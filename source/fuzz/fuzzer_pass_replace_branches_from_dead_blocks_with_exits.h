@@ -20,7 +20,9 @@
 namespace spvtools {
 namespace fuzz {
 
-// TODO comment
+// Fuzzer pass that, under the right conditions, replaces branch instructions
+// from dead blocks with non-branching "exit" terminators, such as OpKill and
+// OpReturn.
 class FuzzerPassReplaceBranchesFromDeadBlocksWithExits : public FuzzerPass {
  public:
   FuzzerPassReplaceBranchesFromDeadBlocksWithExits(
@@ -28,7 +30,7 @@ class FuzzerPassReplaceBranchesFromDeadBlocksWithExits : public FuzzerPass {
       FuzzerContext* fuzzer_context,
       protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassReplaceBranchesFromDeadBlocksWithExits();
+  ~FuzzerPassReplaceBranchesFromDeadBlocksWithExits() override;
 
   void Apply() override;
 };

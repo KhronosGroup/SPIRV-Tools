@@ -63,7 +63,9 @@ class TransformationReplaceBranchFromDeadBlockWithExit : public Transformation {
 
   protobufs::Transformation ToMessage() const override;
 
-  // TODO comment
+  // Returns true if and only if |block| meets the criteria for having its
+  // terminator replaced with an early exit (see IsApplicable for details of the
+  // criteria.)
   static bool BlockIsSuitable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context,

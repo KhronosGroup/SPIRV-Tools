@@ -36,8 +36,10 @@ FuzzerPassReplaceBranchesFromDeadBlocksWithExits::
     ~FuzzerPassReplaceBranchesFromDeadBlocksWithExits() = default;
 
 void FuzzerPassReplaceBranchesFromDeadBlocksWithExits::Apply() {
-  // TODO comment this method
-
+  // OpKill can only be used as a terminator in a function that is guaranteed
+  // to be executed with the Fragment execution model.  We conservatively only
+  // allow OpKill if every entry point in the module has the Fragment execution
+  // model.
   auto fragment_execution_model_guaranteed =
       std::all_of(GetIRContext()->module()->entry_points().begin(),
                   GetIRContext()->module()->entry_points().begin(),
@@ -46,20 +48,31 @@ void FuzzerPassReplaceBranchesFromDeadBlocksWithExits::Apply() {
                            SpvExecutionModelFragment;
                   });
 
+  // Transformations of this type can disable one another.  To avoid ordering
+  // bias, we therefore build a set of candidate transformations to apply, and
+  // subsequently apply them in a random order, skipping any that cease to be
+  // applicable.
   std::vector<TransformationReplaceBranchFromDeadBlockWithExit>
       candidate_transformations;
 
+  // Consider every block in every function.
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
+      // Probabilistically decide whether to skip this block.
       if (GetFuzzerContext()->ChoosePercentage(
               GetFuzzerContext()
                   ->GetChanceOfReplacingBranchFromDeadBlockWithExit())) {
         continue;
       }
+      // Check whether the block is suitable for having its terminator replaced.
       if (!TransformationReplaceBranchFromDeadBlockWithExit::BlockIsSuitable(
               GetIRContext(), *GetTransformationContext(), block)) {
         continue;
       }
+      // We can always use OpUnreachable to replace a block's terminator.
+      // Whether we can use OpKill depends on the execution model, and which of
+      // OpReturn and OpReturnValue we can use depends on the return type of the
+      // enclosing function.
       std::vector<SpvOp> opcodes = {SpvOpUnreachable};
       if (fragment_execution_model_guaranteed) {
         opcodes.emplace_back(SpvOpKill);
@@ -69,8 +82,13 @@ void FuzzerPassReplaceBranchesFromDeadBlocksWithExits::Apply() {
       if (function_return_type->AsVoid()) {
         opcodes.emplace_back(SpvOpReturn);
       } else if (fuzzerutil::CanCreateConstant(*function_return_type)) {
+        // For simplicity we only allow OpReturnValue if the function return
+        // type is a type for which we can create a constant.  This allows us a
+        // zero of the given type as a default return value.
         opcodes.emplace_back(SpvOpReturnValue);
       }
+      // Choose one of the available terminator opcodes at random and create a
+      // candidate transformation.
       auto opcode = opcodes[GetFuzzerContext()->RandomIndex(opcodes)];
       candidate_transformations.emplace_back(
           TransformationReplaceBranchFromDeadBlockWithExit(
@@ -81,8 +99,30 @@ void FuzzerPassReplaceBranchesFromDeadBlocksWithExits::Apply() {
     }
   }
 
+  // Process the candidate transformations in a random order.
   while (!candidate_transformations.empty()) {
-    // TODO comment that they can disable each other
+    // Transformations of this type can disable one another.  For example,
+    // suppose we have dead blocks A, B, C, D arranged as follows:
+    //
+    //         A
+    //        / \
+    //       B   C
+    //        \ /
+    //         D
+    //
+    // Here we can replace the terminator of either B or C with an early exit,
+    // because D has two predecessors.  But if we replace the terminator of B,
+    // say, we get:
+    //
+    //         A
+    //        / \
+    //       B   C
+    //          /
+    //         D
+    //
+    // and now it is no longer OK to replace the terminator of C as D only has
+    // one predecessor and we do not want to make D unreachable in the control
+    // flow graph.
     MaybeApplyTransformation(
         GetFuzzerContext()->RemoveAtRandomIndex(&candidate_transformations));
   }

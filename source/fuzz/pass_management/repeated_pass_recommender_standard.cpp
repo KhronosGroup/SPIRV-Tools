@@ -281,8 +281,7 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
   }
   if (&pass == pass_instances_->GetReplaceBranchesFromDeadBlocksWithExits()) {
     // - Changing a branch to OpReturnValue introduces an irrelevant id, which
-    //   can be replaced.
-    // TODO - plan new passes
+    //   can be replaced
     return RandomOrderAndNonNull({pass_instances_->GetReplaceIrrelevantIds()});
   }
   if (&pass == pass_instances_->GetReplaceCopyMemoriesWithLoadsStores()) {
