@@ -120,7 +120,7 @@ void DumpTransformationsJson(
 void ApplyAndCheckFreshIds(
     const Transformation& transformation, opt::IRContext* ir_context,
     TransformationContext* transformation_context,
-    const std::unordered_set<uint32_t>& issued_overflow_ids = {});
+    const std::unordered_set<uint32_t>& issued_overflow_ids = {{}});
 
 }  // namespace fuzz
 }  // namespace spvtools
