@@ -256,8 +256,11 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     return {};
   }
   if (&pass == pass_instances_->GetPropagateInstructionsDown()) {
-    // No obvious follow-on passes
-    return {};
+    // - This fuzzer pass might create new synonyms that can later be applied.
+    // - This fuzzer pass might create irrelevant ids that can later be
+    //   replaced.
+    return RandomOrderAndNonNull({pass_instances_->GetApplyIdSynonyms(),
+                                  pass_instances_->GetReplaceIrrelevantIds()});
   }
   if (&pass == pass_instances_->GetPropagateInstructionsUp()) {
     // No obvious follow-on passes
