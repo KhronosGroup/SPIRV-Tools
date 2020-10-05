@@ -108,13 +108,8 @@ void TransformationPropagateInstructionDown::Apply(
   }
 
   // Add an OpPhi instruction into the module if possible.
-  if (CanAddOpPhiInstruction(ir_context, message_.block_id(),
-                             *inst_to_propagate, successor_ids)) {
-    auto merge_block_id =
-        ir_context->GetStructuredCFGAnalysis()->MergeBlock(message_.block_id());
-    assert(merge_block_id &&
-           "Propagated instruction must belong to some construct");
-
+  if (auto merge_block_id = GetOpPhiBlockId(
+          ir_context, message_.block_id(), *inst_to_propagate, successor_ids)) {
     opt::Instruction::OperandList in_operands;
     std::unordered_set<uint32_t> visited_predecessors;
     for (auto predecessor_id : ir_context->cfg()->preds(merge_block_id)) {
@@ -207,6 +202,14 @@ void TransformationPropagateInstructionDown::Apply(
       // block).
       if (!transformation_context->GetFactManager()->IdIsIrrelevant(id)) {
         non_irrelevant_ids.push_back(id);
+      }
+    }
+
+    if (transformation_context->GetFactManager()->PointeeValueIsIrrelevant(
+            inst_to_propagate->result_id())) {
+      for (auto id : non_irrelevant_ids) {
+        transformation_context->GetFactManager()
+            ->AddFactValueOfPointeeIsIrrelevant(id);
       }
     }
 
@@ -424,13 +427,8 @@ bool TransformationPropagateInstructionDown::IsApplicableToBlock(
 
   // Get the result id of the block we will insert OpPhi instruction into.
   // This is either 0 or a result id of some merge block in the function.
-  uint32_t phi_block_id = 0;
-  if (CanAddOpPhiInstruction(ir_context, block_id, *inst_to_propagate,
-                             successor_ids)) {
-    assert(block->GetMergeInst() &&
-           "|block| must be a header of some construct");
-    phi_block_id = block->GetMergeInst()->GetSingleWordInOperand(0);
-  }
+  auto phi_block_id =
+      GetOpPhiBlockId(ir_context, block_id, *inst_to_propagate, successor_ids);
 
   // Make sure we can adjust all users of the propagated instruction.
   return ir_context->get_def_use_mgr()->WhileEachUse(
@@ -519,18 +517,21 @@ TransformationPropagateInstructionDown::GetAcceptableSuccessors(
   return result;
 }
 
-bool TransformationPropagateInstructionDown::CanAddOpPhiInstruction(
+uint32_t TransformationPropagateInstructionDown::GetOpPhiBlockId(
     opt::IRContext* ir_context, uint32_t block_id,
     const opt::Instruction& inst_to_propagate,
     const std::unordered_set<uint32_t>& successor_ids) {
-  // |block| must belong to some construct.
+  const auto* block = ir_context->cfg()->block(block_id);
+
+  // |block_id| must belong to some construct.
   auto merge_block_id =
-      ir_context->GetStructuredCFGAnalysis()->MergeBlock(block_id);
+      block->GetMergeInst()
+          ? block->GetMergeInst()->GetSingleWordInOperand(0)
+          : ir_context->GetStructuredCFGAnalysis()->MergeBlock(block_id);
   if (!merge_block_id) {
-    return false;
+    return 0;
   }
 
-  const auto* block = ir_context->cfg()->block(block_id);
   const auto* dominator_analysis =
       ir_context->GetDominatorAnalysis(block->GetParent());
 
@@ -538,13 +539,13 @@ bool TransformationPropagateInstructionDown::CanAddOpPhiInstruction(
   // dominates |merge_block_id|.
   if (!dominator_analysis->IsReachable(merge_block_id) ||
       !dominator_analysis->Dominates(block_id, merge_block_id)) {
-    return false;
+    return 0;
   }
 
   // We can't insert an OpPhi into |merge_block_id| if it's an acceptable
   // successor of |block_id|.
   if (successor_ids.count(merge_block_id)) {
-    return false;
+    return 0;
   }
 
   // All predecessors of the merge block must be dominated by at least one
@@ -558,7 +559,7 @@ bool TransformationPropagateInstructionDown::CanAddOpPhiInstruction(
               return dominator_analysis->Dominates(successor_id,
                                                    predecessor_id);
             })) {
-      return false;
+      return 0;
     }
   }
 
@@ -569,9 +570,13 @@ bool TransformationPropagateInstructionDown::CanAddOpPhiInstruction(
   // VariablePointers capability implicitly declares
   // VariablePointersStorageBuffer. We need those capabilities since otherwise
   // OpPhi instructions cannot have operands of pointer types.
-  return !propagate_type->AsPointer() ||
-         ir_context->get_feature_mgr()->HasCapability(
-             SpvCapabilityVariablePointersStorageBuffer);
+  if (propagate_type->AsPointer() &&
+      !ir_context->get_feature_mgr()->HasCapability(
+          SpvCapabilityVariablePointersStorageBuffer)) {
+    return 0;
+  }
+
+  return merge_block_id;
 }
 
 std::unordered_set<uint32_t>

@@ -70,7 +70,7 @@ class TransformationPropagateInstructionDown : public Transformation {
   //   original instruction.
   // - it is possible to replace every use of the original instruction with some
   //   of the propagated instructions (or an OpPhi if we can create it - see
-  //   CanAddOpPhiInstruction method).
+  //   GetOpPhiBlockId method).
   static bool IsApplicableToBlock(opt::IRContext* ir_context,
                                   uint32_t block_id);
 
@@ -127,17 +127,20 @@ class TransformationPropagateInstructionDown : public Transformation {
   static opt::Instruction* GetFirstInsertBeforeInstruction(
       opt::IRContext* ir_context, uint32_t block_id, SpvOp opcode);
 
-  // Returns true if we can add an OpPhi instruction that groups all the
-  // propagated clones of the original instruction. |block_id| is a
-  // result id of the block we propagate the instruction from. |successor_ids|
-  // contains result ids of the successors we propagate the instruction into.
-  // Concretely, returns true if:
+  // Returns a result id of a basic block, where an OpPhi instruction can be
+  // inserted. Returns nullptr if it's not possible to create an OpPhi. The
+  // created OpPhi instruction groups all the propagated clones of the original
+  // instruction. |block_id| is a result id of the block we propagate the
+  // instruction from. |successor_ids| contains result ids of the successors we
+  // propagate the instruction into. Concretely, returns a non-null value if:
   // - |block_id| is in some construct.
   // - The merge block of that construct is reachable.
   // - |block_id| dominates that merge block.
   // - That merge block may not be an acceptable successor of |block_id|.
   // - There must be at least one |block_id|'s acceptable successor for every
   //   predecessor of the merge block, dominating that predecessor.
+  // - We can't create an OpPhi if the module has neither VariablePointers nor
+  //   VariablePointersStorageBuffer capabilities.
   // A simple example of when we can insert an OpPhi instruction is:
   // - This snippet of code:
   //    %1 = OpLabel
@@ -167,7 +170,7 @@ class TransformationPropagateInstructionDown : public Transformation {
   // of the transformation. Concretely, we wouldn't be able to apply it in the
   // example above if %2 were used in %5. Some more complicated examples can be
   // found in unit tests.
-  static bool CanAddOpPhiInstruction(
+  static uint32_t GetOpPhiBlockId(
       opt::IRContext* ir_context, uint32_t block_id,
       const opt::Instruction& inst_to_propagate,
       const std::unordered_set<uint32_t>& successor_ids);
