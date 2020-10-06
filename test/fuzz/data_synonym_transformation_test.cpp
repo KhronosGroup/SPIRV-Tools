@@ -27,9 +27,10 @@ namespace {
 // This file captures tests that check correctness of the collective use of a
 // number of transformations that relate to data synonyms.
 
-protobufs::Fact MakeSynonymFact(
-    uint32_t first_id, const std::vector<uint32_t>& first_indices,
-    uint32_t second_id, const std::vector<uint32_t>& second_indices) {
+protobufs::Fact MakeSynonymFact(uint32_t first_id,
+                                const std::vector<uint32_t>& first_indices,
+                                uint32_t second_id,
+                                const std::vector<uint32_t>& second_indices) {
   protobufs::FactDataSynonym data_synonym_fact;
   *data_synonym_fact.mutable_data1() =
       MakeDataDescriptor(first_id, first_indices);
