@@ -302,7 +302,7 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
   } else {
     return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
            << spvOpcodeString(opcode)
-           << " cannot appear in a function declaration";
+           << " is in an invalid module layout section";
   }
   return SPV_SUCCESS;
 }

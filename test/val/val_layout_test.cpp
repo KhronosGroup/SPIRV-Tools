@@ -583,7 +583,7 @@ TEST_F(ValidateLayout, ModuleProcessedBeforeLastNameIsTooEarly) {
   // By the mechanics of the validator, we assume ModuleProcessed is in the
   // right spot, but then that OpName is in the wrong spot.
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Name cannot appear in a function declaration"));
+              HasSubstr("Name is in an invalid module layout section"));
 }
 
 TEST_F(ValidateLayout, ModuleProcessedInvalidAfterFirstAnnotation) {
@@ -601,7 +601,7 @@ TEST_F(ValidateLayout, ModuleProcessedInvalidAfterFirstAnnotation) {
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("ModuleProcessed cannot appear in a function declaration"));
+      HasSubstr("ModuleProcessed is in an invalid module layout section"));
 }
 
 TEST_F(ValidateLayout, ModuleProcessedInvalidInFunctionBeforeLabel) {
@@ -623,7 +623,7 @@ TEST_F(ValidateLayout, ModuleProcessedInvalidInFunctionBeforeLabel) {
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("ModuleProcessed cannot appear in a function declaration"));
+      HasSubstr("ModuleProcessed is in an invalid module layout section"));
 }
 
 TEST_F(ValidateLayout, ModuleProcessedInvalidInBasicBlock) {
@@ -645,7 +645,7 @@ TEST_F(ValidateLayout, ModuleProcessedInvalidInBasicBlock) {
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("ModuleProcessed cannot appear in a function declaration"));
+      HasSubstr("ModuleProcessed is in an invalid module layout section"));
 }
 
 TEST_F(ValidateLayout, WebGPUCallerBeforeCalleeBad) {
