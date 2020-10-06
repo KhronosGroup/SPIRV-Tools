@@ -70,6 +70,7 @@
 #include "source/fuzz/transformation_outline_function.h"
 #include "source/fuzz/transformation_permute_function_parameters.h"
 #include "source/fuzz/transformation_permute_phi_operands.h"
+#include "source/fuzz/transformation_propagate_instruction_down.h"
 #include "source/fuzz/transformation_propagate_instruction_up.h"
 #include "source/fuzz/transformation_push_id_through_variable.h"
 #include "source/fuzz/transformation_record_synonymous_constants.h"
@@ -259,6 +260,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kPermutePhiOperands:
       return MakeUnique<TransformationPermutePhiOperands>(
           message.permute_phi_operands());
+    case protobufs::Transformation::TransformationCase::
+        kPropagateInstructionDown:
+      return MakeUnique<TransformationPropagateInstructionDown>(
+          message.propagate_instruction_down());
     case protobufs::Transformation::TransformationCase::kPropagateInstructionUp:
       return MakeUnique<TransformationPropagateInstructionUp>(
           message.propagate_instruction_up());

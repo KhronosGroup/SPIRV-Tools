@@ -68,6 +68,7 @@
 #include "source/fuzz/fuzzer_pass_permute_function_parameters.h"
 #include "source/fuzz/fuzzer_pass_permute_instructions.h"
 #include "source/fuzz/fuzzer_pass_permute_phi_operands.h"
+#include "source/fuzz/fuzzer_pass_propagate_instructions_down.h"
 #include "source/fuzz/fuzzer_pass_propagate_instructions_up.h"
 #include "source/fuzz/fuzzer_pass_push_ids_through_variables.h"
 #include "source/fuzz/fuzzer_pass_replace_adds_subs_muls_with_carrying_extended.h"
@@ -276,6 +277,7 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
     MaybeAddRepeatedPass<FuzzerPassPermuteBlocks>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassPermuteFunctionParameters>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassPermuteInstructions>(&pass_instances);
+    MaybeAddRepeatedPass<FuzzerPassPropagateInstructionsDown>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassPropagateInstructionsUp>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassPushIdsThroughVariables>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassReplaceAddsSubsMulsWithCarryingExtended>(

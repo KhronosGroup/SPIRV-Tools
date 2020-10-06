@@ -552,6 +552,7 @@ message Transformation {
     TransformationAddLoopToCreateIntConstantSynonym add_loop_to_create_int_constant_synonym = 78;
     TransformationWrapRegionInSelection wrap_region_in_selection = 79;
     TransformationAddEarlyTerminatorWrapper add_early_terminator_wrapper = 80;
+    TransformationPropagateInstructionDown propagate_instruction_down = 81;
     // Add additional option using the next available number.
   }
 }
@@ -1742,6 +1743,38 @@ message TransformationPermutePhiOperands {
   // A sequence of numbers in the range [0, n/2 - 1] where |n| is the number
   // of operands of the OpPhi instruction with |result_id|.
   repeated uint32 permutation = 2;
+
+}
+
+message TransformationPropagateInstructionDown {
+
+  // Propagates an instruction from |block_id| into its successors.
+  // Concretely, the transformation clones the propagated instruction
+  // into some of the successors of |block_id| and removes the original
+  // instruction. Additionally, an OpPhi instruction may be added to make sure
+  // that the transformation can be applied in various scenarios.
+  //
+  // Note that the instruction might not be propagated down into every successor
+  // of |block_id| since it might make the module invalid.
+
+  // Id of the block to propagate an instruction from. The decision on what
+  // instruction to propagate is made based on whether the instruction interacts
+  // with memory, whether that instruction is used in its block etc (see the
+  // transformation class for more details).
+  uint32 block_id = 1;
+
+  // A fresh id for an OpPhi instruction. This might not be used by the
+  // transformation since an OpPhi instruction is created only if needed
+  // (e.g. an instruction is propagated into divergent blocks).
+  uint32 phi_fresh_id = 2;
+
+  // A map from the id of some successor of the |block_id| to the fresh id.
+  // The map contains a fresh id for at least every successor of the |block_id|.
+  // Every fresh id in the map corresponds to the result id of the clone,
+  // propagated into the corresponding successor block. This transformation
+  // might use overflow ids if they are available and this field doesn't account
+  // for every successor of |block_id|.
+  repeated UInt32Pair successor_id_to_fresh_id = 3;
 
 }
 
