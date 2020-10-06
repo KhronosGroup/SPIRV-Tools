@@ -25,8 +25,8 @@ namespace fuzz {
 
 // Factory method to create a data descriptor message from an object id and a
 // list of indices.
-protobufs::DataDescriptor MakeDataDescriptor(uint32_t object,
-                                             std::vector<uint32_t>&& indices);
+protobufs::DataDescriptor MakeDataDescriptor(
+    uint32_t object, const std::vector<uint32_t>& indices);
 
 // Hash function for data descriptors.
 struct DataDescriptorHash {

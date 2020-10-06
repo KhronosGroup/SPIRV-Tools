@@ -30,7 +30,8 @@ class TransformationCompositeExtract : public Transformation {
 
   TransformationCompositeExtract(
       const protobufs::InstructionDescriptor& instruction_to_insert_before,
-      uint32_t fresh_id, uint32_t composite_id, std::vector<uint32_t>&& index);
+      uint32_t fresh_id, uint32_t composite_id,
+      const std::vector<uint32_t>& index);
 
   // - |message_.fresh_id| must be available
   // - |message_.instruction_to_insert_before| must identify an instruction

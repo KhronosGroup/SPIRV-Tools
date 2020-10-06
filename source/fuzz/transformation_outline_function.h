@@ -38,8 +38,8 @@ class TransformationOutlineFunction : public Transformation {
       uint32_t new_function_type_id, uint32_t new_function_id,
       uint32_t new_function_region_entry_block, uint32_t new_caller_result_id,
       uint32_t new_callee_result_id,
-      std::map<uint32_t, uint32_t>&& input_id_to_fresh_id,
-      std::map<uint32_t, uint32_t>&& output_id_to_fresh_id);
+      const std::map<uint32_t, uint32_t>& input_id_to_fresh_id,
+      const std::map<uint32_t, uint32_t>& output_id_to_fresh_id);
 
   // - All the fresh ids occurring in the transformation must be distinct and
   //   fresh

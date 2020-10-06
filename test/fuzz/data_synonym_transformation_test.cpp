@@ -28,14 +28,14 @@ namespace {
 // number of transformations that relate to data synonyms.
 
 protobufs::Fact MakeSynonymFact(uint32_t first_id,
-                                std::vector<uint32_t> first_indices,
+                                const std::vector<uint32_t>& first_indices,
                                 uint32_t second_id,
-                                std::vector<uint32_t> second_indices) {
+                                const std::vector<uint32_t>& second_indices) {
   protobufs::FactDataSynonym data_synonym_fact;
   *data_synonym_fact.mutable_data1() =
-      MakeDataDescriptor(first_id, std::move(first_indices));
+      MakeDataDescriptor(first_id, first_indices);
   *data_synonym_fact.mutable_data2() =
-      MakeDataDescriptor(second_id, std::move(second_indices));
+      MakeDataDescriptor(second_id, second_indices);
   protobufs::Fact result;
   *result.mutable_data_synonym_fact() = data_synonym_fact;
   return result;

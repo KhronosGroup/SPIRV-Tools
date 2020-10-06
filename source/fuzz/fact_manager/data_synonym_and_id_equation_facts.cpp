@@ -405,8 +405,8 @@ void DataSynonymAndIdEquationFacts::ComputeCompositeDataSynonymFacts(
         fuzzerutil::RepeatedFieldToVector(dd2.index());
     extended_indices2.push_back(i);
     AddDataSynonymFactRecursive(
-        MakeDataDescriptor(dd1.object(), std::move(extended_indices1)),
-        MakeDataDescriptor(dd2.object(), std::move(extended_indices2)));
+        MakeDataDescriptor(dd1.object(), extended_indices1),
+        MakeDataDescriptor(dd2.object(), extended_indices2));
 
     if (i < kCompositeElementBound - 1 || i == num_composite_elements - 1) {
       // We have not reached the bound yet, or have already skipped ahead to the

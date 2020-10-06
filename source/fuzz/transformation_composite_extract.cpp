@@ -29,7 +29,8 @@ TransformationCompositeExtract::TransformationCompositeExtract(
 
 TransformationCompositeExtract::TransformationCompositeExtract(
     const protobufs::InstructionDescriptor& instruction_to_insert_before,
-    uint32_t fresh_id, uint32_t composite_id, std::vector<uint32_t>&& index) {
+    uint32_t fresh_id, uint32_t composite_id,
+    const std::vector<uint32_t>& index) {
   *message_.mutable_instruction_to_insert_before() =
       instruction_to_insert_before;
   message_.set_fresh_id(fresh_id);
@@ -121,7 +122,7 @@ void TransformationCompositeExtract::Apply(
       indices.push_back(an_index);
     }
     protobufs::DataDescriptor data_descriptor_for_extracted_element =
-        MakeDataDescriptor(message_.composite_id(), std::move(indices));
+        MakeDataDescriptor(message_.composite_id(), indices);
     protobufs::DataDescriptor data_descriptor_for_result_id =
         MakeDataDescriptor(message_.fresh_id(), {});
     transformation_context->GetFactManager()->AddFactDataSynonym(
