@@ -42,7 +42,7 @@ void FuzzerPassReplaceBranchesFromDeadBlocksWithExits::Apply() {
   // model.
   auto fragment_execution_model_guaranteed =
       std::all_of(GetIRContext()->module()->entry_points().begin(),
-                  GetIRContext()->module()->entry_points().begin(),
+                  GetIRContext()->module()->entry_points().end(),
                   [](const opt::Instruction& entry_point) -> bool {
                     return entry_point.GetSingleWordInOperand(0) ==
                            SpvExecutionModelFragment;
