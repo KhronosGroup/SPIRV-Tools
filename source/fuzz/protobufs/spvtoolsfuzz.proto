@@ -553,6 +553,7 @@ message Transformation {
     TransformationWrapRegionInSelection wrap_region_in_selection = 79;
     TransformationAddEarlyTerminatorWrapper add_early_terminator_wrapper = 80;
     TransformationPropagateInstructionDown propagate_instruction_down = 81;
+    TransformationReplaceBranchFromDeadBlockWithExit replace_branch_from_dead_block_with_exit = 82;
     // Add additional option using the next available number.
   }
 }
@@ -1860,6 +1861,24 @@ message TransformationReplaceAddSubMulWithCarryingExtended {
 
   // The result id of the original instruction.
   uint32 result_id = 2;
+
+}
+
+message TransformationReplaceBranchFromDeadBlockWithExit {
+
+  // Given a dead block that ends with OpBranch, replaces OpBranch with an
+  // "exit" instruction; one of OpReturn/OpReturnValue, OpKill (in a fragment
+  // shader) or OpUnreachable.
+
+  // The dead block whose terminator is to be replaced.
+  uint32 block_id = 1;
+
+  // The opcode of the new terminator.
+  uint32 opcode = 2;
+
+  // Ignored unless opcode is OpReturnValue, in which case this field provides
+  // a suitable result id to be returned.
+  uint32 return_value_id = 3;
 
 }
 

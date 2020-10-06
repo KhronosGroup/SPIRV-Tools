@@ -114,6 +114,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfPropagatingInstructionsUp = {20,
 const std::pair<uint32_t, uint32_t> kChanceOfPushingIdThroughVariable = {5, 50};
 const std::pair<uint32_t, uint32_t>
     kChanceOfReplacingAddSubMulWithCarryingExtended = {20, 70};
+const std::pair<uint32_t, uint32_t>
+    kChanceOfReplacingBranchFromDeadBlockWithExit = {10, 65};
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingCopyMemoryWithLoadStore =
     {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfReplacingCopyObjectWithStoreLoad =
@@ -304,6 +306,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfPushingIdThroughVariable);
   chance_of_replacing_add_sub_mul_with_carrying_extended_ =
       ChooseBetweenMinAndMax(kChanceOfReplacingAddSubMulWithCarryingExtended);
+  chance_of_replacing_branch_from_dead_block_with_exit_ =
+      ChooseBetweenMinAndMax(kChanceOfReplacingBranchFromDeadBlockWithExit);
   chance_of_replacing_copy_memory_with_load_store_ =
       ChooseBetweenMinAndMax(kChanceOfReplacingCopyMemoryWithLoadStore);
   chance_of_replacing_copyobject_with_store_load_ =
