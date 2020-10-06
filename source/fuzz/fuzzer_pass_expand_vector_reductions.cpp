@@ -46,6 +46,12 @@ void FuzzerPassExpandVectorReductions::Apply() {
           continue;
         }
 
+        // It must be able to make a synonym of |instruction|.
+        if (fuzzerutil::CanMakeSynonymOf(
+                GetIRContext(), *GetTransformationContext(), &instruction)) {
+          continue;
+        }
+
         // Applies the expand vector reduction transformation.
         ApplyTransformation(TransformationExpandVectorReduction(
             instruction.result_id(),

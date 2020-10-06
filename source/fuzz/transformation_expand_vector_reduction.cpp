@@ -35,8 +35,7 @@ TransformationExpandVectorReduction::TransformationExpandVectorReduction(
 }
 
 bool TransformationExpandVectorReduction::IsApplicable(
-    opt::IRContext* ir_context,
-    const TransformationContext& transformation_context) const {
+    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   auto* instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.instruction_result_id());
 
@@ -47,12 +46,6 @@ bool TransformationExpandVectorReduction::IsApplicable(
 
   // |instruction| must be OpAny or OpAll.
   if (instruction->opcode() != SpvOpAny && instruction->opcode() != SpvOpAll) {
-    return false;
-  }
-
-  // |instruction| must not be irrelevant.
-  if (transformation_context.GetFactManager()->IdIsIrrelevant(
-          instruction->result_id())) {
     return false;
   }
 
@@ -134,11 +127,14 @@ void TransformationExpandVectorReduction::Apply(
 
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
-  // Adds the fact that the last |logical_instruction| is synonym of
-  // |instruction|.
-  transformation_context->GetFactManager()->AddFactDataSynonym(
-      MakeDataDescriptor(logical_instruction.result_id(), {}),
-      MakeDataDescriptor(instruction->result_id(), {}));
+  // If it's be able to make a synonym of |instruction|, then adds the fact that
+  // the last |logical_instruction| is synonym of |instruction|.
+  if (fuzzerutil::CanMakeSynonymOf(ir_context, *transformation_context,
+                                   instruction)) {
+    transformation_context->GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(logical_instruction.result_id(), {}),
+        MakeDataDescriptor(instruction->result_id(), {}));
+  }
 }
 
 protobufs::Transformation TransformationExpandVectorReduction::ToMessage()
