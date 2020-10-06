@@ -76,6 +76,7 @@
 #include "source/fuzz/transformation_record_synonymous_constants.h"
 #include "source/fuzz/transformation_replace_add_sub_mul_with_carrying_extended.h"
 #include "source/fuzz/transformation_replace_boolean_constant_with_constant_binary.h"
+#include "source/fuzz/transformation_replace_branch_from_dead_block_with_exit.h"
 #include "source/fuzz/transformation_replace_constant_with_uniform.h"
 #include "source/fuzz/transformation_replace_copy_memory_with_load_store.h"
 #include "source/fuzz/transformation_replace_copy_object_with_store_load.h"
@@ -282,6 +283,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kReplaceBooleanConstantWithConstantBinary:
       return MakeUnique<TransformationReplaceBooleanConstantWithConstantBinary>(
           message.replace_boolean_constant_with_constant_binary());
+    case protobufs::Transformation::TransformationCase::
+        kReplaceBranchFromDeadBlockWithExit:
+      return MakeUnique<TransformationReplaceBranchFromDeadBlockWithExit>(
+          message.replace_branch_from_dead_block_with_exit());
     case protobufs::Transformation::TransformationCase::
         kReplaceConstantWithUniform:
       return MakeUnique<TransformationReplaceConstantWithUniform>(

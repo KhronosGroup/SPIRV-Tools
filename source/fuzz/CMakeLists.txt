@@ -104,6 +104,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_propagate_instructions_up.h
         fuzzer_pass_push_ids_through_variables.h
         fuzzer_pass_replace_adds_subs_muls_with_carrying_extended.h
+        fuzzer_pass_replace_branches_from_dead_blocks_with_exits.h
         fuzzer_pass_replace_copy_memories_with_loads_stores.h
         fuzzer_pass_replace_copy_objects_with_stores_loads.h
         fuzzer_pass_replace_irrelevant_ids.h
@@ -197,6 +198,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_record_synonymous_constants.h
         transformation_replace_add_sub_mul_with_carrying_extended.h
         transformation_replace_boolean_constant_with_constant_binary.h
+        transformation_replace_branch_from_dead_block_with_exit.h
         transformation_replace_constant_with_uniform.h
         transformation_replace_copy_memory_with_load_store.h
         transformation_replace_copy_object_with_store_load.h
@@ -288,6 +290,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_propagate_instructions_up.cpp
         fuzzer_pass_push_ids_through_variables.cpp
         fuzzer_pass_replace_adds_subs_muls_with_carrying_extended.cpp
+        fuzzer_pass_replace_branches_from_dead_blocks_with_exits.cpp
         fuzzer_pass_replace_copy_memories_with_loads_stores.cpp
         fuzzer_pass_replace_copy_objects_with_stores_loads.cpp
         fuzzer_pass_replace_irrelevant_ids.cpp
@@ -379,6 +382,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_record_synonymous_constants.cpp
         transformation_replace_add_sub_mul_with_carrying_extended.cpp
         transformation_replace_boolean_constant_with_constant_binary.cpp
+        transformation_replace_branch_from_dead_block_with_exit.cpp
         transformation_replace_constant_with_uniform.cpp
         transformation_replace_copy_memory_with_load_store.cpp
         transformation_replace_copy_object_with_store_load.cpp

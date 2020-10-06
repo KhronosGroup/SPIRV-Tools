@@ -276,6 +276,9 @@ class FuzzerContext {
   uint32_t GetChanceOfReplacingAddSubMulWithCarryingExtended() {
     return chance_of_replacing_add_sub_mul_with_carrying_extended_;
   }
+  uint32_t GetChanceOfReplacingBranchFromDeadBlockWithExit() {
+    return chance_of_replacing_branch_from_dead_block_with_exit_;
+  }
   uint32_t GetChanceOfReplacingCopyMemoryWithLoadStore() {
     return chance_of_replacing_copy_memory_with_load_store_;
   }
@@ -470,6 +473,7 @@ class FuzzerContext {
   uint32_t chance_of_propagating_instructions_up_;
   uint32_t chance_of_pushing_id_through_variable_;
   uint32_t chance_of_replacing_add_sub_mul_with_carrying_extended_;
+  uint32_t chance_of_replacing_branch_from_dead_block_with_exit_;
   uint32_t chance_of_replacing_copy_memory_with_load_store_;
   uint32_t chance_of_replacing_copyobject_with_store_load_;
   uint32_t chance_of_replacing_id_with_synonym_;

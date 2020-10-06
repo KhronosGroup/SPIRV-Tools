@@ -63,10 +63,12 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     // - Dead blocks are great for adding function calls
     // - Dead blocks are also great for adding loads and stores
     // - The guard associated with a dead block can be obfuscated
-    return RandomOrderAndNonNull({pass_instances_->GetAddFunctionCalls(),
-                                  pass_instances_->GetAddLoads(),
-                                  pass_instances_->GetAddStores(),
-                                  pass_instances_->GetObfuscateConstants()});
+    // - Branches from dead blocks may be replaced with exits
+    return RandomOrderAndNonNull(
+        {pass_instances_->GetAddFunctionCalls(), pass_instances_->GetAddLoads(),
+         pass_instances_->GetAddStores(),
+         pass_instances_->GetObfuscateConstants(),
+         pass_instances_->GetReplaceBranchesFromDeadBlocksWithExits()});
   }
   if (&pass == pass_instances_->GetAddDeadBreaks()) {
     // - The guard of the dead break is a good candidate for obfuscation
@@ -189,9 +191,12 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     // - New functions in the module can be called
     // - Donated dead functions produce irrelevant ids, which can be replaced
     // - Donated functions are good candidates for having their returns merged
-    return RandomOrderAndNonNull({pass_instances_->GetAddFunctionCalls(),
-                                  pass_instances_->GetReplaceIrrelevantIds(),
-                                  pass_instances_->GetMergeFunctionReturns()});
+    // - Donated dead functions may allow branches to be replaced with exits
+    return RandomOrderAndNonNull(
+        {pass_instances_->GetAddFunctionCalls(),
+         pass_instances_->GetReplaceIrrelevantIds(),
+         pass_instances_->GetMergeFunctionReturns(),
+         pass_instances_->GetReplaceBranchesFromDeadBlocksWithExits()});
   }
   if (&pass == pass_instances_->GetDuplicateRegionsWithSelections()) {
     // - Parts of duplicated regions can be outlined
@@ -273,6 +278,11 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
   if (&pass == pass_instances_->GetReplaceAddsSubsMulsWithCarryingExtended()) {
     // No obvious follow-on passes
     return {};
+  }
+  if (&pass == pass_instances_->GetReplaceBranchesFromDeadBlocksWithExits()) {
+    // - Changing a branch to OpReturnValue introduces an irrelevant id, which
+    //   can be replaced
+    return RandomOrderAndNonNull({pass_instances_->GetReplaceIrrelevantIds()});
   }
   if (&pass == pass_instances_->GetReplaceCopyMemoriesWithLoadsStores()) {
     // No obvious follow-on passes
