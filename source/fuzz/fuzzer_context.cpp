@@ -35,6 +35,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingBitInstructionSynonym = {5,
                                                                             20};
 const std::pair<uint32_t, uint32_t>
     kChanceOfAddingBothBranchesWhenReplacingOpSelect = {40, 60};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingCompositeExtract = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingCompositeInsert = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingCopyMemory = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBlock = {20, 90};
@@ -197,6 +198,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfAddingBitInstructionSynonym);
   chance_of_adding_both_branches_when_replacing_opselect_ =
       ChooseBetweenMinAndMax(kChanceOfAddingBothBranchesWhenReplacingOpSelect);
+  chance_of_adding_composite_extract_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingCompositeExtract);
   chance_of_adding_composite_insert_ =
       ChooseBetweenMinAndMax(kChanceOfAddingCompositeInsert);
   chance_of_adding_copy_memory_ =

@@ -54,6 +54,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass.h
         fuzzer_pass_add_access_chains.h
         fuzzer_pass_add_bit_instruction_synonyms.h
+        fuzzer_pass_add_composite_extract.h
         fuzzer_pass_add_composite_inserts.h
         fuzzer_pass_add_composite_types.h
         fuzzer_pass_add_copy_memory.h
@@ -241,6 +242,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass.cpp
         fuzzer_pass_add_access_chains.cpp
         fuzzer_pass_add_bit_instruction_synonyms.cpp
+        fuzzer_pass_add_composite_extract.cpp
         fuzzer_pass_add_composite_inserts.cpp
         fuzzer_pass_add_composite_types.cpp
         fuzzer_pass_add_copy_memory.cpp
