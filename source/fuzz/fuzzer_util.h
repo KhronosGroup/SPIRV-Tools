@@ -379,6 +379,10 @@ uint32_t MaybeGetVectorType(opt::IRContext* ir_context,
 uint32_t MaybeGetStructType(opt::IRContext* ir_context,
                             const std::vector<uint32_t>& component_type_ids);
 
+// Returns a result id of an OpTypeVoid instruction if present. Returns 0
+// otherwise.
+uint32_t MaybeGetVoidType(opt::IRContext* ir_context);
+
 // Recursive definition is the following:
 // - if |scalar_or_composite_type_id| is a result id of a scalar type - returns
 //   a result id of the following constants (depending on the type): int -> 0,
