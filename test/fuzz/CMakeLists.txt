@@ -87,6 +87,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_outline_function_test.cpp
           transformation_permute_function_parameters_test.cpp
           transformation_permute_phi_operands_test.cpp
+          transformation_propagate_instruction_down_test.cpp
           transformation_propagate_instruction_up_test.cpp
           transformation_push_id_through_variable_test.cpp
           transformation_replace_add_sub_mul_with_carrying_extended_test.cpp

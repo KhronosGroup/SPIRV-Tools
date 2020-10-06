@@ -158,12 +158,5 @@ void ApplyAndCheckFreshIds(
   }
 }
 
-void ApplyAndCheckFreshIds(const Transformation& transformation,
-                           opt::IRContext* ir_context,
-                           TransformationContext* transformation_context) {
-  ApplyAndCheckFreshIds(transformation, ir_context, transformation_context,
-                        std::unordered_set<uint32_t>());
-}
-
 }  // namespace fuzz
 }  // namespace spvtools
