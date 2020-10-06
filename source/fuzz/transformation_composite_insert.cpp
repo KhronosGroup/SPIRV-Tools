@@ -166,15 +166,9 @@ void TransformationCompositeInsert::Apply(
         continue;
       }
       current_index.push_back(i);
-      // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3659):
-      //       Google C++ guide restricts the use of r-value references.
-      //       https://google.github.io/styleguide/cppguide.html#Rvalue_references
-      //       Consider changing the signature of MakeDataDescriptor()
       transformation_context->GetFactManager()->AddFactDataSynonym(
-          MakeDataDescriptor(message_.fresh_id(),
-                             std::vector<uint32_t>(current_index)),
-          MakeDataDescriptor(message_.composite_id(),
-                             std::vector<uint32_t>(current_index)));
+          MakeDataDescriptor(message_.fresh_id(), current_index),
+          MakeDataDescriptor(message_.composite_id(), current_index));
       current_index.pop_back();
     }
     // Store the prefix of the |index|.
@@ -186,7 +180,7 @@ void TransformationCompositeInsert::Apply(
           message_.object_id())) {
     transformation_context->GetFactManager()->AddFactDataSynonym(
         MakeDataDescriptor(message_.object_id(), {}),
-        MakeDataDescriptor(message_.fresh_id(), std::vector<uint32_t>(index)));
+        MakeDataDescriptor(message_.fresh_id(), index));
   }
 }
 
