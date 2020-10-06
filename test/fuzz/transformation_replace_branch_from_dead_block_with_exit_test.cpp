@@ -434,6 +434,127 @@ TEST(TransformationReplaceBranchFromDeadBlockWithExitTest,
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationReplaceBranchFromDeadBlockWithExitTest, OpPhi) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantFalse %6
+         %12 = OpTypeInt 32 1
+         %13 = OpTypePointer Function %12
+         %15 = OpConstant %12 1
+         %17 = OpConstant %12 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %14 = OpVariable %13 Function
+               OpSelectionMerge %9 None
+               OpBranchConditional %7 %8 %21
+          %8 = OpLabel
+               OpSelectionMerge %11 None
+               OpBranchConditional %7 %10 %16
+         %10 = OpLabel
+               OpStore %14 %15
+               OpBranch %20
+         %20 = OpLabel
+         %48 = OpCopyObject %12 %15
+               OpBranch %11
+         %16 = OpLabel
+               OpStore %14 %17
+         %49 = OpCopyObject %12 %17
+               OpBranch %11
+         %11 = OpLabel
+         %50 = OpPhi %12 %48 %20 %49 %16
+               OpBranch %9
+         %21 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  transformation_context.GetFactManager()->AddFactBlockIsDead(8);
+  transformation_context.GetFactManager()->AddFactBlockIsDead(10);
+  transformation_context.GetFactManager()->AddFactBlockIsDead(11);
+  transformation_context.GetFactManager()->AddFactBlockIsDead(16);
+  transformation_context.GetFactManager()->AddFactBlockIsDead(20);
+
+  auto transformation1 =
+      TransformationReplaceBranchFromDeadBlockWithExit(20, SpvOpKill, 0);
+  auto transformation2 =
+      TransformationReplaceBranchFromDeadBlockWithExit(16, SpvOpKill, 0);
+  ASSERT_TRUE(
+      transformation1.IsApplicable(context.get(), transformation_context));
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
+  // Applying transformation 1 should disable transformation 2
+  ASSERT_FALSE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantFalse %6
+         %12 = OpTypeInt 32 1
+         %13 = OpTypePointer Function %12
+         %15 = OpConstant %12 1
+         %17 = OpConstant %12 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %14 = OpVariable %13 Function
+               OpSelectionMerge %9 None
+               OpBranchConditional %7 %8 %21
+          %8 = OpLabel
+               OpSelectionMerge %11 None
+               OpBranchConditional %7 %10 %16
+         %10 = OpLabel
+               OpStore %14 %15
+               OpBranch %20
+         %20 = OpLabel
+         %48 = OpCopyObject %12 %15
+               OpKill
+         %16 = OpLabel
+               OpStore %14 %17
+         %49 = OpCopyObject %12 %17
+               OpBranch %11
+         %11 = OpLabel
+         %50 = OpPhi %12 %49 %16
+               OpBranch %9
+         %21 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

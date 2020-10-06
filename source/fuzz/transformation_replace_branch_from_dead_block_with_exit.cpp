@@ -93,15 +93,35 @@ bool TransformationReplaceBranchFromDeadBlockWithExit::IsApplicable(
 
 void TransformationReplaceBranchFromDeadBlockWithExit::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
-  opt::Instruction::OperandList new_operands;
+  // If the successor block has OpPhi instructions then arguments related to
+  // |message_.block_id| need to be removed from these instruction.
+  auto block = ir_context->get_instr_block(message_.block_id());
+  assert(block->terminator()->opcode() == SpvOpBranch &&
+         "Precondition: the block must end with OpBranch.");
+  auto successor = ir_context->get_instr_block(
+      block->terminator()->GetSingleWordInOperand(0));
+  successor->ForEachPhiInst([block](opt::Instruction* phi_inst) {
+    opt::Instruction::OperandList new_phi_in_operands;
+    for (uint32_t i = 0; i < phi_inst->NumInOperands(); i += 2) {
+      if (phi_inst->GetSingleWordInOperand(i + 1) == block->id()) {
+        continue;
+      }
+      new_phi_in_operands.emplace_back(phi_inst->GetInOperand(i));
+      new_phi_in_operands.emplace_back(phi_inst->GetInOperand(i + 1));
+    }
+    assert(new_phi_in_operands.size() == phi_inst->NumInOperands() - 2);
+    phi_inst->SetInOperands(std::move(new_phi_in_operands));
+  });
+
+  // Rewrite the terminator of |message_.block_id|.
+  opt::Instruction::OperandList new_terminator_in_operands;
   if (message_.opcode() == SpvOpReturnValue) {
-    new_operands.push_back(
+    new_terminator_in_operands.push_back(
         {SPV_OPERAND_TYPE_TYPE_ID, {message_.return_value_id()}});
   }
-  auto terminator =
-      ir_context->get_instr_block(message_.block_id())->terminator();
+  auto terminator = block->terminator();
   terminator->SetOpcode(static_cast<SpvOp>(message_.opcode()));
-  terminator->SetInOperands(std::move(new_operands));
+  terminator->SetInOperands(std::move(new_terminator_in_operands));
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 

@@ -56,6 +56,9 @@ class TransformationReplaceBranchFromDeadBlockWithExit : public Transformation {
   // |message_.opcode|, additionally with input operand
   // |message_.return_value_id| in the case that |message_.opcode| is
   // OpReturnValue.
+  //
+  // If |message_.block_id|'s successor starts with OpPhi instructions these are
+  // updated so that they no longer refer to |message_.block_id|.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
