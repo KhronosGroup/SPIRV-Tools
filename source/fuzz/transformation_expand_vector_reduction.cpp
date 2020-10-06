@@ -56,12 +56,6 @@ bool TransformationExpandVectorReduction::IsApplicable(
     return false;
   }
 
-  // |instruction| block must not be a dead block.
-  if (transformation_context.GetFactManager()->BlockIsDead(
-          instruction->result_id())) {
-    return false;
-  }
-
   // |message_.fresh_ids.size| must have the exact number of fresh ids required
   // to apply the transformation.
   if (static_cast<uint32_t>(message_.fresh_ids().size()) !=
@@ -140,7 +134,7 @@ void TransformationExpandVectorReduction::Apply(
 
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
-  // Adds the fact that the last |logical_instruction| is synonymous of
+  // Adds the fact that the last |logical_instruction| is synonym of
   // |instruction|.
   transformation_context->GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(logical_instruction.result_id(), {}),

@@ -81,12 +81,6 @@ TEST(TransformationExpandVectorReductionTest, IsApplicable) {
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
-  // Tests instruction block being a dead block.
-  transformation_context.GetFactManager()->AddFactBlockIsDead(13);
-  transformation = TransformationExpandVectorReduction(15, {17, 18, 19});
-  ASSERT_FALSE(
-      transformation.IsApplicable(context.get(), transformation_context));
-
   // Tests the number of fresh ids being different than the necessary.
   transformation = TransformationExpandVectorReduction(11, {17, 18});
   ASSERT_FALSE(
