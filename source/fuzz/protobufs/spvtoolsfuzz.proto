@@ -551,6 +551,7 @@ message Transformation {
     TransformationAddBitInstructionSynonym add_bit_instruction_synonym = 77;
     TransformationAddLoopToCreateIntConstantSynonym add_loop_to_create_int_constant_synonym = 78;
     TransformationWrapRegionInSelection wrap_region_in_selection = 79;
+    TransformationAddEarlyTerminatorWrapper add_early_terminator_wrapper = 80;
     // Add additional option using the next available number.
   }
 }
@@ -761,6 +762,28 @@ message TransformationAddDeadContinue {
   // A sequence of ids suitable for extending OpPhi instructions as a result of
   // the new break edge
   repeated uint32 phi_id = 3;
+
+}
+
+message TransformationAddEarlyTerminatorWrapper {
+
+  // Adds a function to the module containing a single block with a single non-
+  // label instruction that is either OpKill, OpUnreachable, or
+  // OpTerminateInvocation.  The purpose of this is to allow such instructions
+  // to be subsequently replaced with wrapper functions, which can then enable
+  // transformations (such as inlining) that are hard in the direct presence
+  // of these instructions.
+
+  // Fresh id for the function.
+  uint32 function_fresh_id = 1;
+
+  // Fresh id for the single basic block in the function.
+  uint32 label_fresh_id = 2;
+
+  // One of OpKill, OpUnreachable, OpTerminateInvocation.  If additional early
+  // termination instructions are added to SPIR-V they should also be handled
+  // here.
+  uint32 opcode = 3;
 
 }
 

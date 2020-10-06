@@ -1011,6 +1011,11 @@ uint32_t MaybeGetStructType(opt::IRContext* ir_context,
   return ir_context->get_type_mgr()->GetId(&type);
 }
 
+uint32_t MaybeGetVoidType(opt::IRContext* ir_context) {
+  opt::analysis::Void type;
+  return ir_context->get_type_mgr()->GetId(&type);
+}
+
 uint32_t MaybeGetZeroConstant(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context,
