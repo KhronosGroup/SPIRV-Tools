@@ -721,6 +721,11 @@ class ValidationState_t {
   // https://github.com/KhronosGroup/Vulkan-Guide/blob/master/chapters/validation_overview.md
   std::string VkErrorID(uint32_t id, const char* reference = nullptr) const;
 
+  // Testing method to allow setting the current layout section.
+  void SetCurrentLayoutSectionForTesting(ModuleLayoutSection section) {
+    current_layout_section_ = section;
+  }
+
  private:
   ValidationState_t(const ValidationState_t&);
 

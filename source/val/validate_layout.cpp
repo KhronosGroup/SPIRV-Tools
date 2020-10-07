@@ -109,7 +109,7 @@ spv_result_t ModuleScopedInstructions(ValidationState_t& _,
   while (_.IsOpcodeInCurrentLayoutSection(opcode) == false) {
     if (_.IsOpcodeInPreviousLayoutSection(opcode)) {
       return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-          << spvOpcodeString(opcode) << " is in an invalid layout section";
+             << spvOpcodeString(opcode) << " is in an invalid layout section";
     }
 
     _.ProgressToNextLayoutSectionOrder();
