@@ -141,7 +141,7 @@ spv_result_t ModuleScopedInstructions(ValidationState_t& _,
 spv_result_t FunctionScopedInstructions(ValidationState_t& _,
                                         const Instruction* inst, SpvOp opcode) {
   // Make sure we advance into the function definitions when we hit
-  // non-function declaration instructions
+  // non-function declaration instructions.
   if (_.current_layout_section() == kLayoutFunctionDeclarations &&
       !_.IsOpcodeInCurrentLayoutSection(opcode)) {
     _.ProgressToNextLayoutSectionOrder();
