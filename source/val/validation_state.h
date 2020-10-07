@@ -195,6 +195,9 @@ class ValidationState_t {
   /// Increments the module_layout_order_section_
   void ProgressToNextLayoutSectionOrder();
 
+  /// Determines if the op instruction is in a previous layout section
+  bool IsOpcodeInPreviousLayoutSection(SpvOp op);
+
   /// Determines if the op instruction is part of the current section
   bool IsOpcodeInCurrentLayoutSection(SpvOp op);
 
