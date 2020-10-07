@@ -134,7 +134,6 @@ TEST_F(ValidationState_HasAnyOfExtensions, MultiCapMask) {
   EXPECT_FALSE(state_.HasAnyOfExtensions(set2));
 }
 
-
 // A test of ValidationState_t::IsOpcodeInCurrentLayoutSection().
 using ValidationState_InLayoutState = ValidationStateTest;
 
