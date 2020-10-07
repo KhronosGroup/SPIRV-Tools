@@ -86,6 +86,11 @@ class TransformationCompositeConstruct : public Transformation {
       opt::IRContext* ir_context,
       const opt::analysis::Vector& vector_type) const;
 
+  // Helper method for adding data synonym facts when applying the
+  // transformation to |ir_context| and |transformation_context|.
+  void AddDataSynonymFacts(opt::IRContext* ir_context,
+                           TransformationContext* transformation_context) const;
+
   protobufs::TransformationCompositeConstruct message_;
 };
 

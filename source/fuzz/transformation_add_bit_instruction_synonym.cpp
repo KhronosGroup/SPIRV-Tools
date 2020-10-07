@@ -94,6 +94,9 @@ void TransformationAddBitInstructionSynonym::Apply(
   auto bit_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.instruction_result_id());
 
+  // Use an appropriate helper function to add the new instruction and new
+  // synonym fact.  The helper function should take care of invalidating
+  // analyses before adding facts.
   switch (bit_instruction->opcode()) {
     case SpvOpBitwiseOr:
     case SpvOpBitwiseXor:
@@ -106,8 +109,6 @@ void TransformationAddBitInstructionSynonym::Apply(
       assert(false && "Should be unreachable.");
       break;
   }
-
-  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationAddBitInstructionSynonym::ToMessage()
@@ -223,11 +224,19 @@ void TransformationAddBitInstructionSynonym::AddOpBitwiseOrOpNotSynonym(
 
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
-  // Adds the fact that the last |bit_insert| instruction is synonymous of
-  // |bit_instruction|.
-  transformation_context->GetFactManager()->AddFactDataSynonym(
-      MakeDataDescriptor(bit_insert.result_id(), {}),
-      MakeDataDescriptor(bit_instruction->result_id(), {}));
+  // We only add a synonym fact if the bit instruction is not irrelevant, and if
+  // the new result id we would make it synonymous with is not irrelevant.  (It
+  // could be irrelevant if we are in a dead block.)
+  if (!transformation_context->GetFactManager()->IdIsIrrelevant(
+          bit_instruction->result_id()) &&
+      !transformation_context->GetFactManager()->IdIsIrrelevant(
+          bit_insert.result_id())) {
+    // Adds the fact that the last |bit_insert| instruction is synonymous of
+    // |bit_instruction|.
+    transformation_context->GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(bit_insert.result_id(), {}),
+        MakeDataDescriptor(bit_instruction->result_id(), {}));
+  }
 }
 
 std::unordered_set<uint32_t>

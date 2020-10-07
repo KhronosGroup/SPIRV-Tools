@@ -76,8 +76,14 @@ class TransformationVectorShuffle : public Transformation {
   uint32_t GetResultTypeId(opt::IRContext* ir_context,
                            const opt::analysis::Type& element_type) const;
 
+  // Returns the type associated with |id_of_vector| in |ir_context|.
   static opt::analysis::Vector* GetVectorType(opt::IRContext* ir_context,
                                               uint32_t id_of_vector);
+
+  // Helper method for adding data synonym facts when applying the
+  // transformation to |ir_context| and |transformation_context|.
+  void AddDataSynonymFacts(opt::IRContext* ir_context,
+                           TransformationContext* transformation_context) const;
 
   protobufs::TransformationVectorShuffle message_;
 };

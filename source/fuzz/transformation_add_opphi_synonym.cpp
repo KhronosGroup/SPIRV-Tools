@@ -34,9 +34,11 @@ TransformationAddOpPhiSynonym::TransformationAddOpPhiSynonym(
 bool TransformationAddOpPhiSynonym::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context) const {
-  // Check that |message_.block_id| is a block label id.
+  // Check that |message_.block_id| is a block label id, and that it is not
+  // dead.
   auto block = fuzzerutil::MaybeFindBlock(ir_context, message_.block_id());
-  if (!block) {
+  if (!block ||
+      transformation_context.GetFactManager()->BlockIsDead(block->id())) {
     return false;
   }
 

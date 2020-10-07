@@ -134,54 +134,8 @@ void TransformationCompositeInsert::Apply(
   // We have modified the module so most analyzes are now invalid.
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
-  // Add facts about synonyms. Every element which hasn't been changed in
-  // the copy is synonymous to the corresponding element in the original
-  // composite which has id |message_.composite_id|. For every index that is a
-  // prefix of |index|, the components different from the one that
-  // contains the inserted object are synonymous with corresponding
-  // elements in the original composite.
-
-  // If |composite_id| is irrelevant then don't add any synonyms.
-  if (transformation_context->GetFactManager()->IdIsIrrelevant(
-          message_.composite_id())) {
-    return;
-  }
-  uint32_t current_node_type_id = composite_type_id;
-  std::vector<uint32_t> current_index;
-
-  for (uint32_t current_level = 0; current_level < index.size();
-       current_level++) {
-    auto current_node_type_inst =
-        ir_context->get_def_use_mgr()->GetDef(current_node_type_id);
-    uint32_t index_to_skip = index[current_level];
-    uint32_t num_of_components = fuzzerutil::GetBoundForCompositeIndex(
-        *current_node_type_inst, ir_context);
-
-    // Update the current_node_type_id.
-    current_node_type_id = fuzzerutil::WalkOneCompositeTypeIndex(
-        ir_context, current_node_type_id, index_to_skip);
-
-    for (uint32_t i = 0; i < num_of_components; i++) {
-      if (i == index_to_skip) {
-        continue;
-      }
-      current_index.push_back(i);
-      transformation_context->GetFactManager()->AddFactDataSynonym(
-          MakeDataDescriptor(message_.fresh_id(), current_index),
-          MakeDataDescriptor(message_.composite_id(), current_index));
-      current_index.pop_back();
-    }
-    // Store the prefix of the |index|.
-    current_index.push_back(index[current_level]);
-  }
-  // The element which has been changed is synonymous to the found object
-  // itself. Add this fact only if |object_id| is not irrelevant.
-  if (!transformation_context->GetFactManager()->IdIsIrrelevant(
-          message_.object_id())) {
-    transformation_context->GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(message_.object_id(), {}),
-        MakeDataDescriptor(message_.fresh_id(), index));
-  }
+  // Add data synonym facts that arise from the insertion.
+  AddDataSynonymFacts(ir_context, transformation_context);
 }
 
 protobufs::Transformation TransformationCompositeInsert::ToMessage() const {
@@ -217,6 +171,66 @@ bool TransformationCompositeInsert::IsCompositeInstructionSupported(
 std::unordered_set<uint32_t> TransformationCompositeInsert::GetFreshIds()
     const {
   return {message_.fresh_id()};
+}
+
+void TransformationCompositeInsert::AddDataSynonymFacts(
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
+  // If any of the composite being used as the basis for insertion, the id being
+  // inserted, or the result id arising from the insertion are irrelevant then
+  // do not add any data synonym facts.  (The result id can be irrelevant if the
+  // insertion occurs in a dead block.)
+  if (transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.composite_id()) ||
+      transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.object_id()) ||
+      transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.fresh_id())) {
+    return;
+  }
+
+  // Every element which hasn't been changed in the copy is synonymous to the
+  // corresponding element in the original composite which has id
+  // |message_.composite_id|. For every index that is a prefix of |index|, the
+  // components different from the one that contains the inserted object are
+  // synonymous with corresponding elements in the original composite.
+
+  uint32_t current_node_type_id =
+      fuzzerutil::GetTypeId(ir_context, message_.composite_id());
+  std::vector<uint32_t> current_index;
+
+  std::vector<uint32_t> index =
+      fuzzerutil::RepeatedFieldToVector(message_.index());
+
+  for (uint32_t current_level : index) {
+    auto current_node_type_inst =
+        ir_context->get_def_use_mgr()->GetDef(current_node_type_id);
+    uint32_t index_to_skip = current_level;
+    uint32_t num_of_components = fuzzerutil::GetBoundForCompositeIndex(
+        *current_node_type_inst, ir_context);
+
+    // Update the current_node_type_id.
+    current_node_type_id = fuzzerutil::WalkOneCompositeTypeIndex(
+        ir_context, current_node_type_id, index_to_skip);
+
+    for (uint32_t i = 0; i < num_of_components; i++) {
+      if (i == index_to_skip) {
+        continue;
+      }
+      current_index.push_back(i);
+      transformation_context->GetFactManager()->AddFactDataSynonym(
+          MakeDataDescriptor(message_.fresh_id(), current_index),
+          MakeDataDescriptor(message_.composite_id(), current_index));
+      current_index.pop_back();
+    }
+    // Store the prefix of the |index|.
+    current_index.push_back(current_level);
+  }
+  // The element which has been changed is synonymous to the found object
+  // itself.
+  transformation_context->GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(message_.object_id(), {}),
+      MakeDataDescriptor(message_.fresh_id(), index));
 }
 
 }  // namespace fuzz

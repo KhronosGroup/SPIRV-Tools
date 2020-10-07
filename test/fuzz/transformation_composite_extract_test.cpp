@@ -577,6 +577,55 @@ TEST(TransformationCompositeExtractTest, DontAddSynonymsForIrrelevantIds) {
       MakeDataDescriptor(201, {}), MakeDataDescriptor(100, {2})));
 }
 
+TEST(TransformationCompositeExtractTest, DontAddSynonymInDeadBlock) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeVector %6 2
+          %8 = OpTypePointer Function %7
+         %10 = OpConstant %6 0
+         %11 = OpConstant %6 1
+         %12 = OpConstantComposite %7 %10 %11
+         %13 = OpTypeBool
+         %14 = OpConstantFalse %13
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %9 = OpVariable %8 Function
+               OpStore %9 %12
+               OpSelectionMerge %16 None
+               OpBranchConditional %14 %15 %16
+         %15 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  transformation_context.GetFactManager()->AddFactBlockIsDead(15);
+  TransformationCompositeExtract transformation(
+      MakeInstructionDescriptor(15, SpvOpBranch, 0), 100, 12, {0});
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(100, {}), MakeDataDescriptor(12, {0})));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

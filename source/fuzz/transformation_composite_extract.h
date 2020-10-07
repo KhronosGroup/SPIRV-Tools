@@ -60,6 +60,11 @@ class TransformationCompositeExtract : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
  private:
+  // Helper method for adding data synonym facts when applying the
+  // transformation to |ir_context| and |transformation_context|.
+  void AddDataSynonymFacts(opt::IRContext* ir_context,
+                           TransformationContext* transformation_context) const;
+
   protobufs::TransformationCompositeExtract message_;
 };
 
