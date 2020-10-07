@@ -30,7 +30,8 @@ namespace spvtools {
 namespace val {
 namespace {
 
-ModuleLayoutSection InstructionLayoutSection(ModuleLayoutSection current_section, SpvOp op) {
+ModuleLayoutSection InstructionLayoutSection(
+    ModuleLayoutSection current_section, SpvOp op) {
   // See Section 2.4
   if (spvOpcodeGeneratesType(op) || spvOpcodeIsConstant(op))
     return kLayoutTypes;
@@ -71,20 +72,17 @@ ModuleLayoutSection InstructionLayoutSection(ModuleLayoutSection current_section
     case SpvOpTypeForwardPointer:
       return kLayoutTypes;
     case SpvOpVariable:
-      if (current_section == kLayoutTypes)
-        return kLayoutTypes;
+      if (current_section == kLayoutTypes) return kLayoutTypes;
       return kLayoutFunctionDefinitions;
     case SpvOpExtInst:
       // SpvOpExtInst is only allowed in types section for certain extended
       // instruction sets. This will be checked separately
-      if (current_section == kLayoutTypes)
-        return kLayoutTypes;
+      if (current_section == kLayoutTypes) return kLayoutTypes;
       return kLayoutFunctionDefinitions;
     case SpvOpLine:
     case SpvOpNoLine:
     case SpvOpUndef:
-      if (current_section == kLayoutTypes)
-        return kLayoutTypes;
+      if (current_section == kLayoutTypes) return kLayoutTypes;
       return kLayoutFunctionDefinitions;
     case SpvOpFunction:
     case SpvOpFunctionParameter:

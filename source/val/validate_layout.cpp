@@ -109,8 +109,7 @@ spv_result_t ModuleScopedInstructions(ValidationState_t& _,
   while (_.IsOpcodeInCurrentLayoutSection(opcode) == false) {
     if (_.IsOpcodeInPreviousLayoutSection(opcode)) {
       return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-          << spvOpcodeString(opcode)
-          << " is in an invalid layout section";
+          << spvOpcodeString(opcode) << " is in an invalid layout section";
     }
 
     _.ProgressToNextLayoutSectionOrder();
@@ -149,7 +148,7 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
 
     if (_.in_function_body()) {
       if (auto error = _.current_function().RegisterSetFunctionDeclType(
-          FunctionDecl::kFunctionDeclDefinition)) {
+              FunctionDecl::kFunctionDeclDefinition)) {
         return error;
       }
     }
