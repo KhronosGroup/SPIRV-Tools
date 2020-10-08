@@ -45,6 +45,7 @@ class TransformationAddLoopToCreateIntConstantSynonym : public Transformation {
   // - |message_.block_after_loop_id| is the label of a block which has a single
   //   predecessor and which is not a merge block, a continue block or a loop
   //   header.
+  // - |message_.block_after_loop_id| must not be a dead block.
   // - |message_.additional_block_id| is either 0 or a valid fresh id, distinct
   //   from the other fresh ids.
   // - All of the other parameters are valid fresh ids.

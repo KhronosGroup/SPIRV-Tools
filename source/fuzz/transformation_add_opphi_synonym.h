@@ -30,6 +30,7 @@ class TransformationAddOpPhiSynonym : public Transformation {
 
   // - |message_.block_id| is the label of a block with at least one
   //   predecessor.
+  // - |message_.block_id| must not be a dead block.
   // - |message_.pred_to_id| contains a mapping from each of the predecessors of
   //   the block to an id that is available at the end of the predecessor.
   // - All the ids corresponding to a predecessor in |message_.pred_to_id|:
