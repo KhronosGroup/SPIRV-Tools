@@ -127,9 +127,16 @@ void FuzzerPassReplaceIrrelevantIds::Apply() {
               continue;
             }
 
-            // Only consider this replacement if it is available at the id use
-            // point.
-            if (fuzzerutil::IdIsAvailableAtUse(GetIRContext(), use_inst,
+            // Only consider this replacement if the use point is within a basic
+            // block and the id is available at the use point.
+            //
+            // There might be opportunities for replacing a non-block use of an
+            // irrelevant id - such as the initializer of a global variable -
+            // with another id, but it would require some care (e.g. to ensure
+            // that the replacement id is defined earlier) and does not seem
+            // worth doing.
+            if (GetIRContext()->get_instr_block(use_inst) &&
+                fuzzerutil::IdIsAvailableAtUse(GetIRContext(), use_inst,
                                                in_index, replacement_id)) {
               available_replacement_ids.push_back(replacement_id);
             }
