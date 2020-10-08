@@ -76,7 +76,7 @@ ModuleLayoutSection InstructionLayoutSection(
       return kLayoutFunctionDefinitions;
     case SpvOpExtInst:
       // SpvOpExtInst is only allowed in types section for certain extended
-      // instruction sets. This will be checked separately
+      // instruction sets. This will be checked separately.
       if (current_section == kLayoutTypes) return kLayoutTypes;
       return kLayoutFunctionDefinitions;
     case SpvOpLine:
