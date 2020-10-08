@@ -193,8 +193,8 @@ bool TransformationAddLoopToCreateIntConstantSynonym::IsApplicable(
   }
 
   // Check that the block is not dead.  If it is then the new loop would be
-  // dead and the data it computes would be irrelevant, so that we would not be
-  // able to make a synonym.
+  // dead and the data it computes would be irrelevant, so we would not be able
+  // to make a synonym.
   if (transformation_context.GetFactManager()->BlockIsDead(block->id())) {
     return false;
   }
