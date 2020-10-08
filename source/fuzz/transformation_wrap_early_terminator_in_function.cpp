@@ -102,6 +102,15 @@ void TransformationWrapEarlyTerminatorInFunction::Apply(
   auto enclosing_block = ir_context->get_instr_block(early_terminator);
   auto enclosing_function = enclosing_block->GetParent();
 
+  // We would like to add an OpFunctionCall before the block's terminator
+  // instruction, and then change the block's terminator to OpReturn or
+  // OpReturnValue.
+
+  // We get an iterator to the instruction we would like to insert the function
+  // call before.  It will be an iterator to the final instruction in the block
+  // unless the block is a merge block in which case it will be to the
+  // penultimate instruction (because we cannot insert an OpFunctionCall after
+  // a merge instruction).
   auto iterator = enclosing_block->tail();
   if (enclosing_block->MergeBlockIdIfAny()) {
     --iterator;
