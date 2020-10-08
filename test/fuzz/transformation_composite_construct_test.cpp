@@ -1517,8 +1517,62 @@ TEST(TransformationCompositeConstructTest, DontAddSynonymsForIrrelevantIds) {
   ASSERT_TRUE(IsValid(env, context.get()));
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(25, {}), MakeDataDescriptor(200, {0})));
-  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+  // Even though %28 is not irrelevant, we do not create a synonym because part
+  // of the new composite, %200, is tainted by the irrelevant id %25.
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(28, {}), MakeDataDescriptor(200, {1})));
+}
+
+TEST(TransformationCompositeConstructTest, DontAddSynonymsInDeadBlock) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeVector %6 2
+          %8 = OpTypePointer Function %7
+         %10 = OpConstant %6 0
+         %11 = OpConstant %6 1
+         %12 = OpConstantComposite %7 %10 %11
+         %13 = OpTypeBool
+         %14 = OpConstantFalse %13
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %9 = OpVariable %8 Function
+               OpStore %9 %12
+               OpSelectionMerge %16 None
+               OpBranchConditional %14 %15 %16
+         %15 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  transformation_context.GetFactManager()->AddFactBlockIsDead(15);
+
+  TransformationCompositeConstruct transformation(
+      7, {10, 11}, MakeInstructionDescriptor(15, SpvOpBranch, 0), 100);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(7, {0}), MakeDataDescriptor(10, {})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(7, {1}), MakeDataDescriptor(11, {})));
 }
 
 }  // namespace

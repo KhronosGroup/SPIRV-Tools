@@ -41,8 +41,7 @@ TransformationCompositeExtract::TransformationCompositeExtract(
 }
 
 bool TransformationCompositeExtract::IsApplicable(
-    opt::IRContext* ir_context,
-    const TransformationContext& transformation_context) const {
+    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_id())) {
     return false;
   }
@@ -54,14 +53,6 @@ bool TransformationCompositeExtract::IsApplicable(
   auto composite_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.composite_id());
   if (!composite_instruction) {
-    return false;
-  }
-  if (!transformation_context.GetFactManager()->IdIsIrrelevant(
-          message_.composite_id()) &&
-      !fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
-                                    composite_instruction)) {
-    // |composite_id| will participate in DataSynonym facts. Thus, it can't be
-    // an irrelevant id.
     return false;
   }
   if (auto block = ir_context->get_instr_block(composite_instruction)) {
@@ -113,6 +104,33 @@ void TransformationCompositeExtract::Apply(
   ir_context->InvalidateAnalysesExceptFor(
       opt::IRContext::Analysis::kAnalysisNone);
 
+  AddDataSynonymFacts(ir_context, transformation_context);
+}
+
+protobufs::Transformation TransformationCompositeExtract::ToMessage() const {
+  protobufs::Transformation result;
+  *result.mutable_composite_extract() = message_;
+  return result;
+}
+
+std::unordered_set<uint32_t> TransformationCompositeExtract::GetFreshIds()
+    const {
+  return {message_.fresh_id()};
+}
+
+void TransformationCompositeExtract::AddDataSynonymFacts(
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
+  // Don't add synonyms if the composite being extracted from is not suitable,
+  // or if the result id into which we are extracting is irrelevant.
+  if (!fuzzerutil::CanMakeSynonymOf(
+          ir_context, *transformation_context,
+          ir_context->get_def_use_mgr()->GetDef(message_.composite_id())) ||
+      transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.fresh_id())) {
+    return;
+  }
+
   // Add the fact that the id storing the extracted element is synonymous with
   // the index into the structure.
   if (!transformation_context->GetFactManager()->IdIsIrrelevant(
@@ -128,17 +146,6 @@ void TransformationCompositeExtract::Apply(
     transformation_context->GetFactManager()->AddFactDataSynonym(
         data_descriptor_for_extracted_element, data_descriptor_for_result_id);
   }
-}
-
-protobufs::Transformation TransformationCompositeExtract::ToMessage() const {
-  protobufs::Transformation result;
-  *result.mutable_composite_extract() = message_;
-  return result;
-}
-
-std::unordered_set<uint32_t> TransformationCompositeExtract::GetFreshIds()
-    const {
-  return {message_.fresh_id()};
 }
 
 }  // namespace fuzz

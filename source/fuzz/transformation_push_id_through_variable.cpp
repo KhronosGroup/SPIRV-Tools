@@ -38,8 +38,7 @@ TransformationPushIdThroughVariable::TransformationPushIdThroughVariable(
 }
 
 bool TransformationPushIdThroughVariable::IsApplicable(
-    opt::IRContext* ir_context,
-    const TransformationContext& transformation_context) const {
+    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   // |message_.value_synonym_id| and |message_.variable_id| must be fresh.
   if (!fuzzerutil::IsFreshId(ir_context, message_.value_synonym_id()) ||
       !fuzzerutil::IsFreshId(ir_context, message_.variable_id())) {
@@ -71,14 +70,6 @@ bool TransformationPushIdThroughVariable::IsApplicable(
   auto value_instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.value_id());
   if (!value_instruction || !value_instruction->type_id()) {
-    return false;
-  }
-
-  // We should be able to create a synonym of |value_id| if it's not irrelevant.
-  if (!transformation_context.GetFactManager()->IdIsIrrelevant(
-          message_.value_id()) &&
-      !fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
-                                    value_instruction)) {
     return false;
   }
 
@@ -153,8 +144,11 @@ void TransformationPushIdThroughVariable::Apply(
 
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
-  if (!transformation_context->GetFactManager()->IdIsIrrelevant(
-          message_.value_id())) {
+  // We should be able to create a synonym of |value_id| if it's not irrelevant.
+  if (fuzzerutil::CanMakeSynonymOf(ir_context, *transformation_context,
+                                   value_instruction) &&
+      !transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.value_synonym_id())) {
     // Adds the fact that |message_.value_synonym_id|
     // and |message_.value_id| are synonymous.
     transformation_context->GetFactManager()->AddFactDataSynonym(

@@ -721,6 +721,184 @@ TEST(TransformationAddBitInstructionSynonymTest, AddOpNotSynonym) {
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
+TEST(TransformationAddBitInstructionSynonymTest, NoSynonymWhenIdIsIrrelevant) {
+  std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %37 "main"
+
+; Types
+          %2 = OpTypeInt 32 0
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+
+; Constants
+          %5 = OpConstant %2 0
+          %6 = OpConstant %2 1
+          %7 = OpConstant %2 2
+          %8 = OpConstant %2 3
+          %9 = OpConstant %2 4
+         %10 = OpConstant %2 5
+         %11 = OpConstant %2 6
+         %12 = OpConstant %2 7
+         %13 = OpConstant %2 8
+         %14 = OpConstant %2 9
+         %15 = OpConstant %2 10
+         %16 = OpConstant %2 11
+         %17 = OpConstant %2 12
+         %18 = OpConstant %2 13
+         %19 = OpConstant %2 14
+         %20 = OpConstant %2 15
+         %21 = OpConstant %2 16
+         %22 = OpConstant %2 17
+         %23 = OpConstant %2 18
+         %24 = OpConstant %2 19
+         %25 = OpConstant %2 20
+         %26 = OpConstant %2 21
+         %27 = OpConstant %2 22
+         %28 = OpConstant %2 23
+         %29 = OpConstant %2 24
+         %30 = OpConstant %2 25
+         %31 = OpConstant %2 26
+         %32 = OpConstant %2 27
+         %33 = OpConstant %2 28
+         %34 = OpConstant %2 29
+         %35 = OpConstant %2 30
+         %36 = OpConstant %2 31
+
+; main function
+         %37 = OpFunction %3 None %4
+         %38 = OpLabel
+         %39 = OpBitwiseOr %2 %5 %6 ; bit instruction
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  // Mark the result id of the bit instruction as irrelevant.
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(39);
+
+  // Adds OpBitwiseOr synonym.
+  auto transformation = TransformationAddBitInstructionSynonym(
+      39, {40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52,
+           53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,
+           66,  67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78,
+           79,  80,  81,  82,  83,  84,  85,  86,  87,  88,  89,  90,  91,
+           92,  93,  94,  95,  96,  97,  98,  99,  100, 101, 102, 103, 104,
+           105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+           118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130,
+           131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143,
+           144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156,
+           157, 158, 159, 160, 161, 162, 163, 164, 165, 166});
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+  // No synonym should have been created, since the bit instruction is
+  // irrelevant.
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(166, {}), MakeDataDescriptor(39, {})));
+}
+
+TEST(TransformationAddBitInstructionSynonymTest, NoSynonymWhenBlockIsDead) {
+  std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %37 "main"
+
+; Types
+          %2 = OpTypeInt 32 0
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+
+; Constants
+          %5 = OpConstant %2 0
+          %6 = OpConstant %2 1
+          %7 = OpConstant %2 2
+          %8 = OpConstant %2 3
+          %9 = OpConstant %2 4
+         %10 = OpConstant %2 5
+         %11 = OpConstant %2 6
+         %12 = OpConstant %2 7
+         %13 = OpConstant %2 8
+         %14 = OpConstant %2 9
+         %15 = OpConstant %2 10
+         %16 = OpConstant %2 11
+         %17 = OpConstant %2 12
+         %18 = OpConstant %2 13
+         %19 = OpConstant %2 14
+         %20 = OpConstant %2 15
+         %21 = OpConstant %2 16
+         %22 = OpConstant %2 17
+         %23 = OpConstant %2 18
+         %24 = OpConstant %2 19
+         %25 = OpConstant %2 20
+         %26 = OpConstant %2 21
+         %27 = OpConstant %2 22
+         %28 = OpConstant %2 23
+         %29 = OpConstant %2 24
+         %30 = OpConstant %2 25
+         %31 = OpConstant %2 26
+         %32 = OpConstant %2 27
+         %33 = OpConstant %2 28
+         %34 = OpConstant %2 29
+         %35 = OpConstant %2 30
+         %36 = OpConstant %2 31
+
+; main function
+         %37 = OpFunction %3 None %4
+         %38 = OpLabel
+         %39 = OpBitwiseOr %2 %5 %6 ; bit instruction
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  // Mark the block where we will try to create the synonym as dead.
+  transformation_context.GetFactManager()->AddFactBlockIsDead(38);
+
+  // Adds OpBitwiseOr synonym.
+  auto transformation = TransformationAddBitInstructionSynonym(
+      39, {40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52,
+           53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,
+           66,  67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78,
+           79,  80,  81,  82,  83,  84,  85,  86,  87,  88,  89,  90,  91,
+           92,  93,  94,  95,  96,  97,  98,  99,  100, 101, 102, 103, 104,
+           105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+           118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130,
+           131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143,
+           144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156,
+           157, 158, 159, 160, 161, 162, 163, 164, 165, 166});
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+  // No synonym should have been created, since the bit instruction is
+  // irrelevant.
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(166, {}), MakeDataDescriptor(39, {})));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
