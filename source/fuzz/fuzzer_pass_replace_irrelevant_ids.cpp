@@ -127,9 +127,10 @@ void FuzzerPassReplaceIrrelevantIds::Apply() {
               continue;
             }
 
-            // Only consider this replacement if it is available at the id use
-            // point.
-            if (fuzzerutil::IdIsAvailableAtUse(GetIRContext(), use_inst,
+            // Only consider this replacement if the use point is within a basic
+            // block and the id is available at the use point.
+            if (GetIRContext()->get_instr_block(use_inst) &&
+                fuzzerutil::IdIsAvailableAtUse(GetIRContext(), use_inst,
                                                in_index, replacement_id)) {
               available_replacement_ids.push_back(replacement_id);
             }
