@@ -268,23 +268,17 @@ std::unordered_set<uint32_t> TransformationCompositeConstruct::GetFreshIds()
 void TransformationCompositeConstruct::AddDataSynonymFacts(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
-  // We only make synonyms if both the composite we are constructing, and all
-  // the components used to construct it, are non-irrelevant.
+  // If the result id of the composite we are constructing is irrelevant (e.g.
+  // because it is in a dead block) then we do not make any synonyms.
   if (transformation_context->GetFactManager()->IdIsIrrelevant(
           message_.fresh_id())) {
     return;
   }
-  for (auto component_id : message_.component()) {
-    if (transformation_context->GetFactManager()->IdIsIrrelevant(
-            component_id)) {
-      return;
-    }
-  }
 
   // Inform the fact manager that we now have new synonyms: every component of
-  // the composite is synonymous with the id used to construct that component,
-  // except in the case of a vector where a single vector id can span multiple
-  // components.
+  // the composite is synonymous with the id used to construct that component
+  // (so long as it is legitimate to create a synonym from that id), except in
+  // the case of a vector where a single vector id can span multiple components.
   auto composite_type =
       ir_context->get_type_mgr()->GetType(message_.composite_type_id());
   uint32_t index = 0;

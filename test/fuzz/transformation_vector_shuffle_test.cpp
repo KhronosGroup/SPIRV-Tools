@@ -699,8 +699,10 @@ TEST(TransformationVectorShuffleTest, HandlesIrrelevantIds2) {
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
-  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+  // Because %12 is not irrelevant, we get a synonym between it and %200[1].
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {0}), MakeDataDescriptor(200, {1})));
+  // Because %112 is irrelevant, we do not get a synonym between it and %200[0].
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(112, {0}), MakeDataDescriptor(200, {0})));
 }
@@ -787,9 +789,11 @@ TEST(TransformationVectorShuffleTest, HandlesIrrelevantIds3) {
       transformation4.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation4, context.get(),
                         &transformation_context);
+  // Because %40 is irrelevant we do not get a synonym between it and %203[0].
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(203, {0}), MakeDataDescriptor(40, {0})));
-  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+  // Because %12 is *not* irrelevant we do get a synonym between it and %203[1].
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(203, {1}), MakeDataDescriptor(12, {1})));
 }
 

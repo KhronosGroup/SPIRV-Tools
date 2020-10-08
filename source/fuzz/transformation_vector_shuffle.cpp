@@ -174,30 +174,6 @@ void TransformationVectorShuffle::AddDataSynonymFacts(
           message_.fresh_id())) {
     return;
   }
-  // Check whether the resulting vector will take a component from a vector
-  // with an irrelevant id.  If it takes any such components then we should not
-  // add any synonym facts.
-  for (uint32_t component_index = 0;
-       component_index < static_cast<uint32_t>(message_.component_size());
-       component_index++) {
-    uint32_t component = message_.component(component_index);
-    if (component == 0xFFFFFFFF) {
-      // This component is undefined; that's OK: we might still be able to add
-      // synonyms for other (non-undefined) vector components.
-      continue;
-    }
-    // Figure out which of the input vectors this component comes from, and
-    // check whether it is irrelevant.
-    auto relevant_vector =
-        component <
-                GetVectorType(ir_context, message_.vector1())->element_count()
-            ? message_.vector1()
-            : message_.vector2();
-    if (transformation_context->GetFactManager()->IdIsIrrelevant(
-            relevant_vector)) {
-      return;
-    }
-  }
 
   // Add synonym facts relating the defined elements of the shuffle result to
   // the vector components that they come from.
@@ -220,8 +196,7 @@ void TransformationVectorShuffle::AddDataSynonymFacts(
     // |component| refers.
     if (component <
         GetVectorType(ir_context, message_.vector1())->element_count()) {
-      // Check that the first vector can participate in data synonym facts (e.g.
-      // it might have decorations that prevent this).
+      // Check that the first vector can participate in data synonym facts.
       if (!fuzzerutil::CanMakeSynonymOf(
               ir_context, *transformation_context,
               ir_context->get_def_use_mgr()->GetDef(message_.vector1()))) {
@@ -236,7 +211,6 @@ void TransformationVectorShuffle::AddDataSynonymFacts(
               ir_context->get_def_use_mgr()->GetDef(message_.vector2()))) {
         continue;
       }
-
       auto index_into_vector_2 =
           component -
           GetVectorType(ir_context, message_.vector1())->element_count();

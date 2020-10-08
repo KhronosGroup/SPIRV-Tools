@@ -58,6 +58,10 @@ class TransformationCompositeConstruct : public Transformation {
   // |message_.base_instruction_id| and |message_.offset|.  The instruction
   // creates a composite of type |message_.composite_type_id| using the ids of
   // |message_.component|.
+  //
+  // Synonym facts are added between the elements of the resulting composite
+  // and the components used to construct it, as long as the associated ids
+  // support synonym creation.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

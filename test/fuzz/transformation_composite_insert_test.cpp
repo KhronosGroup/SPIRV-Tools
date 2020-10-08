@@ -371,7 +371,8 @@ TEST(TransformationCompositeInsertTest, IrrelevantCompositeNoSynonyms) {
                         &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  // No synonyms should have been added.
+  // No synonyms that involve the original object - %30 - should have been
+  // added.
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(30, {0}), MakeDataDescriptor(50, {0})));
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
@@ -380,7 +381,9 @@ TEST(TransformationCompositeInsertTest, IrrelevantCompositeNoSynonyms) {
       MakeDataDescriptor(30, {1, 2}), MakeDataDescriptor(50, {1, 2})));
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(30, {1, 0, 1}), MakeDataDescriptor(50, {1, 0, 1})));
-  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+  // We *should* have a synonym between %11 and the component of %50 into which
+  // it has been inserted.
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(50, {1, 0, 0}), MakeDataDescriptor(11, {})));
 }
 
@@ -471,15 +474,18 @@ TEST(TransformationCompositeInsertTest, IrrelevantObjectNoSynonyms) {
                         &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
 
-  // No synonyms should be added, since %11 is irrelevant.
-  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+  // Since %30 and %50 are not irrelevant, they should be synonymous at all
+  // indices unaffected by the insertion.
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(30, {0}), MakeDataDescriptor(50, {0})));
-  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(30, {1, 1}), MakeDataDescriptor(50, {1, 1})));
-  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(30, {1, 2}), MakeDataDescriptor(50, {1, 2})));
-  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(30, {1, 0, 1}), MakeDataDescriptor(50, {1, 0, 1})));
+  // Since %11 is irrelevant it should not be synonymous with the component into
+  // which it has been inserted.
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(50, {1, 0, 0}), MakeDataDescriptor(11, {})));
 }
@@ -857,7 +863,8 @@ TEST(TransformationCompositeInsertTest, CompositeInsertionWithIrrelevantIds) {
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(100, {1}), MakeDataDescriptor(9, {1})));
 
-  // Does not lead to synonyms as %16 is irrelevant.
+  // Because %16 is irrelevant, we don't get a synonym with the component to
+  // which it has been inserted (but we do for the other component).
   auto transformation2 = TransformationCompositeInsert(
       MakeInstructionDescriptor(13, SpvOpSelectionMerge, 0), 101, 9, 16, {0});
   ASSERT_TRUE(
@@ -866,17 +873,18 @@ TEST(TransformationCompositeInsertTest, CompositeInsertionWithIrrelevantIds) {
                         &transformation_context);
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(101, {0}), MakeDataDescriptor(16, {})));
-  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(101, {1}), MakeDataDescriptor(9, {1})));
 
-  // Does not lead to synonyms as %18 is irrelevant.
+  // Because %18 is irrelevant we only get a synonym for the component into
+  // which insertion has taken place.
   auto transformation3 = TransformationCompositeInsert(
       MakeInstructionDescriptor(13, SpvOpSelectionMerge, 0), 102, 18, 17, {0});
   ASSERT_TRUE(
       transformation3.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation3, context.get(),
                         &transformation_context);
-  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(102, {0}), MakeDataDescriptor(17, {})));
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(102, {1}), MakeDataDescriptor(18, {1})));
