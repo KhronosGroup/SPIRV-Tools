@@ -65,6 +65,11 @@ class TransformationCompositeInsert : public Transformation {
                                               opt::Instruction* instruction);
 
  private:
+  // Helper method for adding data synonym facts when applying the
+  // transformation to |ir_context| and |transformation_context|.
+  void AddDataSynonymFacts(opt::IRContext* ir_context,
+                           TransformationContext* transformation_context) const;
+
   protobufs::TransformationCompositeInsert message_;
 };
 

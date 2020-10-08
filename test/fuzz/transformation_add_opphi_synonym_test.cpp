@@ -418,6 +418,68 @@ TEST(TransformationAddOpPhiSynonymTest, VariablePointers) {
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
+
+TEST(TransformationAddOpPhiSynonymTest, DeadBlock) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+         %10 = OpTypeBool
+         %11 = OpConstantFalse %10
+         %15 = OpConstant %6 0
+         %50 = OpConstant %6 0
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+               OpSelectionMerge %13 None
+               OpBranchConditional %11 %12 %13
+         %12 = OpLabel
+         %14 = OpLoad %6 %8
+         %16 = OpIEqual %10 %14 %15
+               OpSelectionMerge %18 None
+               OpBranchConditional %16 %17 %40
+         %17 = OpLabel
+               OpBranch %18
+         %40 = OpLabel
+               OpBranch %18
+         %18 = OpLabel
+               OpBranch %13
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  // Dead blocks
+  transformation_context.GetFactManager()->AddFactBlockIsDead(12);
+  transformation_context.GetFactManager()->AddFactBlockIsDead(17);
+  transformation_context.GetFactManager()->AddFactBlockIsDead(18);
+
+  // Declare synonym
+  ASSERT_TRUE(transformation_context.GetFactManager()->MaybeAddFact(
+      MakeSynonymFact(15, 50)));
+
+  // Bad because the block 18 is dead.
+  ASSERT_FALSE(TransformationAddOpPhiSynonym(18, {{{17, 15}, {40, 50}}}, 100)
+                   .IsApplicable(context.get(), transformation_context));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

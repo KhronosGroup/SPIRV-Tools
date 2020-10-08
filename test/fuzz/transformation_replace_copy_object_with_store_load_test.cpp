@@ -195,6 +195,67 @@ TEST(TransformationReplaceCopyObjectWithStoreLoad, BasicScenarios) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationReplaceCopyObjectWithStoreLoad, IrrelevantIdsAndDeadBlocks) {
+  std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+         %30 = OpTypePointer Function %6
+         %10 = OpConstant %6 0
+         %11 = OpConstant %6 1
+         %13 = OpTypeBool
+         %14 = OpConstantFalse %13
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpSelectionMerge %16 None
+               OpBranchConditional %14 %15 %16
+         %15 = OpLabel
+         %50 = OpCopyObject %6 %10
+               OpBranch %16
+         %16 = OpLabel
+         %51 = OpCopyObject %6 %11
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  transformation_context.GetFactManager()->AddFactBlockIsDead(15);
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(11);
+
+  auto transformation_1 = TransformationReplaceCopyObjectWithStoreLoad(
+      50, 100, SpvStorageClassFunction, 10);
+  ASSERT_TRUE(
+      transformation_1.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation_1, context.get(),
+                        &transformation_context);
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(100, {}), MakeDataDescriptor(50, {})));
+
+  auto transformation_2 = TransformationReplaceCopyObjectWithStoreLoad(
+      51, 101, SpvStorageClassFunction, 10);
+  ASSERT_TRUE(
+      transformation_2.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation_2, context.get(),
+                        &transformation_context);
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(101, {}), MakeDataDescriptor(51, {})));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

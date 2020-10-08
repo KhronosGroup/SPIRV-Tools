@@ -21,7 +21,7 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
-TEST(TransformationVectorShuffle, BasicTest) {
+TEST(TransformationVectorShuffleTest, BasicTest) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -544,7 +544,7 @@ TEST(TransformationVectorShuffleTest, IllegalInsertionPoints) {
                    .IsApplicable(context.get(), transformation_context));
 }
 
-TEST(TransformationVectorShuffle, HandlesIrrelevantIds1) {
+TEST(TransformationVectorShuffleTest, HandlesIrrelevantIds1) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -624,7 +624,7 @@ TEST(TransformationVectorShuffle, HandlesIrrelevantIds1) {
       MakeDataDescriptor(112, {0}), MakeDataDescriptor(200, {0})));
 }
 
-TEST(TransformationVectorShuffle, HandlesIrrelevantIds2) {
+TEST(TransformationVectorShuffleTest, HandlesIrrelevantIds2) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -699,10 +699,102 @@ TEST(TransformationVectorShuffle, HandlesIrrelevantIds2) {
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
+  // Because %12 is not irrelevant, we get a synonym between it and %200[1].
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {0}), MakeDataDescriptor(200, {1})));
+  // Because %112 is irrelevant, we do not get a synonym between it and %200[0].
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(112, {0}), MakeDataDescriptor(200, {0})));
+}
+
+TEST(TransformationVectorShuffleTest, HandlesIrrelevantIds3) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeVector %6 2
+          %8 = OpTypePointer Function %7
+         %10 = OpConstant %6 0
+         %11 = OpConstant %6 1
+         %12 = OpConstantComposite %7 %10 %11
+         %40 = OpConstantComposite %7 %10 %11
+         %13 = OpTypeBool
+         %14 = OpConstantFalse %13
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %9 = OpVariable %8 Function
+               OpStore %9 %12
+               OpSelectionMerge %16 None
+               OpBranchConditional %14 %15 %16
+         %15 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(40);
+  transformation_context.GetFactManager()->AddFactBlockIsDead(15);
+
+  TransformationVectorShuffle transformation1(
+      MakeInstructionDescriptor(15, SpvOpBranch, 0), 200, 12, 12, {0, 3});
+  ASSERT_TRUE(
+      transformation1.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(200, {0}), MakeDataDescriptor(12, {0})));
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(200, {1}), MakeDataDescriptor(12, {1})));
+
+  TransformationVectorShuffle transformation2(
+      MakeInstructionDescriptor(16, SpvOpReturn, 0), 201, 12, 40, {0, 1});
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(201, {0}), MakeDataDescriptor(12, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(201, {1}), MakeDataDescriptor(12, {1})));
+
+  TransformationVectorShuffle transformation3(
+      MakeInstructionDescriptor(16, SpvOpReturn, 0), 202, 40, 12, {2, 3});
+  ASSERT_TRUE(
+      transformation3.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation3, context.get(),
+                        &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(202, {0}), MakeDataDescriptor(12, {0})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(202, {1}), MakeDataDescriptor(12, {1})));
+
+  TransformationVectorShuffle transformation4(
+      MakeInstructionDescriptor(16, SpvOpReturn, 0), 203, 40, 12, {0, 3});
+  ASSERT_TRUE(
+      transformation4.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation4, context.get(),
+                        &transformation_context);
+  // Because %40 is irrelevant we do not get a synonym between it and %203[0].
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(203, {0}), MakeDataDescriptor(40, {0})));
+  // Because %12 is *not* irrelevant we do get a synonym between it and %203[1].
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(203, {1}), MakeDataDescriptor(12, {1})));
 }
 
 }  // namespace
