@@ -420,6 +420,7 @@ void TransformationDuplicateRegionWithSelection::Apply(
       if (block == exit_block && instr.IsBlockTerminator()) {
         switch (instr.opcode()) {
           case SpvOpBranch:
+          case SpvOpBranchConditional:
           case SpvOpReturn:
           case SpvOpReturnValue:
           case SpvOpUnreachable:
