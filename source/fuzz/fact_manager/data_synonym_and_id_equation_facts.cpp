@@ -867,17 +867,30 @@ DataSynonymAndIdEquationFacts::GetSynonymsForId(uint32_t id) const {
 std::vector<const protobufs::DataDescriptor*>
 DataSynonymAndIdEquationFacts::GetSynonymsForDataDescriptor(
     const protobufs::DataDescriptor& data_descriptor) const {
+  std::vector<const protobufs::DataDescriptor*> result;
   if (synonymous_.Exists(data_descriptor)) {
-    return synonymous_.GetEquivalenceClass(data_descriptor);
+    for (auto dd : synonymous_.GetEquivalenceClass(data_descriptor)) {
+      // There may be data descriptors in the equivalence class whose base
+      // objects have been removed from the module.  We do not expose these
+      // data descriptors to clients of the fact manager.
+      if (ir_context_->get_def_use_mgr()->GetDef(dd->object()) != nullptr) {
+        result.push_back(dd);
+      }
+    }
   }
-  return {};
+  return result;
 }
 
 std::vector<uint32_t>
 DataSynonymAndIdEquationFacts::GetIdsForWhichSynonymsAreKnown() const {
   std::vector<uint32_t> result;
   for (auto& data_descriptor : synonymous_.GetAllKnownValues()) {
-    if (data_descriptor->index().empty()) {
+    // We skip any data descriptors whose base objects no longer exist in the
+    // module, and we restrict attention to data descriptors for plain ids,
+    // which have no indices.
+    if (ir_context_->get_def_use_mgr()->GetDef(data_descriptor->object()) !=
+            nullptr &&
+        data_descriptor->index().empty()) {
       result.push_back(data_descriptor->object());
     }
   }

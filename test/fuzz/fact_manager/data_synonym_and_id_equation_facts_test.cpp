@@ -20,6 +20,23 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
+void CheckConsistencyOfSynonymFacts(
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context) {
+  for (uint32_t id : transformation_context.GetFactManager()
+                         ->GetIdsForWhichSynonymsAreKnown()) {
+    // Every id reported by the fact manager should exist in the module.
+    ASSERT_NE(ir_context->get_def_use_mgr()->GetDef(id), nullptr);
+    auto synonyms =
+        transformation_context.GetFactManager()->GetSynonymsForId(id);
+    for (auto& dd : synonyms) {
+      // Every reported synonym should have a base object that exists in the
+      // module.
+      ASSERT_NE(ir_context->get_def_use_mgr()->GetDef(dd->object()), nullptr);
+    }
+  }
+}
+
 TEST(DataSynonymAndIdEquationFactsTest, RecursiveAdditionOfFacts) {
   std::string shader = R"(
                OpCapability Shader
@@ -192,12 +209,16 @@ TEST(DataSynonymAndIdEquationFactsTest, HandlesCorollariesWithInvalidIds) {
   transformation_context.GetFactManager()->AddFactDataSynonym(
       MakeDataDescriptor(14, {}), MakeDataDescriptor(17, {}));
 
+  CheckConsistencyOfSynonymFacts(context.get(), transformation_context);
+
   // Apply TransformationMergeBlocks which will remove %17 from the module.
   TransformationMergeBlocks transformation(16);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   transformation.Apply(context.get(), &transformation_context);
   ASSERT_TRUE(IsValid(env, context.get()));
+
+  CheckConsistencyOfSynonymFacts(context.get(), transformation_context);
 
   ASSERT_EQ(context->get_def_use_mgr()->GetDef(17), nullptr);
 
@@ -212,6 +233,8 @@ TEST(DataSynonymAndIdEquationFactsTest, HandlesCorollariesWithInvalidIds) {
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(15, {}), MakeDataDescriptor(14, {})));
 
+  CheckConsistencyOfSynonymFacts(context.get(), transformation_context);
+
   // Remove some instructions from the module. At this point, the equivalence
   // class of %14 has no valid members.
   ASSERT_TRUE(context->KillDef(14));
@@ -219,6 +242,8 @@ TEST(DataSynonymAndIdEquationFactsTest, HandlesCorollariesWithInvalidIds) {
 
   transformation_context.GetFactManager()->AddFactIdEquation(
       18, SpvOpConvertSToF, {9});
+
+  CheckConsistencyOfSynonymFacts(context.get(), transformation_context);
 
   // We don't create synonyms if at least one of the equivalence classes has no
   // valid members.
