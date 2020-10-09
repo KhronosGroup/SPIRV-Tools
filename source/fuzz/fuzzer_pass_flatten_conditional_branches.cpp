@@ -100,9 +100,8 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
           // The id will be a zero constant if the type allows it, and an
           // OpUndef otherwise. We want to avoid using OpUndef, if possible, to
           // avoid undefined behaviour in the module as much as possible.
-          if (fuzzerutil::CanCreateConstant(
-                  *GetIRContext()->get_type_mgr()->GetType(
-                      instruction->type_id()))) {
+          if (fuzzerutil::CanCreateConstant(GetIRContext(),
+                                            instruction->type_id())) {
             wrapper_info.set_value_to_copy_id(
                 FindOrCreateZeroConstant(instruction->type_id(), true));
           } else {

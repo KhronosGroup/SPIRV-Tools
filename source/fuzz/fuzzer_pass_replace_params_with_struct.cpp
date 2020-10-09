@@ -56,11 +56,8 @@ void FuzzerPassReplaceParamsWithStruct::Apply() {
     auto new_end = std::remove_if(
         parameter_index.begin(), parameter_index.end(),
         [this, &params](uint32_t index) {
-          const auto* type =
-              GetIRContext()->get_type_mgr()->GetType(params[index]->type_id());
-          assert(type && "Parameter has invalid type");
           return !TransformationReplaceParamsWithStruct::
-              IsParameterTypeSupported(*type);
+              IsParameterTypeSupported(GetIRContext(), params[index]->type_id());
         });
 
     // std::remove_if changes the vector so that removed elements are placed at
