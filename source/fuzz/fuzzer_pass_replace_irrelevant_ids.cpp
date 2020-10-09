@@ -127,6 +127,14 @@ void FuzzerPassReplaceIrrelevantIds::Apply() {
               continue;
             }
 
+            // We cannot replace a variable initializer with a non-constant.
+            if (TransformationReplaceIrrelevantId::
+                    AttemptsToReplaceVariableInitializerWithNonConstant(
+                        *use_inst, *GetIRContext()->get_def_use_mgr()->GetDef(
+                                       replacement_id))) {
+              continue;
+            }
+
             // Only consider this replacement if the use point is within a basic
             // block and the id is available at the use point.
             //
