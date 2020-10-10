@@ -1059,6 +1059,9 @@ TEST(TransformationFlattenConditionalBranchTest, PhiToSelect4) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+// TODO: need a test to check that if we load from a buffer block and don't have
+//  undef then things are not applicable.'
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
