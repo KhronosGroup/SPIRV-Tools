@@ -357,6 +357,10 @@ class FuzzerContext {
 
     return components;
   }
+  uint32_t GetRandomCompositeExtractIndex(uint32_t number_of_members) {
+    assert(number_of_members > 0 && "Composite object must have some members");
+    return ChooseBetweenMinAndMax({0, number_of_members - 1});
+  }
   uint32_t GetRandomIndexForAccessChain(uint32_t composite_size_bound) {
     return random_generator_->RandomUint32(composite_size_bound);
   }

@@ -59,12 +59,10 @@ bool TransformationCompositeExtract::IsApplicable(
           ir_context, instruction_to_insert_before, message_.composite_id())) {
     return false;
   }
-  assert(composite_instruction->type_id() &&
-         "An instruction in a block cannot have a result id but no type id.");
 
   auto composite_type =
       ir_context->get_type_mgr()->GetType(composite_instruction->type_id());
-  if (!composite_type) {
+  if (!fuzzerutil::IsCompositeType(composite_type)) {
     return false;
   }
 
