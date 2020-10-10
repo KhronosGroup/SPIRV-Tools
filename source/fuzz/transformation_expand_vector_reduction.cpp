@@ -127,8 +127,8 @@ void TransformationExpandVectorReduction::Apply(
 
   ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
-  // If it's be able to make a synonym of |instruction|, then adds the fact that
-  // the last |logical_instruction| is synonym of |instruction|.
+  // If it's possible to make a synonym of |instruction|, then add the fact that
+  // the last |logical_instruction| is a synonym of |instruction|.
   if (fuzzerutil::CanMakeSynonymOf(ir_context, *transformation_context,
                                    instruction)) {
     transformation_context->GetFactManager()->AddFactDataSynonym(

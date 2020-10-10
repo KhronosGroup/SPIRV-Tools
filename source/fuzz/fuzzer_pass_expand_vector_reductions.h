@@ -21,7 +21,7 @@ namespace spvtools {
 namespace fuzz {
 
 // This fuzzer pass adds synonyms for the OpAny and OpAll instructions. It
-// iterates over the module, checks if they are OpAny or OpAll applicable
+// iterates over the module, checks if there are any OpAny or OpAll applicable
 // instructions and randomly applies the expand vector reduction transformation.
 class FuzzerPassExpandVectorReductions : public FuzzerPass {
  public:
