@@ -90,7 +90,8 @@ void FuzzerPassAddCompositeExtract::Apply() {
         uint32_t composite_id = 0;
         std::vector<uint32_t> indices;
 
-        if (available_synonyms.empty() || GetFuzzerContext()->ChooseEven()) {
+        if (available_synonyms.empty() || (!available_composites.empty() &&
+                                           GetFuzzerContext()->ChooseEven())) {
           const auto* inst =
               available_composites[GetFuzzerContext()->RandomIndex(
                   available_composites)];
