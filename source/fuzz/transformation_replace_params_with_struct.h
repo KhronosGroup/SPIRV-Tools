@@ -68,7 +68,8 @@ class TransformationReplaceParamsWithStruct : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
   // Returns true if parameter's type is supported by this transformation.
-  static bool IsParameterTypeSupported(opt::IRContext* ir_context, uint32_t param_type_id);
+  static bool IsParameterTypeSupported(opt::IRContext* ir_context,
+                                       uint32_t param_type_id);
 
  private:
   // Returns a result id of the OpTypeStruct instruction required by this

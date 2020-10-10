@@ -166,7 +166,8 @@ void FuzzerPassAddCompositeInserts::Apply() {
         // this type.
         uint32_t available_object_id;
         if (available_objects.empty()) {
-          if (!fuzzerutil::CanCreateConstant(GetIRContext(), current_node_type_id)) {
+          if (!fuzzerutil::CanCreateConstant(GetIRContext(),
+                                             current_node_type_id)) {
             return;
           }
           available_object_id =

@@ -139,7 +139,8 @@ bool TransformationMutatePointer::IsValidPointerInstruction(
     return false;
   }
 
-  opt::Instruction* type_inst = ir_context->get_def_use_mgr()->GetDef(inst.type_id());
+  opt::Instruction* type_inst =
+      ir_context->get_def_use_mgr()->GetDef(inst.type_id());
   assert(type_inst != nullptr && "|inst| has invalid type id");
 
   // |inst| must be a pointer.
@@ -148,7 +149,7 @@ bool TransformationMutatePointer::IsValidPointerInstruction(
   }
 
   // |inst| must have a supported storage class.
-  switch(static_cast<SpvStorageClass>(type_inst->GetSingleWordInOperand(0))) {
+  switch (static_cast<SpvStorageClass>(type_inst->GetSingleWordInOperand(0))) {
     case SpvStorageClassFunction:
     case SpvStorageClassPrivate:
     case SpvStorageClassWorkgroup:
@@ -158,7 +159,8 @@ bool TransformationMutatePointer::IsValidPointerInstruction(
   }
 
   // |inst|'s pointee must consist of scalars and/or composites.
-  return fuzzerutil::CanCreateConstant(ir_context, type_inst->GetSingleWordInOperand(1));
+  return fuzzerutil::CanCreateConstant(ir_context,
+                                       type_inst->GetSingleWordInOperand(1));
 }
 
 std::unordered_set<uint32_t> TransformationMutatePointer::GetFreshIds() const {

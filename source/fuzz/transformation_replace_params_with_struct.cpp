@@ -85,7 +85,8 @@ bool TransformationReplaceParamsWithStruct::IsApplicable(
     }
 
     // Check that the parameter with result id |id| has supported type.
-    if (!IsParameterTypeSupported(ir_context, fuzzerutil::GetTypeId(ir_context, id))) {
+    if (!IsParameterTypeSupported(ir_context,
+                                  fuzzerutil::GetTypeId(ir_context, id))) {
       return false;
     }
   }
@@ -260,8 +261,7 @@ protobufs::Transformation TransformationReplaceParamsWithStruct::ToMessage()
 }
 
 bool TransformationReplaceParamsWithStruct::IsParameterTypeSupported(
-    opt::IRContext* ir_context,
-    uint32_t param_type_id) {
+    opt::IRContext* ir_context, uint32_t param_type_id) {
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):
   //  Consider adding support for more types of parameters.
   return fuzzerutil::CanCreateConstant(ir_context, param_type_id);

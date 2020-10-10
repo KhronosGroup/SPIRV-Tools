@@ -57,7 +57,8 @@ class TransformationReplaceParameterWithGlobal : public Transformation {
 
   // Returns true if the type of the parameter is supported by this
   // transformation.
-  static bool IsParameterTypeSupported(opt::IRContext* ir_context, uint32_t param_type_id);
+  static bool IsParameterTypeSupported(opt::IRContext* ir_context,
+                                       uint32_t param_type_id);
 
  private:
   protobufs::TransformationReplaceParameterWithGlobal message_;

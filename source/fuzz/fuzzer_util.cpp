@@ -1130,13 +1130,15 @@ bool CanCreateConstant(opt::IRContext* ir_context, uint32_t type_id) {
     case SpvOpTypeVector:
       return true;
     case SpvOpTypeArray:
-      return CanCreateConstant(ir_context, type_instr->GetSingleWordInOperand(1));
+      return CanCreateConstant(ir_context,
+                               type_instr->GetSingleWordInOperand(1));
     case SpvOpTypeStruct:
-      if(HasBlockOrBufferBlockDecoration(ir_context, type_id)) {
+      if (HasBlockOrBufferBlockDecoration(ir_context, type_id)) {
         return false;
       }
       for (uint32_t index = 0; index < type_instr->NumInOperands(); index++) {
-        if (!CanCreateConstant(ir_context, type_instr->GetSingleWordInOperand(index))) {
+        if (!CanCreateConstant(ir_context,
+                               type_instr->GetSingleWordInOperand(index))) {
           return false;
         }
       }
