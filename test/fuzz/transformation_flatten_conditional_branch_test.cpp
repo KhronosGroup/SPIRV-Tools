@@ -25,8 +25,8 @@ namespace {
 protobufs::SideEffectWrapperInfo MakeSideEffectWrapperInfo(
     const protobufs::InstructionDescriptor& instruction,
     uint32_t merge_block_id, uint32_t execute_block_id,
-    uint32_t actual_result_id = 0, uint32_t alternative_block_id = 0,
-    uint32_t placeholder_result_id = 0, uint32_t value_to_copy_id = 0) {
+    uint32_t actual_result_id, uint32_t alternative_block_id,
+    uint32_t placeholder_result_id, uint32_t value_to_copy_id) {
   protobufs::SideEffectWrapperInfo result;
   *result.mutable_instruction() = instruction;
   result.set_merge_block_id(merge_block_id);
@@ -36,6 +36,13 @@ protobufs::SideEffectWrapperInfo MakeSideEffectWrapperInfo(
   result.set_placeholder_result_id(placeholder_result_id);
   result.set_value_to_copy_id(value_to_copy_id);
   return result;
+}
+
+protobufs::SideEffectWrapperInfo MakeSideEffectWrapperInfo(
+    const protobufs::InstructionDescriptor& instruction,
+    uint32_t merge_block_id, uint32_t execute_block_id) {
+  return MakeSideEffectWrapperInfo(instruction, merge_block_id,
+                                   execute_block_id, 0, 0, 0, 0);
 }
 
 TEST(TransformationFlattenConditionalBranchTest, Inapplicable) {
@@ -434,19 +441,19 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
 #endif
 
   // The map maps from an instruction to a list with not enough fresh ids.
-  ASSERT_FALSE(
-      TransformationFlattenConditionalBranch(
-          31, true,
-          {{MakeSideEffectWrapperInfo(
-              MakeInstructionDescriptor(6, SpvOpLoad, 0), 100, 101, 102, 103)}})
-          .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(
+                   31, true,
+                   {{MakeSideEffectWrapperInfo(
+                       MakeInstructionDescriptor(6, SpvOpLoad, 0), 100, 101,
+                       102, 103, 0, 0)}})
+                   .IsApplicable(context.get(), transformation_context));
 
   // Not all fresh ids given are distinct.
   ASSERT_FALSE(TransformationFlattenConditionalBranch(
                    31, true,
                    {{MakeSideEffectWrapperInfo(
                        MakeInstructionDescriptor(6, SpvOpLoad, 0), 100, 100,
-                       102, 103, 104)}})
+                       102, 103, 104, 0)}})
                    .IsApplicable(context.get(), transformation_context));
 
   // %48 heads a construct containing an OpSampledImage instruction.
@@ -454,7 +461,7 @@ TEST(TransformationFlattenConditionalBranchTest, LoadStoreFunctionCall) {
                    48, true,
                    {{MakeSideEffectWrapperInfo(
                        MakeInstructionDescriptor(53, SpvOpLoad, 0), 100, 101,
-                       102, 103, 104)}})
+                       102, 103, 104, 0)}})
                    .IsApplicable(context.get(), transformation_context));
 
   // %0 is not a valid id.
@@ -1057,6 +1064,59 @@ TEST(TransformationFlattenConditionalBranchTest, PhiToSelect4) {
                OpFunctionEnd
 )";
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationFlattenConditionalBranchTest,
+     LoadFromBufferBlockDecoratedStruct) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpMemberDecorate %11 0 Offset 0
+               OpDecorate %11 BufferBlock
+               OpDecorate %13 DescriptorSet 0
+               OpDecorate %13 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+         %10 = OpTypeInt 32 1
+         %11 = OpTypeStruct %10
+         %12 = OpTypePointer Uniform %11
+         %13 = OpVariable %12 Uniform
+         %21 = OpUndef %11
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpSelectionMerge %9 None
+               OpBranchConditional %7 %8 %9
+          %8 = OpLabel
+         %20 = OpLoad %11 %13
+               OpBranch %9
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  auto transformation = TransformationFlattenConditionalBranch(
+      5, true,
+      {MakeSideEffectWrapperInfo(MakeInstructionDescriptor(20, SpvOpLoad, 0),
+                                 100, 101, 102, 103, 104, 21)});
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
 }
 
 }  // namespace

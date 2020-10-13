@@ -399,9 +399,10 @@ uint32_t MaybeGetZeroConstant(
     uint32_t scalar_or_composite_type_id, bool is_irrelevant);
 
 // Returns true if it is possible to create an OpConstant or an
-// OpConstantComposite instruction of |type|. That is, returns true if |type|
-// and all its constituents are either scalar or composite.
-bool CanCreateConstant(const opt::analysis::Type& type);
+// OpConstantComposite instruction of type |type_id|. That is, returns true if
+// the type associated with |type_id| and all its constituents are either scalar
+// or composite.
+bool CanCreateConstant(opt::IRContext* ir_context, uint32_t type_id);
 
 // Returns the result id of an OpConstant instruction. |scalar_type_id| must be
 // a result id of a scalar type (i.e. int, float or bool). Returns 0 if no such

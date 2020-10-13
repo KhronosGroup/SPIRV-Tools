@@ -81,7 +81,8 @@ void FuzzerPassReplaceBranchesFromDeadBlocksWithExits::Apply() {
           GetIRContext()->get_type_mgr()->GetType(function.type_id());
       if (function_return_type->AsVoid()) {
         opcodes.emplace_back(SpvOpReturn);
-      } else if (fuzzerutil::CanCreateConstant(*function_return_type)) {
+      } else if (fuzzerutil::CanCreateConstant(GetIRContext(),
+                                               function.type_id())) {
         // For simplicity we only allow OpReturnValue if the function return
         // type is a type for which we can create a constant.  This allows us a
         // zero of the given type as a default return value.
