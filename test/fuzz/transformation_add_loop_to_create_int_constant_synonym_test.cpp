@@ -1022,6 +1022,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
 }
 
 TEST(TransformationAddLoopToCreateIntConstantSynonymTest, InserBeforeOpSwitch) {
+  // Checks that it is acceptable for a loop to be added before a target of an
+  // OpSwitch instruction.
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
