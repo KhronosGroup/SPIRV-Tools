@@ -139,25 +139,28 @@ bool TransformationMutatePointer::IsValidPointerInstruction(
     return false;
   }
 
-  const auto* type = ir_context->get_type_mgr()->GetType(inst.type_id());
-  assert(type && "|inst| has invalid type id");
-
-  const auto* pointer_type = type->AsPointer();
+  opt::Instruction* type_inst =
+      ir_context->get_def_use_mgr()->GetDef(inst.type_id());
+  assert(type_inst != nullptr && "|inst| has invalid type id");
 
   // |inst| must be a pointer.
-  if (!pointer_type) {
+  if (type_inst->opcode() != SpvOpTypePointer) {
     return false;
   }
 
   // |inst| must have a supported storage class.
-  if (pointer_type->storage_class() != SpvStorageClassFunction &&
-      pointer_type->storage_class() != SpvStorageClassPrivate &&
-      pointer_type->storage_class() != SpvStorageClassWorkgroup) {
-    return false;
+  switch (static_cast<SpvStorageClass>(type_inst->GetSingleWordInOperand(0))) {
+    case SpvStorageClassFunction:
+    case SpvStorageClassPrivate:
+    case SpvStorageClassWorkgroup:
+      break;
+    default:
+      return false;
   }
 
   // |inst|'s pointee must consist of scalars and/or composites.
-  return fuzzerutil::CanCreateConstant(*pointer_type->pointee_type());
+  return fuzzerutil::CanCreateConstant(ir_context,
+                                       type_inst->GetSingleWordInOperand(1));
 }
 
 std::unordered_set<uint32_t> TransformationMutatePointer::GetFreshIds() const {
