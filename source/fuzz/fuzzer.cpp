@@ -162,7 +162,6 @@ bool Fuzzer::ApplyPassAndCheckValidity(
     FuzzerPass* pass, const spvtools::SpirvTools& tools) const {
   pass->Apply();
   if (validate_after_each_fuzzer_pass_) {
-
     // Check that the module is valid.
     std::vector<uint32_t> binary_to_validate;
     ir_context_->module()->ToBinary(&binary_to_validate, false);
