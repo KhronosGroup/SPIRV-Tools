@@ -1871,8 +1871,8 @@ TEST(TransformationDuplicateRegionWithSelectionTest, OverflowIds) {
 
 TEST(TransformationDuplicateRegionWithSelectionTest,
      RegionExitIsOpBranchConditional) {
-  // Checks that the transformation works when the exit block of a region ends
-  // with OpBranchConditional (but is not a header).
+  // Checks the case where the exit block of a region ends with
+  // OpBranchConditional (but is not a header).
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
