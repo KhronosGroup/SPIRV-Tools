@@ -162,6 +162,8 @@ bool Fuzzer::ApplyPassAndCheckValidity(
     FuzzerPass* pass, const spvtools::SpirvTools& tools) const {
   pass->Apply();
   if (validate_after_each_fuzzer_pass_) {
+
+    // Check that the module is valid.
     std::vector<uint32_t> binary_to_validate;
     ir_context_->module()->ToBinary(&binary_to_validate, false);
     if (!tools.Validate(&binary_to_validate[0], binary_to_validate.size(),
@@ -171,6 +173,7 @@ bool Fuzzer::ApplyPassAndCheckValidity(
                 "inspect); stopping.");
       return false;
     }
+
     // Check that all blocks in the module have appropriate parent functions.
     for (auto& function : *ir_context_->module()) {
       for (auto& block : function) {
@@ -191,6 +194,24 @@ bool Fuzzer::ApplyPassAndCheckValidity(
           return false;
         }
       }
+    }
+
+    // Check that distinct instructions have different unique ids.
+    std::unordered_map<uint32_t, opt::Instruction*> unique_ids;
+    bool stopping = false;
+    ir_context_->module()->ForEachInst(
+        [this, &stopping, &unique_ids](opt::Instruction* inst) {
+          if (unique_ids.count(inst->unique_id()) != 0) {
+            consumer_(
+                SPV_MSG_INFO, nullptr, {},
+                "Two instructions have the same unique id (set a breakpoint to "
+                "inspect); stopping.");
+            stopping = true;
+          }
+          unique_ids.insert({inst->unique_id(), inst});
+        });
+    if (stopping) {
+      return false;
     }
   }
   return true;

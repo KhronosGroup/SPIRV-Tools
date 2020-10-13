@@ -52,9 +52,9 @@ bool IsEqual(spv_target_env env, const opt::IRContext* ir_1,
 bool IsEqual(spv_target_env env, const std::vector<uint32_t>& binary_1,
              const opt::IRContext* ir_2);
 
-// Assembles the given IR context and returns true if and only if
-// the resulting binary is valid and every basic block has its enclosing
-// function as its parent.
+// Assembles the given IR context and returns true if and only if the resulting
+// binary is valid, every basic block has its enclosing function as its parent,
+// and every instruction in |ir| has a distinct unique id.
 bool IsValid(spv_target_env env, const opt::IRContext* ir);
 
 // Assembles the given IR context, then returns its disassembly as a string.
@@ -107,6 +107,12 @@ void DumpShader(opt::IRContext* context, const char* filename);
 
 // Dumps |binary| to file |filename|. Useful for interactive debugging.
 void DumpShader(const std::vector<uint32_t>& binary, const char* filename);
+
+// Dumps |transformations| to file |filename| in binary format. Useful for
+// interactive debugging.
+void DumpTransformationsBinary(
+    const protobufs::TransformationSequence& transformations,
+    const char* filename);
 
 // Dumps |transformations| to file |filename| in JSON format. Useful for
 // interactive debugging.

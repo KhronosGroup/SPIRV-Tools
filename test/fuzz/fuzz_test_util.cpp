@@ -83,7 +83,7 @@ bool IsEqual(const spv_target_env env, const std::vector<uint32_t>& binary_1,
 bool IsValid(spv_target_env env, const opt::IRContext* ir) {
   MessageConsumer consumer = kConsoleMessageConsumer;
 
-  // First, run the validator.
+  // Run the validator.
   std::vector<uint32_t> binary;
   ir->module()->ToBinary(&binary, false);
   SpirvTools t(env);
@@ -92,8 +92,7 @@ bool IsValid(spv_target_env env, const opt::IRContext* ir) {
     return false;
   }
 
-  // Now check that every block in the module has the appropriate parent
-  // function.
+  // Check that every block in the module has the appropriate parent function.
   for (auto& function : *ir->module()) {
     for (auto& block : function) {
       if (block.GetParent() == nullptr) {
@@ -112,6 +111,23 @@ bool IsValid(spv_target_env env, const opt::IRContext* ir) {
         return false;
       }
     }
+  }
+
+  // Check that all instructions have distinct unique ids.
+  std::unordered_map<uint32_t, opt::Instruction*> unique_ids;
+  bool stopping = false;
+  ir->module()->ForEachInst([consumer, &stopping,
+                             &unique_ids](opt::Instruction* inst) {
+    if (unique_ids.count(inst->unique_id()) != 0) {
+      consumer(SPV_MSG_INFO, nullptr, {},
+               "Two instructions have the same unique id (set a breakpoint to "
+               "inspect); stopping.");
+      stopping = true;
+    }
+    unique_ids.insert({inst->unique_id(), inst});
+  });
+  if (stopping) {
+    return false;
   }
   return true;
 }
@@ -141,6 +157,15 @@ void DumpShader(const std::vector<uint32_t>& binary, const char* filename) {
   if (!write_file_succeeded) {
     std::cerr << "Failed to dump shader" << std::endl;
   }
+}
+
+void DumpTransformationsBinary(
+    const protobufs::TransformationSequence& transformations,
+    const char* filename) {
+  std::ofstream transformations_file;
+  transformations_file.open(filename, std::ios::out | std::ios::binary);
+  transformations.SerializeToOstream(&transformations_file);
+  transformations_file.close();
 }
 
 void DumpTransformationsJson(
