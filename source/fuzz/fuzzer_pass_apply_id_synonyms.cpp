@@ -147,6 +147,15 @@ void FuzzerPassApplyIdSynonyms::Apply() {
                                                : parent_block->terminator();
           }
 
+          if (GetTransformationContext()->GetFactManager()->BlockIsDead(
+                  GetIRContext()
+                      ->get_instr_block(instruction_to_insert_before)
+                      ->id())) {
+            // We cannot create a synonym via a composite extraction in a dead
+            // block, as the resulting id is irrelevant.
+            continue;
+          }
+
           assert(!GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
                      synonym_to_try->object()) &&
                  "Irrelevant ids can't participate in DataSynonym facts");
@@ -155,6 +164,11 @@ void FuzzerPassApplyIdSynonyms::Apply() {
                                         instruction_to_insert_before),
               id_with_which_to_replace_use, synonym_to_try->object(),
               fuzzerutil::RepeatedFieldToVector(synonym_to_try->index())));
+          assert(GetTransformationContext()->GetFactManager()->IsSynonymous(
+                     MakeDataDescriptor(id_with_which_to_replace_use, {}),
+                     *synonym_to_try) &&
+                 "The extracted id must be synonymous with the component from "
+                 "which it was extracted.");
         }
 
         ApplyTransformation(TransformationReplaceIdWithSynonym(
