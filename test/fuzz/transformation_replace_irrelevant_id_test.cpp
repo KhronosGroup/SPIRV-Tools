@@ -186,6 +186,8 @@ TEST(TransformationReplaceIrrelevantIdTest, Apply) {
 
 TEST(TransformationReplaceIrrelevantIdTest,
      DoNotReplaceVariableInitializerWithNonConstant) {
+  // Checks that it is not possible to replace the initializer of a variable
+  // with a non-constant id (such as a function parameter).
   const std::string reference_shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
