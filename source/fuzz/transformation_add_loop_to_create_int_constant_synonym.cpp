@@ -387,12 +387,12 @@ void TransformationAddLoopToCreateIntConstantSynonym::Apply(
       [this](opt::Instruction* instruction, uint32_t operand_index) {
         assert(instruction->opcode() != SpvOpLoopMerge &&
                instruction->opcode() != SpvOpSelectionMerge &&
-               instruction->opcode() != SpvOpSwitch &&
-               "The block should not be referenced by OpLoopMerge, "
-               "OpSelectionMerge or OpSwitch instructions, by construction.");
+               "The block should not be referenced by OpLoopMerge or "
+               "OpSelectionMerge, by construction.");
         // Replace all uses of the label inside branch instructions.
         if (instruction->opcode() == SpvOpBranch ||
-            instruction->opcode() == SpvOpBranchConditional) {
+            instruction->opcode() == SpvOpBranchConditional ||
+            instruction->opcode() == SpvOpSwitch) {
           instruction->SetOperand(operand_index, {message_.loop_id()});
         }
       });

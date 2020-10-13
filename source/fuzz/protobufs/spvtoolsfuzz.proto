@@ -932,7 +932,7 @@ message TransformationAddLoopToCreateIntConstantSynonym {
   // A transformation that uses a loop to create a synonym for an integer
   // constant C (scalar or vector) using an initial value I, a step value S and
   // a number of iterations N such that C = I - N * S. For each iteration, S is
-  // added to the total.
+  // subtracted from the total.
   // The loop can be made up of one or two blocks, and it is inserted before a
   // block with a single predecessor. In the one-block case, it is of the form:
   //
@@ -942,7 +942,7 @@ message TransformationAddLoopToCreateIntConstantSynonym {
   //    %eventual_syn_id = OpISub %type_of_I %temp_id %step_val_id
   // %incremented_ctr_id = OpIAdd %int %ctr_id %int_1
   //            %cond_id = OpSLessThan %bool %incremented_ctr_id %num_iterations_id
-  //                       OpLoopMerge %block_after_loop_id %loop_id %none
+  //                       OpLoopMerge %block_after_loop_id %loop_id None
   //                       OpBranchConditional %cond_id %loop_id %block_after_loop_id
   //
   // A new OpPhi instruction is then added to %block_after_loop_id, as follows:
