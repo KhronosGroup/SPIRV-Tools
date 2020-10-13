@@ -121,9 +121,11 @@ class Fuzzer {
   // the number of transformations that have been applied increases.
   bool ShouldContinueFuzzing();
 
-  // Applies |pass|, which must be a pass constructed with |ir_context|, and
-  // then returns true if and only if |ir_context| is valid.  |tools| is used to
-  // check validity.
+  // Applies |pass|, which must be a pass constructed with |ir_context|.
+  // If |validate_after_each_fuzzer_pass_| is not set, true is always returned.
+  // Otherwise, true is returned if and only if |ir_context| passes validation,
+  // and if every block has its enclosing function as its parent.  |tools| is
+  // used for checking validity.
   bool ApplyPassAndCheckValidity(FuzzerPass* pass,
                                  const spvtools::SpirvTools& tools) const;
 
