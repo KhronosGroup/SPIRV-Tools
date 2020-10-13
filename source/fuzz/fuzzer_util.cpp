@@ -1122,6 +1122,8 @@ uint32_t MaybeGetZeroConstant(
 bool CanCreateConstant(opt::IRContext* ir_context, uint32_t type_id) {
   opt::Instruction* type_instr = ir_context->get_def_use_mgr()->GetDef(type_id);
   assert(type_instr != nullptr && "The type must exist.");
+  assert(spvOpcodeGeneratesType(type_instr->opcode()) &&
+         "A type-generating opcode was expected.");
   switch (type_instr->opcode()) {
     case SpvOpTypeBool:
     case SpvOpTypeInt:
@@ -1131,7 +1133,7 @@ bool CanCreateConstant(opt::IRContext* ir_context, uint32_t type_id) {
       return true;
     case SpvOpTypeArray:
       return CanCreateConstant(ir_context,
-                               type_instr->GetSingleWordInOperand(1));
+                               type_instr->GetSingleWordInOperand(0));
     case SpvOpTypeStruct:
       if (HasBlockOrBufferBlockDecoration(ir_context, type_id)) {
         return false;

@@ -1093,7 +1093,7 @@ TEST(TransformationFlattenConditionalBranchTest,
                OpSelectionMerge %9 None
                OpBranchConditional %7 %8 %9
           %8 = OpLabel
-	 %20 = OpLoad %11 %13
+         %20 = OpLoad %11 %13
                OpBranch %9
           %9 = OpLabel
                OpReturn
