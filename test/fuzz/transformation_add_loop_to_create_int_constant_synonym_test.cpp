@@ -1021,6 +1021,113 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
                    .IsApplicable(context.get(), transformation_context));
 }
 
+TEST(TransformationAddLoopToCreateIntConstantSynonymTest, InserBeforeOpSwitch) {
+  // Checks that it is acceptable for a loop to be added before a target of an
+  // OpSwitch instruction.
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpConstant %6 0
+         %20 = OpConstant %6 1
+         %21 = OpConstant %6 2
+         %22 = OpTypeBool
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpSelectionMerge %10 None
+               OpSwitch %7 %9 0 %8
+          %9 = OpLabel
+               OpBranch %10
+          %8 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  auto transformation1 = TransformationAddLoopToCreateIntConstantSynonym(
+      20, 21, 20, 20, 9, 100, 101, 102, 103, 104, 105, 106, 0);
+  ASSERT_TRUE(
+      transformation1.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(20, {}), MakeDataDescriptor(100, {})));
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  auto transformation2 = TransformationAddLoopToCreateIntConstantSynonym(
+      20, 21, 20, 20, 8, 200, 201, 202, 203, 204, 205, 206, 0);
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(20, {}), MakeDataDescriptor(200, {})));
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformations = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpConstant %6 0
+         %20 = OpConstant %6 1
+         %21 = OpConstant %6 2
+         %22 = OpTypeBool
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpSelectionMerge %10 None
+               OpSwitch %7 %101 0 %201
+        %101 = OpLabel
+        %102 = OpPhi %6 %7 %5 %105 %101
+        %103 = OpPhi %6 %21 %5 %104 %101
+        %104 = OpISub %6 %103 %20
+        %105 = OpIAdd %6 %102 %20
+        %106 = OpSLessThan %22 %105 %20
+               OpLoopMerge %9 %101 None
+               OpBranchConditional %106 %101 %9
+          %9 = OpLabel
+        %100 = OpPhi %6 %104 %101
+               OpBranch %10
+        %201 = OpLabel
+        %202 = OpPhi %6 %7 %5 %205 %201
+        %203 = OpPhi %6 %21 %5 %204 %201
+        %204 = OpISub %6 %203 %20
+        %205 = OpIAdd %6 %202 %20
+        %206 = OpSLessThan %22 %205 %20
+               OpLoopMerge %8 %201 None
+               OpBranchConditional %206 %201 %8
+          %8 = OpLabel
+        %200 = OpPhi %6 %204 %201
+               OpBranch %10
+         %10 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformations, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
