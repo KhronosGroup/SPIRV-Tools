@@ -17,6 +17,7 @@
 #include <cassert>
 #include <memory>
 #include <numeric>
+#include <sstream>
 
 #include "source/fuzz/fact_manager/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
@@ -169,6 +170,27 @@ bool Fuzzer::ApplyPassAndCheckValidity(
                 "Binary became invalid during fuzzing (set a breakpoint to "
                 "inspect); stopping.");
       return false;
+    }
+    // Check that all blocks in the module have appropriate parent functions.
+    for (auto& function : *ir_context_->module()) {
+      for (auto& block : function) {
+        if (block.GetParent() == nullptr) {
+          std::stringstream ss;
+          ss << "Block " << block.id()
+             << " has no parent; its parent should be " << function.result_id()
+             << ".";
+          consumer_(SPV_MSG_INFO, nullptr, {}, ss.str().c_str());
+          return false;
+        }
+        if (block.GetParent() != &function) {
+          std::stringstream ss;
+          ss << "Block " << block.id() << " should have parent "
+             << function.result_id() << " but instead has parent "
+             << block.GetParent() << ".";
+          consumer_(SPV_MSG_INFO, nullptr, {}, ss.str().c_str());
+          return false;
+        }
+      }
     }
   }
   return true;

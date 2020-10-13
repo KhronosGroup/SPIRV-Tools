@@ -53,7 +53,8 @@ bool IsEqual(spv_target_env env, const std::vector<uint32_t>& binary_1,
              const opt::IRContext* ir_2);
 
 // Assembles the given IR context and returns true if and only if
-// the resulting binary is valid.
+// the resulting binary is valid and every basic block has its enclosing
+// function as its parent.
 bool IsValid(spv_target_env env, const opt::IRContext* ir);
 
 // Assembles the given IR context, then returns its disassembly as a string.
