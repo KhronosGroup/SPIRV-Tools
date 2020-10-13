@@ -1869,6 +1869,135 @@ TEST(TransformationDuplicateRegionWithSelectionTest, OverflowIds) {
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 
+TEST(TransformationDuplicateRegionWithSelectionTest,
+     RegionExitIsOpBranchConditional) {
+  // Checks the case where the exit block of a region ends with
+  // OpBranchConditional (but is not a header).
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %8 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %16 = OpConstant %6 100
+         %17 = OpTypeBool
+	 %50 = OpConstantTrue %17
+         %20 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %10
+         %10 = OpLabel
+               OpLoopMerge %12 %13 None
+               OpBranch %14
+         %14 = OpLabel
+         %15 = OpLoad %6 %8
+         %18 = OpSLessThan %17 %15 %16
+               OpBranchConditional %18 %11 %12
+         %11 = OpLabel
+         %19 = OpLoad %6 %8
+         %21 = OpIAdd %6 %19 %20
+               OpStore %8 %21
+               OpBranchConditional %50 %13 %12
+         %13 = OpLabel
+         %22 = OpLoad %6 %8
+         %23 = OpIAdd %6 %22 %20
+               OpStore %8 %23
+               OpBranch %10
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  TransformationDuplicateRegionWithSelection transformation_good_1 =
+      TransformationDuplicateRegionWithSelection(
+          600, 50, 601, 11, 11, {{11, 602}}, {{19, 603}, {21, 604}},
+          {{19, 605}, {21, 606}});
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  ApplyAndCheckFreshIds(transformation_good_1, context.get(),
+                        &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %8 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %16 = OpConstant %6 100
+         %17 = OpTypeBool
+	 %50 = OpConstantTrue %17
+         %20 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %10
+         %10 = OpLabel
+               OpLoopMerge %12 %13 None
+               OpBranch %14
+         %14 = OpLabel
+         %15 = OpLoad %6 %8
+         %18 = OpSLessThan %17 %15 %16
+               OpBranchConditional %18 %600 %12
+        %600 = OpLabel
+               OpSelectionMerge %601 None
+               OpBranchConditional %50 %11 %602
+         %11 = OpLabel
+         %19 = OpLoad %6 %8
+         %21 = OpIAdd %6 %19 %20
+               OpStore %8 %21
+               OpBranch %601
+        %602 = OpLabel
+        %603 = OpLoad %6 %8
+        %604 = OpIAdd %6 %603 %20
+               OpStore %8 %604
+               OpBranch %601
+        %601 = OpLabel
+        %605 = OpPhi %6 %19 %11 %603 %602
+        %606 = OpPhi %6 %21 %11 %604 %602
+               OpBranchConditional %50 %13 %12
+         %13 = OpLabel
+         %22 = OpLoad %6 %8
+         %23 = OpIAdd %6 %22 %20
+               OpStore %8 %23
+               OpBranch %10
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        )";
+
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
