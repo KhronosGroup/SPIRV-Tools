@@ -14,6 +14,8 @@
 
 #include "test/fuzz/fuzz_test_util.h"
 
+#include "gtest/gtest.h"
+
 #include <fstream>
 #include <iostream>
 
@@ -78,58 +80,6 @@ bool IsEqual(const spv_target_env env, const std::vector<uint32_t>& binary_1,
   std::vector<uint32_t> binary_2;
   ir_2->module()->ToBinary(&binary_2, false);
   return IsEqual(env, binary_1, binary_2);
-}
-
-bool IsValid(spv_target_env env, const opt::IRContext* ir) {
-  MessageConsumer consumer = kConsoleMessageConsumer;
-
-  // Run the validator.
-  std::vector<uint32_t> binary;
-  ir->module()->ToBinary(&binary, false);
-  SpirvTools t(env);
-  t.SetMessageConsumer(consumer);
-  if (!t.Validate(binary)) {
-    return false;
-  }
-
-  // Check that every block in the module has the appropriate parent function.
-  for (auto& function : *ir->module()) {
-    for (auto& block : function) {
-      if (block.GetParent() == nullptr) {
-        std::stringstream ss;
-        ss << "Block " << block.id() << " has no parent; its parent should be "
-           << function.result_id() << ".";
-        consumer(SPV_MSG_INFO, nullptr, {}, ss.str().c_str());
-        return false;
-      }
-      if (block.GetParent() != &function) {
-        std::stringstream ss;
-        ss << "Block " << block.id() << " should have parent "
-           << function.result_id() << " but instead has parent "
-           << block.GetParent() << ".";
-        consumer(SPV_MSG_INFO, nullptr, {}, ss.str().c_str());
-        return false;
-      }
-    }
-  }
-
-  // Check that all instructions have distinct unique ids.
-  std::unordered_map<uint32_t, opt::Instruction*> unique_ids;
-  bool stopping = false;
-  ir->module()->ForEachInst([consumer, &stopping,
-                             &unique_ids](opt::Instruction* inst) {
-    if (unique_ids.count(inst->unique_id()) != 0) {
-      consumer(SPV_MSG_INFO, nullptr, {},
-               "Two instructions have the same unique id (set a breakpoint to "
-               "inspect); stopping.");
-      stopping = true;
-    }
-    unique_ids.insert({inst->unique_id(), inst});
-  });
-  if (stopping) {
-    return false;
-  }
-  return true;
 }
 
 std::string ToString(spv_target_env env, const opt::IRContext* ir) {

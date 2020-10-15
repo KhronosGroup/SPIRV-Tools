@@ -151,7 +151,12 @@ uint32_t GetBoundForCompositeIndex(const opt::Instruction& composite_type_inst,
 
 // Returns true if and only if |context| is valid, according to the validator
 // instantiated with |validator_options|.
-bool IsValid(opt::IRContext* context, spv_validator_options validator_options);
+bool IsValid(const opt::IRContext* context,
+             spv_validator_options validator_options);
+
+bool IsValidAndWellFormed(const opt::IRContext* context,
+                          spv_validator_options validator_options,
+                          MessageConsumer consumer);
 
 // Returns a clone of |context|, by writing |context| to a binary and then
 // parsing it again.

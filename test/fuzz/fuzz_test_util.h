@@ -17,7 +17,6 @@
 
 #include <vector>
 
-#include "gtest/gtest.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
 #include "source/fuzz/transformation_context.h"
@@ -51,11 +50,6 @@ bool IsEqual(spv_target_env env, const opt::IRContext* ir_1,
 // binary is bit-wise equal to |binary_1|.
 bool IsEqual(spv_target_env env, const std::vector<uint32_t>& binary_1,
              const opt::IRContext* ir_2);
-
-// Assembles the given IR context and returns true if and only if the resulting
-// binary is valid, every basic block has its enclosing function as its parent,
-// and every instruction in |ir| has a distinct unique id.
-bool IsValid(spv_target_env env, const opt::IRContext* ir);
 
 // Assembles the given IR context, then returns its disassembly as a string.
 // Useful for debugging.

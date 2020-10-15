@@ -14,6 +14,8 @@
 
 #include "source/fuzz/transformation_set_function_control.h"
 
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {

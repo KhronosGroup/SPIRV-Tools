@@ -14,6 +14,7 @@
 
 #include "source/fuzz/replayer.h"
 
+#include "gtest/gtest.h"
 #include "source/fuzz/data_descriptor.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/transformation_add_constant_scalar.h"

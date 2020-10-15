@@ -158,62 +158,11 @@ void Fuzzer::MaybeAddFinalPass(std::vector<std::unique_ptr<FuzzerPass>>* passes,
   }
 }
 
-bool Fuzzer::ApplyPassAndCheckValidity(
-    FuzzerPass* pass, const spvtools::SpirvTools& tools) const {
+bool Fuzzer::ApplyPassAndCheckValidity(FuzzerPass* pass) const {
   pass->Apply();
-  if (validate_after_each_fuzzer_pass_) {
-    // Check that the module is valid.
-    std::vector<uint32_t> binary_to_validate;
-    ir_context_->module()->ToBinary(&binary_to_validate, false);
-    if (!tools.Validate(&binary_to_validate[0], binary_to_validate.size(),
-                        validator_options_)) {
-      consumer_(SPV_MSG_INFO, nullptr, {},
-                "Binary became invalid during fuzzing (set a breakpoint to "
-                "inspect); stopping.");
-      return false;
-    }
-
-    // Check that all blocks in the module have appropriate parent functions.
-    for (auto& function : *ir_context_->module()) {
-      for (auto& block : function) {
-        if (block.GetParent() == nullptr) {
-          std::stringstream ss;
-          ss << "Block " << block.id()
-             << " has no parent; its parent should be " << function.result_id()
-             << ".";
-          consumer_(SPV_MSG_INFO, nullptr, {}, ss.str().c_str());
-          return false;
-        }
-        if (block.GetParent() != &function) {
-          std::stringstream ss;
-          ss << "Block " << block.id() << " should have parent "
-             << function.result_id() << " but instead has parent "
-             << block.GetParent() << ".";
-          consumer_(SPV_MSG_INFO, nullptr, {}, ss.str().c_str());
-          return false;
-        }
-      }
-    }
-
-    // Check that distinct instructions have different unique ids.
-    std::unordered_map<uint32_t, opt::Instruction*> unique_ids;
-    bool stopping = false;
-    ir_context_->module()->ForEachInst(
-        [this, &stopping, &unique_ids](opt::Instruction* inst) {
-          if (unique_ids.count(inst->unique_id()) != 0) {
-            consumer_(
-                SPV_MSG_INFO, nullptr, {},
-                "Two instructions have the same unique id (set a breakpoint to "
-                "inspect); stopping.");
-            stopping = true;
-          }
-          unique_ids.insert({inst->unique_id(), inst});
-        });
-    if (stopping) {
-      return false;
-    }
-  }
-  return true;
+  return !validate_after_each_fuzzer_pass_ ||
+         fuzzerutil::IsValidAndWellFormed(ir_context_.get(), validator_options_,
+                                          consumer_);
 }
 
 Fuzzer::FuzzerResult Fuzzer::Run() {
@@ -372,8 +321,7 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
 
   do {
     if (!ApplyPassAndCheckValidity(
-            repeated_pass_manager->ChoosePass(transformation_sequence_out_),
-            tools)) {
+            repeated_pass_manager->ChoosePass(transformation_sequence_out_))) {
       return {Fuzzer::FuzzerResultStatus::kFuzzerPassLedToInvalidModule,
               std::vector<uint32_t>(), protobufs::TransformationSequence()};
     }
@@ -395,7 +343,7 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
   MaybeAddFinalPass<FuzzerPassSwapCommutableOperands>(&final_passes);
   MaybeAddFinalPass<FuzzerPassToggleAccessChainInstruction>(&final_passes);
   for (auto& pass : final_passes) {
-    if (!ApplyPassAndCheckValidity(pass.get(), tools)) {
+    if (!ApplyPassAndCheckValidity(pass.get())) {
       return {Fuzzer::FuzzerResultStatus::kFuzzerPassLedToInvalidModule,
               std::vector<uint32_t>(), protobufs::TransformationSequence()};
     }
