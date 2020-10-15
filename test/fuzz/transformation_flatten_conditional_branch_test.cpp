@@ -1066,6 +1066,108 @@ TEST(TransformationFlattenConditionalBranchTest, PhiToSelect4) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationFlattenConditionalBranchTest, PhiToSelect5) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeBool
+          %5 = OpConstantTrue %4
+         %10 = OpConstantFalse %4
+          %6 = OpTypeFunction %3
+        %100 = OpTypePointer Function %4
+          %2 = OpFunction %3 None %6
+          %7 = OpLabel
+        %101 = OpVariable %100 Function
+        %102 = OpVariable %100 Function
+               OpSelectionMerge %470 None
+               OpBranchConditional %5 %454 %462
+        %454 = OpLabel
+        %522 = OpLoad %4 %101
+               OpBranch %470
+        %462 = OpLabel
+        %466 = OpLoad %4 %102
+               OpBranch %470
+        %470 = OpLabel
+        %534 = OpPhi %4 %522 %454 %466 %462
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  auto transformation = TransformationFlattenConditionalBranch(
+      7, true,
+      {MakeSideEffectWrapperInfo(MakeInstructionDescriptor(522, SpvOpLoad, 0),
+                                 200, 201, 202, 203, 204, 5),
+       MakeSideEffectWrapperInfo(MakeInstructionDescriptor(466, SpvOpLoad, 0),
+                                 300, 301, 302, 303, 304, 5)});
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeBool
+          %5 = OpConstantTrue %4
+         %10 = OpConstantFalse %4
+          %6 = OpTypeFunction %3
+        %100 = OpTypePointer Function %4
+          %2 = OpFunction %3 None %6
+          %7 = OpLabel
+        %101 = OpVariable %100 Function
+        %102 = OpVariable %100 Function
+               OpBranch %454
+        %454 = OpLabel
+               OpSelectionMerge %200 None
+               OpBranchConditional %5 %201 %203
+        %201 = OpLabel
+        %202 = OpLoad %4 %101
+               OpBranch %200
+        %203 = OpLabel
+        %204 = OpCopyObject %4 %5
+               OpBranch %200
+        %200 = OpLabel
+        %522 = OpPhi %4 %202 %201 %204 %203
+               OpBranch %462
+        %462 = OpLabel
+               OpSelectionMerge %300 None
+               OpBranchConditional %5 %303 %301
+        %301 = OpLabel
+        %302 = OpLoad %4 %102
+               OpBranch %300
+        %303 = OpLabel
+        %304 = OpCopyObject %4 %5
+               OpBranch %300
+        %300 = OpLabel
+        %466 = OpPhi %4 %302 %301 %304 %303
+               OpBranch %470
+        %470 = OpLabel
+        %534 = OpSelect %4 %5 %522 %466
+               OpReturn
+               OpFunctionEnd
+)";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
 TEST(TransformationFlattenConditionalBranchTest,
      LoadFromBufferBlockDecoratedStruct) {
   std::string shader = R"(

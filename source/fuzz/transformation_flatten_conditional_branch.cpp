@@ -145,15 +145,7 @@ void TransformationFlattenConditionalBranch::Apply(
         current_block->terminator()->GetSingleWordInOperand(0);
   }
 
-  // Get the mapping from instructions to fresh ids.
-  auto insts_to_info = GetInstructionsToWrapperInfo(ir_context);
-
   auto branch_instruction = header_block->terminator();
-
-  // Get a reference to the last block in the first branch that will be laid out
-  // (this depends on |message_.true_branch_first|). The last block is the block
-  // in the branch just before flow converges (it might not exist).
-  opt::BasicBlock* last_block_first_branch = nullptr;
 
   // branch = 1 corresponds to the true branch, branch = 2 corresponds to the
   // false branch. If the true branch is to be laid out first, we need to visit
@@ -165,6 +157,68 @@ void TransformationFlattenConditionalBranch::Apply(
     // laid out after the false branch.
     branches = {1, 2};
   }
+
+  // Get the ids of the starting blocks of the first and last branches to be
+  // laid out. The first branch is the true branch iff
+  // |message_.true_branch_first| is true.
+  uint32_t first_block_first_branch_id =
+      branch_instruction->GetSingleWordInOperand(branches[1]);
+  uint32_t first_block_last_branch_id =
+      branch_instruction->GetSingleWordInOperand(branches[0]);
+
+  // If the OpBranchConditional instruction in the header branches to the same
+  // block for both values of the condition, this is the convergence block (the
+  // flow does not actually diverge) and the OpPhi instructions in it are still
+  // valid, so we do not need to make any changes.
+  if (first_block_first_branch_id != first_block_last_branch_id) {
+    // Replace all of the current OpPhi instructions in the convergence block
+    // with OpSelect.
+    ir_context->get_instr_block(convergence_block_id)
+        ->ForEachPhiInst([branch_instruction, header_block,
+                          ir_context](opt::Instruction* phi_inst) {
+          assert(phi_inst->NumInOperands() == 4 &&
+                 "We are going to replace an OpPhi with an OpSelect.  This "
+                 "only makes sense if the block has two distinct "
+                 "predecessors.");
+          // The OpPhi takes values from two distinct predecessors.  One
+          // predecessor is associated with the "true" path of the conditional
+          // we are flattening, the other with the "false" path, but these
+          // predecessors can appear in either order as operands to the OpPhi
+          // instruction.
+
+          std::vector<opt::Operand> operands;
+          operands.emplace_back(branch_instruction->GetInOperand(0));
+
+          uint32_t branch_instruction_true_block_id =
+              branch_instruction->GetSingleWordInOperand(1);
+
+          if (ir_context->GetDominatorAnalysis(header_block->GetParent())
+                  ->Dominates(branch_instruction_true_block_id,
+                              phi_inst->GetSingleWordInOperand(1))) {
+            // The "true" branch is handled first in the OpPhi's operands; we
+            // thus provide operands to OpSelect in the same order that they
+            // appear in the OpPhi.
+            operands.emplace_back(phi_inst->GetInOperand(0));
+            operands.emplace_back(phi_inst->GetInOperand(2));
+          } else {
+            // The "false" branch is handled first in the OpPhi's operands; we
+            // thus provide operands to OpSelect in reverse of the order that
+            // they appear in the OpPhi.
+            operands.emplace_back(phi_inst->GetInOperand(2));
+            operands.emplace_back(phi_inst->GetInOperand(0));
+          }
+          phi_inst->SetOpcode(SpvOpSelect);
+          phi_inst->SetInOperands(std::move(operands));
+        });
+  }
+
+  // Get the mapping from instructions to fresh ids.
+  auto insts_to_info = GetInstructionsToWrapperInfo(ir_context);
+
+  // Get a reference to the last block in the first branch that will be laid out
+  // (this depends on |message_.true_branch_first|). The last block is the block
+  // in the branch just before flow converges (it might not exist).
+  opt::BasicBlock* last_block_first_branch = nullptr;
 
   // Keep track of blocks and ids for which we should later add dead block and
   // irrelevant id facts.  We wait until we have finished applying the
@@ -271,21 +325,6 @@ void TransformationFlattenConditionalBranch::Apply(
     }
   }
 
-  // Get the condition operand and the ids of the starting blocks of the first
-  // and last branches to be laid out. The first branch is the true branch iff
-  // |message_.true_branch_first| is true.
-  auto condition_operand = branch_instruction->GetInOperand(0);
-  uint32_t first_block_first_branch_id =
-      branch_instruction->GetSingleWordInOperand(branches[1]);
-  uint32_t first_block_last_branch_id =
-      branch_instruction->GetSingleWordInOperand(branches[0]);
-
-  // Record the block that will be reached if the branch condition is true.
-  // This information is needed later to determine how to rewrite OpPhi
-  // instructions as OpSelect instructions at the branch's convergence point.
-  uint32_t branch_instruction_true_block_id =
-      branch_instruction->GetSingleWordInOperand(1);
-
   // The current header should unconditionally branch to the starting block in
   // the first branch to be laid out, if such a branch exists (i.e. the header
   // does not branch directly to the convergence block), and to the starting
@@ -328,51 +367,6 @@ void TransformationFlattenConditionalBranch::Apply(
                 phi_inst->SetInOperand(1, {last_block_first_branch->id()});
               });
     }
-  }
-
-  // If the OpBranchConditional instruction in the header branches to the same
-  // block for both values of the condition, this is the convergence block (the
-  // flow does not actually diverge) and the OpPhi instructions in it are still
-  // valid, so we do not need to make any changes.
-  if (first_block_first_branch_id != first_block_last_branch_id) {
-    // Replace all of the current OpPhi instructions in the convergence block
-    // with OpSelect.
-
-    ir_context->get_instr_block(convergence_block_id)
-        ->ForEachPhiInst([branch_instruction_true_block_id, &condition_operand,
-                          header_block,
-                          ir_context](opt::Instruction* phi_inst) {
-          assert(phi_inst->NumInOperands() == 4 &&
-                 "We are going to replace an OpPhi with an OpSelect.  This "
-                 "only makes sense if the block has two distinct "
-                 "predecessors.");
-          // The OpPhi takes values from two distinct predecessors.  One
-          // predecessor is associated with the "true" path of the conditional
-          // we are flattening, the other with the "false" path, but these
-          // predecessors can appear in either order as operands to the OpPhi
-          // instruction.
-
-          std::vector<opt::Operand> operands;
-          operands.emplace_back(condition_operand);
-
-          if (ir_context->GetDominatorAnalysis(header_block->GetParent())
-                  ->Dominates(branch_instruction_true_block_id,
-                              phi_inst->GetSingleWordInOperand(1))) {
-            // The "true" branch is handled first in the OpPhi's operands; we
-            // thus provide operands to OpSelect in the same order that they
-            // appear in the OpPhi.
-            operands.emplace_back(phi_inst->GetInOperand(0));
-            operands.emplace_back(phi_inst->GetInOperand(2));
-          } else {
-            // The "false" branch is handled first in the OpPhi's operands; we
-            // thus provide operands to OpSelect in reverse of the order that
-            // they appear in the OpPhi.
-            operands.emplace_back(phi_inst->GetInOperand(2));
-            operands.emplace_back(phi_inst->GetInOperand(0));
-          }
-          phi_inst->SetOpcode(SpvOpSelect);
-          phi_inst->SetInOperands(std::move(operands));
-        });
   }
 
   // Invalidate all analyses
