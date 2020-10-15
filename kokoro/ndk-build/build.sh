@@ -35,6 +35,11 @@ export ANDROID_NDK=/opt/android-ndk-r15c
 cd $SRC
 git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
 git clone --depth=1 https://github.com/google/googletest          external/googletest
+pushd
+cd external
+cd googletest
+git reset --hard f3dbe3ec44e0163c4659ec7cd541ca7af66632bc
+popd
 git clone --depth=1 https://github.com/google/effcee              external/effcee
 git clone --depth=1 https://github.com/google/re2                 external/re2
 
