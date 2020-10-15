@@ -32,7 +32,7 @@ export PATH=$PWD/clang+llvm-5.0.0-linux-x86_64-ubuntu14.04/bin:$PATH
 cd $SRC
 git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
 git clone https://github.com/google/googletest          external/googletest
-cd external && cd googletest && git reset --hard f3dbe3ec44e0163c4659ec7cd541ca7af66632bc && cd .. && cd ..
+cd external && cd googletest && git reset --hard 2cf1f99b97e5a50b5d9db3d5450a6b474e36b79b && cd .. && cd ..
 git clone --depth=1 https://github.com/google/effcee              external/effcee
 git clone --depth=1 https://github.com/google/re2                 external/re2
 curl -L http://llvm.org/svn/llvm-project/cfe/trunk/tools/clang-format/clang-format-diff.py -o utils/clang-format-diff.py;
