@@ -69,9 +69,7 @@ export PATH="$PWD:$PATH"
 cd $SRC
 git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
 git clone --depth=1 https://github.com/google/googletest          external/googletest
-pushd
-cd external
-cd googletest
+pushd external/googletest
 git reset --hard f3dbe3ec44e0163c4659ec7cd541ca7af66632bc
 popd
 git clone --depth=1 https://github.com/google/effcee              external/effcee
