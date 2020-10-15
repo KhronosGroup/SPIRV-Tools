@@ -31,8 +31,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingAnotherPassToPassLoop = {85,
 const std::pair<uint32_t, uint32_t> kChanceOfAddingAnotherStructField = {20,
                                                                          90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingArrayOrStructType = {20, 90};
-const std::pair<uint32_t, uint32_t> kChanceOfAddingBitInstructionSynonym = {20,
-                                                                            90};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingBitInstructionSynonym = {5,
+                                                                            20};
 const std::pair<uint32_t, uint32_t>
     kChanceOfAddingBothBranchesWhenReplacingOpSelect = {40, 60};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingCompositeInsert = {20, 50};
