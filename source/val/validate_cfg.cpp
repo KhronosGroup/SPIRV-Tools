@@ -122,7 +122,8 @@ spv_result_t ValidatePhi(ValidationState_t& _, const Instruction* inst) {
       // operands.
       if (observed_predecessors.count(inc_id) != 0) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
-        << "OpPhi references incoming basic block <id> " << _.getIdName(inc_id) << " multiple times.";
+               << "OpPhi references incoming basic block <id> "
+               << _.getIdName(inc_id) << " multiple times.";
       }
 
       // Note the fact that we have now observed this predecessor.

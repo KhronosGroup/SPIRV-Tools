@@ -4595,8 +4595,7 @@ TEST_F(ValidateCFG, PhiInstructionWithDuplicateIncomingEdges) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpPhi references incoming basic block <id> "));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("multiple times."));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("multiple times."));
 }
 
 }  // namespace
