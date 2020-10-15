@@ -545,7 +545,8 @@ void DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
                                    kDebugValueOperandLocalVariableIndex),
                                value_id, 0, index_id, insert_before);
     assert(added_dbg_value != nullptr);
-    added_dbg_value->UpdateDebugInfoFrom(is_function_param ? dbg_decl_or_val : scope_and_line);
+    added_dbg_value->UpdateDebugInfoFrom(is_function_param ? dbg_decl_or_val
+                                                           : scope_and_line);
     AnalyzeDebugInst(added_dbg_value);
   }
 }
