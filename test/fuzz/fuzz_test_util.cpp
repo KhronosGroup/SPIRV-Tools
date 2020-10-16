@@ -14,6 +14,8 @@
 
 #include "test/fuzz/fuzz_test_util.h"
 
+#include "gtest/gtest.h"
+
 #include <fstream>
 #include <iostream>
 
@@ -22,6 +24,29 @@
 
 namespace spvtools {
 namespace fuzz {
+
+const spvtools::MessageConsumer kConsoleMessageConsumer =
+    [](spv_message_level_t level, const char*, const spv_position_t& position,
+       const char* message) -> void {
+  switch (level) {
+    case SPV_MSG_FATAL:
+    case SPV_MSG_INTERNAL_ERROR:
+    case SPV_MSG_ERROR:
+      std::cerr << "error: line " << position.index << ": " << message
+                << std::endl;
+      break;
+    case SPV_MSG_WARNING:
+      std::cout << "warning: line " << position.index << ": " << message
+                << std::endl;
+      break;
+    case SPV_MSG_INFO:
+      std::cout << "info: line " << position.index << ": " << message
+                << std::endl;
+      break;
+    default:
+      break;
+  }
+};
 
 bool IsEqual(const spv_target_env env,
              const std::vector<uint32_t>& expected_binary,
@@ -80,42 +105,6 @@ bool IsEqual(const spv_target_env env, const std::vector<uint32_t>& binary_1,
   return IsEqual(env, binary_1, binary_2);
 }
 
-bool IsValid(spv_target_env env, const opt::IRContext* ir) {
-  MessageConsumer consumer = kConsoleMessageConsumer;
-
-  // First, run the validator.
-  std::vector<uint32_t> binary;
-  ir->module()->ToBinary(&binary, false);
-  SpirvTools t(env);
-  t.SetMessageConsumer(consumer);
-  if (!t.Validate(binary)) {
-    return false;
-  }
-
-  // Now check that every block in the module has the appropriate parent
-  // function.
-  for (auto& function : *ir->module()) {
-    for (auto& block : function) {
-      if (block.GetParent() == nullptr) {
-        std::stringstream ss;
-        ss << "Block " << block.id() << " has no parent; its parent should be "
-           << function.result_id() << ".";
-        consumer(SPV_MSG_INFO, nullptr, {}, ss.str().c_str());
-        return false;
-      }
-      if (block.GetParent() != &function) {
-        std::stringstream ss;
-        ss << "Block " << block.id() << " should have parent "
-           << function.result_id() << " but instead has parent "
-           << block.GetParent() << ".";
-        consumer(SPV_MSG_INFO, nullptr, {}, ss.str().c_str());
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
 std::string ToString(spv_target_env env, const opt::IRContext* ir) {
   std::vector<uint32_t> binary;
   ir->module()->ToBinary(&binary, false);
@@ -141,6 +130,15 @@ void DumpShader(const std::vector<uint32_t>& binary, const char* filename) {
   if (!write_file_succeeded) {
     std::cerr << "Failed to dump shader" << std::endl;
   }
+}
+
+void DumpTransformationsBinary(
+    const protobufs::TransformationSequence& transformations,
+    const char* filename) {
+  std::ofstream transformations_file;
+  transformations_file.open(filename, std::ios::out | std::ios::binary);
+  transformations.SerializeToOstream(&transformations_file);
+  transformations_file.close();
 }
 
 void DumpTransformationsJson(

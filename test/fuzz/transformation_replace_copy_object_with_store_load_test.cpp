@@ -14,6 +14,8 @@
 
 #include "source/fuzz/transformation_replace_copy_object_with_store_load.h"
 
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -81,7 +83,8 @@ TEST(TransformationReplaceCopyObjectWithStoreLoad, BasicScenarios) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Invalid: fresh_variable_id=10 is not fresh.
   auto transformation_invalid_1 = TransformationReplaceCopyObjectWithStoreLoad(
@@ -127,7 +130,8 @@ TEST(TransformationReplaceCopyObjectWithStoreLoad, BasicScenarios) {
                                                   transformation_context));
   ApplyAndCheckFreshIds(transformation_valid_1, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto transformation_valid_2 = TransformationReplaceCopyObjectWithStoreLoad(
       28, 32, SpvStorageClassPrivate, 15);
@@ -135,7 +139,8 @@ TEST(TransformationReplaceCopyObjectWithStoreLoad, BasicScenarios) {
                                                   transformation_context));
   ApplyAndCheckFreshIds(transformation_valid_2, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -232,7 +237,8 @@ TEST(TransformationReplaceCopyObjectWithStoreLoad, IrrelevantIdsAndDeadBlocks) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   transformation_context.GetFactManager()->AddFactBlockIsDead(15);
   transformation_context.GetFactManager()->AddFactIdIsIrrelevant(11);

@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_function.h"
+
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_message.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -39,7 +42,10 @@ std::vector<protobufs::Instruction> GetInstructionsForFunction(
   std::vector<protobufs::Instruction> result;
   const auto donor_context =
       BuildModule(env, consumer, donor, kFuzzAssembleOption);
-  assert(IsValid(env, donor_context.get()) && "The given donor must be valid.");
+  spvtools::ValidatorOptions validator_options;
+  assert(fuzzerutil::IsValidAndWellFormed(
+             donor_context.get(), validator_options, kConsoleMessageConsumer) &&
+         "The given donor must be valid.");
   for (auto& function : *donor_context->module()) {
     if (function.result_id() == function_id) {
       function.ForEachInst([&result](opt::Instruction* inst) {
@@ -142,9 +148,9 @@ TEST(TransformationAddFunctionTest, BasicTest) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   TransformationAddFunction transformation1(std::vector<protobufs::Instruction>(
@@ -220,7 +226,8 @@ TEST(TransformationAddFunctionTest, BasicTest) {
       transformation1.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation1, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_transformation1 = R"(
                OpCapability Shader
@@ -342,7 +349,8 @@ TEST(TransformationAddFunctionTest, BasicTest) {
       transformation2.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation2, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_transformation2 = R"(
                OpCapability Shader
@@ -491,9 +499,9 @@ TEST(TransformationAddFunctionTest, InapplicableTransformations) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // No instructions
@@ -629,11 +637,13 @@ TEST(TransformationAddFunctionTest, LoopLimiters) {
   instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
+  spvtools::ValidatorOptions validator_options;
+
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context1.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context1.get(), validator_options, kConsoleMessageConsumer));
 
-  spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context1(
       MakeUnique<FactManager>(context1.get()), validator_options);
   TransformationContext transformation_context2(
@@ -644,7 +654,8 @@ TEST(TransformationAddFunctionTest, LoopLimiters) {
       add_dead_function.IsApplicable(context1.get(), transformation_context1));
   ApplyAndCheckFreshIds(add_dead_function, context1.get(),
                         &transformation_context1);
-  ASSERT_TRUE(IsValid(env, context1.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context1.get(), validator_options, kConsoleMessageConsumer));
   // The added function should not be deemed livesafe.
   ASSERT_FALSE(
       transformation_context1.GetFactManager()->FunctionIsLivesafe(30));
@@ -730,7 +741,8 @@ TEST(TransformationAddFunctionTest, LoopLimiters) {
                                                  transformation_context2));
   ApplyAndCheckFreshIds(add_livesafe_function, context2.get(),
                         &transformation_context2);
-  ASSERT_TRUE(IsValid(env, context2.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context2.get(), validator_options, kConsoleMessageConsumer));
   // The added function should indeed be deemed livesafe.
   ASSERT_TRUE(transformation_context2.GetFactManager()->FunctionIsLivesafe(30));
   // All variables/parameters in the function should be deemed irrelevant,
@@ -851,11 +863,13 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInVoidFunction) {
   instructions.push_back(MakeInstructionMessage(SpvOpKill, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
+  spvtools::ValidatorOptions validator_options;
+
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context1.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context1.get(), validator_options, kConsoleMessageConsumer));
 
-  spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context1(
       MakeUnique<FactManager>(context1.get()), validator_options);
   TransformationContext transformation_context2(
@@ -866,7 +880,8 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInVoidFunction) {
       add_dead_function.IsApplicable(context1.get(), transformation_context1));
   ApplyAndCheckFreshIds(add_dead_function, context1.get(),
                         &transformation_context1);
-  ASSERT_TRUE(IsValid(env, context1.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context1.get(), validator_options, kConsoleMessageConsumer));
   // The added function should not be deemed livesafe.
   ASSERT_FALSE(
       transformation_context1.GetFactManager()->FunctionIsLivesafe(10));
@@ -913,7 +928,8 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInVoidFunction) {
                                                  transformation_context2));
   ApplyAndCheckFreshIds(add_livesafe_function, context2.get(),
                         &transformation_context2);
-  ASSERT_TRUE(IsValid(env, context2.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context2.get(), validator_options, kConsoleMessageConsumer));
   // The added function should indeed be deemed livesafe.
   ASSERT_TRUE(transformation_context2.GetFactManager()->FunctionIsLivesafe(10));
   // All variables/parameters in the function should be deemed irrelevant.
@@ -1006,11 +1022,13 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInNonVoidFunction) {
   instructions.push_back(MakeInstructionMessage(SpvOpKill, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
+  spvtools::ValidatorOptions validator_options;
+
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context1.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context1.get(), validator_options, kConsoleMessageConsumer));
 
-  spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context1(
       MakeUnique<FactManager>(context1.get()), validator_options);
   TransformationContext transformation_context2(
@@ -1021,7 +1039,8 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInNonVoidFunction) {
       add_dead_function.IsApplicable(context1.get(), transformation_context1));
   ApplyAndCheckFreshIds(add_dead_function, context1.get(),
                         &transformation_context1);
-  ASSERT_TRUE(IsValid(env, context1.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context1.get(), validator_options, kConsoleMessageConsumer));
   // The added function should not be deemed livesafe.
   ASSERT_FALSE(
       transformation_context1.GetFactManager()->FunctionIsLivesafe(10));
@@ -1069,7 +1088,8 @@ TEST(TransformationAddFunctionTest, KillAndUnreachableInNonVoidFunction) {
                                                  transformation_context2));
   ApplyAndCheckFreshIds(add_livesafe_function, context2.get(),
                         &transformation_context2);
-  ASSERT_TRUE(IsValid(env, context2.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context2.get(), validator_options, kConsoleMessageConsumer));
   // The added function should indeed be deemed livesafe.
   ASSERT_TRUE(transformation_context2.GetFactManager()->FunctionIsLivesafe(10));
   // All variables/parameters in the function should be deemed irrelevant.
@@ -1293,11 +1313,13 @@ TEST(TransformationAddFunctionTest, ClampedAccessChains) {
   instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
+  spvtools::ValidatorOptions validator_options;
+
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context1.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context1.get(), validator_options, kConsoleMessageConsumer));
 
-  spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context1(
       MakeUnique<FactManager>(context1.get()), validator_options);
   TransformationContext transformation_context2(
@@ -1308,7 +1330,8 @@ TEST(TransformationAddFunctionTest, ClampedAccessChains) {
       add_dead_function.IsApplicable(context1.get(), transformation_context1));
   ApplyAndCheckFreshIds(add_dead_function, context1.get(),
                         &transformation_context1);
-  ASSERT_TRUE(IsValid(env, context1.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context1.get(), validator_options, kConsoleMessageConsumer));
   // The function should not be deemed livesafe
   ASSERT_FALSE(
       transformation_context1.GetFactManager()->FunctionIsLivesafe(12));
@@ -1449,7 +1472,8 @@ TEST(TransformationAddFunctionTest, ClampedAccessChains) {
                                                  transformation_context2));
   ApplyAndCheckFreshIds(add_livesafe_function, context2.get(),
                         &transformation_context2);
-  ASSERT_TRUE(IsValid(env, context2.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context2.get(), validator_options, kConsoleMessageConsumer));
   // The function should be deemed livesafe
   ASSERT_TRUE(transformation_context2.GetFactManager()->FunctionIsLivesafe(12));
   // All variables/parameters in the function should be deemed irrelevant.
@@ -1620,11 +1644,13 @@ TEST(TransformationAddFunctionTest, LivesafeCanCallLivesafe) {
   instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
+  spvtools::ValidatorOptions validator_options;
+
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context1.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context1.get(), validator_options, kConsoleMessageConsumer));
 
-  spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context1(
       MakeUnique<FactManager>(context1.get()), validator_options);
   TransformationContext transformation_context2(
@@ -1638,7 +1664,8 @@ TEST(TransformationAddFunctionTest, LivesafeCanCallLivesafe) {
       add_dead_function.IsApplicable(context1.get(), transformation_context1));
   ApplyAndCheckFreshIds(add_dead_function, context1.get(),
                         &transformation_context1);
-  ASSERT_TRUE(IsValid(env, context1.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context1.get(), validator_options, kConsoleMessageConsumer));
   // The function should not be deemed livesafe
   ASSERT_FALSE(transformation_context1.GetFactManager()->FunctionIsLivesafe(8));
   // All variables/parameters in the function should be deemed irrelevant.
@@ -1676,7 +1703,8 @@ TEST(TransformationAddFunctionTest, LivesafeCanCallLivesafe) {
                                                  transformation_context2));
   ApplyAndCheckFreshIds(add_livesafe_function, context2.get(),
                         &transformation_context2);
-  ASSERT_TRUE(IsValid(env, context2.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context2.get(), validator_options, kConsoleMessageConsumer));
   // The function should be deemed livesafe
   ASSERT_TRUE(transformation_context2.GetFactManager()->FunctionIsLivesafe(8));
   // All variables/parameters in the function should be deemed irrelevant.
@@ -1720,11 +1748,13 @@ TEST(TransformationAddFunctionTest, LivesafeOnlyCallsLivesafe) {
   instructions.push_back(MakeInstructionMessage(SpvOpReturn, 0, 0, {}));
   instructions.push_back(MakeInstructionMessage(SpvOpFunctionEnd, 0, 0, {}));
 
+  spvtools::ValidatorOptions validator_options;
+
   const auto context1 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   const auto context2 = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context1.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context1.get(), validator_options, kConsoleMessageConsumer));
 
-  spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context1(
       MakeUnique<FactManager>(context1.get()), validator_options);
   TransformationContext transformation_context2(
@@ -1735,7 +1765,8 @@ TEST(TransformationAddFunctionTest, LivesafeOnlyCallsLivesafe) {
       add_dead_function.IsApplicable(context1.get(), transformation_context1));
   ApplyAndCheckFreshIds(add_dead_function, context1.get(),
                         &transformation_context1);
-  ASSERT_TRUE(IsValid(env, context1.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context1.get(), validator_options, kConsoleMessageConsumer));
   // The function should not be deemed livesafe
   ASSERT_FALSE(transformation_context1.GetFactManager()->FunctionIsLivesafe(8));
   // All variables/parameters in the function should be deemed irrelevant.
@@ -1851,9 +1882,9 @@ TEST(TransformationAddFunctionTest,
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %6 in
@@ -1873,7 +1904,8 @@ TEST(TransformationAddFunctionTest,
                                                  transformation_context));
   ApplyAndCheckFreshIds(add_livesafe_function, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   std::string expected = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -2007,9 +2039,9 @@ TEST(TransformationAddFunctionTest,
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %6 in
@@ -2029,7 +2061,8 @@ TEST(TransformationAddFunctionTest,
                                                  transformation_context));
   ApplyAndCheckFreshIds(add_livesafe_function, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   std::string expected = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -2161,9 +2194,9 @@ TEST(TransformationAddFunctionTest, LoopLimitersHeaderIsBackEdgeBlock) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %6 in
@@ -2183,7 +2216,8 @@ TEST(TransformationAddFunctionTest, LoopLimitersHeaderIsBackEdgeBlock) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(add_livesafe_function, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   std::string expected = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -2307,9 +2341,9 @@ TEST(TransformationAddFunctionTest, InfiniteLoop) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %6 in
@@ -2419,9 +2453,9 @@ TEST(TransformationAddFunctionTest, UnreachableContinueConstruct) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %6 in
@@ -2441,7 +2475,8 @@ TEST(TransformationAddFunctionTest, UnreachableContinueConstruct) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(add_livesafe_function, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   std::string expected = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -2583,9 +2618,9 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi1) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %8 in
@@ -2616,7 +2651,8 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi1) {
       with_op_phi_data.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(with_op_phi_data, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   std::string expected = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -2774,9 +2810,9 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi2) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %8 in
@@ -2796,7 +2832,8 @@ TEST(TransformationAddFunctionTest, LoopLimitersAndOpPhi2) {
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   std::string expected = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -2922,9 +2959,9 @@ TEST(TransformationAddFunctionTest, StaticallyOutOfBoundsArrayAccess) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Make a sequence of instruction messages corresponding to function %6 in
@@ -2938,7 +2975,8 @@ TEST(TransformationAddFunctionTest, StaticallyOutOfBoundsArrayAccess) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(add_livesafe_function, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   std::string expected = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"

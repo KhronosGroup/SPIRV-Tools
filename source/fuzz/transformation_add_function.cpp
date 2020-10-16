@@ -135,7 +135,8 @@ bool TransformationAddFunction::IsApplicable(
   // Check whether the cloned module is still valid after adding the function.
   // If it is not, the transformation is not applicable.
   if (!fuzzerutil::IsValid(cloned_module.get(),
-                           transformation_context.GetValidatorOptions())) {
+                           transformation_context.GetValidatorOptions(),
+                           fuzzerutil::kSilentMessageConsumer)) {
     return false;
   }
 
@@ -151,7 +152,8 @@ bool TransformationAddFunction::IsApplicable(
     // It is simpler to rely on the validator to guard against this than to
     // consider all scenarios when making a function livesafe.
     if (!fuzzerutil::IsValid(cloned_module.get(),
-                             transformation_context.GetValidatorOptions())) {
+                             transformation_context.GetValidatorOptions(),
+                             fuzzerutil::kSilentMessageConsumer)) {
       return false;
     }
   }

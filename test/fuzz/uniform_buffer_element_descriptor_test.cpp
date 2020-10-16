@@ -14,7 +14,7 @@
 
 #include "source/fuzz/uniform_buffer_element_descriptor.h"
 
-#include "test/fuzz/fuzz_test_util.h"
+#include "gtest/gtest.h"
 
 namespace spvtools {
 namespace fuzz {

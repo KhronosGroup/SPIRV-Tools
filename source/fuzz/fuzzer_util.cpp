@@ -43,6 +43,10 @@ uint32_t MaybeGetOpConstant(opt::IRContext* ir_context,
 
 }  // namespace
 
+const spvtools::MessageConsumer kSilentMessageConsumer =
+    [](spv_message_level_t, const char*, const spv_position_t&,
+       const char*) -> void {};
+
 bool IsFreshId(opt::IRContext* context, uint32_t id) {
   return !context->get_def_use_mgr()->GetDef(id);
 }
@@ -400,11 +404,62 @@ uint32_t GetBoundForCompositeIndex(const opt::Instruction& composite_type_inst,
   }
 }
 
-bool IsValid(opt::IRContext* context, spv_validator_options validator_options) {
+bool IsValid(const opt::IRContext* context,
+             spv_validator_options validator_options,
+             MessageConsumer consumer) {
   std::vector<uint32_t> binary;
   context->module()->ToBinary(&binary, false);
   SpirvTools tools(context->grammar().target_env());
+  tools.SetMessageConsumer(consumer);
   return tools.Validate(binary.data(), binary.size(), validator_options);
+}
+
+bool IsValidAndWellFormed(const opt::IRContext* ir_context,
+                          spv_validator_options validator_options,
+                          MessageConsumer consumer) {
+  if (!IsValid(ir_context, validator_options, consumer)) {
+    consumer(SPV_MSG_INFO, nullptr, {},
+             "Module is invalid (set a breakpoint to inspect).");
+    return false;
+  }
+  // Check that all blocks in the module have appropriate parent functions.
+  for (auto& function : *ir_context->module()) {
+    for (auto& block : function) {
+      if (block.GetParent() == nullptr) {
+        std::stringstream ss;
+        ss << "Block " << block.id() << " has no parent; its parent should be "
+           << function.result_id() << " (set a breakpoint to inspect).";
+        consumer(SPV_MSG_INFO, nullptr, {}, ss.str().c_str());
+        return false;
+      }
+      if (block.GetParent() != &function) {
+        std::stringstream ss;
+        ss << "Block " << block.id() << " should have parent "
+           << function.result_id() << " but instead has parent "
+           << block.GetParent() << " (set a breakpoint to inspect).";
+        consumer(SPV_MSG_INFO, nullptr, {}, ss.str().c_str());
+        return false;
+      }
+    }
+  }
+
+  // Check that all instructions have distinct unique ids.  We map each unique
+  // id to the first instruction it is observed to be associated with so that
+  // if we encounter a duplicate we have access to the previous instruction -
+  // this is a useful aid to debugging.
+  std::unordered_map<uint32_t, opt::Instruction*> unique_ids;
+  bool found_duplicate = false;
+  ir_context->module()->ForEachInst([&consumer, &found_duplicate,
+                                     &unique_ids](opt::Instruction* inst) {
+    if (unique_ids.count(inst->unique_id()) != 0) {
+      consumer(SPV_MSG_INFO, nullptr, {},
+               "Two instructions have the same unique id (set a breakpoint to "
+               "inspect).");
+      found_duplicate = true;
+    }
+    unique_ids.insert({inst->unique_id(), inst});
+  });
+  return !found_duplicate;
 }
 
 std::unique_ptr<opt::IRContext> CloneIRContext(opt::IRContext* context) {

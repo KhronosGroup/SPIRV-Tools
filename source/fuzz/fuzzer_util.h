@@ -15,6 +15,7 @@
 #ifndef SOURCE_FUZZ_FUZZER_UTIL_H_
 #define SOURCE_FUZZ_FUZZER_UTIL_H_
 
+#include <iostream>
 #include <map>
 #include <vector>
 
@@ -23,12 +24,16 @@
 #include "source/opt/basic_block.h"
 #include "source/opt/instruction.h"
 #include "source/opt/ir_context.h"
+#include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
 namespace fuzz {
 
 // Provides types and global utility methods for use by the fuzzer
 namespace fuzzerutil {
+
+// A silent message consumer.
+extern const spvtools::MessageConsumer kSilentMessageConsumer;
 
 // Function type that produces a SPIR-V module.
 using ModuleSupplier = std::function<std::unique_ptr<opt::IRContext>()>;
@@ -150,8 +155,18 @@ uint32_t GetBoundForCompositeIndex(const opt::Instruction& composite_type_inst,
                                    opt::IRContext* ir_context);
 
 // Returns true if and only if |context| is valid, according to the validator
-// instantiated with |validator_options|.
-bool IsValid(opt::IRContext* context, spv_validator_options validator_options);
+// instantiated with |validator_options|.  |consumer| is used for error
+// reporting.
+bool IsValid(const opt::IRContext* context,
+             spv_validator_options validator_options, MessageConsumer consumer);
+
+// Returns true if and only if IsValid(|context|, |validator_options|) holds,
+// and furthermore every basic block in |context| has its enclosing function as
+// its parent, and every instruction in |context| has a distinct unique id.
+// |consumer| is used for error reporting.
+bool IsValidAndWellFormed(const opt::IRContext* context,
+                          spv_validator_options validator_options,
+                          MessageConsumer consumer);
 
 // Returns a clone of |context|, by writing |context| to a binary and then
 // parsing it again.
