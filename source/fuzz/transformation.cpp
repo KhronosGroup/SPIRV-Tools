@@ -64,6 +64,7 @@
 #include "source/fuzz/transformation_load.h"
 #include "source/fuzz/transformation_make_vector_operation_dynamic.h"
 #include "source/fuzz/transformation_merge_blocks.h"
+#include "source/fuzz/transformation_merge_function_returns.h"
 #include "source/fuzz/transformation_move_block_down.h"
 #include "source/fuzz/transformation_move_instruction_down.h"
 #include "source/fuzz/transformation_mutate_pointer.h"
@@ -245,6 +246,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
           message.make_vector_operation_dynamic());
     case protobufs::Transformation::TransformationCase::kMergeBlocks:
       return MakeUnique<TransformationMergeBlocks>(message.merge_blocks());
+    case protobufs::Transformation::TransformationCase::kMergeFunctionReturns:
+      return MakeUnique<TransformationMergeFunctionReturns>(
+          message.merge_function_returns());
     case protobufs::Transformation::TransformationCase::kMoveBlockDown:
       return MakeUnique<TransformationMoveBlockDown>(message.move_block_down());
     case protobufs::Transformation::TransformationCase::kMoveInstructionDown:

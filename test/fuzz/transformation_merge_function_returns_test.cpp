@@ -25,7 +25,7 @@ namespace {
 protobufs::ReturnMergingInfo MakeReturnMergingInfo(
     uint32_t merge_block_id, uint32_t is_returning_id,
     uint32_t maybe_return_val_id,
-    std::map<uint32_t, uint32_t> opphi_to_suitable_id) {
+    const std::map<uint32_t, uint32_t>& opphi_to_suitable_id) {
   protobufs::ReturnMergingInfo result;
   result.set_merge_block_id(merge_block_id);
   result.set_is_returning_id(is_returning_id);
@@ -1779,6 +1779,84 @@ TEST(TransformationMergeFunctionReturnsTest, RespectDominanceRules4) {
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
+
+TEST(TransformationMergeFunctionReturnsTest, OpPhiAfterFirstBlock) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpConstantFalse %5
+          %2 = OpFunction %3 None %4
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+         %10 = OpPhi %5 %6 %8
+               OpSelectionMerge %11 None
+               OpBranchConditional %6 %12 %11
+         %12 = OpLabel
+               OpReturn
+         %11 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  spvtools::ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  auto transformation =
+      TransformationMergeFunctionReturns(2, 100, 101, 0, 0, {});
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %5 = OpTypeBool
+          %6 = OpConstantTrue %5
+          %7 = OpConstantFalse %5
+          %2 = OpFunction %3 None %4
+          %8 = OpLabel
+               OpBranch %100
+        %100 = OpLabel
+               OpLoopMerge %101 %100 None
+               OpBranchConditional %6 %9 %100
+          %9 = OpLabel
+         %10 = OpPhi %5 %6 %100
+               OpSelectionMerge %11 None
+               OpBranchConditional %6 %12 %11
+         %12 = OpLabel
+               OpBranch %101
+         %11 = OpLabel
+               OpBranch %101
+        %101 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
