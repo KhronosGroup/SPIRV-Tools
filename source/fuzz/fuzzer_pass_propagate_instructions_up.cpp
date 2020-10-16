@@ -52,7 +52,6 @@ void FuzzerPassPropagateInstructionsUp::Apply() {
             fresh_id = GetFuzzerContext()->GetFreshId();
           }
         }
-
         ApplyTransformation(
             TransformationPropagateInstructionUp(block.id(), fresh_ids));
       }

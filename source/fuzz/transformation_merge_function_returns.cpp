@@ -284,7 +284,7 @@ void TransformationMergeFunctionReturns::Apply(
     // Replace the return instruction with an unconditional branch.
     ret_block->terminator()->SetOpcode(SpvOpBranch);
     ret_block->terminator()->SetInOperands(
-        {{SPV_OPERAND_TYPE_RESULT_ID, {merge_block_id}}});
+        {{SPV_OPERAND_TYPE_ID, {merge_block_id}}});
   }
 
   // Get a list of all the relevant merge blocks.
@@ -345,32 +345,33 @@ void TransformationMergeFunctionReturns::Apply(
     auto merge_block = ir_context->get_instr_block(merge_block_id);
 
     // Adjust the existing OpPhi instructions.
-    merge_block->ForEachPhiInst([&preds, &returning_preds, &phi_to_id,
-                                 &types_to_available_ids](
-                                    opt::Instruction* inst) {
-      // We need a placeholder value id. If |phi_to_id| contains a mapping
-      // for this instruction, we use the given id, otherwise a suitable id
-      // for the instruction's type from |types_to_available_ids|.
-      uint32_t placeholder_val_id =
-          phi_to_id.count(inst->result_id())
-              ? phi_to_id[inst->result_id()]
-              : types_to_available_ids[inst->type_id()];
-      assert(placeholder_val_id &&
-             "We should always be able to find a suitable if the "
-             "transformation is applicable.");
+    merge_block->ForEachPhiInst(
+        [&preds, &returning_preds, &phi_to_id,
+         &types_to_available_ids](opt::Instruction* inst) {
+          // We need a placeholder value id. If |phi_to_id| contains a mapping
+          // for this instruction, we use the given id, otherwise a suitable id
+          // for the instruction's type from |types_to_available_ids|.
+          uint32_t placeholder_val_id =
+              phi_to_id.count(inst->result_id())
+                  ? phi_to_id[inst->result_id()]
+                  : types_to_available_ids[inst->type_id()];
+          assert(placeholder_val_id &&
+                 "We should always be able to find a suitable if the "
+                 "transformation is applicable.");
 
-      // Add a pair of operands (placeholder id, new predecessor) for each
-      // new predecessor of the merge block.
-      for (const auto& entry : returning_preds) {
-        // A returning predecessor may already be a predecessor of the
-        // block. In that case, we should not add new operands.
-        // Each entry is in the form (predecessor, {return val, is returning}).
-        if (!preds.count(entry.first)) {
-          inst->AddOperand({SPV_OPERAND_TYPE_RESULT_ID, {placeholder_val_id}});
-          inst->AddOperand({SPV_OPERAND_TYPE_RESULT_ID, {entry.first}});
-        }
-      }
-    });
+          // Add a pair of operands (placeholder id, new predecessor) for each
+          // new predecessor of the merge block.
+          for (const auto& entry : returning_preds) {
+            // A returning predecessor may already be a predecessor of the
+            // block. In that case, we should not add new operands.
+            // Each entry is in the form (predecessor, {return val, is
+            // returning}).
+            if (!preds.count(entry.first)) {
+              inst->AddOperand({SPV_OPERAND_TYPE_ID, {placeholder_val_id}});
+              inst->AddOperand({SPV_OPERAND_TYPE_ID, {entry.first}});
+            }
+          }
+        });
 
     // If the function is not void, add a new OpPhi instructions to collect the
     // return value from the returning predecessors.
@@ -383,9 +384,9 @@ void TransformationMergeFunctionReturns::Apply(
         // Each entry is in the form (predecessor, {return value,
         // is returning}).
         operand_list.emplace_back(
-            opt::Operand{SPV_OPERAND_TYPE_RESULT_ID, {entry.second.first}});
+            opt::Operand{SPV_OPERAND_TYPE_ID, {entry.second.first}});
         operand_list.emplace_back(
-            opt::Operand{SPV_OPERAND_TYPE_RESULT_ID, {entry.first}});
+            opt::Operand{SPV_OPERAND_TYPE_ID, {entry.first}});
       }
 
       // Add two operands for each original predecessor from which the function
@@ -398,9 +399,9 @@ void TransformationMergeFunctionReturns::Apply(
         }
 
         operand_list.emplace_back(
-            opt::Operand{SPV_OPERAND_TYPE_RESULT_ID, {returnable_val_id}});
+            opt::Operand{SPV_OPERAND_TYPE_ID, {returnable_val_id}});
         operand_list.emplace_back(
-            opt::Operand{SPV_OPERAND_TYPE_RESULT_ID, {original_pred}});
+            opt::Operand{SPV_OPERAND_TYPE_ID, {original_pred}});
       }
 
       // Insert the instruction.
@@ -421,9 +422,9 @@ void TransformationMergeFunctionReturns::Apply(
         // Each entry is in the form (predecessor, {return value,
         // is returning}).
         operand_list.emplace_back(
-            opt::Operand{SPV_OPERAND_TYPE_RESULT_ID, {entry.second.second}});
+            opt::Operand{SPV_OPERAND_TYPE_ID, {entry.second.second}});
         operand_list.emplace_back(
-            opt::Operand{SPV_OPERAND_TYPE_RESULT_ID, {entry.first}});
+            opt::Operand{SPV_OPERAND_TYPE_ID, {entry.first}});
       }
 
       // Add two operands for each original predecessor from which the function
@@ -436,9 +437,9 @@ void TransformationMergeFunctionReturns::Apply(
         }
 
         operand_list.emplace_back(
-            opt::Operand{SPV_OPERAND_TYPE_RESULT_ID, {constant_false}});
+            opt::Operand{SPV_OPERAND_TYPE_ID, {constant_false}});
         operand_list.emplace_back(
-            opt::Operand{SPV_OPERAND_TYPE_RESULT_ID, {original_pred}});
+            opt::Operand{SPV_OPERAND_TYPE_ID, {original_pred}});
       }
 
       // Insert the instruction.
@@ -480,9 +481,9 @@ void TransformationMergeFunctionReturns::Apply(
     // true, to |original_succ| otherwise.
     merge_block->terminator()->SetOpcode(SpvOpBranchConditional);
     merge_block->terminator()->SetInOperands(
-        {{SPV_OPERAND_TYPE_RESULT_ID, {is_returning_id}},
-         {SPV_OPERAND_TYPE_RESULT_ID, {enclosing_merge}},
-         {SPV_OPERAND_TYPE_RESULT_ID, {original_succ}}});
+        {{SPV_OPERAND_TYPE_ID, {is_returning_id}},
+         {SPV_OPERAND_TYPE_ID, {enclosing_merge}},
+         {SPV_OPERAND_TYPE_ID, {original_succ}}});
   }
 
   assert(function->entry()->terminator()->opcode() == SpvOpBranch &&
@@ -503,8 +504,8 @@ void TransformationMergeFunctionReturns::Apply(
   outer_loop_header->AddInstruction(MakeUnique<opt::Instruction>(
       ir_context, SpvOpLoopMerge, 0, 0,
       opt::Instruction::OperandList{
-          {SPV_OPERAND_TYPE_RESULT_ID, {message_.outer_return_id()}},
-          {SPV_OPERAND_TYPE_RESULT_ID, {message_.outer_header_id()}},
+          {SPV_OPERAND_TYPE_ID, {message_.outer_return_id()}},
+          {SPV_OPERAND_TYPE_ID, {message_.outer_header_id()}},
           {SPV_OPERAND_TYPE_LOOP_CONTROL, {SpvLoopControlMaskNone}}}));
 
   // Add conditional branch:
@@ -514,8 +515,8 @@ void TransformationMergeFunctionReturns::Apply(
   outer_loop_header->AddInstruction(MakeUnique<opt::Instruction>(
       ir_context, SpvOpBranchConditional, 0, 0,
       opt::Instruction::OperandList{
-          {SPV_OPERAND_TYPE_RESULT_ID, {constant_true}},
-          {SPV_OPERAND_TYPE_RESULT_ID, {block_after_entry}},
+          {SPV_OPERAND_TYPE_ID, {constant_true}},
+          {SPV_OPERAND_TYPE_ID, {block_after_entry}},
           {SPV_OPERAND_TYPE_LOOP_CONTROL, {message_.outer_header_id()}}}));
 
   // Insert the header right after the entry block.
@@ -524,7 +525,18 @@ void TransformationMergeFunctionReturns::Apply(
 
   // Update the branching instruction of the entry block.
   function->entry()->terminator()->SetInOperands(
-      {{SPV_OPERAND_TYPE_RESULT_ID, {message_.outer_header_id()}}});
+      {{SPV_OPERAND_TYPE_ID, {message_.outer_header_id()}}});
+
+  // If the entry block is referenced in an OpPhi instruction, the header for
+  // the new loop should be referenced instead.
+  ir_context->get_def_use_mgr()->ForEachUse(
+      function->entry()->id(),
+      [this](opt::Instruction* use_instruction, uint32_t use_operand_index) {
+        if (use_instruction->opcode() == SpvOpPhi) {
+          use_instruction->SetOperand(use_operand_index,
+                                      {message_.outer_header_id()});
+        }
+      });
 
   // Create the merge block for the loop (and return block for the function).
   auto outer_return_block =
@@ -543,9 +555,9 @@ void TransformationMergeFunctionReturns::Apply(
     for (auto entry : outer_merge_predecessors) {
       // Each entry is in the form (predecessor, return value).
       operand_list.emplace_back(
-          opt::Operand{SPV_OPERAND_TYPE_RESULT_ID, {entry.second}});
+          opt::Operand{SPV_OPERAND_TYPE_ID, {entry.second}});
       operand_list.emplace_back(
-          opt::Operand{SPV_OPERAND_TYPE_RESULT_ID, {entry.first}});
+          opt::Operand{SPV_OPERAND_TYPE_ID, {entry.first}});
     }
 
     // Insert the OpPhi instruction.
@@ -559,7 +571,7 @@ void TransformationMergeFunctionReturns::Apply(
     outer_return_block->AddInstruction(MakeUnique<opt::Instruction>(
         ir_context, SpvOpReturnValue, 0, 0,
         opt::Instruction::OperandList{
-            {SPV_OPERAND_TYPE_RESULT_ID, {message_.return_val_id()}}}));
+            {SPV_OPERAND_TYPE_ID, {message_.return_val_id()}}}));
   } else {
     // Insert an OpReturn instruction (the function is void).
     outer_return_block->AddInstruction(MakeUnique<opt::Instruction>(
@@ -598,7 +610,9 @@ std::unordered_set<uint32_t> TransformationMergeFunctionReturns::GetFreshIds()
 
 protobufs::Transformation TransformationMergeFunctionReturns::ToMessage()
     const {
-  return protobufs::Transformation();
+  protobufs::Transformation result;
+  *result.mutable_merge_function_returns() = message_;
+  return result;
 }
 
 std::map<uint32_t, protobufs::ReturnMergingInfo>

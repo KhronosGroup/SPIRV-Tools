@@ -581,10 +581,18 @@ void DataSynonymAndIdEquationFacts::ComputeClosureOfFacts(
               synonymous_.IsEquivalent(dd1_prefix, dd2_prefix)) {
             continue;
           }
-
+          opt::Instruction* dd1_object =
+              ir_context_->get_def_use_mgr()->GetDef(dd1->object());
+          opt::Instruction* dd2_object =
+              ir_context_->get_def_use_mgr()->GetDef(dd2->object());
+          if (dd1_object == nullptr || dd2_object == nullptr) {
+            // The objects are not both available in the module, so we cannot
+            // investigate the types of the associated data descriptors; we need
+            // to move on.
+            continue;
+          }
           // Get the type of obj_1
-          auto dd1_root_type_id =
-              ir_context_->get_def_use_mgr()->GetDef(dd1->object())->type_id();
+          auto dd1_root_type_id = dd1_object->type_id();
           // Use this type, together with a_1, ..., a_m, to get the type of
           // obj_1[a_1, ..., a_m].
           auto dd1_prefix_type = fuzzerutil::WalkCompositeTypeIndices(
@@ -592,8 +600,7 @@ void DataSynonymAndIdEquationFacts::ComputeClosureOfFacts(
 
           // Similarly, get the type of obj_2 and use it to get the type of
           // obj_2[b_1, ..., b_n].
-          auto dd2_root_type_id =
-              ir_context_->get_def_use_mgr()->GetDef(dd2->object())->type_id();
+          auto dd2_root_type_id = dd2_object->type_id();
           auto dd2_prefix_type = fuzzerutil::WalkCompositeTypeIndices(
               ir_context_, dd2_root_type_id, dd2_prefix.index());
 

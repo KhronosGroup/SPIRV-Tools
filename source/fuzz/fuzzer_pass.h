@@ -71,8 +71,8 @@ class FuzzerPass {
           instruction_is_relevant) const;
 
   // A helper method that iterates through each instruction in each reachable
-  // block, at all times tracking an instruction descriptor that allows the
-  // latest instruction to be located even if it has no result id.
+  // block of |function|, at all times tracking an instruction descriptor that
+  // allows the latest instruction to be located even if it has no result id.
   //
   // The code to manipulate the instruction descriptor is a bit fiddly.  The
   // point of this method is to avoiding having to duplicate it in multiple
@@ -87,6 +87,17 @@ class FuzzerPass {
   // whether to try to apply some transformation, and then - if selected - to
   // attempt to apply it.
   void ForEachInstructionWithInstructionDescriptor(
+      opt::Function* function,
+      std::function<
+          void(opt::BasicBlock* block, opt::BasicBlock::iterator inst_it,
+               const protobufs::InstructionDescriptor& instruction_descriptor)>
+          action);
+
+  // Applies the above overload of ForEachInstructionWithInstructionDescriptor
+  // to every function in the module, so that |action| is applied to an
+  // |instruction_descriptor| for every instruction, |inst_it|, of every |block|
+  // in every |function|.
+  void ForEachInstructionWithInstructionDescriptor(
       std::function<
           void(opt::Function* function, opt::BasicBlock* block,
                opt::BasicBlock::iterator inst_it,
@@ -100,7 +111,12 @@ class FuzzerPass {
                                        *GetTransformationContext()) &&
            "Transformation should be applicable by construction.");
     transformation.Apply(GetIRContext(), GetTransformationContext());
-    *GetTransformations()->add_transformation() = transformation.ToMessage();
+    protobufs::Transformation transformation_message =
+        transformation.ToMessage();
+    assert(transformation_message.transformation_case() !=
+               protobufs::Transformation::TRANSFORMATION_NOT_SET &&
+           "Bad transformation.");
+    *GetTransformations()->add_transformation() = transformation_message;
   }
 
   // A generic helper for applying a transformation only if it is applicable.
@@ -111,7 +127,12 @@ class FuzzerPass {
     if (transformation.IsApplicable(GetIRContext(),
                                     *GetTransformationContext())) {
       transformation.Apply(GetIRContext(), GetTransformationContext());
-      *GetTransformations()->add_transformation() = transformation.ToMessage();
+      protobufs::Transformation transformation_message =
+          transformation.ToMessage();
+      assert(transformation_message.transformation_case() !=
+                 protobufs::Transformation::TRANSFORMATION_NOT_SET &&
+             "Bad transformation.");
+      *GetTransformations()->add_transformation() = transformation_message;
       return true;
     }
     return false;

@@ -21,7 +21,11 @@ namespace spvtools {
 namespace fuzz {
 
 // A fuzzer pass for changing functions in the module so that they don't have an
-// early return.
+// early return.  When handling a function the pass first eliminates early
+// terminator instructions, such as OpKill, by wrapping them in functions and
+// replacing them with a function call followed by a return.  The return
+// instructions that arise are then modified so that the function does not have
+// early returns.
 class FuzzerPassMergeFunctionReturns : public FuzzerPass {
  public:
   FuzzerPassMergeFunctionReturns(

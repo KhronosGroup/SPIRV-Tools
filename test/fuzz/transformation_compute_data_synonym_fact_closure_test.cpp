@@ -371,6 +371,104 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
       MakeDataDescriptor(40, {2, 1, 1}), MakeDataDescriptor(108, {2, 1, 1})));
 }
 
+TEST(TransformationComputeDataSynonymFactClosureTest,
+     ComputeClosureWithMissingIds) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeVector %6 4
+         %15 = OpConstant %6 24
+         %16 = OpConstantComposite %7 %15 %15 %15 %15
+         %17 = OpConstantComposite %7 %15 %15 %15 %15
+         %18 = OpTypeStruct %7
+         %19 = OpConstantComposite %18 %16
+         %30 = OpConstantComposite %18 %17
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+         %50 = OpCopyObject %7 %16
+         %51 = OpCopyObject %7 %17
+         %20 = OpCopyObject %6 %15
+         %21 = OpCopyObject %6 %15
+         %22 = OpCopyObject %6 %15
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  ASSERT_TRUE(IsValid(env, context.get()));
+
+  ValidatorOptions validator_options;
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(20, {}), MakeDataDescriptor(15, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(21, {}), MakeDataDescriptor(15, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(22, {}), MakeDataDescriptor(15, {}));
+
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(17, {0}), MakeDataDescriptor(15, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(17, {1}), MakeDataDescriptor(15, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(17, {2}), MakeDataDescriptor(15, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(17, {3}), MakeDataDescriptor(15, {}));
+
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(16, {0}), MakeDataDescriptor(20, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(16, {1}), MakeDataDescriptor(21, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(16, {2}), MakeDataDescriptor(22, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(16, {3}), MakeDataDescriptor(15, {}));
+
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(51, {0}), MakeDataDescriptor(15, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(51, {1}), MakeDataDescriptor(15, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(51, {2}), MakeDataDescriptor(15, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(51, {3}), MakeDataDescriptor(15, {}));
+
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(50, {0}), MakeDataDescriptor(20, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(50, {1}), MakeDataDescriptor(21, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(50, {2}), MakeDataDescriptor(22, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(50, {3}), MakeDataDescriptor(15, {}));
+
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(19, {}), MakeDataDescriptor(30, {})));
+
+  context->KillDef(20);
+  context->KillDef(21);
+  context->KillDef(22);
+  context->KillDef(50);
+  context->KillDef(51);
+  context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+
+  ApplyAndCheckFreshIds(TransformationComputeDataSynonymFactClosure(100),
+                        context.get(), &transformation_context);
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(19, {}), MakeDataDescriptor(30, {})));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
