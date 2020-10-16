@@ -16,7 +16,9 @@
 
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
+#include "source/fuzz/transformation_add_early_terminator_wrapper.h"
 #include "source/fuzz/transformation_merge_function_returns.h"
+#include "source/fuzz/transformation_wrap_early_terminator_in_function.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -31,7 +33,15 @@ FuzzerPassMergeFunctionReturns::FuzzerPassMergeFunctionReturns(
 FuzzerPassMergeFunctionReturns::~FuzzerPassMergeFunctionReturns() = default;
 
 void FuzzerPassMergeFunctionReturns::Apply() {
+  // The pass might add new functions to the module (due to wrapping early
+  // terminator instructions in function calls), so we record the functions that
+  // are currently present and then iterate over them.
+  std::vector<opt::Function*> functions;
   for (auto& function : *GetIRContext()->module()) {
+    functions.emplace_back(&function);
+  }
+
+  for (auto* function : functions) {
     // Randomly decide whether to consider this function.
     if (GetFuzzerContext()->ChoosePercentage(
             GetFuzzerContext()->GetChanceOfMergingFunctionReturns())) {
@@ -39,13 +49,66 @@ void FuzzerPassMergeFunctionReturns::Apply() {
     }
 
     // Only consider functions that have early returns.
-    if (!function.HasEarlyReturn()) {
+    if (!function->HasEarlyReturn()) {
       continue;
     }
 
+    // Wrap early terminators in function calls.
+    ForEachInstructionWithInstructionDescriptor(
+        function,
+        [this, function](
+            opt::BasicBlock* /*unused*/, opt::BasicBlock::iterator inst_it,
+            const protobufs::InstructionDescriptor& instruction_descriptor) {
+          const SpvOp opcode = inst_it->opcode();
+          switch (opcode) {
+            case SpvOpKill:
+            case SpvOpUnreachable:
+            case SpvOpTerminateInvocation: {
+              // This is an early termination instruction - we need to wrap it
+              // so that it becomes a return.
+              if (TransformationWrapEarlyTerminatorInFunction::
+                      MaybeGetWrapperFunction(GetIRContext(), opcode) ==
+                  nullptr) {
+                // We don't have a suitable wrapper function, so create one.
+                ApplyTransformation(TransformationAddEarlyTerminatorWrapper(
+                    GetFuzzerContext()->GetFreshId(),
+                    GetFuzzerContext()->GetFreshId(), opcode));
+              }
+              // If the function has non-void return type then we need a
+              // suitable value to use in an OpReturnValue instruction.
+              opt::Instruction* function_return_type =
+                  GetIRContext()->get_def_use_mgr()->GetDef(
+                      function->type_id());
+              uint32_t returned_value_id;
+              if (function_return_type->opcode() == SpvOpTypeVoid) {
+                // No value is needed.
+                returned_value_id = 0;
+              } else if (fuzzerutil::CanCreateConstant(
+                             GetIRContext(),
+                             function_return_type->result_id())) {
+                // We favour returning an irrelevant zero.
+                returned_value_id = FindOrCreateZeroConstant(
+                    function_return_type->result_id(), true);
+              } else {
+                // It's not possible to use an irrelevant zero, so we use an
+                // OpUndef instead.
+                returned_value_id =
+                    FindOrCreateGlobalUndef(function_return_type->result_id());
+              }
+              // Wrap the early termination instruction in a function call.
+              ApplyTransformation(TransformationWrapEarlyTerminatorInFunction(
+                  GetFuzzerContext()->GetFreshId(), instruction_descriptor,
+                  returned_value_id));
+              break;
+            }
+            default:
+              break;
+          }
+        });
+
     // Get the return blocks.
     auto return_blocks = fuzzerutil::GetReachableReturnBlocks(
-        GetIRContext(), function.result_id());
+        GetIRContext(), function->result_id());
 
     // Only go ahead if there is more than one reachable return block.
     if (return_blocks.size() <= 1) {
@@ -58,12 +121,12 @@ void FuzzerPassMergeFunctionReturns::Apply() {
 
     // Collect the ids available after the entry block of the function.
     auto ids_available_after_entry_block =
-        GetTypesToIdsAvailableAfterEntryBlock(&function);
+        GetTypesToIdsAvailableAfterEntryBlock(function);
 
     // If the entry block does not branch unconditionally to another block,
     // split it.
-    if (function.entry()->terminator()->opcode() != SpvOpBranch) {
-      SplitBlockAfterOpPhiOrOpVariable(function.entry()->id());
+    if (function->entry()->terminator()->opcode() != SpvOpBranch) {
+      SplitBlockAfterOpPhiOrOpVariable(function->entry()->id());
     }
 
     // Collect the merge blocks of the function whose corresponding loops
@@ -109,7 +172,7 @@ void FuzzerPassMergeFunctionReturns::Apply() {
     uint32_t outer_return_id = GetFuzzerContext()->GetFreshId();
 
     bool function_is_void =
-        GetIRContext()->get_type_mgr()->GetType(function.type_id())->AsVoid();
+        GetIRContext()->get_type_mgr()->GetType(function->type_id())->AsVoid();
 
     // We only need a return value if the function is not void.
     uint32_t return_val_id =
@@ -120,17 +183,17 @@ void FuzzerPassMergeFunctionReturns::Apply() {
     uint32_t returnable_val_id = 0;
     if (!function_is_void && !actual_merge_blocks.empty()) {
       // If there is an id of the suitable type, choose one at random.
-      if (ids_available_after_entry_block.count(function.type_id())) {
+      if (ids_available_after_entry_block.count(function->type_id())) {
         const auto& candidates =
-            ids_available_after_entry_block[function.type_id()];
+            ids_available_after_entry_block[function->type_id()];
         returnable_val_id =
             candidates[GetFuzzerContext()->RandomIndex(candidates)];
       } else {
         // If there is no id, add a global OpUndef.
-        uint32_t suitable_id = FindOrCreateGlobalUndef(function.type_id());
+        uint32_t suitable_id = FindOrCreateGlobalUndef(function->type_id());
         // Add the new id to the map of available ids.
         ids_available_after_entry_block.emplace(
-            function.type_id(), std::vector<uint32_t>({suitable_id}));
+            function->type_id(), std::vector<uint32_t>({suitable_id}));
         returnable_val_id = suitable_id;
       }
     }
@@ -142,7 +205,7 @@ void FuzzerPassMergeFunctionReturns::Apply() {
     // Apply the transformation if it is applicable (it could be inapplicable if
     // adding new predecessors to merge blocks breaks dominance rules).
     MaybeApplyTransformation(TransformationMergeFunctionReturns(
-        function.result_id(), outer_header_id, outer_return_id, return_val_id,
+        function->result_id(), outer_header_id, outer_return_id, return_val_id,
         returnable_val_id, merge_blocks_info));
   }
 }

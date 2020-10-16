@@ -45,7 +45,7 @@ bool TransformationWrapEarlyTerminatorInFunction::IsApplicable(
     return false;
   }
 
-  // |message_.early_terminator_instruction| must identify an instruciton, and
+  // |message_.early_terminator_instruction| must identify an instruction, and
   // the instruction must indeed be an early terminator.
   auto early_terminator =
       FindInstruction(message_.early_terminator_instruction(), ir_context);

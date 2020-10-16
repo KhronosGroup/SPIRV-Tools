@@ -101,6 +101,72 @@ std::vector<opt::Instruction*> FuzzerPass::FindAvailableInstructions(
 }
 
 void FuzzerPass::ForEachInstructionWithInstructionDescriptor(
+    opt::Function* function,
+    std::function<
+        void(opt::BasicBlock* block, opt::BasicBlock::iterator inst_it,
+             const protobufs::InstructionDescriptor& instruction_descriptor)>
+        action) {
+  // Consider only reachable blocks. We do this in a separate loop to avoid
+  // recomputing the dominator analysis every time |action| changes the
+  // module.
+  std::vector<opt::BasicBlock*> reachable_blocks;
+
+  const auto* dominator_analysis =
+      GetIRContext()->GetDominatorAnalysis(function);
+  for (auto& block : *function) {
+    if (dominator_analysis->IsReachable(&block)) {
+      reachable_blocks.push_back(&block);
+    }
+  }
+
+  for (auto* block : reachable_blocks) {
+    // We now consider every instruction in the block, randomly deciding
+    // whether to apply a transformation before it.
+
+    // In order for transformations to insert new instructions, they need to
+    // be able to identify the instruction to insert before.  We describe an
+    // instruction via its opcode, 'opc', a base instruction 'base' that has a
+    // result id, and the number of instructions with opcode 'opc' that we
+    // should skip when searching from 'base' for the desired instruction.
+    // (An instruction that has a result id is represented by its own opcode,
+    // itself as 'base', and a skip-count of 0.)
+    std::vector<std::tuple<uint32_t, SpvOp, uint32_t>> base_opcode_skip_triples;
+
+    // The initial base instruction is the block label.
+    uint32_t base = block->id();
+
+    // Counts the number of times we have seen each opcode since we reset the
+    // base instruction.
+    std::map<SpvOp, uint32_t> skip_count;
+
+    // Consider every instruction in the block.  The label is excluded: it is
+    // only necessary to consider it as a base in case the first instruction
+    // in the block does not have a result id.
+    for (auto inst_it = block->begin(); inst_it != block->end(); ++inst_it) {
+      if (inst_it->HasResultId()) {
+        // In the case that the instruction has a result id, we use the
+        // instruction as its own base, and clear the skip counts we have
+        // collected.
+        base = inst_it->result_id();
+        skip_count.clear();
+      }
+      const SpvOp opcode = inst_it->opcode();
+
+      // Invoke the provided function, which might apply a transformation.
+      action(block, inst_it,
+             MakeInstructionDescriptor(
+                 base, opcode,
+                 skip_count.count(opcode) ? skip_count.at(opcode) : 0));
+
+      if (!inst_it->HasResultId()) {
+        skip_count[opcode] =
+            skip_count.count(opcode) ? skip_count.at(opcode) + 1 : 1;
+      }
+    }
+  }
+}
+
+void FuzzerPass::ForEachInstructionWithInstructionDescriptor(
     std::function<
         void(opt::Function* function, opt::BasicBlock* block,
              opt::BasicBlock::iterator inst_it,
@@ -108,65 +174,13 @@ void FuzzerPass::ForEachInstructionWithInstructionDescriptor(
         action) {
   // Consider every block in every function.
   for (auto& function : *GetIRContext()->module()) {
-    // Consider only reachable blocks. We do this in a separate loop to avoid
-    // recomputing the dominator analysis every time |action| changes the
-    // module.
-    std::vector<opt::BasicBlock*> reachable_blocks;
-
-    const auto* dominator_analysis =
-        GetIRContext()->GetDominatorAnalysis(&function);
-    for (auto& block : function) {
-      if (dominator_analysis->IsReachable(&block)) {
-        reachable_blocks.push_back(&block);
-      }
-    }
-
-    for (auto* block : reachable_blocks) {
-      // We now consider every instruction in the block, randomly deciding
-      // whether to apply a transformation before it.
-
-      // In order for transformations to insert new instructions, they need to
-      // be able to identify the instruction to insert before.  We describe an
-      // instruction via its opcode, 'opc', a base instruction 'base' that has a
-      // result id, and the number of instructions with opcode 'opc' that we
-      // should skip when searching from 'base' for the desired instruction.
-      // (An instruction that has a result id is represented by its own opcode,
-      // itself as 'base', and a skip-count of 0.)
-      std::vector<std::tuple<uint32_t, SpvOp, uint32_t>>
-          base_opcode_skip_triples;
-
-      // The initial base instruction is the block label.
-      uint32_t base = block->id();
-
-      // Counts the number of times we have seen each opcode since we reset the
-      // base instruction.
-      std::map<SpvOp, uint32_t> skip_count;
-
-      // Consider every instruction in the block.  The label is excluded: it is
-      // only necessary to consider it as a base in case the first instruction
-      // in the block does not have a result id.
-      for (auto inst_it = block->begin(); inst_it != block->end(); ++inst_it) {
-        if (inst_it->HasResultId()) {
-          // In the case that the instruction has a result id, we use the
-          // instruction as its own base, and clear the skip counts we have
-          // collected.
-          base = inst_it->result_id();
-          skip_count.clear();
-        }
-        const SpvOp opcode = inst_it->opcode();
-
-        // Invoke the provided function, which might apply a transformation.
-        action(&function, block, inst_it,
-               MakeInstructionDescriptor(
-                   base, opcode,
-                   skip_count.count(opcode) ? skip_count.at(opcode) : 0));
-
-        if (!inst_it->HasResultId()) {
-          skip_count[opcode] =
-              skip_count.count(opcode) ? skip_count.at(opcode) + 1 : 1;
-        }
-      }
-    }
+    ForEachInstructionWithInstructionDescriptor(
+        &function,
+        [&action, &function](
+            opt::BasicBlock* block, opt::BasicBlock::iterator inst_it,
+            const protobufs::InstructionDescriptor& instruction_descriptor) {
+          action(&function, block, inst_it, instruction_descriptor);
+        });
   }
 }
 
