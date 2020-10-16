@@ -27,6 +27,8 @@
 namespace spvtools {
 namespace fuzz {
 
+extern const spvtools::MessageConsumer kConsoleMessageConsumer;
+
 // Returns true if and only if the given binaries are bit-wise equal.
 bool IsEqual(spv_target_env env, const std::vector<uint32_t>& expected_binary,
              const std::vector<uint32_t>& actual_binary);

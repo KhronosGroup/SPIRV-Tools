@@ -67,8 +67,8 @@ TEST(TransformationMoveInstructionDownTest, BasicTest) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Instruction descriptor is invalid.
@@ -116,7 +116,7 @@ TEST(TransformationMoveInstructionDownTest, BasicTest) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
   {
     TransformationMoveInstructionDown transformation(
@@ -126,7 +126,7 @@ TEST(TransformationMoveInstructionDownTest, BasicTest) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   std::string after_transformation = R"(
@@ -212,8 +212,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesUnsupportedInstructions) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Swap memory instruction with an unsupported one.
@@ -232,8 +232,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesUnsupportedInstructions) {
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -316,8 +316,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesBarrierInstructions) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Swap two barrier instructions.
@@ -342,7 +342,7 @@ TEST(TransformationMoveInstructionDownTest, HandlesBarrierInstructions) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
   {
     TransformationMoveInstructionDown transformation(
@@ -352,7 +352,7 @@ TEST(TransformationMoveInstructionDownTest, HandlesBarrierInstructions) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   ASSERT_TRUE(IsEqual(env, shader, context.get()));
@@ -399,8 +399,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesSimpleInstructions) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Swap simple and barrier instructions.
@@ -412,7 +412,7 @@ TEST(TransformationMoveInstructionDownTest, HandlesSimpleInstructions) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
   {
     TransformationMoveInstructionDown transformation(
@@ -422,7 +422,7 @@ TEST(TransformationMoveInstructionDownTest, HandlesSimpleInstructions) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   // Swap simple and memory instructions.
@@ -434,7 +434,7 @@ TEST(TransformationMoveInstructionDownTest, HandlesSimpleInstructions) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
   {
     TransformationMoveInstructionDown transformation(
@@ -444,7 +444,7 @@ TEST(TransformationMoveInstructionDownTest, HandlesSimpleInstructions) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   // Swap two simple instructions.
@@ -456,7 +456,7 @@ TEST(TransformationMoveInstructionDownTest, HandlesSimpleInstructions) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   std::string after_transformation = R"(
@@ -614,8 +614,8 @@ TEST(TransformationMoveInstructionDownTest, HandlesMemoryInstructions) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
@@ -709,7 +709,7 @@ TEST(TransformationMoveInstructionDownTest, HandlesMemoryInstructions) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   ASSERT_TRUE(IsEqual(env, shader, context.get()));

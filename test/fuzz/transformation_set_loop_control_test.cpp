@@ -257,8 +257,8 @@ TEST(TransformationSetLoopControlTest, VariousScenarios) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // These are the loop headers together with the selection controls of their
@@ -953,7 +953,7 @@ TEST(TransformationSetLoopControlTest, CheckSPIRVVersionsRespected) {
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     spvtools::ValidatorOptions validator_options;
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
     TransformationContext transformation_context(
         MakeUnique<FactManager>(context.get()), validator_options);
     TransformationSetLoopControl transformation(

@@ -86,8 +86,8 @@ TEST(TransformationAddOpPhiSynonymTest, Inapplicable) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   SetUpIdSynonyms(transformation_context.GetFactManager());
@@ -207,8 +207,8 @@ TEST(TransformationAddOpPhiSynonymTest, Apply) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   SetUpIdSynonyms(transformation_context.GetFactManager());
@@ -251,8 +251,8 @@ TEST(TransformationAddOpPhiSynonymTest, Apply) {
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(103, {}), MakeDataDescriptor(9, {})));
 
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_transformations = R"(
                OpCapability Shader
@@ -355,8 +355,8 @@ TEST(TransformationAddOpPhiSynonymTest, VariablePointers) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Declare synonyms
@@ -465,8 +465,8 @@ TEST(TransformationAddOpPhiSynonymTest, DeadBlock) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Dead blocks

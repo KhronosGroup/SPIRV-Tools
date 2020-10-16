@@ -82,7 +82,7 @@ TEST(ReplayerTest, PartialReplay) {
 
   std::vector<uint32_t> binary_in;
   SpirvTools t(env);
-  t.SetMessageConsumer(fuzzerutil::kConsoleMessageConsumer);
+  t.SetMessageConsumer(kConsoleMessageConsumer);
   ASSERT_TRUE(t.Assemble(kTestShader, &binary_in, kFuzzAssembleOption));
   ASSERT_TRUE(t.Validate(binary_in));
 
@@ -98,8 +98,8 @@ TEST(ReplayerTest, PartialReplay) {
     // Full replay
     protobufs::FactSequence empty_facts;
     auto replayer_result =
-        Replayer(env, fuzzerutil::kConsoleMessageConsumer, binary_in,
-                 empty_facts, transformations, 11, true, validator_options)
+        Replayer(env, kConsoleMessageConsumer, binary_in, empty_facts,
+                 transformations, 11, true, validator_options)
             .Run();
     // Replay should succeed.
     ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete,
@@ -184,8 +184,8 @@ TEST(ReplayerTest, PartialReplay) {
     // Half replay
     protobufs::FactSequence empty_facts;
     auto replayer_result =
-        Replayer(env, fuzzerutil::kConsoleMessageConsumer, binary_in,
-                 empty_facts, transformations, 5, true, validator_options)
+        Replayer(env, kConsoleMessageConsumer, binary_in, empty_facts,
+                 transformations, 5, true, validator_options)
             .Run();
     // Replay should succeed.
     ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete,
@@ -262,8 +262,8 @@ TEST(ReplayerTest, PartialReplay) {
     // Empty replay
     protobufs::FactSequence empty_facts;
     auto replayer_result =
-        Replayer(env, fuzzerutil::kConsoleMessageConsumer, binary_in,
-                 empty_facts, transformations, 0, true, validator_options)
+        Replayer(env, kConsoleMessageConsumer, binary_in, empty_facts,
+                 transformations, 0, true, validator_options)
             .Run();
     // Replay should succeed.
     ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete,
@@ -280,8 +280,8 @@ TEST(ReplayerTest, PartialReplay) {
     // The number of transformations requested to be applied exceeds the number
     // of transformations
     auto replayer_result =
-        Replayer(env, fuzzerutil::kConsoleMessageConsumer, binary_in,
-                 empty_facts, transformations, 12, true, validator_options)
+        Replayer(env, kConsoleMessageConsumer, binary_in, empty_facts,
+                 transformations, 12, true, validator_options)
             .Run();
 
     // Replay should not succeed.
@@ -326,7 +326,7 @@ TEST(ReplayerTest, CheckFactsAfterReplay) {
 
   std::vector<uint32_t> binary_in;
   SpirvTools t(env);
-  t.SetMessageConsumer(fuzzerutil::kConsoleMessageConsumer);
+  t.SetMessageConsumer(kConsoleMessageConsumer);
   ASSERT_TRUE(t.Assemble(kTestShader, &binary_in, kFuzzAssembleOption));
   ASSERT_TRUE(t.Validate(binary_in));
 
@@ -350,7 +350,7 @@ TEST(ReplayerTest, CheckFactsAfterReplay) {
   // Full replay
   protobufs::FactSequence empty_facts;
   auto replayer_result =
-      Replayer(env, fuzzerutil::kConsoleMessageConsumer, binary_in, empty_facts,
+      Replayer(env, kConsoleMessageConsumer, binary_in, empty_facts,
                transformations, transformations.transformation_size(), true,
                validator_options)
           .Run();

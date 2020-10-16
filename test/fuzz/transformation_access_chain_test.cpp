@@ -105,8 +105,8 @@ TEST(TransformationAccessChainTest, BasicTest) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Types:
   // Ptr | Pointee | Storage class | GLSL for pointee    | Ids of this type
@@ -222,7 +222,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(100));
   }
@@ -235,7 +235,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(101));
   }
@@ -248,7 +248,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(103));
   }
@@ -261,7 +261,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(104));
   }
@@ -274,7 +274,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(105));
   }
@@ -287,7 +287,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(106));
   }
@@ -300,7 +300,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(107));
   }
@@ -418,8 +418,8 @@ TEST(TransformationAccessChainTest, IsomorphicStructs) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   {
@@ -430,7 +430,7 @@ TEST(TransformationAccessChainTest, IsomorphicStructs) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
   {
     TransformationAccessChain transformation(
@@ -440,7 +440,7 @@ TEST(TransformationAccessChainTest, IsomorphicStructs) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   std::string after_transformation = R"(
@@ -528,8 +528,8 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: no ids given for clamping
@@ -584,7 +584,7 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   {
@@ -596,7 +596,7 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   {
@@ -608,7 +608,7 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   {
@@ -620,7 +620,7 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   {
@@ -632,7 +632,7 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   std::string after_transformation = R"(

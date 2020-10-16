@@ -25,6 +25,29 @@
 namespace spvtools {
 namespace fuzz {
 
+const spvtools::MessageConsumer kConsoleMessageConsumer =
+    [](spv_message_level_t level, const char*, const spv_position_t& position,
+       const char* message) -> void {
+  switch (level) {
+    case SPV_MSG_FATAL:
+    case SPV_MSG_INTERNAL_ERROR:
+    case SPV_MSG_ERROR:
+      std::cerr << "error: line " << position.index << ": " << message
+                << std::endl;
+      break;
+    case SPV_MSG_WARNING:
+      std::cout << "warning: line " << position.index << ": " << message
+                << std::endl;
+      break;
+    case SPV_MSG_INFO:
+      std::cout << "info: line " << position.index << ": " << message
+                << std::endl;
+      break;
+    default:
+      break;
+  }
+};
+
 bool IsEqual(const spv_target_env env,
              const std::vector<uint32_t>& expected_binary,
              const std::vector<uint32_t>& actual_binary) {

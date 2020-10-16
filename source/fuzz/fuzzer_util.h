@@ -32,36 +32,8 @@ namespace fuzz {
 // Provides types and global utility methods for use by the fuzzer
 namespace fuzzerutil {
 
-namespace {
 // A silent message consumer.
-const spvtools::MessageConsumer kSilentMessageConsumer =
-    [](spv_message_level_t, const char*, const spv_position_t&,
-       const char*) -> void {};
-
-// A message consumer that writes output to the console.
-const spvtools::MessageConsumer kConsoleMessageConsumer =
-    [](spv_message_level_t level, const char*, const spv_position_t& position,
-       const char* message) -> void {
-  switch (level) {
-    case SPV_MSG_FATAL:
-    case SPV_MSG_INTERNAL_ERROR:
-    case SPV_MSG_ERROR:
-      std::cerr << "error: line " << position.index << ": " << message
-                << std::endl;
-      break;
-    case SPV_MSG_WARNING:
-      std::cout << "warning: line " << position.index << ": " << message
-                << std::endl;
-      break;
-    case SPV_MSG_INFO:
-      std::cout << "info: line " << position.index << ": " << message
-                << std::endl;
-      break;
-    default:
-      break;
-  }
-};
-}  // namespace
+extern const spvtools::MessageConsumer kSilentMessageConsumer;
 
 // Function type that produces a SPIR-V module.
 using ModuleSupplier = std::function<std::unique_ptr<opt::IRContext>()>;

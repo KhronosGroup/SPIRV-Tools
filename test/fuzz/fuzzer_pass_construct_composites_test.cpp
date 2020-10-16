@@ -84,7 +84,7 @@ TEST(FuzzerPassConstructCompositesTest, IsomorphicStructs) {
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     spvtools::ValidatorOptions validator_options;
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
     TransformationContext transformation_context(
         MakeUnique<FactManager>(context.get()), validator_options);
     FuzzerContext fuzzer_context(prng.get(), 100);
@@ -98,7 +98,7 @@ TEST(FuzzerPassConstructCompositesTest, IsomorphicStructs) {
 
     // We just check that the result is valid.
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 }
 
@@ -165,7 +165,7 @@ TEST(FuzzerPassConstructCompositesTest, IsomorphicArrays) {
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     spvtools::ValidatorOptions validator_options;
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
     TransformationContext transformation_context(
         MakeUnique<FactManager>(context.get()), validator_options);
     FuzzerContext fuzzer_context(prng.get(), 100);
@@ -179,7 +179,7 @@ TEST(FuzzerPassConstructCompositesTest, IsomorphicArrays) {
 
     // We just check that the result is valid.
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 }
 

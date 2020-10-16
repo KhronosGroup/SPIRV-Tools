@@ -68,7 +68,7 @@ void FuzzerPassDonateModules::Apply() {
     assert(
         fuzzerutil::IsValid(donor_ir_context.get(),
                             GetTransformationContext()->GetValidatorOptions(),
-                            fuzzerutil::kConsoleMessageConsumer) &&
+                            fuzzerutil::kSilentMessageConsumer) &&
         "The donor module must be valid");
     // Donate the supplied module.
     //

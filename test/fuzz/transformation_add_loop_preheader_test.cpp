@@ -72,8 +72,8 @@ TEST(TransformationAddLoopPreheaderTest, SimpleTest) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // %9 is not a loop header
   ASSERT_FALSE(TransformationAddLoopPreheader(9, 15, {}).IsApplicable(
@@ -100,8 +100,8 @@ TEST(TransformationAddLoopPreheaderTest, SimpleTest) {
   ApplyAndCheckFreshIds(transformation2, context.get(),
                         &transformation_context);
 
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_transformations = R"(
                OpCapability Shader
@@ -205,8 +205,8 @@ TEST(TransformationAddLoopPreheaderTest, OpPhi) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto transformation1 = TransformationAddLoopPreheader(8, 40, {});
   ASSERT_TRUE(
@@ -236,8 +236,8 @@ TEST(TransformationAddLoopPreheaderTest, OpPhi) {
   ApplyAndCheckFreshIds(transformation2, context.get(),
                         &transformation_context);
 
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_transformations = R"(
                OpCapability Shader

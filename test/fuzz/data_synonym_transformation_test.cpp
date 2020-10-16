@@ -124,8 +124,8 @@ TEST(DataSynonymTransformationTest, ArrayCompositeSynonyms) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
@@ -162,8 +162,8 @@ TEST(DataSynonymTransformationTest, ArrayCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_1.IsApplicable(context.get(), transformation_context));
   replacement_1.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %13 with %100[1] in 'OpStore %15 %13'
   auto instruction_descriptor_2 = MakeInstructionDescriptor(100, SpvOpStore, 0);
@@ -178,8 +178,8 @@ TEST(DataSynonymTransformationTest, ArrayCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_2.IsApplicable(context.get(), transformation_context));
   replacement_2.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %22 with %100[2] in '%23 = OpConvertSToF %16 %22'
   auto instruction_descriptor_3 =
@@ -199,8 +199,8 @@ TEST(DataSynonymTransformationTest, ArrayCompositeSynonyms) {
   ASSERT_FALSE(
       bad_replacement_3.IsApplicable(context.get(), transformation_context));
   replacement_3.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %28 with %101[0] in 'OpStore %33 %28'
   auto instruction_descriptor_4 = MakeInstructionDescriptor(33, SpvOpStore, 0);
@@ -219,8 +219,8 @@ TEST(DataSynonymTransformationTest, ArrayCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_4.IsApplicable(context.get(), transformation_context));
   replacement_4.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %23 with %101[1] in '%50 = OpCopyObject %16 %23'
   auto instruction_descriptor_5 =
@@ -240,8 +240,8 @@ TEST(DataSynonymTransformationTest, ArrayCompositeSynonyms) {
   ASSERT_FALSE(
       bad_replacement_5.IsApplicable(context.get(), transformation_context));
   replacement_5.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %32 with %101[2] in 'OpStore %33 %32'
   auto instruction_descriptor_6 = MakeInstructionDescriptor(33, SpvOpStore, 1);
@@ -260,8 +260,8 @@ TEST(DataSynonymTransformationTest, ArrayCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_6.IsApplicable(context.get(), transformation_context));
   replacement_6.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %23 with %101[3] in '%51 = OpCopyObject %16 %23'
   auto instruction_descriptor_7 =
@@ -281,8 +281,8 @@ TEST(DataSynonymTransformationTest, ArrayCompositeSynonyms) {
   ASSERT_FALSE(
       bad_replacement_7.IsApplicable(context.get(), transformation_context));
   replacement_7.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const std::string after_transformation = R"(
                OpCapability Shader
@@ -418,8 +418,8 @@ TEST(DataSynonymTransformationTest, MatrixCompositeSynonyms) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
@@ -441,8 +441,8 @@ TEST(DataSynonymTransformationTest, MatrixCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_1.IsApplicable(context.get(), transformation_context));
   replacement_1.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %25 with %100[1] in '%26 = OpFAdd %7 %23 %25'
   auto instruction_descriptor_2 = MakeInstructionDescriptor(26, SpvOpFAdd, 0);
@@ -455,8 +455,8 @@ TEST(DataSynonymTransformationTest, MatrixCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_2.IsApplicable(context.get(), transformation_context));
   replacement_2.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const std::string after_transformation = R"(
                OpCapability Shader
@@ -589,8 +589,8 @@ TEST(DataSynonymTransformationTest, StructCompositeSynonyms) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
@@ -621,8 +621,8 @@ TEST(DataSynonymTransformationTest, StructCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_1.IsApplicable(context.get(), transformation_context));
   replacement_1.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace second occurrence of %27 with %101[0] in '%28 =
   // OpCompositeConstruct %8 %27 %27'
@@ -637,8 +637,8 @@ TEST(DataSynonymTransformationTest, StructCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_2.IsApplicable(context.get(), transformation_context));
   replacement_2.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %36 with %101[1] in '%45 = OpCompositeConstruct %31 %36 %41 %44'
   auto instruction_descriptor_3 =
@@ -652,8 +652,8 @@ TEST(DataSynonymTransformationTest, StructCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_3.IsApplicable(context.get(), transformation_context));
   replacement_3.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace first occurrence of %27 with %101[2] in '%28 = OpCompositeConstruct
   // %8 %27 %27'
@@ -668,8 +668,8 @@ TEST(DataSynonymTransformationTest, StructCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_4.IsApplicable(context.get(), transformation_context));
   replacement_4.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %22 with %102[0] in 'OpStore %23 %22'
   auto instruction_descriptor_5 = MakeInstructionDescriptor(23, SpvOpStore, 0);
@@ -682,8 +682,8 @@ TEST(DataSynonymTransformationTest, StructCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_5.IsApplicable(context.get(), transformation_context));
   replacement_5.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const std::string after_transformation = R"(
                OpCapability Shader
@@ -883,8 +883,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
@@ -943,8 +943,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_1.IsApplicable(context.get(), transformation_context));
   replacement_1.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %54 with %100[3] in '%56 = OpFOrdNotEqual %30 %54 %55'
   auto instruction_descriptor_2 =
@@ -959,8 +959,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_2.IsApplicable(context.get(), transformation_context));
   replacement_2.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %15 with %101[0:1] in 'OpStore %12 %15'
   auto instruction_descriptor_3 = MakeInstructionDescriptor(64, SpvOpStore, 0);
@@ -975,8 +975,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_3.IsApplicable(context.get(), transformation_context));
   replacement_3.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %19 with %101[2:3] in '%81 = OpVectorShuffle %16 %19 %19 0 0 1'
   auto instruction_descriptor_4 =
@@ -992,8 +992,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_4.IsApplicable(context.get(), transformation_context));
   replacement_4.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %27 with %102[0] in '%82 = OpCompositeConstruct %21 %26 %27 %28
   // %25'
@@ -1009,8 +1009,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_5.IsApplicable(context.get(), transformation_context));
   replacement_5.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %15 with %102[1:2] in '%83 = OpCopyObject %10 %15'
   auto instruction_descriptor_6 =
@@ -1026,8 +1026,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_6.IsApplicable(context.get(), transformation_context));
   replacement_6.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %33 with %103[0] in '%86 = OpCopyObject %30 %33'
   auto instruction_descriptor_7 =
@@ -1041,8 +1041,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_7.IsApplicable(context.get(), transformation_context));
   replacement_7.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %47 with %103[1:3] in '%84 = OpCopyObject %39 %47'
   auto instruction_descriptor_8 =
@@ -1058,8 +1058,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_8.IsApplicable(context.get(), transformation_context));
   replacement_8.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %42 with %104[0] in '%85 = OpCopyObject %30 %42'
   auto instruction_descriptor_9 =
@@ -1073,8 +1073,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_9.IsApplicable(context.get(), transformation_context));
   replacement_9.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %45 with %104[1] in '%63 = OpLogicalOr %30 %45 %46'
   auto instruction_descriptor_10 =
@@ -1088,8 +1088,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_10.IsApplicable(context.get(), transformation_context));
   replacement_10.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %38 with %105[0:1] in 'OpStore %36 %38'
   auto instruction_descriptor_11 = MakeInstructionDescriptor(85, SpvOpStore, 0);
@@ -1104,8 +1104,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_11.IsApplicable(context.get(), transformation_context));
   replacement_11.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %46 with %105[2] in '%62 = OpLogicalAnd %30 %45 %46'
   auto instruction_descriptor_12 =
@@ -1119,8 +1119,8 @@ TEST(DataSynonymTransformationTest, VectorCompositeSynonyms) {
   ASSERT_TRUE(
       replacement_12.IsApplicable(context.get(), transformation_context));
   replacement_12.Apply(context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const std::string after_transformation = R"(
                OpCapability Shader

@@ -43,6 +43,10 @@ uint32_t MaybeGetOpConstant(opt::IRContext* ir_context,
 
 }  // namespace
 
+const spvtools::MessageConsumer kSilentMessageConsumer =
+    [](spv_message_level_t, const char*, const spv_position_t&,
+       const char*) -> void {};
+
 bool IsFreshId(opt::IRContext* context, uint32_t id) {
   return !context->get_def_use_mgr()->GetDef(id);
 }

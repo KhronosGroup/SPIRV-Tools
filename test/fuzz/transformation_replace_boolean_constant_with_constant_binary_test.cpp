@@ -162,8 +162,8 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   std::vector<protobufs::IdUseDescriptor> uses_of_true = {
@@ -293,26 +293,26 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
       context.get(), transformation_context));
   ApplyAndCheckFreshIds(replace_true_with_double_comparison, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(replace_true_with_uint32_comparison.IsApplicable(
       context.get(), transformation_context));
   ApplyAndCheckFreshIds(replace_true_with_uint32_comparison, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(replace_false_with_float_comparison.IsApplicable(
       context.get(), transformation_context));
   ApplyAndCheckFreshIds(replace_false_with_float_comparison, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(replace_false_with_sint64_comparison.IsApplicable(
       context.get(), transformation_context));
   ApplyAndCheckFreshIds(replace_false_with_sint64_comparison, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after = R"(
                OpCapability Shader
@@ -426,7 +426,7 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
         context.get(), SpvOpConstant, 6, 200, operands));
     fuzzerutil::UpdateModuleIdBound(context.get(), 200);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
     // The transformation is not applicable because %200 is NaN.
     ASSERT_FALSE(TransformationReplaceBooleanConstantWithConstantBinary(
                      uses_of_true[0], 11, 200, SpvOpFOrdLessThan, 300)
@@ -443,7 +443,7 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
         context.get(), SpvOpConstant, 6, 201, operands));
     fuzzerutil::UpdateModuleIdBound(context.get(), 201);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
     // Even though the double constant %11 is less than the infinity %201, the
     // transformation is restricted to only apply to finite values.
     ASSERT_FALSE(TransformationReplaceBooleanConstantWithConstantBinary(
@@ -468,7 +468,7 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
         context.get(), SpvOpConstant, 12, 203, operands));
     fuzzerutil::UpdateModuleIdBound(context.get(), 203);
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+        context.get(), validator_options, kConsoleMessageConsumer));
     // Even though the negative infinity at %203 is less than the positive
     // infinity %202, the transformation is restricted to only apply to finite
     // values.
@@ -542,8 +542,8 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   auto use_of_true_in_if = MakeIdUseDescriptor(
@@ -559,14 +559,14 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
   ASSERT_TRUE(
       replacement_1.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement_1, context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   ASSERT_TRUE(
       replacement_2.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement_2, context.get(), &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after = R"(
                OpCapability Shader
@@ -658,8 +658,8 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest, OpPhi) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   auto instruction_descriptor = MakeInstructionDescriptor(14, SpvOpPhi, 0);
@@ -702,8 +702,8 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest, OpPhi) {
                OpFunctionEnd
   )";
 
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
@@ -736,8 +736,8 @@ TEST(TransformationReplaceBooleanConstantWithConstantBinaryTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_FALSE(TransformationReplaceBooleanConstantWithConstantBinary(

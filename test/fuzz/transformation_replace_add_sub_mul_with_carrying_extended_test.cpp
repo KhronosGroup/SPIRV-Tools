@@ -411,8 +411,8 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_1, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto transformation_good_2 =
       TransformationReplaceAddSubMulWithCarryingExtended(81, 18);
@@ -420,8 +420,8 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_2, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto transformation_good_3 =
       TransformationReplaceAddSubMulWithCarryingExtended(82, 21);
@@ -429,8 +429,8 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_3, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto transformation_good_4 =
       TransformationReplaceAddSubMulWithCarryingExtended(83, 31);
@@ -438,8 +438,8 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_4, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto transformation_good_5 =
       TransformationReplaceAddSubMulWithCarryingExtended(84, 42);
@@ -447,8 +447,8 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_5, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto transformation_good_6 =
       TransformationReplaceAddSubMulWithCarryingExtended(85, 45);
@@ -456,8 +456,8 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_6, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto transformation_good_7 =
       TransformationReplaceAddSubMulWithCarryingExtended(86, 48);
@@ -465,8 +465,8 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_7, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto transformation_good_8 =
       TransformationReplaceAddSubMulWithCarryingExtended(87, 59);
@@ -474,8 +474,8 @@ TEST(TransformationReplaceAddSubMulWithCarryingExtendedTest,
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_8, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader
