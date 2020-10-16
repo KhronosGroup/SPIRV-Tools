@@ -14,6 +14,8 @@
 
 #include "source/fuzz/transformation_replace_copy_memory_with_load_store.h"
 
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -69,7 +71,8 @@ TEST(TransformationReplaceCopyMemoryWithLoadStoreTest, BasicScenarios) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto instruction_descriptor_invalid_1 =
       MakeInstructionDescriptor(5, SpvOpStore, 0);
@@ -96,7 +99,8 @@ TEST(TransformationReplaceCopyMemoryWithLoadStoreTest, BasicScenarios) {
                                                   transformation_context));
   ApplyAndCheckFreshIds(transformation_valid_1, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto transformation_valid_2 = TransformationReplaceCopyMemoryWithLoadStore(
       21, instruction_descriptor_valid_2);
@@ -104,7 +108,8 @@ TEST(TransformationReplaceCopyMemoryWithLoadStoreTest, BasicScenarios) {
                                                   transformation_context));
   ApplyAndCheckFreshIds(transformation_valid_2, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader

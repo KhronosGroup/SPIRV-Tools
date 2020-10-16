@@ -17,7 +17,6 @@
 
 #include <vector>
 
-#include "gtest/gtest.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
 #include "source/fuzz/transformation_context.h"
@@ -27,6 +26,8 @@
 
 namespace spvtools {
 namespace fuzz {
+
+extern const spvtools::MessageConsumer kConsoleMessageConsumer;
 
 // Returns true if and only if the given binaries are bit-wise equal.
 bool IsEqual(spv_target_env env, const std::vector<uint32_t>& expected_binary,
@@ -52,11 +53,6 @@ bool IsEqual(spv_target_env env, const opt::IRContext* ir_1,
 bool IsEqual(spv_target_env env, const std::vector<uint32_t>& binary_1,
              const opt::IRContext* ir_2);
 
-// Assembles the given IR context and returns true if and only if
-// the resulting binary is valid and every basic block has its enclosing
-// function as its parent.
-bool IsValid(spv_target_env env, const opt::IRContext* ir);
-
 // Assembles the given IR context, then returns its disassembly as a string.
 // Useful for debugging.
 std::string ToString(spv_target_env env, const opt::IRContext* ir);
@@ -73,40 +69,18 @@ const uint32_t kFuzzAssembleOption =
 const uint32_t kFuzzDisassembleOption =
     SPV_BINARY_TO_TEXT_OPTION_NO_HEADER | SPV_BINARY_TO_TEXT_OPTION_INDENT;
 
-// A silent message consumer.
-const spvtools::MessageConsumer kSilentConsumer =
-    [](spv_message_level_t, const char*, const spv_position_t&,
-       const char*) -> void {};
-
-const spvtools::MessageConsumer kConsoleMessageConsumer =
-    [](spv_message_level_t level, const char*, const spv_position_t& position,
-       const char* message) -> void {
-  switch (level) {
-    case SPV_MSG_FATAL:
-    case SPV_MSG_INTERNAL_ERROR:
-    case SPV_MSG_ERROR:
-      std::cerr << "error: line " << position.index << ": " << message
-                << std::endl;
-      break;
-    case SPV_MSG_WARNING:
-      std::cout << "warning: line " << position.index << ": " << message
-                << std::endl;
-      break;
-    case SPV_MSG_INFO:
-      std::cout << "info: line " << position.index << ": " << message
-                << std::endl;
-      break;
-    default:
-      break;
-  }
-};
-
 // Dumps the SPIRV-V module in |context| to file |filename|. Useful for
 // interactive debugging.
 void DumpShader(opt::IRContext* context, const char* filename);
 
 // Dumps |binary| to file |filename|. Useful for interactive debugging.
 void DumpShader(const std::vector<uint32_t>& binary, const char* filename);
+
+// Dumps |transformations| to file |filename| in binary format. Useful for
+// interactive debugging.
+void DumpTransformationsBinary(
+    const protobufs::TransformationSequence& transformations,
+    const char* filename);
 
 // Dumps |transformations| to file |filename| in JSON format. Useful for
 // interactive debugging.

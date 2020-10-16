@@ -14,8 +14,8 @@
 
 #include "source/fuzz/transformation_replace_opselect_with_conditional_branch.h"
 
-#include "source/fuzz/fuzzer_pass_replace_opselects_with_conditional_branches.h"
-#include "source/fuzz/pseudo_random_generator.h"
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -84,9 +84,9 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Inapplicable) {
   const auto env = SPV_ENV_UNIVERSAL_1_5;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // %20 is not an OpSelect instruction.
@@ -186,9 +186,9 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Simple) {
   const auto env = SPV_ENV_UNIVERSAL_1_5;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation =
@@ -211,7 +211,8 @@ TEST(TransformationReplaceOpSelectWithConditionalBranchTest, Simple) {
   ApplyAndCheckFreshIds(transformation3, context.get(),
                         &transformation_context);
 
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader

@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include "source/fuzz/call_graph.h"
+
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -274,7 +277,9 @@ TEST(CallGraphTest, FunctionInDegree) {
   const auto consumer = nullptr;
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const auto graph = CallGraph(context.get());
 
@@ -292,7 +297,9 @@ TEST(CallGraphTest, DirectCallees) {
   const auto consumer = nullptr;
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const auto graph = CallGraph(context.get());
 
@@ -309,7 +316,9 @@ TEST(CallGraphTest, IndirectCallees) {
   const auto consumer = nullptr;
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const auto graph = CallGraph(context.get());
 
@@ -326,7 +335,9 @@ TEST(CallGraphTest, TopologicalOrder) {
   const auto consumer = nullptr;
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const auto graph = CallGraph(context.get());
 
@@ -347,7 +358,9 @@ TEST(CallGraphTest, LoopNestingDepth) {
   const auto consumer = nullptr;
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const auto graph = CallGraph(context.get());
 

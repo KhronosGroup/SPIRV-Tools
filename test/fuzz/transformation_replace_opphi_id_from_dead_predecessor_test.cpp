@@ -14,6 +14,8 @@
 
 #include "source/fuzz/transformation_replace_opphi_id_from_dead_predecessor.h"
 
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -78,7 +80,8 @@ TEST(TransformationReplaceOpPhiIdFromDeadPredecessorTest, Inapplicable) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Record the fact that blocks 20, 17, 28 are dead.
   transformation_context.GetFactManager()->AddFactBlockIsDead(20);
@@ -119,7 +122,8 @@ TEST(TransformationReplaceOpPhiIdFromDeadPredecessorTest, Apply) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Record the fact that blocks 20, 17, 28 are dead.
   transformation_context.GetFactManager()->AddFactBlockIsDead(20);
@@ -147,7 +151,8 @@ TEST(TransformationReplaceOpPhiIdFromDeadPredecessorTest, Apply) {
   ApplyAndCheckFreshIds(transformation3, context.get(),
                         &transformation_context);
 
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_transformations = R"(
                OpCapability Shader

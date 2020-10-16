@@ -14,7 +14,9 @@
 
 #include "source/fuzz/transformation_composite_construct.h"
 
+#include "gtest/gtest.h"
 #include "source/fuzz/data_descriptor.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -127,9 +129,9 @@ TEST(TransformationCompositeConstructTest, ConstructArrays) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Make a vec2[3]
@@ -146,7 +148,8 @@ TEST(TransformationCompositeConstructTest, ConstructArrays) {
       context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_vec2_array_length_3, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(41, {}), MakeDataDescriptor(200, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -166,7 +169,8 @@ TEST(TransformationCompositeConstructTest, ConstructArrays) {
       context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_float_array_length_2, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(24, {}), MakeDataDescriptor(201, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -186,7 +190,8 @@ TEST(TransformationCompositeConstructTest, ConstructArrays) {
       context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_bool_array_length_3, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(33, {}), MakeDataDescriptor(202, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -206,7 +211,8 @@ TEST(TransformationCompositeConstructTest, ConstructArrays) {
       context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_uvec3_array_length_2_2, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(69, {}), MakeDataDescriptor(203, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -395,9 +401,9 @@ TEST(TransformationCompositeConstructTest, ConstructMatrices) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // make a mat3x4
@@ -410,7 +416,8 @@ TEST(TransformationCompositeConstructTest, ConstructMatrices) {
   ASSERT_FALSE(
       make_mat34_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_mat34, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(25, {}), MakeDataDescriptor(200, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -428,7 +435,8 @@ TEST(TransformationCompositeConstructTest, ConstructMatrices) {
   ASSERT_FALSE(
       make_mat43_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_mat43, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(11, {}), MakeDataDescriptor(201, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -606,9 +614,9 @@ TEST(TransformationCompositeConstructTest, ConstructStructs) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // make an Inner
@@ -621,7 +629,8 @@ TEST(TransformationCompositeConstructTest, ConstructStructs) {
   ASSERT_FALSE(
       make_inner_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_inner, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(25, {}), MakeDataDescriptor(200, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -639,7 +648,8 @@ TEST(TransformationCompositeConstructTest, ConstructStructs) {
   ASSERT_FALSE(
       make_outer_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_outer, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(46, {}), MakeDataDescriptor(201, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -928,9 +938,9 @@ TEST(TransformationCompositeConstructTest, ConstructVectors) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   TransformationCompositeConstruct make_vec2(
@@ -942,7 +952,8 @@ TEST(TransformationCompositeConstructTest, ConstructVectors) {
   ASSERT_FALSE(
       make_vec2_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_vec2, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(17, {}), MakeDataDescriptor(200, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -959,7 +970,8 @@ TEST(TransformationCompositeConstructTest, ConstructVectors) {
   ASSERT_FALSE(
       make_vec3_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_vec3, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {0}), MakeDataDescriptor(201, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -978,7 +990,8 @@ TEST(TransformationCompositeConstructTest, ConstructVectors) {
   ASSERT_FALSE(
       make_vec4_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_vec4, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(32, {}), MakeDataDescriptor(202, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -997,7 +1010,8 @@ TEST(TransformationCompositeConstructTest, ConstructVectors) {
   ASSERT_FALSE(
       make_ivec2_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_ivec2, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(126, {}), MakeDataDescriptor(203, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -1014,7 +1028,8 @@ TEST(TransformationCompositeConstructTest, ConstructVectors) {
   ASSERT_FALSE(
       make_ivec3_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_ivec3, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(56, {}), MakeDataDescriptor(204, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -1033,7 +1048,8 @@ TEST(TransformationCompositeConstructTest, ConstructVectors) {
   ASSERT_FALSE(
       make_ivec4_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_ivec4, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(56, {}), MakeDataDescriptor(205, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -1051,7 +1067,8 @@ TEST(TransformationCompositeConstructTest, ConstructVectors) {
   ASSERT_FALSE(
       make_uvec2_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_uvec2, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(18, {}), MakeDataDescriptor(206, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -1066,7 +1083,8 @@ TEST(TransformationCompositeConstructTest, ConstructVectors) {
   ASSERT_FALSE(
       make_uvec3_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_uvec3, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(14, {}), MakeDataDescriptor(207, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -1085,7 +1103,8 @@ TEST(TransformationCompositeConstructTest, ConstructVectors) {
   ASSERT_FALSE(
       make_uvec4_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_uvec4, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(14, {}), MakeDataDescriptor(208, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -1114,7 +1133,8 @@ TEST(TransformationCompositeConstructTest, ConstructVectors) {
   ASSERT_FALSE(
       make_bvec2_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_bvec2, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(111, {}), MakeDataDescriptor(209, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -1129,7 +1149,8 @@ TEST(TransformationCompositeConstructTest, ConstructVectors) {
   ASSERT_FALSE(
       make_bvec3_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_bvec3, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(108, {0}), MakeDataDescriptor(210, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -1146,7 +1167,8 @@ TEST(TransformationCompositeConstructTest, ConstructVectors) {
   ASSERT_FALSE(
       make_bvec4_bad.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_bvec4, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(108, {0}), MakeDataDescriptor(211, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -1420,9 +1442,9 @@ TEST(TransformationCompositeConstructTest, AddSynonymsForRelevantIds) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   TransformationCompositeConstruct transformation(
@@ -1430,7 +1452,8 @@ TEST(TransformationCompositeConstructTest, AddSynonymsForRelevantIds) {
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(25, {}), MakeDataDescriptor(200, {0})));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -1502,9 +1525,9 @@ TEST(TransformationCompositeConstructTest, DontAddSynonymsForIrrelevantIds) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   transformation_context.GetFactManager()->AddFactIdIsIrrelevant(25);
@@ -1514,7 +1537,8 @@ TEST(TransformationCompositeConstructTest, DontAddSynonymsForIrrelevantIds) {
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(25, {}), MakeDataDescriptor(200, {0})));
   // Even though %28 is not irrelevant, we do not create a synonym because part
@@ -1557,9 +1581,9 @@ TEST(TransformationCompositeConstructTest, DontAddSynonymsInDeadBlock) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   transformation_context.GetFactManager()->AddFactBlockIsDead(15);

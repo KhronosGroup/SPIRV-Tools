@@ -65,10 +65,11 @@ void FuzzerPassDonateModules::Apply() {
     std::unique_ptr<opt::IRContext> donor_ir_context = donor_suppliers_.at(
         GetFuzzerContext()->RandomIndex(donor_suppliers_))();
     assert(donor_ir_context != nullptr && "Supplying of donor failed");
-    assert(fuzzerutil::IsValid(
-               donor_ir_context.get(),
-               GetTransformationContext()->GetValidatorOptions()) &&
-           "The donor module must be valid");
+    assert(
+        fuzzerutil::IsValid(donor_ir_context.get(),
+                            GetTransformationContext()->GetValidatorOptions(),
+                            fuzzerutil::kSilentMessageConsumer) &&
+        "The donor module must be valid");
     // Donate the supplied module.
     //
     // Randomly decide whether to make the module livesafe (see

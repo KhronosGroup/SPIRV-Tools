@@ -14,6 +14,8 @@
 
 #include "source/fuzz/transformation_move_block_down.h"
 
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -333,7 +335,8 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
   // Let's bubble 20 all the way down.
 
   ApplyAndCheckFreshIds(move_down_20, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Current ordering: 5 14 23 20 21 25 29 32 30 15
   ASSERT_FALSE(move_down_5.IsApplicable(context.get(), transformation_context));
@@ -351,7 +354,8 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       move_down_15.IsApplicable(context.get(), transformation_context));
 
   ApplyAndCheckFreshIds(move_down_20, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Current ordering: 5 14 23 21 20 25 29 32 30 15
   ASSERT_FALSE(move_down_5.IsApplicable(context.get(), transformation_context));
@@ -369,7 +373,8 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       move_down_15.IsApplicable(context.get(), transformation_context));
 
   ApplyAndCheckFreshIds(move_down_20, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Current ordering: 5 14 23 21 25 20 29 32 30 15
   ASSERT_FALSE(move_down_5.IsApplicable(context.get(), transformation_context));
@@ -386,7 +391,8 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       move_down_15.IsApplicable(context.get(), transformation_context));
 
   ApplyAndCheckFreshIds(move_down_20, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Current ordering: 5 14 23 21 25 29 20 32 30 15
   ASSERT_FALSE(move_down_5.IsApplicable(context.get(), transformation_context));
@@ -404,7 +410,8 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       move_down_15.IsApplicable(context.get(), transformation_context));
 
   ApplyAndCheckFreshIds(move_down_20, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Current ordering: 5 14 23 21 25 29 32 20 30 15
   ASSERT_FALSE(move_down_5.IsApplicable(context.get(), transformation_context));
@@ -422,7 +429,8 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       move_down_15.IsApplicable(context.get(), transformation_context));
 
   ApplyAndCheckFreshIds(move_down_20, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Current ordering: 5 14 23 21 25 29 32 30 20 15
   ASSERT_FALSE(move_down_5.IsApplicable(context.get(), transformation_context));
@@ -440,7 +448,8 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       move_down_15.IsApplicable(context.get(), transformation_context));
 
   ApplyAndCheckFreshIds(move_down_20, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_bubbling_20_down = R"(
                OpCapability Shader
@@ -530,7 +539,8 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       move_down_20.IsApplicable(context.get(), transformation_context));
 
   ApplyAndCheckFreshIds(move_down_23, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Current ordering: 5 14 21 23 25 29 32 30 15 20
   ASSERT_FALSE(move_down_5.IsApplicable(context.get(), transformation_context));
@@ -548,7 +558,8 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       move_down_20.IsApplicable(context.get(), transformation_context));
 
   ApplyAndCheckFreshIds(move_down_23, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Current ordering: 5 14 21 25 23 29 32 30 15 20
   ASSERT_FALSE(move_down_5.IsApplicable(context.get(), transformation_context));
@@ -565,7 +576,8 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       move_down_20.IsApplicable(context.get(), transformation_context));
 
   ApplyAndCheckFreshIds(move_down_21, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Current ordering: 5 14 25 21 23 29 32 30 15 20
   ASSERT_FALSE(move_down_5.IsApplicable(context.get(), transformation_context));
@@ -581,7 +593,8 @@ TEST(TransformationMoveBlockDownTest, ManyMovesPossible) {
       move_down_20.IsApplicable(context.get(), transformation_context));
 
   ApplyAndCheckFreshIds(move_down_14, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_more_shuffling = R"(
                OpCapability Shader
@@ -698,9 +711,9 @@ TEST(TransformationMoveBlockDownTest, DoNotMoveUnreachable) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation = TransformationMoveBlockDown(6);

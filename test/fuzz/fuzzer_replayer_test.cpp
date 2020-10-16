@@ -13,9 +13,11 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer.h"
+#include "source/fuzz/replayer.h"
+
+#include "gtest/gtest.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/pseudo_random_generator.h"
-#include "source/fuzz/replayer.h"
 #include "source/fuzz/uniform_buffer_element_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 

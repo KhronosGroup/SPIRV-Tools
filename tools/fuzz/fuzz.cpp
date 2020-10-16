@@ -618,6 +618,34 @@ void DumpShader(spvtools::opt::IRContext* context, const char* filename) {
   DumpShader(binary, filename);
 }
 
+// Dumps |transformations| to file |filename| in binary format. Useful for
+// interactive debugging.
+void DumpTransformationsBinary(
+    const spvtools::fuzz::protobufs::TransformationSequence& transformations,
+    const char* filename) {
+  std::ofstream transformations_file;
+  transformations_file.open(filename, std::ios::out | std::ios::binary);
+  transformations.SerializeToOstream(&transformations_file);
+  transformations_file.close();
+}
+
+// Dumps |transformations| to file |filename| in JSON format. Useful for
+// interactive debugging.
+void DumpTransformationsJson(
+    const spvtools::fuzz::protobufs::TransformationSequence& transformations,
+    const char* filename) {
+  std::string json_string;
+  auto json_options = google::protobuf::util::JsonOptions();
+  json_options.add_whitespace = true;
+  auto json_generation_status = google::protobuf::util::MessageToJsonString(
+      transformations, &json_string, json_options);
+  if (json_generation_status == google::protobuf::util::Status::OK) {
+    std::ofstream transformations_json_file(filename);
+    transformations_json_file << json_string;
+    transformations_json_file.close();
+  }
+}
+
 const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_3;
 
 int main(int argc, const char** argv) {

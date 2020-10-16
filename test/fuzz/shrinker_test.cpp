@@ -14,9 +14,11 @@
 
 #include "source/fuzz/shrinker.h"
 
+#include "gtest/gtest.h"
 #include "source/fuzz/fact_manager/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_pass_donate_modules.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "source/fuzz/transformation_context.h"
 #include "source/opt/ir_context.h"
@@ -142,24 +144,27 @@ TEST(ShrinkerTest, ReduceAddedFunctions) {
   // compilers are kept happy.  See:
   // https://developercommunity.visualstudio.com/content/problem/367326/problems-with-capturing-constexpr-in-lambda.html
   spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer = kSilentConsumer;
+  const auto consumer = kConsoleMessageConsumer;
 
   SpirvTools tools(env);
   std::vector<uint32_t> reference_binary;
   ASSERT_TRUE(
       tools.Assemble(kReferenceModule, &reference_binary, kFuzzAssembleOption));
 
+  spvtools::ValidatorOptions validator_options;
+
   const auto variant_ir_context =
       BuildModule(env, consumer, kReferenceModule, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, variant_ir_context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      variant_ir_context.get(), validator_options, kConsoleMessageConsumer));
 
   const auto donor_ir_context =
       BuildModule(env, consumer, kDonorModule, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, donor_ir_context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      donor_ir_context.get(), validator_options, kConsoleMessageConsumer));
 
   PseudoRandomGenerator random_generator(0);
   FuzzerContext fuzzer_context(&random_generator, 100);
-  spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(variant_ir_context.get()), validator_options);
 

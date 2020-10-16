@@ -14,6 +14,8 @@
 
 #include "source/fuzz/transformation_add_loop_preheader.h"
 
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -70,7 +72,8 @@ TEST(TransformationAddLoopPreheaderTest, SimpleTest) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // %9 is not a loop header
   ASSERT_FALSE(TransformationAddLoopPreheader(9, 15, {}).IsApplicable(
@@ -97,7 +100,8 @@ TEST(TransformationAddLoopPreheaderTest, SimpleTest) {
   ApplyAndCheckFreshIds(transformation2, context.get(),
                         &transformation_context);
 
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_transformations = R"(
                OpCapability Shader
@@ -201,7 +205,8 @@ TEST(TransformationAddLoopPreheaderTest, OpPhi) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto transformation1 = TransformationAddLoopPreheader(8, 40, {});
   ASSERT_TRUE(
@@ -231,7 +236,8 @@ TEST(TransformationAddLoopPreheaderTest, OpPhi) {
   ApplyAndCheckFreshIds(transformation2, context.get(),
                         &transformation_context);
 
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_transformations = R"(
                OpCapability Shader

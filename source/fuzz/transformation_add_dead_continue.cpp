@@ -122,7 +122,8 @@ bool TransformationAddDeadContinue::IsApplicable(
   auto cloned_context = fuzzerutil::CloneIRContext(ir_context);
   ApplyImpl(cloned_context.get(), transformation_context);
   return fuzzerutil::IsValid(cloned_context.get(),
-                             transformation_context.GetValidatorOptions());
+                             transformation_context.GetValidatorOptions(),
+                             fuzzerutil::kSilentMessageConsumer);
 }
 
 void TransformationAddDeadContinue::Apply(

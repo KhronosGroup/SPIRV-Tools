@@ -14,7 +14,9 @@
 
 #include "source/fuzz/transformation_propagate_instruction_down.h"
 
+#include "gtest/gtest.h"
 #include "source/fuzz/counter_overflow_id_source.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -105,9 +107,9 @@ TEST(TransformationPropagateInstructionDownTest, BasicTest) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
@@ -177,7 +179,8 @@ TEST(TransformationPropagateInstructionDownTest, BasicTest) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
 
     ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
         MakeDataDescriptor(201, {}), MakeDataDescriptor(202, {})));
@@ -335,9 +338,9 @@ TEST(TransformationPropagateInstructionDownTest, CantCreateOpPhiTest) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
@@ -365,7 +368,8 @@ TEST(TransformationPropagateInstructionDownTest, CantCreateOpPhiTest) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   // No transformation has introduced an OpPhi instruction.
@@ -471,9 +475,9 @@ TEST(TransformationPropagateInstructionDownTest, VariablePointersCapability) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
@@ -485,7 +489,8 @@ TEST(TransformationPropagateInstructionDownTest, VariablePointersCapability) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(context->get_def_use_mgr()->GetDef(200));
   }
   {
@@ -505,7 +510,8 @@ TEST(TransformationPropagateInstructionDownTest, VariablePointersCapability) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   std::string after_transformation = R"(
@@ -582,9 +588,9 @@ TEST(TransformationPropagateInstructionDownTest, UseOverflowIdsTest) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options,
       MakeUnique<CounterOverflowIdSource>(300));
@@ -594,7 +600,8 @@ TEST(TransformationPropagateInstructionDownTest, UseOverflowIdsTest) {
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context,
                         {300});
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -671,9 +678,9 @@ TEST(TransformationPropagateInstructionDownTest, TestCreatedFacts) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
@@ -690,7 +697,8 @@ TEST(TransformationPropagateInstructionDownTest, TestCreatedFacts) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
 
     ASSERT_FALSE(transformation_context.GetFactManager()->IdIsIrrelevant(201));
     ASSERT_FALSE(transformation_context.GetFactManager()->IdIsIrrelevant(202));
@@ -716,7 +724,8 @@ TEST(TransformationPropagateInstructionDownTest, TestCreatedFacts) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
 
     ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(203));
     ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(204));
@@ -742,7 +751,8 @@ TEST(TransformationPropagateInstructionDownTest, TestCreatedFacts) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
 
     ASSERT_FALSE(transformation_context.GetFactManager()->IdIsIrrelevant(206));
     ASSERT_FALSE(transformation_context.GetFactManager()->IdIsIrrelevant(207));
@@ -857,9 +867,9 @@ TEST(TransformationPropagateInstructionDownTest, TestLoops1) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
@@ -870,7 +880,8 @@ TEST(TransformationPropagateInstructionDownTest, TestLoops1) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   // Can't replace usage of %22 in %26.
@@ -966,9 +977,9 @@ TEST(TransformationPropagateInstructionDownTest, TestLoops2) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
@@ -980,7 +991,8 @@ TEST(TransformationPropagateInstructionDownTest, TestLoops2) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
   {
     // Can propagate %201 from %20 into %21.
@@ -990,7 +1002,8 @@ TEST(TransformationPropagateInstructionDownTest, TestLoops2) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   // Can't propagate %24 from %21 into %20.
@@ -1068,9 +1081,9 @@ TEST(TransformationPropagateInstructionDownTest, TestLoops3) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
@@ -1083,7 +1096,8 @@ TEST(TransformationPropagateInstructionDownTest, TestLoops3) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   std::string after_transformation = R"(

@@ -141,16 +141,18 @@ void TransformationInlineFunction::Apply(
 
   // Inline the |called_function| entry block.
   for (auto& entry_block_instruction : *called_function->entry()) {
-    opt::Instruction* inlined_instruction = nullptr;
+    opt::Instruction* inlined_instruction;
 
     if (entry_block_instruction.opcode() == SpvOpVariable) {
       // All OpVariable instructions in a function must be in the first block
       // in the function.
       inlined_instruction = caller_function->begin()->begin()->InsertBefore(
-          MakeUnique<opt::Instruction>(entry_block_instruction));
+          std::unique_ptr<opt::Instruction>(
+              entry_block_instruction.Clone(ir_context)));
     } else {
       inlined_instruction = function_call_instruction->InsertBefore(
-          MakeUnique<opt::Instruction>(entry_block_instruction));
+          std::unique_ptr<opt::Instruction>(
+              entry_block_instruction.Clone(ir_context)));
     }
 
     AdaptInlinedInstruction(result_id_map, ir_context, inlined_instruction);

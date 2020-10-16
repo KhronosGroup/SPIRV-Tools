@@ -15,6 +15,8 @@
 
 #include "source/fuzz/transformation_record_synonymous_constants.h"
 
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -88,7 +90,8 @@ TEST(TransformationRecordSynonymousConstantsTest, IntConstants) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // %3 is not a constant declaration
   ASSERT_FALSE(TransformationRecordSynonymousConstants(3, 9).IsApplicable(
@@ -196,7 +199,8 @@ TEST(TransformationRecordSynonymousConstantsTest, BoolConstants) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // %9 and %11 are not equivalent
   ASSERT_FALSE(TransformationRecordSynonymousConstants(9, 11).IsApplicable(
@@ -287,7 +291,8 @@ TEST(TransformationRecordSynonymousConstantsTest, FloatConstants) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // %9 and %13 are not equivalent
   ASSERT_FALSE(TransformationRecordSynonymousConstants(9, 13).IsApplicable(
@@ -392,7 +397,8 @@ TEST(TransformationRecordSynonymousConstantsTest,
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // %25 and %27 are equivalent (25 is zero-like, 27 is null)
   ASSERT_TRUE(TransformationRecordSynonymousConstants(25, 27).IsApplicable(
@@ -528,7 +534,8 @@ TEST(TransformationRecordSynonymousConstantsTest, StructCompositeConstants) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // %29 and %35 are not equivalent (they have different types)
   ASSERT_FALSE(TransformationRecordSynonymousConstants(29, 35).IsApplicable(
@@ -625,7 +632,8 @@ TEST(TransformationRecordSynonymousConstantsTest, ArrayCompositeConstants) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // %25 and %31 are not equivalent (they have different types)
   ASSERT_FALSE(TransformationRecordSynonymousConstants(25, 31).IsApplicable(
@@ -715,7 +723,8 @@ TEST(TransformationRecordSynonymousConstantsTest, IntVectors) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // %15 and %17 are not equivalent (having non-equivalent components)
   ASSERT_FALSE(TransformationRecordSynonymousConstants(15, 17).IsApplicable(
@@ -789,9 +798,9 @@ TEST(TransformationRecordSynonymousConstantsTest, FirstIrrelevantConstant) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_TRUE(TransformationRecordSynonymousConstants(7, 8).IsApplicable(
@@ -824,9 +833,9 @@ TEST(TransformationRecordSynonymousConstantsTest, SecondIrrelevantConstant) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_TRUE(TransformationRecordSynonymousConstants(7, 8).IsApplicable(
@@ -858,9 +867,9 @@ TEST(TransformationRecordSynonymousConstantsTest, InvalidIds) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_FALSE(TransformationRecordSynonymousConstants(7, 8).IsApplicable(

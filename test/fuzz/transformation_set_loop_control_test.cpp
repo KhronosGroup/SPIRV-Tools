@@ -14,6 +14,8 @@
 
 #include "source/fuzz/transformation_set_loop_control.h"
 
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -254,9 +256,9 @@ TEST(TransformationSetLoopControlTest, VariousScenarios) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
 
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // These are the loop headers together with the selection controls of their
@@ -949,9 +951,9 @@ TEST(TransformationSetLoopControlTest, CheckSPIRVVersionsRespected) {
     const auto consumer = nullptr;
     const auto context =
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
-    ASSERT_TRUE(IsValid(env, context.get()));
-
     spvtools::ValidatorOptions validator_options;
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
     TransformationContext transformation_context(
         MakeUnique<FactManager>(context.get()), validator_options);
     TransformationSetLoopControl transformation(

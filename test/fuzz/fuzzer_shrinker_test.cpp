@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/fuzz/fuzzer.h"
+#include "source/fuzz/shrinker.h"
+
 #include <functional>
 #include <vector>
 
-#include "source/fuzz/fuzzer.h"
+#include "gtest/gtest.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/pseudo_random_generator.h"
-#include "source/fuzz/shrinker.h"
 #include "source/fuzz/uniform_buffer_element_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -992,7 +994,7 @@ void RunAndCheckShrinker(
     spv_validator_options validator_options) {
   // Run the shrinker.
   auto shrinker_result =
-      Shrinker(target_env, kSilentConsumer, binary_in, initial_facts,
+      Shrinker(target_env, kConsoleMessageConsumer, binary_in, initial_facts,
                transformation_sequence_in, interestingness_function, step_limit,
                false, validator_options)
           .Run();
@@ -1054,9 +1056,9 @@ void RunFuzzerAndShrinker(const std::string& shader,
   }
 
   auto fuzzer_result =
-      Fuzzer(env, kSilentConsumer, binary_in, initial_facts, donor_suppliers,
-             MakeUnique<PseudoRandomGenerator>(seed), enable_all_passes,
-             repeated_pass_strategy, true, validator_options)
+      Fuzzer(env, kConsoleMessageConsumer, binary_in, initial_facts,
+             donor_suppliers, MakeUnique<PseudoRandomGenerator>(seed),
+             enable_all_passes, repeated_pass_strategy, true, validator_options)
           .Run();
   ASSERT_EQ(Fuzzer::FuzzerResultStatus::kComplete, fuzzer_result.status);
   ASSERT_TRUE(t.Validate(fuzzer_result.transformed_binary));

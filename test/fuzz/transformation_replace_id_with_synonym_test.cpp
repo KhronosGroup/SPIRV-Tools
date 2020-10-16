@@ -14,7 +14,9 @@
 
 #include "source/fuzz/transformation_replace_id_with_synonym.h"
 
+#include "gtest/gtest.h"
 #include "source/fuzz/data_descriptor.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/id_use_descriptor.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
@@ -218,9 +220,9 @@ TEST(TransformationReplaceIdWithSynonymTest, IllegalTransformations) {
   const auto consumer = nullptr;
   const auto context =
       BuildModule(env, consumer, kComplexShader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   SetUpIdSynonyms(transformation_context.GetFactManager());
@@ -291,9 +293,9 @@ TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
   const auto consumer = nullptr;
   const auto context =
       BuildModule(env, consumer, kComplexShader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   SetUpIdSynonyms(transformation_context.GetFactManager());
@@ -305,7 +307,8 @@ TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
                                                    transformation_context));
   ApplyAndCheckFreshIds(global_constant_synonym, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto replace_vector_access_chain_index = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(
@@ -315,7 +318,8 @@ TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
       context.get(), transformation_context));
   ApplyAndCheckFreshIds(replace_vector_access_chain_index, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // This is an interesting case because it replaces something that is being
   // copied with something that is already a synonym.
@@ -327,7 +331,8 @@ TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
       regular_replacement.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(regular_replacement, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto regular_replacement2 = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(55, MakeInstructionDescriptor(203, SpvOpStore, 0), 0),
@@ -336,14 +341,16 @@ TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
       regular_replacement2.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(regular_replacement2, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   auto good_op_phi = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(74, MakeInstructionDescriptor(86, SpvOpPhi, 0), 2),
       205);
   ASSERT_TRUE(good_op_phi.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(good_op_phi, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const std::string after_transformation = R"(
                OpCapability Shader
@@ -515,9 +522,9 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   transformation_context.GetFactManager()->MaybeAddFact(
@@ -532,7 +539,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
       100);
   ASSERT_TRUE(replacement1.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement1, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %8 with %101 in:
   // OpStore %8 %11
@@ -541,7 +549,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
       101);
   ASSERT_TRUE(replacement2.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement2, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %8 with %101 in:
   // %12 = OpLoad %6 %8
@@ -550,7 +559,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
       101);
   ASSERT_TRUE(replacement3.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement3, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replace %10 with %100 in:
   // OpStore %10 %12
@@ -559,7 +569,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfVariables) {
       100);
   ASSERT_TRUE(replacement4.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement4, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const std::string after_transformation = R"(
                OpCapability Shader
@@ -647,9 +658,9 @@ TEST(TransformationReplaceIdWithSynonymTest,
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   transformation_context.GetFactManager()->MaybeAddFact(
@@ -811,9 +822,9 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym facts corresponding to the OpCopyObject operations that have
@@ -886,7 +897,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
       100);
   ASSERT_TRUE(replacement4.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement4, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // %52 = OpAccessChain %23 %50 %16 *%16*
   // Corresponds to i[0].*f*
@@ -917,7 +929,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
       100);
   ASSERT_TRUE(replacement7.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement7, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replacements of the form %21 -> %101
 
@@ -951,7 +964,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
   ASSERT_TRUE(
       replacement10.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement10, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // %44 = OpAccessChain %23 %37 *%21* %21 %43
   // Corresponds to h.*g*.b[0]
@@ -993,7 +1007,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
   ASSERT_TRUE(
       replacement14.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement14, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // %53 = OpAccessChain %19 %50 %21 *%21* %16 %16
   // Corresponds to i[1].*g*.a[0]
@@ -1047,7 +1062,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
   ASSERT_TRUE(
       replacement19.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement19, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // %27 = OpAccessChain %26 %15 %17
   // Corresponds to d.c
@@ -1079,7 +1095,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
   ASSERT_TRUE(
       replacement22.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement22, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // %58 = OpInBoundsAccessChain %26 %50 %57 %21 %17
   // Corresponds to i[3].g.*c*
@@ -1103,7 +1120,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
   ASSERT_TRUE(
       replacement24.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement24, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replacements of the form %32 -> %106
 
@@ -1117,7 +1135,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
   ASSERT_TRUE(
       replacement25.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement25, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replacements of the form %43 -> %107
 
@@ -1131,7 +1150,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
   ASSERT_TRUE(
       replacement26.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement26, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replacements of the form %55 -> %108
 
@@ -1145,7 +1165,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
   ASSERT_TRUE(
       replacement27.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement27, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Replacements of the form %8 -> %109
 
@@ -1159,7 +1180,8 @@ TEST(TransformationReplaceIdWithSynonymTest, SynonymsOfAccessChainIndices) {
   ASSERT_TRUE(
       replacement28.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement28, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const std::string after_transformation = R"(
                OpCapability Shader
@@ -1310,9 +1332,9 @@ TEST(TransformationReplaceIdWithSynonymTest, RuntimeArrayTest) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym fact relating %50 and %12.
@@ -1346,7 +1368,8 @@ TEST(TransformationReplaceIdWithSynonymTest, RuntimeArrayTest) {
   ASSERT_TRUE(replacement2.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement2, context.get(), &transformation_context);
 
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const std::string after_transformation = R"(
                OpCapability Shader
@@ -1421,9 +1444,9 @@ TEST(TransformationReplaceIdWithSynonymTest,
   const auto env = SPV_ENV_UNIVERSAL_1_5;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym fact relating %100 and %9.
@@ -1481,9 +1504,9 @@ TEST(TransformationReplaceIdWithSynonymTest, EquivalentIntegerConstants) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym fact relating %10 and %13 (equivalent integer constant with
@@ -1544,7 +1567,8 @@ TEST(TransformationReplaceIdWithSynonymTest, EquivalentIntegerConstants) {
                    13)
                    .IsApplicable(context.get(), transformation_context));
 
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const std::string after_transformation = R"(
                OpCapability Shader
@@ -1624,9 +1648,9 @@ TEST(TransformationReplaceIdWithSynonymTest, EquivalentIntegerVectorConstants) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Add synonym fact relating %10 and %13 (equivalent integer vectors with
@@ -1662,7 +1686,8 @@ TEST(TransformationReplaceIdWithSynonymTest, EquivalentIntegerVectorConstants) {
   ASSERT_TRUE(replacement2.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(replacement2, context.get(), &transformation_context);
 
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   const std::string after_transformation = R"(
                OpCapability Shader
@@ -1728,9 +1753,9 @@ TEST(TransformationReplaceIdWithSynonymTest, IncompatibleTypes) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   auto* op_i_add = context->get_def_use_mgr()->GetDef(18);

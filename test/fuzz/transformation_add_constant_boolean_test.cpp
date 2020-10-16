@@ -14,6 +14,8 @@
 
 #include "source/fuzz/transformation_add_constant_boolean.h"
 
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -41,9 +43,9 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // True and false can both be added as neither is present.
@@ -67,7 +69,8 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
 
   ASSERT_TRUE(add_true.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(add_true, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Having added true, we cannot add it again with the same id.
   ASSERT_FALSE(add_true.IsApplicable(context.get(), transformation_context));
@@ -76,11 +79,13 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
   ASSERT_TRUE(
       add_true_again.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(add_true_again, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   ASSERT_TRUE(add_false.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(add_false, context.get(), &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Having added false, we cannot add it again with the same id.
   ASSERT_FALSE(add_false.IsApplicable(context.get(), transformation_context));
@@ -90,7 +95,8 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
       add_false_again.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(add_false_again, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // We can create an irrelevant OpConstantTrue.
   TransformationAddConstantBoolean irrelevant_true(102, true, true);
@@ -98,7 +104,8 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
       irrelevant_true.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(irrelevant_true, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // We can create an irrelevant OpConstantFalse.
   TransformationAddConstantBoolean irrelevant_false(103, false, true);
@@ -106,7 +113,8 @@ TEST(TransformationAddConstantBooleanTest, NeitherPresentInitiallyAddBoth) {
       irrelevant_false.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(irrelevant_false, context.get(),
                         &transformation_context);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   ASSERT_FALSE(transformation_context.GetFactManager()->IdIsIrrelevant(100));
   ASSERT_FALSE(transformation_context.GetFactManager()->IdIsIrrelevant(101));
@@ -159,9 +167,9 @@ TEST(TransformationAddConstantBooleanTest, NoOpTypeBoolPresent) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
   spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Neither true nor false can be added as OpTypeBool is not present.
