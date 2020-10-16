@@ -1211,6 +1211,80 @@ TEST_F(LocalSingleStoreElimTest, DebugValueTest) {
   SinglePassRunAndMatch<LocalSingleStoreElimPass>(text, false);
 }
 
+TEST_F(LocalSingleStoreElimTest, DebugDeclareForFunctionParameter) {
+  // We have to add DebugValue for DebugDeclare regardless of the scope
+  // if it declares a function parameter.
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "OpenCL.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+          %3 = OpString "fn_call.hlsl"
+          %4 = OpString "int"
+          %5 = OpString ""
+          %6 = OpString "x"
+          %7 = OpString "A"
+          %8 = OpString "main"
+               OpName %type_StructuredBuffer_int "type.StructuredBuffer.int"
+               OpName %data "data"
+               OpName %main "main"
+               OpDecorate %data DescriptorSet 0
+               OpDecorate %data Binding 0
+               OpDecorate %_runtimearr_int ArrayStride 4
+               OpMemberDecorate %type_StructuredBuffer_int 0 Offset 0
+               OpMemberDecorate %type_StructuredBuffer_int 0 NonWritable
+               OpDecorate %type_StructuredBuffer_int BufferBlock
+        %int = OpTypeInt 32 1
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+    %uint_32 = OpConstant %uint 32
+%_runtimearr_int = OpTypeRuntimeArray %int
+%type_StructuredBuffer_int = OpTypeStruct %_runtimearr_int
+%_ptr_Uniform_type_StructuredBuffer_int = OpTypePointer Uniform %type_StructuredBuffer_int
+       %void = OpTypeVoid
+         %18 = OpTypeFunction %void
+%_ptr_Function_int = OpTypePointer Function %int
+%_ptr_Uniform_int = OpTypePointer Uniform %int
+       %data = OpVariable %_ptr_Uniform_type_StructuredBuffer_int Uniform
+         %21 = OpExtInst %void %1 DebugInfoNone
+         %22 = OpExtInst %void %1 DebugExpression
+         %23 = OpExtInst %void %1 DebugTypeBasic %4 %uint_32 Signed
+         %24 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %23 %23
+         %25 = OpExtInst %void %1 DebugSource %3
+         %26 = OpExtInst %void %1 DebugCompilationUnit 1 4 %25 HLSL
+         %27 = OpExtInst %void %1 DebugFunction %7 %24 %25 17 1 %26 %5 FlagIsProtected|FlagIsPrivate 18 %21
+         %28 = OpExtInst %void %1 DebugLocalVariable %6 %23 %25 17 11 %27 FlagIsLocal 1
+         %29 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %void
+         %30 = OpExtInst %void %1 DebugFunction %8 %29 %25 25 1 %26 %5 FlagIsProtected|FlagIsPrivate 25 %21
+         %31 = OpExtInst %void %1 DebugLexicalBlock %25 25 13 %30
+         %32 = OpExtInst %void %1 DebugInlinedAt 26 %31
+;CHECK: [[fn_param:%\w+]] = OpExtInst %void [[ext:%\w+]] DebugLocalVariable
+;CHECK: [[bb:%\w+]] = OpExtInst %void [[ext]] DebugLexicalBlock
+;CHECK: [[inlined_at:%\w+]] = OpExtInst %void [[ext]] DebugInlinedAt 26 [[bb]]
+       %main = OpFunction %void None %18
+         %bb = OpLabel
+         %33 = OpExtInst %void %1 DebugScope %31
+         %34 = OpVariable %_ptr_Function_int Function
+               OpLine %3 26 15
+         %35 = OpAccessChain %_ptr_Uniform_int %data %uint_0 %uint_0
+         %36 = OpLoad %int %35
+;CHECK: DebugScope [[bb]]
+;CHECK: OpLine {{%\w+}} 26 15
+;CHECK: OpStore {{%\w+}} [[val:%\w+]]
+               OpStore %34 %36
+         %37 = OpExtInst %void %1 DebugScope %27 %32
+         %38 = OpExtInst %void %1 DebugDeclare %28 %34 %22
+;CHECK: DebugScope {{%\w+}} [[inlined_at:%\w+]]
+;CHECK: DebugValue [[fn_param]] [[val]]
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<LocalSingleStoreElimPass>(text, false);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Other types
