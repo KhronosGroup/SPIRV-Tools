@@ -45,8 +45,8 @@ TEST(TransformationMergeBlocksTest, BlockDoesNotExist) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_FALSE(TransformationMergeBlocks(3).IsApplicable(
@@ -85,8 +85,8 @@ TEST(TransformationMergeBlocksTest, DoNotMergeFirstBlockHasMultipleSuccessors) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_FALSE(TransformationMergeBlocks(6).IsApplicable(
@@ -124,8 +124,8 @@ TEST(TransformationMergeBlocksTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_FALSE(TransformationMergeBlocks(10).IsApplicable(
@@ -164,16 +164,16 @@ TEST(TransformationMergeBlocksTest, MergeWhenSecondBlockIsSelectionMerge) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   TransformationMergeBlocks transformation(10);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -237,16 +237,16 @@ TEST(TransformationMergeBlocksTest, MergeWhenSecondBlockIsLoopMerge) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   TransformationMergeBlocks transformation(10);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -315,16 +315,16 @@ TEST(TransformationMergeBlocksTest, MergeWhenSecondBlockIsLoopContinue) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   TransformationMergeBlocks transformation(11);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -389,16 +389,16 @@ TEST(TransformationMergeBlocksTest, MergeWhenSecondBlockStartsWithOpPhi) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   TransformationMergeBlocks transformation(6);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -469,8 +469,8 @@ TEST(TransformationMergeBlocksTest, BasicMerge) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   for (auto& transformation :
@@ -480,8 +480,8 @@ TEST(TransformationMergeBlocksTest, BasicMerge) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-    fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                     kConsoleMessageConsumer);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   }
 
   std::string after_transformation = R"(
@@ -561,8 +561,8 @@ TEST(TransformationMergeBlocksTest, MergeWhenSecondBlockIsSelectionHeader) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   for (auto& transformation :
@@ -571,8 +571,8 @@ TEST(TransformationMergeBlocksTest, MergeWhenSecondBlockIsSelectionHeader) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-    fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                     kConsoleMessageConsumer);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   }
 
   std::string after_transformation = R"(
@@ -652,16 +652,16 @@ TEST(TransformationMergeBlocksTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   TransformationMergeBlocks transformation(101);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader

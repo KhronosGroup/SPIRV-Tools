@@ -43,8 +43,8 @@ TEST(TransformationAddTypeBooleanTest, BasicTest) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Not applicable because id 1 is already in use.
@@ -55,8 +55,8 @@ TEST(TransformationAddTypeBooleanTest, BasicTest) {
   ASSERT_TRUE(
       add_type_bool.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(add_type_bool, context.get(), &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // Not applicable as we already have this type now.
   ASSERT_FALSE(TransformationAddTypeBoolean(101).IsApplicable(

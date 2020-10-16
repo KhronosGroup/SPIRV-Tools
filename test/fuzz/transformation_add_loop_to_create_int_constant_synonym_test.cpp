@@ -77,8 +77,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Reminder: the first four parameters of the constructor are the constants
@@ -187,7 +187,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     spvtools::ValidatorOptions validator_options;
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, kConsoleMessageConsumer));
+        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
     TransformationContext transformation_context(
         MakeUnique<FactManager>(context.get()), validator_options);
     ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
@@ -226,7 +226,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     spvtools::ValidatorOptions validator_options;
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, kConsoleMessageConsumer));
+        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
     TransformationContext transformation_context(
         MakeUnique<FactManager>(context.get()), validator_options);
     ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
@@ -265,7 +265,7 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
     spvtools::ValidatorOptions validator_options;
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, kConsoleMessageConsumer));
+        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
     TransformationContext transformation_context(
         MakeUnique<FactManager>(context.get()), validator_options);
     ASSERT_FALSE(TransformationAddLoopToCreateIntConstantSynonym(
@@ -330,8 +330,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Block %14 has no predecessors.
@@ -395,8 +395,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
                         &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {}), MakeDataDescriptor(100, {})));
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // This transformation will create a synonym of constant %12 from a 2-block
   // loop.
@@ -408,8 +408,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
                         &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {}), MakeDataDescriptor(107, {})));
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // This transformation will create a synonym of constant %12 from a 2-block
   // loop.
@@ -421,8 +421,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Simple) {
                         &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {}), MakeDataDescriptor(115, {})));
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformations = R"(
                OpCapability Shader
@@ -558,8 +558,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // These tests check that the transformation is applicable and is applied
@@ -574,8 +574,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
                         &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {}), MakeDataDescriptor(100, {})));
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // %12 and %11 are signed integers, %18 is an unsigned integer.
   auto transformation2 = TransformationAddLoopToCreateIntConstantSynonym(
@@ -586,8 +586,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
                         &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {}), MakeDataDescriptor(108, {})));
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // %17, %18 and %16 are all signed integers.
   auto transformation3 = TransformationAddLoopToCreateIntConstantSynonym(
@@ -598,8 +598,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
                         &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(17, {}), MakeDataDescriptor(115, {})));
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // %22 is an unsigned integer vector, %23 and %24 are signed integer vectors.
   auto transformation4 = TransformationAddLoopToCreateIntConstantSynonym(
@@ -610,8 +610,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
                         &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(22, {}), MakeDataDescriptor(122, {})));
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // %21, %23 and %24 are all signed integer vectors.
   auto transformation5 = TransformationAddLoopToCreateIntConstantSynonym(
@@ -622,8 +622,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
                         &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(21, {}), MakeDataDescriptor(129, {})));
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformations = R"(
                OpCapability Shader
@@ -757,8 +757,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, 64BitConstants) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // These tests check that the transformation can be applied, and is applied
@@ -773,8 +773,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, 64BitConstants) {
                         &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(13, {}), MakeDataDescriptor(100, {})));
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // 64-bit vector integers.
   auto transformation2 = TransformationAddLoopToCreateIntConstantSynonym(
@@ -785,8 +785,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, 64BitConstants) {
                         &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(16, {}), MakeDataDescriptor(107, {})));
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformations = R"(
                OpCapability Shader
@@ -878,8 +878,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Underflow) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // These tests check that underflows are taken into consideration when
@@ -895,8 +895,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Underflow) {
                         &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(12, {}), MakeDataDescriptor(100, {})));
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // Subtracting 20 twice from 0 underflows and gives the unsigned integer
   // 4294967256.
@@ -908,8 +908,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, Underflow) {
                         &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(15, {}), MakeDataDescriptor(107, {})));
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformations = R"(
                OpCapability Shader
@@ -1003,8 +1003,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest,
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   transformation_context.GetFactManager()->AddFactBlockIsDead(15);
@@ -1069,8 +1069,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, InserBeforeOpSwitch) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
@@ -1082,8 +1082,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, InserBeforeOpSwitch) {
                         &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(20, {}), MakeDataDescriptor(100, {})));
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   auto transformation2 = TransformationAddLoopToCreateIntConstantSynonym(
       20, 21, 20, 20, 8, 200, 201, 202, 203, 204, 205, 206, 0);
@@ -1093,8 +1093,8 @@ TEST(TransformationAddLoopToCreateIntConstantSynonymTest, InserBeforeOpSwitch) {
                         &transformation_context);
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(20, {}), MakeDataDescriptor(200, {})));
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformations = R"(
                OpCapability Shader

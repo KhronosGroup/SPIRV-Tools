@@ -278,8 +278,8 @@ TEST(CallGraphTest, FunctionInDegree) {
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   const auto graph = CallGraph(context.get());
 
@@ -298,8 +298,8 @@ TEST(CallGraphTest, DirectCallees) {
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   const auto graph = CallGraph(context.get());
 
@@ -317,8 +317,8 @@ TEST(CallGraphTest, IndirectCallees) {
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   const auto graph = CallGraph(context.get());
 
@@ -336,8 +336,8 @@ TEST(CallGraphTest, TopologicalOrder) {
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   const auto graph = CallGraph(context.get());
 
@@ -359,8 +359,8 @@ TEST(CallGraphTest, LoopNestingDepth) {
 
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   const auto graph = CallGraph(context.get());
 

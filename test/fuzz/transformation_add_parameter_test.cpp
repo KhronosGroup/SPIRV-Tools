@@ -103,8 +103,8 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Can't modify entry point function.
@@ -136,32 +136,32 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
     TransformationAddParameter correct(9, 60, 11, {{{13, 8}}}, 61);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(correct, context.get(), &transformation_context);
-    fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                     kConsoleMessageConsumer);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
     ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(60));
   }
   {
     TransformationAddParameter correct(17, 62, 7, {{}}, 63);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(correct, context.get(), &transformation_context);
-    fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                     kConsoleMessageConsumer);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
     ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(62));
   }
   {
     TransformationAddParameter correct(29, 64, 31, {{}}, 65);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(correct, context.get(), &transformation_context);
-    fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                     kConsoleMessageConsumer);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
     ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(64));
   }
   {
     TransformationAddParameter correct(34, 66, 7, {{}}, 67);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(correct, context.get(), &transformation_context);
-    fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                     kConsoleMessageConsumer);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
     ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(66));
   }
 
@@ -325,8 +325,8 @@ TEST(TransformationAddParameterTest, NonPointerNotApplicableTest) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: Id 19 is not available in the caller that has id 34.
@@ -450,8 +450,8 @@ TEST(TransformationAddParameterTest, PointerFunctionTest) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: Pointer of id 61 has storage class Output, which is not supported.
@@ -468,8 +468,8 @@ TEST(TransformationAddParameterTest, PointerFunctionTest) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_1, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // Good: Local variable of id 34 is defined in the caller (main).
   TransformationAddParameter transformation_good_2(14, 52, 9, {{{43, 34}}}, 53);
@@ -477,8 +477,8 @@ TEST(TransformationAddParameterTest, PointerFunctionTest) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_2, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // Good: Local variable of id 39 is defined in the caller (main).
   TransformationAddParameter transformation_good_3(6, 54, 9, {{{33, 39}}}, 55);
@@ -486,8 +486,8 @@ TEST(TransformationAddParameterTest, PointerFunctionTest) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_3, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // Good: This adds another pointer parameter to the function of id 6.
   TransformationAddParameter transformation_good_4(6, 56, 30, {{{33, 31}}}, 57);
@@ -495,8 +495,8 @@ TEST(TransformationAddParameterTest, PointerFunctionTest) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_4, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string expected_shader = R"(
                OpCapability Shader
@@ -675,8 +675,8 @@ TEST(TransformationAddParameterTest, PointerPrivateWorkgroupTest) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Good: Global variable of id 28 (storage class Private) is defined in the
@@ -687,8 +687,8 @@ TEST(TransformationAddParameterTest, PointerPrivateWorkgroupTest) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_1, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // Good: Global variable of id 61 is (storage class Workgroup) is defined in
   // the caller (main).
@@ -706,8 +706,8 @@ TEST(TransformationAddParameterTest, PointerPrivateWorkgroupTest) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_3, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // Good: Global variable of id 61 is (storage class Workgroup) is defined in
   // the caller (main).
@@ -725,8 +725,8 @@ TEST(TransformationAddParameterTest, PointerPrivateWorkgroupTest) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_5, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // Good: Global variable of id 61 is (storage class Workgroup) is defined in
   // the caller (main).
@@ -736,8 +736,8 @@ TEST(TransformationAddParameterTest, PointerPrivateWorkgroupTest) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_6, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string expected_shader = R"(
                OpCapability Shader
@@ -896,8 +896,8 @@ TEST(TransformationAddParameterTest, PointerMoreEntriesInMapTest) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Good: Local variable of id 21 is defined in every caller (id 27 and id 31).
@@ -907,8 +907,8 @@ TEST(TransformationAddParameterTest, PointerMoreEntriesInMapTest) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_1, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // Good: Local variable of id 28 is defined in every caller (id 27 and id 31).
   TransformationAddParameter transformation_good_2(
@@ -917,8 +917,8 @@ TEST(TransformationAddParameterTest, PointerMoreEntriesInMapTest) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_2, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string expected_shader = R"(
               OpCapability Shader
@@ -1054,8 +1054,8 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   TransformationAddParameter transformation_good_1(10, 70, 7,
@@ -1064,8 +1064,8 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_1, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // Check if the fact PointeeValueIsIrrelevant is set for the new parameter
   // (storage class Function).
@@ -1078,8 +1078,8 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_2, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // Check if the fact PointeeValueIsIrrelevant is set for the new parameter
   // (storage class Private).
@@ -1092,8 +1092,8 @@ TEST(TransformationAddParameterTest, PointeeValueIsIrrelevantTest) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_3, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // Check if the fact PointeeValueIsIrrelevant is set for the new parameter
   // (storage class Workgroup).

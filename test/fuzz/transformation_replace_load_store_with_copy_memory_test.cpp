@@ -114,8 +114,8 @@ TEST(TransformationReplaceLoadStoreWithCopyMemoryTest, BasicScenarios) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   auto bad_instruction_descriptor_1 =
       MakeInstructionDescriptor(11, SpvOpConstant, 0);
@@ -187,8 +187,8 @@ TEST(TransformationReplaceLoadStoreWithCopyMemoryTest, BasicScenarios) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_1, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   auto transformation_good_2 = TransformationReplaceLoadStoreWithCopyMemory(
       load_instruction_descriptor_3, store_instruction_descriptor_3);
@@ -196,8 +196,8 @@ TEST(TransformationReplaceLoadStoreWithCopyMemoryTest, BasicScenarios) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_2, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformations = R"(
                OpCapability Shader

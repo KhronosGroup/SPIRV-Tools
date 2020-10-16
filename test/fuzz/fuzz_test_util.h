@@ -67,34 +67,6 @@ const uint32_t kFuzzAssembleOption =
 const uint32_t kFuzzDisassembleOption =
     SPV_BINARY_TO_TEXT_OPTION_NO_HEADER | SPV_BINARY_TO_TEXT_OPTION_INDENT;
 
-// A silent message consumer.
-const spvtools::MessageConsumer kSilentConsumer =
-    [](spv_message_level_t, const char*, const spv_position_t&,
-       const char*) -> void {};
-
-const spvtools::MessageConsumer kConsoleMessageConsumer =
-    [](spv_message_level_t level, const char*, const spv_position_t& position,
-       const char* message) -> void {
-  switch (level) {
-    case SPV_MSG_FATAL:
-    case SPV_MSG_INTERNAL_ERROR:
-    case SPV_MSG_ERROR:
-      std::cerr << "error: line " << position.index << ": " << message
-                << std::endl;
-      break;
-    case SPV_MSG_WARNING:
-      std::cout << "warning: line " << position.index << ": " << message
-                << std::endl;
-      break;
-    case SPV_MSG_INFO:
-      std::cout << "info: line " << position.index << ": " << message
-                << std::endl;
-      break;
-    default:
-      break;
-  }
-};
-
 // Dumps the SPIRV-V module in |context| to file |filename|. Useful for
 // interactive debugging.
 void DumpShader(opt::IRContext* context, const char* filename);

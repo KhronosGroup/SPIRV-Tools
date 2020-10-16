@@ -98,8 +98,8 @@ TEST(TransformationAddTypePointerTest, BasicTest) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   auto bad_type_id_does_not_exist =
@@ -144,8 +144,8 @@ TEST(TransformationAddTypePointerTest, BasicTest) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-    fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                     kConsoleMessageConsumer);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   }
 
   std::string after_transformation = R"(

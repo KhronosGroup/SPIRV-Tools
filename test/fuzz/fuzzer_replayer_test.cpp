@@ -1629,7 +1629,7 @@ void RunFuzzerAndReplayer(const std::string& shader,
 
   std::vector<uint32_t> binary_in;
   SpirvTools t(env);
-  t.SetMessageConsumer(kConsoleMessageConsumer);
+  t.SetMessageConsumer(fuzzerutil::kConsoleMessageConsumer);
   ASSERT_TRUE(t.Assemble(shader, &binary_in, kFuzzAssembleOption));
   ASSERT_TRUE(t.Validate(binary_in));
 
@@ -1637,7 +1637,7 @@ void RunFuzzerAndReplayer(const std::string& shader,
   for (auto donor : {&kTestShader1, &kTestShader2, &kTestShader3, &kTestShader4,
                      &kTestShader5, &kTestShader6}) {
     donor_suppliers.emplace_back([donor]() {
-      return BuildModule(env, kConsoleMessageConsumer, *donor,
+      return BuildModule(env, fuzzerutil::kConsoleMessageConsumer, *donor,
                          kFuzzAssembleOption);
     });
   }
@@ -1652,10 +1652,10 @@ void RunFuzzerAndReplayer(const std::string& shader,
     // Every 4th time we run the fuzzer, enable all fuzzer passes.
     bool enable_all_passes = (seed % 4) == 0;
     auto fuzzer_result =
-        Fuzzer(env, kConsoleMessageConsumer, binary_in, initial_facts,
-               donor_suppliers, MakeUnique<PseudoRandomGenerator>(seed),
-               enable_all_passes, strategies[strategy_index], true,
-               validator_options)
+        Fuzzer(env, fuzzerutil::kConsoleMessageConsumer, binary_in,
+               initial_facts, donor_suppliers,
+               MakeUnique<PseudoRandomGenerator>(seed), enable_all_passes,
+               strategies[strategy_index], true, validator_options)
             .Run();
 
     // Cycle the repeated pass strategy so that we try a different one next time
@@ -1668,7 +1668,7 @@ void RunFuzzerAndReplayer(const std::string& shader,
 
     auto replayer_result =
         Replayer(
-            env, kConsoleMessageConsumer, binary_in, initial_facts,
+            env, fuzzerutil::kConsoleMessageConsumer, binary_in, initial_facts,
             fuzzer_result.applied_transformations,
             static_cast<uint32_t>(
                 fuzzer_result.applied_transformations.transformation_size()),

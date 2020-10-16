@@ -994,9 +994,9 @@ void RunAndCheckShrinker(
     spv_validator_options validator_options) {
   // Run the shrinker.
   auto shrinker_result =
-      Shrinker(target_env, kSilentConsumer, binary_in, initial_facts,
-               transformation_sequence_in, interestingness_function, step_limit,
-               false, validator_options)
+      Shrinker(target_env, fuzzerutil::kConsoleMessageConsumer, binary_in,
+               initial_facts, transformation_sequence_in,
+               interestingness_function, step_limit, false, validator_options)
           .Run();
 
   ASSERT_TRUE(Shrinker::ShrinkerResultStatus::kComplete ==
@@ -1026,14 +1026,14 @@ void RunFuzzerAndShrinker(const std::string& shader,
 
   std::vector<uint32_t> binary_in;
   SpirvTools t(env);
-  t.SetMessageConsumer(kConsoleMessageConsumer);
+  t.SetMessageConsumer(fuzzerutil::kConsoleMessageConsumer);
   ASSERT_TRUE(t.Assemble(shader, &binary_in, kFuzzAssembleOption));
   ASSERT_TRUE(t.Validate(binary_in));
 
   std::vector<fuzzerutil::ModuleSupplier> donor_suppliers;
   for (auto donor : {&kTestShader1, &kTestShader2, &kTestShader3}) {
     donor_suppliers.emplace_back([donor]() {
-      return BuildModule(env, kConsoleMessageConsumer, *donor,
+      return BuildModule(env, fuzzerutil::kConsoleMessageConsumer, *donor,
                          kFuzzAssembleOption);
     });
   }
@@ -1056,9 +1056,9 @@ void RunFuzzerAndShrinker(const std::string& shader,
   }
 
   auto fuzzer_result =
-      Fuzzer(env, kSilentConsumer, binary_in, initial_facts, donor_suppliers,
-             MakeUnique<PseudoRandomGenerator>(seed), enable_all_passes,
-             repeated_pass_strategy, true, validator_options)
+      Fuzzer(env, fuzzerutil::kConsoleMessageConsumer, binary_in, initial_facts,
+             donor_suppliers, MakeUnique<PseudoRandomGenerator>(seed),
+             enable_all_passes, repeated_pass_strategy, true, validator_options)
           .Run();
   ASSERT_EQ(Fuzzer::FuzzerResultStatus::kComplete, fuzzer_result.status);
   ASSERT_TRUE(t.Validate(fuzzer_result.transformed_binary));

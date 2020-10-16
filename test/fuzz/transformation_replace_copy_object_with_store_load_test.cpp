@@ -83,8 +83,8 @@ TEST(TransformationReplaceCopyObjectWithStoreLoad, BasicScenarios) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // Invalid: fresh_variable_id=10 is not fresh.
   auto transformation_invalid_1 = TransformationReplaceCopyObjectWithStoreLoad(
@@ -130,8 +130,8 @@ TEST(TransformationReplaceCopyObjectWithStoreLoad, BasicScenarios) {
                                                   transformation_context));
   ApplyAndCheckFreshIds(transformation_valid_1, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   auto transformation_valid_2 = TransformationReplaceCopyObjectWithStoreLoad(
       28, 32, SpvStorageClassPrivate, 15);
@@ -139,8 +139,8 @@ TEST(TransformationReplaceCopyObjectWithStoreLoad, BasicScenarios) {
                                                   transformation_context));
   ApplyAndCheckFreshIds(transformation_valid_2, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -237,8 +237,8 @@ TEST(TransformationReplaceCopyObjectWithStoreLoad, IrrelevantIdsAndDeadBlocks) {
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   transformation_context.GetFactManager()->AddFactBlockIsDead(15);
   transformation_context.GetFactManager()->AddFactIdIsIrrelevant(11);

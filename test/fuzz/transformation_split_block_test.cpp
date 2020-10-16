@@ -209,8 +209,8 @@ TEST(TransformationSplitBlockTest, SplitBlockSeveralTimes) {
       MakeInstructionDescriptor(5, SpvOpStore, 0), 100);
   ASSERT_TRUE(split_1.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(split_1, context.get(), &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_split_1 = R"(
                OpCapability Shader
@@ -258,8 +258,8 @@ TEST(TransformationSplitBlockTest, SplitBlockSeveralTimes) {
       MakeInstructionDescriptor(11, SpvOpStore, 0), 101);
   ASSERT_TRUE(split_2.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(split_2, context.get(), &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_split_2 = R"(
                OpCapability Shader
@@ -309,8 +309,8 @@ TEST(TransformationSplitBlockTest, SplitBlockSeveralTimes) {
       MakeInstructionDescriptor(14, SpvOpLoad, 0), 102);
   ASSERT_TRUE(split_3.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(split_3, context.get(), &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_split_3 = R"(
                OpCapability Shader
@@ -436,8 +436,8 @@ TEST(TransformationSplitBlockTest, SplitBlockBeforeSelectBranch) {
       MakeInstructionDescriptor(14, SpvOpSelectionMerge, 0), 100);
   ASSERT_TRUE(split.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(split, context.get(), &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_split = R"(
                OpCapability Shader
@@ -565,8 +565,8 @@ TEST(TransformationSplitBlockTest, SplitBlockBeforeSwitchBranch) {
       MakeInstructionDescriptor(9, SpvOpSelectionMerge, 0), 100);
   ASSERT_TRUE(split.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(split, context.get(), &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_split = R"(
                OpCapability Shader
@@ -750,8 +750,8 @@ TEST(TransformationSplitBlockTest, SplitOpPhiWithSinglePredecessor) {
       TransformationSplitBlock(MakeInstructionDescriptor(20, SpvOpPhi, 0), 100);
   ASSERT_TRUE(split.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(split, context.get(), &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_split = R"(
                OpCapability Shader
@@ -829,8 +829,8 @@ TEST(TransformationSplitBlockTest, DeadBlockShouldSplitToTwoDeadBlocks) {
       MakeInstructionDescriptor(8, SpvOpBranch, 0), 100);
   ASSERT_TRUE(split.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(split, context.get(), &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   ASSERT_TRUE(transformation_context.GetFactManager()->BlockIsDead(8));
   ASSERT_TRUE(transformation_context.GetFactManager()->BlockIsDead(100));

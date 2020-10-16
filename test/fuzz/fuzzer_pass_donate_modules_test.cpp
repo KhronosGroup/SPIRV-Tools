@@ -193,13 +193,15 @@ TEST(FuzzerPassDonateModulesTest, BasicDonation) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -216,8 +218,9 @@ TEST(FuzzerPassDonateModulesTest, BasicDonation) {
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 TEST(FuzzerPassDonateModulesTest, DonationWithUniforms) {
@@ -274,13 +277,15 @@ TEST(FuzzerPassDonateModulesTest, DonationWithUniforms) {
 
   const auto recipient_context = BuildModule(
       env, consumer, recipient_and_donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context = BuildModule(
       env, consumer, recipient_and_donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -295,8 +300,9 @@ TEST(FuzzerPassDonateModulesTest, DonationWithUniforms) {
 
   fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -405,13 +411,15 @@ TEST(FuzzerPassDonateModulesTest, DonationWithInputAndOutputVariables) {
 
   const auto recipient_context = BuildModule(
       env, consumer, recipient_and_donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context = BuildModule(
       env, consumer, recipient_and_donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -426,8 +434,9 @@ TEST(FuzzerPassDonateModulesTest, DonationWithInputAndOutputVariables) {
 
   fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -500,13 +509,15 @@ TEST(FuzzerPassDonateModulesTest, DonateFunctionTypeWithDifferentPointers) {
 
   const auto recipient_context = BuildModule(
       env, consumer, recipient_and_donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context = BuildModule(
       env, consumer, recipient_and_donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -523,8 +534,9 @@ TEST(FuzzerPassDonateModulesTest, DonateFunctionTypeWithDifferentPointers) {
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 TEST(FuzzerPassDonateModulesTest, DonateOpConstantNull) {
@@ -570,13 +582,15 @@ TEST(FuzzerPassDonateModulesTest, DonateOpConstantNull) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -593,8 +607,9 @@ TEST(FuzzerPassDonateModulesTest, DonateOpConstantNull) {
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImages) {
@@ -698,13 +713,15 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImages) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -721,8 +738,9 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImages) {
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesSampler) {
@@ -794,13 +812,15 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesSampler) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -817,8 +837,9 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesSampler) {
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageStructField) {
@@ -926,13 +947,15 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageStructField) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -949,8 +972,9 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageStructField) {
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageFunctionParameter) {
@@ -1062,13 +1086,15 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageFunctionParameter) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -1085,8 +1111,9 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageFunctionParameter) {
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 TEST(FuzzerPassDonateModulesTest, DonateShaderWithImageStorageClass) {
@@ -1144,13 +1171,15 @@ TEST(FuzzerPassDonateModulesTest, DonateShaderWithImageStorageClass) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -1167,8 +1196,9 @@ TEST(FuzzerPassDonateModulesTest, DonateShaderWithImageStorageClass) {
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithRuntimeArray) {
@@ -1231,13 +1261,15 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithRuntimeArray) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -1254,8 +1286,9 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithRuntimeArray) {
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithRuntimeArrayLivesafe) {
@@ -1335,13 +1368,15 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithRuntimeArrayLivesafe) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -1358,8 +1393,9 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithRuntimeArrayLivesafe) {
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithWorkgroupVariables) {
@@ -1407,13 +1443,15 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithWorkgroupVariables) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -1430,8 +1468,9 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithWorkgroupVariables) {
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithAtomics) {
@@ -1517,13 +1556,15 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithAtomics) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -1540,8 +1581,9 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithAtomics) {
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 TEST(FuzzerPassDonateModulesTest, Miscellaneous1) {
@@ -1701,13 +1743,15 @@ TEST(FuzzerPassDonateModulesTest, Miscellaneous1) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -1724,8 +1768,9 @@ TEST(FuzzerPassDonateModulesTest, Miscellaneous1) {
 
   // We just check that the result is valid.  Checking to what it should be
   // exactly equal to would be very fragile.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 TEST(FuzzerPassDonateModulesTest, OpSpecConstantInstructions) {
@@ -1773,13 +1818,15 @@ TEST(FuzzerPassDonateModulesTest, OpSpecConstantInstructions) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -1795,8 +1842,9 @@ TEST(FuzzerPassDonateModulesTest, OpSpecConstantInstructions) {
   fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
   // Check that the module is valid first.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   std::string expected_shader = R"(
                OpCapability Shader
@@ -1930,13 +1978,15 @@ TEST(FuzzerPassDonateModulesTest, DonationSupportsOpTypeRuntimeArray) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -1951,8 +2001,9 @@ TEST(FuzzerPassDonateModulesTest, DonationSupportsOpTypeRuntimeArray) {
 
   fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 TEST(FuzzerPassDonateModulesTest, HandlesCapabilities) {
@@ -2003,13 +2054,15 @@ TEST(FuzzerPassDonateModulesTest, HandlesCapabilities) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -2048,8 +2101,9 @@ TEST(FuzzerPassDonateModulesTest, HandlesCapabilities) {
   fuzzer_pass.DonateSingleModule(donor_context.get(), false);
 
   // Check that donation was successful.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -2236,13 +2290,15 @@ TEST(FuzzerPassDonateModulesTest, HandlesOpPhisInMergeBlock) {
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_context =
       BuildModule(env, consumer, donor_shader, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(
+      fuzzerutil::IsValidAndWellFormed(donor_context.get(), validator_options,
+                                       fuzzerutil::kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
@@ -2259,8 +2315,9 @@ TEST(FuzzerPassDonateModulesTest, HandlesOpPhisInMergeBlock) {
 
   // We just check that the result is valid. Checking to what it should be
   // exactly equal to would be very fragile.
-  fuzzerutil::IsValidAndWellFormed(recipient_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      recipient_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 }
 
 }  // namespace

@@ -46,7 +46,8 @@ bool TransformationAddSpecConstantOp::IsApplicable(
   auto clone = fuzzerutil::CloneIRContext(ir_context);
   ApplyImpl(clone.get());
   return fuzzerutil::IsValid(clone.get(),
-                             transformation_context.GetValidatorOptions());
+                             transformation_context.GetValidatorOptions(),
+                             fuzzerutil::kSilentMessageConsumer);
 }
 
 void TransformationAddSpecConstantOp::Apply(

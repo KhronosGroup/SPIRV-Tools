@@ -97,8 +97,8 @@ TEST(TransformationCompositeExtractTest, BasicTest) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Instruction does not exist.
@@ -146,8 +146,8 @@ TEST(TransformationCompositeExtractTest, BasicTest) {
       transformation_1.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation_1, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   TransformationCompositeExtract transformation_2(
       MakeInstructionDescriptor(37, SpvOpAccessChain, 0), 202, 104, {0, 2});
@@ -155,8 +155,8 @@ TEST(TransformationCompositeExtractTest, BasicTest) {
       transformation_2.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation_2, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   TransformationCompositeExtract transformation_3(
       MakeInstructionDescriptor(29, SpvOpAccessChain, 0), 203, 104, {0});
@@ -164,8 +164,8 @@ TEST(TransformationCompositeExtractTest, BasicTest) {
       transformation_3.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation_3, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   TransformationCompositeExtract transformation_4(
       MakeInstructionDescriptor(24, SpvOpStore, 0), 204, 101, {0});
@@ -173,8 +173,8 @@ TEST(TransformationCompositeExtractTest, BasicTest) {
       transformation_4.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation_4, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   TransformationCompositeExtract transformation_5(
       MakeInstructionDescriptor(29, SpvOpBranch, 0), 205, 102, {2});
@@ -182,8 +182,8 @@ TEST(TransformationCompositeExtractTest, BasicTest) {
       transformation_5.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation_5, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   TransformationCompositeExtract transformation_6(
       MakeInstructionDescriptor(37, SpvOpReturn, 0), 206, 103, {1});
@@ -191,8 +191,8 @@ TEST(TransformationCompositeExtractTest, BasicTest) {
       transformation_6.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation_6, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(201, {}), MakeDataDescriptor(100, {2})));
@@ -362,8 +362,8 @@ TEST(TransformationCompositeExtractTest, IllegalInsertionPoints) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Cannot insert before the OpVariables of a function.
@@ -484,8 +484,8 @@ TEST(TransformationCompositeExtractTest, AddSynonymsForRelevantIds) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   TransformationCompositeExtract transformation(
@@ -571,8 +571,8 @@ TEST(TransformationCompositeExtractTest, DontAddSynonymsForIrrelevantIds) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   transformation_context.GetFactManager()->AddFactIdIsIrrelevant(100);
@@ -620,8 +620,8 @@ TEST(TransformationCompositeExtractTest, DontAddSynonymInDeadBlock) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   transformation_context.GetFactManager()->AddFactBlockIsDead(15);

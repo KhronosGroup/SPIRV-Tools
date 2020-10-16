@@ -47,8 +47,8 @@ TEST(TransformationAddTypeIntTest, IsApplicable) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Tests non-fresh id.
@@ -113,8 +113,8 @@ TEST(TransformationAddTypeIntTest, Apply) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Adds signed 8-bit integer type.
@@ -177,8 +177,8 @@ TEST(TransformationAddTypeIntTest, Apply) {
          OpFunctionEnd
   )";
 
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 

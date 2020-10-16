@@ -401,17 +401,19 @@ uint32_t GetBoundForCompositeIndex(const opt::Instruction& composite_type_inst,
 }
 
 bool IsValid(const opt::IRContext* context,
-             spv_validator_options validator_options) {
+             spv_validator_options validator_options,
+             MessageConsumer consumer) {
   std::vector<uint32_t> binary;
   context->module()->ToBinary(&binary, false);
   SpirvTools tools(context->grammar().target_env());
+  tools.SetMessageConsumer(consumer);
   return tools.Validate(binary.data(), binary.size(), validator_options);
 }
 
 bool IsValidAndWellFormed(const opt::IRContext* ir_context,
                           spv_validator_options validator_options,
                           MessageConsumer consumer) {
-  if (!IsValid(ir_context, validator_options)) {
+  if (!IsValid(ir_context, validator_options, consumer)) {
     consumer(SPV_MSG_INFO, nullptr, {},
              "Module is invalid (set a breakpoint to inspect).");
     return false;

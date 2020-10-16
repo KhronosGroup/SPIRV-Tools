@@ -144,7 +144,7 @@ TEST(ShrinkerTest, ReduceAddedFunctions) {
   // compilers are kept happy.  See:
   // https://developercommunity.visualstudio.com/content/problem/367326/problems-with-capturing-constexpr-in-lambda.html
   spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer = kSilentConsumer;
+  const auto consumer = fuzzerutil::kConsoleMessageConsumer;
 
   SpirvTools tools(env);
   std::vector<uint32_t> reference_binary;
@@ -155,13 +155,15 @@ TEST(ShrinkerTest, ReduceAddedFunctions) {
 
   const auto variant_ir_context =
       BuildModule(env, consumer, kReferenceModule, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(variant_ir_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      variant_ir_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   const auto donor_ir_context =
       BuildModule(env, consumer, kDonorModule, kFuzzAssembleOption);
-  fuzzerutil::IsValidAndWellFormed(donor_ir_context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      donor_ir_context.get(), validator_options,
+      fuzzerutil::kConsoleMessageConsumer));
 
   PseudoRandomGenerator random_generator(0);
   FuzzerContext fuzzer_context(&random_generator, 100);

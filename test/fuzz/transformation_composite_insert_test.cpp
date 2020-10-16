@@ -97,8 +97,8 @@ TEST(TransformationCompositeInsertTest, NotApplicableScenarios) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: |fresh_id| is not fresh.
@@ -216,8 +216,8 @@ TEST(TransformationCompositeInsertTest, EmptyCompositeScenarios) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: The composite with |composite_id| cannot be empty.
@@ -234,8 +234,8 @@ TEST(TransformationCompositeInsertTest, EmptyCompositeScenarios) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_1, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformations = R"(
                OpCapability Shader
@@ -360,8 +360,8 @@ TEST(TransformationCompositeInsertTest, IrrelevantCompositeNoSynonyms) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Add fact that the composite is irrelevant.
@@ -373,8 +373,8 @@ TEST(TransformationCompositeInsertTest, IrrelevantCompositeNoSynonyms) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_1, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // No synonyms that involve the original object - %30 - should have been
   // added.
@@ -465,8 +465,8 @@ TEST(TransformationCompositeInsertTest, IrrelevantObjectNoSynonyms) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Add fact that the object is irrelevant.
@@ -478,8 +478,8 @@ TEST(TransformationCompositeInsertTest, IrrelevantObjectNoSynonyms) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_1, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // Since %30 and %50 are not irrelevant, they should be synonymous at all
   // indices unaffected by the insertion.
@@ -575,8 +575,8 @@ TEST(TransformationCompositeInsertTest, ApplicableCreatedSynonyms) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation_good_1 = TransformationCompositeInsert(
@@ -585,8 +585,8 @@ TEST(TransformationCompositeInsertTest, ApplicableCreatedSynonyms) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_1, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // These synonyms should have been added.
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -614,8 +614,8 @@ TEST(TransformationCompositeInsertTest, ApplicableCreatedSynonyms) {
                                                  transformation_context));
   ApplyAndCheckFreshIds(transformation_good_2, context.get(),
                         &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   // These synonyms should have been added.
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
@@ -780,8 +780,8 @@ TEST(TransformationCompositeInsertTest, IdNotAvailableScenarios) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Bad: The object with |object_id| is not available at
@@ -852,8 +852,8 @@ TEST(TransformationCompositeInsertTest, CompositeInsertionWithIrrelevantIds) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
@@ -911,8 +911,8 @@ TEST(TransformationCompositeInsertTest, CompositeInsertionWithIrrelevantIds) {
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(103, {1}), MakeDataDescriptor(9, {1})));
 
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 }
 
 }  // namespace

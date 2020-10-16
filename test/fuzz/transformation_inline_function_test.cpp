@@ -143,8 +143,8 @@ TEST(TransformationInlineFunctionTest, IsApplicable) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Tests undefined OpFunctionCall instruction.
@@ -273,8 +273,8 @@ TEST(TransformationInlineFunctionTest, Apply) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation = TransformationInlineFunction(43, {{22, 45},
@@ -380,8 +380,8 @@ TEST(TransformationInlineFunctionTest, Apply) {
                OpFunctionEnd
   )";
 
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
@@ -512,8 +512,8 @@ TEST(TransformationInlineFunctionTest, ApplyToMultipleFunctions) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation = TransformationInlineFunction(30, {});
@@ -749,8 +749,8 @@ TEST(TransformationInlineFunctionTest, ApplyToMultipleFunctions) {
                OpFunctionEnd
   )";
 
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
@@ -785,8 +785,8 @@ TEST(TransformationInlineFunctionTest, HandlesOpPhisInTheSecondBlock) {
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   TransformationInlineFunction transformation(6,
@@ -794,8 +794,8 @@ TEST(TransformationInlineFunctionTest, HandlesOpPhisInTheSecondBlock) {
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -903,8 +903,8 @@ TEST(TransformationInlineFunctionTest, OverflowIds) {
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   auto overflow_ids_unique_ptr = MakeUnique<CounterOverflowIdSource>(1000);
   auto overflow_ids_ptr = overflow_ids_unique_ptr.get();
   TransformationContext transformation_context(
@@ -1016,8 +1016,8 @@ TEST(TransformationInlineFunctionTest, OverflowIds) {
                OpFunctionEnd
   )";
 
-  fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                   kConsoleMessageConsumer);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      context.get(), validator_options, fuzzerutil::kConsoleMessageConsumer));
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
