@@ -236,6 +236,55 @@ TEST(TransformationReplaceIrrelevantIdTest,
                    .IsApplicable(context.get(), transformation_context));
 }
 
+TEST(TransformationReplaceIrrelevantIdTest,
+     DoNotReplaceIrrelevantIdWithOpFunction) {
+  // Checks that an OpFunction result id is not allowed to be used to replace an
+  // irrelevant id.
+  const std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeFunction %6
+         %13 = OpConstant %6 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %20 = OpCopyObject %6 %13
+         %21 = OpCopyObject %6 %20
+               OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %6 None %7
+         %11 = OpLabel
+               OpReturnValue %13
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(20);
+
+  // We cannot replace the use of %20 in by %21 with %10 because %10 is an
+  // OpFunction instruction.
+  ASSERT_FALSE(
+      TransformationReplaceIrrelevantId(
+          MakeIdUseDescriptor(
+              20, MakeInstructionDescriptor(21, SpvOpCopyObject, 0), 0),
+          10)
+          .IsApplicable(context.get(), transformation_context));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
