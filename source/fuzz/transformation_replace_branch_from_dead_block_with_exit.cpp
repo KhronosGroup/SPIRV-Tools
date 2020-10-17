@@ -117,7 +117,7 @@ void TransformationReplaceBranchFromDeadBlockWithExit::Apply(
   opt::Instruction::OperandList new_terminator_in_operands;
   if (message_.opcode() == SpvOpReturnValue) {
     new_terminator_in_operands.push_back(
-        {SPV_OPERAND_TYPE_TYPE_ID, {message_.return_value_id()}});
+        {SPV_OPERAND_TYPE_ID, {message_.return_value_id()}});
   }
   auto terminator = block->terminator();
   terminator->SetOpcode(static_cast<SpvOp>(message_.opcode()));

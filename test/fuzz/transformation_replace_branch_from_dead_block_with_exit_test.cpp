@@ -337,6 +337,12 @@ TEST(TransformationReplaceBranchFromDeadBlockWithExitTest,
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
 
+  opt::Instruction* return_value_inst =
+      context->get_instr_block(201)->terminator();
+  ASSERT_EQ(SpvOpReturnValue, return_value_inst->opcode());
+  ASSERT_EQ(SPV_OPERAND_TYPE_ID, return_value_inst->GetInOperand(0).type);
+  ASSERT_EQ(400, return_value_inst->GetSingleWordInOperand(0));
+
   std::string after_transformation = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
