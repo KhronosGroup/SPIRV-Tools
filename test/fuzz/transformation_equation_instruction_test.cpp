@@ -1618,6 +1618,63 @@ TEST(TransformationEquationInstructionTest, HandlesIrrelevantIds) {
       transformation.IsApplicable(context.get(), transformation_context));
 }
 
+TEST(TransformationEquationInstructionTest, HandlesDeadBlock) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %12 "main"
+               OpExecutionMode %12 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+         %30 = OpTypeVector %6 3
+         %15 = OpConstant %6 24
+         %16 = OpConstant %6 37
+         %31 = OpConstantComposite %30 %15 %16 %15
+         %33 = OpTypeBool
+         %32 = OpConstantTrue %33
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpSelectionMerge %40 None
+               OpBranchConditional %32 %40 %41
+         %41 = OpLabel
+               OpBranch %40
+         %40 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  transformation_context.GetFactManager()->AddFactBlockIsDead(41);
+
+  TransformationEquationInstruction transformation1(
+      14, SpvOpIAdd, {15, 16},
+      MakeInstructionDescriptor(13, SpvOpSelectionMerge, 0));
+  // No synonym is created since block is dead.
+  TransformationEquationInstruction transformation2(
+      100, SpvOpISub, {14, 16}, MakeInstructionDescriptor(41, SpvOpBranch, 0));
+  ASSERT_TRUE(
+      transformation1.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation1, context.get(),
+                        &transformation_context);
+  ASSERT_TRUE(
+      transformation2.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation2, context.get(),
+                        &transformation_context);
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(100, {}), MakeDataDescriptor(15, {})));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
