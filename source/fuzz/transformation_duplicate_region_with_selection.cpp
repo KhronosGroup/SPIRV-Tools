@@ -589,6 +589,21 @@ void TransformationDuplicateRegionWithSelection::Apply(
         }
       });
 
+  opt::Instruction* merge_block_terminator = merge_block->terminator();
+  switch (merge_block_terminator->opcode()) {
+    case SpvOpReturnValue:
+    case SpvOpBranchConditional: {
+      uint32_t operand = merge_block_terminator->GetSingleWordInOperand(0);
+      if (original_id_to_phi_id.count(operand)) {
+        merge_block_terminator->SetInOperand(
+            0, {original_id_to_phi_id.at(operand)});
+      }
+      break;
+    }
+    default:
+      break;
+  }
+
   // Insert the merge block after the |duplicated_exit_block| (the
   // last duplicated block).
   enclosing_function->InsertBasicBlockAfter(std::move(merge_block),

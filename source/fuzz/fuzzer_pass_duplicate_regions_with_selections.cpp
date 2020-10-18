@@ -124,9 +124,8 @@ void FuzzerPassDuplicateRegionsWithSelections::Apply() {
         TransformationDuplicateRegionWithSelection(
             GetFuzzerContext()->GetFreshId(), condition_id,
             GetFuzzerContext()->GetFreshId(), entry_block->id(),
-            exit_block->id(), std::move(original_label_to_duplicate_label),
-            std::move(original_id_to_duplicate_id),
-            std::move(original_id_to_phi_id));
+            exit_block->id(), original_label_to_duplicate_label,
+            original_id_to_duplicate_id, original_id_to_phi_id);
     MaybeApplyTransformation(transformation);
   }
 }

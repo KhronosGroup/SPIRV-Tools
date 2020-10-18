@@ -1590,7 +1590,7 @@ const std::string kTestShader6 = R"(
           %2 = OpFunction %132 None %133
         %164 = OpLabel
         %184 = OpLoad %15 %40
-	%213 = OpLoad %38 %41
+        %213 = OpLoad %38 %41
         %216 = OpSampledImage %45 %184 %213
         %217 = OpImageSampleImplicitLod %76 %216 %112 Bias %55
                OpReturn
