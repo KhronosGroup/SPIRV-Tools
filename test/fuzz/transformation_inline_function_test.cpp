@@ -1021,6 +1021,96 @@ TEST(TransformationInlineFunctionTest, OverflowIds) {
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
+TEST(TransformationInlineFunctionTest, OpPhiInBlockFollowingCall) {
+  // This test checks that if the block after the inlined function call has an
+  // OpPhi instruction and the called function contains multiple blocks then the
+  // OpPhi instruction gets updated to refer to the return block of the inlined
+  // function, since the block containing the call will no longer be a
+  // predecessor.
+
+  std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %13 = OpTypeBool
+         %14 = OpConstantTrue %13
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+          %8 = OpFunctionCall %2 %6
+               OpBranch %11
+         %11 = OpLabel
+         %12 = OpPhi %13 %14 %10
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  auto transformation = TransformationInlineFunction(8, {{7, 100}, {20, 101}});
+
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
+
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+
+  std::string variant_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+         %13 = OpTypeBool
+         %14 = OpConstantTrue %13
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %10
+         %10 = OpLabel
+               OpBranch %101
+        %101 = OpLabel
+               OpBranch %11
+         %11 = OpLabel
+         %12 = OpPhi %13 %14 %101
+               OpReturn
+               OpFunctionEnd
+          %6 = OpFunction %2 None %3
+          %7 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
