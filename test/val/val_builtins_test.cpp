@@ -1,4 +1,6 @@
 // Copyright (c) 2018 Google LLC.
+// Modifications Copyright (C) 2020 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -3723,6 +3725,108 @@ OpDecorate %int0 BuiltIn Position
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+INSTANTIATE_TEST_SUITE_P(
+    PrimitiveShadingRateOutputSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("PrimitiveShadingRateKHR"), Values("Vertex", "Geometry"),
+            Values("Output"), Values("%u32"),
+            Values("OpCapability FragmentShadingRateKHR\n"),
+            Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
+            Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    PrimitiveShadingRateMeshOutputSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("PrimitiveShadingRateKHR"), Values("MeshNV"),
+            Values("Output"), Values("%u32"),
+            Values("OpCapability FragmentShadingRateKHR\nOpCapability "
+                   "MeshShadingNV\n"),
+            Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\nOpExtension "
+                   "\"SPV_NV_mesh_shader\"\n"),
+            Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    PrimitiveShadingRateInvalidExecutionModel,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("PrimitiveShadingRateKHR"), Values("Fragment"), Values("Output"),
+        Values("%u32"), Values("OpCapability FragmentShadingRateKHR\n"),
+        Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
+        Values("VUID-PrimitiveShadingRateKHR-PrimitiveShadingRateKHR-04484 "),
+        Values(TestResult(
+            SPV_ERROR_INVALID_DATA,
+            "Vulkan spec allows BuiltIn PrimitiveShadingRateKHR to be used "
+            "only with Vertex, Geometry, or MeshNV execution models."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    PrimitiveShadingRateInvalidStorageClass,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("PrimitiveShadingRateKHR"), Values("Vertex"), Values("Input"),
+        Values("%u32"), Values("OpCapability FragmentShadingRateKHR\n"),
+        Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
+        Values("VUID-PrimitiveShadingRateKHR-PrimitiveShadingRateKHR-04485 "),
+        Values(TestResult(
+            SPV_ERROR_INVALID_DATA,
+            "Vulkan spec allows BuiltIn PrimitiveShadingRateKHR to be only "
+            "used for variables with Output storage class."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    PrimitiveShadingRateInvalidType,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("PrimitiveShadingRateKHR"), Values("Vertex"), Values("Output"),
+        Values("%f32"), Values("OpCapability FragmentShadingRateKHR\n"),
+        Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
+        Values("VUID-PrimitiveShadingRateKHR-PrimitiveShadingRateKHR-04485 "),
+        Values(TestResult(
+            SPV_ERROR_INVALID_DATA,
+            "According to the Vulkan spec BuiltIn PrimitiveShadingRateKHR "
+            "variable needs to be a 32-bit int scalar."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    ShadingRateInputSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("ShadingRateKHR"), Values("Fragment"), Values("Input"),
+            Values("%u32"), Values("OpCapability FragmentShadingRateKHR\n"),
+            Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
+            Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    ShadingRateInvalidExecutionModel,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("ShadingRateKHR"), Values("Vertex"), Values("Input"),
+            Values("%u32"), Values("OpCapability FragmentShadingRateKHR\n"),
+            Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
+            Values("VUID-ShadingRateKHR-ShadingRateKHR-04490 "),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "Vulkan spec allows BuiltIn ShadingRateKHR to be used "
+                "only with the Fragment execution model."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    ShadingRateInvalidStorageClass,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("ShadingRateKHR"), Values("Fragment"), Values("Output"),
+            Values("%u32"), Values("OpCapability FragmentShadingRateKHR\n"),
+            Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
+            Values("VUID-ShadingRateKHR-ShadingRateKHR-04491 "),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "Vulkan spec allows BuiltIn ShadingRateKHR to be only "
+                "used for variables with Input storage class."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    ShadingRateInvalidType,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("ShadingRateKHR"), Values("Fragment"), Values("Input"),
+        Values("%f32"), Values("OpCapability FragmentShadingRateKHR\n"),
+        Values("OpExtension \"SPV_KHR_fragment_shading_rate\"\n"),
+        Values("VUID-ShadingRateKHR-ShadingRateKHR-04492 "),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "According to the Vulkan spec BuiltIn ShadingRateKHR "
+                          "variable needs to be a 32-bit int scalar."))));
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
