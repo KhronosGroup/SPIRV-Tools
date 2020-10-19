@@ -158,10 +158,26 @@ void TransformationInlineFunction::Apply(
     AdaptInlinedInstruction(result_id_map, ir_context, inlined_instruction);
   }
 
+  // If the function call's successor block contains OpPhi instructions that
+  // refer to the block containing the call then these will need to be rewritten
+  // to instead refer to the block associated with "returning" from the inlined
+  // function, as this block will be the predecessor of what used to be the
+  // function call's successor block.  We look out for this block.
+  uint32_t new_return_block_id = 0;
+
   // Inline the |called_function| non-entry blocks.
   for (auto& block : *called_function) {
     if (&block == &*called_function->entry()) {
       continue;
+    }
+
+    // Check whether this is the function's return block.  Take note if it is,
+    // so that OpPhi instructions in the successor of the original function call
+    // block can be re-written.
+    if (block.terminator()->IsReturn()) {
+      assert(new_return_block_id == 0 &&
+             "There should be only one return block.");
+      new_return_block_id = result_id_map.at(block.id());
     }
 
     auto* cloned_block = block.Clone(ir_context);
@@ -176,10 +192,31 @@ void TransformationInlineFunction::Apply(
     }
   }
 
+  opt::BasicBlock* block_containing_function_call =
+      ir_context->get_instr_block(function_call_instruction);
+
+  assert(((new_return_block_id == 0) ==
+          called_function->entry()->terminator()->IsReturn()) &&
+         "We should have found a return block unless the function being "
+         "inlined returns in its first block.");
+  if (new_return_block_id != 0) {
+    // Rewrite any OpPhi instructions in the successor block so that they refer
+    // to the new return block instead of the block that originally contained
+    // the function call.
+    ir_context->get_def_use_mgr()->ForEachUse(
+        block_containing_function_call->id(),
+        [ir_context, new_return_block_id, successor_block](
+            opt::Instruction* use_instruction, uint32_t operand_index) {
+          if (use_instruction->opcode() == SpvOpPhi &&
+              ir_context->get_instr_block(use_instruction) == successor_block) {
+            use_instruction->SetOperand(operand_index, {new_return_block_id});
+          }
+        });
+  }
+
   // Removes the function call instruction and its block termination instruction
   // from |caller_function|.
-  ir_context->KillInst(
-      ir_context->get_instr_block(function_call_instruction)->terminator());
+  ir_context->KillInst(block_containing_function_call->terminator());
   ir_context->KillInst(function_call_instruction);
 
   // Since the SPIR-V module has changed, no analyses must be validated.
