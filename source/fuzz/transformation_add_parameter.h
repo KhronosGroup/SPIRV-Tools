@@ -62,7 +62,8 @@ class TransformationAddParameter : public Transformation {
 
   // Returns true if the type of the parameter is supported by this
   // transformation.
-  static bool IsParameterTypeSupported(const opt::analysis::Type& type);
+  static bool IsParameterTypeSupported(opt::IRContext* ir_context,
+                                       uint32_t type_id);
 
  private:
   protobufs::TransformationAddParameter message_;
