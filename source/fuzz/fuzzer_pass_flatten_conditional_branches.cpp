@@ -157,13 +157,14 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
                         use_component_wise_3d_select_even_if_optional,
                         &fresh_id_for_bvec3_selector);
                     break;
-                  default:
-                    assert(dimension == 4 && "Invalid vector dimension.");
+                  case 4:
                     PrepareForOpPhiOnVectors(
                         dimension,
                         use_component_wise_4d_select_even_if_optional,
                         &fresh_id_for_bvec4_selector);
                     break;
+                  default:
+                    assert(false && "Invalid vector dimension.");
                 }
                 break;
               }

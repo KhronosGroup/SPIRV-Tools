@@ -74,28 +74,46 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
   }
 
   if (OpSelectArgumentsAreRestricted(ir_context)) {
+    // OpPhi instructions at the convergence block for the selection are handled
+    // by turning them into OpSelect instructions.  The SPIR-V version in use
+    // has restrictions on the arguments that OpSelect can take, so we must
+    // check that any OpPhi instructions are compatible with these restrictions.
     uint32_t convergence_block_id =
         FindConvergenceBlock(ir_context, *header_block);
+    // Consider every OpPhi instruction at the convergence block.
     if (!ir_context->cfg()
              ->block(convergence_block_id)
              ->WhileEachPhiInst([this,
                                  ir_context](opt::Instruction* inst) -> bool {
+               // Decide whether the OpPhi can be handled based on its result
+               // type.
                opt::Instruction* phi_result_type =
                    ir_context->get_def_use_mgr()->GetDef(inst->type_id());
                switch (phi_result_type->opcode()) {
                  case SpvOpTypeBool:
                  case SpvOpTypeInt:
                  case SpvOpTypeFloat:
+                 case SpvOpTypePointer:
+                   // Fine: OpSelect can work directly on scalar and pointer
+                   // types.
                    return true;
                  case SpvOpTypeVector: {
+                   // In its restricted form, OpSelect can only select between
+                   // vectors if the condition of the select is a boolean
+                   // boolean vector.  We thus require the appropriate boolean
+                   // vector type to be present.
                    uint32_t bool_type_id =
                        fuzzerutil::MaybeGetBoolType(ir_context);
                    uint32_t dimension =
                        phi_result_type->GetSingleWordInOperand(1);
                    if (fuzzerutil::MaybeGetVectorType(ir_context, bool_type_id,
                                                       dimension) == 0) {
+                     // The required boolean vector type is not present.
                      return false;
                    }
+                   // The transformation needs to be equipped with a fresh id
+                   // in which to store the vectorized version of the selection
+                   // construct's condition.
                    switch (dimension) {
                      case 2:
                        return message_.fresh_id_for_bvec2_selector() != 0;
@@ -824,12 +842,6 @@ void TransformationFlattenConditionalBranch::
                "We are going to replace an OpPhi with an OpSelect.  This "
                "only makes sense if the block has two distinct "
                "predecessors.");
-        // The OpPhi takes values from two distinct predecessors.  One
-        // predecessor is associated with the "true" path of the conditional
-        // we are flattening, the other with the "false" path, but these
-        // predecessors can appear in either order as operands to the OpPhi
-        // instruction.
-
         // We are going to replace the OpPhi with an OpSelect.  By default,
         // the condition for the OpSelect will be the branch condition's
         // operand.  However, if the OpPhi has vector result type we may need
@@ -876,6 +888,13 @@ void TransformationFlattenConditionalBranch::
         uint32_t branch_instruction_true_block_id =
             branch_instruction.GetSingleWordInOperand(1);
 
+        // The OpPhi takes values from two distinct predecessors.  One
+        // predecessor is associated with the "true" path of the conditional
+        // we are flattening, the other with the "false" path, but these
+        // predecessors can appear in either order as operands to the OpPhi
+        // instruction.  We determine in which order the OpPhi inputs should
+        // appear as OpSelect arguments by checking dominance of the true and
+        // false immediate successors of the header block.
         if (ir_context->GetDominatorAnalysis(header_block.GetParent())
                 ->Dominates(branch_instruction_true_block_id,
                             phi_inst->GetSingleWordInOperand(1))) {
