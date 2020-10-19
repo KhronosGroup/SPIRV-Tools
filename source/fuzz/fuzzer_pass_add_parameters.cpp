@@ -35,10 +35,8 @@ void FuzzerPassAddParameters::Apply() {
   // Compute type candidates for the new parameter.
   std::vector<uint32_t> type_candidates;
   for (const auto& type_inst : GetIRContext()->module()->GetTypes()) {
-    const auto* type =
-        GetIRContext()->get_type_mgr()->GetType(type_inst->result_id());
-    assert(type && "Type instruction is not registered in the type manager");
-    if (TransformationAddParameter::IsParameterTypeSupported(*type)) {
+    if (TransformationAddParameter::IsParameterTypeSupported(
+            GetIRContext(), type_inst->result_id())) {
       type_candidates.push_back(type_inst->result_id());
     }
   }

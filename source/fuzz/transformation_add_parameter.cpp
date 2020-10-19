@@ -46,13 +46,11 @@ bool TransformationAddParameter::IsApplicable(
   }
 
   // The type must be supported.
-  uint32_t new_parameter_type_id = message_.parameter_type_id();
-  auto new_parameter_type =
-      ir_context->get_type_mgr()->GetType(new_parameter_type_id);
-  if (!new_parameter_type) {
+  if (ir_context->get_def_use_mgr()->GetDef(message_.parameter_type_id()) ==
+      nullptr) {
     return false;
   }
-  if (!IsParameterTypeSupported(*new_parameter_type)) {
+  if (!IsParameterTypeSupported(ir_context, message_.parameter_type_id())) {
     return false;
   }
 
@@ -88,7 +86,7 @@ bool TransformationAddParameter::IsApplicable(
     }
 
     // Type of every value of the map must be the same for all callers.
-    if (new_parameter_type_id != value_type_id) {
+    if (message_.parameter_type_id() != value_type_id) {
       return false;
     }
   }
@@ -175,32 +173,40 @@ protobufs::Transformation TransformationAddParameter::ToMessage() const {
 }
 
 bool TransformationAddParameter::IsParameterTypeSupported(
-    const opt::analysis::Type& type) {
+    opt::IRContext* ir_context, uint32_t type_id) {
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3403):
   //  Think about other type instructions we can add here.
-  switch (type.kind()) {
-    case opt::analysis::Type::kBool:
-    case opt::analysis::Type::kInteger:
-    case opt::analysis::Type::kFloat:
-    case opt::analysis::Type::kMatrix:
-    case opt::analysis::Type::kVector:
+  opt::Instruction* type_inst = ir_context->get_def_use_mgr()->GetDef(type_id);
+  switch (type_inst->opcode()) {
+    case SpvOpTypeBool:
+    case SpvOpTypeInt:
+    case SpvOpTypeFloat:
+    case SpvOpTypeMatrix:
+    case SpvOpTypeVector:
       return true;
-    case opt::analysis::Type::kArray:
-      return IsParameterTypeSupported(*type.AsArray()->element_type());
-    case opt::analysis::Type::kStruct:
-      return std::all_of(type.AsStruct()->element_types().begin(),
-                         type.AsStruct()->element_types().end(),
-                         [](const opt::analysis::Type* element_type) {
-                           return IsParameterTypeSupported(*element_type);
-                         });
-    case opt::analysis::Type::kPointer: {
-      auto storage_class = type.AsPointer()->storage_class();
+    case SpvOpTypeArray:
+      return IsParameterTypeSupported(ir_context,
+                                      type_inst->GetSingleWordInOperand(0));
+    case SpvOpTypeStruct:
+      if (fuzzerutil::HasBlockOrBufferBlockDecoration(ir_context, type_id)) {
+        return false;
+      }
+      for (uint32_t i = 0; i < type_inst->NumInOperands(); i++) {
+        if (!IsParameterTypeSupported(ir_context,
+                                      type_inst->GetSingleWordInOperand(i))) {
+          return false;
+        }
+      }
+      return true;
+    case SpvOpTypePointer: {
+      SpvStorageClass storage_class =
+          static_cast<SpvStorageClass>(type_inst->GetSingleWordInOperand(0));
       switch (storage_class) {
         case SpvStorageClassPrivate:
         case SpvStorageClassFunction:
         case SpvStorageClassWorkgroup: {
-          auto pointee_type = type.AsPointer()->pointee_type();
-          return IsParameterTypeSupported(*pointee_type);
+          return IsParameterTypeSupported(ir_context,
+                                          type_inst->GetSingleWordInOperand(1));
         }
         default:
           return false;
