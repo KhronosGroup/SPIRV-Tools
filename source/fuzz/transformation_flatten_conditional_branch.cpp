@@ -57,6 +57,15 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
     return false;
   }
 
+  // The branch condition cannot be irrelevant: we will make reference to it
+  // multiple times and we need to be guaranteed that these references will
+  // yield the same result; if they are replaced by other ids that will not
+  // work.
+  if (transformation_context.GetFactManager()->IdIsIrrelevant(
+          header_block->terminator()->GetSingleWordInOperand(0))) {
+    return false;
+  }
+
   std::set<uint32_t> used_fresh_ids;
 
   // If ids have been provided to be used as vector guards for OpSelect
