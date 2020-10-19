@@ -367,10 +367,10 @@ void TransformationOutlineFunction::Apply(
 
   // Fill out the body of the outlined function according to the region that is
   // being outlined.
-  PopulateOutlinedFunction(*original_region_entry_block,
-                           *original_region_exit_block, region_blocks,
-                           region_output_ids, output_id_to_fresh_id_map,
-                           ir_context, outlined_function.get());
+  PopulateOutlinedFunction(
+      *original_region_entry_block, *original_region_exit_block, region_blocks,
+      region_output_ids, output_id_to_type_id, output_id_to_fresh_id_map,
+      ir_context, outlined_function.get());
 
   // Collapse the region that has been outlined into a function down to a single
   // block that calls said function.
@@ -595,6 +595,12 @@ TransformationOutlineFunction::PrepareFunctionPrototype(
       for (uint32_t output_id : region_output_ids) {
         auto output_id_type =
             ir_context->get_def_use_mgr()->GetDef(output_id)->type_id();
+        if (ir_context->get_def_use_mgr()->GetDef(output_id_type)->opcode() ==
+            SpvOpTypeVoid) {
+          // We cannot add a void field to a struct.  We instead use OpUndef to
+          // handle void output ids.
+          continue;
+        }
         struct_member_types.push_back({SPV_OPERAND_TYPE_ID, {output_id_type}});
       }
       // Add a new struct type to the module.
@@ -758,6 +764,7 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
     const opt::BasicBlock& original_region_exit_block,
     const std::set<opt::BasicBlock*>& region_blocks,
     const std::vector<uint32_t>& region_output_ids,
+    const std::map<uint32_t, uint32_t>& output_id_to_type_id,
     const std::map<uint32_t, uint32_t>& output_id_to_fresh_id_map,
     opt::IRContext* ir_context, opt::Function* outlined_function) const {
   // When we create the exit block for the outlined region, we use this pointer
@@ -857,12 +864,16 @@ void TransformationOutlineFunction::PopulateOutlinedFunction(
         ir_context, SpvOpReturn, 0, 0, opt::Instruction::OperandList()));
   } else {
     // In the case where there are output ids, we add an OpCompositeConstruct
-    // instruction to pack all the output values into a struct, and then an
-    // OpReturnValue instruction to return this struct.
+    // instruction to pack all the non-void output values into a struct, and
+    // then an OpReturnValue instruction to return this struct.
     opt::Instruction::OperandList struct_member_operands;
     for (uint32_t id : region_output_ids) {
-      struct_member_operands.push_back(
-          {SPV_OPERAND_TYPE_ID, {output_id_to_fresh_id_map.at(id)}});
+      if (ir_context->get_def_use_mgr()
+              ->GetDef(output_id_to_type_id.at(id))
+              ->opcode() != SpvOpTypeVoid) {
+        struct_member_operands.push_back(
+            {SPV_OPERAND_TYPE_ID, {output_id_to_fresh_id_map.at(id)}});
+      }
     }
     outlined_region_exit_block->AddInstruction(MakeUnique<opt::Instruction>(
         ir_context, SpvOpCompositeConstruct,
@@ -948,15 +959,27 @@ void TransformationOutlineFunction::ShrinkOriginalRegion(
 
   // If there are output ids, the function call will return a struct.  For each
   // output id, we add an extract operation to pull the appropriate struct
-  // member out into an output id.
-  for (uint32_t index = 0; index < region_output_ids.size(); ++index) {
-    uint32_t output_id = region_output_ids[index];
-    original_region_entry_block->AddInstruction(MakeUnique<opt::Instruction>(
-        ir_context, SpvOpCompositeExtract, output_id_to_type_id.at(output_id),
-        output_id,
-        opt::Instruction::OperandList(
-            {{SPV_OPERAND_TYPE_ID, {message_.new_caller_result_id()}},
-             {SPV_OPERAND_TYPE_LITERAL_INTEGER, {index}}})));
+  // member out into an output id.  The exception is for output ids with void
+  // type.  There are no struct entries for these, so we use an OpUndef of void
+  // type instead.
+  uint32_t struct_member_index = 0;
+  for (uint32_t output_id : region_output_ids) {
+    uint32_t output_type_id = output_id_to_type_id.at(output_id);
+    if (ir_context->get_def_use_mgr()->GetDef(output_type_id)->opcode() ==
+        SpvOpTypeVoid) {
+      original_region_entry_block->AddInstruction(MakeUnique<opt::Instruction>(
+          ir_context, SpvOpUndef, output_type_id, output_id,
+          opt::Instruction::OperandList()));
+      // struct_member_index is not incremented since there was no struct member
+      // associated with this void-typed output id.
+    } else {
+      original_region_entry_block->AddInstruction(MakeUnique<opt::Instruction>(
+          ir_context, SpvOpCompositeExtract, output_type_id, output_id,
+          opt::Instruction::OperandList(
+              {{SPV_OPERAND_TYPE_ID, {message_.new_caller_result_id()}},
+               {SPV_OPERAND_TYPE_LITERAL_INTEGER, {struct_member_index}}})));
+      struct_member_index++;
+    }
   }
 
   // Finally, we terminate the block with the merge instruction (if any) that

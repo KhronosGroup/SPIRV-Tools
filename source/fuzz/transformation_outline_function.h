@@ -178,7 +178,8 @@ class TransformationOutlineFunction : public Transformation {
   // of |original_region_exit_block| so that it returns something appropriate,
   // and patching up branches to |original_region_entry_block| to refer to its
   // clone.  Parameters |region_output_ids| and |output_id_to_fresh_id_map| are
-  // used to determine what the function should return.
+  // used to determine what the function should return.  Parameter
+  // |output_id_to_type_id| provides the type of each output id.
   //
   // The |transformation_context| argument allow facts about blocks being
   // outlined, e.g. whether they are dead blocks, to be asserted about blocks
@@ -188,6 +189,7 @@ class TransformationOutlineFunction : public Transformation {
       const opt::BasicBlock& original_region_exit_block,
       const std::set<opt::BasicBlock*>& region_blocks,
       const std::vector<uint32_t>& region_output_ids,
+      const std::map<uint32_t, uint32_t>& output_id_to_type_id,
       const std::map<uint32_t, uint32_t>& output_id_to_fresh_id_map,
       opt::IRContext* ir_context, opt::Function* outlined_function) const;
 
