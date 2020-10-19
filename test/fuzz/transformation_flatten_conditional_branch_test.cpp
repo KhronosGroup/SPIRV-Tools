@@ -1233,6 +1233,70 @@ TEST(TransformationFlattenConditionalBranchTest,
                                                kConsoleMessageConsumer));
 }
 
+TEST(TransformationFlattenConditionalBranchTest, InapplicableSampledImageLoad) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %12 %96
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpDecorate %12 BuiltIn FragCoord
+               OpDecorate %91 DescriptorSet 0
+               OpDecorate %91 Binding 0
+               OpDecorate %96 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+         %10 = OpTypeVector %6 4
+         %11 = OpTypePointer Input %10
+         %12 = OpVariable %11 Input
+         %21 = OpConstant %6 2
+         %24 = OpTypeInt 32 1
+         %33 = OpTypeBool
+         %35 = OpConstantTrue %33
+         %88 = OpTypeImage %6 2D 0 0 0 1 Unknown
+         %89 = OpTypeSampledImage %88
+         %90 = OpTypePointer UniformConstant %89
+         %91 = OpVariable %90 UniformConstant
+         %95 = OpTypePointer Output %10
+         %96 = OpVariable %95 Output
+        %200 = OpUndef %89
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %28
+         %28 = OpLabel
+               OpSelectionMerge %38 None
+               OpBranchConditional %35 %32 %37
+         %32 = OpLabel
+         %40 = OpLoad %89 %91
+               OpBranch %38
+         %37 = OpLabel
+               OpBranch %38
+         %38 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(
+                   28, true,
+                   {MakeSideEffectWrapperInfo(
+                       MakeInstructionDescriptor(40, SpvOpLoad, 0), 100, 101,
+                       102, 103, 104, 200)})
+                   .IsApplicable(context.get(), transformation_context));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

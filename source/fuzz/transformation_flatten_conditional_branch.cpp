@@ -699,6 +699,15 @@ bool TransformationFlattenConditionalBranch::InstructionCanBeHandled(
     return false;
   }
 
+  // We cannot handle a sampled image load, because we re-work loads using
+  // conditional branches and OpPhi instructions, and the result type of OpPhi
+  // cannot be OpTypeSampledImage.
+  if (instruction.opcode() == SpvOpLoad &&
+      ir_context->get_def_use_mgr()->GetDef(instruction.type_id())->opcode() ==
+          SpvOpTypeSampledImage) {
+    return false;
+  }
+
   // We cannot handle instructions with an id which return a void type, if the
   // result id is used in the module (e.g. a function call to a function that
   // returns nothing).
