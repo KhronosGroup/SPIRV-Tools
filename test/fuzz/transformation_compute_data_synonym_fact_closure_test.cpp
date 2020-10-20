@@ -45,7 +45,7 @@ TEST(TransformationComputeDataSynonymFactClosureTest, DataSynonymFacts) {
   // void main() {
   //   T myT = T(bool[5](true, false, true, false, true),
   //             mat4x2(vec2(1.0, 2.0), vec2(3.0, 4.0),
-  // 	           vec2(5.0, 6.0), vec2(7.0, 8.0)),
+  //                    vec2(5.0, 6.0), vec2(7.0, 8.0)),
   //             S(10, uvec2(100u, 200u)));
   // }
 
