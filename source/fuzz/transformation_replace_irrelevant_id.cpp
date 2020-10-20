@@ -64,6 +64,11 @@ bool TransformationReplaceIrrelevantId::IsApplicable(
     return false;
   }
 
+  // The replacement id must not be the result of an OpFunction instruction.
+  if (replacement_id_def->opcode() == SpvOpFunction) {
+    return false;
+  }
+
   // Consistency check: an irrelevant id cannot be a pointer.
   assert(
       !ir_context->get_type_mgr()->GetType(type_id_of_interest)->AsPointer() &&

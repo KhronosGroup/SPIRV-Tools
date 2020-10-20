@@ -32,6 +32,7 @@ class TransformationReplaceIrrelevantId : public Transformation {
   // - The id of interest in |message_.id_use_descriptor| is irrelevant
   //   according to the fact manager.
   // - The types of the original id and of the replacement ids are the same.
+  // - The replacement must not be the result id of an OpFunction instruction.
   // - |message_.replacement_id| is available to use at the enclosing
   //   instruction of |message_.id_use_descriptor|.
   // - The original id is in principle replaceable with any other id of the same
