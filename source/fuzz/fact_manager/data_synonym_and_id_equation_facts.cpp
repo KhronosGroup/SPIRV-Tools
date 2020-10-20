@@ -271,7 +271,12 @@ void DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
 void DataSynonymAndIdEquationFacts::AddDataSynonymFactRecursive(
     const protobufs::DataDescriptor& dd1,
     const protobufs::DataDescriptor& dd2) {
-  assert(DataDescriptorsAreWellFormedAndComparable(dd1, dd2));
+  if (ir_context_->get_def_use_mgr()->GetDef(dd1.object()) != nullptr &&
+      ir_context_->get_def_use_mgr()->GetDef(dd2.object()) != nullptr) {
+    // Both data descriptor's objects are present in the module, so we have the
+    // chance to check that it makes sense to relate them.
+    assert(DataDescriptorsAreWellFormedAndComparable(dd1, dd2));
+  }
 
   // Record that the data descriptors provided in the fact are equivalent.
   MakeEquivalent(dd1, dd2);

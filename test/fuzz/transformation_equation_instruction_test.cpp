@@ -1675,6 +1675,11 @@ TEST(TransformationEquationInstructionTest, HandlesDeadBlock) {
       MakeDataDescriptor(100, {}), MakeDataDescriptor(15, {})));
 }
 
+TEST(TransformationEquationInstructionTest,
+     EquationLeadsToSynonymsWithAbsentIds) {
+  FAIL();
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
