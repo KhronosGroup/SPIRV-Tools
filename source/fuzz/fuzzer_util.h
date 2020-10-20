@@ -388,7 +388,8 @@ uint32_t MaybeGetBoolType(opt::IRContext* ir_context);
 uint32_t MaybeGetVectorType(opt::IRContext* ir_context,
                             uint32_t component_type_id, uint32_t element_count);
 
-// Returns a result id of an OpTypeStruct instruction if present. Returns 0
+// Returns a result id of an OpTypeStruct instruction whose field types exactly
+// match |component_type_ids| if such an instruction is present. Returns 0
 // otherwise. |component_type_ids| may not contain a result id of an
 // OpTypeFunction.
 uint32_t MaybeGetStructType(opt::IRContext* ir_context,
