@@ -30,6 +30,16 @@ class FuzzerPassFlattenConditionalBranches : public FuzzerPass {
   ~FuzzerPassFlattenConditionalBranches() override;
 
   void Apply() override;
+
+ private:
+  // If the SPIR-V version requires vector OpSelects to be component-wise, or
+  // if |use_vector_select_if_optional| holds, |fresh_id_for_bvec_selector| is
+  // populated with a fresh id if it is currently zero, and a
+  // |vector_dimension|-dimensional boolean vector type is added to the module
+  // if not already present.
+  void PrepareForOpPhiOnVectors(uint32_t vector_dimension,
+                                bool use_vector_select_if_optional,
+                                uint32_t* fresh_id_for_bvec_selector);
 };
 }  // namespace fuzz
 }  // namespace spvtools

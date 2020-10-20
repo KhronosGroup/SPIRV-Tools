@@ -1468,10 +1468,23 @@ message TransformationFlattenConditionalBranch {
   // field is true.
   bool true_branch_first = 2;
 
+  // If the convergence block contains an OpPhi with bvec2 result type, it may
+  // be necessary to introduce a bvec2 with the selection construct's condition
+  // in both components in order to turn the OpPhi into an OpSelect.  This
+  // this field provides a fresh id for an OpCompositeConstruct instruction for
+  // this purpose.  It should be set to 0 if no such instruction is required.
+  uint32 fresh_id_for_bvec2_selector = 3;
+
+  // The same as |fresh_id_for_bvec2_selector| but for the bvec3 case.
+  uint32 fresh_id_for_bvec3_selector = 4;
+
+  // The same as |fresh_id_for_bvec2_selector| but for the bvec4 case.
+  uint32 fresh_id_for_bvec4_selector = 5;
+
   // A list of instructions with side effects, which must be enclosed
   // inside smaller conditionals before flattening the main one, and
   // the corresponding fresh ids and module ids needed.
-  repeated SideEffectWrapperInfo side_effect_wrapper_info = 3;
+  repeated SideEffectWrapperInfo side_effect_wrapper_info = 6;
 }
 
 message TransformationFunctionCall {

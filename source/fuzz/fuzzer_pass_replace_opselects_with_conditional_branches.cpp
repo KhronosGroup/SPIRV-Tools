@@ -65,6 +65,16 @@ void FuzzerPassReplaceOpSelectsWithConditionalBranches::Apply() {
           continue;
         }
 
+        // If the selector does not have scalar boolean type (i.e., it is a
+        // boolean vector) then ignore this OpSelect.
+        if (GetIRContext()
+                ->get_def_use_mgr()
+                ->GetDef(fuzzerutil::GetTypeId(
+                    GetIRContext(), instruction.GetSingleWordInOperand(0)))
+                ->opcode() != SpvOpTypeBool) {
+          continue;
+        }
+
         // If the block is a loop header and we need to split it, the
         // transformation cannot be applied because loop headers cannot be
         // split. We can break out of this loop because the transformation can

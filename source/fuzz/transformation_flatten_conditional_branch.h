@@ -27,6 +27,9 @@ class TransformationFlattenConditionalBranch : public Transformation {
 
   TransformationFlattenConditionalBranch(
       uint32_t header_block_id, bool true_branch_first,
+      uint32_t fresh_id_for_bvec2_selector,
+      uint32_t fresh_id_for_bvec3_selector,
+      uint32_t fresh_id_for_bvec4_selector,
       const std::vector<protobufs::SideEffectWrapperInfo>&
           side_effect_wrappers_info);
 
@@ -81,6 +84,19 @@ class TransformationFlattenConditionalBranch : public Transformation {
   static bool InstructionNeedsPlaceholder(opt::IRContext* ir_context,
                                           const opt::Instruction& instruction);
 
+  // Returns true if and only if the SPIR-V version is such that the arguments
+  // to OpSelect are restricted to only scalars, pointers (if the appropriate
+  // capability is enabled) and component-wise vectors.
+  static bool OpSelectArgumentsAreRestricted(opt::IRContext* ir_context);
+
+  // Find the first block where flow converges (it is not necessarily the merge
+  // block) by walking the true branch until reaching a block that post-
+  // dominates the header.
+  // This is necessary because a potential common set of blocks at the end of
+  // the construct should not be duplicated.
+  static uint32_t FindConvergenceBlock(opt::IRContext* ir_context,
+                                       const opt::BasicBlock& header_block);
+
  private:
   // Returns an unordered_map mapping instructions to the info required to
   // enclose them inside a conditional. It maps the instructions to the
@@ -107,6 +123,22 @@ class TransformationFlattenConditionalBranch : public Transformation {
       uint32_t condition_id, bool exec_if_cond_true,
       std::vector<uint32_t>* dead_blocks,
       std::vector<uint32_t>* irrelevant_ids) const;
+
+  // Turns every OpPhi instruction of |convergence_block| -- the convergence
+  // block for |header_block| (both in |ir_context|) into an OpSelect
+  // instruction.
+  void RewriteOpPhiInstructionsAtConvergenceBlock(
+      const opt::BasicBlock& header_block, uint32_t convergence_block_id,
+      opt::IRContext* ir_context) const;
+
+  // Adds an OpCompositeExtract instruction to the start of |block| in
+  // |ir_context|, with result id given by |fresh_id|.  The instruction will
+  // make a |dimension|-dimensional boolean vector with
+  // |branch_condition_operand| at every component.
+  void AddBooleanVectorConstructorToBlock(
+      uint32_t fresh_id, uint32_t dimension,
+      const opt::Operand& branch_condition_operand, opt::IRContext* ir_context,
+      opt::BasicBlock* block) const;
 
   // Returns true if the given instruction either has no side effects or it can
   // be handled by being enclosed in a conditional.
