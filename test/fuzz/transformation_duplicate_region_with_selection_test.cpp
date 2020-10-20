@@ -979,8 +979,6 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
                                                kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
 
   TransformationDuplicateRegionWithSelection transformation_good_1 =
       TransformationDuplicateRegionWithSelection(
@@ -1212,8 +1210,6 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
                                                kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
 
   TransformationDuplicateRegionWithSelection transformation_good_1 =
       TransformationDuplicateRegionWithSelection(
@@ -1410,8 +1406,6 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
                                                kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
 
   TransformationDuplicateRegionWithSelection transformation_good_1 =
       TransformationDuplicateRegionWithSelection(
@@ -1531,8 +1525,6 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
                                                kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
 
   TransformationDuplicateRegionWithSelection transformation_good_1 =
       TransformationDuplicateRegionWithSelection(
@@ -1813,8 +1805,6 @@ TEST(TransformationDuplicateRegionWithSelectionTest, OverflowIds) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options,
       std::move(overflow_ids_unique_ptr));
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
 
   // The mappings do not provide sufficient ids, thus overflow ids are required.
   TransformationDuplicateRegionWithSelection transformation_good_1 =
@@ -1941,8 +1931,6 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
                                                kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
 
   TransformationDuplicateRegionWithSelection transformation_good_1 =
       TransformationDuplicateRegionWithSelection(
@@ -2071,8 +2059,6 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
                                                kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
 
   TransformationDuplicateRegionWithSelection transformation_good_1 =
       TransformationDuplicateRegionWithSelection(
@@ -2186,8 +2172,6 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
                                                kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
 
   TransformationDuplicateRegionWithSelection transformation_good_1 =
       TransformationDuplicateRegionWithSelection(
@@ -2237,6 +2221,58 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
         )";
 
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationDuplicateRegionWithSelectionTest,
+     InapplicableDueToOpTypeSampledImage) {
+  std::string reference_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %10
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpDecorate %10 RelaxedPrecision
+               OpDecorate %10 DescriptorSet 0
+               OpDecorate %10 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeImage %6 2D 0 0 0 1 Unknown
+          %8 = OpTypeSampledImage %7
+          %9 = OpTypePointer UniformConstant %8
+         %10 = OpVariable %9 UniformConstant
+         %12 = OpTypeVector %6 2
+         %13 = OpConstant %6 0
+         %14 = OpConstantComposite %12 %13 %13
+         %15 = OpTypeVector %6 4
+         %30 = OpTypeBool
+         %31 = OpConstantTrue %30
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+         %11 = OpLoad %8 %10
+               OpBranch %21
+         %21 = OpLabel
+         %16 = OpImageSampleImplicitLod %15 %11 %14
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context =
+      BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  ASSERT_FALSE(TransformationDuplicateRegionWithSelection(
+                   600, 31, 601, 20, 20, {{20, 602}}, {{11, 603}}, {{11, 605}})
+                   .IsApplicable(context.get(), transformation_context));
 }
 
 }  // namespace

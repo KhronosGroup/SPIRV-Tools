@@ -240,14 +240,22 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
       if (&instr == &*exit_block->tail() ||
           fuzzerutil::IdIsAvailableBeforeInstruction(
               ir_context, &*exit_block->tail(), instr.result_id())) {
-        // Using pointers with OpPhi requires capability VariablePointers.
         // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3787):
-        //     Consider not adding OpPhi instructions for the pointers which are
-        //     unused after the region, so that the transformation could be
-        //     still applicable.
-        if (ir_context->get_type_mgr()->GetType(instr.type_id())->AsPointer() &&
+        //     Consider not adding OpPhi instructions for the pointers and
+        //     sampled images which are unused after the region, so that the
+        //     transformation could be still applicable.
+
+        // Using pointers with OpPhi requires capability VariablePointers.
+        if (ir_context->get_def_use_mgr()->GetDef(instr.type_id())->opcode() ==
+                SpvOpTypePointer &&
             !ir_context->get_feature_mgr()->HasCapability(
                 SpvCapabilityVariablePointers)) {
+          return false;
+        }
+
+        // OpTypeSampledImage cannot be the result type of an OpPhi instruction.
+        if (ir_context->get_def_use_mgr()->GetDef(instr.type_id())->opcode() ==
+            SpvOpTypeSampledImage) {
           return false;
         }
 
