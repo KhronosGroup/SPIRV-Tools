@@ -1837,6 +1837,16 @@ TEST(TransformationMergeFunctionReturnsTest, OpPhiAfterFirstBlock) {
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
 
+  // Ensure that all input operands of OpBranchConditional instructions have
+  // the right operand type.
+  context->module()->ForEachInst([](opt::Instruction* inst) {
+    if (inst->opcode() == SpvOpBranchConditional) {
+      ASSERT_EQ(inst->GetInOperand(0).type, SPV_OPERAND_TYPE_ID);
+      ASSERT_EQ(inst->GetInOperand(1).type, SPV_OPERAND_TYPE_ID);
+      ASSERT_EQ(inst->GetInOperand(2).type, SPV_OPERAND_TYPE_ID);
+    }
+  });
+
   std::string after_transformation = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
