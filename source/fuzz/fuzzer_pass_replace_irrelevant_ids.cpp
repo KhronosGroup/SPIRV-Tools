@@ -70,7 +70,7 @@ void FuzzerPassReplaceIrrelevantIds::Apply() {
   }
 
   // For every type for which we have at least one irrelevant id, record all ids
-  // in the module which have that type.  Skip ids of OpFunction instructions as
+  // in the module which have that type. Skip ids of OpFunction instructions as
   // we cannot use these as replacements.
   for (const auto& pair : GetIRContext()->get_def_use_mgr()->id_to_defs()) {
     uint32_t type_id = pair.second->type_id();
