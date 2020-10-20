@@ -1904,7 +1904,7 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
           %9 = OpConstant %6 0
          %16 = OpConstant %6 100
          %17 = OpTypeBool
-	 %50 = OpConstantTrue %17
+         %50 = OpConstantTrue %17
          %20 = OpConstant %6 1
           %4 = OpFunction %2 None %3
           %5 = OpLabel
@@ -1971,7 +1971,7 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
           %9 = OpConstant %6 0
          %16 = OpConstant %6 100
          %17 = OpTypeBool
-	 %50 = OpConstantTrue %17
+         %50 = OpConstantTrue %17
          %20 = OpConstant %6 1
           %4 = OpFunction %2 None %3
           %5 = OpLabel
@@ -2009,6 +2009,230 @@ TEST(TransformationDuplicateRegionWithSelectionTest,
                OpBranch %10
          %12 = OpLabel
                OpReturn
+               OpFunctionEnd
+        )";
+
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationDuplicateRegionWithSelectionTest,
+     RegionExitIsOpBranchConditionalUsingBooleanDefinedInBlock) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %8 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %16 = OpConstant %6 100
+         %17 = OpTypeBool
+         %50 = OpConstantTrue %17
+         %20 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %10
+         %10 = OpLabel
+               OpLoopMerge %12 %13 None
+               OpBranch %14
+         %14 = OpLabel
+         %15 = OpLoad %6 %8
+         %18 = OpSLessThan %17 %15 %16
+               OpBranchConditional %18 %11 %12
+         %11 = OpLabel
+         %19 = OpLoad %6 %8
+         %21 = OpIAdd %6 %19 %20
+         %70 = OpCopyObject %17 %50
+               OpStore %8 %21
+               OpBranchConditional %70 %13 %12
+         %13 = OpLabel
+         %22 = OpLoad %6 %8
+         %23 = OpIAdd %6 %22 %20
+               OpStore %8 %23
+               OpBranch %10
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+
+  TransformationDuplicateRegionWithSelection transformation_good_1 =
+      TransformationDuplicateRegionWithSelection(
+          600, 50, 601, 11, 11, {{11, 602}}, {{19, 603}, {21, 604}, {70, 608}},
+          {{19, 605}, {21, 606}, {70, 607}});
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  ApplyAndCheckFreshIds(transformation_good_1, context.get(),
+                        &transformation_context);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %8 "i"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %16 = OpConstant %6 100
+         %17 = OpTypeBool
+         %50 = OpConstantTrue %17
+         %20 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+               OpBranch %10
+         %10 = OpLabel
+               OpLoopMerge %12 %13 None
+               OpBranch %14
+         %14 = OpLabel
+         %15 = OpLoad %6 %8
+         %18 = OpSLessThan %17 %15 %16
+               OpBranchConditional %18 %600 %12
+        %600 = OpLabel
+               OpSelectionMerge %601 None
+               OpBranchConditional %50 %11 %602
+         %11 = OpLabel
+         %19 = OpLoad %6 %8
+         %21 = OpIAdd %6 %19 %20
+         %70 = OpCopyObject %17 %50
+               OpStore %8 %21
+               OpBranch %601
+        %602 = OpLabel
+        %603 = OpLoad %6 %8
+        %604 = OpIAdd %6 %603 %20
+        %608 = OpCopyObject %17 %50
+               OpStore %8 %604
+               OpBranch %601
+        %601 = OpLabel
+        %605 = OpPhi %6 %19 %11 %603 %602
+        %606 = OpPhi %6 %21 %11 %604 %602
+        %607 = OpPhi %17 %70 %11 %608 %602
+               OpBranchConditional %607 %13 %12
+         %13 = OpLabel
+         %22 = OpLoad %6 %8
+         %23 = OpIAdd %6 %22 %20
+               OpStore %8 %23
+               OpBranch %10
+         %12 = OpLabel
+               OpReturn
+               OpFunctionEnd
+        )";
+
+  ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
+}
+
+TEST(TransformationDuplicateRegionWithSelectionTest,
+     RegionExitUsesOpReturnValueWithIdDefinedInRegion) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeFunction %6
+         %10 = OpConstant %6 2
+         %30 = OpTypeBool
+         %31 = OpConstantTrue %30
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %13 = OpFunctionCall %6 %8
+               OpReturn
+               OpFunctionEnd
+          %8 = OpFunction %6 None %7
+          %9 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+         %21 = OpCopyObject %6 %10
+               OpReturnValue %21
+               OpFunctionEnd
+         )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+
+  TransformationDuplicateRegionWithSelection transformation_good_1 =
+      TransformationDuplicateRegionWithSelection(
+          600, 31, 601, 20, 20, {{20, 602}}, {{21, 603}}, {{21, 605}});
+  ASSERT_TRUE(transformation_good_1.IsApplicable(context.get(),
+                                                 transformation_context));
+  ApplyAndCheckFreshIds(transformation_good_1, context.get(),
+                        &transformation_context);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+
+  std::string expected_shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeFunction %6
+         %10 = OpConstant %6 2
+         %30 = OpTypeBool
+         %31 = OpConstantTrue %30
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %13 = OpFunctionCall %6 %8
+               OpReturn
+               OpFunctionEnd
+          %8 = OpFunction %6 None %7
+          %9 = OpLabel
+               OpBranch %600
+        %600 = OpLabel
+               OpSelectionMerge %601 None
+               OpBranchConditional %31 %20 %602
+         %20 = OpLabel
+         %21 = OpCopyObject %6 %10
+               OpBranch %601
+        %602 = OpLabel
+        %603 = OpCopyObject %6 %10
+               OpBranch %601
+        %601 = OpLabel
+        %605 = OpPhi %6 %21 %20 %603 %602
+               OpReturnValue %605
                OpFunctionEnd
         )";
 

@@ -509,7 +509,7 @@ void TransformationMergeFunctionReturns::Apply(
           {SPV_OPERAND_TYPE_LOOP_CONTROL, {SpvLoopControlMaskNone}}}));
 
   // Add conditional branch:
-  // 	OpBranchConditional %true %block_after_entry %outer_header_id
+  //   OpBranchConditional %true %block_after_entry %outer_header_id
   // This will always branch to %block_after_entry, but it also creates a back
   // edge for the loop (which is never traversed).
   outer_loop_header->AddInstruction(MakeUnique<opt::Instruction>(
