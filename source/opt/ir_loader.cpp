@@ -90,7 +90,12 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
 
   std::unique_ptr<Instruction> spv_inst(
       new Instruction(module()->context(), *inst, std::move(dbg_line_info_)));
-  dbg_line_info_.clear();
+  if (!dbg_line_info_.empty()) {
+    if (dbg_line_info_.back().opcode() == SpvOpNoLine)
+      dbg_line_info_.clear();
+    else
+      dbg_line_info_.erase(dbg_line_info_.begin(), dbg_line_info_.end() - 1);
+  }
 
   const char* src = source_.c_str();
   spv_position_t loc = {inst_index_, 0, 0};
@@ -141,6 +146,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
     function_->AddBasicBlock(std::move(block_));
     block_ = nullptr;
     last_dbg_scope_ = DebugScope(kNoDebugScope, kNoInlinedAt);
+    dbg_line_info_.clear();
   } else {
     if (function_ == nullptr) {  // Outside function definition
       SPIRV_ASSERT(consumer_, block_ == nullptr);

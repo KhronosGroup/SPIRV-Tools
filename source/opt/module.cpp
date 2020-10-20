@@ -143,8 +143,10 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
 
   size_t bound_idx = binary->size() - 2;
   DebugScope last_scope(kNoDebugScope, kNoInlinedAt);
-  auto write_inst = [binary, skip_nop, &last_scope,
+  const Instruction* last_line_inst = nullptr;
+  auto write_inst = [binary, skip_nop, &last_scope, &last_line_inst,
                      this](const Instruction* i) {
+    if (last_line_inst != nullptr && *last_line_inst == *i) return;
     if (!(skip_nop && i->IsNop())) {
       const auto& scope = i->GetDebugScope();
       if (scope != last_scope) {
@@ -157,6 +159,11 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
 
       i->ToBinaryWithoutAttachedDebugInsts(binary);
     }
+    auto opcode = i->opcode();
+    if (IsTerminatorInst(opcode) || opcode == SpvOpNoLine)
+      last_line_inst = nullptr;
+    else if (opcode == SpvOpLine)
+      last_line_inst = i;
   };
   ForEachInst(write_inst, true);
 
