@@ -75,9 +75,9 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
 
   if (OpSelectArgumentsAreRestricted(ir_context)) {
     // OpPhi instructions at the convergence block for the selection are handled
-    // by turning them into OpSelect instructions.  The SPIR-V version in use
-    // has restrictions on the arguments that OpSelect can take, so we must
-    // check that any OpPhi instructions are compatible with these restrictions.
+    // by turning them into OpSelect instructions.  As the SPIR-V version in use
+    // has restrictions on the arguments that OpSelect can take, we must check
+    // that any OpPhi instructions are compatible with these restrictions.
     uint32_t convergence_block_id =
         FindConvergenceBlock(ir_context, *header_block);
     // Consider every OpPhi instruction at the convergence block.
