@@ -58,6 +58,10 @@ class FuzzerPassMergeFunctionReturns : public FuzzerPass {
       const std::vector<uint32_t>& merge_blocks,
       std::map<uint32_t, std::vector<uint32_t>>*
           ids_available_after_entry_block);
+
+  // Returns true if and only if |function| is a wrapper for an early terminator
+  // instruction such as OpKill.
+  bool IsEarlyTerminatorWrapper(const opt::Function& function) const;
 };
 }  // namespace fuzz
 }  // namespace spvtools
