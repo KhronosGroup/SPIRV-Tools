@@ -1846,6 +1846,47 @@ TEST(TransformationFlattenConditionalBranchTest, ApplicablePhiToSelectMatrix) {
   ASSERT_TRUE(IsEqual(env, expected_shader, context.get()));
 }
 
+TEST(TransformationFlattenConditionalBranchTest,
+     InapplicableConditionIsIrrelevant) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeBool
+          %7 = OpConstantTrue %6
+         %10 = OpTypeInt 32 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpSelectionMerge %9 None
+               OpBranchConditional %7 %8 %9
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(7);
+
+  // Inapplicable because the branch condition, %7, is irrelevant.
+  ASSERT_FALSE(TransformationFlattenConditionalBranch(5, true, 0, 0, 0, {})
+                   .IsApplicable(context.get(), transformation_context));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
