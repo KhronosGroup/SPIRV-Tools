@@ -48,6 +48,12 @@ void FuzzerPassMergeFunctionReturns::Apply() {
       continue;
     }
 
+    // We skip wrappers for early terminators, since this fuzzer pass introduces
+    // such wrappers to eliminate early terminators.
+    if (IsEarlyTerminatorWrapper(*function)) {
+      continue;
+    }
+
     // Only consider functions that have early returns.
     if (!function->HasEarlyReturn()) {
       continue;
@@ -314,6 +320,17 @@ FuzzerPassMergeFunctionReturns::GetInfoNeededForMergeBlocks(
   }
 
   return result;
+}
+
+bool FuzzerPassMergeFunctionReturns::IsEarlyTerminatorWrapper(
+    const opt::Function& function) const {
+  for (SpvOp opcode : {SpvOpKill, SpvOpUnreachable, SpvOpTerminateInvocation}) {
+    if (TransformationWrapEarlyTerminatorInFunction::MaybeGetWrapperFunction(
+            GetIRContext(), opcode) == &function) {
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace fuzz
