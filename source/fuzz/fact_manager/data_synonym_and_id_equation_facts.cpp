@@ -596,7 +596,6 @@ void DataSynonymAndIdEquationFacts::ComputeClosureOfFacts(
           // Get the type of obj_1
           auto dd1_root_type_id =
               fuzzerutil::GetTypeId(ir_context_, dd1->object());
-          ;
           // Use this type, together with a_1, ..., a_m, to get the type of
           // obj_1[a_1, ..., a_m].
           auto dd1_prefix_type = fuzzerutil::WalkCompositeTypeIndices(
@@ -606,7 +605,6 @@ void DataSynonymAndIdEquationFacts::ComputeClosureOfFacts(
           // obj_2[b_1, ..., b_n].
           auto dd2_root_type_id =
               fuzzerutil::GetTypeId(ir_context_, dd2->object());
-          ;
           auto dd2_prefix_type = fuzzerutil::WalkCompositeTypeIndices(
               ir_context_, dd2_root_type_id, dd2_prefix.index());
 
