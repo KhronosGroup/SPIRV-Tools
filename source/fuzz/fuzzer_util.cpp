@@ -627,28 +627,45 @@ bool IdIsAvailableBeforeInstruction(opt::IRContext* context,
   assert(context->get_instr_block(instruction) &&
          "|instruction| must be in a basic block");
 
-  auto defining_instruction = context->get_def_use_mgr()->GetDef(id);
-  auto enclosing_function = context->get_instr_block(instruction)->GetParent();
+  auto id_definition = context->get_def_use_mgr()->GetDef(id);
+  auto function_enclosing_instruction =
+      context->get_instr_block(instruction)->GetParent();
   // If the id a function parameter, it needs to be associated with the
   // function containing the instruction.
-  if (defining_instruction->opcode() == SpvOpFunctionParameter) {
-    return InstructionIsFunctionParameter(defining_instruction,
-                                          enclosing_function);
+  if (id_definition->opcode() == SpvOpFunctionParameter) {
+    return InstructionIsFunctionParameter(id_definition,
+                                          function_enclosing_instruction);
   }
   if (!context->get_instr_block(id)) {
     // The id is at global scope.
     return true;
   }
-  if (defining_instruction == instruction) {
+  if (id_definition == instruction) {
     // The instruction is not available right before its own definition.
     return false;
   }
   const auto* dominator_analysis =
-      context->GetDominatorAnalysis(enclosing_function);
-  return dominator_analysis->IsReachable(
-             context->get_instr_block(instruction)) &&
-         dominator_analysis->IsReachable(context->get_instr_block(id)) &&
-         dominator_analysis->Dominates(defining_instruction, instruction);
+      context->GetDominatorAnalysis(function_enclosing_instruction);
+  if (dominator_analysis->IsReachable(context->get_instr_block(instruction)) &&
+      dominator_analysis->IsReachable(context->get_instr_block(id)) &&
+      dominator_analysis->Dominates(id_definition, instruction)) {
+    // The id's definition dominates the instruction, and both the definition
+    // and the instruction are in reachable blocks, thus the id is available at
+    // the instruction.
+    return true;
+  }
+  if (id_definition->opcode() == SpvOpVariable &&
+      function_enclosing_instruction ==
+          context->get_instr_block(id)->GetParent()) {
+    assert(!dominator_analysis->IsReachable(
+               context->get_instr_block(instruction)) &&
+           "If the instruction were in a reachable block we should already "
+           "have returned true.");
+    // The id is a variable and it is in the same function as |instruction|.
+    // This is OK despite |instruction| being unreachable.
+    return true;
+  }
+  return false;
 }
 
 bool InstructionIsFunctionParameter(opt::Instruction* instruction,
