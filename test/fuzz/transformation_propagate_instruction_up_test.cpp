@@ -892,6 +892,61 @@ TEST(TransformationPropagateInstructionUpTest, MultipleIdenticalPredecessors) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationPropagateInstructionUpTest,
+     InapplicableDueToOpTypeSampledImage) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %10
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpDecorate %10 RelaxedPrecision
+               OpDecorate %10 DescriptorSet 0
+               OpDecorate %10 Binding 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeImage %6 2D 0 0 0 1 Unknown
+          %8 = OpTypeSampledImage %7
+          %9 = OpTypePointer UniformConstant %8
+         %10 = OpVariable %9 UniformConstant
+         %12 = OpTypeVector %6 2
+         %13 = OpConstant %6 0
+         %14 = OpConstantComposite %12 %13 %13
+         %15 = OpTypeVector %6 4
+         %30 = OpTypeBool
+         %31 = OpConstantTrue %30
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %11 = OpLoad %8 %10
+               OpSelectionMerge %20 None
+               OpBranchConditional %31 %40 %41
+         %40 = OpLabel
+               OpBranch %20
+         %41 = OpLabel
+               OpBranch %20
+         %20 = OpLabel
+         %50 = OpCopyObject %8 %11
+         %16 = OpImageSampleImplicitLod %15 %50 %14
+               OpReturn
+               OpFunctionEnd
+)";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  ASSERT_FALSE(
+      TransformationPropagateInstructionUp(20, {{{40, 100}, {41, 101}}})
+          .IsApplicable(context.get(), transformation_context));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
