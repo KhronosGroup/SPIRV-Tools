@@ -517,7 +517,7 @@ void TransformationMergeFunctionReturns::Apply(
       opt::Instruction::OperandList{
           {SPV_OPERAND_TYPE_ID, {constant_true}},
           {SPV_OPERAND_TYPE_ID, {block_after_entry}},
-          {SPV_OPERAND_TYPE_LOOP_CONTROL, {message_.outer_header_id()}}}));
+          {SPV_OPERAND_TYPE_ID, {message_.outer_header_id()}}}));
 
   // Insert the header right after the entry block.
   function->InsertBasicBlockAfter(std::move(outer_loop_header),

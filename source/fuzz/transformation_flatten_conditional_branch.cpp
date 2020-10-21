@@ -867,7 +867,7 @@ void TransformationFlattenConditionalBranch::
               // OpSelect's condition, and note the fact that we will need to
               // add an instruction to bring this bvec2 into existence.
               if (message_.fresh_id_for_bvec2_selector() != 0) {
-                selector_operand = {SPV_OPERAND_TYPE_TYPE_ID,
+                selector_operand = {SPV_OPERAND_TYPE_ID,
                                     {message_.fresh_id_for_bvec2_selector()}};
                 require_2d_boolean_vector = true;
               }
@@ -875,7 +875,7 @@ void TransformationFlattenConditionalBranch::
             case 3:
               // Similar to the 2D case.
               if (message_.fresh_id_for_bvec3_selector() != 0) {
-                selector_operand = {SPV_OPERAND_TYPE_TYPE_ID,
+                selector_operand = {SPV_OPERAND_TYPE_ID,
                                     {message_.fresh_id_for_bvec3_selector()}};
                 require_3d_boolean_vector = true;
               }
@@ -884,7 +884,7 @@ void TransformationFlattenConditionalBranch::
               assert(dimension == 4 && "Invalid vector dimension.");
               // Similar to the 2D case.
               if (message_.fresh_id_for_bvec4_selector() != 0) {
-                selector_operand = {SPV_OPERAND_TYPE_TYPE_ID,
+                selector_operand = {SPV_OPERAND_TYPE_ID,
                                     {message_.fresh_id_for_bvec4_selector()}};
                 require_4d_boolean_vector = true;
               }
