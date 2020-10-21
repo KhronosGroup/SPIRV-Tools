@@ -123,11 +123,6 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
                    // The transformation needs to be equipped with a fresh id
                    // in which to store the vectorized version of the selection
                    // construct's condition.
-                     return false;
-                   }
-                   // The transformation needs to be equipped with a fresh id
-                   // in which to store the vectorized version of the selection
-                   // construct's condition.
                    switch (dimension) {
                      case 2:
                        return message_.fresh_id_for_bvec2_selector() != 0;
