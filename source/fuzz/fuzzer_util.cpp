@@ -418,6 +418,8 @@ bool IsValidAndWellFormed(const opt::IRContext* ir_context,
                           spv_validator_options validator_options,
                           MessageConsumer consumer) {
   if (!IsValid(ir_context, validator_options, consumer)) {
+    // Expression to dump |ir_context| to /data/temp/shader.spv:
+    //    DumpShader(ir_context, "/data/temp/shader.spv")
     consumer(SPV_MSG_INFO, nullptr, {},
              "Module is invalid (set a breakpoint to inspect).");
     return false;
@@ -1052,18 +1054,24 @@ uint32_t MaybeGetVectorType(opt::IRContext* ir_context,
 
 uint32_t MaybeGetStructType(opt::IRContext* ir_context,
                             const std::vector<uint32_t>& component_type_ids) {
-  std::vector<const opt::analysis::Type*> component_types;
-  component_types.reserve(component_type_ids.size());
-
-  for (auto type_id : component_type_ids) {
-    const auto* component_type = ir_context->get_type_mgr()->GetType(type_id);
-    assert(component_type && !component_type->AsFunction() &&
-           "Component type is invalid");
-    component_types.push_back(component_type);
+  for (auto& type_or_value : ir_context->types_values()) {
+    if (type_or_value.opcode() != SpvOpTypeStruct ||
+        type_or_value.NumInOperands() !=
+            static_cast<uint32_t>(component_type_ids.size())) {
+      continue;
+    }
+    bool all_components_match = true;
+    for (uint32_t i = 0; i < component_type_ids.size(); i++) {
+      if (type_or_value.GetSingleWordInOperand(i) != component_type_ids[i]) {
+        all_components_match = false;
+        break;
+      }
+    }
+    if (all_components_match) {
+      return type_or_value.result_id();
+    }
   }
-
-  opt::analysis::Struct type(component_types);
-  return ir_context->get_type_mgr()->GetId(&type);
+  return 0;
 }
 
 uint32_t MaybeGetVoidType(opt::IRContext* ir_context) {
