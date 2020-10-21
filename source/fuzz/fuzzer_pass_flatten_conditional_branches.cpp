@@ -47,10 +47,13 @@ void FuzzerPassFlattenConditionalBranches::Apply() {
         continue;
       }
 
-      // Only consider this block if it is the header of a conditional.
+      // Only consider this block if it is the header of a conditional, with a
+      // non-irrelevant condition.
       if (block.GetMergeInst() &&
           block.GetMergeInst()->opcode() == SpvOpSelectionMerge &&
-          block.terminator()->opcode() == SpvOpBranchConditional) {
+          block.terminator()->opcode() == SpvOpBranchConditional &&
+          !GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
+              block.terminator()->GetSingleWordInOperand(0))) {
         selection_headers.emplace_back(&block);
       }
     }

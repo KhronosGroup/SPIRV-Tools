@@ -35,6 +35,8 @@ class TransformationFlattenConditionalBranch : public Transformation {
 
   // - |message_.header_block_id| must be the label id of a reachable selection
   //   header, which ends with an OpBranchConditional instruction.
+  // - The condition of the OpBranchConditional instruction must not be an
+  //   irrelevant id.
   // - The header block and the merge block must describe a single-entry,
   //   single-exit region.
   // - The region must not contain barrier or OpSampledImage instructions.
