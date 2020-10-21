@@ -50,6 +50,12 @@ void FuzzerPassAddLoopsToCreateIntConstantSynonyms::Apply() {
     auto constant = GetIRContext()->get_constant_mgr()->FindDeclaredConstant(
         constant_def->result_id());
 
+    // We do not consider irrelevant constants
+    if (GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
+            constant_def->result_id())) {
+      continue;
+    }
+
     // We only consider integer constants (scalar or vector).
     if (!constant->AsIntConstant() &&
         !(constant->AsVectorConstant() &&
