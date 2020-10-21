@@ -163,9 +163,9 @@ TEST(TransformationReplaceParamsWithStructTest, BasicTest) {
                    .IsApplicable(context.get(), transformation_context));
 
   // |caller_id_to_fresh_composite_id| misses values.
-  ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 91,
-                                                     {{33, 92}, {90, 93}})
-                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(
+      TransformationReplaceParamsWithStruct({16, 17}, 90, 91, {{90, 93}})
+          .IsApplicable(context.get(), transformation_context));
 
   // All fresh ids must be unique.
   ASSERT_FALSE(TransformationReplaceParamsWithStruct({16, 17}, 90, 90,
@@ -481,6 +481,45 @@ TEST(TransformationReplaceParamsWithStructTest, ParametersRemainValid) {
   )";
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationReplaceParamsWithStructTest, IsomorphicStructs) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %16 "main"
+               OpExecutionMode %16 OriginUpperLeft
+               OpSource ESSL 310
+          %2 = OpTypeVoid
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeStruct %6
+          %8 = OpTypeStruct %6
+          %9 = OpTypeStruct %8
+         %10 = OpTypeFunction %2 %7
+         %15 = OpTypeFunction %2
+         %16 = OpFunction %2 None %15
+         %17 = OpLabel
+               OpReturn
+               OpFunctionEnd
+         %11 = OpFunction %2 None %10
+         %12 = OpFunctionParameter %7
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  ASSERT_FALSE(TransformationReplaceParamsWithStruct({12}, 100, 101, {{}})
+                   .IsApplicable(context.get(), transformation_context));
 }
 
 }  // namespace
