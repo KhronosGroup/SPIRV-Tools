@@ -271,7 +271,9 @@ void DataSynonymAndIdEquationFacts::AddEquationFactRecursive(
 void DataSynonymAndIdEquationFacts::AddDataSynonymFactRecursive(
     const protobufs::DataDescriptor& dd1,
     const protobufs::DataDescriptor& dd2) {
-  assert(DataDescriptorsAreWellFormedAndComparable(dd1, dd2));
+  assert((!ObjectStillExists(dd1) || !ObjectStillExists(dd2) ||
+          DataDescriptorsAreWellFormedAndComparable(dd1, dd2)) &&
+         "Mismatched data descriptors.");
 
   // Record that the data descriptors provided in the fact are equivalent.
   MakeEquivalent(dd1, dd2);
@@ -292,6 +294,11 @@ void DataSynonymAndIdEquationFacts::ComputeConversionDataSynonymFacts(
   assert(synonymous_.Exists(dd) &&
          "|dd| should've been registered in the equivalence relation");
 
+  if (!ObjectStillExists(dd)) {
+    // The object is gone from the module, so we cannot proceed.
+    return;
+  }
+
   const auto* type =
       ir_context_->get_type_mgr()->GetType(fuzzerutil::WalkCompositeTypeIndices(
           ir_context_, fuzzerutil::GetTypeId(ir_context_, dd.object()),
@@ -308,12 +315,11 @@ void DataSynonymAndIdEquationFacts::ComputeConversionDataSynonymFacts(
 
     for (const auto& fact : id_equations_) {
       auto equivalence_class = synonymous_.GetEquivalenceClass(*fact.first);
-      auto dd_it = std::find_if(
-          equivalence_class.begin(), equivalence_class.end(),
-          [this](const protobufs::DataDescriptor* a) {
-            return ir_context_->get_def_use_mgr()->GetDef(a->object()) !=
-                   nullptr;
-          });
+      auto dd_it =
+          std::find_if(equivalence_class.begin(), equivalence_class.end(),
+                       [this](const protobufs::DataDescriptor* a) {
+                         return ObjectStillExists(*a);
+                       });
       if (dd_it == equivalence_class.end()) {
         // Skip |equivalence_class| if it has no valid ids.
         continue;
@@ -581,18 +587,15 @@ void DataSynonymAndIdEquationFacts::ComputeClosureOfFacts(
               synonymous_.IsEquivalent(dd1_prefix, dd2_prefix)) {
             continue;
           }
-          opt::Instruction* dd1_object =
-              ir_context_->get_def_use_mgr()->GetDef(dd1->object());
-          opt::Instruction* dd2_object =
-              ir_context_->get_def_use_mgr()->GetDef(dd2->object());
-          if (dd1_object == nullptr || dd2_object == nullptr) {
+          if (!ObjectStillExists(*dd1) || !ObjectStillExists(*dd2)) {
             // The objects are not both available in the module, so we cannot
             // investigate the types of the associated data descriptors; we need
             // to move on.
             continue;
           }
           // Get the type of obj_1
-          auto dd1_root_type_id = dd1_object->type_id();
+          auto dd1_root_type_id =
+              fuzzerutil::GetTypeId(ir_context_, dd1->object());
           // Use this type, together with a_1, ..., a_m, to get the type of
           // obj_1[a_1, ..., a_m].
           auto dd1_prefix_type = fuzzerutil::WalkCompositeTypeIndices(
@@ -600,7 +603,8 @@ void DataSynonymAndIdEquationFacts::ComputeClosureOfFacts(
 
           // Similarly, get the type of obj_2 and use it to get the type of
           // obj_2[b_1, ..., b_n].
-          auto dd2_root_type_id = dd2_object->type_id();
+          auto dd2_root_type_id =
+              fuzzerutil::GetTypeId(ir_context_, dd2->object());
           auto dd2_prefix_type = fuzzerutil::WalkCompositeTypeIndices(
               ir_context_, dd2_root_type_id, dd2_prefix.index());
 
@@ -792,9 +796,11 @@ DataSynonymAndIdEquationFacts::RegisterDataDescriptor(
 bool DataSynonymAndIdEquationFacts::DataDescriptorsAreWellFormedAndComparable(
     const protobufs::DataDescriptor& dd1,
     const protobufs::DataDescriptor& dd2) const {
-  assert(ir_context_->get_def_use_mgr()->GetDef(dd1.object()) &&
-         ir_context_->get_def_use_mgr()->GetDef(dd2.object()) &&
-         "Both descriptors must exist in the module");
+  if (!ObjectStillExists(dd1) || !ObjectStillExists(dd2)) {
+    // We trivially return true if one or other of the objects associated with
+    // the data descriptors is gone.
+    return true;
+  }
 
   auto end_type_id_1 = fuzzerutil::WalkCompositeTypeIndices(
       ir_context_, fuzzerutil::GetTypeId(ir_context_, dd1.object()),
@@ -880,7 +886,7 @@ DataSynonymAndIdEquationFacts::GetSynonymsForDataDescriptor(
       // There may be data descriptors in the equivalence class whose base
       // objects have been removed from the module.  We do not expose these
       // data descriptors to clients of the fact manager.
-      if (ir_context_->get_def_use_mgr()->GetDef(dd->object()) != nullptr) {
+      if (ObjectStillExists(*dd)) {
         result.push_back(dd);
       }
     }
@@ -895,8 +901,7 @@ DataSynonymAndIdEquationFacts::GetIdsForWhichSynonymsAreKnown() const {
     // We skip any data descriptors whose base objects no longer exist in the
     // module, and we restrict attention to data descriptors for plain ids,
     // which have no indices.
-    if (ir_context_->get_def_use_mgr()->GetDef(data_descriptor->object()) !=
-            nullptr &&
+    if (ObjectStillExists(*data_descriptor) &&
         data_descriptor->index().empty()) {
       result.push_back(data_descriptor->object());
     }
@@ -910,6 +915,11 @@ bool DataSynonymAndIdEquationFacts::IsSynonymous(
   return synonymous_.Exists(data_descriptor1) &&
          synonymous_.Exists(data_descriptor2) &&
          synonymous_.IsEquivalent(data_descriptor1, data_descriptor2);
+}
+
+bool DataSynonymAndIdEquationFacts::ObjectStillExists(
+    const protobufs::DataDescriptor& dd) const {
+  return ir_context_->get_def_use_mgr()->GetDef(dd.object()) != nullptr;
 }
 
 }  // namespace fact_manager
