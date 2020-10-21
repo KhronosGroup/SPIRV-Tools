@@ -280,10 +280,6 @@ TEST(TransformationMutatePointerTest, HandlesUnreachableBlocks) {
 
   const auto insert_before = MakeInstructionDescriptor(10, SpvOpReturn, 0);
 
-  // Local variable doesn't dominate an unreachable block.
-  ASSERT_FALSE(TransformationMutatePointer(9, 50, insert_before)
-                   .IsApplicable(context.get(), transformation_context));
-
   // Can mutate a global variable in an unreachable block.
   TransformationMutatePointer transformation(12, 50, insert_before);
   ASSERT_TRUE(
