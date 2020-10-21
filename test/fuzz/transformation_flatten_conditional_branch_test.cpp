@@ -1725,6 +1725,16 @@ TEST(TransformationFlattenConditionalBranchTest, ApplicablePhiToSelectVector3) {
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
 
+  // Check that the in operands of any OpSelect instructions all have the
+  // appropriate operand type.
+  context->module()->ForEachInst([](opt::Instruction* inst) {
+    if (inst->opcode() == SpvOpSelect) {
+      ASSERT_EQ(SPV_OPERAND_TYPE_ID, inst->GetInOperand(0).type);
+      ASSERT_EQ(SPV_OPERAND_TYPE_ID, inst->GetInOperand(1).type);
+      ASSERT_EQ(SPV_OPERAND_TYPE_ID, inst->GetInOperand(2).type);
+    }
+  });
+
   std::string expected_shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
