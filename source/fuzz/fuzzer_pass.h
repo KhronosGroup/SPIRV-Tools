@@ -107,9 +107,13 @@ class FuzzerPass {
   // A generic helper for applying a transformation that should be applicable
   // by construction, and adding it to the sequence of applied transformations.
   void ApplyTransformation(const Transformation& transformation) {
-    assert(transformation.IsApplicable(GetIRContext(),
-                                       *GetTransformationContext()) &&
-           "Transformation should be applicable by construction.");
+#ifndef NDEBUG
+    if (!transformation.IsApplicable(GetIRContext(),
+                                       *GetTransformationContext())) {
+      std::cerr << "Transformation of type " << transformation.ToMessage().transformation_case() << " should be applicable by construction." << std::endl;
+      assert(false && "Transformation should be applicable by construction.");
+    }
+#endif
     transformation.Apply(GetIRContext(), GetTransformationContext());
     protobufs::Transformation transformation_message =
         transformation.ToMessage();
