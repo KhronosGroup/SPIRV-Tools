@@ -286,6 +286,7 @@ void TransformationCompositeConstruct::AddDataSynonymFacts(
     if (!fuzzerutil::CanMakeSynonymOf(
             ir_context, *transformation_context,
             ir_context->get_def_use_mgr()->GetDef(component))) {
+      index++;
       continue;
     }
     auto component_type = ir_context->get_type_mgr()->GetType(
