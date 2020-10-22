@@ -2641,6 +2641,15 @@ spv_result_t BuiltInsValidator::ValidateLayerOrViewportIndexAtReference(
         case SpvExecutionModelVertex:
         case SpvExecutionModelTessellationEvaluation: {
           if (!_.HasCapability(SpvCapabilityShaderViewportIndexLayerEXT)) {
+
+            if (operand == SpvBuiltInViewportIndex &&
+                _.HasCapability(SpvCapabilityShaderViewportIndex))
+              break; // Ok
+            if (operand == SpvBuiltInLayer &&
+                _.HasCapability(SpvCapabilityShaderLayer))
+              break;  // Ok
+
+
             return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
                    << "Using BuiltIn "
                    << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
