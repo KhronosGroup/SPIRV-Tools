@@ -844,8 +844,9 @@ void TransformationFlattenConditionalBranch::
   opt::BasicBlock* convergence_block =
       ir_context->get_instr_block(convergence_block_id);
   convergence_block->ForEachPhiInst(
-      [this, &branch_condition_operand, branch_instruction, &header_block,
-       ir_context, &require_2d_boolean_vector, &require_3d_boolean_vector,
+      [this, &branch_condition_operand, branch_instruction,
+       convergence_block_id, &header_block, ir_context,
+       &require_2d_boolean_vector, &require_3d_boolean_vector,
        &require_4d_boolean_vector](opt::Instruction* phi_inst) {
         assert(phi_inst->NumInOperands() == 4 &&
                "We are going to replace an OpPhi with an OpSelect.  This "
@@ -880,14 +881,16 @@ void TransformationFlattenConditionalBranch::
                 require_3d_boolean_vector = true;
               }
               break;
-            default:
-              assert(dimension == 4 && "Invalid vector dimension.");
+            case 4:
               // Similar to the 2D case.
               if (message_.fresh_id_for_bvec4_selector() != 0) {
                 selector_operand = {SPV_OPERAND_TYPE_ID,
                                     {message_.fresh_id_for_bvec4_selector()}};
                 require_4d_boolean_vector = true;
               }
+              break;
+            default:
+              assert(dimension == 4 && "Invalid vector dimension.");
               break;
           }
         }
@@ -896,26 +899,69 @@ void TransformationFlattenConditionalBranch::
 
         uint32_t branch_instruction_true_block_id =
             branch_instruction.GetSingleWordInOperand(1);
+        uint32_t branch_instruction_false_block_id =
+            branch_instruction.GetSingleWordInOperand(2);
 
         // The OpPhi takes values from two distinct predecessors.  One
         // predecessor is associated with the "true" path of the conditional
         // we are flattening, the other with the "false" path, but these
         // predecessors can appear in either order as operands to the OpPhi
         // instruction.  We determine in which order the OpPhi inputs should
-        // appear as OpSelect arguments by checking dominance of the true and
-        // false immediate successors of the header block.
-        if (ir_context->GetDominatorAnalysis(header_block.GetParent())
-                ->Dominates(branch_instruction_true_block_id,
-                            phi_inst->GetSingleWordInOperand(1))) {
-          // The "true" branch is handled first in the OpPhi's operands; we
-          // thus provide operands to OpSelect in the same order that they
-          // appear in the OpPhi.
+        // appear as OpSelect arguments by first checking whether the
+        // convergence block is a direct successor of the selection header, and
+        // otherwise checking dominance of the true and false immediate
+        // successors of the header block.
+        if (branch_instruction_true_block_id == convergence_block_id) {
+          // The branch instruction's true block is the convergence block.  This
+          // means that the OpPhi's value associated with the branch
+          // instruction's block should the "true" result of the OpSelect.
+          assert(branch_instruction_false_block_id != convergence_block_id &&
+                 "Control should not reach here if both branches target the "
+                 "convergence block.");
+          if (phi_inst->GetSingleWordInOperand(1) ==
+              message_.header_block_id()) {
+            operands.emplace_back(phi_inst->GetInOperand(0));
+            operands.emplace_back(phi_inst->GetInOperand(2));
+          } else {
+            assert(phi_inst->GetSingleWordInOperand(3) ==
+                       message_.header_block_id() &&
+                   "Since the convergence block has the header block as one of "
+                   "two predecessors, if it is not handled by the first pair "
+                   "of operands of this OpPhi instruction it should be handled "
+                   "by the second pair.");
+            operands.emplace_back(phi_inst->GetInOperand(2));
+            operands.emplace_back(phi_inst->GetInOperand(0));
+          }
+        } else if (branch_instruction_false_block_id == convergence_block_id) {
+          // The branch instruction's false block is the convergence block. This
+          // means that the OpPhi's value associated with the branch
+          // instruction's block should the "false" result of the OpSelect.
+          if (phi_inst->GetSingleWordInOperand(1) ==
+              message_.header_block_id()) {
+            operands.emplace_back(phi_inst->GetInOperand(2));
+            operands.emplace_back(phi_inst->GetInOperand(0));
+          } else {
+            assert(phi_inst->GetSingleWordInOperand(3) ==
+                       message_.header_block_id() &&
+                   "Since the convergence block has the header block as one of "
+                   "two predecessors, if it is not handled by the first pair "
+                   "of operands of this OpPhi instruction it should be handled "
+                   "by the second pair.");
+            operands.emplace_back(phi_inst->GetInOperand(0));
+            operands.emplace_back(phi_inst->GetInOperand(2));
+          }
+        } else if (ir_context->GetDominatorAnalysis(header_block.GetParent())
+                       ->Dominates(branch_instruction_true_block_id,
+                                   phi_inst->GetSingleWordInOperand(1))) {
+          // The "true" branch  of the conditional is handled first in the
+          // OpPhi's operands; we thus provide operands to OpSelect in the same
+          // order that they appear in the OpPhi.
           operands.emplace_back(phi_inst->GetInOperand(0));
           operands.emplace_back(phi_inst->GetInOperand(2));
         } else {
-          // The "false" branch is handled first in the OpPhi's operands; we
-          // thus provide operands to OpSelect in reverse of the order that
-          // they appear in the OpPhi.
+          // The "false" branch of the conditional is handled first in the
+          // OpPhi's operands; we thus provide operands to OpSelect in reverse
+          // of the order that they appear in the OpPhi.
           operands.emplace_back(phi_inst->GetInOperand(2));
           operands.emplace_back(phi_inst->GetInOperand(0));
         }
