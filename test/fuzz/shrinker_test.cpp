@@ -144,7 +144,7 @@ TEST(ShrinkerTest, ReduceAddedFunctions) {
   // compilers are kept happy.  See:
   // https://developercommunity.visualstudio.com/content/problem/367326/problems-with-capturing-constexpr-in-lambda.html
   spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
-  const auto consumer = kConsoleMessageConsumer;
+  const auto consumer = fuzzerutil::kSilentMessageConsumer;
 
   SpirvTools tools(env);
   std::vector<uint32_t> reference_binary;
@@ -264,6 +264,118 @@ TEST(ShrinkerTest, ReduceAddedFunctions) {
       }
     }
   }
+}
+
+TEST(ShrinkerTest, HitStepLimitWhenReducingAddedFunctions) {
+  const std::string kReferenceModule = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Private %6
+          %8 = OpVariable %7 Private
+          %9 = OpConstant %6 2
+         %10 = OpTypePointer Function %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %11 = OpVariable %10 Function
+               OpStore %8 %9
+         %12 = OpLoad %6 %8
+               OpStore %11 %12
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const std::string kDonorModule = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+         %48 = OpConstant %6 3
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %52 = OpCopyObject %6 %48
+         %53 = OpCopyObject %6 %52
+         %54 = OpCopyObject %6 %53
+         %55 = OpCopyObject %6 %54
+         %56 = OpCopyObject %6 %55
+         %57 = OpCopyObject %6 %56
+         %58 = OpCopyObject %6 %48
+         %59 = OpCopyObject %6 %58
+         %60 = OpCopyObject %6 %59
+         %61 = OpCopyObject %6 %60
+         %62 = OpCopyObject %6 %61
+         %63 = OpCopyObject %6 %62
+         %64 = OpCopyObject %6 %48
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = fuzzerutil::kSilentMessageConsumer;
+
+  SpirvTools tools(env);
+  std::vector<uint32_t> reference_binary;
+  ASSERT_TRUE(
+      tools.Assemble(kReferenceModule, &reference_binary, kFuzzAssembleOption));
+
+  spvtools::ValidatorOptions validator_options;
+
+  const auto variant_ir_context =
+      BuildModule(env, consumer, kReferenceModule, kFuzzAssembleOption);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      variant_ir_context.get(), validator_options, kConsoleMessageConsumer));
+
+  const auto donor_ir_context =
+      BuildModule(env, consumer, kDonorModule, kFuzzAssembleOption);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+      donor_ir_context.get(), validator_options, kConsoleMessageConsumer));
+
+  PseudoRandomGenerator random_generator(0);
+  FuzzerContext fuzzer_context(&random_generator, 100);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(variant_ir_context.get()), validator_options);
+
+  protobufs::TransformationSequence transformations;
+  FuzzerPassDonateModules pass(variant_ir_context.get(),
+                               &transformation_context, &fuzzer_context,
+                               &transformations, {});
+  pass.DonateSingleModule(donor_ir_context.get(), true);
+
+  protobufs::FactSequence no_facts;
+
+  Shrinker::InterestingnessFunction interestingness_function =
+      [consumer, env](const std::vector<uint32_t>& binary,
+                      uint32_t /*unused*/) -> bool {
+    auto temp_ir_context =
+        BuildModule(env, consumer, binary.data(), binary.size());
+    uint32_t copy_object_count = 0;
+    temp_ir_context->module()->ForEachInst(
+        [&copy_object_count](opt::Instruction* inst) {
+          if (inst->opcode() == SpvOpCopyObject) {
+            copy_object_count++;
+          }
+
+        });
+    return copy_object_count >= 8;
+  };
+
+  auto shrinker_result =
+      Shrinker(env, consumer, reference_binary, no_facts, transformations,
+               interestingness_function, 30, true, validator_options)
+          .Run();
+  ASSERT_EQ(Shrinker::ShrinkerResultStatus::kStepLimitReached,
+            shrinker_result.status);
 }
 
 }  // namespace

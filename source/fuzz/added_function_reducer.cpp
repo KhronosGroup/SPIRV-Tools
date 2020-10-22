@@ -45,7 +45,7 @@ AddedFunctionReducer::AddedFunctionReducer(
       validator_options_(validator_options),
       shrinker_step_limit_(shrinker_step_limit),
       num_existing_shrink_attempts_(num_existing_shrink_attempts),
-      num_reduction_attempts_(0) {}
+      num_reducer_interestingness_function_invocations_(0) {}
 
 AddedFunctionReducer::~AddedFunctionReducer() = default;
 
@@ -99,16 +99,25 @@ AddedFunctionReducer::AddedFunctionReducerResult AddedFunctionReducer::Run() {
   protobufs::TransformationSequence transformation_sequence_out;
   ReplayAdaptedTransformations(reduced_binary, &binary_out,
                                &transformation_sequence_out);
+  // We subtract 1 from |num_reducer_interestingness_function_invocations_| to
+  // account for the fact that spirv-reduce invokes its interestingness test
+  // once before reduction commences in order to check that the initial module
+  // is interesting.
+  assert(num_reducer_interestingness_function_invocations_ > 0 &&
+         "At a minimum spirv-reduce should have invoked its interestingness "
+         "test once.");
   return {AddedFunctionReducerResultStatus::kComplete, std::move(binary_out),
-          std::move(transformation_sequence_out), num_reduction_attempts_};
+          std::move(transformation_sequence_out),
+          num_reducer_interestingness_function_invocations_ - 1};
 }
 
 bool AddedFunctionReducer::InterestingnessFunctionForReducingAddedFunction(
     const std::vector<uint32_t>& binary_under_reduction,
     const std::unordered_set<uint32_t>& irrelevant_pointee_global_variables) {
   uint32_t counter_for_shrinker_interestingness_function =
-      num_existing_shrink_attempts_ + num_reduction_attempts_;
-  num_reduction_attempts_++;
+      num_existing_shrink_attempts_ +
+      num_reducer_interestingness_function_invocations_;
+  num_reducer_interestingness_function_invocations_++;
 
   // The reduced version of the added function must be limited to accessing
   // global variables appearing in |irrelevant_pointee_global_variables|.  This
