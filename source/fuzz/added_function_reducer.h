@@ -181,9 +181,10 @@ class AddedFunctionReducer {
   // AddedFunctionReducer instance.
   const uint32_t num_existing_shrink_attempts_;
 
-  // Tracks the number of attempts that spirv-reduce has made in reducing the
-  // added function.
-  uint32_t num_reduction_attempts_;
+  // Tracks the number of attempts that spirv-reduce has invoked its
+  // interestingness function, which it does once at the start of reduction,
+  // and then once more each time it makes a reduction step.
+  uint32_t num_reducer_interestingness_function_invocations_;
 };
 
 }  // namespace fuzz
