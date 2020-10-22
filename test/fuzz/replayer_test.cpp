@@ -22,6 +22,7 @@
 #include "source/fuzz/transformation_add_global_variable.h"
 #include "source/fuzz/transformation_add_parameter.h"
 #include "source/fuzz/transformation_add_synonym.h"
+#include "source/fuzz/transformation_flatten_conditional_branch.h"
 #include "source/fuzz/transformation_split_block.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -404,6 +405,69 @@ TEST(ReplayerTest, CheckFactsAfterReplay) {
   ASSERT_TRUE(
       replayer_result.transformation_context->GetFactManager()->IsSynonymous(
           MakeDataDescriptor(11, {}), MakeDataDescriptor(104, {})));
+}
+
+TEST(ReplayerTest, ReplayWithOverflowIds) {
+  const std::string kTestShader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+         %50 = OpTypePointer Private %6
+          %9 = OpConstant %6 2
+         %11 = OpConstant %6 0
+         %12 = OpTypeBool
+         %17 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+         %10 = OpLoad %6 %8
+         %13 = OpSGreaterThan %12 %10 %11
+               OpSelectionMerge %15 None
+               OpBranchConditional %13 %14 %15
+         %14 = OpLabel
+         %16 = OpLoad %6 %8
+         %18 = OpIAdd %6 %16 %17
+               OpStore %8 %18
+               OpBranch %15
+         %15 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  spvtools::ValidatorOptions validator_options;
+
+  std::vector<uint32_t> binary_in;
+  SpirvTools t(env);
+  t.SetMessageConsumer(kConsoleMessageConsumer);
+  ASSERT_TRUE(t.Assemble(kTestShader, &binary_in, kFuzzAssembleOption));
+  ASSERT_TRUE(t.Validate(binary_in));
+
+  protobufs::TransformationSequence transformations;
+  *transformations.add_transformation() =
+      TransformationFlattenConditionalBranch(5, true, 0, 0, 0, {}).ToMessage();
+  *transformations.add_transformation() =
+      TransformationAddGlobalVariable(101, 50, SpvStorageClassPrivate, 11, true)
+          .ToMessage();
+
+  protobufs::FactSequence empty_facts;
+  auto replayer_result =
+      Replayer(env, kConsoleMessageConsumer, binary_in, empty_facts,
+               transformations, transformations.transformation_size(), true,
+               validator_options)
+          .Run();
+  // Replay should succeed.
+  ASSERT_EQ(Replayer::ReplayerResultStatus::kComplete, replayer_result.status);
+  // All transformations should be applied.
+  ASSERT_EQ(2, replayer_result.applied_transformations.transformation_size());
 }
 
 }  // namespace
