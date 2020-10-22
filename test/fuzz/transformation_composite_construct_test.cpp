@@ -1541,10 +1541,10 @@ TEST(TransformationCompositeConstructTest, DontAddSynonymsForIrrelevantIds) {
                                                kConsoleMessageConsumer));
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(25, {}), MakeDataDescriptor(200, {0})));
-  // Even though %28 is not irrelevant, we do not create a synonym because part
-  // of the new composite, %200, is tainted by the irrelevant id %25.
-  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(28, {}), MakeDataDescriptor(200, {1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(31, {}), MakeDataDescriptor(200, {2})));
 }
 
 TEST(TransformationCompositeConstructTest, DontAddSynonymsInDeadBlock) {
