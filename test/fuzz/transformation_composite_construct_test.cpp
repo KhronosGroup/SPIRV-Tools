@@ -1541,10 +1541,10 @@ TEST(TransformationCompositeConstructTest, DontAddSynonymsForIrrelevantIds) {
                                                kConsoleMessageConsumer));
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(25, {}), MakeDataDescriptor(200, {0})));
-  // Even though %28 is not irrelevant, we do not create a synonym because part
-  // of the new composite, %200, is tainted by the irrelevant id %25.
-  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(28, {}), MakeDataDescriptor(200, {1})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(31, {}), MakeDataDescriptor(200, {2})));
 }
 
 TEST(TransformationCompositeConstructTest, DontAddSynonymsInDeadBlock) {
@@ -1594,9 +1594,53 @@ TEST(TransformationCompositeConstructTest, DontAddSynonymsInDeadBlock) {
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(7, {0}), MakeDataDescriptor(10, {})));
+      MakeDataDescriptor(100, {0}), MakeDataDescriptor(10, {})));
   ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(7, {1}), MakeDataDescriptor(11, {})));
+      MakeDataDescriptor(100, {1}), MakeDataDescriptor(11, {})));
+}
+
+TEST(TransformationCompositeConstructTest, OneIrrelevantComponent) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeStruct %6 %6 %6
+          %8 = OpConstant %6 42
+          %9 = OpConstant %6 50
+         %10 = OpConstant %6 51
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  transformation_context.GetFactManager()->AddFactIdIsIrrelevant(8);
+
+  TransformationCompositeConstruct transformation(
+      7, {8, 9, 10}, MakeInstructionDescriptor(5, SpvOpReturn, 0), 100);
+  ASSERT_TRUE(
+      transformation.IsApplicable(context.get(), transformation_context));
+  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
+  ASSERT_FALSE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(100, {0}), MakeDataDescriptor(8, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(100, {1}), MakeDataDescriptor(9, {})));
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(100, {2}), MakeDataDescriptor(10, {})));
 }
 
 }  // namespace
