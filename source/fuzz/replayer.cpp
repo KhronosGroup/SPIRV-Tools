@@ -100,7 +100,7 @@ Replayer::ReplayerResult Replayer::Run() {
     if (!fresh_ids.empty()) {
       first_overflow_id =
           std::max(first_overflow_id,
-                   *std::max_element(fresh_ids.begin(), fresh_ids.end()));
+                   *std::max_element(fresh_ids.begin(), fresh_ids.end()) + 1);
     }
   }
 
