@@ -14,6 +14,8 @@
 
 #include "source/fuzz/transformation_expand_vector_reduction.h"
 
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -52,11 +54,12 @@ TEST(TransformationExpandVectorReductionTest, IsApplicable) {
   const auto consumer = nullptr;
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
 
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Tests undefined instruction.
   auto transformation = TransformationExpandVectorReduction(13, {14, 15, 16});
@@ -148,11 +151,12 @@ TEST(TransformationExpandVectorReductionTest, Apply) {
   const auto consumer = nullptr;
   const auto context =
       BuildModule(env, consumer, reference_shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
 
   spvtools::ValidatorOptions validator_options;
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Adds OpAny synonym for 2-dimensional vector.
   auto transformation = TransformationExpandVectorReduction(15, {21, 22, 23});
@@ -270,7 +274,8 @@ TEST(TransformationExpandVectorReductionTest, Apply) {
                OpFunctionEnd
   )";
 
-  ASSERT_TRUE(IsValid(env, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
