@@ -35,12 +35,14 @@ IrLoader::IrLoader(const MessageConsumer& consumer, Module* m)
       module_(m),
       source_("<instruction>"),
       inst_index_(0),
+      last_line_inst_(nullptr),
       last_dbg_scope_(kNoDebugScope, kNoInlinedAt) {}
 
 bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
   ++inst_index_;
   const auto opcode = static_cast<SpvOp>(inst->opcode);
   if (IsDebugLineInst(opcode)) {
+    last_line_inst_.reset();
     dbg_line_info_.push_back(
         Instruction(module()->context(), *inst, last_dbg_scope_));
     return true;
@@ -91,10 +93,14 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
   std::unique_ptr<Instruction> spv_inst(
       new Instruction(module()->context(), *inst, std::move(dbg_line_info_)));
   if (!dbg_line_info_.empty()) {
-    if (dbg_line_info_.back().opcode() == SpvOpNoLine)
-      dbg_line_info_.clear();
-    else
-      dbg_line_info_.erase(dbg_line_info_.begin(), dbg_line_info_.end() - 1);
+    if (dbg_line_info_.back().opcode() != SpvOpNoLine) {
+      last_line_inst_ = std::unique_ptr<Instruction>(
+          dbg_line_info_.back().Clone(module()->context()));
+    }
+    dbg_line_info_.clear();
+  } else if (last_line_inst_ != nullptr) {
+    last_line_inst_->SetDebugScope(last_dbg_scope_);
+    spv_inst->dbg_line_insts().push_back(*last_line_inst_);
   }
 
   const char* src = source_.c_str();
@@ -146,6 +152,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
     function_->AddBasicBlock(std::move(block_));
     block_ = nullptr;
     last_dbg_scope_ = DebugScope(kNoDebugScope, kNoInlinedAt);
+    last_line_inst_.reset();
     dbg_line_info_.clear();
   } else {
     if (function_ == nullptr) {  // Outside function definition
