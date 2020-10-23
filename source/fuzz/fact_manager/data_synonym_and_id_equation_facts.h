@@ -66,6 +66,9 @@ class DataSynonymAndIdEquationFacts {
   std::vector<uint32_t> GetIdsForWhichSynonymsAreKnown() const;
 
   // See method in FactManager which delegates to this method.
+  std::vector<const protobufs::DataDescriptor*> GetAllKnownSynonyms() const;
+
+  // See method in FactManager which delegates to this method.
   bool IsSynonymous(const protobufs::DataDescriptor& data_descriptor1,
                     const protobufs::DataDescriptor& data_descriptor2) const;
 

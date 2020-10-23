@@ -909,6 +909,17 @@ DataSynonymAndIdEquationFacts::GetIdsForWhichSynonymsAreKnown() const {
   return result;
 }
 
+std::vector<const protobufs::DataDescriptor*>
+DataSynonymAndIdEquationFacts::GetAllKnownSynonyms() const {
+  std::vector<const protobufs::DataDescriptor*> result;
+  for (const auto* dd : synonymous_.GetAllKnownValues()) {
+    if (ObjectStillExists(*dd)) {
+      result.push_back(dd);
+    }
+  }
+  return result;
+}
+
 bool DataSynonymAndIdEquationFacts::IsSynonymous(
     const protobufs::DataDescriptor& data_descriptor1,
     const protobufs::DataDescriptor& data_descriptor2) const {

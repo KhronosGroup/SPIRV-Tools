@@ -40,6 +40,10 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     // - Adding bit instruction synonyms creates opportunities to apply synonyms
     return RandomOrderAndNonNull({pass_instances_->GetApplyIdSynonyms()});
   }
+  if (&pass == pass_instances_->GetAddCompositeExtract()) {
+    // - This transformation can introduce synonyms to the fact manager.
+    return RandomOrderAndNonNull({pass_instances_->GetApplyIdSynonyms()});
+  }
   if (&pass == pass_instances_->GetAddCompositeInserts()) {
     // - Having added inserts we will have more vectors, so there is scope for
     //   vector shuffling

@@ -55,19 +55,14 @@ bool TransformationCompositeExtract::IsApplicable(
   if (!composite_instruction) {
     return false;
   }
-  if (auto block = ir_context->get_instr_block(composite_instruction)) {
-    if (composite_instruction == instruction_to_insert_before ||
-        !ir_context->GetDominatorAnalysis(block->GetParent())
-             ->Dominates(composite_instruction, instruction_to_insert_before)) {
-      return false;
-    }
+  if (!fuzzerutil::IdIsAvailableBeforeInstruction(
+          ir_context, instruction_to_insert_before, message_.composite_id())) {
+    return false;
   }
-  assert(composite_instruction->type_id() &&
-         "An instruction in a block cannot have a result id but no type id.");
 
   auto composite_type =
       ir_context->get_type_mgr()->GetType(composite_instruction->type_id());
-  if (!composite_type) {
+  if (!fuzzerutil::IsCompositeType(composite_type)) {
     return false;
   }
 
@@ -133,19 +128,14 @@ void TransformationCompositeExtract::AddDataSynonymFacts(
 
   // Add the fact that the id storing the extracted element is synonymous with
   // the index into the structure.
-  if (!transformation_context->GetFactManager()->IdIsIrrelevant(
-          message_.composite_id())) {
-    std::vector<uint32_t> indices;
-    for (auto an_index : message_.index()) {
-      indices.push_back(an_index);
-    }
-    protobufs::DataDescriptor data_descriptor_for_extracted_element =
-        MakeDataDescriptor(message_.composite_id(), indices);
-    protobufs::DataDescriptor data_descriptor_for_result_id =
-        MakeDataDescriptor(message_.fresh_id(), {});
-    transformation_context->GetFactManager()->AddFactDataSynonym(
-        data_descriptor_for_extracted_element, data_descriptor_for_result_id);
-  }
+  std::vector<uint32_t> indices(message_.index().begin(),
+                                message_.index().end());
+  auto data_descriptor_for_extracted_element =
+      MakeDataDescriptor(message_.composite_id(), indices);
+  auto data_descriptor_for_result_id =
+      MakeDataDescriptor(message_.fresh_id(), {});
+  transformation_context->GetFactManager()->AddFactDataSynonym(
+      data_descriptor_for_extracted_element, data_descriptor_for_result_id);
 }
 
 }  // namespace fuzz

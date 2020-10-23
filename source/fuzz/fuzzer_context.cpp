@@ -35,6 +35,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingBitInstructionSynonym = {5,
                                                                             20};
 const std::pair<uint32_t, uint32_t>
     kChanceOfAddingBothBranchesWhenReplacingOpSelect = {40, 60};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingCompositeExtract = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingCompositeInsert = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingCopyMemory = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingDeadBlock = {20, 90};
@@ -82,6 +83,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfDuplicatingRegionWithSelection = {
     20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfFlatteningConditionalBranch = {45,
                                                                             95};
+const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperToExtractComposite = {
+    30, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperToInsertInComposite = {
     30, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfGoingDeeperWhenMakingAccessChain =
@@ -197,6 +200,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfAddingBitInstructionSynonym);
   chance_of_adding_both_branches_when_replacing_opselect_ =
       ChooseBetweenMinAndMax(kChanceOfAddingBothBranchesWhenReplacingOpSelect);
+  chance_of_adding_composite_extract_ =
+      ChooseBetweenMinAndMax(kChanceOfAddingCompositeExtract);
   chance_of_adding_composite_insert_ =
       ChooseBetweenMinAndMax(kChanceOfAddingCompositeInsert);
   chance_of_adding_copy_memory_ =
@@ -263,6 +268,8 @@ FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
       ChooseBetweenMinAndMax(kChanceOfDuplicatingRegionWithSelection);
   chance_of_flattening_conditional_branch_ =
       ChooseBetweenMinAndMax(kChanceOfFlatteningConditionalBranch);
+  chance_of_going_deeper_to_extract_composite_ =
+      ChooseBetweenMinAndMax(kChanceOfGoingDeeperToExtractComposite);
   chance_of_going_deeper_to_insert_in_composite_ =
       ChooseBetweenMinAndMax(kChanceOfGoingDeeperToInsertInComposite);
   chance_of_going_deeper_when_making_access_chain_ =

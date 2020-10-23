@@ -23,6 +23,7 @@
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_pass_add_access_chains.h"
 #include "source/fuzz/fuzzer_pass_add_bit_instruction_synonyms.h"
+#include "source/fuzz/fuzzer_pass_add_composite_extract.h"
 #include "source/fuzz/fuzzer_pass_add_composite_inserts.h"
 #include "source/fuzz/fuzzer_pass_add_composite_types.h"
 #include "source/fuzz/fuzzer_pass_add_copy_memory.h"
@@ -228,6 +229,7 @@ Fuzzer::FuzzerResult Fuzzer::Run() {
     // if it is enabled.
     MaybeAddRepeatedPass<FuzzerPassAddAccessChains>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassAddBitInstructionSynonyms>(&pass_instances);
+    MaybeAddRepeatedPass<FuzzerPassAddCompositeExtract>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassAddCompositeInserts>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassAddCompositeTypes>(&pass_instances);
     MaybeAddRepeatedPass<FuzzerPassAddCopyMemory>(&pass_instances);
