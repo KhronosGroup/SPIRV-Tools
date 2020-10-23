@@ -17,6 +17,7 @@
 
 #include "source/fuzz/fuzzer_pass_add_access_chains.h"
 #include "source/fuzz/fuzzer_pass_add_bit_instruction_synonyms.h"
+#include "source/fuzz/fuzzer_pass_add_composite_extract.h"
 #include "source/fuzz/fuzzer_pass_add_composite_inserts.h"
 #include "source/fuzz/fuzzer_pass_add_composite_types.h"
 #include "source/fuzz/fuzzer_pass_add_copy_memory.h"
@@ -110,6 +111,7 @@ class RepeatedPassInstances {
 
   REPEATED_PASS_INSTANCE(AddAccessChains);
   REPEATED_PASS_INSTANCE(AddBitInstructionSynonyms);
+  REPEATED_PASS_INSTANCE(AddCompositeExtract);
   REPEATED_PASS_INSTANCE(AddCompositeInserts);
   REPEATED_PASS_INSTANCE(AddCompositeTypes);
   REPEATED_PASS_INSTANCE(AddCopyMemory);

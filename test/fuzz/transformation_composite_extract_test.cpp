@@ -107,9 +107,10 @@ TEST(TransformationCompositeExtractTest, BasicTest) {
                    .IsApplicable(context.get(), transformation_context));
 
   // Id for composite is not a composite.
-  ASSERT_FALSE(TransformationCompositeExtract(
-                   MakeInstructionDescriptor(36, SpvOpIAdd, 0), 200, 27, {})
-                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(
+      TransformationCompositeExtract(
+          MakeInstructionDescriptor(37, SpvOpAccessChain, 0), 200, 32, {})
+          .IsApplicable(context.get(), transformation_context));
 
   // Composite does not dominate instruction being inserted before.
   ASSERT_FALSE(

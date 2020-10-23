@@ -127,6 +127,9 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingBothBranchesWhenReplacingOpSelect() {
     return chance_of_adding_both_branches_when_replacing_opselect_;
   }
+  uint32_t GetChanceOfAddingCompositeExtract() {
+    return chance_of_adding_composite_extract_;
+  }
   uint32_t GetChanceOfAddingCompositeInsert() {
     return chance_of_adding_composite_insert_;
   }
@@ -215,6 +218,9 @@ class FuzzerContext {
   }
   uint32_t GetChanceOfFlatteningConditionalBranch() {
     return chance_of_flattening_conditional_branch_;
+  }
+  uint32_t GetChanceOfGoingDeeperToExtractComposite() {
+    return chance_of_going_deeper_to_extract_composite_;
   }
   uint32_t GetChanceOfGoingDeeperToInsertInComposite() {
     return chance_of_going_deeper_to_insert_in_composite_;
@@ -354,6 +360,10 @@ class FuzzerContext {
 
     return components;
   }
+  uint32_t GetRandomCompositeExtractIndex(uint32_t number_of_members) {
+    assert(number_of_members > 0 && "Composite object must have some members");
+    return ChooseBetweenMinAndMax({0, number_of_members - 1});
+  }
   uint32_t GetRandomIndexForAccessChain(uint32_t composite_size_bound) {
     return random_generator_->RandomUint32(composite_size_bound);
   }
@@ -416,6 +426,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_array_or_struct_type_;
   uint32_t chance_of_adding_bit_instruction_synonym_;
   uint32_t chance_of_adding_both_branches_when_replacing_opselect_;
+  uint32_t chance_of_adding_composite_extract_;
   uint32_t chance_of_adding_composite_insert_;
   uint32_t chance_of_adding_copy_memory_;
   uint32_t chance_of_adding_dead_block_;
@@ -451,6 +462,7 @@ class FuzzerContext {
   uint32_t chance_of_donating_additional_module_;
   uint32_t chance_of_duplicating_region_with_selection_;
   uint32_t chance_of_flattening_conditional_branch_;
+  uint32_t chance_of_going_deeper_to_extract_composite_;
   uint32_t chance_of_going_deeper_to_insert_in_composite_;
   uint32_t chance_of_going_deeper_when_making_access_chain_;
   uint32_t chance_of_having_two_blocks_in_loop_to_create_int_synonym_;

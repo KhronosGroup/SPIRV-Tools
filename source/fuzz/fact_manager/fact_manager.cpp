@@ -177,6 +177,11 @@ std::vector<uint32_t> FactManager::GetIdsForWhichSynonymsAreKnown() const {
   return data_synonym_and_id_equation_facts_.GetIdsForWhichSynonymsAreKnown();
 }
 
+std::vector<const protobufs::DataDescriptor*> FactManager::GetAllSynonyms()
+    const {
+  return data_synonym_and_id_equation_facts_.GetAllKnownSynonyms();
+}
+
 std::vector<const protobufs::DataDescriptor*>
 FactManager::GetSynonymsForDataDescriptor(
     const protobufs::DataDescriptor& data_descriptor) const {
