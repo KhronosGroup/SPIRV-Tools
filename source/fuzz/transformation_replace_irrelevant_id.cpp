@@ -78,8 +78,8 @@ bool TransformationReplaceIrrelevantId::IsApplicable(
       message_.id_use_descriptor().in_operand_index();
 
   // The id use must be replaceable with any other id of the same type.
-  if (!fuzzerutil::IdUseCanBeReplaced(ir_context, use_instruction,
-                                      use_in_operand_index)) {
+  if (!fuzzerutil::IdUseCanBeReplaced(ir_context, transformation_context,
+                                      use_instruction, use_in_operand_index)) {
     return false;
   }
 
