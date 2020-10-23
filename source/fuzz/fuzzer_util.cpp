@@ -1530,10 +1530,18 @@ opt::Instruction* GetLastInsertBeforeInstruction(opt::IRContext* ir_context,
 }
 
 bool IdUseCanBeReplaced(opt::IRContext* ir_context,
+                        const TransformationContext& transformation_context,
                         opt::Instruction* use_instruction,
                         uint32_t use_in_operand_index) {
   if (spvOpcodeIsAccessChain(use_instruction->opcode()) &&
       use_in_operand_index > 0) {
+    // A replacement for an irrelevant index in OpAccessChain must be clamped
+    // first.
+    if (transformation_context.GetFactManager()->IdIsIrrelevant(
+            use_instruction->GetSingleWordInOperand(use_in_operand_index))) {
+      return false;
+    }
+
     // This is an access chain index.  If the (sub-)object being accessed by the
     // given index has struct type then we cannot replace the use, as it needs
     // to be an OpConstant.

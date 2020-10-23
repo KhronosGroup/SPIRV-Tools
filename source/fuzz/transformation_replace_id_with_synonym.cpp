@@ -74,7 +74,7 @@ bool TransformationReplaceIdWithSynonym::IsApplicable(
 
   // Is the use suitable for being replaced in principle?
   if (!fuzzerutil::IdUseCanBeReplaced(
-          ir_context, use_instruction,
+          ir_context, transformation_context, use_instruction,
           message_.id_use_descriptor().in_operand_index())) {
     return false;
   }
