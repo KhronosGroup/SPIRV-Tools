@@ -20,9 +20,14 @@ namespace spvtools {
 namespace fuzz {
 
 namespace {
+
+// Limits to help control the overall fuzzing process and rein in individual
+// fuzzer passes.
+const uint32_t kIdBoundLimit = 50000;
+const uint32_t kTransformationLimit = 2000;
+
 // Default <minimum, maximum> pairs of probabilities for applying various
 // transformations. All values are percentages. Keep them in alphabetical order.
-
 const std::pair<uint32_t, uint32_t>
     kChanceOfAcceptingRepeatedPassRecommendation = {70, 100};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingAccessChain = {5, 50};
@@ -390,6 +395,12 @@ FuzzerContext::GetRandomSynonymType() {
   assert(protobufs::TransformationAddSynonym::SynonymType_IsValid(result) &&
          "|result| is not a value of SynonymType");
   return static_cast<protobufs::TransformationAddSynonym::SynonymType>(result);
+}
+
+uint32_t FuzzerContext::GetIdBoundLimit() const { return kIdBoundLimit; }
+
+uint32_t FuzzerContext::GetTransformationLimit() const {
+  return kTransformationLimit;
 }
 
 }  // namespace fuzz
