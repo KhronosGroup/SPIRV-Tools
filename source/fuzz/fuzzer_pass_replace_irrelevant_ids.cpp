@@ -115,8 +115,9 @@ void FuzzerPassReplaceIrrelevantIds::Apply() {
               fuzzerutil::InOperandIndexFromOperandIndex(*use_inst, use_index);
 
           // Only go ahead if this id use can be replaced in principle.
-          if (!fuzzerutil::IdUseCanBeReplaced(GetIRContext(), use_inst,
-                                              in_index)) {
+          if (!fuzzerutil::IdUseCanBeReplaced(GetIRContext(),
+                                              *GetTransformationContext(),
+                                              use_inst, in_index)) {
             return;
           }
 

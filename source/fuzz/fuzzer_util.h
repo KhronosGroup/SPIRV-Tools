@@ -545,13 +545,16 @@ opt::Instruction* GetLastInsertBeforeInstruction(opt::IRContext* ir_context,
 // replacing the id use at |use_in_operand_index| of |use_instruction| with a
 // synonym or another id of appropriate type if the original id is irrelevant.
 // In particular, this checks that:
-// - the id use is not an index into a struct field in an OpAccessChain - such
+// - If id use is an index of an irrelevant id (|use_in_operand_index > 0|)
+//   in OpAccessChain - it can't be replaced.
+// - The id use is not an index into a struct field in an OpAccessChain - such
 //   indices must be constants, so it is dangerous to replace them.
-// - the id use is not a pointer function call argument, on which there are
+// - The id use is not a pointer function call argument, on which there are
 //   restrictions that make replacement problematic.
-// - the id use is not the Sample parameter of an OpImageTexelPointer
+// - The id use is not the Sample parameter of an OpImageTexelPointer
 //   instruction, as this must satisfy particular requirements.
 bool IdUseCanBeReplaced(opt::IRContext* ir_context,
+                        const TransformationContext& transformation_context,
                         opt::Instruction* use_instruction,
                         uint32_t use_in_operand_index);
 
