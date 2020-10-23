@@ -556,6 +556,7 @@ message Transformation {
     TransformationReplaceBranchFromDeadBlockWithExit replace_branch_from_dead_block_with_exit = 82;
     TransformationWrapEarlyTerminatorInFunction wrap_early_terminator_in_function = 83;
     TransformationMergeFunctionReturns merge_function_returns = 84;
+    TransformationExpandVectorReduction expand_vector_reduction = 85;
     // Add additional option using the next available number.
   }
 }
@@ -1414,6 +1415,21 @@ message TransformationEquationInstruction {
   // A descriptor for an instruction in a block before which the new
   // instruction should be inserted
   InstructionDescriptor instruction_to_insert_before = 4;
+
+}
+
+message TransformationExpandVectorReduction {
+
+  // A transformation that adds synonyms for OpAny and OpAll instructions by
+  // evaluating each vector component with the corresponding logical operation.
+  // There is a SPIR-V code example in the header file of the transformation
+  // class that can help understand the transformation.
+
+  // The OpAny or OpAll instruction result id.
+  uint32 instruction_result_id = 1;
+
+  // The fresh ids required to apply the transformation.
+  repeated uint32 fresh_ids = 2;
 
 }
 

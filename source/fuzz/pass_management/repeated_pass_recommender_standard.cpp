@@ -206,6 +206,10 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     // - Parts of duplicated regions can be outlined
     return RandomOrderAndNonNull({pass_instances_->GetOutlineFunctions()});
   }
+  if (&pass == pass_instances_->GetExpandVectorReductions()) {
+    // - Adding OpAny and OpAll synonyms creates opportunities to apply synonyms
+    return RandomOrderAndNonNull({pass_instances_->GetApplyIdSynonyms()});
+  }
   if (&pass == pass_instances_->GetFlattenConditionalBranches()) {
     // - Parts of flattened selections can be outlined
     // - The flattening transformation introduces constants and irrelevant ids

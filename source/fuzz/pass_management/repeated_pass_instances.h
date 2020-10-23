@@ -43,6 +43,7 @@
 #include "source/fuzz/fuzzer_pass_copy_objects.h"
 #include "source/fuzz/fuzzer_pass_donate_modules.h"
 #include "source/fuzz/fuzzer_pass_duplicate_regions_with_selections.h"
+#include "source/fuzz/fuzzer_pass_expand_vector_reductions.h"
 #include "source/fuzz/fuzzer_pass_flatten_conditional_branches.h"
 #include "source/fuzz/fuzzer_pass_inline_functions.h"
 #include "source/fuzz/fuzzer_pass_invert_comparison_operators.h"
@@ -137,6 +138,7 @@ class RepeatedPassInstances {
   REPEATED_PASS_INSTANCE(CopyObjects);
   REPEATED_PASS_INSTANCE(DonateModules);
   REPEATED_PASS_INSTANCE(DuplicateRegionsWithSelections);
+  REPEATED_PASS_INSTANCE(ExpandVectorReductions);
   REPEATED_PASS_INSTANCE(FlattenConditionalBranches);
   REPEATED_PASS_INSTANCE(InlineFunctions);
   REPEATED_PASS_INSTANCE(InvertComparisonOperators);

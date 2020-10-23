@@ -216,6 +216,9 @@ class FuzzerContext {
   uint32_t GetChanceOfDuplicatingRegionWithSelection() {
     return chance_of_duplicating_region_with_selection_;
   }
+  uint32_t GetChanceOfExpandingVectorReduction() {
+    return chance_of_expanding_vector_reduction_;
+  }
   uint32_t GetChanceOfFlatteningConditionalBranch() {
     return chance_of_flattening_conditional_branch_;
   }
@@ -461,6 +464,7 @@ class FuzzerContext {
   uint32_t chance_of_creating_int_synonyms_using_loops_;
   uint32_t chance_of_donating_additional_module_;
   uint32_t chance_of_duplicating_region_with_selection_;
+  uint32_t chance_of_expanding_vector_reduction_;
   uint32_t chance_of_flattening_conditional_branch_;
   uint32_t chance_of_going_deeper_to_extract_composite_;
   uint32_t chance_of_going_deeper_to_insert_in_composite_;
