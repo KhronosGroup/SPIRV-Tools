@@ -150,8 +150,7 @@ class FactManager {
   std::vector<uint32_t> GetIdsForWhichSynonymsAreKnown() const;
 
   // Returns a vector of all data descriptors that participate in DataSynonym
-  // facts. Some of the descriptors may represent non-existent ids in the
-  // module.
+  // facts. All descriptors are guaranteed to exist in the |ir_context_|.
   std::vector<const protobufs::DataDescriptor*> GetAllSynonyms() const;
 
   // Returns the equivalence class of all known synonyms of |id|, or an empty

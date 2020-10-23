@@ -911,7 +911,13 @@ DataSynonymAndIdEquationFacts::GetIdsForWhichSynonymsAreKnown() const {
 
 std::vector<const protobufs::DataDescriptor*>
 DataSynonymAndIdEquationFacts::GetAllKnownSynonyms() const {
-  return synonymous_.GetAllKnownValues();
+  std::vector<const protobufs::DataDescriptor*> result;
+  for (const auto* dd : synonymous_.GetAllKnownValues()) {
+    if (ObjectStillExists(*dd)) {
+      result.push_back(dd);
+    }
+  }
+  return result;
 }
 
 bool DataSynonymAndIdEquationFacts::IsSynonymous(

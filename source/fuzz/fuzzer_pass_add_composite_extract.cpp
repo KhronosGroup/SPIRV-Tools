@@ -36,20 +36,14 @@ void FuzzerPassAddCompositeExtract::Apply() {
   for (const auto* dd :
        GetTransformationContext()->GetFactManager()->GetAllSynonyms()) {
     // |dd| must describe a component of a composite.
-    if (dd->index().empty()) {
-      continue;
+    if (!dd->index().empty()) {
+      composite_synonyms.push_back(dd);
     }
-
-    // Skip all invalid ids.
-    if (!GetIRContext()->get_def_use_mgr()->GetDef(dd->object())) {
-      continue;
-    }
-
-    composite_synonyms.push_back(dd);
   }
 
   // We don't want to invalidate the module every time we apply this
-  // transformation since rebuilding DominatorAnalysis can be expensive.
+  // transformation since rebuilding DominatorAnalysis can be expensive, so we
+  // collect up the transformations we wish to apply and apply them all later.
   std::vector<TransformationCompositeExtract> transformations;
 
   ForEachInstructionWithInstructionDescriptor(
@@ -97,34 +91,52 @@ void FuzzerPassAddCompositeExtract::Apply() {
                   available_composites)];
           composite_id = inst->result_id();
 
-          const auto* type_inst =
-              GetIRContext()->get_def_use_mgr()->GetDef(inst->type_id());
-          assert(type_inst && "Composite instruction has invalid type id");
+          const auto* type =
+              GetIRContext()->get_type_mgr()->GetType(inst->type_id());
+          assert(type && "Composite instruction has invalid type id");
 
-          uint32_t number_of_members = 0;
-          switch (type_inst->opcode()) {
-            case SpvOpTypeArray:
+          do {
+            uint32_t number_of_members = 0;
+
+            if (const auto* array_type = type->AsArray()) {
+              const auto* type_inst =
+                  GetIRContext()->get_def_use_mgr()->GetDef(inst->type_id());
+              assert(type_inst && "Type instruction must exist");
+
               number_of_members =
                   fuzzerutil::GetArraySize(*type_inst, GetIRContext());
-              break;
-            case SpvOpTypeVector:
-            case SpvOpTypeMatrix:
-              number_of_members = type_inst->GetSingleWordInOperand(1);
-              break;
-            case SpvOpTypeStruct:
-              number_of_members = type_inst->NumInOperands();
-              break;
-            default:
+              type = array_type->element_type();
+            } else if (const auto* vector_type = type->AsVector()) {
+              number_of_members = vector_type->element_count();
+              type = vector_type->element_type();
+            } else if (const auto* matrix_type = type->AsMatrix()) {
+              number_of_members = matrix_type->element_count();
+              type = matrix_type->element_type();
+            } else if (const auto* struct_type = type->AsStruct()) {
+              number_of_members =
+                  static_cast<uint32_t>(struct_type->element_types().size());
+              // The next value of |type| will be assigned when we know the
+              // index of the OpTypeStruct's operand.
+            } else {
               assert(false && "|inst| is not a composite");
-              break;
-          }
+              return;
+            }
 
-          if (number_of_members == 0) {
-            return;
-          }
+            if (number_of_members == 0) {
+              return;
+            }
 
-          indices = {GetFuzzerContext()->GetRandomCompositeExtractIndex(
-              number_of_members)};
+            indices.push_back(
+                GetFuzzerContext()->GetRandomCompositeExtractIndex(
+                    number_of_members));
+
+            if (const auto* struct_type = type->AsStruct()) {
+              type = struct_type->element_types()[indices.back()];
+            }
+          } while (fuzzerutil::IsCompositeType(type) &&
+                   GetFuzzerContext()->ChoosePercentage(
+                       GetFuzzerContext()
+                           ->GetChanceOfGoingDeeperToExtractComposite()));
         } else {
           const auto* dd = available_synonyms[GetFuzzerContext()->RandomIndex(
               available_synonyms)];
