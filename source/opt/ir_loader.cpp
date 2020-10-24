@@ -92,10 +92,10 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
 
   std::unique_ptr<Instruction> spv_inst(
       new Instruction(module()->context(), *inst, std::move(dbg_line_info_)));
-  if (!dbg_line_info_.empty()) {
-    if (dbg_line_info_.back().opcode() != SpvOpNoLine) {
+  if (!spv_inst->dbg_line_insts().empty()) {
+    if (spv_inst->dbg_line_insts().back().opcode() != SpvOpNoLine) {
       last_line_inst_ = std::unique_ptr<Instruction>(
-          dbg_line_info_.back().Clone(module()->context()));
+          spv_inst->dbg_line_insts().back().Clone(module()->context()));
     }
     dbg_line_info_.clear();
   } else if (last_line_inst_ != nullptr) {

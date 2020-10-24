@@ -2103,7 +2103,7 @@ OpDecorate %gl_FragCoord BuiltIn FragCoord
 %uint_7 = OpConstant %uint 7
 %uint_8 = OpConstant %uint 8
 %uint_9 = OpConstant %uint 9
-%uint_93 = OpConstant %uint 93
+%uint_109 = OpConstant %uint 109
 %125 = OpConstantNull %v4float
 )";
 
@@ -2180,19 +2180,23 @@ OpLine %5 24 0
 %54 = OpSampledImage %37 %52 %53
 %55 = OpAccessChain %_ptr_Function_v2float %i %int_0
 %56 = OpLoad %v2float %55
+OpNoLine
 %62 = OpULessThan %bool %50 %uint_128
 OpSelectionMerge %63 None
 OpBranchConditional %62 %64 %65
 %64 = OpLabel
 %66 = OpLoad %27 %51
 %67 = OpSampledImage %37 %66 %53
+OpLine %5 24 0
 %68 = OpImageSampleImplicitLod %v4float %67 %56
+OpNoLine
 OpBranch %63
 %65 = OpLabel
-%124 = OpFunctionCall %void %69 %uint_93 %uint_0 %50 %uint_128
+%124 = OpFunctionCall %void %69 %uint_109 %uint_0 %50 %uint_128
 OpBranch %63
 %63 = OpLabel
 %126 = OpPhi %v4float %68 %64 %125 %65
+OpLine %5 24 0
 %58 = OpAccessChain %_ptr_Function_v4float %ps_output %int_0
 OpStore %58 %126
 OpLine %5 25 0

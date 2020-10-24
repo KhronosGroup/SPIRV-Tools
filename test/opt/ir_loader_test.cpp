@@ -140,6 +140,7 @@ TEST(IrBuilder, DistributeLineDebugInfo) {
                "OpMemoryModel Logical GLSL450\n"
                "OpEntryPoint Vertex %main \"main\"\n"
                "OpSource ESSL 310\n"
+       "%file = OpString \"test\"\n"
                "OpName %main \"main\"\n"
                "OpName %f_ \"f(\"\n"
                "OpName %gv1 \"gv1\"\n"
@@ -147,7 +148,6 @@ TEST(IrBuilder, DistributeLineDebugInfo) {
                "OpName %lv1 \"lv1\"\n"
                "OpName %lv2 \"lv2\"\n"
                "OpName %lv1_0 \"lv1\"\n"
-       "%file = OpString \"test\"\n"
        "%void = OpTypeVoid\n"
          "%10 = OpTypeFunction %void\n"
                "OpLine %file 10 0\n"
@@ -189,7 +189,7 @@ TEST(IrBuilder, DistributeLineDebugInfo) {
          "%25 = OpLoad %float %gv1\n"
          "%26 = OpLoad %float %gv2\n"
          "%27 = OpFMul %float %25 %26\n"
-               "OpBranch %28"
+               "OpBranch %28\n"
          "%28 = OpLabel\n"
                "OpStore %lv2 %27\n"
          "%29 = OpLoad %float %lv1\n"
@@ -201,7 +201,8 @@ TEST(IrBuilder, DistributeLineDebugInfo) {
   // clang-format on
 
   std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text);
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
   struct LineInstrCheck {
@@ -224,6 +225,11 @@ TEST(IrBuilder, DistributeLineDebugInfo) {
   for (const LineInstrCheck& check : line_checks) {
     auto& lines = def_use_mgr->GetDef(check.id)->dbg_line_insts();
     for (uint32_t i = 0; i < check.line_numbers.size(); ++i) {
+      if (check.line_numbers[i] == kNoLine) {
+        EXPECT_EQ(lines[i].opcode(), SpvOpNoLine);
+        continue;
+      }
+      EXPECT_EQ(lines[i].opcode(), SpvOpLine);
       EXPECT_EQ(lines[i].GetSingleWordOperand(kOpLineOperandLineIndex),
                 check.line_numbers[i]);
     }
