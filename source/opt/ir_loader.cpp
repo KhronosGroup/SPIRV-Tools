@@ -35,7 +35,6 @@ IrLoader::IrLoader(const MessageConsumer& consumer, Module* m)
       module_(m),
       source_("<instruction>"),
       inst_index_(0),
-      last_line_inst_(nullptr),
       last_dbg_scope_(kNoDebugScope, kNoInlinedAt) {}
 
 bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {

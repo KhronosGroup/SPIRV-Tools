@@ -29,7 +29,7 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-const uint32_t kOpLineOperandLineIndex = 1;
+constexpr uint32_t kOpLineOperandLineIndex = 1;
 
 void DoRoundTripCheck(const std::string& text) {
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
