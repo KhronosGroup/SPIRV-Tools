@@ -34,7 +34,7 @@ Pass::Status PassManager::Run(IRContext* context) {
   auto print_disassembly = [&context, this](const char* preamble, Pass* pass) {
     if (print_all_stream_) {
       std::vector<uint32_t> binary;
-      context->module()->ToBinary(&binary, false);
+      context->module()->ToBinaryWithAllOpLines(&binary, false);
       SpirvTools t(SPV_ENV_UNIVERSAL_1_2);
       std::string disassembly;
       t.Disassemble(binary, &disassembly, 0);
@@ -55,7 +55,10 @@ Pass::Status PassManager::Run(IRContext* context) {
       spvtools::SpirvTools tools(target_env_);
       tools.SetMessageConsumer(consumer());
       std::vector<uint32_t> binary;
-      context->module()->ToBinary(&binary, true);
+      if (print_all_stream_)
+        context->module()->ToBinaryWithAllOpLines(&binary, true);
+      else
+        context->module()->ToBinary(&binary, true);
       if (!tools.Validate(binary.data(), binary.size(), val_options_)) {
         std::string msg = "Validation failed after pass ";
         msg += pass->name();

@@ -53,7 +53,8 @@ class PassTest : public TestT {
         manager_(new PassManager()),
         assemble_options_(SpirvTools::kDefaultAssembleOption),
         disassemble_options_(SpirvTools::kDefaultDisassembleOption),
-        env_(SPV_ENV_UNIVERSAL_1_3) {}
+        env_(SPV_ENV_UNIVERSAL_1_3),
+        binary_with_all_oplines_(false) {}
 
   // Runs the given |pass| on the binary assembled from the |original|.
   // Returns a tuple of the optimized binary and the boolean value returned
@@ -75,7 +76,10 @@ class PassTest : public TestT {
 
     std::vector<uint32_t> binary;
     if (status != Pass::Status::Failure) {
-      context()->module()->ToBinary(&binary, skip_nop);
+      if (binary_with_all_oplines_)
+        context()->module()->ToBinaryWithAllOpLines(&binary, skip_nop);
+      else
+        context()->module()->ToBinary(&binary, skip_nop);
     }
     return std::make_tuple(binary, status);
   }
@@ -248,7 +252,12 @@ class PassTest : public TestT {
 
     if (status != Pass::Status::Failure) {
       std::vector<uint32_t> binary;
-      context()->module()->ToBinary(&binary, /* skip_nop = */ false);
+      if (binary_with_all_oplines_) {
+        context()->module()->ToBinaryWithAllOpLines(&binary,
+                                                    /* skip_nop = */ false);
+      } else {
+        context()->module()->ToBinary(&binary, /* skip_nop = */ false);
+      }
 
       std::string optimized;
       SpirvTools tools(env_);
@@ -278,6 +287,10 @@ class PassTest : public TestT {
 
   void SetTargetEnv(spv_target_env env) { env_ = env; }
 
+  void SetBinaryWithAllOpLines(bool binary_with_all_oplines) {
+    binary_with_all_oplines_ = binary_with_all_oplines;
+  }
+
  private:
   MessageConsumer consumer_;              // Message consumer.
   std::unique_ptr<IRContext> context_;    // IR context
@@ -287,6 +300,7 @@ class PassTest : public TestT {
   spv_optimizer_options_t optimizer_options_;
   spv_validator_options_t validator_options_;
   spv_target_env env_;
+  bool binary_with_all_oplines_;
 };
 
 }  // namespace opt

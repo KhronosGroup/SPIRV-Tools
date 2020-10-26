@@ -368,12 +368,9 @@ OpNoLine
 OpFunctionEnd
 )";
 
+  SetBinaryWithAllOpLines(true);
   SinglePassRunAndCheck<ProcessLinesPass>(predefs + before, predefs + after,
                                           false, true, kLinesPropagateLines);
-
-  std::vector<uint32_t> optimized_bin;
-  auto status = Pass::Status::SuccessWithoutChange;
-  std::tie(optimized_bin, status) = SinglePassRunToBinary<ProcessLinesPass>(predefs + before, false, kLinesPropagateLines);
 }
 
 TEST_F(ProcessLinesTest, SimpleElimination) {
@@ -686,6 +683,7 @@ OpReturnValue %74
 OpFunctionEnd
 )";
 
+  SetBinaryWithAllOpLines(true);
   SinglePassRunAndCheck<ProcessLinesPass>(
       predefs + before, predefs + after, false, true, kLinesEliminateDeadLines);
 }

@@ -133,6 +133,49 @@ void Module::ForEachInst(const std::function<void(const Instruction*)>& f,
 #undef DELEGATE
 }
 
+void Module::ToBinaryWithAllOpLines(std::vector<uint32_t>* binary,
+                                    bool skip_nop) const {
+  binary->push_back(header_.magic_number);
+  binary->push_back(header_.version);
+  // TODO(antiagainst): should we change the generator number?
+  binary->push_back(header_.generator);
+  binary->push_back(header_.bound);
+  binary->push_back(header_.reserved);
+
+  size_t bound_idx = binary->size() - 2;
+  DebugScope last_scope(kNoDebugScope, kNoInlinedAt);
+  bool between_merge_and_branch = false;
+  auto write_inst = [binary, skip_nop, &last_scope, &between_merge_and_branch,
+                     this](const Instruction* i) {
+    // Skip emitting line instructions between merge and branch instructions.
+    auto opcode = i->opcode();
+    if (between_merge_and_branch &&
+        (opcode == SpvOpLine || opcode == SpvOpNoLine)) {
+      return;
+    }
+    between_merge_and_branch = false;
+    if (!(skip_nop && i->IsNop())) {
+      const auto& scope = i->GetDebugScope();
+      if (scope != last_scope) {
+        // Emit DebugScope |scope| to |binary|.
+        auto dbg_inst = ext_inst_debuginfo_.begin();
+        scope.ToBinary(dbg_inst->type_id(), context()->TakeNextId(),
+                       dbg_inst->GetSingleWordOperand(2), binary);
+        last_scope = scope;
+      }
+
+      i->ToBinaryWithoutAttachedDebugInsts(binary);
+    }
+    if (opcode == SpvOpLoopMerge || opcode == SpvOpSelectionMerge) {
+      between_merge_and_branch = true;
+    }
+  };
+  ForEachInst(write_inst, true);
+
+  // We create new instructions for DebugScope. The bound must be updated.
+  binary->data()[bound_idx] = header_.bound;
+}
+
 void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
   binary->push_back(header_.magic_number);
   binary->push_back(header_.version);
@@ -148,8 +191,9 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
   auto write_inst = [binary, skip_nop, &last_scope, &last_line_inst,
                      &between_merge_and_branch, this](const Instruction* i) {
     // Skip emitting line instructions between merge and branch instructions.
+    auto opcode = i->opcode();
     if (between_merge_and_branch &&
-        (i->opcode() == SpvOpLine || i->opcode() == SpvOpNoLine)) {
+        (opcode == SpvOpLine || opcode == SpvOpNoLine)) {
       return;
     }
     between_merge_and_branch = false;
@@ -157,7 +201,7 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
       // If the current instruction is OpLine and it is the same with
       // the last line instruction that is still effective (can be applied
       // to the next instruction), we skip writing the current instruction.
-      if (i->opcode() == SpvOpLine) {
+      if (opcode == SpvOpLine) {
         uint32_t operand_index = 0;
         if (last_line_inst->WhileEachInOperand(
                 [&operand_index, i](const uint32_t* word) {
@@ -166,7 +210,7 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
                 })) {
           return;
         }
-      } else if (i->opcode() != SpvOpNoLine && i->dbg_line_insts().empty()) {
+      } else if (opcode != SpvOpNoLine && i->dbg_line_insts().empty()) {
         // If the current instruction does not have the line information,
         // the last line information is not effective any more. Emit OpNoLine
         // to specify it.
@@ -186,7 +230,6 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
 
       i->ToBinaryWithoutAttachedDebugInsts(binary);
     }
-    auto opcode = i->opcode();
     // Update the last line instruction.
     if (IsTerminatorInst(opcode) || opcode == SpvOpNoLine) {
       last_line_inst = nullptr;
