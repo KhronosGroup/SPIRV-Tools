@@ -16,8 +16,6 @@
 
 // Validates correctness of built-in variables.
 
-#include "source/val/validate.h"
-
 #include <functional>
 #include <list>
 #include <map>
@@ -33,6 +31,7 @@
 #include "source/spirv_target_env.h"
 #include "source/util/bitutils.h"
 #include "source/val/instruction.h"
+#include "source/val/validate.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
@@ -108,7 +107,9 @@ SpvStorageClass GetStorageClass(const Instruction& inst) {
     case SpvOpGenericCastToPtrExplicit: {
       return SpvStorageClass(inst.word(4));
     }
-    default: { break; }
+    default: {
+      break;
+    }
   }
   return SpvStorageClassMax;
 }
@@ -2641,15 +2642,14 @@ spv_result_t BuiltInsValidator::ValidateLayerOrViewportIndexAtReference(
         case SpvExecutionModelVertex:
         case SpvExecutionModelTessellationEvaluation: {
           if (!_.HasCapability(SpvCapabilityShaderViewportIndexLayerEXT)) {
-
             if (operand == SpvBuiltInViewportIndex &&
                 _.HasCapability(SpvCapabilityShaderViewportIndex))
-              break; // Ok
+              break;  // Ok
             if (operand == SpvBuiltInLayer &&
                 _.HasCapability(SpvCapabilityShaderLayer))
               break;  // Ok
 
-            const char *capability = "ShaderViewportIndexLayerEXT";
+            const char* capability = "ShaderViewportIndexLayerEXT";
 
             if (operand == SpvBuiltInViewportIndex)
               capability = "ShaderViewportIndexLayerEXT or ShaderViewportIndex";
@@ -2661,8 +2661,7 @@ spv_result_t BuiltInsValidator::ValidateLayerOrViewportIndexAtReference(
                    << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
                                                     operand)
                    << " in Vertex or Tessellation execution model requires the "
-                   << capability
-                   << " capability.";
+                   << capability << " capability.";
           }
           break;
         }
