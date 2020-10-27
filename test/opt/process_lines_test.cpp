@@ -24,6 +24,8 @@ namespace spvtools {
 namespace opt {
 namespace {
 
+constexpr uint32_t kOpLineLineInIdx = 1;
+
 using ProcessLinesTest = PassTest<::testing::Test>;
 
 TEST_F(ProcessLinesTest, SimplePropagation) {
@@ -281,21 +283,13 @@ OpNoLine
 %param = OpVariable %_ptr_Function_PS_INPUT Function
 OpLine %5 23 0
 %49 = OpLoad %v2float %i_vTextureCoords
-OpLine %5 23 0
 %50 = OpAccessChain %_ptr_Function_v2float %i_0 %int_0
-OpLine %5 23 0
 OpStore %50 %49
-OpLine %5 23 0
 %51 = OpLoad %PS_INPUT %i_0
-OpLine %5 23 0
 OpStore %param %51
-OpLine %5 23 0
 %52 = OpFunctionCall %PS_OUTPUT %_MainPs_struct_PS_INPUT_vf21_ %param
-OpLine %5 23 0
 %53 = OpCompositeExtract %v4float %52 0
-OpLine %5 23 0
 OpStore %_entryPointOutput_vColor %53
-OpLine %5 23 0
 OpReturn
 OpNoLine
 OpFunctionEnd
@@ -311,66 +305,68 @@ OpNoLine
 %ps_output = OpVariable %_ptr_Function_PS_OUTPUT Function
 OpLine %5 27 0
 %55 = OpAccessChain %_ptr_PushConstant_uint %_ %int_2
-OpLine %5 27 0
 %56 = OpLoad %uint %55
-OpLine %5 27 0
 %57 = OpINotEqual %bool %56 %uint_0
-OpLine %5 27 0
 OpSelectionMerge %58 None
 OpBranchConditional %57 %59 %60
 OpNoLine
 %59 = OpLabel
 OpLine %5 28 0
 %61 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
-OpLine %5 28 0
 %62 = OpLoad %uint %61
-OpLine %5 28 0
 OpStore %u %62
-OpLine %5 28 0
 OpBranch %58
 OpNoLine
 %60 = OpLabel
 OpLine %5 30 0
 %63 = OpAccessChain %_ptr_PushConstant_uint %_ %int_1
-OpLine %5 30 0
 %64 = OpLoad %uint %63
-OpLine %5 30 0
 OpStore %u %64
-OpLine %5 30 0
 OpBranch %58
 OpNoLine
 %58 = OpLabel
 OpLine %5 31 0
 %65 = OpLoad %uint %u
-OpLine %5 31 0
 %66 = OpAccessChain %_ptr_UniformConstant_36 %g_tColor %65
-OpLine %5 31 0
 %67 = OpLoad %36 %66
-OpLine %5 31 0
 %68 = OpLoad %41 %g_sAniso
-OpLine %5 31 0
 %69 = OpSampledImage %43 %67 %68
-OpLine %5 31 0
 %70 = OpAccessChain %_ptr_Function_v2float %i %int_0
-OpLine %5 31 0
 %71 = OpLoad %v2float %70
-OpLine %5 31 0
 %72 = OpImageSampleImplicitLod %v4float %69 %71
-OpLine %5 31 0
 %73 = OpAccessChain %_ptr_Function_v4float %ps_output %int_0
-OpLine %5 31 0
 OpStore %73 %72
 OpLine %5 32 0
 %74 = OpLoad %PS_OUTPUT %ps_output
-OpLine %5 32 0
 OpReturnValue %74
 OpNoLine
 OpFunctionEnd
 )";
 
-  SetBinaryWithAllOpLines(true);
   SinglePassRunAndCheck<ProcessLinesPass>(predefs + before, predefs + after,
                                           false, true, kLinesPropagateLines);
+  struct IdLineTest {
+    std::vector<uint32_t> ids;
+    uint32_t expected_line;
+  };
+  const IdLineTest ids_to_expected_lines[] = {
+      {{49, 50, 51, 52, 53}, 23},
+      {{55, 56, 57}, 27},
+      {{61, 62}, 28},
+      {{63, 64}, 30},
+      {{65, 66, 67, 68, 69, 70, 71, 72, 73}, 31},
+      {{74}, 32},
+  };
+  for (auto& ids_to_line : ids_to_expected_lines) {
+    for (uint32_t id : ids_to_line.ids) {
+      const auto* inst = context()->get_def_use_mgr()->GetDef(id);
+      EXPECT_EQ(inst->dbg_line_insts().size(), 1);
+      const Instruction& line = inst->dbg_line_insts().back();
+      EXPECT_EQ(line.opcode(), SpvOpLine);
+      EXPECT_EQ(line.GetSingleWordInOperand(kOpLineLineInIdx),
+                ids_to_line.expected_line);
+    }
+  }
 }
 
 TEST_F(ProcessLinesTest, SimpleElimination) {
@@ -633,6 +629,7 @@ OpFunctionEnd
 %param = OpVariable %_ptr_Function_PS_INPUT Function
 OpLine %5 23 0
 %49 = OpLoad %v2float %i_vTextureCoords
+OpNoLine
 %50 = OpAccessChain %_ptr_Function_v2float %i_0 %int_0
 OpStore %50 %49
 %51 = OpLoad %PS_INPUT %i_0
@@ -649,6 +646,7 @@ OpFunctionEnd
 %ps_output = OpVariable %_ptr_Function_PS_OUTPUT Function
 OpLine %5 27 0
 %55 = OpAccessChain %_ptr_PushConstant_uint %_ %int_2
+OpNoLine
 %56 = OpLoad %uint %55
 %57 = OpINotEqual %bool %56 %uint_0
 OpSelectionMerge %58 None
@@ -656,18 +654,21 @@ OpBranchConditional %57 %59 %60
 %59 = OpLabel
 OpLine %5 28 0
 %61 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
+OpNoLine
 %62 = OpLoad %uint %61
 OpStore %u %62
 OpBranch %58
 %60 = OpLabel
 OpLine %5 30 0
 %63 = OpAccessChain %_ptr_PushConstant_uint %_ %int_1
+OpNoLine
 %64 = OpLoad %uint %63
 OpStore %u %64
 OpBranch %58
 %58 = OpLabel
 OpLine %5 31 0
 %65 = OpLoad %uint %u
+OpNoLine
 %66 = OpAccessChain %_ptr_UniformConstant_36 %g_tColor %65
 %67 = OpLoad %36 %66
 %68 = OpLoad %41 %g_sAniso
@@ -679,11 +680,11 @@ OpLine %5 31 0
 OpStore %73 %72
 OpLine %5 32 0
 %74 = OpLoad %PS_OUTPUT %ps_output
+OpNoLine
 OpReturnValue %74
 OpFunctionEnd
 )";
 
-  SetBinaryWithAllOpLines(true);
   SinglePassRunAndCheck<ProcessLinesPass>(
       predefs + before, predefs + after, false, true, kLinesEliminateDeadLines);
 }
