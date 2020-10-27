@@ -442,7 +442,8 @@ bool DebugInfoManager::IsAncestorOfScope(uint32_t scope, uint32_t ancestor) {
 
 bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
                                                Instruction* scope) {
-  assert(dbg_declare != nullptr && scope != nullptr);
+  assert(dbg_declare != nullptr);
+  assert(scope != nullptr);
 
   std::vector<uint32_t> scope_ids;
   if (scope->opcode() == SpvOpPhi) {
@@ -450,8 +451,8 @@ bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
     for (uint32_t i = 0; i < scope->NumInOperands(); i += 2) {
       auto* value = context()->get_def_use_mgr()->GetDef(
           scope->GetSingleWordInOperand(i));
-      if (value == nullptr) continue;
-      scope_ids.push_back(value->GetDebugScope().GetLexicalScope());
+      if (value != nullptr)
+        scope_ids.push_back(value->GetDebugScope().GetLexicalScope());
     }
   } else {
     scope_ids.push_back(scope->GetDebugScope().GetLexicalScope());
@@ -467,8 +468,10 @@ bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
   // If the scope of DebugDeclare is an ancestor scope of the instruction's
   // scope, the local variable is visible to the instruction.
   for (uint32_t scope_id : scope_ids) {
-    if (scope_id == kNoDebugScope) continue;
-    if (IsAncestorOfScope(scope_id, decl_scope_id)) return true;
+    if (scope_id != kNoDebugScope &&
+        IsAncestorOfScope(scope_id, decl_scope_id)) {
+      return true;
+    }
   }
   return false;
 }
