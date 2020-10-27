@@ -252,7 +252,7 @@ class SSARewriter {
   // Adds DebugValues for DebugDeclares in
   // |decls_invisible_to_value_assignment_|. Returns whether the function was
   // modified or not, and whether or not the conversion was successful.
-  Pass::Status AddDebugValuesForInvisibleDebugDecls();
+  Pass::Status AddDebugValuesForInvisibleDebugDecls(Function* fp);
 
   // Prints the table of Phi candidates to std::cerr.
   void PrintPhiCandidates() const;

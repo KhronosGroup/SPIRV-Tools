@@ -450,6 +450,7 @@ bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
     for (uint32_t i = 0; i < scope->NumInOperands(); i += 2) {
       auto* value = context()->get_def_use_mgr()->GetDef(
           scope->GetSingleWordInOperand(i));
+      if (value == nullptr) continue;
       scope_ids.push_back(value->GetDebugScope().GetLexicalScope());
     }
   } else {

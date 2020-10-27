@@ -2261,8 +2261,8 @@ TEST_F(LocalSSAElimTest, AddDebugValueForFunctionParameterWithPhi) {
          %69 = OpExtInst %void %1 DebugLexicalBlock %60 7 21 %68
          %70 = OpExtInst %void %1 DebugLocalVariable %11 %59 %60 6 26 %67 FlagIsLocal 2
 
-; CHECK: [[null_expr:%\w+]] = OpExtInst %void [[ext:%\w+]] DebugExpression
 ; CHECK: [[i_name:%\w+]] = OpString "i"
+; CHECK: [[null_expr:%\w+]] = OpExtInst %void [[ext:%\w+]] DebugExpression
 ; CHECK: [[dbg_i:%\w+]] = OpExtInst %void [[ext]] DebugLocalVariable [[i_name]] {{%\w+}} {{%\w+}} 6 16 {{%\w+}} FlagIsLocal 1
          %71 = OpExtInst %void %1 DebugLocalVariable %15 %65 %60 6 16 %67 FlagIsLocal 1
          %72 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %62 %59 %59
@@ -2275,6 +2275,8 @@ TEST_F(LocalSSAElimTest, AddDebugValueForFunctionParameterWithPhi) {
        %main = OpFunction %void None %50
          %79 = OpLabel
         %168 = OpExtInst %void %1 DebugScope %74
+
+; CHECK: [[i:%\w+]] = OpVariable %_ptr_Function_int Function
         %120 = OpVariable %_ptr_Function_int Function
         %121 = OpVariable %_ptr_Function_v4float Function
         %169 = OpExtInst %void %1 DebugNoScope
@@ -2291,7 +2293,7 @@ TEST_F(LocalSSAElimTest, AddDebugValueForFunctionParameterWithPhi) {
                OpLine %7 17 18
 
 ; CHECK: OpStore {{%\w+}} %int_4
-; CHECK: DebugValue [[%dbg_i]] %int_4 [[null_expr]]
+; CHECK: DebugValue [[dbg_i]] %int_4 [[null_expr]]
                OpStore %120 %int_4
                OpStore %121 %80
         %172 = OpExtInst %void %1 DebugScope %67 %155
@@ -2304,7 +2306,7 @@ TEST_F(LocalSSAElimTest, AddDebugValueForFunctionParameterWithPhi) {
         %137 = OpLabel
 
 ; CHECK: [[phi:%\w+]] = OpPhi %int %int_4
-; CHECK: DebugValue [[%dbg_i]] [[phi]] [[null_expr]]
+; CHECK: DebugValue [[dbg_i]] [[phi]] [[null_expr]]
         %175 = OpExtInst %void %1 DebugScope %68 %155
                OpLine %7 7 10
         %138 = OpLoad %int %120
@@ -2337,8 +2339,8 @@ TEST_F(LocalSSAElimTest, AddDebugValueForFunctionParameterWithPhi) {
         %151 = OpIAdd %int %146 %int_1
                OpLine %7 9 7
 
-; CHECK: OpStore {{%\w+}} [[value:%\w+]]
-; CHECK: DebugValue [[%dbg_i]] [[value]] [[null_expr]]
+; CHECK: OpStore [[i]] [[value:%\w+]]
+; CHECK: DebugValue [[dbg_i]] [[value]] [[null_expr]]
                OpStore %120 %151
         %179 = OpExtInst %void %1 DebugScope %68 %155
                OpLine %7 10 3
@@ -2691,6 +2693,7 @@ TEST_F(LocalSSAElimTest, DebugValueForReferenceVariableInBB) {
 ; CHECK:      [[phi0:%\w+]] = OpPhi %float %float_0
 ; CHECK:      [[phi1:%\w+]] = OpPhi %int %int_0
 ; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[phi0]]
+; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_x]] [[phi0]]
 ; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_i]] [[phi1]]
 ; CHECK:      OpLoopMerge [[loop_merge:%\w+]] [[loop_cont:%\w+]] None
 ; CHECK-NEXT: OpBranch [[loop_body:%\w+]]

@@ -580,8 +580,8 @@ void SSARewriter::FinalizePhiCandidates() {
   }
 }
 
-Pass::Status SSARewriter::AddDebugValuesForInvisibleDebugDecls() {
-  // Some cases the value assignment is invisible to DebugDeclare e.g.,
+Pass::Status SSARewriter::AddDebugValuesForInvisibleDebugDecls(Function* fp) {
+  // For the cases the value assignment is invisible to DebugDeclare e.g.,
   // the argument passing for an inlined function.
   //
   // Before inlining foo(int x):
@@ -593,6 +593,7 @@ Pass::Status SSARewriter::AddDebugValuesForInvisibleDebugDecls() {
   //
   // This function specifies the value for the variable using
   // |defs_at_block_[bb]|, where |bb| is the basic block contains the decl.
+  DominatorAnalysis* dom_tree = pass_->context()->GetDominatorAnalysis(fp);
   Pass::Status status = Pass::Status::SuccessWithoutChange;
   for (auto* decl : decls_invisible_to_value_assignment_) {
     uint32_t var_id =
@@ -601,8 +602,19 @@ Pass::Status SSARewriter::AddDebugValuesForInvisibleDebugDecls() {
     if (var->opcode() == SpvOpFunctionParameter) continue;
 
     BasicBlock* bb = pass_->context()->get_instr_block(decl);
-    if (!pass_->context()->get_debug_info_mgr()->AddDebugValueForDecl(
-            decl, defs_at_block_[bb][var_id])) {
+    assert(bb != nullptr);
+    const auto& bb_it = defs_at_block_.find(bb);
+    if (bb_it == defs_at_block_.end()) continue;
+    const auto& def_at_bb_it = bb_it->second.find(var_id);
+    if (def_at_bb_it == bb_it->second.end()) continue;
+
+    auto* value = pass_->get_def_use_mgr()->GetDef(def_at_bb_it->second);
+    // If |value| is defined before the function body, it dominates |decl|.
+    // If |value| dominates |decl|, we can set it as DebugValue.
+    if ((pass_->context()->get_instr_block(value) == nullptr ||
+         dom_tree->Dominates(value, decl)) &&
+        !pass_->context()->get_debug_info_mgr()->AddDebugValueForDecl(
+            decl, value->result_id())) {
       return Pass::Status::Failure;
     }
 
@@ -645,7 +657,7 @@ Pass::Status SSARewriter::RewriteFunctionIntoSSA(Function* fp) {
   // Finally, apply all the replacements in the IR.
   bool modified = ApplyReplacements();
 
-  auto status = AddDebugValuesForInvisibleDebugDecls();
+  auto status = AddDebugValuesForInvisibleDebugDecls(fp);
   if (status == Pass::Status::SuccessWithChange ||
       status == Pass::Status::Failure) {
     return status;
