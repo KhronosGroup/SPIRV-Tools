@@ -496,13 +496,21 @@ Instruction* DebugInfoManager::AddDebugValueWithIndex(
 
 void DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
     Instruction* scope_and_line, uint32_t variable_id, uint32_t value_id,
-    Instruction* insert_pos) {
+    Instruction* insert_pos,
+    std::unordered_set<Instruction*>* invisible_decls) {
   auto dbg_decl_itr = var_id_to_dbg_decl_.find(variable_id);
   if (dbg_decl_itr == var_id_to_dbg_decl_.end()) return;
 
-  uint32_t instr_scope_id = scope_and_line->GetDebugScope().GetLexicalScope();
+  uint32_t instr_scope_id =
+      scope_and_line == nullptr
+          ? 0
+          : scope_and_line->GetDebugScope().GetLexicalScope();
   for (auto* dbg_decl_or_val : dbg_decl_itr->second) {
-    if (!IsDeclareVisibleToInstr(dbg_decl_or_val, instr_scope_id)) continue;
+    if (instr_scope_id &&
+        !IsDeclareVisibleToInstr(dbg_decl_or_val, instr_scope_id)) {
+      if (invisible_decls) invisible_decls->insert(dbg_decl_or_val);
+      continue;
+    }
 
     // Avoid inserting the new DebugValue between OpPhi or OpVariable
     // instructions.
@@ -523,9 +531,34 @@ void DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
                                    kDebugValueOperandLocalVariableIndex),
                                value_id, 0, index_id, insert_before);
     assert(added_dbg_value != nullptr);
-    added_dbg_value->UpdateDebugInfoFrom(scope_and_line);
+    added_dbg_value->UpdateDebugInfoFrom(instr_scope_id ? scope_and_line
+                                                        : dbg_decl_or_val);
     AnalyzeDebugInst(added_dbg_value);
   }
+}
+
+bool DebugInfoManager::AddDebugValueForDecl(Instruction* dbg_decl,
+                                            uint32_t value_id) {
+  if (dbg_decl == nullptr || !IsDebugDeclare(dbg_decl)) return false;
+
+  std::unique_ptr<Instruction> dbg_val(dbg_decl->Clone(context()));
+  dbg_val->SetResultId(context()->TakeNextId());
+  dbg_val->SetInOperand(kExtInstInstructionInIdx,
+                        {OpenCLDebugInfo100DebugValue});
+  dbg_val->SetOperand(kDebugDeclareOperandVariableIndex, {value_id});
+  dbg_val->SetOperand(kDebugValueOperandExpressionIndex,
+                      {GetEmptyDebugExpression()->result_id()});
+
+  auto* added_dbg_val = dbg_decl->InsertBefore(std::move(dbg_val));
+  AnalyzeDebugInst(added_dbg_val);
+  if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
+    context()->get_def_use_mgr()->AnalyzeInstDefUse(added_dbg_val);
+  if (context()->AreAnalysesValid(
+          IRContext::Analysis::kAnalysisInstrToBlockMapping)) {
+    auto insert_blk = context()->get_instr_block(dbg_decl);
+    context()->set_instr_block(added_dbg_val, insert_blk);
+  }
+  return true;
 }
 
 uint32_t DebugInfoManager::GetVariableIdOfDebugValueUsedForDeclare(

@@ -66,6 +66,7 @@ namespace opt {
 namespace {
 const uint32_t kStoreValIdInIdx = 1;
 const uint32_t kVariableInitIdInIdx = 1;
+const uint32_t kDebugDeclareOperandVariableIdx = 5;
 }  // namespace
 
 std::string SSARewriter::PhiCandidate::PrettyPrint(const CFG* cfg) const {
@@ -308,7 +309,7 @@ void SSARewriter::ProcessStore(Instruction* inst, BasicBlock* bb) {
   if (pass_->IsTargetVar(var_id)) {
     WriteVariable(var_id, bb, val_id);
     pass_->context()->get_debug_info_mgr()->AddDebugValueIfVarDeclIsVisible(
-        inst, var_id, val_id, inst);
+        inst, var_id, val_id, inst, &decls_invisible_to_value_assignment_);
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
     std::cerr << "\tFound store '%" << var_id << " = %" << val_id << "': "
@@ -439,8 +440,6 @@ bool SSARewriter::ApplyReplacements() {
 
   // Add Phi instructions from completed Phi candidates.
   std::vector<Instruction*> generated_phis;
-  // Add DebugValue instructions for Phi instructions.
-  std::vector<Instruction*> dbg_values_for_phis;
   for (const PhiCandidate* phi_candidate : phis_to_generate_) {
 #if SSA_REWRITE_DEBUGGING_LEVEL > 2
     std::cerr << "Phi candidate: " << phi_candidate->PrettyPrint(pass_->cfg())
@@ -493,7 +492,7 @@ bool SSARewriter::ApplyReplacements() {
     insert_it->SetDebugScope(local_var->GetDebugScope());
     pass_->context()->get_debug_info_mgr()->AddDebugValueIfVarDeclIsVisible(
         &*insert_it, phi_candidate->var_id(), phi_candidate->result_id(),
-        &*insert_it);
+        &*insert_it, &decls_invisible_to_value_assignment_);
 
     modified = true;
   }
@@ -581,6 +580,42 @@ void SSARewriter::FinalizePhiCandidates() {
   }
 }
 
+Pass::Status SSARewriter::AddDebugValuesForInvisibleDebugDecls() {
+  // Some cases the value assignment is invisible to DebugDeclare e.g.,
+  // the argument passing for an inlined function.
+  //
+  // Before inlining foo(int x):
+  //   a = 3;
+  //   foo(3);
+  // After inlining:
+  //   a = 3; // we want to specify DebugValue %x = %int_3
+  //   foo and x disappeared!
+  //
+  // This function specifies the value for the variable using
+  // |defs_at_block_[bb]|, where |bb| is the basic block contains the decl.
+  Pass::Status status = Pass::Status::SuccessWithoutChange;
+  for (auto* decl : decls_invisible_to_value_assignment_) {
+    uint32_t var_id =
+        decl->GetSingleWordOperand(kDebugDeclareOperandVariableIdx);
+    auto* var = pass_->get_def_use_mgr()->GetDef(var_id);
+    if (var->opcode() == SpvOpFunctionParameter) continue;
+
+    BasicBlock* bb = pass_->context()->get_instr_block(decl);
+    if (!pass_->context()->get_debug_info_mgr()->AddDebugValueForDecl(
+            decl, defs_at_block_[bb][var_id])) {
+      return Pass::Status::Failure;
+    }
+
+    // DebugDeclares of target variables will be removed by
+    // SSARewritePass::Process().
+    if (!pass_->IsTargetVar(var_id)) {
+      pass_->context()->get_debug_info_mgr()->KillDebugDeclares(var_id);
+    }
+    status = Pass::Status::SuccessWithChange;
+  }
+  return status;
+}
+
 Pass::Status SSARewriter::RewriteFunctionIntoSSA(Function* fp) {
 #if SSA_REWRITE_DEBUGGING_LEVEL > 0
   std::cerr << "Function before SSA rewrite:\n"
@@ -609,6 +644,12 @@ Pass::Status SSARewriter::RewriteFunctionIntoSSA(Function* fp) {
 
   // Finally, apply all the replacements in the IR.
   bool modified = ApplyReplacements();
+
+  auto status = AddDebugValuesForInvisibleDebugDecls();
+  if (status == Pass::Status::SuccessWithChange ||
+      status == Pass::Status::Failure) {
+    return status;
+  }
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 0
   std::cerr << "\n\n\nFunction after SSA rewrite:\n"
