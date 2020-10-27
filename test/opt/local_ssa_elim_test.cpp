@@ -2692,9 +2692,9 @@ TEST_F(LocalSSAElimTest, DebugValueForReferenceVariableInBB) {
 ; CHECK:      OpExtInst %void [[ext]] DebugScope [[dbg_main]]
 ; CHECK:      [[phi0:%\w+]] = OpPhi %float %float_0
 ; CHECK:      [[phi1:%\w+]] = OpPhi %int %int_0
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[phi0]]
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_x]] [[phi0]]
-; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_i]] [[phi1]]
+; CHECK-DAG: OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[phi0]]
+; CHECK-DAG: OpExtInst %void [[ext]] DebugValue [[dbg_x]] [[phi0]]
+; CHECK-DAG: OpExtInst %void [[ext]] DebugValue [[dbg_i]] [[phi1]]
 ; CHECK:      OpLoopMerge [[loop_merge:%\w+]] [[loop_cont:%\w+]] None
 ; CHECK-NEXT: OpBranch [[loop_body:%\w+]]
 
