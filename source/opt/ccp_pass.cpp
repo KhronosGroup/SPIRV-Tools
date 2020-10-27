@@ -135,19 +135,9 @@ SSAPropagator::PropStatus CCPPass::VisitAssignment(Instruction* instr) {
     }
     return it->second;
   };
-  uint32_t next_id = context()->module()->IdBound();
   Instruction* folded_inst =
       context()->get_instruction_folder().FoldInstructionToConstant(instr,
                                                                     map_func);
-
-  // Whether or not the instruction was folded, the folder may have created
-  // new constants.  If this happens, we need to indicate that CCP has modified
-  // the IR (independently of whether the new constant is actually propagated).
-  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/3636 and
-  // https://github.com/KhronosGroup/SPIRV-Tools/issues/3991 for details.
-  if (context()->module()->IdBound() > next_id) {
-    created_new_constant_ = true;
-  }
 
   if (folded_inst != nullptr) {
     // We do not want to change the body of the function by adding new
@@ -280,10 +270,14 @@ bool CCPPass::ReplaceValues() {
   // Even if we make no changes to the function's IR, propagation may have
   // created new constants.  Even if those constants cannot be replaced in
   // the IR, the constant definition itself is a change.  To reflect this,
-  // we initialize the IR changed indicator with the value of the
-  // created_new_constant_ indicator.  For an example, see the bug reported
-  // in https://github.com/KhronosGroup/SPIRV-Tools/issues/3636.
-  bool changed_ir = created_new_constant_;
+  // we check whether the next ID to be given by the module is different than
+  // the original bound ID. If that happens, new instructions were added to the
+  // module during propagation.
+  //
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/3636 and
+  // https://github.com/KhronosGroup/SPIRV-Tools/issues/3991 for details.
+  bool changed_ir = (context()->module()->IdBound() > original_id_bound_);
+
   for (const auto& it : values_) {
     uint32_t id = it.first;
     uint32_t cst_id = it.second;
@@ -292,6 +286,7 @@ bool CCPPass::ReplaceValues() {
       changed_ir |= context()->ReplaceAllUsesWith(id, cst_id);
     }
   }
+
   return changed_ir;
 }
 
@@ -331,7 +326,7 @@ void CCPPass::Initialize() {
     }
   }
 
-  created_new_constant_ = false;
+  original_id_bound_ = context()->module()->IdBound();
 }
 
 Pass::Status CCPPass::Process() {
