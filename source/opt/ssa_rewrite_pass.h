@@ -192,6 +192,10 @@ class SSARewriter {
     }
   }
 
+  // Returns the value of |var_id| at |bb| if |defs_at_block_| contains it.
+  // Otherwise, returns 0.
+  uint32_t GetValueAtBlock(uint32_t var_id, BasicBlock* bb);
+
   // Processes the store operation |inst| in basic block |bb|. This extracts
   // the variable ID being stored into, determines whether the variable is an
   // SSA-target variable, and, if it is, it stores its value in the

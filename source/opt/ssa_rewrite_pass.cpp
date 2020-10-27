@@ -242,8 +242,8 @@ uint32_t SSARewriter::AddPhiOperands(PhiCandidate* phi_candidate) {
   return repl_id;
 }
 
-uint32_t SSARewriter::GetReachingDef(uint32_t var_id, BasicBlock* bb) {
-  // If |var_id| has a definition in |bb|, return it.
+uint32_t SSARewriter::GetValueAtBlock(uint32_t var_id, BasicBlock* bb) {
+  assert(bb != nullptr);
   const auto& bb_it = defs_at_block_.find(bb);
   if (bb_it != defs_at_block_.end()) {
     const auto& current_defs = bb_it->second;
@@ -252,9 +252,15 @@ uint32_t SSARewriter::GetReachingDef(uint32_t var_id, BasicBlock* bb) {
       return var_it->second;
     }
   }
+  return 0;
+}
+
+uint32_t SSARewriter::GetReachingDef(uint32_t var_id, BasicBlock* bb) {
+  // If |var_id| has a definition in |bb|, return it.
+  uint32_t val_id = GetValueAtBlock(var_id, bb);
+  if (val_id != 0) return val_id;
 
   // Otherwise, look up the value for |var_id| in |bb|'s predecessors.
-  uint32_t val_id = 0;
   auto& predecessors = pass_->cfg()->preds(bb->id());
   if (predecessors.size() == 1) {
     // If |bb| has exactly one predecessor, we look for |var_id|'s definition
@@ -588,11 +594,11 @@ Pass::Status SSARewriter::AddDebugValuesForInvisibleDebugDecls(Function* fp) {
   //   a = 3;
   //   foo(3);
   // After inlining:
-  //   a = 3; // we want to specify DebugValue %x = %int_3
+  //   a = 3; // we want to specify "DebugValue: %x = %int_3"
   //   foo and x disappeared!
   //
-  // This function specifies the value for the variable using
-  // |defs_at_block_[bb]|, where |bb| is the basic block contains the decl.
+  // We want to specify the value for the variable using |defs_at_block_[bb]|,
+  // where |bb| is the basic block contains the decl.
   DominatorAnalysis* dom_tree = pass_->context()->GetDominatorAnalysis(fp);
   Pass::Status status = Pass::Status::SuccessWithoutChange;
   for (auto* decl : decls_invisible_to_value_assignment_) {
@@ -601,21 +607,28 @@ Pass::Status SSARewriter::AddDebugValuesForInvisibleDebugDecls(Function* fp) {
     auto* var = pass_->get_def_use_mgr()->GetDef(var_id);
     if (var->opcode() == SpvOpFunctionParameter) continue;
 
-    BasicBlock* bb = pass_->context()->get_instr_block(decl);
-    assert(bb != nullptr);
-    const auto& bb_it = defs_at_block_.find(bb);
-    if (bb_it == defs_at_block_.end()) continue;
-    const auto& def_at_bb_it = bb_it->second.find(var_id);
-    if (def_at_bb_it == bb_it->second.end()) continue;
+    auto* bb = pass_->context()->get_instr_block(decl);
+    uint32_t value_id = GetValueAtBlock(var_id, bb);
+    Instruction* value = nullptr;
+    if (value_id) value = pass_->get_def_use_mgr()->GetDef(value_id);
 
-    auto* value = pass_->get_def_use_mgr()->GetDef(def_at_bb_it->second);
     // If |value| is defined before the function body, it dominates |decl|.
     // If |value| dominates |decl|, we can set it as DebugValue.
-    if ((pass_->context()->get_instr_block(value) == nullptr ||
-         dom_tree->Dominates(value, decl)) &&
-        !pass_->context()->get_debug_info_mgr()->AddDebugValueForDecl(
-            decl, value->result_id())) {
-      return Pass::Status::Failure;
+    if (value && (pass_->context()->get_instr_block(value) == nullptr ||
+                  dom_tree->Dominates(value, decl))) {
+      if (!pass_->context()->get_debug_info_mgr()->AddDebugValueForDecl(
+              decl, value->result_id())) {
+        return Pass::Status::Failure;
+      }
+    } else {
+      // If |value| in the same basic block does not dominate |decl|, we can
+      // assign the value in the immediate dominator.
+      value_id = GetValueAtBlock(var_id, dom_tree->ImmediateDominator(bb));
+      if (value_id &&
+          !pass_->context()->get_debug_info_mgr()->AddDebugValueForDecl(
+              decl, value_id)) {
+        return Pass::Status::Failure;
+      }
     }
 
     // DebugDeclares of target variables will be removed by
