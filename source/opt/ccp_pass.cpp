@@ -139,19 +139,21 @@ SSAPropagator::PropStatus CCPPass::VisitAssignment(Instruction* instr) {
   Instruction* folded_inst =
       context()->get_instruction_folder().FoldInstructionToConstant(instr,
                                                                     map_func);
+
+  // Whether or not the instruction was folded, the folder may have created
+  // new constants.  If this happens, we need to indicate that CCP has modified
+  // the IR (independently of whether the new constant is actually propagated).
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/3636 and
+  // https://github.com/KhronosGroup/SPIRV-Tools/issues/3991 for details.
+  if (context()->module()->IdBound() > next_id) {
+    created_new_constant_ = true;
+  }
+
   if (folded_inst != nullptr) {
     // We do not want to change the body of the function by adding new
     // instructions.  When folding we can only generate new constants.
     assert(folded_inst->IsConstant() && "CCP is only interested in constant.");
     values_[instr->result_id()] = folded_inst->result_id();
-
-    // If the folded instruction has just been created, its result ID will
-    // match the previous ID bound. When this happens, we need to indicate
-    // that CCP has modified the IR, independently of whether the constant is
-    // actually propagated. See
-    // https://github.com/KhronosGroup/SPIRV-Tools/issues/3636 for details.
-    if (folded_inst->result_id() >= next_id) created_new_constant_ = true;
-
     return SSAPropagator::kInteresting;
   }
 

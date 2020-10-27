@@ -1158,6 +1158,56 @@ TEST_F(CCPTest, CCPNoChangeFailureSeveralConstantsDuringFolding) {
   auto result = SinglePassRunAndMatch<CCPPass>(text, true);
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
+
+// Test from https://github.com/KhronosGroup/SPIRV-Tools/issues/3991
+// Similar to the previous one but constants are created even when no
+// instruction are ever folded during propagation.
+TEST_F(CCPTest, CCPNoChangeFailureWithUnfoldableInstr) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+       %bool = OpTypeBool
+    %float_0 = OpConstant %float 0
+         %11 = OpConstantComposite %v3float %float_0 %float_0 %float_0
+%float_0_300000012 = OpConstant %float 0.300000012
+         %13 = OpConstantComposite %v3float %float_0_300000012 %float_0_300000012 %float_0_300000012
+
+; CCP generates two constants when trying to fold an instruction, which it
+; ultimately fails to fold. The instruction folder in CCP was only
+; checking for newly added constants if the instruction folds successfully.
+;
+; CHECK: %float_1 = OpConstant %float 1
+; CHECK: %float_0_699999988 = OpConstant %float 0.69999998
+
+          %2 = OpFunction %void None %4
+         %14 = OpLabel
+         %15 = OpBitcast %uint %float_0_300000012
+         %16 = OpUGreaterThan %bool %15 %uint_0
+               OpBranch %17
+         %17 = OpLabel
+         %18 = OpPhi %v3float %11 %14 %13 %19
+               OpLoopMerge %20 %19 None
+               OpBranchConditional %16 %19 %20
+         %19 = OpLabel
+               OpBranch %17
+         %20 = OpLabel
+         %21 = OpExtInst %v3float %1 FMix %11 %18 %13
+               OpReturn
+               OpFunctionEnd
+)";
+
+  auto result = SinglePassRunAndMatch<CCPPass>(text, true);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
