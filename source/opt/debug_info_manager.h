@@ -224,8 +224,7 @@ class DebugInfoManager {
 
   // Returns true if the declaration of a local variable |dbg_declare|
   // is visible in the scope of an instruction |instr_scope_id|.
-  bool IsDeclareVisibleToInstr(Instruction* dbg_declare,
-                               uint32_t instr_scope_id);
+  bool IsDeclareVisibleToInstr(Instruction* dbg_declare, Instruction* scope);
 
   // Returns the parent scope of the scope |child_scope|.
   uint32_t GetParentScope(uint32_t child_scope);

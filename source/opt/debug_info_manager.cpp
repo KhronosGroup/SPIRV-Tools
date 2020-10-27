@@ -441,8 +441,20 @@ bool DebugInfoManager::IsAncestorOfScope(uint32_t scope, uint32_t ancestor) {
 }
 
 bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
-                                               uint32_t instr_scope_id) {
-  if (instr_scope_id == kNoDebugScope) return false;
+                                               Instruction* scope) {
+  assert(dbg_declare != nullptr && scope != nullptr);
+
+  std::vector<uint32_t> scope_ids;
+  if (scope->opcode() == SpvOpPhi) {
+    scope_ids.push_back(scope->GetDebugScope().GetLexicalScope());
+    for (uint32_t i = 0; i < scope->NumInOperands(); i += 2) {
+      auto* value = context()->get_def_use_mgr()->GetDef(
+          scope->GetSingleWordInOperand(i));
+      scope_ids.push_back(value->GetDebugScope().GetLexicalScope());
+    }
+  } else {
+    scope_ids.push_back(scope->GetDebugScope().GetLexicalScope());
+  }
 
   uint32_t dbg_local_var_id =
       dbg_declare->GetSingleWordOperand(kDebugDeclareOperandLocalVariableIndex);
@@ -453,7 +465,11 @@ bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
 
   // If the scope of DebugDeclare is an ancestor scope of the instruction's
   // scope, the local variable is visible to the instruction.
-  return IsAncestorOfScope(instr_scope_id, decl_scope_id);
+  for (uint32_t scope_id : scope_ids) {
+    if (scope_id == kNoDebugScope) continue;
+    if (IsAncestorOfScope(scope_id, decl_scope_id)) return true;
+  }
+  return false;
 }
 
 Instruction* DebugInfoManager::AddDebugValueWithIndex(
@@ -501,13 +517,9 @@ void DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
   auto dbg_decl_itr = var_id_to_dbg_decl_.find(variable_id);
   if (dbg_decl_itr == var_id_to_dbg_decl_.end()) return;
 
-  uint32_t instr_scope_id =
-      scope_and_line == nullptr
-          ? 0
-          : scope_and_line->GetDebugScope().GetLexicalScope();
   for (auto* dbg_decl_or_val : dbg_decl_itr->second) {
-    if (instr_scope_id &&
-        !IsDeclareVisibleToInstr(dbg_decl_or_val, instr_scope_id)) {
+    if (scope_and_line &&
+        !IsDeclareVisibleToInstr(dbg_decl_or_val, scope_and_line)) {
       if (invisible_decls) invisible_decls->insert(dbg_decl_or_val);
       continue;
     }
@@ -531,7 +543,7 @@ void DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
                                    kDebugValueOperandLocalVariableIndex),
                                value_id, 0, index_id, insert_before);
     assert(added_dbg_value != nullptr);
-    added_dbg_value->UpdateDebugInfoFrom(instr_scope_id ? scope_and_line
+    added_dbg_value->UpdateDebugInfoFrom(scope_and_line ? scope_and_line
                                                         : dbg_decl_or_val);
     AnalyzeDebugInst(added_dbg_value);
   }
