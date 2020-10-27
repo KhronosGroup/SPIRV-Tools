@@ -2649,13 +2649,20 @@ spv_result_t BuiltInsValidator::ValidateLayerOrViewportIndexAtReference(
                 _.HasCapability(SpvCapabilityShaderLayer))
               break;  // Ok
 
+            const char *capability = "ShaderViewportIndexLayerEXT";
+
+            if (operand == SpvBuiltInViewportIndex)
+              capability = "ShaderViewportIndexLayerEXT or ShaderViewportIndex";
+            if (operand == SpvBuiltInLayer)
+              capability = "ShaderViewportIndexLayerEXT or ShaderLayer";
 
             return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
                    << "Using BuiltIn "
                    << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
                                                     operand)
-                   << " in Vertex or Tessellation execution model requires "
-                      "the ShaderViewportIndexLayerEXT capability.";
+                   << " in Vertex or Tessellation execution model requires the "
+                   << capability
+                   << " capability.";
           }
           break;
         }
