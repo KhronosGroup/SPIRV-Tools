@@ -40,7 +40,6 @@ static const uint32_t kDebugLocalVariableOperandParentIndex = 9;
 static const uint32_t kExtInstInstructionInIdx = 1;
 static const uint32_t kDebugGlobalVariableOperandFlagsIndex = 12;
 static const uint32_t kDebugLocalVariableOperandFlagsIndex = 10;
-static const uint32_t kDebugLocalVariableOperandArgNumberIndex = 11;
 
 namespace spvtools {
 namespace opt {
@@ -441,27 +440,15 @@ bool DebugInfoManager::IsAncestorOfScope(uint32_t scope, uint32_t ancestor) {
   return false;
 }
 
-Instruction* DebugInfoManager::GetDebugLocalVariableFromDeclare(
-    Instruction* dbg_declare) {
-  assert(dbg_declare);
+bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
+                                               uint32_t instr_scope_id) {
+  if (instr_scope_id == kNoDebugScope) return false;
+
   uint32_t dbg_local_var_id =
       dbg_declare->GetSingleWordOperand(kDebugDeclareOperandLocalVariableIndex);
   auto dbg_local_var_itr = id_to_dbg_inst_.find(dbg_local_var_id);
   assert(dbg_local_var_itr != id_to_dbg_inst_.end());
-  return dbg_local_var_itr->second;
-}
-
-bool DebugInfoManager::IsFunctionParameter(Instruction* dbg_local_var) const {
-  // If a DebugLocalVariable has ArgNumber operand, it is a function parameter.
-  return dbg_local_var->NumOperands() >
-         kDebugLocalVariableOperandArgNumberIndex;
-}
-
-bool DebugInfoManager::IsLocalVariableVisibleToInstr(Instruction* dbg_local_var,
-                                                     uint32_t instr_scope_id) {
-  if (instr_scope_id == kNoDebugScope) return false;
-
-  uint32_t decl_scope_id = dbg_local_var->GetSingleWordOperand(
+  uint32_t decl_scope_id = dbg_local_var_itr->second->GetSingleWordOperand(
       kDebugLocalVariableOperandParentIndex);
 
   // If the scope of DebugDeclare is an ancestor scope of the instruction's
@@ -515,20 +502,11 @@ void DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
 
   uint32_t instr_scope_id = scope_and_line->GetDebugScope().GetLexicalScope();
   for (auto* dbg_decl_or_val : dbg_decl_itr->second) {
-    // If it declares a function parameter, the store instruction for the
-    // function parameter can exist out of the function parameter's scope
-    // because of the function inlining. We always add DebugValue for a
-    // function parameter next to the DebugDeclare regardless of the scope.
-    auto* dbg_local_var = GetDebugLocalVariableFromDeclare(dbg_decl_or_val);
-    bool is_function_param = IsFunctionParameter(dbg_local_var);
-    if (!is_function_param &&
-        !IsLocalVariableVisibleToInstr(dbg_local_var, instr_scope_id))
-      continue;
+    if (!IsDeclareVisibleToInstr(dbg_decl_or_val, instr_scope_id)) continue;
 
     // Avoid inserting the new DebugValue between OpPhi or OpVariable
     // instructions.
-    Instruction* insert_before = is_function_param ? dbg_decl_or_val->NextNode()
-                                                   : insert_pos->NextNode();
+    Instruction* insert_before = insert_pos->NextNode();
     while (insert_before->opcode() == SpvOpPhi ||
            insert_before->opcode() == SpvOpVariable) {
       insert_before = insert_before->NextNode();
@@ -545,8 +523,7 @@ void DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
                                    kDebugValueOperandLocalVariableIndex),
                                value_id, 0, index_id, insert_before);
     assert(added_dbg_value != nullptr);
-    added_dbg_value->UpdateDebugInfoFrom(is_function_param ? dbg_decl_or_val
-                                                           : scope_and_line);
+    added_dbg_value->UpdateDebugInfoFrom(scope_and_line);
     AnalyzeDebugInst(added_dbg_value);
   }
 }
