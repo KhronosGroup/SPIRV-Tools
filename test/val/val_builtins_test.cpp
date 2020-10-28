@@ -71,6 +71,11 @@ using ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResul
         std::tuple<const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, TestResult>>;
 
+using ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult =
+    spvtest::ValidateBase<std::tuple<spv_target_env, const char*, const char*,
+                                     const char*, const char*, const char*,
+                                     const char*, const char*, TestResult>>;
+
 bool InitializerRequired(spv_target_env env, const char* const storage_class) {
   return spvIsWebGPUEnv(env) && (strncmp(storage_class, "Output", 6) == 0 ||
                                  strncmp(storage_class, "Private", 7) == 0 ||
@@ -247,6 +252,36 @@ TEST_P(
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(test_result.validation_result,
             ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  if (test_result.error_str) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
+  }
+  if (test_result.error_str2) {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str2));
+  }
+  if (vuid) {
+    EXPECT_THAT(getDiagnosticString(), AnyVUID(vuid));
+  }
+}
+
+TEST_P(
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    InMain) {
+  const spv_target_env env = std::get<0>(GetParam());
+  const char* const built_in = std::get<1>(GetParam());
+  const char* const execution_model = std::get<2>(GetParam());
+  const char* const storage_class = std::get<3>(GetParam());
+  const char* const data_type = std::get<4>(GetParam());
+  const char* const capabilities = std::get<5>(GetParam());
+  const char* const extensions = std::get<6>(GetParam());
+  const char* const vuid = std::get<7>(GetParam());
+  const TestResult& test_result = std::get<8>(GetParam());
+
+  CodeGenerator generator =
+      GetInMainCodeGenerator(env, built_in, execution_model, storage_class,
+                             capabilities, extensions, data_type);
+
+  CompileSuccessfully(generator.Build(), env);
+  ASSERT_EQ(test_result.validation_result, ValidateInstructions(env));
   if (test_result.error_str) {
     EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
   }
@@ -1207,14 +1242,21 @@ INSTANTIATE_TEST_SUITE_P(
                        "Geometry, or Fragment execution models"))));
 
 INSTANTIATE_TEST_SUITE_P(
-    LayerAndViewportIndexExecutionModelEnabledByCapability,
+    ViewportIndexExecutionModelEnabledByCapability,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("Layer", "ViewportIndex"),
-            Values("Vertex", "TessellationEvaluation"), Values("Output"),
-            Values("%u32"), Values(nullptr),
+    Combine(Values("ViewportIndex"), Values("Vertex", "TessellationEvaluation"),
+            Values("Output"), Values("%u32"), Values(nullptr),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
-                "requires the ShaderViewportIndexLayerEXT capability"))));
+                "ShaderViewportIndexLayerEXT or ShaderViewportIndex"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    LayerExecutionModelEnabledByCapability,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("Layer"), Values("Vertex", "TessellationEvaluation"),
+            Values("Output"), Values("%u32"), Values(nullptr),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "ShaderViewportIndexLayerEXT or ShaderLayer"))));
 
 INSTANTIATE_TEST_SUITE_P(
     LayerAndViewportIndexFragmentNotInput,
@@ -1259,6 +1301,22 @@ INSTANTIATE_TEST_SUITE_P(
         Values(TestResult(SPV_ERROR_INVALID_DATA,
                           "needs to be a 32-bit int scalar",
                           "has bit width 64"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    LayerCapability,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("Layer"), Values("Vertex"),
+            Values("Output"), Values("%u32"),
+            Values("OpCapability ShaderLayer\n"), Values(nullptr),
+            Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    ViewportIndexCapability,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("ViewportIndex"),
+            Values("Vertex"), Values("Output"), Values("%u32"),
+            Values("OpCapability ShaderViewportIndex\n"), Values(nullptr),
+            Values(nullptr), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
     PatchVerticesSuccess,
