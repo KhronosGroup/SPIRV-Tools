@@ -447,7 +447,7 @@ if(SPIRV_BUILD_FUZZER)
 
   # The fuzzer reuses a lot of functionality from the SPIRV-Tools library.
   target_link_libraries(SPIRV-Tools-fuzz
-        PUBLIC ${SPIRV_TOOLS}-static
+        PUBLIC ${SPIRV_TOOLS_FULL_VISIBILITY}
         PUBLIC SPIRV-Tools-opt
         PUBLIC SPIRV-Tools-reduce
         PUBLIC protobuf::libprotobuf)
