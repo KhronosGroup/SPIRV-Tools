@@ -315,8 +315,10 @@ TEST_F(RedundancyEliminationTest, OpenCLDebugInfo100) {
 ; After removing one `OpFAdd %float %26 %26`, two DebugValues are the same.
 ; One must be removed.
 ;
-; CHECK:      [[add:%\w+]] = OpFAdd %float [[value:%\w+]]
+; CHECK:      OpLine {{%\w+}} 0 0
+; CHECK-NEXT: [[add:%\w+]] = OpFAdd %float [[value:%\w+]]
 ; CHECK-NEXT: DebugValue [[dbg_local_var]] [[add]]
+; CHECK-NEXT: OpLine {{%\w+}} 1 0
 ; CHECK-NEXT: OpFAdd %float [[add]] [[value]]
 ; CHECK-NEXT: OpReturn
          %27 = OpFAdd %float %26 %26

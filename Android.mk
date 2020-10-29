@@ -149,7 +149,6 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/pass.cpp \
 		source/opt/pass_manager.cpp \
 		source/opt/private_to_local_pass.cpp \
-		source/opt/process_lines_pass.cpp \
 		source/opt/propagator.cpp \
 		source/opt/reduce_load_size.cpp \
 		source/opt/redundancy_elimination.cpp \
