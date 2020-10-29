@@ -160,13 +160,10 @@ OpName %gl_FragColor "gl_FragColor"
 ; CHECK: [[st_id:%\w+]] = OpLoad %v4float %BaseColor
 ; CHECK: OpLine {{%\w+}} 1 0
 ; CHECK: [[ld1:%\w+]] = OpLoad %S_t %s0
-; CHECK: OpLine {{%\w+}} 1 0
 ; CHECK: [[ex1:%\w+]] = OpCompositeInsert %S_t [[st_id]] [[ld1]] 1
-; CHECK: OpLine {{%\w+}} 1 0
 ; CHECK: OpStore %s0 [[ex1]]
 ; CHECK: OpLine {{%\w+}} 3 0
 ; CHECK: [[ld2:%\w+]] = OpLoad %S_t %s0
-; CHECK: OpLine {{%\w+}} 3 0
 ; CHECK: [[ex2:%\w+]] = OpCompositeExtract %v4float [[ld2]] 1
 ; CHECK: OpLine {{%\w+}} 4 0
 ; CHECK: OpStore %gl_FragColor [[ex2]]
@@ -263,15 +260,12 @@ OpName %gl_FragColor "gl_FragColor"
 ; CHECK: DebugValue [[dbg_s0:%\w+]] [[s0_1_ptr]]
 ; CHECK: OpLine {{%\w+}} 1 0
 ; CHECK: [[s0:%\w+]] = OpLoad %S_t %s0
-; CHECK: OpLine {{%\w+}} 1 0
 ; CHECK: [[comp:%\w+]] = OpCompositeInsert %S_t [[st_id]] [[s0]] 1
-; CHECK: OpLine {{%\w+}} 1 0
 ; CHECK: OpStore %s0 [[comp]]
 ; CHECK: OpLine {{%\w+}} 2 0
 ; CHECK: [[s0_2_ptr:%\w+]] = OpAccessChain %_ptr_Function_v4float %s0 %int_1
 ; CHECK: OpLine {{%\w+}} 3 0
 ; CHECK: [[s0:%\w+]] = OpLoad %S_t %s0
-; CHECK: OpLine {{%\w+}} 3 0
 ; CHECK: [[s0_2_val:%\w+]] = OpCompositeExtract %v4float [[s0]] 1
 ; CHECK: DebugValue [[dbg_s0]] [[s0_2_val]]
 ; CHECK: OpLine {{%\w+}} 4 0
