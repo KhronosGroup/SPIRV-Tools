@@ -537,11 +537,13 @@ Optimizer::PassToken CreateDeadInsertElimPass();
 Optimizer::PassToken CreateAggressiveDCEPass();
 
 // Creates an empty pass.
+// This is deprecated and will be removed.
 // TODO(jaebaek): remove this pass after handling glslang's broken unit tests.
 //                https://github.com/KhronosGroup/glslang/pull/2440
 Optimizer::PassToken CreatePropagateLineInfoPass();
 
 // Creates an empty pass.
+// This is deprecated and will be removed.
 // TODO(jaebaek): remove this pass after handling glslang's broken unit tests.
 //                https://github.com/KhronosGroup/glslang/pull/2440
 Optimizer::PassToken CreateRedundantLineInfoElimPass();
