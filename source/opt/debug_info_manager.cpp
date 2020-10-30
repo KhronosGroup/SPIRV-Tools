@@ -521,6 +521,8 @@ bool DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
     Instruction* scope_and_line, uint32_t variable_id, uint32_t value_id,
     Instruction* insert_pos,
     std::unordered_set<Instruction*>* invisible_decls) {
+  assert(scope_and_line != nullptr);
+
   auto dbg_decl_itr = var_id_to_dbg_decl_.find(variable_id);
   if (dbg_decl_itr == var_id_to_dbg_decl_.end()) return false;
 
