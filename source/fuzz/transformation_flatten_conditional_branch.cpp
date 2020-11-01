@@ -156,56 +156,56 @@ bool TransformationFlattenConditionalBranch::IsApplicable(
         FindConvergenceBlock(ir_context, *header_block);
     // Consider every OpPhi instruction at the convergence block.
     if (!ir_context->cfg()
-        ->block(convergence_block_id)
-        ->WhileEachPhiInst([this,
-                               ir_context](opt::Instruction* inst) -> bool {
-          // Decide whether the OpPhi can be handled based on its result
-          // type.
-          opt::Instruction* phi_result_type =
-              ir_context->get_def_use_mgr()->GetDef(inst->type_id());
-          switch (phi_result_type->opcode()) {
-            case SpvOpTypeBool:
-            case SpvOpTypeInt:
-            case SpvOpTypeFloat:
-            case SpvOpTypePointer:
-              // Fine: OpSelect can work directly on scalar and pointer
-              // types.
-              return true;
-            case SpvOpTypeVector: {
-              // In its restricted form, OpSelect can only select between
-              // vectors if the condition of the select is a boolean
-              // boolean vector.  We thus require the appropriate boolean
-              // vector type to be present.
-              uint32_t bool_type_id =
-                  fuzzerutil::MaybeGetBoolType(ir_context);
-              if (!bool_type_id) {
-                return false;
-              }
+             ->block(convergence_block_id)
+             ->WhileEachPhiInst([this,
+                                 ir_context](opt::Instruction* inst) -> bool {
+               // Decide whether the OpPhi can be handled based on its result
+               // type.
+               opt::Instruction* phi_result_type =
+                   ir_context->get_def_use_mgr()->GetDef(inst->type_id());
+               switch (phi_result_type->opcode()) {
+                 case SpvOpTypeBool:
+                 case SpvOpTypeInt:
+                 case SpvOpTypeFloat:
+                 case SpvOpTypePointer:
+                   // Fine: OpSelect can work directly on scalar and pointer
+                   // types.
+                   return true;
+                 case SpvOpTypeVector: {
+                   // In its restricted form, OpSelect can only select between
+                   // vectors if the condition of the select is a boolean
+                   // boolean vector.  We thus require the appropriate boolean
+                   // vector type to be present.
+                   uint32_t bool_type_id =
+                       fuzzerutil::MaybeGetBoolType(ir_context);
+                   if (!bool_type_id) {
+                     return false;
+                   }
 
-              uint32_t dimension =
-                  phi_result_type->GetSingleWordInOperand(1);
-              if (fuzzerutil::MaybeGetVectorType(ir_context, bool_type_id,
-                                                 dimension) == 0) {
-                // The required boolean vector type is not present.
-                return false;
-              }
-              // The transformation needs to be equipped with a fresh id
-              // in which to store the vectorized version of the selection
-              // construct's condition.
-              switch (dimension) {
-                case 2:
-                  return message_.fresh_id_for_bvec2_selector() != 0;
-                case 3:
-                  return message_.fresh_id_for_bvec3_selector() != 0;
-                default:
-                  assert(dimension == 4 && "Invalid vector dimension.");
-                  return message_.fresh_id_for_bvec4_selector() != 0;
-              }
-            }
-            default:
-              return false;
-          }
-        })) {
+                   uint32_t dimension =
+                       phi_result_type->GetSingleWordInOperand(1);
+                   if (fuzzerutil::MaybeGetVectorType(ir_context, bool_type_id,
+                                                      dimension) == 0) {
+                     // The required boolean vector type is not present.
+                     return false;
+                   }
+                   // The transformation needs to be equipped with a fresh id
+                   // in which to store the vectorized version of the selection
+                   // construct's condition.
+                   switch (dimension) {
+                     case 2:
+                       return message_.fresh_id_for_bvec2_selector() != 0;
+                     case 3:
+                       return message_.fresh_id_for_bvec3_selector() != 0;
+                     default:
+                       assert(dimension == 4 && "Invalid vector dimension.");
+                       return message_.fresh_id_for_bvec4_selector() != 0;
+                   }
+                 }
+                 default:
+                   return false;
+               }
+             })) {
       return false;
     }
   }
