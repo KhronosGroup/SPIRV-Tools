@@ -1263,7 +1263,8 @@ INSTANTIATE_TEST_SUITE_P(
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
         Values("Layer", "ViewportIndex"), Values("Fragment"), Values("Output"),
-        Values("%u32"), Values(nullptr),
+        Values("%u32"),
+        Values("VUID-Layer-Layer-04275 VUID-ViewportIndex-ViewportIndex-04407"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
                           "Output storage class if execution model is Fragment",
                           "which is called with execution model Fragment"))));
@@ -1274,10 +1275,11 @@ INSTANTIATE_TEST_SUITE_P(
     Combine(
         Values("Layer", "ViewportIndex"),
         Values("Vertex", "TessellationEvaluation", "Geometry"), Values("Input"),
-        Values("%u32"), Values(nullptr),
+        Values("%u32"),
+        Values("VUID-Layer-Layer-04274 VUID-ViewportIndex-ViewportIndex-04406"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
                           "Input storage class if execution model is Vertex, "
-                          "TessellationEvaluation, or Geometry",
+                          "TessellationEvaluation, Geometry, or MeshNV",
                           "which is called with execution model"))));
 
 INSTANTIATE_TEST_SUITE_P(
