@@ -17,10 +17,13 @@ set(VIMSYNTAX_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_vim_sy
 set(XML_REGISTRY_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_registry_tables.py")
 set(LANG_HEADER_PROCESSING_SCRIPT "${spirv-tools_SOURCE_DIR}/utils/generate_language_headers.py")
 
-# For now, assume the DebugInfo grammar file is in the current directory.
-# It might migrate to SPIRV-Headers.
+# Pull in grammar files that have migrated to SPIRV-Headers
 set(DEBUGINFO_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/unified1/extinst.debuginfo.grammar.json")
 set(CLDEBUGINFO100_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/unified1/extinst.opencl.debuginfo.100.grammar.json")
+
+# For now, assume the NonSemantic.Vulkan.DebugInfo grammar file is in the current directory.
+# It will later migrate to SPIRV-Headers.
+set(VKDEBUGINFO100_GRAMMAR_JSON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/extinst.nonsemantic.vulkan.debuginfo.100.grammar.json")
 
 # macro() definitions are used in the following because we need to append .inc
 # file paths into some global lists (*_CPP_DEPENDS). And those global lists are
@@ -113,6 +116,9 @@ endmacro(spvtools_opencl_tables)
 macro(spvtools_vendor_tables VENDOR_TABLE SHORT_NAME OPERAND_KIND_PREFIX)
   set(INSTS_FILE "${spirv-tools_BINARY_DIR}/${VENDOR_TABLE}.insts.inc")
   set(GRAMMAR_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/unified1/extinst.${VENDOR_TABLE}.grammar.json")
+  if(NOT EXISTS ${GRAMMAR_FILE})
+    set(GRAMMAR_FILE "${spirv-tools_SOURCE_DIR}/source/extinst.${VENDOR_TABLE}.grammar.json")
+  endif()
   add_custom_command(OUTPUT ${INSTS_FILE}
     COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
       --extinst-vendor-grammar=${GRAMMAR_FILE}
@@ -148,9 +154,11 @@ spvtools_vendor_tables("spv-amd-gcn-shader" "spv-amd-gs" "")
 spvtools_vendor_tables("spv-amd-shader-ballot" "spv-amd-sb" "")
 spvtools_vendor_tables("debuginfo" "debuginfo" "")
 spvtools_vendor_tables("opencl.debuginfo.100" "cldi100" "CLDEBUG100_")
+spvtools_vendor_tables("nonsemantic.vulkan.debuginfo.100" "vkdi100" "VKDEBUG100_")
 spvtools_vendor_tables("nonsemantic.clspvreflection" "clspvreflection" "")
 spvtools_extinst_lang_headers("DebugInfo" ${DEBUGINFO_GRAMMAR_JSON_FILE})
 spvtools_extinst_lang_headers("OpenCLDebugInfo100" ${CLDEBUGINFO100_GRAMMAR_JSON_FILE})
+spvtools_extinst_lang_headers("NonSemanticVulkanDebugInfo100" ${VKDEBUGINFO100_GRAMMAR_JSON_FILE})
 
 spvtools_vimsyntax("unified1" "1.0")
 add_custom_target(spirv-tools-vimsyntax DEPENDS ${VIMSYNTAX_FILE})

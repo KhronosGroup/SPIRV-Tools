@@ -3,6 +3,7 @@ load(
     "COMMON_COPTS",
     "DEBUGINFO_GRAMMAR_JSON_FILE",
     "CLDEBUGINFO100_GRAMMAR_JSON_FILE",
+    "VKDEBUGINFO100_GRAMMAR_JSON_FILE",
     "TEST_COPTS",
     "base_test",
     "generate_core_tables",
@@ -11,6 +12,7 @@ load(
     "generate_glsl_tables",
     "generate_opencl_tables",
     "generate_vendor_tables",
+    "generate_vendor_tables_local",
     "link_test",
     "opt_test",
     "reduce_test",
@@ -59,11 +61,15 @@ generate_vendor_tables("debuginfo")
 
 generate_vendor_tables("opencl.debuginfo.100", "CLDEBUG100_")
 
+generate_vendor_tables_local("nonsemantic.vulkan.debuginfo.100", "VKDEBUG100_")
+
 generate_vendor_tables("nonsemantic.clspvreflection")
 
 generate_extinst_lang_headers("DebugInfo", DEBUGINFO_GRAMMAR_JSON_FILE)
 
 generate_extinst_lang_headers("OpenCLDebugInfo100", CLDEBUGINFO100_GRAMMAR_JSON_FILE)
+
+generate_extinst_lang_headers("VulkanDebugInfo100", VKDEBUGINFO100_GRAMMAR_JSON_FILE)
 
 py_binary(
     name = "generate_registry_tables",
@@ -101,12 +107,14 @@ cc_library(
         ":gen_enum_string_mapping",
         ":gen_extinst_lang_headers_DebugInfo",
         ":gen_extinst_lang_headers_OpenCLDebugInfo100",
+        ":gen_extinst_lang_headers_VulkanDebugInfo100",
         ":gen_glsl_tables_unified1",
         ":gen_opencl_tables_unified1",
         ":gen_registry_tables",
         ":gen_vendor_tables_debuginfo",
         ":gen_vendor_tables_nonsemantic_clspvreflection",
         ":gen_vendor_tables_opencl_debuginfo_100",
+        ":gen_vendor_tables_nonsemantic_vulkan_debuginfo_100",
         ":gen_vendor_tables_spv_amd_gcn_shader",
         ":gen_vendor_tables_spv_amd_shader_ballot",
         ":gen_vendor_tables_spv_amd_shader_explicit_vertex_parameter",
