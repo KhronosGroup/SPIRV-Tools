@@ -300,8 +300,8 @@ spvtools_language_header("cldebuginfo100") {
   grammar_file = "${spirv_headers}/include/spirv/unified1/extinst.opencl.debuginfo.100.grammar.json"
 }
 spvtools_language_header("vkdebuginfo100") {
-  name = "NonSemanticVulkanDebugInfo100"
-  grammar_file = "source/extinst.nonsemantic.vulkan.debuginfo.100.grammar.json"
+  name = "NonSemanticShaderDebugInfo100"
+  grammar_file = "${spirv_headers}/include/spirv/unified1/extinst.nonsemantic.shader.debuginfo.100.grammar.json"
 }
 
 spvtools_vendor_tables = [
@@ -336,8 +336,8 @@ spvtools_vendor_tables = [
 ]
 
 spvtools_vendor_tables_local = [ [
-      "nonsemantic.vulkan.debuginfo.100",
-      "VKDEBUG100_",
+      "nonsemantic.shader.debuginfo.100",
+      "SHDEBUG100_",
     ] ]
 
 foreach(table_def, spvtools_vendor_tables) {

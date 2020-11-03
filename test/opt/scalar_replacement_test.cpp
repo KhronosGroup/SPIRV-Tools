@@ -1935,12 +1935,12 @@ OpName %6 "simple_struct"
 ; CHECK: [[dbg_local_var:%\w+]] = OpExtInst %void [[ext]] DebugLocalVariable
 ; CHECK: [[deref_expr:%\w+]] = OpExtInst %void [[ext]] DebugExpression [[deref]]
 ; CHECK: [[repl3:%\w+]] = OpVariable %_ptr_Function_uint Function
-; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl3]] [[deref_expr]] %int_3
 ; CHECK: [[repl2:%\w+]] = OpVariable %_ptr_Function_uint Function
-; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl2]] [[deref_expr]] %int_2
 ; CHECK: [[repl1:%\w+]] = OpVariable %_ptr_Function_uint Function
-; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl1]] [[deref_expr]] %int_1
 ; CHECK: [[repl0:%\w+]] = OpVariable %_ptr_Function_uint Function
+; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl3]] [[deref_expr]] %int_3
+; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl2]] [[deref_expr]] %int_2
+; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl1]] [[deref_expr]] %int_1
 ; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl0]] [[deref_expr]] %int_0
 ; CHECK-NOT: DebugDeclare
 %decl = OpExtInst %1 %ext DebugDeclare %dbg_foo %14 %null_expr
@@ -2058,10 +2058,10 @@ OpName %6 "simple_struct"
 ; CHECK: [[repl2:%\w+]] = OpVariable %_ptr_Function_float Function %float_1
 ; CHECK: [[repl1:%\w+]] = OpVariable %_ptr_Function_uint Function %uint_32
 ; CHECK: [[repl3:%\w+]] = OpVariable %_ptr_Function_float Function %float_1
+; CHECK: [[repl0:%\w+]] = OpVariable %_ptr_Function_uint Function %uint_32
 ; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl3]] [[deref_expr]] %int_2
 ; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl1]] [[deref_expr]] %int_1 %int_0
 ; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl2]] [[deref_expr]] %int_1 %int_1
-; CHECK: [[repl0:%\w+]] = OpVariable %_ptr_Function_uint Function %uint_32
 ; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl0]] [[deref_expr]] %int_0
 ; CHECK-NOT: DebugDeclare
 %decl = OpExtInst %1 %ext DebugDeclare %dbg_foo %14 %null_expr
@@ -2174,12 +2174,12 @@ OpName %6 "simple_struct"
 
 ; CHECK: [[dbg_local_var:%\w+]] = OpExtInst %void [[ext:%\w+]] DebugLocalVariable
 ; CHECK: [[repl3:%\w+]] = OpVariable %_ptr_Function_uint Function
-; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl3]] [[deref_expr:%\w+]] %int_3
 ; CHECK: [[repl2:%\w+]] = OpVariable %_ptr_Function_uint Function
-; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl2]] [[deref_expr]] %int_2
 ; CHECK: [[repl1:%\w+]] = OpVariable %_ptr_Function_uint Function
-; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl1]] [[deref_expr]] %int_1
 ; CHECK: [[repl0:%\w+]] = OpVariable %_ptr_Function_uint Function
+; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl3]] [[deref_expr:%\w+]] %int_3
+; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl2]] [[deref_expr]] %int_2
+; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl1]] [[deref_expr]] %int_1
 ; CHECK: OpExtInst %void [[ext]] DebugValue [[dbg_local_var]] [[repl0]] [[deref_expr]] %int_0
 
 OpBranch %20

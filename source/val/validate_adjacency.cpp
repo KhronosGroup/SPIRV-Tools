@@ -63,7 +63,7 @@ spv_result_t ValidateAdjacency(ValidationState_t& _) {
         // NOTE: This does not apply to the non-semantic vulkan debug info.
         if (!spvExtInstIsDebugInfo(inst.ext_inst_type()) ||
             inst.ext_inst_type() ==
-                SPV_EXT_INST_TYPE_NONSEMANTIC_VULKAN_DEBUGINFO_100) {
+                SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100) {
           adjacency_status = PHI_AND_VAR_INVALID;
         }
         break;

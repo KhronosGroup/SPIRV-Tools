@@ -405,8 +405,8 @@ bool InlinePass::InlineEntryBlock(
   while (callee_inst_itr != callee_first_block->end()) {
     // Don't inline function definition links, the calling function is not a
     // definition.
-    if (callee_inst_itr->GetVulkan100DebugOpcode() ==
-        NonSemanticVulkanDebugInfo100DebugFunctionDefinition) {
+    if (callee_inst_itr->GetShader100DebugOpcode() ==
+        NonSemanticShaderDebugInfo100DebugFunctionDefinition) {
       ++callee_inst_itr;
       continue;
     }
@@ -441,6 +441,11 @@ std::unique_ptr<BasicBlock> InlinePass::InlineBasicBlocks(
     auto tail_inst_itr = callee_block_itr->end();
     for (auto inst_itr = callee_block_itr->begin(); inst_itr != tail_inst_itr;
          ++inst_itr) {
+      // Don't inline function definition links, the calling function is not a
+      // definition
+      if (inst_itr->GetShader100DebugOpcode() ==
+          NonSemanticShaderDebugInfo100DebugFunctionDefinition)
+        continue;
       if (!InlineSingleInstruction(
               callee2caller, new_blk_ptr.get(), &*inst_itr,
               context()->get_debug_info_mgr()->BuildDebugInlinedAtChain(

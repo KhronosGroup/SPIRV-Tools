@@ -22,7 +22,7 @@
 #include <utility>
 #include <vector>
 
-#include "NonSemanticVulkanDebugInfo100.h"
+#include "NonSemanticShaderDebugInfo100.h"
 #include "OpenCLDebugInfo100.h"
 #include "source/common_debug_info.h"
 #include "source/latest_version_glsl_std_450_header.h"
@@ -552,13 +552,13 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // OpenCLDebugInfo100InstructionsMax.
   OpenCLDebugInfo100Instructions GetOpenCL100DebugOpcode() const;
 
-  // Returns debug opcode of a NonSemantic.Vulkan.DebugInfo.100 instruction. If
-  // it is not a NonSemantic.Vulkan.DebugInfo.100 instruction, just returns
-  // NonSemanticVulkanDebugInfo100InstructionsMax.
-  NonSemanticVulkanDebugInfo100Instructions GetVulkan100DebugOpcode() const;
+  // Returns debug opcode of an NonSemantic.Shader.DebugInfo.100 instruction. If
+  // it is not an NonSemantic.Shader.DebugInfo.100 instruction, just return
+  // NonSemanticShaderDebugInfo100InstructionsMax.
+  NonSemanticShaderDebugInfo100Instructions GetShader100DebugOpcode() const;
 
   // Returns debug opcode of an OpenCL.100.DebugInfo or
-  // NonSemantic.Vulkan.DebugInfo.100 instruction. Since these overlap, we
+  // NonSemantic.Shader.DebugInfo.100 instruction. Since these overlap, we
   // return the OpenCLDebugInfo code
   CommonDebugInfoInstructions GetCommonDebugOpcode() const;
 
@@ -566,10 +566,11 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   bool IsOpenCL100DebugInstr() const {
     return GetOpenCL100DebugOpcode() != OpenCLDebugInfo100InstructionsMax;
   }
-  // Returns true if it is a NonSemantic.Vulkan.DebugInfo.100 instruction.
-  bool IsVulkan100DebugInstr() const {
-    return GetVulkan100DebugOpcode() !=
-           NonSemanticVulkanDebugInfo100InstructionsMax;
+
+  // Returns true if it is an NonSemantic.Shader.DebugInfo.100 instruction.
+  bool IsShader100DebugInstr() const {
+    return GetShader100DebugOpcode() !=
+           NonSemanticShaderDebugInfo100InstructionsMax;
   }
   bool IsCommonDebugInstr() const {
     return GetCommonDebugOpcode() != CommonDebugInfoInstructionsMax;

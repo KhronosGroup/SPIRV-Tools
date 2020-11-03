@@ -97,7 +97,7 @@ class FeatureManager {
   // for performance.
   uint32_t extinst_importid_OpenCL100DebugInfo_ = 0;
 
-  // Common NonSemanticVulkan100DebugInfo external instruction import ids,
+  // Common NonSemanticShader100DebugInfo external instruction import ids,
   // cached for performance.
   uint32_t extinst_importid_Vulkan100DebugInfo_ = 0;
 };
