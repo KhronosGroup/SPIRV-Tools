@@ -383,10 +383,19 @@ bool Fuzzer::ShouldContinueFuzzing() {
     // Stop because we have reached the transformation limit.
     return false;
   }
+  // If we have applied T transformations so far, and the limit on the number of
+  // transformations to apply is L (where T < L), the chance that we will
+  // continue fuzzing is:
+  //
+  //     1 - T/(2*L)
+  //
+  // That is, the chance of continuing decreases as more transformations are
+  // applied.  Using 2*L instead of L increases the number of transformations
+  // that are applied on average.
   auto chance_of_continuing = static_cast<uint32_t>(
-      100.0 *
-      (1.0 - (static_cast<double>(transformations_applied_so_far) /
-              static_cast<double>(fuzzer_context_->GetTransformationLimit()))));
+      100.0 * (1.0 - (static_cast<double>(transformations_applied_so_far) /
+                      (2.0 * static_cast<double>(
+                                 fuzzer_context_->GetTransformationLimit())))));
   if (!fuzzer_context_->ChoosePercentage(chance_of_continuing)) {
     // We have probabilistically decided to stop.
     return false;

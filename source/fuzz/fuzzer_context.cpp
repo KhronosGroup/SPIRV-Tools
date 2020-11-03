@@ -29,10 +29,10 @@ const uint32_t kTransformationLimit = 2000;
 // Default <minimum, maximum> pairs of probabilities for applying various
 // transformations. All values are percentages. Keep them in alphabetical order.
 const std::pair<uint32_t, uint32_t>
-    kChanceOfAcceptingRepeatedPassRecommendation = {70, 100};
+    kChanceOfAcceptingRepeatedPassRecommendation = {50, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingAccessChain = {5, 50};
-const std::pair<uint32_t, uint32_t> kChanceOfAddingAnotherPassToPassLoop = {85,
-                                                                            95};
+const std::pair<uint32_t, uint32_t> kChanceOfAddingAnotherPassToPassLoop = {50,
+                                                                            90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingAnotherStructField = {20,
                                                                          90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingArrayOrStructType = {20, 90};
