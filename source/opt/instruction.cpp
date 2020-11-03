@@ -985,10 +985,10 @@ void DebugScope::ToBinary(uint32_t type_id, uint32_t result_id,
                           uint32_t ext_set,
                           std::vector<uint32_t>* binary) const {
   uint32_t num_words = kDebugScopeNumWords;
-  OpenCLDebugInfo100Instructions dbg_opcode = OpenCLDebugInfo100DebugScope;
+  CommonDebugInfoInstructions dbg_opcode = CommonDebugInfoDebugScope;
   if (GetLexicalScope() == kNoDebugScope) {
     num_words = kDebugNoScopeNumWords;
-    dbg_opcode = OpenCLDebugInfo100DebugNoScope;
+    dbg_opcode = CommonDebugInfoDebugNoScope;
   } else if (GetInlinedAt() == kNoInlinedAt) {
     num_words = kDebugScopeNumWordsWithoutInlinedAt;
   }

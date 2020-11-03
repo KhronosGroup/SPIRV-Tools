@@ -184,8 +184,8 @@ bool LocalAccessChainConvertPass::IsConstantIndexAccessChain(
 bool LocalAccessChainConvertPass::HasOnlySupportedRefs(uint32_t ptrId) {
   if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end()) return true;
   if (get_def_use_mgr()->WhileEachUser(ptrId, [this](Instruction* user) {
-        if (user->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue ||
-            user->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare) {
+        if (user->GetCommonDebugOpcode() == CommonDebugInfoDebugValue ||
+            user->GetCommonDebugOpcode() == CommonDebugInfoDebugDeclare) {
           return true;
         }
         SpvOp op = user->opcode();
