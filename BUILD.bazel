@@ -69,7 +69,7 @@ generate_extinst_lang_headers("DebugInfo", DEBUGINFO_GRAMMAR_JSON_FILE)
 
 generate_extinst_lang_headers("OpenCLDebugInfo100", CLDEBUGINFO100_GRAMMAR_JSON_FILE)
 
-generate_extinst_lang_headers("VulkanDebugInfo100", VKDEBUGINFO100_GRAMMAR_JSON_FILE)
+generate_extinst_lang_headers("NonSemanticVulkanDebugInfo100", VKDEBUGINFO100_GRAMMAR_JSON_FILE)
 
 py_binary(
     name = "generate_registry_tables",
@@ -107,7 +107,7 @@ cc_library(
         ":gen_enum_string_mapping",
         ":gen_extinst_lang_headers_DebugInfo",
         ":gen_extinst_lang_headers_OpenCLDebugInfo100",
-        ":gen_extinst_lang_headers_VulkanDebugInfo100",
+        ":gen_extinst_lang_headers_NonSemanticVulkanDebugInfo100",
         ":gen_glsl_tables_unified1",
         ":gen_opencl_tables_unified1",
         ":gen_registry_tables",

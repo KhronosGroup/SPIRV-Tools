@@ -16,6 +16,7 @@
 
 #include <initializer_list>
 
+#include "NonSemanticVulkanDebugInfo100.h"
 #include "OpenCLDebugInfo100.h"
 #include "source/disassemble.h"
 #include "source/opt/fold.h"
@@ -32,7 +33,8 @@ const uint32_t kLoadBaseIndex = 0;
 const uint32_t kPointerTypeStorageClassIndex = 0;
 const uint32_t kTypeImageSampledIndex = 5;
 
-// Constants for OpenCL.DebugInfo.100 extension instructions.
+// Constants for OpenCL.DebugInfo.100 / NonSemantic.Vulkan.DebugInfo.100
+// extension instructions.
 const uint32_t kExtInstSetIdInIdx = 0;
 const uint32_t kExtInstInstructionInIdx = 1;
 const uint32_t kDebugScopeNumWords = 7;
@@ -615,6 +617,49 @@ OpenCLDebugInfo100Instructions Instruction::GetOpenCL100DebugOpcode() const {
   }
 
   return OpenCLDebugInfo100Instructions(
+      GetSingleWordInOperand(kExtInstInstructionInIdx));
+}
+
+NonSemanticVulkanDebugInfo100Instructions Instruction::GetVulkan100DebugOpcode()
+    const {
+  if (opcode() != SpvOpExtInst) {
+    return NonSemanticVulkanDebugInfo100InstructionsMax;
+  }
+
+  if (!context()->get_feature_mgr()->GetExtInstImportId_Vulkan100DebugInfo()) {
+    return NonSemanticVulkanDebugInfo100InstructionsMax;
+  }
+
+  if (GetSingleWordInOperand(kExtInstSetIdInIdx) !=
+      context()->get_feature_mgr()->GetExtInstImportId_Vulkan100DebugInfo()) {
+    return NonSemanticVulkanDebugInfo100InstructionsMax;
+  }
+
+  return NonSemanticVulkanDebugInfo100Instructions(
+      GetSingleWordInOperand(kExtInstInstructionInIdx));
+}
+
+CommonDebugInfoInstructions Instruction::GetCommonDebugOpcode() const {
+  if (opcode() != SpvOpExtInst) {
+    return CommonDebugInfoInstructionsMax;
+  }
+
+  const uint32_t opencl_set_id =
+      context()->get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo();
+  const uint32_t vulkan_set_id =
+      context()->get_feature_mgr()->GetExtInstImportId_Vulkan100DebugInfo();
+
+  if (!opencl_set_id && !vulkan_set_id) {
+    return CommonDebugInfoInstructionsMax;
+  }
+
+  const uint32_t used_set_id = GetSingleWordInOperand(kExtInstSetIdInIdx);
+
+  if (used_set_id != opencl_set_id && used_set_id != vulkan_set_id) {
+    return CommonDebugInfoInstructionsMax;
+  }
+
+  return CommonDebugInfoInstructions(
       GetSingleWordInOperand(kExtInstInstructionInIdx));
 }
 
