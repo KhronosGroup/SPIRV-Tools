@@ -1214,7 +1214,7 @@ TEST_F(LocalSingleStoreElimTest, DebugValueTest) {
 TEST_F(LocalSingleStoreElimTest, UseStoreLineInfoForDebugValueLine) {
   // When the store is in the scope of OpenCL.DebugInfo.100 DebugDeclare,
   // the OpLine of the added OpenCL.DebugInfo.100 DebugValue must be the
-  // same with the store.
+  // same with the OpLine of the store.
   const std::string text = R"(
                OpCapability Shader
           %1 = OpExtInstImport "OpenCL.DebugInfo.100"
