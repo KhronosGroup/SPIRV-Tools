@@ -540,27 +540,14 @@ bool DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
            insert_before->opcode() == SpvOpVariable) {
       insert_before = insert_before->NextNode();
     }
-
-    uint32_t index_id = 0;
-    if (dbg_decl_or_val->NumOperands() > kDebugValueOperandIndexesIndex) {
-      index_id =
-          dbg_decl_or_val->GetSingleWordOperand(kDebugValueOperandIndexesIndex);
-    }
-
-    Instruction* added_dbg_value =
-        AddDebugValueWithIndex(dbg_decl_or_val->GetSingleWordOperand(
-                                   kDebugValueOperandLocalVariableIndex),
-                               value_id, 0, index_id, insert_before);
-    assert(added_dbg_value != nullptr);
-    added_dbg_value->UpdateDebugInfoFrom(scope_and_line);
-    AnalyzeDebugInst(added_dbg_value);
-    modified = true;
+    modified |= AddDebugValueForDecl(dbg_decl_or_val, value_id, insert_before);
   }
   return modified;
 }
 
 bool DebugInfoManager::AddDebugValueForDecl(Instruction* dbg_decl,
-                                            uint32_t value_id) {
+                                            uint32_t value_id,
+                                      Instruction* insert_before) {
   if (dbg_decl == nullptr || !IsDebugDeclare(dbg_decl)) return false;
 
   std::unique_ptr<Instruction> dbg_val(dbg_decl->Clone(context()));
@@ -571,7 +558,7 @@ bool DebugInfoManager::AddDebugValueForDecl(Instruction* dbg_decl,
   dbg_val->SetOperand(kDebugValueOperandExpressionIndex,
                       {GetEmptyDebugExpression()->result_id()});
 
-  auto* added_dbg_val = dbg_decl->InsertBefore(std::move(dbg_val));
+  auto* added_dbg_val = insert_before->InsertBefore(std::move(dbg_val));
   AnalyzeDebugInst(added_dbg_val);
   if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
     context()->get_def_use_mgr()->AnalyzeInstDefUse(added_dbg_val);
