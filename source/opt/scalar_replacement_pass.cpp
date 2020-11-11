@@ -173,17 +173,19 @@ bool ScalarReplacementPass::ReplaceWholeDebugDeclare(
   // Add DebugValue instruction with Indexes operand and Deref operation.
   int32_t idx = 0;
   for (const auto* var : replacements) {
-    uint32_t dbg_local_variable =
-        dbg_decl->GetSingleWordOperand(kDebugDeclareOperandLocalVariableIndex);
-    uint32_t index_id = context()->get_constant_mgr()->GetSIntConst(idx);
-
     Instruction* added_dbg_value =
-        context()->get_debug_info_mgr()->AddDebugValueWithIndex(
-            dbg_local_variable,
-            /*value_id=*/var->result_id(), /*expr_id=*/deref_expr->result_id(),
-            index_id, /*insert_before=*/var->NextNode());
+        context()->get_debug_info_mgr()->AddDebugValueForDecl(
+            dbg_decl, /*value_id=*/var->result_id(),
+            /*insert_before=*/var->NextNode());
     if (added_dbg_value == nullptr) return false;
-    added_dbg_value->UpdateDebugInfoFrom(dbg_decl);
+    added_dbg_value->AddOperand(
+        {SPV_OPERAND_TYPE_ID,
+         {context()->get_constant_mgr()->GetSIntConst(idx)}});
+    added_dbg_value->SetOperand(kDebugValueOperandExpressionIndex,
+                                {deref_expr->result_id()});
+    if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse)) {
+      context()->get_def_use_mgr()->AnalyzeInstUse(added_dbg_value);
+    }
     ++idx;
   }
   return true;
