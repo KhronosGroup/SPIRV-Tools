@@ -161,7 +161,8 @@ class DebugInfoManager {
   // Adds DebugValue for DebugDeclare |dbg_decl|. The new DebugValue has the
   // same line, scope, and operands but it uses |value_id| for value. Returns
   // weather it succeeds or not.
-  bool AddDebugValueForDecl(Instruction* dbg_decl, uint32_t value_id, Instruction* insert_before);
+  bool AddDebugValueForDecl(Instruction* dbg_decl, uint32_t value_id,
+                            Instruction* insert_before);
 
   // Erases |instr| from data structures of this class.
   void ClearDebugInfo(Instruction* instr);

@@ -547,7 +547,7 @@ bool DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
 
 bool DebugInfoManager::AddDebugValueForDecl(Instruction* dbg_decl,
                                             uint32_t value_id,
-                                      Instruction* insert_before) {
+                                            Instruction* insert_before) {
   if (dbg_decl == nullptr || !IsDebugDeclare(dbg_decl)) return false;
 
   std::unique_ptr<Instruction> dbg_val(dbg_decl->Clone(context()));
