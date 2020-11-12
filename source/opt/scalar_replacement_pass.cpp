@@ -25,7 +25,6 @@
 #include "source/opt/types.h"
 #include "source/util/make_unique.h"
 
-static const uint32_t kDebugDeclareOperandLocalVariableIndex = 4;
 static const uint32_t kDebugValueOperandValueIndex = 5;
 static const uint32_t kDebugValueOperandExpressionIndex = 6;
 
