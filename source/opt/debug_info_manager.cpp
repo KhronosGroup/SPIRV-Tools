@@ -526,7 +526,7 @@ Instruction* DebugInfoManager::AddDebugValueForDecl(
     context()->get_def_use_mgr()->AnalyzeInstDefUse(added_dbg_val);
   if (context()->AreAnalysesValid(
           IRContext::Analysis::kAnalysisInstrToBlockMapping)) {
-    auto insert_blk = context()->get_instr_block(dbg_decl);
+    auto insert_blk = context()->get_instr_block(insert_before);
     context()->set_instr_block(added_dbg_val, insert_blk);
   }
   return added_dbg_val;
