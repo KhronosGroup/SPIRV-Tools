@@ -1,5 +1,5 @@
 ARG EMSDK_VERSION
-FROM trzeci/emscripten:${EMSDK_VERSION}-upstream
+FROM emscripten/emsdk:${EMSDK_VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
