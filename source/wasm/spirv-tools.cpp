@@ -22,8 +22,8 @@
 #include <emscripten/val.h>
 using namespace emscripten;
 
-auto print_msg_to_stderr = [](spv_message_level_t, const char*,
-                              const spv_position_t&, const char* m) {
+void print_msg_to_stderr (spv_message_level_t, const char*,
+                          const spv_position_t&, const char* m) {
   std::cerr << "error: " << m << std::endl;
 };
 
