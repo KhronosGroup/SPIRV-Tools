@@ -17,6 +17,7 @@
 set -ex
 
 NUM_CORES=$(nproc)
+echo "Detected $NUM_CORES cores for building"
 
 build() { 
     type=$1
