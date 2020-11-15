@@ -14,8 +14,9 @@ jobs:
         run: docker-compose run --rm build ./source/wasm/build.sh
       - name: Run tests
         run: node test/wasm/test.js
-      # - name: Publish to npm
-      #   uses: primer/publish@v2.0.0
-      #   env:
-      #     NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish to npm
+        uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          package: ./out/package.json
+          dry-run: true
