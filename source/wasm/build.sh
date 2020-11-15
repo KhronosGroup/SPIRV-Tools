@@ -20,7 +20,7 @@ NUM_CORES=$(nproc)
 echo "Detected $NUM_CORES cores for building"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-VERSION=$(sed -n '0,/^v20/ s/^v\(20[0-9.]*\).*/\1/p' $DIR/../../CHANGES).${GITHUB_RUN_ID:-0}
+VERSION=$(sed -n '0,/^v20/ s/^v\(20[0-9.]*\).*/\1/p' $DIR/../../CHANGES).${GITHUB_RUN_NUMBER:-0}
 echo "Version: $VERSION"
 
 build() { 
