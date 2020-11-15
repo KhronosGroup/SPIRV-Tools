@@ -11,7 +11,7 @@ jobs:
       - name: Build the Docker image
         run: docker-compose build
       - name: Build web
-        run: docker-compose run --rm build ./source/wasm/build.sh
+        run: docker-compose up
       - name: Run tests
         run: node test/wasm/test.js
       - name: Publish to npm
