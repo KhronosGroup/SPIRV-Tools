@@ -1,11 +1,7 @@
 version: "3"
 services:
   build:
-    build:
-      context: .
-      dockerfile: source/wasm/Dockerfile
-      args:
-        EMSDK_VERSION: "2.0.2"
+    image: emscripten/emsdk:2.0.2
     working_dir: /app
     command: ./source/wasm/build.sh
     volumes:

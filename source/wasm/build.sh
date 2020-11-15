@@ -14,10 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+set -e
 
 NUM_CORES=$(nproc)
 echo "Detected $NUM_CORES cores for building"
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+VERSION=$(sed -n '0,/^v20/ s/^v\(20[0-9.]*\).*/\1/p' $DIR/../../CHANGES).${GITHUB_RUN_ID:-0}
+echo "Version: $VERSION"
 
 build() { 
     type=$1
@@ -48,17 +52,15 @@ build() {
 
     # copy other js files
     cp source/wasm/spirv-tools.d.ts out/$type/
-    cp source/wasm/package.json out/$type/
+    sed -e 's/\("version"\s*:\s*\).*/\1"'$VERSION'",/' source/wasm/package.json > out/$type/package.json
     cp source/wasm/README.md out/$type/
     cp LICENSE out/$type/
 
     cp build/$type/spirv-tools.js out/$type/
     gzip -9 -k -f out/$type/spirv-tools.js
-    brotli     -f out/$type/spirv-tools.js
     if [ -e build/$type/spirv-tools.wasm ] ; then
        cp build/$type/spirv-tools.wasm out/$type/
        gzip -9 -k -f out/$type/spirv-tools.wasm
-       brotli     -f out/$type/spirv-tools.wasm
     fi
 }
 
