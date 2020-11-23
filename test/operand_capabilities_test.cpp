@@ -499,7 +499,7 @@ INSTANTIATE_TEST_SUITE_P(
             CASE1(BUILT_IN, BuiltInVertexId, Shader),
             CASE1(BUILT_IN, BuiltInInstanceId, Shader),
             CASE4(BUILT_IN, BuiltInPrimitiveId, Geometry, Tessellation,
-                  RayTracingNV, RayTracingProvisionalKHR),
+                  RayTracingNV, RayTracingKHR),
             CASE2(BUILT_IN, BuiltInInvocationId, Geometry, Tessellation),
             CASE2(BUILT_IN, BuiltInLayer, Geometry, ShaderViewportIndexLayerEXT),
             CASE2(BUILT_IN, BuiltInViewportIndex, MultiViewport, ShaderViewportIndexLayerEXT),  // Bug 15234
