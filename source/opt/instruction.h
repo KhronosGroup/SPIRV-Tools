@@ -117,7 +117,7 @@ inline bool operator!=(const Operand& o1, const Operand& o2) {
 }
 
 // This structure is used to represent a DebugScope instruction from
-// the OpenCL.100.DebugInfo extened instruction set. Note that we can
+// the OpenCL.100.DebugInfo extended instruction set. Note that we can
 // ignore the result id of DebugScope instruction because it is not
 // used for anything. We do not keep it to reduce the size of
 // structure.
@@ -175,7 +175,8 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
         has_type_id_(false),
         has_result_id_(false),
         unique_id_(0),
-        dbg_scope_(kNoDebugScope, kNoInlinedAt) {}
+        dbg_scope_(kNoDebugScope, kNoInlinedAt),
+        is_synthetic_(false) {}
 
   // Creates a default OpNop instruction.
   Instruction(IRContext*);
@@ -558,6 +559,12 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // debuggers.
   void Dump() const;
 
+  // Returns true if this instruction was automatically inserted by the module
+  // loader to track debug information.
+  bool IsSynthetic() const { return is_synthetic_; }
+  // Sets whether this instruction is considered to be synthetic.
+  void SetSynthetic(bool flag) { is_synthetic_ = flag; }
+
  private:
   // Returns the total count of result type id and result id.
   uint32_t TypeResultIdCount() const {
@@ -591,6 +598,10 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
 
   // DebugScope that wraps this instruction.
   DebugScope dbg_scope_;
+
+  // True if this instruction was created by the IR loader for the purpose
+  // of recording line information.
+  bool is_synthetic_;
 
   friend InstructionList;
 };

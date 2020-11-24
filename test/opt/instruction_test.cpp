@@ -47,6 +47,8 @@ TEST(InstructionTest, CreateTrivial) {
   EXPECT_EQ(0u, empty.NumInOperandWords());
   EXPECT_EQ(empty.cend(), empty.cbegin());
   EXPECT_EQ(empty.end(), empty.begin());
+  EXPECT_EQ(empty.end(), empty.begin());
+  EXPECT_FALSE(empty.IsSynthetic());
 }
 
 TEST(InstructionTest, CreateWithOpcodeAndNoOperands) {
@@ -60,6 +62,7 @@ TEST(InstructionTest, CreateWithOpcodeAndNoOperands) {
   EXPECT_EQ(0u, inst.NumInOperandWords());
   EXPECT_EQ(inst.cend(), inst.cbegin());
   EXPECT_EQ(inst.end(), inst.begin());
+  EXPECT_FALSE(inst.IsSynthetic());
 }
 
 TEST(InstructionTest, OperandAsCString) {
@@ -163,6 +166,7 @@ TEST(InstructionTest, CreateWithOpcodeAndOperands) {
   EXPECT_EQ(3u, inst.NumOperands());
   EXPECT_EQ(3u, inst.NumOperandWords());
   EXPECT_EQ(2u, inst.NumInOperandWords());
+  EXPECT_FALSE(inst.IsSynthetic());
 }
 
 TEST(InstructionTest, GetOperand) {
@@ -1529,6 +1533,24 @@ OpFunctionEnd
   EXPECT_EQ(true, inst->IsVulkanStorageImage());
   EXPECT_EQ(false, inst->IsVulkanSampledImage());
   EXPECT_EQ(false, inst->IsVulkanStorageTexelBuffer());
+}
+
+TEST(InstructionTest, Instruction_SetSynthetic) {
+  IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
+  Instruction inst(&context, kSampleParsedInstruction);
+  EXPECT_FALSE(inst.IsSynthetic());
+  inst.SetSynthetic(true);
+  EXPECT_TRUE(inst.IsSynthetic());
+  inst.SetSynthetic(false);
+  EXPECT_FALSE(inst.IsSynthetic());
+}
+
+TEST(InstructionTest, Instruction_SyntheticPropertySurvivesCopying) {
+  IRContext context(SPV_ENV_UNIVERSAL_1_2, nullptr);
+  Instruction inst(&context, kSampleParsedInstruction);
+  inst.SetSynthetic(true);
+  Instruction copy(inst);
+  EXPECT_TRUE(copy.IsSynthetic());
 }
 
 }  // namespace

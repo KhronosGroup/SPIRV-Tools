@@ -100,6 +100,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
   } else if (last_line_inst_ != nullptr) {
     last_line_inst_->SetDebugScope(last_dbg_scope_);
     spv_inst->dbg_line_insts().push_back(*last_line_inst_);
+    spv_inst->dbg_line_insts().back().SetSynthetic(true);
   }
 
   const char* src = source_.c_str();

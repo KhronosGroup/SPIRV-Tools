@@ -19,7 +19,7 @@
 #include <utility>
 #include <vector>
 
-#include "gtest/gtest.h"
+#include "gmock/gmock.h"
 #include "source/opt/build_module.h"
 #include "source/opt/def_use_manager.h"
 #include "source/opt/ir_context.h"
@@ -28,6 +28,9 @@
 namespace spvtools {
 namespace opt {
 namespace {
+
+using ::testing::ContainerEq;
+using ::testing::Eq;
 
 constexpr uint32_t kOpLineOperandLineIndex = 1;
 
@@ -234,6 +237,53 @@ TEST(IrBuilder, DistributeLineDebugInfo) {
                 check.line_numbers[i]);
     }
   }
+}
+
+TEST(IrBuilder, InjectedOpLineAreSynthetic) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical Simple
+               OpEntryPoint Vertex %main "main"
+       %file = OpString "my file"
+       %void = OpTypeVoid
+     %voidfn = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %float_1 = OpConstant %float 1
+       %main = OpFunction %void None %voidfn
+         %100 = OpLabel
+          %1 = OpFAdd %float %float_1 %float_1
+               OpLine %file 1 0
+          %2 = OpFMul %float %1 %1
+          %3 = OpFSub %float %2 %2
+               OpReturn
+               OpFunctionEnd
+               )";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(nullptr, context);
+
+  spvtools::opt::analysis::DefUseManager* def_use_mgr =
+      context->get_def_use_mgr();
+
+  std::vector<SpvOp> opcodes;
+  std::vector<bool> synthetics;
+  for (auto* inst = def_use_mgr->GetDef(1);
+       inst && (inst->opcode() != SpvOpFunctionEnd); inst = inst->NextNode()) {
+    inst->ForEachInst(
+        [&opcodes, &synthetics](spvtools::opt::Instruction* sub_inst) {
+          opcodes.push_back(sub_inst->opcode());
+          synthetics.push_back(sub_inst->IsSynthetic());
+        },
+        true);
+  }
+
+  EXPECT_THAT(opcodes, ContainerEq(std::vector<SpvOp>{
+                           SpvOpFAdd, SpvOpLine, SpvOpFMul, SpvOpLine,
+                           SpvOpFSub, SpvOpLine, SpvOpReturn}));
+  EXPECT_THAT(synthetics, ContainerEq(std::vector<bool>{
+                              false, false, false, true, false, true, false}));
 }
 
 TEST(IrBuilder, ConsumeDebugInfoInst) {
