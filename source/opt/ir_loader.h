@@ -63,6 +63,10 @@ class IrLoader {
   // or a missing OpFunctionEnd.  Resolves internal bookkeeping.
   void EndModule();
 
+  // Sets whether extra OpLine instructions should be injected to better
+  // track line information.
+  void SetExtraLineTracking(bool flag) { extra_line_tracking_ = flag; }
+
  private:
   // Consumer for communicating messages to outside.
   const MessageConsumer& consumer_;
@@ -83,6 +87,10 @@ class IrLoader {
 
   // The last DebugScope information that IrLoader::AddInstruction() handled.
   DebugScope last_dbg_scope_;
+
+  // When true, extra OpLine instructions are injected to help track line
+  // info more robustly during transformations.
+  bool extra_line_tracking_ = true;
 };
 
 }  // namespace opt

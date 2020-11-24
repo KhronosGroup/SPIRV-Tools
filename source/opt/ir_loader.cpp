@@ -99,7 +99,9 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
     dbg_line_info_.clear();
   } else if (last_line_inst_ != nullptr) {
     last_line_inst_->SetDebugScope(last_dbg_scope_);
-    spv_inst->dbg_line_insts().push_back(*last_line_inst_);
+    if (extra_line_tracking_) {
+      spv_inst->dbg_line_insts().push_back(*last_line_inst_);
+    }
   }
 
   const char* src = source_.c_str();
