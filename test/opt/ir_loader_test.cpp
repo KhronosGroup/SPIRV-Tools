@@ -260,7 +260,7 @@ OpFunctionEnd
   std::vector<uint32_t> binary;
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   ASSERT_TRUE(t.Assemble(text, &binary,
-                       SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS));
+                         SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS));
 
   // This is the function we're testing.
   std::unique_ptr<IRContext> context = BuildModule(
@@ -308,7 +308,7 @@ OpFunctionEnd
 
   SpirvTools t(SPV_ENV_UNIVERSAL_1_1);
   ASSERT_TRUE(t.Assemble(text, &binary,
-                       SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS));
+                         SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS));
 
   // This is the function we're testing.
   std::unique_ptr<IRContext> context =
