@@ -496,10 +496,10 @@ TEST_P(ValidateCFG, BranchTargetFirstBlockBadSinceEntryBlock) {
 
 TEST_P(ValidateCFG, BranchTargetFirstBlockBadSinceValue) {
   Block entry("entry");
-  entry.SetBody("%undef = OpUndef %voidt\n");
+  entry.SetBody("%undef = OpUndef %boolt\n");
   Block bad("bad");
   Block end("end", SpvOpReturn);
-  Block badvalue("undef");  // This referenes the OpUndef.
+  Block badvalue("undef");  // This references the OpUndef.
   std::string str = GetDefaultHeader(GetParam()) +
                     nameOps("entry", "bad", std::make_pair("func", "Main")) +
                     types_consts() +
