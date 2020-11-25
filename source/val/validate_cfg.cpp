@@ -50,7 +50,7 @@ spv_result_t ValidatePhi(ValidationState_t& _, const Instruction* inst) {
 
   if (_.IsVoidType(inst->type_id())) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "OpPhi must not have void result type";
+           << "OpPhi must not have void result type";
   }
   if (_.IsPointerType(inst->type_id()) &&
       _.addressing_model() == SpvAddressingModelLogical) {
