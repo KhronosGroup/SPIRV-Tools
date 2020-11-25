@@ -82,14 +82,16 @@ class IrLoader {
   std::unique_ptr<BasicBlock> block_;
   // Line related debug instructions accumulated thus far.
   std::vector<Instruction> dbg_line_info_;
-  // Line instruction that should be applied to the next instruction.
+  // If doing extra line tracking, this is the line instruction that should be
+  // applied to the next instruction.  Otherwise it always contains null.
   std::unique_ptr<Instruction> last_line_inst_;
 
   // The last DebugScope information that IrLoader::AddInstruction() handled.
   DebugScope last_dbg_scope_;
 
-  // When true, extra OpLine instructions are injected to help track line
-  // info more robustly during transformations.
+  // When true, do extra line information tracking: Additional OpLine
+  // instructions will be injected to help track line info more robustly during
+  // transformations.
   bool extra_line_tracking_ = true;
 };
 
