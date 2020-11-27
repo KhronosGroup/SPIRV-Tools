@@ -2749,9 +2749,13 @@ TEST_F(ValidateIdWithMessage, OpStoreObjectGood) {
 %6 = OpVariable %3 Uniform
 %7 = OpFunction %1 None %4
 %8 = OpLabel
-%9 = OpUndef %1
+%9 = OpFunctionCall %1 %10
      OpStore %6 %9
      OpReturn
+     OpFunctionEnd
+%10 = OpFunction %1 None %4
+%11 = OpLabel
+      OpReturn
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
