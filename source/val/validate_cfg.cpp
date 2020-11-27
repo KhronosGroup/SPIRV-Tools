@@ -48,11 +48,11 @@ spv_result_t ValidatePhi(ValidationState_t& _, const Instruction* inst) {
               "basic blocks.";
   }
 
-  const Instruction* type_inst = _.FindDef(inst->type_id());
-  assert(type_inst);
-
-  const SpvOp type_opcode = type_inst->opcode();
-  if (type_opcode == SpvOpTypePointer &&
+  if (_.IsVoidType(inst->type_id())) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "OpPhi must not have void result type";
+  }
+  if (_.IsPointerType(inst->type_id()) &&
       _.addressing_model() == SpvAddressingModelLogical) {
     if (!_.features().variable_pointers &&
         !_.features().variable_pointers_storage_buffer) {
@@ -61,6 +61,10 @@ spv_result_t ValidatePhi(ValidationState_t& _, const Instruction* inst) {
              << "VariablePointers or VariablePointersStorageBuffer";
     }
   }
+
+  const Instruction* type_inst = _.FindDef(inst->type_id());
+  assert(type_inst);
+  const SpvOp type_opcode = type_inst->opcode();
 
   if (!_.options()->before_hlsl_legalization) {
     if (type_opcode == SpvOpTypeSampledImage ||
