@@ -619,20 +619,6 @@ bool InlinePass::GenInlineCode(
     assert(resId != 0);
     AddLoad(calleeTypeId, resId, returnVarId, &new_blk_ptr,
             call_inst_itr->dbg_line_inst(), call_inst_itr->GetDebugScope());
-  } else {
-    // If the function does not return a value, there could be OpName
-    // instructions that refer to the id associated with the original
-    // OpFunctionCall instruction.  These need to be removed.
-    std::unordered_set<opt::Instruction*> to_kill;
-    for (auto& inst : context()->debugs2()) {
-      if (inst.opcode() == SpvOpName &&
-          inst.GetSingleWordInOperand(0) == call_inst_itr->result_id()) {
-        to_kill.insert(&inst);
-      }
-    }
-    for (auto* inst : to_kill) {
-      context()->KillInst(inst);
-    }
   }
 
   // Move instructions of original caller block after call instruction.
@@ -651,6 +637,10 @@ bool InlinePass::GenInlineCode(
   for (auto& blk : *new_blocks) {
     id2block_[blk->id()] = &*blk;
   }
+
+  // We need to kill the name and decorations for the call, which will be
+  // deleted.
+  context()->KillNamesAndDecorates(&*call_inst_itr);
 
   return true;
 }
