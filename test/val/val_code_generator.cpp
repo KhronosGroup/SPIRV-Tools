@@ -115,6 +115,15 @@ std::string GetDefaultShaderTypes() {
 %f32vec3arr3 = OpTypeArray %f32vec3 %u32_3
 %f32vec4arr3 = OpTypeArray %f32vec4 %u32_3
 %f64vec4arr3 = OpTypeArray %f64vec4 %u32_3
+
+%f32mat22 = OpTypeMatrix %f32vec2 2
+%f32mat23 = OpTypeMatrix %f32vec2 3
+%f32mat32 = OpTypeMatrix %f32vec3 2
+%f32mat33 = OpTypeMatrix %f32vec3 3
+%f64mat22 = OpTypeMatrix %f64vec2 2
+%f32mat34 = OpTypeMatrix %f32vec3 4
+%f32mat43 = OpTypeMatrix %f32vec4 3
+%f32mat44 = OpTypeMatrix %f32vec4 4
 )";
 }
 
