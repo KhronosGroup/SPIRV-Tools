@@ -654,14 +654,14 @@ INSTANTIATE_TEST_SUITE_P(
                 "which is called with execution model Fragment."))));
 
 INSTANTIATE_TEST_SUITE_P(
-    VertexIdAndInstanceIdVertexInput,
+    VertexIdVertexInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("VertexId", "InstanceId"), Values("Vertex"), Values("Input"),
-            Values("%u32"), Values(nullptr),
-            Values(TestResult(
-                SPV_ERROR_INVALID_DATA,
-                "Vulkan spec doesn't allow BuiltIn VertexId/InstanceId to be "
-                "used."))));
+    Combine(
+        Values("VertexId"), Values("Vertex"), Values("Input"), Values("%u32"),
+        Values(nullptr),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "Vulkan spec doesn't allow BuiltIn VertexId to be "
+                          "used."))));
 
 INSTANTIATE_TEST_SUITE_P(
     ClipAndCullDistanceVertexInput,
@@ -1632,7 +1632,8 @@ INSTANTIATE_TEST_SUITE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be used only with Fragment, TessellationControl, "
-                "TessellationEvaluation or Geometry execution models"))));
+                "TessellationEvaluation, Geometry, MeshNV, IntersectionKHR, "
+                "AnyHitKHR, and ClosestHitKHR execution models"))));
 
 INSTANTIATE_TEST_SUITE_P(
     PrimitiveIdFragmentNotInput,
@@ -1645,7 +1646,7 @@ INSTANTIATE_TEST_SUITE_P(
                           "which is called with execution model Fragment"))));
 
 INSTANTIATE_TEST_SUITE_P(
-    PrimitiveIdGeometryNotInput,
+    PrimitiveIdTessellationNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("PrimitiveId"),
             Values("TessellationControl", "TessellationEvaluation"),
@@ -2361,6 +2362,581 @@ INSTANTIATE_TEST_SUITE_P(
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
                               "is not an int scalar"))));
+
+// Test HitKind in NV RT shaders
+INSTANTIATE_TEST_SUITE_P(
+    HitKindNVSuccess,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("HitKindNV"),
+            Values("AnyHitNV", "ClosestHitNV"), Values("Input"), Values("%u32"),
+            Values("OpCapability RayTracingNV\n"),
+            Values("OpExtension \"SPV_NV_ray_tracing\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+// HitKind is valid in AH, CH shaders as input i32 scalar
+INSTANTIATE_TEST_SUITE_P(
+    HitKindSuccess,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("HitKindKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR"), Values("Input"),
+            Values("%u32"), Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    HitKindNotExecutionMode,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("HitKindKHR"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "Fragment",
+                   "GLCompute", "RayGenerationKHR", "IntersectionKHR",
+                   "MissKHR", "CallableKHR"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-HitKindKHR-HitKindKHR-04242"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "Vulkan spec does not allow BuiltIn",
+                              "to be used with the execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    HitKindNotInput,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("HitKindKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR"), Values("Output"),
+            Values("%u32"), Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-HitKindKHR-HitKindKHR-04243"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
+                              "used for variables with Input storage class"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    HitKindNotIntScalar,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("HitKindKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR"), Values("Input"),
+            Values("%f32", "%u32vec3"), Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-HitKindKHR-HitKindKHR-04244"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "is not an int scalar"))));
+
+// Ensure HitT is not supported in KHR RT shaders
+INSTANTIATE_TEST_SUITE_P(
+    HitTNVNotSupportedInKHR,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("HitTNV"),
+            Values("AnyHitKHR", "ClosestHitKHR"), Values("Input"),
+            Values("%u32"), Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
+            Values(TestResult(
+                SPV_ERROR_INVALID_CAPABILITY,
+                "of MemberDecorate requires one of these capabilities"))));
+
+// HitT is valid in AH, CH shaders as input f32 scalar (NV RT only)
+INSTANTIATE_TEST_SUITE_P(
+    HitTNVSuccess,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("HitTNV"),
+            Values("AnyHitNV", "ClosestHitNV"), Values("Input"), Values("%f32"),
+            Values("OpCapability RayTracingNV\n"),
+            Values("OpExtension \"SPV_NV_ray_tracing\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    HitTNVNotExecutionMode,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("HitTNV"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "Fragment",
+                   "GLCompute", "RayGenerationNV", "IntersectionNV", "MissNV",
+                   "CallableNV"),
+            Values("Input"), Values("%f32"),
+            Values("OpCapability RayTracingNV\n"),
+            Values("OpExtension \"SPV_NV_ray_tracing\"\n"),
+            Values("VUID-HitTNV-HitTNV-04245"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "Vulkan spec does not allow BuiltIn",
+                              "to be used with the execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    HitTNVNotInput,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("HitTNV"),
+            Values("AnyHitNV", "ClosestHitNV"), Values("Output"),
+            Values("%f32"), Values("OpCapability RayTracingNV\n"),
+            Values("OpExtension \"SPV_NV_ray_tracing\"\n"),
+            Values("VUID-HitTNV-HitTNV-04246"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
+                              "used for variables with Input storage class"))));
+INSTANTIATE_TEST_SUITE_P(
+    HitTNVNotIntScalar,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("HitTNV"),
+            Values("AnyHitNV", "ClosestHitNV"), Values("Input"),
+            Values("%u32", "%f32vec3"), Values("OpCapability RayTracingNV\n"),
+            Values("OpExtension \"SPV_NV_ray_tracing\"\n"),
+            Values("VUID-HitTNV-HitTNV-04247"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit float scalar",
+                              "is not a float scalar"))));
+
+// InstanceCustomIndexKHR, InstanceId, PrimitiveId, RayGeometryIndexKHR are
+// valid in IS, AH, CH shaders as input i32 scalars
+INSTANTIATE_TEST_SUITE_P(
+    RTBuiltIn3StageI32Success,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2),
+            Values("InstanceCustomIndexKHR", "RayGeometryIndexKHR",
+                   "InstanceId", "PrimitiveId"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    RTBuiltIn3StageI32NotExecutionMode,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2),
+            Values("InstanceCustomIndexKHR", "RayGeometryIndexKHR",
+                   "InstanceId"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "Fragment",
+                   "GLCompute", "RayGenerationKHR", "MissKHR", "CallableKHR"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-InstanceCustomIndexKHR-InstanceCustomIndexKHR-04251 "
+                   "VUID-RayGeometryIndexKHR-RayGeometryIndexKHR-04345 "
+                   "VUID-InstanceId-InstanceId-04254 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "Vulkan spec does not allow BuiltIn",
+                              "to be used with the execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    RTBuiltIn3StageI32NotInput,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2),
+            Values("InstanceCustomIndexKHR", "RayGeometryIndexKHR",
+                   "InstanceId"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR"),
+            Values("Output"), Values("%u32"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-InstanceCustomIndexKHR-InstanceCustomIndexKHR-04252 "
+                   "VUID-RayGeometryIndexKHR-RayGeometryIndexKHR-04346 "
+                   "VUID-InstanceId-InstanceId-04255 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
+                              "used for variables with Input storage class"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    RTBuiltIn3StageI32NotIntScalar,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2),
+            Values("InstanceCustomIndexKHR", "RayGeometryIndexKHR",
+                   "InstanceId"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR"),
+            Values("Input"), Values("%f32", "%u32vec3"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-InstanceCustomIndexKHR-InstanceCustomIndexKHR-04253 "
+                   "VUID-RayGeometryIndexKHR-RayGeometryIndexKHR-04347 "
+                   "VUID-InstanceId-InstanceId-04256 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "is not an int scalar"))));
+
+// PrimitiveId needs special negative testing because it has non-RT uses
+INSTANTIATE_TEST_SUITE_P(
+    PrimitiveIdRTNotExecutionMode,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("PrimitiveId"),
+            Values("RayGenerationKHR", "MissKHR", "CallableKHR"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-PrimitiveId-PrimitiveId-04330"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "to be used only with Fragment, TessellationControl, "
+                "TessellationEvaluation, Geometry, MeshNV, IntersectionKHR, "
+                "AnyHitKHR, and ClosestHitKHR execution models"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    PrimitiveIdRTNotInput,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("PrimitiveId"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR"),
+            Values("Output"), Values("%u32"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-PrimitiveId-PrimitiveId-04334"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "Output storage class if execution model is "))));
+
+INSTANTIATE_TEST_SUITE_P(
+    PrimitiveIdRTNotIntScalar,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("PrimitiveId"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR"),
+            Values("Input"), Values("%f32", "%u32vec3"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-PrimitiveId-PrimitiveId-04337"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "is not an int scalar"))));
+
+// ObjectRayDirectionKHR and ObjectRayOriginKHR valid
+// in IS, AH, CH shaders as input 32-bit float vec3
+INSTANTIATE_TEST_SUITE_P(
+    ObjectRayDirectionAndOriginSuccess,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2),
+            Values("ObjectRayDirectionKHR", "ObjectRayOriginKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR"),
+            Values("Input"), Values("%f32vec3"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    ObjectRayDirectionAndOriginNotExecutionMode,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2),
+            Values("ObjectRayDirectionKHR", "ObjectRayOriginKHR"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "Fragment",
+                   "GLCompute", "RayGenerationKHR", "MissKHR", "CallableKHR"),
+            Values("Input"), Values("%f32vec3"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-ObjectRayDirectionKHR-ObjectRayDirectionKHR-04299 "
+                   "VUID-ObjectRayOriginKHR-ObjectRayOriginKHR-04302 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "Vulkan spec does not allow BuiltIn",
+                              "to be used with the execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    ObjectRayDirectionAndOriginNotInput,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2),
+            Values("ObjectRayDirectionKHR", "ObjectRayOriginKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR"),
+            Values("Output"), Values("%f32vec3"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-ObjectRayDirectionKHR-ObjectRayDirectionKHR-04300 "
+                   "VUID-ObjectRayOriginKHR-ObjectRayOriginKHR-04303 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
+                              "used for variables with Input storage class"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    ObjectRayDirectionAndOriginNotFloatVec3,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values(SPV_ENV_VULKAN_1_2),
+        Values("ObjectRayDirectionKHR", "ObjectRayOriginKHR"),
+        Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR"),
+        Values("Input"), Values("%u32vec3", "%f32", "%f32vec2", "%f32vec4"),
+        Values("OpCapability RayTracingKHR\n"),
+        Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+        Values("VUID-ObjectRayDirectionKHR-ObjectRayDirectionKHR-04301 "
+               "VUID-ObjectRayOriginKHR-ObjectRayOriginKHR-04304 "),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "needs to be a 3-component 32-bit float vector"))));
+
+// ObjectToWorldKHR and WorldToObjectKHR valid
+// in IS, AH, CH shaders as input mat4x3
+INSTANTIATE_TEST_SUITE_P(
+    RTObjectMatrixSuccess,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2),
+            Values("ObjectToWorldKHR", "WorldToObjectKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR"),
+            Values("Input"), Values("%f32mat34"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    RTObjectMatrixNotExecutionMode,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2),
+            Values("ObjectToWorldKHR", "WorldToObjectKHR"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "Fragment",
+                   "GLCompute", "RayGenerationKHR", "MissKHR", "CallableKHR"),
+            Values("Input"), Values("%f32mat34"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-ObjectToWorldKHR-ObjectToWorldKHR-04305 "
+                   "VUID-WorldToObjectKHR-WorldToObjectKHR-04434 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "Vulkan spec does not allow BuiltIn",
+                              "to be used with the execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    RTObjectMatrixNotInput,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2),
+            Values("ObjectToWorldKHR", "WorldToObjectKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR"),
+            Values("Output"), Values("%f32mat34"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-ObjectToWorldKHR-ObjectToWorldKHR-04306 "
+                   "VUID-WorldToObjectKHR-WorldToObjectKHR-04435 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
+                              "used for variables with Input storage class"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    RTObjectMatrixNotMat4x3,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2),
+            Values("ObjectToWorldKHR", "WorldToObjectKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR"),
+            Values("Input"), Values("%f32mat43", "%f32mat44", "%f32vec4"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-ObjectToWorldKHR-ObjectToWorldKHR-04307 "
+                   "VUID-WorldToObjectKHR-WorldToObjectKHR-04436 "),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "variable needs to be a matrix with "
+                "4 columns of 3-component vectors of 32-bit floats"))));
+
+// IncomingRayFlagsKHR is valid
+// in IS, AH, CH, MS shaders as an input i32 scalar
+INSTANTIATE_TEST_SUITE_P(
+    IncomingRayFlagsSuccess,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("IncomingRayFlagsKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR", "MissKHR"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    IncomingRayFlagsNotExecutionMode,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("IncomingRayFlagsKHR"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "Fragment",
+                   "GLCompute", "RayGenerationKHR", "CallableKHR"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-IncomingRayFlagsKHR-IncomingRayFlagsKHR-04248 "
+                   "VUID-RayTmaxKHR-RayTmaxKHR-04348 "
+                   "VUID-RayTminKHR-RayTminKHR-04351 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "Vulkan spec does not allow BuiltIn",
+                              "to be used with the execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    IncomingRayFlagsNotInput,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("IncomingRayFlagsKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR", "MissKHR"),
+            Values("Output"), Values("%u32"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-IncomingRayFlagsKHR-IncomingRayFlagsKHR-04249 "
+                   "VUID-RayTmaxKHR-RayTmaxKHR-04349 "
+                   "VUID-RayTminKHR-RayTminKHR-04352 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
+                              "used for variables with Input storage class"))));
+INSTANTIATE_TEST_SUITE_P(
+    IncomingRayFlagsNotIntScalar,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("IncomingRayFlagsKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR", "MissKHR"),
+            Values("Input"), Values("%f32", "%u32vec3"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-IncomingRayFlagsKHR-IncomingRayFlagsKHR-04250 "
+                   "VUID-RayTmaxKHR-RayTmaxKHR-04350 "
+                   "VUID-RayTminKHR-RayTminKHR-04353 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "is not an int scalar"))));
+
+// RayTmaxKHR, RayTminKHR are all valid
+// in IS, AH, CH, MS shaders as input f32 scalars
+INSTANTIATE_TEST_SUITE_P(
+    RayTSuccess,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("RayTmaxKHR", "RayTminKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR", "MissKHR"),
+            Values("Input"), Values("%f32"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    RayTNotExecutionMode,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("RayTmaxKHR", "RayTminKHR"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "Fragment",
+                   "GLCompute", "RayGenerationKHR", "CallableKHR"),
+            Values("Input"), Values("%f32"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-IncomingRayFlagsKHR-IncomingRayFlagsKHR-04248 "
+                   "VUID-RayTmaxKHR-RayTmaxKHR-04348 "
+                   "VUID-RayTminKHR-RayTminKHR-04351 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "Vulkan spec does not allow BuiltIn",
+                              "to be used with the execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    RayTNotInput,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("RayTmaxKHR", "RayTminKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR", "MissKHR"),
+            Values("Output"), Values("%f32"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-IncomingRayFlagsKHR-IncomingRayFlagsKHR-04249 "
+                   "VUID-RayTmaxKHR-RayTmaxKHR-04349 "
+                   "VUID-RayTminKHR-RayTminKHR-04352 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
+                              "used for variables with Input storage class"))));
+INSTANTIATE_TEST_SUITE_P(
+    RayTNotFloatScalar,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("RayTmaxKHR", "RayTminKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR", "MissKHR"),
+            Values("Input"), Values("%u32", "%f32vec3"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-IncomingRayFlagsKHR-IncomingRayFlagsKHR-04250 "
+                   "VUID-RayTmaxKHR-RayTmaxKHR-04350 "
+                   "VUID-RayTminKHR-RayTminKHR-04353 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit float scalar",
+                              "is not a float scalar"))));
+
+// WorldRayDirectionKHR and WorldRayOriginKHR are valid
+// in IS, AH, CH, MS shaders as input 32-bit float vec3
+INSTANTIATE_TEST_SUITE_P(
+    WorldRayDirectionAndOriginSuccess,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2),
+            Values("WorldRayDirectionKHR", "WorldRayOriginKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR", "MissKHR"),
+            Values("Input"), Values("%f32vec3"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    WorldRayDirectionAndOriginNotExecutionMode,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2),
+            Values("WorldRayDirectionKHR", "WorldRayOriginKHR"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "Fragment",
+                   "GLCompute", "RayGenerationKHR", "CallableKHR"),
+            Values("Input"), Values("%f32vec3"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-WorldRayDirectionKHR-WorldRayDirectionKHR-04428 "
+                   "VUID-WorldRayOriginKHR-WorldRayOriginKHR-04431 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "Vulkan spec does not allow BuiltIn",
+                              "to be used with the execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    WorldRayDirectionAndOriginNotInput,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2),
+            Values("WorldRayDirectionKHR", "WorldRayOriginKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR", "MissKHR"),
+            Values("Output"), Values("%f32vec3"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-WorldRayDirectionKHR-WorldRayDirectionKHR-04429 "
+                   "VUID-WorldRayOriginKHR-WorldRayOriginKHR-04432 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
+                              "used for variables with Input storage class"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    WorldRayDirectionAndOriginNotFloatVec3,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values(SPV_ENV_VULKAN_1_2),
+        Values("WorldRayDirectionKHR", "WorldRayOriginKHR"),
+        Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR", "MissKHR"),
+        Values("Input"), Values("%u32vec3", "%f32", "%f32vec2", "%f32vec4"),
+        Values("OpCapability RayTracingKHR\n"),
+        Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+        Values("VUID-WorldRayDirectionKHR-WorldRayDirectionKHR-04430 "
+               "VUID-WorldRayOriginKHR-WorldRayOriginKHR-04433 "),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "needs to be a 3-component 32-bit float vector"))));
+
+// LaunchIdKHR and LaunchSizeKHR are valid
+// in RG, IS, AH, CH, MS shaders as input 32-bit ivec3
+INSTANTIATE_TEST_SUITE_P(
+    LaunchRTSuccess,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("LaunchIdKHR", "LaunchSizeKHR"),
+            Values("RayGenerationKHR", "AnyHitKHR", "ClosestHitKHR",
+                   "IntersectionKHR", "MissKHR", "CallableKHR"),
+            Values("Input"), Values("%u32vec3"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    LaunchRTNotExecutionMode,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("LaunchIdKHR", "LaunchSizeKHR"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "Fragment",
+                   "GLCompute"),
+            Values("Input"), Values("%u32vec3"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-LaunchIdKHR-LaunchIdKHR-04266 "
+                   "VUID-LaunchSizeKHR-LaunchSizeKHR-04269 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "Vulkan spec does not allow BuiltIn",
+                              "to be used with the execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    LaunchRTNotInput,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("LaunchIdKHR", "LaunchSizeKHR"),
+            Values("RayGenerationKHR", "AnyHitKHR", "ClosestHitKHR",
+                   "IntersectionKHR", "MissKHR", "CallableKHR"),
+            Values("Output"), Values("%u32vec3"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-LaunchIdKHR-LaunchIdKHR-04267 "
+                   "VUID-LaunchSizeKHR-LaunchSizeKHR-04270 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
+                              "used for variables with Input storage class"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    LaunchRTNotIntVec3,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("LaunchIdKHR", "LaunchSizeKHR"),
+            Values("RayGenerationKHR", "AnyHitKHR", "ClosestHitKHR",
+                   "IntersectionKHR", "MissKHR", "CallableKHR"),
+            Values("Input"), Values("%f32vec3", "%u32", "%u32vec2", "%u32vec4"),
+            Values("OpCapability RayTracingKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\n"),
+            Values("VUID-LaunchIdKHR-LaunchIdKHR-04268 "
+                   "VUID-LaunchSizeKHR-LaunchSizeKHR-04271 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 3-component 32-bit int vector"))));
 
 CodeGenerator GetArrayedVariableCodeGenerator(spv_target_env env,
                                               const char* const built_in,
@@ -3356,44 +3932,6 @@ OpFunctionEnd
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-}
-
-TEST_F(ValidateBuiltIns, DisallowInstanceIdWithRayGenShader) {
-  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
-  generator.capabilities_ += R"(
-OpCapability RayTracingNV
-)";
-
-  generator.extensions_ = R"(
-OpExtension "SPV_NV_ray_tracing"
-)";
-
-  generator.before_types_ = R"(
-OpMemberDecorate %input_type 0 BuiltIn InstanceId
-)";
-
-  generator.after_types_ = R"(
-%input_type = OpTypeStruct %u32
-%input_ptr = OpTypePointer Input %input_type
-%input_ptr_u32 = OpTypePointer Input %u32
-%input = OpVariable %input_ptr Input
-)";
-
-  EntryPoint entry_point;
-  entry_point.name = "main_d_r";
-  entry_point.execution_model = "RayGenerationNV";
-  entry_point.interfaces = "%input";
-  entry_point.body = R"(
-%input_member = OpAccessChain %input_ptr_u32 %input %u32_0
-)";
-  generator.entry_points_.push_back(std::move(entry_point));
-
-  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Vulkan spec allows BuiltIn InstanceId to be used "
-                        "only with IntersectionNV, ClosestHitNV and "
-                        "AnyHitNV execution models"));
 }
 
 TEST_F(ValidateBuiltIns, ValidBuiltinsForMeshShader) {
