@@ -117,7 +117,7 @@ uint32_t InstBindlessCheckPass::CloneOriginalImage(
 }
 
 uint32_t InstBindlessCheckPass::CloneOriginalReference(
-    ref_analysis* ref, InstructionBuilder* builder) {
+    RefAnalysis* ref, InstructionBuilder* builder) {
   // If original is image based, start by cloning descriptor load
   uint32_t new_image_id = 0;
   if (ref->desc_load_id != 0) {
@@ -192,7 +192,7 @@ Instruction* InstBindlessCheckPass::GetPointeeTypeInst(Instruction* ptr_inst) {
 }
 
 bool InstBindlessCheckPass::AnalyzeDescriptorReference(Instruction* ref_inst,
-                                                       ref_analysis* ref) {
+                                                       RefAnalysis* ref) {
   ref->ref_inst = ref_inst;
   if (ref_inst->opcode() == SpvOpLoad || ref_inst->opcode() == SpvOpStore) {
     ref->desc_load_id = 0;
@@ -338,7 +338,7 @@ uint32_t InstBindlessCheckPass::ByteSize(uint32_t ty_id, uint32_t matrix_stride,
   return size;
 }
 
-uint32_t InstBindlessCheckPass::GenLastByteIdx(ref_analysis* ref,
+uint32_t InstBindlessCheckPass::GenLastByteIdx(RefAnalysis* ref,
                                                InstructionBuilder* builder) {
   // Find outermost buffer type and its access chain index
   Instruction* var_inst = get_def_use_mgr()->GetDef(ref->var_id);
@@ -490,7 +490,7 @@ uint32_t InstBindlessCheckPass::GenLastByteIdx(ref_analysis* ref,
 
 void InstBindlessCheckPass::GenCheckCode(
     uint32_t check_id, uint32_t error_id, uint32_t offset_id,
-    uint32_t length_id, uint32_t stage_idx, ref_analysis* ref,
+    uint32_t length_id, uint32_t stage_idx, RefAnalysis* ref,
     std::vector<std::unique_ptr<BasicBlock>>* new_blocks) {
   BasicBlock* back_blk_ptr = &*new_blocks->back();
   InstructionBuilder builder(
@@ -567,7 +567,7 @@ void InstBindlessCheckPass::GenDescIdxCheckCode(
     std::vector<std::unique_ptr<BasicBlock>>* new_blocks) {
   // Look for reference through indexed descriptor. If found, analyze and
   // save components. If not, return.
-  ref_analysis ref;
+  RefAnalysis ref;
   if (!AnalyzeDescriptorReference(&*ref_inst_itr, &ref)) return;
   Instruction* ptr_inst = get_def_use_mgr()->GetDef(ref.ptr_id);
   if (ptr_inst->opcode() != SpvOp::SpvOpAccessChain) return;
@@ -626,7 +626,7 @@ void InstBindlessCheckPass::GenDescInitCheckCode(
     UptrVectorIterator<BasicBlock> ref_block_itr, uint32_t stage_idx,
     std::vector<std::unique_ptr<BasicBlock>>* new_blocks) {
   // Look for reference through descriptor. If not, return.
-  ref_analysis ref;
+  RefAnalysis ref;
   if (!AnalyzeDescriptorReference(&*ref_inst_itr, &ref)) return;
   // Determine if we can only do initialization check
   bool init_check = false;
@@ -690,7 +690,7 @@ void InstBindlessCheckPass::GenTexBuffCheckCode(
         (op == SpvOpImageWrite && num_in_oprnds == 3)))
     return;
   // Pull components from descriptor reference
-  ref_analysis ref;
+  RefAnalysis ref;
   if (!AnalyzeDescriptorReference(ref_inst, &ref)) return;
   // Only process if image is texel buffer
   Instruction* image_inst = get_def_use_mgr()->GetDef(ref.image_id);
