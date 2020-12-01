@@ -972,8 +972,7 @@ OpMemoryModel Logical GLSL450
 )";
 
   CompileSuccessfully(test, SPV_ENV_UNIVERSAL_1_5);
-  ASSERT_EQ(SPV_ERROR_INVALID_ID,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Operand 3[%_ptr_PhysicalStorageBuffer__struct_1] "
                         "requires a previous definition"));
