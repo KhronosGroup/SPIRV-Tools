@@ -28,24 +28,16 @@ namespace opt {
 // external design may change as the layer evolves.
 class InstBindlessCheckPass : public InstrumentPass {
  public:
-  // Old interface to support testing pre-buffer-overrun capability
-  InstBindlessCheckPass(uint32_t desc_set, uint32_t shader_id,
-                        bool desc_idx_enable, bool desc_init_enable)
-      : InstrumentPass(desc_set, shader_id, kInstValidationIdBindless, false),
-        desc_idx_enabled_(desc_idx_enable),
-        desc_init_enabled_(desc_init_enable),
-        buffer_bounds_enabled_(false) {}
-
-  // New interface supporting buffer overrun checking
   InstBindlessCheckPass(uint32_t desc_set, uint32_t shader_id,
                         bool desc_idx_enable, bool desc_init_enable,
-                        bool buffer_bounds_enable)
-      : InstrumentPass(
-            desc_set, shader_id, kInstValidationIdBindless,
-            desc_idx_enable || desc_init_enable || buffer_bounds_enable),
+                        bool buffer_bounds_enable, bool texel_buffer_enable,
+                        bool opt_direct_reads)
+      : InstrumentPass(desc_set, shader_id, kInstValidationIdBindless,
+                       opt_direct_reads),
         desc_idx_enabled_(desc_idx_enable),
         desc_init_enabled_(desc_init_enable),
-        buffer_bounds_enabled_(buffer_bounds_enable) {}
+        buffer_bounds_enabled_(buffer_bounds_enable),
+        texel_buffer_enabled_(texel_buffer_enable) {}
 
   ~InstBindlessCheckPass() override = default;
 
@@ -63,6 +55,10 @@ class InstBindlessCheckPass : public InstrumentPass {
   // checks that the referenced descriptor has been initialized, if the
   // SPV_EXT_descriptor_indexing extension is enabled, and initialized large
   // enough to handle the reference, if RobustBufferAccess is disabled.
+  // GenDescInitCheckCode checks for uniform and storage buffer overrun.
+  // GenTexBuffCheckCode checks for texel buffer overrun and should be
+  // run after GenDescInitCheckCode to first make sure that the descriptor
+  // is initialized because it uses OpImageQuerySize on the descriptor.
   //
   // The functions are designed to be passed to
   // InstrumentPass::InstProcessEntryPointCallTree(), which applies the
@@ -109,6 +105,11 @@ class InstBindlessCheckPass : public InstrumentPass {
       UptrVectorIterator<BasicBlock> ref_block_itr, uint32_t stage_idx,
       std::vector<std::unique_ptr<BasicBlock>>* new_blocks);
 
+  void GenTexBuffCheckCode(
+      BasicBlock::iterator ref_inst_itr,
+      UptrVectorIterator<BasicBlock> ref_block_itr, uint32_t stage_idx,
+      std::vector<std::unique_ptr<BasicBlock>>* new_blocks);
+
   // Generate instructions into |builder| to read length of runtime descriptor
   // array |var_id| from debug input buffer and return id of value.
   uint32_t GenDebugReadLength(uint32_t var_id, InstructionBuilder* builder);
@@ -143,6 +144,10 @@ class InstBindlessCheckPass : public InstrumentPass {
 
   // Generate index of last byte referenced by buffer reference |ref|
   uint32_t GenLastByteIdx(ref_analysis* ref, InstructionBuilder* builder);
+
+  // Clone original image computation starting at |image_id| into |builder|.
+  // This may generate more than one instruction if neccessary.
+  uint32_t CloneOriginalImage(uint32_t image_id, InstructionBuilder* builder);
 
   // Clone original original reference encapsulated by |ref| into |builder|.
   // This may generate more than one instruction if neccessary.
@@ -184,8 +189,11 @@ class InstBindlessCheckPass : public InstrumentPass {
   // Enable instrumentation of descriptor initialization checking
   bool desc_init_enabled_;
 
-  // Enable instrumentation of buffer overrun checking
+  // Enable instrumentation of uniform and storage buffer overrun checking
   bool buffer_bounds_enabled_;
+
+  // Enable instrumentation of texel buffer overrun checking
+  bool texel_buffer_enabled_;
 
   // Mapping from variable to descriptor set
   std::unordered_map<uint32_t, uint32_t> var2desc_set_;
