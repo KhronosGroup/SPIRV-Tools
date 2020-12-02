@@ -6,6 +6,7 @@ v2020.6-dev 2020-12-02
  - Disassembler
     Add some context comments to disassembly. (#3847)
  - Optimizer
+   - Do run DCE if SPV_KHR_ray_query is used. (#4047)
    - Handle 8-bit index in elim dead member (#4043)
    - Add texel buffer out-of-bounds checking instrumentation (#4038)
    - Update MeshShadingNV dependencies (and land Ray tracing updates) (#4028)
