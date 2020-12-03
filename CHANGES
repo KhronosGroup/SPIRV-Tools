@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2020.7-dev 2020-12-03
+ - Start v2020.7-dev
+
 v2020.6 2020-12-02
  - General
     CMake: Add SPIRV_TOOLS_BUILD_STATIC flag (#3910)
