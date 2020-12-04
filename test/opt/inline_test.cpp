@@ -2587,7 +2587,7 @@ TEST_F(InlineTest, InlineFuncWithOpTerminateRayNotInContinue) {
                OpCapability RayTracingKHR
                OpExtension "SPV_KHR_ray_tracing"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint AnyHitNV %MyAHitMain2 "MyAHitMain2" %a
+               OpEntryPoint AnyHitKHR %MyAHitMain2 "MyAHitMain2" %a
                OpSource HLSL 630
                OpName %a "a"
                OpName %MyAHitMain2 "MyAHitMain2"
@@ -2596,12 +2596,12 @@ TEST_F(InlineTest, InlineFuncWithOpTerminateRayNotInContinue) {
                OpName %a_0 "a"
                OpName %bb_entry "bb.entry"
         %int = OpTypeInt 32 1
-%_ptr_IncomingRayPayloadNV_int = OpTypePointer IncomingRayPayloadNV %int
+%_ptr_IncomingRayPayloadKHR_int = OpTypePointer IncomingRayPayloadKHR %int
        %void = OpTypeVoid
           %6 = OpTypeFunction %void
 %_ptr_Function_int = OpTypePointer Function %int
          %14 = OpTypeFunction %void %_ptr_Function_int
-          %a = OpVariable %_ptr_IncomingRayPayloadNV_int IncomingRayPayloadNV
+          %a = OpVariable %_ptr_IncomingRayPayloadKHR_int IncomingRayPayloadKHR
 %MyAHitMain2 = OpFunction %void None %6
           %7 = OpLabel
 %param_var_a = OpVariable %_ptr_Function_int Function
