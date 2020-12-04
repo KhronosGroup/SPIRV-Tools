@@ -61,7 +61,9 @@ inline bool IsSpecConstantInst(SpvOp opcode) {
 }
 inline bool IsTerminatorInst(SpvOp opcode) {
   return (opcode >= SpvOpBranch && opcode <= SpvOpUnreachable) ||
-         (opcode == SpvOpTerminateInvocation);
+         (opcode == SpvOpTerminateInvocation ||
+          opcode == SpvOpTerminateRayKHR ||
+          opcode == SpvOpIgnoreIntersectionKHR);
 }
 
 }  // namespace opt
