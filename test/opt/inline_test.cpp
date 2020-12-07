@@ -2581,6 +2581,63 @@ OpFunctionEnd
   SinglePassRunAndCheck<InlineExhaustivePass>(before, after, false, true);
 }
 
+TEST_F(InlineTest, InlineFuncWithOpTerminateRayNotInContinue) {
+  const std::string text =
+      R"(
+               OpCapability RayTracingKHR
+               OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint AnyHitKHR %MyAHitMain2 "MyAHitMain2" %a
+               OpSource HLSL 630
+               OpName %a "a"
+               OpName %MyAHitMain2 "MyAHitMain2"
+               OpName %param_var_a "param.var.a"
+               OpName %src_MyAHitMain2 "src.MyAHitMain2"
+               OpName %a_0 "a"
+               OpName %bb_entry "bb.entry"
+        %int = OpTypeInt 32 1
+%_ptr_IncomingRayPayloadKHR_int = OpTypePointer IncomingRayPayloadKHR %int
+       %void = OpTypeVoid
+          %6 = OpTypeFunction %void
+%_ptr_Function_int = OpTypePointer Function %int
+         %14 = OpTypeFunction %void %_ptr_Function_int
+          %a = OpVariable %_ptr_IncomingRayPayloadKHR_int IncomingRayPayloadKHR
+%MyAHitMain2 = OpFunction %void None %6
+          %7 = OpLabel
+%param_var_a = OpVariable %_ptr_Function_int Function
+         %10 = OpLoad %int %a
+               OpStore %param_var_a %10
+         %11 = OpFunctionCall %void %src_MyAHitMain2 %param_var_a
+         %13 = OpLoad %int %param_var_a
+               OpStore %a %13
+               OpReturn
+               OpFunctionEnd
+%src_MyAHitMain2 = OpFunction %void None %14
+        %a_0 = OpFunctionParameter %_ptr_Function_int
+   %bb_entry = OpLabel
+         %17 = OpLoad %int %a_0
+               OpStore %a %17
+               OpTerminateRayKHR
+               OpFunctionEnd
+
+; CHECK:      %MyAHitMain2 = OpFunction %void None
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT:   %param_var_a = OpVariable %_ptr_Function_int Function
+; CHECK-NEXT:   OpLoad %int %a
+; CHECK-NEXT:   OpStore %param_var_a {{%\d+}}
+; CHECK-NEXT:   OpLoad %int %param_var_a
+; CHECK-NEXT:   OpStore %a {{%\d+}}
+; CHECK-NEXT:   OpTerminateRayKHR
+; CHECK-NEXT: OpLabel
+; CHECK-NEXT:   OpLoad %int %param_var_a
+; CHECK-NEXT:   OpStore %a %16
+; CHECK-NEXT:   OpReturn
+; CHECK-NEXT: OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<InlineExhaustivePass>(text, false);
+}
+
 TEST_F(InlineTest, EarlyReturnFunctionInlined) {
   // #version 140
   //
