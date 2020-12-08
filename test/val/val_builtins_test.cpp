@@ -1256,7 +1256,8 @@ INSTANTIATE_TEST_SUITE_P(
     ViewportIndexExecutionModelEnabledByCapability,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("ViewportIndex"), Values("Vertex", "TessellationEvaluation"),
-            Values("Output"), Values("%u32"), Values(nullptr),
+            Values("Output"), Values("%u32"),
+            Values("VUID-ViewportIndex-ViewportIndex-04405"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "ShaderViewportIndexLayerEXT or ShaderViewportIndex"))));
@@ -1265,7 +1266,7 @@ INSTANTIATE_TEST_SUITE_P(
     LayerExecutionModelEnabledByCapability,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Layer"), Values("Vertex", "TessellationEvaluation"),
-            Values("Output"), Values("%u32"), Values(nullptr),
+            Values("Output"), Values("%u32"), Values("VUID-Layer-Layer-04273"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "ShaderViewportIndexLayerEXT or ShaderLayer"))));
 
