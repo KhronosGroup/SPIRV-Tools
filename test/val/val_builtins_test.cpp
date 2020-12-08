@@ -1918,7 +1918,8 @@ INSTANTIATE_TEST_SUITE_P(
     TessLevelOuterOutputTese,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelOuter"), Values("TessellationEvaluation"),
-            Values("Output"), Values("%f32arr4"), Values(nullptr),
+            Values("Output"), Values("%f32arr4"),
+            Values("VUID-TessLevelOuter-TessLevelOuter-04392"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "Vulkan spec doesn't allow TessLevelOuter/TessLevelInner to be "
@@ -1929,7 +1930,8 @@ INSTANTIATE_TEST_SUITE_P(
     TessLevelOuterInputTesc,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelOuter"), Values("TessellationControl"),
-            Values("Input"), Values("%f32arr4"), Values(nullptr),
+            Values("Input"), Values("%f32arr4"),
+            Values("VUID-TessLevelOuter-TessLevelOuter-04391"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "Vulkan spec doesn't allow TessLevelOuter/TessLevelInner to be "
@@ -2005,7 +2007,8 @@ INSTANTIATE_TEST_SUITE_P(
     TessLevelInnerOutputTese,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelInner"), Values("TessellationEvaluation"),
-            Values("Output"), Values("%f32arr2"), Values(nullptr),
+            Values("Output"), Values("%f32arr2"),
+            Values("VUID-TessLevelInner-TessLevelInner-04396"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "Vulkan spec doesn't allow TessLevelOuter/TessLevelInner to be "
@@ -2016,7 +2019,8 @@ INSTANTIATE_TEST_SUITE_P(
     TessLevelInnerInputTesc,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("TessLevelInner"), Values("TessellationControl"),
-            Values("Input"), Values("%f32arr2"), Values(nullptr),
+            Values("Input"), Values("%f32arr2"),
+            Values("VUID-TessLevelInner-TessLevelInner-04395"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "Vulkan spec doesn't allow TessLevelOuter/TessLevelInner to be "
