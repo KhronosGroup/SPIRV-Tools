@@ -1869,7 +1869,7 @@ spv_result_t BuiltInsValidator::ValidatePositionAtReference(
         storage_class != SpvStorageClassInput &&
         storage_class != SpvStorageClassOutput) {
       return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
-             << "Vulkan spec allows BuiltIn Position to be only used for "
+             << _.VkErrorID(4320) << "Vulkan spec allows BuiltIn Position to be only used for "
                 "variables with Input or Output storage class. "
              << GetReferenceDesc(decoration, built_in_inst, referenced_inst,
                                  referenced_from_inst)
@@ -1879,11 +1879,18 @@ spv_result_t BuiltInsValidator::ValidatePositionAtReference(
     if (storage_class == SpvStorageClassInput) {
       assert(function_id_ == 0);
       id_to_at_reference_checks_[referenced_from_inst.id()].push_back(std::bind(
-          &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this, 4320,
+          &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this, 4319,
           "Vulkan spec doesn't allow BuiltIn Position to be used "
           "for variables "
           "with Input storage class if execution model is Vertex.",
           SpvExecutionModelVertex, decoration, built_in_inst,
+          referenced_from_inst, std::placeholders::_1));
+      id_to_at_reference_checks_[referenced_from_inst.id()].push_back(std::bind(
+          &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this, 4319,
+          "Vulkan spec doesn't allow BuiltIn Position to be used "
+          "for variables "
+          "with Input storage class if execution model is MeshNV.",
+          SpvExecutionModelMeshNV, decoration, built_in_inst,
           referenced_from_inst, std::placeholders::_1));
     }
 
