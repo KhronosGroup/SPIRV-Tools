@@ -642,10 +642,26 @@ INSTANTIATE_TEST_SUITE_P(
             Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
+    ClipAndCullDistanceInvalidStorageClass,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("ClipDistance", "CullDistance"),
+            Values("Vertex", "Geometry", "TessellationControl",
+                   "TessellationEvaluation"),
+            Values("Private"), Values("%f32arr2", "%f32arr4"),
+            Values("VUID-ClipDistance-ClipDistance-04190 "
+                   "VUID-CullDistance-CullDistance-04199"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "to be only used for variables with Input or Output storage "
+                "class."))));
+
+INSTANTIATE_TEST_SUITE_P(
     ClipAndCullDistanceFragmentOutput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("ClipDistance", "CullDistance"), Values("Fragment"),
-            Values("Output"), Values("%f32arr4"), Values(nullptr),
+            Values("Output"), Values("%f32arr4"),
+            Values("VUID-ClipDistance-ClipDistance-04189 "
+                   "VUID-CullDistance-CullDistance-04198"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "Vulkan spec doesn't allow BuiltIn ClipDistance/CullDistance "
@@ -667,7 +683,9 @@ INSTANTIATE_TEST_SUITE_P(
     ClipAndCullDistanceVertexInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("ClipDistance", "CullDistance"), Values("Vertex"),
-            Values("Input"), Values("%f32arr4"), Values(nullptr),
+            Values("Input"), Values("%f32arr4"),
+            Values("VUID-ClipDistance-ClipDistance-04188 "
+                   "VUID-CullDistance-CullDistance-04197"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "Vulkan spec doesn't allow BuiltIn ClipDistance/CullDistance "
