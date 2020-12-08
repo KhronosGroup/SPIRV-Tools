@@ -1547,10 +1547,18 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-TessCoord-TessCoord-04389);
     case 4390:
       return VUID_WRAP(VUID-TessLevelOuter-TessLevelOuter-04390);
+    case 4391:
+      return VUID_WRAP(VUID-TessLevelOuter-TessLevelOuter-04391);
+    case 4392:
+      return VUID_WRAP(VUID-TessLevelOuter-TessLevelOuter-04392);
     case 4393:
       return VUID_WRAP(VUID-TessLevelOuter-TessLevelOuter-04393);
     case 4394:
       return VUID_WRAP(VUID-TessLevelInner-TessLevelInner-04394);
+    case 4395:
+      return VUID_WRAP(VUID-TessLevelInner-TessLevelInner-04395);
+    case 4396:
+      return VUID_WRAP(VUID-TessLevelInner-TessLevelInner-04396);
     case 4397:
       return VUID_WRAP(VUID-TessLevelInner-TessLevelInner-04397);
     case 4398:
