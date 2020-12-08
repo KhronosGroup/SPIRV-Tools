@@ -2475,8 +2475,9 @@ spv_result_t BuiltInsValidator::ValidateTessLevelAtReference(
 
     if (storage_class == SpvStorageClassInput) {
       assert(function_id_ == 0);
+      uint32_t vuid = (decoration.params()[0] == SpvBuiltInTessLevelOuter) ? 4391 : 4395;
       id_to_at_reference_checks_[referenced_from_inst.id()].push_back(std::bind(
-          &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this, -1,
+          &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this, vuid,
           "Vulkan spec doesn't allow TessLevelOuter/TessLevelInner to be "
           "used "
           "for variables with Input storage class if execution model is "
@@ -2487,8 +2488,9 @@ spv_result_t BuiltInsValidator::ValidateTessLevelAtReference(
 
     if (storage_class == SpvStorageClassOutput) {
       assert(function_id_ == 0);
+      uint32_t vuid = (decoration.params()[0] == SpvBuiltInTessLevelOuter) ? 4392 : 4396;
       id_to_at_reference_checks_[referenced_from_inst.id()].push_back(std::bind(
-          &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this, -1,
+          &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this, vuid,
           "Vulkan spec doesn't allow TessLevelOuter/TessLevelInner to be "
           "used "
           "for variables with Output storage class if execution model is "
