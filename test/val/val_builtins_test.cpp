@@ -1540,10 +1540,22 @@ INSTANTIATE_TEST_SUITE_P(
                           "for variables with Output storage class"))));
 
 INSTANTIATE_TEST_SUITE_P(
+    PositionInvalidStorageClass,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("Position"),
+            Values("Geometry", "TessellationControl", "TessellationEvaluation"),
+            Values("Private"), Values("%f32vec4"),
+            Values("VUID-Position-Position-04320"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "Vulkan spec allows BuiltIn Position to be only used for "
+                "variables with Input or Output storage class."))));
+
+INSTANTIATE_TEST_SUITE_P(
     PositionVertexInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Position"), Values("Vertex"), Values("Input"),
-            Values("%f32vec4"), Values("VUID-Position-Position-04320"),
+            Values("%f32vec4"), Values("VUID-Position-Position-04319"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "Vulkan spec doesn't allow BuiltIn Position "
