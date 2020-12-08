@@ -1419,6 +1419,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-LaunchSizeKHR-LaunchSizeKHR-04271);
     case 4272:
       return VUID_WRAP(VUID-Layer-Layer-04272);
+    case 4273:
+      return VUID_WRAP(VUID-Layer-Layer-04273);
     case 4274:
       return VUID_WRAP(VUID-Layer-Layer-04274);
     case 4275:
@@ -1553,6 +1555,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-ViewIndex-ViewIndex-04403);
     case 4404:
       return VUID_WRAP(VUID-ViewportIndex-ViewportIndex-04404);
+    case 4405:
+      return VUID_WRAP(VUID-ViewportIndex-ViewportIndex-04405);
     case 4406:
       return VUID_WRAP(VUID-ViewportIndex-ViewportIndex-04406);
     case 4407:
