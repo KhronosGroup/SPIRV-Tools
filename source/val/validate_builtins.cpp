@@ -2775,8 +2775,9 @@ spv_result_t BuiltInsValidator::ValidateLayerOrViewportIndexAtReference(
             if (operand == SpvBuiltInLayer)
               capability = "ShaderViewportIndexLayerEXT or ShaderLayer";
 
+            uint32_t vuid = (operand == SpvBuiltInLayer) ? 4273 : 4405;
             return _.diag(SPV_ERROR_INVALID_DATA, &referenced_from_inst)
-                   << "Using BuiltIn "
+                   << _.VkErrorID(vuid) << "Using BuiltIn "
                    << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
                                                     operand)
                    << " in Vertex or Tessellation execution model requires the "
