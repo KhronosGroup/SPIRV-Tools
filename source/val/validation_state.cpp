@@ -1477,6 +1477,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-PointSize-PointSize-04317);
     case 4318:
       return VUID_WRAP(VUID-Position-Position-04318);
+    case 4319:
+      return VUID_WRAP(VUID-Position-Position-04319);
     case 4320:
       return VUID_WRAP(VUID-Position-Position-04320);
     case 4321:
