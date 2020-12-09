@@ -66,7 +66,7 @@ OpCapability ImageBuffer
 %uniform_image_f32_1d_0001
 %uniform_image_f32_1d_0002_rgba32f
 %uniform_image_f32_2d_0001
-%uniform_image_f32_2d_0011
+%uniform_image_f32_2d_0011 ; multisampled sampled
 %uniform_image_u32_2d_0001
 %uniform_image_u32_2d_0002
 %uniform_image_s32_3d_0001
@@ -1365,12 +1365,26 @@ TEST_F(ValidateImage, LodMultisampled) {
 %img = OpLoad %type_image_f32_2d_0011 %uniform_image_f32_2d_0011
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_2d_0011 %img %sampler
-%res1 = OpImageSampleExplicitLod %f32vec4 %simg %f32vec2_00 Lod %f32_0)";
+%res1 = OpImageSampleExplicitLod %f32vec4 %simg %f32vec2_00 Lod|Sample %f32_0 %u32_1)";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Image Operand Lod requires 'MS' parameter to be 0"));
+}
+
+TEST_F(ValidateImage, LodMultisampledWithoutSample) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0011 %uniform_image_f32_2d_0011
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0011 %img %sampler
+%res1 = OpImageSampleExplicitLod %f32vec4 %simg %f32vec2_00 Lod %f32_0)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Operand Sample is required for operation on "
+                        "multi-sampled image"));
 }
 
 TEST_F(ValidateImage, MinLodIncompatible) {
@@ -1405,18 +1419,20 @@ TEST_F(ValidateImage, ImplicitLodWithGrad) {
           "Image Operand Grad can only be used with ExplicitLod opcodes"));
 }
 
-TEST_F(ValidateImage, SampleImplicitLod3DArrayedMultisampledSuccess) {
+TEST_F(ValidateImage, SampleImplicitLod3DArrayedMultisampledFail) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
 %res1 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000
-%res2 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset %s32vec3_012
-%res3 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Offset %s32vec3_012
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions())
+      << GenerateShaderCode(body);
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Operand Sample is required for operation on "
+                        "multi-sampled image"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodCubeArrayedSuccess) {
@@ -1468,13 +1484,28 @@ TEST_F(ValidateImage, SampleImplicitLodBiasMultisampled) {
 %img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
-%res1 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Bias %f32_0_25
+%res1 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Bias|Sample %f32_0_25 %u32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Image Operand Bias requires 'MS' parameter to be 0"));
+}
+
+TEST_F(ValidateImage, SampleImplicitLodBiasMultisampledWithoutSample) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
+%res1 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Bias %f32_0_25
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Operand Sample is required for operation on "
+                        "multi-sampled image"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodGradDxWrongType) {
@@ -1544,13 +1575,28 @@ TEST_F(ValidateImage, SampleExplicitLodGradMultisampled) {
 %img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
-%res1 = OpImageSampleExplicitLod %f32vec4 %simg %f32vec4_0000 Grad %f32vec3_000 %f32vec3_000
+%res1 = OpImageSampleExplicitLod %f32vec4 %simg %f32vec4_0000 Grad|Sample %f32vec3_000 %f32vec3_000 %u32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Image Operand Grad requires 'MS' parameter to be 0"));
+}
+
+TEST_F(ValidateImage, SampleExplicitLodGradMultisampledWithoutSample) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
+%res1 = OpImageSampleExplicitLod %f32vec4 %simg %f32vec4_0000 Grad %f32vec3_000 %f32vec3_000
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Operand Sample is required for operation on "
+                        "multi-sampled image"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodConstOffsetCubeDim) {
@@ -1574,7 +1620,7 @@ TEST_F(ValidateImage, SampleImplicitLodConstOffsetWrongType) {
 %img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
-%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset %f32vec3_000
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset|Sample %f32vec3_000 %u32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -1590,7 +1636,7 @@ TEST_F(ValidateImage, SampleImplicitLodConstOffsetWrongSize) {
 %img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
-%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset %s32vec2_01
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset|Sample %s32vec2_01 %u32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -1606,7 +1652,7 @@ TEST_F(ValidateImage, SampleImplicitLodConstOffsetNotConst) {
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
 %offset = OpSNegate %s32vec3 %s32vec3_012
-%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset %offset
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset|Sample %offset %u32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -1636,7 +1682,7 @@ TEST_F(ValidateImage, SampleImplicitLodOffsetWrongType) {
 %img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
-%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Offset %f32vec3_000
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Offset|Sample %f32vec3_000 %u32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -1651,7 +1697,7 @@ TEST_F(ValidateImage, SampleImplicitLodOffsetWrongSize) {
 %img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
-%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Offset %s32vec2_01
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Offset|Sample %s32vec2_01 %u32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -1667,7 +1713,7 @@ TEST_F(ValidateImage, SampleImplicitLodMoreThanOneOffset) {
 %img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
-%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset|Offset %s32vec3_012 %s32vec3_012
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset|Offset|Sample %s32vec3_012 %s32vec3_012 %u32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -1711,14 +1757,30 @@ TEST_F(ValidateImage, SampleImplicitLodMinLodMultisampled) {
 %img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
+%res1 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 MinLod|Sample %f32_0_25 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Operand Sample can only be used with "
+                        "OpImageFetch, OpImageRead, OpImageWrite, "
+                        "OpImageSparseFetch and OpImageSparseRead"));
+}
+
+TEST_F(ValidateImage, SampleImplicitLodMinLodMultisampledWithoutSample) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_3d_0111 %uniform_image_f32_3d_0111
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_3d_0111 %img %sampler
 %res1 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 MinLod %f32_0_25
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Image Operand MinLod requires 'MS' parameter to be 0"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Operand Sample is required for operation on "
+                        "multi-sampled image"));
 }
 
 TEST_F(ValidateImage, SampleProjExplicitLodSuccess2D) {
@@ -2472,6 +2534,23 @@ OpExtension "SPV_KHR_vulkan_memory_model"
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
+TEST_F(ValidateImage, FetchMultisampledSuccess) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0011 %uniform_image_f32_2d_0011
+%res1 = OpImageFetch %f32vec4 %img %u32vec2_01 Sample %u32_1
+%res2 = OpImageFetch %f32vec4 %img %u32vec2_01 Sample|NonPrivateTexelKHR %u32_1
+)";
+
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+)";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment", "",
+                                         SPV_ENV_UNIVERSAL_1_3, "VulkanKHR")
+                          .c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
 TEST_F(ValidateImage, FetchWrongResultType) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_rect_0001 %uniform_image_f32_rect_0001
@@ -2609,6 +2688,21 @@ TEST_F(ValidateImage, FetchLodNotInt) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image Operand Lod to be int scalar when used "
                         "with OpImageFetch"));
+}
+
+TEST_F(ValidateImage, FetchMultisampledMissingSample) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0011 %uniform_image_f32_2d_0011
+%res1 = OpImageFetch %f32vec4 %img %u32vec2_01
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions())
+      << GenerateShaderCode(body);
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Operand Sample is required for operation on "
+                        "multi-sampled image"))
+      << getDiagnosticString();
 }
 
 TEST_F(ValidateImage, GatherSuccess) {
@@ -3360,7 +3454,7 @@ OpImageWrite %img %u32vec2_01 %f32vec4_0000 Sample %f32_1
               HasSubstr("Expected Image Operand Sample to be int scalar"));
 }
 
-TEST_F(ValidateImage, SampleNotMultisampled) {
+TEST_F(ValidateImage, WriteSampleNotMultisampled) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_2d_0002 %uniform_image_f32_2d_0002
 OpImageWrite %img %u32vec2_01 %f32vec4_0000 Sample %u32_1

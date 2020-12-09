@@ -16,8 +16,6 @@
 
 // Validates correctness of image instructions.
 
-#include "source/val/validate.h"
-
 #include <string>
 
 #include "source/diagnostic.h"
@@ -25,6 +23,7 @@
 #include "source/spirv_target_env.h"
 #include "source/util/bitutils.h"
 #include "source/val/instruction.h"
+#include "source/val/validate.h"
 #include "source/val/validate_scopes.h"
 #include "source/val/validation_state.h"
 
@@ -234,9 +233,10 @@ uint32_t GetMinCoordSize(SpvOp opcode, const ImageTypeInfo& info) {
 }
 
 // Checks ImageOperand bitfield and respective operands.
+// word_index is the index of the first word after the image-operand mask word.
 spv_result_t ValidateImageOperands(ValidationState_t& _,
                                    const Instruction* inst,
-                                   const ImageTypeInfo& info, uint32_t mask,
+                                   const ImageTypeInfo& info,
                                    uint32_t word_index) {
   static const bool kAllImageOperandsHandled = CheckAllImageOperandsHandled();
   (void)kAllImageOperandsHandled;
@@ -244,23 +244,42 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
   const SpvOp opcode = inst->opcode();
   const size_t num_words = inst->words().size();
 
-  // NonPrivate, Volatile, SignExtend, ZeroExtend take no operand words.
-  const uint32_t mask_bits_having_operands =
-      mask & ~uint32_t(SpvImageOperandsNonPrivateTexelKHRMask |
-                       SpvImageOperandsVolatileTexelKHRMask |
-                       SpvImageOperandsSignExtendMask |
-                       SpvImageOperandsZeroExtendMask);
-  size_t expected_num_image_operand_words =
-      spvtools::utils::CountSetBits(mask_bits_having_operands);
-  if (mask & SpvImageOperandsGradMask) {
-    // Grad uses two words.
-    ++expected_num_image_operand_words;
-  }
+  const bool have_explicit_mask = (word_index - 1 < num_words);
+  const uint32_t mask = have_explicit_mask ? inst->word(word_index - 1) : 0u;
 
-  if (expected_num_image_operand_words != num_words - word_index) {
+  if (have_explicit_mask) {
+    // NonPrivate, Volatile, SignExtend, ZeroExtend take no operand words.
+    const uint32_t mask_bits_having_operands =
+        mask & ~uint32_t(SpvImageOperandsNonPrivateTexelKHRMask |
+                         SpvImageOperandsVolatileTexelKHRMask |
+                         SpvImageOperandsSignExtendMask |
+                         SpvImageOperandsZeroExtendMask);
+    size_t expected_num_image_operand_words =
+        spvtools::utils::CountSetBits(mask_bits_having_operands);
+    if (mask & SpvImageOperandsGradMask) {
+      // Grad uses two words.
+      ++expected_num_image_operand_words;
+    }
+
+    if (expected_num_image_operand_words != num_words - word_index) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Number of image operand ids doesn't correspond to the bit "
+                "mask";
+    }
+  } else if (num_words != word_index - 1) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Number of image operand ids doesn't correspond to the bit mask";
   }
+
+  if (info.multisampled & (0 == (mask & SpvImageOperandsSampleMask))) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Image Operand Sample is required for operation on "
+              "multi-sampled image";
+  }
+
+  // After this point, only set bits in the image operands mask can cause
+  // the module to be invalid.
+  if (mask == 0) return SPV_SUCCESS;
 
   if (spvtools::utils::CountSetBits(
           mask & (SpvImageOperandsOffsetMask | SpvImageOperandsConstOffsetMask |
@@ -1156,16 +1175,11 @@ spv_result_t ValidateImageLod(ValidationState_t& _, const Instruction* inst) {
            << " components, but given only " << actual_coord_size;
   }
 
-  if (inst->words().size() <= 5) {
-    assert(IsImplicitLod(opcode));
-    return SPV_SUCCESS;
-  }
+  const uint32_t mask = inst->words().size() <= 5 ? 0 : inst->word(5);
 
-  const uint32_t mask = inst->word(5);
-
-  if (spvIsOpenCLEnv(_.context()->target_env)) {
-    if (opcode == SpvOpImageSampleExplicitLod) {
-      if (mask & SpvImageOperandsConstOffsetMask) {
+  if (mask & SpvImageOperandsConstOffsetMask) {
+    if (spvIsOpenCLEnv(_.context()->target_env)) {
+      if (opcode == SpvOpImageSampleExplicitLod) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "ConstOffset image operand not allowed "
                << "in the OpenCL environment.";
@@ -1174,7 +1188,7 @@ spv_result_t ValidateImageLod(ValidationState_t& _, const Instruction* inst) {
   }
 
   if (spv_result_t result =
-          ValidateImageOperands(_, inst, info, mask, /* word_index = */ 6))
+          ValidateImageOperands(_, inst, info, /* word_index = */ 6))
     return result;
 
   return SPV_SUCCESS;
@@ -1235,14 +1249,8 @@ spv_result_t ValidateImageDrefLod(ValidationState_t& _,
            << "Expected Dref to be of 32-bit float type";
   }
 
-  if (inst->words().size() <= 6) {
-    assert(IsImplicitLod(opcode));
-    return SPV_SUCCESS;
-  }
-
-  const uint32_t mask = inst->word(6);
   if (spv_result_t result =
-          ValidateImageOperands(_, inst, info, mask, /* word_index = */ 7))
+          ValidateImageOperands(_, inst, info, /* word_index = */ 7))
     return result;
 
   return SPV_SUCCESS;
@@ -1313,11 +1321,8 @@ spv_result_t ValidateImageFetch(ValidationState_t& _, const Instruction* inst) {
            << " components, but given only " << actual_coord_size;
   }
 
-  if (inst->words().size() <= 5) return SPV_SUCCESS;
-
-  const uint32_t mask = inst->word(5);
   if (spv_result_t result =
-          ValidateImageOperands(_, inst, info, mask, /* word_index = */ 6))
+          ValidateImageOperands(_, inst, info, /* word_index = */ 6))
     return result;
 
   return SPV_SUCCESS;
@@ -1403,11 +1408,8 @@ spv_result_t ValidateImageGather(ValidationState_t& _,
     }
   }
 
-  if (inst->words().size() <= 6) return SPV_SUCCESS;
-
-  const uint32_t mask = inst->word(6);
   if (spv_result_t result =
-          ValidateImageOperands(_, inst, info, mask, /* word_index = */ 7))
+          ValidateImageOperands(_, inst, info, /* word_index = */ 7))
     return result;
 
   return SPV_SUCCESS;
@@ -1496,12 +1498,10 @@ spv_result_t ValidateImageRead(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  if (inst->words().size() <= 5) return SPV_SUCCESS;
+  const uint32_t mask = inst->words().size() <= 5 ? 0 : inst->word(5);
 
-  const uint32_t mask = inst->word(5);
-
-  if (spvIsOpenCLEnv(_.context()->target_env)) {
-    if (mask & SpvImageOperandsConstOffsetMask) {
+  if (mask & SpvImageOperandsConstOffsetMask) {
+    if (spvIsOpenCLEnv(_.context()->target_env)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "ConstOffset image operand not allowed "
              << "in the OpenCL environment.";
@@ -1509,7 +1509,7 @@ spv_result_t ValidateImageRead(ValidationState_t& _, const Instruction* inst) {
   }
 
   if (spv_result_t result =
-          ValidateImageOperands(_, inst, info, mask, /* word_index = */ 6))
+          ValidateImageOperands(_, inst, info, /* word_index = */ 6))
     return result;
 
   return SPV_SUCCESS;
@@ -1585,9 +1585,7 @@ spv_result_t ValidateImageWrite(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  if (inst->words().size() <= 4) {
-    return SPV_SUCCESS;
-  } else {
+  if (inst->words().size() > 4) {
     if (spvIsOpenCLEnv(_.context()->target_env)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Optional Image Operands are not allowed in the OpenCL "
@@ -1595,9 +1593,8 @@ spv_result_t ValidateImageWrite(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  const uint32_t mask = inst->word(4);
   if (spv_result_t result =
-          ValidateImageOperands(_, inst, info, mask, /* word_index = */ 5))
+          ValidateImageOperands(_, inst, info, /* word_index = */ 5))
     return result;
 
   return SPV_SUCCESS;
