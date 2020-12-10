@@ -91,7 +91,7 @@ TEST_F(ValidateOpenCL, NonZeroMSImageBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_OPENCL_1_2));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("MS must be 0 in the OpenCL environement."
+      HasSubstr("MS must be 0 in the OpenCL environment."
                 "\n  %2 = OpTypeImage %void 2D 0 0 1 0 Unknown ReadOnly\n"));
 }
 
