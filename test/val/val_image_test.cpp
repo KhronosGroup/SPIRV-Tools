@@ -584,6 +584,43 @@ TEST_F(ValidateImage, TypeImageWrongFormatForSubpassData) {
               HasSubstr("Dim SubpassData requires format Unknown"));
 }
 
+TEST_F(ValidateImage, TypeImageMultisampleStorageImage_MissingCapability) {
+  const std::string code = GetShaderHeader("", false) +
+                           R"(
+%img_type = OpTypeImage %f32 2D 0 0 1 2 Rgba32f
+)";
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions()) << code;
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Capability StorageImageMultisample is required when "
+                        "using multisampled storage image"));
+}
+
+TEST_F(ValidateImage, TypeImageMultisampleStorageImage_UsesCapability) {
+  const std::string code =
+      GetShaderHeader("OpCapability StorageImageMultisample\n", false) +
+      R"(
+%img_type = OpTypeImage %f32 2D 0 0 1 2 Rgba32f
+)";
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << code;
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateImage, TypeImageMultisampleSubpassData_OK) {
+  const std::string code =
+      GetShaderHeader("OpCapability InputAttachment\n", false) +
+      R"(
+%img_type = OpTypeImage %f32 SubpassData 0 0 1 2 Unknown
+)";
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << code;
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
 TEST_F(ValidateImage, TypeSampledImageNotImage) {
   const std::string code = GetShaderHeader("", false) + R"(
 %simg_type = OpTypeSampledImage %f32
