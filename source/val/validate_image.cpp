@@ -829,6 +829,14 @@ spv_result_t ValidateTypeImage(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  if (info.multisampled && (info.sampled == 2)) {
+    if (!_.HasCapability(SpvCapabilityStorageImageMultisample)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Capability StorageImageMultisample is required when using "
+                "multisampled storage image";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
