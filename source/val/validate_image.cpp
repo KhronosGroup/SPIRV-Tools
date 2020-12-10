@@ -829,7 +829,8 @@ spv_result_t ValidateTypeImage(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  if (info.multisampled && (info.sampled == 2)) {
+  if (info.multisampled && (info.sampled == 2) &&
+      (info.dim != SpvDimSubpassData)) {
     if (!_.HasCapability(SpvCapabilityStorageImageMultisample)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Capability StorageImageMultisample is required when using "
