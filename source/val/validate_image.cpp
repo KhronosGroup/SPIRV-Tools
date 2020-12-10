@@ -315,10 +315,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
                 "or Cube";
     }
 
-    if (info.multisampled != 0) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Image Operand Bias requires 'MS' parameter to be 0";
-    }
+    // Multisampled is already checked.
   }
 
   if (mask & SpvImageOperandsLodMask) {
@@ -357,10 +354,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
                 "or Cube";
     }
 
-    if (info.multisampled != 0) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Image Operand Lod requires 'MS' parameter to be 0";
-    }
+    // Multisampled is already checked.
   }
 
   if (mask & SpvImageOperandsGradMask) {
@@ -393,10 +387,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << " components, but given " << dy_size;
     }
 
-    if (info.multisampled != 0) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Image Operand Grad requires 'MS' parameter to be 0";
-    }
+    // Multisampled is already checked.
   }
 
   if (mask & SpvImageOperandsConstOffsetMask) {
@@ -632,12 +623,12 @@ spv_result_t ValidateImageCommon(ValidationState_t& _, const Instruction* inst,
 
     if (info.multisampled != 0) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Image Image 'MS' parameter to be 0";
+             << "Expected Image 'MS' parameter to be 0";
     }
 
     if (info.arrayed != 0) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Image Image 'arrayed' parameter to be 0";
+             << "Expected Image 'arrayed' parameter to be 0";
     }
   }
 
@@ -1141,6 +1132,14 @@ spv_result_t ValidateImageLod(ValidationState_t& _, const Instruction* inst) {
 
   if (spv_result_t result = ValidateImageCommon(_, inst, info)) return result;
 
+  if (info.multisampled) {
+    // When using image operands, the Sample image operand is required if and
+    // only if the image is multisampled (MS=1). The Sample image operand is
+    // only allowed for fetch, read, and write.
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Sampling operation is invalid for multisample image";
+  }
+
   if (_.GetIdOpcode(info.sampled_type) != SpvOpTypeVoid) {
     const uint32_t texel_component_type =
         _.GetComponentType(actual_result_type);
@@ -1222,6 +1221,14 @@ spv_result_t ValidateImageDrefLod(ValidationState_t& _,
   }
 
   if (spv_result_t result = ValidateImageCommon(_, inst, info)) return result;
+
+  if (info.multisampled) {
+    // When using image operands, the Sample image operand is required if and
+    // only if the image is multisampled (MS=1). The Sample image operand is
+    // only allowed for fetch, read, and write.
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Dref sampling operation is invalid for multisample image";
+  }
 
   if (actual_result_type != info.sampled_type) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -1358,6 +1365,14 @@ spv_result_t ValidateImageGather(ValidationState_t& _,
   if (!GetImageTypeInfo(_, image_type, &info)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Corrupt image type definition";
+  }
+
+  if (info.multisampled) {
+    // When using image operands, the Sample image operand is required if and
+    // only if the image is multisampled (MS=1). The Sample image operand is
+    // only allowed for fetch, read, and write.
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Gather operation is invalid for multisample image";
   }
 
   if (opcode == SpvOpImageDrefGather || opcode == SpvOpImageSparseDrefGather ||
