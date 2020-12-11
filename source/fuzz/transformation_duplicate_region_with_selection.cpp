@@ -240,9 +240,9 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
       // If the instruction is available at the end of the region then we would
       // like to be able to add an OpPhi instruction at the merge point of the
       // duplicated region to capture the values computed by both duplicates of
-      // the instruction, so that this is available to after the region.  We do
-      // this not just for instructions that are already used after the region,
-      // but for all instructions so that the phi is available to future
+      // the instruction, so that this is also available after the region.  We
+      // do this not just for instructions that are already used after the
+      // region, but for all instructions so that the phi is available to future
       // transformations.
       if (AvailableAfterRegion(instr, exit_block, ir_context)) {
         if (!ValidOpPhiArgument(instr, ir_context)) {
@@ -250,10 +250,10 @@ bool TransformationDuplicateRegionWithSelection::IsApplicable(
           // blocker if there are uses of the instruction after the region.
           // Otherwise we can simply avoid generating an OpPhi for this
           // instruction and its duplicate.
-          if (!ir_context->get_def_use_mgr()->WhileEachUse(
+          if (!ir_context->get_def_use_mgr()->WhileEachUser(
                   &instr,
-                  [ir_context, &region_set](opt::Instruction* use_instr,
-                                            uint32_t) -> bool {
+                  [ir_context,
+                   &region_set](opt::Instruction* use_instr) -> bool {
                     opt::BasicBlock* use_block =
                         ir_context->get_instr_block(use_instr);
                     return use_block == nullptr ||
