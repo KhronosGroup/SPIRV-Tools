@@ -463,6 +463,13 @@ std::string GetWebGPUShaderHeader() {
   %func = OpTypeFunction %void
   %f32 = OpTypeFloat 32
   %u32 = OpTypeInt 32 0
+  %f32vec2 = OpTypeVector %f32 2
+  %f32vec3 = OpTypeVector %f32 3
+  %f32vec4 = OpTypeVector %f32 4
+  %u32vec2 = OpTypeVector %u32 2
+  %u32vec3 = OpTypeVector %u32 3
+  %u32vec4 = OpTypeVector %u32 4
+  %u32vec2null = OpConstantNull %u32vec2
   )";
 }
 
@@ -3131,16 +3138,61 @@ TEST_F(ValidateImage, DISABLED_ReadWrongResultType) {
               HasSubstr("Expected Result Type to be int or float vector type"));
 }
 
-// TODO(atgoo@github.com) Disabled until the spec is clarified.
-TEST_F(ValidateImage, DISABLED_ReadWrongNumComponentsResultType) {
+TEST_F(ValidateImage, ReadScalarResultType_Universal) {
   const std::string body = R"(
 %img = OpLoad %type_image_u32_2d_0002 %uniform_image_u32_2d_0002
-%res1 = OpImageRead %f32vec3 %img %u32vec2_01
+%res1 = OpImageRead %u32 %img %u32vec2_01
 )";
 
   const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_0));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateImage, ReadUnusualNumComponentsResultType_Universal) {
+  const std::string body = R"(
+%img = OpLoad %type_image_u32_2d_0002 %uniform_image_u32_2d_0002
+%res1 = OpImageRead %u32vec3 %img %u32vec2_01
+)";
+
+  const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_0));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateImage, ReadWrongNumComponentsResultType_Vulkan) {
+  const std::string body = R"(
+%img = OpLoad %type_image_u32_2d_0002 %uniform_image_u32_2d_0002
+%res1 = OpImageRead %u32vec3 %img %u32vec2_01
+)";
+
+  const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
+  CompileSuccessfully(
+      GenerateShaderCode(body, extra, "Fragment", "", SPV_ENV_VULKAN_1_0)
+          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to have 4 components"));
+}
+
+TEST_F(ValidateImage, ReadWrongNumComponentsResultType_WebGPU) {
+  const std::string code = GetWebGPUShaderHeader() + R"(
+%img_type = OpTypeImage %f32 2D 0 0 0 2 Unknown
+%ptr_type = OpTypePointer UniformConstant %img_type
+%var = OpVariable %ptr_type UniformConstant
+%main = OpFunction %void None %func
+%entry = OpLabel
+%img = OpLoad %img_type %var
+%res1 = OpImageRead %u32vec3 %img %u32vec2null
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0))
+      << getDiagnosticString();
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type to have 4 components"));
 }
