@@ -1444,14 +1444,16 @@ spv_result_t ValidateImageRead(ValidationState_t& _, const Instruction* inst) {
            << " to be int or float scalar or vector type";
   }
 
-#if 0
-  // TODO(atgoo@github.com) Disabled until the spec is clarified.
-  if (_.GetDimension(actual_result_type) != 4) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected " << GetActualResultTypeStr(opcode)
-           << " to have 4 components";
-  }
-#endif
+  const auto target_env = _.context()->target_env;
+  // Vulkan and WebGPU require the result to be a 4-element int or float
+  // vector.
+  if (spvIsVulkanEnv(target_env) || spvIsWebGPUEnv(target_env)) {
+    if (_.GetDimension(actual_result_type) != 4) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Expected " << GetActualResultTypeStr(opcode)
+             << " to have 4 components";
+    }
+  }  // Check OpenCL below, after we get the image info.
 
   const uint32_t image_type = _.GetOperandTypeId(inst, 2);
   if (_.GetIdOpcode(image_type) != SpvOpTypeImage) {
@@ -1463,6 +1465,29 @@ spv_result_t ValidateImageRead(ValidationState_t& _, const Instruction* inst) {
   if (!GetImageTypeInfo(_, image_type, &info)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Corrupt image type definition";
+  }
+
+  if (spvIsOpenCLEnv(target_env)) {
+    // In OpenCL, a read from a depth image returns a scalar float. In other
+    // cases, the result is always a 4-element vector.
+    // https://www.khronos.org/registry/OpenCL/specs/3.0-unified/html/OpenCL_Env.html#_data_format_for_reading_and_writing_images
+    // https://www.khronos.org/registry/OpenCL/specs/3.0-unified/html/OpenCL_C.html#image-read-and-write-functions
+    // The builtins for reading depth images are:
+    //   float read_imagef(aQual image2d_depth_t image, int2 coord)
+    //   float read_imagef(aQual image2d_array_depth_t image, int4 coord)
+    if (info.depth) {
+      if (!_.IsFloatScalarType(actual_result_type)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Expected " << GetActualResultTypeStr(opcode)
+               << " from a depth image read to result in a scalar float value";
+      }
+    } else {
+      if (_.GetDimension(actual_result_type) != 4) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Expected " << GetActualResultTypeStr(opcode)
+               << " to have 4 components";
+      }
+    }
   }
 
   if (info.dim == SpvDimSubpassData) {
