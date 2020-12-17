@@ -54,8 +54,9 @@ using ::testing::Values;
 using ::testing::ValuesIn;
 
 using ValidateBuiltIns = spvtest::ValidateBase<bool>;
-using ValidateVulkanSubgroupBuiltIns = spvtest::ValidateBase<
-    std::tuple<const char*, const char*, const char*, const char*, TestResult>>;
+using ValidateVulkanSubgroupBuiltIns =
+    spvtest::ValidateBase<std::tuple<const char*, const char*, const char*,
+                                     const char*, const char*, TestResult>>;
 using ValidateVulkanCombineBuiltInExecutionModelDataTypeResult =
     spvtest::ValidateBase<std::tuple<const char*, const char*, const char*,
                                      const char*, const char*, TestResult>>;
@@ -4082,7 +4083,8 @@ TEST_P(ValidateVulkanSubgroupBuiltIns, InMain) {
   const char* const execution_model = std::get<1>(GetParam());
   const char* const storage_class = std::get<2>(GetParam());
   const char* const data_type = std::get<3>(GetParam());
-  const TestResult& test_result = std::get<4>(GetParam());
+  const char* const vuid = std::get<4>(GetParam());
+  const TestResult& test_result = std::get<5>(GetParam());
 
   CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
   generator.capabilities_ += R"(
@@ -4142,6 +4144,9 @@ OpCapability GroupNonUniformBallot
   if (test_result.error_str2) {
     EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str2));
   }
+  if (vuid) {
+    EXPECT_THAT(getDiagnosticString(), AnyVUID(vuid));
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -4149,6 +4154,11 @@ INSTANTIATE_TEST_SUITE_P(
     Combine(Values("SubgroupEqMask", "SubgroupGeMask", "SubgroupGtMask",
                    "SubgroupLeMask", "SubgroupLtMask"),
             Values("GLCompute"), Values("Input"), Values("%u32vec3"),
+            Values("VUID-SubgroupEqMask-SubgroupEqMask-04371 "
+                   "VUID-SubgroupGeMask-SubgroupGeMask-04373 "
+                   "VUID-SubgroupGtMask-SubgroupGtMask-04375 "
+                   "VUID-SubgroupLeMask-SubgroupLeMask-04377 "
+                   "VUID-SubgroupLtMask-SubgroupLtMask-04379"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit int vector"))));
 
@@ -4157,6 +4167,11 @@ INSTANTIATE_TEST_SUITE_P(
     Combine(Values("SubgroupEqMask", "SubgroupGeMask", "SubgroupGtMask",
                    "SubgroupLeMask", "SubgroupLtMask"),
             Values("GLCompute"), Values("Input"), Values("%f32vec4"),
+            Values("VUID-SubgroupEqMask-SubgroupEqMask-04371 "
+                   "VUID-SubgroupGeMask-SubgroupGeMask-04373 "
+                   "VUID-SubgroupGtMask-SubgroupGtMask-04375 "
+                   "VUID-SubgroupLeMask-SubgroupLeMask-04377 "
+                   "VUID-SubgroupLtMask-SubgroupLtMask-04379"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit int vector"))));
 
@@ -4166,6 +4181,11 @@ INSTANTIATE_TEST_SUITE_P(
                    "SubgroupLeMask", "SubgroupLtMask"),
             Values("GLCompute"), Values("Output", "Workgroup", "Private"),
             Values("%u32vec4"),
+            Values("VUID-SubgroupEqMask-SubgroupEqMask-04370 "
+                   "VUID-SubgroupGeMask-SubgroupGeMask-04372 "
+                   "VUID-SubgroupGtMask-SubgroupGtMask-04374 "
+                   "VUID-SubgroupLeMask-SubgroupLeMask-04376  "
+                   "VUID-SubgroupLtMask-SubgroupLtMask-04378"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class"))));
@@ -4175,7 +4195,7 @@ INSTANTIATE_TEST_SUITE_P(SubgroupMaskOk, ValidateVulkanSubgroupBuiltIns,
                                         "SubgroupGtMask", "SubgroupLeMask",
                                         "SubgroupLtMask"),
                                  Values("GLCompute"), Values("Input"),
-                                 Values("%u32vec4"),
+                                 Values("%u32vec4"), Values(nullptr),
                                  Values(TestResult(SPV_SUCCESS, ""))));
 
 TEST_F(ValidateBuiltIns, SubgroupMaskMemberDecorate) {
@@ -4208,6 +4228,8 @@ INSTANTIATE_TEST_SUITE_P(
     SubgroupInvocationIdAndSizeNotU32, ValidateVulkanSubgroupBuiltIns,
     Combine(Values("SubgroupLocalInvocationId", "SubgroupSize"),
             Values("GLCompute"), Values("Input"), Values("%f32"),
+            Values("VUID-SubgroupLocalInvocationId-SubgroupLocalInvocationId-"
+                   "04381 VUID-SubgroupSize-SubgroupSize-04383"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int"))));
 
@@ -4216,6 +4238,8 @@ INSTANTIATE_TEST_SUITE_P(
     Combine(Values("SubgroupLocalInvocationId", "SubgroupSize"),
             Values("GLCompute"), Values("Output", "Workgroup", "Private"),
             Values("%u32"),
+            Values("VUID-SubgroupLocalInvocationId-SubgroupLocalInvocationId-"
+                   "04380 VUID-SubgroupSize-SubgroupSize-04382"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class"))));
@@ -4224,7 +4248,7 @@ INSTANTIATE_TEST_SUITE_P(
     SubgroupInvocationIdAndSizeOk, ValidateVulkanSubgroupBuiltIns,
     Combine(Values("SubgroupLocalInvocationId", "SubgroupSize"),
             Values("GLCompute"), Values("Input"), Values("%u32"),
-            Values(TestResult(SPV_SUCCESS, ""))));
+            Values(nullptr), Values(TestResult(SPV_SUCCESS, ""))));
 
 TEST_F(ValidateBuiltIns, SubgroupSizeMemberDecorate) {
   const std::string text = R"(
@@ -4252,9 +4276,21 @@ OpFunctionEnd
 }
 
 INSTANTIATE_TEST_SUITE_P(
+    SubgroupNumAndIdNotCompute, ValidateVulkanSubgroupBuiltIns,
+    Combine(
+        Values("SubgroupId", "NumSubgroups"), Values("Vertex"), Values("Input"),
+        Values("%u32"),
+        Values("VUID-SubgroupId-SubgroupId-04367 "
+               "VUID-NumSubgroups-NumSubgroups-04293"),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "to be used only with GLCompute execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
     SubgroupNumAndIdNotU32, ValidateVulkanSubgroupBuiltIns,
     Combine(Values("SubgroupId", "NumSubgroups"), Values("GLCompute"),
             Values("Input"), Values("%f32"),
+            Values("VUID-SubgroupId-SubgroupId-04369 "
+                   "VUID-NumSubgroups-NumSubgroups-04295"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int"))));
 
@@ -4262,6 +4298,8 @@ INSTANTIATE_TEST_SUITE_P(
     SubgroupNumAndIdNotInput, ValidateVulkanSubgroupBuiltIns,
     Combine(Values("SubgroupId", "NumSubgroups"), Values("GLCompute"),
             Values("Output", "Workgroup", "Private"), Values("%u32"),
+            Values("VUID-SubgroupId-SubgroupId-04368 "
+                   "VUID-NumSubgroups-NumSubgroups-04294"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class"))));
@@ -4269,7 +4307,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(SubgroupNumAndIdOk, ValidateVulkanSubgroupBuiltIns,
                          Combine(Values("SubgroupId", "NumSubgroups"),
                                  Values("GLCompute"), Values("Input"),
-                                 Values("%u32"),
+                                 Values("%u32"), Values(nullptr),
                                  Values(TestResult(SPV_SUCCESS, ""))));
 
 TEST_F(ValidateBuiltIns, SubgroupIdMemberDecorate) {
