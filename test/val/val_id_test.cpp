@@ -411,10 +411,10 @@ TEST_F(ValidateIdWithMessage, OpEntryPointFunctionBad) {
 }
 TEST_F(ValidateIdWithMessage, OpEntryPointParameterCountBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
-     OpEntryPoint GLCompute %3 ""
-%1 = OpTypeVoid
-%2 = OpTypeFunction %1 %1
-%3 = OpFunction %1 None %2
+     OpEntryPoint GLCompute %1 ""
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2 %2
+%1 = OpFunction %2 None %3
 %4 = OpLabel
      OpReturn
      OpFunctionEnd)";
@@ -426,16 +426,55 @@ TEST_F(ValidateIdWithMessage, OpEntryPointParameterCountBad) {
 }
 TEST_F(ValidateIdWithMessage, OpEntryPointReturnTypeBad) {
   std::string spirv = kGLSL450MemoryModel + R"(
-     OpEntryPoint GLCompute %3 ""
-%1 = OpTypeInt 32 0
-%ret = OpConstant %1 0
-%2 = OpTypeFunction %1
-%3 = OpFunction %1 None %2
+     OpEntryPoint GLCompute %1 ""
+%2 = OpTypeInt 32 0
+%ret = OpConstant %2 0
+%3 = OpTypeFunction %2
+%1 = OpFunction %2 None %3
 %4 = OpLabel
      OpReturnValue %ret
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpEntryPoint Entry Point <id> '1[%1]'s function "
+                        "return type is not void."));
+}
+TEST_F(ValidateIdWithMessage, OpEntryPointParameterCountBadInVulkan) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint GLCompute %1 ""
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2 %2
+%1 = OpFunction %2 None %3
+%4 = OpLabel
+     OpReturn
+     OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-04633"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpEntryPoint Entry Point <id> '1[%1]'s function "
+                        "parameter count is not zero"));
+}
+TEST_F(ValidateIdWithMessage, OpEntryPointReturnTypeBadInVulkan) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint GLCompute %1 ""
+%2 = OpTypeInt 32 0
+%ret = OpConstant %2 0
+%3 = OpTypeFunction %2
+%1 = OpFunction %2 None %3
+%4 = OpLabel
+     OpReturnValue %ret
+     OpFunctionEnd)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-04633"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpEntryPoint Entry Point <id> '1[%1]'s function "
                         "return type is not void."));

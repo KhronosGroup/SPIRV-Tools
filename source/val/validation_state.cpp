@@ -1665,6 +1665,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-ShadingRateKHR-ShadingRateKHR-04491);
     case 4492:
       return VUID_WRAP(VUID-ShadingRateKHR-ShadingRateKHR-04492);
+    case 4633:
+      return VUID_WRAP(VUID-StandaloneSpirv-None-04633);
     default:
       return "";  // unknown id
   };

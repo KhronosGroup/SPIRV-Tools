@@ -42,7 +42,8 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
     const auto entry_point_type = _.FindDef(entry_point_type_id);
     if (!entry_point_type || 3 != entry_point_type->words().size()) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "OpEntryPoint Entry Point <id> '" << _.getIdName(entry_point_id)
+             << _.VkErrorID(4633) << "OpEntryPoint Entry Point <id> '"
+             << _.getIdName(entry_point_id)
              << "'s function parameter count is not zero.";
     }
   }
@@ -50,7 +51,8 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
   auto return_type = _.FindDef(entry_point->type_id());
   if (!return_type || SpvOpTypeVoid != return_type->opcode()) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpEntryPoint Entry Point <id> '" << _.getIdName(entry_point_id)
+           << _.VkErrorID(4633) << "OpEntryPoint Entry Point <id> '"
+           << _.getIdName(entry_point_id)
            << "'s function return type is not void.";
   }
 
