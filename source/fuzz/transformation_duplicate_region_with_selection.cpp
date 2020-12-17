@@ -492,10 +492,6 @@ void TransformationDuplicateRegionWithSelection::Apply(
       if (instr.result_id() == 0) {
         continue;
       }
-      if (ir_context->get_def_use_mgr()->GetDef(instr.type_id())->opcode() ==
-          SpvOpTypeVoid) {
-        continue;
-      }
       if (AvailableAfterRegion(instr, exit_block, ir_context) &&
           ValidOpPhiArgument(instr, ir_context)) {
         // Add an OpPhi instruction for every result id that is available at
