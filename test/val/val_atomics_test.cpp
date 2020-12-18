@@ -422,8 +422,11 @@ OpAtomicStore %f32_var_function %device %relaxed %f32_1
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicStore: Function storage class forbidden when "
-                        "the Shader capability is declared."));
+              AnyVUID("VUID-StandaloneSpirv-None-04686"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("AtomicStore: Vulkan spec only allows storage classes for "
+                "atomic to be: Uniform, Workgroup, Image, StorageBuffer."));
 }
 
 // TODO(atgoo@github.com): the corresponding check fails Vulkan CTS,
