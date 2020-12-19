@@ -96,6 +96,14 @@ class SetSpecConstantDefaultValuePass : public Pass {
   static std::unique_ptr<SpecIdToValueStrMap> ParseDefaultValuesString(
       const char* str);
 
+  // Given a decoration group defining instruction that is decorated with SpecId
+  // decoration, finds the spec constant defining instruction which is the real
+  // target of the SpecId decoration. Returns the spec constant defining
+  // instruction if such an instruction is found, otherwise returns a nullptr.
+  static Instruction* GetSpecIdTargetFromDecorationGroup(
+      const Instruction& decoration_group_defining_inst,
+      analysis::DefUseManager* def_use_mgr);
+
  private:
   // The mappings from spec ids to default values. Two maps are defined here,
   // each to be used for one specific form of the default values. Only one of

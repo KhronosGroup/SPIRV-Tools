@@ -230,9 +230,12 @@ Options (in lexicographical order):)",
                OpSpecConstantComposite instructions to front-end constants
                when possible.)");
   printf(R"(
-  --freeze-spec-const
+  --freeze-spec-const[="<spec id> ..."]
                Freeze the values of specialization constants to their default
-               values.)");
+               values. An optional double-quoted, space-separated list of
+               <spec id> values may be provided to freeze only a subet of all
+               specialization constants.
+               e.g.: --freeze-spec-const="1 2 3")");
   printf(R"(
   --graphics-robust-access
                Clamp indices used to access buffers and internal composite

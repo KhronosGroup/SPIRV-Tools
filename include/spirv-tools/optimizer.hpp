@@ -19,6 +19,7 @@
 #include <ostream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "libspirv.hpp"
@@ -304,6 +305,19 @@ Optimizer::PassToken CreateFlattenDecorationPass();
 // other spec constants defined by OpSpecConstantComposite or
 // OpSpecConstantOp.
 Optimizer::PassToken CreateFreezeSpecConstantValuePass();
+
+// Creates a freeze-spec-constant-value pass.
+// A freeze-spec-constant pass specializes the value of spec constants to
+// their default values. This pass only processes the spec constants that have
+// SpecId decorations with ids matching the spec-ids in id_set (defined by
+// OpSpecConstant, OpSpecConstantTrue, or OpSpecConstantFalse instructions)
+// and replaces them with their normal counterparts (OpConstant,
+// OpConstantTrue, or OpConstantFalse). The corresponding SpecId annotation
+// instructions will also be removed. This pass does not fold the newly added
+// normal constants and does not process other spec constants defined by
+// OpSpecConstantComposite or OpSpecConstantOp.
+Optimizer::PassToken CreateFreezeSpecConstantValuePass(
+    const std::unordered_set<uint32_t>& id_set);
 
 // Creates a fold-spec-constant-op-and-composite pass.
 // A fold-spec-constant-op-and-composite pass folds spec constants defined by

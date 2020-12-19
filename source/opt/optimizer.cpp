@@ -327,7 +327,19 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
   } else if (pass_name == "if-conversion") {
     RegisterPass(CreateIfConversionPass());
   } else if (pass_name == "freeze-spec-const") {
-    RegisterPass(CreateFreezeSpecConstantValuePass());
+    if (pass_args.size() > 0) {
+      auto spec_ids = opt::FreezeSpecConstantValuePass::ParseSpecIdsString(
+          pass_args.c_str());
+      if (!spec_ids) {
+        Errorf(consumer(), nullptr, {},
+               "Invalid argument for --freeze-spec-const: %s",
+               pass_args.c_str());
+        return false;
+      }
+      RegisterPass(CreateFreezeSpecConstantValuePass(std::move(*spec_ids)));
+    } else {
+      RegisterPass(CreateFreezeSpecConstantValuePass());
+    }
   } else if (pass_name == "inline-entry-points-exhaustive") {
     RegisterPass(CreateInlineExhaustivePass());
   } else if (pass_name == "inline-entry-points-opaque") {
@@ -672,6 +684,12 @@ Optimizer::PassToken CreateFlattenDecorationPass() {
 Optimizer::PassToken CreateFreezeSpecConstantValuePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::FreezeSpecConstantValuePass>());
+}
+
+Optimizer::PassToken CreateFreezeSpecConstantValuePass(
+    const std::unordered_set<uint32_t>& id_set) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::FreezeSpecConstantValuePass>(id_set));
 }
 
 Optimizer::PassToken CreateFoldSpecConstantOpAndCompositePass() {
