@@ -824,7 +824,7 @@ spv_result_t ValidateTypeImage(ValidationState_t& _, const Instruction* inst) {
   if (spvIsVulkanEnv(target_env) || spvIsWebGPUEnv(target_env)) {
     if (info.sampled == 0) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Sampled must be 1 or 2 in the "
+             << _.VkErrorID(4657) << "Sampled must be 1 or 2 in the "
              << (spvIsVulkanEnv(target_env) ? "Vulkan" : "WebGPU")
              << " environment.";
     }

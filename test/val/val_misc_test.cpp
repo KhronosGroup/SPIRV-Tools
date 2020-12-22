@@ -227,6 +227,30 @@ OpFunctionEnd)";
               HasSubstr("Scope must be Subgroup or Device"));
 }
 
+TEST_F(ValidateMisc, VulkanShaderClockWorkgroupScope) {
+  const std::string spirv = ShaderClockSpriv + R"(
+%3 = OpTypeFunction %void
+%ulong = OpTypeInt 64 0
+%uint = OpTypeInt 32 0
+%_ptr_Function_ulong = OpTypePointer Function %ulong
+%workgroup = OpConstant %uint 2
+%uint_1 = OpConstant %uint 1
+%main = OpFunction %void None %3
+%5 = OpLabel
+%time1 = OpVariable %_ptr_Function_ulong Function
+%11 = OpReadClockKHR %ulong %workgroup
+OpStore %time1 %11
+OpReturn
+OpFunctionEnd)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpReadClockKHR-04652"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Scope must be Subgroup or Device"));
+}
+
 TEST_F(ValidateMisc, UndefVoid) {
   const std::string spirv = R"(
                OpCapability Shader

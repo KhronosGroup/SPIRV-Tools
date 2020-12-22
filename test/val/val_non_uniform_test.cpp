@@ -141,6 +141,8 @@ TEST_P(GroupNonUniform, Vulkan1p1) {
       EXPECT_EQ(SPV_SUCCESS, result);
     } else {
       EXPECT_EQ(SPV_ERROR_INVALID_DATA, result);
+      EXPECT_THAT(getDiagnosticString(),
+                  AnyVUID("VUID-StandaloneSpirv-None-04642"));
       EXPECT_THAT(
           getDiagnosticString(),
           HasSubstr(

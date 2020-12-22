@@ -828,6 +828,8 @@ TEST_F(ValidateImage, TypeImage_Vulkan_Sampled0_Invalid) {
   CompileSuccessfully(code.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpTypeImage-04657"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Sampled must be 1 or 2 in the Vulkan environment."));
 }
 
