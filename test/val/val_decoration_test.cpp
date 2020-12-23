@@ -44,6 +44,8 @@ struct TestResult {
 using ValidateDecorations = spvtest::ValidateBase<bool>;
 using ValidateWebGPUCombineDecorationResult =
     spvtest::ValidateBase<std::tuple<const char*, TestResult>>;
+using ValidateVulkanCombineDecorationResult =
+    spvtest::ValidateBase<std::tuple<const char*, const char*, TestResult>>;
 
 TEST_F(ValidateDecorations, ValidateOpDecorateRegistration) {
   std::string spirv = R"(
@@ -6448,6 +6450,40 @@ INSTANTIATE_TEST_SUITE_P(
             Values(TestResult(
                 SPV_ERROR_INVALID_ID,
                 "is not valid for the WebGPU execution environment."))));
+
+TEST_P(ValidateVulkanCombineDecorationResult, Decorate) {
+  const char* const decoration = std::get<0>(GetParam());
+  const char* const vuid = std::get<1>(GetParam());
+  const TestResult& test_result = std::get<2>(GetParam());
+
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
+  generator.before_types_ = "OpDecorate %u32 ";
+  generator.before_types_ += decoration;
+  generator.before_types_ += "\n";
+
+  EntryPoint entry_point;
+  entry_point.name = "main";
+  entry_point.execution_model = "Vertex";
+  generator.entry_points_.push_back(std::move(entry_point));
+
+  CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(test_result.validation_result,
+            ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  if (test_result.error_str != "") {
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
+  }
+  if (vuid) {
+    EXPECT_THAT(getDiagnosticString(), AnyVUID(vuid));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    DecorationAllowListFailure, ValidateVulkanCombineDecorationResult,
+    Combine(Values("GLSLShared", "GLSLPacked"),
+            Values("VUID-StandaloneSpirv-GLSLShared-04669"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_ID,
+                "is not valid for the Vulkan execution environment."))));
 
 TEST_F(ValidateDecorations, NonWritableVarFunctionV13Bad) {
   std::string spirv = ShaderWithNonWritableTarget("%var_func");
