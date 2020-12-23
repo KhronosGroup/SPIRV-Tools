@@ -1669,6 +1669,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-None-04633);
     case 4685:
       return VUID_WRAP(VUID-StandaloneSpirv-OpGroupNonUniformBallotBitCount-04685);
+    case 4711:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpTypeForwardPointer-04711);
     default:
       return "";  // unknown id
   };
