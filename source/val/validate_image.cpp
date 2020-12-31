@@ -1095,6 +1095,20 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
                 "the value 0";
     }
   }
+
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if ((info.format != SpvImageFormatR64i) &&
+        (info.format != SpvImageFormatR64ui) &&
+        (info.format != SpvImageFormatR32f) &&
+        (info.format != SpvImageFormatR32i) &&
+        (info.format != SpvImageFormatR32ui)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << _.VkErrorID(4658)
+             << "Expected the Image Format in Image to be R64i, R64ui, R32f, "
+                "R32i, or R32ui for Vulkan environment";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
