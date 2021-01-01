@@ -22,28 +22,38 @@
 #include "spirv-tools/linker.hpp"
 #include "tools/io.h"
 
-void print_usage(char* argv0) {
-  std::string target_env_list = spvTargetEnvList(27, 95);
+void print_usage(const char* program) {
+  std::string target_env_list = spvTargetEnvList(16, 80);
+  // NOTE: Please maintain flags in lexicographical order.
   printf(
       R"(%s - Link SPIR-V binary files together.
 
-USAGE: %s [options] <filename> [<filename> ...]
+USAGE: %s [options] [-o <output>] <input>...
 
-The SPIR-V binaries are read from the different <filename>.
+The SPIR-V binaries are read from the different <input>(s).
+The SPIR-V resulting linked binary module is written to the standard output
+unless the -o option is used.
 
 NOTE: The linker is a work in progress.
 
-Options:
-  -h, --help              Print this help.
-  -o                      Name of the resulting linked SPIR-V binary.
-  --create-library        Link the binaries into a library, keeping all exported symbols.
-  --allow-partial-linkage Allow partial linkage by accepting imported symbols to be unresolved.
-  --verify-ids            Verify that IDs in the resulting modules are truly unique.
-  --version               Display linker version information
-  --target-env            {%s}
-                          Use validation rules from the specified environment.
+Options (in lexicographical order):
+  --allow-partial-linkage
+               Allow partial linkage by accepting imported symbols to be
+               unresolved.
+  --create-library
+               Link the binaries into a library, keeping all exported symbols.
+  -h, --help
+                  Print this help.
+  --target-env <env>
+               Set the target environment. Without this flag the target
+               environment defaults to spv1.5. <env> must be one of
+               {%s}
+  --verify-ids
+               Verify that IDs in the resulting modules are truly unique.
+  --version
+               Display linker version information
 )",
-      argv0, argv0, target_env_list.c_str());
+      program, program, target_env_list.c_str());
 }
 
 int main(int argc, char** argv) {
@@ -67,20 +77,10 @@ int main(int argc, char** argv) {
           fprintf(stderr, "error: Missing argument to %s\n", cur_arg);
           return 1;
         }
-      } else if (0 == strcmp(cur_arg, "--create-library")) {
-        options.SetCreateLibrary(true);
-      } else if (0 == strcmp(cur_arg, "--verify-ids")) {
-        options.SetVerifyIds(true);
       } else if (0 == strcmp(cur_arg, "--allow-partial-linkage")) {
         options.SetAllowPartialLinkage(true);
-      } else if (0 == strcmp(cur_arg, "--version")) {
-        printf("%s\n", spvSoftwareVersionDetailsString());
-        // TODO(dneto): Add OpenCL 2.2 at least.
-        printf("Targets:\n  %s\n  %s\n  %s\n",
-               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1),
-               spvTargetEnvDescription(SPV_ENV_VULKAN_1_0),
-               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_2));
-        return 0;
+      } else if (0 == strcmp(cur_arg, "--create-library")) {
+        options.SetCreateLibrary(true);
       } else if (0 == strcmp(cur_arg, "--help") || 0 == strcmp(cur_arg, "-h")) {
         print_usage(argv[0]);
         return 0;
@@ -95,6 +95,16 @@ int main(int argc, char** argv) {
           fprintf(stderr, "error: Missing argument to --target-env\n");
           return 1;
         }
+      } else if (0 == strcmp(cur_arg, "--verify-ids")) {
+        options.SetVerifyIds(true);
+      } else if (0 == strcmp(cur_arg, "--version")) {
+        printf("%s\n", spvSoftwareVersionDetailsString());
+        // TODO(dneto): Add OpenCL 2.2 at least.
+        printf("Targets:\n  %s\n  %s\n  %s\n",
+               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1),
+               spvTargetEnvDescription(SPV_ENV_VULKAN_1_0),
+               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_2));
+        return 0;
       } else {
         fprintf(stderr, "error: Unrecognized option: %s\n\n", argv[argi]);
         print_usage(argv[0]);
