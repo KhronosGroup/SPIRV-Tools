@@ -106,11 +106,7 @@ int main(int argc, char** argv) {
         options.SetVerifyIds(true);
       } else if (0 == strcmp(cur_arg, "--version")) {
         printf("%s\n", spvSoftwareVersionDetailsString());
-        // TODO(dneto): Add OpenCL 2.2 at least.
-        printf("Targets:\n  %s\n  %s\n  %s\n",
-               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1),
-               spvTargetEnvDescription(SPV_ENV_VULKAN_1_0),
-               spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_2));
+        printf("Target: %s\n", spvTargetEnvDescription(target_env));
         return 0;
       } else {
         fprintf(stderr, "error: Unrecognized option: %s\n\n", argv[argi]);
