@@ -103,6 +103,10 @@ int main(int argc, char** argv) {
           continue_processing = false;
           return_code = 1;
         }
+      } else {
+        fprintf(stderr, "error: Unrecognized option: %s\n\n", argv[argi]);
+        print_usage(argv[0]);
+        return 1;
       }
     } else {
       inFiles.push_back(cur_arg);
