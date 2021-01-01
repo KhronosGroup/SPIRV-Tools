@@ -35,8 +35,9 @@ void print_usage(const char* program) {
 USAGE: %s [options] [-o <output>] <input>...
 
 The SPIR-V binaries are read from the different <input>(s).
-The SPIR-V resulting linked binary module is written to the standard output
-unless the -o option is used.
+The SPIR-V resulting linked binary module is written to the file "out.spv"
+unless the -o option is used; if <output> is "-", it is written to the standard
+output.
 
 NOTE: The linker is a work in progress.
 
@@ -119,6 +120,10 @@ int main(int argc, char** argv) {
     } else {
       inFiles.push_back(cur_arg);
     }
+  }
+
+  if (!outFile) {
+    outFile = "out.spv";
   }
 
   if (inFiles.empty()) {
