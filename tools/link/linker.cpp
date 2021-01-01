@@ -22,6 +22,10 @@
 #include "spirv-tools/linker.hpp"
 #include "tools/io.h"
 
+namespace {
+
+const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_5;
+
 void print_usage(const char* program) {
   std::string target_env_list = spvTargetEnvList(16, 80);
   // NOTE: Please maintain flags in lexicographical order.
@@ -56,10 +60,12 @@ Options (in lexicographical order):
       program, program, target_env_list.c_str());
 }
 
+}  // namespace
+
 int main(int argc, char** argv) {
   std::vector<const char*> inFiles;
   const char* outFile = nullptr;
-  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_0;
+  spv_target_env target_env = kDefaultEnvironment;
   spvtools::LinkerOptions options;
 
   for (int argi = 1; argi < argc; ++argi) {
