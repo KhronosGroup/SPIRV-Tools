@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "spirv-tools/linker.hpp"
+
 #include <cstring>
 #include <iostream>
 #include <vector>
@@ -19,7 +21,6 @@
 #include "source/spirv_target_env.h"
 #include "source/table.h"
 #include "spirv-tools/libspirv.hpp"
-#include "spirv-tools/linker.hpp"
 #include "tools/io.h"
 
 namespace {
