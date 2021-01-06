@@ -480,6 +480,7 @@ std::string GetShaderHeader(const std::string& capabilities_and_extensions = "",
   ss << R"(
 OpCapability Shader
 OpCapability Int64
+OpCapability Float64
 )";
 
   ss << capabilities_and_extensions;
@@ -500,9 +501,11 @@ OpMemoryModel Logical GLSL450
 %func = OpTypeFunction %void
 %bool = OpTypeBool
 %f32 = OpTypeFloat 32
+%f64 = OpTypeFloat 64
 %u32 = OpTypeInt 32 0
 %u64 = OpTypeInt 64 0
 %s32 = OpTypeInt 32 1
+%s64 = OpTypeInt 64 1
 )";
 
   return ss.str();
@@ -524,8 +527,7 @@ TEST_F(ValidateImage, TypeImageWrongSampledType) {
 TEST_F(ValidateImage, TypeImageVoidSampledTypeVulkan) {
   const std::string code = GetShaderHeader() + R"(
 %img_type = OpTypeImage %void 2D 0 0 0 1 Unknown
-%void_func = OpTypeFunction %void
-%main = OpFunction %void None %void_func
+%main = OpFunction %void None %func
 %main_lab = OpLabel
 OpReturn
 OpFunctionEnd
@@ -535,15 +537,131 @@ OpFunctionEnd
   CompileSuccessfully(code, env);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Sampled Type to be a 32-bit int "
-                        "or float scalar type for Vulkan environment"));
+              AnyVUID("VUID-StandaloneSpirv-OpTypeImage-04656"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Sampled Type to be a 32-bit int, 64-bit int "
+                        "or 32-bit float scalar type for Vulkan environment"));
+}
+
+TEST_F(ValidateImage, TypeImageU32SampledTypeVulkan) {
+  const std::string code = GetShaderHeader() + R"(
+%img_type = OpTypeImage %u32 2D 0 0 0 1 Unknown
+%main = OpFunction %void None %func
+%main_lab = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateImage, TypeImageI32SampledTypeVulkan) {
+  const std::string code = GetShaderHeader() + R"(
+%img_type = OpTypeImage %s32 2D 0 0 0 1 Unknown
+%main = OpFunction %void None %func
+%main_lab = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateImage, TypeImageI64SampledTypeNoCapabilityVulkan) {
+  const std::string code = GetShaderHeader() + R"(
+%img_type = OpTypeImage %s64 2D 0 0 0 1 Unknown
+%main = OpFunction %void None %func
+%main_lab = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Capability Int64ImageEXT is required when using "
+                        "Sampled Type of 64-bit int"));
+}
+
+TEST_F(ValidateImage, TypeImageI64SampledTypeVulkan) {
+  const std::string code = GetShaderHeader(
+                               "OpCapability Int64ImageEXT\nOpExtension "
+                               "\"SPV_EXT_shader_image_int64\"\n") +
+                           R"(
+%img_type = OpTypeImage %s64 2D 0 0 0 1 Unknown
+%main = OpFunction %void None %func
+%main_lab = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateImage, TypeImageU64SampledTypeNoCapabilityVulkan) {
+  const std::string code = GetShaderHeader() + R"(
+%img_type = OpTypeImage %u64 2D 0 0 0 1 Unknown
+%main = OpFunction %void None %func
+%main_lab = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Capability Int64ImageEXT is required when using "
+                        "Sampled Type of 64-bit int"));
 }
 
 TEST_F(ValidateImage, TypeImageU64SampledTypeVulkan) {
-  const std::string code = GetShaderHeader() + R"(
+  const std::string code = GetShaderHeader(
+                               "OpCapability Int64ImageEXT\nOpExtension "
+                               "\"SPV_EXT_shader_image_int64\"\n") +
+                           R"(
 %img_type = OpTypeImage %u64 2D 0 0 0 1 Unknown
-%void_func = OpTypeFunction %void
-%main = OpFunction %void None %void_func
+%main = OpFunction %void None %func
+%main_lab = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateImage, TypeImageF32SampledTypeVulkan) {
+  const std::string code = GetShaderHeader() + R"(
+%img_type = OpTypeImage %f32 2D 0 0 0 1 Unknown
+%main = OpFunction %void None %func
+%main_lab = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateImage, TypeImageF64SampledTypeVulkan) {
+  const std::string code = GetShaderHeader() + R"(
+%img_type = OpTypeImage %f64 2D 0 0 0 1 Unknown
+%main = OpFunction %void None %func
 %main_lab = OpLabel
 OpReturn
 OpFunctionEnd
@@ -553,8 +671,32 @@ OpFunctionEnd
   CompileSuccessfully(code, env);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Sampled Type to be a 32-bit int "
-                        "or float scalar type for Vulkan environment"));
+              AnyVUID("VUID-StandaloneSpirv-OpTypeImage-04656"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Sampled Type to be a 32-bit int, 64-bit int "
+                        "or 32-bit float scalar type for Vulkan environment"));
+}
+
+TEST_F(ValidateImage, TypeImageF64SampledTypeWithInt64Vulkan) {
+  const std::string code = GetShaderHeader(
+                               "OpCapability Int64ImageEXT\nOpExtension "
+                               "\"SPV_EXT_shader_image_int64\"\n") +
+                           R"(
+%img_type = OpTypeImage %f64 2D 0 0 0 1 Unknown
+%main = OpFunction %void None %func
+%main_lab = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpTypeImage-04656"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Sampled Type to be a 32-bit int, 64-bit int "
+                        "or 32-bit float scalar type for Vulkan environment"));
 }
 
 TEST_F(ValidateImage, TypeImageWrongDepth) {

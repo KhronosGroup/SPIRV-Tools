@@ -746,16 +746,26 @@ spv_result_t ValidateTypeImage(ValidationState_t& _, const Instruction* inst) {
            << "Corrupt image type definition";
   }
 
+  if (_.IsIntScalarType(info.sampled_type) &&
+      (64 == _.GetBitWidth(info.sampled_type)) &&
+      !_.HasCapability(SpvCapabilityInt64ImageEXT)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Capability Int64ImageEXT is required when using Sampled Type of "
+              "64-bit int";
+  }
+
   const auto target_env = _.context()->target_env;
   if (spvIsVulkanEnv(target_env)) {
     if ((!_.IsFloatScalarType(info.sampled_type) &&
          !_.IsIntScalarType(info.sampled_type)) ||
-        (32 != _.GetBitWidth(info.sampled_type) &&
-         (64 != _.GetBitWidth(info.sampled_type) ||
-          !_.HasCapability(SpvCapabilityInt64ImageEXT)))) {
+        ((32 != _.GetBitWidth(info.sampled_type)) &&
+         (64 != _.GetBitWidth(info.sampled_type))) ||
+        ((64 == _.GetBitWidth(info.sampled_type)) &&
+         _.IsFloatScalarType(info.sampled_type))) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Expected Sampled Type to be a 32-bit int or float "
-                "scalar type for Vulkan environment";
+             << _.VkErrorID(4656)
+             << "Expected Sampled Type to be a 32-bit int, 64-bit int or "
+                "32-bit float scalar type for Vulkan environment";
     }
   } else if (spvIsOpenCLEnv(target_env)) {
     if (!_.IsVoidType(info.sampled_type)) {
