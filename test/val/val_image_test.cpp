@@ -133,6 +133,7 @@ OpDecorate %uniform_sampler Binding 0
 %u32 = OpTypeInt 32 0
 %s32 = OpTypeInt 32 1
 %u64 = OpTypeInt 64 0
+%s64 = OpTypeInt 64 1
 %s32vec2 = OpTypeVector %s32 2
 %u32vec2 = OpTypeVector %u32 2
 %f32vec2 = OpTypeVector %f32 2
@@ -928,7 +929,7 @@ TEST_F(ValidateImage, ImageTexelPointerImageNotResultTypePointer) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 141[%141] cannot be a "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 142[%142] cannot be a "
                                                "type"));
 }
 
@@ -5434,6 +5435,12 @@ static const std::string declarations_image64 = R"(
 %ptr_image_u64_buffer_0002_r64ui = OpTypePointer Private %type_image_u64_buffer_0002_r64ui
 %private_image_u64_buffer_0002_r64ui = OpVariable %ptr_image_u64_buffer_0002_r64ui Private
 )";
+static const std::string declarations_image64i = R"(
+%type_image_s64_buffer_0002_r64i = OpTypeImage %s64 Buffer 0 0 0 2 R64i
+%ptr_Image_s64 = OpTypePointer Image %s64
+%ptr_image_s64_buffer_0002_r64i = OpTypePointer Private %type_image_s64_buffer_0002_r64i
+%private_image_s64_buffer_0002_r64i = OpVariable %ptr_image_s64_buffer_0002_r64i Private
+)";
 
 TEST_F(ValidateImage, Image64MissingCapability) {
   CompileSuccessfully(GenerateShaderCode("", "", "Fragment", "",
@@ -5517,6 +5524,134 @@ TEST_F(ValidateImage, ImageTexelPointer64SampleNotZeroForImageWithMSZero) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Sample for Image with MS 0 to be a valid "
                         "<id> for the value 0"));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerR32uiSuccessVulkan) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_u32 %private_image_u32_buffer_0002_r32ui %u32_0 %u32_0
+)";
+
+  spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(GenerateShaderCode(body, "", "Fragment", "", env).c_str(),
+                      env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerR32iSuccessVulkan) {
+  const std::string& declarations = R"(
+%type_image_s32_buffer_0002_r32i = OpTypeImage %s32 Buffer 0 0 0 2 R32i
+%ptr_Image_s32 = OpTypePointer Image %s32
+%ptr_image_s32_buffer_0002_r32i = OpTypePointer Private %type_image_s32_buffer_0002_r32i
+%private_image_s32_buffer_0002_r32i = OpVariable %ptr_image_s32_buffer_0002_r32i Private
+)";
+
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_s32 %private_image_s32_buffer_0002_r32i %u32_0 %u32_0
+)";
+
+  spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(
+      GenerateShaderCode(body, "", "Fragment", "", env, "GLSL450", declarations)
+          .c_str(),
+      env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerR64uiSuccessVulkan) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_u64 %private_image_u64_buffer_0002_r64ui %u32_0 %u32_0
+)";
+
+  spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities_and_extensions_image64, "Fragment",
+                         "", env, "GLSL450", declarations_image64)
+          .c_str(),
+      env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerR64iSuccessVulkan) {
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_s64 %private_image_s64_buffer_0002_r64i %u32_0 %u32_0
+)";
+
+  spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities_and_extensions_image64, "Fragment",
+                         "", env, "GLSL450", declarations_image64i)
+          .c_str(),
+      env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerR32fSuccessVulkan) {
+  const std::string& declarations = R"(
+%type_image_f32_buffer_0002_r32f = OpTypeImage %f32 Buffer 0 0 0 2 R32f
+%ptr_image_f32_buffer_0002_r32f = OpTypePointer Private %type_image_f32_buffer_0002_r32f
+%private_image_f32_buffer_0002_r32f = OpVariable %ptr_image_f32_buffer_0002_r32f Private
+)";
+
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_f32 %private_image_f32_buffer_0002_r32f %u32_0 %u32_0
+)";
+
+  spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(
+      GenerateShaderCode(body, "", "Fragment", "", env, "GLSL450", declarations)
+          .c_str(),
+      env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerRgba32iVulkan) {
+  const std::string& declarations = R"(
+%type_image_s32_buffer_0002_rgba32i = OpTypeImage %s32 Buffer 0 0 0 2 Rgba32i
+%ptr_Image_s32 = OpTypePointer Image %s32
+%ptr_image_s32_buffer_0002_rgba32i = OpTypePointer Private %type_image_s32_buffer_0002_rgba32i
+%private_image_s32_buffer_0002_rgba32i = OpVariable %ptr_image_s32_buffer_0002_rgba32i Private
+)";
+
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_s32 %private_image_s32_buffer_0002_rgba32i %u32_0 %u32_0
+)";
+
+  spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(
+      GenerateShaderCode(body, "", "Fragment", "", env, "GLSL450", declarations)
+          .c_str(),
+      env);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpImageTexelPointer-04658"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected the Image Format in Image to be R64i, R64ui, "
+                        "R32f, R32i, or R32ui for Vulkan environment"));
+}
+
+TEST_F(ValidateImage, ImageTexelPointerRgba16fVulkan) {
+  const std::string& declarations = R"(
+%type_image_s32_buffer_0002_rgba16f = OpTypeImage %s32 Buffer 0 0 0 2 Rgba16f
+%ptr_Image_s32 = OpTypePointer Image %s32
+%ptr_image_s32_buffer_0002_rgba16f = OpTypePointer Private %type_image_s32_buffer_0002_rgba16f
+%private_image_s32_buffer_0002_rgba16f = OpVariable %ptr_image_s32_buffer_0002_rgba16f Private
+)";
+
+  const std::string body = R"(
+%texel_ptr = OpImageTexelPointer %ptr_Image_s32 %private_image_s32_buffer_0002_rgba16f %u32_0 %u32_0
+)";
+
+  spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(
+      GenerateShaderCode(body, "", "Fragment", "", env, "GLSL450", declarations)
+          .c_str(),
+      env);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpImageTexelPointer-04658"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected the Image Format in Image to be R64i, R64ui, "
+                        "R32f, R32i, or R32ui for Vulkan environment"));
 }
 
 }  // namespace
