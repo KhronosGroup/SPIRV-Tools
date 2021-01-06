@@ -4679,6 +4679,95 @@ OpFunctionEnd
                         "Object operand of an OpStore."));
 }
 
+TEST_F(ValidateDecorations, VulkanFPRoundingModeGood) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability StorageBuffer16BitAccess
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpMemberDecorate %ssbo 0 Offset 0
+               OpDecorate %ssbo Block
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 0
+               OpDecorate %17 FPRoundingMode RTE
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+    %float_1 = OpConstant %float 1
+       %half = OpTypeFloat 16
+       %ssbo = OpTypeStruct %half
+%_ptr_StorageBuffer_ssbo = OpTypePointer StorageBuffer %ssbo
+          %_ = OpVariable %_ptr_StorageBuffer_ssbo StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_half = OpTypePointer StorageBuffer %half
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %b = OpVariable %_ptr_Function_float Function
+               OpStore %b %float_1
+         %16 = OpLoad %float %b
+         %17 = OpFConvert %half %16
+         %19 = OpAccessChain %_ptr_StorageBuffer_half %_ %int_0
+               OpStore %19 %17
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_2));
+}
+
+TEST_F(ValidateDecorations, VulkanFPRoundingModeBadMode) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability StorageBuffer16BitAccess
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpMemberDecorate %ssbo 0 Offset 0
+               OpDecorate %ssbo Block
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 0
+               OpDecorate %17 FPRoundingMode RTP
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+    %float_1 = OpConstant %float 1
+       %half = OpTypeFloat 16
+       %ssbo = OpTypeStruct %half
+%_ptr_StorageBuffer_ssbo = OpTypePointer StorageBuffer %ssbo
+          %_ = OpVariable %_ptr_StorageBuffer_ssbo StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_half = OpTypePointer StorageBuffer %half
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %b = OpVariable %_ptr_Function_float Function
+               OpStore %b %float_1
+         %16 = OpLoad %float %b
+         %17 = OpFConvert %half %16
+         %19 = OpAccessChain %_ptr_StorageBuffer_half %_ %int_0
+               OpStore %19 %17
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-FPRoundingMode-04675"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("In Vulkan, the FPRoundingMode mode must only by RTE or RTZ."));
+}
+
 TEST_F(ValidateDecorations, GroupDecorateTargetsDecorationGroup) {
   std::string spirv = R"(
 OpCapability Shader
