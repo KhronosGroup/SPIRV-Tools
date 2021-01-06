@@ -960,6 +960,26 @@ OpTypeForwardPointer %1 PhysicalStorageBuffer
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
 }
 
+TEST_F(ValidateData, VulkanTypeForwardStorageClass) {
+  std::string test = R"(
+OpCapability Shader
+OpCapability PhysicalStorageBufferAddresses
+OpMemoryModel Logical GLSL450
+OpTypeForwardPointer %1 Uniform
+%2 = OpTypeStruct
+%3 = OpTypeRuntimeArray %1
+%1 = OpTypePointer Uniform %2
+)";
+
+  CompileSuccessfully(test, SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpTypeForwardPointer-04711"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("In Vulkan, OpTypeForwardPointer must have "
+                        "a storage class of PhysicalStorageBuffer."));
+}
+
 TEST_F(ValidateData, TypeForwardReferenceMustBeForwardPointer) {
   std::string test = R"(
 OpCapability Shader
