@@ -586,10 +586,8 @@ OpFunctionEnd
   CompileSuccessfully(code, env);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-OpTypeImage-04656"));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Sampled Type to be a 32-bit int, 64-bit int "
-                        "or 32-bit float scalar type for Vulkan environment"));
+              HasSubstr("Capability Int64ImageEXT is required when using "
+                        "Sampled Type of 64-bit int"));
 }
 
 TEST_F(ValidateImage, TypeImageI64SampledTypeVulkan) {
@@ -623,10 +621,8 @@ OpFunctionEnd
   CompileSuccessfully(code, env);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-OpTypeImage-04656"));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Sampled Type to be a 32-bit int, 64-bit int "
-                        "or 32-bit float scalar type for Vulkan environment"));
+              HasSubstr("Capability Int64ImageEXT is required when using "
+                        "Sampled Type of 64-bit int"));
 }
 
 TEST_F(ValidateImage, TypeImageU64SampledTypeVulkan) {
@@ -664,6 +660,28 @@ OpFunctionEnd
 
 TEST_F(ValidateImage, TypeImageF64SampledTypeVulkan) {
   const std::string code = GetShaderHeader() + R"(
+%img_type = OpTypeImage %f64 2D 0 0 0 1 Unknown
+%main = OpFunction %void None %func
+%main_lab = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpTypeImage-04656"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Sampled Type to be a 32-bit int, 64-bit int "
+                        "or 32-bit float scalar type for Vulkan environment"));
+}
+
+TEST_F(ValidateImage, TypeImageF64SampledTypeWithInt64Vulkan) {
+  const std::string code = GetShaderHeader(
+                               "OpCapability Int64ImageEXT\nOpExtension "
+                               "\"SPV_EXT_shader_image_int64\"\n") +
+                           R"(
 %img_type = OpTypeImage %f64 2D 0 0 0 1 Unknown
 %main = OpFunction %void None %func
 %main_lab = OpLabel
