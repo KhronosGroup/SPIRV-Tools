@@ -630,6 +630,8 @@ OpFunctionEnd
 )";
   CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpVariable-04651"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("OpVariable, <id> '5[%5]', has a disallowed initializer & "
