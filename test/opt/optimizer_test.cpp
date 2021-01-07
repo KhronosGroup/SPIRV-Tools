@@ -762,7 +762,7 @@ OpFunctionEnd
       << "Was expecting the OpNop to have been removed.";
 }
 
-TEST(Optimizer, AvoidIntegrityCheckWhenTrackingExtraLine) {
+TEST(Optimizer, AvoidIntegrityCheckForExtraLineInfo) {
   // Test that it avoids the integrity check when no optimizations are run and
   // OpLines are propagated.
   const std::string before = R"(OpCapability Shader
