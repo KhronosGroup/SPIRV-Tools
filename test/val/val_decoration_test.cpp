@@ -6469,7 +6469,7 @@ TEST_P(ValidateVulkanCombineDecorationResult, Decorate) {
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(test_result.validation_result,
             ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  if (test_result.error_str != "") {
+  if (!test_result.error_str.empty()) {
     EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
   }
   if (vuid) {
