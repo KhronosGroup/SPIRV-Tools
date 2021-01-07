@@ -459,11 +459,13 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
   if (spvIsVulkanEnv(_.context()->target_env)) {
     if (mode == SpvExecutionModeOriginLowerLeft) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << _.VkErrorID(4653)
              << "In the Vulkan environment, the OriginLowerLeft execution mode "
                 "must not be used.";
     }
     if (mode == SpvExecutionModePixelCenterInteger) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << _.VkErrorID(4654)
              << "In the Vulkan environment, the PixelCenterInteger execution "
                 "mode must not be used.";
     }

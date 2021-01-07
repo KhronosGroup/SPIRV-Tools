@@ -1667,8 +1667,22 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-ShadingRateKHR-ShadingRateKHR-04492);
     case 4633:
       return VUID_WRAP(VUID-StandaloneSpirv-None-04633);
+    case 4642:
+      return VUID_WRAP(VUID-StandaloneSpirv-None-04642);
+    case 4649:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpMemoryBarrier-04649);
+    case 4651:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpVariable-04651);
+    case 4652:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpReadClockKHR-04652);
+    case 4653:
+      return VUID_WRAP(VUID-StandaloneSpirv-OriginLowerLeft-04653);
+    case 4654:
+      return VUID_WRAP(VUID-StandaloneSpirv-PixelCenterInteger-04654);
     case 4656:
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeImage-04656);
+    case 4657:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpTypeImage-04657);
     case 4658:
       return VUID_WRAP(VUID-StandaloneSpirv-OpImageTexelPointer-04658);
     case 4669:

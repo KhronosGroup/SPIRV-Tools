@@ -111,6 +111,8 @@ OpExecutionMode %main OriginLowerLeft
   CompileSuccessfully(spirv, env);
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OriginLowerLeft-04653"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("In the Vulkan environment, the OriginLowerLeft "
                         "execution mode must not be used."));
 }
@@ -127,6 +129,8 @@ OpExecutionMode %main PixelCenterInteger
   spv_target_env env = SPV_ENV_VULKAN_1_0;
   CompileSuccessfully(spirv, env);
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-PixelCenterInteger-04654"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("In the Vulkan environment, the PixelCenterInteger "
                         "execution mode must not be used."));
