@@ -217,11 +217,13 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
           if ((storage_class != SpvStorageClassUniform) &&
               (storage_class != SpvStorageClassStorageBuffer) &&
               (storage_class != SpvStorageClassWorkgroup) &&
-              (storage_class != SpvStorageClassImage)) {
+              (storage_class != SpvStorageClassImage) &&
+              (storage_class != SpvStorageClassPhysicalStorageBuffer)) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << _.VkErrorID(4686) << spvOpcodeString(opcode)
                    << ": Vulkan spec only allows storage classes for atomic to "
-                      "be: Uniform, Workgroup, Image, StorageBuffer.";
+                      "be: Uniform, Workgroup, Image, StorageBuffer, or "
+                      "PhysicalStorageBuffer.";
           }
         } else if (storage_class == SpvStorageClassFunction) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)

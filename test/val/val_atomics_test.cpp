@@ -426,7 +426,8 @@ OpAtomicStore %f32_var_function %device %relaxed %f32_1
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("AtomicStore: Vulkan spec only allows storage classes for "
-                "atomic to be: Uniform, Workgroup, Image, StorageBuffer."));
+                "atomic to be: Uniform, Workgroup, Image, StorageBuffer, or "
+                "PhysicalStorageBuffer."));
 }
 
 // TODO(atgoo@github.com): the corresponding check fails Vulkan CTS,
