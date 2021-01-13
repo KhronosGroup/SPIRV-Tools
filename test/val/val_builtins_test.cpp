@@ -60,12 +60,7 @@ using ValidateVulkanSubgroupBuiltIns =
 using ValidateVulkanCombineBuiltInExecutionModelDataTypeResult =
     spvtest::ValidateBase<std::tuple<const char*, const char*, const char*,
                                      const char*, const char*, TestResult>>;
-using ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult =
-    spvtest::ValidateBase<std::tuple<const char*, const char*, const char*,
-                                     const char*, TestResult>>;
 using ValidateVulkanCombineBuiltInArrayedVariable = spvtest::ValidateBase<
-    std::tuple<const char*, const char*, const char*, const char*, TestResult>>;
-using ValidateWebGPUCombineBuiltInArrayedVariable = spvtest::ValidateBase<
     std::tuple<const char*, const char*, const char*, const char*, TestResult>>;
 using ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult =
     spvtest::ValidateBase<
@@ -77,22 +72,19 @@ using ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResu
                                      const char*, const char*, const char*,
                                      const char*, const char*, TestResult>>;
 
-bool InitializerRequired(spv_target_env env, const char* const storage_class) {
-  return spvIsWebGPUEnv(env) && (strncmp(storage_class, "Output", 6) == 0 ||
-                                 strncmp(storage_class, "Private", 7) == 0 ||
-                                 strncmp(storage_class, "Function", 8) == 0);
+bool InitializerRequired(const char* const storage_class) {
+  return (strncmp(storage_class, "Output", 6) == 0 ||
+          strncmp(storage_class, "Private", 7) == 0 ||
+          strncmp(storage_class, "Function", 8) == 0);
 }
 
-CodeGenerator GetInMainCodeGenerator(spv_target_env env,
-                                     const char* const built_in,
+CodeGenerator GetInMainCodeGenerator(const char* const built_in,
                                      const char* const execution_model,
                                      const char* const storage_class,
                                      const char* const capabilities,
                                      const char* const extensions,
                                      const char* const data_type) {
-  CodeGenerator generator =
-      spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
-                          : CodeGenerator::GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   if (capabilities) {
     generator.capabilities_ += capabilities;
@@ -108,13 +100,13 @@ CodeGenerator GetInMainCodeGenerator(spv_target_env env,
   std::ostringstream after_types;
 
   after_types << "%built_in_type = OpTypeStruct " << data_type << "\n";
-  if (InitializerRequired(env, storage_class)) {
+  if (InitializerRequired(storage_class)) {
     after_types << "%built_in_null = OpConstantNull %built_in_type\n";
   }
   after_types << "%built_in_ptr = OpTypePointer " << storage_class
               << " %built_in_type\n";
   after_types << "%built_in_var = OpVariable %built_in_ptr " << storage_class;
-  if (InitializerRequired(env, storage_class)) {
+  if (InitializerRequired(storage_class)) {
     after_types << " %built_in_null";
   }
   after_types << "\n";
@@ -167,9 +159,8 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, InMain) {
   const char* const vuid = std::get<4>(GetParam());
   const TestResult& test_result = std::get<5>(GetParam());
 
-  CodeGenerator generator =
-      GetInMainCodeGenerator(SPV_ENV_VULKAN_1_0, built_in, execution_model,
-                             storage_class, NULL, NULL, data_type);
+  CodeGenerator generator = GetInMainCodeGenerator(
+      built_in, execution_model, storage_class, NULL, NULL, data_type);
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(test_result.validation_result,
@@ -185,28 +176,6 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, InMain) {
   }
 }
 
-TEST_P(ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult, InMain) {
-  const char* const built_in = std::get<0>(GetParam());
-  const char* const execution_model = std::get<1>(GetParam());
-  const char* const storage_class = std::get<2>(GetParam());
-  const char* const data_type = std::get<3>(GetParam());
-  const TestResult& test_result = std::get<4>(GetParam());
-
-  CodeGenerator generator =
-      GetInMainCodeGenerator(SPV_ENV_WEBGPU_0, built_in, execution_model,
-                             storage_class, NULL, NULL, data_type);
-
-  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(test_result.validation_result,
-            ValidateInstructions(SPV_ENV_WEBGPU_0));
-  if (test_result.error_str) {
-    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
-  }
-  if (test_result.error_str2) {
-    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str2));
-  }
-}
-
 TEST_P(
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     InMain) {
@@ -219,9 +188,9 @@ TEST_P(
   const char* const vuid = std::get<6>(GetParam());
   const TestResult& test_result = std::get<7>(GetParam());
 
-  CodeGenerator generator = GetInMainCodeGenerator(
-      SPV_ENV_VULKAN_1_0, built_in, execution_model, storage_class,
-      capabilities, extensions, data_type);
+  CodeGenerator generator =
+      GetInMainCodeGenerator(built_in, execution_model, storage_class,
+                             capabilities, extensions, data_type);
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(test_result.validation_result,
@@ -251,7 +220,7 @@ TEST_P(
   const TestResult& test_result = std::get<8>(GetParam());
 
   CodeGenerator generator =
-      GetInMainCodeGenerator(env, built_in, execution_model, storage_class,
+      GetInMainCodeGenerator(built_in, execution_model, storage_class,
                              capabilities, extensions, data_type);
 
   CompileSuccessfully(generator.Build(), env);
@@ -267,16 +236,13 @@ TEST_P(
   }
 }
 
-CodeGenerator GetInFunctionCodeGenerator(spv_target_env env,
-                                         const char* const built_in,
+CodeGenerator GetInFunctionCodeGenerator(const char* const built_in,
                                          const char* const execution_model,
                                          const char* const storage_class,
                                          const char* const capabilities,
                                          const char* const extensions,
                                          const char* const data_type) {
-  CodeGenerator generator =
-      spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
-                          : CodeGenerator::GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   if (capabilities) {
     generator.capabilities_ += capabilities;
@@ -291,13 +257,13 @@ CodeGenerator GetInFunctionCodeGenerator(spv_target_env env,
 
   std::ostringstream after_types;
   after_types << "%built_in_type = OpTypeStruct " << data_type << "\n";
-  if (InitializerRequired(env, storage_class)) {
+  if (InitializerRequired(storage_class)) {
     after_types << "%built_in_null = OpConstantNull %built_in_type\n";
   }
   after_types << "%built_in_ptr = OpTypePointer " << storage_class
               << " %built_in_type\n";
   after_types << "%built_in_var = OpVariable %built_in_ptr " << storage_class;
-  if (InitializerRequired(env, storage_class)) {
+  if (InitializerRequired(storage_class)) {
     after_types << " %built_in_null";
   }
   after_types << "\n";
@@ -346,11 +312,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  if (spvIsWebGPUEnv(env)) {
-    generator.after_types_ += function_body;
-  } else {
-    generator.add_at_the_end_ = function_body;
-  }
+  generator.add_at_the_end_ = function_body;
 
   generator.entry_points_.push_back(std::move(entry_point));
 
@@ -365,9 +327,8 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, InFunction) {
   const char* const vuid = std::get<4>(GetParam());
   const TestResult& test_result = std::get<5>(GetParam());
 
-  CodeGenerator generator =
-      GetInFunctionCodeGenerator(SPV_ENV_VULKAN_1_0, built_in, execution_model,
-                                 storage_class, NULL, NULL, data_type);
+  CodeGenerator generator = GetInFunctionCodeGenerator(
+      built_in, execution_model, storage_class, NULL, NULL, data_type);
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(test_result.validation_result,
@@ -380,28 +341,6 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, InFunction) {
   }
   if (vuid) {
     EXPECT_THAT(getDiagnosticString(), AnyVUID(vuid));
-  }
-}
-
-TEST_P(ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult, InFunction) {
-  const char* const built_in = std::get<0>(GetParam());
-  const char* const execution_model = std::get<1>(GetParam());
-  const char* const storage_class = std::get<2>(GetParam());
-  const char* const data_type = std::get<3>(GetParam());
-  const TestResult& test_result = std::get<4>(GetParam());
-
-  CodeGenerator generator =
-      GetInFunctionCodeGenerator(SPV_ENV_WEBGPU_0, built_in, execution_model,
-                                 storage_class, NULL, NULL, data_type);
-
-  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(test_result.validation_result,
-            ValidateInstructions(SPV_ENV_WEBGPU_0));
-  if (test_result.error_str) {
-    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
-  }
-  if (test_result.error_str2) {
-    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str2));
   }
 }
 
@@ -417,9 +356,9 @@ TEST_P(
   const char* const vuid = std::get<6>(GetParam());
   const TestResult& test_result = std::get<7>(GetParam());
 
-  CodeGenerator generator = GetInFunctionCodeGenerator(
-      SPV_ENV_VULKAN_1_0, built_in, execution_model, storage_class,
-      capabilities, extensions, data_type);
+  CodeGenerator generator =
+      GetInFunctionCodeGenerator(built_in, execution_model, storage_class,
+                                 capabilities, extensions, data_type);
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(test_result.validation_result,
@@ -435,16 +374,13 @@ TEST_P(
   }
 }
 
-CodeGenerator GetVariableCodeGenerator(spv_target_env env,
-                                       const char* const built_in,
+CodeGenerator GetVariableCodeGenerator(const char* const built_in,
                                        const char* const execution_model,
                                        const char* const storage_class,
                                        const char* const capabilities,
                                        const char* const extensions,
                                        const char* const data_type) {
-  CodeGenerator generator =
-      spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
-                          : CodeGenerator::GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   if (capabilities) {
     generator.capabilities_ += capabilities;
@@ -458,13 +394,13 @@ CodeGenerator GetVariableCodeGenerator(spv_target_env env,
   generator.before_types_ += "\n";
 
   std::ostringstream after_types;
-  if (InitializerRequired(env, storage_class)) {
+  if (InitializerRequired(storage_class)) {
     after_types << "%built_in_null = OpConstantNull " << data_type << "\n";
   }
   after_types << "%built_in_ptr = OpTypePointer " << storage_class << " "
               << data_type << "\n";
   after_types << "%built_in_var = OpVariable %built_in_ptr " << storage_class;
-  if (InitializerRequired(env, storage_class)) {
+  if (InitializerRequired(storage_class)) {
     after_types << " %built_in_null";
   }
   after_types << "\n";
@@ -516,9 +452,8 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, Variable) {
   const char* const vuid = std::get<4>(GetParam());
   const TestResult& test_result = std::get<5>(GetParam());
 
-  CodeGenerator generator =
-      GetVariableCodeGenerator(SPV_ENV_VULKAN_1_0, built_in, execution_model,
-                               storage_class, NULL, NULL, data_type);
+  CodeGenerator generator = GetVariableCodeGenerator(
+      built_in, execution_model, storage_class, NULL, NULL, data_type);
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(test_result.validation_result,
@@ -534,28 +469,6 @@ TEST_P(ValidateVulkanCombineBuiltInExecutionModelDataTypeResult, Variable) {
   }
 }
 
-TEST_P(ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult, Variable) {
-  const char* const built_in = std::get<0>(GetParam());
-  const char* const execution_model = std::get<1>(GetParam());
-  const char* const storage_class = std::get<2>(GetParam());
-  const char* const data_type = std::get<3>(GetParam());
-  const TestResult& test_result = std::get<4>(GetParam());
-
-  CodeGenerator generator =
-      GetVariableCodeGenerator(SPV_ENV_WEBGPU_0, built_in, execution_model,
-                               storage_class, NULL, NULL, data_type);
-
-  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(test_result.validation_result,
-            ValidateInstructions(SPV_ENV_WEBGPU_0));
-  if (test_result.error_str) {
-    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
-  }
-  if (test_result.error_str2) {
-    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str2));
-  }
-}
-
 TEST_P(
     ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
     Variable) {
@@ -568,9 +481,9 @@ TEST_P(
   const char* const vuid = std::get<6>(GetParam());
   const TestResult& test_result = std::get<7>(GetParam());
 
-  CodeGenerator generator = GetVariableCodeGenerator(
-      SPV_ENV_VULKAN_1_0, built_in, execution_model, storage_class,
-      capabilities, extensions, data_type);
+  CodeGenerator generator =
+      GetVariableCodeGenerator(built_in, execution_model, storage_class,
+                               capabilities, extensions, data_type);
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(test_result.validation_result,
@@ -707,11 +620,6 @@ INSTANTIATE_TEST_SUITE_P(
             Values("%f32vec4"), Values(nullptr), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
-    FragCoordSuccess, ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("FragCoord"), Values("Fragment"), Values("Input"),
-            Values("%f32vec4"), Values(TestResult())));
-
-INSTANTIATE_TEST_SUITE_P(
     FragCoordNotFragment,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -724,27 +632,9 @@ INSTANTIATE_TEST_SUITE_P(
                           "to be used only with Fragment execution model"))));
 
 INSTANTIATE_TEST_SUITE_P(
-    FragCoordNotFragment,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("FragCoord"), Values("Vertex", "GLCompute"), Values("Input"),
-        Values("%f32vec4"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with Fragment execution model"))));
-
-INSTANTIATE_TEST_SUITE_P(
     FragCoordNotInput, ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragCoord"), Values("Fragment"), Values("Output"),
             Values("%f32vec4"), Values("VUID-FragCoord-FragCoord-04211"),
-            Values(TestResult(
-                SPV_ERROR_INVALID_DATA,
-                "to be only used for variables with Input storage class",
-                "uses storage class Output"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    FragCoordNotInput, ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("FragCoord"), Values("Fragment"), Values("Output"),
-            Values("%f32vec4"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class",
@@ -761,28 +651,10 @@ INSTANTIATE_TEST_SUITE_P(
                               "is not a float vector"))));
 
 INSTANTIATE_TEST_SUITE_P(
-    FragCoordNotFloatVector,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("FragCoord"), Values("Fragment"), Values("Input"),
-            Values("%f32arr4", "%u32vec4"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "needs to be a 4-component 32-bit float vector",
-                              "is not a float vector"))));
-
-INSTANTIATE_TEST_SUITE_P(
     FragCoordNotFloatVec4,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragCoord"), Values("Fragment"), Values("Input"),
             Values("%f32vec3"), Values("VUID-FragCoord-FragCoord-04212"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "needs to be a 4-component 32-bit float vector",
-                              "has 3 components"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    FragCoordNotFloatVec4,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("FragCoord"), Values("Fragment"), Values("Input"),
-            Values("%f32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float vector",
                               "has 3 components"))));
@@ -802,11 +674,6 @@ INSTANTIATE_TEST_SUITE_P(
             Values("%f32"), Values(nullptr), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
-    FragDepthSuccess, ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("FragDepth"), Values("Fragment"), Values("Output"),
-            Values("%f32"), Values(TestResult())));
-
-INSTANTIATE_TEST_SUITE_P(
     FragDepthNotFragment,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -815,15 +682,6 @@ INSTANTIATE_TEST_SUITE_P(
                "TessellationEvaluation"),
         Values("Output"), Values("%f32"),
         Values("VUID-FragDepth-FragDepth-04213"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with Fragment execution model"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    FragDepthNotFragment,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("FragDepth"), Values("Vertex", "GLCompute"), Values("Output"),
-        Values("%f32"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
                           "to be used only with Fragment execution model"))));
 
@@ -838,30 +696,11 @@ INSTANTIATE_TEST_SUITE_P(
                 "uses storage class Input"))));
 
 INSTANTIATE_TEST_SUITE_P(
-    FragDepthNotOutput,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("FragDepth"), Values("Fragment"), Values("Input"),
-            Values("%f32"),
-            Values(TestResult(
-                SPV_ERROR_INVALID_DATA,
-                "to be only used for variables with Output storage class",
-                "uses storage class Input"))));
-
-INSTANTIATE_TEST_SUITE_P(
     FragDepthNotFloatScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FragDepth"), Values("Fragment"), Values("Output"),
             Values("%f32vec4", "%u32"),
             Values("VUID-FragDepth-FragDepth-04215"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "needs to be a 32-bit float scalar",
-                              "is not a float scalar"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    FragDepthNotFloatScalar,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("FragDepth"), Values("Fragment"), Values("Output"),
-            Values("%f32vec4", "%u32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float scalar",
                               "is not a float scalar"))));
@@ -882,12 +721,6 @@ INSTANTIATE_TEST_SUITE_P(
             Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
-    FrontFacingSuccess,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("FrontFacing"), Values("Fragment"), Values("Input"),
-            Values("%bool"), Values(TestResult())));
-
-INSTANTIATE_TEST_SUITE_P(
     FrontFacingAndHelperInvocationNotFragment,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(
@@ -901,31 +734,12 @@ INSTANTIATE_TEST_SUITE_P(
                           "to be used only with Fragment execution model"))));
 
 INSTANTIATE_TEST_SUITE_P(
-    FrontFacingNotFragment,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("FrontFacing"), Values("Vertex", "GLCompute"), Values("Input"),
-        Values("%bool"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with Fragment execution model"))));
-
-INSTANTIATE_TEST_SUITE_P(
     FrontFacingAndHelperInvocationNotInput,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("FrontFacing", "HelperInvocation"), Values("Fragment"),
             Values("Output"), Values("%bool"),
             Values("VUID-FrontFacing-FrontFacing-04230 "
                    "VUID-HelperInvocation-HelperInvocation-04240"),
-            Values(TestResult(
-                SPV_ERROR_INVALID_DATA,
-                "to be only used for variables with Input storage class",
-                "uses storage class Output"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    FrontFacingNotInput,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("FrontFacing"), Values("Fragment"), Values("Output"),
-            Values("%bool"),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "to be only used for variables with Input storage class",
@@ -943,28 +757,12 @@ INSTANTIATE_TEST_SUITE_P(
                               "is not a bool scalar"))));
 
 INSTANTIATE_TEST_SUITE_P(
-    FrontFacingNotBool,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("FrontFacing"), Values("Fragment"), Values("Input"),
-            Values("%f32", "%u32"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "needs to be a bool scalar",
-                              "is not a bool scalar"))));
-
-INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3Success,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups",
                    "WorkgroupId"),
             Values("GLCompute"), Values("Input"), Values("%u32vec3"),
             Values(nullptr), Values(TestResult())));
-
-INSTANTIATE_TEST_SUITE_P(
-    ComputeShaderInputInt32Vec3Success,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups"),
-            Values("GLCompute"), Values("Input"), Values("%u32vec3"),
-            Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3NotGLCompute,
@@ -979,15 +777,6 @@ INSTANTIATE_TEST_SUITE_P(
                "VUID-LocalInvocationId-LocalInvocationId-04281 "
                "VUID-NumWorkgroups-NumWorkgroups-04296 "
                "VUID-WorkgroupId-WorkgroupId-04422"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with GLCompute execution model"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    ComputeShaderInputInt32Vec3NotGLCompute,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups"),
-        Values("Vertex", "Fragment"), Values("Input"), Values("%u32vec3"),
         Values(TestResult(SPV_ERROR_INVALID_DATA,
                           "to be used only with GLCompute execution model"))));
 
@@ -1007,16 +796,6 @@ INSTANTIATE_TEST_SUITE_P(
                 "uses storage class Output"))));
 
 INSTANTIATE_TEST_SUITE_P(
-    ComputeShaderInputInt32Vec3NotInput,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups"),
-            Values("GLCompute"), Values("Output"), Values("%u32vec3"),
-            Values(TestResult(
-                SPV_ERROR_INVALID_DATA,
-                "to be only used for variables with Input storage class",
-                "uses storage class Output"))));
-
-INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3NotIntVector,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups",
@@ -1032,16 +811,6 @@ INSTANTIATE_TEST_SUITE_P(
                               "is not an int vector"))));
 
 INSTANTIATE_TEST_SUITE_P(
-    ComputeShaderInputInt32Vec3NotIntVector,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups"),
-            Values("GLCompute"), Values("Input"),
-            Values("%u32arr3", "%f32vec3"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "needs to be a 3-component 32-bit int vector",
-                              "is not an int vector"))));
-
-INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3NotIntVec3,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups",
@@ -1051,15 +820,6 @@ INSTANTIATE_TEST_SUITE_P(
                    "VUID-LocalInvocationId-LocalInvocationId-04283 "
                    "VUID-NumWorkgroups-NumWorkgroups-04298 "
                    "VUID-WorkgroupId-WorkgroupId-04424"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "needs to be a 3-component 32-bit int vector",
-                              "has 4 components"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    ComputeShaderInputInt32Vec3NotIntVec3,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups"),
-            Values("GLCompute"), Values("Input"), Values("%u32vec4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 3-component 32-bit int vector",
                               "has 4 components"))));
@@ -1134,12 +894,6 @@ INSTANTIATE_TEST_SUITE_P(
             Values("%u32"), Values(nullptr), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
-    InstanceIndexSuccess,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("InstanceIndex"), Values("Vertex"), Values("Input"),
-            Values("%u32"), Values(TestResult())));
-
-INSTANTIATE_TEST_SUITE_P(
     InstanceIndexInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("InstanceIndex"),
@@ -1147,14 +901,6 @@ INSTANTIATE_TEST_SUITE_P(
                    "TessellationEvaluation"),
             Values("Input"), Values("%u32"),
             Values("VUID-InstanceIndex-InstanceIndex-04263"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "to be used only with Vertex execution model"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    InstanceIndexInvalidExecutionModel,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("InstanceIndex"), Values("Fragment", "GLCompute"),
-            Values("Input"), Values("%u32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "to be used only with Vertex execution model"))));
 
@@ -1169,30 +915,11 @@ INSTANTIATE_TEST_SUITE_P(
                 "uses storage class Output"))));
 
 INSTANTIATE_TEST_SUITE_P(
-    InstanceIndexNotInput,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("InstanceIndex"), Values("Vertex"), Values("Output"),
-            Values("%u32"),
-            Values(TestResult(
-                SPV_ERROR_INVALID_DATA,
-                "to be only used for variables with Input storage class",
-                "uses storage class Output"))));
-
-INSTANTIATE_TEST_SUITE_P(
     InstanceIndexNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("InstanceIndex"), Values("Vertex"), Values("Input"),
             Values("%f32", "%u32vec3"),
             Values("VUID-InstanceIndex-InstanceIndex-04265"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "needs to be a 32-bit int scalar",
-                              "is not an int scalar"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    InstanceIndexNotIntScalar,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("InstanceIndex"), Values("Vertex"), Values("Input"),
-            Values("%f32", "%u32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
                               "is not an int scalar"))));
@@ -1489,37 +1216,12 @@ INSTANTIATE_TEST_SUITE_P(
             Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
-    PositionOutputSuccess,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("Position"), Values("Vertex"), Values("Output"),
-            Values("%f32vec4"), Values(TestResult())));
-
-INSTANTIATE_TEST_SUITE_P(
-    PositionOutputFailure,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("Position"), Values("Fragment", "GLCompute"),
-            Values("Output"), Values("%f32vec4"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "WebGPU spec allows BuiltIn Position to be used "
-                              "only with the Vertex execution model."))));
-
-INSTANTIATE_TEST_SUITE_P(
     PositionInputSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Position"),
             Values("Geometry", "TessellationControl", "TessellationEvaluation"),
             Values("Input"), Values("%f32vec4"), Values(nullptr),
             Values(TestResult())));
-
-INSTANTIATE_TEST_SUITE_P(
-    PositionInputFailure,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("Position"), Values("Vertex", "Fragment", "GLCompute"),
-        Values("Input"), Values("%f32vec4"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "WebGPU spec allows BuiltIn Position to be only used "
-                          "for variables with Output storage class"))));
 
 INSTANTIATE_TEST_SUITE_P(
     PositionInvalidStorageClass,
@@ -1567,15 +1269,6 @@ INSTANTIATE_TEST_SUITE_P(
                               "is not a float vector"))));
 
 INSTANTIATE_TEST_SUITE_P(
-    PositionNotFloatVector,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("Position"), Values("Vertex"), Values("Output"),
-        Values("%f32arr4", "%u32vec4"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "needs to be a 4-component 32-bit float vector"))));
-
-INSTANTIATE_TEST_SUITE_P(
     PositionNotFloatVec4,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("Position"), Values("Geometry"), Values("Input"),
@@ -1583,15 +1276,6 @@ INSTANTIATE_TEST_SUITE_P(
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float vector",
                               "has 3 components"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    PositionNotFloatVec4,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("Position"), Values("Vertex"), Values("Output"),
-        Values("%f32vec3"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "needs to be a 4-component 32-bit float vector"))));
 
 INSTANTIATE_TEST_SUITE_P(
     PositionNotF32Vec4,
@@ -2068,12 +1752,6 @@ INSTANTIATE_TEST_SUITE_P(
             Values("%u32"), Values(nullptr), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
-    VertexIndexSuccess,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("VertexIndex"), Values("Vertex"), Values("Input"),
-            Values("%u32"), Values(TestResult())));
-
-INSTANTIATE_TEST_SUITE_P(
     VertexIndexInvalidExecutionModel,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("VertexIndex"),
@@ -2081,14 +1759,6 @@ INSTANTIATE_TEST_SUITE_P(
                    "TessellationEvaluation"),
             Values("Input"), Values("%u32"),
             Values("VUID-VertexIndex-VertexIndex-04398"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "to be used only with Vertex execution model"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    VertexIndexInvalidExecutionModel,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("VertexIndex"), Values("Fragment", "GLCompute"),
-            Values("Input"), Values("%u32"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "to be used only with Vertex execution model"))));
 
@@ -2103,30 +1773,11 @@ INSTANTIATE_TEST_SUITE_P(
                           "used for variables with Input storage class"))));
 
 INSTANTIATE_TEST_SUITE_P(
-    VertexIndexNotInput,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("VertexIndex"), Values("Vertex"), Values("Output"),
-        Values("%u32"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "WebGPU spec allows BuiltIn VertexIndex to be only "
-                          "used for variables with Input storage class"))));
-
-INSTANTIATE_TEST_SUITE_P(
     VertexIndexNotIntScalar,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("VertexIndex"), Values("Vertex"), Values("Input"),
             Values("%f32", "%u32vec3"),
             Values("VUID-VertexIndex-VertexIndex-04400"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "needs to be a 32-bit int scalar",
-                              "is not an int scalar"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    VertexIndexNotIntScalar,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("VertexIndex"), Values("Vertex"), Values("Input"),
-            Values("%f32", "%u32vec3"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
                               "is not an int scalar"))));
@@ -2139,50 +1790,6 @@ INSTANTIATE_TEST_SUITE_P(
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit int scalar",
                               "has bit width 64"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    LocalInvocationIndexSuccess,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("LocalInvocationIndex"), Values("GLCompute"),
-            Values("Input"), Values("%u32"), Values(TestResult())));
-
-INSTANTIATE_TEST_SUITE_P(
-    LocalInvocationIndexInvalidExecutionModel,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("LocalInvocationIndex"), Values("Fragment", "Vertex"),
-        Values("Input"), Values("%u32"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with GLCompute execution model"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    LocalInvocationIndexNotInput,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("LocalInvocationIndex"), Values("GLCompute"), Values("Output"),
-        Values("%u32"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "WebGPU spec allows BuiltIn LocalInvocationIndex to "
-                          "be only used for variables with Input storage "
-                          "class"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    LocalInvocationIndexNotIntScalar,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("LocalInvocationIndex"), Values("GLCompute"),
-            Values("Input"), Values("%f32", "%u32vec3"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "needs to be a 32-bit int", "is not an int"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    AllowListRejection,
-    ValidateWebGPUCombineBuiltInExecutionModelDataTypeResult,
-    Combine(Values("PointSize", "ClipDistance", "CullDistance", "VertexId",
-                   "InstanceId", "PointCoord", "SampleMask", "HelperInvocation",
-                   "WorkgroupId"),
-            Values("Vertex"), Values("Input"), Values("%u32"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "WebGPU does not allow BuiltIn"))));
 
 INSTANTIATE_TEST_SUITE_P(
     BaseInstanceOrVertexSuccess,
@@ -2936,14 +2543,11 @@ INSTANTIATE_TEST_SUITE_P(
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 3-component 32-bit int vector"))));
 
-CodeGenerator GetArrayedVariableCodeGenerator(spv_target_env env,
-                                              const char* const built_in,
+CodeGenerator GetArrayedVariableCodeGenerator(const char* const built_in,
                                               const char* const execution_model,
                                               const char* const storage_class,
                                               const char* const data_type) {
-  CodeGenerator generator =
-      spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
-                          : CodeGenerator::GetDefaultShaderCodeGenerator();
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = "OpDecorate %built_in_var BuiltIn ";
   generator.before_types_ += built_in;
@@ -2951,14 +2555,14 @@ CodeGenerator GetArrayedVariableCodeGenerator(spv_target_env env,
 
   std::ostringstream after_types;
   after_types << "%built_in_array = OpTypeArray " << data_type << " %u32_3\n";
-  if (InitializerRequired(env, storage_class)) {
+  if (InitializerRequired(storage_class)) {
     after_types << "%built_in_array_null = OpConstantNull %built_in_array\n";
   }
 
   after_types << "%built_in_ptr = OpTypePointer " << storage_class
               << " %built_in_array\n";
   after_types << "%built_in_var = OpVariable %built_in_ptr " << storage_class;
-  if (InitializerRequired(env, storage_class)) {
+  if (InitializerRequired(storage_class)) {
     after_types << " %built_in_array_null";
   }
   after_types << "\n";
@@ -3007,32 +2611,11 @@ TEST_P(ValidateVulkanCombineBuiltInArrayedVariable, Variable) {
   const TestResult& test_result = std::get<4>(GetParam());
 
   CodeGenerator generator = GetArrayedVariableCodeGenerator(
-      SPV_ENV_VULKAN_1_0, built_in, execution_model, storage_class, data_type);
+      built_in, execution_model, storage_class, data_type);
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(test_result.validation_result,
             ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  if (test_result.error_str) {
-    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
-  }
-  if (test_result.error_str2) {
-    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str2));
-  }
-}
-
-TEST_P(ValidateWebGPUCombineBuiltInArrayedVariable, Variable) {
-  const char* const built_in = std::get<0>(GetParam());
-  const char* const execution_model = std::get<1>(GetParam());
-  const char* const storage_class = std::get<2>(GetParam());
-  const char* const data_type = std::get<3>(GetParam());
-  const TestResult& test_result = std::get<4>(GetParam());
-
-  CodeGenerator generator = GetArrayedVariableCodeGenerator(
-      SPV_ENV_WEBGPU_0, built_in, execution_model, storage_class, data_type);
-
-  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(test_result.validation_result,
-            ValidateInstructions(SPV_ENV_WEBGPU_0));
   if (test_result.error_str) {
     EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
   }
@@ -3080,14 +2663,6 @@ INSTANTIATE_TEST_SUITE_P(
 
 INSTANTIATE_TEST_SUITE_P(
     PositionArrayedF32Vec4Vertex, ValidateVulkanCombineBuiltInArrayedVariable,
-    Combine(Values("Position"), Values("Vertex"), Values("Output"),
-            Values("%f32vec4"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "needs to be a 4-component 32-bit float vector",
-                              "is not a float vector"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    PositionArrayedF32Vec4Vertex, ValidateWebGPUCombineBuiltInArrayedVariable,
     Combine(Values("Position"), Values("Vertex"), Values("Output"),
             Values("%f32vec4"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
@@ -3197,10 +2772,8 @@ INSTANTIATE_TEST_SUITE_P(
                               "needs to be a 32-bit int scalar",
                               "has bit width 64"))));
 
-CodeGenerator GetWorkgroupSizeSuccessGenerator(spv_target_env env) {
-  CodeGenerator generator =
-      env == SPV_ENV_WEBGPU_0 ? CodeGenerator::GetWebGPUShaderCodeGenerator()
-                              : CodeGenerator::GetDefaultShaderCodeGenerator();
+CodeGenerator GetWorkgroupSizeSuccessGenerator() {
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
@@ -3222,22 +2795,13 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 }
 
 TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeSuccess) {
-  CodeGenerator generator =
-      GetWorkgroupSizeSuccessGenerator(SPV_ENV_VULKAN_1_0);
+  CodeGenerator generator = GetWorkgroupSizeSuccessGenerator();
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
-TEST_F(ValidateBuiltIns, WebGPUWorkgroupSizeSuccess) {
-  CodeGenerator generator = GetWorkgroupSizeSuccessGenerator(SPV_ENV_WEBGPU_0);
-  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
-}
-
-CodeGenerator GetWorkgroupSizeFragmentGenerator(spv_target_env env) {
-  CodeGenerator generator =
-      env == SPV_ENV_WEBGPU_0 ? CodeGenerator::GetWebGPUShaderCodeGenerator()
-                              : CodeGenerator::GetDefaultShaderCodeGenerator();
+CodeGenerator GetWorkgroupSizeFragmentGenerator() {
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
@@ -3260,8 +2824,7 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 }
 
 TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeFragment) {
-  CodeGenerator generator =
-      GetWorkgroupSizeFragmentGenerator(SPV_ENV_VULKAN_1_0);
+  CodeGenerator generator = GetWorkgroupSizeFragmentGenerator();
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
@@ -3275,20 +2838,6 @@ TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeFragment) {
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-WorkgroupSize-WorkgroupSize-04425 "
                       "VUID-WorkgroupSize-WorkgroupSize-04427"));
-}
-
-TEST_F(ValidateBuiltIns, WebGPUWorkgroupSizeFragment) {
-  CodeGenerator generator = GetWorkgroupSizeFragmentGenerator(SPV_ENV_WEBGPU_0);
-
-  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("WebGPU spec allows BuiltIn WorkgroupSize to be used "
-                        "only with GLCompute execution model"));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("is referencing ID <2> (OpConstantComposite) which is "
-                        "decorated with BuiltIn WorkgroupSize in function <1> "
-                        "called with execution model Fragment"));
 }
 
 TEST_F(ValidateBuiltIns, WorkgroupSizeNotConstant) {
@@ -3316,10 +2865,8 @@ OpDecorate %copy BuiltIn WorkgroupSize
       HasSubstr("BuiltIns can only target variables, structs or constants"));
 }
 
-CodeGenerator GetWorkgroupSizeNotVectorGenerator(spv_target_env env) {
-  CodeGenerator generator =
-      env == SPV_ENV_WEBGPU_0 ? CodeGenerator::GetWebGPUShaderCodeGenerator()
-                              : CodeGenerator::GetDefaultShaderCodeGenerator();
+CodeGenerator GetWorkgroupSizeNotVectorGenerator() {
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
@@ -3341,8 +2888,7 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 }
 
 TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeNotVector) {
-  CodeGenerator generator =
-      GetWorkgroupSizeNotVectorGenerator(SPV_ENV_VULKAN_1_0);
+  CodeGenerator generator = GetWorkgroupSizeNotVectorGenerator();
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
@@ -3354,22 +2900,8 @@ TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeNotVector) {
               AnyVUID("VUID-WorkgroupSize-WorkgroupSize-04427"));
 }
 
-TEST_F(ValidateBuiltIns, WebGPUWorkgroupSizeNotVector) {
-  CodeGenerator generator =
-      GetWorkgroupSizeNotVectorGenerator(SPV_ENV_WEBGPU_0);
-
-  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("According to the WebGPU spec BuiltIn WorkgroupSize "
-                        "variable needs to be a 3-component 32-bit int vector. "
-                        "ID <2> (OpConstant) is not an int vector."));
-}
-
-CodeGenerator GetWorkgroupSizeNotIntVectorGenerator(spv_target_env env) {
-  CodeGenerator generator =
-      env == SPV_ENV_WEBGPU_0 ? CodeGenerator::GetWebGPUShaderCodeGenerator()
-                              : CodeGenerator::GetDefaultShaderCodeGenerator();
+CodeGenerator GetWorkgroupSizeNotIntVectorGenerator() {
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
@@ -3391,8 +2923,7 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 }
 
 TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeNotIntVector) {
-  CodeGenerator generator =
-      GetWorkgroupSizeNotIntVectorGenerator(SPV_ENV_VULKAN_1_0);
+  CodeGenerator generator = GetWorkgroupSizeNotIntVectorGenerator();
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
@@ -3404,22 +2935,8 @@ TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeNotIntVector) {
               AnyVUID("VUID-WorkgroupSize-WorkgroupSize-04427"));
 }
 
-TEST_F(ValidateBuiltIns, WebGPUWorkgroupSizeNotIntVector) {
-  CodeGenerator generator =
-      GetWorkgroupSizeNotIntVectorGenerator(SPV_ENV_WEBGPU_0);
-
-  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("According to the WebGPU spec BuiltIn WorkgroupSize "
-                        "variable needs to be a 3-component 32-bit int vector. "
-                        "ID <2> (OpConstantComposite) is not an int vector."));
-}
-
-CodeGenerator GetWorkgroupSizeNotVec3Generator(spv_target_env env) {
-  CodeGenerator generator =
-      env == SPV_ENV_WEBGPU_0 ? CodeGenerator::GetWebGPUShaderCodeGenerator()
-                              : CodeGenerator::GetDefaultShaderCodeGenerator();
+CodeGenerator GetWorkgroupSizeNotVec3Generator() {
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = R"(
 OpDecorate %workgroup_size BuiltIn WorkgroupSize
@@ -3441,8 +2958,7 @@ OpDecorate %workgroup_size BuiltIn WorkgroupSize
 }
 
 TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeNotVec3) {
-  CodeGenerator generator =
-      GetWorkgroupSizeNotVec3Generator(SPV_ENV_VULKAN_1_0);
+  CodeGenerator generator = GetWorkgroupSizeNotVec3Generator();
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
@@ -3452,17 +2968,6 @@ TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeNotVec3) {
                         "ID <2> (OpConstantComposite) has 2 components."));
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-WorkgroupSize-WorkgroupSize-04427"));
-}
-
-TEST_F(ValidateBuiltIns, WebGPUWorkgroupSizeNotVec3) {
-  CodeGenerator generator = GetWorkgroupSizeNotVec3Generator(SPV_ENV_WEBGPU_0);
-
-  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("According to the WebGPU spec BuiltIn WorkgroupSize "
-                        "variable needs to be a 3-component 32-bit int vector. "
-                        "ID <2> (OpConstantComposite) has 2 components."));
 }
 
 TEST_F(ValidateBuiltIns, WorkgroupSizeNotInt32Vec) {
@@ -3742,10 +3247,8 @@ OpFunctionEnd
               HasSubstr("called with execution model Fragment"));
 }
 
-CodeGenerator GetNoDepthReplacingGenerator(spv_target_env env) {
-  CodeGenerator generator =
-      spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
-                          : CodeGenerator::GetDefaultShaderCodeGenerator();
+CodeGenerator GetNoDepthReplacingGenerator() {
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = R"(
 OpMemberDecorate %output_type 0 BuiltIn FragDepth
@@ -3778,17 +3281,13 @@ OpReturn
 OpFunctionEnd
 )";
 
-  if (spvIsWebGPUEnv(env)) {
-    generator.after_types_ += function_body;
-  } else {
     generator.add_at_the_end_ = function_body;
-  }
 
   return generator;
 }
 
 TEST_F(ValidateBuiltIns, VulkanFragmentFragDepthNoDepthReplacing) {
-  CodeGenerator generator = GetNoDepthReplacingGenerator(SPV_ENV_VULKAN_1_0);
+  CodeGenerator generator = GetNoDepthReplacingGenerator();
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
@@ -3799,21 +3298,8 @@ TEST_F(ValidateBuiltIns, VulkanFragmentFragDepthNoDepthReplacing) {
               HasSubstr("VUID-FragDepth-FragDepth-04216"));
 }
 
-TEST_F(ValidateBuiltIns, WebGPUFragmentFragDepthNoDepthReplacing) {
-  CodeGenerator generator = GetNoDepthReplacingGenerator(SPV_ENV_WEBGPU_0);
-
-  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("WebGPU spec requires DepthReplacing execution mode to "
-                        "be declared when using BuiltIn FragDepth"));
-}
-
-CodeGenerator GetOneMainHasDepthReplacingOtherHasntGenerator(
-    spv_target_env env) {
-  CodeGenerator generator =
-      spvIsWebGPUEnv(env) ? CodeGenerator::GetWebGPUShaderCodeGenerator()
-                          : CodeGenerator::GetDefaultShaderCodeGenerator();
+CodeGenerator GetOneMainHasDepthReplacingOtherHasntGenerator() {
+  CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
   generator.before_types_ = R"(
 OpMemberDecorate %output_type 0 BuiltIn FragDepth
@@ -3857,19 +3343,14 @@ OpReturn
 OpFunctionEnd
 )";
 
-  if (spvIsWebGPUEnv(env)) {
-    generator.after_types_ += function_body;
-  } else {
     generator.add_at_the_end_ = function_body;
-  }
 
   return generator;
 }
 
 TEST_F(ValidateBuiltIns,
        VulkanFragmentFragDepthOneMainHasDepthReplacingOtherHasnt) {
-  CodeGenerator generator =
-      GetOneMainHasDepthReplacingOtherHasntGenerator(SPV_ENV_VULKAN_1_0);
+  CodeGenerator generator = GetOneMainHasDepthReplacingOtherHasntGenerator();
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
@@ -3880,17 +3361,6 @@ TEST_F(ValidateBuiltIns,
               HasSubstr("VUID-FragDepth-FragDepth-04216"));
 }
 
-TEST_F(ValidateBuiltIns,
-       WebGPUFragmentFragDepthOneMainHasDepthReplacingOtherHasnt) {
-  CodeGenerator generator =
-      GetOneMainHasDepthReplacingOtherHasntGenerator(SPV_ENV_WEBGPU_0);
-
-  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("WebGPU spec requires DepthReplacing execution mode to "
-                        "be declared when using BuiltIn FragDepth"));
-}
 
 TEST_F(ValidateBuiltIns, AllowInstanceIdWithIntersectionShader) {
   CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
