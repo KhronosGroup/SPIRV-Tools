@@ -430,6 +430,19 @@ OpAtomicStore %f32_var_function %device %relaxed %f32_1
                 "PhysicalStorageBuffer."));
 }
 
+TEST_F(ValidateAtomics, AtomicStoreFunctionPointerStorageType) {
+  const std::string body = R"(
+%f32_var_function = OpVariable %f32_ptr_function Function
+OpAtomicStore %f32_var_function %device %relaxed %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicStore: Function storage class forbidden when "
+                        "the Shader capability is declared."));
+}
+
 // TODO(atgoo@github.com): the corresponding check fails Vulkan CTS,
 // reenable once fixed.
 TEST_F(ValidateAtomics, DISABLED_AtomicLoadVulkanSubgroup) {
