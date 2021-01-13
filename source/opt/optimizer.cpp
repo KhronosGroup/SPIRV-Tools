@@ -583,10 +583,12 @@ bool Optimizer::Run(const uint32_t* original_binary,
 #ifndef NDEBUG
   // We do not keep the result id of DebugScope in struct DebugScope.
   // Instead, we assign random ids for them, which results in integrity
+  // check failures. In addition, propagating the OpLine/OpNoLine to preserve
+  // the debug information through transformations results in integrity
   // check failures. We want to skip the integrity check when the module
-  // contains DebugScope instructions.
+  // contains DebugScope or OpLine/OpNoLine instructions.
   if (status == opt::Pass::Status::SuccessWithoutChange &&
-      !context->module()->ContainsDebugScope()) {
+      !context->module()->ContainsDebugInfo()) {
     std::vector<uint32_t> optimized_binary_with_nop;
     context->module()->ToBinary(&optimized_binary_with_nop,
                                 /* skip_nop = */ false);

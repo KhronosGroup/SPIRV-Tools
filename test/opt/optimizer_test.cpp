@@ -762,6 +762,124 @@ OpFunctionEnd
       << "Was expecting the OpNop to have been removed.";
 }
 
+TEST(Optimizer, AvoidIntegrityCheckForExtraLineInfo) {
+  // Test that it avoids the integrity check when no optimizations are run and
+  // OpLines are propagated.
+  const std::string before = R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpString "Test"
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%_ptr_Function_uint = OpTypePointer Function %uint
+%6 = OpFunction %void None %3
+%7 = OpLabel
+OpLine %1 10 0
+%8 = OpVariable %_ptr_Function_uint Function
+OpLine %1 10 0
+%9 = OpVariable %_ptr_Function_uint Function
+OpLine %1 20 0
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string after = R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpString "Test"
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%_ptr_Function_uint = OpTypePointer Function %uint
+%6 = OpFunction %void None %3
+%7 = OpLabel
+OpLine %1 10 0
+%8 = OpVariable %_ptr_Function_uint Function
+%9 = OpVariable %_ptr_Function_uint Function
+OpLine %1 20 0
+OpReturn
+OpFunctionEnd
+)";
+
+  std::vector<uint32_t> binary;
+  SpirvTools tools(SPV_ENV_VULKAN_1_1);
+  tools.Assemble(before, &binary);
+
+  Optimizer opt(SPV_ENV_VULKAN_1_1);
+
+  std::vector<uint32_t> optimized;
+  class ValidatorOptions validator_options;
+  ASSERT_TRUE(opt.Run(binary.data(), binary.size(), &optimized,
+                      validator_options, true))
+      << before << "\n";
+
+  std::string disassembly;
+  tools.Disassemble(optimized.data(), optimized.size(), &disassembly);
+
+  EXPECT_EQ(after, disassembly)
+      << "Was expecting the OpLine to have been propagated.";
+}
+
+TEST(Optimizer, AvoidIntegrityCheckForDebugScope) {
+  // Test that it avoids the integrity check when the code contains DebugScope.
+  const std::string before = R"(OpCapability Shader
+%1 = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%3 = OpString "simple_vs.hlsl"
+OpSource HLSL 600 %3
+OpName %main "main"
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%6 = OpExtInst %void %1 DebugSource %3
+%7 = OpExtInst %void %1 DebugCompilationUnit 2 4 %6 HLSL
+%main = OpFunction %void None %5
+%14 = OpLabel
+%26 = OpExtInst %void %1 DebugScope %7
+OpReturn
+%27 = OpExtInst %void %1 DebugNoScope
+OpFunctionEnd
+)";
+
+  const std::string after = R"(OpCapability Shader
+%1 = OpExtInstImport "OpenCL.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%3 = OpString "simple_vs.hlsl"
+OpSource HLSL 600 %3
+OpName %main "main"
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%6 = OpExtInst %void %1 DebugSource %3
+%7 = OpExtInst %void %1 DebugCompilationUnit 2 4 %6 HLSL
+%main = OpFunction %void None %5
+%8 = OpLabel
+%11 = OpExtInst %void %1 DebugScope %7
+OpReturn
+%12 = OpExtInst %void %1 DebugNoScope
+OpFunctionEnd
+)";
+
+  std::vector<uint32_t> binary;
+  SpirvTools tools(SPV_ENV_VULKAN_1_1);
+  tools.Assemble(before, &binary);
+
+  Optimizer opt(SPV_ENV_VULKAN_1_1);
+
+  std::vector<uint32_t> optimized;
+  ASSERT_TRUE(opt.Run(binary.data(), binary.size(), &optimized))
+      << before << "\n";
+
+  std::string disassembly;
+  tools.Disassemble(optimized.data(), optimized.size(), &disassembly);
+
+  EXPECT_EQ(after, disassembly)
+      << "Was expecting the result id of DebugScope to have been changed.";
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
