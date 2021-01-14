@@ -42,8 +42,6 @@ struct TestResult {
 };
 
 using ValidateDecorations = spvtest::ValidateBase<bool>;
-using ValidateWebGPUCombineDecorationResult =
-    spvtest::ValidateBase<std::tuple<const char*, TestResult>>;
 using ValidateVulkanCombineDecorationResult =
     spvtest::ValidateBase<std::tuple<const char*, const char*, TestResult>>;
 
@@ -164,44 +162,6 @@ TEST_F(ValidateDecorations, ValidateGroupDecorateRegistration) {
   EXPECT_THAT(vstate_->id_decorations(3), Eq(expected_decorations));
   EXPECT_THAT(vstate_->id_decorations(4), Eq(expected_decorations));
 }
-
-TEST_F(ValidateDecorations, WebGPUOpDecorationGroupBad) {
-  std::string spirv = R"(
-               OpCapability Shader
-               OpCapability VulkanMemoryModelKHR
-               OpExtension "SPV_KHR_vulkan_memory_model"
-               OpMemoryModel Logical VulkanKHR
-               OpDecorate %1 DescriptorSet 0
-               OpDecorate %1 NonWritable
-               OpDecorate %1 Restrict
-          %1 = OpDecorationGroup
-               OpGroupDecorate %1 %2 %3
-               OpGroupDecorate %1 %4
-  %float = OpTypeFloat 32
-%_runtimearr_float = OpTypeRuntimeArray %float
-  %_struct_9 = OpTypeStruct %_runtimearr_float
-%_ptr_Uniform__struct_9 = OpTypePointer Uniform %_struct_9
-         %2 = OpVariable %_ptr_Uniform__struct_9 Uniform
- %_struct_10 = OpTypeStruct %_runtimearr_float
-%_ptr_Uniform__struct_10 = OpTypePointer Uniform %_struct_10
-         %3 = OpVariable %_ptr_Uniform__struct_10 Uniform
- %_struct_11 = OpTypeStruct %_runtimearr_float
-%_ptr_Uniform__struct_11 = OpTypePointer Uniform %_struct_11
-         %4 = OpVariable %_ptr_Uniform__struct_11 Uniform
-  )";
-  CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions(SPV_ENV_WEBGPU_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpDecorationGroup is not allowed in the WebGPU "
-                        "execution environment.\n  %1 = OpDecorationGroup\n"));
-}
-
-// For WebGPU, OpGroupDecorate does not have a test case, because it requires
-// being preceded by OpDecorationGroup, which will cause a validation error.
-
-// For WebGPU, OpGroupMemberDecorate does not have a test case, because it
-// requires being preceded by OpDecorationGroup, which will cause a validation
-// error.
 
 TEST_F(ValidateDecorations, ValidateGroupMemberDecorateRegistration) {
   std::string spirv = R"(
@@ -6389,67 +6349,6 @@ TEST_F(ValidateDecorations, NonWritableRuntimeArrayGood) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-
-TEST_P(ValidateWebGPUCombineDecorationResult, Decorate) {
-  const char* const decoration = std::get<0>(GetParam());
-  const TestResult& test_result = std::get<1>(GetParam());
-
-  CodeGenerator generator = CodeGenerator::GetWebGPUShaderCodeGenerator();
-  generator.before_types_ = "OpDecorate %u32 ";
-  generator.before_types_ += decoration;
-  generator.before_types_ += "\n";
-
-  EntryPoint entry_point;
-  entry_point.name = "main";
-  entry_point.execution_model = "Vertex";
-  generator.entry_points_.push_back(std::move(entry_point));
-
-  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(test_result.validation_result,
-            ValidateInstructions(SPV_ENV_WEBGPU_0));
-  if (test_result.error_str != "") {
-    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
-  }
-}
-
-TEST_P(ValidateWebGPUCombineDecorationResult, DecorateMember) {
-  const char* const decoration = std::get<0>(GetParam());
-  const TestResult& test_result = std::get<1>(GetParam());
-
-  CodeGenerator generator = CodeGenerator::GetWebGPUShaderCodeGenerator();
-  generator.before_types_ = "OpMemberDecorate %struct_type 0 ";
-  generator.before_types_ += decoration;
-  generator.before_types_ += "\n";
-
-  generator.after_types_ = "%struct_type = OpTypeStruct %u32\n";
-
-  EntryPoint entry_point;
-  entry_point.name = "main";
-  entry_point.execution_model = "Vertex";
-  generator.entry_points_.push_back(std::move(entry_point));
-
-  CompileSuccessfully(generator.Build(), SPV_ENV_WEBGPU_0);
-  ASSERT_EQ(test_result.validation_result,
-            ValidateInstructions(SPV_ENV_WEBGPU_0));
-  if (!test_result.error_str.empty()) {
-    EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str));
-  }
-}
-
-INSTANTIATE_TEST_SUITE_P(
-    DecorationCapabilityFailure, ValidateWebGPUCombineDecorationResult,
-    Combine(Values("CPacked", "Patch", "Sample", "Constant",
-                   "SaturatedConversion", "NonUniformEXT"),
-            Values(TestResult(SPV_ERROR_INVALID_CAPABILITY,
-                              "requires one of these capabilities"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    DecorationAllowListFailure, ValidateWebGPUCombineDecorationResult,
-    Combine(Values("RelaxedPrecision", "BufferBlock", "GLSLShared",
-                   "GLSLPacked", "Invariant", "Volatile", "Coherent"),
-            Values(TestResult(
-                SPV_ERROR_INVALID_ID,
-                "is not valid for the WebGPU execution environment."))));
 
 TEST_P(ValidateVulkanCombineDecorationResult, Decorate) {
   const char* const decoration = std::get<0>(GetParam());

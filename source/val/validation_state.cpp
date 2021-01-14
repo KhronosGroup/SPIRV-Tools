@@ -1240,23 +1240,6 @@ bool ValidationState_t::ContainsLimitedUseIntOrFloatType(uint32_t id) const {
 
 bool ValidationState_t::IsValidStorageClass(
     SpvStorageClass storage_class) const {
-  if (spvIsWebGPUEnv(context()->target_env)) {
-    switch (storage_class) {
-      case SpvStorageClassUniformConstant:
-      case SpvStorageClassUniform:
-      case SpvStorageClassStorageBuffer:
-      case SpvStorageClassInput:
-      case SpvStorageClassOutput:
-      case SpvStorageClassImage:
-      case SpvStorageClassWorkgroup:
-      case SpvStorageClassPrivate:
-      case SpvStorageClassFunction:
-        return true;
-      default:
-        return false;
-    }
-  }
-
   if (spvIsVulkanEnv(context()->target_env)) {
     switch (storage_class) {
       case SpvStorageClassUniformConstant:
