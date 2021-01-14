@@ -454,26 +454,6 @@ std::string TrivialMain() {
   )";
 }
 
-std::string GetWebGPUShaderHeader() {
-  return R"(
-  OpCapability Shader
-  OpMemoryModel Logical GLSL450
-  OpEntryPoint GLCompute %main "main"
-  OpExecutionMode %main LocalSize 1 1 1
-  %void = OpTypeVoid
-  %func = OpTypeFunction %void
-  %f32 = OpTypeFloat 32
-  %u32 = OpTypeInt 32 0
-  %f32vec2 = OpTypeVector %f32 2
-  %f32vec3 = OpTypeVector %f32 3
-  %f32vec4 = OpTypeVector %f32 4
-  %u32vec2 = OpTypeVector %u32 2
-  %u32vec3 = OpTypeVector %u32 3
-  %u32vec4 = OpTypeVector %u32 4
-  %u32vec2null = OpConstantNull %u32vec2
-  )";
-}
-
 std::string GetShaderHeader(const std::string& capabilities_and_extensions = "",
                             bool include_entry_point = true) {
   std::ostringstream ss;
@@ -831,37 +811,6 @@ TEST_F(ValidateImage, TypeImage_Vulkan_Sampled0_Invalid) {
               AnyVUID("VUID-StandaloneSpirv-OpTypeImage-04657"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Sampled must be 1 or 2 in the Vulkan environment."));
-}
-
-TEST_F(ValidateImage, TypeImage_WebGPU_Sampled1_OK) {
-  const std::string code = GetWebGPUShaderHeader() + R"(
-%img_type = OpTypeImage %f32 2D 0 0 0 1 Unknown
-)" + TrivialMain();
-
-  CompileSuccessfully(code.c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
-  EXPECT_THAT(getDiagnosticString(), Eq(""));
-}
-
-TEST_F(ValidateImage, TypeImage_WebGPU_Sampled2_OK) {
-  const std::string code = GetWebGPUShaderHeader() + R"(
-%img_type = OpTypeImage %f32 2D 0 0 0 2 Rgba32f
-)" + TrivialMain();
-
-  CompileSuccessfully(code.c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_WEBGPU_0));
-  EXPECT_THAT(getDiagnosticString(), Eq(""));
-}
-
-TEST_F(ValidateImage, TypeImage_WebGPU_Sampled0_Invalid) {
-  const std::string code = GetWebGPUShaderHeader() + R"(
-%img_type = OpTypeImage %f32 2D 0 0 0 0 Unknown
-)" + TrivialMain();
-
-  CompileSuccessfully(code.c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Sampled must be 1 or 2 in the WebGPU environment."));
 }
 
 TEST_F(ValidateImage, TypeImageWrongFormatForSubpassData) {
@@ -3318,26 +3267,6 @@ TEST_F(ValidateImage, ReadWrongNumComponentsResultType_Vulkan) {
       GenerateShaderCode(body, extra, "Fragment", "", SPV_ENV_VULKAN_1_0)
           .c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Result Type to have 4 components"));
-}
-
-TEST_F(ValidateImage, ReadWrongNumComponentsResultType_WebGPU) {
-  const std::string code = GetWebGPUShaderHeader() + R"(
-%img_type = OpTypeImage %f32 2D 0 0 0 2 Unknown
-%ptr_type = OpTypePointer UniformConstant %img_type
-%var = OpVariable %ptr_type UniformConstant
-%main = OpFunction %void None %func
-%entry = OpLabel
-%img = OpLoad %img_type %var
-%res1 = OpImageRead %u32vec3 %img %u32vec2null
-OpReturn
-OpFunctionEnd
-)";
-
-  CompileSuccessfully(code.c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_WEBGPU_0))
-      << getDiagnosticString();
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type to have 4 components"));
 }
