@@ -3671,7 +3671,7 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     // Early return. All currently implemented rules are based on Vulkan spec.
     //
     // TODO: If you are adding validation rules for environments other than
-    // Vulkan (or general rules which are not environment  independent), then
+    // Vulkan (or general rules which are not environment independent), then
     // you need to modify or remove this condition. Consider also adding early
     // returns into BuiltIn-specific rules, so that the system doesn't spawn new
     // rules which don't do anything.
