@@ -498,6 +498,15 @@ spv_result_t ValidateMemoryModel(ValidationState_t& _,
     }
   }
 
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if ((_.addressing_model() != SpvAddressingModelLogical) &&
+        (_.addressing_model() != SpvAddressingModelPhysicalStorageBuffer64)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << _.VkErrorID(4635)
+             << "Addressing model must be Logical or PhysicalStorageBuffer64 "
+             << "in the Vulkan environment.";
+    }
+  }
   return SPV_SUCCESS;
 }
 
