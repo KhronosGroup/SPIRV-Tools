@@ -36,7 +36,10 @@ SHADERC_DIR=$GITHUB_DIR/shaderc
 cd $SHADERC_DIR/third_party
 
 # Get shaderc dependencies. Link the appropriate SPIRV-Tools.
-git clone https://github.com/google/googletest.git
+
+# Use v1.10.0 of googltest because it works with older compilers.
+( mkdir googletest && cd googletest && git init && git remote add github https://github.com/google/googletest.git && git fetch github release-1.10.0 && git checkout FETCH_HEAD )
+
 git clone https://github.com/KhronosGroup/glslang.git
 ln -s $GITHUB_DIR/SPIRV-Tools spirv-tools
 git clone https://github.com/KhronosGroup/SPIRV-Headers.git spirv-headers
