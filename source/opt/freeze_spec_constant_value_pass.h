@@ -62,8 +62,7 @@ class FreezeSpecConstantValuePass : public Pass {
   static std::unique_ptr<SpecIdSet> ParseSpecIdsString(const char* str);
 
  private:
-  Status FreezeAllSpecIds();
-  Status FreezeSpecIds(const SpecIdSet& spec_ids);
+  bool ShouldFreezeSpecId(uint32_t spec_id) const;
 
   // The spec-ids to freeze. If empty, freeze all spec-ids.
   const SpecIdSet spec_ids_;

@@ -22,46 +22,6 @@ namespace spvtools {
 namespace opt {
 
 Pass::Status FreezeSpecConstantValuePass::Process() {
-  if (spec_ids_.empty()) {
-    return FreezeAllSpecIds();
-  } else {
-    return FreezeSpecIds(spec_ids_);
-  }
-}
-
-Pass::Status FreezeSpecConstantValuePass::FreezeAllSpecIds() {
-  bool modified = false;
-  auto ctx = context();
-  ctx->module()->ForEachInst([&modified, ctx](Instruction* inst) {
-    switch (inst->opcode()) {
-      case SpvOp::SpvOpSpecConstant:
-        inst->SetOpcode(SpvOp::SpvOpConstant);
-        modified = true;
-        break;
-      case SpvOp::SpvOpSpecConstantTrue:
-        inst->SetOpcode(SpvOp::SpvOpConstantTrue);
-        modified = true;
-        break;
-      case SpvOp::SpvOpSpecConstantFalse:
-        inst->SetOpcode(SpvOp::SpvOpConstantFalse);
-        modified = true;
-        break;
-      case SpvOp::SpvOpDecorate:
-        if (inst->GetSingleWordInOperand(1) ==
-            SpvDecoration::SpvDecorationSpecId) {
-          ctx->KillInst(inst);
-          modified = true;
-        }
-        break;
-      default:
-        break;
-    }
-  });
-  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
-}
-
-Pass::Status FreezeSpecConstantValuePass::FreezeSpecIds(
-    const SpecIdSet& spec_ids) {
   // The operand index of decoration target in an OpDecorate instruction.
   const uint32_t kTargetIdOperandIndex = 0;
   // The operand index of the decoration literal in an OpDecorate instruction.
@@ -73,7 +33,7 @@ Pass::Status FreezeSpecConstantValuePass::FreezeSpecIds(
   const uint32_t kOpDecorateSpecIdNumOperands = 3;
 
   auto ctx = context();
-  auto def = get_def_use_mgr();
+  auto def_use_mgr = get_def_use_mgr();
   bool modified = false;
 
   // Scan through all the annotation instructions to find 'OpDecorate SpecId'
@@ -97,19 +57,18 @@ Pass::Status FreezeSpecConstantValuePass::FreezeSpecIds(
     uint32_t spec_id = inst.GetSingleWordOperand(kSpecIdLiteralOperandIndex);
     uint32_t target_id = inst.GetSingleWordOperand(kTargetIdOperandIndex);
 
-    // Only process spec-ids specified by the caller.
-    if (spec_ids.find(spec_id) == spec_ids.end()) {
+    if (!ShouldFreezeSpecId(spec_id)) {
       continue;
     }
 
     // Find the spec constant defining instruction. Note that the
     // target_id might be a decoration group id.
     Instruction* spec_inst = nullptr;
-    if (Instruction* target_inst = def->GetDef(target_id)) {
+    if (Instruction* target_inst = def_use_mgr->GetDef(target_id)) {
       if (target_inst->opcode() == SpvOp::SpvOpDecorationGroup) {
         spec_inst =
             SetSpecConstantDefaultValuePass::GetSpecIdTargetFromDecorationGroup(
-                *target_inst, def);
+                *target_inst, def_use_mgr);
       } else {
         spec_inst = target_inst;
       }
@@ -139,6 +98,16 @@ Pass::Status FreezeSpecConstantValuePass::FreezeSpecIds(
     }
   }
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+}
+
+bool FreezeSpecConstantValuePass::ShouldFreezeSpecId(uint32_t spec_id) const {
+  // If spec_ids_ is empty, freeze all spec constants.
+  if (spec_ids_.empty()) {
+    return true;
+  }
+
+  // Otherwise freeze only the ids present in spec_ids_.
+  return (spec_ids_.find(spec_id) != spec_ids_.end());
 }
 
 std::unique_ptr<FreezeSpecConstantValuePass::SpecIdSet>
