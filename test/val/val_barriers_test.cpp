@@ -121,6 +121,15 @@ OpCapability Int64
       execution_model, memory_model);
 }
 
+std::string GenerateVulkanVertexShaderCode(
+    const std::string& body,
+    const std::string& capabilities_and_extensions = "",
+    const std::string& execution_model = "Vertex") {
+  const std::string memory_model = "OpMemoryModel Logical GLSL450";
+  return GenerateShaderCodeImpl(body, capabilities_and_extensions, "",
+                                execution_model, memory_model);
+}
+
 std::string GenerateKernelCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "") {
@@ -348,6 +357,8 @@ OpControlBarrier %subgroup %subgroup %none
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-04638"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("ControlBarrier: in Vulkan 1.0 environment Memory Scope is "
@@ -371,8 +382,33 @@ OpControlBarrier %subgroup %cross_device %none
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_1);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-04638"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("ControlBarrier: in Vulkan environment, Memory Scope "
                         "cannot be CrossDevice"));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierVulkan1p1WorkgroupNonComputeFailure) {
+  const std::string body = R"(
+OpControlBarrier %workgroup %workgroup %acquire
+)";
+
+  CompileSuccessfully(GenerateVulkanVertexShaderCode(body), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-04639"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Workgroup Memory Scope is limited to MeshNV, TaskNV, "
+                        "and GLCompute execution model"));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierVulkan1p1WorkgroupNonComputeSuccess) {
+  const std::string body = R"(
+OpControlBarrier %workgroup %workgroup %acquire
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
 
 TEST_F(ValidateBarriers, OpControlBarrierAcquireAndRelease) {
@@ -647,6 +683,8 @@ OpMemoryBarrier %subgroup %acquire_release_uniform_workgroup
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-04638"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("MemoryBarrier: in Vulkan 1.0 environment Memory Scope is "
@@ -1397,6 +1435,8 @@ TEST_F(ValidateBarriers, OpMemoryBarrierShaderCallComputeFailure) {
                       SPV_ENV_VULKAN_1_1);
 
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-04640"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
