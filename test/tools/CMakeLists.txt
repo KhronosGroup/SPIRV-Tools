@@ -12,10 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_test(NAME spirv-tools_expect_unittests
-         COMMAND ${Python3_EXECUTABLE} -m unittest expect_unittest.py
-         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-add_test(NAME spirv-tools_spirv_test_framework_unittests
-         COMMAND ${Python3_EXECUTABLE} -m unittest spirv_test_framework_unittest.py
-         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+if(CMAKE_VERSION VERSION_LESS "3.12")
+  add_test(NAME spirv-tools_expect_unittests
+           COMMAND ${PYTHON_EXECUTABLE} -m unittest expect_unittest.py
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  add_test(NAME spirv-tools_spirv_test_framework_unittests
+           COMMAND ${PYTHON_EXECUTABLE} -m unittest spirv_test_framework_unittest.py
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+else()
+  add_test(NAME spirv-tools_expect_unittests
+           COMMAND ${Python3_EXECUTABLE} -m unittest expect_unittest.py
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  add_test(NAME spirv-tools_spirv_test_framework_unittests
+           COMMAND ${Python3_EXECUTABLE} -m unittest spirv_test_framework_unittest.py
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
 add_subdirectory(opt)

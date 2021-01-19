@@ -13,13 +13,25 @@
 # limitations under the License.
 
 if(NOT ${SPIRV_SKIP_TESTS})
-  if(${Python3_FOUND})
-    add_test(NAME spirv_opt_cli_tools_tests
-      COMMAND ${Python3_EXECUTABLE}
-      ${CMAKE_CURRENT_SOURCE_DIR}/../spirv_test_framework.py
-      $<TARGET_FILE:spirv-opt> $<TARGET_FILE:spirv-as> $<TARGET_FILE:spirv-dis>
-      --test-dir ${CMAKE_CURRENT_SOURCE_DIR})
+  if(CMAKE_VERSION VERSION_LESS "3.12")
+    if(${PYTHONINTERP_FOUND})
+      add_test(NAME spirv_opt_cli_tools_tests
+        COMMAND ${PYTHON_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../spirv_test_framework.py
+        $<TARGET_FILE:spirv-opt> $<TARGET_FILE:spirv-as> $<TARGET_FILE:spirv-dis>
+        --test-dir ${CMAKE_CURRENT_SOURCE_DIR})
+    else()
+      message("Skipping CLI tools tests - Python executable not found")
+    endif()
   else()
-    message("Skipping CLI tools tests - Python executable not found")
+    if(${Python3_FOUND})
+      add_test(NAME spirv_opt_cli_tools_tests
+        COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../spirv_test_framework.py
+        $<TARGET_FILE:spirv-opt> $<TARGET_FILE:spirv-as> $<TARGET_FILE:spirv-dis>
+        --test-dir ${CMAKE_CURRENT_SOURCE_DIR})
+    else()
+      message("Skipping CLI tools tests - Python executable not found")
+    endif()
   endif()
 endif()

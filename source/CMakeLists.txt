@@ -30,18 +30,33 @@ macro(spvtools_core_tables CONFIG_VERSION)
   set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
   set(GRAMMAR_INSTS_INC_FILE "${spirv-tools_BINARY_DIR}/core.insts-${CONFIG_VERSION}.inc")
   set(GRAMMAR_KINDS_INC_FILE "${spirv-tools_BINARY_DIR}/operand.kinds-${CONFIG_VERSION}.inc")
-  add_custom_command(OUTPUT ${GRAMMAR_INSTS_INC_FILE} ${GRAMMAR_KINDS_INC_FILE}
-    COMMAND ${Python3_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
-      --spirv-core-grammar=${GRAMMAR_JSON_FILE}
-      --extinst-debuginfo-grammar=${DEBUGINFO_GRAMMAR_JSON_FILE}
-      --extinst-cldebuginfo100-grammar=${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
-      --core-insts-output=${GRAMMAR_INSTS_INC_FILE}
-      --operand-kinds-output=${GRAMMAR_KINDS_INC_FILE}
-    DEPENDS ${GRAMMAR_PROCESSING_SCRIPT}
-            ${GRAMMAR_JSON_FILE}
-            ${DEBUGINFO_GRAMMAR_JSON_FILE}
-            ${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
-    COMMENT "Generate info tables for SPIR-V v${CONFIG_VERSION} core instructions and operands.")
+  if(CMAKE_VERSION VERSION_LESS "3.12")
+    add_custom_command(OUTPUT ${GRAMMAR_INSTS_INC_FILE} ${GRAMMAR_KINDS_INC_FILE}
+      COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
+        --spirv-core-grammar=${GRAMMAR_JSON_FILE}
+        --extinst-debuginfo-grammar=${DEBUGINFO_GRAMMAR_JSON_FILE}
+        --extinst-cldebuginfo100-grammar=${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
+        --core-insts-output=${GRAMMAR_INSTS_INC_FILE}
+        --operand-kinds-output=${GRAMMAR_KINDS_INC_FILE}
+      DEPENDS ${GRAMMAR_PROCESSING_SCRIPT}
+              ${GRAMMAR_JSON_FILE}
+              ${DEBUGINFO_GRAMMAR_JSON_FILE}
+              ${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
+      COMMENT "Generate info tables for SPIR-V v${CONFIG_VERSION} core instructions and operands.")
+  else()
+    add_custom_command(OUTPUT ${GRAMMAR_INSTS_INC_FILE} ${GRAMMAR_KINDS_INC_FILE}
+      COMMAND ${Python3_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
+        --spirv-core-grammar=${GRAMMAR_JSON_FILE}
+        --extinst-debuginfo-grammar=${DEBUGINFO_GRAMMAR_JSON_FILE}
+        --extinst-cldebuginfo100-grammar=${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
+        --core-insts-output=${GRAMMAR_INSTS_INC_FILE}
+        --operand-kinds-output=${GRAMMAR_KINDS_INC_FILE}
+      DEPENDS ${GRAMMAR_PROCESSING_SCRIPT}
+              ${GRAMMAR_JSON_FILE}
+              ${DEBUGINFO_GRAMMAR_JSON_FILE}
+              ${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
+      COMMENT "Generate info tables for SPIR-V v${CONFIG_VERSION} core instructions and operands.")
+  endif()
   list(APPEND OPCODE_CPP_DEPENDS ${GRAMMAR_INSTS_INC_FILE})
   list(APPEND OPERAND_CPP_DEPENDS ${GRAMMAR_KINDS_INC_FILE})
 endmacro(spvtools_core_tables)
@@ -50,19 +65,35 @@ macro(spvtools_enum_string_mapping CONFIG_VERSION)
   set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
   set(GRAMMAR_EXTENSION_ENUM_INC_FILE "${spirv-tools_BINARY_DIR}/extension_enum.inc")
   set(GRAMMAR_ENUM_STRING_MAPPING_INC_FILE "${spirv-tools_BINARY_DIR}/enum_string_mapping.inc")
-  add_custom_command(OUTPUT ${GRAMMAR_EXTENSION_ENUM_INC_FILE}
-     ${GRAMMAR_ENUM_STRING_MAPPING_INC_FILE}
-    COMMAND ${Python3_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
-      --spirv-core-grammar=${GRAMMAR_JSON_FILE}
-      --extinst-debuginfo-grammar=${DEBUGINFO_GRAMMAR_JSON_FILE}
-      --extinst-cldebuginfo100-grammar=${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
-      --extension-enum-output=${GRAMMAR_EXTENSION_ENUM_INC_FILE}
-      --enum-string-mapping-output=${GRAMMAR_ENUM_STRING_MAPPING_INC_FILE}
-    DEPENDS ${GRAMMAR_PROCESSING_SCRIPT}
-            ${GRAMMAR_JSON_FILE}
-            ${DEBUGINFO_GRAMMAR_JSON_FILE}
-            ${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
-    COMMENT "Generate enum-string mapping for SPIR-V v${CONFIG_VERSION}.")
+  if(CMAKE_VERSION VERSION_LESS "3.12")
+    add_custom_command(OUTPUT ${GRAMMAR_EXTENSION_ENUM_INC_FILE}
+       ${GRAMMAR_ENUM_STRING_MAPPING_INC_FILE}
+      COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
+        --spirv-core-grammar=${GRAMMAR_JSON_FILE}
+        --extinst-debuginfo-grammar=${DEBUGINFO_GRAMMAR_JSON_FILE}
+        --extinst-cldebuginfo100-grammar=${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
+        --extension-enum-output=${GRAMMAR_EXTENSION_ENUM_INC_FILE}
+        --enum-string-mapping-output=${GRAMMAR_ENUM_STRING_MAPPING_INC_FILE}
+      DEPENDS ${GRAMMAR_PROCESSING_SCRIPT}
+              ${GRAMMAR_JSON_FILE}
+              ${DEBUGINFO_GRAMMAR_JSON_FILE}
+              ${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
+      COMMENT "Generate enum-string mapping for SPIR-V v${CONFIG_VERSION}.")
+  else()
+    add_custom_command(OUTPUT ${GRAMMAR_EXTENSION_ENUM_INC_FILE}
+       ${GRAMMAR_ENUM_STRING_MAPPING_INC_FILE}
+      COMMAND ${Python3_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
+        --spirv-core-grammar=${GRAMMAR_JSON_FILE}
+        --extinst-debuginfo-grammar=${DEBUGINFO_GRAMMAR_JSON_FILE}
+        --extinst-cldebuginfo100-grammar=${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
+        --extension-enum-output=${GRAMMAR_EXTENSION_ENUM_INC_FILE}
+        --enum-string-mapping-output=${GRAMMAR_ENUM_STRING_MAPPING_INC_FILE}
+      DEPENDS ${GRAMMAR_PROCESSING_SCRIPT}
+              ${GRAMMAR_JSON_FILE}
+              ${DEBUGINFO_GRAMMAR_JSON_FILE}
+              ${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
+      COMMENT "Generate enum-string mapping for SPIR-V v${CONFIG_VERSION}.")
+  endif()
   list(APPEND EXTENSION_H_DEPENDS ${GRAMMAR_EXTENSION_ENUM_INC_FILE})
   list(APPEND ENUM_STRING_MAPPING_CPP_DEPENDS ${GRAMMAR_ENUM_STRING_MAPPING_INC_FILE})
 endmacro(spvtools_enum_string_mapping)
@@ -72,28 +103,50 @@ macro(spvtools_vimsyntax CONFIG_VERSION CLVERSION)
   set(GLSL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/extinst.glsl.std.450.grammar.json")
   set(OPENCL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/extinst.opencl.std.100.grammar.json")
   set(VIMSYNTAX_FILE "${spirv-tools_BINARY_DIR}/spvasm.vim")
-  add_custom_command(OUTPUT ${VIMSYNTAX_FILE}
-      COMMAND ${Python3_EXECUTABLE} ${VIMSYNTAX_PROCESSING_SCRIPT}
-      --spirv-core-grammar=${GRAMMAR_JSON_FILE}
-      --extinst-debuginfo-grammar=${DEBUGINFO_GRAMMAR_JSON_FILE}
-      --extinst-glsl-grammar=${GLSL_GRAMMAR_JSON_FILE}
-      --extinst-opencl-grammar=${OPENCL_GRAMMAR_JSON_FILE}
-      >${VIMSYNTAX_FILE}
-    DEPENDS ${VIMSYNTAX_PROCESSING_SCRIPT} ${GRAMMAR_JSON_FILE}
-            ${GLSL_GRAMMAR_JSON_FILE} ${OPENCL_GRAMMAR_JSON_FILE} ${DEBUGINFO_GRAMMAR_JSON_FILE}
-    COMMENT "Generate spvasm.vim: Vim syntax file for SPIR-V assembly.")
+  if(CMAKE_VERSION VERSION_LESS "3.12")
+    add_custom_command(OUTPUT ${VIMSYNTAX_FILE}
+        COMMAND ${PYTHON_EXECUTABLE} ${VIMSYNTAX_PROCESSING_SCRIPT}
+        --spirv-core-grammar=${GRAMMAR_JSON_FILE}
+        --extinst-debuginfo-grammar=${DEBUGINFO_GRAMMAR_JSON_FILE}
+        --extinst-glsl-grammar=${GLSL_GRAMMAR_JSON_FILE}
+        --extinst-opencl-grammar=${OPENCL_GRAMMAR_JSON_FILE}
+        >${VIMSYNTAX_FILE}
+      DEPENDS ${VIMSYNTAX_PROCESSING_SCRIPT} ${GRAMMAR_JSON_FILE}
+              ${GLSL_GRAMMAR_JSON_FILE} ${OPENCL_GRAMMAR_JSON_FILE} ${DEBUGINFO_GRAMMAR_JSON_FILE}
+      COMMENT "Generate spvasm.vim: Vim syntax file for SPIR-V assembly.")
+  else()
+    add_custom_command(OUTPUT ${VIMSYNTAX_FILE}
+        COMMAND ${Python3_EXECUTABLE} ${VIMSYNTAX_PROCESSING_SCRIPT}
+        --spirv-core-grammar=${GRAMMAR_JSON_FILE}
+        --extinst-debuginfo-grammar=${DEBUGINFO_GRAMMAR_JSON_FILE}
+        --extinst-glsl-grammar=${GLSL_GRAMMAR_JSON_FILE}
+        --extinst-opencl-grammar=${OPENCL_GRAMMAR_JSON_FILE}
+        >${VIMSYNTAX_FILE}
+      DEPENDS ${VIMSYNTAX_PROCESSING_SCRIPT} ${GRAMMAR_JSON_FILE}
+              ${GLSL_GRAMMAR_JSON_FILE} ${OPENCL_GRAMMAR_JSON_FILE} ${DEBUGINFO_GRAMMAR_JSON_FILE}
+      COMMENT "Generate spvasm.vim: Vim syntax file for SPIR-V assembly.")
+  endif()
 endmacro(spvtools_vimsyntax)
 
 macro(spvtools_glsl_tables CONFIG_VERSION)
   set(CORE_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
   set(GLSL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/extinst.glsl.std.450.grammar.json")
   set(GRAMMAR_INC_FILE "${spirv-tools_BINARY_DIR}/glsl.std.450.insts.inc")
-  add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
-    COMMAND ${Python3_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
-      --extinst-glsl-grammar=${GLSL_GRAMMAR_JSON_FILE}
-      --glsl-insts-output=${GRAMMAR_INC_FILE}
-    DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${CORE_GRAMMAR_JSON_FILE} ${GLSL_GRAMMAR_JSON_FILE}
-    COMMENT "Generate info tables for GLSL extended instructions and operands v${CONFIG_VERSION}.")
+  if(CMAKE_VERSION VERSION_LESS "3.12")
+    add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
+      COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
+        --extinst-glsl-grammar=${GLSL_GRAMMAR_JSON_FILE}
+        --glsl-insts-output=${GRAMMAR_INC_FILE}
+      DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${CORE_GRAMMAR_JSON_FILE} ${GLSL_GRAMMAR_JSON_FILE}
+      COMMENT "Generate info tables for GLSL extended instructions and operands v${CONFIG_VERSION}.")
+  else()
+    add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
+      COMMAND ${Python3_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
+        --extinst-glsl-grammar=${GLSL_GRAMMAR_JSON_FILE}
+        --glsl-insts-output=${GRAMMAR_INC_FILE}
+      DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${CORE_GRAMMAR_JSON_FILE} ${GLSL_GRAMMAR_JSON_FILE}
+      COMMENT "Generate info tables for GLSL extended instructions and operands v${CONFIG_VERSION}.")
+  endif()
   list(APPEND EXTINST_CPP_DEPENDS ${GRAMMAR_INC_FILE})
 endmacro(spvtools_glsl_tables)
 
@@ -101,25 +154,44 @@ macro(spvtools_opencl_tables CONFIG_VERSION)
   set(CORE_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
   set(OPENCL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/extinst.opencl.std.100.grammar.json")
   set(GRAMMAR_INC_FILE "${spirv-tools_BINARY_DIR}/opencl.std.insts.inc")
-  add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
-    COMMAND ${Python3_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
-      --extinst-opencl-grammar=${OPENCL_GRAMMAR_JSON_FILE}
-      --opencl-insts-output=${GRAMMAR_INC_FILE}
-    DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${CORE_GRAMMAR_JSON_FILE} ${OPENCL_GRAMMAR_JSON_FILE}
-    COMMENT "Generate info tables for OpenCL extended instructions and operands v${CONFIG_VERSION}.")
+  if(CMAKE_VERSION VERSION_LESS "3.12")
+    add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
+      COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
+        --extinst-opencl-grammar=${OPENCL_GRAMMAR_JSON_FILE}
+        --opencl-insts-output=${GRAMMAR_INC_FILE}
+      DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${CORE_GRAMMAR_JSON_FILE} ${OPENCL_GRAMMAR_JSON_FILE}
+      COMMENT "Generate info tables for OpenCL extended instructions and operands v${CONFIG_VERSION}.")
+  else()
+    add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
+      COMMAND ${Python3_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
+        --extinst-opencl-grammar=${OPENCL_GRAMMAR_JSON_FILE}
+        --opencl-insts-output=${GRAMMAR_INC_FILE}
+      DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${CORE_GRAMMAR_JSON_FILE} ${OPENCL_GRAMMAR_JSON_FILE}
+      COMMENT "Generate info tables for OpenCL extended instructions and operands v${CONFIG_VERSION}.")
+  endif()
   list(APPEND EXTINST_CPP_DEPENDS ${GRAMMAR_INC_FILE})
 endmacro(spvtools_opencl_tables)
 
 macro(spvtools_vendor_tables VENDOR_TABLE SHORT_NAME OPERAND_KIND_PREFIX)
   set(INSTS_FILE "${spirv-tools_BINARY_DIR}/${VENDOR_TABLE}.insts.inc")
   set(GRAMMAR_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/unified1/extinst.${VENDOR_TABLE}.grammar.json")
-  add_custom_command(OUTPUT ${INSTS_FILE}
-    COMMAND ${Python3_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
-      --extinst-vendor-grammar=${GRAMMAR_FILE}
-      --vendor-insts-output=${INSTS_FILE}
-      --vendor-operand-kind-prefix=${OPERAND_KIND_PREFIX}
-    DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${GRAMMAR_FILE}
-    COMMENT "Generate extended instruction tables for ${VENDOR_TABLE}.")
+  if(CMAKE_VERSION VERSION_LESS "3.12")
+    add_custom_command(OUTPUT ${INSTS_FILE}
+      COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
+        --extinst-vendor-grammar=${GRAMMAR_FILE}
+        --vendor-insts-output=${INSTS_FILE}
+        --vendor-operand-kind-prefix=${OPERAND_KIND_PREFIX}
+      DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${GRAMMAR_FILE}
+      COMMENT "Generate extended instruction tables for ${VENDOR_TABLE}.")
+  else()
+    add_custom_command(OUTPUT ${INSTS_FILE}
+      COMMAND ${Python3_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
+        --extinst-vendor-grammar=${GRAMMAR_FILE}
+        --vendor-insts-output=${INSTS_FILE}
+        --vendor-operand-kind-prefix=${OPERAND_KIND_PREFIX}
+      DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${GRAMMAR_FILE}
+      COMMENT "Generate extended instruction tables for ${VENDOR_TABLE}.")
+  endif()
   add_custom_target(spv-tools-${SHORT_NAME} DEPENDS ${INSTS_FILE})
   set_property(TARGET spv-tools-${SHORT_NAME} PROPERTY FOLDER "SPIRV-Tools build")
   list(APPEND EXTINST_CPP_DEPENDS spv-tools-${SHORT_NAME})
@@ -127,12 +199,21 @@ endmacro(spvtools_vendor_tables)
 
 macro(spvtools_extinst_lang_headers NAME GRAMMAR_FILE)
   set(OUT_H ${spirv-tools_BINARY_DIR}/${NAME}.h)
-  add_custom_command(OUTPUT ${OUT_H}
-    COMMAND ${Python3_EXECUTABLE} ${LANG_HEADER_PROCESSING_SCRIPT}
-      --extinst-grammar=${GRAMMAR_FILE}
-      --extinst-output-path=${OUT_H}
-    DEPENDS ${LANG_HEADER_PROCESSING_SCRIPT} ${GRAMMAR_FILE}
-    COMMENT "Generate language specific header for ${NAME}.")
+  if(CMAKE_VERSION VERSION_LESS "3.12")
+    add_custom_command(OUTPUT ${OUT_H}
+      COMMAND ${PYTHON_EXECUTABLE} ${LANG_HEADER_PROCESSING_SCRIPT}
+        --extinst-grammar=${GRAMMAR_FILE}
+        --extinst-output-path=${OUT_H}
+      DEPENDS ${LANG_HEADER_PROCESSING_SCRIPT} ${GRAMMAR_FILE}
+      COMMENT "Generate language specific header for ${NAME}.")
+  else()
+    add_custom_command(OUTPUT ${OUT_H}
+      COMMAND ${Python3_EXECUTABLE} ${LANG_HEADER_PROCESSING_SCRIPT}
+        --extinst-grammar=${GRAMMAR_FILE}
+        --extinst-output-path=${OUT_H}
+      DEPENDS ${LANG_HEADER_PROCESSING_SCRIPT} ${GRAMMAR_FILE}
+      COMMENT "Generate language specific header for ${NAME}.")
+  endif()
   add_custom_target(spirv-tools-header-${NAME} DEPENDS ${OUT_H})
   set_property(TARGET spirv-tools-header-${NAME} PROPERTY FOLDER "SPIRV-Tools build")
   list(APPEND EXTINST_CPP_DEPENDS spirv-tools-header-${NAME})
@@ -159,12 +240,21 @@ set_property(TARGET spirv-tools-vimsyntax PROPERTY FOLDER "SPIRV-Tools utilities
 # Extract the list of known generators from the SPIR-V XML registry file.
 set(GENERATOR_INC_FILE ${spirv-tools_BINARY_DIR}/generators.inc)
 set(SPIRV_XML_REGISTRY_FILE ${SPIRV_HEADER_INCLUDE_DIR}/spirv/spir-v.xml)
-add_custom_command(OUTPUT ${GENERATOR_INC_FILE}
-  COMMAND ${Python3_EXECUTABLE} ${XML_REGISTRY_PROCESSING_SCRIPT}
-    --xml=${SPIRV_XML_REGISTRY_FILE}
-    --generator-output=${GENERATOR_INC_FILE}
-  DEPENDS ${XML_REGISTRY_PROCESSING_SCRIPT} ${SPIRV_XML_REGISTRY_FILE}
-  COMMENT "Generate tables based on the SPIR-V XML registry.")
+if(CMAKE_VERSION VERSION_LESS "3.12")
+  add_custom_command(OUTPUT ${GENERATOR_INC_FILE}
+    COMMAND ${PYTHON_EXECUTABLE} ${XML_REGISTRY_PROCESSING_SCRIPT}
+      --xml=${SPIRV_XML_REGISTRY_FILE}
+      --generator-output=${GENERATOR_INC_FILE}
+    DEPENDS ${XML_REGISTRY_PROCESSING_SCRIPT} ${SPIRV_XML_REGISTRY_FILE}
+    COMMENT "Generate tables based on the SPIR-V XML registry.")
+else()
+  add_custom_command(OUTPUT ${GENERATOR_INC_FILE}
+    COMMAND ${Python3_EXECUTABLE} ${XML_REGISTRY_PROCESSING_SCRIPT}
+      --xml=${SPIRV_XML_REGISTRY_FILE}
+      --generator-output=${GENERATOR_INC_FILE}
+    DEPENDS ${XML_REGISTRY_PROCESSING_SCRIPT} ${SPIRV_XML_REGISTRY_FILE}
+    COMMENT "Generate tables based on the SPIR-V XML registry.")
+endif()
 list(APPEND OPCODE_CPP_DEPENDS ${GENERATOR_INC_FILE})
 
 # The following .cpp files include the above generated .inc files.
@@ -189,13 +279,23 @@ set(SPIRV_TOOLS_BUILD_VERSION_INC_GENERATOR
   ${spirv-tools_SOURCE_DIR}/utils/update_build_version.py)
 set(SPIRV_TOOLS_CHANGES_FILE
   ${spirv-tools_SOURCE_DIR}/CHANGES)
-add_custom_command(OUTPUT ${SPIRV_TOOLS_BUILD_VERSION_INC}
-   COMMAND ${Python3_EXECUTABLE}
-           ${SPIRV_TOOLS_BUILD_VERSION_INC_GENERATOR}
-           ${spirv-tools_SOURCE_DIR} ${SPIRV_TOOLS_BUILD_VERSION_INC}
-   DEPENDS ${SPIRV_TOOLS_BUILD_VERSION_INC_GENERATOR}
-           ${SPIRV_TOOLS_CHANGES_FILE}
-   COMMENT "Update build-version.inc in the SPIRV-Tools build directory (if necessary).")
+if(CMAKE_VERSION VERSION_LESS "3.12")
+  add_custom_command(OUTPUT ${SPIRV_TOOLS_BUILD_VERSION_INC}
+     COMMAND ${PYTHON_EXECUTABLE}
+             ${SPIRV_TOOLS_BUILD_VERSION_INC_GENERATOR}
+             ${spirv-tools_SOURCE_DIR} ${SPIRV_TOOLS_BUILD_VERSION_INC}
+     DEPENDS ${SPIRV_TOOLS_BUILD_VERSION_INC_GENERATOR}
+             ${SPIRV_TOOLS_CHANGES_FILE}
+     COMMENT "Update build-version.inc in the SPIRV-Tools build directory (if necessary).")
+else()
+  add_custom_command(OUTPUT ${SPIRV_TOOLS_BUILD_VERSION_INC}
+     COMMAND ${Python3_EXECUTABLE}
+             ${SPIRV_TOOLS_BUILD_VERSION_INC_GENERATOR}
+             ${spirv-tools_SOURCE_DIR} ${SPIRV_TOOLS_BUILD_VERSION_INC}
+     DEPENDS ${SPIRV_TOOLS_BUILD_VERSION_INC_GENERATOR}
+             ${SPIRV_TOOLS_CHANGES_FILE}
+     COMMENT "Update build-version.inc in the SPIRV-Tools build directory (if necessary).")
+endif()
 # Convenience target for standalone generation of the build-version.inc file.
 # This is not required for any dependence chain.
 add_custom_target(spirv-tools-build-version

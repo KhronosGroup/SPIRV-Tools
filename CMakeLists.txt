@@ -230,7 +230,11 @@ if(NOT COMMAND find_host_program)
 endif()
 
 # Tests require Python3
-find_host_package(Python3 3 REQUIRED)
+if(CMAKE_VERSION VERSION_LESS "3.12")
+  find_host_package(PythonInterp 3 REQUIRED)
+else()
+  find_host_package(Python3 3 REQUIRED)
+endif()
 
 # Check for symbol exports on Linux.
 # At the moment, this check will fail on the OSX build machines for the Android NDK.
@@ -238,9 +242,15 @@ find_host_package(Python3 3 REQUIRED)
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   macro(spvtools_check_symbol_exports TARGET)
     if (NOT "${SPIRV_SKIP_TESTS}")
-      add_test(NAME spirv-tools-symbol-exports-${TARGET}
-               COMMAND ${Python3_EXECUTABLE}
-               ${spirv-tools_SOURCE_DIR}/utils/check_symbol_exports.py "$<TARGET_FILE:${TARGET}>")
+      if(CMAKE_VERSION VERSION_LESS "3.12")
+        add_test(NAME spirv-tools-symbol-exports-${TARGET}
+                 COMMAND ${PYTHON_EXECUTABLE}
+                 ${spirv-tools_SOURCE_DIR}/utils/check_symbol_exports.py "$<TARGET_FILE:${TARGET}>")
+      else()
+        add_test(NAME spirv-tools-symbol-exports-${TARGET}
+                 COMMAND ${Python3_EXECUTABLE}
+                 ${spirv-tools_SOURCE_DIR}/utils/check_symbol_exports.py "$<TARGET_FILE:${TARGET}>")
+      endif()
     endif()
   endmacro()
 else()
@@ -337,9 +347,15 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
 endif(ENABLE_SPIRV_TOOLS_INSTALL)
 
 if (NOT "${SPIRV_SKIP_TESTS}")
-  add_test(NAME spirv-tools-copyrights
-           COMMAND ${Python3_EXECUTABLE} utils/check_copyright.py
-           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  if(CMAKE_VERSION VERSION_LESS "3.12")
+    add_test(NAME spirv-tools-copyrights
+             COMMAND ${PYTHON_EXECUTABLE} utils/check_copyright.py
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  else()
+    add_test(NAME spirv-tools-copyrights
+             COMMAND ${Python3_EXECUTABLE} utils/check_copyright.py
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  endif()
 endif()
 
 set(SPIRV_LIBRARIES "-lSPIRV-Tools-opt -lSPIRV-Tools -lSPIRV-Tools-link")
