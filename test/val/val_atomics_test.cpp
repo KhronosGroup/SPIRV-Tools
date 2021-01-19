@@ -30,16 +30,16 @@ using ValidateAtomics = spvtest::ValidateBase<bool>;
 
 std::string GenerateShaderCodeImpl(
     const std::string& body, const std::string& capabilities_and_extensions,
-    const std::string& definitions, const std::string& memory_model) {
+    const std::string& definitions, const std::string& memory_model,
+    const std::string& execution) {
   std::ostringstream ss;
   ss << R"(
 OpCapability Shader
 )";
   ss << capabilities_and_extensions;
   ss << "OpMemoryModel Logical " << memory_model << "\n";
+  ss << execution;
   ss << R"(
-OpEntryPoint Fragment %main "main"
-OpExecutionMode %main OriginUpperLeft
 %void = OpTypeVoid
 %func = OpTypeFunction %void
 %bool = OpTypeBool
@@ -96,6 +96,10 @@ std::string GenerateShaderCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "",
     const std::string& memory_model = "GLSL450") {
+  const std::string execution = R"(
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+)";
   const std::string defintions = R"(
 %u64 = OpTypeInt 64 0
 %s64 = OpTypeInt 64 1
@@ -110,7 +114,32 @@ std::string GenerateShaderCode(
 )";
   return GenerateShaderCodeImpl(
       body, "OpCapability Int64\n" + capabilities_and_extensions, defintions,
-      memory_model);
+      memory_model, execution);
+}
+
+std::string GenerateShaderComputeCode(
+    const std::string& body,
+    const std::string& capabilities_and_extensions = "",
+    const std::string& memory_model = "GLSL450") {
+  const std::string execution = R"(
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 32 1 1
+)";
+  const std::string defintions = R"(
+%u64 = OpTypeInt 64 0
+%s64 = OpTypeInt 64 1
+
+%u64_1 = OpConstant %u64 1
+%s64_1 = OpConstant %s64 1
+
+%u64_ptr = OpTypePointer Workgroup %u64
+%s64_ptr = OpTypePointer Workgroup %s64
+%u64_var = OpVariable %u64_ptr Workgroup
+%s64_var = OpVariable %s64_ptr Workgroup
+)";
+  return GenerateShaderCodeImpl(
+      body, "OpCapability Int64\n" + capabilities_and_extensions, defintions,
+      memory_model, execution);
 }
 
 std::string GenerateKernelCode(
@@ -217,7 +246,7 @@ TEST_F(ValidateAtomics, AtomicLoadInt32VulkanSuccess) {
 %val2 = OpAtomicLoad %u32 %u32_var %workgroup %acquire
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
+  CompileSuccessfully(GenerateShaderComputeCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -341,7 +370,7 @@ TEST_F(ValidateAtomics, AtomicLoadFloatVulkan) {
 %val2 = OpAtomicLoad %f32 %f32_var %workgroup %acquire
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
+  CompileSuccessfully(GenerateShaderComputeCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -369,8 +398,9 @@ TEST_F(ValidateAtomics, AtomicLoadInt64WithCapabilityVulkanSuccess) {
   %val2 = OpAtomicLoad %u64 %u64_var %workgroup %acquire
   )";
 
-  CompileSuccessfully(GenerateShaderCode(body, "OpCapability Int64Atomics\n"),
-                      SPV_ENV_VULKAN_1_0);
+  CompileSuccessfully(
+      GenerateShaderComputeCode(body, "OpCapability Int64Atomics\n"),
+      SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -380,7 +410,7 @@ TEST_F(ValidateAtomics, AtomicLoadInt64WithoutCapabilityVulkan) {
   %val2 = OpAtomicLoad %u64 %u64_var %workgroup %acquire
   )";
 
-  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
+  CompileSuccessfully(GenerateShaderComputeCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("64-bit atomics require the Int64Atomics capability"));
