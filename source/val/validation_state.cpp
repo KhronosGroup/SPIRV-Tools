@@ -1340,12 +1340,36 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-FragDepth-FragDepth-04215);
     case 4216:
       return VUID_WRAP(VUID-FragDepth-FragDepth-04216);
+    case 4217:
+      return VUID_WRAP(VUID-FragInvocationCountEXT-FragInvocationCountEXT-04217);
+    case 4218:
+      return VUID_WRAP(VUID-FragInvocationCountEXT-FragInvocationCountEXT-04218);
+    case 4219:
+      return VUID_WRAP(VUID-FragInvocationCountEXT-FragInvocationCountEXT-04219);
+    case 4220:
+      return VUID_WRAP(VUID-FragSizeEXT-FragSizeEXT-04220);
+    case 4221:
+      return VUID_WRAP(VUID-FragSizeEXT-FragSizeEXT-04221);
+    case 4222:
+      return VUID_WRAP(VUID-FragSizeEXT-FragSizeEXT-04222);
+    case 4223:
+      return VUID_WRAP(VUID-FragStencilRefEXT-FragStencilRefEXT-04223);
+    case 4224:
+      return VUID_WRAP(VUID-FragStencilRefEXT-FragStencilRefEXT-04224);
+    case 4225:
+      return VUID_WRAP(VUID-FragStencilRefEXT-FragStencilRefEXT-04225);
     case 4229:
       return VUID_WRAP(VUID-FrontFacing-FrontFacing-04229);
     case 4230:
       return VUID_WRAP(VUID-FrontFacing-FrontFacing-04230);
     case 4231:
       return VUID_WRAP(VUID-FrontFacing-FrontFacing-04231);
+    case 4232:
+      return VUID_WRAP(VUID-FullyCoveredEXT-FullyCoveredEXT-04232);
+    case 4233:
+      return VUID_WRAP(VUID-FullyCoveredEXT-FullyCoveredEXT-04233);
+    case 4234:
+      return VUID_WRAP(VUID-FullyCoveredEXT-FullyCoveredEXT-04234);
     case 4236:
       return VUID_WRAP(VUID-GlobalInvocationId-GlobalInvocationId-04236);
     case 4237:

@@ -3941,6 +3941,184 @@ INSTANTIATE_TEST_SUITE_P(
         Values(TestResult(SPV_ERROR_INVALID_DATA,
                           "According to the Vulkan spec BuiltIn ShadingRateKHR "
                           "variable needs to be a 32-bit int scalar."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    FragInvocationCountInputSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("FragInvocationCountEXT"), Values("Fragment"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability FragmentDensityEXT\n"),
+            Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
+            Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    FragInvocationCountInvalidExecutionModel,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("FragInvocationCountEXT"), Values("Vertex"), Values("Input"),
+        Values("%u32"), Values("OpCapability FragmentDensityEXT\n"),
+        Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
+        Values("VUID-FragInvocationCountEXT-FragInvocationCountEXT-04217"),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "Vulkan spec allows BuiltIn FragInvocationCountEXT "
+                          "to be used only with Fragment execution model."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    FragInvocationCountInvalidStorageClass,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("FragInvocationCountEXT"), Values("Fragment"),
+            Values("Output"), Values("%u32"),
+            Values("OpCapability FragmentDensityEXT\n"),
+            Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
+            Values("VUID-FragInvocationCountEXT-FragInvocationCountEXT-04218"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "Vulkan spec allows BuiltIn FragInvocationCountEXT to be only "
+                "used for variables with Input storage class."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    FragInvocationCountInvalidType,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("FragInvocationCountEXT"), Values("Fragment"),
+            Values("Input"), Values("%f32"),
+            Values("OpCapability FragmentDensityEXT\n"),
+            Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
+            Values("VUID-FragInvocationCountEXT-FragInvocationCountEXT-04219"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "According to the Vulkan spec BuiltIn FragInvocationCountEXT "
+                "variable needs to be a 32-bit int scalar."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    FragSizeInputSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("FragSizeEXT"), Values("Fragment"), Values("Input"),
+            Values("%u32vec2"), Values("OpCapability FragmentDensityEXT\n"),
+            Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
+            Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    FragSizeInvalidExecutionModel,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("FragSizeEXT"), Values("Vertex"), Values("Input"),
+            Values("%u32vec2"), Values("OpCapability FragmentDensityEXT\n"),
+            Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
+            Values("VUID-FragSizeEXT-FragSizeEXT-04220"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "Vulkan spec allows BuiltIn FragSizeEXT to be "
+                              "used only with Fragment execution model."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    FragSizeInvalidStorageClass,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("FragSizeEXT"), Values("Fragment"), Values("Output"),
+        Values("%u32vec2"), Values("OpCapability FragmentDensityEXT\n"),
+        Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
+        Values("VUID-FragSizeEXT-FragSizeEXT-04221"),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "Vulkan spec allows BuiltIn FragSizeEXT to be only "
+                          "used for variables with Input storage class."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    FragSizeInvalidType,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("FragSizeEXT"), Values("Fragment"), Values("Input"),
+            Values("%u32vec3"), Values("OpCapability FragmentDensityEXT\n"),
+            Values("OpExtension \"SPV_EXT_fragment_invocation_density\"\n"),
+            Values("VUID-FragSizeEXT-FragSizeEXT-04222"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "According to the Vulkan spec BuiltIn FragSizeEXT variable "
+                "needs to be a 2-component 32-bit int vector."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    FragStencilRefOutputSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("FragStencilRefEXT"), Values("Fragment"), Values("Output"),
+            Values("%u32", "%u64"), Values("OpCapability StencilExportEXT\n"),
+            Values("OpExtension \"SPV_EXT_shader_stencil_export\"\n"),
+            Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    FragStencilRefInvalidExecutionModel,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("FragStencilRefEXT"), Values("Vertex"), Values("Output"),
+            Values("%u32", "%u64"), Values("OpCapability StencilExportEXT\n"),
+            Values("OpExtension \"SPV_EXT_shader_stencil_export\"\n"),
+            Values("VUID-FragStencilRefEXT-FragStencilRefEXT-04223"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "Vulkan spec allows BuiltIn FragStencilRefEXT to "
+                              "be used only with Fragment execution model."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    FragStencilRefInvalidStorageClass,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("FragStencilRefEXT"), Values("Fragment"), Values("Input"),
+            Values("%u32", "%u64"), Values("OpCapability StencilExportEXT\n"),
+            Values("OpExtension \"SPV_EXT_shader_stencil_export\"\n"),
+            Values("VUID-FragStencilRefEXT-FragStencilRefEXT-04224"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "Vulkan spec allows BuiltIn FragStencilRefEXT to be only used "
+                "for variables with Output storage class."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    FragStencilRefInvalidType,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("FragStencilRefEXT"), Values("Fragment"), Values("Output"),
+            Values("%f32", "%f64", "%u32vec2"),
+            Values("OpCapability StencilExportEXT\n"),
+            Values("OpExtension \"SPV_EXT_shader_stencil_export\"\n"),
+            Values("VUID-FragStencilRefEXT-FragStencilRefEXT-04225"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "According to the Vulkan spec BuiltIn FragStencilRefEXT "
+                "variable needs to be a int scalar."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    FullyCoveredEXTInputSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("FullyCoveredEXT"), Values("Fragment"), Values("Input"),
+            Values("%bool"), Values("OpCapability FragmentFullyCoveredEXT\n"),
+            Values("OpExtension \"SPV_EXT_fragment_fully_covered\"\n"),
+            Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    FullyCoveredEXTInvalidExecutionModel,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("FullyCoveredEXT"), Values("Vertex"), Values("Input"),
+            Values("%bool"), Values("OpCapability FragmentFullyCoveredEXT\n"),
+            Values("OpExtension \"SPV_EXT_fragment_fully_covered\"\n"),
+            Values("VUID-FullyCoveredEXT-FullyCoveredEXT-04232"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "Vulkan spec allows BuiltIn FullyCoveredEXT to "
+                              "be used only with Fragment execution model."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    FullyCoveredEXTInvalidStorageClass,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("FullyCoveredEXT"), Values("Fragment"), Values("Output"),
+            Values("%bool"), Values("OpCapability FragmentFullyCoveredEXT\n"),
+            Values("OpExtension \"SPV_EXT_fragment_fully_covered\"\n"),
+            Values("VUID-FullyCoveredEXT-FullyCoveredEXT-04233"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "Vulkan spec allows BuiltIn FullyCoveredEXT to be only used "
+                "for variables with Input storage class."))));
+
+INSTANTIATE_TEST_SUITE_P(
+    FullyCoveredEXTInvalidType,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("FullyCoveredEXT"), Values("Fragment"), Values("Input"),
+            Values("%f32"), Values("OpCapability FragmentFullyCoveredEXT\n"),
+            Values("OpExtension \"SPV_EXT_fragment_fully_covered\"\n"),
+            Values("VUID-FullyCoveredEXT-FullyCoveredEXT-04234"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "According to the Vulkan spec BuiltIn FullyCoveredEXT variable "
+                "needs to be a bool scalar."))));
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
