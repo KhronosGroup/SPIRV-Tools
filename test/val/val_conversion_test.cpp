@@ -1516,6 +1516,70 @@ OpFunctionEnd
                         "PhysicalStorageBufferEXT: ConvertUToPtr"));
 }
 
+TEST_F(ValidateConversion, ConvertUToPtrVulkanWrongWidth) {
+  const std::string body = R"(
+OpCapability PhysicalStorageBufferAddressesEXT
+OpCapability Shader
+OpExtension "SPV_EXT_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64EXT GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%uint32 = OpTypeInt 32 0
+%u32_1 = OpConstant %uint32 1
+%ptr = OpTypePointer PhysicalStorageBufferEXT %uint32
+%void = OpTypeVoid
+%voidfn = OpTypeFunction %void
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%val1 = OpConvertUToPtr %ptr %u32_1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-PhysicalStorageBuffer64-04710"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Pointer must be a 64 bit width integer with PhysicalStorageBuffer64 "
+          "addressing mode for Vulkan environment."));
+}
+
+TEST_F(ValidateConversion, ConvertUToPtrVulkanWrongWidthDifferentResult) {
+  const std::string body = R"(
+OpCapability PhysicalStorageBufferAddressesEXT
+OpCapability Int64
+OpCapability Shader
+OpExtension "SPV_EXT_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64EXT GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%uint32 = OpTypeInt 32 0
+%uint64 = OpTypeInt 64 0
+%u64_1 = OpConstant %uint64 1
+%ptr = OpTypePointer PhysicalStorageBufferEXT %uint32
+%void = OpTypeVoid
+%voidfn = OpTypeFunction %void
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%val1 = OpConvertUToPtr %ptr %u64_1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-PhysicalStorageBuffer64-04710"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Pointer must be a 64 bit width integer with PhysicalStorageBuffer64 "
+          "addressing mode for Vulkan environment."));
+}
+
 TEST_F(ValidateConversion, ConvertPtrToUPSBSuccess) {
   const std::string body = R"(
 OpCapability PhysicalStorageBufferAddressesEXT
@@ -1572,6 +1636,76 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Pointer storage class must be "
                         "PhysicalStorageBufferEXT: ConvertPtrToU"));
+}
+
+TEST_F(ValidateConversion, ConvertPtrToUVulkanWrongWidth) {
+  const std::string body = R"(
+OpCapability PhysicalStorageBufferAddressesEXT
+OpCapability Shader
+OpExtension "SPV_EXT_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64EXT GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %val1 RestrictPointerEXT
+%uint32 = OpTypeInt 32 0
+%ptr = OpTypePointer PhysicalStorageBufferEXT %uint32
+%pptr_f = OpTypePointer Function %ptr
+%void = OpTypeVoid
+%voidfn = OpTypeFunction %void
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%val1 = OpVariable %pptr_f Function
+%val2 = OpLoad %ptr %val1
+%val3 = OpConvertPtrToU %uint32 %val2
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-PhysicalStorageBuffer64-04710"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Pointer must be a 64 bit width integer with PhysicalStorageBuffer64 "
+          "addressing mode for Vulkan environment."));
+}
+
+TEST_F(ValidateConversion, ConvertPtrToUVulkanWrongWidthDifferentResult) {
+  const std::string body = R"(
+OpCapability PhysicalStorageBufferAddressesEXT
+OpCapability Shader
+OpCapability Int64
+OpExtension "SPV_EXT_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64EXT GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %val1 RestrictPointerEXT
+%uint32 = OpTypeInt 32 0
+%uint64 = OpTypeInt 64 0
+%ptr = OpTypePointer PhysicalStorageBufferEXT %uint32
+%pptr_f = OpTypePointer Function %ptr
+%void = OpTypeVoid
+%voidfn = OpTypeFunction %void
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%val1 = OpVariable %pptr_f Function
+%val2 = OpLoad %ptr %val1
+%val3 = OpConvertPtrToU %uint64 %val2
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-PhysicalStorageBuffer64-04710"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Pointer must be a 64 bit width integer with PhysicalStorageBuffer64 "
+          "addressing mode for Vulkan environment."));
 }
 
 using ValidateSmallConversions = spvtest::ValidateBase<std::string>;

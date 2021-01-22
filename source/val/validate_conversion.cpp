@@ -14,12 +14,12 @@
 
 // Validates correctness of conversion instructions.
 
-#include "source/val/validate.h"
-
 #include "source/diagnostic.h"
 #include "source/opcode.h"
 #include "source/spirv_constant.h"
+#include "source/spirv_target_env.h"
 #include "source/val/instruction.h"
+#include "source/val/validate.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
@@ -273,6 +273,18 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Pointer storage class must be PhysicalStorageBufferEXT: "
                  << spvOpcodeString(opcode);
+
+        if (spvIsVulkanEnv(_.context()->target_env)) {
+          if (!_.IsIntScalarType(input_data_type) ||
+              (_.GetBitWidth(input_data_type) != 64)) {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << _.VkErrorID(4710)
+                   << "Pointer must be a 64 bit width integer with "
+                      "PhysicalStorageBuffer64 addressing mode for Vulkan "
+                      "environment."
+                   << spvOpcodeString(opcode);
+          }
+        }
       }
       break;
     }
@@ -324,6 +336,18 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Pointer storage class must be PhysicalStorageBufferEXT: "
                  << spvOpcodeString(opcode);
+
+        if (spvIsVulkanEnv(_.context()->target_env)) {
+          if (!_.IsIntScalarType(result_data_type) ||
+              (_.GetBitWidth(result_data_type) != 64)) {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << _.VkErrorID(4710)
+                   << "Pointer must be a 64 bit width integer with "
+                      "PhysicalStorageBuffer64 addressing mode for Vulkan "
+                      "environment."
+                   << spvOpcodeString(opcode);
+          }
+        }
       }
       break;
     }
