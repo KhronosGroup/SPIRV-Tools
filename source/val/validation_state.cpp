@@ -1684,8 +1684,6 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-None-04640);
     case 4642:
       return VUID_WRAP(VUID-StandaloneSpirv-None-04642);
-    case 4649:
-      return VUID_WRAP(VUID-StandaloneSpirv-OpMemoryBarrier-04649);
     case 4651:
       return VUID_WRAP(VUID-StandaloneSpirv-OpVariable-04651);
     case 4652:
@@ -1714,6 +1712,14 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-None-04686);
     case 4711:
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeForwardPointer-04711);
+    case 4730:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpAtomicStore-04730);
+    case 4731:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpAtomicLoad-04731);
+    case 4732:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpMemoryBarrier-04732);
+    case 4733:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpMemoryBarrier-04733);
     default:
       return "";  // unknown id
   };

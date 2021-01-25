@@ -477,6 +477,8 @@ TEST_F(ValidateAtomics, AtomicLoadVulkanRelease) {
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpAtomicLoad-04731"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Vulkan spec disallows OpAtomicLoad with Memory Semantics "
@@ -490,6 +492,8 @@ TEST_F(ValidateAtomics, AtomicLoadVulkanAcquireRelease) {
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpAtomicLoad-04731"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Vulkan spec disallows OpAtomicLoad with Memory Semantics "
@@ -503,6 +507,8 @@ TEST_F(ValidateAtomics, AtomicLoadVulkanSequentiallyConsistent) {
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpAtomicLoad-04731"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Vulkan spec disallows OpAtomicLoad with Memory Semantics "
@@ -675,6 +681,8 @@ OpAtomicStore %u32_var %device %acquire %u32_1
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpAtomicStore-04730"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Vulkan spec disallows OpAtomicStore with Memory Semantics "
@@ -688,6 +696,8 @@ OpAtomicStore %u32_var %device %acquire_release %u32_1
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpAtomicStore-04730"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Vulkan spec disallows OpAtomicStore with Memory Semantics "
@@ -701,6 +711,8 @@ OpAtomicStore %u32_var %device %sequentially_consistent %u32_1
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpAtomicStore-04730"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Vulkan spec disallows OpAtomicStore with Memory Semantics "
