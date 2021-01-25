@@ -175,7 +175,7 @@ bool ScalarReplacementPass::ReplaceWholeDebugDeclare(
     Instruction* added_dbg_value =
         context()->get_debug_info_mgr()->AddDebugValueForDecl(
             dbg_decl, /*value_id=*/var->result_id(),
-            /*insert_before=*/var->NextNode());
+            /*insert_before=*/var->NextNode(), nullptr);
     if (added_dbg_value == nullptr) return false;
     added_dbg_value->AddOperand(
         {SPV_OPERAND_TYPE_ID,
