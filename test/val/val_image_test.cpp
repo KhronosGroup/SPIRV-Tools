@@ -1782,6 +1782,24 @@ TEST_F(ValidateImage, SampleImplicitLodMoreThanOneOffset) {
                         "cannot be used together"));
 }
 
+TEST_F(ValidateImage, SampleImplicitLodVulkanMoreThanOneOffset) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 ConstOffset|Offset %s32vec2_01 %s32vec2_01
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, "", "Fragment", "", SPV_ENV_VULKAN_1_0).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Offset-04662"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Operands Offset, ConstOffset, ConstOffsets "
+                        "cannot be used together"));
+}
+
 TEST_F(ValidateImage, SampleImplicitLodMinLodWrongType) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
