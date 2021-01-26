@@ -55,10 +55,10 @@ namespace analysis {
 
 bool DecorationManager::RemoveDecorationsFrom(
     uint32_t id, std::function<bool(const Instruction&)> pred) {
-  bool modified = false;
+  bool was_modified = false;
   const auto ids_iter = id_to_decoration_insts_.find(id);
   if (ids_iter == id_to_decoration_insts_.end()) {
-    return modified;
+    return was_modified;
   }
 
   TargetData& decorations_info = ids_iter->second;
@@ -100,7 +100,6 @@ bool DecorationManager::RemoveDecorationsFrom(
 
     // Otherwise, remove |id| from the targets of |group_id|
     const uint32_t stride = inst->opcode() == SpvOpGroupDecorate ? 1u : 2u;
-    bool was_modified = false;
     for (uint32_t i = 1u; i < inst->NumInOperands();) {
       if (inst->GetSingleWordInOperand(i) != id) {
         i += stride;
@@ -156,7 +155,7 @@ bool DecorationManager::RemoveDecorationsFrom(
           }),
       indirect_decorations.end());
 
-  modified |= !insts_to_kill.empty();
+  was_modified |= !insts_to_kill.empty();
   for (Instruction* inst : insts_to_kill) context->KillInst(inst);
   insts_to_kill.clear();
 
@@ -167,7 +166,7 @@ bool DecorationManager::RemoveDecorationsFrom(
     for (Instruction* inst : decorations_info.decorate_insts)
       insts_to_kill.push_back(inst);
   }
-  modified |= !insts_to_kill.empty();
+  was_modified |= !insts_to_kill.empty();
   for (Instruction* inst : insts_to_kill) context->KillInst(inst);
 
   if (decorations_info.direct_decorations.empty() &&
@@ -175,7 +174,7 @@ bool DecorationManager::RemoveDecorationsFrom(
       decorations_info.decorate_insts.empty()) {
     id_to_decoration_insts_.erase(ids_iter);
   }
-  return modified;
+  return was_modified;
 }
 
 std::vector<Instruction*> DecorationManager::GetDecorationsFor(

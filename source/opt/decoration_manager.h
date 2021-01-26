@@ -36,8 +36,9 @@ class DecorationManager {
   }
   DecorationManager() = delete;
 
-  // Changes all of the decorations (direct and through groups) where |pred| is
-  // true and that apply to |id| so that they no longer apply to |id|.
+  // Removes all decorations (direct and through groups) where |pred| is
+  // true and that apply to |id| so that they no longer apply to |id|.  Returns
+  // true if something changed.
   //
   // If |id| is part of a group, it will be removed from the group if it
   // does not use all of the group's decorations, or, if there are no
