@@ -53,11 +53,12 @@ namespace spvtools {
 namespace opt {
 namespace analysis {
 
-void DecorationManager::RemoveDecorationsFrom(
+bool DecorationManager::RemoveDecorationsFrom(
     uint32_t id, std::function<bool(const Instruction&)> pred) {
+  bool modified = false;
   const auto ids_iter = id_to_decoration_insts_.find(id);
   if (ids_iter == id_to_decoration_insts_.end()) {
-    return;
+    return modified;
   }
 
   TargetData& decorations_info = ids_iter->second;
@@ -155,6 +156,7 @@ void DecorationManager::RemoveDecorationsFrom(
           }),
       indirect_decorations.end());
 
+  modified |= !insts_to_kill.empty();
   for (Instruction* inst : insts_to_kill) context->KillInst(inst);
   insts_to_kill.clear();
 
@@ -165,6 +167,7 @@ void DecorationManager::RemoveDecorationsFrom(
     for (Instruction* inst : decorations_info.decorate_insts)
       insts_to_kill.push_back(inst);
   }
+  modified |= !insts_to_kill.empty();
   for (Instruction* inst : insts_to_kill) context->KillInst(inst);
 
   if (decorations_info.direct_decorations.empty() &&
@@ -172,6 +175,7 @@ void DecorationManager::RemoveDecorationsFrom(
       decorations_info.decorate_insts.empty()) {
     id_to_decoration_insts_.erase(ids_iter);
   }
+  return modified;
 }
 
 std::vector<Instruction*> DecorationManager::GetDecorationsFor(
