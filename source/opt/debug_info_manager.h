@@ -161,6 +161,18 @@ class DebugInfoManager {
                                     Instruction* insert_before,
                                     Instruction* scope_and_line);
 
+  // Creates a DebugValue with Deref operation that is used as a DebugDeclare
+  // for |scalar_index|th component of local variable with an aggregate type
+  // declared by |dbg_decl| and inserts it before |scalar_var|. It sets
+  // |scalar_var| as the new storage for the scalar. It uses |deref_expr| as the
+  // expression if it is not nullptr. Otherwise, it creates a new expression
+  // with Deref operation. Returns the created DebugValue, or nullptr if fails
+  // to create one.
+  Instruction* AddDebugDeclareForScalar(Instruction* dbg_decl,
+                                        Instruction* scalar_var,
+                                        uint32_t scalar_index,
+                                        Instruction* deref_expr);
+
   // Erases |instr| from data structures of this class.
   void ClearDebugInfo(Instruction* instr);
 
