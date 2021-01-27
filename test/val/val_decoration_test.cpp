@@ -7418,6 +7418,39 @@ TEST_F(ValidateDecorations, WorkgroupBlockVariableWith16BitType) {
 	    ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
 }
 
+TEST_F(ValidateDecorations, WorkgroupBlockVariableScalarLayout) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability WorkgroupMemoryExplicitLayoutKHR
+               OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %B
+               OpSource GLSL 450
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 4
+               OpMemberDecorate %S 2 Offset 16
+               OpMemberDecorate %S 3 Offset 28
+               OpDecorate %S Block
+               OpDecorate %B Aliased
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+          %S = OpTypeStruct %float %v3float %v3float %v3float
+%_ptr_Workgroup_S = OpTypePointer Workgroup %S
+          %B = OpVariable %_ptr_Workgroup_S Workgroup
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  spvValidatorOptionsSetWorkgroupScalarBlockLayout(getValidatorOptions(), true);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4))
+      << getDiagnosticString();
+}
+
 TEST_F(ValidateDecorations, WorkgroupMixBlockAndNonBlockBad) {
   std::string spirv = R"(
                OpCapability Shader

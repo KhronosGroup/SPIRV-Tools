@@ -379,6 +379,7 @@ bool IsAlignedTo(uint32_t offset, uint32_t alignment) {
 // or row major-ness.
 spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
                          const char* decoration_str, bool blockRules,
+                         bool scalar_block_layout,
                          uint32_t incoming_offset,
                          MemberConstraints& constraints,
                          ValidationState_t& vstate) {
@@ -392,7 +393,6 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
   // For example, relaxed layout is implied by Vulkan 1.1.  But scalar layout
   // is more permissive than relaxed layout.
   const bool relaxed_block_layout = vstate.IsRelaxedBlockLayout();
-  const bool scalar_block_layout = vstate.options()->scalar_block_layout;
 
   auto fail = [&vstate, struct_id, storage_class_str, decoration_str,
                blockRules, relaxed_block_layout,
@@ -501,6 +501,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
     if (SpvOpTypeStruct == opcode &&
         SPV_SUCCESS != (recursive_status = checkLayout(
                             id, storage_class_str, decoration_str, blockRules,
+                            scalar_block_layout,
                             offset, constraints, vstate)))
       return recursive_status;
     // Check matrix stride.
@@ -553,7 +554,8 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
         if (SpvOpTypeStruct == element_inst->opcode() &&
             SPV_SUCCESS != (recursive_status = checkLayout(
                                 typeId, storage_class_str, decoration_str,
-                                blockRules, next_offset, constraints, vstate)))
+                                blockRules, scalar_block_layout,
+                                next_offset, constraints, vstate)))
           return recursive_status;
         // If offsets accumulate up to a 16-byte multiple stop checking since
         // it will just repeat.
@@ -1086,6 +1088,10 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
           if (blockRules || bufferRules) {
             const char* deco_str = blockDeco ? "Block" : "BufferBlock";
             spv_result_t recursive_status = SPV_SUCCESS;
+            const bool scalar_block_layout = workgroup ?
+                vstate.options()->workgroup_scalar_block_layout :
+                vstate.options()->scalar_block_layout;
+
             if (isMissingOffsetInStruct(id, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                      << "Structure id " << id << " decorated as " << deco_str
@@ -1114,12 +1120,14 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                         "decorations.";
             } else if (blockRules &&
                        (SPV_SUCCESS != (recursive_status = checkLayout(
-                                            id, sc_str, deco_str, true, 0,
+                                            id, sc_str, deco_str, true,
+                                            scalar_block_layout, 0,
                                             constraints, vstate)))) {
               return recursive_status;
             } else if (bufferRules &&
                        (SPV_SUCCESS != (recursive_status = checkLayout(
-                                            id, sc_str, deco_str, false, 0,
+                                            id, sc_str, deco_str, false,
+                                            scalar_block_layout, 0,
                                             constraints, vstate)))) {
               return recursive_status;
             }
