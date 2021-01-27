@@ -532,26 +532,6 @@ Instruction* DebugInfoManager::AddDebugValueForDecl(
   return added_dbg_val;
 }
 
-Instruction* DebugInfoManager::AddDebugDeclareForScalar(
-    Instruction* dbg_decl, Instruction* scalar_var, uint32_t scalar_index,
-    Instruction* deref_expr) {
-  Instruction* dbg_decl_for_scalar = AddDebugValueForDecl(
-      dbg_decl, scalar_var->result_id(), scalar_var->NextNode(), dbg_decl);
-  if (dbg_decl_for_scalar == nullptr) return nullptr;
-  if (deref_expr == nullptr) deref_expr = GetDebugOperationWithDeref();
-  assert(GetDbgInst(deref_expr->GetSingleWordOperand(
-                        kDebugExpressOperandOperationIndex))
-             ->GetSingleWordOperand(kDebugOperationOperandOperationIndex) ==
-         OpenCLDebugInfo100Deref);
-  dbg_decl_for_scalar->AddOperand({SPV_OPERAND_TYPE_ID, {scalar_index}});
-  dbg_decl_for_scalar->SetOperand(kDebugValueOperandExpressionIndex,
-                                  {deref_expr->result_id()});
-  AnalyzeDebugInst(dbg_decl_for_scalar);
-  if (context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
-    context()->get_def_use_mgr()->AnalyzeInstDefUse(dbg_decl_for_scalar);
-  return dbg_decl_for_scalar;
-}
-
 uint32_t DebugInfoManager::GetVariableIdOfDebugValueUsedForDeclare(
     Instruction* inst) {
   if (inst->GetOpenCL100DebugOpcode() != OpenCLDebugInfo100DebugValue) return 0;
