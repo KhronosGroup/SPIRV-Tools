@@ -172,14 +172,10 @@ bool ScalarReplacementPass::ReplaceWholeDebugDeclare(
   // Add DebugValue instruction with Indexes operand and Deref operation.
   int32_t idx = 0;
   for (const auto* var : replacements) {
-    // We use the nullptr instruction for the scope and line info instruction
-    // of the new DebugValue because it will be used as DebugDeclare, not
-    // DebugValue. Setting the scope and line info must be done when we
-    // distribute DebugValue instructions for a DebugDeclare.
     Instruction* added_dbg_value =
         context()->get_debug_info_mgr()->AddDebugValueForDecl(
             dbg_decl, /*value_id=*/var->result_id(),
-            /*insert_before=*/var->NextNode(), nullptr);
+            /*insert_before=*/var->NextNode(), /*scope_and_line=*/dbg_decl);
 
     if (added_dbg_value == nullptr) return false;
     added_dbg_value->AddOperand(
