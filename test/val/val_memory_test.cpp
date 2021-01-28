@@ -451,7 +451,8 @@ OpFunctionEnd
       HasSubstr("OpVariable, <id> '5[%5]', has a disallowed initializer & "
                 "storage class combination.\nFrom Vulkan spec:\nVariable "
                 "declarations that include initializers must have one of the "
-                "following storage classes: Output, Private, or Function\n  %5 "
+                "following storage classes: Output, Private, Function or "
+                "Workgroup\n  %5 "
                 "= OpVariable %_ptr_Input_float Input %float_1\n"));
 }
 
@@ -4078,6 +4079,55 @@ OpFunctionEnd
       getDiagnosticString(),
       HasSubstr(
           "Cannot use a pointer in the PhysicalStorageBuffer storage class"));
+}
+
+TEST_F(ValidateMemory, VulkanInitializerWithWorkgroupStorageClassBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%float = OpTypeFloat 32
+%float_ptr = OpTypePointer Workgroup %float
+%init_val = OpConstant %float 1.0
+%1 = OpVariable %float_ptr Workgroup %init_val
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variable initializers in Workgroup storage class are "
+                        "limited to OpConstantNull"));
+}
+
+TEST_F(ValidateMemory, VulkanInitializerWithWorkgroupStorageClassGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+%float = OpTypeFloat 32
+%float_ptr = OpTypePointer Workgroup %float
+%init_val = OpConstantNull %float
+%1 = OpVariable %float_ptr Workgroup %init_val
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
 }  // namespace
