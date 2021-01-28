@@ -58,6 +58,7 @@ Options:
                                    uniform, storage buffer, and push constant layouts.  Scalar layout
                                    rules are more permissive than relaxed block layout so in effect
                                    this will override the --relax-block-layout option.
+  --workgroup-scalar-block-layout  Enable scalar block layout when checking Workgroup block layouts.
   --skip-block-layout              Skip checking standard uniform/storage buffer layout.
                                    Overrides any --relax-block-layout or --scalar-block-layout option.
   --relax-struct-store             Allow store from one struct type to a
@@ -148,6 +149,8 @@ int main(int argc, char** argv) {
         options.SetUniformBufferStandardLayout(true);
       } else if (0 == strcmp(cur_arg, "--scalar-block-layout")) {
         options.SetScalarBlockLayout(true);
+      } else if (0 == strcmp(cur_arg, "--workgroup-scalar-block-layout")) {
+        options.SetWorkgroupScalarBlockLayout(true);
       } else if (0 == strcmp(cur_arg, "--skip-block-layout")) {
         options.SetSkipBlockLayout(true);
       } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {

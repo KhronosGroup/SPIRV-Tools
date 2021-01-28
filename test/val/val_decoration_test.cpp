@@ -7183,6 +7183,469 @@ OpDecorate %float Location 0
                         "or member of a structure type"));
 }
 
+TEST_F(ValidateDecorations, WorkgroupSingleBlockVariable) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability WorkgroupMemoryExplicitLayoutKHR
+               OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 8 1 1
+               OpMemberDecorate %first 0 Offset 0
+               OpDecorate %first Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+      %first = OpTypeStruct %int
+%_ptr_Workgroup_first = OpTypePointer Workgroup %first
+          %_ = OpVariable %_ptr_Workgroup_first Workgroup
+      %int_0 = OpConstant %int 0
+      %int_2 = OpConstant %int 2
+%_ptr_Workgroup_int = OpTypePointer Workgroup %int
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %13 = OpAccessChain %_ptr_Workgroup_int %_ %int_0
+               OpStore %13 %int_2
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS,
+	    ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
+}
+
+TEST_F(ValidateDecorations, WorkgroupBlockVariableRequiresV14) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability WorkgroupMemoryExplicitLayoutKHR
+               OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 8 1 1
+               OpMemberDecorate %first 0 Offset 0
+               OpDecorate %first Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+      %first = OpTypeStruct %int
+%_ptr_Workgroup_first = OpTypePointer Workgroup %first
+          %_ = OpVariable %_ptr_Workgroup_first Workgroup
+      %int_0 = OpConstant %int 0
+      %int_2 = OpConstant %int 2
+%_ptr_Workgroup_int = OpTypePointer Workgroup %int
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %13 = OpAccessChain %_ptr_Workgroup_int %_ %int_0
+               OpStore %13 %int_2
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_WRONG_VERSION,
+            ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires SPIR-V version 1.4 or later"));
+}
+
+TEST_F(ValidateDecorations, WorkgroupSingleNonBlockVariable) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %a
+               OpExecutionMode %main LocalSize 8 1 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Workgroup_int = OpTypePointer Workgroup %int
+          %a = OpVariable %_ptr_Workgroup_int Workgroup
+      %int_2 = OpConstant %int 2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpStore %a %int_2
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS,
+	    ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
+}
+
+TEST_F(ValidateDecorations, WorkgroupMultiBlockVariable) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability WorkgroupMemoryExplicitLayoutKHR
+               OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_ %__0
+               OpExecutionMode %main LocalSize 8 1 1
+               OpMemberDecorate %first 0 Offset 0
+               OpDecorate %first Block
+               OpMemberDecorate %second 0 Offset 0
+               OpDecorate %second Block
+               OpDecorate %_ Aliased
+               OpDecorate %__0 Aliased
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+      %first = OpTypeStruct %int
+%_ptr_Workgroup_first = OpTypePointer Workgroup %first
+          %_ = OpVariable %_ptr_Workgroup_first Workgroup
+      %int_0 = OpConstant %int 0
+      %int_2 = OpConstant %int 2
+%_ptr_Workgroup_int = OpTypePointer Workgroup %int
+     %second = OpTypeStruct %int
+%_ptr_Workgroup_second = OpTypePointer Workgroup %second
+        %__0 = OpVariable %_ptr_Workgroup_second Workgroup
+      %int_3 = OpConstant %int 3
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %13 = OpAccessChain %_ptr_Workgroup_int %_ %int_0
+               OpStore %13 %int_2
+         %18 = OpAccessChain %_ptr_Workgroup_int %__0 %int_0
+               OpStore %18 %int_3
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS,
+	    ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
+}
+
+TEST_F(ValidateDecorations, WorkgroupBlockVariableWith8BitType) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Int8
+               OpCapability WorkgroupMemoryExplicitLayout8BitAccessKHR
+               OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 2 1 1
+               OpMemberDecorate %first 0 Offset 0
+               OpDecorate %first Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %char = OpTypeInt 8 1
+      %first = OpTypeStruct %char
+%_ptr_Workgroup_first = OpTypePointer Workgroup %first
+          %_ = OpVariable %_ptr_Workgroup_first Workgroup
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+     %char_2 = OpConstant %char 2
+%_ptr_Workgroup_char = OpTypePointer Workgroup %char
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %14 = OpAccessChain %_ptr_Workgroup_char %_ %int_0
+               OpStore %14 %char_2
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS,
+	    ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
+}
+
+TEST_F(ValidateDecorations, WorkgroupMultiNonBlockVariable) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %a %b
+               OpExecutionMode %main LocalSize 8 1 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Workgroup_int = OpTypePointer Workgroup %int
+          %a = OpVariable %_ptr_Workgroup_int Workgroup
+      %int_2 = OpConstant %int 2
+          %b = OpVariable %_ptr_Workgroup_int Workgroup
+      %int_3 = OpConstant %int 3
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpStore %a %int_2
+               OpStore %b %int_3
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS,
+	    ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
+}
+
+TEST_F(ValidateDecorations, WorkgroupBlockVariableWith16BitType) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Float16
+               OpCapability Int16
+               OpCapability WorkgroupMemoryExplicitLayout16BitAccessKHR
+               OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 2 1 1
+               OpMemberDecorate %first 0 Offset 0
+               OpMemberDecorate %first 1 Offset 2
+               OpDecorate %first Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %short = OpTypeInt 16 1
+       %half = OpTypeFloat 16
+      %first = OpTypeStruct %short %half
+%_ptr_Workgroup_first = OpTypePointer Workgroup %first
+          %_ = OpVariable %_ptr_Workgroup_first Workgroup
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+    %short_3 = OpConstant %short 3
+%_ptr_Workgroup_short = OpTypePointer Workgroup %short
+      %int_1 = OpConstant %int 1
+%half_0x1_898p_3 = OpConstant %half 0x1.898p+3
+%_ptr_Workgroup_half = OpTypePointer Workgroup %half
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpAccessChain %_ptr_Workgroup_short %_ %int_0
+               OpStore %15 %short_3
+         %19 = OpAccessChain %_ptr_Workgroup_half %_ %int_1
+               OpStore %19 %half_0x1_898p_3
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS,
+	    ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
+}
+
+TEST_F(ValidateDecorations, WorkgroupBlockVariableScalarLayout) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability WorkgroupMemoryExplicitLayoutKHR
+               OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %B
+               OpSource GLSL 450
+               OpMemberDecorate %S 0 Offset 0
+               OpMemberDecorate %S 1 Offset 4
+               OpMemberDecorate %S 2 Offset 16
+               OpMemberDecorate %S 3 Offset 28
+               OpDecorate %S Block
+               OpDecorate %B Aliased
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+          %S = OpTypeStruct %float %v3float %v3float %v3float
+%_ptr_Workgroup_S = OpTypePointer Workgroup %S
+          %B = OpVariable %_ptr_Workgroup_S Workgroup
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  spvValidatorOptionsSetWorkgroupScalarBlockLayout(getValidatorOptions(), true);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4))
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateDecorations, WorkgroupMixBlockAndNonBlockBad) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability WorkgroupMemoryExplicitLayoutKHR
+               OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_ %b
+               OpExecutionMode %main LocalSize 8 1 1
+               OpMemberDecorate %first 0 Offset 0
+               OpDecorate %first Block
+               OpDecorate %_ Aliased
+               OpDecorate %b Aliased
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+      %first = OpTypeStruct %int
+%_ptr_Workgroup_first = OpTypePointer Workgroup %first
+          %_ = OpVariable %_ptr_Workgroup_first Workgroup
+      %int_0 = OpConstant %int 0
+      %int_2 = OpConstant %int 2
+%_ptr_Workgroup_int = OpTypePointer Workgroup %int
+          %b = OpVariable %_ptr_Workgroup_int Workgroup
+      %int_3 = OpConstant %int 3
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %13 = OpAccessChain %_ptr_Workgroup_int %_ %int_0
+               OpStore %13 %int_2
+               OpStore %b %int_3
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
+            ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("either all or none of the Workgroup Storage Class variables "
+                "in the entry point interface must point to struct types "
+                "decorated with Block"));
+}
+
+TEST_F(ValidateDecorations, WorkgroupMultiBlockVariableMissingAliased) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability WorkgroupMemoryExplicitLayoutKHR
+               OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_ %__0
+               OpExecutionMode %main LocalSize 8 1 1
+               OpMemberDecorate %first 0 Offset 0
+               OpDecorate %first Block
+               OpMemberDecorate %second 0 Offset 0
+               OpDecorate %second Block
+               OpDecorate %_ Aliased
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+      %first = OpTypeStruct %int
+%_ptr_Workgroup_first = OpTypePointer Workgroup %first
+          %_ = OpVariable %_ptr_Workgroup_first Workgroup
+      %int_0 = OpConstant %int 0
+      %int_2 = OpConstant %int 2
+%_ptr_Workgroup_int = OpTypePointer Workgroup %int
+     %second = OpTypeStruct %int
+%_ptr_Workgroup_second = OpTypePointer Workgroup %second
+        %__0 = OpVariable %_ptr_Workgroup_second Workgroup
+      %int_3 = OpConstant %int 3
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %13 = OpAccessChain %_ptr_Workgroup_int %_ %int_0
+               OpStore %13 %int_2
+         %18 = OpAccessChain %_ptr_Workgroup_int %__0 %int_0
+               OpStore %18 %int_3
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
+            ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("more than one Workgroup Storage Class variable in the "
+                "entry point interface point to a type decorated with Block, "
+                "all of them must be decorated with Aliased"));
+}
+
+TEST_F(ValidateDecorations, WorkgroupSingleBlockVariableNotAStruct) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability WorkgroupMemoryExplicitLayoutKHR
+               OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 8 1 1
+               OpDecorate %first Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+      %int_3 = OpConstant %int 3
+      %first = OpTypeArray %int %int_3
+%_ptr_Workgroup_first = OpTypePointer Workgroup %first
+          %_ = OpVariable %_ptr_Workgroup_first Workgroup
+      %int_0 = OpConstant %int 0
+      %int_2 = OpConstant %int 2
+%_ptr_Workgroup_int = OpTypePointer Workgroup %int
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %13 = OpAccessChain %_ptr_Workgroup_int %_ %int_0
+               OpStore %13 %int_2
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Block decoration on a non-struct type"));
+}
+
+TEST_F(ValidateDecorations, WorkgroupSingleBlockVariableMissingLayout) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability WorkgroupMemoryExplicitLayoutKHR
+               OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 8 1 1
+               OpDecorate %first Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+      %first = OpTypeStruct %int
+%_ptr_Workgroup_first = OpTypePointer Workgroup %first
+          %_ = OpVariable %_ptr_Workgroup_first Workgroup
+      %int_0 = OpConstant %int 0
+      %int_2 = OpConstant %int 2
+%_ptr_Workgroup_int = OpTypePointer Workgroup %int
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %13 = OpAccessChain %_ptr_Workgroup_int %_ %int_0
+               OpStore %13 %int_2
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Block must be explicitly laid out with Offset decorations"));
+}
+
+TEST_F(ValidateDecorations, WorkgroupSingleBlockVariableBadLayout) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability WorkgroupMemoryExplicitLayoutKHR
+               OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 8 1 1
+               OpMemberDecorate %first 0 Offset 1
+               OpDecorate %first Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+      %first = OpTypeStruct %int
+%_ptr_Workgroup_first = OpTypePointer Workgroup %first
+          %_ = OpVariable %_ptr_Workgroup_first Workgroup
+      %int_0 = OpConstant %int 0
+      %int_2 = OpConstant %int 2
+%_ptr_Workgroup_int = OpTypePointer Workgroup %int
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %13 = OpAccessChain %_ptr_Workgroup_int %_ %int_0
+               OpStore %13 %int_2
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Block for variable in Workgroup storage class must follow "
+          "standard storage buffer layout rules: "
+          "member 0 at offset 1 is not aligned to 4"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
