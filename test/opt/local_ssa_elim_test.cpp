@@ -2261,9 +2261,13 @@ TEST_F(LocalSSAElimTest, AddDebugValueForFunctionParameterWithPhi) {
          %69 = OpExtInst %void %1 DebugLexicalBlock %60 7 21 %68
          %70 = OpExtInst %void %1 DebugLocalVariable %11 %59 %60 6 26 %67 FlagIsLocal 2
 
+; CHECK: [[color_name:%\w+]] = OpString "color"
+; CHECK: [[pos_name:%\w+]] = OpString "pos"
 ; CHECK: [[i_name:%\w+]] = OpString "i"
 ; CHECK: [[null_expr:%\w+]] = OpExtInst %void [[ext:%\w+]] DebugExpression
 ; CHECK: [[dbg_i:%\w+]] = OpExtInst %void [[ext]] DebugLocalVariable [[i_name]] {{%\w+}} {{%\w+}} 6 16 {{%\w+}} FlagIsLocal 1
+; CHECK: [[dbg_color:%\w+]] = OpExtInst %void [[ext]] DebugLocalVariable [[color_name]] {{%\w+}} {{%\w+}} 15 23
+; CHECK: [[dbg_pos:%\w+]] = OpExtInst %void [[ext]] DebugLocalVariable [[pos_name]] {{%\w+}} {{%\w+}} 14 23
          %71 = OpExtInst %void %1 DebugLocalVariable %15 %65 %60 6 16 %67 FlagIsLocal 1
          %72 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %62 %59 %59
          %73 = OpExtInst %void %1 DebugFunction %16 %72 %60 14 1 %61 %14 FlagIsProtected|FlagIsPrivate 15 %156
@@ -2282,13 +2286,23 @@ TEST_F(LocalSSAElimTest, AddDebugValueForFunctionParameterWithPhi) {
         %169 = OpExtInst %void %1 DebugNoScope
 %param_var_pos = OpVariable %_ptr_Function_v4float Function
 %param_var_color = OpVariable %_ptr_Function_v4float Function
+               OpLine %7 100 105
          %80 = OpLoad %v4float %in_var_POSITION
                OpStore %param_var_pos %80
+               OpNoLine
+               OpLine %7 200 205
          %81 = OpLoad %v4float %in_var_COLOR
                OpStore %param_var_color %81
+               OpNoLine
         %170 = OpExtInst %void %1 DebugScope %73
+
+; CHECK: OpLine {{%\w+}} 100 105
+; CHECK: DebugValue [[dbg_pos]]
         %124 = OpExtInst %void %1 DebugDeclare %78 %param_var_pos %77
+; CHECK: OpLine {{%\w+}} 200 205
+; CHECK: DebugValue [[dbg_color]]
         %125 = OpExtInst %void %1 DebugDeclare %76 %param_var_color %77
+
         %171 = OpExtInst %void %1 DebugScope %74
                OpLine %7 17 18
 
