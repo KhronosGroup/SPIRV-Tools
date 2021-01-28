@@ -1767,6 +1767,24 @@ TEST_F(ValidateImage, SampleImplicitLodOffsetWrongSize) {
           "Expected Image Operand Offset to have 2 components, but given 3"));
 }
 
+TEST_F(ValidateImage, SampleImplicitLodVulkanOffsetWrongSize) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Offset %s32vec2_01
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, "", "Fragment", "", SPV_ENV_VULKAN_1_0).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Offset-04663"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Operand Offset can only be used with "
+                        "OpImage*Gather operations"));
+}
+
 TEST_F(ValidateImage, SampleImplicitLodMoreThanOneOffset) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
