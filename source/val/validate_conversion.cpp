@@ -263,26 +263,23 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
                << "Logical addressing not supported: "
                << spvOpcodeString(opcode);
 
-      if (_.addressing_model() ==
-          SpvAddressingModelPhysicalStorageBuffer64EXT) {
+      if (_.addressing_model() == SpvAddressingModelPhysicalStorageBuffer64) {
         uint32_t input_storage_class = 0;
         uint32_t input_data_type = 0;
         _.GetPointerTypeInfo(input_type, &input_data_type,
                              &input_storage_class);
-        if (input_storage_class != SpvStorageClassPhysicalStorageBufferEXT)
+        if (input_storage_class != SpvStorageClassPhysicalStorageBuffer)
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << "Pointer storage class must be PhysicalStorageBufferEXT: "
+                 << "Pointer storage class must be PhysicalStorageBuffer: "
                  << spvOpcodeString(opcode);
 
         if (spvIsVulkanEnv(_.context()->target_env)) {
-          if (!_.IsIntScalarType(input_data_type) ||
-              (_.GetBitWidth(input_data_type) != 64)) {
+          if (_.GetBitWidth(result_type) != 64) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << _.VkErrorID(4710)
-                   << "Pointer must be a 64 bit width integer with "
-                      "PhysicalStorageBuffer64 addressing mode for Vulkan "
-                      "environment."
-                   << spvOpcodeString(opcode);
+                   << "PhysicalStorageBuffer64 addressing mode requires the "
+                      "result integer type to have a 64-bit width for Vulkan "
+                      "environment.";
           }
         }
       }
@@ -326,26 +323,23 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
                << "Logical addressing not supported: "
                << spvOpcodeString(opcode);
 
-      if (_.addressing_model() ==
-          SpvAddressingModelPhysicalStorageBuffer64EXT) {
+      if (_.addressing_model() == SpvAddressingModelPhysicalStorageBuffer64) {
         uint32_t result_storage_class = 0;
         uint32_t result_data_type = 0;
         _.GetPointerTypeInfo(result_type, &result_data_type,
                              &result_storage_class);
-        if (result_storage_class != SpvStorageClassPhysicalStorageBufferEXT)
+        if (result_storage_class != SpvStorageClassPhysicalStorageBuffer)
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << "Pointer storage class must be PhysicalStorageBufferEXT: "
+                 << "Pointer storage class must be PhysicalStorageBuffer: "
                  << spvOpcodeString(opcode);
 
         if (spvIsVulkanEnv(_.context()->target_env)) {
-          if (!_.IsIntScalarType(result_data_type) ||
-              (_.GetBitWidth(result_data_type) != 64)) {
+          if (_.GetBitWidth(input_type) != 64) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << _.VkErrorID(4710)
-                   << "Pointer must be a 64 bit width integer with "
-                      "PhysicalStorageBuffer64 addressing mode for Vulkan "
-                      "environment."
-                   << spvOpcodeString(opcode);
+                   << "PhysicalStorageBuffer64 addressing mode requires the "
+                      "input integer to have a 64-bit width for Vulkan "
+                      "environment.";
           }
         }
       }
