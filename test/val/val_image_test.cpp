@@ -4453,7 +4453,7 @@ OpFunctionEnd
   CompileSuccessfully(body.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-OpImageQuerySizeLod-04659"));
+              AnyVUID("VUID-StandaloneSpirv-OpTypeImage-04657"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Sampled image type requires an image type with "
                         "\"Sampled\" operand set to 0 or 1"));
