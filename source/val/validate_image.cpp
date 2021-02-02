@@ -899,6 +899,7 @@ spv_result_t ValidateTypeSampledImage(ValidationState_t& _,
   // Vulkan uses the Sampled=1 case.
   if ((info.sampled != 0) && (info.sampled != 1)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(4657)
            << "Sampled image type requires an image type with \"Sampled\" "
               "operand set to 0 or 1";
   }
