@@ -1696,7 +1696,7 @@ TEST(FuzzerReplayerTest, Miscellaneous1) {
                        kNumFuzzerRuns);
 }
 
-TEST(FuzzerReplayerTest, DISABLED_Miscellaneous2) {
+TEST(FuzzerReplayerTest, Miscellaneous2) {
   // Do some fuzzer runs, starting from an initial seed of 10 (seed value chosen
   // arbitrarily).
   RunFuzzerAndReplayer(kTestShader2, protobufs::FactSequence(), 10,
