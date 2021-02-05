@@ -14,8 +14,6 @@
 
 #include "source/fuzz/fuzzer.h"
 
-#include <test/fuzz/fuzz_test_util.h>
-
 #include <cassert>
 #include <memory>
 #include <numeric>
