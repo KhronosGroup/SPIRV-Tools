@@ -200,8 +200,7 @@ void Fuzzer::BuildState() {
     // the original module and the ids used for fuzzing, as a readability aid.
     //
     // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2541) consider
-    // the
-    //  case where the maximum id bound is reached.
+    // the case where the maximum id bound is reached.
     auto minimum_fresh_id = ir_context->module()->id_bound() + kIdBoundGap;
     auto fuzzer_context =
         MakeUnique<FuzzerContext>(random_generator_.get(), minimum_fresh_id);
