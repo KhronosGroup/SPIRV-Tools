@@ -1465,8 +1465,7 @@ spv_result_t ValidateImageGather(ValidationState_t& _,
              << "Expected Component to be 32-bit int scalar";
     }
     if (spvIsVulkanEnv(_.context()->target_env)) {
-      if (!spvOpcodeIsConstant(_.GetIdOpcode(component)) &&
-          !spvOpcodeIsSpecConstant(_.GetIdOpcode(component))) {
+      if (!spvOpcodeIsConstant(_.GetIdOpcode(component))) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << _.VkErrorID(4664)
                << "Expected Component Operand to be a const object for Vulkan "
