@@ -204,7 +204,7 @@ FuzzStatus ParseFlags(
     std::vector<std::string>* interestingness_test,
     std::string* shrink_transformations_file,
     std::string* shrink_temp_file_prefix,
-    spvtools::fuzz::Fuzzer::RepeatedPassStrategy* repeated_pass_strategy,
+    spvtools::fuzz::RepeatedPassStrategy* repeated_pass_strategy,
     spvtools::FuzzerOptions* fuzzer_options,
     spvtools::ValidatorOptions* validator_options) {
   uint32_t positional_arg_index = 0;
@@ -212,7 +212,7 @@ FuzzStatus ParseFlags(
   bool force_render_red = false;
 
   *repeated_pass_strategy =
-      spvtools::fuzz::Fuzzer::RepeatedPassStrategy::kLoopedWithRecommendations;
+      spvtools::fuzz::RepeatedPassStrategy::kLoopedWithRecommendations;
 
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
@@ -250,14 +250,14 @@ FuzzStatus ParseFlags(
                               sizeof("--repeated-pass-strategy=") - 1)) {
         std::string strategy = spvtools::utils::SplitFlagArgs(cur_arg).second;
         if (strategy == "looped") {
-          *repeated_pass_strategy = spvtools::fuzz::Fuzzer::
-              RepeatedPassStrategy::kLoopedWithRecommendations;
+          *repeated_pass_strategy =
+              spvtools::fuzz::RepeatedPassStrategy::kLoopedWithRecommendations;
         } else if (strategy == "random") {
-          *repeated_pass_strategy = spvtools::fuzz::Fuzzer::
-              RepeatedPassStrategy::kRandomWithRecommendations;
+          *repeated_pass_strategy =
+              spvtools::fuzz::RepeatedPassStrategy::kRandomWithRecommendations;
         } else if (strategy == "simple") {
           *repeated_pass_strategy =
-              spvtools::fuzz::Fuzzer::RepeatedPassStrategy::kSimple;
+              spvtools::fuzz::RepeatedPassStrategy::kSimple;
         } else {
           std::stringstream ss;
           ss << "Unknown repeated pass strategy '" << strategy << "'"
@@ -549,7 +549,7 @@ bool Fuzz(const spv_target_env& target_env,
           const std::vector<uint32_t>& binary_in,
           const spvtools::fuzz::protobufs::FactSequence& initial_facts,
           const std::string& donors,
-          spvtools::fuzz::Fuzzer::RepeatedPassStrategy repeated_pass_strategy,
+          spvtools::fuzz::RepeatedPassStrategy repeated_pass_strategy,
           std::vector<uint32_t>* binary_out,
           spvtools::fuzz::protobufs::TransformationSequence*
               transformations_applied) {
@@ -578,19 +578,17 @@ bool Fuzz(const spv_target_env& target_env,
         });
   }
 
-  auto fuzz_result =
-      spvtools::fuzz::Fuzzer(
-          target_env, message_consumer, binary_in, initial_facts,
-          donor_suppliers,
-          spvtools::MakeUnique<spvtools::fuzz::PseudoRandomGenerator>(
-              fuzzer_options->has_random_seed
-                  ? fuzzer_options->random_seed
-                  : static_cast<uint32_t>(std::random_device()())),
-          fuzzer_options->all_passes_enabled, repeated_pass_strategy,
-          fuzzer_options->fuzzer_pass_validation_enabled, validator_options)
-          .Run();
+  spvtools::fuzz::Fuzzer fuzzer(
+      target_env, message_consumer, binary_in, initial_facts, donor_suppliers,
+      spvtools::MakeUnique<spvtools::fuzz::PseudoRandomGenerator>(
+          fuzzer_options->has_random_seed
+              ? fuzzer_options->random_seed
+              : static_cast<uint32_t>(std::random_device()())),
+      fuzzer_options->all_passes_enabled, repeated_pass_strategy,
+      fuzzer_options->fuzzer_pass_validation_enabled, validator_options, true);
+  auto fuzz_result = fuzzer.Run();
   *binary_out = std::move(fuzz_result.transformed_binary);
-  *transformations_applied = std::move(fuzz_result.applied_transformations);
+  *transformations_applied = fuzzer.GetAppliedTransformations();
   if (fuzz_result.status !=
       spvtools::fuzz::Fuzzer::FuzzerResultStatus::kComplete) {
     spvtools::Error(FuzzDiagnostic, nullptr, {}, "Error running fuzzer");
@@ -656,7 +654,7 @@ int main(int argc, const char** argv) {
   std::vector<std::string> interestingness_test;
   std::string shrink_transformations_file;
   std::string shrink_temp_file_prefix = "temp_";
-  spvtools::fuzz::Fuzzer::RepeatedPassStrategy repeated_pass_strategy;
+  spvtools::fuzz::RepeatedPassStrategy repeated_pass_strategy;
 
   spvtools::FuzzerOptions fuzzer_options;
   spvtools::ValidatorOptions validator_options;

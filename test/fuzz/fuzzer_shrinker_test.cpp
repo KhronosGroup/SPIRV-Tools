@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/fuzzer.h"
-#include "source/fuzz/shrinker.h"
-
 #include <functional>
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "source/fuzz/fuzzer.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/pseudo_random_generator.h"
+#include "source/fuzz/shrinker.h"
 #include "source/fuzz/uniform_buffer_element_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -1044,22 +1043,20 @@ void RunFuzzerAndShrinker(const std::string& shader,
   // Depending on the seed, decide whether to enable all passes and which
   // repeated pass manager to use.
   bool enable_all_passes = (seed % 4) == 0;
-  Fuzzer::RepeatedPassStrategy repeated_pass_strategy;
+  RepeatedPassStrategy repeated_pass_strategy;
   if ((seed % 3) == 0) {
-    repeated_pass_strategy = Fuzzer::RepeatedPassStrategy::kSimple;
+    repeated_pass_strategy = RepeatedPassStrategy::kSimple;
   } else if ((seed % 3) == 1) {
-    repeated_pass_strategy =
-        Fuzzer::RepeatedPassStrategy::kLoopedWithRecommendations;
+    repeated_pass_strategy = RepeatedPassStrategy::kLoopedWithRecommendations;
   } else {
-    repeated_pass_strategy =
-        Fuzzer::RepeatedPassStrategy::kRandomWithRecommendations;
+    repeated_pass_strategy = RepeatedPassStrategy::kRandomWithRecommendations;
   }
 
-  auto fuzzer_result =
-      Fuzzer(env, kConsoleMessageConsumer, binary_in, initial_facts,
-             donor_suppliers, MakeUnique<PseudoRandomGenerator>(seed),
-             enable_all_passes, repeated_pass_strategy, true, validator_options)
-          .Run();
+  Fuzzer fuzzer(env, kConsoleMessageConsumer, binary_in, initial_facts,
+                donor_suppliers, MakeUnique<PseudoRandomGenerator>(seed),
+                enable_all_passes, repeated_pass_strategy, true,
+                validator_options, true);
+  auto fuzzer_result = fuzzer.Run();
   ASSERT_EQ(Fuzzer::FuzzerResultStatus::kComplete, fuzzer_result.status);
   ASSERT_TRUE(t.Validate(fuzzer_result.transformed_binary));
 
@@ -1069,30 +1066,30 @@ void RunFuzzerAndShrinker(const std::string& shader,
   // With the AlwaysInteresting test, we should quickly shrink to the original
   // binary with no transformations remaining.
   RunAndCheckShrinker(env, binary_in, initial_facts,
-                      fuzzer_result.applied_transformations,
+                      fuzzer.GetAppliedTransformations(),
                       AlwaysInteresting().AsFunction(), binary_in, 0,
                       kReasonableStepLimit, validator_options);
 
   // With the OnlyInterestingFirstTime test, no shrinking should be achieved.
   RunAndCheckShrinker(
-      env, binary_in, initial_facts, fuzzer_result.applied_transformations,
+      env, binary_in, initial_facts, fuzzer.GetAppliedTransformations(),
       OnlyInterestingFirstTime().AsFunction(), fuzzer_result.transformed_binary,
       static_cast<uint32_t>(
-          fuzzer_result.applied_transformations.transformation_size()),
+          fuzzer.GetAppliedTransformations().transformation_size()),
       kReasonableStepLimit, validator_options);
 
   // The PingPong test is unpredictable; passing an empty expected binary
   // means that we don't check anything beyond that shrinking completes
   // successfully.
   RunAndCheckShrinker(
-      env, binary_in, initial_facts, fuzzer_result.applied_transformations,
+      env, binary_in, initial_facts, fuzzer.GetAppliedTransformations(),
       PingPong().AsFunction(), {}, 0, kSmallStepLimit, validator_options);
 
   // The InterestingThenRandom test is unpredictable; passing an empty
   // expected binary means that we do not check anything about shrinking
   // results.
   RunAndCheckShrinker(
-      env, binary_in, initial_facts, fuzzer_result.applied_transformations,
+      env, binary_in, initial_facts, fuzzer.GetAppliedTransformations(),
       InterestingThenRandom(PseudoRandomGenerator(seed)).AsFunction(), {}, 0,
       kSmallStepLimit, validator_options);
 }
