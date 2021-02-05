@@ -61,14 +61,14 @@ OpFunctionEnd
 )";
   CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-UniformConstant-04655"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("From Vulkan spec, section 14.5.2:\n"
-                "Variables identified with the UniformConstant storage class "
+      HasSubstr("Variables identified with the UniformConstant storage class "
                 "are used only as handles to refer to opaque resources. Such "
                 "variables must be typed as OpTypeImage, OpTypeSampler, "
-                "OpTypeSampledImage, OpTypeAccelerationStructureNV, "
-                "OpTypeAccelerationStructureKHR, OpTypeRayQueryKHR, "
+                "OpTypeSampledImage, OpTypeAccelerationStructureKHR, "
                 "or an array of one of these types."));
 }
 
@@ -115,14 +115,14 @@ OpFunctionEnd
 )";
   CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-UniformConstant-04655"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("From Vulkan spec, section 14.5.2:\n"
-                "Variables identified with the UniformConstant storage class "
+      HasSubstr("Variables identified with the UniformConstant storage class "
                 "are used only as handles to refer to opaque resources. Such "
                 "variables must be typed as OpTypeImage, OpTypeSampler, "
-                "OpTypeSampledImage, OpTypeAccelerationStructureNV, "
-                "OpTypeAccelerationStructureKHR, OpTypeRayQueryKHR, "
+                "OpTypeSampledImage, OpTypeAccelerationStructureKHR, "
                 "or an array of one of these types."));
 }
 
