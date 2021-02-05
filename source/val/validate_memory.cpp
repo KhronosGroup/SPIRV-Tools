@@ -407,6 +407,10 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
            << "' is not a pointer type.";
   }
 
+  const auto type_index = 2;
+  const auto value_id = result_type->GetOperandAs<uint32_t>(type_index);
+  auto value_type = _.FindDef(value_id);
+
   const auto initializer_index = 3;
   const auto storage_class_index = 2;
   if (initializer_index < inst->operands().size()) {
@@ -423,7 +427,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
              << "OpVariable Initializer <id> '" << _.getIdName(initializer_id)
              << "' is not a constant or module-scope variable.";
     }
-    if (initializer->type_id() != result_type->GetOperandAs<uint32_t>(2u)) {
+    if (initializer->type_id() != value_id) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "Initializer type must match the type pointed to by the Result "
                 "Type";
@@ -440,9 +444,6 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       storage_class != SpvStorageClassHitAttributeNV &&
       storage_class != SpvStorageClassCallableDataNV &&
       storage_class != SpvStorageClassIncomingCallableDataNV) {
-    const auto storage_index = 2;
-    const auto storage_id = result_type->GetOperandAs<uint32_t>(storage_index);
-    const auto storage = _.FindDef(storage_id);
     bool storage_input_or_output = storage_class == SpvStorageClassInput ||
                                    storage_class == SpvStorageClassOutput;
     bool builtin = false;
@@ -455,7 +456,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       }
     }
     if (!(storage_input_or_output && builtin) &&
-        ContainsInvalidBool(_, storage, storage_input_or_output)) {
+        ContainsInvalidBool(_, value_type, storage_input_or_output)) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "If OpTypeBool is stored in conjunction with OpVariable, it "
              << "can only be used with non-externally visible shader Storage "
@@ -576,6 +577,28 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
                   "of this type";
       }
     }
+
+    // Check for invalid use of Invariant
+    if (storage_class != SpvStorageClassInput &&
+        storage_class != SpvStorageClassOutput) {
+      if (_.HasDecoration(inst->id(), SpvDecorationInvariant)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << _.VkErrorID(4677)
+               << "Variable decorated with Invariant must only be identified "
+                  "with the Input or Output storage class in Vulkan "
+                  "environment.";
+      }
+      // Need to check if only the members in a struct are decorated
+      if (value_type && value_type->opcode() == SpvOpTypeStruct) {
+        if (_.HasDecoration(value_id, SpvDecorationInvariant)) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << _.VkErrorID(4677)
+                 << "Variable struct member decorated with Invariant must only "
+                    "be identified with the Input or Output storage class in "
+                    "Vulkan environment.";
+        }
+      }
+    }
   }
 
   // Vulkan Appendix A: Check that if contains initializer, then
@@ -640,9 +663,6 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
   }
 
   // Vulkan specific validation rules for OpTypeRuntimeArray
-  const auto type_index = 2;
-  const auto value_id = result_type->GetOperandAs<uint32_t>(type_index);
-  auto value_type = _.FindDef(value_id);
   if (spvIsVulkanEnv(_.context()->target_env)) {
     // OpTypeRuntimeArray should only ever be in a container like OpTypeStruct,
     // so should never appear as a bare variable.
