@@ -4042,6 +4042,109 @@ OpFunctionEnd
                 "typed as OpTypeStruct, or an array of this type"));
 }
 
+TEST_F(ValidateMemory, VulkanInvariantOutputSuccess) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpDecorate %var Location 0
+OpDecorate %var Invariant
+%void = OpTypeVoid
+%f32 = OpTypeFloat 32
+%ptr_output = OpTypePointer Output %f32
+%var = OpVariable %ptr_output Output
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateMemory, VulkanInvariantInputStructSuccess) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %var Location 0
+OpMemberDecorate %struct 1 Invariant
+%void = OpTypeVoid
+%f32 = OpTypeFloat 32
+%struct = OpTypeStruct %f32 %f32
+%ptr_input = OpTypePointer Input %struct
+%var = OpVariable %ptr_input Input
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateMemory, VulkanInvariantWrongStorageClass) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpDecorate %var Invariant
+%void = OpTypeVoid
+%f32 = OpTypeFloat 32
+%ptr_private = OpTypePointer Private %f32
+%var = OpVariable %ptr_private Private
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Invariant-04677"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Variable decorated with Invariant must only be identified with the "
+          "Input or Output storage class in Vulkan environment."));
+}
+
+TEST_F(ValidateMemory, VulkanInvariantMemberWrongStorageClass) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpMemberDecorate %struct 1 Invariant
+%void = OpTypeVoid
+%f32 = OpTypeFloat 32
+%struct = OpTypeStruct %f32 %f32
+%ptr_private = OpTypePointer Private %struct
+%var = OpVariable %ptr_private Private
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Invariant-04677"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variable struct member decorated with Invariant must "
+                        "only be identified with the Input or Output storage "
+                        "class in Vulkan environment."));
+}
+
 TEST_F(ValidateMemory, PhysicalStorageBufferPtrEqual) {
   const std::string spirv = R"(
 OpCapability Shader
