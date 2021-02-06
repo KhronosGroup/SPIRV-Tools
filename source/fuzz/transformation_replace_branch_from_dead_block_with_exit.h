@@ -48,6 +48,10 @@ class TransformationReplaceBranchFromDeadBlockWithExit : public Transformation {
   // - If |message_.opcode()| is OpReturnValue then |message_.return_value_id|
   //   must be an id that is available at the block terminator and that matches
   //   the return type of the enclosing function
+  // - Domination rules should be preserved when we apply this transformation.
+  //   In particular, if some block appears after the |block_id|'s successor in
+  //   the CFG, then that block cannot dominate |block_id|'s successor when this
+  //   transformation is applied.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;

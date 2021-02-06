@@ -18,6 +18,26 @@
 
 namespace spvtools {
 namespace fuzz {
+namespace {
+
+class ChangeTerminatorRAII {
+ public:
+  explicit ChangeTerminatorRAII(opt::BasicBlock* block,
+                                opt::Instruction new_terminator)
+      : block_(block), old_terminator_(std::move(*block->terminator())) {
+    *block_->terminator() = std::move(new_terminator);
+  }
+
+  ~ChangeTerminatorRAII() {
+    *block_->terminator() = std::move(old_terminator_);
+  }
+
+ private:
+  opt::BasicBlock* block_;
+  opt::Instruction old_terminator_;
+};
+
+}  // namespace
 
 TransformationReplaceBranchFromDeadBlockWithExit::
     TransformationReplaceBranchFromDeadBlockWithExit(
@@ -161,6 +181,29 @@ bool TransformationReplaceBranchFromDeadBlockWithExit::BlockIsSuitable(
       block.terminator()->GetSingleWordInOperand(0));
   if (ir_context->cfg()->preds(successor->id()).size() < 2) {
     return false;
+  }
+  // Make sure that domination rules are satisfied when we remove the branch
+  // from the |block| to its |successor|. Particularly, we check that every
+  // block, that appears after the |successor|, will not dominate the |block|,
+  // when the edge is removed.
+  //
+  // We use const_cast here since we will restore the original terminator
+  // instruction later.
+  ChangeTerminatorRAII change_terminator_raii(
+      const_cast<opt::BasicBlock*>(&block), {ir_context, SpvOpUnreachable});
+  opt::DominatorAnalysis dominator_analysis;
+  dominator_analysis.InitializeTree(*ir_context->cfg(), block.GetParent());
+  if (dominator_analysis.IsReachable(successor)) {
+    // If the |successor| is still reachable in the CFG, then we must make sure
+    // that no node, that appears after the |successor|, dominates the
+    // |successor|. Otherwise (i.e. if |successor| is not reachable) we don't
+    // need to worry about the domination rules.
+    for (auto it = successor->GetParent()->FindBlock(successor->id());
+         it != successor->GetParent()->end(); ++it) {
+      if (dominator_analysis.StrictlyDominates(&*it, successor)) {
+        return false;
+      }
+    }
   }
   return true;
 }
