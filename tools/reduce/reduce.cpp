@@ -318,7 +318,8 @@ int main(int argc, const char** argv) {
   reducer.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
 
   std::vector<uint32_t> binary_in;
-  if (!ReadFile<uint32_t>(in_binary_file.c_str(), "rb", &binary_in)) {
+  if (!ReadFile<uint32_t>(in_binary_file.c_str(), /* isBinaryFile = */ true,
+                          &binary_in)) {
     return 1;
   }
 

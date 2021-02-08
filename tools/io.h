@@ -20,42 +20,60 @@
 #include <cstring>
 #include <vector>
 
+#if defined(SPIRV_WINDOWS)
+#include <fcntl.h>
+#include <io.h>
+
+#define SET_MODE(stdin, isBinaryFile) \
+  _setmode(_fileno(stdin), (isBinaryFile ? O_BINARY : O_TEXT));
+#else
+#define SET_MODE(stdin, isBinaryFile)
+#endif
+
 // Appends the content from the file named as |filename| to |data|, assuming
 // each element in the file is of type |T|. The file is opened with the given
 // |mode|. If |filename| is nullptr or "-", reads from the standard input, but
 // reopened with the given mode. If any error occurs, writes error messages to
 // standard error and returns false.
 template <typename T>
-bool ReadFile(const char* filename, const char* mode, std::vector<T>* data) {
+bool ReadFile(const char* filename, bool isBinaryFile, std::vector<T>* data) {
   const int buf_size = 1024;
   const bool use_file = filename && strcmp("-", filename);
-  if (FILE* fp =
-          (use_file ? fopen(filename, mode) : freopen(nullptr, mode, stdin))) {
-    T buf[buf_size];
-    while (size_t len = fread(buf, sizeof(T), buf_size, fp)) {
-      data->insert(data->end(), buf, buf + len);
-    }
-    if (ftell(fp) == -1L) {
-      if (ferror(fp)) {
-        fprintf(stderr, "error: error reading file '%s'\n", filename);
-        if (use_file) fclose(fp);
-        return false;
-      }
-    } else {
-      if (sizeof(T) != 1 && (ftell(fp) % sizeof(T))) {
-        fprintf(
-            stderr,
-            "error: file size should be a multiple of %zd; file '%s' corrupt\n",
-            sizeof(T), filename);
-        if (use_file) fclose(fp);
-        return false;
-      }
-    }
-    if (use_file) fclose(fp);
+  FILE* fp = nullptr;
+  if (use_file) {
+    fp = fopen(filename, (isBinaryFile ? "rb" : "r"));
   } else {
+    SET_MODE(stdin, isBinaryFile);
+    fp = stdin;
+  }
+
+  if (fp == nullptr) {
     fprintf(stderr, "error: file does not exist '%s'\n", filename);
     return false;
   }
+
+  T buf[buf_size];
+  while (size_t len = fread(buf, sizeof(T), buf_size, fp)) {
+    data->insert(data->end(), buf, buf + len);
+  }
+  if (ftell(fp) == -1L) {
+    if (ferror(fp)) {
+      fprintf(stderr, "error: error reading file '%s'\n", filename);
+      if (use_file) fclose(fp);
+      return false;
+    }
+  } else {
+    if (sizeof(T) != 1 && (ftell(fp) % sizeof(T))) {
+      fprintf(
+          stderr,
+          "error: file size should be a multiple of %zd; file '%s' corrupt\n",
+          sizeof(T), filename);
+      if (use_file) fclose(fp);
+      return false;
+    }
+  }
+  if (use_file) fclose(fp);
+
   return true;
 }
 

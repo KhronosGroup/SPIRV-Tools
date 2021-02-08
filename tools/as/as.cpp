@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
   }
 
   std::vector<char> contents;
-  if (!ReadFile<char>(inFile, "r", &contents)) return 1;
+  if (!ReadFile<char>(inFile, /* isBinaryFile = */ false, &contents)) return 1;
 
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;

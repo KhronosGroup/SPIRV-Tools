@@ -104,7 +104,8 @@ int main(int argc, char** argv) {
 
   // Read the input binary.
   std::vector<uint32_t> contents;
-  if (!ReadFile<uint32_t>(inFile, "rb", &contents)) return 1;
+  if (!ReadFile<uint32_t>(inFile, /* isBinaryFile = */ true, &contents))
+    return 1;
   spv_context context = spvContextCreate(kDefaultEnvironment);
   spv_diagnostic diagnostic = nullptr;
 

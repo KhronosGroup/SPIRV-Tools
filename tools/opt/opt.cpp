@@ -807,7 +807,7 @@ int main(int argc, const char** argv) {
   }
 
   std::vector<uint32_t> binary;
-  if (!ReadFile<uint32_t>(in_file, "rb", &binary)) {
+  if (!ReadFile<uint32_t>(in_file, /* isBinaryFile = */ true, &binary)) {
     return 1;
   }
 
