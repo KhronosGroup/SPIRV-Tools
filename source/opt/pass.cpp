@@ -141,11 +141,6 @@ uint32_t Pass::GenerateCopy(Instruction* object_to_copy, uint32_t new_type_id,
     }
     return ir_builder.AddCompositeConstruct(new_type_id, element_ids)
         ->result_id();
-  } else if (original_type->AsImage() && new_type->AsImage()) {
-    // Allow storing an image with a different format.
-    // For example in function parameters the format is unknown, but inlining
-    // fixes this
-    return object_to_copy->result_id();
   } else {
     // If we do not have an aggregate type, then we have a problem.  Either we
     // found multiple instances of the same type, or we are copying to an
