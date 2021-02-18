@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2021.0-dev 2021-02-16
+ - Start SPIRV-Tools v2021.0-dev
+
 v2020.7 2021-02-16
  - General
     - Support pending Intel extensions (#4116)
