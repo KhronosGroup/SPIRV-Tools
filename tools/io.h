@@ -24,57 +24,95 @@
 #include <fcntl.h>
 #include <io.h>
 
-#define SET_MODE(stdin, isBinaryFile) \
-  _setmode(_fileno(stdin), (isBinaryFile ? O_BINARY : O_TEXT));
+#define SET_STDIN_TO_BINARY_MODE() _setmode(_fileno(stdin), O_BINARY);
+#define SET_STDIN_TO_TEXT_MODE() _setmode(_fileno(stdin), O_TEXT);
 #else
-#define SET_MODE(stdin, isBinaryFile)
+#define SET_STDIN_TO_BINARY_MODE()
+#define SET_STDIN_TO_TEXT_MODE()
 #endif
 
-// Appends the content from the file named as |filename| to |data|, assuming
-// each element in the file is of type |T|. The file is opened with the given
-// |mode|. If |filename| is nullptr or "-", reads from the standard input, but
-// reopened with the given mode. If any error occurs, writes error messages to
-// standard error and returns false.
+// Appends the contents of the |file| to |data|, assuming each element in the
+// file is of type |T|.
 template <typename T>
-bool ReadFile(const char* filename, bool isBinaryFile, std::vector<T>* data) {
-  const int buf_size = 1024;
-  const bool use_file = filename && strcmp("-", filename);
-  FILE* fp = nullptr;
-  if (use_file) {
-    fp = fopen(filename, (isBinaryFile ? "rb" : "r"));
-  } else {
-    SET_MODE(stdin, isBinaryFile);
-    fp = stdin;
-  }
+void ReadFile(FILE* file, std::vector<T>* data) {
+  if (file == nullptr) return;
 
-  if (fp == nullptr) {
+  const int buf_size = 1024;
+  T buf[buf_size];
+  while (size_t len = fread(buf, sizeof(T), buf_size, file)) {
+    data->insert(data->end(), buf, buf + len);
+  }
+}
+
+// Returns true if |file| has encountered an error opening the file or reading
+// the file as a series of element of type |T|. If there was an error, writes an
+// error message to standard error.
+template <class T>
+bool CorrectlyReadFile(FILE* file, const char* filename) {
+  if (file == nullptr) {
     fprintf(stderr, "error: file does not exist '%s'\n", filename);
     return false;
   }
 
-  T buf[buf_size];
-  while (size_t len = fread(buf, sizeof(T), buf_size, fp)) {
-    data->insert(data->end(), buf, buf + len);
-  }
-  if (ftell(fp) == -1L) {
-    if (ferror(fp)) {
+  if (ftell(file) == -1L) {
+    if (ferror(file)) {
       fprintf(stderr, "error: error reading file '%s'\n", filename);
-      if (use_file) fclose(fp);
       return false;
     }
   } else {
-    if (sizeof(T) != 1 && (ftell(fp) % sizeof(T))) {
+    if (sizeof(T) != 1 && (ftell(file) % sizeof(T))) {
       fprintf(
           stderr,
           "error: file size should be a multiple of %zd; file '%s' corrupt\n",
           sizeof(T), filename);
-      if (use_file) fclose(fp);
       return false;
     }
   }
-  if (use_file) fclose(fp);
-
   return true;
+}
+
+// Appends the contents of the file named |filename| to |data|, assuming
+// each element in the file is of type |T|. The file is opened as a binary file
+// If |filename| is nullptr or "-", reads from the standard input, but
+// reopened as a binary file. If any error occurs, writes error messages to
+// standard error and returns false.
+template <typename T>
+bool ReadBinaryFile(const char* filename, std::vector<T>* data) {
+  const bool use_file = filename && strcmp("-", filename);
+  FILE* fp = nullptr;
+  if (use_file) {
+    fp = fopen(filename, "rb");
+  } else {
+    SET_STDIN_TO_BINARY_MODE();
+    fp = stdin;
+  }
+
+  ReadFile(fp, data);
+  bool succeeded = CorrectlyReadFile<T>(fp, filename);
+  if (use_file) fclose(fp);
+  return succeeded;
+}
+
+// Appends the contents of the file named |filename| to |data|, assuming
+// each element in the file is of type |T|. The file is opened as a text file
+// If |filename| is nullptr or "-", reads from the standard input, but
+// reopened as a text file. If any error occurs, writes error messages to
+// standard error and returns false.
+template <typename T>
+bool ReadTextFile(const char* filename, std::vector<T>* data) {
+  const bool use_file = filename && strcmp("-", filename);
+  FILE* fp = nullptr;
+  if (use_file) {
+    fp = fopen(filename, "r");
+  } else {
+    SET_STDIN_TO_TEXT_MODE();
+    fp = stdin;
+  }
+
+  ReadFile(fp, data);
+  bool succeeded = CorrectlyReadFile<T>(fp, filename);
+  if (use_file) fclose(fp);
+  return succeeded;
 }
 
 // Writes the given |data| into the file named as |filename| using the given
