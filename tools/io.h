@@ -48,7 +48,7 @@ void ReadFile(FILE* file, std::vector<T>* data) {
 // the file as a series of element of type |T|. If there was an error, writes an
 // error message to standard error.
 template <class T>
-bool CorrectlyReadFile(FILE* file, const char* filename) {
+bool WasFileCorrectlyRead(FILE* file, const char* filename) {
   if (file == nullptr) {
     fprintf(stderr, "error: file does not exist '%s'\n", filename);
     return false;
@@ -88,7 +88,7 @@ bool ReadBinaryFile(const char* filename, std::vector<T>* data) {
   }
 
   ReadFile(fp, data);
-  bool succeeded = CorrectlyReadFile<T>(fp, filename);
+  bool succeeded = WasFileCorrectlyRead<T>(fp, filename);
   if (use_file) fclose(fp);
   return succeeded;
 }
@@ -110,7 +110,7 @@ bool ReadTextFile(const char* filename, std::vector<T>* data) {
   }
 
   ReadFile(fp, data);
-  bool succeeded = CorrectlyReadFile<T>(fp, filename);
+  bool succeeded = WasFileCorrectlyRead<T>(fp, filename);
   if (use_file) fclose(fp);
   return succeeded;
 }
