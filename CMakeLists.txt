@@ -230,7 +230,9 @@ if(NOT COMMAND find_host_program)
 endif()
 
 # Tests require Python3
-find_host_package(PythonInterp 3 REQUIRED)
+if (NOT "${SPIRV_SKIP_TESTS}")
+    find_host_package(PythonInterp 3 REQUIRED)
+endif()
 
 # Check for symbol exports on Linux.
 # At the moment, this check will fail on the OSX build machines for the Android NDK.
