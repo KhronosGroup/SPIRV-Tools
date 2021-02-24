@@ -15,6 +15,8 @@
 @set EXT_PATH=%userprofile%\.vscode\extensions\google.spirvls-0.0.1
 @set ROOT_PATH=%~dp0
 
+go get -u golang.org/x/xerrors
+
 go run %ROOT_PATH%\src\tools\gen-grammar.go --cache %ROOT_PATH%\cache --template %ROOT_PATH%\spirv.json.tmpl --out %ROOT_PATH%\spirv.json
 go run %ROOT_PATH%\src\tools\gen-grammar.go --cache %ROOT_PATH%\cache --template %ROOT_PATH%\src\schema\schema.go.tmpl --out %ROOT_PATH%\src\schema\schema.go
 
@@ -23,7 +25,7 @@ copy %ROOT_PATH%\extension.js %EXT_PATH%
 copy %ROOT_PATH%\package.json %EXT_PATH%
 copy %ROOT_PATH%\spirv.json %EXT_PATH%
 
-go build -o %EXT_PATH%\langsvr %ROOT_PATH%\src\langsvr.go
+go build -o %EXT_PATH%\langsvr.exe %ROOT_PATH%\src\langsvr.go
 
 @pushd %EXT_PATH%
 call npm install

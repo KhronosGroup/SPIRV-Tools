@@ -18,6 +18,8 @@ set -e # Fail on any error.
 EXT_PATH=~/.vscode/extensions/google.spirvls-0.0.1
 ROOT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
+go get -u golang.org/x/xerrors
+
 go run ${ROOT_PATH}/src/tools/gen-grammar.go --cache ${ROOT_PATH}/cache --template ${ROOT_PATH}/spirv.json.tmpl --out ${ROOT_PATH}/spirv.json
 go run ${ROOT_PATH}/src/tools/gen-grammar.go --cache ${ROOT_PATH}/cache --template ${ROOT_PATH}/src/schema/schema.go.tmpl --out ${ROOT_PATH}/src/schema/schema.go
 
