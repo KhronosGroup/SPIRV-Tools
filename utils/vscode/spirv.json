@@ -11,6 +11,8 @@
 		{ "include": "#BitEnum_MemorySemantics" },
 		{ "include": "#BitEnum_MemoryAccess" },
 		{ "include": "#BitEnum_KernelProfilingInfo" },
+		{ "include": "#BitEnum_RayFlags" },
+		{ "include": "#BitEnum_FragmentShadingRate" },
 		{ "include": "#ValueEnum_SourceLanguage" },
 		{ "include": "#ValueEnum_ExecutionModel" },
 		{ "include": "#ValueEnum_AddressingModel" },
@@ -24,6 +26,8 @@
 		{ "include": "#ValueEnum_ImageChannelOrder" },
 		{ "include": "#ValueEnum_ImageChannelDataType" },
 		{ "include": "#ValueEnum_FPRoundingMode" },
+		{ "include": "#ValueEnum_FPDenormMode" },
+		{ "include": "#ValueEnum_FPOperationMode" },
 		{ "include": "#ValueEnum_LinkageType" },
 		{ "include": "#ValueEnum_AccessQualifier" },
 		{ "include": "#ValueEnum_FunctionParameterAttribute" },
@@ -33,6 +37,9 @@
 		{ "include": "#ValueEnum_GroupOperation" },
 		{ "include": "#ValueEnum_KernelEnqueueFlags" },
 		{ "include": "#ValueEnum_Capability" },
+		{ "include": "#ValueEnum_RayQueryIntersection" },
+		{ "include": "#ValueEnum_RayQueryCommittedIntersectionType" },
+		{ "include": "#ValueEnum_RayQueryCandidateIntersectionType" },
 		{ "include": "#BitEnum_DebugInfoFlags" },
 		{ "include": "#ValueEnum_DebugBaseTypeAttributeEncoding" },
 		{ "include": "#ValueEnum_DebugCompositeType" },
@@ -53,7 +60,7 @@
 			"name": "keyword.spirv"
 		},
 		"BitEnum_FPFastMathMode": {
-			"match": "\\b(None|NotNaN|NotInf|NSZ|AllowRecip|Fast)\\b",
+			"match": "\\b(None|NotNaN|NotInf|NSZ|AllowRecip|Fast|AllowContractFastINTEL|AllowReassocINTEL)\\b",
 			"name": "keyword.spirv"
 		},
 		"BitEnum_SelectionControl": {
@@ -61,7 +68,7 @@
 			"name": "keyword.spirv"
 		},
 		"BitEnum_LoopControl": {
-			"match": "\\b(None|Unroll|DontUnroll|DependencyInfinite|DependencyLength|MinIterations|MaxIterations|IterationMultiple|PeelCount|PartialCount)\\b",
+			"match": "\\b(None|Unroll|DontUnroll|DependencyInfinite|DependencyLength|MinIterations|MaxIterations|IterationMultiple|PeelCount|PartialCount|InitiationIntervalINTEL|MaxConcurrencyINTEL|DependencyArrayINTEL|PipelineEnableINTEL|LoopCoalesceINTEL|MaxInterleavingINTEL|SpeculatedIterationsINTEL|NoFusionINTEL)\\b",
 			"name": "keyword.spirv"
 		},
 		"BitEnum_FunctionControl": {
@@ -80,12 +87,20 @@
 			"match": "\\b(None|CmdExecTime)\\b",
 			"name": "keyword.spirv"
 		},
+		"BitEnum_RayFlags": {
+			"match": "\\b(NoneKHR|OpaqueKHR|NoOpaqueKHR|TerminateOnFirstHitKHR|SkipClosestHitShaderKHR|CullBackFacingTrianglesKHR|CullFrontFacingTrianglesKHR|CullOpaqueKHR|CullNoOpaqueKHR|SkipTrianglesKHR|SkipAABBsKHR)\\b",
+			"name": "keyword.spirv"
+		},
+		"BitEnum_FragmentShadingRate": {
+			"match": "\\b(Vertical2Pixels|Vertical4Pixels|Horizontal2Pixels|Horizontal4Pixels)\\b",
+			"name": "keyword.spirv"
+		},
 		"ValueEnum_SourceLanguage": {
 			"match": "\\b(Unknown|ESSL|GLSL|OpenCL_C|OpenCL_CPP|HLSL)\\b",
 			"name": "keyword.spirv"
 		},
 		"ValueEnum_ExecutionModel": {
-			"match": "\\b(Vertex|TessellationControl|TessellationEvaluation|Geometry|Fragment|GLCompute|Kernel|TaskNV|MeshNV|RayGenerationNV|IntersectionNV|AnyHitNV|ClosestHitNV|MissNV|CallableNV)\\b",
+			"match": "\\b(Vertex|TessellationControl|TessellationEvaluation|Geometry|Fragment|GLCompute|Kernel|TaskNV|MeshNV|RayGenerationNV|RayGenerationKHR|IntersectionNV|IntersectionKHR|AnyHitNV|AnyHitKHR|ClosestHitNV|ClosestHitKHR|MissNV|MissKHR|CallableNV|CallableKHR)\\b",
 			"name": "keyword.spirv"
 		},
 		"ValueEnum_AddressingModel": {
@@ -97,11 +112,11 @@
 			"name": "keyword.spirv"
 		},
 		"ValueEnum_ExecutionMode": {
-			"match": "\\b(Invocations|SpacingEqual|SpacingFractionalEven|SpacingFractionalOdd|VertexOrderCw|VertexOrderCcw|PixelCenterInteger|OriginUpperLeft|OriginLowerLeft|EarlyFragmentTests|PointMode|Xfb|DepthReplacing|DepthGreater|DepthLess|DepthUnchanged|LocalSize|LocalSizeHint|InputPoints|InputLines|InputLinesAdjacency|Triangles|InputTrianglesAdjacency|Quads|Isolines|OutputVertices|OutputPoints|OutputLineStrip|OutputTriangleStrip|VecTypeHint|ContractionOff|Initializer|Finalizer|SubgroupSize|SubgroupsPerWorkgroup|SubgroupsPerWorkgroupId|LocalSizeId|LocalSizeHintId|PostDepthCoverage|DenormPreserve|DenormFlushToZero|SignedZeroInfNanPreserve|RoundingModeRTE|RoundingModeRTZ|StencilRefReplacingEXT|OutputLinesNV|OutputPrimitivesNV|DerivativeGroupQuadsNV|DerivativeGroupLinearNV|OutputTrianglesNV|PixelInterlockOrderedEXT|PixelInterlockUnorderedEXT|SampleInterlockOrderedEXT|SampleInterlockUnorderedEXT|ShadingRateInterlockOrderedEXT|ShadingRateInterlockUnorderedEXT)\\b",
+			"match": "\\b(Invocations|SpacingEqual|SpacingFractionalEven|SpacingFractionalOdd|VertexOrderCw|VertexOrderCcw|PixelCenterInteger|OriginUpperLeft|OriginLowerLeft|EarlyFragmentTests|PointMode|Xfb|DepthReplacing|DepthGreater|DepthLess|DepthUnchanged|LocalSize|LocalSizeHint|InputPoints|InputLines|InputLinesAdjacency|Triangles|InputTrianglesAdjacency|Quads|Isolines|OutputVertices|OutputPoints|OutputLineStrip|OutputTriangleStrip|VecTypeHint|ContractionOff|Initializer|Finalizer|SubgroupSize|SubgroupsPerWorkgroup|SubgroupsPerWorkgroupId|LocalSizeId|LocalSizeHintId|PostDepthCoverage|DenormPreserve|DenormFlushToZero|SignedZeroInfNanPreserve|RoundingModeRTE|RoundingModeRTZ|StencilRefReplacingEXT|OutputLinesNV|OutputPrimitivesNV|DerivativeGroupQuadsNV|DerivativeGroupLinearNV|OutputTrianglesNV|PixelInterlockOrderedEXT|PixelInterlockUnorderedEXT|SampleInterlockOrderedEXT|SampleInterlockUnorderedEXT|ShadingRateInterlockOrderedEXT|ShadingRateInterlockUnorderedEXT|SharedLocalMemorySizeINTEL|RoundingModeRTPINTEL|RoundingModeRTNINTEL|FloatingPointModeALTINTEL|FloatingPointModeIEEEINTEL|MaxWorkgroupSizeINTEL|MaxWorkDimINTEL|NoGlobalOffsetINTEL|NumSIMDWorkitemsINTEL|SchedulerTargetFmaxMhzINTEL)\\b",
 			"name": "keyword.spirv"
 		},
 		"ValueEnum_StorageClass": {
-			"match": "\\b(UniformConstant|Input|Uniform|Output|Workgroup|CrossWorkgroup|Private|Function|Generic|PushConstant|AtomicCounter|Image|StorageBuffer|CallableDataNV|IncomingCallableDataNV|RayPayloadNV|HitAttributeNV|IncomingRayPayloadNV|ShaderRecordBufferNV|PhysicalStorageBuffer|PhysicalStorageBufferEXT)\\b",
+			"match": "\\b(UniformConstant|Input|Uniform|Output|Workgroup|CrossWorkgroup|Private|Function|Generic|PushConstant|AtomicCounter|Image|StorageBuffer|CallableDataNV|CallableDataKHR|IncomingCallableDataNV|IncomingCallableDataKHR|RayPayloadNV|RayPayloadKHR|HitAttributeNV|HitAttributeKHR|IncomingRayPayloadNV|IncomingRayPayloadKHR|ShaderRecordBufferNV|ShaderRecordBufferKHR|PhysicalStorageBuffer|PhysicalStorageBufferEXT|CodeSectionINTEL|DeviceOnlyINTEL|HostOnlyINTEL)\\b",
 			"name": "keyword.spirv"
 		},
 		"ValueEnum_Dim": {
@@ -117,7 +132,7 @@
 			"name": "keyword.spirv"
 		},
 		"ValueEnum_ImageFormat": {
-			"match": "\\b(Unknown|Rgba32f|Rgba16f|R32f|Rgba8|Rgba8Snorm|Rg32f|Rg16f|R11fG11fB10f|R16f|Rgba16|Rgb10A2|Rg16|Rg8|R16|R8|Rgba16Snorm|Rg16Snorm|Rg8Snorm|R16Snorm|R8Snorm|Rgba32i|Rgba16i|Rgba8i|R32i|Rg32i|Rg16i|Rg8i|R16i|R8i|Rgba32ui|Rgba16ui|Rgba8ui|R32ui|Rgb10a2ui|Rg32ui|Rg16ui|Rg8ui|R16ui|R8ui)\\b",
+			"match": "\\b(Unknown|Rgba32f|Rgba16f|R32f|Rgba8|Rgba8Snorm|Rg32f|Rg16f|R11fG11fB10f|R16f|Rgba16|Rgb10A2|Rg16|Rg8|R16|R8|Rgba16Snorm|Rg16Snorm|Rg8Snorm|R16Snorm|R8Snorm|Rgba32i|Rgba16i|Rgba8i|R32i|Rg32i|Rg16i|Rg8i|R16i|R8i|Rgba32ui|Rgba16ui|Rgba8ui|R32ui|Rgb10a2ui|Rg32ui|Rg16ui|Rg8ui|R16ui|R8ui|R64ui|R64i)\\b",
 			"name": "keyword.spirv"
 		},
 		"ValueEnum_ImageChannelOrder": {
@@ -130,6 +145,14 @@
 		},
 		"ValueEnum_FPRoundingMode": {
 			"match": "\\b(RTE|RTZ|RTP|RTN)\\b",
+			"name": "keyword.spirv"
+		},
+		"ValueEnum_FPDenormMode": {
+			"match": "\\b(Preserve|FlushToZero)\\b",
+			"name": "keyword.spirv"
+		},
+		"ValueEnum_FPOperationMode": {
+			"match": "\\b(IEEE|ALT)\\b",
 			"name": "keyword.spirv"
 		},
 		"ValueEnum_LinkageType": {
@@ -145,15 +168,15 @@
 			"name": "keyword.spirv"
 		},
 		"ValueEnum_Decoration": {
-			"match": "\\b(RelaxedPrecision|SpecId|Block|BufferBlock|RowMajor|ColMajor|ArrayStride|MatrixStride|GLSLShared|GLSLPacked|CPacked|BuiltIn|NoPerspective|Flat|Patch|Centroid|Sample|Invariant|Restrict|Aliased|Volatile|Constant|Coherent|NonWritable|NonReadable|Uniform|UniformId|SaturatedConversion|Stream|Location|Component|Index|Binding|DescriptorSet|Offset|XfbBuffer|XfbStride|FuncParamAttr|FPRoundingMode|FPFastMathMode|LinkageAttributes|NoContraction|InputAttachmentIndex|Alignment|MaxByteOffset|AlignmentId|MaxByteOffsetId|NoSignedWrap|NoUnsignedWrap|ExplicitInterpAMD|OverrideCoverageNV|PassthroughNV|ViewportRelativeNV|SecondaryViewportRelativeNV|PerPrimitiveNV|PerViewNV|PerTaskNV|PerVertexNV|NonUniform|NonUniformEXT|RestrictPointer|RestrictPointerEXT|AliasedPointer|AliasedPointerEXT|CounterBuffer|HlslCounterBufferGOOGLE|UserSemantic|HlslSemanticGOOGLE|UserTypeGOOGLE)\\b",
+			"match": "\\b(RelaxedPrecision|SpecId|Block|BufferBlock|RowMajor|ColMajor|ArrayStride|MatrixStride|GLSLShared|GLSLPacked|CPacked|BuiltIn|NoPerspective|Flat|Patch|Centroid|Sample|Invariant|Restrict|Aliased|Volatile|Constant|Coherent|NonWritable|NonReadable|Uniform|UniformId|SaturatedConversion|Stream|Location|Component|Index|Binding|DescriptorSet|Offset|XfbBuffer|XfbStride|FuncParamAttr|FPRoundingMode|FPFastMathMode|LinkageAttributes|NoContraction|InputAttachmentIndex|Alignment|MaxByteOffset|AlignmentId|MaxByteOffsetId|NoSignedWrap|NoUnsignedWrap|ExplicitInterpAMD|OverrideCoverageNV|PassthroughNV|ViewportRelativeNV|SecondaryViewportRelativeNV|PerPrimitiveNV|PerViewNV|PerTaskNV|PerVertexNV|NonUniform|NonUniformEXT|RestrictPointer|RestrictPointerEXT|AliasedPointer|AliasedPointerEXT|SIMTCallINTEL|ReferencedIndirectlyINTEL|ClobberINTEL|SideEffectsINTEL|VectorComputeVariableINTEL|FuncParamIOKindINTEL|VectorComputeFunctionINTEL|StackCallINTEL|GlobalVariableOffsetINTEL|CounterBuffer|HlslCounterBufferGOOGLE|UserSemantic|HlslSemanticGOOGLE|UserTypeGOOGLE|FunctionRoundingModeINTEL|FunctionDenormModeINTEL|RegisterINTEL|MemoryINTEL|NumbanksINTEL|BankwidthINTEL|MaxPrivateCopiesINTEL|SinglepumpINTEL|DoublepumpINTEL|MaxReplicatesINTEL|SimpleDualPortINTEL|MergeINTEL|BankBitsINTEL|ForcePow2DepthINTEL|BurstCoalesceINTEL|CacheSizeINTEL|DontStaticallyCoalesceINTEL|PrefetchINTEL|StallEnableINTEL|FuseLoopsInFunctionINTEL|BufferLocationINTEL|IOPipeStorageINTEL|FunctionFloatingPointModeINTEL|SingleElementVectorINTEL|VectorComputeCallableFunctionINTEL)\\b",
 			"name": "keyword.spirv"
 		},
 		"ValueEnum_BuiltIn": {
-			"match": "\\b(Position|PointSize|ClipDistance|CullDistance|VertexId|InstanceId|PrimitiveId|InvocationId|Layer|ViewportIndex|TessLevelOuter|TessLevelInner|TessCoord|PatchVertices|FragCoord|PointCoord|FrontFacing|SampleId|SamplePosition|SampleMask|FragDepth|HelperInvocation|NumWorkgroups|WorkgroupSize|WorkgroupId|LocalInvocationId|GlobalInvocationId|LocalInvocationIndex|WorkDim|GlobalSize|EnqueuedWorkgroupSize|GlobalOffset|GlobalLinearId|SubgroupSize|SubgroupMaxSize|NumSubgroups|NumEnqueuedSubgroups|SubgroupId|SubgroupLocalInvocationId|VertexIndex|InstanceIndex|SubgroupEqMask|SubgroupGeMask|SubgroupGtMask|SubgroupLeMask|SubgroupLtMask|SubgroupEqMaskKHR|SubgroupGeMaskKHR|SubgroupGtMaskKHR|SubgroupLeMaskKHR|SubgroupLtMaskKHR|BaseVertex|BaseInstance|DrawIndex|DeviceIndex|ViewIndex|BaryCoordNoPerspAMD|BaryCoordNoPerspCentroidAMD|BaryCoordNoPerspSampleAMD|BaryCoordSmoothAMD|BaryCoordSmoothCentroidAMD|BaryCoordSmoothSampleAMD|BaryCoordPullModelAMD|FragStencilRefEXT|ViewportMaskNV|SecondaryPositionNV|SecondaryViewportMaskNV|PositionPerViewNV|ViewportMaskPerViewNV|FullyCoveredEXT|TaskCountNV|PrimitiveCountNV|PrimitiveIndicesNV|ClipDistancePerViewNV|CullDistancePerViewNV|LayerPerViewNV|MeshViewCountNV|MeshViewIndicesNV|BaryCoordNV|BaryCoordNoPerspNV|FragSizeEXT|FragmentSizeNV|FragInvocationCountEXT|InvocationsPerPixelNV|LaunchIdNV|LaunchSizeNV|WorldRayOriginNV|WorldRayDirectionNV|ObjectRayOriginNV|ObjectRayDirectionNV|RayTminNV|RayTmaxNV|InstanceCustomIndexNV|ObjectToWorldNV|WorldToObjectNV|HitTNV|HitKindNV|IncomingRayFlagsNV|WarpsPerSMNV|SMCountNV|WarpIDNV|SMIDNV)\\b",
+			"match": "\\b(Position|PointSize|ClipDistance|CullDistance|VertexId|InstanceId|PrimitiveId|InvocationId|Layer|ViewportIndex|TessLevelOuter|TessLevelInner|TessCoord|PatchVertices|FragCoord|PointCoord|FrontFacing|SampleId|SamplePosition|SampleMask|FragDepth|HelperInvocation|NumWorkgroups|WorkgroupSize|WorkgroupId|LocalInvocationId|GlobalInvocationId|LocalInvocationIndex|WorkDim|GlobalSize|EnqueuedWorkgroupSize|GlobalOffset|GlobalLinearId|SubgroupSize|SubgroupMaxSize|NumSubgroups|NumEnqueuedSubgroups|SubgroupId|SubgroupLocalInvocationId|VertexIndex|InstanceIndex|SubgroupEqMask|SubgroupEqMaskKHR|SubgroupGeMask|SubgroupGeMaskKHR|SubgroupGtMask|SubgroupGtMaskKHR|SubgroupLeMask|SubgroupLeMaskKHR|SubgroupLtMask|SubgroupLtMaskKHR|BaseVertex|BaseInstance|DrawIndex|PrimitiveShadingRateKHR|DeviceIndex|ViewIndex|ShadingRateKHR|BaryCoordNoPerspAMD|BaryCoordNoPerspCentroidAMD|BaryCoordNoPerspSampleAMD|BaryCoordSmoothAMD|BaryCoordSmoothCentroidAMD|BaryCoordSmoothSampleAMD|BaryCoordPullModelAMD|FragStencilRefEXT|ViewportMaskNV|SecondaryPositionNV|SecondaryViewportMaskNV|PositionPerViewNV|ViewportMaskPerViewNV|FullyCoveredEXT|TaskCountNV|PrimitiveCountNV|PrimitiveIndicesNV|ClipDistancePerViewNV|CullDistancePerViewNV|LayerPerViewNV|MeshViewCountNV|MeshViewIndicesNV|BaryCoordNV|BaryCoordNoPerspNV|FragSizeEXT|FragmentSizeNV|FragInvocationCountEXT|InvocationsPerPixelNV|LaunchIdNV|LaunchIdKHR|LaunchSizeNV|LaunchSizeKHR|WorldRayOriginNV|WorldRayOriginKHR|WorldRayDirectionNV|WorldRayDirectionKHR|ObjectRayOriginNV|ObjectRayOriginKHR|ObjectRayDirectionNV|ObjectRayDirectionKHR|RayTminNV|RayTminKHR|RayTmaxNV|RayTmaxKHR|InstanceCustomIndexNV|InstanceCustomIndexKHR|ObjectToWorldNV|ObjectToWorldKHR|WorldToObjectNV|WorldToObjectKHR|HitTNV|HitKindNV|HitKindKHR|IncomingRayFlagsNV|IncomingRayFlagsKHR|RayGeometryIndexKHR|WarpsPerSMNV|SMCountNV|WarpIDNV|SMIDNV)\\b",
 			"name": "keyword.spirv"
 		},
 		"ValueEnum_Scope": {
-			"match": "\\b(CrossDevice|Device|Workgroup|Subgroup|Invocation|QueueFamily|QueueFamilyKHR)\\b",
+			"match": "\\b(CrossDevice|Device|Workgroup|Subgroup|Invocation|QueueFamily|QueueFamilyKHR|ShaderCallKHR)\\b",
 			"name": "keyword.spirv"
 		},
 		"ValueEnum_GroupOperation": {
@@ -165,11 +188,23 @@
 			"name": "keyword.spirv"
 		},
 		"ValueEnum_Capability": {
-			"match": "\\b(Matrix|Shader|Geometry|Tessellation|Addresses|Linkage|Kernel|Vector16|Float16Buffer|Float16|Float64|Int64|Int64Atomics|ImageBasic|ImageReadWrite|ImageMipmap|Pipes|Groups|DeviceEnqueue|LiteralSampler|AtomicStorage|Int16|TessellationPointSize|GeometryPointSize|ImageGatherExtended|StorageImageMultisample|UniformBufferArrayDynamicIndexing|SampledImageArrayDynamicIndexing|StorageBufferArrayDynamicIndexing|StorageImageArrayDynamicIndexing|ClipDistance|CullDistance|ImageCubeArray|SampleRateShading|ImageRect|SampledRect|GenericPointer|Int8|InputAttachment|SparseResidency|MinLod|Sampled1D|Image1D|SampledCubeArray|SampledBuffer|ImageBuffer|ImageMSArray|StorageImageExtendedFormats|ImageQuery|DerivativeControl|InterpolationFunction|TransformFeedback|GeometryStreams|StorageImageReadWithoutFormat|StorageImageWriteWithoutFormat|MultiViewport|SubgroupDispatch|NamedBarrier|PipeStorage|GroupNonUniform|GroupNonUniformVote|GroupNonUniformArithmetic|GroupNonUniformBallot|GroupNonUniformShuffle|GroupNonUniformShuffleRelative|GroupNonUniformClustered|GroupNonUniformQuad|ShaderLayer|ShaderViewportIndex|SubgroupBallotKHR|DrawParameters|SubgroupVoteKHR|StorageBuffer16BitAccess|StorageUniformBufferBlock16|UniformAndStorageBuffer16BitAccess|StorageUniform16|StoragePushConstant16|StorageInputOutput16|DeviceGroup|MultiView|VariablePointersStorageBuffer|VariablePointers|AtomicStorageOps|SampleMaskPostDepthCoverage|StorageBuffer8BitAccess|UniformAndStorageBuffer8BitAccess|StoragePushConstant8|DenormPreserve|DenormFlushToZero|SignedZeroInfNanPreserve|RoundingModeRTE|RoundingModeRTZ|Float16ImageAMD|ImageGatherBiasLodAMD|FragmentMaskAMD|StencilExportEXT|ImageReadWriteLodAMD|ShaderClockKHR|SampleMaskOverrideCoverageNV|GeometryShaderPassthroughNV|ShaderViewportIndexLayerEXT|ShaderViewportIndexLayerNV|ShaderViewportMaskNV|ShaderStereoViewNV|PerViewAttributesNV|FragmentFullyCoveredEXT|MeshShadingNV|ImageFootprintNV|FragmentBarycentricNV|ComputeDerivativeGroupQuadsNV|FragmentDensityEXT|ShadingRateNV|GroupNonUniformPartitionedNV|ShaderNonUniform|ShaderNonUniformEXT|RuntimeDescriptorArray|RuntimeDescriptorArrayEXT|InputAttachmentArrayDynamicIndexing|InputAttachmentArrayDynamicIndexingEXT|UniformTexelBufferArrayDynamicIndexing|UniformTexelBufferArrayDynamicIndexingEXT|StorageTexelBufferArrayDynamicIndexing|StorageTexelBufferArrayDynamicIndexingEXT|UniformBufferArrayNonUniformIndexing|UniformBufferArrayNonUniformIndexingEXT|SampledImageArrayNonUniformIndexing|SampledImageArrayNonUniformIndexingEXT|StorageBufferArrayNonUniformIndexing|StorageBufferArrayNonUniformIndexingEXT|StorageImageArrayNonUniformIndexing|StorageImageArrayNonUniformIndexingEXT|InputAttachmentArrayNonUniformIndexing|InputAttachmentArrayNonUniformIndexingEXT|UniformTexelBufferArrayNonUniformIndexing|UniformTexelBufferArrayNonUniformIndexingEXT|StorageTexelBufferArrayNonUniformIndexing|StorageTexelBufferArrayNonUniformIndexingEXT|RayTracingNV|VulkanMemoryModel|VulkanMemoryModelKHR|VulkanMemoryModelDeviceScope|VulkanMemoryModelDeviceScopeKHR|PhysicalStorageBufferAddresses|PhysicalStorageBufferAddressesEXT|ComputeDerivativeGroupLinearNV|CooperativeMatrixNV|FragmentShaderSampleInterlockEXT|FragmentShaderShadingRateInterlockEXT|ShaderSMBuiltinsNV|FragmentShaderPixelInterlockEXT|DemoteToHelperInvocationEXT|SubgroupShuffleINTEL|SubgroupBufferBlockIOINTEL|SubgroupImageBlockIOINTEL|SubgroupImageMediaBlockIOINTEL|IntegerFunctions2INTEL|SubgroupAvcMotionEstimationINTEL|SubgroupAvcMotionEstimationIntraINTEL|SubgroupAvcMotionEstimationChromaINTEL)\\b",
+			"match": "\\b(Matrix|Shader|Geometry|Tessellation|Addresses|Linkage|Kernel|Vector16|Float16Buffer|Float16|Float64|Int64|Int64Atomics|ImageBasic|ImageReadWrite|ImageMipmap|Pipes|Groups|DeviceEnqueue|LiteralSampler|AtomicStorage|Int16|TessellationPointSize|GeometryPointSize|ImageGatherExtended|StorageImageMultisample|UniformBufferArrayDynamicIndexing|SampledImageArrayDynamicIndexing|StorageBufferArrayDynamicIndexing|StorageImageArrayDynamicIndexing|ClipDistance|CullDistance|ImageCubeArray|SampleRateShading|ImageRect|SampledRect|GenericPointer|Int8|InputAttachment|SparseResidency|MinLod|Sampled1D|Image1D|SampledCubeArray|SampledBuffer|ImageBuffer|ImageMSArray|StorageImageExtendedFormats|ImageQuery|DerivativeControl|InterpolationFunction|TransformFeedback|GeometryStreams|StorageImageReadWithoutFormat|StorageImageWriteWithoutFormat|MultiViewport|SubgroupDispatch|NamedBarrier|PipeStorage|GroupNonUniform|GroupNonUniformVote|GroupNonUniformArithmetic|GroupNonUniformBallot|GroupNonUniformShuffle|GroupNonUniformShuffleRelative|GroupNonUniformClustered|GroupNonUniformQuad|ShaderLayer|ShaderViewportIndex|FragmentShadingRateKHR|SubgroupBallotKHR|DrawParameters|WorkgroupMemoryExplicitLayoutKHR|WorkgroupMemoryExplicitLayout8BitAccessKHR|WorkgroupMemoryExplicitLayout16BitAccessKHR|SubgroupVoteKHR|StorageBuffer16BitAccess|StorageUniformBufferBlock16|UniformAndStorageBuffer16BitAccess|StorageUniform16|StoragePushConstant16|StorageInputOutput16|DeviceGroup|MultiView|VariablePointersStorageBuffer|VariablePointers|AtomicStorageOps|SampleMaskPostDepthCoverage|StorageBuffer8BitAccess|UniformAndStorageBuffer8BitAccess|StoragePushConstant8|DenormPreserve|DenormFlushToZero|SignedZeroInfNanPreserve|RoundingModeRTE|RoundingModeRTZ|RayQueryProvisionalKHR|RayQueryKHR|RayTraversalPrimitiveCullingKHR|RayTracingKHR|Float16ImageAMD|ImageGatherBiasLodAMD|FragmentMaskAMD|StencilExportEXT|ImageReadWriteLodAMD|Int64ImageEXT|ShaderClockKHR|SampleMaskOverrideCoverageNV|GeometryShaderPassthroughNV|ShaderViewportIndexLayerEXT|ShaderViewportIndexLayerNV|ShaderViewportMaskNV|ShaderStereoViewNV|PerViewAttributesNV|FragmentFullyCoveredEXT|MeshShadingNV|ImageFootprintNV|FragmentBarycentricNV|ComputeDerivativeGroupQuadsNV|FragmentDensityEXT|ShadingRateNV|GroupNonUniformPartitionedNV|ShaderNonUniform|ShaderNonUniformEXT|RuntimeDescriptorArray|RuntimeDescriptorArrayEXT|InputAttachmentArrayDynamicIndexing|InputAttachmentArrayDynamicIndexingEXT|UniformTexelBufferArrayDynamicIndexing|UniformTexelBufferArrayDynamicIndexingEXT|StorageTexelBufferArrayDynamicIndexing|StorageTexelBufferArrayDynamicIndexingEXT|UniformBufferArrayNonUniformIndexing|UniformBufferArrayNonUniformIndexingEXT|SampledImageArrayNonUniformIndexing|SampledImageArrayNonUniformIndexingEXT|StorageBufferArrayNonUniformIndexing|StorageBufferArrayNonUniformIndexingEXT|StorageImageArrayNonUniformIndexing|StorageImageArrayNonUniformIndexingEXT|InputAttachmentArrayNonUniformIndexing|InputAttachmentArrayNonUniformIndexingEXT|UniformTexelBufferArrayNonUniformIndexing|UniformTexelBufferArrayNonUniformIndexingEXT|StorageTexelBufferArrayNonUniformIndexing|StorageTexelBufferArrayNonUniformIndexingEXT|RayTracingNV|VulkanMemoryModel|VulkanMemoryModelKHR|VulkanMemoryModelDeviceScope|VulkanMemoryModelDeviceScopeKHR|PhysicalStorageBufferAddresses|PhysicalStorageBufferAddressesEXT|ComputeDerivativeGroupLinearNV|RayTracingProvisionalKHR|CooperativeMatrixNV|FragmentShaderSampleInterlockEXT|FragmentShaderShadingRateInterlockEXT|ShaderSMBuiltinsNV|FragmentShaderPixelInterlockEXT|DemoteToHelperInvocationEXT|SubgroupShuffleINTEL|SubgroupBufferBlockIOINTEL|SubgroupImageBlockIOINTEL|SubgroupImageMediaBlockIOINTEL|RoundToInfinityINTEL|FloatingPointModeINTEL|IntegerFunctions2INTEL|FunctionPointersINTEL|IndirectReferencesINTEL|AsmINTEL|AtomicFloat32MinMaxEXT|AtomicFloat64MinMaxEXT|AtomicFloat16MinMaxEXT|VectorComputeINTEL|VectorAnyINTEL|SubgroupAvcMotionEstimationINTEL|SubgroupAvcMotionEstimationIntraINTEL|SubgroupAvcMotionEstimationChromaINTEL|VariableLengthArrayINTEL|FunctionFloatControlINTEL|FPGAMemoryAttributesINTEL|FPFastMathModeINTEL|ArbitraryPrecisionIntegersINTEL|UnstructuredLoopControlsINTEL|FPGALoopControlsINTEL|KernelAttributesINTEL|FPGAKernelAttributesINTEL|FPGAMemoryAccessesINTEL|FPGAClusterAttributesINTEL|LoopFuseINTEL|FPGABufferLocationINTEL|USMStorageClassesINTEL|IOPipesINTEL|BlockingPipesINTEL|FPGARegINTEL|AtomicFloat32AddEXT|AtomicFloat64AddEXT|LongConstantCompositeINTEL)\\b",
+			"name": "keyword.spirv"
+		},
+		"ValueEnum_RayQueryIntersection": {
+			"match": "\\b(RayQueryCandidateIntersectionKHR|RayQueryCommittedIntersectionKHR)\\b",
+			"name": "keyword.spirv"
+		},
+		"ValueEnum_RayQueryCommittedIntersectionType": {
+			"match": "\\b(RayQueryCommittedIntersectionNoneKHR|RayQueryCommittedIntersectionTriangleKHR|RayQueryCommittedIntersectionGeneratedKHR)\\b",
+			"name": "keyword.spirv"
+		},
+		"ValueEnum_RayQueryCandidateIntersectionType": {
+			"match": "\\b(RayQueryCandidateIntersectionTriangleKHR|RayQueryCandidateIntersectionAABBKHR)\\b",
 			"name": "keyword.spirv"
 		},
 		"BitEnum_DebugInfoFlags": {
-			"match": "\\b(FlagIsProtected|FlagIsPrivate|FlagIsPublic|FlagIsLocal|FlagIsDefinition|FlagFwdDecl|FlagArtificial|FlagExplicit|FlagPrototyped|FlagObjectPointer|FlagStaticMember|FlagIndirectVariable|FlagLValueReference|FlagRValueReference|FlagIsOptimized|FlagIsEnumClass|FlagTypePassByValue|FlagTypePassByReference)\\b",
+			"match": "\\b(None|FlagIsProtected|FlagIsPrivate|FlagIsPublic|FlagIsLocal|FlagIsDefinition|FlagFwdDecl|FlagArtificial|FlagExplicit|FlagPrototyped|FlagObjectPointer|FlagStaticMember|FlagIndirectVariable|FlagLValueReference|FlagRValueReference|FlagIsOptimized|FlagIsEnumClass|FlagTypePassByValue|FlagTypePassByReference)\\b",
 			"name": "keyword.spirv"
 		},
 		"ValueEnum_DebugBaseTypeAttributeEncoding": {

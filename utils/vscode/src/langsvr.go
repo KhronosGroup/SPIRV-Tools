@@ -28,11 +28,11 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"./parser"
-	"./schema"
+	"github.com/KhronosGroup/SPIRV-Tools/utils/vscode/src/parser"
+	"github.com/KhronosGroup/SPIRV-Tools/utils/vscode/src/schema"
 
-	"./lsp/jsonrpc2"
-	lsp "./lsp/protocol"
+	"github.com/KhronosGroup/SPIRV-Tools/utils/vscode/src/lsp/jsonrpc2"
+	lsp "github.com/KhronosGroup/SPIRV-Tools/utils/vscode/src/lsp/protocol"
 )
 
 // rSpy is a reader 'spy' that wraps an io.Reader, and logs all data that passes
