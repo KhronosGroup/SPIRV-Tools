@@ -41,7 +41,7 @@ class TransformationReplaceBranchFromDeadBlockWithExit : public Transformation {
   //   predecessor
   // - |message_.opcode()| must be one of OpKill, OpReturn, OpReturnValue and
   //   OpUnreachable
-  // - |message_.opcode()| can only be OpKill the module's entry points all
+  // - |message_.opcode()| can only be OpKill if the module's entry points all
   //   have Fragment execution mode
   // - |message_.opcode()| can only be OpReturn if the return type of the
   //   function containing the block is void
