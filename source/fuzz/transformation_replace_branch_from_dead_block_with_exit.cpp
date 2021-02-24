@@ -18,26 +18,6 @@
 
 namespace spvtools {
 namespace fuzz {
-namespace {
-
-class ChangeTerminatorRAII {
- public:
-  explicit ChangeTerminatorRAII(opt::BasicBlock* block,
-                                opt::Instruction new_terminator)
-      : block_(block), old_terminator_(std::move(*block->terminator())) {
-    *block_->terminator() = std::move(new_terminator);
-  }
-
-  ~ChangeTerminatorRAII() {
-    *block_->terminator() = std::move(old_terminator_);
-  }
-
- private:
-  opt::BasicBlock* block_;
-  opt::Instruction old_terminator_;
-};
-
-}  // namespace
 
 TransformationReplaceBranchFromDeadBlockWithExit::
     TransformationReplaceBranchFromDeadBlockWithExit(
@@ -189,7 +169,7 @@ bool TransformationReplaceBranchFromDeadBlockWithExit::BlockIsSuitable(
   //
   // We use const_cast here since we will restore the original terminator
   // instruction later.
-  ChangeTerminatorRAII change_terminator_raii(
+  fuzzerutil::ChangeTerminatorRAII change_terminator_raii(
       const_cast<opt::BasicBlock*>(&block), {ir_context, SpvOpUnreachable});
   opt::DominatorAnalysis dominator_analysis;
   dominator_analysis.InitializeTree(*ir_context->cfg(), block.GetParent());
