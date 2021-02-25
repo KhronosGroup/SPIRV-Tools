@@ -47,6 +47,34 @@ const spvtools::MessageConsumer kSilentMessageConsumer =
     [](spv_message_level_t, const char*, const spv_position_t&,
        const char*) -> void {};
 
+bool BuildIRContext(spv_target_env target_env,
+                    const spvtools::MessageConsumer& message_consumer,
+                    const std::vector<uint32_t>& binary_in,
+                    spv_validator_options validator_options,
+                    std::unique_ptr<spvtools::opt::IRContext>* ir_context) {
+  SpirvTools tools(target_env);
+  tools.SetMessageConsumer(message_consumer);
+  if (!tools.IsValid()) {
+    message_consumer(SPV_MSG_ERROR, nullptr, {},
+                     "Failed to create SPIRV-Tools interface; stopping.");
+    return false;
+  }
+
+  // Initial binary should be valid.
+  if (!tools.Validate(binary_in.data(), binary_in.size(), validator_options)) {
+    message_consumer(SPV_MSG_ERROR, nullptr, {},
+                     "Initial binary is invalid; stopping.");
+    return false;
+  }
+
+  // Build the module from the input binary.
+  auto result = BuildModule(target_env, message_consumer, binary_in.data(),
+                            binary_in.size());
+  assert(result && "IRContext must be valid");
+  *ir_context = std::move(result);
+  return true;
+}
+
 bool IsFreshId(opt::IRContext* context, uint32_t id) {
   return !context->get_def_use_mgr()->GetDef(id);
 }
@@ -410,7 +438,7 @@ bool IsValid(const opt::IRContext* context,
   std::vector<uint32_t> binary;
   context->module()->ToBinary(&binary, false);
   SpirvTools tools(context->grammar().target_env());
-  tools.SetMessageConsumer(consumer);
+  tools.SetMessageConsumer(std::move(consumer));
   return tools.Validate(binary.data(), binary.size(), validator_options);
 }
 

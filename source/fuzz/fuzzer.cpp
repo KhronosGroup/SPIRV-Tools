@@ -18,7 +18,6 @@
 #include <memory>
 #include <numeric>
 
-#include "source/fuzz/fact_manager/fact_manager.h"
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_pass_add_access_chains.h"
 #include "source/fuzz/fuzzer_pass_add_bit_instruction_synonyms.h"
@@ -100,47 +99,143 @@
 namespace spvtools {
 namespace fuzz {
 
-Fuzzer::Fuzzer(spv_target_env target_env, MessageConsumer consumer,
-               std::vector<uint32_t> binary_in,
-               protobufs::FactSequence initial_facts,
-               std::vector<fuzzerutil::ModuleSupplier> donor_suppliers,
-               std::unique_ptr<RandomGenerator> random_generator,
+Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
+               std::unique_ptr<TransformationContext> transformation_context,
+               std::unique_ptr<FuzzerContext> fuzzer_context,
+               MessageConsumer consumer,
+               const std::vector<fuzzerutil::ModuleSupplier>& donor_suppliers,
                bool enable_all_passes,
                RepeatedPassStrategy repeated_pass_strategy,
                bool validate_after_each_fuzzer_pass,
                spv_validator_options validator_options,
                bool continue_fuzzing_probabilistically)
-    : target_env_(target_env),
-      consumer_(std::move(consumer)),
-      binary_in_(std::move(binary_in)),
-      initial_facts_(std::move(initial_facts)),
-      donor_suppliers_(std::move(donor_suppliers)),
-      random_generator_(std::move(random_generator)),
+    : consumer_(std::move(consumer)),
       enable_all_passes_(enable_all_passes),
-      repeated_pass_strategy_(repeated_pass_strategy),
       validate_after_each_fuzzer_pass_(validate_after_each_fuzzer_pass),
       validator_options_(validator_options),
       continue_fuzzing_probabilistically_(continue_fuzzing_probabilistically),
-      state_() {}
+      num_repeated_passes_applied_(0),
+      ir_context_(std::move(ir_context)),
+      transformation_context_(std::move(transformation_context)),
+      fuzzer_context_(std::move(fuzzer_context)),
+      transformation_sequence_out_(),
+      pass_instances_(),
+      repeated_pass_recommender_(nullptr),
+      repeated_pass_manager_(nullptr),
+      final_passes_() {
+  assert(ir_context_ && "IRContext is not initialized");
+  assert(fuzzer_context_ && "FuzzerContext is not initialized");
+  assert(transformation_context_ && "TransformationContext is not initialized");
+  assert(fuzzerutil::IsValidAndWellFormed(ir_context_.get(), validator_options_,
+                                          consumer_) &&
+         "IRContext is invalid");
 
-Fuzzer::State::State(
-    std::unique_ptr<opt::IRContext> ir_context_,
-    std::unique_ptr<FuzzerContext> fuzzer_context_,
-    std::unique_ptr<TransformationContext> transformation_context_)
-    : num_repeated_passes_applied(0),
-      ir_context(std::move(ir_context_)),
-      fuzzer_context(std::move(fuzzer_context_)),
-      transformation_context(std::move(transformation_context_)),
-      transformation_sequence_out(),
-      pass_instances(),
-      // These objects will be initialized in the |BuildState| method.
-      repeated_pass_recommender(),
-      repeated_pass_manager() {}
+  // The following passes are likely to be very useful: many other passes
+  // introduce synonyms, irrelevant ids and constants that these passes can work
+  // with.  We thus enable them with high probability.
+  MaybeAddRepeatedPass<FuzzerPassObfuscateConstants>(90, &pass_instances_);
+  MaybeAddRepeatedPass<FuzzerPassApplyIdSynonyms>(90, &pass_instances_);
+  MaybeAddRepeatedPass<FuzzerPassReplaceIrrelevantIds>(90, &pass_instances_);
 
-namespace {
-const uint32_t kIdBoundGap = 100;
+  do {
+    // Each call to MaybeAddRepeatedPass randomly decides whether the given pass
+    // should be enabled, and adds an instance of the pass to |pass_instances|
+    // if it is enabled.
+    MaybeAddRepeatedPass<FuzzerPassAddAccessChains>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddBitInstructionSynonyms>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddCompositeExtract>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddCompositeInserts>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddCompositeTypes>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddCopyMemory>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddDeadBlocks>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddDeadBreaks>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddDeadContinues>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddEquationInstructions>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddFunctionCalls>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddGlobalVariables>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddImageSampleUnusedComponents>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddLoads>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddLocalVariables>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddLoopPreheaders>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddLoopsToCreateIntConstantSynonyms>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddOpPhiSynonyms>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddParameters>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddRelaxedDecorations>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddStores>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddSynonyms>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddVectorShuffleInstructions>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassConstructComposites>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassCopyObjects>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassDonateModules>(&pass_instances_,
+                                                  donor_suppliers);
+    MaybeAddRepeatedPass<FuzzerPassDuplicateRegionsWithSelections>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassExpandVectorReductions>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassFlattenConditionalBranches>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassInlineFunctions>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassInvertComparisonOperators>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassMakeVectorOperationsDynamic>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassMergeBlocks>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassMergeFunctionReturns>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassMutatePointers>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassOutlineFunctions>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassPermuteBlocks>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassPermuteFunctionParameters>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassPermuteInstructions>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassPropagateInstructionsDown>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassPropagateInstructionsUp>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassPushIdsThroughVariables>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassReplaceAddsSubsMulsWithCarryingExtended>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassReplaceBranchesFromDeadBlocksWithExits>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassReplaceCopyMemoriesWithLoadsStores>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassReplaceCopyObjectsWithStoresLoads>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassReplaceLoadsStoresWithCopyMemories>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassReplaceParameterWithGlobal>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassReplaceLinearAlgebraInstructions>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassReplaceOpPhiIdsFromDeadPredecessors>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassReplaceOpSelectsWithConditionalBranches>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassReplaceParamsWithStruct>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassSplitBlocks>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassSwapBranchConditionalOperands>(
+        &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassWrapRegionsInSelections>(&pass_instances_);
+    // There is a theoretical possibility that no pass instances were created
+    // until now; loop again if so.
+  } while (pass_instances_.GetPasses().empty());
 
-}  // namespace
+  repeated_pass_recommender_ = MakeUnique<RepeatedPassRecommenderStandard>(
+      &pass_instances_, fuzzer_context_.get());
+  repeated_pass_manager_ = RepeatedPassManager::Create(
+      repeated_pass_strategy, fuzzer_context_.get(), &pass_instances_,
+      repeated_pass_recommender_.get());
+
+  MaybeAddFinalPass<FuzzerPassAdjustBranchWeights>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassAdjustFunctionControls>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassAdjustLoopControls>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassAdjustMemoryOperandsMasks>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassAdjustSelectionControls>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassAddNoContractionDecorations>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassInterchangeSignednessOfIntegerOperands>(
+      &final_passes_);
+  MaybeAddFinalPass<FuzzerPassInterchangeZeroLikeConstants>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassPermutePhiOperands>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassSwapCommutableOperands>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassToggleAccessChainInstruction>(&final_passes_);
+}
 
 Fuzzer::~Fuzzer() = default;
 
@@ -148,255 +243,65 @@ template <typename FuzzerPassT, typename... Args>
 void Fuzzer::MaybeAddRepeatedPass(uint32_t percentage_chance_of_adding_pass,
                                   RepeatedPassInstances* pass_instances,
                                   Args&&... extra_args) {
-  if (enable_all_passes_ || state_->fuzzer_context->ChoosePercentage(
-                                percentage_chance_of_adding_pass)) {
+  if (enable_all_passes_ ||
+      fuzzer_context_->ChoosePercentage(percentage_chance_of_adding_pass)) {
     pass_instances->SetPass(MakeUnique<FuzzerPassT>(
-        state_->ir_context.get(), state_->transformation_context.get(),
-        state_->fuzzer_context.get(), &state_->transformation_sequence_out,
-        std::forward<Args>(extra_args)...));
+        ir_context_.get(), transformation_context_.get(), fuzzer_context_.get(),
+        &transformation_sequence_out_, std::forward<Args>(extra_args)...));
   }
 }
 
 template <typename FuzzerPassT, typename... Args>
 void Fuzzer::MaybeAddFinalPass(std::vector<std::unique_ptr<FuzzerPass>>* passes,
                                Args&&... extra_args) {
-  if (enable_all_passes_ || state_->fuzzer_context->ChooseEven()) {
+  if (enable_all_passes_ || fuzzer_context_->ChooseEven()) {
     passes->push_back(MakeUnique<FuzzerPassT>(
-        state_->ir_context.get(), state_->transformation_context.get(),
-        state_->fuzzer_context.get(), &state_->transformation_sequence_out,
-        std::forward<Args>(extra_args)...));
+        ir_context_.get(), transformation_context_.get(), fuzzer_context_.get(),
+        &transformation_sequence_out_, std::forward<Args>(extra_args)...));
   }
 }
 
 bool Fuzzer::ApplyPassAndCheckValidity(FuzzerPass* pass) const {
   pass->Apply();
   return !validate_after_each_fuzzer_pass_ ||
-         fuzzerutil::IsValidAndWellFormed(state_->ir_context.get(),
-                                          validator_options_, consumer_);
+         fuzzerutil::IsValidAndWellFormed(ir_context_.get(), validator_options_,
+                                          consumer_);
 }
 
 const protobufs::TransformationSequence& Fuzzer::GetAppliedTransformations()
     const {
-  assert(state_ && "Run method hasn't been called");
-  return state_->transformation_sequence_out;
-}
-
-void Fuzzer::BuildState() {
-  assert(!state_ && "state_ has already been initialized");
-
-  {
-    // Variables in this scope are unique pointers that will be invalidated when
-    // the |state_| is created. Thus, it's better not to keep them around when
-    // that happens.
-
-    // Build the module from the input binary.
-    auto ir_context = BuildModule(target_env_, consumer_, binary_in_.data(),
-                                  binary_in_.size());
-    assert(ir_context && "SPIR-V binary should've already been validated");
-
-    // The fuzzer will introduce new ids into the module.  The module's id bound
-    // gives the smallest id that can be used for this purpose.  We add an
-    // offset to this so that there is a sizeable gap between the ids used in
-    // the original module and the ids used for fuzzing, as a readability aid.
-    //
-    // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2541) consider
-    // the case where the maximum id bound is reached.
-    auto minimum_fresh_id = ir_context->module()->id_bound() + kIdBoundGap;
-    auto fuzzer_context =
-        MakeUnique<FuzzerContext>(random_generator_.get(), minimum_fresh_id);
-
-    auto transformation_context = MakeUnique<TransformationContext>(
-        MakeUnique<FactManager>(ir_context.get()), validator_options_);
-    transformation_context->GetFactManager()->AddInitialFacts(consumer_,
-                                                              initial_facts_);
-
-    state_ = MakeUnique<State>(std::move(ir_context), std::move(fuzzer_context),
-                               std::move(transformation_context));
-  }
-
-  // The following passes are likely to be very useful: many other passes
-  // introduce synonyms, irrelevant ids and constants that these passes can work
-  // with.  We thus enable them with high probability.
-  MaybeAddRepeatedPass<FuzzerPassObfuscateConstants>(90,
-                                                     &state_->pass_instances);
-  MaybeAddRepeatedPass<FuzzerPassApplyIdSynonyms>(90, &state_->pass_instances);
-  MaybeAddRepeatedPass<FuzzerPassReplaceIrrelevantIds>(90,
-                                                       &state_->pass_instances);
-
-  do {
-    // Each call to MaybeAddRepeatedPass randomly decides whether the given pass
-    // should be enabled, and adds an instance of the pass to |pass_instances|
-    // if it is enabled.
-    MaybeAddRepeatedPass<FuzzerPassAddAccessChains>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddBitInstructionSynonyms>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddCompositeExtract>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddCompositeInserts>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddCompositeTypes>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddCopyMemory>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddDeadBlocks>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddDeadBreaks>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddDeadContinues>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddEquationInstructions>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddFunctionCalls>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddGlobalVariables>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddImageSampleUnusedComponents>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddLoads>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddLocalVariables>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddLoopPreheaders>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddLoopsToCreateIntConstantSynonyms>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddOpPhiSynonyms>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddParameters>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddRelaxedDecorations>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddStores>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddSynonyms>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassAddVectorShuffleInstructions>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassConstructComposites>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassCopyObjects>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassDonateModules>(&state_->pass_instances,
-                                                  donor_suppliers_);
-    MaybeAddRepeatedPass<FuzzerPassDuplicateRegionsWithSelections>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassExpandVectorReductions>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassFlattenConditionalBranches>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassInlineFunctions>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassInvertComparisonOperators>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassMakeVectorOperationsDynamic>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassMergeBlocks>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassMergeFunctionReturns>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassMutatePointers>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassOutlineFunctions>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassPermuteBlocks>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassPermuteFunctionParameters>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassPermuteInstructions>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassPropagateInstructionsDown>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassPropagateInstructionsUp>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassPushIdsThroughVariables>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassReplaceAddsSubsMulsWithCarryingExtended>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassReplaceBranchesFromDeadBlocksWithExits>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassReplaceCopyMemoriesWithLoadsStores>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassReplaceCopyObjectsWithStoresLoads>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassReplaceLoadsStoresWithCopyMemories>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassReplaceParameterWithGlobal>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassReplaceLinearAlgebraInstructions>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassReplaceOpPhiIdsFromDeadPredecessors>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassReplaceOpSelectsWithConditionalBranches>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassReplaceParamsWithStruct>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassSplitBlocks>(&state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassSwapBranchConditionalOperands>(
-        &state_->pass_instances);
-    MaybeAddRepeatedPass<FuzzerPassWrapRegionsInSelections>(
-        &state_->pass_instances);
-    // There is a theoretical possibility that no pass instances were created
-    // until now; loop again if so.
-  } while (state_->pass_instances.GetPasses().empty());
-
-  state_->repeated_pass_recommender =
-      MakeUnique<RepeatedPassRecommenderStandard>(&state_->pass_instances,
-                                                  state_->fuzzer_context.get());
-  state_->repeated_pass_manager = RepeatedPassManager::Create(
-      repeated_pass_strategy_, state_->fuzzer_context.get(),
-      &state_->pass_instances, state_->repeated_pass_recommender.get());
+  return transformation_sequence_out_;
 }
 
 Fuzzer::FuzzerResult Fuzzer::Run(uint32_t num_of_transformations_to_apply) {
-  // Check compatibility between the library version being linked with and the
-  // header files being used.
-  GOOGLE_PROTOBUF_VERIFY_VERSION;
-
-  if (!state_) {
-    spvtools::SpirvTools tools(target_env_);
-    tools.SetMessageConsumer(consumer_);
-    if (!tools.IsValid()) {
-      consumer_(SPV_MSG_ERROR, nullptr, {},
-                "Failed to create SPIRV-Tools interface; stopping.");
-      return {FuzzerResultStatus::kFailedToCreateSpirvToolsInterface, {}};
-    }
-
-    // Initial binary should be valid.
-    if (!tools.Validate(binary_in_.data(), binary_in_.size(),
-                        validator_options_)) {
-      consumer_(SPV_MSG_ERROR, nullptr, {},
-                "Initial binary is invalid; stopping.");
-      return {FuzzerResultStatus::kInitialBinaryInvalid, {}};
-    }
-
-    BuildState();
-  }
-
-  assert(state_ && "state_ is not initialized");
-
-  const auto initial_num_of_transformations = static_cast<uint32_t>(
-      state_->transformation_sequence_out.transformation_size());
+  const auto initial_num_of_transformations =
+      static_cast<uint32_t>(transformation_sequence_out_.transformation_size());
   if (initial_num_of_transformations >=
-      state_->fuzzer_context->GetTransformationLimit()) {
+      fuzzer_context_->GetTransformationLimit()) {
     return {FuzzerResultStatus::kTransformationLimitReached, {}};
   }
 
-  if (state_->num_repeated_passes_applied >=
-      state_->fuzzer_context->GetTransformationLimit()) {
+  if (num_repeated_passes_applied_ >=
+      fuzzer_context_->GetTransformationLimit()) {
     return {FuzzerResultStatus::kFuzzerStuck, {}};
   }
 
   do {
-    if (!ApplyPassAndCheckValidity(state_->repeated_pass_manager->ChoosePass(
-            state_->transformation_sequence_out))) {
+    if (!ApplyPassAndCheckValidity(
+            repeated_pass_manager_->ChoosePass(transformation_sequence_out_))) {
       return {Fuzzer::FuzzerResultStatus::kFuzzerPassLedToInvalidModule, {}};
     }
   } while (ShouldContinueFuzzing(initial_num_of_transformations,
                                  num_of_transformations_to_apply));
 
-  // Now apply some passes that it does not make sense to apply repeatedly,
-  // as they do not unlock other passes.
-  std::vector<std::unique_ptr<FuzzerPass>> final_passes;
-  MaybeAddFinalPass<FuzzerPassAdjustBranchWeights>(&final_passes);
-  MaybeAddFinalPass<FuzzerPassAdjustFunctionControls>(&final_passes);
-  MaybeAddFinalPass<FuzzerPassAdjustLoopControls>(&final_passes);
-  MaybeAddFinalPass<FuzzerPassAdjustMemoryOperandsMasks>(&final_passes);
-  MaybeAddFinalPass<FuzzerPassAdjustSelectionControls>(&final_passes);
-  MaybeAddFinalPass<FuzzerPassAddNoContractionDecorations>(&final_passes);
-  MaybeAddFinalPass<FuzzerPassInterchangeSignednessOfIntegerOperands>(
-      &final_passes);
-  MaybeAddFinalPass<FuzzerPassInterchangeZeroLikeConstants>(&final_passes);
-  MaybeAddFinalPass<FuzzerPassPermutePhiOperands>(&final_passes);
-  MaybeAddFinalPass<FuzzerPassSwapCommutableOperands>(&final_passes);
-  MaybeAddFinalPass<FuzzerPassToggleAccessChainInstruction>(&final_passes);
-  for (auto& pass : final_passes) {
+  for (auto& pass : final_passes_) {
     if (!ApplyPassAndCheckValidity(pass.get())) {
       return {Fuzzer::FuzzerResultStatus::kFuzzerPassLedToInvalidModule, {}};
     }
   }
   // Encode the module as a binary.
   std::vector<uint32_t> binary_out;
-  state_->ir_context->module()->ToBinary(&binary_out, false);
+  ir_context_->module()->ToBinary(&binary_out, false);
 
   return {Fuzzer::FuzzerResultStatus::kComplete, std::move(binary_out)};
 }
@@ -409,22 +314,21 @@ bool Fuzzer::ShouldContinueFuzzing(uint32_t initial_num_of_transformations,
   // that fuzzing stops if the number of repeated passes hits the limit on the
   // number of transformations that can be applied.
   assert(
-      state_->num_repeated_passes_applied <=
-          state_->fuzzer_context->GetTransformationLimit() &&
+      num_repeated_passes_applied_ <=
+          fuzzer_context_->GetTransformationLimit() &&
       "The number of repeated passes applied must not exceed its upper limit.");
-  if (state_->ir_context->module()->id_bound() >=
-      state_->fuzzer_context->GetIdBoundLimit()) {
+  if (ir_context_->module()->id_bound() >= fuzzer_context_->GetIdBoundLimit()) {
     return false;
   }
-  if (state_->num_repeated_passes_applied ==
-      state_->fuzzer_context->GetTransformationLimit()) {
+  if (num_repeated_passes_applied_ ==
+      fuzzer_context_->GetTransformationLimit()) {
     // Stop because fuzzing has got stuck.
     return false;
   }
-  auto transformations_applied_so_far = static_cast<uint32_t>(
-      state_->transformation_sequence_out.transformation_size());
+  auto transformations_applied_so_far =
+      static_cast<uint32_t>(transformation_sequence_out_.transformation_size());
   if (transformations_applied_so_far >=
-      state_->fuzzer_context->GetTransformationLimit()) {
+      fuzzer_context_->GetTransformationLimit()) {
     // Stop because we have reached the transformation limit.
     return false;
   }
@@ -449,17 +353,16 @@ bool Fuzzer::ShouldContinueFuzzing(uint32_t initial_num_of_transformations,
     // that are applied on average.
     auto chance_of_continuing = static_cast<uint32_t>(
         100.0 *
-        (1.0 -
-         (static_cast<double>(transformations_applied_so_far) /
-          (2.0 * static_cast<double>(
-                     state_->fuzzer_context->GetTransformationLimit())))));
-    if (!state_->fuzzer_context->ChoosePercentage(chance_of_continuing)) {
+        (1.0 - (static_cast<double>(transformations_applied_so_far) /
+                (2.0 * static_cast<double>(
+                           fuzzer_context_->GetTransformationLimit())))));
+    if (!fuzzer_context_->ChoosePercentage(chance_of_continuing)) {
       // We have probabilistically decided to stop.
       return false;
     }
   }
   // Continue fuzzing!
-  state_->num_repeated_passes_applied++;
+  num_repeated_passes_applied_++;
   return true;
 }
 

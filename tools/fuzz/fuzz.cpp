@@ -578,12 +578,31 @@ bool Fuzz(const spv_target_env& target_env,
         });
   }
 
-  spvtools::fuzz::Fuzzer fuzzer(
-      target_env, message_consumer, binary_in, initial_facts, donor_suppliers,
+  std::unique_ptr<spvtools::opt::IRContext> ir_context;
+  if (!spvtools::fuzz::fuzzerutil::BuildIRContext(target_env, message_consumer,
+                                                  binary_in, validator_options,
+                                                  &ir_context)) {
+    spvtools::Error(FuzzDiagnostic, nullptr, {}, "Initial binary is invalid");
+    return false;
+  }
+
+  auto fuzzer_context = spvtools::MakeUnique<spvtools::fuzz::FuzzerContext>(
       spvtools::MakeUnique<spvtools::fuzz::PseudoRandomGenerator>(
           fuzzer_options->has_random_seed
               ? fuzzer_options->random_seed
               : static_cast<uint32_t>(std::random_device()())),
+      spvtools::fuzz::FuzzerContext::GetMinFreshId(ir_context.get()));
+
+  auto transformation_context =
+      spvtools::MakeUnique<spvtools::fuzz::TransformationContext>(
+          spvtools::MakeUnique<spvtools::fuzz::FactManager>(ir_context.get()),
+          validator_options);
+  transformation_context->GetFactManager()->AddInitialFacts(message_consumer,
+                                                            initial_facts);
+
+  spvtools::fuzz::Fuzzer fuzzer(
+      std::move(ir_context), std::move(transformation_context),
+      std::move(fuzzer_context), message_consumer, donor_suppliers,
       fuzzer_options->all_passes_enabled, repeated_pass_strategy,
       fuzzer_options->fuzzer_pass_validation_enabled, validator_options, true);
   auto fuzz_result = fuzzer.Run();

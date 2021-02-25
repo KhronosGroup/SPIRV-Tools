@@ -1648,12 +1648,27 @@ void RunFuzzerAndReplayer(const std::string& shader,
   uint32_t strategy_index = 0;
   for (uint32_t seed = initial_seed; seed < initial_seed + num_runs; seed++) {
     spvtools::ValidatorOptions validator_options;
+
+    std::unique_ptr<opt::IRContext> ir_context;
+    ASSERT_TRUE(fuzzerutil::BuildIRContext(env, kConsoleMessageConsumer,
+                                           binary_in, validator_options,
+                                           &ir_context));
+
+    auto fuzzer_context = MakeUnique<FuzzerContext>(
+        MakeUnique<PseudoRandomGenerator>(seed),
+        FuzzerContext::GetMinFreshId(ir_context.get()));
+
+    auto transformation_context = MakeUnique<TransformationContext>(
+        MakeUnique<FactManager>(ir_context.get()), validator_options);
+    transformation_context->GetFactManager()->AddInitialFacts(
+        kConsoleMessageConsumer, initial_facts);
+
     // Every 4th time we run the fuzzer, enable all fuzzer passes.
     bool enable_all_passes = (seed % 4) == 0;
-    Fuzzer fuzzer(env, kConsoleMessageConsumer, binary_in, initial_facts,
-                  donor_suppliers, MakeUnique<PseudoRandomGenerator>(seed),
-                  enable_all_passes, strategies[strategy_index], true,
-                  validator_options, true);
+    Fuzzer fuzzer(std::move(ir_context), std::move(transformation_context),
+                  std::move(fuzzer_context), kConsoleMessageConsumer,
+                  donor_suppliers, enable_all_passes,
+                  strategies[strategy_index], true, validator_options, true);
     auto fuzzer_result = fuzzer.Run();
 
     // Cycle the repeated pass strategy so that we try a different one next time

@@ -1052,10 +1052,23 @@ void RunFuzzerAndShrinker(const std::string& shader,
     repeated_pass_strategy = RepeatedPassStrategy::kRandomWithRecommendations;
   }
 
-  Fuzzer fuzzer(env, kConsoleMessageConsumer, binary_in, initial_facts,
-                donor_suppliers, MakeUnique<PseudoRandomGenerator>(seed),
-                enable_all_passes, repeated_pass_strategy, true,
-                validator_options, true);
+  std::unique_ptr<opt::IRContext> ir_context;
+  ASSERT_TRUE(fuzzerutil::BuildIRContext(
+      env, kConsoleMessageConsumer, binary_in, validator_options, &ir_context));
+
+  auto fuzzer_context =
+      MakeUnique<FuzzerContext>(MakeUnique<PseudoRandomGenerator>(seed),
+                                FuzzerContext::GetMinFreshId(ir_context.get()));
+
+  auto transformation_context = MakeUnique<TransformationContext>(
+      MakeUnique<FactManager>(ir_context.get()), validator_options);
+  transformation_context->GetFactManager()->AddInitialFacts(
+      kConsoleMessageConsumer, initial_facts);
+
+  Fuzzer fuzzer(std::move(ir_context), std::move(transformation_context),
+                std::move(fuzzer_context), kConsoleMessageConsumer,
+                donor_suppliers, enable_all_passes, repeated_pass_strategy,
+                true, validator_options, true);
   auto fuzzer_result = fuzzer.Run();
   ASSERT_EQ(Fuzzer::FuzzerResultStatus::kComplete, fuzzer_result.status);
   ASSERT_TRUE(t.Validate(fuzzer_result.transformed_binary));
