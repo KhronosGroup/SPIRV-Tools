@@ -447,12 +447,25 @@ var (
 		"OpPtrEqual": OpPtrEqual,
 		"OpPtrNotEqual": OpPtrNotEqual,
 		"OpPtrDiff": OpPtrDiff,
+		"OpTerminateInvocation": OpTerminateInvocation,
 		"OpSubgroupBallotKHR": OpSubgroupBallotKHR,
 		"OpSubgroupFirstInvocationKHR": OpSubgroupFirstInvocationKHR,
 		"OpSubgroupAllKHR": OpSubgroupAllKHR,
 		"OpSubgroupAnyKHR": OpSubgroupAnyKHR,
 		"OpSubgroupAllEqualKHR": OpSubgroupAllEqualKHR,
 		"OpSubgroupReadInvocationKHR": OpSubgroupReadInvocationKHR,
+		"OpTraceRayKHR": OpTraceRayKHR,
+		"OpExecuteCallableKHR": OpExecuteCallableKHR,
+		"OpConvertUToAccelerationStructureKHR": OpConvertUToAccelerationStructureKHR,
+		"OpIgnoreIntersectionKHR": OpIgnoreIntersectionKHR,
+		"OpTerminateRayKHR": OpTerminateRayKHR,
+		"OpTypeRayQueryKHR": OpTypeRayQueryKHR,
+		"OpRayQueryInitializeKHR": OpRayQueryInitializeKHR,
+		"OpRayQueryTerminateKHR": OpRayQueryTerminateKHR,
+		"OpRayQueryGenerateIntersectionKHR": OpRayQueryGenerateIntersectionKHR,
+		"OpRayQueryConfirmIntersectionKHR": OpRayQueryConfirmIntersectionKHR,
+		"OpRayQueryProceedKHR": OpRayQueryProceedKHR,
+		"OpRayQueryGetIntersectionTypeKHR": OpRayQueryGetIntersectionTypeKHR,
 		"OpGroupIAddNonUniformAMD": OpGroupIAddNonUniformAMD,
 		"OpGroupFAddNonUniformAMD": OpGroupFAddNonUniformAMD,
 		"OpGroupFMinNonUniformAMD": OpGroupFMinNonUniformAMD,
@@ -470,39 +483,11 @@ var (
 		"OpReportIntersectionNV": OpReportIntersectionNV,
 		"OpReportIntersectionKHR": OpReportIntersectionKHR,
 		"OpIgnoreIntersectionNV": OpIgnoreIntersectionNV,
-		"OpIgnoreIntersectionKHR": OpIgnoreIntersectionKHR,
 		"OpTerminateRayNV": OpTerminateRayNV,
-		"OpTerminateRayKHR": OpTerminateRayKHR,
 		"OpTraceNV": OpTraceNV,
-		"OpTraceRayKHR": OpTraceRayKHR,
 		"OpTypeAccelerationStructureNV": OpTypeAccelerationStructureNV,
 		"OpTypeAccelerationStructureKHR": OpTypeAccelerationStructureKHR,
-		"OpTypeRayQueryKHR": OpTypeRayQueryKHR,
-		"OpRayQueryInitializeKHR": OpRayQueryInitializeKHR,
-		"OpRayQueryTerminateKHR": OpRayQueryTerminateKHR,
-		"OpRayQueryGenerateIntersectionKHR": OpRayQueryGenerateIntersectionKHR,
-		"OpRayQueryConfirmIntersectionKHR": OpRayQueryConfirmIntersectionKHR,
-		"OpRayQueryProceedKHR": OpRayQueryProceedKHR,
-		"OpRayQueryGetIntersectionTypeKHR": OpRayQueryGetIntersectionTypeKHR,
-		"OpRayQueryGetRayTMinKHR": OpRayQueryGetRayTMinKHR,
-		"OpRayQueryGetRayFlagsKHR": OpRayQueryGetRayFlagsKHR,
-		"OpRayQueryGetIntersectionTKHR": OpRayQueryGetIntersectionTKHR,
-		"OpRayQueryGetIntersectionInstanceCustomIndexKHR": OpRayQueryGetIntersectionInstanceCustomIndexKHR,
-		"OpRayQueryGetIntersectionInstanceIdKHR": OpRayQueryGetIntersectionInstanceIdKHR,
-		"OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR": OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR,
-		"OpRayQueryGetIntersectionGeometryIndexKHR": OpRayQueryGetIntersectionGeometryIndexKHR,
-		"OpRayQueryGetIntersectionPrimitiveIndexKHR": OpRayQueryGetIntersectionPrimitiveIndexKHR,
-		"OpRayQueryGetIntersectionBarycentricsKHR": OpRayQueryGetIntersectionBarycentricsKHR,
-		"OpRayQueryGetIntersectionFrontFaceKHR": OpRayQueryGetIntersectionFrontFaceKHR,
-		"OpRayQueryGetIntersectionCandidateAABBOpaqueKHR": OpRayQueryGetIntersectionCandidateAABBOpaqueKHR,
-		"OpRayQueryGetIntersectionObjectRayDirectionKHR": OpRayQueryGetIntersectionObjectRayDirectionKHR,
-		"OpRayQueryGetIntersectionObjectRayOriginKHR": OpRayQueryGetIntersectionObjectRayOriginKHR,
-		"OpRayQueryGetWorldRayDirectionKHR": OpRayQueryGetWorldRayDirectionKHR,
-		"OpRayQueryGetWorldRayOriginKHR": OpRayQueryGetWorldRayOriginKHR,
-		"OpRayQueryGetIntersectionObjectToWorldKHR": OpRayQueryGetIntersectionObjectToWorldKHR,
-		"OpRayQueryGetIntersectionWorldToObjectKHR": OpRayQueryGetIntersectionWorldToObjectKHR,
 		"OpExecuteCallableNV": OpExecuteCallableNV,
-		"OpExecuteCallableKHR": OpExecuteCallableKHR,
 		"OpTypeCooperativeMatrixNV": OpTypeCooperativeMatrixNV,
 		"OpCooperativeMatrixLoadNV": OpCooperativeMatrixLoadNV,
 		"OpCooperativeMatrixStoreNV": OpCooperativeMatrixStoreNV,
@@ -536,6 +521,13 @@ var (
 		"OpUSubSatINTEL": OpUSubSatINTEL,
 		"OpIMul32x16INTEL": OpIMul32x16INTEL,
 		"OpUMul32x16INTEL": OpUMul32x16INTEL,
+		"OpConstFunctionPointerINTEL": OpConstFunctionPointerINTEL,
+		"OpFunctionPointerCallINTEL": OpFunctionPointerCallINTEL,
+		"OpAsmTargetINTEL": OpAsmTargetINTEL,
+		"OpAsmINTEL": OpAsmINTEL,
+		"OpAsmCallINTEL": OpAsmCallINTEL,
+		"OpAtomicFMinEXT": OpAtomicFMinEXT,
+		"OpAtomicFMaxEXT": OpAtomicFMaxEXT,
 		"OpDecorateString": OpDecorateString,
 		"OpDecorateStringGOOGLE": OpDecorateStringGOOGLE,
 		"OpMemberDecorateString": OpMemberDecorateString,
@@ -658,6 +650,37 @@ var (
 		"OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL": OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL,
 		"OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL": OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL,
 		"OpSubgroupAvcSicGetInterRawSadsINTEL": OpSubgroupAvcSicGetInterRawSadsINTEL,
+		"OpVariableLengthArrayINTEL": OpVariableLengthArrayINTEL,
+		"OpSaveMemoryINTEL": OpSaveMemoryINTEL,
+		"OpRestoreMemoryINTEL": OpRestoreMemoryINTEL,
+		"OpLoopControlINTEL": OpLoopControlINTEL,
+		"OpPtrCastToCrossWorkgroupINTEL": OpPtrCastToCrossWorkgroupINTEL,
+		"OpCrossWorkgroupCastToPtrINTEL": OpCrossWorkgroupCastToPtrINTEL,
+		"OpReadPipeBlockingINTEL": OpReadPipeBlockingINTEL,
+		"OpWritePipeBlockingINTEL": OpWritePipeBlockingINTEL,
+		"OpFPGARegINTEL": OpFPGARegINTEL,
+		"OpRayQueryGetRayTMinKHR": OpRayQueryGetRayTMinKHR,
+		"OpRayQueryGetRayFlagsKHR": OpRayQueryGetRayFlagsKHR,
+		"OpRayQueryGetIntersectionTKHR": OpRayQueryGetIntersectionTKHR,
+		"OpRayQueryGetIntersectionInstanceCustomIndexKHR": OpRayQueryGetIntersectionInstanceCustomIndexKHR,
+		"OpRayQueryGetIntersectionInstanceIdKHR": OpRayQueryGetIntersectionInstanceIdKHR,
+		"OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR": OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR,
+		"OpRayQueryGetIntersectionGeometryIndexKHR": OpRayQueryGetIntersectionGeometryIndexKHR,
+		"OpRayQueryGetIntersectionPrimitiveIndexKHR": OpRayQueryGetIntersectionPrimitiveIndexKHR,
+		"OpRayQueryGetIntersectionBarycentricsKHR": OpRayQueryGetIntersectionBarycentricsKHR,
+		"OpRayQueryGetIntersectionFrontFaceKHR": OpRayQueryGetIntersectionFrontFaceKHR,
+		"OpRayQueryGetIntersectionCandidateAABBOpaqueKHR": OpRayQueryGetIntersectionCandidateAABBOpaqueKHR,
+		"OpRayQueryGetIntersectionObjectRayDirectionKHR": OpRayQueryGetIntersectionObjectRayDirectionKHR,
+		"OpRayQueryGetIntersectionObjectRayOriginKHR": OpRayQueryGetIntersectionObjectRayOriginKHR,
+		"OpRayQueryGetWorldRayDirectionKHR": OpRayQueryGetWorldRayDirectionKHR,
+		"OpRayQueryGetWorldRayOriginKHR": OpRayQueryGetWorldRayOriginKHR,
+		"OpRayQueryGetIntersectionObjectToWorldKHR": OpRayQueryGetIntersectionObjectToWorldKHR,
+		"OpRayQueryGetIntersectionWorldToObjectKHR": OpRayQueryGetIntersectionWorldToObjectKHR,
+		"OpAtomicFAddEXT": OpAtomicFAddEXT,
+		"OpTypeBufferSurfaceINTEL": OpTypeBufferSurfaceINTEL,
+		"OpTypeStructContinuedINTEL": OpTypeStructContinuedINTEL,
+		"OpConstantCompositeContinuedINTEL": OpConstantCompositeContinuedINTEL,
+		"OpSpecConstantCompositeContinuedINTEL": OpSpecConstantCompositeContinuedINTEL,
 	}
 
 	// ExtOpcodes is a map of extension name to Opcode description list.
@@ -10022,6 +10045,13 @@ var (
 			}, 
 		},
 	}
+	OpTerminateInvocation = &Opcode {
+		Opname:   "OpTerminateInvocation",
+		Class:    "Control-Flow",
+		Opcode:   4416,
+		Operands: []Operand {
+		},
+	}
 	OpSubgroupBallotKHR = &Opcode {
 		Opname:   "OpSubgroupBallotKHR",
 		Class:    "Group",
@@ -10155,6 +10185,270 @@ var (
 			Operand {
 				Kind:       OperandKindIdRef,
 				Name:       "'Index'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpTraceRayKHR = &Opcode {
+		Opname:   "OpTraceRayKHR",
+		Class:    "Reserved",
+		Opcode:   4445,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Accel'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Ray Flags'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Cull Mask'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'SBT Offset'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'SBT Stride'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Miss Index'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Ray Origin'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Ray Tmin'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Ray Direction'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Ray Tmax'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Payload'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpExecuteCallableKHR = &Opcode {
+		Opname:   "OpExecuteCallableKHR",
+		Class:    "Reserved",
+		Opcode:   4446,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'SBT Index'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Callable Data'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpConvertUToAccelerationStructureKHR = &Opcode {
+		Opname:   "OpConvertUToAccelerationStructureKHR",
+		Class:    "Reserved",
+		Opcode:   4447,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Accel'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpIgnoreIntersectionKHR = &Opcode {
+		Opname:   "OpIgnoreIntersectionKHR",
+		Class:    "Reserved",
+		Opcode:   4448,
+		Operands: []Operand {
+		},
+	}
+	OpTerminateRayKHR = &Opcode {
+		Opname:   "OpTerminateRayKHR",
+		Class:    "Reserved",
+		Opcode:   4449,
+		Operands: []Operand {
+		},
+	}
+	OpTypeRayQueryKHR = &Opcode {
+		Opname:   "OpTypeRayQueryKHR",
+		Class:    "Reserved",
+		Opcode:   4472,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryInitializeKHR = &Opcode {
+		Opname:   "OpRayQueryInitializeKHR",
+		Class:    "Reserved",
+		Opcode:   4473,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Accel'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayFlags'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'CullMask'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayOrigin'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayTMin'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayDirection'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayTMax'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryTerminateKHR = &Opcode {
+		Opname:   "OpRayQueryTerminateKHR",
+		Class:    "Reserved",
+		Opcode:   4474,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGenerateIntersectionKHR = &Opcode {
+		Opname:   "OpRayQueryGenerateIntersectionKHR",
+		Class:    "Reserved",
+		Opcode:   4475,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'HitT'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryConfirmIntersectionKHR = &Opcode {
+		Opname:   "OpRayQueryConfirmIntersectionKHR",
+		Class:    "Reserved",
+		Opcode:   4476,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryProceedKHR = &Opcode {
+		Opname:   "OpRayQueryProceedKHR",
+		Class:    "Reserved",
+		Opcode:   4477,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetIntersectionTypeKHR = &Opcode {
+		Opname:   "OpRayQueryGetIntersectionTypeKHR",
+		Class:    "Reserved",
+		Opcode:   4479,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Intersection'",
 				Quantifier: "",
 			}, 
 		},
@@ -10638,13 +10932,6 @@ var (
 		Operands: []Operand {
 		},
 	}
-	OpIgnoreIntersectionKHR = &Opcode {
-		Opname:   "OpIgnoreIntersectionKHR",
-		Class:    "Reserved",
-		Opcode:   5335,
-		Operands: []Operand {
-		},
-	}
 	OpTerminateRayNV = &Opcode {
 		Opname:   "OpTerminateRayNV",
 		Class:    "Reserved",
@@ -10652,77 +10939,8 @@ var (
 		Operands: []Operand {
 		},
 	}
-	OpTerminateRayKHR = &Opcode {
-		Opname:   "OpTerminateRayKHR",
-		Class:    "Reserved",
-		Opcode:   5336,
-		Operands: []Operand {
-		},
-	}
 	OpTraceNV = &Opcode {
 		Opname:   "OpTraceNV",
-		Class:    "Reserved",
-		Opcode:   5337,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Accel'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Ray Flags'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Cull Mask'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'SBT Offset'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'SBT Stride'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Miss Index'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Ray Origin'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Ray Tmin'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Ray Direction'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Ray Tmax'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'PayloadId'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpTraceRayKHR = &Opcode {
-		Opname:   "OpTraceRayKHR",
 		Class:    "Reserved",
 		Opcode:   5337,
 		Operands: []Operand {
@@ -10807,608 +11025,8 @@ var (
 			}, 
 		},
 	}
-	OpTypeRayQueryKHR = &Opcode {
-		Opname:   "OpTypeRayQueryKHR",
-		Class:    "Reserved",
-		Opcode:   4472,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryInitializeKHR = &Opcode {
-		Opname:   "OpRayQueryInitializeKHR",
-		Class:    "Reserved",
-		Opcode:   4473,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Accel'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayFlags'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'CullMask'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayOrigin'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayTMin'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayDirection'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayTMax'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryTerminateKHR = &Opcode {
-		Opname:   "OpRayQueryTerminateKHR",
-		Class:    "Reserved",
-		Opcode:   4474,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGenerateIntersectionKHR = &Opcode {
-		Opname:   "OpRayQueryGenerateIntersectionKHR",
-		Class:    "Reserved",
-		Opcode:   4475,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'HitT'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryConfirmIntersectionKHR = &Opcode {
-		Opname:   "OpRayQueryConfirmIntersectionKHR",
-		Class:    "Reserved",
-		Opcode:   4476,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryProceedKHR = &Opcode {
-		Opname:   "OpRayQueryProceedKHR",
-		Class:    "Reserved",
-		Opcode:   4477,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetIntersectionTypeKHR = &Opcode {
-		Opname:   "OpRayQueryGetIntersectionTypeKHR",
-		Class:    "Reserved",
-		Opcode:   4479,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Intersection'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetRayTMinKHR = &Opcode {
-		Opname:   "OpRayQueryGetRayTMinKHR",
-		Class:    "Reserved",
-		Opcode:   6016,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetRayFlagsKHR = &Opcode {
-		Opname:   "OpRayQueryGetRayFlagsKHR",
-		Class:    "Reserved",
-		Opcode:   6017,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetIntersectionTKHR = &Opcode {
-		Opname:   "OpRayQueryGetIntersectionTKHR",
-		Class:    "Reserved",
-		Opcode:   6018,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Intersection'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetIntersectionInstanceCustomIndexKHR = &Opcode {
-		Opname:   "OpRayQueryGetIntersectionInstanceCustomIndexKHR",
-		Class:    "Reserved",
-		Opcode:   6019,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Intersection'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetIntersectionInstanceIdKHR = &Opcode {
-		Opname:   "OpRayQueryGetIntersectionInstanceIdKHR",
-		Class:    "Reserved",
-		Opcode:   6020,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Intersection'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR = &Opcode {
-		Opname:   "OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR",
-		Class:    "Reserved",
-		Opcode:   6021,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Intersection'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetIntersectionGeometryIndexKHR = &Opcode {
-		Opname:   "OpRayQueryGetIntersectionGeometryIndexKHR",
-		Class:    "Reserved",
-		Opcode:   6022,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Intersection'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetIntersectionPrimitiveIndexKHR = &Opcode {
-		Opname:   "OpRayQueryGetIntersectionPrimitiveIndexKHR",
-		Class:    "Reserved",
-		Opcode:   6023,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Intersection'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetIntersectionBarycentricsKHR = &Opcode {
-		Opname:   "OpRayQueryGetIntersectionBarycentricsKHR",
-		Class:    "Reserved",
-		Opcode:   6024,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Intersection'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetIntersectionFrontFaceKHR = &Opcode {
-		Opname:   "OpRayQueryGetIntersectionFrontFaceKHR",
-		Class:    "Reserved",
-		Opcode:   6025,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Intersection'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetIntersectionCandidateAABBOpaqueKHR = &Opcode {
-		Opname:   "OpRayQueryGetIntersectionCandidateAABBOpaqueKHR",
-		Class:    "Reserved",
-		Opcode:   6026,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetIntersectionObjectRayDirectionKHR = &Opcode {
-		Opname:   "OpRayQueryGetIntersectionObjectRayDirectionKHR",
-		Class:    "Reserved",
-		Opcode:   6027,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Intersection'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetIntersectionObjectRayOriginKHR = &Opcode {
-		Opname:   "OpRayQueryGetIntersectionObjectRayOriginKHR",
-		Class:    "Reserved",
-		Opcode:   6028,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Intersection'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetWorldRayDirectionKHR = &Opcode {
-		Opname:   "OpRayQueryGetWorldRayDirectionKHR",
-		Class:    "Reserved",
-		Opcode:   6029,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetWorldRayOriginKHR = &Opcode {
-		Opname:   "OpRayQueryGetWorldRayOriginKHR",
-		Class:    "Reserved",
-		Opcode:   6030,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetIntersectionObjectToWorldKHR = &Opcode {
-		Opname:   "OpRayQueryGetIntersectionObjectToWorldKHR",
-		Class:    "Reserved",
-		Opcode:   6031,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Intersection'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpRayQueryGetIntersectionWorldToObjectKHR = &Opcode {
-		Opname:   "OpRayQueryGetIntersectionWorldToObjectKHR",
-		Class:    "Reserved",
-		Opcode:   6032,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdResultType,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdResult,
-				Name:       "",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'RayQuery'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Intersection'",
-				Quantifier: "",
-			}, 
-		},
-	}
 	OpExecuteCallableNV = &Opcode {
 		Opname:   "OpExecuteCallableNV",
-		Class:    "Reserved",
-		Opcode:   5344,
-		Operands: []Operand {
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'SBT Index'",
-				Quantifier: "",
-			}, 
-			Operand {
-				Kind:       OperandKindIdRef,
-				Name:       "'Callable DataId'",
-				Quantifier: "",
-			}, 
-		},
-	}
-	OpExecuteCallableKHR = &Opcode {
-		Opname:   "OpExecuteCallableKHR",
 		Class:    "Reserved",
 		Opcode:   5344,
 		Operands: []Operand {
@@ -12256,6 +11874,210 @@ var (
 			Operand {
 				Kind:       OperandKindIdRef,
 				Name:       "'Operand 2'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpConstFunctionPointerINTEL = &Opcode {
+		Opname:   "OpConstFunctionPointerINTEL",
+		Class:    "@exclude",
+		Opcode:   5600,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Function'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpFunctionPointerCallINTEL = &Opcode {
+		Opname:   "OpFunctionPointerCallINTEL",
+		Class:    "@exclude",
+		Opcode:   5601,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Operand 1'",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpAsmTargetINTEL = &Opcode {
+		Opname:   "OpAsmTargetINTEL",
+		Class:    "@exclude",
+		Opcode:   5609,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralString,
+				Name:       "'Asm target'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpAsmINTEL = &Opcode {
+		Opname:   "OpAsmINTEL",
+		Class:    "@exclude",
+		Opcode:   5610,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Asm type'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Target'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralString,
+				Name:       "'Asm instructions'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindLiteralString,
+				Name:       "'Constraints'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpAsmCallINTEL = &Opcode {
+		Opname:   "OpAsmCallINTEL",
+		Class:    "@exclude",
+		Opcode:   5611,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Asm'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Argument 0'",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpAtomicFMinEXT = &Opcode {
+		Opname:   "OpAtomicFMinEXT",
+		Class:    "Atomic",
+		Opcode:   5614,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Pointer'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdScope,
+				Name:       "'Memory'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdMemorySemantics,
+				Name:       "'Semantics'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Value'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpAtomicFMaxEXT = &Opcode {
+		Opname:   "OpAtomicFMaxEXT",
+		Class:    "Atomic",
+		Opcode:   5615,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Pointer'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdScope,
+				Name:       "'Memory'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdMemorySemantics,
+				Name:       "'Semantics'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Value'",
 				Quantifier: "",
 			}, 
 		},
@@ -15436,6 +15258,713 @@ var (
 				Kind:       OperandKindIdRef,
 				Name:       "'Payload'",
 				Quantifier: "",
+			}, 
+		},
+	}
+	OpVariableLengthArrayINTEL = &Opcode {
+		Opname:   "OpVariableLengthArrayINTEL",
+		Class:    "@exclude",
+		Opcode:   5818,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Lenght'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpSaveMemoryINTEL = &Opcode {
+		Opname:   "OpSaveMemoryINTEL",
+		Class:    "@exclude",
+		Opcode:   5819,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRestoreMemoryINTEL = &Opcode {
+		Opname:   "OpRestoreMemoryINTEL",
+		Class:    "@exclude",
+		Opcode:   5820,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Ptr'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpLoopControlINTEL = &Opcode {
+		Opname:   "OpLoopControlINTEL",
+		Class:    "Reserved",
+		Opcode:   5887,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'Loop Control Parameters'",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpPtrCastToCrossWorkgroupINTEL = &Opcode {
+		Opname:   "OpPtrCastToCrossWorkgroupINTEL",
+		Class:    "@exclude",
+		Opcode:   5934,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Pointer'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpCrossWorkgroupCastToPtrINTEL = &Opcode {
+		Opname:   "OpCrossWorkgroupCastToPtrINTEL",
+		Class:    "@exclude",
+		Opcode:   5938,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Pointer'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpReadPipeBlockingINTEL = &Opcode {
+		Opname:   "OpReadPipeBlockingINTEL",
+		Class:    "Pipe",
+		Opcode:   5946,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Packet Size'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Packet Alignment'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpWritePipeBlockingINTEL = &Opcode {
+		Opname:   "OpWritePipeBlockingINTEL",
+		Class:    "Pipe",
+		Opcode:   5947,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Packet Size'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Packet Alignment'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpFPGARegINTEL = &Opcode {
+		Opname:   "OpFPGARegINTEL",
+		Class:    "Reserved",
+		Opcode:   5949,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Result'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Input'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetRayTMinKHR = &Opcode {
+		Opname:   "OpRayQueryGetRayTMinKHR",
+		Class:    "Reserved",
+		Opcode:   6016,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetRayFlagsKHR = &Opcode {
+		Opname:   "OpRayQueryGetRayFlagsKHR",
+		Class:    "Reserved",
+		Opcode:   6017,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetIntersectionTKHR = &Opcode {
+		Opname:   "OpRayQueryGetIntersectionTKHR",
+		Class:    "Reserved",
+		Opcode:   6018,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Intersection'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetIntersectionInstanceCustomIndexKHR = &Opcode {
+		Opname:   "OpRayQueryGetIntersectionInstanceCustomIndexKHR",
+		Class:    "Reserved",
+		Opcode:   6019,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Intersection'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetIntersectionInstanceIdKHR = &Opcode {
+		Opname:   "OpRayQueryGetIntersectionInstanceIdKHR",
+		Class:    "Reserved",
+		Opcode:   6020,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Intersection'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR = &Opcode {
+		Opname:   "OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR",
+		Class:    "Reserved",
+		Opcode:   6021,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Intersection'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetIntersectionGeometryIndexKHR = &Opcode {
+		Opname:   "OpRayQueryGetIntersectionGeometryIndexKHR",
+		Class:    "Reserved",
+		Opcode:   6022,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Intersection'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetIntersectionPrimitiveIndexKHR = &Opcode {
+		Opname:   "OpRayQueryGetIntersectionPrimitiveIndexKHR",
+		Class:    "Reserved",
+		Opcode:   6023,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Intersection'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetIntersectionBarycentricsKHR = &Opcode {
+		Opname:   "OpRayQueryGetIntersectionBarycentricsKHR",
+		Class:    "Reserved",
+		Opcode:   6024,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Intersection'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetIntersectionFrontFaceKHR = &Opcode {
+		Opname:   "OpRayQueryGetIntersectionFrontFaceKHR",
+		Class:    "Reserved",
+		Opcode:   6025,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Intersection'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetIntersectionCandidateAABBOpaqueKHR = &Opcode {
+		Opname:   "OpRayQueryGetIntersectionCandidateAABBOpaqueKHR",
+		Class:    "Reserved",
+		Opcode:   6026,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetIntersectionObjectRayDirectionKHR = &Opcode {
+		Opname:   "OpRayQueryGetIntersectionObjectRayDirectionKHR",
+		Class:    "Reserved",
+		Opcode:   6027,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Intersection'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetIntersectionObjectRayOriginKHR = &Opcode {
+		Opname:   "OpRayQueryGetIntersectionObjectRayOriginKHR",
+		Class:    "Reserved",
+		Opcode:   6028,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Intersection'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetWorldRayDirectionKHR = &Opcode {
+		Opname:   "OpRayQueryGetWorldRayDirectionKHR",
+		Class:    "Reserved",
+		Opcode:   6029,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetWorldRayOriginKHR = &Opcode {
+		Opname:   "OpRayQueryGetWorldRayOriginKHR",
+		Class:    "Reserved",
+		Opcode:   6030,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetIntersectionObjectToWorldKHR = &Opcode {
+		Opname:   "OpRayQueryGetIntersectionObjectToWorldKHR",
+		Class:    "Reserved",
+		Opcode:   6031,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Intersection'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpRayQueryGetIntersectionWorldToObjectKHR = &Opcode {
+		Opname:   "OpRayQueryGetIntersectionWorldToObjectKHR",
+		Class:    "Reserved",
+		Opcode:   6032,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'RayQuery'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Intersection'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpAtomicFAddEXT = &Opcode {
+		Opname:   "OpAtomicFAddEXT",
+		Class:    "Atomic",
+		Opcode:   6035,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Pointer'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdScope,
+				Name:       "'Memory'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdMemorySemantics,
+				Name:       "'Semantics'",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Value'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpTypeBufferSurfaceINTEL = &Opcode {
+		Opname:   "OpTypeBufferSurfaceINTEL",
+		Class:    "Type-Declaration",
+		Opcode:   6086,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpTypeStructContinuedINTEL = &Opcode {
+		Opname:   "OpTypeStructContinuedINTEL",
+		Class:    "Type-Declaration",
+		Opcode:   6090,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Member 0 type', + 'member 1 type', + ...",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpConstantCompositeContinuedINTEL = &Opcode {
+		Opname:   "OpConstantCompositeContinuedINTEL",
+		Class:    "Constant-Creation",
+		Opcode:   6091,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Constituents'",
+				Quantifier: "*",
+			}, 
+		},
+	}
+	OpSpecConstantCompositeContinuedINTEL = &Opcode {
+		Opname:   "OpSpecConstantCompositeContinuedINTEL",
+		Class:    "Constant-Creation",
+		Opcode:   6092,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Constituents'",
+				Quantifier: "*",
 			}, 
 		},
 	}
@@ -19788,6 +20317,20 @@ var (
 				Parameters:   []Parameter{},
 				Version:      "",
 			},
+			Enumerant{
+				Enumerant:    "AllowContractFastINTEL",
+				Value:        0x10000,
+				Capabilities: []string{"FPFastMathModeINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "AllowReassocINTEL",
+				Value:        0x20000,
+				Capabilities: []string{"FPFastMathModeINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
 		},
 		Bases:      []*OperandKind {},
 	}
@@ -19892,6 +20435,62 @@ var (
 				Capabilities: []string{},
 				Parameters:   []Parameter{{OperandKindLiteralInteger, ""},},
 				Version:      "1.4",
+			},
+			Enumerant{
+				Enumerant:    "InitiationIntervalINTEL",
+				Value:        0x10000,
+				Capabilities: []string{"FPGALoopControlsINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, ""},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "MaxConcurrencyINTEL",
+				Value:        0x20000,
+				Capabilities: []string{"FPGALoopControlsINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, ""},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "DependencyArrayINTEL",
+				Value:        0x40000,
+				Capabilities: []string{"FPGALoopControlsINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, ""},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "PipelineEnableINTEL",
+				Value:        0x80000,
+				Capabilities: []string{"FPGALoopControlsINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, ""},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "LoopCoalesceINTEL",
+				Value:        0x100000,
+				Capabilities: []string{"FPGALoopControlsINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, ""},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "MaxInterleavingINTEL",
+				Value:        0x200000,
+				Capabilities: []string{"FPGALoopControlsINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, ""},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "SpeculatedIterationsINTEL",
+				Value:        0x400000,
+				Capabilities: []string{"FPGALoopControlsINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, ""},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "NoFusionINTEL",
+				Value:        0x800000,
+				Capabilities: []string{"FPGALoopControlsINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, ""},},
+				Version:      "None",
 			},
 		},
 		Bases:      []*OperandKind {},
@@ -20185,77 +20784,112 @@ var (
 				Value:        0x0000,
 				Capabilities: []string{"RayQueryKHR","RayTracingKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "OpaqueKHR",
 				Value:        0x0001,
 				Capabilities: []string{"RayQueryKHR","RayTracingKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "NoOpaqueKHR",
 				Value:        0x0002,
 				Capabilities: []string{"RayQueryKHR","RayTracingKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "TerminateOnFirstHitKHR",
 				Value:        0x0004,
 				Capabilities: []string{"RayQueryKHR","RayTracingKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "SkipClosestHitShaderKHR",
 				Value:        0x0008,
 				Capabilities: []string{"RayQueryKHR","RayTracingKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "CullBackFacingTrianglesKHR",
 				Value:        0x0010,
 				Capabilities: []string{"RayQueryKHR","RayTracingKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "CullFrontFacingTrianglesKHR",
 				Value:        0x0020,
 				Capabilities: []string{"RayQueryKHR","RayTracingKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "CullOpaqueKHR",
 				Value:        0x0040,
 				Capabilities: []string{"RayQueryKHR","RayTracingKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "CullNoOpaqueKHR",
 				Value:        0x0080,
 				Capabilities: []string{"RayQueryKHR","RayTracingKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "SkipTrianglesKHR",
 				Value:        0x0100,
 				Capabilities: []string{"RayTraversalPrimitiveCullingKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "SkipAABBsKHR",
 				Value:        0x0200,
 				Capabilities: []string{"RayTraversalPrimitiveCullingKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
+			},
+		},
+		Bases:      []*OperandKind {},
+	}
+	OperandKindFragmentShadingRate = &OperandKind {
+		Kind:       "FragmentShadingRate",
+		Category:   "BitEnum",
+		Enumerants: []Enumerant {
+			Enumerant{
+				Enumerant:    "Vertical2Pixels",
+				Value:        0x0001,
+				Capabilities: []string{"FragmentShadingRateKHR",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "Vertical4Pixels",
+				Value:        0x0002,
+				Capabilities: []string{"FragmentShadingRateKHR",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "Horizontal2Pixels",
+				Value:        0x0004,
+				Capabilities: []string{"FragmentShadingRateKHR",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "Horizontal4Pixels",
+				Value:        0x0008,
+				Capabilities: []string{"FragmentShadingRateKHR",},
+				Parameters:   []Parameter{},
+				Version:      "None",
 			},
 		},
 		Bases:      []*OperandKind {},
@@ -20943,6 +21577,76 @@ var (
 				Parameters:   []Parameter{},
 				Version:      "None",
 			},
+			Enumerant{
+				Enumerant:    "SharedLocalMemorySizeINTEL",
+				Value:        5618,
+				Capabilities: []string{"VectorComputeINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Size'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "RoundingModeRTPINTEL",
+				Value:        5620,
+				Capabilities: []string{"RoundToInfinityINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Target Width'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "RoundingModeRTNINTEL",
+				Value:        5621,
+				Capabilities: []string{"RoundToInfinityINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Target Width'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FloatingPointModeALTINTEL",
+				Value:        5622,
+				Capabilities: []string{"RoundToInfinityINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Target Width'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FloatingPointModeIEEEINTEL",
+				Value:        5623,
+				Capabilities: []string{"RoundToInfinityINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Target Width'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "MaxWorkgroupSizeINTEL",
+				Value:        5893,
+				Capabilities: []string{"KernelAttributesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'max_x_size'"},{OperandKindLiteralInteger, "'max_y_size'"},{OperandKindLiteralInteger, "'max_z_size'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "MaxWorkDimINTEL",
+				Value:        5894,
+				Capabilities: []string{"KernelAttributesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'max_dimensions'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "NoGlobalOffsetINTEL",
+				Value:        5895,
+				Capabilities: []string{"KernelAttributesINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "NumSIMDWorkitemsINTEL",
+				Value:        5896,
+				Capabilities: []string{"FPGAKernelAttributesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'vector_width'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "SchedulerTargetFmaxMhzINTEL",
+				Value:        5903,
+				Capabilities: []string{"FPGAKernelAttributesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'target_fmax'"},},
+				Version:      "None",
+			},
 		},
 		Bases:      []*OperandKind {},
 	}
@@ -21138,6 +21842,27 @@ var (
 				Capabilities: []string{"PhysicalStorageBufferAddresses",},
 				Parameters:   []Parameter{},
 				Version:      "1.5",
+			},
+			Enumerant{
+				Enumerant:    "CodeSectionINTEL",
+				Value:        5605,
+				Capabilities: []string{"FunctionPointersINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "DeviceOnlyINTEL",
+				Value:        5936,
+				Capabilities: []string{"USMStorageClassesINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "HostOnlyINTEL",
+				Value:        5937,
+				Capabilities: []string{"USMStorageClassesINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
 			},
 		},
 		Bases:      []*OperandKind {},
@@ -21545,6 +22270,20 @@ var (
 				Parameters:   []Parameter{},
 				Version:      "",
 			},
+			Enumerant{
+				Enumerant:    "R64ui",
+				Value:        40,
+				Capabilities: []string{"Int64ImageEXT",},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
+			Enumerant{
+				Enumerant:    "R64i",
+				Value:        41,
+				Capabilities: []string{"Int64ImageEXT",},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
 		},
 		Bases:      []*OperandKind {},
 	}
@@ -21852,6 +22591,48 @@ var (
 				Capabilities: []string{},
 				Parameters:   []Parameter{},
 				Version:      "",
+			},
+		},
+		Bases:      []*OperandKind {},
+	}
+	OperandKindFPDenormMode = &OperandKind {
+		Kind:       "FPDenormMode",
+		Category:   "ValueEnum",
+		Enumerants: []Enumerant {
+			Enumerant{
+				Enumerant:    "Preserve",
+				Value:        0,
+				Capabilities: []string{"FunctionFloatControlINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FlushToZero",
+				Value:        1,
+				Capabilities: []string{"FunctionFloatControlINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+		},
+		Bases:      []*OperandKind {},
+	}
+	OperandKindFPOperationMode = &OperandKind {
+		Kind:       "FPOperationMode",
+		Category:   "ValueEnum",
+		Enumerants: []Enumerant {
+			Enumerant{
+				Enumerant:    "IEEE",
+				Value:        0,
+				Capabilities: []string{"FunctionFloatControlINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "ALT",
+				Value:        1,
+				Capabilities: []string{"FunctionFloatControlINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
 			},
 		},
 		Bases:      []*OperandKind {},
@@ -22421,6 +23202,69 @@ var (
 				Version:      "1.5",
 			},
 			Enumerant{
+				Enumerant:    "SIMTCallINTEL",
+				Value:        5599,
+				Capabilities: []string{"VectorComputeINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'N'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "ReferencedIndirectlyINTEL",
+				Value:        5602,
+				Capabilities: []string{"IndirectReferencesINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "ClobberINTEL",
+				Value:        5607,
+				Capabilities: []string{"AsmINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralString, "'Register'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "SideEffectsINTEL",
+				Value:        5608,
+				Capabilities: []string{"AsmINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "VectorComputeVariableINTEL",
+				Value:        5624,
+				Capabilities: []string{"VectorComputeINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FuncParamIOKindINTEL",
+				Value:        5625,
+				Capabilities: []string{"VectorComputeINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Kind'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "VectorComputeFunctionINTEL",
+				Value:        5626,
+				Capabilities: []string{"VectorComputeINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "StackCallINTEL",
+				Value:        5627,
+				Capabilities: []string{"VectorComputeINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "GlobalVariableOffsetINTEL",
+				Value:        5628,
+				Capabilities: []string{"VectorComputeINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Offset'"},},
+				Version:      "None",
+			},
+			Enumerant{
 				Enumerant:    "CounterBuffer",
 				Value:        5634,
 				Capabilities: []string{},
@@ -22453,6 +23297,181 @@ var (
 				Value:        5636,
 				Capabilities: []string{},
 				Parameters:   []Parameter{{OperandKindLiteralString, "'User Type'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FunctionRoundingModeINTEL",
+				Value:        5822,
+				Capabilities: []string{"FunctionFloatControlINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Target Width'"},{OperandKindFPRoundingMode, "'FP Rounding Mode'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FunctionDenormModeINTEL",
+				Value:        5823,
+				Capabilities: []string{"FunctionFloatControlINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Target Width'"},{OperandKindFPDenormMode, "'FP Denorm Mode'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "RegisterINTEL",
+				Value:        5825,
+				Capabilities: []string{"FPGAMemoryAttributesINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "MemoryINTEL",
+				Value:        5826,
+				Capabilities: []string{"FPGAMemoryAttributesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralString, "'Memory Type'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "NumbanksINTEL",
+				Value:        5827,
+				Capabilities: []string{"FPGAMemoryAttributesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Banks'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "BankwidthINTEL",
+				Value:        5828,
+				Capabilities: []string{"FPGAMemoryAttributesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Bank Width'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "MaxPrivateCopiesINTEL",
+				Value:        5829,
+				Capabilities: []string{"FPGAMemoryAttributesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Maximum Copies'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "SinglepumpINTEL",
+				Value:        5830,
+				Capabilities: []string{"FPGAMemoryAttributesINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "DoublepumpINTEL",
+				Value:        5831,
+				Capabilities: []string{"FPGAMemoryAttributesINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "MaxReplicatesINTEL",
+				Value:        5832,
+				Capabilities: []string{"FPGAMemoryAttributesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Maximum Replicates'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "SimpleDualPortINTEL",
+				Value:        5833,
+				Capabilities: []string{"FPGAMemoryAttributesINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "MergeINTEL",
+				Value:        5834,
+				Capabilities: []string{"FPGAMemoryAttributesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralString, "'Merge Key'"},{OperandKindLiteralString, "'Merge Type'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "BankBitsINTEL",
+				Value:        5835,
+				Capabilities: []string{"FPGAMemoryAttributesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Bank Bits'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "ForcePow2DepthINTEL",
+				Value:        5836,
+				Capabilities: []string{"FPGAMemoryAttributesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Force Key'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "BurstCoalesceINTEL",
+				Value:        5899,
+				Capabilities: []string{"FPGAMemoryAccessesINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "CacheSizeINTEL",
+				Value:        5900,
+				Capabilities: []string{"FPGAMemoryAccessesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Cache Size in bytes'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "DontStaticallyCoalesceINTEL",
+				Value:        5901,
+				Capabilities: []string{"FPGAMemoryAccessesINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "PrefetchINTEL",
+				Value:        5902,
+				Capabilities: []string{"FPGAMemoryAccessesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Prefetcher Size in bytes'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "StallEnableINTEL",
+				Value:        5905,
+				Capabilities: []string{"FPGAClusterAttributesINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FuseLoopsInFunctionINTEL",
+				Value:        5907,
+				Capabilities: []string{"LoopFuseINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "BufferLocationINTEL",
+				Value:        5921,
+				Capabilities: []string{"FPGABufferLocationINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Buffer Location ID'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "IOPipeStorageINTEL",
+				Value:        5944,
+				Capabilities: []string{"IOPipesINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'IO Pipe ID'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FunctionFloatingPointModeINTEL",
+				Value:        6080,
+				Capabilities: []string{"FunctionFloatControlINTEL",},
+				Parameters:   []Parameter{{OperandKindLiteralInteger, "'Target Width'"},{OperandKindFPOperationMode, "'FP Operation Mode'"},},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "SingleElementVectorINTEL",
+				Value:        6085,
+				Capabilities: []string{"VectorComputeINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "VectorComputeCallableFunctionINTEL",
+				Value:        6087,
+				Capabilities: []string{"VectorComputeINTEL",},
+				Parameters:   []Parameter{},
 				Version:      "None",
 			},
 		},
@@ -22507,7 +23526,7 @@ var (
 			Enumerant{
 				Enumerant:    "PrimitiveId",
 				Value:        7,
-				Capabilities: []string{"Geometry","Tessellation","RayTracingNV","RayTracingKHR",},
+				Capabilities: []string{"Geometry","Tessellation","RayTracingNV","RayTracingKHR","MeshShadingNV",},
 				Parameters:   []Parameter{},
 				Version:      "",
 			},
@@ -22521,14 +23540,14 @@ var (
 			Enumerant{
 				Enumerant:    "Layer",
 				Value:        9,
-				Capabilities: []string{"Geometry","ShaderLayer","ShaderViewportIndexLayerEXT",},
+				Capabilities: []string{"Geometry","ShaderLayer","ShaderViewportIndexLayerEXT","MeshShadingNV",},
 				Parameters:   []Parameter{},
 				Version:      "",
 			},
 			Enumerant{
 				Enumerant:    "ViewportIndex",
 				Value:        10,
-				Capabilities: []string{"MultiViewport","ShaderViewportIndex","ShaderViewportIndexLayerEXT",},
+				Capabilities: []string{"MultiViewport","ShaderViewportIndex","ShaderViewportIndexLayerEXT","MeshShadingNV",},
 				Parameters:   []Parameter{},
 				Version:      "",
 			},
@@ -22757,7 +23776,21 @@ var (
 				Version:      "1.3",
 			},
 			Enumerant{
+				Enumerant:    "SubgroupEqMaskKHR",
+				Value:        4416,
+				Capabilities: []string{"SubgroupBallotKHR","GroupNonUniformBallot",},
+				Parameters:   []Parameter{},
+				Version:      "1.3",
+			},
+			Enumerant{
 				Enumerant:    "SubgroupGeMask",
+				Value:        4417,
+				Capabilities: []string{"SubgroupBallotKHR","GroupNonUniformBallot",},
+				Parameters:   []Parameter{},
+				Version:      "1.3",
+			},
+			Enumerant{
+				Enumerant:    "SubgroupGeMaskKHR",
 				Value:        4417,
 				Capabilities: []string{"SubgroupBallotKHR","GroupNonUniformBallot",},
 				Parameters:   []Parameter{},
@@ -22771,7 +23804,21 @@ var (
 				Version:      "1.3",
 			},
 			Enumerant{
+				Enumerant:    "SubgroupGtMaskKHR",
+				Value:        4418,
+				Capabilities: []string{"SubgroupBallotKHR","GroupNonUniformBallot",},
+				Parameters:   []Parameter{},
+				Version:      "1.3",
+			},
+			Enumerant{
 				Enumerant:    "SubgroupLeMask",
+				Value:        4419,
+				Capabilities: []string{"SubgroupBallotKHR","GroupNonUniformBallot",},
+				Parameters:   []Parameter{},
+				Version:      "1.3",
+			},
+			Enumerant{
+				Enumerant:    "SubgroupLeMaskKHR",
 				Value:        4419,
 				Capabilities: []string{"SubgroupBallotKHR","GroupNonUniformBallot",},
 				Parameters:   []Parameter{},
@@ -22780,34 +23827,6 @@ var (
 			Enumerant{
 				Enumerant:    "SubgroupLtMask",
 				Value:        4420,
-				Capabilities: []string{"SubgroupBallotKHR","GroupNonUniformBallot",},
-				Parameters:   []Parameter{},
-				Version:      "1.3",
-			},
-			Enumerant{
-				Enumerant:    "SubgroupEqMaskKHR",
-				Value:        4416,
-				Capabilities: []string{"SubgroupBallotKHR","GroupNonUniformBallot",},
-				Parameters:   []Parameter{},
-				Version:      "1.3",
-			},
-			Enumerant{
-				Enumerant:    "SubgroupGeMaskKHR",
-				Value:        4417,
-				Capabilities: []string{"SubgroupBallotKHR","GroupNonUniformBallot",},
-				Parameters:   []Parameter{},
-				Version:      "1.3",
-			},
-			Enumerant{
-				Enumerant:    "SubgroupGtMaskKHR",
-				Value:        4418,
-				Capabilities: []string{"SubgroupBallotKHR","GroupNonUniformBallot",},
-				Parameters:   []Parameter{},
-				Version:      "1.3",
-			},
-			Enumerant{
-				Enumerant:    "SubgroupLeMaskKHR",
-				Value:        4419,
 				Capabilities: []string{"SubgroupBallotKHR","GroupNonUniformBallot",},
 				Parameters:   []Parameter{},
 				Version:      "1.3",
@@ -22841,6 +23860,13 @@ var (
 				Version:      "1.3",
 			},
 			Enumerant{
+				Enumerant:    "PrimitiveShadingRateKHR",
+				Value:        4432,
+				Capabilities: []string{"FragmentShadingRateKHR",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
 				Enumerant:    "DeviceIndex",
 				Value:        4438,
 				Capabilities: []string{"DeviceGroup",},
@@ -22853,6 +23879,13 @@ var (
 				Capabilities: []string{"MultiView",},
 				Parameters:   []Parameter{},
 				Version:      "1.3",
+			},
+			Enumerant{
+				Enumerant:    "ShadingRateKHR",
+				Value:        4444,
+				Capabilities: []string{"FragmentShadingRateKHR",},
+				Parameters:   []Parameter{},
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "BaryCoordNoPerspAMD",
@@ -23207,14 +24240,7 @@ var (
 			Enumerant{
 				Enumerant:    "HitTNV",
 				Value:        5332,
-				Capabilities: []string{"RayTracingNV","RayTracingKHR",},
-				Parameters:   []Parameter{},
-				Version:      "None",
-			},
-			Enumerant{
-				Enumerant:    "HitTKHR",
-				Value:        5332,
-				Capabilities: []string{"RayTracingNV","RayTracingKHR",},
+				Capabilities: []string{"RayTracingNV",},
 				Parameters:   []Parameter{},
 				Version:      "None",
 			},
@@ -23342,7 +24368,7 @@ var (
 				Value:        6,
 				Capabilities: []string{"RayTracingKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 		},
 		Bases:      []*OperandKind {},
@@ -23919,6 +24945,13 @@ var (
 				Version:      "1.5",
 			},
 			Enumerant{
+				Enumerant:    "FragmentShadingRateKHR",
+				Value:        4422,
+				Capabilities: []string{"Shader",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
 				Enumerant:    "SubgroupBallotKHR",
 				Value:        4423,
 				Capabilities: []string{},
@@ -23931,6 +24964,27 @@ var (
 				Capabilities: []string{"Shader",},
 				Parameters:   []Parameter{},
 				Version:      "1.3",
+			},
+			Enumerant{
+				Enumerant:    "WorkgroupMemoryExplicitLayoutKHR",
+				Value:        4428,
+				Capabilities: []string{"Shader",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "WorkgroupMemoryExplicitLayout8BitAccessKHR",
+				Value:        4429,
+				Capabilities: []string{"WorkgroupMemoryExplicitLayoutKHR",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "WorkgroupMemoryExplicitLayout16BitAccessKHR",
+				Value:        4430,
+				Capabilities: []string{"Shader",},
+				Parameters:   []Parameter{},
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "SubgroupVoteKHR",
@@ -24080,8 +25134,15 @@ var (
 				Version:      "1.4",
 			},
 			Enumerant{
-				Enumerant:    "RayQueryKHR",
+				Enumerant:    "RayQueryProvisionalKHR",
 				Value:        4471,
+				Capabilities: []string{"Shader",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "RayQueryKHR",
+				Value:        4472,
 				Capabilities: []string{"Shader",},
 				Parameters:   []Parameter{},
 				Version:      "None",
@@ -24090,6 +25151,13 @@ var (
 				Enumerant:    "RayTraversalPrimitiveCullingKHR",
 				Value:        4478,
 				Capabilities: []string{"RayQueryKHR","RayTracingKHR",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "RayTracingKHR",
+				Value:        4479,
+				Capabilities: []string{"Shader",},
 				Parameters:   []Parameter{},
 				Version:      "None",
 			},
@@ -24124,6 +25192,13 @@ var (
 			Enumerant{
 				Enumerant:    "ImageReadWriteLodAMD",
 				Value:        5015,
+				Capabilities: []string{"Shader",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "Int64ImageEXT",
+				Value:        5016,
 				Capabilities: []string{"Shader",},
 				Parameters:   []Parameter{},
 				Version:      "None",
@@ -24465,7 +25540,7 @@ var (
 				Version:      "None",
 			},
 			Enumerant{
-				Enumerant:    "RayTracingKHR",
+				Enumerant:    "RayTracingProvisionalKHR",
 				Value:        5353,
 				Capabilities: []string{"Shader",},
 				Parameters:   []Parameter{},
@@ -24542,9 +25617,79 @@ var (
 				Version:      "None",
 			},
 			Enumerant{
+				Enumerant:    "RoundToInfinityINTEL",
+				Value:        5582,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FloatingPointModeINTEL",
+				Value:        5583,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
 				Enumerant:    "IntegerFunctions2INTEL",
 				Value:        5584,
 				Capabilities: []string{"Shader",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FunctionPointersINTEL",
+				Value:        5603,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "IndirectReferencesINTEL",
+				Value:        5604,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "AsmINTEL",
+				Value:        5606,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "AtomicFloat32MinMaxEXT",
+				Value:        5612,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "AtomicFloat64MinMaxEXT",
+				Value:        5613,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "AtomicFloat16MinMaxEXT",
+				Value:        5616,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "VectorComputeINTEL",
+				Value:        5617,
+				Capabilities: []string{"VectorAnyINTEL",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "VectorAnyINTEL",
+				Value:        5619,
+				Capabilities: []string{},
 				Parameters:   []Parameter{},
 				Version:      "None",
 			},
@@ -24569,6 +25714,146 @@ var (
 				Parameters:   []Parameter{},
 				Version:      "None",
 			},
+			Enumerant{
+				Enumerant:    "VariableLengthArrayINTEL",
+				Value:        5817,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FunctionFloatControlINTEL",
+				Value:        5821,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FPGAMemoryAttributesINTEL",
+				Value:        5824,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FPFastMathModeINTEL",
+				Value:        5837,
+				Capabilities: []string{"Kernel",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "ArbitraryPrecisionIntegersINTEL",
+				Value:        5844,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "UnstructuredLoopControlsINTEL",
+				Value:        5886,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FPGALoopControlsINTEL",
+				Value:        5888,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "KernelAttributesINTEL",
+				Value:        5892,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FPGAKernelAttributesINTEL",
+				Value:        5897,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FPGAMemoryAccessesINTEL",
+				Value:        5898,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FPGAClusterAttributesINTEL",
+				Value:        5904,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "LoopFuseINTEL",
+				Value:        5906,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FPGABufferLocationINTEL",
+				Value:        5920,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "USMStorageClassesINTEL",
+				Value:        5935,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "IOPipesINTEL",
+				Value:        5943,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "BlockingPipesINTEL",
+				Value:        5945,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "FPGARegINTEL",
+				Value:        5948,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "AtomicFloat32AddEXT",
+				Value:        6033,
+				Capabilities: []string{"Shader",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "AtomicFloat64AddEXT",
+				Value:        6034,
+				Capabilities: []string{"Shader",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "LongConstantCompositeINTEL",
+				Value:        6089,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
 		},
 		Bases:      []*OperandKind {},
 	}
@@ -24581,14 +25866,14 @@ var (
 				Value:        0,
 				Capabilities: []string{"RayQueryKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "RayQueryCommittedIntersectionKHR",
 				Value:        1,
 				Capabilities: []string{"RayQueryKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 		},
 		Bases:      []*OperandKind {},
@@ -24602,21 +25887,21 @@ var (
 				Value:        0,
 				Capabilities: []string{"RayQueryKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "RayQueryCommittedIntersectionTriangleKHR",
 				Value:        1,
 				Capabilities: []string{"RayQueryKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "RayQueryCommittedIntersectionGeneratedKHR",
 				Value:        2,
 				Capabilities: []string{"RayQueryKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 		},
 		Bases:      []*OperandKind {},
@@ -24630,14 +25915,14 @@ var (
 				Value:        0,
 				Capabilities: []string{"RayQueryKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 			Enumerant{
 				Enumerant:    "RayQueryCandidateIntersectionAABBKHR",
 				Value:        1,
 				Capabilities: []string{"RayQueryKHR",},
 				Parameters:   []Parameter{},
-				Version:      "",
+				Version:      "None",
 			},
 		},
 		Bases:      []*OperandKind {},
@@ -24737,6 +26022,13 @@ var (
 		Kind:       "DebugInfoFlags",
 		Category:   "BitEnum",
 		Enumerants: []Enumerant {
+			Enumerant{
+				Enumerant:    "None",
+				Value:        0x0000,
+				Capabilities: []string{},
+				Parameters:   []Parameter{},
+				Version:      "",
+			},
 			Enumerant{
 				Enumerant:    "FlagIsProtected",
 				Value:        0x01,
