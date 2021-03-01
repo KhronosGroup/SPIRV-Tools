@@ -568,8 +568,8 @@ bool Fuzz(const spv_target_env& target_env,
         [donor_filename, message_consumer,
          target_env]() -> std::unique_ptr<spvtools::opt::IRContext> {
           std::vector<uint32_t> donor_binary;
-          if (!ReadFile<uint32_t>(donor_filename.c_str(), "rb",
-                                  &donor_binary)) {
+          if (!ReadBinaryFile<uint32_t>(donor_filename.c_str(),
+                                        &donor_binary)) {
             return nullptr;
           }
           return spvtools::BuildModule(target_env, message_consumer,
@@ -672,7 +672,7 @@ int main(int argc, const char** argv) {
   }
 
   std::vector<uint32_t> binary_in;
-  if (!ReadFile<uint32_t>(in_binary_file.c_str(), "rb", &binary_in)) {
+  if (!ReadBinaryFile<uint32_t>(in_binary_file.c_str(), &binary_in)) {
     return 1;
   }
 
