@@ -25,6 +25,25 @@ namespace fuzz {
 namespace fuzzerutil {
 namespace {
 
+// An utility class that uses RAII to change and restore the terminator
+// instruction of the |block|.
+class ChangeTerminatorRAII {
+ public:
+  explicit ChangeTerminatorRAII(opt::BasicBlock* block,
+                                opt::Instruction new_terminator)
+      : block_(block), old_terminator_(std::move(*block->terminator())) {
+    *block_->terminator() = std::move(new_terminator);
+  }
+
+  ~ChangeTerminatorRAII() {
+    *block_->terminator() = std::move(old_terminator_);
+  }
+
+ private:
+  opt::BasicBlock* block_;
+  opt::Instruction old_terminator_;
+};
+
 uint32_t MaybeGetOpConstant(opt::IRContext* ir_context,
                             const TransformationContext& transformation_context,
                             const std::vector<uint32_t>& words,
@@ -73,16 +92,6 @@ bool BuildIRContext(spv_target_env target_env,
   assert(result && "IRContext must be valid");
   *ir_context = std::move(result);
   return true;
-}
-
-ChangeTerminatorRAII::ChangeTerminatorRAII(opt::BasicBlock* block,
-                                           opt::Instruction new_terminator)
-    : block_(block), old_terminator_(std::move(*block->terminator())) {
-  *block_->terminator() = std::move(new_terminator);
-}
-
-ChangeTerminatorRAII::~ChangeTerminatorRAII() {
-  *block_->terminator() = std::move(old_terminator_);
 }
 
 bool IsFreshId(opt::IRContext* context, uint32_t id) {
@@ -1888,6 +1897,46 @@ bool NewTerminatorPreservesDominationRules(opt::IRContext* ir_context,
   opt::DominatorAnalysis dominator_analysis;
   dominator_analysis.InitializeTree(*ir_context->cfg(),
                                     mutated_block->GetParent());
+
+  // Check that each dominator appears before each dominated block.
+  std::unordered_map<uint32_t, size_t> positions;
+  for (const auto& block : *mutated_block->GetParent()) {
+    positions[block.id()] = positions.size();
+  }
+
+  std::queue<uint32_t> q({mutated_block->GetParent()->begin()->id()});
+  std::unordered_set<uint32_t> visited;
+  while (!q.empty()) {
+    auto block = q.front();
+    q.pop();
+    visited.insert(block);
+
+    auto success = ir_context->cfg()->block(block)->WhileEachSuccessorLabel(
+        [&positions, &visited, &dominator_analysis, block, &q](uint32_t id) {
+          if (id == block) {
+            // Handle the case when loop header and continue target are the same
+            // block.
+            return true;
+          }
+
+          if (dominator_analysis.Dominates(block, id) &&
+              positions[block] > positions[id]) {
+            // |block| dominates |id| but appears after |id| - violates
+            // domination rules.
+            return false;
+          }
+
+          if (!visited.count(id)) {
+            q.push(id);
+          }
+
+          return true;
+        });
+
+    if (!success) {
+      return false;
+    }
+  }
 
   // For each instruction in the |block->GetParent()| function check whether
   // all its dependencies satisfy domination rules (i.e. all id operands

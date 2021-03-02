@@ -163,29 +163,9 @@ bool TransformationReplaceBranchFromDeadBlockWithExit::BlockIsSuitable(
     return false;
   }
   // Make sure that domination rules are satisfied when we remove the branch
-  // from the |block| to its |successor|. Particularly, we check that every
-  // block, that appears after the |successor|, will not dominate the |block|,
-  // when the edge is removed.
-  //
-  // We use const_cast here since we will restore the original terminator
-  // instruction later.
-  fuzzerutil::ChangeTerminatorRAII change_terminator_raii(
-      const_cast<opt::BasicBlock*>(&block), {ir_context, SpvOpUnreachable});
-  opt::DominatorAnalysis dominator_analysis;
-  dominator_analysis.InitializeTree(*ir_context->cfg(), block.GetParent());
-  if (dominator_analysis.IsReachable(successor)) {
-    // If the |successor| is still reachable in the CFG, then we must make sure
-    // that no node, that appears after the |successor|, dominates the
-    // |successor|. Otherwise (i.e. if |successor| is not reachable) we don't
-    // need to worry about the domination rules.
-    for (auto it = successor->GetParent()->FindBlock(successor->id());
-         it != successor->GetParent()->end(); ++it) {
-      if (dominator_analysis.StrictlyDominates(&*it, successor)) {
-        return false;
-      }
-    }
-  }
-  return true;
+  // from the |block| to its |successor|.
+  return fuzzerutil::NewTerminatorPreservesDominationRules(
+      ir_context, block.id(), {ir_context, SpvOpUnreachable});
 }
 
 }  // namespace fuzz

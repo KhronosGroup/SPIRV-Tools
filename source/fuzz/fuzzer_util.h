@@ -47,20 +47,6 @@ bool BuildIRContext(spv_target_env target_env,
                     spv_validator_options validator_options,
                     std::unique_ptr<spvtools::opt::IRContext>* ir_context);
 
-// An utility class that uses RAII to change and restore the terminator
-// instruction of the |block|.
-class ChangeTerminatorRAII {
- public:
-  explicit ChangeTerminatorRAII(opt::BasicBlock* block,
-                                opt::Instruction new_terminator);
-
-  ~ChangeTerminatorRAII();
-
- private:
-  opt::BasicBlock* block_;
-  opt::Instruction old_terminator_;
-};
-
 // Returns true if and only if the module does not define the given id.
 bool IsFreshId(opt::IRContext* context, uint32_t id);
 
@@ -622,8 +608,9 @@ std::set<uint32_t> GetReachableReturnBlocks(opt::IRContext* ir_context,
                                             uint32_t function_id);
 
 // Returns true if changing terminator instruction to |new_terminator| in the
-// basic block with id |block_id| preserves domination rules. Returns false
-// otherwise.
+// basic block with id |block_id| preserves domination rules and valid block
+// order (i.e. dominator must always appear before dominated in the CFG).
+// Returns false otherwise.
 bool NewTerminatorPreservesDominationRules(opt::IRContext* ir_context,
                                            uint32_t block_id,
                                            opt::Instruction new_terminator);
