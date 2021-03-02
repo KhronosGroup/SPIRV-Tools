@@ -3520,7 +3520,10 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Selection must be structured"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpSwitch must be preceeded by an OpSelectionMerge instruction"));
 }
 
 TEST_F(ValidateCFG, MissingMergeSwitchBad2) {
@@ -3544,7 +3547,10 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Selection must be structured"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpSwitch must be preceeded by an OpSelectionMerge instruction"));
 }
 
 TEST_F(ValidateCFG, MissingMergeOneBranchToMergeGood) {
@@ -3594,7 +3600,7 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateCFG, MissingMergeOneTargetSwitchGood) {
+TEST_F(ValidateCFG, MissingMergeOneTargetSwitchBad) {
   const std::string text = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -3612,10 +3618,14 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(text);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpSwitch must be preceeded by an OpSelectionMerge instruction"));
 }
 
-TEST_F(ValidateCFG, MissingMergeOneUnseenTargetSwitchGood) {
+TEST_F(ValidateCFG, MissingMergeOneUnseenTargetSwitchBad) {
   const std::string text = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -3640,7 +3650,11 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(text);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpSwitch must be preceeded by an OpSelectionMerge instruction"));
 }
 
 TEST_F(ValidateCFG, MissingMergeLoopBreakGood) {
