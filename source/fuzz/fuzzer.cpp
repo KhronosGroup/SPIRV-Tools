@@ -107,14 +107,13 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
                bool enable_all_passes,
                RepeatedPassStrategy repeated_pass_strategy,
                bool validate_after_each_fuzzer_pass,
-               spv_validator_options validator_options,
-               bool continue_fuzzing_probabilistically)
+               spv_validator_options validator_options)
     : consumer_(std::move(consumer)),
       enable_all_passes_(enable_all_passes),
       validate_after_each_fuzzer_pass_(validate_after_each_fuzzer_pass),
       validator_options_(validator_options),
-      continue_fuzzing_probabilistically_(continue_fuzzing_probabilistically),
       num_repeated_passes_applied_(0),
+      is_valid_(true),
       ir_context_(std::move(ir_context)),
       transformation_context_(std::move(transformation_context)),
       fuzzer_context_(std::move(fuzzer_context)),
@@ -268,80 +267,80 @@ bool Fuzzer::ApplyPassAndCheckValidity(FuzzerPass* pass) const {
                                           consumer_);
 }
 
-const protobufs::TransformationSequence& Fuzzer::GetAppliedTransformations()
+opt::IRContext* Fuzzer::GetIRContext() { return ir_context_.get(); }
+
+const protobufs::TransformationSequence& Fuzzer::GetTransformationSequence()
     const {
   return transformation_sequence_out_;
 }
 
-Fuzzer::FuzzerResult Fuzzer::Run(uint32_t num_of_transformations_to_apply) {
+Fuzzer::Result Fuzzer::Run(uint32_t num_of_transformations_to_apply) {
+  assert(is_valid_ && "The module was invalidated during the previous fuzzing");
+
   const auto initial_num_of_transformations =
       static_cast<uint32_t>(transformation_sequence_out_.transformation_size());
-  if (initial_num_of_transformations >=
-      fuzzer_context_->GetTransformationLimit()) {
-    return {FuzzerResultStatus::kTransformationLimitReached, {}};
-  }
 
-  if (num_repeated_passes_applied_ >=
-      fuzzer_context_->GetTransformationLimit()) {
-    return {FuzzerResultStatus::kFuzzerStuck, {}};
-  }
-
+  auto status = Status::kComplete;
   do {
+    // Check that the module is small enough.
+    if (ir_context_->module()->id_bound() >=
+        fuzzer_context_->GetIdBoundLimit()) {
+      status = Status::kModuleTooBig;
+      break;
+    }
+
+    auto transformations_applied_so_far = static_cast<uint32_t>(
+        transformation_sequence_out_.transformation_size());
+    assert(transformations_applied_so_far >= initial_num_of_transformations &&
+           "Number of transformations cannot decrease");
+
+    // Check if we've already applied the maximum number of transformations.
+    if (transformations_applied_so_far >=
+        fuzzer_context_->GetTransformationLimit()) {
+      status = Status::kTransformationLimitReached;
+      break;
+    }
+
+    // If the number of transformations is still small
+    if (num_repeated_passes_applied_ >=
+        fuzzer_context_->GetTransformationLimit()) {
+      status = Status::kFuzzerStuck;
+      break;
+    }
+
+    // Check whether we've exceeded the number of transformations we can apply
+    // in a single call to this method.
+    if (num_of_transformations_to_apply != 0 &&
+        transformations_applied_so_far - initial_num_of_transformations >=
+            num_of_transformations_to_apply) {
+      status = Status::kComplete;
+      break;
+    }
+
     if (!ApplyPassAndCheckValidity(
             repeated_pass_manager_->ChoosePass(transformation_sequence_out_))) {
-      return {Fuzzer::FuzzerResultStatus::kFuzzerPassLedToInvalidModule, {}};
+      status = Status::kFuzzerPassLedToInvalidModule;
+      break;
     }
-  } while (ShouldContinueFuzzing(initial_num_of_transformations,
-                                 num_of_transformations_to_apply));
+  } while (ShouldContinueFuzzing(num_of_transformations_to_apply == 0));
 
-  for (auto& pass : final_passes_) {
-    if (!ApplyPassAndCheckValidity(pass.get())) {
-      return {Fuzzer::FuzzerResultStatus::kFuzzerPassLedToInvalidModule, {}};
+  if (status != Status::kFuzzerPassLedToInvalidModule) {
+    for (auto& pass : final_passes_) {
+      if (!ApplyPassAndCheckValidity(pass.get())) {
+        status = Status::kFuzzerPassLedToInvalidModule;
+        break;
+      }
     }
   }
-  // Encode the module as a binary.
-  std::vector<uint32_t> binary_out;
-  ir_context_->module()->ToBinary(&binary_out, false);
 
-  return {Fuzzer::FuzzerResultStatus::kComplete, std::move(binary_out)};
+  is_valid_ = status != Status::kFuzzerPassLedToInvalidModule;
+  return {status, static_cast<uint32_t>(
+                      transformation_sequence_out_.transformation_size()) !=
+                      initial_num_of_transformations};
 }
 
-bool Fuzzer::ShouldContinueFuzzing(uint32_t initial_num_of_transformations,
-                                   uint32_t num_of_transformations_to_apply) {
-  // There's a risk that fuzzing could get stuck, if none of the enabled fuzzer
-  // passes are able to apply any transformations.  To guard against this we
-  // count the number of times some repeated pass has been applied and ensure
-  // that fuzzing stops if the number of repeated passes hits the limit on the
-  // number of transformations that can be applied.
-  assert(
-      num_repeated_passes_applied_ <=
-          fuzzer_context_->GetTransformationLimit() &&
-      "The number of repeated passes applied must not exceed its upper limit.");
-  if (ir_context_->module()->id_bound() >= fuzzer_context_->GetIdBoundLimit()) {
-    return false;
-  }
-  if (num_repeated_passes_applied_ ==
-      fuzzer_context_->GetTransformationLimit()) {
-    // Stop because fuzzing has got stuck.
-    return false;
-  }
-  auto transformations_applied_so_far =
-      static_cast<uint32_t>(transformation_sequence_out_.transformation_size());
-  if (transformations_applied_so_far >=
-      fuzzer_context_->GetTransformationLimit()) {
-    // Stop because we have reached the transformation limit.
-    return false;
-  }
-  assert(transformations_applied_so_far >= initial_num_of_transformations &&
-         "Number of transformations cannot decrease");
-  if (num_of_transformations_to_apply != 0 &&
-      transformations_applied_so_far - initial_num_of_transformations >=
-          num_of_transformations_to_apply) {
-    // Stop because we've applied the maximum number of transformations for a
-    // single execution of a |Run| method.
-    return false;
-  }
-  if (continue_fuzzing_probabilistically_) {
+bool Fuzzer::ShouldContinueFuzzing(bool continue_fuzzing_probabilistically) {
+  if (continue_fuzzing_probabilistically) {
     // If we have applied T transformations so far, and the limit on the number
     // of transformations to apply is L (where T < L), the chance that we will
     // continue fuzzing is:
@@ -351,6 +350,8 @@ bool Fuzzer::ShouldContinueFuzzing(uint32_t initial_num_of_transformations,
     // That is, the chance of continuing decreases as more transformations are
     // applied.  Using 2*L instead of L increases the number of transformations
     // that are applied on average.
+    auto transformations_applied_so_far = static_cast<uint32_t>(
+        transformation_sequence_out_.transformation_size());
     auto chance_of_continuing = static_cast<uint32_t>(
         100.0 *
         (1.0 - (static_cast<double>(transformations_applied_so_far) /

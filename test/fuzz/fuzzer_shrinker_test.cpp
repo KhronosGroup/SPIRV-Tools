@@ -1068,10 +1068,13 @@ void RunFuzzerAndShrinker(const std::string& shader,
   Fuzzer fuzzer(std::move(ir_context), std::move(transformation_context),
                 std::move(fuzzer_context), kConsoleMessageConsumer,
                 donor_suppliers, enable_all_passes, repeated_pass_strategy,
-                true, validator_options, true);
-  auto fuzzer_result = fuzzer.Run();
-  ASSERT_EQ(Fuzzer::FuzzerResultStatus::kComplete, fuzzer_result.status);
-  ASSERT_TRUE(t.Validate(fuzzer_result.transformed_binary));
+                true, validator_options);
+  auto fuzzer_result = fuzzer.Run(0);
+  ASSERT_NE(Fuzzer::Status::kFuzzerPassLedToInvalidModule,
+            fuzzer_result.status);
+  std::vector<uint32_t> transformed_binary;
+  fuzzer.GetIRContext()->module()->ToBinary(&transformed_binary, true);
+  ASSERT_TRUE(t.Validate(transformed_binary));
 
   const uint32_t kReasonableStepLimit = 50;
   const uint32_t kSmallStepLimit = 20;
@@ -1079,30 +1082,30 @@ void RunFuzzerAndShrinker(const std::string& shader,
   // With the AlwaysInteresting test, we should quickly shrink to the original
   // binary with no transformations remaining.
   RunAndCheckShrinker(env, binary_in, initial_facts,
-                      fuzzer.GetAppliedTransformations(),
+                      fuzzer.GetTransformationSequence(),
                       AlwaysInteresting().AsFunction(), binary_in, 0,
                       kReasonableStepLimit, validator_options);
 
   // With the OnlyInterestingFirstTime test, no shrinking should be achieved.
   RunAndCheckShrinker(
-      env, binary_in, initial_facts, fuzzer.GetAppliedTransformations(),
-      OnlyInterestingFirstTime().AsFunction(), fuzzer_result.transformed_binary,
+      env, binary_in, initial_facts, fuzzer.GetTransformationSequence(),
+      OnlyInterestingFirstTime().AsFunction(), transformed_binary,
       static_cast<uint32_t>(
-          fuzzer.GetAppliedTransformations().transformation_size()),
+          fuzzer.GetTransformationSequence().transformation_size()),
       kReasonableStepLimit, validator_options);
 
   // The PingPong test is unpredictable; passing an empty expected binary
   // means that we don't check anything beyond that shrinking completes
   // successfully.
   RunAndCheckShrinker(
-      env, binary_in, initial_facts, fuzzer.GetAppliedTransformations(),
+      env, binary_in, initial_facts, fuzzer.GetTransformationSequence(),
       PingPong().AsFunction(), {}, 0, kSmallStepLimit, validator_options);
 
   // The InterestingThenRandom test is unpredictable; passing an empty
   // expected binary means that we do not check anything about shrinking
   // results.
   RunAndCheckShrinker(
-      env, binary_in, initial_facts, fuzzer.GetAppliedTransformations(),
+      env, binary_in, initial_facts, fuzzer.GetTransformationSequence(),
       InterestingThenRandom(PseudoRandomGenerator(seed)).AsFunction(), {}, 0,
       kSmallStepLimit, validator_options);
 }

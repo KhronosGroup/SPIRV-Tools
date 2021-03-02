@@ -38,16 +38,21 @@ namespace fuzz {
 class Fuzzer {
  public:
   // Possible statuses that can result from running the fuzzer.
-  enum class FuzzerResultStatus {
+  enum class Status {
     kComplete,
+    kModuleTooBig,
     kTransformationLimitReached,
     kFuzzerStuck,
     kFuzzerPassLedToInvalidModule,
   };
 
-  struct FuzzerResult {
-    FuzzerResultStatus status;
-    std::vector<uint32_t> transformed_binary;
+  struct Result {
+    // Status of the fuzzing session.
+    Status status;
+
+    // Equals to true if new transformations were applied during the previous
+    // fuzzing session.
+    bool is_changed;
   };
 
   Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
@@ -57,8 +62,7 @@ class Fuzzer {
          const std::vector<fuzzerutil::ModuleSupplier>& donor_suppliers,
          bool enable_all_passes, RepeatedPassStrategy repeated_pass_strategy,
          bool validate_after_each_fuzzer_pass,
-         spv_validator_options validator_options,
-         bool continue_fuzzing_probabilistically);
+         spv_validator_options validator_options);
 
   // Disables copy/move constructor/assignment operations.
   Fuzzer(const Fuzzer&) = delete;
@@ -68,20 +72,23 @@ class Fuzzer {
 
   ~Fuzzer();
 
-  // Transforms |binary_in_| by running a number of randomized fuzzer passes.
-  // Initial facts about the input binary and the context in which it will
-  // execute are provided via |initial_facts_|.  A source of donor modules to be
-  // used by transformations is provided via |donor_suppliers_|.  On success,
-  // returns a successful result status together with the transformed binary and
-  // the sequence of transformations that were applied.  Otherwise, returns an
-  // appropriate result status together with an empty binary and empty
-  // transformation sequence. |num_of_transformations| is equal to the maximum
-  // number of transformations applied in a single call to this method. This
-  // parameter is ignored if its value is equal to 0.
-  FuzzerResult Run(uint32_t num_of_transformations_to_apply = 0);
+  // Transforms |ir_context_| by running a number of randomized fuzzer passes.
+  // Initial facts about the input binary and the context in which it will be
+  // executed are provided with |transformation_context_|.
+  // |num_of_transformations| is equal to the maximum number of transformations
+  // applied in a single call to this method. This parameter is ignored if its
+  // value is equal to 0. Because fuzzing cannot stop mid way through a fuzzer
+  // pass, fuzzing will stop after the fuzzer pass that exceeds
+  // |num_of_transformations| has completed, so that the total number of
+  // transformations may be somewhat larger than this number.
+  Result Run(uint32_t num_of_transformations_to_apply);
 
-  // Returns all applied transformations.
-  const protobufs::TransformationSequence& GetAppliedTransformations() const;
+  // Returns the current IR context. It may be invalid if the Run method
+  // returned Status::kFuzzerPassLedToInvalidModule previously.
+  opt::IRContext* GetIRContext();
+
+  // Returns the sequence of applied transformations.
+  const protobufs::TransformationSequence& GetTransformationSequence() const;
 
  private:
   // A convenience method to add a repeated fuzzer pass to |pass_instances| with
@@ -116,11 +123,9 @@ class Fuzzer {
 
   // Decides whether to apply more repeated passes. The probability decreases as
   // the number of transformations that have been applied increases.
-  // |initial_num_of_transformations| - number of applied transformations when
-  // the |Run| method has been called. |num_of_transformations_to_apply| -
-  // number of transformations to apply in this execution of the |Run| method.
-  bool ShouldContinueFuzzing(uint32_t initial_num_of_transformations,
-                             uint32_t num_of_transformations_to_apply);
+  // The described probability is only applied if
+  // |continue_fuzzing_probabilistically| is true.
+  bool ShouldContinueFuzzing(bool continue_fuzzing_probabilistically);
 
   // Applies |pass|, which must be a pass constructed with |ir_context|.
   // If |validate_after_each_fuzzer_pass_| is not set, true is always returned.
@@ -143,14 +148,15 @@ class Fuzzer {
   // Options to control validation.
   const spv_validator_options validator_options_;
 
-  // Determines whether the probability of applying another fuzzer pass
-  // decreases as the number of applied transformations increases.
-  const bool continue_fuzzing_probabilistically_;
-
   // The number of repeated fuzzer passes that have been applied is kept track
   // of, in order to enforce a hard limit on the number of times such passes
   // can be applied.
   uint32_t num_repeated_passes_applied_;
+
+  // We use this to determine whether we can continue fuzzing incrementally
+  // since the previous call to the Run method could've returned
+  // kFuzzerPassLedToInvalidModule.
+  bool is_valid_;
 
   // Intermediate representation for the module being fuzzed, which gets
   // mutated as fuzzing proceeds.
