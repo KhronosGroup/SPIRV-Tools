@@ -322,9 +322,12 @@ Fuzzer::Result Fuzzer::Run(uint32_t num_of_transformations_to_apply) {
       status = Status::kFuzzerPassLedToInvalidModule;
       break;
     }
-  } while (ShouldContinueFuzzing(num_of_transformations_to_apply == 0));
+  } while (ShouldContinueRepeatedPasses(num_of_transformations_to_apply == 0));
 
   if (status != Status::kFuzzerPassLedToInvalidModule) {
+    // We apply this transformations despite the fact that we might exceed
+    // |num_of_transformations_to_apply|. This is not a problem for us since
+    // these fuzzer passes are relatively simple yet might trigger some bugs.
     for (auto& pass : final_passes_) {
       if (!ApplyPassAndCheckValidity(pass.get())) {
         status = Status::kFuzzerPassLedToInvalidModule;
@@ -339,7 +342,8 @@ Fuzzer::Result Fuzzer::Run(uint32_t num_of_transformations_to_apply) {
                       initial_num_of_transformations};
 }
 
-bool Fuzzer::ShouldContinueFuzzing(bool continue_fuzzing_probabilistically) {
+bool Fuzzer::ShouldContinueRepeatedPasses(
+    bool continue_fuzzing_probabilistically) {
   if (continue_fuzzing_probabilistically) {
     // If we have applied T transformations so far, and the limit on the number
     // of transformations to apply is L (where T < L), the chance that we will

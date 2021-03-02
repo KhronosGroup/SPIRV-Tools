@@ -125,7 +125,7 @@ class Fuzzer {
   // the number of transformations that have been applied increases.
   // The described probability is only applied if
   // |continue_fuzzing_probabilistically| is true.
-  bool ShouldContinueFuzzing(bool continue_fuzzing_probabilistically);
+  bool ShouldContinueRepeatedPasses(bool continue_fuzzing_probabilistically);
 
   // Applies |pass|, which must be a pass constructed with |ir_context|.
   // If |validate_after_each_fuzzer_pass_| is not set, true is always returned.
