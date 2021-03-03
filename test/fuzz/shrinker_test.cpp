@@ -163,8 +163,7 @@ TEST(ShrinkerTest, ReduceAddedFunctions) {
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
       donor_ir_context.get(), validator_options, kConsoleMessageConsumer));
 
-  PseudoRandomGenerator random_generator(0);
-  FuzzerContext fuzzer_context(&random_generator, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   TransformationContext transformation_context(
       MakeUnique<FactManager>(variant_ir_context.get()), validator_options);
 
@@ -341,8 +340,7 @@ TEST(ShrinkerTest, HitStepLimitWhenReducingAddedFunctions) {
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
       donor_ir_context.get(), validator_options, kConsoleMessageConsumer));
 
-  PseudoRandomGenerator random_generator(0);
-  FuzzerContext fuzzer_context(&random_generator, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   TransformationContext transformation_context(
       MakeUnique<FactManager>(variant_ir_context.get()), validator_options);
 

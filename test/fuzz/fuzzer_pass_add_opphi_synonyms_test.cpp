@@ -128,8 +128,7 @@ TEST(FuzzerPassAddOpPhiSynonymsTest, HelperFunctions) {
                                                kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassAddOpPhiSynonyms fuzzer_pass(context.get(), &transformation_context,
