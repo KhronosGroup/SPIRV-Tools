@@ -204,8 +204,7 @@ TEST(FuzzerPassDonateModulesTest, BasicDonation) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -285,8 +284,7 @@ TEST(FuzzerPassDonateModulesTest, DonationWithUniforms) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -416,8 +414,7 @@ TEST(FuzzerPassDonateModulesTest, DonationWithInputAndOutputVariables) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -511,8 +508,7 @@ TEST(FuzzerPassDonateModulesTest, DonateFunctionTypeWithDifferentPointers) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -581,8 +577,7 @@ TEST(FuzzerPassDonateModulesTest, DonateOpConstantNull) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -709,8 +704,7 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImages) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -805,8 +799,7 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesSampler) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -937,8 +930,7 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageStructField) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -1073,8 +1065,7 @@ TEST(FuzzerPassDonateModulesTest, DonateCodeThatUsesImageFunctionParameter) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -1155,8 +1146,7 @@ TEST(FuzzerPassDonateModulesTest, DonateShaderWithImageStorageClass) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -1242,8 +1232,7 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithRuntimeArray) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -1346,8 +1335,7 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithRuntimeArrayLivesafe) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -1418,8 +1406,7 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithWorkgroupVariables) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -1528,8 +1515,7 @@ TEST(FuzzerPassDonateModulesTest, DonateComputeShaderWithAtomics) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -1712,8 +1698,7 @@ TEST(FuzzerPassDonateModulesTest, Miscellaneous1) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator rng(0);
-  FuzzerContext fuzzer_context(&rng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -1784,8 +1769,7 @@ TEST(FuzzerPassDonateModulesTest, OpSpecConstantInstructions) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -1941,8 +1925,7 @@ TEST(FuzzerPassDonateModulesTest, DonationSupportsOpTypeRuntimeArray) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator rng(0);
-  FuzzerContext fuzzer_context(&rng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -2014,8 +1997,7 @@ TEST(FuzzerPassDonateModulesTest, HandlesCapabilities) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator rng(0);
-  FuzzerContext fuzzer_context(&rng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),
@@ -2247,8 +2229,7 @@ TEST(FuzzerPassDonateModulesTest, HandlesOpPhisInMergeBlock) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(recipient_context.get()), validator_options);
 
-  PseudoRandomGenerator prng(0);
-  FuzzerContext fuzzer_context(&prng, 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
   protobufs::TransformationSequence transformation_sequence;
 
   FuzzerPassDonateModules fuzzer_pass(recipient_context.get(),

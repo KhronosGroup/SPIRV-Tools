@@ -21,6 +21,12 @@ namespace fuzz {
 
 namespace {
 
+// An offset between the the module's id bound and the minimum fresh id.
+//
+// TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/2541): consider
+//  the case where the maximum id bound is reached.
+const uint32_t kIdBoundGap = 100;
+
 // Limits to help control the overall fuzzing process and rein in individual
 // fuzzer passes.
 const uint32_t kIdBoundLimit = 50000;
@@ -177,9 +183,9 @@ const std::function<bool(uint32_t, RandomGenerator*)>
 
 }  // namespace
 
-FuzzerContext::FuzzerContext(RandomGenerator* random_generator,
+FuzzerContext::FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
                              uint32_t min_fresh_id)
-    : random_generator_(random_generator),
+    : random_generator_(std::move(random_generator)),
       next_fresh_id_(min_fresh_id),
       max_equivalence_class_size_for_data_synonym_fact_closure_(
           kDefaultMaxEquivalenceClassSizeForDataSynonymFactClosure),
@@ -401,6 +407,10 @@ uint32_t FuzzerContext::GetIdBoundLimit() const { return kIdBoundLimit; }
 
 uint32_t FuzzerContext::GetTransformationLimit() const {
   return kTransformationLimit;
+}
+
+uint32_t FuzzerContext::GetMinFreshId(opt::IRContext* ir_context) {
+  return ir_context->module()->id_bound() + kIdBoundGap;
 }
 
 }  // namespace fuzz
