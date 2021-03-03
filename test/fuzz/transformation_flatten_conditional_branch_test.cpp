@@ -2193,10 +2193,6 @@ TEST(TransformationFlattenConditionalBranchTest, ContainsSynonymCreation) {
                    .IsApplicable(context.get(), transformation_context));
 }
 
-// TODO: VULKAN_1_1
-
-// TODO: VULKAN_1_1 with 1.4
-
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
