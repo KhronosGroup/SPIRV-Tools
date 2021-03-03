@@ -947,7 +947,9 @@ TEST(TransformationSetLoopControlTest, CheckSPIRVVersionsRespected) {
 
   for (auto env :
        {SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1, SPV_ENV_UNIVERSAL_1_2,
-        SPV_ENV_UNIVERSAL_1_3, SPV_ENV_UNIVERSAL_1_4, SPV_ENV_UNIVERSAL_1_5}) {
+        SPV_ENV_UNIVERSAL_1_3, SPV_ENV_UNIVERSAL_1_4, SPV_ENV_UNIVERSAL_1_5,
+        SPV_ENV_VULKAN_1_0, SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_1_SPIRV_1_4,
+        SPV_ENV_VULKAN_1_2}) {
     const auto consumer = nullptr;
     const auto context =
         BuildModule(env, consumer, shader, kFuzzAssembleOption);
@@ -964,6 +966,8 @@ TEST(TransformationSetLoopControlTest, CheckSPIRVVersionsRespected) {
       case SPV_ENV_UNIVERSAL_1_1:
       case SPV_ENV_UNIVERSAL_1_2:
       case SPV_ENV_UNIVERSAL_1_3:
+      case SPV_ENV_VULKAN_1_0:
+      case SPV_ENV_VULKAN_1_1:
         // PeelCount and PartialCount were introduced in SPIRV 1.4, so are not
         // valid in the context of older versions.
         ASSERT_FALSE(
@@ -971,6 +975,8 @@ TEST(TransformationSetLoopControlTest, CheckSPIRVVersionsRespected) {
         break;
       case SPV_ENV_UNIVERSAL_1_4:
       case SPV_ENV_UNIVERSAL_1_5:
+      case SPV_ENV_VULKAN_1_1_SPIRV_1_4:
+      case SPV_ENV_VULKAN_1_2:
         ASSERT_TRUE(
             transformation.IsApplicable(context.get(), transformation_context));
         break;
