@@ -199,14 +199,16 @@ bool TransformationSetLoopControl::PartialCountIsSupported(
 
 bool TransformationSetLoopControl::PeelCountIsSupported(
     opt::IRContext* ir_context) {
-  // TODO(afd): We capture the universal environments for which this loop
-  //  control is definitely not supported.  The check should be refined on
-  //  demand for other target environments.
+  // TODO(afd): We capture the environments for which this loop control is
+  //  definitely not supported.  The check should be refined on demand for other
+  //  target environments.
   switch (ir_context->grammar().target_env()) {
     case SPV_ENV_UNIVERSAL_1_0:
     case SPV_ENV_UNIVERSAL_1_1:
     case SPV_ENV_UNIVERSAL_1_2:
     case SPV_ENV_UNIVERSAL_1_3:
+    case SPV_ENV_VULKAN_1_0:
+    case SPV_ENV_VULKAN_1_1:
       return false;
     default:
       return true;
