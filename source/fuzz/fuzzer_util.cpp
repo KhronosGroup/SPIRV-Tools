@@ -25,6 +25,25 @@ namespace fuzz {
 namespace fuzzerutil {
 namespace {
 
+// A utility class that uses RAII to change and restore the terminator
+// instruction of the |block|.
+class ChangeTerminatorRAII {
+ public:
+  explicit ChangeTerminatorRAII(opt::BasicBlock* block,
+                                opt::Instruction new_terminator)
+      : block_(block), old_terminator_(std::move(*block->terminator())) {
+    *block_->terminator() = std::move(new_terminator);
+  }
+
+  ~ChangeTerminatorRAII() {
+    *block_->terminator() = std::move(old_terminator_);
+  }
+
+ private:
+  opt::BasicBlock* block_;
+  opt::Instruction old_terminator_;
+};
+
 uint32_t MaybeGetOpConstant(opt::IRContext* ir_context,
                             const TransformationContext& transformation_context,
                             const std::vector<uint32_t>& words,
@@ -163,35 +182,46 @@ bool PhiIdsOkForNewEdge(
   return true;
 }
 
-void AddUnreachableEdgeAndUpdateOpPhis(
-    opt::IRContext* context, opt::BasicBlock* bb_from, opt::BasicBlock* bb_to,
-    uint32_t bool_id,
-    const google::protobuf::RepeatedField<google::protobuf::uint32>& phi_ids) {
-  assert(PhiIdsOkForNewEdge(context, bb_from, bb_to, phi_ids) &&
-         "Precondition on phi_ids is not satisfied");
+opt::Instruction CreateUnreachableEdgeInstruction(opt::IRContext* ir_context,
+                                                  uint32_t bb_from_id,
+                                                  uint32_t bb_to_id,
+                                                  uint32_t bool_id) {
+  const auto* bb_from = MaybeFindBlock(ir_context, bb_from_id);
+  assert(bb_from && "|bb_from_id| is invalid");
+  assert(MaybeFindBlock(ir_context, bb_to_id) && "|bb_to_id| is invalid");
   assert(bb_from->terminator()->opcode() == SpvOpBranch &&
          "Precondition on terminator of bb_from is not satisfied");
 
   // Get the id of the boolean constant to be used as the condition.
-  auto condition_inst = context->get_def_use_mgr()->GetDef(bool_id);
+  auto condition_inst = ir_context->get_def_use_mgr()->GetDef(bool_id);
   assert(condition_inst &&
          (condition_inst->opcode() == SpvOpConstantTrue ||
           condition_inst->opcode() == SpvOpConstantFalse) &&
          "|bool_id| is invalid");
 
   auto condition_value = condition_inst->opcode() == SpvOpConstantTrue;
-
-  const bool from_to_edge_already_exists = bb_from->IsSuccessor(bb_to);
-  auto successor = bb_from->terminator()->GetSingleWordInOperand(0);
+  auto successor_id = bb_from->terminator()->GetSingleWordInOperand(0);
 
   // Add the dead branch, by turning OpBranch into OpBranchConditional, and
   // ordering the targets depending on whether the given boolean corresponds to
   // true or false.
-  bb_from->terminator()->SetOpcode(SpvOpBranchConditional);
-  bb_from->terminator()->SetInOperands(
+  return opt::Instruction(
+      ir_context, SpvOpBranchConditional, 0, 0,
       {{SPV_OPERAND_TYPE_ID, {bool_id}},
-       {SPV_OPERAND_TYPE_ID, {condition_value ? successor : bb_to->id()}},
-       {SPV_OPERAND_TYPE_ID, {condition_value ? bb_to->id() : successor}}});
+       {SPV_OPERAND_TYPE_ID, {condition_value ? successor_id : bb_to_id}},
+       {SPV_OPERAND_TYPE_ID, {condition_value ? bb_to_id : successor_id}}});
+}
+
+void AddUnreachableEdgeAndUpdateOpPhis(
+    opt::IRContext* context, opt::BasicBlock* bb_from, opt::BasicBlock* bb_to,
+    uint32_t bool_id,
+    const google::protobuf::RepeatedField<google::protobuf::uint32>& phi_ids) {
+  assert(PhiIdsOkForNewEdge(context, bb_from, bb_to, phi_ids) &&
+         "Precondition on phi_ids is not satisfied");
+
+  const bool from_to_edge_already_exists = bb_from->IsSuccessor(bb_to);
+  *bb_from->terminator() = CreateUnreachableEdgeInstruction(
+      context, bb_from->id(), bb_to->id(), bool_id);
 
   // Update OpPhi instructions in the target block if this branch adds a
   // previously non-existent edge from source to target.
@@ -1854,6 +1884,104 @@ std::set<uint32_t> GetReachableReturnBlocks(opt::IRContext* ir_context,
                                              });
 
   return result;
+}
+
+bool NewTerminatorPreservesDominationRules(opt::IRContext* ir_context,
+                                           uint32_t block_id,
+                                           opt::Instruction new_terminator) {
+  auto* mutated_block = MaybeFindBlock(ir_context, block_id);
+  assert(mutated_block && "|block_id| is invalid");
+
+  ChangeTerminatorRAII change_terminator_raii(mutated_block,
+                                              std::move(new_terminator));
+  opt::DominatorAnalysis dominator_analysis;
+  dominator_analysis.InitializeTree(*ir_context->cfg(),
+                                    mutated_block->GetParent());
+
+  // Check that each dominator appears before each dominated block.
+  std::unordered_map<uint32_t, size_t> positions;
+  for (const auto& block : *mutated_block->GetParent()) {
+    positions[block.id()] = positions.size();
+  }
+
+  std::queue<uint32_t> q({mutated_block->GetParent()->begin()->id()});
+  std::unordered_set<uint32_t> visited;
+  while (!q.empty()) {
+    auto block = q.front();
+    q.pop();
+    visited.insert(block);
+
+    auto success = ir_context->cfg()->block(block)->WhileEachSuccessorLabel(
+        [&positions, &visited, &dominator_analysis, block, &q](uint32_t id) {
+          if (id == block) {
+            // Handle the case when loop header and continue target are the same
+            // block.
+            return true;
+          }
+
+          if (dominator_analysis.Dominates(block, id) &&
+              positions[block] > positions[id]) {
+            // |block| dominates |id| but appears after |id| - violates
+            // domination rules.
+            return false;
+          }
+
+          if (!visited.count(id)) {
+            q.push(id);
+          }
+
+          return true;
+        });
+
+    if (!success) {
+      return false;
+    }
+  }
+
+  // For each instruction in the |block->GetParent()| function check whether
+  // all its dependencies satisfy domination rules (i.e. all id operands
+  // dominate that instruction).
+  for (const auto& block : *mutated_block->GetParent()) {
+    if (!dominator_analysis.IsReachable(&block)) {
+      // If some block is not reachable then we don't need to worry about the
+      // preservation of domination rules for its instructions.
+      continue;
+    }
+
+    for (const auto& inst : block) {
+      for (uint32_t i = 0; i < inst.NumInOperands();
+           i += inst.opcode() == SpvOpPhi ? 2 : 1) {
+        const auto& operand = inst.GetInOperand(i);
+        if (!spvIsInIdType(operand.type)) {
+          continue;
+        }
+
+        if (MaybeFindBlock(ir_context, operand.words[0])) {
+          // Ignore operands that refer to OpLabel instructions.
+          continue;
+        }
+
+        const auto* dependency_block =
+            ir_context->get_instr_block(operand.words[0]);
+        if (!dependency_block) {
+          // A global instruction always dominates all instructions in any
+          // function.
+          continue;
+        }
+
+        auto domination_target_id = inst.opcode() == SpvOpPhi
+                                        ? inst.GetSingleWordInOperand(i + 1)
+                                        : block.id();
+
+        if (!dominator_analysis.Dominates(dependency_block->id(),
+                                          domination_target_id)) {
+          return false;
+        }
+      }
+    }
+  }
+
+  return true;
 }
 
 }  // namespace fuzzerutil
