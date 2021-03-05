@@ -68,6 +68,16 @@ bool PhiIdsOkForNewEdge(
     opt::IRContext* context, opt::BasicBlock* bb_from, opt::BasicBlock* bb_to,
     const google::protobuf::RepeatedField<google::protobuf::uint32>& phi_ids);
 
+// Returns an OpBranchConditional instruction that will create an unreachable
+// branch from |bb_from_id| to |bb_to_id|. |bool_id| must be a result id of
+// either OpConstantTrue or OpConstantFalse. Based on the opcode of |bool_id|,
+// operands of the returned instruction will be positioned in a way that the
+// branch from |bb_from_id| to |bb_to_id| is always unreachable.
+opt::Instruction CreateUnreachableEdgeInstruction(opt::IRContext* ir_context,
+                                                  uint32_t bb_from_id,
+                                                  uint32_t bb_to_id,
+                                                  uint32_t bool_id);
+
 // Requires that |bool_id| is a valid result id of either OpConstantTrue or
 // OpConstantFalse, that PhiIdsOkForNewEdge(context, bb_from, bb_to, phi_ids)
 // holds, and that bb_from ends with "OpBranch %some_block".  Turns OpBranch
@@ -596,6 +606,14 @@ bool InstructionHasNoSideEffects(const opt::Instruction& instruction);
 // Assumes that the function exists in the module.
 std::set<uint32_t> GetReachableReturnBlocks(opt::IRContext* ir_context,
                                             uint32_t function_id);
+
+// Returns true if changing terminator instruction to |new_terminator| in the
+// basic block with id |block_id| preserves domination rules and valid block
+// order (i.e. dominator must always appear before dominated in the CFG).
+// Returns false otherwise.
+bool NewTerminatorPreservesDominationRules(opt::IRContext* ir_context,
+                                           uint32_t block_id,
+                                           opt::Instruction new_terminator);
 
 }  // namespace fuzzerutil
 }  // namespace fuzz
