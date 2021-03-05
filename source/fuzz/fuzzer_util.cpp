@@ -25,7 +25,7 @@ namespace fuzz {
 namespace fuzzerutil {
 namespace {
 
-// An utility class that uses RAII to change and restore the terminator
+// A utility class that uses RAII to change and restore the terminator
 // instruction of the |block|.
 class ChangeTerminatorRAII {
  public:
