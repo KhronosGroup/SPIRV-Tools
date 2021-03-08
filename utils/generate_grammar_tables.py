@@ -601,7 +601,7 @@ def generate_extension_to_string_mapping(extensions):
         '      return "{extension}";\n'
     function += ''.join([template.format(extension=extension)
                          for extension in extensions])
-    function += '  };\n\n  return "";\n}'
+    function += '  }\n\n  return "";\n}'
     return function
 
 
@@ -647,7 +647,7 @@ def generate_capability_to_string_mapping(operand_kinds):
     function += '    case SpvCapabilityMax:\n' \
         '      assert(0 && "Attempting to convert SpvCapabilityMax to string");\n' \
         '      return "";\n'
-    function += '  };\n\n  return "";\n}'
+    function += '  }\n\n  return "";\n}'
     return function
 
 
