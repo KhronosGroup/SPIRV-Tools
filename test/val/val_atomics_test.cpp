@@ -537,6 +537,19 @@ TEST_F(ValidateAtomics, AtomicLoadVulkanInt64) {
           "AtomicLoad: 64-bit atomics require the Int64Atomics capability"));
 }
 
+TEST_F(ValidateAtomics, AtomicStoreVulkanInt64) {
+  const std::string body = R"(
+OpAtomicStore %u64_var %device %relaxed %u64_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "AtomicStore: 64-bit atomics require the Int64Atomics capability"));
+}
+
 TEST_F(ValidateAtomics, VK_KHR_shader_atomic_int64Success) {
   const std::string body = R"(
 %val1 = OpAtomicUMin %u64 %u64_var %device %relaxed %u64_1
