@@ -835,7 +835,7 @@ class OpTypeArrayLengthTest
         position_(spv_position_t{0, 0, 0}),
         diagnostic_(spvDiagnosticCreate(&position_, "")) {}
 
-  ~OpTypeArrayLengthTest() { spvDiagnosticDestroy(diagnostic_); }
+  ~OpTypeArrayLengthTest() override { spvDiagnosticDestroy(diagnostic_); }
 
   // Runs spvValidate() on v, printing any errors via spvDiagnosticPrint().
   spv_result_t Val(const SpirvVector& v, const std::string& expected_err = "") {
