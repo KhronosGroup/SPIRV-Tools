@@ -326,11 +326,15 @@ config("spvtools_internal_config") {
 
   configs = [ ":spvtools_public_config" ]
 
+  cflags = []
   if (is_clang) {
-    cflags = [
+    cflags += [
       "-Wno-implicit-fallthrough",
       "-Wno-newline-eof",
     ]
+  } else if (!is_win) {
+    # Work around a false-positive on a Skia GCC 10 builder.
+    cflgas += [ "-Wno-format-truncation" ]
   }
 }
 
