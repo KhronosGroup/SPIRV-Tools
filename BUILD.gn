@@ -334,7 +334,7 @@ config("spvtools_internal_config") {
     ]
   } else if (!is_win) {
     # Work around a false-positive on a Skia GCC 10 builder.
-    cflgas += [ "-Wno-format-truncation" ]
+    cflags += [ "-Wno-format-truncation" ]
   }
 }
 
