@@ -31,12 +31,11 @@ AvailableInstructions::AvailableInstructions(
   for (auto& function : *ir_context->module()) {
     std::vector<opt::Instruction*> params;
     function.ForEachParam(
-        [this, &filter, ir_context, &params](opt::Instruction* param) {
+        [&filter, ir_context, &params](opt::Instruction* param) {
           if (filter(ir_context, param)) {
             params.push_back(param);
           }
         });
-    available_params_.insert({&function, params});
 
     auto dominator_analysis = ir_context->GetDominatorAnalysis(&function);
     for (auto& block : function) {
@@ -60,8 +59,9 @@ AvailableInstructions::AvailableInstructions(
           generated.push_back(&inst);
         }
       }
-      generated_by_block_.insert({&block, generated});
+      generated_by_block_.emplace(&block, std::move(generated));
     }
+    available_params_.emplace(&function, std::move(params));
   }
 }
 
@@ -79,6 +79,7 @@ bool AvailableInstructions::AvailableBeforeInstruction::empty() const {
 
 opt::Instruction* AvailableInstructions::AvailableBeforeInstruction::operator[](
     uint32_t index) const {
+  assert(index < size() && "Index out of bounds.");
   if (index < available_instructions_.available_globals_.size()) {
     return available_instructions_.available_globals_[index];
   }
@@ -95,7 +96,11 @@ opt::Instruction* AvailableInstructions::AvailableBeforeInstruction::operator[](
   auto dominator_analysis =
       available_instructions_.ir_context_->GetDominatorAnalysis(function);
 
-  for (auto* ancestor = block;;
+  for (auto *ancestor = block;
+       assert(
+           ancestor != &*function->begin() &&
+           "By construction we should find a block associated with the index."),
+            true;
        ancestor = dominator_analysis->ImmediateDominator(ancestor)) {
     if (index >=
         available_instructions_.num_available_at_block_entry_.at(ancestor)) {
