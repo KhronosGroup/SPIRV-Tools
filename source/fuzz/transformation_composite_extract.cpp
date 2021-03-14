@@ -89,15 +89,21 @@ void TransformationCompositeExtract::Apply(
   auto extracted_type = fuzzerutil::WalkCompositeTypeIndices(
       ir_context, composite_instruction->type_id(), message_.index());
 
-  FindInstruction(message_.instruction_to_insert_before(), ir_context)
-      ->InsertBefore(MakeUnique<opt::Instruction>(
-          ir_context, SpvOpCompositeExtract, extracted_type,
-          message_.fresh_id(), extract_operands));
+  auto insert_before =
+      FindInstruction(message_.instruction_to_insert_before(), ir_context);
+  auto new_instruction = MakeUnique<opt::Instruction>(
+      ir_context, SpvOpCompositeExtract, extracted_type, message_.fresh_id(),
+      extract_operands);
+  auto new_instruction_ptr = new_instruction.get();
+  insert_before->InsertBefore(std::move(new_instruction));
+  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);
+  ir_context->set_instr_block(new_instruction_ptr,
+                              ir_context->get_instr_block(insert_before));
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
 
-  ir_context->InvalidateAnalysesExceptFor(
-      opt::IRContext::Analysis::kAnalysisNone);
+  // No analyses need to be invalidated since the transformation is local to a
+  // block and the def-use and instruction-to-block mappings have been updated.
 
   AddDataSynonymFacts(ir_context, transformation_context);
 }
