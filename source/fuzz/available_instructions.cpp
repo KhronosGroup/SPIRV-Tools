@@ -96,11 +96,7 @@ opt::Instruction* AvailableInstructions::AvailableBeforeInstruction::operator[](
   auto dominator_analysis =
       available_instructions_.ir_context_->GetDominatorAnalysis(function);
 
-  for (auto *ancestor = block;
-       assert(
-           ancestor != &*function->begin() &&
-           "By construction we should find a block associated with the index."),
-            true;
+  for (auto* ancestor = block; true;
        ancestor = dominator_analysis->ImmediateDominator(ancestor)) {
     if (index >=
         available_instructions_.num_available_at_block_entry_.at(ancestor)) {
@@ -108,6 +104,8 @@ opt::Instruction* AvailableInstructions::AvailableBeforeInstruction::operator[](
           ancestor)[index - available_instructions_
                                 .num_available_at_block_entry_.at(ancestor)];
     }
+    assert(ancestor != &*function->begin() &&
+           "By construction we should find a block associated with the index.");
   }
 
   assert(false && "Unreachable.");
