@@ -105,8 +105,8 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
       }
     }
 
-    // If OpControlBarrier  is used by subset of Execution Model the execution
-    // Scope must be Subgroup.
+    // OpControlBarrier must only use Subgroup execution scope for a subset of
+    // execution models.
     if (opcode == SpvOpControlBarrier && value != SpvScopeSubgroup) {
       std::string errorVUID = _.VkErrorID(4682);
       _.function(inst->function()->id())
@@ -136,7 +136,7 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
           });
     }
 
-    // Only subset of Execution Model support Workgroup.
+    // Only subset of execution models support Workgroup.
     if (value == SpvScopeWorkgroup) {
       std::string errorVUID = _.VkErrorID(4637);
       _.function(inst->function()->id())
