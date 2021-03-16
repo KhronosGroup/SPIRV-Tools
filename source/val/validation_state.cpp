@@ -1680,6 +1680,10 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-None-04634);
     case 4635:
       return VUID_WRAP(VUID-StandaloneSpirv-None-04635);
+    case 4636:
+      return VUID_WRAP(VUID-StandaloneSpirv-None-04636);
+    case 4637:
+      return VUID_WRAP(VUID-StandaloneSpirv-None-04637);
     case 4638:
       return VUID_WRAP(VUID-StandaloneSpirv-None-04638);
     case 4639:
@@ -1720,6 +1724,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-FPRoundingMode-04675);
     case 4677:
       return VUID_WRAP(VUID-StandaloneSpirv-Invariant-04677);
+    case 4682:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpControlBarrier-04682);
     case 4683:
       return VUID_WRAP(VUID-StandaloneSpirv-LocalSize-04683);
     case 4685:
