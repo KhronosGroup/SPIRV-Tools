@@ -411,6 +411,30 @@ OpControlBarrier %workgroup %workgroup %acquire
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
 
+TEST_F(ValidateBarriers, OpControlBarrierVulkanInvocationSuccess) {
+  const std::string body = R"(
+OpControlBarrier %workgroup %invocation %none
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierVulkanInvocationFailure) {
+  const std::string body = R"(
+OpControlBarrier %workgroup %invocation %acquire
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-04641"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ControlBarrier: Vulkan specification requires Memory "
+                "Semantics to be None if used with Invocation Memory Scope"));
+}
+
 TEST_F(ValidateBarriers, OpControlBarrierAcquireAndRelease) {
   const std::string body = R"(
 OpControlBarrier %device %device %acquire_and_release_uniform
