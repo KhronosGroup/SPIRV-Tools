@@ -36,10 +36,8 @@ class FuzzerPassConstructComposites : public FuzzerPass {
   void Apply() override;
 
  private:
-  // Used to map a type id to relevant instructions whose result type matches
-  // the type id.
-  typedef std::map<uint32_t, std::vector<opt::Instruction*>>
-      TypeIdToInstructions;
+  // Used to map a type id to the ids of relevant instructions of the type.
+  typedef std::map<uint32_t, std::vector<uint32_t>> TypeIdToInstructions;
 
   // Considers all instructions that are available at |inst| - instructions
   // whose results could be packed into a composite - and updates

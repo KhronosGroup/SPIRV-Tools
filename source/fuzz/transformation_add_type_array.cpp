@@ -39,9 +39,11 @@ bool TransformationAddTypeArray::IsApplicable(
   }
   auto element_type =
       ir_context->get_type_mgr()->GetType(message_.element_type_id());
-  if (!element_type || element_type->AsFunction()) {
-    // The element type id either does not refer to a type, or refers to a
-    // function type; both are illegal.
+  if (!element_type || element_type->AsFunction() ||
+      fuzzerutil::HasBlockOrBufferBlockDecoration(ir_context,
+                                                  message_.element_type_id())) {
+    // The element type id either does not refer to a type, refers to a function
+    // type, or refers to a block-decorated struct. These cases are all illegal.
     return false;
   }
   auto constant =
