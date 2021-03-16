@@ -293,14 +293,15 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
       }
 
       const auto equal_semantics_index = operand_index++;
-      if (auto error = ValidateMemorySemantics(_, inst, equal_semantics_index))
+      if (auto error = ValidateMemorySemantics(_, inst, equal_semantics_index,
+                                               memory_scope))
         return error;
 
       if (opcode == SpvOpAtomicCompareExchange ||
           opcode == SpvOpAtomicCompareExchangeWeak) {
         const auto unequal_semantics_index = operand_index++;
-        if (auto error =
-                ValidateMemorySemantics(_, inst, unequal_semantics_index))
+        if (auto error = ValidateMemorySemantics(
+                _, inst, unequal_semantics_index, memory_scope))
           return error;
 
         // Volatile bits must match for equal and unequal semantics. Previous

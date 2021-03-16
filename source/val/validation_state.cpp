@@ -1686,6 +1686,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-None-04639);
     case 4640:
       return VUID_WRAP(VUID-StandaloneSpirv-None-04640);
+    case 4641:
+      return VUID_WRAP(VUID-StandaloneSpirv-None-04641);
     case 4642:
       return VUID_WRAP(VUID-StandaloneSpirv-None-04642);
     case 4651:
