@@ -38,6 +38,7 @@ class AvailableInstructions {
    private:
     const AvailableInstructions& available_instructions_;
     opt::Instruction* inst_;
+    mutable std::unordered_map<uint32_t, opt::Instruction*> index_cache;
   };
 
   AvailableInstructions(

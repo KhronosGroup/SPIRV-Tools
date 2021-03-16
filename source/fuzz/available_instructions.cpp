@@ -80,8 +80,14 @@ bool AvailableInstructions::AvailableBeforeInstruction::empty() const {
 opt::Instruction* AvailableInstructions::AvailableBeforeInstruction::operator[](
     uint32_t index) const {
   assert(index < size() && "Index out of bounds.");
+  auto cached_result = index_cache.find(index);
+  if (cached_result != index_cache.end()) {
+    return cached_result->second;
+  }
   if (index < available_instructions_.available_globals_.size()) {
-    return available_instructions_.available_globals_[index];
+    auto result = available_instructions_.available_globals_[index];
+    index_cache.insert({index, result});
+    return result;
   }
   auto block = available_instructions_.ir_context_->get_instr_block(inst_);
   auto function = block->GetParent();
@@ -89,8 +95,10 @@ opt::Instruction* AvailableInstructions::AvailableBeforeInstruction::operator[](
   if (index <
       available_instructions_.available_globals_.size() +
           available_instructions_.available_params_.at(function).size()) {
-    return available_instructions_.available_params_.at(
+    auto result = available_instructions_.available_params_.at(
         function)[index - available_instructions_.available_globals_.size()];
+    index_cache.insert({index, result});
+    return result;
   }
 
   auto dominator_analysis =
@@ -98,11 +106,19 @@ opt::Instruction* AvailableInstructions::AvailableBeforeInstruction::operator[](
 
   for (auto* ancestor = block; true;
        ancestor = dominator_analysis->ImmediateDominator(ancestor)) {
-    if (index >=
-        available_instructions_.num_available_at_block_entry_.at(ancestor)) {
-      return available_instructions_.generated_by_block_.at(
-          ancestor)[index - available_instructions_
-                                .num_available_at_block_entry_.at(ancestor)];
+    uint32_t num_available_at_ancestor_entry =
+        available_instructions_.num_available_at_block_entry_.at(ancestor);
+    if (index_cache.count(num_available_at_ancestor_entry) == 0) {
+      auto& generated_by_ancestor =
+          available_instructions_.generated_by_block_.at(ancestor);
+      for (uint32_t local_index = 0; local_index < generated_by_ancestor.size();
+           local_index++) {
+        index_cache.insert({num_available_at_ancestor_entry + local_index,
+                            generated_by_ancestor[local_index]});
+      }
+    }
+    if (index >= num_available_at_ancestor_entry) {
+      return index_cache.at(index);
     }
     assert(ancestor != &*function->begin() &&
            "By construction we should find a block associated with the index.");
