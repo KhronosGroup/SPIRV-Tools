@@ -4992,6 +4992,8 @@ TEST_F(ValidateDecorations, UniformDecorationWithScopeIdV14VulkanEnv) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_VULKAN_1_1_SPIRV_1_4));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-04636"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr(": in Vulkan environment Execution Scope is limited to "
                         "Workgroup and Subgroup"));
 }
