@@ -52,6 +52,7 @@ if(SPIRV_BUILD_FUZZER)
         force_render_red.h
         fuzzer.h
         fuzzer_context.h
+        fuzzer_context_wgsl.h
         fuzzer_pass.h
         fuzzer_pass_add_access_chains.h
         fuzzer_pass_add_bit_instruction_synonyms.h
@@ -243,6 +244,7 @@ if(SPIRV_BUILD_FUZZER)
         force_render_red.cpp
         fuzzer.cpp
         fuzzer_context.cpp
+        fuzzer_context_wgsl.cpp
         fuzzer_pass.cpp
         fuzzer_pass_add_access_chains.cpp
         fuzzer_pass_add_bit_instruction_synonyms.cpp

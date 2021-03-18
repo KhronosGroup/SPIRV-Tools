@@ -23,6 +23,7 @@
 
 #include "source/fuzz/force_render_red.h"
 #include "source/fuzz/fuzzer.h"
+#include "source/fuzz/fuzzer_context_wgsl.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/pseudo_random_generator.h"
@@ -38,6 +39,8 @@
 #include "tools/util/cli_consumer.h"
 
 namespace {
+
+enum class FuzzingTarget { kSPIR_V, kWGSL };
 
 // Check that the std::system function can actually be used.
 bool CheckExecuteCommand() {
@@ -141,6 +144,12 @@ Options (in lexicographical order):
                  that was used previously.
                - simple: each time a fuzzer pass is requested, one is provided
                  at random from the set of enabled passes.
+  --fuzzing-target=
+              This option will adjust probabilities of applying certain
+              transformations s.t. the module always remains valid according
+              to the semantics of some fuzzing target. Available targets:
+              - spir-v - module is valid according to the SPIR-V spec.
+              - wgsl - module is valid according to the WGSL spec.
   --replay
                File from which to read a sequence of transformations to replay
                (instead of fuzzing)
@@ -205,7 +214,7 @@ FuzzStatus ParseFlags(
     std::string* shrink_transformations_file,
     std::string* shrink_temp_file_prefix,
     spvtools::fuzz::RepeatedPassStrategy* repeated_pass_strategy,
-    spvtools::FuzzerOptions* fuzzer_options,
+    FuzzingTarget* fuzzing_target, spvtools::FuzzerOptions* fuzzer_options,
     spvtools::ValidatorOptions* validator_options) {
   uint32_t positional_arg_index = 0;
   bool only_positional_arguments_remain = false;
@@ -263,6 +272,20 @@ FuzzStatus ParseFlags(
           ss << "Unknown repeated pass strategy '" << strategy << "'"
              << std::endl;
           ss << "Valid options are 'looped', 'random' and 'simple'.";
+          spvtools::Error(FuzzDiagnostic, nullptr, {}, ss.str().c_str());
+          return {FuzzActions::STOP, 1};
+        }
+      } else if (0 == strncmp(cur_arg, "--fuzzing-target=",
+                              sizeof("--fuzzing-target=") - 1)) {
+        std::string target = spvtools::utils::SplitFlagArgs(cur_arg).second;
+        if (target == "spir-v") {
+          *fuzzing_target = FuzzingTarget::kSPIR_V;
+        } else if (target == "wgsl") {
+          *fuzzing_target = FuzzingTarget::kWGSL;
+        } else {
+          std::stringstream ss;
+          ss << "Unknown fuzzing target '" << target << "'" << std::endl;
+          ss << "Valid options are 'spir-v' and 'wgsl'.";
           spvtools::Error(FuzzDiagnostic, nullptr, {}, ss.str().c_str());
           return {FuzzActions::STOP, 1};
         }
@@ -550,7 +573,7 @@ bool Fuzz(const spv_target_env& target_env,
           const spvtools::fuzz::protobufs::FactSequence& initial_facts,
           const std::string& donors,
           spvtools::fuzz::RepeatedPassStrategy repeated_pass_strategy,
-          std::vector<uint32_t>* binary_out,
+          FuzzingTarget fuzzing_target, std::vector<uint32_t>* binary_out,
           spvtools::fuzz::protobufs::TransformationSequence*
               transformations_applied) {
   auto message_consumer = spvtools::utils::CLIMessageConsumer;
@@ -586,12 +609,27 @@ bool Fuzz(const spv_target_env& target_env,
     return false;
   }
 
-  auto fuzzer_context = spvtools::MakeUnique<spvtools::fuzz::FuzzerContext>(
-      spvtools::MakeUnique<spvtools::fuzz::PseudoRandomGenerator>(
-          fuzzer_options->has_random_seed
-              ? fuzzer_options->random_seed
-              : static_cast<uint32_t>(std::random_device()())),
-      spvtools::fuzz::FuzzerContext::GetMinFreshId(ir_context.get()));
+  std::unique_ptr<spvtools::fuzz::FuzzerContext> fuzzer_context;
+  {
+    auto prng = spvtools::MakeUnique<spvtools::fuzz::PseudoRandomGenerator>(
+        fuzzer_options->has_random_seed
+            ? fuzzer_options->random_seed
+            : static_cast<uint32_t>(std::random_device()()));
+    auto min_fresh_id =
+        spvtools::fuzz::FuzzerContext::GetMinFreshId(ir_context.get());
+
+    switch (fuzzing_target) {
+      case FuzzingTarget::kSPIR_V:
+        fuzzer_context = spvtools::MakeUnique<spvtools::fuzz::FuzzerContext>(
+            std::move(prng), min_fresh_id);
+        break;
+      case FuzzingTarget::kWGSL:
+        fuzzer_context =
+            spvtools::MakeUnique<spvtools::fuzz::FuzzerContextWgsl>(
+                std::move(prng), min_fresh_id);
+        break;
+    }
+  }
 
   auto transformation_context =
       spvtools::MakeUnique<spvtools::fuzz::TransformationContext>(
@@ -675,6 +713,7 @@ int main(int argc, const char** argv) {
   std::string shrink_transformations_file;
   std::string shrink_temp_file_prefix = "temp_";
   spvtools::fuzz::RepeatedPassStrategy repeated_pass_strategy;
+  auto fuzzing_target = FuzzingTarget::kSPIR_V;
 
   spvtools::FuzzerOptions fuzzer_options;
   spvtools::ValidatorOptions validator_options;
@@ -683,7 +722,8 @@ int main(int argc, const char** argv) {
       ParseFlags(argc, argv, &in_binary_file, &out_binary_file, &donors_file,
                  &replay_transformations_file, &interestingness_test,
                  &shrink_transformations_file, &shrink_temp_file_prefix,
-                 &repeated_pass_strategy, &fuzzer_options, &validator_options);
+                 &repeated_pass_strategy, &fuzzing_target, &fuzzer_options,
+                 &validator_options);
 
   if (status.action == FuzzActions::STOP) {
     return status.code;
@@ -729,8 +769,8 @@ int main(int argc, const char** argv) {
       break;
     case FuzzActions::FUZZ:
       if (!Fuzz(target_env, fuzzer_options, validator_options, binary_in,
-                initial_facts, donors_file, repeated_pass_strategy, &binary_out,
-                &transformations_applied)) {
+                initial_facts, donors_file, repeated_pass_strategy,
+                fuzzing_target, &binary_out, &transformations_applied)) {
         return 1;
       }
       break;

@@ -36,7 +36,7 @@ class FuzzerContext {
   FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
                 uint32_t min_fresh_id);
 
-  ~FuzzerContext();
+  virtual ~FuzzerContext();
 
   // Returns a random boolean.
   bool ChooseEven();
@@ -456,6 +456,7 @@ class FuzzerContext {
   // The next fresh id to be issued.
   uint32_t next_fresh_id_;
 
+ protected:
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.
   uint32_t chance_of_accepting_repeated_pass_recommendation_;
