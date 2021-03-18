@@ -5815,6 +5815,11 @@ static const std::string capabilities_and_extensions_image64 = R"(
 OpCapability Int64ImageEXT
 OpExtension "SPV_EXT_shader_image_int64"
 )";
+static const std::string capabilities_and_extensions_image64_atomic = R"(
+OpCapability Int64Atomics
+OpCapability Int64ImageEXT
+OpExtension "SPV_EXT_shader_image_int64"
+)";
 static const std::string declarations_image64 = R"(
 %type_image_u64_buffer_0002_r64ui = OpTypeImage %u64 Buffer 0 0 0 2 R64ui
 %ptr_Image_u64 = OpTypePointer Image %u64
@@ -5854,11 +5859,11 @@ TEST_F(ValidateImage, ImageTexelPointer64Success) {
 %sum = OpAtomicIAdd %u64 %texel_ptr %u32_1 %u32_0 %u64_1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body,
-                                         capabilities_and_extensions_image64,
-                                         "Fragment", "", SPV_ENV_UNIVERSAL_1_3,
-                                         "GLSL450", declarations_image64)
-                          .c_str());
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities_and_extensions_image64_atomic,
+                         "Fragment", "", SPV_ENV_UNIVERSAL_1_3, "GLSL450",
+                         declarations_image64)
+          .c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -5868,11 +5873,11 @@ TEST_F(ValidateImage, ImageTexelPointer64ResultTypeNotPointer) {
 %sum = OpAtomicIAdd %u64 %texel_ptr %u32_1 %u32_0 %u64_1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body,
-                                         capabilities_and_extensions_image64,
-                                         "Fragment", "", SPV_ENV_UNIVERSAL_1_3,
-                                         "GLSL450", declarations_image64)
-                          .c_str());
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities_and_extensions_image64_atomic,
+                         "Fragment", "", SPV_ENV_UNIVERSAL_1_3, "GLSL450",
+                         declarations_image64)
+          .c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type to be OpTypePointer"));
@@ -5884,11 +5889,11 @@ TEST_F(ValidateImage, ImageTexelPointer64ResultTypeNotImageClass) {
 %sum = OpAtomicIAdd %u64 %texel_ptr %u32_1 %u32_0 %u64_1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body,
-                                         capabilities_and_extensions_image64,
-                                         "Fragment", "", SPV_ENV_UNIVERSAL_1_3,
-                                         "GLSL450", declarations_image64)
-                          .c_str());
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities_and_extensions_image64_atomic,
+                         "Fragment", "", SPV_ENV_UNIVERSAL_1_3, "GLSL450",
+                         declarations_image64)
+          .c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type to be OpTypePointer whose "
@@ -5901,11 +5906,11 @@ TEST_F(ValidateImage, ImageTexelPointer64SampleNotZeroForImageWithMSZero) {
 %sum = OpAtomicIAdd %u64 %texel_ptr %u32_1 %u32_0 %u64_1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body,
-                                         capabilities_and_extensions_image64,
-                                         "Fragment", "", SPV_ENV_UNIVERSAL_1_3,
-                                         "GLSL450", declarations_image64)
-                          .c_str());
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities_and_extensions_image64_atomic,
+                         "Fragment", "", SPV_ENV_UNIVERSAL_1_3, "GLSL450",
+                         declarations_image64)
+          .c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Sample for Image with MS 0 to be a valid "
