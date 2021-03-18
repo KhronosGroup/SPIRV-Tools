@@ -184,9 +184,10 @@ const std::function<bool(uint32_t, RandomGenerator*)>
 }  // namespace
 
 FuzzerContext::FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
-                             uint32_t min_fresh_id)
+                             uint32_t min_fresh_id, bool is_wgsl_compatible)
     : random_generator_(std::move(random_generator)),
       next_fresh_id_(min_fresh_id),
+      is_wgsl_compatible_(is_wgsl_compatible),
       max_equivalence_class_size_for_data_synonym_fact_closure_(
           kDefaultMaxEquivalenceClassSizeForDataSynonymFactClosure),
       max_loop_control_partial_count_(kDefaultMaxLoopControlPartialCount),

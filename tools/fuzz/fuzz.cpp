@@ -23,7 +23,6 @@
 
 #include "source/fuzz/force_render_red.h"
 #include "source/fuzz/fuzzer.h"
-#include "source/fuzz/fuzzer_context_wgsl.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/pseudo_random_generator.h"
@@ -609,27 +608,16 @@ bool Fuzz(const spv_target_env& target_env,
     return false;
   }
 
-  std::unique_ptr<spvtools::fuzz::FuzzerContext> fuzzer_context;
-  {
-    auto prng = spvtools::MakeUnique<spvtools::fuzz::PseudoRandomGenerator>(
-        fuzzer_options->has_random_seed
-            ? fuzzer_options->random_seed
-            : static_cast<uint32_t>(std::random_device()()));
-    auto min_fresh_id =
-        spvtools::fuzz::FuzzerContext::GetMinFreshId(ir_context.get());
-
-    switch (fuzzing_target) {
-      case FuzzingTarget::kSPIR_V:
-        fuzzer_context = spvtools::MakeUnique<spvtools::fuzz::FuzzerContext>(
-            std::move(prng), min_fresh_id);
-        break;
-      case FuzzingTarget::kWGSL:
-        fuzzer_context =
-            spvtools::MakeUnique<spvtools::fuzz::FuzzerContextWgsl>(
-                std::move(prng), min_fresh_id);
-        break;
-    }
-  }
+  assert((fuzzing_target == FuzzingTarget::kWGSL ||
+          fuzzing_target == FuzzingTarget::kSPIR_V) &&
+         "Not all fuzzing targets are handled");
+  auto fuzzer_context = spvtools::MakeUnique<spvtools::fuzz::FuzzerContext>(
+      spvtools::MakeUnique<spvtools::fuzz::PseudoRandomGenerator>(
+          fuzzer_options->has_random_seed
+              ? fuzzer_options->random_seed
+              : static_cast<uint32_t>(std::random_device()())),
+      spvtools::fuzz::FuzzerContext::GetMinFreshId(ir_context.get()),
+      fuzzing_target == FuzzingTarget::kWGSL);
 
   auto transformation_context =
       spvtools::MakeUnique<spvtools::fuzz::TransformationContext>(

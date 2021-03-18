@@ -87,7 +87,8 @@ TEST(FuzzerPassTest, ForEachInstructionWithInstructionDescriptor) {
   ASSERT_TRUE(dominator_analysis->IsReachable(5));
   ASSERT_FALSE(dominator_analysis->IsReachable(8));
 
-  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100,
+                               false);
   protobufs::TransformationSequence transformations;
   FuzzerPassMock fuzzer_pass_mock(context.get(), &transformation_context,
                                   &fuzzer_context, &transformations);

@@ -228,8 +228,11 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
   MaybeAddFinalPass<FuzzerPassAdjustMemoryOperandsMasks>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassAdjustSelectionControls>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassAddNoContractionDecorations>(&final_passes_);
-  MaybeAddFinalPass<FuzzerPassInterchangeSignednessOfIntegerOperands>(
-      &final_passes_);
+  if (!fuzzer_context_->IsWgslCompatible()) {
+    // Signedness is not as interchangeable in WGSL as in SPIR-V.
+    MaybeAddFinalPass<FuzzerPassInterchangeSignednessOfIntegerOperands>(
+        &final_passes_);
+  }
   MaybeAddFinalPass<FuzzerPassInterchangeZeroLikeConstants>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassPermutePhiOperands>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassSwapCommutableOperands>(&final_passes_);
