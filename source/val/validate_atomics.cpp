@@ -151,45 +151,6 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
                      << ": expected Result Type to be int or float scalar type";
           }
         }
-
-        if (spvIsVulkanEnv(_.context()->target_env) &&
-            (_.GetBitWidth(result_type) != 32 &&
-             (_.GetBitWidth(result_type) != 64 ||
-              !_.HasCapability(SpvCapabilityInt64ImageEXT)))) {
-          switch (opcode) {
-            case SpvOpAtomicSMin:
-            case SpvOpAtomicUMin:
-            case SpvOpAtomicSMax:
-            case SpvOpAtomicUMax:
-            case SpvOpAtomicAnd:
-            case SpvOpAtomicOr:
-            case SpvOpAtomicXor:
-            case SpvOpAtomicIAdd:
-            case SpvOpAtomicISub:
-            case SpvOpAtomicFAddEXT:
-            case SpvOpAtomicLoad:
-            case SpvOpAtomicStore:
-            case SpvOpAtomicExchange:
-            case SpvOpAtomicIIncrement:
-            case SpvOpAtomicIDecrement:
-            case SpvOpAtomicCompareExchangeWeak:
-            case SpvOpAtomicCompareExchange: {
-              if (_.GetBitWidth(result_type) == 64 &&
-                  _.IsIntScalarType(result_type) &&
-                  !_.HasCapability(SpvCapabilityInt64Atomics))
-                return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                       << spvOpcodeString(opcode)
-                       << ": 64-bit atomics require the Int64Atomics "
-                          "capability";
-            } break;
-            default:
-              return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << spvOpcodeString(opcode)
-                     << ": according to the Vulkan spec atomic Result Type "
-                        "needs "
-                        "to be a 32-bit int scalar type";
-          }
-        }
       }
 
       uint32_t operand_index =
@@ -202,6 +163,14 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << spvOpcodeString(opcode)
                << ": expected Pointer to be of type OpTypePointer";
+      }
+
+      // Can't use result_type because OpAtomicStore doesn't have a result
+      if (_.GetBitWidth(data_type) == 64 && _.IsIntScalarType(data_type) &&
+          !_.HasCapability(SpvCapabilityInt64Atomics)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << spvOpcodeString(opcode)
+               << ": 64-bit atomics require the Int64Atomics capability";
       }
 
       // Validate storage class against universal rules
@@ -226,15 +195,6 @@ spv_result_t AtomicsPass(ValidationState_t& _, const Instruction* inst) {
                       "PhysicalStorageBuffer.";
           }
 
-          // Can't use result_type because OpAtomicStore doesn't have a result
-          if (opcode == SpvOpAtomicStore && _.GetBitWidth(data_type) == 64 &&
-              _.IsIntScalarType(data_type) &&
-              !_.HasCapability(SpvCapabilityInt64Atomics)) {
-            return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << spvOpcodeString(opcode)
-                   << ": 64-bit atomics require the Int64Atomics "
-                      "capability";
-          }
         } else if (storage_class == SpvStorageClassFunction) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)

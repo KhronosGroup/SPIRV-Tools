@@ -222,7 +222,6 @@ TEST_F(ValidateAtomics, AtomicLoadShaderSuccess) {
   const std::string body = R"(
 %val1 = OpAtomicLoad %u32 %u32_var %device %relaxed
 %val2 = OpAtomicLoad %u32 %u32_var %workgroup %acquire
-%val3 = OpAtomicLoad %u64 %u64_var %subgroup %sequentially_consistent
 )";
 
   CompileSuccessfully(GenerateShaderCode(body));
@@ -233,10 +232,27 @@ TEST_F(ValidateAtomics, AtomicLoadKernelSuccess) {
   const std::string body = R"(
 %val1 = OpAtomicLoad %f32 %f32_var %device %relaxed
 %val2 = OpAtomicLoad %u32 %u32_var %workgroup %sequentially_consistent
-%val3 = OpAtomicLoad %u64 %u64_var %subgroup %acquire
 )";
 
   CompileSuccessfully(GenerateKernelCode(body));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAtomics, AtomicLoadInt64ShaderSuccess) {
+  const std::string body = R"(
+%val1 = OpAtomicLoad %u64 %u64_var %subgroup %sequentially_consistent
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "OpCapability Int64Atomics\n"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateAtomics, AtomicLoadInt64KernelSuccess) {
+  const std::string body = R"(
+%val1 = OpAtomicLoad %u64 %u64_var %subgroup %acquire
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body, "OpCapability Int64Atomics\n"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -555,6 +571,19 @@ TEST_F(ValidateAtomics, AtomicLoadVulkanInt64) {
           "AtomicLoad: 64-bit atomics require the Int64Atomics capability"));
 }
 
+TEST_F(ValidateAtomics, AtomicLoadKernelInt64) {
+  const std::string body = R"(
+%val1 = OpAtomicLoad %u64 %u64_var %device %relaxed
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "AtomicLoad: 64-bit atomics require the Int64Atomics capability"));
+}
+
 TEST_F(ValidateAtomics, AtomicStoreVulkanInt64) {
   const std::string body = R"(
 OpAtomicStore %u64_var %device %relaxed %u64_1
@@ -562,6 +591,19 @@ OpAtomicStore %u64_var %device %relaxed %u64_1
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "AtomicStore: 64-bit atomics require the Int64Atomics capability"));
+}
+
+TEST_F(ValidateAtomics, AtomicStoreKernelInt64) {
+  const std::string body = R"(
+OpAtomicStore %u64_var %device %relaxed %u64_1
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -1260,7 +1302,7 @@ TEST_F(ValidateAtomics, AtomicFlagTestAndSetNotInt32Pointer) {
 %val1 = OpAtomicFlagTestAndSet %bool %u64_var %device %relaxed
 )";
 
-  CompileSuccessfully(GenerateKernelCode(body));
+  CompileSuccessfully(GenerateKernelCode(body, "OpCapability Int64Atomics\n"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -1334,7 +1376,7 @@ TEST_F(ValidateAtomics, AtomicFlagClearNotInt32Pointer) {
 OpAtomicFlagClear %u64_var %device %relaxed
 )";
 
-  CompileSuccessfully(GenerateKernelCode(body));
+  CompileSuccessfully(GenerateKernelCode(body, "OpCapability Int64Atomics\n"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
