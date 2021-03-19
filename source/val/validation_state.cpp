@@ -1718,6 +1718,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Offset-04663);
     case 4664:
       return VUID_WRAP(VUID-StandaloneSpirv-OpImageGather-04664);
+    case 4667:
+      return VUID_WRAP(VUID-StandaloneSpirv-None-04667);
     case 4669:
       return VUID_WRAP(VUID-StandaloneSpirv-GLSLShared-04669);
     case 4675:
