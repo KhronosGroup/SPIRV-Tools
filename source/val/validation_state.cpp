@@ -1255,12 +1255,12 @@ bool ValidationState_t::IsValidStorageClass(
       case SpvStorageClassFunction:
       case SpvStorageClassPushConstant:
       case SpvStorageClassPhysicalStorageBuffer:
-      case SpvStorageClassRayPayloadNV:
-      case SpvStorageClassIncomingRayPayloadNV:
-      case SpvStorageClassHitAttributeNV:
-      case SpvStorageClassCallableDataNV:
-      case SpvStorageClassIncomingCallableDataNV:
-      case SpvStorageClassShaderRecordBufferNV:
+      case SpvStorageClassRayPayloadKHR:
+      case SpvStorageClassIncomingRayPayloadKHR:
+      case SpvStorageClassHitAttributeKHR:
+      case SpvStorageClassCallableDataKHR:
+      case SpvStorageClassIncomingCallableDataKHR:
+      case SpvStorageClassShaderRecordBufferKHR:
         return true;
       default:
         return false;
@@ -1694,6 +1694,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-None-04641);
     case 4642:
       return VUID_WRAP(VUID-StandaloneSpirv-None-04642);
+    case 4643:
+      return VUID_WRAP(VUID-StandaloneSpirv-None-04643);
     case 4651:
       return VUID_WRAP(VUID-StandaloneSpirv-OpVariable-04651);
     case 4652:
