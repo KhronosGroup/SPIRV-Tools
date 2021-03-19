@@ -495,30 +495,6 @@ uint32_t MaybeGetBoolConstant(
     const TransformationContext& transformation_context, bool value,
     bool is_irrelevant);
 
-// Creates a new OpTypeInt instruction in the module. Updates module's id bound
-// to accommodate for |result_id|.
-void AddIntegerType(opt::IRContext* ir_context, uint32_t result_id,
-                    uint32_t width, bool is_signed);
-
-// Creates a new OpTypeFloat instruction in the module. Updates module's id
-// bound to accommodate for |result_id|.
-void AddFloatType(opt::IRContext* ir_context, uint32_t result_id,
-                  uint32_t width);
-
-// Creates a new OpTypeVector instruction in the module. |component_type_id|
-// must be a valid result id of an OpTypeInt, OpTypeFloat or OpTypeBool
-// instruction in the module. |element_count| must be in the range [2, 4].
-// Updates module's id bound to accommodate for |result_id|.
-void AddVectorType(opt::IRContext* ir_context, uint32_t result_id,
-                   uint32_t component_type_id, uint32_t element_count);
-
-// Creates a new OpTypeStruct instruction in the module. Updates module's id
-// bound to accommodate for |result_id|. |component_type_ids| may not contain
-// a result id of an OpTypeFunction. if |component_type_ids| contains a result
-// of an OpTypeStruct instruction, that struct may not have BuiltIn members.
-void AddStructType(opt::IRContext* ir_context, uint32_t result_id,
-                   const std::vector<uint32_t>& component_type_ids);
-
 // Returns a vector of words representing the integer |value|, only considering
 // the last |width| bits. The last |width| bits are sign-extended if the value
 // is signed, zero-extended if it is unsigned.
