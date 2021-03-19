@@ -46,9 +46,7 @@ class AvailableInstructions {
       const std::function<bool(opt::IRContext*, opt::Instruction*)>& filter);
 
   AvailableBeforeInstruction GetAvailableBeforeInstruction(
-      opt::Instruction* inst) const {
-    return {*this, inst};
-  }
+      opt::Instruction* inst) const;
 
  private:
   opt::IRContext* ir_context_;

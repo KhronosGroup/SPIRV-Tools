@@ -39,12 +39,22 @@ AvailableInstructions::AvailableInstructions(
 
     auto dominator_analysis = ir_context->GetDominatorAnalysis(&function);
     for (auto& block : function) {
+      if (!dominator_analysis->Dominates(function.entry().get(), &block)) {
+        // Consider only reachable blocks.
+        continue;
+      }
       if (&block == &*function.begin()) {
         num_available_at_block_entry_.insert(
             {&block, params.size() + available_globals_.size()});
       } else {
         auto immediate_dominator =
             dominator_analysis->ImmediateDominator(&block);
+        assert(immediate_dominator != nullptr &&
+               "The block is reachable so should have an immediate dominator.");
+        assert(generated_by_block_.count(immediate_dominator) != 0 &&
+               "Immediate dominator should have already been processed.");
+        assert(num_available_at_block_entry_.count(immediate_dominator) != 0 &&
+               "Immediate dominator should have already been processed.");
         num_available_at_block_entry_.insert(
             {&block,
              generated_by_block_.at(immediate_dominator).size() +
@@ -52,6 +62,8 @@ AvailableInstructions::AvailableInstructions(
       }
       std::vector<opt::Instruction*> generated;
       for (auto& inst : block) {
+        assert(num_available_at_block_entry_.count(&block) != 0 &&
+               "Block should have already been processed.");
         num_available_before_instruction_.insert(
             {&inst,
              num_available_at_block_entry_.at(&block) + generated.size()});
@@ -63,6 +75,14 @@ AvailableInstructions::AvailableInstructions(
     }
     available_params_.emplace(&function, std::move(params));
   }
+}
+
+AvailableInstructions::AvailableBeforeInstruction
+AvailableInstructions::GetAvailableBeforeInstruction(
+    opt::Instruction* inst) const {
+  assert(num_available_before_instruction_.count(inst) != 0 &&
+         "Availability can only be queried for reachable instructions.");
+  return {*this, inst};
 }
 
 AvailableInstructions::AvailableBeforeInstruction::AvailableBeforeInstruction(

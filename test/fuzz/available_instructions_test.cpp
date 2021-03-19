@@ -235,7 +235,7 @@ TEST(AvailableInstructionsTest, BasicTest) {
       ASSERT_EQ(3, available.size());
       ASSERT_EQ(SpvOpConstantComposite, available[0]->opcode());
       ASSERT_EQ(SpvOpConstantComposite, available[1]->opcode());
-      ASSERT_EQ(SpvOpCopyObject, available[1]->opcode());
+      ASSERT_EQ(SpvOpCopyObject, available[2]->opcode());
     }
     {
       auto available = vector_instructions.GetAvailableBeforeInstruction(i6);
@@ -272,6 +272,55 @@ TEST(AvailableInstructionsTest, BasicTest) {
       ASSERT_EQ(SpvOpIAdd, available[0]->opcode());
     }
   }
+}
+
+TEST(AvailableInstructionsTest, UnreachableBlock) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+               OpName %4 "main"
+               OpName %8 "x"
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+               OpStore %8 %9
+         %12 = OpLoad %6 %8
+               OpReturn
+         %10 = OpLabel
+         %11 = OpLoad %6 %8
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+
+  AvailableInstructions all_instructions(
+      context.get(),
+      [](opt::IRContext*, opt::Instruction*) -> bool { return true; });
+  ASSERT_EQ(7, all_instructions
+                   .GetAvailableBeforeInstruction(
+                       context->get_def_use_mgr()->GetDef(12))
+                   .size());
+
+#ifndef NDEBUG
+  ASSERT_DEATH(all_instructions.GetAvailableBeforeInstruction(
+                   context->get_def_use_mgr()->GetDef(11)),
+               "Availability can only be queried for reachable instructions.");
+#endif
 }
 
 }  // namespace
