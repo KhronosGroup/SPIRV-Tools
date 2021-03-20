@@ -118,11 +118,24 @@ TEST(TransformationAddGlobalVariableTest, BasicTest) {
                                                14, false)
                    .IsApplicable(context.get(), transformation_context));
 
-  TransformationAddGlobalVariable transformations[] = {
-      // %100 = OpVariable %12 Private
-      TransformationAddGlobalVariable(100, 12, SpvStorageClassPrivate, 16,
-                                      true),
+  {
+    // %100 = OpVariable %12 Private
+    ASSERT_EQ(nullptr, context->get_def_use_mgr()->GetDef(100));
+    TransformationAddGlobalVariable transformation(
+        100, 12, SpvStorageClassPrivate, 16, true);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_EQ(SpvOpVariable, context->get_def_use_mgr()->GetDef(100)->opcode());
+    ASSERT_EQ(
+        SpvStorageClassPrivate,
+        static_cast<SpvStorageClass>(
+            context->get_def_use_mgr()->GetDef(100)->GetSingleWordInOperand(
+                0)));
+  }
 
+  TransformationAddGlobalVariable transformations[] = {
       // %101 = OpVariable %10 Private
       TransformationAddGlobalVariable(101, 10, SpvStorageClassPrivate, 40,
                                       false),

@@ -171,7 +171,11 @@ TEST(TransformationAddConstantScalarTest, Apply) {
       MakeUnique<FactManager>(context.get()), validator_options);
   // Adds 32-bit unsigned integer (1 logical operand with 1 word).
   auto transformation = TransformationAddConstantScalar(19, 2, {4}, false);
+  ASSERT_EQ(nullptr, context->get_def_use_mgr()->GetDef(19));
+  ASSERT_EQ(nullptr, context->get_constant_mgr()->FindDeclaredConstant(19));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
+  ASSERT_EQ(SpvOpConstant, context->get_def_use_mgr()->GetDef(19)->opcode());
+  ASSERT_EQ(4, context->get_constant_mgr()->FindDeclaredConstant(19)->GetU32());
   auto* constant_instruction = context->get_def_use_mgr()->GetDef(19);
   EXPECT_EQ(constant_instruction->NumInOperands(), 1);
   EXPECT_EQ(constant_instruction->NumInOperandWords(), 1);
