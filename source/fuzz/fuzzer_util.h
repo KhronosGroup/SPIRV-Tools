@@ -303,9 +303,12 @@ void AddVariableIdToEntryPointInterfaces(opt::IRContext* context, uint32_t id);
 // - |initializer_id| must be 0 if |storage_class| is Workgroup, and otherwise
 //   may either be 0 or the id of a constant whose type is the pointee type of
 //   |type_id|.
-void AddGlobalVariable(opt::IRContext* context, uint32_t result_id,
-                       uint32_t type_id, SpvStorageClass storage_class,
-                       uint32_t initializer_id);
+//
+// Returns a pointer to the new global variable instruction.
+opt::Instruction* AddGlobalVariable(opt::IRContext* context, uint32_t result_id,
+                                    uint32_t type_id,
+                                    SpvStorageClass storage_class,
+                                    uint32_t initializer_id);
 
 // Adds an instruction to the start of |function_id|, of the form:
 //   |result_id| = OpVariable |type_id| Function |initializer_id|.
@@ -315,9 +318,11 @@ void AddGlobalVariable(opt::IRContext* context, uint32_t result_id,
 // - |initializer_id| must be the id of a constant with the same type as the
 //   pointer's pointee type.
 // - |function_id| must be the id of a function.
-void AddLocalVariable(opt::IRContext* context, uint32_t result_id,
-                      uint32_t type_id, uint32_t function_id,
-                      uint32_t initializer_id);
+//
+// Returns a pointer to the new local variable instruction.
+opt::Instruction* AddLocalVariable(opt::IRContext* context, uint32_t result_id,
+                                   uint32_t type_id, uint32_t function_id,
+                                   uint32_t initializer_id);
 
 // Returns true if the vector |arr| has duplicates.
 bool HasDuplicates(const std::vector<uint32_t>& arr);
