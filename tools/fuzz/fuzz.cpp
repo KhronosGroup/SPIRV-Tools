@@ -39,7 +39,7 @@
 
 namespace {
 
-enum class FuzzingTarget { kSPIR_V, kWGSL };
+enum class FuzzingTarget { kSpirv, kWgsl };
 
 // Check that the std::system function can actually be used.
 bool CheckExecuteCommand() {
@@ -278,9 +278,9 @@ FuzzStatus ParseFlags(
                               sizeof("--fuzzing-target=") - 1)) {
         std::string target = spvtools::utils::SplitFlagArgs(cur_arg).second;
         if (target == "spir-v") {
-          *fuzzing_target = FuzzingTarget::kSPIR_V;
+          *fuzzing_target = FuzzingTarget::kSpirv;
         } else if (target == "wgsl") {
-          *fuzzing_target = FuzzingTarget::kWGSL;
+          *fuzzing_target = FuzzingTarget::kWgsl;
         } else {
           std::stringstream ss;
           ss << "Unknown fuzzing target '" << target << "'" << std::endl;
@@ -608,8 +608,8 @@ bool Fuzz(const spv_target_env& target_env,
     return false;
   }
 
-  assert((fuzzing_target == FuzzingTarget::kWGSL ||
-          fuzzing_target == FuzzingTarget::kSPIR_V) &&
+  assert((fuzzing_target == FuzzingTarget::kWgsl ||
+          fuzzing_target == FuzzingTarget::kSpirv) &&
          "Not all fuzzing targets are handled");
   auto fuzzer_context = spvtools::MakeUnique<spvtools::fuzz::FuzzerContext>(
       spvtools::MakeUnique<spvtools::fuzz::PseudoRandomGenerator>(
@@ -617,7 +617,7 @@ bool Fuzz(const spv_target_env& target_env,
               ? fuzzer_options->random_seed
               : static_cast<uint32_t>(std::random_device()())),
       spvtools::fuzz::FuzzerContext::GetMinFreshId(ir_context.get()),
-      fuzzing_target == FuzzingTarget::kWGSL);
+      fuzzing_target == FuzzingTarget::kWgsl);
 
   auto transformation_context =
       spvtools::MakeUnique<spvtools::fuzz::TransformationContext>(
@@ -701,7 +701,7 @@ int main(int argc, const char** argv) {
   std::string shrink_transformations_file;
   std::string shrink_temp_file_prefix = "temp_";
   spvtools::fuzz::RepeatedPassStrategy repeated_pass_strategy;
-  auto fuzzing_target = FuzzingTarget::kSPIR_V;
+  auto fuzzing_target = FuzzingTarget::kSpirv;
 
   spvtools::FuzzerOptions fuzzer_options;
   spvtools::ValidatorOptions validator_options;
