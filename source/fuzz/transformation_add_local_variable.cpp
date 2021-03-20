@@ -76,6 +76,11 @@ void TransformationAddLocalVariable::Apply(
 
   // Inform the def-use manager about the new instruction.
   ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction);
+  ir_context->set_instr_block(
+      new_instruction,
+      fuzzerutil::FindFunction(ir_context, message_.function_id())
+          ->entry()
+          .get());
 
   if (message_.value_is_irrelevant()) {
     transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
