@@ -132,7 +132,7 @@ TEST(TransformationAddGlobalVariableTest, BasicTest) {
         SpvStorageClassPrivate,
         static_cast<SpvStorageClass>(
             context->get_def_use_mgr()->GetDef(100)->GetSingleWordInOperand(
-                1)));
+                0)));
   }
 
   TransformationAddGlobalVariable transformations[] = {
