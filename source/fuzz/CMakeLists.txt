@@ -37,6 +37,7 @@ if(SPIRV_BUILD_FUZZER)
 
   set(SPIRV_TOOLS_FUZZ_SOURCES
         added_function_reducer.h
+        available_instructions.h
         call_graph.h
         comparator_deep_blocks_first.h
         counter_overflow_id_source.h
@@ -229,6 +230,7 @@ if(SPIRV_BUILD_FUZZER)
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.h
 
         added_function_reducer.cpp
+        available_instructions.cpp
         call_graph.cpp
         counter_overflow_id_source.cpp
         data_descriptor.cpp
