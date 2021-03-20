@@ -124,7 +124,9 @@ TEST(TransformationAddGlobalVariableTest, BasicTest) {
     TransformationAddGlobalVariable transformation(
         100, 12, SpvStorageClassPrivate, 16, true);
     ASSERT_TRUE(
-        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(100));
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
     ASSERT_EQ(SpvOpVariable, context->get_def_use_mgr()->GetDef(100)->opcode());
     ASSERT_EQ(
         SpvStorageClassPrivate,
