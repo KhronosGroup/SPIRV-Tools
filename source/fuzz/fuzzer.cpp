@@ -261,8 +261,6 @@ void Fuzzer::MaybeAddFinalPass(std::vector<std::unique_ptr<FuzzerPass>>* passes,
 }
 
 bool Fuzzer::ApplyPassAndCheckValidity(FuzzerPass* pass) const {
-  static uint32_t counter = 0;
-  counter++;
   pass->Apply();
   return !validate_after_each_fuzzer_pass_ ||
          fuzzerutil::IsValidAndWellFormed(ir_context_.get(), validator_options_,
