@@ -163,7 +163,8 @@ TEST(ShrinkerTest, ReduceAddedFunctions) {
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
       donor_ir_context.get(), validator_options, kConsoleMessageConsumer));
 
-  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100,
+                               false);
   TransformationContext transformation_context(
       MakeUnique<FactManager>(variant_ir_context.get()), validator_options);
 
@@ -340,7 +341,8 @@ TEST(ShrinkerTest, HitStepLimitWhenReducingAddedFunctions) {
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
       donor_ir_context.get(), validator_options, kConsoleMessageConsumer));
 
-  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100,
+                               false);
   TransformationContext transformation_context(
       MakeUnique<FactManager>(variant_ir_context.get()), validator_options);
 
@@ -363,7 +365,6 @@ TEST(ShrinkerTest, HitStepLimitWhenReducingAddedFunctions) {
           if (inst->opcode() == SpvOpCopyObject) {
             copy_object_count++;
           }
-
         });
     return copy_object_count >= 8;
   };

@@ -34,7 +34,7 @@ class FuzzerContext {
   // Constructs a fuzzer context with a given random generator and the minimum
   // value that can be used for fresh ids.
   FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
-                uint32_t min_fresh_id);
+                uint32_t min_fresh_id, bool is_wgsl_compatible);
 
   ~FuzzerContext();
 
@@ -66,7 +66,7 @@ class FuzzerContext {
   }
 
   // Randomly shuffles a |sequence| between |lo| and |hi| indices inclusively.
-  // |lo| and |hi| must be valid indices to the |sequence|
+  // |lo| and |hi| must be valid indices to the |sequence|.
   template <typename T>
   void Shuffle(std::vector<T>* sequence, size_t lo, size_t hi) const {
     auto& array = *sequence;
@@ -91,7 +91,7 @@ class FuzzerContext {
     }
   }
 
-  // Ramdomly shuffles a |sequence|
+  // Randomly shuffles a |sequence|.
   template <typename T>
   void Shuffle(std::vector<T>* sequence) const {
     if (!sequence->empty()) {
@@ -104,7 +104,7 @@ class FuzzerContext {
   uint32_t GetFreshId();
 
   // Returns a vector of |count| fresh ids.
-  std::vector<uint32_t> GetFreshIds(const uint32_t count);
+  std::vector<uint32_t> GetFreshIds(uint32_t count);
 
   // A suggested limit on the id bound for the module being fuzzed.  This is
   // useful for deciding when to stop the overall fuzzing process.  Furthermore,
@@ -119,6 +119,11 @@ class FuzzerContext {
 
   // Returns the minimum fresh id that can be used given the |ir_context|.
   static uint32_t GetMinFreshId(opt::IRContext* ir_context);
+
+  // Returns true if all transformations should be compatible with WGSL.
+  bool IsWgslCompatible() const {
+    return is_wgsl_compatible_;
+  }
 
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.
@@ -455,6 +460,9 @@ class FuzzerContext {
   std::unique_ptr<RandomGenerator> random_generator_;
   // The next fresh id to be issued.
   uint32_t next_fresh_id_;
+
+  // True if all transformations should be compatible with WGSL spec.
+  bool is_wgsl_compatible_;
 
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.
