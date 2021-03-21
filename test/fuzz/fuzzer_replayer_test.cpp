@@ -1656,7 +1656,7 @@ void RunFuzzerAndReplayer(const std::string& shader,
 
     auto fuzzer_context = MakeUnique<FuzzerContext>(
         MakeUnique<PseudoRandomGenerator>(seed),
-        FuzzerContext::GetMinFreshId(ir_context.get()));
+        FuzzerContext::GetMinFreshId(ir_context.get()), false);
 
     auto transformation_context = MakeUnique<TransformationContext>(
         MakeUnique<FactManager>(ir_context.get()), validator_options);

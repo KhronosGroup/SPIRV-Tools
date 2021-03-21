@@ -35,6 +35,9 @@ FuzzerPassInterchangeSignednessOfIntegerOperands::
     ~FuzzerPassInterchangeSignednessOfIntegerOperands() = default;
 
 void FuzzerPassInterchangeSignednessOfIntegerOperands::Apply() {
+  assert(!GetFuzzerContext()->IsWgslCompatible() &&
+         "Cannot interchange signedness in WGSL");
+
   // Make vector keeping track of all the uses we want to replace.
   // This is a vector of pairs, where the first element is an id use descriptor
   // identifying the use of a constant id and the second is the id that should

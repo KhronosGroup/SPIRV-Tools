@@ -77,7 +77,8 @@ TEST(FuzzerPassConstructCompositesTest, IsomorphicStructs) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
 
-  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100,
+                               false);
 
   for (uint32_t i = 0; i < 10; i++) {
     const auto context =
@@ -157,7 +158,8 @@ TEST(FuzzerPassConstructCompositesTest, IsomorphicArrays) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
 
-  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100);
+  FuzzerContext fuzzer_context(MakeUnique<PseudoRandomGenerator>(0), 100,
+                               false);
 
   for (uint32_t i = 0; i < 10; i++) {
     const auto context =
