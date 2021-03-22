@@ -218,6 +218,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_set_loop_control.h
         transformation_set_memory_operands_mask.h
         transformation_set_selection_control.h
+        transformation_swap_function_variables.h
         transformation_split_block.h
         transformation_store.h
         transformation_swap_commutable_operands.h
@@ -403,6 +404,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_replace_opselect_with_conditional_branch.cpp
         transformation_replace_parameter_with_global.cpp
         transformation_replace_params_with_struct.cpp
+        transformation_swap_function_variables.cpp
         transformation_set_function_control.cpp
         transformation_set_loop_control.cpp
         transformation_set_memory_operands_mask.cpp
