@@ -557,6 +557,7 @@ message Transformation {
     TransformationWrapEarlyTerminatorInFunction wrap_early_terminator_in_function = 83;
     TransformationMergeFunctionReturns merge_function_returns = 84;
     TransformationExpandVectorReduction expand_vector_reduction = 85;
+    TransformationSwapFunctionVariables 
     // Add additional option using the next available number.
   }
 }
