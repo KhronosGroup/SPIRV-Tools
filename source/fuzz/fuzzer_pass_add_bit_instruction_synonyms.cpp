@@ -28,9 +28,6 @@ FuzzerPassAddBitInstructionSynonyms::FuzzerPassAddBitInstructionSynonyms(
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassAddBitInstructionSynonyms::~FuzzerPassAddBitInstructionSynonyms() =
-    default;
-
 void FuzzerPassAddBitInstructionSynonyms::Apply() {
   for (auto& function : *GetIRContext()->module()) {
     for (auto& block : function) {
