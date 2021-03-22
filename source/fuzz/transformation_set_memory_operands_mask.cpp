@@ -29,9 +29,8 @@ const uint32_t kOpCopyMemorySizedFirstMemoryOperandsMaskIndex = 3;
 }  // namespace
 
 TransformationSetMemoryOperandsMask::TransformationSetMemoryOperandsMask(
-    const spvtools::fuzz::protobufs::TransformationSetMemoryOperandsMask&
-        message)
-    : message_(message) {}
+    protobufs::TransformationSetMemoryOperandsMask message)
+    : message_(std::move(message)) {}
 
 TransformationSetMemoryOperandsMask::TransformationSetMemoryOperandsMask(
     const protobufs::InstructionDescriptor& memory_access_instruction,

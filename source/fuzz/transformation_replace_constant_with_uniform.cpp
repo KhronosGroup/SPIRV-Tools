@@ -22,9 +22,8 @@ namespace fuzz {
 
 TransformationReplaceConstantWithUniform::
     TransformationReplaceConstantWithUniform(
-        const spvtools::fuzz::protobufs::
-            TransformationReplaceConstantWithUniform& message)
-    : message_(message) {}
+        protobufs::TransformationReplaceConstantWithUniform message)
+    : message_(std::move(message)) {}
 
 TransformationReplaceConstantWithUniform::
     TransformationReplaceConstantWithUniform(

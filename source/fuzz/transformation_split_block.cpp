@@ -24,8 +24,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationSplitBlock::TransformationSplitBlock(
-    const spvtools::fuzz::protobufs::TransformationSplitBlock& message)
-    : message_(message) {}
+    protobufs::TransformationSplitBlock message)
+    : message_(std::move(message)) {}
 
 TransformationSplitBlock::TransformationSplitBlock(
     const protobufs::InstructionDescriptor& instruction_to_split_before,

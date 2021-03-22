@@ -28,7 +28,7 @@ namespace fuzz {
 class TransformationAddDeadContinue : public Transformation {
  public:
   explicit TransformationAddDeadContinue(
-      const protobufs::TransformationAddDeadContinue& message);
+      protobufs::TransformationAddDeadContinue message);
 
   TransformationAddDeadContinue(uint32_t from_block,
                                 bool continue_condition_value,

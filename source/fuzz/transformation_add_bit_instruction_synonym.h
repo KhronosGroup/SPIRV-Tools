@@ -103,7 +103,7 @@ namespace fuzz {
 class TransformationAddBitInstructionSynonym : public Transformation {
  public:
   explicit TransformationAddBitInstructionSynonym(
-      const protobufs::TransformationAddBitInstructionSynonym& message);
+      protobufs::TransformationAddBitInstructionSynonym message);
 
   TransformationAddBitInstructionSynonym(
       const uint32_t instruction_result_id,

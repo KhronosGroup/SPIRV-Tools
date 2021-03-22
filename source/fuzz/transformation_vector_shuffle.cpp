@@ -21,8 +21,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationVectorShuffle::TransformationVectorShuffle(
-    const spvtools::fuzz::protobufs::TransformationVectorShuffle& message)
-    : message_(message) {}
+    protobufs::TransformationVectorShuffle message)
+    : message_(std::move(message)) {}
 
 TransformationVectorShuffle::TransformationVectorShuffle(
     const protobufs::InstructionDescriptor& instruction_to_insert_before,

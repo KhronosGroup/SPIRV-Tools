@@ -21,9 +21,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationPushIdThroughVariable::TransformationPushIdThroughVariable(
-    const spvtools::fuzz::protobufs::TransformationPushIdThroughVariable&
-        message)
-    : message_(message) {}
+    protobufs::TransformationPushIdThroughVariable message)
+    : message_(std::move(message)) {}
 
 TransformationPushIdThroughVariable::TransformationPushIdThroughVariable(
     uint32_t value_id, uint32_t value_synonym_id, uint32_t variable_id,

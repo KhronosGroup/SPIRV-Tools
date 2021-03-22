@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationAddTypeArray : public Transformation {
  public:
   explicit TransformationAddTypeArray(
-      const protobufs::TransformationAddTypeArray& message);
+      protobufs::TransformationAddTypeArray message);
 
   TransformationAddTypeArray(uint32_t fresh_id, uint32_t element_type_id,
                              uint32_t size_id);

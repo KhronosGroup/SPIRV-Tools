@@ -21,8 +21,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationReplaceIrrelevantId::TransformationReplaceIrrelevantId(
-    const protobufs::TransformationReplaceIrrelevantId& message)
-    : message_(message) {}
+    protobufs::TransformationReplaceIrrelevantId message)
+    : message_(std::move(message)) {}
 
 TransformationReplaceIrrelevantId::TransformationReplaceIrrelevantId(
     const protobufs::IdUseDescriptor& id_use_descriptor,

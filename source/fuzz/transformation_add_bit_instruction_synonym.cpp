@@ -21,9 +21,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationAddBitInstructionSynonym::TransformationAddBitInstructionSynonym(
-    const spvtools::fuzz::protobufs::TransformationAddBitInstructionSynonym&
-        message)
-    : message_(message) {}
+    protobufs::TransformationAddBitInstructionSynonym message)
+    : message_(std::move(message)) {}
 
 TransformationAddBitInstructionSynonym::TransformationAddBitInstructionSynonym(
     const uint32_t instruction_result_id,
