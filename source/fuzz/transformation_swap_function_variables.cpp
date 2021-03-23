@@ -17,8 +17,37 @@
 namespace spvtools {
 namespace fuzz {
 
+TransformationSwapFunctionVariables::
+    TransformationSwapFunctionVariables(
+        const spvtools::fuzz::protobufs::
+            TransformationSwapFunctionVariables& message)
+    : message_(message) {}
+
+TransformationSwapFunctionVariables::TransformationSwapFunctionVariables(uint32_t var_id1,
+                                    uint32_t var_id2){
 
 
+}
+
+void TransformationSwapFunctionVariables::Apply(opt::IRContext* ir_context,
+             TransformationContext* transformation_context) const {
+
+}
+
+bool TransformationSwapFunctionVariables::IsApplicable(opt::IRContext* ir_context,
+      const TransformationContext& transformation_context) const{
+
+
+}   
+
+protobufs::Transformation TransformationSwapFunctionVariables::ToMessage() const {
+
+}     
+
+std::unordered_set<uint32_t> TransformationSwapFunctionVariables::GetFreshIds()
+    const {
+  return std::unordered_set<uint32_t>();
+}
 
 
 }  // namespace fuzz
