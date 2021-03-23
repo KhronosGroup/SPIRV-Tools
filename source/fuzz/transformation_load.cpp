@@ -20,9 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
-TransformationLoad::TransformationLoad(
-    const spvtools::fuzz::protobufs::TransformationLoad& message)
-    : message_(message) {}
+TransformationLoad::TransformationLoad(protobufs::TransformationLoad message)
+    : message_(std::move(message)) {}
 
 TransformationLoad::TransformationLoad(
     uint32_t fresh_id, uint32_t pointer_id,

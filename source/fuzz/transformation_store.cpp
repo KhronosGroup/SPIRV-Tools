@@ -20,9 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
-TransformationStore::TransformationStore(
-    const spvtools::fuzz::protobufs::TransformationStore& message)
-    : message_(message) {}
+TransformationStore::TransformationStore(protobufs::TransformationStore message)
+    : message_(std::move(message)) {}
 
 TransformationStore::TransformationStore(
     uint32_t pointer_id, uint32_t value_id,

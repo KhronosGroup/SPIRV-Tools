@@ -22,8 +22,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationAddCopyMemory::TransformationAddCopyMemory(
-    const protobufs::TransformationAddCopyMemory& message)
-    : message_(message) {}
+    protobufs::TransformationAddCopyMemory message)
+    : message_(std::move(message)) {}
 
 TransformationAddCopyMemory::TransformationAddCopyMemory(
     const protobufs::InstructionDescriptor& instruction_descriptor,

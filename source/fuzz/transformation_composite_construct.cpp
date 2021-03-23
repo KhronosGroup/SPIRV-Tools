@@ -23,8 +23,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationCompositeConstruct::TransformationCompositeConstruct(
-    const protobufs::TransformationCompositeConstruct& message)
-    : message_(message) {}
+    protobufs::TransformationCompositeConstruct message)
+    : message_(std::move(message)) {}
 
 TransformationCompositeConstruct::TransformationCompositeConstruct(
     uint32_t composite_type_id, std::vector<uint32_t> component,

@@ -24,8 +24,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationCompositeExtract::TransformationCompositeExtract(
-    const spvtools::fuzz::protobufs::TransformationCompositeExtract& message)
-    : message_(message) {}
+    protobufs::TransformationCompositeExtract message)
+    : message_(std::move(message)) {}
 
 TransformationCompositeExtract::TransformationCompositeExtract(
     const protobufs::InstructionDescriptor& instruction_to_insert_before,

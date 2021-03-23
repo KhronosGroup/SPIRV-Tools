@@ -22,7 +22,7 @@ namespace fuzz {
 class TransformationMergeFunctionReturns : public Transformation {
  public:
   explicit TransformationMergeFunctionReturns(
-      const protobufs::TransformationMergeFunctionReturns& message);
+      protobufs::TransformationMergeFunctionReturns message);
 
   TransformationMergeFunctionReturns(
       uint32_t function_id, uint32_t outer_header_id, uint32_t outer_return_id,

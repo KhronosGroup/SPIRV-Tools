@@ -23,8 +23,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationAccessChain::TransformationAccessChain(
-    const spvtools::fuzz::protobufs::TransformationAccessChain& message)
-    : message_(message) {}
+    protobufs::TransformationAccessChain message)
+    : message_(std::move(message)) {}
 
 TransformationAccessChain::TransformationAccessChain(
     uint32_t fresh_id, uint32_t pointer_id,

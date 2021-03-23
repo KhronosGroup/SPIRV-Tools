@@ -22,9 +22,8 @@ namespace fuzz {
 
 TransformationReplaceCopyObjectWithStoreLoad::
     TransformationReplaceCopyObjectWithStoreLoad(
-        const spvtools::fuzz::protobufs::
-            TransformationReplaceCopyObjectWithStoreLoad& message)
-    : message_(message) {}
+        protobufs::TransformationReplaceCopyObjectWithStoreLoad message)
+    : message_(std::move(message)) {}
 
 TransformationReplaceCopyObjectWithStoreLoad::
     TransformationReplaceCopyObjectWithStoreLoad(

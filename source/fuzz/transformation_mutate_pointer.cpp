@@ -21,8 +21,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationMutatePointer::TransformationMutatePointer(
-    const protobufs::TransformationMutatePointer& message)
-    : message_(message) {}
+    protobufs::TransformationMutatePointer message)
+    : message_(std::move(message)) {}
 
 TransformationMutatePointer::TransformationMutatePointer(
     uint32_t pointer_id, uint32_t fresh_id,
