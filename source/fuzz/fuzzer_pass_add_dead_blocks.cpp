@@ -27,8 +27,6 @@ FuzzerPassAddDeadBlocks::FuzzerPassAddDeadBlocks(
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassAddDeadBlocks::~FuzzerPassAddDeadBlocks() = default;
-
 void FuzzerPassAddDeadBlocks::Apply() {
   // We iterate over all blocks in the module collecting up those at which we
   // might add a branch to a new dead block.  We then loop over all such

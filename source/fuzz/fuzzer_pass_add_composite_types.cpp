@@ -28,8 +28,6 @@ FuzzerPassAddCompositeTypes::FuzzerPassAddCompositeTypes(
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassAddCompositeTypes::~FuzzerPassAddCompositeTypes() = default;
-
 void FuzzerPassAddCompositeTypes::Apply() {
   MaybeAddMissingVectorTypes();
   MaybeAddMissingMatrixTypes();

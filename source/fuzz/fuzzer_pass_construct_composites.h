@@ -31,8 +31,6 @@ class FuzzerPassConstructComposites : public FuzzerPass {
       FuzzerContext* fuzzer_context,
       protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassConstructComposites();
-
   void Apply() override;
 
  private:

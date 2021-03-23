@@ -31,9 +31,6 @@ FuzzerPassInterchangeSignednessOfIntegerOperands::
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassInterchangeSignednessOfIntegerOperands::
-    ~FuzzerPassInterchangeSignednessOfIntegerOperands() = default;
-
 void FuzzerPassInterchangeSignednessOfIntegerOperands::Apply() {
   assert(!GetFuzzerContext()->IsWgslCompatible() &&
          "Cannot interchange signedness in WGSL");
