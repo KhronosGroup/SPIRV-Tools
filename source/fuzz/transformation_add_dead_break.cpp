@@ -24,8 +24,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationAddDeadBreak::TransformationAddDeadBreak(
-    const spvtools::fuzz::protobufs::TransformationAddDeadBreak& message)
-    : message_(message) {}
+    protobufs::TransformationAddDeadBreak message)
+    : message_(std::move(message)) {}
 
 TransformationAddDeadBreak::TransformationAddDeadBreak(
     uint32_t from_block, uint32_t to_block, bool break_condition_value,

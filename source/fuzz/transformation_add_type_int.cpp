@@ -20,8 +20,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationAddTypeInt::TransformationAddTypeInt(
-    const spvtools::fuzz::protobufs::TransformationAddTypeInt& message)
-    : message_(message) {}
+    protobufs::TransformationAddTypeInt message)
+    : message_(std::move(message)) {}
 
 TransformationAddTypeInt::TransformationAddTypeInt(uint32_t fresh_id,
                                                    uint32_t width,

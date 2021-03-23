@@ -20,8 +20,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationAddTypeStruct::TransformationAddTypeStruct(
-    const spvtools::fuzz::protobufs::TransformationAddTypeStruct& message)
-    : message_(message) {}
+    protobufs::TransformationAddTypeStruct message)
+    : message_(std::move(message)) {}
 
 TransformationAddTypeStruct::TransformationAddTypeStruct(
     uint32_t fresh_id, const std::vector<uint32_t>& member_type_ids) {

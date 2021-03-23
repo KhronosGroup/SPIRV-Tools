@@ -27,8 +27,7 @@ namespace fuzz {
 class TransformationReplaceBranchFromDeadBlockWithExit : public Transformation {
  public:
   explicit TransformationReplaceBranchFromDeadBlockWithExit(
-      const protobufs::TransformationReplaceBranchFromDeadBlockWithExit&
-          message);
+      protobufs::TransformationReplaceBranchFromDeadBlockWithExit message);
 
   TransformationReplaceBranchFromDeadBlockWithExit(uint32_t block_id,
                                                    SpvOp opcode,

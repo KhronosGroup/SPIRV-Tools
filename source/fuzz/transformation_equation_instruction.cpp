@@ -21,8 +21,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationEquationInstruction::TransformationEquationInstruction(
-    const spvtools::fuzz::protobufs::TransformationEquationInstruction& message)
-    : message_(message) {}
+    protobufs::TransformationEquationInstruction message)
+    : message_(std::move(message)) {}
 
 TransformationEquationInstruction::TransformationEquationInstruction(
     uint32_t fresh_id, SpvOp opcode, const std::vector<uint32_t>& in_operand_id,

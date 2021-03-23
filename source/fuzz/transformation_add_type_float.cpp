@@ -26,8 +26,8 @@ TransformationAddTypeFloat::TransformationAddTypeFloat(uint32_t fresh_id,
 }
 
 TransformationAddTypeFloat::TransformationAddTypeFloat(
-    const spvtools::fuzz::protobufs::TransformationAddTypeFloat& message)
-    : message_(message) {}
+    protobufs::TransformationAddTypeFloat message)
+    : message_(std::move(message)) {}
 
 bool TransformationAddTypeFloat::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {

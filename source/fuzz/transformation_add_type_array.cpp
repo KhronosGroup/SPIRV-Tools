@@ -20,8 +20,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationAddTypeArray::TransformationAddTypeArray(
-    const spvtools::fuzz::protobufs::TransformationAddTypeArray& message)
-    : message_(message) {}
+    protobufs::TransformationAddTypeArray message)
+    : message_(std::move(message)) {}
 
 TransformationAddTypeArray::TransformationAddTypeArray(uint32_t fresh_id,
                                                        uint32_t element_type_id,

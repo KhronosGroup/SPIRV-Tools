@@ -22,8 +22,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationCompositeInsert::TransformationCompositeInsert(
-    const spvtools::fuzz::protobufs::TransformationCompositeInsert& message)
-    : message_(message) {}
+    protobufs::TransformationCompositeInsert message)
+    : message_(std::move(message)) {}
 
 TransformationCompositeInsert::TransformationCompositeInsert(
     const protobufs::InstructionDescriptor& instruction_to_insert_before,

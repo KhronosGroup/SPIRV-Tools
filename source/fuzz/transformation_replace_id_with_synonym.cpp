@@ -26,9 +26,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationReplaceIdWithSynonym::TransformationReplaceIdWithSynonym(
-    const spvtools::fuzz::protobufs::TransformationReplaceIdWithSynonym&
-        message)
-    : message_(message) {}
+    protobufs::TransformationReplaceIdWithSynonym message)
+    : message_(std::move(message)) {}
 
 TransformationReplaceIdWithSynonym::TransformationReplaceIdWithSynonym(
     protobufs::IdUseDescriptor id_use_descriptor, uint32_t synonymous_id) {

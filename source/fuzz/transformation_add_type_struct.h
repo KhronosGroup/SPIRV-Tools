@@ -28,7 +28,7 @@ namespace fuzz {
 class TransformationAddTypeStruct : public Transformation {
  public:
   explicit TransformationAddTypeStruct(
-      const protobufs::TransformationAddTypeStruct& message);
+      protobufs::TransformationAddTypeStruct message);
 
   TransformationAddTypeStruct(uint32_t fresh_id,
                               const std::vector<uint32_t>& component_type_ids);
