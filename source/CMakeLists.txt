@@ -359,7 +359,7 @@ function(spirv_tools_default_target_options target)
   )
   set_property(TARGET ${target} PROPERTY FOLDER "SPIRV-Tools libraries")
   spvtools_check_symbol_exports(${target})
-  add_dependencies(${target} core_tables enum_string_mapping extinst_tables)
+  add_dependencies(${target} spirv-tools-build-version core_tables enum_string_mapping extinst_tables)
 endfunction()
 
 # Always build ${SPIRV_TOOLS}-shared. This is expected distro packages, and
