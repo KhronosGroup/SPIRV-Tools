@@ -50,8 +50,6 @@ FuzzerPassDonateModules::FuzzerPassDonateModules(
                  transformations),
       donor_suppliers_(donor_suppliers) {}
 
-FuzzerPassDonateModules::~FuzzerPassDonateModules() = default;
-
 void FuzzerPassDonateModules::Apply() {
   // If there are no donor suppliers, this fuzzer pass is a no-op.
   if (donor_suppliers_.empty()) {

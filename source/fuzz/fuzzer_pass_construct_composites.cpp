@@ -29,8 +29,6 @@ FuzzerPassConstructComposites::FuzzerPassConstructComposites(
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassConstructComposites::~FuzzerPassConstructComposites() = default;
-
 void FuzzerPassConstructComposites::Apply() {
   // Gather up the ids of all composite types, but skip block-/buffer
   // block-decorated struct types.
