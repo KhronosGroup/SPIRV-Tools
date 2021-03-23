@@ -958,8 +958,8 @@ TEST(TransformationSetLoopControlTest, CheckSPIRVVersionsRespected) {
         context.get(), validator_options, kConsoleMessageConsumer));
     TransformationContext transformation_context(
         MakeUnique<FactManager>(context.get()), validator_options);
-    TransformationSetLoopControl peel_count(
-        10, SpvLoopControlPeelCountMask, 4, 0);
+    TransformationSetLoopControl peel_count(10, SpvLoopControlPeelCountMask, 4,
+                                            0);
     TransformationSetLoopControl partial_count(
         10, SpvLoopControlPartialCountMask, 0, 4);
 
