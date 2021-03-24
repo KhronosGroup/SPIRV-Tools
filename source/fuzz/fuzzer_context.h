@@ -225,6 +225,10 @@ class FuzzerContext {
   uint32_t GetChanceOfAdjustingSelectionControl() const {
     return chance_of_adjusting_selection_control_;
   }
+  unit32_t GetChanceOfPermuteFunctionVariables() const
+  {
+    return chance_of_permute_function_variables;
+  }
   uint32_t GetChanceOfCallingFunction() const {
     return chance_of_calling_function_;
   }
@@ -548,7 +552,7 @@ class FuzzerContext {
   uint32_t chance_of_swapping_conditional_branch_operands_;
   uint32_t chance_of_toggling_access_chain_instruction_;
   uint32_t chance_of_wrapping_region_in_selection_;
-
+  unit32_t chance_of_permute_function_variables;
   // Limits associated with various quantities for which random values are
   // chosen during fuzzing.
   // Keep them in alphabetical order.
