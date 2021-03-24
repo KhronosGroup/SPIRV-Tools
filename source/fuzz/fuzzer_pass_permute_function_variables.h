@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Mostafa Ashraf
+// Copyright (c) 2021 Mostafa Ashraf
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ namespace fuzz {
 
 // A pass that permute function variables.
 // This is final class so, can't be inherited.
-class FuzzerPassPermuteFunctionVariables  final: public FuzzerPass {
+class FuzzerPassPermuteFunctionVariables : public FuzzerPass {
  public:
   FuzzerPassPermuteFunctionVariables(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
