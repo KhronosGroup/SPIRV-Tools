@@ -2263,8 +2263,14 @@ message TransformationSwapConditionalBranchOperands {
 
 message TransformationSwapFunctionVariables {
 	// A transformation that swaps function variables 
+	// set all second constuctor values 
 	
-	// set all constuctor values 
+	// id of first variable to be stored
+	uint32 var_id1 = 1;
+	// id of second variable to be stored
+	uint32 var_id2 = 2;
+	// function id to be stored
+	uint32 function_id = 1;
 
 }
 
