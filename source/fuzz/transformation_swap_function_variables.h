@@ -19,7 +19,7 @@ class TransformationSwapFunctionVariables : public Transformation
       const protobufs::TransformationSwapFunctionVariables& message);
 
     TransformationSwapFunctionVariables(uint32_t var_id1,
-                                    uint32_t var_id2);
+                                    uint32_t var_id2,uint32_t function_id);
 
     bool IsApplicable(
       opt::IRContext* ir_context,
@@ -29,11 +29,14 @@ class TransformationSwapFunctionVariables : public Transformation
              TransformationContext* transformation_context) const override;
 
     protobufs::Transformation ToMessage() const override;
-    
+
     std::unordered_set<uint32_t> GetFreshIds() const override;
-    
+
     private:
     protobufs::TransformationSwapFunctionVariables message_;
+    uint32_t var_id1,var_id2,function_id;
+    mutable bool _2varsExists = false;
+
 
 };
 
