@@ -557,7 +557,7 @@ message Transformation {
     TransformationWrapEarlyTerminatorInFunction wrap_early_terminator_in_function = 83;
     TransformationMergeFunctionReturns merge_function_returns = 84;
     TransformationExpandVectorReduction expand_vector_reduction = 85;
-    TransformationSwapFunctionVariables 
+    TransformationSwapFunctionVariables swap_function_variables = 86;
     // Add additional option using the next available number.
   }
 }
@@ -2258,6 +2258,13 @@ message TransformationSwapConditionalBranchOperands {
   // Fresh result id for the OpLogicalNot instruction, used
   // to invert the guard.
   uint32 fresh_id = 2;
+
+}
+
+message TransformationSwapFunctionVariables {
+	// A transformation that swaps function variables 
+	
+	// set all constuctor values 
 
 }
 
