@@ -30,7 +30,6 @@ class FuzzerPassPermuteFunctionVariables  final: public FuzzerPass {
       FuzzerContext* fuzzer_context,
       protobufs::TransformationSequence* transformations);
 
-  ~FuzzerPassPermuteFunctionVariables() override;
 
   void Apply() override;
 };
