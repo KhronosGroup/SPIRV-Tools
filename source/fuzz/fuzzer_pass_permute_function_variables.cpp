@@ -27,8 +27,25 @@ FuzzerPassPermuteFunctionVariables::FuzzerPassPermuteFunctionVariables(
 FuzzerPassPermuteFunctionVariables::~FuzzerPassPermuteFunctionVariables() = default;
 
 void FuzzerPassPermuteFunctionVariables::Apply() {
+for (const auto& function : *GetIRContext()->module()) {
+    uint32_t function_id = function.result_id();
+
+    // enty point mean something like e.g. main(), so skip it. 
+    // because FunctionIsEntryPoint Returns |true| if one of entry points has function id |function_id|
+    if (fuzzerutil::FunctionIsEntryPoint(GetIRContext(), function_id)) {
+      continue;
+    }
+
+    if (!GetFuzzerContext()->ChoosePercentage(
+            GetFuzzerContext()->GetChanceOfPermuteFunctionVariables())) {
+      continue;
+    }
 
 
+
+    ApplyTransformation(TransformationSwapFunctionVariables(,,function_id));
+
+}
 
 }
  
