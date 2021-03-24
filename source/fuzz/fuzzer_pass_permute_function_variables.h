@@ -16,13 +16,14 @@
 #define SOURCE_FUZZ_FUZZER_PASS_PERMUTE_FUNCTION_VARIABLES_H_
 
 #include "source/fuzz/fuzzer_pass.h"
+#include "source/fuzz/transformation_swap_function_variables.h"
 
 namespace spvtools {
 namespace fuzz {
 
 // A pass that permute function variables.
 // this is final class so, can't be inherited. 
-class FuzzerPassPermuteFunctionVariables final: public FuzzerPass {
+class FuzzerPassPermuteFunctionVariables  final: public FuzzerPass {
  public:
   FuzzerPassPermuteFunctionVariables(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
