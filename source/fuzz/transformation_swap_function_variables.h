@@ -47,8 +47,6 @@ class TransformationSwapFunctionVariables : public Transformation
 
     private:
     protobufs::TransformationSwapFunctionVariables message_;
-    uint32_t var_id1,var_id2,function_id;
-    mutable bool _2varsExists = false;
 
 
 };
