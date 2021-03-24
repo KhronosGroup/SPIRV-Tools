@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Google LLC
+// Copyright (c) 2020 Mostafa Ashraf
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ namespace spvtools {
 namespace fuzz {
 
 // A pass that permute function variables.
-// this is final class so, can't be inherited. 
+// This is final class so, can't be inherited.
 class FuzzerPassPermuteFunctionVariables  final: public FuzzerPass {
  public:
   FuzzerPassPermuteFunctionVariables(

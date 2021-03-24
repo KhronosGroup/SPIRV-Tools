@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Google LLC
+// Copyright (c) 2021 Mostafa Ashraf
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ TransformationSwapFunctionVariables::TransformationSwapFunctionVariables(uint32_
 bool TransformationSwapFunctionVariables::IsApplicable(opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const{
 
-     // return vector of OpFunctionParameter
+     // Return vector of OpFunctionParameter
     bool _1stFlag = false ,_2ndFlag = false;
     auto functionVars = fuzzerutil::GetParameters(ir_context,this->funcion_id);
     for(opt::Instruction* var : functionVars)
