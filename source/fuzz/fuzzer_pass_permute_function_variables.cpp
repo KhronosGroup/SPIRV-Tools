@@ -22,10 +22,8 @@ FuzzerPassPermuteFunctionVariables::FuzzerPassPermuteFunctionVariables(
     FuzzerContext* fuzzer_context,
     protobufs::TransformationSequence* transformations)
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
-                 transformations) {} // here call parent constructor
+                 transformations) {} // Here we call parent constructor
 
-// use default destructor
-FuzzerPassPermuteFunctionVariables::~FuzzerPassPermuteFunctionVariables() = default;
 
 void FuzzerPassPermuteFunctionVariables::Apply() {
 for (const auto& function : *GetIRContext()->module()) {
