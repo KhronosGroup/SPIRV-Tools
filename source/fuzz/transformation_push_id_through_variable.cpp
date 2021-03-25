@@ -119,18 +119,18 @@ void TransformationPushIdThroughVariable::Apply(
     opt::Instruction* global_variable = fuzzerutil::AddGlobalVariable(
         ir_context, message_.variable_id(), pointer_type_id,
         SpvStorageClassPrivate, message_.initializer_id());
-    ir_context->get_def_use_mgr()->AnalyzeInstUse(global_variable);
+    ir_context->get_def_use_mgr()->AnalyzeInstDefUse(global_variable);
   } else {
-    auto function_id = ir_context
-                           ->get_instr_block(FindInstruction(
-                               message_.instruction_descriptor(), ir_context))
-                           ->GetParent()
-                           ->result_id();
+    opt::Function* function =
+        ir_context
+            ->get_instr_block(
+                FindInstruction(message_.instruction_descriptor(), ir_context))
+            ->GetParent();
     opt::Instruction* local_variable = fuzzerutil::AddLocalVariable(
-        ir_context, message_.variable_id(), pointer_type_id, function_id,
-        message_.initializer_id());
-    ir_context->get_def_use_mgr()->AnalyzeInstUse(local_variable);
-    ir_context->set_instr_block(local_variable, enclosing_block);
+        ir_context, message_.variable_id(), pointer_type_id,
+        function->result_id(), message_.initializer_id());
+    ir_context->get_def_use_mgr()->AnalyzeInstDefUse(local_variable);
+    ir_context->set_instr_block(local_variable, &*function->entry());
   }
 
   // First, insert the OpLoad instruction before |instruction_descriptor| and
@@ -148,9 +148,9 @@ void TransformationPushIdThroughVariable::Apply(
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {message_.variable_id()}},
                {SPV_OPERAND_TYPE_ID, {message_.value_id()}}})));
-  ir_context->get_def_use_mgr()->AnalyzeInstUse(store_instruction);
+  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(store_instruction);
   ir_context->set_instr_block(store_instruction, enclosing_block);
-  ir_context->get_def_use_mgr()->AnalyzeInstUse(load_instruction);
+  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(load_instruction);
   ir_context->set_instr_block(load_instruction, enclosing_block);
 
   // We should be able to create a synonym of |value_id| if it's not irrelevant.
