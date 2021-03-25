@@ -158,8 +158,8 @@ void FuzzerPassConstructComposites::RecordAvailableInstruction(
   if (type_id_to_available_instructions->count(inst->type_id()) == 0) {
     (*type_id_to_available_instructions)[inst->type_id()] = {};
   }
-  type_id_to_available_instructions->at(inst->type_id())
-      .push_back(inst->result_id());
+  (*type_id_to_available_instructions)[inst->type_id()].push_back(
+      inst->result_id());
 }
 
 std::vector<uint32_t>
@@ -187,8 +187,7 @@ FuzzerPassConstructComposites::FindComponentsToConstructArray(
   for (uint32_t index = 0; index < array_length; index++) {
     if (available_instructions == type_id_to_available_instructions.cend()) {
       // No suitable instructions are available, so use a zero constant
-      result.push_back(FindOrCreateZeroConstant(
-          element_type_id, GetFuzzerContext()->ChooseEven()));
+      result.push_back(FindOrCreateZeroConstant(element_type_id, true));
     } else {
       result.push_back(
           available_instructions->second[GetFuzzerContext()->RandomIndex(
@@ -218,8 +217,7 @@ FuzzerPassConstructComposites::FindComponentsToConstructMatrix(
        index < matrix_type_instruction.GetSingleWordInOperand(1); index++) {
     if (available_instructions == type_id_to_available_instructions.cend()) {
       // No suitable components are available, so use a zero constant.
-      result.push_back(FindOrCreateZeroConstant(
-          element_type_id, GetFuzzerContext()->ChooseEven()));
+      result.push_back(FindOrCreateZeroConstant(element_type_id, true));
     } else {
       result.push_back(
           available_instructions->second[GetFuzzerContext()->RandomIndex(
@@ -249,8 +247,7 @@ FuzzerPassConstructComposites::FindComponentsToConstructStruct(
     if (available_instructions == type_id_to_available_instructions.cend()) {
       // No suitable component is available for this element type, so use a zero
       // constant.
-      result.push_back(FindOrCreateZeroConstant(
-          element_type_id, GetFuzzerContext()->ChooseEven()));
+      result.push_back(FindOrCreateZeroConstant(element_type_id, true));
     } else {
       result.push_back(
           available_instructions->second[GetFuzzerContext()->RandomIndex(
@@ -310,9 +307,10 @@ FuzzerPassConstructComposites::FindComponentsToConstructVector(
   // (otherwise there will not be space left for a vec3).
 
   uint32_t vector_slots_used = 0;
-  // The instructions we will use to construct the vector, in no particular
-  // order at this stage.
-  std::vector<opt::Instruction*> instructions_to_use;
+
+  // The instructions result ids we will use to construct the vector, in no
+  // particular order at this stage.
+  std::vector<uint32_t> result;
 
   while (vector_slots_used < element_count) {
     std::vector<uint32_t> instructions_to_choose_from;
@@ -334,13 +332,12 @@ FuzzerPassConstructComposites::FindComponentsToConstructVector(
     // otherwise select one of the instructions at random.
     uint32_t id_of_instruction_to_use =
         instructions_to_choose_from.empty()
-            ? FindOrCreateZeroConstant(element_type_id,
-                                       GetFuzzerContext()->ChooseEven())
+            ? FindOrCreateZeroConstant(element_type_id, true)
             : instructions_to_choose_from[GetFuzzerContext()->RandomIndex(
                   instructions_to_choose_from)];
     opt::Instruction* instruction_to_use =
         GetIRContext()->get_def_use_mgr()->GetDef(id_of_instruction_to_use);
-    instructions_to_use.push_back(instruction_to_use);
+    result.push_back(instruction_to_use->result_id());
     auto chosen_type =
         GetIRContext()->get_type_mgr()->GetType(instruction_to_use->type_id());
     if (chosen_type->AsVector()) {
@@ -356,14 +353,7 @@ FuzzerPassConstructComposites::FindComponentsToConstructVector(
   }
   assert(vector_slots_used == element_count);
 
-  std::vector<uint32_t> result;
-  std::vector<uint32_t> operands;
-  while (!instructions_to_use.empty()) {
-    auto index = GetFuzzerContext()->RandomIndex(instructions_to_use);
-    result.push_back(instructions_to_use[index]->result_id());
-    instructions_to_use.erase(instructions_to_use.begin() + index);
-  }
-  assert(result.size() > 1);
+  GetFuzzerContext()->Shuffle(&result);
   return result;
 }
 

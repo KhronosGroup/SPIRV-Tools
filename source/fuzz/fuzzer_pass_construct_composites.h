@@ -15,7 +15,7 @@
 #ifndef SOURCE_FUZZ_FUZZER_PASS_CONSTRUCT_COMPOSITES_H_
 #define SOURCE_FUZZ_FUZZER_PASS_CONSTRUCT_COMPOSITES_H_
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 
 #include "source/fuzz/fuzzer_pass.h"
@@ -37,7 +37,8 @@ class FuzzerPassConstructComposites : public FuzzerPass {
 
  private:
   // Used to map a type id to the ids of relevant instructions of the type.
-  typedef std::map<uint32_t, std::vector<uint32_t>> TypeIdToInstructions;
+  using TypeIdToInstructions =
+      std::unordered_map<uint32_t, std::vector<uint32_t>>;
 
   // Considers all instructions that are available at |inst| - instructions
   // whose results could be packed into a composite - and updates
