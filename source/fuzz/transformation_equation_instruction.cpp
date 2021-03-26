@@ -84,18 +84,16 @@ void TransformationEquationInstruction::Apply(
     rhs_id.push_back(id);
   }
 
-  auto new_instruction = MakeUnique<opt::Instruction>(
-      ir_context, static_cast<SpvOp>(message_.opcode()),
-      MaybeGetResultTypeId(ir_context), message_.fresh_id(),
-      std::move(in_operands));
-  auto new_instruction_ptr = new_instruction.get();
-
   auto insert_before =
       FindInstruction(message_.instruction_to_insert_before(), ir_context);
-  insert_before->InsertBefore(std::move(new_instruction));
+  opt::Instruction* new_instruction =
+      insert_before->InsertBefore(MakeUnique<opt::Instruction>(
+          ir_context, static_cast<SpvOp>(message_.opcode()),
+          MaybeGetResultTypeId(ir_context), message_.fresh_id(),
+          std::move(in_operands)));
 
-  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);
-  ir_context->set_instr_block(new_instruction_ptr,
+  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction);
+  ir_context->set_instr_block(new_instruction,
                               ir_context->get_instr_block(insert_before));
 
   // Add an equation fact as long as the result id is not irrelevant (it could
