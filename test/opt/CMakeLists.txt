@@ -57,6 +57,7 @@ add_spvtools_unittest(TARGET opt
        inst_debug_printf_test.cpp
        instruction_list_test.cpp
        instruction_test.cpp
+       interp_fixup_test.cpp
        ir_builder.cpp
        ir_context_test.cpp
        ir_loader_test.cpp
