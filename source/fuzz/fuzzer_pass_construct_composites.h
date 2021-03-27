@@ -40,14 +40,6 @@ class FuzzerPassConstructComposites : public FuzzerPass {
   using TypeIdToInstructions =
       std::unordered_map<uint32_t, std::vector<uint32_t>>;
 
-  // Considers all instructions that are available at |inst| - instructions
-  // whose results could be packed into a composite - and updates
-  // |type_id_to_available_instructions| so that each such instruction is
-  // associated with its the id of its result type.
-  void RecordAvailableInstruction(
-      opt::Instruction* inst,
-      TypeIdToInstructions* type_id_to_available_instructions);
-
   // Requires that |array_type_instruction| has opcode OpTypeArray.
   // Attempts to find suitable instruction result ids from the values of
   // |type_id_to_available_instructions| that would allow a composite of type
