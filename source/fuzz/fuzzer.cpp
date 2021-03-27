@@ -185,6 +185,7 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
     MaybeAddRepeatedPass<FuzzerPassOutlineFunctions>(&pass_instances_);
     MaybeAddRepeatedPass<FuzzerPassPermuteBlocks>(&pass_instances_);
     MaybeAddRepeatedPass<FuzzerPassPermuteFunctionParameters>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassPermuteFunctionVariables>(&pass_instances_);
     MaybeAddRepeatedPass<FuzzerPassPermuteInstructions>(&pass_instances_);
     MaybeAddRepeatedPass<FuzzerPassPropagateInstructionsDown>(&pass_instances_);
     MaybeAddRepeatedPass<FuzzerPassPropagateInstructionsUp>(&pass_instances_);
