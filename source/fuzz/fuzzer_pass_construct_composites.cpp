@@ -97,9 +97,10 @@ void FuzzerPassConstructComposites::Apply() {
         for (uint32_t available_instruction_index = 0;
              available_instruction_index < available_instructions.size();
              available_instruction_index++) {
-          RecordAvailableInstruction(
-              available_instructions[available_instruction_index],
-              &type_id_to_available_instructions);
+          opt::Instruction* inst =
+              available_instructions[available_instruction_index];
+          type_id_to_available_instructions[inst->type_id()].push_back(
+              inst->result_id());
         }
 
         // At this point, |composite_type_ids| captures all the composite types
@@ -150,16 +151,6 @@ void FuzzerPassConstructComposites::Apply() {
             chosen_composite_type, constructor_arguments,
             instruction_descriptor, GetFuzzerContext()->GetFreshId()));
       });
-}
-
-void FuzzerPassConstructComposites::RecordAvailableInstruction(
-    opt::Instruction* inst,
-    TypeIdToInstructions* type_id_to_available_instructions) {
-  if (type_id_to_available_instructions->count(inst->type_id()) == 0) {
-    (*type_id_to_available_instructions)[inst->type_id()] = {};
-  }
-  (*type_id_to_available_instructions)[inst->type_id()].push_back(
-      inst->result_id());
 }
 
 std::vector<uint32_t>
