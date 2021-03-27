@@ -21,9 +21,8 @@ namespace fuzz {
 
 TransformationReplaceBranchFromDeadBlockWithExit::
     TransformationReplaceBranchFromDeadBlockWithExit(
-        const spvtools::fuzz::protobufs::
-            TransformationReplaceBranchFromDeadBlockWithExit& message)
-    : message_(message) {}
+        protobufs::TransformationReplaceBranchFromDeadBlockWithExit message)
+    : message_(std::move(message)) {}
 
 TransformationReplaceBranchFromDeadBlockWithExit::
     TransformationReplaceBranchFromDeadBlockWithExit(uint32_t block_id,

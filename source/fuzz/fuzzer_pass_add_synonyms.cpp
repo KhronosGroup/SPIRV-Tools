@@ -29,8 +29,6 @@ FuzzerPassAddSynonyms::FuzzerPassAddSynonyms(
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassAddSynonyms::~FuzzerPassAddSynonyms() = default;
-
 void FuzzerPassAddSynonyms::Apply() {
   ForEachInstructionWithInstructionDescriptor(
       [this](opt::Function* function, opt::BasicBlock* block,

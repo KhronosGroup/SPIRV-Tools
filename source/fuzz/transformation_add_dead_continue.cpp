@@ -20,8 +20,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationAddDeadContinue::TransformationAddDeadContinue(
-    const spvtools::fuzz::protobufs::TransformationAddDeadContinue& message)
-    : message_(message) {}
+    protobufs::TransformationAddDeadContinue message)
+    : message_(std::move(message)) {}
 
 TransformationAddDeadContinue::TransformationAddDeadContinue(
     uint32_t from_block, bool continue_condition_value,

@@ -20,8 +20,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationAddTypeBoolean::TransformationAddTypeBoolean(
-    const spvtools::fuzz::protobufs::TransformationAddTypeBoolean& message)
-    : message_(message) {}
+    protobufs::TransformationAddTypeBoolean message)
+    : message_(std::move(message)) {}
 
 TransformationAddTypeBoolean::TransformationAddTypeBoolean(uint32_t fresh_id) {
   message_.set_fresh_id(fresh_id);

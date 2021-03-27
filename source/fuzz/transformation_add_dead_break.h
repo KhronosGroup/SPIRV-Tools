@@ -28,7 +28,7 @@ namespace fuzz {
 class TransformationAddDeadBreak : public Transformation {
  public:
   explicit TransformationAddDeadBreak(
-      const protobufs::TransformationAddDeadBreak& message);
+      protobufs::TransformationAddDeadBreak message);
 
   TransformationAddDeadBreak(uint32_t from_block, uint32_t to_block,
                              bool break_condition_value,

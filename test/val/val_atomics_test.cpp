@@ -95,6 +95,7 @@ OpFunctionEnd)";
 std::string GenerateShaderCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "",
+    const std::string& extra_defs = "",
     const std::string& memory_model = "GLSL450") {
   const std::string execution = R"(
 OpEntryPoint Fragment %main "main"
@@ -113,7 +114,8 @@ OpExecutionMode %main OriginUpperLeft
 %s64_var = OpVariable %s64_ptr Workgroup
 )";
   return GenerateShaderCodeImpl(
-      body, "OpCapability Int64\n" + capabilities_and_extensions, defintions,
+      body, "OpCapability Int64\n" + capabilities_and_extensions,
+      defintions + extra_defs,
       memory_model, execution);
 }
 
@@ -304,6 +306,32 @@ TEST_F(ValidateAtomics, AtomicAddFloatVulkan) {
                 "AtomicFloat32AddEXT AtomicFloat64AddEXT"));
 }
 
+TEST_F(ValidateAtomics, AtomicMinFloatVulkan) {
+  const std::string body = R"(
+%val1 = OpAtomicFMinEXT %f32 %f32_var %device %relaxed %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Opcode AtomicFMinEXT requires one of these capabilities: "
+                "AtomicFloat32MinMaxEXT AtomicFloat64MinMaxEXT AtomicFloat16MinMaxEXT"));
+}
+
+TEST_F(ValidateAtomics, AtomicMaxFloatVulkan) {
+  const std::string body = R"(
+%val1 = OpAtomicFMaxEXT %f32 %f32_var %device %relaxed %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Opcode AtomicFMaxEXT requires one of these capabilities: "
+                "AtomicFloat32MinMaxEXT AtomicFloat64MinMaxEXT AtomicFloat16MinMaxEXT"));
+}
+
 TEST_F(ValidateAtomics, AtomicAddFloatVulkanWrongType1) {
   const std::string body = R"(
 %val1 = OpAtomicFAddEXT %f32vec4 %f32vec4_var %device %relaxed %f32_1
@@ -317,6 +345,38 @@ OpExtension "SPV_EXT_shader_atomic_float_add"
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("AtomicFAddEXT: "
+                        "expected Result Type to be float scalar type"));
+}
+
+TEST_F(ValidateAtomics, AtomicMinFloatVulkanWrongType1) {
+  const std::string body = R"(
+%val1 = OpAtomicFMinEXT %f32vec4 %f32vec4_var %device %relaxed %f32_1
+)";
+  const std::string extra = R"(
+OpCapability AtomicFloat32MinMaxEXT
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicFMinEXT: "
+                        "expected Result Type to be float scalar type"));
+}
+
+TEST_F(ValidateAtomics, AtomicMaxFloatVulkanWrongType1) {
+  const std::string body = R"(
+%val1 = OpAtomicFMaxEXT %f32vec4 %f32vec4_var %device %relaxed %f32_1
+)";
+  const std::string extra = R"(
+OpCapability AtomicFloat32MinMaxEXT
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicFMaxEXT: "
                         "expected Result Type to be float scalar type"));
 }
 
@@ -336,6 +396,38 @@ OpExtension "SPV_EXT_shader_atomic_float_add"
                         "expected Result Type to be float scalar type"));
 }
 
+TEST_F(ValidateAtomics, AtomicMinFloatVulkanWrongType2) {
+  const std::string body = R"(
+%val1 = OpAtomicFMinEXT %u32 %u32_var %device %relaxed %u32_1
+)";
+  const std::string extra = R"(
+OpCapability AtomicFloat32MinMaxEXT
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicFMinEXT: "
+                        "expected Result Type to be float scalar type"));
+}
+
+TEST_F(ValidateAtomics, AtomicMaxFloatVulkanWrongType2) {
+  const std::string body = R"(
+%val1 = OpAtomicFMaxEXT %u32 %u32_var %device %relaxed %u32_1
+)";
+  const std::string extra = R"(
+OpCapability AtomicFloat32MinMaxEXT
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicFMaxEXT: "
+                        "expected Result Type to be float scalar type"));
+}
+
 TEST_F(ValidateAtomics, AtomicAddFloatVulkanWrongType3) {
   const std::string body = R"(
 %val1 = OpAtomicFAddEXT %u64 %u64_var %device %relaxed %u64_1
@@ -349,6 +441,38 @@ OpExtension "SPV_EXT_shader_atomic_float_add"
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("AtomicFAddEXT: "
+                        "expected Result Type to be float scalar type"));
+}
+
+TEST_F(ValidateAtomics, AtomicMinFloatVulkanWrongType3) {
+  const std::string body = R"(
+%val1 = OpAtomicFMinEXT %u64 %u64_var %device %relaxed %u64_1
+)";
+  const std::string extra = R"(
+OpCapability AtomicFloat32MinMaxEXT
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicFMinEXT: "
+                        "expected Result Type to be float scalar type"));
+}
+
+TEST_F(ValidateAtomics, AtomicMaxFloatVulkanWrongType3) {
+  const std::string body = R"(
+%val1 = OpAtomicFMaxEXT %u64 %u64_var %device %relaxed %u64_1
+)";
+  const std::string extra = R"(
+OpCapability AtomicFloat32MinMaxEXT
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicFMaxEXT: "
                         "expected Result Type to be float scalar type"));
 }
 
@@ -368,6 +492,38 @@ OpExtension "SPV_EXT_shader_atomic_float_add"
                         "require the AtomicFloat32AddEXT capability"));
 }
 
+TEST_F(ValidateAtomics, AtomicMinFloatVulkanWrongCapability) {
+  const std::string body = R"(
+%val1 = OpAtomicFMinEXT %f32 %f32_var %device %relaxed %f32_1
+)";
+  const std::string extra = R"(
+OpCapability AtomicFloat64MinMaxEXT
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicFMinEXT: float min/max atomics "
+                        "require the AtomicFloat32MinMaxEXT capability"));
+}
+
+TEST_F(ValidateAtomics, AtomicMaxFloatVulkanWrongCapability) {
+  const std::string body = R"(
+%val1 = OpAtomicFMaxEXT %f32 %f32_var %device %relaxed %f32_1
+)";
+  const std::string extra = R"(
+OpCapability AtomicFloat64MinMaxEXT
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("AtomicFMaxEXT: float min/max atomics "
+                        "require the AtomicFloat32MinMaxEXT capability"));
+}
+
 TEST_F(ValidateAtomics, AtomicAddFloatVulkanSuccess) {
   const std::string body = R"(
 %val1 = OpAtomicFAddEXT %f32 %f32_var %device %relaxed %f32_1
@@ -379,6 +535,112 @@ OpExtension "SPV_EXT_shader_atomic_float_add"
 )";
 
   CompileSuccessfully(GenerateShaderCode(body, extra), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateAtomics, AtomicMinFloat16VulkanSuccess) {
+  const std::string defs = R"(
+%f16 = OpTypeFloat 16
+%f16_1 = OpConstant %f16 1
+%f16_ptr = OpTypePointer Workgroup %f16
+%f16_var = OpVariable %f16_ptr Workgroup
+)";
+  const std::string body = R"(
+%val1 = OpAtomicFMinEXT %f16 %f16_var %device %relaxed %f16_1
+)";
+  const std::string extra = R"(
+OpCapability Float16
+OpCapability AtomicFloat16MinMaxEXT
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, defs), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateAtomics, AtomicMaxFloat16VulkanSuccess) {
+  const std::string defs = R"(
+%f16 = OpTypeFloat 16
+%f16_1 = OpConstant %f16 1
+%f16_ptr = OpTypePointer Workgroup %f16
+%f16_var = OpVariable %f16_ptr Workgroup
+)";
+  const std::string body = R"(
+%val1 = OpAtomicFMaxEXT %f16 %f16_var %device %relaxed %f16_1
+)";
+  const std::string extra = R"(
+OpCapability Float16
+OpCapability AtomicFloat16MinMaxEXT
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, defs), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateAtomics, AtomicMinFloat32VulkanSuccess) {
+  const std::string body = R"(
+%val1 = OpAtomicFMinEXT %f32 %f32_var %device %relaxed %f32_1
+)";
+  const std::string extra = R"(
+OpCapability AtomicFloat32MinMaxEXT
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateAtomics, AtomicMaxFloat32VulkanSuccess) {
+  const std::string body = R"(
+%val1 = OpAtomicFMaxEXT %f32 %f32_var %device %relaxed %f32_1
+)";
+  const std::string extra = R"(
+OpCapability AtomicFloat32MinMaxEXT
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateAtomics, AtomicMinFloat64VulkanSuccess) {
+  const std::string defs = R"(
+%f64 = OpTypeFloat 64
+%f64_1 = OpConstant %f64 1
+%f64_ptr = OpTypePointer Workgroup %f64
+%f64_var = OpVariable %f64_ptr Workgroup
+)";
+  const std::string body = R"(
+%val1 = OpAtomicFMinEXT %f64 %f64_var %device %relaxed %f64_1
+)";
+  const std::string extra = R"(
+OpCapability Float64
+OpCapability AtomicFloat64MinMaxEXT
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, defs), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateAtomics, AtomicMaxFloat64VulkanSuccess) {
+  const std::string defs = R"(
+%f64 = OpTypeFloat 64
+%f64_1 = OpConstant %f64 1
+%f64_ptr = OpTypePointer Workgroup %f64
+%f64_var = OpVariable %f64_ptr Workgroup
+)";
+  const std::string body = R"(
+%val1 = OpAtomicFMaxEXT %f64 %f64_var %device %relaxed %f64_1
+)";
+  const std::string extra = R"(
+OpCapability Float64
+OpCapability AtomicFloat64MinMaxEXT
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, defs), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -1479,7 +1741,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1498,7 +1760,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1518,7 +1780,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1538,7 +1800,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1558,7 +1820,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1578,7 +1840,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1598,7 +1860,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1617,7 +1879,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1636,7 +1898,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1655,7 +1917,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1674,7 +1936,28 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
+                      SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("SequentiallyConsistent memory semantics cannot be "
+                        "used with the VulkanKHR memory model."));
+}
+
+TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicFMinEXT) {
+  const std::string body = R"(
+%max = OpAtomicFMinEXT %f32 %f32_var %workgroup %sequentially_consistent %f32_0
+)";
+
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpCapability AtomicFloat32MinMaxEXT
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1693,7 +1976,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1712,7 +1995,28 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
+                      SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("SequentiallyConsistent memory semantics cannot be "
+                        "used with the VulkanKHR memory model."));
+}
+
+TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicFMaxEXT) {
+  const std::string body = R"(
+%max = OpAtomicFMaxEXT %f32 %f32_var %workgroup %sequentially_consistent %f32_0
+)";
+
+  const std::string extra = R"(
+OpCapability VulkanMemoryModelKHR
+OpCapability AtomicFloat32MinMaxEXT
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpExtension "SPV_EXT_shader_atomic_float_min_max"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1731,7 +2035,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1750,7 +2054,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1769,7 +2073,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -1993,7 +2297,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
@@ -2121,7 +2425,7 @@ TEST_F(ValidateAtomics, VulkanMemoryModelDeviceScopeBad) {
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
@@ -2141,7 +2445,7 @@ OpCapability VulkanMemoryModelDeviceScopeKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }

@@ -105,6 +105,23 @@ TEST(TransformationPermutePhiOperandsTest, BasicTest) {
       transformation.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 
+  // Check that the def-use manager knows that the phi instruction's ids have
+  // been permuted.
+  std::vector<std::pair<uint32_t, uint32_t>> phi_operand_to_new_operand_index =
+      {{20, 4}, {16, 5}, {24, 2}, {21, 3}};
+  for (std::pair<uint32_t, uint32_t>& entry :
+       phi_operand_to_new_operand_index) {
+    context->get_def_use_mgr()->WhileEachUse(
+        entry.first,
+        [&entry](opt::Instruction* inst, uint32_t operand_index) -> bool {
+          if (inst->result_id() == 25) {
+            EXPECT_EQ(entry.second, operand_index);
+            return false;
+          }
+          return true;
+        });
+  }
+
   std::string after_transformation = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
