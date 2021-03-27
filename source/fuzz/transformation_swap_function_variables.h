@@ -31,8 +31,8 @@ class TransformationSwapFunctionVariables : public Transformation
     explicit TransformationSwapFunctionVariables(
       const protobufs::TransformationSwapFunctionVariables& message);
 
-    TransformationSwapFunctionVariables(uint32_t var_id1,
-                                    uint32_t var_id2,uint32_t function_id);
+    TransformationSwapFunctionVariables(std::pair<uint32_t,uint32_t>Pair_Id,
+                    uint32_t function_id,uint32_t fresh_id);
 
     bool IsApplicable(
       opt::IRContext* ir_context,
