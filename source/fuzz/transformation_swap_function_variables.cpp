@@ -25,64 +25,74 @@ TransformationSwapFunctionVariables::
             TransformationSwapFunctionVariables& message)
     : message_(message) {}
 
-TransformationSwapFunctionVariables::TransformationSwapFunctionVariables(uint32_t var_id1,
-                                    uint32_t var_id2,uint32_t function_id){
-        this->var_id1 = var_id1;
-        this->var_id2 = var_id2;
-        this->function_id = function_id
-
+TransformationSwapFunctionVariables::TransformationSwapFunctionVariables(
+                    std::pair<uint32_t,uint32_t>Pair_Id,
+                    uint32_t function_id,
+                    uint32_t fresh_id){
+    message_.set_function_id(funcion_id);
+    message_.set_fresh_id(fresh_id);
+    protobufs::UInt32Pair pair;
+    pair.set_first(Pair_Id.first);
+    pair.set_second(Pair_Id.second);
+    message_.set_pair(pair);
 }
 
 bool TransformationSwapFunctionVariables::IsApplicable(opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const{
-
-     // Return vector of OpFunctionParameter
-    bool _1stFlag = false ,_2ndFlag = false;
-    auto functionVars = fuzzerutil::GetParameters(ir_context,this->funcion_id);
-    for(opt::Instruction* var : functionVars)
+          // Check that function exists
+    const auto* function =
+      fuzzerutil::FindFunction(ir_context, message_.function_id());
+    // Here we check if funciton exists and check for it's entry point 
+    //  FunctionIsEntryPoint -> Returns |true| if one of entry points has function id |function_id|
+    if (!function || fuzzerutil::FunctionIsEntryPoint(ir_context, function->result_id())) {
+    return false;
+    }
+    protobufs::UInt32Pair IdPair = message_.get_pair();
+    auto _1stBlock = function->entry().get();
+    bool _1stID = false, _2ndID = false
+    for(auto BlockItrator = _1stBlock->begin();BlockItrator!=_1stBlock->end();BlockItrator++)
     {
-        auto id = var->result_id();
-        if(id  == this->var_id1)
-            _1stFlag = true;
-        else if(id == this->var_id2)
-            _2ndFlag = true;
-        if(_1stFlag&&_2ndFlag)
+        Instruction* Instuction = &(*BlockItrator);
+        uint32_t _id_ = Instuction->result_id();
+        _1stID = (_id_ == IdPair.first)? true:false;
+        _2ndID = (_id_ == IdPair.second)? true:false;
+        if(_1stID && _2ndID)
             return true;
     }
-    // mutable var
-    this->_2varsExists  = true
     return false;
 }
 
 
 void TransformationSwapFunctionVariables::Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const {
+    // Check exists of functions
+     auto* function = fuzzerutil::FindFunction(ir_context, message_.function_id());
+    assert(function && "function doesn't exists");
+    protobufs::UInt32Pair IdPair = message_.get_pair();
 
-    if(this->_2varsExists)
+    auto FBlock = function->entry().get();
+    for(auto BlockItrator = FBlock->begin();
+    uint32_t _1stIndex=-1,_2ndIndex=-1;
+    uint32_t i = 0;
+    BlockItrator!=FBlock->end() && BlockItrator->opcode() == SpvOpVariable
+    ;BlockItrator++)
     {
-        auto* function = fuzzerutil::FindFunction(ir_context, message_.function_id());
-        function->ForEachParam(
-            [this->var_id1,this->var_id2](const opt::Instruction* param){
-                 if(param->result_id()==this->var_id1)
-                 {
-                    //  here need to swap 2vars
-                 }
-            }
-        );
+      Instruction* Instuction = &(*BlockItrator);
+      auto _id_ = Instuction->result_id()
+      _1stIndex = (_id_ == IdPair.first)? i:-1;
+      _2ndIndex = (_id_ == IdPair.second)? i:-1;
+      i++;
     }
 
-    assert("one of the variables doesn't exists");
-
+    std::swap(FBlock[_1stIndex],FBlock[_2ndIndex]);
 }
 
 
 protobufs::Transformation TransformationSwapFunctionVariables::ToMessage() const {
 
 protobufs::Transformation result;
-// there is line here !!
-  *result.transformation_swap_function_variables() = message_; // !!
+  *result.transformation_swap_function_variables() = message_;
   return result;
-
 }
 
 std::unordered_set<uint32_t> TransformationSwapFunctionVariables::GetFreshIds()
