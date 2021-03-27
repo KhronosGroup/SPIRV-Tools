@@ -2265,12 +2265,12 @@ message TransformationSwapFunctionVariables {
 	// A transformation that swaps function variables 
 	// set all second constuctor values 
 	
-	// id of first variable to be stored
-	uint32 var_id1 = 1;
-	// id of second variable to be stored
-	uint32 var_id2 = 2;
+	// Pair of two variable ids 
+	UInt32Pair _2IDs = 1;
 	// function id to be stored
-	uint32 function_id = 1;
+	uint32 function_id = 2;
+	// fresh process id
+	uint32 fresh_id = 3 
 
 }
 
