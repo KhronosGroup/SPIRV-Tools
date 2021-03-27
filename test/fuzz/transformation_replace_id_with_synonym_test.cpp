@@ -303,10 +303,18 @@ TEST(TransformationReplaceIdWithSynonymTest, LegalTransformations) {
   auto global_constant_synonym = TransformationReplaceIdWithSynonym(
       MakeIdUseDescriptor(19, MakeInstructionDescriptor(47, SpvOpStore, 0), 1),
       210);
+  uint32_t num_uses_of_original_id_before_replacement =
+      context->get_def_use_mgr()->NumUses(19);
+  uint32_t num_uses_of_synonym_before_replacement =
+      context->get_def_use_mgr()->NumUses(210);
   ASSERT_TRUE(global_constant_synonym.IsApplicable(context.get(),
                                                    transformation_context));
   ApplyAndCheckFreshIds(global_constant_synonym, context.get(),
                         &transformation_context);
+  ASSERT_EQ(num_uses_of_original_id_before_replacement - 1,
+            context->get_def_use_mgr()->NumUses(19));
+  ASSERT_EQ(num_uses_of_synonym_before_replacement + 1,
+            context->get_def_use_mgr()->NumUses(210));
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
 

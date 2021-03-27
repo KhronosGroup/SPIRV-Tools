@@ -103,15 +103,27 @@ TEST(TransformationAddTypeFloatTest, Apply) {
       MakeUnique<FactManager>(context.get()), validator_options);
   // Adds 16-bit float type.
   auto transformation = TransformationAddTypeFloat(6, 16);
+  ASSERT_EQ(nullptr, context->get_def_use_mgr()->GetDef(6));
+  ASSERT_EQ(nullptr, context->get_type_mgr()->GetType(6));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
+  ASSERT_EQ(SpvOpTypeFloat, context->get_def_use_mgr()->GetDef(6)->opcode());
+  ASSERT_NE(nullptr, context->get_type_mgr()->GetType(6)->AsFloat());
 
   // Adds 32-bit float type.
   transformation = TransformationAddTypeFloat(7, 32);
+  ASSERT_EQ(nullptr, context->get_def_use_mgr()->GetDef(7));
+  ASSERT_EQ(nullptr, context->get_type_mgr()->GetType(7));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
+  ASSERT_EQ(SpvOpTypeFloat, context->get_def_use_mgr()->GetDef(7)->opcode());
+  ASSERT_NE(nullptr, context->get_type_mgr()->GetType(7)->AsFloat());
 
   // Adds 64-bit float type.
   transformation = TransformationAddTypeFloat(8, 64);
+  ASSERT_EQ(nullptr, context->get_def_use_mgr()->GetDef(8));
+  ASSERT_EQ(nullptr, context->get_type_mgr()->GetType(8));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
+  ASSERT_EQ(SpvOpTypeFloat, context->get_def_use_mgr()->GetDef(8)->opcode());
+  ASSERT_NE(nullptr, context->get_type_mgr()->GetType(8)->AsFloat());
 
   std::string variant_shader = R"(
          OpCapability Shader

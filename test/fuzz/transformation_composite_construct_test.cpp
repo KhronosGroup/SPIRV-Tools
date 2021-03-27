@@ -146,8 +146,19 @@ TEST(TransformationCompositeConstructTest, ConstructArrays) {
                                                     transformation_context));
   ASSERT_FALSE(make_vec2_array_length_3_bad.IsApplicable(
       context.get(), transformation_context));
+  ASSERT_EQ(nullptr, context->get_def_use_mgr()->GetDef(200));
+  ASSERT_EQ(nullptr, context->get_instr_block(200));
+  uint32_t num_uses_of_41_before = context->get_def_use_mgr()->NumUses(41);
+  uint32_t num_uses_of_45_before = context->get_def_use_mgr()->NumUses(45);
+  uint32_t num_uses_of_27_before = context->get_def_use_mgr()->NumUses(27);
   ApplyAndCheckFreshIds(make_vec2_array_length_3, context.get(),
                         &transformation_context);
+  ASSERT_EQ(SpvOpCompositeConstruct,
+            context->get_def_use_mgr()->GetDef(200)->opcode());
+  ASSERT_EQ(34, context->get_instr_block(200)->id());
+  ASSERT_EQ(num_uses_of_41_before + 1, context->get_def_use_mgr()->NumUses(41));
+  ASSERT_EQ(num_uses_of_45_before + 1, context->get_def_use_mgr()->NumUses(45));
+  ASSERT_EQ(num_uses_of_27_before + 1, context->get_def_use_mgr()->NumUses(27));
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(

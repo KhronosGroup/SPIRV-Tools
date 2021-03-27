@@ -30,8 +30,6 @@ FuzzerPassAddCompositeExtract::FuzzerPassAddCompositeExtract(
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassAddCompositeExtract::~FuzzerPassAddCompositeExtract() = default;
-
 void FuzzerPassAddCompositeExtract::Apply() {
   std::vector<const protobufs::DataDescriptor*> composite_synonyms;
   for (const auto* dd :

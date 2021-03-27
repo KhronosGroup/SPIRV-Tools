@@ -30,8 +30,6 @@ FuzzerPassMergeFunctionReturns::FuzzerPassMergeFunctionReturns(
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassMergeFunctionReturns::~FuzzerPassMergeFunctionReturns() = default;
-
 void FuzzerPassMergeFunctionReturns::Apply() {
   // The pass might add new functions to the module (due to wrapping early
   // terminator instructions in function calls), so we record the functions that

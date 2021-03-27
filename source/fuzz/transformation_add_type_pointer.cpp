@@ -20,8 +20,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationAddTypePointer::TransformationAddTypePointer(
-    const spvtools::fuzz::protobufs::TransformationAddTypePointer& message)
-    : message_(message) {}
+    protobufs::TransformationAddTypePointer message)
+    : message_(std::move(message)) {}
 
 TransformationAddTypePointer::TransformationAddTypePointer(
     uint32_t fresh_id, SpvStorageClass storage_class, uint32_t base_type_id) {

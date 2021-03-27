@@ -27,9 +27,6 @@ FuzzerPassPropagateInstructionsDown::FuzzerPassPropagateInstructionsDown(
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
-FuzzerPassPropagateInstructionsDown::~FuzzerPassPropagateInstructionsDown() =
-    default;
-
 void FuzzerPassPropagateInstructionsDown::Apply() {
   for (const auto& function : *GetIRContext()->module()) {
     std::vector<const opt::BasicBlock*> reachable_blocks;
