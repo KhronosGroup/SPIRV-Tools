@@ -13,9 +13,10 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_permute_function_variables.h"
+
+#include <algorithm>
 #include <numeric>
-#include<vector>
-#include<algorithm>
+#include <vector>
 
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_util.h"
@@ -29,76 +30,59 @@ FuzzerPassPermuteFunctionVariables::FuzzerPassPermuteFunctionVariables(
     FuzzerContext* fuzzer_context,
     protobufs::TransformationSequence* transformations)
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
-                 transformations) {} // Here we call parent constructor
-
+                 transformations) {}  // Here we call parent constructor
 
 void FuzzerPassPermuteFunctionVariables::Apply() {
-  // here I want to loop over all functions and for each one,
-  // Then deterimne number of OpVariable and swap them.
-for (auto& Func : *GetIRContext()->module()) {
-    uint32_t FunctionId = Func.result_id();
-
-    // Entry point mean something like e.g. main(), so skip it.
-    // Need to be consider a "main()" function also, so commented down section.
-    // if (fuzzerutil::FunctionIsEntryPoint(GetIRContext(), function_id)) {
-    //   continue;
-    // }
+  // Permuting OpVariable instructions in each function
+  for (auto& function : *GetIRContext()->module()) {
+    uint32_t function_id = function.result_id();
 
     if (!GetFuzzerContext()->ChoosePercentage(
             GetFuzzerContext()->GetChanceOfPermuteFunctionVariables())) {
       continue;
     }
-    // IDs storage section
+    // Ids storage section
     // entry() return unique_ptr of "BasicBlock"
-    auto FBlock = Func->entry().get();
+    auto first_block = function->entry().get();
 
-    // iterate over block
-    std::std::vector<Instruction*> VarsPtr;
-    std::vector<uint32_t> VarsIDs;
-    for(auto BlockItrator = FBlock->begin();BlockItrator!=FBlock->end();BlockItrator++)
-    {
-      if(BlockItrator->opcode() == SpvOpVariable)
-      {
-
-        Instruction* Instuction = &(*BlockItrator);
-        VarsPtr.push_back(Instuction)
-        VarsIDs.push_back(Instuction->result_id());
-      }
-      else{
-        continue;
+    std::vector<opt::Instruction> variables_ptr;
+    std::vector<uint32_t> variables_id;
+    for (auto& instruction : *first_block) {
+      if (instruction.opcode() == SpvOpVariable) {
+        variables_ptr.push_back(instruction);
+        variables_id.push_back(instruction->result_id());
       }
     }
 
-    uint32_t VarsSize = VarsIDs.size()
+    uint32_t arg_size = variables_id.size();
 
     // permutation section
-    std::vector<uint32_t> permutation(VarsSize); // 8 0 -> 7
-    // Below function fill from ZEROs -->> Vector len-1
-    std::iota(permutation.begin(), permutation.end(),0);
+    // Create a vector, fill it with [0, n-1] values and shuffle it
+    std::vector<uint32_t> permutation(arg_size);
+    std::iota(permutation.begin(), permutation.end(), 0);
     GetFuzzerContext()->Shuffle(&permutation);
 
-    std::vector<std::pair<uint32_t,uint32_t>> Pair_Ids;
-    /* This concept using in DES cipher
+    std::vector<std::pair<uint32_t, uint32_t>> variables_pair_id;
+    /*
+    // Cycle notation, Apply product of transpositions because
+    // Every Permutation can be written as a product of transpositions and
+    // Transpositions Is special case of Permutation but between two numbers.
+    // Mathematical formula I've followed
     // (a1,a2,...,as)=(as,as−1)∘(as,as−2)∘...∘(as,a2)∘(as,a1)
-    // Above formula is cycle, Apply product of transpositions
-    // Every Permutation can be written as a product of transpositions and transpositions
-    // Is special case of Permutation but between two numbers
-    // start
     */
-    for(uint32_t _Lindex= VarsSize-2; _Lindex > 0 ;_Lindex--)
-      Pair_Ids.push_back(std::make_pair(VarsSize-1,_Lindex))
-    // end
-
-    //  Apply Transformation
-    for(std::pair<uint32_t,uint32_t> Pair_Id:Pair_Ids){
-      ApplyTransformation(TransformationSwapFunctionVariables(
-        Pair_Id,
-        function_id,
-        /* GetFreshId() give me new id not used, to use it current process */
-        GetFuzzerContext()->GetFreshId()));
+    for (uint32_t changed_index = arg_size - 2; changed_index > 0;
+         changed_index--) {
+      variables_pair_id.push_back(std::make_pair(arg_size - 1, changed_index));
     }
 
-}
+    //  Apply Transformation
+    for (std::pair<uint32_t, uint32_t> pair_id : variables_pair_id) {
+      ApplyTransformation(TransformationSwapFunctionVariables(
+          pair_id, function_id,
+          // GetFreshId() give me new id not used, to use it in current process
+          GetFuzzerContext()->GetFreshId()));
+    }
+  }
 }
 
 }  // namespace fuzz
