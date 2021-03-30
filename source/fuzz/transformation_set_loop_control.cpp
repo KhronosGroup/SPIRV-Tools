@@ -18,8 +18,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationSetLoopControl::TransformationSetLoopControl(
-    const spvtools::fuzz::protobufs::TransformationSetLoopControl& message)
-    : message_(message) {}
+    protobufs::TransformationSetLoopControl message)
+    : message_(std::move(message)) {}
 
 TransformationSetLoopControl::TransformationSetLoopControl(
     uint32_t block_id, uint32_t loop_control, uint32_t peel_count,

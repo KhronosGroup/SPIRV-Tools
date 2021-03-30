@@ -24,8 +24,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationCompositeExtract::TransformationCompositeExtract(
-    const spvtools::fuzz::protobufs::TransformationCompositeExtract& message)
-    : message_(message) {}
+    protobufs::TransformationCompositeExtract message)
+    : message_(std::move(message)) {}
 
 TransformationCompositeExtract::TransformationCompositeExtract(
     const protobufs::InstructionDescriptor& instruction_to_insert_before,
@@ -91,13 +91,12 @@ void TransformationCompositeExtract::Apply(
 
   auto insert_before =
       FindInstruction(message_.instruction_to_insert_before(), ir_context);
-  auto new_instruction = MakeUnique<opt::Instruction>(
-      ir_context, SpvOpCompositeExtract, extracted_type, message_.fresh_id(),
-      extract_operands);
-  auto new_instruction_ptr = new_instruction.get();
-  insert_before->InsertBefore(std::move(new_instruction));
-  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);
-  ir_context->set_instr_block(new_instruction_ptr,
+  opt::Instruction* new_instruction =
+      insert_before->InsertBefore(MakeUnique<opt::Instruction>(
+          ir_context, SpvOpCompositeExtract, extracted_type,
+          message_.fresh_id(), extract_operands));
+  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction);
+  ir_context->set_instr_block(new_instruction,
                               ir_context->get_instr_block(insert_before));
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());

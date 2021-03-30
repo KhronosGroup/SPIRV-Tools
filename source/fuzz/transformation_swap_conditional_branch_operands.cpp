@@ -22,9 +22,8 @@ namespace fuzz {
 
 TransformationSwapConditionalBranchOperands::
     TransformationSwapConditionalBranchOperands(
-        const spvtools::fuzz::protobufs::
-            TransformationSwapConditionalBranchOperands& message)
-    : message_(message) {}
+        protobufs::TransformationSwapConditionalBranchOperands message)
+    : message_(std::move(message)) {}
 
 TransformationSwapConditionalBranchOperands::
     TransformationSwapConditionalBranchOperands(
