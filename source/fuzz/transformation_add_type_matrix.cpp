@@ -20,8 +20,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationAddTypeMatrix::TransformationAddTypeMatrix(
-    const spvtools::fuzz::protobufs::TransformationAddTypeMatrix& message)
-    : message_(message) {}
+    protobufs::TransformationAddTypeMatrix message)
+    : message_(std::move(message)) {}
 
 TransformationAddTypeMatrix::TransformationAddTypeMatrix(
     uint32_t fresh_id, uint32_t column_type_id, uint32_t column_count) {

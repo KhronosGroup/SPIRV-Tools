@@ -21,8 +21,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationMergeFunctionReturns::TransformationMergeFunctionReturns(
-    const protobufs::TransformationMergeFunctionReturns& message)
-    : message_(message) {}
+    protobufs::TransformationMergeFunctionReturns message)
+    : message_(std::move(message)) {}
 
 TransformationMergeFunctionReturns::TransformationMergeFunctionReturns(
     uint32_t function_id, uint32_t outer_header_id, uint32_t outer_return_id,

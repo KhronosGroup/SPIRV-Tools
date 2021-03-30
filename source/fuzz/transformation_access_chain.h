@@ -28,7 +28,7 @@ namespace fuzz {
 class TransformationAccessChain : public Transformation {
  public:
   explicit TransformationAccessChain(
-      const protobufs::TransformationAccessChain& message);
+      protobufs::TransformationAccessChain message);
 
   TransformationAccessChain(
       uint32_t fresh_id, uint32_t pointer_id,

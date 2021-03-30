@@ -102,14 +102,19 @@ void TransformationAddSynonym::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
   // Add a synonymous instruction.
-  FindInstruction(message_.insert_before(), ir_context)
-      ->InsertBefore(
-          MakeSynonymousInstruction(ir_context, *transformation_context));
+  auto new_instruction =
+      MakeSynonymousInstruction(ir_context, *transformation_context);
+  auto new_instruction_ptr = new_instruction.get();
+  auto insert_before = FindInstruction(message_.insert_before(), ir_context);
+  insert_before->InsertBefore(std::move(new_instruction));
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.synonym_fresh_id());
 
-  ir_context->InvalidateAnalysesExceptFor(
-      opt::IRContext::Analysis::kAnalysisNone);
+  // Inform the def-use manager about the new instruction and record its basic
+  // block.
+  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);
+  ir_context->set_instr_block(new_instruction_ptr,
+                              ir_context->get_instr_block(insert_before));
 
   // Propagate PointeeValueIsIrrelevant fact.
   const auto* new_synonym_type = ir_context->get_type_mgr()->GetType(

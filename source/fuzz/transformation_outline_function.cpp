@@ -22,8 +22,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationOutlineFunction::TransformationOutlineFunction(
-    const spvtools::fuzz::protobufs::TransformationOutlineFunction& message)
-    : message_(message) {}
+    protobufs::TransformationOutlineFunction message)
+    : message_(std::move(message)) {}
 
 TransformationOutlineFunction::TransformationOutlineFunction(
     uint32_t entry_block, uint32_t exit_block,

@@ -118,8 +118,14 @@ TEST(TransformationAddTypeIntTest, Apply) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   // Adds signed 8-bit integer type.
+  // For this transformation we also check that the def-use manager and type
+  // manager are updated appropriately.
   auto transformation = TransformationAddTypeInt(6, 8, true);
+  ASSERT_EQ(nullptr, context->get_def_use_mgr()->GetDef(6));
+  ASSERT_EQ(nullptr, context->get_type_mgr()->GetType(6));
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
+  ASSERT_EQ(SpvOpTypeInt, context->get_def_use_mgr()->GetDef(6)->opcode());
+  ASSERT_NE(nullptr, context->get_type_mgr()->GetType(6)->AsInteger());
 
   // Adds signed 16-bit integer type.
   transformation = TransformationAddTypeInt(7, 16, true);

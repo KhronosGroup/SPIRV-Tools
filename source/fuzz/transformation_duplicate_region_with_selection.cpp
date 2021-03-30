@@ -21,9 +21,8 @@ namespace fuzz {
 
 TransformationDuplicateRegionWithSelection::
     TransformationDuplicateRegionWithSelection(
-        const spvtools::fuzz::protobufs::
-            TransformationDuplicateRegionWithSelection& message)
-    : message_(message) {}
+        protobufs::TransformationDuplicateRegionWithSelection message)
+    : message_(std::move(message)) {}
 
 TransformationDuplicateRegionWithSelection::
     TransformationDuplicateRegionWithSelection(
