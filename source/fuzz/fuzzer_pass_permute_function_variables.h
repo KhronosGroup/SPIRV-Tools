@@ -21,8 +21,7 @@
 namespace spvtools {
 namespace fuzz {
 
-// A pass that permute function variables.
-// This is final class so, can't be inherited.
+// A Pass that permute functions variables, as whole.
 class FuzzerPassPermuteFunctionVariables : public FuzzerPass {
  public:
   FuzzerPassPermuteFunctionVariables(
@@ -30,12 +29,10 @@ class FuzzerPassPermuteFunctionVariables : public FuzzerPass {
       FuzzerContext* fuzzer_context,
       protobufs::TransformationSequence* transformations);
 
-
   void Apply() override;
 };
 
 }  // namespace fuzz
 }  // namespace spvtools
 
-
-#endif // SOURCE_FUZZ_FUZZER_PASS_PERMUTE_FUNCTION_VARIABLES_H_
+#endif  // SOURCE_FUZZ_FUZZER_PASS_PERMUTE_FUNCTION_VARIABLES_H_
