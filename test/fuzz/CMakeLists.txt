@@ -47,9 +47,11 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_add_dead_continue_test.cpp
           transformation_add_early_terminator_wrapper_test.cpp
           transformation_add_function_test.cpp
+          transformation_add_float_type_test.cpp
           transformation_add_global_undef_test.cpp
           transformation_add_global_variable_test.cpp
           transformation_add_image_sample_unused_components_test.cpp
+          transformation_add_integer_type_test
           transformation_add_local_variable_test.cpp
           transformation_add_loop_preheader_test.cpp
           transformation_add_loop_to_create_int_constant_synonym_test.cpp
