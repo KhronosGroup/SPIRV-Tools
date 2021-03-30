@@ -2266,7 +2266,7 @@ message TransformationSwapFunctionVariables {
 	// set all second constuctor values 
 	
 	// Pair of two variable ids 
-	UInt32Pair _2IDs = 1;
+	UInt32Pair pair_id = 1;
 	// function id to be stored
 	uint32 function_id = 2;
 	// fresh process id
