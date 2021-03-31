@@ -609,6 +609,8 @@ static_library("spvtools_opt") {
     "source/opt/instruction_list.h",
     "source/opt/instrument_pass.cpp",
     "source/opt/instrument_pass.h",
+    "source/opt/interp_fixup_pass.cpp",
+    "source/opt/interp_fixup_pass.h",
     "source/opt/ir_builder.h",
     "source/opt/ir_context.cpp",
     "source/opt/ir_context.h",
