@@ -18,24 +18,36 @@
 namespace spvtools {
 namespace fuzz {
 
+#include <assert.h>
+
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
 #include "source/fuzz/transformation_context.h"
 #include "source/opt/ir_context.h"
-
 // Transformation that's responsible for single change on just one method
 class TransformationSwapFunctionVariables : public Transformation {
  public:
   explicit TransformationSwapFunctionVariables(
       const protobufs::TransformationSwapFunctionVariables& message);
 
-  TransformationSwapFunctionVariables(std::pair<uint32_t, uint32_t> pair_id,
-                                      uint32_t function_id, uint32_t fresh_id);
+  TransformationSwapFunctionVariables(uint32_t variable_1_id,
+                                      uint32_t variable_2_id);
 
+  // - |message_.variable_id| must return two variables ids.
+  // - |ir_context->get_instr_block| must return a block related to the specific
+  // id.
+  // - |block_n->GetParent->result_id| return function id related to block "n".
+  // - Return true or false under the condition of two ids exist in the same
+  // function.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
+  // - |message_.variable_id| must return two variables ids.
+  // - |ir_context->get_instr_block| must return a block for the function.
+  // - |block_n->GetParent| return pointer to function.
+  // - |function->entry| return pointer to the first block has our variables.
+  // - get ids of two variables and swapping them in the block.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
@@ -50,4 +62,4 @@ class TransformationSwapFunctionVariables : public Transformation {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_TRANSFORMATION_SWAP_FUNCTION_VARIABLES_H_+-
+#endif  // SOURCE_FUZZ_TRANSFORMATION_SWAP_FUNCTION_VARIABLES_H_
