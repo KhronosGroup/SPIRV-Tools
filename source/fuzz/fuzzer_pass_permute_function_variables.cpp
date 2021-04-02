@@ -35,30 +35,25 @@ FuzzerPassPermuteFunctionVariables::FuzzerPassPermuteFunctionVariables(
 void FuzzerPassPermuteFunctionVariables::Apply() {
   // Permuting OpVariable instructions in each function
   for (auto& function : *GetIRContext()->module()) {
-    uint32_t function_id = function.result_id();
-
     if (!GetFuzzerContext()->ChoosePercentage(
             GetFuzzerContext()->GetChanceOfPermuteFunctionVariables())) {
       continue;
     }
     // Ids storage section
-    // entry() return unique_ptr of "BasicBlock"
     auto first_block = function->entry().get();
 
-    std::vector<opt::Instruction> variables_ptr;
-    std::vector<uint32_t> variables_id;
-    for (auto& instruction : *first_block) {
+    std::vector<opt::Instruction*> variables;
+    for (auto& instruction : first_block) {
       if (instruction.opcode() == SpvOpVariable) {
-        variables_ptr.push_back(instruction);
-        variables_id.push_back(instruction->result_id());
+        variables.push_back(&instruction);
       }
     }
 
-    uint32_t arg_size = variables_id.size();
+    uint32_t vars_size = variables.size();
 
-    // permutation section
+    // Permutation section
     // Create a vector, fill it with [0, n-1] values and shuffle it
-    std::vector<uint32_t> permutation(arg_size);
+    std::vector<uint32_t> permutation(vars_size);
     std::iota(permutation.begin(), permutation.end(), 0);
     GetFuzzerContext()->Shuffle(&permutation);
 
@@ -70,17 +65,15 @@ void FuzzerPassPermuteFunctionVariables::Apply() {
     // Mathematical formula I've followed
     // (a1,a2,...,as)=(as,as−1)∘(as,as−2)∘...∘(as,a2)∘(as,a1)
     */
-    for (uint32_t changed_index = arg_size - 2; changed_index > 0;
+    for (uint32_t changed_index = vars_size - 2; changed_index > 0;
          changed_index--) {
-      variables_pair_id.push_back(std::make_pair(arg_size - 1, changed_index));
+      variables_pair_id.push_back(std::make_pair(vars_size - 1, changed_index));
     }
 
     //  Apply Transformation
-    for (std::pair<uint32_t, uint32_t> pair_id : variables_pair_id) {
-      ApplyTransformation(TransformationSwapFunctionVariables(
-          pair_id, function_id,
-          // GetFreshId() give me new id not used, to use it in current process
-          GetFuzzerContext()->GetFreshId()));
+    for (const auto& pair_id : variables_pair_id) {
+      ApplyTransformation(
+          TransformationSwapFunctionVariables(pair_id.first, pair_id.second));
     }
   }
 }
