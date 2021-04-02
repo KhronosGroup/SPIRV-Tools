@@ -25,62 +25,43 @@ TransformationSwapFunctionVariables::TransformationSwapFunctionVariables(
     : message_(message) {}
 
 TransformationSwapFunctionVariables::TransformationSwapFunctionVariables(
-    std::pair<uint32_t, uint32_t> pair_id, uint32_t function_id,
-    uint32_t fresh_id) {
-  message_.set_function_id(funcion_id);
-  message_.set_fresh_id(fresh_id);
-  protobufs::UInt32Pair pair;
-  pair.set_first(pair_id.first);
-  pair.set_second(pair_id.second);
-  message_.set_pair(pair);
+    uint32_t variable_1_id, uint32_t variable_2_id) {
+  message_.set_variable_id(variable_1_id);
+  message_.set_variable_id(variable_2_id);
 }
 
 bool TransformationSwapFunctionVariables::IsApplicable(
     opt::IRContext* ir_context,
-    const TransformationContext& transformation_context) const {
-  // Here we check if funciton exists and check for it's entry point
-  // FunctionIsEntryPoint -> Returns |true| if one of entry points has function
-  // id |function_id|
-  const auto* function =
-      fuzzerutil::FindFunction(ir_context, message_.function_id());
-  if (!function ||
-      fuzzerutil::FunctionIsEntryPoint(ir_context, function->result_id())) {
-    return false;
-  }
+    const TransformationContext& transformation_context /*unused*/) const {
+  uint32_t variable_1_id = message_.variable_id();
+  uint32_t variable_2_id = message_.variable_id();
 
-  // Retrieve ids and check they exists in the same function
-  protobufs::UInt32Pair pair_id = message_.get_pair();
-  auto first_block = function->entry().get();
-  bool first_id_flag = false, second_id_flag = false;
-  for (auto& instruction : *first_block) {
-    uint32_t _id_ = instruction.result_id();
-    first_id_flag = (_id_ == pair_id.first) ? true : false;
-    second_id_flag = (_id_ == pair_id.second) ? true : false;
-    if (first_id_flag && second_id_flag) {
-      return true;
-    }
-  }
-  return false;
+  // The get_instr_block(..) overloaded method return BasicBlock* or nullptr.
+  auto* block_1 = ir_context->get_instr_block(variable_1_id);
+  assert(block_1 && "The Block related to the first id is null");
+  auto* block_2 = ir_context->get_instr_block(variable_2_id);
+  assert(block_2 && "The Block related to the second id is null");
+
+  auto function_id_1 = block_1->GetParent()->result_id();
+  auto function_id_2 = block_2->GetParent()->result_id();
+
+  return (function_id_1 == function_id_2) ? true : false;
 }
 
 void TransformationSwapFunctionVariables::Apply(
     opt::IRContext* ir_context,
-    TransformationContext* transformation_context) const {
-  // Check exists of functions
-  auto* function = fuzzerutil::FindFunction(ir_context, message_.function_id());
-  assert(function && "function doesn't exists");
-  protobufs::UInt32Pair pair_id = message_.get_pair();
+    TransformationContext* transformation_context /*unused*/) const {
+  uint32_t variable_1_id = message_.variable_id();
+  uint32_t variable_2_id = message_.variable_id();
+
+  // The get_instr_block(..) overloaded method return BasicBlock* or nullptr.
+  auto* block = ir_context->get_instr_block(variable_1_id);
+
+  auto function = block->GetParent();
 
   auto first_block = function->entry().get();
-  uint32_t first_index = -1, second_index = -1, index = 0;
-  for (auto& instruction : *first_block) {
-    auto inst_id = instruction.result_id();
-    first_index = (inst_id == pair_id.first) ? index : -1;
-    second_index = (inst_id == pair_id.second) ? index : -1;
-    ++index;
-  }
 
-  std::swap(*first_block[first_index], *first_block[second_index]);
+  std::swap(*first_block[variable_1_id], *first_block[variable_2_id]);
 }
 
 protobufs::Transformation TransformationSwapFunctionVariables::ToMessage()
