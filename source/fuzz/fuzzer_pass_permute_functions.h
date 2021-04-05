@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_PASS_PERMUTE_FUNCTION_PARAMETERS_H_
-#define SOURCE_FUZZ_FUZZER_PASS_PERMUTE_FUNCTION_PARAMETERS_H_
+#ifndef SOURCE_FUZZ_FUZZER_PASS_PERMUTE_FUNCTIONS_H_
+#define SOURCE_FUZZ_FUZZER_PASS_PERMUTE_FUNCTIONS_H_
 
 #include "source/fuzz/fuzzer_pass.h"
 
@@ -27,9 +27,9 @@ namespace fuzz {
 //      (only add this if it doesn't already exist)
 //   2. Changes the type of the function to this type
 //   3. Adjusts all calls to the function so that their arguments are permuted
-class FuzzerPassPermuteFunctionParameters : public FuzzerPass {
+class FuzzerPassPermuteFunctions : public FuzzerPass {
  public:
-  FuzzerPassPermuteFunctionParameters(
+  FuzzerPassPermuteFunctions(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       FuzzerContext* fuzzer_context,
       protobufs::TransformationSequence* transformations);

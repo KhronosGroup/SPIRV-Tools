@@ -71,6 +71,7 @@
 #include "source/fuzz/transformation_mutate_pointer.h"
 #include "source/fuzz/transformation_outline_function.h"
 #include "source/fuzz/transformation_permute_function_parameters.h"
+#include "source/fuzz/transformation_permute_functions.h"
 #include "source/fuzz/transformation_permute_phi_operands.h"
 #include "source/fuzz/transformation_propagate_instruction_down.h"
 #include "source/fuzz/transformation_propagate_instruction_up.h"
@@ -267,6 +268,12 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kPermuteFunctionParameters:
       return MakeUnique<TransformationPermuteFunctionParameters>(
           message.permute_function_parameters());
+    
+    case protobufs::Transformation::TransformationCase::
+        kPermuteFunctions:
+      return MakeUnique<TransformationPermuteFunctions>(
+          message.permute_functions());
+    
     case protobufs::Transformation::TransformationCase::kPermutePhiOperands:
       return MakeUnique<TransformationPermutePhiOperands>(
           message.permute_phi_operands());
