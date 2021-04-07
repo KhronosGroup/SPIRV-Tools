@@ -50,10 +50,11 @@ bool TransformationMoveSwapTwoFunctions::IsApplicable(
 void TransformationSwapTwoFunctions::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   // Found the two functions in ir_context and swap their position. 
-  auto ptr1 = nullptr, iter2 = nullptr; 
+  auto ptr1 = nullptr;
+  auto ptr2 = nullptr; 
   for(auto func_it = *ir_context->module().begin(); func_it!=*ir_context->module().end();++func_it) {
-    if(func_it->result_id()==message_.function_id1()) iter1 = func_it; 
-    if(func_it->result_id()==message_.function_id2()) iter2 = func_it; 
+    if(func_it->result_id()==message_.function_id1()) ptr1 = func_it; 
+    if(func_it->result_id()==message_.function_id2()) ptr2 = func_it; 
   } 
   
   
@@ -62,7 +63,7 @@ void TransformationSwapTwoFunctions::Apply(
   assert(&ptr1!=&ptr2 && "ERRPR: Two functions cannot be the same.");
   //two function pointers are all set, swap the two functions within the module  
   //TODO 
-  std::iter_swap(ptr1, pt2); 
+  std::iter_swap(ptr1, ptr2); 
 }
 
 protobufs::Transformation TransformationSwapTwoFunctions::ToMessage() const {
