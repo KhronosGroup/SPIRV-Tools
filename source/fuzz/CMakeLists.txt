@@ -120,6 +120,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_split_blocks.h
         fuzzer_pass_swap_commutable_operands.h
         fuzzer_pass_swap_conditional_branch_operands.h
+        fuzzer_pass_swap_functions.h
         fuzzer_pass_toggle_access_chain_instruction.h
         fuzzer_pass_wrap_regions_in_selections.h
         fuzzer_util.h
@@ -311,6 +312,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_split_blocks.cpp
         fuzzer_pass_swap_commutable_operands.cpp
         fuzzer_pass_swap_conditional_branch_operands.cpp
+        fuzzer_pass_swap_functions.cpp
         fuzzer_pass_toggle_access_chain_instruction.cpp
         fuzzer_pass_wrap_regions_in_selections.cpp
         fuzzer_util.cpp
