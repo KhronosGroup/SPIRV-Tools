@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Google LLC
+// Copyright (c) 2021 Shiyu Liu 
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,17 +31,19 @@ TransformationSwapTwoFunctions::TransformationSwapTwoFunctions(uint32_t id1, uin
 bool TransformationMoveSwapTwoFunctions::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   // Go through every function in ir_context and return true only when both ids are found.
-  //not applicable since two swapped functions are the same one. 
+  // not applicable since two swapped functions are the same one. 
   if(message_.function_id1()==message_.function_id2()) return false;  
 
-  bool foundFunc1 = false, foundFunc2 = false;
+  bool found_func1 = false; 
+  bool found_func2 = false;
   
-  for (auto& function : *ir_context->module()) {//iterate through every functions in module
-    if(function->result_id()==message_.function_id1()) foundFunc1 = true;
-    if(function->result_id()==message_.function_id2()) foundFunc2 = true;
+  // Iterate through every functions in a module
+  for (auto& function : *ir_context->module()) {
+    if(function->result_id()==message_.function_id1()) found_func1 = true;
+    if(function->result_id()==message_.function_id2()) found_func2 = true;
   }
 
-  // return true only when both functions are found with given ids
+  // Return true only when both functions are found with given ids
   return foundFunc1 && foundFunc2;
 }
 
@@ -55,9 +57,9 @@ void TransformationSwapTwoFunctions::Apply(
   } 
   
   
-  assert(ptr1!=nullptr && "Whoops, function 1 was not found."); 
-  assert(ptr2!=nullptr && "Whoops, function 2 was not found.");
-  assert(&ptr1!=&ptr2 && "Whoops, two functions cannot be the same");
+  assert(ptr1!=nullptr && "ERROR: Function 1 was not found with the given id."); 
+  assert(ptr2!=nullptr && "ERROR: Function 2 was not found with the given id.");
+  assert(&ptr1!=&ptr2 && "ERRPR: Two functions cannot be the same.");
   //two function pointers are all set, swap the two functions within the module  
   //TODO 
   std::iter_swap(ptr1, pt2); 

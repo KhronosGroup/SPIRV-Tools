@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Google LLC
+// Copyright (c) 2021 Shiyu Liu
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ class TransformationSwapTwoFunctions : public Transformation {
   explicit TransformationSwapTwoFunctions(
       protobufs::TransformationSwapTwoFunctions message);
 
-  explicit TransformationSwapTwoFunctions(uint32_t id1, uint32_t id2);
+  TransformationSwapTwoFunctions(uint32_t id1, uint32_t id2);
 
   // TODO: edit requirements
   // a and b cannot be the same  
