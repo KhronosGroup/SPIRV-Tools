@@ -114,7 +114,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_store_test.cpp
           transformation_swap_commutable_operands_test.cpp
           transformation_swap_conditional_branch_operands_test.cpp
-          tramsformation_swap_two_functions_test.cpp
+          transformation_swap_two_functions_test.cpp
           transformation_toggle_access_chain_instruction_test.cpp
           transformation_record_synonymous_constants_test.cpp
           transformation_vector_shuffle_test.cpp
