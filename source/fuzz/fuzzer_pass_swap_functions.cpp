@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_swap_functions.h"
-
+#include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/transformation_swap_two_functions.h"
 
 namespace spvtools {
@@ -41,12 +41,16 @@ void FuzzerPassSwapFunctions::Apply() {
         function_ids.emplace_back(function.result_id());
     }
     
-    // Number of functions (& function ids) in the set.
-    int id_sz = function_ids.size(); 
-
+    int id_size = function_ids.size(); 
     // We iterate through every combination of id i & j where i!=j.
-    for(int i = 0; i<id_sz-1; ++i) {
-       for(int j = i+1; j<id_sz; ++j) {
+    for(int i = 0; i<id_size-1; ++i) {
+       for(int j = i+1; j<id_size; ++j) {
+         
+         // Randomly decide whether to ignore function swap
+         if (!GetFuzzerContext()->ChoosePercentage(
+                 GetFuzzerContext()->GetChanceOfSwappingFunctions())) {
+           continue;
+         }         
          // We do a swap between functions and break if such swap cannot be performed.
          TransformationSwapTwoFunctions transformation(function_ids[i], function_ids[j]); 
          if(!MaybeApplyTransformation(transformation)) {

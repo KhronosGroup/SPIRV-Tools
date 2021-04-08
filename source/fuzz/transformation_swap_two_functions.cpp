@@ -37,14 +37,14 @@ bool TransformationMoveSwapTwoFunctions::IsApplicable(
   bool found_func1 = false; 
   bool found_func2 = false;
   
-  // Iterate through every functions in a module
+  // Iterate through every functions in a module.
   for (auto& function : *ir_context->module()) {
     if(function->result_id()==message_.function_id1()) found_func1 = true;
     if(function->result_id()==message_.function_id2()) found_func2 = true;
   }
 
-  // Return true only when both functions are found with given ids
-  return foundFunc1 && foundFunc2;
+  // Return true only when both functions are found with given ids.
+  return found_func1 && found_func2;
 }
 
 void TransformationSwapTwoFunctions::Apply(
@@ -61,8 +61,7 @@ void TransformationSwapTwoFunctions::Apply(
   assert(ptr1!=nullptr && "ERROR: Function 1 was not found with the given id."); 
   assert(ptr2!=nullptr && "ERROR: Function 2 was not found with the given id.");
   assert(&ptr1!=&ptr2 && "ERRPR: Two functions cannot be the same.");
-  //two function pointers are all set, swap the two functions within the module  
-  //TODO 
+  // Two function pointers are all set, swap the two functions within the module.
   std::iter_swap(ptr1, ptr2); 
 }
 

@@ -153,6 +153,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfReplacingParametersWithStruct = {
 const std::pair<uint32_t, uint32_t> kChanceOfSplittingBlock = {40, 95};
 const std::pair<uint32_t, uint32_t> kChanceOfSwappingConditionalBranchOperands =
     {10, 70};
+const std::pair<uint32_t, uint32_t> kChanceOfSwappingFunctions = 
+    {10, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfTogglingAccessChainInstruction = {
     20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfWrappingRegionInSelection = {70,
@@ -354,6 +356,8 @@ FuzzerContext::FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
   chance_of_splitting_block_ = ChooseBetweenMinAndMax(kChanceOfSplittingBlock);
   chance_of_swapping_conditional_branch_operands_ =
       ChooseBetweenMinAndMax(kChanceOfSwappingConditionalBranchOperands);
+  change_of_swapping_functions_ = 
+      ChooseBetweenMinAndMax(kChanceofSwappingFunctions);
   chance_of_toggling_access_chain_instruction_ =
       ChooseBetweenMinAndMax(kChanceOfTogglingAccessChainInstruction);
   chance_of_wrapping_region_in_selection_ =
