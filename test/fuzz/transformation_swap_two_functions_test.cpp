@@ -26,10 +26,6 @@ namespace {
 
 TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
 
-// layout(location=0) in float value;
-// void main() {
-// 
-// }
 //
 // float multiplyBy2(in float value) {
 //   return value*2.0;
@@ -89,14 +85,29 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
   ASSERT_FALSE(
     swap_5_and_6.IsApplicable(context.get(), transformation_context));   
 
-  //Function 2 and 3 should swap successfully. 
+  //Function 1 and 3 should swap successfully. 
   ASSERT_TRUE(
-    TransformationSwapTwoFunctions(2,3).IsApplicable(context.get(), transformation_context));  
-
-  //Function 1 and 4 should swap successfully. 
-   ASSERT_TRUE(                                                                                                       TransformationSwapTwoFunctions(1,4).IsApplicable(context.get(), transformation_context));
+    TransformationSwapTwoFunctions(1,3).IsApplicable(context.get(), transformation_context));  
 
   std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %8
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %8 "value"
+               OpDecorate %8 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypePointer Input %6
+          %8 = OpVariable %7 Input
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
   )";
   // Final check to make sure the serious transformation above is correct. 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
