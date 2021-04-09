@@ -15,23 +15,21 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_SWAP_FUNCTION_VARIABLES_H_
 #define SOURCE_FUZZ_TRANSFORMATION_SWAP_FUNCTION_VARIABLES_H_
 
-namespace spvtools {
-namespace fuzz {
-
-#include <assert.h>
-
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
 #include "source/fuzz/transformation_context.h"
 #include "source/opt/ir_context.h"
+
+namespace spvtools {
+namespace fuzz {
+
 // Transformation that's responsible for single change on just one method
 class TransformationSwapFunctionVariables : public Transformation {
  public:
   explicit TransformationSwapFunctionVariables(
-      const protobufs::TransformationSwapFunctionVariables& message);
+      protobufs::TransformationSwapFunctionVariables message);
 
-  TransformationSwapFunctionVariables(uint32_t variable_1_id,
-                                      uint32_t variable_2_id);
+  TransformationSwapFunctionVariables(uint32_t result_id1, uint32_t result_id2);
 
   // - |message_.variable_id| must return two variables ids.
   // - |ir_context->get_instr_block| must return a block related to the specific
