@@ -551,6 +551,7 @@ class FuzzerContext {
   uint32_t chance_of_replacing_parameters_with_struct_;
   uint32_t chance_of_splitting_block_;
   uint32_t chance_of_swapping_conditional_branch_operands_;
+  uint32_t chance_of_swapping_functions_;
   uint32_t chance_of_toggling_access_chain_instruction_;
   uint32_t chance_of_wrapping_region_in_selection_;
 

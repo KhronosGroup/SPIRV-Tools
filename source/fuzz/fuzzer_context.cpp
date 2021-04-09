@@ -357,7 +357,7 @@ FuzzerContext::FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
   chance_of_swapping_conditional_branch_operands_ =
       ChooseBetweenMinAndMax(kChanceOfSwappingConditionalBranchOperands);
   chance_of_swapping_functions_ = 
-      ChooseBetweenMinAndMax(kChanceofSwappingFunctions);
+      ChooseBetweenMinAndMax(kChanceOfSwappingFunctions);
   chance_of_toggling_access_chain_instruction_ =
       ChooseBetweenMinAndMax(kChanceOfTogglingAccessChainInstruction);
   chance_of_wrapping_region_in_selection_ =
