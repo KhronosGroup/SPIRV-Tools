@@ -2262,12 +2262,12 @@ message TransformationSwapConditionalBranchOperands {
 }
 
 message TransformationSwapFunctionVariables {
-	// A transformation that swaps function variables 
+  // A transformation that swaps function variables 
 	 
-	// variable 1 id to be stored
-	uint32 variable_1_id = 1;
-	// variable 2 id to be stored
-	uint32 variable_2_id = 2; 
+  // Result id of the first variable.
+  uint32 result_id1 = 1;
+  // Result id of the second variable.
+  uint32 result_id2 = 2; 
 }
 
 message TransformationToggleAccessChainInstruction {
