@@ -130,7 +130,8 @@ if (${SPIRV_BUILD_FUZZER})
     # separately.
     set(SOURCES ${SOURCES}
             fuzzer_replayer_test.cpp
-            fuzzer_shrinker_test.cpp)
+            fuzzer_shrinker_test.cpp
+            transformation_swap_function_variables_test.cpp)
   endif()
 
   add_spvtools_unittest(TARGET fuzz
