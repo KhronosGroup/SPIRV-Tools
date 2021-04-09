@@ -88,6 +88,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_mutate_pointer_test.cpp
           transformation_outline_function_test.cpp
           transformation_permute_function_parameters_test.cpp
+          transformation_swap_functions_test.cpp
           transformation_permute_phi_operands_test.cpp
           transformation_propagate_instruction_down_test.cpp
           transformation_propagate_instruction_up_test.cpp

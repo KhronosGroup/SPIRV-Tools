@@ -557,6 +557,7 @@ message Transformation {
     TransformationWrapEarlyTerminatorInFunction wrap_early_terminator_in_function = 83;
     TransformationMergeFunctionReturns merge_function_returns = 84;
     TransformationExpandVectorReduction expand_vector_reduction = 85;
+    TransformationSwapFunctions swap_functions = 86;
     // Add additional option using the next available number.
   }
 }
@@ -1762,6 +1763,19 @@ message TransformationPermuteFunctionParameters {
   // function's argument (i.e. i-th argument will be permutation[i]-th
   // after running this transformation)
   repeated uint32 permutation = 3;
+
+}
+
+message TransformationSwapFunctions {
+
+  // A transformation that, given two function ids
+  // it swaps the functions if their ids are not equal
+  
+  // The id of the first function
+  uint32 func1_id = 1;
+
+  // The id of the second function
+  uint32 func2_id = 2;
 
 }
 

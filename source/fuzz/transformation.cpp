@@ -98,6 +98,7 @@
 #include "source/fuzz/transformation_store.h"
 #include "source/fuzz/transformation_swap_commutable_operands.h"
 #include "source/fuzz/transformation_swap_conditional_branch_operands.h"
+#include "source/fuzz/transformation_swap_functions.h"
 #include "source/fuzz/transformation_toggle_access_chain_instruction.h"
 #include "source/fuzz/transformation_vector_shuffle.h"
 #include "source/fuzz/transformation_wrap_early_terminator_in_function.h"
@@ -267,6 +268,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kPermuteFunctionParameters:
       return MakeUnique<TransformationPermuteFunctionParameters>(
           message.permute_function_parameters());
+
+    case protobufs::Transformation::TransformationCase::kSwapFunctions:
+      return MakeUnique<TransformationSwapFunctions>(message.swap_functions());
+
     case protobufs::Transformation::TransformationCase::kPermutePhiOperands:
       return MakeUnique<TransformationPermutePhiOperands>(
           message.permute_phi_operands());
