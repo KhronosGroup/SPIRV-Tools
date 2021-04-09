@@ -31,6 +31,7 @@ class FuzzerPassSwapFunctions : public FuzzerPass {
   void Apply() override;
 };
 
+
 }  // namespace fuzz
 }  // namespace spvtools
 

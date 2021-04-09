@@ -46,6 +46,7 @@ class TransformationSwapTwoFunctions : public Transformation {
   protobufs::TransformationSwapTwoFunctions message_;
 };
 
+
 }  // namespace fuzz
 }  // namespace spvtools
 

@@ -35,7 +35,7 @@ void FuzzerPassSwapFunctions::Apply() {
     // When the function space is large, we might choose functions arbitrarily from the function space
     // and do random swaps.
 
-    // we first collect all functions by their id from the given module
+    // Collect all functions by their id from the given module.
     std::vector<uint32_t> function_ids; 
     for(auto& function : *GetIRContext()->module()) {
         function_ids.emplace_back(function.result_id());
@@ -44,9 +44,8 @@ void FuzzerPassSwapFunctions::Apply() {
     int id_size = function_ids.size(); 
     // We iterate through every combination of id i & j where i!=j.
     for(int i = 0; i<id_size-1; ++i) {
-       for(int j = i+1; j<id_size; ++j) {
-         
-         // Randomly decide whether to ignore function swap
+       for(int j = i+1; j<id_size; ++j) {  
+         // Randomly decide whether to ignore function swap.
          if (!GetFuzzerContext()->ChoosePercentage(
                  GetFuzzerContext()->GetChanceOfSwappingFunctions())) {
            continue;

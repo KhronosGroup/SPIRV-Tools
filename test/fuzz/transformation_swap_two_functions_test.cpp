@@ -71,25 +71,21 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
   ASSERT_FALSE(
      same_func_swap.IsApplicable(context.get(), transformation_context)); 
 
-  // Function 1 is reachable, Function with id 5 is not reachable (not in range)
   auto swap_1_and_5 = TransformationSwapTwoFunctions(1, 5); 
   ASSERT_FALSE(
     swap_1_and_5.IsApplicable(context.get(), transformation_context));
 
-  // Function 5 is not reachable, function 2 is.
+
   auto swap_5_and_2 = TransformationSwapTwoFunctions(5,2);
   ASSERT_FALSE(
     swap_5_and_2.IsApplicable(context.get(), transformation_context));  
 
-  // Both function 5 and 6 are not reachable. 
+  // Both function 5 and 6 do not exist. 
   auto swap_5_and_6 = TransformationSwapTwoFunctions(5,6); 
   ASSERT_FALSE(
     swap_5_and_6.IsApplicable(context.get(), transformation_context));   
 
-  //Function 1 and 3 should swap successfully. 
-
-  // This would require to provide the actual valid id for function. 
-  // Not quite sure how each function are labeled.  
+  //Function 1 and 2 should swap successfully.   
 
   ASSERT_TRUE(
     TransformationSwapTwoFunctions(2,1).IsApplicable(context.get(), transformation_context));  

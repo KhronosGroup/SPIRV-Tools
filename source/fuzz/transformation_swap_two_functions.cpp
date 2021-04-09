@@ -17,7 +17,6 @@
 #include "source/opt/function.h"
 #include "source/opt/module.h"
 
-
 namespace spvtools {
 namespace fuzz {
 
@@ -33,7 +32,7 @@ TransformationSwapTwoFunctions::TransformationSwapTwoFunctions(uint32_t id1, uin
 bool TransformationSwapTwoFunctions::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   // Go through every function in ir_context and return true only when both ids are found.
-  // not applicable since two swapped functions are the same one. 
+  // Not applicable since two swapped functions are the same one. 
   if(message_.function_id1()==message_.function_id2()) return false;  
   assert(message_.function_id1()!=message_.function_id2() && " Two functions cannot be the same.");
 
@@ -65,7 +64,7 @@ void TransformationSwapTwoFunctions::Apply(
   bool func1_found = false; 
   bool func2_found = false;
 
-  // Initialize the position 
+  // Initialize the position.
   opt::Module::iterator func1_it = ir_context->module()->begin(); 
   opt::Module::iterator func2_it = ir_context->module()->begin(); 
   for(auto& func : *ir_context->module()) {
