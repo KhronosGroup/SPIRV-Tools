@@ -83,26 +83,27 @@ TEST(TransformationSwapFunctionVariables, NotApplicable) {
                OpReturn
                OpFunctionEnd
 )";
-// I've decleared a SPIR-V 1.5 latest version accroding to libspir.h
-const auto env = SPV_ENV_UNIVERSAL_1_5;
-const auto consumer = nullptr;
-const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-spvtools::ValidatorOptions validator_options;
+  // I've decleared a SPIR-V 1.5 latest version accroding to libspir.h
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
 
-TransformationContext transformation_context(
-    MakeUnique<FactManager>(context.get()), validator_options);
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
-// approach I not sure to use it!!
-// start 
-// auto func = context->GetFunction(4);
-// auto first_block = func->entry().get();
-//  then get id and pass it !
-// end
+  // approach I not sure to use it!!
+  // start
+  // auto func = context->GetFunction(4);
+  // auto first_block = func->entry().get();
+  //  then get id and pass it !
+  // end
 
-ASSERT_FALSE(TransformationSwapFunctionVariables(27,28).IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(TransformationSwapFunctionVariables(27, 28).IsApplicable(
+      context.get(), transformation_context));
 
-// ASSERT_TRUE(TransformationSwapFunctionVariables(id1,id2).IsApplicable(context.get(), transformation_context))
-
+  // ASSERT_TRUE(TransformationSwapFunctionVariables(id1,id2).IsApplicable(context.get(),
+  // transformation_context))
 }
 
 // next test
