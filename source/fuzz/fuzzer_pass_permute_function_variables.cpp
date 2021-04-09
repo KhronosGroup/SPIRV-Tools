@@ -21,6 +21,7 @@
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
+#include "source/fuzz/transformation_swap_function_variables.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -39,41 +40,22 @@ void FuzzerPassPermuteFunctionVariables::Apply() {
             GetFuzzerContext()->GetChanceOfPermuteFunctionVariables())) {
       continue;
     }
-    // Ids storage section
-    auto first_block = function->entry().get();
+
+    auto first_block = function.entry().get();
 
     std::vector<opt::Instruction*> variables;
-    for (auto& instruction : first_block) {
+    for (auto& instruction : *first_block) {
       if (instruction.opcode() == SpvOpVariable) {
         variables.push_back(&instruction);
       }
     }
 
-    uint32_t vars_size = variables.size();
+    while (variables.size() >= 2) {
+      auto instruction_1 = GetFuzzerContext()->RemoveAtRandomIndex(&variables);
+      auto instruction_2 = GetFuzzerContext()->RemoveAtRandomIndex(&variables);
 
-    // Permutation section
-    // Create a vector, fill it with [0, n-1] values and shuffle it
-    std::vector<uint32_t> permutation(vars_size);
-    std::iota(permutation.begin(), permutation.end(), 0);
-    GetFuzzerContext()->Shuffle(&permutation);
-
-    std::vector<std::pair<uint32_t, uint32_t>> variables_pair_id;
-    /*
-    // Cycle notation, Apply product of transpositions because
-    // Every Permutation can be written as a product of transpositions and
-    // Transpositions Is special case of Permutation but between two numbers.
-    // Mathematical formula I've followed
-    // (a1,a2,...,as)=(as,as−1)∘(as,as−2)∘...∘(as,a2)∘(as,a1)
-    */
-    for (uint32_t changed_index = vars_size - 2; changed_index > 0;
-         changed_index--) {
-      variables_pair_id.push_back(std::make_pair(vars_size - 1, changed_index));
-    }
-
-    //  Apply Transformation
-    for (const auto& pair_id : variables_pair_id) {
-      ApplyTransformation(
-          TransformationSwapFunctionVariables(pair_id.first, pair_id.second));
+      ApplyTransformation(TransformationSwapFunctionVariables(
+          instruction_1->result_id(), instruction_2->result_id()));
     }
   }
 }
