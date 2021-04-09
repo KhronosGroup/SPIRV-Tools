@@ -38,6 +38,7 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
 // float multiplyBy8(in float value) {
 //   return multiplyBy2(value)*multiplyBy4(value);
 // }
+
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -86,9 +87,14 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
     swap_5_and_6.IsApplicable(context.get(), transformation_context));   
 
   //Function 1 and 3 should swap successfully. 
-  ASSERT_TRUE(
-    TransformationSwapTwoFunctions(1,3).IsApplicable(context.get(), transformation_context));  
 
+  // This would require to provide the actual valid id for function. 
+  // Not quite sure how each function are labeled.  
+
+  ASSERT_TRUE(
+    TransformationSwapTwoFunctions(2,1).IsApplicable(context.get(), transformation_context));  
+
+  
   std::string after_transformation = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"

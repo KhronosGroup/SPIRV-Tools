@@ -15,6 +15,8 @@
 #include "source/fuzz/transformation_swap_two_functions.h"
 
 #include "source/opt/function.h"
+#include "source/opt/module.h"
+
 
 namespace spvtools {
 namespace fuzz {
@@ -28,41 +30,60 @@ TransformationSwapTwoFunctions::TransformationSwapTwoFunctions(uint32_t id1, uin
   message_.set_function_id2(id2);
 }
 
-bool TransformationMoveSwapTwoFunctions::IsApplicable(
+bool TransformationSwapTwoFunctions::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   // Go through every function in ir_context and return true only when both ids are found.
   // not applicable since two swapped functions are the same one. 
   if(message_.function_id1()==message_.function_id2()) return false;  
 
-  bool found_func1 = false; 
-  bool found_func2 = false;
-  
   // Iterate through every functions in a module.
-  for (auto& function : *ir_context->module()) {
-    if(function->result_id()==message_.function_id1()) found_func1 = true;
-    if(function->result_id()==message_.function_id2()) found_func2 = true;
+  bool func1_found = false; 
+  bool func2_found = false;  
+  uint32_t id1 = -1; 
+  uint32_t id2 = -1; 
+  for (auto& func : *ir_context->module()) {
+    if(func.result_id()==message_.function_id1()) {
+      id1 = func.result_id();
+      func1_found = true;
+    }
+    if(func.result_id()==message_.function_id2()) {
+      id2 = func.result_id();
+      func2_found = true;
+    }
   }
 
-  // Return true only when both functions are found with given ids.
-  return found_func1 && found_func2;
+  // Return true only when both functions are found with given ids and ids are not the same.
+  return  func1_found && func2_found && (id1!=id2);
 }
 
 void TransformationSwapTwoFunctions::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   // Found the two functions in ir_context and swap their position. 
-  auto ptr1 = nullptr;
-  auto ptr2 = nullptr; 
-  for(auto func_it = *ir_context->module().begin(); func_it!=*ir_context->module().end();++func_it) {
-    if(func_it->result_id()==message_.function_id1()) ptr1 = func_it; 
-    if(func_it->result_id()==message_.function_id2()) ptr2 = func_it; 
+
+  // Offsets mark the relevant distance of the function from module().begin(). 
+  bool func1_found = false; 
+  bool func2_found = false;
+
+  // Initialize the position 
+  opt::Module::iterator func1_it = ir_context->module()->begin(); 
+  opt::Module::iterator func2_it = ir_context->module()->begin(); 
+  for(auto& func : *ir_context->module()) {
+    if(func.result_id()==message_.function_id1()) func1_found = true; 
+    if(func.result_id()==message_.function_id2()) func2_found = true;
+
+    // Once we found the target function, we stop increment iterator and thus 
+    // after one iteration, func1_it and func2_it should be the iterator with 
+    // their updated position. 
+    // If we have not found (ie. found = false), we kept incrementing. 
+    if(!func1_found) ++func1_it;
+    if(!func2_found) ++func2_it;
   } 
   
-  
-  assert(ptr1!=nullptr && "ERROR: Function 1 was not found with the given id."); 
-  assert(ptr2!=nullptr && "ERROR: Function 2 was not found with the given id.");
-  assert(&ptr1!=&ptr2 && "ERRPR: Two functions cannot be the same.");
+  assert( func1_found  && "ERROR: Function 1 was not found with the given id."); 
+  assert( func2_found  && "ERROR: Function 2 was not found with the given id.");
+  assert( func1_it != func2_it && "ERROR: Two functions cannot be the same.");
   // Two function pointers are all set, swap the two functions within the module.
-  std::iter_swap(ptr1, ptr2); 
+  std::swap(func1_it, func2_it); 
 }
 
 protobufs::Transformation TransformationSwapTwoFunctions::ToMessage() const {
