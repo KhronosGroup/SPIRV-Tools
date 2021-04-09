@@ -1,0 +1,113 @@
+// Copyright (c) 2021 Mostafa Ashraf
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "source/fuzz/transformation_swap_function_variables.h"
+
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
+#include "source/fuzz/instruction_descriptor.h"
+#include "test/fuzz/fuzz_test_util.h"
+
+namespace spvtools {
+namespace fuzz {
+namespace {
+
+TEST(TransformationSwapFunctionVariables, NotApplicable) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFloat 32
+          %9 = OpTypePointer Function %8
+         %10 = OpTypeVector %8 2
+         %11 = OpTypePointer Function %10
+         %12 = OpTypeVector %8 3
+         %13 = OpTypeMatrix %12 3
+         %14 = OpTypePointer Function %13
+         %15 = OpTypeFunction %2 %7 %9 %11 %14 %7 %7
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %24 = OpVariable %7 Function
+         %25 = OpVariable %9 Function
+         %26 = OpVariable %11 Function
+         %27 = OpVariable %14 Function
+         %28 = OpVariable %7 Function
+         %29 = OpVariable %7 Function
+         %30 = OpVariable %7 Function
+         %32 = OpVariable %9 Function
+         %34 = OpVariable %11 Function
+         %36 = OpVariable %14 Function
+         %38 = OpVariable %7 Function
+         %40 = OpVariable %7 Function
+         %31 = OpLoad %6 %24
+               OpStore %30 %31
+         %33 = OpLoad %8 %25
+               OpStore %32 %33
+         %35 = OpLoad %10 %26
+               OpStore %34 %35
+         %37 = OpLoad %13 %27
+               OpStore %36 %37
+         %39 = OpLoad %6 %28
+               OpStore %38 %39
+         %41 = OpLoad %6 %29
+               OpStore %40 %41
+         %42 = OpFunctionCall %2 %22 %30 %32 %34 %36 %38 %40
+               OpReturn
+               OpFunctionEnd
+         %22 = OpFunction %2 None %15
+         %16 = OpFunctionParameter %7
+         %17 = OpFunctionParameter %9
+         %18 = OpFunctionParameter %11
+         %19 = OpFunctionParameter %14
+         %20 = OpFunctionParameter %7
+         %21 = OpFunctionParameter %7
+         %23 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+// I've decleared a SPIR-V 1.5 latest version accroding to libspir.h
+const auto env = SPV_ENV_UNIVERSAL_1_5;
+const auto consumer = nullptr;
+const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+spvtools::ValidatorOptions validator_options;
+
+TransformationContext transformation_context(
+    MakeUnique<FactManager>(context.get()), validator_options);
+
+// approach I not sure to use it!!
+// start 
+// auto func = context->GetFunction(4);
+// auto first_block = func->entry().get();
+//  then get id and pass it !
+// end
+
+ASSERT_FALSE(TransformationSwapFunctionVariables(27,28).IsApplicable(context.get(), transformation_context));
+
+// ASSERT_TRUE(TransformationSwapFunctionVariables(id1,id2).IsApplicable(context.get(), transformation_context))
+
+}
+
+// next test
+TEST(TransformationSwapFunctionVariables, IsApplicable) {}
+
+}  // namespace
+}  // namespace fuzz
+}  // namespace spvtools
