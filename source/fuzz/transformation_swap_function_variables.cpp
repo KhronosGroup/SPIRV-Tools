@@ -20,54 +20,58 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationSwapFunctionVariables::TransformationSwapFunctionVariables(
-    const spvtools::fuzz::protobufs::TransformationSwapFunctionVariables&
-        message)
-    : message_(message) {}
+    protobufs::TransformationSwapFunctionVariables message)
+    : message_(std::move(message)) {}
 
 TransformationSwapFunctionVariables::TransformationSwapFunctionVariables(
-    uint32_t variable_1_id, uint32_t variable_2_id) {
-  message_.set_variable_id(variable_1_id);
-  message_.set_variable_id(variable_2_id);
+    uint32_t result_id1, uint32_t result_id2) {
+  message_.set_result_id1(result_id1);
+  message_.set_result_id2(result_id2);
 }
 
 bool TransformationSwapFunctionVariables::IsApplicable(
-    opt::IRContext* ir_context,
-    const TransformationContext& transformation_context /*unused*/) const {
-  uint32_t variable_1_id = message_.variable_id();
-  uint32_t variable_2_id = message_.variable_id();
+    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+  uint32_t result_id1 = message_.result_id1();
+  uint32_t result_id2 = message_.result_id2();
+
+  if (result_id1 == result_id2) {
+    return false;
+  }
+  // GetDef return pointer of instruction for given id or null
+  auto instruction1 = ir_context->get_def_use_mgr()->GetDef(result_id1);
+  auto instruction2 = ir_context->get_def_use_mgr()->GetDef(result_id2);
+  assert((instruction1 && instruction2) &&
+         "One of the instruction are not exists");
+
+  if (instruction1->opcode() != SpvOpVariable ||
+      instruction2->opcode() != SpvOpVariable) {
+    return false;
+  }
 
   // The get_instr_block(..) overloaded method return BasicBlock* or nullptr.
-  auto* block_1 = ir_context->get_instr_block(variable_1_id);
+  auto* block_1 = ir_context->get_instr_block(result_id1);
   assert(block_1 && "The Block related to the first id is null");
-  auto* block_2 = ir_context->get_instr_block(variable_2_id);
+  auto* block_2 = ir_context->get_instr_block(result_id2);
   assert(block_2 && "The Block related to the second id is null");
 
-  auto function_id_1 = block_1->GetParent()->result_id();
-  auto function_id_2 = block_2->GetParent()->result_id();
-
-  return (function_id_1 == function_id_2) ? true : false;
+  return (block_1 == block_2) ? true : false;
 }
 
 void TransformationSwapFunctionVariables::Apply(
-    opt::IRContext* ir_context,
-    TransformationContext* transformation_context /*unused*/) const {
-  uint32_t variable_1_id = message_.variable_id();
-  uint32_t variable_2_id = message_.variable_id();
+    opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
+  uint32_t result_id1 = message_.result_id1();
+  uint32_t result_id2 = message_.result_id2();
 
-  // The get_instr_block(..) overloaded method return BasicBlock* or nullptr.
-  auto* block = ir_context->get_instr_block(variable_1_id);
+  auto instruction1 = ir_context->get_def_use_mgr()->GetDef(result_id1);
+  auto instruction2 = ir_context->get_def_use_mgr()->GetDef(result_id2);
 
-  auto function = block->GetParent();
-
-  auto first_block = function->entry().get();
-
-  std::swap(*first_block[variable_1_id], *first_block[variable_2_id]);
+  std::swap(instruction1, instruction2);
 }
 
 protobufs::Transformation TransformationSwapFunctionVariables::ToMessage()
     const {
   protobufs::Transformation result;
-  *result.transformation_swap_function_variables() = message_;
+  *result.mutable_swap_function_variables() = message_;
   return result;
 }
 
