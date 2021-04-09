@@ -16,12 +16,11 @@
 #define SOURCE_FUZZ_FUZZER_PASS_PERMUTE_FUNCTION_VARIABLES_H_
 
 #include "source/fuzz/fuzzer_pass.h"
-#include "source/fuzz/transformation_swap_function_variables.h"
 
 namespace spvtools {
 namespace fuzz {
 
-// A Pass that permute functions variables, as whole.
+// This fuzzer pass permutes variables in all functions in the module.
 class FuzzerPassPermuteFunctionVariables : public FuzzerPass {
  public:
   FuzzerPassPermuteFunctionVariables(
