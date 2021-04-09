@@ -30,9 +30,6 @@ class TransformationSwapTwoFunctions : public Transformation {
 
   TransformationSwapTwoFunctions(uint32_t id1, uint32_t id2);
 
-  // TODO: edit requirements
-  // a and b cannot be the same  
-  // both a and b should be reachable
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;

@@ -35,6 +35,7 @@ bool TransformationSwapTwoFunctions::IsApplicable(
   // Go through every function in ir_context and return true only when both ids are found.
   // not applicable since two swapped functions are the same one. 
   if(message_.function_id1()==message_.function_id2()) return false;  
+  assert(message_.function_id1()!=message_.function_id2() && " Two functions cannot be the same.");
 
   // Iterate through every functions in a module.
   bool func1_found = false; 
