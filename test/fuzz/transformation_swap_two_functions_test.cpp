@@ -76,7 +76,7 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
     swap_1_and_5.IsApplicable(context.get(), transformation_context));
 
   // Function 5 is not reachable, function 2 is.
-  auto swap_5_and_2 = TransformationSwapTwoFunctions(5,2)
+  auto swap_5_and_2 = TransformationSwapTwoFunctions(5,2);
   ASSERT_FALSE(
     swap_5_and_2.IsApplicable(context.get(), transformation_context));  
 
