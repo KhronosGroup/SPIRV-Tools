@@ -365,7 +365,7 @@ class FuzzerContext {
   }
   
   uint32_t GetChanceOfSwappingFunctions() const {
-    return change_of_swapping_functions_;
+    return chance_of_swapping_functions_;
   }
 
   uint32_t GetChanceOfTogglingAccessChainInstruction() const {
