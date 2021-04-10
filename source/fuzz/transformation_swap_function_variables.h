@@ -31,21 +31,22 @@ class TransformationSwapFunctionVariables : public Transformation {
 
   TransformationSwapFunctionVariables(uint32_t result_id1, uint32_t result_id2);
 
-  // - |message_.variable_id| must return two variables ids.
+  // - |message_.result_id1| and |message_.result_id2| are unique result ids of
+  // two OpVariable instructions.
   // - |ir_context->get_instr_block| must return a block related to the specific
   // id.
-  // - |block_n->GetParent->result_id| return function id related to block "n".
-  // - Return true or false under the condition of two ids exist in the same
-  // function.
+  // - Return true or false under because Instructions with those result ids
+  // must exist and must be in the same basic block.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // - |message_.variable_id| must return two variables ids.
-  // - |ir_context->get_instr_block| must return a block for the function.
-  // - |block_n->GetParent| return pointer to function.
-  // - |function->entry| return pointer to the first block has our variables.
-  // - get ids of two variables and swapping them in the block.
+  // - |message_.result_id1| and |message_.result_id2| are unique result ids of
+  // two OpVariable instructions.
+  // - |ir_context->get_def_use_mgr()->GetDef| return pointer of instruction
+  //  for given id or null
+  // - Swaps two OpVariable instructions with result ids |message_.result_id1|
+  // and |message_.result_id2|.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
