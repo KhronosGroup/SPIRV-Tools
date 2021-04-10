@@ -228,6 +228,14 @@ TEST(TransformationSwapFunctions, BasicTest) {
   ASSERT_TRUE(TransformationSwapFunctions({96, 104}).IsApplicable(
       context.get(), transformation_context));
 
+  // Cannot swap a function with itself
+  ASSERT_FALSE(TransformationSwapFunctions({96, 96}).IsApplicable(
+      context.get(), transformation_context));
+  
+  // Function with id 10000 doesn't exist
+  ASSERT_FALSE(TransformationSwapFunctions({96, 1000}).IsApplicable(
+      context.get(), transformation_context));
+
   std::string after_transformation = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
