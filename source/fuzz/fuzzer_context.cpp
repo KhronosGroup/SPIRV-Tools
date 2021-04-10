@@ -120,10 +120,10 @@ const std::pair<uint32_t, uint32_t> kChanceOfMovingBlockDown = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfMutatingPointer = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfObfuscatingConstant = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfOutliningFunction = {10, 90};
-const std::pair<uint32_t, uint32_t> kChanceOfPermutingInstructions = {20, 70};
-const std::pair<uint32_t, uint32_t> kChanceOfPermutingParameters = {30, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfPermutingFunctionVariables = {30,
                                                                            90};
+const std::pair<uint32_t, uint32_t> kChanceOfPermutingInstructions = {20, 70};
+const std::pair<uint32_t, uint32_t> kChanceOfPermutingParameters = {30, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfPermutingPhiOperands = {30, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfPropagatingInstructionsDown = {20,
                                                                             70};
@@ -309,6 +309,8 @@ FuzzerContext::FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
   chance_of_merging_blocks_ = ChooseBetweenMinAndMax(kChanceOfMergingBlocks);
   chance_of_merging_function_returns_ =
       ChooseBetweenMinAndMax(kChanceOfMergingFunctionReturns);
+  chance_of_permute_function_variables_ =
+      ChooseBetweenMinAndMax(kChanceOfPermutingFunctionVariables);
   chance_of_moving_block_down_ =
       ChooseBetweenMinAndMax(kChanceOfMovingBlockDown);
   chance_of_mutating_pointer_ =
@@ -321,8 +323,6 @@ FuzzerContext::FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
       ChooseBetweenMinAndMax(kChanceOfPermutingInstructions);
   chance_of_permuting_parameters_ =
       ChooseBetweenMinAndMax(kChanceOfPermutingParameters);
-  chance_of_permute_function_variables_ =
-      ChooseBetweenMinAndMax(kChanceOfPermutingFunctionVariables);
   chance_of_permuting_phi_operands_ =
       ChooseBetweenMinAndMax(kChanceOfPermutingPhiOperands);
   chance_of_propagating_instructions_down_ =
