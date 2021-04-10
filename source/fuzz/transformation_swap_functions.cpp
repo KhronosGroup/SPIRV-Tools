@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Vasyl Teliman
+// Copyright (c) 2021 Emiljano Gjiriti
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ TransformationSwapFunctions::TransformationSwapFunctions(uint32_t func1_id,
 
 bool TransformationSwapFunctions::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+  
   bool found_func1 = false;
   bool found_func2 = false;
 
