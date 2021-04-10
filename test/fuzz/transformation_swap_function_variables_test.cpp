@@ -83,31 +83,42 @@ TEST(TransformationSwapFunctionVariables, NotApplicable) {
                OpReturn
                OpFunctionEnd
 )";
+
   // I've decleared a SPIR-V 1.5 latest version accroding to libspir.h
   const auto env = SPV_ENV_UNIVERSAL_1_5;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
 
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-  // approach I not sure to use it!!
-  // start
-  // auto func = context->GetFunction(4);
-  // auto first_block = func->entry().get();
-  //  then get id and pass it !
-  // end
+  // #ifndef NDEBUG
+  //   // Can't swap variable with itself.
+  //   ASSERT_DEATH(TransformationSwapFunctionVariables(7, 7).IsApplicable(
+  //                    context.get(), transformation_context),
+  //                "two ids are equal");
+  // #endif
 
-  ASSERT_FALSE(TransformationSwapFunctionVariables(27, 28).IsApplicable(
+  // Can't swap instuction id for one of them not exits.
+  ASSERT_FALSE(TransformationSwapFunctionVariables(1, 2).IsApplicable(
+      context.get(), transformation_context));
+  // Can't swap instuctions one of them not OpVariable.
+  ASSERT_FALSE(TransformationSwapFunctionVariables(5, 24).IsApplicable(
+      context.get(), transformation_context));
+  //     Can't swap two instructions from two different blocks.
+  ASSERT_FALSE(TransformationSwapFunctionVariables(16, 26).IsApplicable(
       context.get(), transformation_context));
 
-  // ASSERT_TRUE(TransformationSwapFunctionVariables(id1,id2).IsApplicable(context.get(),
-  // transformation_context))
+  // Successful transformations
+  {
+    //   Swap two OpVariable instructions in the same function
+    ASSERT_TRUE(TransformationSwapFunctionVariables(24, 28).IsApplicable(
+        context.get(), transformation_context));
+  }
 }
-
-// next test
-TEST(TransformationSwapFunctionVariables, IsApplicable) {}
 
 }  // namespace
 }  // namespace fuzz
