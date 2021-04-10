@@ -34,14 +34,14 @@ bool TransformationSwapFunctionVariables::IsApplicable(
   uint32_t result_id1 = message_.result_id1();
   uint32_t result_id2 = message_.result_id2();
 
-  if (result_id1 == result_id2) {
-    return false;
-  }
+  assert((result_id1 != result_id2) && "two results ids are equal");
+
   // GetDef return pointer of instruction for given id or null
   auto instruction1 = ir_context->get_def_use_mgr()->GetDef(result_id1);
   auto instruction2 = ir_context->get_def_use_mgr()->GetDef(result_id2);
-  assert((instruction1 && instruction2) &&
-         "One of the instruction are not exists");
+  if (instruction1 == nullptr || instruction2 == nullptr) {
+    return false;
+  }
 
   if (instruction1->opcode() != SpvOpVariable ||
       instruction2->opcode() != SpvOpVariable) {
@@ -50,11 +50,12 @@ bool TransformationSwapFunctionVariables::IsApplicable(
 
   // The get_instr_block(..) overloaded method return BasicBlock* or nullptr.
   auto* block_1 = ir_context->get_instr_block(result_id1);
-  assert(block_1 && "The Block related to the first id is null");
   auto* block_2 = ir_context->get_instr_block(result_id2);
-  assert(block_2 && "The Block related to the second id is null");
+  if (block_1 == nullptr || block_2 == nullptr) {
+    return false;
+  }
 
-  return (block_1 == block_2) ? true : false;
+  return block_1 == block_2;
 }
 
 void TransformationSwapFunctionVariables::Apply(
@@ -62,10 +63,11 @@ void TransformationSwapFunctionVariables::Apply(
   uint32_t result_id1 = message_.result_id1();
   uint32_t result_id2 = message_.result_id2();
 
+  // GetDef return pointer of instruction for given id or null
   auto instruction1 = ir_context->get_def_use_mgr()->GetDef(result_id1);
   auto instruction2 = ir_context->get_def_use_mgr()->GetDef(result_id2);
 
-  std::swap(instruction1, instruction2);
+  std::swap(*instruction1, *instruction2);
 }
 
 protobufs::Transformation TransformationSwapFunctionVariables::ToMessage()
