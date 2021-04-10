@@ -101,9 +101,9 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_outline_functions.h
         fuzzer_pass_permute_blocks.h
         fuzzer_pass_permute_function_parameters.h
+        fuzzer_pass_permute_function_variables.h
         fuzzer_pass_permute_instructions.h
         fuzzer_pass_permute_phi_operands.h
-        fuzzer_pass_permute_function_variables.h
         fuzzer_pass_propagate_instructions_down.h
         fuzzer_pass_propagate_instructions_up.h
         fuzzer_pass_push_ids_through_variables.h
