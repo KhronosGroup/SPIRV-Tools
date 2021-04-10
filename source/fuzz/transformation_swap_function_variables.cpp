@@ -63,7 +63,7 @@ void TransformationSwapFunctionVariables::Apply(
   uint32_t result_id1 = message_.result_id1();
   uint32_t result_id2 = message_.result_id2();
 
-  // GetDef return pointer of instruction for given id or null
+  // GetDef return pointer of instruction for given id or null.
   auto instruction1 = ir_context->get_def_use_mgr()->GetDef(result_id1);
   auto instruction2 = ir_context->get_def_use_mgr()->GetDef(result_id2);
 
