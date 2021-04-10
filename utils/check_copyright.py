@@ -130,7 +130,7 @@ def insert_copyright(author, glob, comment_prefix):
         update_file = False
         for line in fileinput.input(file, inplace=1):
             emit = True
-            if state is 0:
+            if state == 0:
                 if COPYRIGHT_RE.search(line):
                     state = 1
                 elif skip(line):
@@ -141,7 +141,7 @@ def insert_copyright(author, glob, comment_prefix):
                     sys.stdout.write(licensed)
                     # Assume there isn't a previous license notice.
                     state = 1
-            elif state is 1:
+            elif state == 1:
                 if MIT_BEGIN_RE.search(line):
                     state = 2
                     emit = False
@@ -149,7 +149,7 @@ def insert_copyright(author, glob, comment_prefix):
                     # Assume an Apache license is preceded by a copyright
                     # notice.  So just emit it like the rest of the file.
                     state = 9
-            elif state is 2:
+            elif state == 2:
                 # Replace the MIT license with Apache 2
                 emit = False
                 if MIT_END_RE.search(line):
