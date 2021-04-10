@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//    
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,8 +32,7 @@ TransformationSwapTwoFunctions::TransformationSwapTwoFunctions(uint32_t id1, uin
 bool TransformationSwapTwoFunctions::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   // Go through every function in ir_context and return true only when both ids are found.
-  // Not applicable since two swapped functions are the same one. 
-  if(message_.function_id1()==message_.function_id2()) return false;  
+  // not applicable since two swapped functions are the same one. 
   assert(message_.function_id1()!=message_.function_id2() && " Two functions cannot be the same.");
 
   // Iterate through every functions in a module.
@@ -64,7 +63,7 @@ void TransformationSwapTwoFunctions::Apply(
   bool func1_found = false; 
   bool func2_found = false;
 
-  // Initialize the position.
+  // Initialize the position 
   opt::Module::iterator func1_it = ir_context->module()->begin(); 
   opt::Module::iterator func2_it = ir_context->module()->begin(); 
   for(auto& func : *ir_context->module()) {
