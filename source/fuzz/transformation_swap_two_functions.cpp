@@ -31,28 +31,12 @@ TransformationSwapTwoFunctions::TransformationSwapTwoFunctions(uint32_t id1, uin
 
 bool TransformationSwapTwoFunctions::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
-  // Go through every function in ir_context and return true only when both ids are found.
-  // not applicable since two swapped functions are the same one. 
+      
   assert(message_.function_id1()!=message_.function_id2() && " Two functions cannot be the same.");
+  assert(ir_context->GetFunction(message_.function_id1())!=nullptr && "Function 1 is not in range.");
+  assert(ir_context->GetFunction(message_.function_id2())!=nullptr && "Function 2 is not in range."); 
 
-  // Iterate through every functions in a module.
-  bool func1_found = false; 
-  bool func2_found = false;  
-  uint32_t id1 = -1; 
-  uint32_t id2 = -1; 
-  for (auto& func : *ir_context->module()) {
-    if(func.result_id()==message_.function_id1()) {
-      id1 = func.result_id();
-      func1_found = true;
-    }
-    if(func.result_id()==message_.function_id2()) {
-      id2 = func.result_id();
-      func2_found = true;
-    }
-  }
-
-  // Return true only when both functions are found with given ids and ids are not the same.
-  return  func1_found && func2_found && (id1!=id2);
+  return true;
 }
 
 void TransformationSwapTwoFunctions::Apply(

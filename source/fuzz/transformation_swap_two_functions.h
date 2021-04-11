@@ -28,13 +28,18 @@ class TransformationSwapTwoFunctions : public Transformation {
   explicit TransformationSwapTwoFunctions(
       protobufs::TransformationSwapTwoFunctions message);
 
-  TransformationSwapTwoFunctions(uint32_t id1, uint32_t id2);
+  TransformationSwapTwoFunctions(uint32_t function_id1, uint32_t function_id2);
+  // - |function_id1| is a valid non-entry-point OpFunction instruction
+  // - |function_id2| is a fresh id.
+  //   Swap function operation is only permitted if:
+  //     - function_id1 and function_id2 are not the same.
+  //     - both ids can be found within the id space.
 
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // The position between functions with |message_.id1| and |message_.id2| are swapped.
+  // - OpFunction with |function_id1| and |function_id1| are swapped.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
