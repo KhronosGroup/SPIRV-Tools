@@ -43,30 +43,17 @@ void TransformationSwapTwoFunctions::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   // Found the two functions in ir_context and swap their position. 
 
-  // Offsets mark the relevant distance of the function from module().begin(). 
-  bool func1_found = false; 
-  bool func2_found = false;
+  // TODO: Modify function.h, get function pointer and perform swap
 
-  // Initialize the position 
-  opt::Module::iterator func1_it = ir_context->module()->begin(); 
-  opt::Module::iterator func2_it = ir_context->module()->begin(); 
-  for(auto& func : *ir_context->module()) {
-    if(func.result_id()==message_.function_id1()) func1_found = true; 
-    if(func.result_id()==message_.function_id2()) func2_found = true;
+  opt::Function* func1_ptr = ir_context->GetFunction(message_.function_id1());
+  opt::Function* func2_ptr = ir_context->GetFunction(message_.function_id2());
 
-    // Once we found the target function, we stop increment iterator and thus 
-    // after one iteration, func1_it and func2_it should be the iterator with 
-    // their updated position. 
-    // If we have not found (ie. found = false), we kept incrementing. 
-    if(!func1_found) ++func1_it;
-    if(!func2_found) ++func2_it;
-  } 
-  
-  assert( func1_found  && "ERROR: Function 1 was not found with the given id."); 
-  assert( func2_found  && "ERROR: Function 2 was not found with the given id.");
-  assert( func1_it != func2_it && "ERROR: Two functions cannot be the same.");
-  // Two function pointers are all set, swap the two functions within the module.
-  std::swap(func1_it, func2_it); 
+  assert( func1_ptr!=nullptr  && "ERROR: Function 1 was not found with the given id."); 
+  assert( func2_ptr!=nullptr  && "ERROR: Function 2 was not found with the given id.");
+  assert( &func1_ptr != &func2_ptr && "ERROR: Two functions cannot be the same.");
+  //TODO: testing after modifying function.h
+
+  //std::swap(*func1_ptr, *func2_ptr); 
 }
 
 protobufs::Transformation TransformationSwapTwoFunctions::ToMessage() const {
