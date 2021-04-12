@@ -19,6 +19,7 @@ if (build_with_chromium) {
 }
 
 spirv_headers = spirv_tools_spirv_headers_dir
+spirv_is_winuwp = is_win && target_os == "winuwp"
 
 template("spvtools_core_tables") {
   assert(defined(invoker.version), "Need version in $target_name generation.")
@@ -1005,8 +1006,8 @@ executable("spirv-link") {
   configs += [ ":spvtools_internal_config" ]
 }
 
-if (!is_ios) {
-  # iOS does not allow std::system calls which spirv-reduce requires
+if (!is_ios && !spirv_is_winuwp) {
+  # iOS and UWP do not allow std::system calls which spirv-reduce requires
   executable("spirv-reduce") {
     sources = [ "tools/reduce/reduce.cpp" ]
     deps = [
@@ -1030,7 +1031,7 @@ group("all_spirv_tools") {
     ":spirv-opt",
     ":spirv-val",
   ]
-  if (!is_ios) {
+  if (!is_ios && !spirv_is_winuwp) {
     deps += [ ":spirv-reduce" ]
   }
 }
