@@ -16,6 +16,8 @@
 
 #include "source/opt/function.h"
 #include "source/opt/module.h"
+#include <iostream>
+#include <string>
 
 namespace spvtools {
 namespace fuzz {
@@ -31,10 +33,17 @@ TransformationSwapTwoFunctions::TransformationSwapTwoFunctions(uint32_t id1, uin
 
 bool TransformationSwapTwoFunctions::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
-      
-  assert(message_.function_id1()!=message_.function_id2() && " Two functions cannot be the same.");
+
+  // Debugging
+  // for(auto& func: *ir_context->module()) {
+  //   std::cout<<func.result_id()<<" "<<func.PrettyPrint()<<std::endl;
+  // }
+  assert(message_.function_id1()!=message_.function_id2() && "Two functions cannot be the same.");
+  assert( (ir_context->GetFunction(message_.function_id1())!=nullptr 
+     || ir_context->GetFunction(message_.function_id2())!=nullptr) && "Both functions are not in range.");
   assert(ir_context->GetFunction(message_.function_id1())!=nullptr && "Function 1 is not in range.");
   assert(ir_context->GetFunction(message_.function_id2())!=nullptr && "Function 2 is not in range."); 
+
 
   return true;
 }
@@ -43,17 +52,14 @@ void TransformationSwapTwoFunctions::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   // Found the two functions in ir_context and swap their position. 
 
-  // TODO: Modify function.h, get function pointer and perform swap
-
   opt::Function* func1_ptr = ir_context->GetFunction(message_.function_id1());
   opt::Function* func2_ptr = ir_context->GetFunction(message_.function_id2());
 
   assert( func1_ptr!=nullptr  && "ERROR: Function 1 was not found with the given id."); 
   assert( func2_ptr!=nullptr  && "ERROR: Function 2 was not found with the given id.");
   assert( &func1_ptr != &func2_ptr && "ERROR: Two functions cannot be the same.");
-  //TODO: testing after modifying function.h
 
-  //std::swap(*func1_ptr, *func2_ptr); 
+  std::swap(func1_ptr, func2_ptr); 
 }
 
 protobufs::Transformation TransformationSwapTwoFunctions::ToMessage() const {

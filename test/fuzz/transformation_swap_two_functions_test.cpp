@@ -38,25 +38,89 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
 // float multiplyBy8(in float value) {
 //   return multiplyBy2(value)*multiplyBy4(value);
 // }
+// 
+// void main() {
+//  multiplyBy2(3.7);
+//  multiplyBy4(3.9);
+//  multiplyBy8(5.0);
+// }
 
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main" %8
+               OpEntryPoint Fragment %4 "main" %48
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
-               OpName %8 "value"
-               OpDecorate %8 Location 0
+               OpName %10 "multiplyBy2(f1;"
+               OpName %9 "value"
+               OpName %13 "multiplyBy4(f1;"
+               OpName %12 "value"
+               OpName %16 "multiplyBy8(f1;"
+               OpName %15 "value"
+               OpName %23 "param"
+               OpName %29 "param"
+               OpName %32 "param"
+               OpName %39 "param"
+               OpName %42 "param"
+               OpName %45 "param"
+               OpName %48 "value"
+               OpDecorate %48 Location 0
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeFloat 32
-          %7 = OpTypePointer Input %6
-          %8 = OpVariable %7 Input
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %6 %7
+         %19 = OpConstant %6 2
+         %38 = OpConstant %6 3.70000005
+         %41 = OpConstant %6 3.9000001
+         %44 = OpConstant %6 5
+         %47 = OpTypePointer Input %6
+         %48 = OpVariable %47 Input
           %4 = OpFunction %2 None %3
           %5 = OpLabel
+         %39 = OpVariable %7 Function
+         %42 = OpVariable %7 Function
+         %45 = OpVariable %7 Function
+               OpStore %39 %38
+         %40 = OpFunctionCall %6 %10 %39
+               OpStore %42 %41
+         %43 = OpFunctionCall %6 %13 %42
+               OpStore %45 %44
+         %46 = OpFunctionCall %6 %16 %45
                OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %6 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %18 = OpLoad %6 %9
+         %20 = OpFMul %6 %18 %19
+               OpReturnValue %20
+               OpFunctionEnd
+         %13 = OpFunction %6 None %8
+         %12 = OpFunctionParameter %7
+         %14 = OpLabel
+         %23 = OpVariable %7 Function
+         %24 = OpLoad %6 %12
+               OpStore %23 %24
+         %25 = OpFunctionCall %6 %10 %23
+         %26 = OpFMul %6 %25 %19
+               OpReturnValue %26
+               OpFunctionEnd
+         %16 = OpFunction %6 None %8
+         %15 = OpFunctionParameter %7
+         %17 = OpLabel
+         %29 = OpVariable %7 Function
+         %32 = OpVariable %7 Function
+         %30 = OpLoad %6 %15
+               OpStore %29 %30
+         %31 = OpFunctionCall %6 %10 %29
+         %33 = OpLoad %6 %15
+               OpStore %32 %33
+         %34 = OpFunctionCall %6 %13 %32
+         %35 = OpFMul %6 %31 %34
+               OpReturnValue %35
                OpFunctionEnd
   )";
   const auto env = SPV_ENV_UNIVERSAL_1_3; 
@@ -71,53 +135,114 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-  // Function 1 should not swap with itself
-  auto same_func_swap = TransformationSwapTwoFunctions(1, 1);
-  ASSERT_FALSE(
-     same_func_swap.IsApplicable(context.get(), transformation_context)); 
+  // Function should not swap with itself
 
-  auto swap_1_and_5 = TransformationSwapTwoFunctions(1, 5); 
-  ASSERT_FALSE(
-    swap_1_and_5.IsApplicable(context.get(), transformation_context));
+  
+  // Permutation has invalid values 2
+  ASSERT_DEATH( TransformationSwapTwoFunctions(4,4)
+                   .IsApplicable(context.get(), transformation_context),
+               "Two functions cannot be the same.");
 
+//   // Function with id 29 does not exist. 
+  ASSERT_DEATH( TransformationSwapTwoFunctions(10,29)
+                   .IsApplicable(context.get(), transformation_context),
+               "Function 2 is not in range.");
 
-  auto swap_5_and_2 = TransformationSwapTwoFunctions(5,2);
-  ASSERT_FALSE(
-    swap_5_and_2.IsApplicable(context.get(), transformation_context));  
+//   // Function with id 30 does not exist. 
+  ASSERT_DEATH( TransformationSwapTwoFunctions(30,13)
+                   .IsApplicable(context.get(), transformation_context),
+               "Function 1 is not in range.");
 
-  // Both function 5 and 6 do not exist. 
-  auto swap_5_and_6 = TransformationSwapTwoFunctions(5,6); 
-  ASSERT_FALSE(
-    swap_5_and_6.IsApplicable(context.get(), transformation_context));   
+//   // Both function 5 and 6 do not exist. 
+  ASSERT_DEATH( TransformationSwapTwoFunctions(5,6)
+                   .IsApplicable(context.get(), transformation_context),
+               "Both functions are not in range.");
 
-  //Function 1 and 2 should swap successfully.   
-
+//   // Function with result_id 10 and 13 should swap successfully.
+  auto swap_test5 = TransformationSwapTwoFunctions(10, 13);
   ASSERT_TRUE(
-    TransformationSwapTwoFunctions(2,1).IsApplicable(context.get(), transformation_context));  
-
+      swap_test5.IsApplicable(context.get(), transformation_context));
   
   std::string after_transformation = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main" %8
+               OpEntryPoint Fragment %4 "main" %48
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
-               OpName %8 "value"
-               OpDecorate %8 Location 0
+               OpName %10 "multiplyBy2(f1;"
+               OpName %9 "value"
+               OpName %13 "multiplyBy4(f1;"
+               OpName %12 "value"
+               OpName %16 "multiplyBy8(f1;"
+               OpName %15 "value"
+               OpName %23 "param"
+               OpName %29 "param"
+               OpName %32 "param"
+               OpName %39 "param"
+               OpName %42 "param"
+               OpName %45 "param"
+               OpName %48 "value"
+               OpDecorate %48 Location 0
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeFloat 32
-          %7 = OpTypePointer Input %6
-          %8 = OpVariable %7 Input
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFunction %6 %7
+         %19 = OpConstant %6 2
+         %38 = OpConstant %6 3.70000005
+         %41 = OpConstant %6 3.9000001
+         %44 = OpConstant %6 5
+         %47 = OpTypePointer Input %6
+         %48 = OpVariable %47 Input
           %4 = OpFunction %2 None %3
           %5 = OpLabel
+         %39 = OpVariable %7 Function
+         %42 = OpVariable %7 Function
+         %45 = OpVariable %7 Function
+               OpStore %39 %38
+         %40 = OpFunctionCall %6 %10 %39
+               OpStore %42 %41
+         %43 = OpFunctionCall %6 %13 %42
+               OpStore %45 %44
+         %46 = OpFunctionCall %6 %16 %45
                OpReturn
+               OpFunctionEnd
+         %10 = OpFunction %6 None %8
+          %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %18 = OpLoad %6 %9
+         %20 = OpFMul %6 %18 %19
+               OpReturnValue %20
+               OpFunctionEnd
+         %13 = OpFunction %6 None %8
+         %12 = OpFunctionParameter %7
+         %14 = OpLabel
+         %23 = OpVariable %7 Function
+         %24 = OpLoad %6 %12
+               OpStore %23 %24
+         %25 = OpFunctionCall %6 %10 %23
+         %26 = OpFMul %6 %25 %19
+               OpReturnValue %26
+               OpFunctionEnd
+         %16 = OpFunction %6 None %8
+         %15 = OpFunctionParameter %7
+         %17 = OpLabel
+         %29 = OpVariable %7 Function
+         %32 = OpVariable %7 Function
+         %30 = OpLoad %6 %15
+               OpStore %29 %30
+         %31 = OpFunctionCall %6 %10 %29
+         %33 = OpLoad %6 %15
+               OpStore %32 %33
+         %34 = OpFunctionCall %6 %13 %32
+         %35 = OpFMul %6 %31 %34
+               OpReturnValue %35
                OpFunctionEnd
   )";
   // Final check to make sure the serious transformation above is correct. 
-  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 } // namespace 

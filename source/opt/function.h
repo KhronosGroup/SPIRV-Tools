@@ -54,6 +54,9 @@ class Function {
   Instruction& DefInst() { return *def_inst_; }
   const Instruction& DefInst() const { return *def_inst_; }
 
+  // Add move constructor for swap utility. 
+  Function(Function&&) = default;
+
   // Appends a parameter to this function.
   inline void AddParameter(std::unique_ptr<Instruction> p);
   // Appends a debug instruction in function header to this function.
