@@ -143,26 +143,29 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
                    .IsApplicable(context.get(), transformation_context),
                "Two functions cannot be the same.");
 
-//   // Function with id 29 does not exist. 
+  // Function with id 29 does not exist.
   ASSERT_DEATH( TransformationSwapTwoFunctions(10,29)
                    .IsApplicable(context.get(), transformation_context),
                "Function 2 is not in range.");
 
-//   // Function with id 30 does not exist. 
+  // Function with id 30 does not exist.
   ASSERT_DEATH( TransformationSwapTwoFunctions(30,13)
                    .IsApplicable(context.get(), transformation_context),
                "Function 1 is not in range.");
 
-//   // Both function 5 and 6 do not exist. 
+  // Both function 5 and 6 do not exist.
   ASSERT_DEATH( TransformationSwapTwoFunctions(5,6)
                    .IsApplicable(context.get(), transformation_context),
                "Both functions are not in range.");
 
-//   // Function with result_id 10 and 13 should swap successfully.
+  // Function with result_id 10 and 13 should swap successfully.
   auto swap_test5 = TransformationSwapTwoFunctions(10, 13);
   ASSERT_TRUE(
       swap_test5.IsApplicable(context.get(), transformation_context));
-  
+  ApplyAndCheckFreshIds(swap_test5, context.get(), &transformation_context);
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+
   std::string after_transformation = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -241,8 +244,8 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
                OpReturnValue %35
                OpFunctionEnd
   )";
-  // Final check to make sure the serious transformation above is correct. 
-   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+  // Final check to make sure the series of transformation above is correct.
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 } // namespace 

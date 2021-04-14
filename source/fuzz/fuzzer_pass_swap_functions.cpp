@@ -32,30 +32,27 @@ void FuzzerPassSwapFunctions::Apply() {
     // and a and b are not the same function (ie, have a different id). 
     // For every combination of a and b, we do transformation_swap_two_functions(a.id, b.id) and 
     // make sure everyone of them have the correct result returned. 
-    // When the function space is large, we might choose functions arbitrarily from the function space
-    // and do random swaps.
 
     // Collect all functions by their id from the given module.
     std::vector<uint32_t> function_ids; 
     for(auto& function : *GetIRContext()->module()) {
         function_ids.emplace_back(function.result_id());
     }
-    
-    int id_size = function_ids.size(); 
+
+    size_t id_size = function_ids.size();
     // We iterate through every combination of id i & j where i!=j.
-    for(int i = 0; i<id_size-1; ++i) {
-       for(int j = i+1; j<id_size; ++j) {  
-         // Randomly decide whether to ignore function swap.
-         if (!GetFuzzerContext()->ChoosePercentage(
-                 GetFuzzerContext()->GetChanceOfSwappingFunctions())) {
-           continue;
-         }         
-         // We do a swap between functions and break if such swap cannot be performed.
-         TransformationSwapTwoFunctions transformation(function_ids[i], function_ids[j]); 
-         if(!MaybeApplyTransformation(transformation)) {
-           break; 
-         }
-       }
+    for (size_t i = 0; i < id_size - 1; ++i) {
+      for (size_t j = i + 1; j < id_size; ++j) {
+        // Randomly decide whether to ignore function swap.
+        if (!GetFuzzerContext()->ChoosePercentage(
+                GetFuzzerContext()->GetChanceOfSwappingFunctions())) {
+          continue;
+        }
+        // We do a swap between functions and break if such swap cannot be
+        // performed.
+        TransformationSwapTwoFunctions transformation(function_ids[i],
+                                                      function_ids[j]);
+      }
     }
 }
 
