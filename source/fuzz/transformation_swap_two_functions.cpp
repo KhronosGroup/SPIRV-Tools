@@ -26,15 +26,13 @@ TransformationSwapTwoFunctions::TransformationSwapTwoFunctions(
 
 TransformationSwapTwoFunctions::TransformationSwapTwoFunctions(uint32_t id1,
                                                                uint32_t id2) {
-  assert(id1 != id2 && "Two functions cannot be the ");
+  assert(id1 != id2 && "Two functions cannot be the same.");
   message_.set_function_id1(id1);
   message_.set_function_id2(id2);
 }
 
 bool TransformationSwapTwoFunctions::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
-  assert(message_.function_id1() != message_.function_id2() &&
-         "Two functions cannot be the same.");
   assert((ir_context->GetFunction(message_.function_id1()) != nullptr ||
           ir_context->GetFunction(message_.function_id2()) != nullptr) &&
          "Both functions are not in range.");
@@ -52,7 +50,8 @@ void TransformationSwapTwoFunctions::Apply(
   // Offsets mark the relevant distance of the function from module().begin().
   bool func1_found = false;
   bool func2_found = false;
-  // Initialize the position
+
+  // Initialize the position (underlying: UptrVectorIterator<Function>)
   opt::Module::iterator func1_it = ir_context->module()->begin();
   opt::Module::iterator func2_it = ir_context->module()->begin();
   for (auto& func : *ir_context->module()) {
@@ -65,12 +64,9 @@ void TransformationSwapTwoFunctions::Apply(
     if (!func1_found) ++func1_it;
     if (!func2_found) ++func2_it;
   }
-  assert(func1_found && "ERROR: Function 1 was not found with the given id.");
-  assert(func2_found && "ERROR: Function 2 was not found with the given id.");
-  assert(func1_it != func2_it && "ERROR: Two functions cannot be the same.");
   // Two function pointers are all set, swap the two functions within the
   // module.
-  std::swap(func1_it.Get(), func2_it.Get());
+  std::iter_swap(func1_it.Get(), func2_it.Get());
 }
 
 protobufs::Transformation TransformationSwapTwoFunctions::ToMessage() const {

@@ -25,25 +25,28 @@ namespace fuzz {
 namespace {
 
 TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
+  // float multiplyBy8(in float value);
+  // float multiplyBy4(in float value);
+  // float multiplyBy2(in float value);
 
-//
-// float multiplyBy2(in float value) {
-//   return value*2.0;
-// }
-//
-// float multiplyBy4(in float value) {
-//   return multiplyBy2(value)*2.0;
-// }
+  // float multiplyBy2(in float value) {
+  //   return value*2.0;
+  // }
 
-// float multiplyBy8(in float value) {
-//   return multiplyBy2(value)*multiplyBy4(value);
-// }
-// 
-// void main() {
-//  multiplyBy2(3.7);
-//  multiplyBy4(3.9);
-//  multiplyBy8(5.0);
-// }
+  // float multiplyBy4(in float value) {
+  //   return multiplyBy2(value)*2.0;
+  // }
+
+  // float multiplyBy8(in float value) {
+  //   return multiplyBy2(value)*multiplyBy4(value);
+  // }
+
+  // layout(location=0) in float value;
+  // void main() { //4
+  //   multiplyBy2(3.7); //10
+  //   multiplyBy4(3.9); //13
+  //   multiplyBy8(5.0); //16
+  // }
 
   std::string shader = R"(
                OpCapability Shader
@@ -212,13 +215,6 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
          %46 = OpFunctionCall %6 %16 %45
                OpReturn
                OpFunctionEnd
-         %10 = OpFunction %6 None %8
-          %9 = OpFunctionParameter %7
-         %11 = OpLabel
-         %18 = OpLoad %6 %9
-         %20 = OpFMul %6 %18 %19
-               OpReturnValue %20
-               OpFunctionEnd
          %13 = OpFunction %6 None %8
          %12 = OpFunctionParameter %7
          %14 = OpLabel
@@ -228,6 +224,13 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
          %25 = OpFunctionCall %6 %10 %23
          %26 = OpFMul %6 %25 %19
                OpReturnValue %26
+               OpFunctionEnd
+         %10 = OpFunction %6 None %8
+         %9 = OpFunctionParameter %7
+         %11 = OpLabel
+         %18 = OpLoad %6 %9
+         %20 = OpFMul %6 %18 %19
+               OpReturnValue %20
                OpFunctionEnd
          %16 = OpFunction %6 None %8
          %15 = OpFunctionParameter %7
