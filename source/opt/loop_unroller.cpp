@@ -108,11 +108,11 @@ struct LoopUnrollState {
     previous_phi_ = new_phi;
     previous_latch_block_ = new_latch_block;
     previous_condition_block_ = new_condition_block;
-    previous_phis_ = std::move(new_phis_);
     for (size_t index = 0; index < previous_phis_.size(); ++index) {
       previous_phi_value_ids_[index] =
           new_inst[previous_phis_[index]->result_id()];
     }
+    previous_phis_ = std::move(new_phis_);
 
     // Clear new nodes.
     new_phi = nullptr;
