@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_swap_functions.h"
+
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/transformation_swap_two_functions.h"
 
@@ -20,40 +21,41 @@ namespace spvtools {
 namespace fuzz {
 
 FuzzerPassSwapFunctions::FuzzerPassSwapFunctions(
-    opt::IRContext* ir_context, TransformationContext* transformation_context, 
-    FuzzerContext* fuzzer_context, 
+    opt::IRContext* ir_context, TransformationContext* transformation_context,
+    FuzzerContext* fuzzer_context,
     protobufs::TransformationSequence* transformations)
-    : FuzzerPass(ir_context, transformation_context, fuzzer_context, 
+    : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
 void FuzzerPassSwapFunctions::Apply() {
-    // Here we start by doing exhaustive swap testing: 
-    // For every function a and function b, where a and b has a valid id in [function_ids] set
-    // and a and b are not the same function (ie, have a different id). 
-    // For every combination of a and b, we do transformation_swap_two_functions(a.id, b.id) and 
-    // make sure everyone of them have the correct result returned. 
+  // Here we start by doing exhaustive swap testing:
+  // For every function a and function b, where a and b has a valid id in
+  // [function_ids] set and a and b are not the same function (ie, have a
+  // different id). For every combination of a and b, we do
+  // transformation_swap_two_functions(a.id, b.id) and make sure everyone of
+  // them have the correct result returned.
 
-    // Collect all functions by their id from the given module.
-    std::vector<uint32_t> function_ids; 
-    for(auto& function : *GetIRContext()->module()) {
-        function_ids.emplace_back(function.result_id());
-    }
+  // Collect all functions by their id from the given module.
+  std::vector<uint32_t> function_ids;
+  for (auto& function : *GetIRContext()->module()) {
+    function_ids.emplace_back(function.result_id());
+  }
 
-    size_t id_size = function_ids.size();
-    // We iterate through every combination of id i & j where i!=j.
-    for (size_t i = 0; i < id_size - 1; ++i) {
-      for (size_t j = i + 1; j < id_size; ++j) {
-        // Randomly decide whether to ignore function swap.
-        if (!GetFuzzerContext()->ChoosePercentage(
-                GetFuzzerContext()->GetChanceOfSwappingFunctions())) {
-          continue;
-        }
-        // We do a swap between functions and break if such swap cannot be
-        // performed.
-        TransformationSwapTwoFunctions transformation(function_ids[i],
-                                                      function_ids[j]);
+  size_t id_size = function_ids.size();
+  // We iterate through every combination of id i & j where i!=j.
+  for (size_t i = 0; i < id_size - 1; ++i) {
+    for (size_t j = i + 1; j < id_size; ++j) {
+      // Randomly decide whether to ignore function swap.
+      if (!GetFuzzerContext()->ChoosePercentage(
+              GetFuzzerContext()->GetChanceOfSwappingFunctions())) {
+        continue;
       }
+      // We do a swap between functions and break if such swap cannot be
+      // performed.
+      TransformationSwapTwoFunctions transformation(function_ids[i],
+                                                    function_ids[j]);
     }
+  }
 }
 
 }  // namespace fuzz

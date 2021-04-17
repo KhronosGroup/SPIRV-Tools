@@ -23,14 +23,13 @@ namespace fuzz {
 // Randomly swap functions within a module.
 class FuzzerPassSwapFunctions : public FuzzerPass {
  public:
-  FuzzerPassSwapFunctions(
-      opt::IRContext* ir_context, TransformationContext* transformation_context,
-      FuzzerContext* fuzzer_context,
-      protobufs::TransformationSequence* transformations);
+  FuzzerPassSwapFunctions(opt::IRContext* ir_context,
+                          TransformationContext* transformation_context,
+                          FuzzerContext* fuzzer_context,
+                          protobufs::TransformationSequence* transformations);
 
   void Apply() override;
 };
-
 
 }  // namespace fuzz
 }  // namespace spvtools

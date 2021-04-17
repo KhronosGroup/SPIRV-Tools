@@ -26,21 +26,17 @@ TransformationSwapTwoFunctions::TransformationSwapTwoFunctions(
 
 TransformationSwapTwoFunctions::TransformationSwapTwoFunctions(uint32_t id1,
                                                                uint32_t id2) {
-  assert(id1 != id2 && "Two functions cannot be the same.");
   message_.set_function_id1(id1);
   message_.set_function_id2(id2);
 }
 
 bool TransformationSwapTwoFunctions::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
-  assert((ir_context->GetFunction(message_.function_id1()) != nullptr ||
-          ir_context->GetFunction(message_.function_id2()) != nullptr) &&
-         "Both functions are not in range.");
-  assert(ir_context->GetFunction(message_.function_id1()) != nullptr &&
-         "Function 1 is not in range.");
-  assert(ir_context->GetFunction(message_.function_id2()) != nullptr &&
-         "Function 2 is not in range.");
-
+  auto func1_ptr = ir_context->GetFunction(message_.function_id1());
+  auto func2_ptr = ir_context->GetFunction(message_.function_id2());
+  if (!func1_ptr || !func2_ptr ||
+      func1_ptr->result_id() == func2_ptr->result_id())
+    return false;
   return true;
 }
 

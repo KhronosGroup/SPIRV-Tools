@@ -44,13 +44,11 @@ class TransformationSwapTwoFunctions : public Transformation {
              TransformationContext* transformation_context) const override;
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
-
   protobufs::Transformation ToMessage() const override;
 
  private:
   protobufs::TransformationSwapTwoFunctions message_;
 };
-
 
 }  // namespace fuzz
 }  // namespace spvtools

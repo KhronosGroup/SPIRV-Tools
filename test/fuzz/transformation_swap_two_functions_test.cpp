@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "source/fuzz/transformation_swap_two_functions.h"
 
 #include "gtest/gtest.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
-
 
 namespace spvtools {
 namespace fuzz {
@@ -126,7 +124,7 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
                OpReturnValue %35
                OpFunctionEnd
   )";
-  const auto env = SPV_ENV_UNIVERSAL_1_3; 
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
@@ -140,31 +138,25 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
 
   // Function should not swap with itself
 
-  
   // Permutation has invalid values 2
-  ASSERT_DEATH( TransformationSwapTwoFunctions(4,4)
-                   .IsApplicable(context.get(), transformation_context),
-               "Two functions cannot be the same.");
+  ASSERT_FALSE(TransformationSwapTwoFunctions(4, 4).IsApplicable(
+      context.get(), transformation_context));
 
   // Function with id 29 does not exist.
-  ASSERT_DEATH( TransformationSwapTwoFunctions(10,29)
-                   .IsApplicable(context.get(), transformation_context),
-               "Function 2 is not in range.");
+  ASSERT_FALSE(TransformationSwapTwoFunctions(10, 29).IsApplicable(
+      context.get(), transformation_context));
 
   // Function with id 30 does not exist.
-  ASSERT_DEATH( TransformationSwapTwoFunctions(30,13)
-                   .IsApplicable(context.get(), transformation_context),
-               "Function 1 is not in range.");
+  ASSERT_FALSE(TransformationSwapTwoFunctions(30, 13).IsApplicable(
+      context.get(), transformation_context));
 
   // Both function 5 and 6 do not exist.
-  ASSERT_DEATH( TransformationSwapTwoFunctions(5,6)
-                   .IsApplicable(context.get(), transformation_context),
-               "Both functions are not in range.");
+  ASSERT_FALSE(TransformationSwapTwoFunctions(5, 6).IsApplicable(
+      context.get(), transformation_context));
 
   // Function with result_id 10 and 13 should swap successfully.
   auto swap_test5 = TransformationSwapTwoFunctions(10, 13);
-  ASSERT_TRUE(
-      swap_test5.IsApplicable(context.get(), transformation_context));
+  ASSERT_TRUE(swap_test5.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(swap_test5, context.get(), &transformation_context);
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
@@ -251,6 +243,6 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
-} // namespace 
-} // namespace fuzz
-} // namespace spvtools
+}  // namespace
+}  // namespace fuzz
+}  // namespace spvtools
