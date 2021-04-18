@@ -37,7 +37,7 @@ void FuzzerPassPermuteFunctionVariables::Apply() {
   // Permuting OpVariable instructions in each function
   for (auto& function : *GetIRContext()->module()) {
     if (!GetFuzzerContext()->ChoosePercentage(
-            GetFuzzerContext()->GetChanceOfPermuteFunctionVariables())) {
+            GetFuzzerContext()->GetChanceOfPermutingFunctionVariables())) {
       continue;
     }
 
@@ -49,14 +49,24 @@ void FuzzerPassPermuteFunctionVariables::Apply() {
         variables.push_back(&instruction);
       }
     }
+    uint32_t iterations_limit = 0;
+    do {
+      // Random Index template method which takes HasSize Method(std::vector) by
+      // reference and returns the random index for instruction.
+      uint32_t instruction_1_index = GetFuzzerContext()->RandomIndex(variables);
+      uint32_t instruction_2_index = GetFuzzerContext()->RandomIndex(variables);
 
-    while (variables.size() >= 2) {
-      auto instruction_1 = GetFuzzerContext()->RemoveAtRandomIndex(&variables);
-      auto instruction_2 = GetFuzzerContext()->RemoveAtRandomIndex(&variables);
+      if (instruction_1_index != instruction_2_index) {
+        ApplyTransformation(TransformationSwapFunctionVariables(
+            variables[instruction_1_index]->result_id(),
+            variables[instruction_2_index]->result_id()));
+      }
 
-      ApplyTransformation(TransformationSwapFunctionVariables(
-          instruction_1->result_id(), instruction_2->result_id()));
-    }
+    } while (GetFuzzerContext()->ChoosePercentage(
+                 GetFuzzerContext()
+                     ->GetChanceOfSwappingAnotherPairOfFunctionVariables()) &&
+             iterations_limit++ <
+                 25);  // I don't know 25 it's a good limit or no!.
   }
 }
 
