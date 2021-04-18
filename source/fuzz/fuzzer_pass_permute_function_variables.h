@@ -20,7 +20,7 @@
 namespace spvtools {
 namespace fuzz {
 
-// This fuzzer pass permutes variables in all functions in the module.
+// This fuzzer pass permutes variables in functions in the module.
 class FuzzerPassPermuteFunctionVariables : public FuzzerPass {
  public:
   FuzzerPassPermuteFunctionVariables(
