@@ -95,12 +95,13 @@ TEST(TransformationSwapFunctionVariables, NotApplicable) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-  // #ifndef NDEBUG
-  //   // Can't swap variable with itself.
-  //   ASSERT_DEATH(TransformationSwapFunctionVariables(7, 7).IsApplicable(
-  //                    context.get(), transformation_context),
-  //                "two ids are equal");
-  // #endif
+// This is defined when write it with cmake flags 
+#ifndef NDEBUG
+  // Can't swap variable with itself.
+  ASSERT_DEATH(TransformationSwapFunctionVariables(7, 7).IsApplicable(
+                   context.get(), transformation_context),
+               "Two results ids are equal");
+#endif
 
   // Can't swap instuction id for one of them not exits.
   ASSERT_FALSE(TransformationSwapFunctionVariables(1, 2).IsApplicable(
@@ -108,13 +109,86 @@ TEST(TransformationSwapFunctionVariables, NotApplicable) {
   // Can't swap instuctions one of them not OpVariable.
   ASSERT_FALSE(TransformationSwapFunctionVariables(5, 24).IsApplicable(
       context.get(), transformation_context));
-  //     Can't swap two instructions from two different blocks.
+  // Can't swap two instructions from two different blocks.
   ASSERT_FALSE(TransformationSwapFunctionVariables(16, 26).IsApplicable(
       context.get(), transformation_context));
+}
+
+TEST(TransformationSwapFunctionVariables, IsApplicable) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %8 = OpTypeFloat 32
+          %9 = OpTypePointer Function %8
+         %10 = OpTypeVector %8 2
+         %11 = OpTypePointer Function %10
+         %12 = OpTypeVector %8 3
+         %13 = OpTypeMatrix %12 3
+         %14 = OpTypePointer Function %13
+         %15 = OpTypeFunction %2 %7 %9 %11 %14 %7 %7
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %24 = OpVariable %7 Function
+         %25 = OpVariable %9 Function
+         %26 = OpVariable %11 Function
+         %27 = OpVariable %14 Function
+         %28 = OpVariable %7 Function
+         %29 = OpVariable %7 Function
+         %30 = OpVariable %7 Function
+         %32 = OpVariable %9 Function
+         %34 = OpVariable %11 Function
+         %36 = OpVariable %14 Function
+         %38 = OpVariable %7 Function
+         %40 = OpVariable %7 Function
+         %31 = OpLoad %6 %24
+               OpStore %30 %31
+         %33 = OpLoad %8 %25
+               OpStore %32 %33
+         %35 = OpLoad %10 %26
+               OpStore %34 %35
+         %37 = OpLoad %13 %27
+               OpStore %36 %37
+         %39 = OpLoad %6 %28
+               OpStore %38 %39
+         %41 = OpLoad %6 %29
+               OpStore %40 %41
+         %42 = OpFunctionCall %2 %22 %30 %32 %34 %36 %38 %40
+               OpReturn
+               OpFunctionEnd
+         %22 = OpFunction %2 None %15
+         %16 = OpFunctionParameter %7
+         %17 = OpFunctionParameter %9
+         %18 = OpFunctionParameter %11
+         %19 = OpFunctionParameter %14
+         %20 = OpFunctionParameter %7
+         %21 = OpFunctionParameter %7
+         %23 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  // I've decleared a SPIR-V 1.5 latest version accroding to libspir.h
+  const auto env = SPV_ENV_UNIVERSAL_1_5;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
 
   // Successful transformations
   {
-    //   Swap two OpVariable instructions in the same function
+    // Swap two OpVariable instructions in the same function
     ASSERT_TRUE(TransformationSwapFunctionVariables(24, 28).IsApplicable(
         context.get(), transformation_context));
   }
