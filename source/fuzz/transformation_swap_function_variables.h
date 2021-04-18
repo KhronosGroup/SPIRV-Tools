@@ -23,7 +23,8 @@
 namespace spvtools {
 namespace fuzz {
 
-// Transformation that's responsible for single change on just one method
+// A transformation that swaps two variable declaration instructions that appear
+// in the same function.
 class TransformationSwapFunctionVariables : public Transformation {
  public:
   explicit TransformationSwapFunctionVariables(
@@ -31,21 +32,13 @@ class TransformationSwapFunctionVariables : public Transformation {
 
   TransformationSwapFunctionVariables(uint32_t result_id1, uint32_t result_id2);
 
-  // - |message_.result_id1| and |message_.result_id2| are unique result ids of
-  // two OpVariable instructions.
-  // - |ir_context->get_instr_block| must return a block related to the specific
-  // id.
-  // - Return true or false under because Instructions with those result ids
-  // must exist and must be in the same basic block.
+  // - |message_.result_id1| and |message_.result_id2| must be the ids of
+  //   distinct OpVariable instructions appearing in the same function.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // - |message_.result_id1| and |message_.result_id2| are unique result ids of
-  // two OpVariable instructions.
-  // - |ir_context->get_def_use_mgr()->GetDef| return pointer of instruction
-  //  for given id or null
-  // - Swaps two OpVariable instructions with result ids |message_.result_id1|
+  // Swaps two OpVariable instructions with result ids |message_.result_id1|
   // and |message_.result_id2|.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
