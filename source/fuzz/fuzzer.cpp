@@ -86,6 +86,7 @@
 #include "source/fuzz/fuzzer_pass_split_blocks.h"
 #include "source/fuzz/fuzzer_pass_swap_commutable_operands.h"
 #include "source/fuzz/fuzzer_pass_swap_conditional_branch_operands.h"
+#include "source/fuzz/fuzzer_pass_swap_functions.h"
 #include "source/fuzz/fuzzer_pass_toggle_access_chain_instruction.h"
 #include "source/fuzz/fuzzer_pass_wrap_regions_in_selections.h"
 #include "source/fuzz/pass_management/repeated_pass_manager.h"
@@ -103,24 +104,19 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
                std::unique_ptr<TransformationContext> transformation_context,
                std::unique_ptr<FuzzerContext> fuzzer_context,
                MessageConsumer consumer,
-               const std::vector<fuzzerutil::ModuleSupplier>& donor_suppliers,
+               const std::vector<fuzzerutil::ModuleSupplier> &donor_suppliers,
                bool enable_all_passes,
                RepeatedPassStrategy repeated_pass_strategy,
                bool validate_after_each_fuzzer_pass,
                spv_validator_options validator_options)
-    : consumer_(std::move(consumer)),
-      enable_all_passes_(enable_all_passes),
+    : consumer_(std::move(consumer)), enable_all_passes_(enable_all_passes),
       validate_after_each_fuzzer_pass_(validate_after_each_fuzzer_pass),
-      validator_options_(validator_options),
-      num_repeated_passes_applied_(0),
-      is_valid_(true),
-      ir_context_(std::move(ir_context)),
+      validator_options_(validator_options), num_repeated_passes_applied_(0),
+      is_valid_(true), ir_context_(std::move(ir_context)),
       transformation_context_(std::move(transformation_context)),
       fuzzer_context_(std::move(fuzzer_context)),
-      transformation_sequence_out_(),
-      pass_instances_(),
-      repeated_pass_recommender_(nullptr),
-      repeated_pass_manager_(nullptr),
+      transformation_sequence_out_(), pass_instances_(),
+      repeated_pass_recommender_(nullptr), repeated_pass_manager_(nullptr),
       final_passes_() {
   assert(ir_context_ && "IRContext is not initialized");
   assert(fuzzer_context_ && "FuzzerContext is not initialized");
@@ -211,6 +207,7 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
     MaybeAddRepeatedPass<FuzzerPassSplitBlocks>(&pass_instances_);
     MaybeAddRepeatedPass<FuzzerPassSwapBranchConditionalOperands>(
         &pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassSwapFunctions>(&pass_instances_);
     MaybeAddRepeatedPass<FuzzerPassWrapRegionsInSelections>(&pass_instances_);
     // There is a theoretical possibility that no pass instances were created
     // until now; loop again if so.
@@ -245,8 +242,8 @@ Fuzzer::~Fuzzer() = default;
 
 template <typename FuzzerPassT, typename... Args>
 void Fuzzer::MaybeAddRepeatedPass(uint32_t percentage_chance_of_adding_pass,
-                                  RepeatedPassInstances* pass_instances,
-                                  Args&&... extra_args) {
+                                  RepeatedPassInstances *pass_instances,
+                                  Args &&... extra_args) {
   if (enable_all_passes_ ||
       fuzzer_context_->ChoosePercentage(percentage_chance_of_adding_pass)) {
     pass_instances->SetPass(MakeUnique<FuzzerPassT>(
@@ -256,8 +253,8 @@ void Fuzzer::MaybeAddRepeatedPass(uint32_t percentage_chance_of_adding_pass,
 }
 
 template <typename FuzzerPassT, typename... Args>
-void Fuzzer::MaybeAddFinalPass(std::vector<std::unique_ptr<FuzzerPass>>* passes,
-                               Args&&... extra_args) {
+void Fuzzer::MaybeAddFinalPass(std::vector<std::unique_ptr<FuzzerPass>> *passes,
+                               Args &&... extra_args) {
   if (enable_all_passes_ || fuzzer_context_->ChooseEven()) {
     passes->push_back(MakeUnique<FuzzerPassT>(
         ir_context_.get(), transformation_context_.get(), fuzzer_context_.get(),
@@ -265,17 +262,17 @@ void Fuzzer::MaybeAddFinalPass(std::vector<std::unique_ptr<FuzzerPass>>* passes,
   }
 }
 
-bool Fuzzer::ApplyPassAndCheckValidity(FuzzerPass* pass) const {
+bool Fuzzer::ApplyPassAndCheckValidity(FuzzerPass *pass) const {
   pass->Apply();
   return !validate_after_each_fuzzer_pass_ ||
          fuzzerutil::IsValidAndWellFormed(ir_context_.get(), validator_options_,
                                           consumer_);
 }
 
-opt::IRContext* Fuzzer::GetIRContext() { return ir_context_.get(); }
+opt::IRContext *Fuzzer::GetIRContext() { return ir_context_.get(); }
 
-const protobufs::TransformationSequence& Fuzzer::GetTransformationSequence()
-    const {
+const protobufs::TransformationSequence &
+Fuzzer::GetTransformationSequence() const {
   return transformation_sequence_out_;
 }
 
@@ -336,7 +333,7 @@ Fuzzer::Result Fuzzer::Run(uint32_t num_of_transformations_to_apply) {
     // We apply this transformations despite the fact that we might exceed
     // |num_of_transformations_to_apply|. This is not a problem for us since
     // these fuzzer passes are relatively simple yet might trigger some bugs.
-    for (auto& pass : final_passes_) {
+    for (auto &pass : final_passes_) {
       if (!ApplyPassAndCheckValidity(pass.get())) {
         status = Status::kFuzzerPassLedToInvalidModule;
         break;
@@ -379,5 +376,5 @@ bool Fuzzer::ShouldContinueRepeatedPasses(
   return true;
 }
 
-}  // namespace fuzz
-}  // namespace spvtools
+} // namespace fuzz
+} // namespace spvtools

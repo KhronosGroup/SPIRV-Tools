@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_TRANSFORMATION_PERMUTE_FUNCTIONS_H_
-#define SOURCE_FUZZ_TRANSFORMATION_PERMUTE_FUNCTION_H_
+#ifndef SOURCE_FUZZ_TRANSFORMATION_SWAP_FUNCTIONS_H_
+#define SOURCE_FUZZ_TRANSFORMATION_SWAP_FUNCTIONS_H_
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
@@ -24,29 +24,30 @@ namespace spvtools {
 namespace fuzz {
 
 class TransformationSwapFunctions : public Transformation {
- public:
+public:
   explicit TransformationSwapFunctions(
       protobufs::TransformationSwapFunctions message);
 
-  TransformationSwapFunctions(uint32_t func1_id, uint32_t func2_id);
+  TransformationSwapFunctions(uint32_t result_id1, uint32_t result_id2);
 
-  // - |permutation| is a set of [0..(n - 1)], where n is the number
-  //   of functions in the module
+  // Swaps two functions with result_ids result_id1
+  // and result_id2 if they are valid function ids
+  // and they are not equal.
   bool IsApplicable(
-      opt::IRContext* ir_context,
-      const TransformationContext& transformation_context) const override;
+      opt::IRContext *ir_context,
+      const TransformationContext &transformation_context) const override;
 
-  void Apply(opt::IRContext* ir_context,
-             TransformationContext* transformation_context) const override;
+  void Apply(opt::IRContext *ir_context,
+             TransformationContext *transformation_context) const override;
 
+private:
+  // private
   std::unordered_set<uint32_t> GetFreshIds() const override;
   protobufs::Transformation ToMessage() const override;
-
-  //  private:
   protobufs::TransformationSwapFunctions message_;
 };
 
-}  // namespace fuzz
-}  // namespace spvtools
+} // namespace fuzz
+} // namespace spvtools
 
-#endif  // SOURCE_FUZZ_TRANSFORMATION_PERMUTE_FUNCTIONS_H_
+#endif // SOURCE_FUZZ_TRANSFORMATION_SWAP_FUNCTIONS_H_

@@ -14,29 +14,25 @@
 
 #ifndef SOURCE_FUZZ_FUZZER_PASS_SWAP_FUNCTIONS_H_
 #define SOURCE_FUZZ_FUZZER_PASS_SWAP_FUNCTIONS_H_
-
-#define NUM_SWAPS 3
-
 #include "source/fuzz/fuzzer_pass.h"
 
 namespace spvtools {
 namespace fuzz {
 
 // Fuzzer pass that, given two non-equal ids
-// It checks whether there exist functions with the given ids
-// And Swaps the functions if that is the case
-
+// it checks whether there exist functions with the given ids
+// and Swaps the functions if that is the case.
 class FuzzerPassSwapFunctions : public FuzzerPass {
- public:
-  FuzzerPassSwapFunctions(opt::IRContext* ir_context,
-                          TransformationContext* transformation_context,
-                          FuzzerContext* fuzzer_context,
-                          protobufs::TransformationSequence* transformations);
+public:
+  FuzzerPassSwapFunctions(opt::IRContext *ir_context,
+                          TransformationContext *transformation_context,
+                          FuzzerContext *fuzzer_context,
+                          protobufs::TransformationSequence *transformations);
 
   void Apply() override;
 };
 
-}  // namespace fuzz
-}  // namespace spvtools
+} // namespace fuzz
+} // namespace spvtools
 
-#endif  // SOURCE_FUZZ_FUZZER_PASS_SWAP_FUNCTIONS_H_
+#endif // SOURCE_FUZZ_FUZZER_PASS_SWAP_FUNCTIONS_H_

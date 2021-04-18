@@ -1771,11 +1771,11 @@ message TransformationSwapFunctions {
   // A transformation that, given two function ids
   // it swaps the functions if their ids are not equal
   
-  // The id of the first function
-  uint32 func1_id = 1;
+  // The result id of the first function
+  uint32 result_id1 = 1;
 
-  // The id of the second function
-  uint32 func2_id = 2;
+  // The result id of the second function
+  uint32 result_id2 = 2;
 
 }
 

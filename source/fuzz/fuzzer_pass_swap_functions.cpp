@@ -14,8 +14,6 @@
 
 #include "source/fuzz/fuzzer_pass_swap_functions.h"
 
-#include <cstdlib>
-#include <ctime>
 #include <numeric>
 #include <vector>
 
@@ -28,26 +26,38 @@ namespace spvtools {
 namespace fuzz {
 
 FuzzerPassSwapFunctions::FuzzerPassSwapFunctions(
-    opt::IRContext* ir_context, TransformationContext* transformation_context,
-    FuzzerContext* fuzzer_context,
-    protobufs::TransformationSequence* transformations)
+    opt::IRContext *ir_context, TransformationContext *transformation_context,
+    FuzzerContext *fuzzer_context,
+    protobufs::TransformationSequence *transformations)
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
 void FuzzerPassSwapFunctions::Apply() {
-  uint32_t func1_id;
-  uint32_t func2_id;
-  uint32_t func_size = (uint32_t)(GetIRContext()->module()->end() -
-                                  GetIRContext()->module()->begin());
-  srand((unsigned)time(0));
-
-  for (int i = 0; i < NUM_SWAPS; i++) {
-    func1_id = rand() % func_size;
-    func2_id = rand() % func_size;
-
-    ApplyTransformation(TransformationSwapFunctions(func1_id, func2_id));
+  // This function iterates over the set of all result_ids
+  // and it swaps two functions with 0.1 <= probability <=0.5
+  // After each transformation it decides with a random probability
+  // whether to perform another transformation or exit.
+  std::vector<uint32_t> result_ids;
+  size_t i = 0, j = 0;
+  size_t func_size;
+  for (auto &function : *GetIRContext()->module()) {
+    result_ids.push_back(function.result_id());
+  }
+  func_size = result_ids.size();
+  for (; i < func_size; i++) {
+    for (; j < func_size; j++) {
+      if (!GetFuzzerContext()->ChoosePercentage(
+              GetFuzzerContext()->GetChanceOfSwappingFunctions())) {
+        continue;
+      }
+      ApplyTransformation(
+          TransformationSwapFunctions(result_ids[i], result_ids[j]));
+      if (!GetFuzzerContext()->ContinueSwappingFunctions()) {
+        break;
+      }
+    }
   }
 }
 
-}  // namespace fuzz
-}  // namespace spvtools
+} // namespace fuzz
+} // namespace spvtools

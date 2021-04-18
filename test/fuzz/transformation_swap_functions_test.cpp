@@ -14,9 +14,9 @@
 
 #include "source/fuzz/transformation_swap_functions.h"
 
-#include "gtest/gtest.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
+#include "gtest/gtest.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -217,24 +217,52 @@ TEST(TransformationSwapFunctions, BasicTest) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-  // Try random permutations
+  // Try random valid permutations
+  ASSERT_TRUE(TransformationSwapFunctions(12, 22).IsApplicable(
+      context.get(), transformation_context));
+  {
 
-  ASSERT_TRUE(TransformationSwapFunctions({68, 87}).IsApplicable(
+    TransformationSwapFunctions transformation(12, 22);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+  }
+  ASSERT_TRUE(TransformationSwapFunctions(22, 28).IsApplicable(
       context.get(), transformation_context));
 
-  ASSERT_TRUE(TransformationSwapFunctions({68, 82}).IsApplicable(
-      context.get(), transformation_context));
+  {
 
-  ASSERT_TRUE(TransformationSwapFunctions({96, 104}).IsApplicable(
-      context.get(), transformation_context));
+    TransformationSwapFunctions transformation(22, 28);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+  }
 
   // Cannot swap a function with itself
-  ASSERT_FALSE(TransformationSwapFunctions({96, 96}).IsApplicable(
+  ASSERT_FALSE(TransformationSwapFunctions(96, 96).IsApplicable(
       context.get(), transformation_context));
-  
-  // Function with id 10000 doesn't exist
-  ASSERT_FALSE(TransformationSwapFunctions({96, 1000}).IsApplicable(
-      context.get(), transformation_context));
+  {
+
+    TransformationSwapFunctions transformation(96, 96);
+    ASSERT_FALSE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+  }
+
+  // Function with result_id 10000 doesn't exist
+  ASSERT_FALSE(TransformationSwapFunctions({96, 1000})
+                   .IsApplicable(context.get(), transformation_context));
+  {
+
+    TransformationSwapFunctions transformation(96, 1000);
+    ASSERT_FALSE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+  }
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -379,60 +407,61 @@ TEST(TransformationSwapFunctions, BasicTest) {
                OpReturn
                OpFunctionEnd
          
-         ; Function0
-         ; adjust type of the function in-place
-         %12 = OpFunction %8 None %9
-         %10 = OpFunctionParameter %7
-         %11 = OpFunctionParameter %7
-         %13 = OpLabel
-         %30 = OpLoad %6 %10
-         %32 = OpFDiv %6 %30 %31
-         %35 = OpLoad %6 %11
-         %36 = OpFDiv %6 %35 %31
-         %37 = OpFSub %6 %34 %36
-         %38 = OpCompositeConstruct %8 %32 %33 %37 %34
-               OpReturnValue %38
-               OpFunctionEnd
-         
-         ; Function1
-         %22 = OpFunction %8 None %18
-         %19 = OpFunctionParameter %7
-         %20 = OpFunctionParameter %15
-         %21 = OpFunctionParameter %17
-         %23 = OpLabel
-         %53 = OpVariable %7 Function
-         %54 = OpVariable %7 Function
-         %41 = OpLoad %6 %19
-         %44 = OpAccessChain %7 %21 %43
-         %45 = OpLoad %6 %44
-         %46 = OpFAdd %6 %41 %45
-         %47 = OpLoad %14 %20
-         %48 = OpConvertSToF %6 %47
-         %50 = OpAccessChain %7 %21 %49
-         %51 = OpLoad %6 %50
-         %52 = OpFAdd %6 %48 %51
-               OpStore %53 %46
-               OpStore %54 %52
-         %55 = OpFunctionCall %8 %12 %53 %54
-               OpReturnValue %55
-               OpFunctionEnd
-         
-         ; Function2
-         %28 = OpFunction %24 None %25
-         %26 = OpFunctionParameter %15
-         %27 = OpFunctionParameter %7
-         %29 = OpLabel
-         %58 = OpLoad %14 %26
-         %59 = OpConvertSToF %6 %58
-         %60 = OpLoad %6 %27
-         %61 = OpFOrdLessThan %24 %59 %60
-               OpReturnValue %61
-               OpFunctionEnd
+      ; Function2
+      %28 = OpFunction %24 None %25
+      %26 = OpFunctionParameter %15
+      %27 = OpFunctionParameter %7
+      %29 = OpLabel
+      %58 = OpLoad %14 %26
+      %59 = OpConvertSToF %6 %58
+      %60 = OpLoad %6 %27
+      %61 = OpFOrdLessThan %24 %59 %60
+            OpReturnValue %61
+            OpFunctionEnd
+
+      ; Function0
+      ; adjust type of the function in-place
+      %12 = OpFunction %8 None %9
+      %10 = OpFunctionParameter %7
+      %11 = OpFunctionParameter %7
+      %13 = OpLabel
+      %30 = OpLoad %6 %10
+      %32 = OpFDiv %6 %30 %31
+      %35 = OpLoad %6 %11
+      %36 = OpFDiv %6 %35 %31
+      %37 = OpFSub %6 %34 %36
+      %38 = OpCompositeConstruct %8 %32 %33 %37 %34
+            OpReturnValue %38
+            OpFunctionEnd
+      
+      ; Function1
+            %22 = OpFunction %8 None %18
+            %19 = OpFunctionParameter %7
+            %20 = OpFunctionParameter %15
+            %21 = OpFunctionParameter %17
+            %23 = OpLabel
+            %53 = OpVariable %7 Function
+            %54 = OpVariable %7 Function
+            %41 = OpLoad %6 %19
+            %44 = OpAccessChain %7 %21 %43
+            %45 = OpLoad %6 %44
+            %46 = OpFAdd %6 %41 %45
+            %47 = OpLoad %14 %20
+            %48 = OpConvertSToF %6 %47
+            %50 = OpAccessChain %7 %21 %49
+            %51 = OpLoad %6 %50
+            %52 = OpFAdd %6 %48 %51
+                  OpStore %53 %46
+                  OpStore %54 %52
+            %55 = OpFunctionCall %8 %12 %53 %54
+                  OpReturnValue %55
+                  OpFunctionEnd
+            
   )";
 
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
-}  // namespace
-}  // namespace fuzz
-}  // namespace spvtools
+} // namespace
+} // namespace fuzz
+} // namespace spvtools

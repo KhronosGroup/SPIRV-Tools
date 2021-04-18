@@ -341,6 +341,10 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     // No obvious follow-on passes
     return {};
   }
+  if (&pass == pass_instances_->GetSwapFunctions()) {
+    // No obvious follow-on passes
+    return {};
+  }
   if (&pass == pass_instances_->GetWrapRegionsInSelections()) {
     // - This pass uses an irrelevant boolean constant - we can replace it with
     //   something more interesting.

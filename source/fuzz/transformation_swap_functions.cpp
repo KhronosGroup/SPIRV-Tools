@@ -27,55 +27,49 @@ TransformationSwapFunctions::TransformationSwapFunctions(
     protobufs::TransformationSwapFunctions message)
     : message_(std::move(message)) {}
 
-TransformationSwapFunctions::TransformationSwapFunctions(uint32_t func1_id,
-                                                         uint32_t func2_id) {
-  message_.set_func1_id(func1_id);
-  message_.set_func2_id(func2_id);
+TransformationSwapFunctions::TransformationSwapFunctions(uint32_t result_id1,
+                                                         uint32_t result_id2) {
+  message_.set_result_id1(result_id1);
+  message_.set_result_id2(result_id2);
 }
 
 bool TransformationSwapFunctions::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
-  
-  bool found_func1 = false;
-  bool found_func2 = false;
+    opt::IRContext *ir_context,
+    const TransformationContext & /*unused*/) const {
 
-  for (auto it = ir_context->module()->cbegin();
-       it != ir_context->module()->cend(); ++it) {
-    if (it->result_id() == message_.func1_id()) {
-      found_func1 = true;
-    }
+  // A swap transformation is possible if:
+  // - Both the result_ids are valid result_ids of some functions in the module
+  // and
+  // - The result_ids are not equal
+  opt::Function *f1 = ir_context->GetFunction(message_.result_id1());
+  opt::Function *f2 = ir_context->GetFunction(message_.result_id2());
 
-    if (it->result_id() == message_.func2_id()) {
-      found_func2 = true;
-    }
-  }
-
-  if ((message_.func1_id() == message_.func2_id()) ||
-      !(found_func1 && found_func2)) {
+  if (f1 == nullptr || f2 == nullptr) {
     return false;
   }
+  assert(f1 != nullptr && "Function 1 doesn't exist");
+  assert(f2 != nullptr && "Function 2 doesn't exist");
+  assert(message_.result_id1() != message_.result_id2() &&
+         "Cannot swap a function with itself");
   return true;
 }
 
 void TransformationSwapFunctions::Apply(
-    opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
-  auto fp1 = ir_context->module()->cbegin();
-  auto fp2 = ir_context->module()->cbegin();
-  // Find the functions that will be swapped
-
-  for (auto it1 = ir_context->module()->cbegin();
-       it1 != ir_context->module()->cend(); ++it1) {
-    if (it1->result_id() == message_.func1_id()) {
-      fp1 = it1;
-    }
-    if (it1->result_id() == message_.func2_id()) {
-      fp2 = it1;
-    }
-  }
-  std::swap(fp1, fp2);
-  // Make sure our changes are analyzed
-  ir_context->InvalidateAnalysesExceptFor(
-      opt::IRContext::Analysis::kAnalysisNone);
+    opt::IRContext *ir_context, TransformationContext * /*unused*/) const {
+  // Function that swaps two functions based on their result_ids
+  auto fp1 =
+      std::find_if(ir_context->module()->begin(), ir_context->module()->end(),
+                   [this](const opt::Function &function) {
+                     return function.result_id() == message_.result_id1();
+                   });
+  auto fp2 =
+      std::find_if(ir_context->module()->begin(), ir_context->module()->end(),
+                   [this](const opt::Function &function) {
+                     return function.result_id() == message_.result_id2();
+                   });
+  assert(*fp1.Get() != nullptr && "First function id is not valid");
+  assert(*fp2.Get() && "Second function id is not valid");
+  std::iter_swap(fp1.Get(), fp2.Get());
 }
 
 std::unordered_set<uint32_t> TransformationSwapFunctions::GetFreshIds() const {
@@ -88,5 +82,5 @@ protobufs::Transformation TransformationSwapFunctions::ToMessage() const {
   return result;
 }
 
-}  // namespace fuzz
-}  // namespace spvtools
+} // namespace fuzz
+} // namespace spvtools
