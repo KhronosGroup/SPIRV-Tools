@@ -55,7 +55,6 @@
 #include "source/fuzz/fuzzer_pass_outline_functions.h"
 #include "source/fuzz/fuzzer_pass_permute_blocks.h"
 #include "source/fuzz/fuzzer_pass_permute_function_parameters.h"
-#include "source/fuzz/fuzzer_pass_permute_function_variables.h"
 #include "source/fuzz/fuzzer_pass_permute_instructions.h"
 #include "source/fuzz/fuzzer_pass_propagate_instructions_down.h"
 #include "source/fuzz/fuzzer_pass_propagate_instructions_up.h"
@@ -151,7 +150,6 @@ class RepeatedPassInstances {
   REPEATED_PASS_INSTANCE(OutlineFunctions);
   REPEATED_PASS_INSTANCE(PermuteBlocks);
   REPEATED_PASS_INSTANCE(PermuteFunctionParameters);
-  REPEATED_PASS_INSTANCE(PermuteFunctionVariables);
   REPEATED_PASS_INSTANCE(PermuteInstructions);
   REPEATED_PASS_INSTANCE(PropagateInstructionsDown);
   REPEATED_PASS_INSTANCE(PropagateInstructionsUp);
