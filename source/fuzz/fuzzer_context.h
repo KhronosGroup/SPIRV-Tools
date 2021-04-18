@@ -228,9 +228,6 @@ class FuzzerContext {
   uint32_t GetChanceOfCallingFunction() const {
     return chance_of_calling_function_;
   }
-  uint32_t GetChanceOfPermuteFunctionVariables() const {
-    return chance_of_permute_function_variables_;
-  }
   uint32_t GetChanceOfChoosingStructTypeVsArrayType() const {
     return chance_of_choosing_struct_type_vs_array_type_;
   }
@@ -306,6 +303,9 @@ class FuzzerContext {
   uint32_t GetChanceOfOutliningFunction() const {
     return chance_of_outlining_function_;
   }
+  uint32_t GetChanceOfPermutingFunctionVariables() const {
+    return chance_of_permuting_function_variables_;
+  }
   uint32_t GetChanceOfPermutingInstructions() const {
     return chance_of_permuting_instructions_;
   }
@@ -365,6 +365,9 @@ class FuzzerContext {
   }
   uint32_t GetChanceOfSwappingConditionalBranchOperands() const {
     return chance_of_swapping_conditional_branch_operands_;
+  }
+  uint32_t GetChanceOfSwappingAnotherPairOfFunctionVariables() const {
+    return chance_of_swapping_another_pair_of_function_variables_;
   }
   uint32_t GetChanceOfTogglingAccessChainInstruction() const {
     return chance_of_toggling_access_chain_instruction_;
@@ -529,9 +532,9 @@ class FuzzerContext {
   uint32_t chance_of_mutating_pointer_;
   uint32_t chance_of_obfuscating_constant_;
   uint32_t chance_of_outlining_function_;
+  uint32_t chance_of_permuting_function_variables_;
   uint32_t chance_of_permuting_instructions_;
   uint32_t chance_of_permuting_parameters_;
-  uint32_t chance_of_permute_function_variables_;
   uint32_t chance_of_permuting_phi_operands_;
   uint32_t chance_of_propagating_instructions_down_;
   uint32_t chance_of_propagating_instructions_up_;
@@ -550,8 +553,10 @@ class FuzzerContext {
   uint32_t chance_of_replacing_parameters_with_struct_;
   uint32_t chance_of_splitting_block_;
   uint32_t chance_of_swapping_conditional_branch_operands_;
+  uint32_t chance_of_swapping_another_pair_of_function_variables_;
   uint32_t chance_of_toggling_access_chain_instruction_;
   uint32_t chance_of_wrapping_region_in_selection_;
+  
   // Limits associated with various quantities for which random values are
   // chosen during fuzzing.
   // Keep them in alphabetical order.
