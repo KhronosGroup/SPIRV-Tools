@@ -34,21 +34,23 @@ bool TransformationSwapFunctionVariables::IsApplicable(
   uint32_t result_id1 = message_.result_id1();
   uint32_t result_id2 = message_.result_id2();
 
-  assert((result_id1 != result_id2) && "two results ids are equal");
+  assert((result_id1 != result_id2) && "Two results ids are equal");
 
-  // GetDef return pointer of instruction for given id or null
+  // The result ids used in the message must refer to instructions.
   auto instruction1 = ir_context->get_def_use_mgr()->GetDef(result_id1);
   auto instruction2 = ir_context->get_def_use_mgr()->GetDef(result_id2);
   if (instruction1 == nullptr || instruction2 == nullptr) {
     return false;
   }
-
+  // Both instructions must be variables.
   if (instruction1->opcode() != SpvOpVariable ||
       instruction2->opcode() != SpvOpVariable) {
     return false;
   }
 
-  // The get_instr_block(..) overloaded method return BasicBlock* or nullptr.
+  // Both variable instructions must be in some basic block (as they are
+  // function-local variables), and they must be in the same block (as they need
+  // to be variables of the same function).
   auto* block_1 = ir_context->get_instr_block(result_id1);
   auto* block_2 = ir_context->get_instr_block(result_id2);
   if (block_1 == nullptr || block_2 == nullptr) {
@@ -60,12 +62,11 @@ bool TransformationSwapFunctionVariables::IsApplicable(
 
 void TransformationSwapFunctionVariables::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
-  uint32_t result_id1 = message_.result_id1();
-  uint32_t result_id2 = message_.result_id2();
-
-  // GetDef return pointer of instruction for given id or null.
-  auto instruction1 = ir_context->get_def_use_mgr()->GetDef(result_id1);
-  auto instruction2 = ir_context->get_def_use_mgr()->GetDef(result_id2);
+  // The result ids used in the message must refer to instructions.
+  auto instruction1 =
+      ir_context->get_def_use_mgr()->GetDef(message_.result_id1());
+  auto instruction2 =
+      ir_context->get_def_use_mgr()->GetDef(message_.result_id2());
 
   std::swap(*instruction1, *instruction2);
 }
