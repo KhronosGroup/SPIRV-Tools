@@ -3406,86 +3406,51 @@ TEST_F(PassClassTest, UnrollWithPhiReferencesPhi) {
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint GLCompute %csMain "csMain" %gl_LocalInvocationID %gl_WorkGroupID %gl_GlobalInvocationID
-               OpExecutionMode %csMain LocalSize 64 1 1
+               OpEntryPoint Fragment %main "main" %color
+               OpExecutionMode %main OriginUpperLeft
                OpSource HLSL 600
-               OpName %type_2d_image "type.2d.image"
-               OpName %blurOutput "blurOutput"
-               OpName %csMain "csMain"
-               OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
-               OpDecorate %gl_WorkGroupID BuiltIn WorkgroupId
-               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
-               OpDecorate %blurOutput DescriptorSet 0
-               OpDecorate %blurOutput Binding 0
-               OpDecorate %138 NoContraction
+               OpName %main "main"
+               OpName %color "color"
+               OpDecorate %color Location 0
        %uint = OpTypeInt 32 0
-     %uint_0 = OpConstant %uint 0
-     %v2uint = OpTypeVector %uint 2
-         %37 = OpConstantComposite %v2uint %uint_0 %uint_0
       %float = OpTypeFloat 32
     %float_0 = OpConstant %float 0
     %float_1 = OpConstant %float 1
      %uint_1 = OpConstant %uint 1
      %uint_3 = OpConstant %uint 3
-%type_2d_image = OpTypeImage %float 2D 2 0 0 2 R32f
-%_ptr_UniformConstant_type_2d_image = OpTypePointer UniformConstant %type_2d_image
-     %v3uint = OpTypeVector %uint 3
-%_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
-         %51 = OpTypeFunction %void
+         %11 = OpTypeFunction %void
        %bool = OpTypeBool
- %blurOutput = OpVariable %_ptr_UniformConstant_type_2d_image UniformConstant
-%gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
-%gl_WorkGroupID = OpVariable %_ptr_Input_v3uint Input
-%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
-        %158 = OpUndef %float
-       %true = OpConstantTrue %bool
-     %uint_2 = OpConstant %uint 2
-     %csMain = OpFunction %void None %51
-         %59 = OpLabel
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+      %color = OpVariable %_ptr_Output_v4float Output
+       %main = OpFunction %void None %11
+         %15 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+         %17 = OpPhi %float %float_0 %15 %18 %19
+         %18 = OpPhi %float %float_1 %15 %20 %19
+         %21 = OpPhi %uint %uint_1 %15 %22 %19
+         %23 = OpULessThanEqual %bool %21 %uint_3
+               OpLoopMerge %24 %19 Unroll
+               OpBranchConditional %23 %25 %24
+         %25 = OpLabel
 
-; CHECK: [[phi0_init:%\w+]] = OpUndef %float
-; CHECK: [[phi1_init:%\w+]] = OpFSub %float [[phi0_init]] [[phi0_init]]
+; First loop iteration
+; CHECK: [[next_phi1_0:%\w+]] = OpFSub %float %float_1 %float_0
 
-        %117 = OpFSub %float %158 %158
-               OpBranch %118
-        %118 = OpLabel
+; Second loop iteration
+; CHECK: [[next_phi1_1:%\w+]] = OpFSub %float [[next_phi1_0]] %float_1
 
-; CHECK:      [[next_phi1_0:%\w+]] = OpFSub %float [[phi1_init]] [[phi0_init]]
-; CHECK-NEXT:                        OpFSub %float [[next_phi1_0]] [[phi1_init]]
+; Third loop iteration
+; CHECK:                        OpFSub %float [[next_phi1_1]] [[next_phi1_0]]
 
-; CHECK:      [[next_phi1_1:%\w+]] = OpFSub %float [[next_phi1_0]] [[phi1_init]]
-; CHECK-NEXT:                        OpFSub %float [[next_phi1_1]] [[next_phi1_0]]
-
-; CHECK:      [[next_phi1_2:%\w+]] = OpFSub %float [[next_phi1_1]] [[next_phi1_0]]
-; CHECK-NEXT:                        OpFSub %float [[next_phi1_2]] [[next_phi1_1]]
-
-        %164 = OpPhi %float %float_1 %59 %130 %148
-        %163 = OpPhi %float %158 %59 %162 %148
-        %162 = OpPhi %float %117 %59 %124 %148
-        %161 = OpPhi %float %float_0 %59 %138 %148
-        %160 = OpPhi %float %float_0 %59 %141 %148
-        %159 = OpPhi %uint %uint_1 %59 %150 %148
-        %120 = OpULessThanEqual %bool %159 %uint_3
-               OpLoopMerge %151 %148 Unroll
-               OpBranchConditional %120 %121 %151
-        %121 = OpLabel
-        %124 = OpFSub %float %162 %163
-        %127 = OpFSub %float %124 %162
-        %128 = OpExtInst %float %1 FAbs %127
-        %130 = OpFMul %float %164 %128
-        %132 = OpConvertUToF %float %159
-        %134 = OpFMul %float %132 %130
-        %138 = OpExtInst %float %1 Fma %float_0 %134 %161
-        %141 = OpFAdd %float %160 %134
-               OpBranch %148
-        %148 = OpLabel
-        %150 = OpIAdd %uint %159 %uint_1
-               OpBranch %118
-        %151 = OpLabel
-        %154 = OpFDiv %float %161 %160
-        %157 = OpLoad %type_2d_image %blurOutput
-               OpImageWrite %157 %37 %154 None
+         %20 = OpFSub %float %18 %17
+               OpBranch %19
+         %19 = OpLabel
+         %22 = OpIAdd %uint %21 %uint_1
+               OpBranch %16
+         %24 = OpLabel
                OpReturn
                OpFunctionEnd
 )";
@@ -3508,89 +3473,56 @@ TEST_F(PassClassTest, UnrollWithTwoPhisReferencePhis) {
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint GLCompute %csMain "csMain" %gl_LocalInvocationID %gl_WorkGroupID %gl_GlobalInvocationID
-               OpExecutionMode %csMain LocalSize 64 1 1
+               OpEntryPoint Fragment %main "main" %color
+               OpExecutionMode %main OriginUpperLeft
                OpSource HLSL 600
-               OpName %type_2d_image "type.2d.image"
-               OpName %blurOutput "blurOutput"
-               OpName %csMain "csMain"
-               OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
-               OpDecorate %gl_WorkGroupID BuiltIn WorkgroupId
-               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
-               OpDecorate %blurOutput DescriptorSet 0
-               OpDecorate %blurOutput Binding 0
-               OpDecorate %138 NoContraction
+               OpName %main "main"
+               OpName %color "color"
+               OpDecorate %color Location 0
        %uint = OpTypeInt 32 0
-     %uint_0 = OpConstant %uint 0
-     %v2uint = OpTypeVector %uint 2
-         %37 = OpConstantComposite %v2uint %uint_0 %uint_0
       %float = OpTypeFloat 32
     %float_0 = OpConstant %float 0
     %float_1 = OpConstant %float 1
      %uint_1 = OpConstant %uint 1
      %uint_3 = OpConstant %uint 3
-%type_2d_image = OpTypeImage %float 2D 2 0 0 2 R32f
-%_ptr_UniformConstant_type_2d_image = OpTypePointer UniformConstant %type_2d_image
-     %v3uint = OpTypeVector %uint 3
-%_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
-         %51 = OpTypeFunction %void
+         %11 = OpTypeFunction %void
        %bool = OpTypeBool
- %blurOutput = OpVariable %_ptr_UniformConstant_type_2d_image UniformConstant
-%gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
-%gl_WorkGroupID = OpVariable %_ptr_Input_v3uint Input
-%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
-        %158 = OpUndef %float
-       %true = OpConstantTrue %bool
-     %uint_2 = OpConstant %uint 2
-     %csMain = OpFunction %void None %51
-         %59 = OpLabel
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+      %color = OpVariable %_ptr_Output_v4float Output
+       %main = OpFunction %void None %11
+         %15 = OpLabel
+               OpBranch %16
+         %16 = OpLabel
+         %17 = OpPhi %float %float_1 %15 %18 %19
+         %18 = OpPhi %float %float_0 %15 %20 %19
+         %20 = OpPhi %float %float_1 %15 %21 %19
+         %22 = OpPhi %uint %uint_1 %15 %23 %19
+         %24 = OpULessThanEqual %bool %22 %uint_3
+               OpLoopMerge %25 %19 Unroll
+               OpBranchConditional %24 %26 %25
+         %26 = OpLabel
 
-; CHECK: [[phi0_init:%\w+]] = OpUndef %float
-; CHECK: [[phi1_init:%\w+]] = OpFSub %float [[phi0_init]] [[phi0_init]]
+; First loop iteration
+; CHECK: [[next_phi1_0:%\w+]] = OpFSub %float %float_1 %float_0
+; CHECK:                        OpFMul %float %float_1
 
-        %117 = OpFSub %float %158 %158
-               OpBranch %118
-        %118 = OpLabel
+; Second loop iteration
+; CHECK: [[next_phi1_1:%\w+]] = OpFSub %float [[next_phi1_0]] %float_1
+; CHECK:                        OpFMul %float %float_0
 
-; CHECK:      [[next_phi1_0:%\w+]] = OpFSub %float [[phi1_init]] [[phi0_init]]
-; CHECK-NEXT:                        OpFSub %float [[next_phi1_0]] [[phi1_init]]
-; CHECK:                             OpFMul %float %float_1
+; Third loop iteration
+; CHECK:                        OpFSub %float [[next_phi1_1]] [[next_phi1_0]]
+; CHECK:                        OpFMul %float %float_1
 
-; CHECK:      [[next_phi1_1:%\w+]] = OpFSub %float [[next_phi1_0]] [[phi1_init]]
-; CHECK-NEXT:                        OpFSub %float [[next_phi1_1]] [[next_phi1_0]]
-; CHECK:                             OpFMul %float [[phi0_init]]
-
-; CHECK:      [[next_phi1_2:%\w+]] = OpFSub %float [[next_phi1_1]] [[next_phi1_0]]
-; CHECK-NEXT:                        OpFSub %float [[next_phi1_2]] [[next_phi1_1]]
-; CHECK:                             OpFMul %float [[phi1_init]]
-
-        %164 = OpPhi %float %float_1 %59 %163 %148
-        %163 = OpPhi %float %158 %59 %162 %148
-        %162 = OpPhi %float %117 %59 %124 %148
-        %161 = OpPhi %float %float_0 %59 %138 %148
-        %160 = OpPhi %float %float_0 %59 %141 %148
-        %159 = OpPhi %uint %uint_1 %59 %150 %148
-        %120 = OpULessThanEqual %bool %159 %uint_3
-               OpLoopMerge %151 %148 Unroll
-               OpBranchConditional %120 %121 %151
-        %121 = OpLabel
-        %124 = OpFSub %float %162 %163
-        %127 = OpFSub %float %124 %162
-        %128 = OpExtInst %float %1 FAbs %127
-        %130 = OpFMul %float %164 %128
-        %132 = OpConvertUToF %float %159
-        %134 = OpFMul %float %132 %130
-        %138 = OpExtInst %float %1 Fma %float_0 %134 %161
-        %141 = OpFAdd %float %160 %134
-               OpBranch %148
-        %148 = OpLabel
-        %150 = OpIAdd %uint %159 %uint_1
-               OpBranch %118
-        %151 = OpLabel
-        %154 = OpFDiv %float %161 %160
-        %157 = OpLoad %type_2d_image %blurOutput
-               OpImageWrite %157 %37 %154 None
+         %21 = OpFSub %float %20 %18
+         %27 = OpFMul %float %17 %21
+               OpBranch %19
+         %19 = OpLabel
+         %23 = OpIAdd %uint %22 %uint_1
+               OpBranch %16
+         %25 = OpLabel
                OpReturn
                OpFunctionEnd
 )";
