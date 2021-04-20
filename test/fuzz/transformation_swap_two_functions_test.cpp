@@ -137,8 +137,9 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
       MakeUnique<FactManager>(context.get()), validator_options);
 
   // Function should not swap with itself
-  ASSERT_FALSE(TransformationSwapTwoFunctions(4, 4).IsApplicable(
-      context.get(), transformation_context));
+  ASSERT_DEATH(TransformationSwapTwoFunctions(4, 4).IsApplicable(
+                   context.get(), transformation_context),
+               "The two function ids cannot be the same.");
 
   // Function with id 29 does not exist.
   ASSERT_FALSE(TransformationSwapTwoFunctions(10, 29).IsApplicable(

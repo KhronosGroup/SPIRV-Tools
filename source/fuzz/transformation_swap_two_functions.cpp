@@ -17,6 +17,8 @@
 #include "source/opt/function.h"
 #include "source/opt/module.h"
 
+#include <algorithm>
+
 namespace spvtools {
 namespace fuzz {
 
@@ -26,6 +28,7 @@ TransformationSwapTwoFunctions::TransformationSwapTwoFunctions(
 
 TransformationSwapTwoFunctions::TransformationSwapTwoFunctions(uint32_t id1,
                                                                uint32_t id2) {
+  assert(id1 != id2 && "The two function ids cannot be the same.");
   message_.set_function_id1(id1);
   message_.set_function_id2(id2);
 }
@@ -42,23 +45,14 @@ bool TransformationSwapTwoFunctions::IsApplicable(
 
 void TransformationSwapTwoFunctions::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
-  // Found the two functions in ir_context and swap their position.
-  // Offsets mark the relevant distance of the function from module().begin().
-  bool func1_found = false;
-  bool func2_found = false;
-
   // Initialize the position (underlying: UptrVectorIterator<Function>)
   opt::Module::iterator func1_it = ir_context->module()->begin();
   opt::Module::iterator func2_it = ir_context->module()->begin();
-  for (auto& func : *ir_context->module()) {
-    if (func.result_id() == message_.function_id1()) func1_found = true;
-    if (func.result_id() == message_.function_id2()) func2_found = true;
-    // Once we found the target function, we stop increment iterator and thus
-    // after one iteration, func1_it and func2_it should be the iterator with
-    // their updated position.
-    // If we have not found (ie. found = false), we kept incrementing.
-    if (!func1_found) ++func1_it;
-    if (!func2_found) ++func2_it;
+
+  for (auto iter = ir_context->module()->begin();
+       iter != ir_context->module()->end(); ++iter) {
+    if ((*iter).result_id() == message_.function_id1()) func1_it = iter;
+    if ((*iter).result_id() == message_.function_id2()) func2_it = iter;
   }
   // Two function pointers are all set, swap the two functions within the
   // module.
