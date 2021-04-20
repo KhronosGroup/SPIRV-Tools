@@ -363,7 +363,7 @@ class FuzzerContext {
   uint32_t GetChanceOfSwappingConditionalBranchOperands() const {
     return chance_of_swapping_conditional_branch_operands_;
   }
-  
+
   uint32_t GetChanceOfSwappingFunctions() const {
     return chance_of_swapping_functions_;
   }
