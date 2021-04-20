@@ -3658,23 +3658,25 @@ OpFunctionEnd
 
 INSTANTIATE_TEST_SUITE_P(
     SubgroupInvocationIdAndSizeNotU32, ValidateVulkanSubgroupBuiltIns,
-    Combine(Values("SubgroupLocalInvocationId", "SubgroupSize"),
-            Values("GLCompute"), Values("Input"), Values("%f32"),
-            Values("VUID-SubgroupLocalInvocationId-SubgroupLocalInvocationId-"
-                   "04381 VUID-SubgroupSize-SubgroupSize-04383"),
-            Values(TestResult(SPV_ERROR_INVALID_DATA,
-                              "needs to be a 32-bit int"))));
+    Combine(
+        Values("SubgroupLocalInvocationId", "SubgroupSize"),
+        Values("GLCompute"), Values("Input"), Values("%f32"),
+        Values("VUID-SubgroupLocalInvocationId-SubgroupLocalInvocationId-04381 "
+               "VUID-SubgroupSize-SubgroupSize-04383"),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "needs to be a 32-bit int"))));
 
 INSTANTIATE_TEST_SUITE_P(
     SubgroupInvocationIdAndSizeNotInput, ValidateVulkanSubgroupBuiltIns,
-    Combine(Values("SubgroupLocalInvocationId", "SubgroupSize"),
-            Values("GLCompute"), Values("Output", "Workgroup", "Private"),
-            Values("%u32"),
-            Values("VUID-SubgroupLocalInvocationId-SubgroupLocalInvocationId-"
-                   "04380 VUID-SubgroupSize-SubgroupSize-04382"),
-            Values(TestResult(
-                SPV_ERROR_INVALID_DATA,
-                "to be only used for variables with Input storage class"))));
+    Combine(
+        Values("SubgroupLocalInvocationId", "SubgroupSize"),
+        Values("GLCompute"), Values("Output", "Workgroup", "Private"),
+        Values("%u32"),
+        Values("VUID-SubgroupLocalInvocationId-SubgroupLocalInvocationId-04380 "
+               "VUID-SubgroupSize-SubgroupSize-04382"),
+        Values(TestResult(
+            SPV_ERROR_INVALID_DATA,
+            "to be only used for variables with Input storage class"))));
 
 INSTANTIATE_TEST_SUITE_P(
     SubgroupInvocationIdAndSizeOk, ValidateVulkanSubgroupBuiltIns,

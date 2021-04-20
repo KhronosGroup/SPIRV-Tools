@@ -1,7 +1,24 @@
 Revision history for SPIRV-Tools
 
-v2021.0-dev 2021-02-16
- - Start SPIRV-Tools v2021.0-dev
+v2021.0-dev 2021-04-19
+ - General
+    - Support SPV_KHR_linkonce_odr, SPV_KHR_expect_assume (#4161)
+    - Fixes for the vscode language server extension (#4150)
+ - Validator
+    - Add validation for SPV_EXT_shader_atomic_float_min_max (#4105)
+    - Add Vulkan Execution Scope checks (#4183)
+    - Vulkan 64-bit OpAtomicStore check (#4163)
+ - Optimizer
+    - Add interpolate legalization pass (#4220)
+ - Fuzz
+    - Various performance optimizations
+    - Do not add too many dead blocks (#4217)
+    - Add WGSL compatibility flag to context (#4193)
+    - Add persistent state to the fuzzer (#4137)
+ - Debug Info
+ - Instrumentation
+ - Linker
+ - Reduce
 
 v2020.7 2021-02-16
  - General
@@ -40,7 +57,7 @@ v2020.7 2021-02-16
     - Add last Position VUID (#4052)
     - Allow forward pointer to be used in types generally (#4044)
  - Optimizer
-    - Mark module as modified if convert-to-half removes decorations. (#4127)
+    - Mark module as modified if convert-to-half removes decorations (#4127)
     - Fix binding number calculation in desc sroa (#4095)
     - Run DCE when SPV_KHR_shader_clock is used (#4049)
  - Debug Info
