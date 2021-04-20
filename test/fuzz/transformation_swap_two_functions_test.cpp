@@ -137,8 +137,6 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
       MakeUnique<FactManager>(context.get()), validator_options);
 
   // Function should not swap with itself
-
-  // Permutation has invalid values 2
   ASSERT_FALSE(TransformationSwapTwoFunctions(4, 4).IsApplicable(
       context.get(), transformation_context));
 
