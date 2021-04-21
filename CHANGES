@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2021.0-dev 2021-04-19
+v2021.1 2021-04-19
  - General
     - Support SPV_KHR_linkonce_odr, SPV_KHR_expect_assume (#4161)
     - Fixes for the vscode language server extension (#4150)
