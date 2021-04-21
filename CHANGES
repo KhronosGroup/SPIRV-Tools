@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2021.2-dev 2021-04-21
+ - Start v2021.2-dev
+
 v2021.1 2021-04-19
  - General
     - Support SPV_KHR_linkonce_odr, SPV_KHR_expect_assume (#4161)
