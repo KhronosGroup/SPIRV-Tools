@@ -1,18 +1,18 @@
-#!/usr/bin/env python
-# coding=utf-8
-# Copyright (c) 2016 Google Inc.
+#!/ usr / bin / env python
+#coding = utf - 8
+#Copyright(c) 2016 Google Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+#Licensed under the Apache License, Version 2.0(the "License");
+#you may not use this file except in compliance with the License.
+#You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#http:  // www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+#Unless required by applicable law or agreed to in writing, software
+#distributed under the License is distributed on an "AS IS" BASIS,
+#WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#See the License for the specific language governing permissions and
+#limitations under the License.
 """Checks for copyright notices in all the files that need them under the
 current directory.  Optionally insert them.  When inserting, replaces
 an MIT or Khronos free use license with Apache 2.
@@ -26,7 +26,7 @@ import os
 import re
 import sys
 
-# List of designated copyright owners.
+#List of designated copyright owners.
 AUTHORS = ['The Khronos Group Inc.',
            'LunarG Inc.',
            'Google Inc.',
@@ -37,7 +37,8 @@ AUTHORS = ['The Khronos Group Inc.',
            'Vasyl Teliman',
            'Advanced Micro Devices, Inc.',
            'Stefano Milizia',
-           'Alastair F. Donaldson']
+           'Alastair F. Donaldson',
+           'Shiyu Liu']
 CURRENT_YEAR='2020'
 
 YEARS = '(2014-2016|2015-2016|2015-2020|2016|2016-2017|2017|2017-2019|2018|2019|2020|2021)'
@@ -120,11 +121,11 @@ def insert_copyright(author, glob, comment_prefix):
                         comment_prefix) + '\n\n'
     licensed = comment(LICENSED, comment_prefix) + '\n\n'
     for file in filtered_descendants(glob):
-        # Parsing states are:
-        #   0 Initial: Have not seen a copyright declaration.
-        #   1 Seen a copyright line and no other interesting lines
-        #   2 In the middle of an MIT or Khronos free use license
-        #   9 Exited any of the above
+#Parsing states are:
+# 0 Initial : Have not seen a copyright declaration.
+# 1 Seen a copyright line and no other interesting lines
+# 2 In the middle of an MIT or Khronos free use license
+# 9 Exited any of the above
         state = 0
         update_file = False
         for line in fileinput.input(file, inplace=1):
@@ -135,21 +136,21 @@ def insert_copyright(author, glob, comment_prefix):
                 elif skip(line):
                     pass
                 else:
-                    # Didn't see a copyright. Inject copyright and license.
+#Didn't see a copyright. Inject copyright and license.
                     sys.stdout.write(copyright)
                     sys.stdout.write(licensed)
-                    # Assume there isn't a previous license notice.
+#Assume there isn't a previous license notice.
                     state = 1
             elif state is 1:
                 if MIT_BEGIN_RE.search(line):
                     state = 2
                     emit = False
                 elif APACHE2_BEGIN_RE.search(line):
-                    # Assume an Apache license is preceded by a copyright
-                    # notice.  So just emit it like the rest of the file.
+#Assume an Apache license is preceded by a copyright
+#notice.So just emit it like the rest of the file.
                     state = 9
             elif state is 2:
-                # Replace the MIT license with Apache 2
+#Replace the MIT license with Apache 2
                 emit = False
                 if MIT_END_RE.search(line):
                     state = 9
