@@ -28,13 +28,6 @@ FuzzerPassSwapFunctions::FuzzerPassSwapFunctions(
                  transformations) {}
 
 void FuzzerPassSwapFunctions::Apply() {
-  // Here we start by doing exhaustive swap testing:
-  // For every function a and function b, where a and b has a valid id in
-  // [function_ids] set and a and b are not the same function (ie, have a
-  // different id). For every combination of a and b, we do
-  // transformation_swap_two_functions(a.id, b.id) and make sure everyone of
-  // them have the correct result returned.
-
   // Collect all functions by their id from the given module.
   std::vector<uint32_t> function_ids;
   for (auto& function : *GetIRContext()->module()) {
@@ -50,8 +43,6 @@ void FuzzerPassSwapFunctions::Apply() {
               GetFuzzerContext()->GetChanceOfSwappingFunctions())) {
         continue;
       }
-      // We do a swap between functions and break if such swap cannot be
-      // performed.
       TransformationSwapTwoFunctions transformation(function_ids[i],
                                                     function_ids[j]);
     }

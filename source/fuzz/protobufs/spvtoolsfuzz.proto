@@ -2262,11 +2262,11 @@ message TransformationSwapConditionalBranchOperands {
 }
 
 message TransformationSwapTwoFunctions {
-   // A transformation that swaps the position of two functions within the same module.
-   
-   // the IDs for the two functions that are swapped.  
-    uint32 function_id1 = 1;
-    uint32 function_id2 = 2; 
+  // A transformation that swaps the position of two functions within the same module.
+
+  // the IDs for the two functions that are swapped.  
+  uint32 function_id1 = 1;
+  uint32 function_id2 = 2; 
 }
 
 message TransformationToggleAccessChainInstruction {
