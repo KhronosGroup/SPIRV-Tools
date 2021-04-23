@@ -51,8 +51,6 @@ void FuzzerPassPermuteFunctionVariables::Apply() {
     }
     uint32_t iterations_limit = 0;
     do {
-      // Random Index template method which takes HasSize Method(std::vector) by
-      // reference and returns the random index for instruction.
       uint32_t instruction_1_index = GetFuzzerContext()->RandomIndex(variables);
       uint32_t instruction_2_index = GetFuzzerContext()->RandomIndex(variables);
 
