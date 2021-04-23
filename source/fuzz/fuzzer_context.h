@@ -363,11 +363,11 @@ class FuzzerContext {
   uint32_t GetChanceOfSplittingBlock() const {
     return chance_of_splitting_block_;
   }
-  uint32_t GetChanceOfSwappingConditionalBranchOperands() const {
-    return chance_of_swapping_conditional_branch_operands_;
-  }
   uint32_t GetChanceOfSwappingAnotherPairOfFunctionVariables() const {
     return chance_of_swapping_another_pair_of_function_variables_;
+  }
+  uint32_t GetChanceOfSwappingConditionalBranchOperands() const {
+    return chance_of_swapping_conditional_branch_operands_;
   }
   uint32_t GetChanceOfTogglingAccessChainInstruction() const {
     return chance_of_toggling_access_chain_instruction_;
@@ -552,8 +552,8 @@ class FuzzerContext {
   uint32_t chance_of_replacing_parameters_with_globals_;
   uint32_t chance_of_replacing_parameters_with_struct_;
   uint32_t chance_of_splitting_block_;
-  uint32_t chance_of_swapping_conditional_branch_operands_;
   uint32_t chance_of_swapping_another_pair_of_function_variables_;
+  uint32_t chance_of_swapping_conditional_branch_operands_;
   uint32_t chance_of_toggling_access_chain_instruction_;
   uint32_t chance_of_wrapping_region_in_selection_;
   
