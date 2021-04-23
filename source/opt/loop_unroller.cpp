@@ -90,8 +90,7 @@ struct LoopUnrollState {
 
   // Initialize from the loop descriptor class.
   LoopUnrollState(Instruction* induction, BasicBlock* latch_block,
-                  BasicBlock* condition, std::vector<Instruction*>&& phis,
-                  std::vector<uint32_t>&& phi_initial_value_ids)
+                  BasicBlock* condition, std::vector<Instruction*>&& phis)
       : previous_phi_(induction),
         previous_latch_block_(latch_block),
         previous_condition_block_(condition),
@@ -100,7 +99,6 @@ struct LoopUnrollState {
         new_condition_block(nullptr),
         new_header_block(nullptr) {
     previous_phis_ = std::move(phis);
-    previous_phi_value_ids_ = std::move(phi_initial_value_ids);
   }
 
   // Swap the state so that the new nodes are now the previous nodes.
@@ -108,10 +106,6 @@ struct LoopUnrollState {
     previous_phi_ = new_phi;
     previous_latch_block_ = new_latch_block;
     previous_condition_block_ = new_condition_block;
-    for (size_t index = 0; index < previous_phis_.size(); ++index) {
-      previous_phi_value_ids_[index] =
-          new_inst[previous_phis_[index]->result_id()];
-    }
     previous_phis_ = std::move(new_phis_);
 
     // Clear new nodes.
@@ -132,9 +126,6 @@ struct LoopUnrollState {
 
   // All the phi nodes from the previous loop iteration.
   std::vector<Instruction*> previous_phis_;
-
-  // All the ids of phi node values from the previous loop iteration.
-  std::vector<uint32_t> previous_phi_value_ids_;
 
   std::vector<Instruction*> new_phis_;
 
@@ -205,10 +196,6 @@ class LoopUnrollerUtilsImpl {
 
   // Get the ID of the variable in the |phi| paired with |label|.
   uint32_t GetPhiDefID(const Instruction* phi, uint32_t label) const;
-
-  // Get the ID of the value of phi instruction with |phi_id| from the previous
-  // loop iteration. If |phi_id| is not a loop induction, it returns 0.
-  uint32_t GetPhiValueFromPreviousIterationAsId(uint32_t phi_id);
 
   // Close the loop by removing the OpLoopMerge from the |loop| header block and
   // making the backedge point to the merge block.
@@ -550,18 +537,8 @@ void LoopUnrollerUtilsImpl::Unroll(Loop* loop, size_t factor) {
 
   std::vector<Instruction*> inductions;
   loop->GetInductionVariables(inductions);
-  std::vector<uint32_t> induction_initial_value_ids(inductions.size(), 0);
-  auto* preheader_block = loop->GetPreHeaderBlock();
-  if (preheader_block != nullptr) {
-    for (size_t index = 0; index < inductions.size(); ++index) {
-      induction_initial_value_ids[index] =
-          GetPhiDefID(inductions[index], preheader_block->id());
-    }
-  }
-
   state_ = LoopUnrollState{loop_induction_variable_, loop->GetLatchBlock(),
-                           loop_condition_block_, std::move(inductions),
-                           std::move(induction_initial_value_ids)};
+                           loop_condition_block_, std::move(inductions)};
   for (size_t i = 0; i < factor - 1; ++i) {
     CopyBody(loop, true);
   }
@@ -727,14 +704,8 @@ void LoopUnrollerUtilsImpl::CopyBody(Loop* loop, bool eliminate_conditions) {
     assert(induction_clone->result_id() != 0);
 
     if (!state_.previous_phis_.empty()) {
-      auto phi_value_id_from_latch = GetPhiDefID(
+      state_.new_inst[primary_copy->result_id()] = GetPhiDefID(
           state_.previous_phis_[index], state_.previous_latch_block_->id());
-      auto phi_value_id_from_previous_iteration =
-          GetPhiValueFromPreviousIterationAsId(phi_value_id_from_latch);
-      state_.new_inst[primary_copy->result_id()] =
-          phi_value_id_from_previous_iteration == 0
-              ? phi_value_id_from_latch
-              : phi_value_id_from_previous_iteration;
     } else {
       // Do not replace the first phi block ids.
       state_.new_inst[primary_copy->result_id()] = primary_copy->result_id();
@@ -769,16 +740,6 @@ uint32_t LoopUnrollerUtilsImpl::GetPhiDefID(const Instruction* phi,
     }
   }
   assert(false && "Could not find a phi index matching the provided label");
-  return 0;
-}
-
-uint32_t LoopUnrollerUtilsImpl::GetPhiValueFromPreviousIterationAsId(
-    uint32_t phi_id) {
-  for (size_t index = 0; index < state_.previous_phis_.size(); ++index) {
-    if (state_.previous_phis_[index]->result_id() == phi_id) {
-      return state_.previous_phi_value_ids_[index];
-    }
-  }
   return 0;
 }
 
@@ -835,6 +796,9 @@ void LoopUnrollerUtilsImpl::CloseUnrolledLoop(Loop* loop) {
 
   for (BasicBlock* block : loop_blocks_inorder_) {
     RemapOperands(block);
+  }
+  for (auto& block_itr : blocks_to_add_) {
+    RemapOperands(block_itr.get());
   }
 
   // Rewrite the last phis, since they may still reference the original phi.
