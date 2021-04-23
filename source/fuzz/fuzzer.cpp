@@ -237,9 +237,9 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
         &final_passes_);
   }
   MaybeAddFinalPass<FuzzerPassInterchangeZeroLikeConstants>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassPermuteFunctionVariables>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassPermutePhiOperands>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassSwapCommutableOperands>(&final_passes_);
-  MaybeAddFinalPass<FuzzerPassPermuteFunctionVariables>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassToggleAccessChainInstruction>(&final_passes_);
 }
 
