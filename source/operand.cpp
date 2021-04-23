@@ -187,6 +187,10 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
       return "floating-point fast math mode";
     case SPV_OPERAND_TYPE_FP_ROUNDING_MODE:
       return "floating-point rounding mode";
+    case SPV_OPERAND_TYPE_FP_DENORM_MODE:
+      return "floating-point denorm mode";
+    case SPV_OPERAND_TYPE_FP_OPERATION_MODE:
+      return "floating-point operation mode";
     case SPV_OPERAND_TYPE_LINKAGE_TYPE:
       return "linkage type";
     case SPV_OPERAND_TYPE_ACCESS_QUALIFIER:
@@ -331,6 +335,8 @@ bool spvOperandIsConcrete(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_IMAGE_CHANNEL_ORDER:
     case SPV_OPERAND_TYPE_IMAGE_CHANNEL_DATA_TYPE:
     case SPV_OPERAND_TYPE_FP_ROUNDING_MODE:
+    case SPV_OPERAND_TYPE_FP_DENORM_MODE:
+    case SPV_OPERAND_TYPE_FP_OPERATION_MODE:
     case SPV_OPERAND_TYPE_LINKAGE_TYPE:
     case SPV_OPERAND_TYPE_ACCESS_QUALIFIER:
     case SPV_OPERAND_TYPE_FUNCTION_PARAMETER_ATTRIBUTE:

@@ -197,6 +197,10 @@ def convert_operand_kind(operand_tuple):
 
     if kind == 'FPRoundingMode':
         kind = 'FpRoundingMode'
+    elif kind == 'FPDenormMode':
+        kind = 'FpDenormMode'
+    elif kind == 'FPOperationMode':
+        kind = 'FpOperationMode'
     elif kind == 'FPFastMathMode':
         kind = 'FpFastMathMode'
 

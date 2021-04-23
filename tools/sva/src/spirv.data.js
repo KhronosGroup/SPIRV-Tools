@@ -3893,6 +3893,28 @@ export default {
         }
       }
     },
+    "FPDenormMode": {
+      "type": "ValueEnum",
+      "values": {
+        "Preserve": {
+          "value": 0
+        },
+        "FlushToZero": {
+          "value": 1
+        }
+      }
+    },
+    "FPOperationMode": {
+      "type": "ValueEnum",
+      "values": {
+        "IEEE": {
+          "value": 0
+        },
+        "ALT": {
+          "value": 1
+        }
+      }
+    },
     "Decoration": {
       "type": "ValueEnum",
       "values": {
