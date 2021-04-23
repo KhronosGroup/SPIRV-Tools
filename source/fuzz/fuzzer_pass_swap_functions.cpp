@@ -28,17 +28,17 @@ FuzzerPassSwapFunctions::FuzzerPassSwapFunctions(
                  transformations) {}
 
 void FuzzerPassSwapFunctions::Apply() {
-  // Collect all functions by their id from the given module.
+  // Collect all function ids in a module.
   std::vector<uint32_t> function_ids;
   for (auto& function : *GetIRContext()->module()) {
     function_ids.emplace_back(function.result_id());
   }
 
   size_t id_size = function_ids.size();
-  // We iterate through every combination of id i & j where i!=j.
+  // Iterate through every combination of id i & j where i!=j.
   for (size_t i = 0; i < id_size - 1; ++i) {
     for (size_t j = i + 1; j < id_size; ++j) {
-      // Randomly decide whether to ignore function swap.
+      // Perform function swap randomly.
       if (!GetFuzzerContext()->ChoosePercentage(
               GetFuzzerContext()->GetChanceOfSwappingFunctions())) {
         continue;

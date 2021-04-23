@@ -598,7 +598,7 @@ bool NewTerminatorPreservesDominationRules(opt::IRContext* ir_context,
                                            opt::Instruction new_terminator);
 
 // Return the iterator that points to the function with the corresponding
-// function id If function is not found, return the pointer pointing to
+// function id. If the function is not found, return the pointer pointing to
 // module()->end().
 opt::Module::iterator GetFunctionIterator(opt::IRContext* ir_context,
                                           uint32_t function_id);

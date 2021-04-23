@@ -23,28 +23,24 @@ namespace fuzz {
 namespace {
 
 TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
-  // float multiplyBy8(in float value);
-  // float multiplyBy4(in float value);
-  // float multiplyBy2(in float value);
+  //   float multiplyBy2(in float value) {
+  //     return value*2.0;
+  //   }
 
-  // float multiplyBy2(in float value) {
-  //   return value*2.0;
-  // }
+  //   float multiplyBy4(in float value) {
+  //     return multiplyBy2(value)*2.0;
+  //   }
 
-  // float multiplyBy4(in float value) {
-  //   return multiplyBy2(value)*2.0;
-  // }
+  //   float multiplyBy8(in float value) {
+  //     return multiplyBy2(value)*multiplyBy4(value);
+  //   }
 
-  // float multiplyBy8(in float value) {
-  //   return multiplyBy2(value)*multiplyBy4(value);
-  // }
-
-  // layout(location=0) in float value;
-  // void main() { //4
-  //   multiplyBy2(3.7); //10
-  //   multiplyBy4(3.9); //13
-  //   multiplyBy8(5.0); //16
-  // }
+  //   layout(location=0) in float value;
+  //   void main() { //4
+  //     multiplyBy2(3.7); //10
+  //     multiplyBy4(3.9); //13
+  //     multiplyBy8(5.0); //16
+  //   }
 
   std::string shader = R"(
                OpCapability Shader
@@ -136,7 +132,7 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-  // Function should not swap with itself
+  // Function should not swap with itself.
   ASSERT_DEATH(TransformationSwapTwoFunctions(4, 4).IsApplicable(
                    context.get(), transformation_context),
                "The two function ids cannot be the same.");
@@ -149,7 +145,7 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
   ASSERT_FALSE(TransformationSwapTwoFunctions(30, 13).IsApplicable(
       context.get(), transformation_context));
 
-  // Both function 5 and 6 do not exist.
+  // Both functions with id 5 and 6 do not exist.
   ASSERT_FALSE(TransformationSwapTwoFunctions(5, 6).IsApplicable(
       context.get(), transformation_context));
 
@@ -238,7 +234,6 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
                OpReturnValue %35
                OpFunctionEnd
   )";
-  // Final check to make sure the series of transformation above is correct.
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
