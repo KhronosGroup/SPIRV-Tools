@@ -121,7 +121,9 @@ class FuzzerContext {
   static uint32_t GetMinFreshId(opt::IRContext* ir_context);
 
   // Returns true if all transformations should be compatible with WGSL.
-  bool IsWgslCompatible() const { return is_wgsl_compatible_; }
+  bool IsWgslCompatible() const {
+    return is_wgsl_compatible_;
+  }
 
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.

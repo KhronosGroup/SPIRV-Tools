@@ -49,9 +49,11 @@ class BlockMergePass : public Pass {
   }
 
  private:
+
   // Search |func| for blocks which have a single Branch to a block
   // with no other predecessors. Merge these blocks into a single block.
   bool MergeBlocks(Function* func);
+
 };
 
 }  // namespace opt
