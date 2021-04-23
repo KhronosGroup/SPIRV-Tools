@@ -358,10 +358,10 @@ FuzzerContext::FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
   chance_of_replacing_parameters_with_struct_ =
       ChooseBetweenMinAndMax(kChanceOfReplacingParametersWithStruct);
   chance_of_splitting_block_ = ChooseBetweenMinAndMax(kChanceOfSplittingBlock);
-  chance_of_swapping_conditional_branch_operands_ =
-      ChooseBetweenMinAndMax(kChanceOfSwappingConditionalBranchOperands);
   chance_of_swapping_another_pair_of_function_variables_ =
       ChooseBetweenMinAndMax(kChanceOfSwappingAnotherPairOfFunctionVariables);
+  chance_of_swapping_conditional_branch_operands_ =
+      ChooseBetweenMinAndMax(kChanceOfSwappingConditionalBranchOperands);
   chance_of_toggling_access_chain_instruction_ =
       ChooseBetweenMinAndMax(kChanceOfTogglingAccessChainInstruction);
   chance_of_wrapping_region_in_selection_ =
