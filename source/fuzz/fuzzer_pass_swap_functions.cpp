@@ -38,21 +38,18 @@ void FuzzerPassSwapFunctions::Apply() {
   // After each transformation it decides with a random probability
   // whether to perform another transformation or exit.
   std::vector<uint32_t> result_ids;
-  size_t i = 0, j = 0;
-  size_t func_size;
   for (auto &function : *GetIRContext()->module()) {
     result_ids.push_back(function.result_id());
   }
-  func_size = result_ids.size();
-  for (; i < func_size; i++) {
-    for (; j < func_size; j++) {
+  for (auto id1 : result_ids) {
+    for (auto id2 : result_ids) {
       if (!GetFuzzerContext()->ChoosePercentage(
               GetFuzzerContext()->GetChanceOfSwappingFunctions())) {
         continue;
       }
       ApplyTransformation(
-          TransformationSwapFunctions(result_ids[i], result_ids[j]));
-      if (!GetFuzzerContext()->ContinueSwappingFunctions()) {
+          TransformationSwapFunctions(result_ids[id1], result_ids[id2]));
+      if (!GetFuzzerContext()->GetChanceOfContinuingSwappingFunctions()) {
         break;
       }
     }

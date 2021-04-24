@@ -207,7 +207,6 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
     MaybeAddRepeatedPass<FuzzerPassSplitBlocks>(&pass_instances_);
     MaybeAddRepeatedPass<FuzzerPassSwapBranchConditionalOperands>(
         &pass_instances_);
-    MaybeAddRepeatedPass<FuzzerPassSwapFunctions>(&pass_instances_);
     MaybeAddRepeatedPass<FuzzerPassWrapRegionsInSelections>(&pass_instances_);
     // There is a theoretical possibility that no pass instances were created
     // until now; loop again if so.
@@ -235,6 +234,7 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
   MaybeAddFinalPass<FuzzerPassInterchangeZeroLikeConstants>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassPermutePhiOperands>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassSwapCommutableOperands>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassSwapFunctions>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassToggleAccessChainInstruction>(&final_passes_);
 }
 

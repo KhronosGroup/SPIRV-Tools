@@ -44,12 +44,7 @@ public:
   // Returns true if and only if a randomly-chosen integer in the range [0, 100]
   // is less than |percentage_chance|.
   bool ChoosePercentage(uint32_t percentage_chance);
-
-  // Called after swapping two functions.
-  // It determines whether another transformation
-  // will be performed
-  bool ContinueSwappingFunctions();
-
+  
   // Returns a random index into |sequence|, which is expected to have a 'size'
   // method, and which must be non-empty.  Typically 'HasSizeMethod' will be an
   // std::vector.
@@ -237,6 +232,9 @@ public:
   }
   uint32_t GetChanceOfConstructingComposite() const {
     return chance_of_constructing_composite_;
+  }
+  uint32_t GetChanceOfContinuingSwappingFunctions() const {
+    return chance_of_continuing_swapping_functions_;
   }
   uint32_t GetChanceOfCopyingObject() const {
     return chance_of_copying_object_;
@@ -508,6 +506,7 @@ private:
   uint32_t chance_of_choosing_struct_type_vs_array_type_;
   uint32_t chance_of_choosing_workgroup_storage_class_;
   uint32_t chance_of_constructing_composite_;
+  uint32_t chance_of_continuing_swapping_functions_;
   uint32_t chance_of_copying_object_;
   uint32_t chance_of_creating_int_synonyms_using_loops_;
   uint32_t chance_of_donating_additional_module_;

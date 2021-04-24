@@ -196,7 +196,6 @@ if(SPIRV_BUILD_FUZZER)
         transformation_mutate_pointer.h
         transformation_outline_function.h
         transformation_permute_function_parameters.h
-        transformation_swap_functions.h
         transformation_permute_phi_operands.h
         transformation_propagate_instruction_down.h
         transformation_propagate_instruction_up.h
@@ -224,6 +223,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_store.h
         transformation_swap_commutable_operands.h
         transformation_swap_conditional_branch_operands.h
+        transformation_swap_functions.h
         transformation_toggle_access_chain_instruction.h
         transformation_vector_shuffle.h
         transformation_wrap_early_terminator_in_function.h

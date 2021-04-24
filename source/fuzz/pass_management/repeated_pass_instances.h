@@ -168,7 +168,6 @@ private:                                                                       \
   REPEATED_PASS_INSTANCE(ReplaceParamsWithStruct);
   REPEATED_PASS_INSTANCE(SplitBlocks);
   REPEATED_PASS_INSTANCE(SwapBranchConditionalOperands);
-  REPEATED_PASS_INSTANCE(SwapFunctions);
   REPEATED_PASS_INSTANCE(WrapRegionsInSelections);
 #undef REPEATED_PASS_INSTANCE
 

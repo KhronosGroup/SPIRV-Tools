@@ -40,10 +40,9 @@ public:
   void Apply(opt::IRContext *ir_context,
              TransformationContext *transformation_context) const override;
 
-private:
-  // private
   std::unordered_set<uint32_t> GetFreshIds() const override;
   protobufs::Transformation ToMessage() const override;
+private:
   protobufs::TransformationSwapFunctions message_;
 };
 

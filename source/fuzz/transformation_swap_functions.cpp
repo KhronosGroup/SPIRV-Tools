@@ -67,8 +67,6 @@ void TransformationSwapFunctions::Apply(
                    [this](const opt::Function &function) {
                      return function.result_id() == message_.result_id2();
                    });
-  assert(*fp1.Get() != nullptr && "First function id is not valid");
-  assert(*fp2.Get() && "Second function id is not valid");
   std::iter_swap(fp1.Get(), fp2.Get());
 }
 

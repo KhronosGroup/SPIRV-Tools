@@ -20,14 +20,14 @@ namespace spvtools {
 namespace fuzz {
 
 RepeatedPassRecommenderStandard::RepeatedPassRecommenderStandard(
-    RepeatedPassInstances* pass_instances, FuzzerContext* fuzzer_context)
+    RepeatedPassInstances *pass_instances, FuzzerContext *fuzzer_context)
     : pass_instances_(pass_instances), fuzzer_context_(fuzzer_context) {}
 
 RepeatedPassRecommenderStandard::~RepeatedPassRecommenderStandard() = default;
 
-std::vector<FuzzerPass*>
+std::vector<FuzzerPass *>
 RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
-    const FuzzerPass& pass) {
+    const FuzzerPass &pass) {
   if (&pass == pass_instances_->GetAddAccessChains()) {
     // - Adding access chains means there is more scope for loading and storing
     // - It could be worth making more access chains from the recently-added
@@ -341,10 +341,6 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     // No obvious follow-on passes
     return {};
   }
-  if (&pass == pass_instances_->GetSwapFunctions()) {
-    // No obvious follow-on passes
-    return {};
-  }
   if (&pass == pass_instances_->GetWrapRegionsInSelections()) {
     // - This pass uses an irrelevant boolean constant - we can replace it with
     //   something more interesting.
@@ -359,13 +355,14 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
   return {};
 }
 
-std::vector<FuzzerPass*> RepeatedPassRecommenderStandard::RandomOrderAndNonNull(
-    const std::vector<FuzzerPass*>& passes) {
+std::vector<FuzzerPass *>
+RepeatedPassRecommenderStandard::RandomOrderAndNonNull(
+    const std::vector<FuzzerPass *> &passes) {
   std::vector<uint32_t> indices(passes.size());
   std::iota(indices.begin(), indices.end(), 0);
-  std::vector<FuzzerPass*> result;
+  std::vector<FuzzerPass *> result;
   while (!indices.empty()) {
-    FuzzerPass* maybe_pass =
+    FuzzerPass *maybe_pass =
         passes[fuzzer_context_->RemoveAtRandomIndex(&indices)];
     if (maybe_pass != nullptr &&
         fuzzer_context_->ChoosePercentage(
@@ -377,5 +374,5 @@ std::vector<FuzzerPass*> RepeatedPassRecommenderStandard::RandomOrderAndNonNull(
   return result;
 }
 
-}  // namespace fuzz
-}  // namespace spvtools
+} // namespace fuzz
+} // namespace spvtools

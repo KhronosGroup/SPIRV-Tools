@@ -86,6 +86,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfChoosingStructTypeVsArrayType = {
 const std::pair<uint32_t, uint32_t> kChanceOfChoosingWorkgroupStorageClass = {
     50, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfConstructingComposite = {20, 50};
+const std::pair<uint32_t, uint32_t> kChanceOfContinuingSwappingFunctions = {50,
+                                                                            50};
 const std::pair<uint32_t, uint32_t> kChanceOfCopyingObject = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfCreatingIntSynonymsUsingLoops = {
     5, 10};
@@ -273,6 +275,8 @@ FuzzerContext::FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
       ChooseBetweenMinAndMax(kChanceOfChoosingWorkgroupStorageClass);
   chance_of_constructing_composite_ =
       ChooseBetweenMinAndMax(kChanceOfConstructingComposite);
+  chance_of_continuing_swapping_functions_ =
+      ChooseBetweenMinAndMax(kChanceOfContinuingSwappingFunctions);
   chance_of_copying_object_ = ChooseBetweenMinAndMax(kChanceOfCopyingObject);
   chance_of_creating_int_synonyms_using_loops_ =
       ChooseBetweenMinAndMax(kChanceOfCreatingIntSynonymsUsingLoops);
@@ -388,14 +392,6 @@ uint32_t FuzzerContext::ChooseBetweenMinAndMax(
   assert(min_max.first <= min_max.second);
   return min_max.first +
          random_generator_->RandomUint32(min_max.second - min_max.first + 1);
-}
-
-bool FuzzerContext::ContinueSwappingFunctions() {
-  // Continues swapping functions with a random probability.
-  if (!ChoosePercentage(random_generator_->RandomUint32(101))) {
-    return false;
-  }
-  return true;
 }
 
 protobufs::TransformationAddSynonym::SynonymType

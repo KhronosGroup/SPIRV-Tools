@@ -217,9 +217,14 @@ TEST(TransformationSwapFunctions, BasicTest) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-  // Try random valid permutations
-  ASSERT_TRUE(TransformationSwapFunctions(12, 22).IsApplicable(
+  // Cannot swap a function with itself
+  ASSERT_FALSE(TransformationSwapFunctions(96, 96).IsApplicable(
       context.get(), transformation_context));
+
+  ASSERT_FALSE(TransformationSwapFunctions({96, 1000})
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Try random valid permutations
   {
 
     TransformationSwapFunctions transformation(12, 22);
@@ -227,10 +232,9 @@ TEST(TransformationSwapFunctions, BasicTest) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
-  ASSERT_TRUE(TransformationSwapFunctions(22, 28).IsApplicable(
-      context.get(), transformation_context));
-
   {
 
     TransformationSwapFunctions transformation(22, 28);
@@ -238,30 +242,8 @@ TEST(TransformationSwapFunctions, BasicTest) {
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
-  }
-
-  // Cannot swap a function with itself
-  ASSERT_FALSE(TransformationSwapFunctions(96, 96).IsApplicable(
-      context.get(), transformation_context));
-  {
-
-    TransformationSwapFunctions transformation(96, 96);
-    ASSERT_FALSE(
-        transformation.IsApplicable(context.get(), transformation_context));
-    ApplyAndCheckFreshIds(transformation, context.get(),
-                          &transformation_context);
-  }
-
-  // Function with result_id 10000 doesn't exist
-  ASSERT_FALSE(TransformationSwapFunctions({96, 1000})
-                   .IsApplicable(context.get(), transformation_context));
-  {
-
-    TransformationSwapFunctions transformation(96, 1000);
-    ASSERT_FALSE(
-        transformation.IsApplicable(context.get(), transformation_context));
-    ApplyAndCheckFreshIds(transformation, context.get(),
-                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   std::string after_transformation = R"(
@@ -458,7 +440,6 @@ TEST(TransformationSwapFunctions, BasicTest) {
                   OpFunctionEnd
             
   )";
-
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
