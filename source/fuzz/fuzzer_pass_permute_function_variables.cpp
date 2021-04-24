@@ -49,7 +49,7 @@ void FuzzerPassPermuteFunctionVariables::Apply() {
         variables.push_back(&instruction);
       }
     }
-    uint32_t iterations_limit = 0;
+
     do {
       uint32_t instruction_1_index = GetFuzzerContext()->RandomIndex(variables);
       uint32_t instruction_2_index = GetFuzzerContext()->RandomIndex(variables);
@@ -61,10 +61,8 @@ void FuzzerPassPermuteFunctionVariables::Apply() {
       }
 
     } while (GetFuzzerContext()->ChoosePercentage(
-                 GetFuzzerContext()
-                     ->GetChanceOfSwappingAnotherPairOfFunctionVariables()) &&
-             iterations_limit++ <
-                 25);  // I don't know 25 it's a good limit or no!.
+        GetFuzzerContext()
+            ->GetChanceOfSwappingAnotherPairOfFunctionVariables()));
   }
 }
 
