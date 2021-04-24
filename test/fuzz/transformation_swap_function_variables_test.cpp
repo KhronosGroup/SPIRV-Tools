@@ -95,7 +95,7 @@ TEST(TransformationSwapFunctionVariables, NotApplicable) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-// This is defined when write it with cmake flags 
+// This is defined when write it with cmake flags
 #ifndef NDEBUG
   // Can't swap variable with itself.
   ASSERT_DEATH(TransformationSwapFunctionVariables(7, 7).IsApplicable(
@@ -188,9 +188,15 @@ TEST(TransformationSwapFunctionVariables, IsApplicable) {
 
   // Successful transformations
   {
+    TransformationSwapFunctionVariables transformation(24, 28);
     // Swap two OpVariable instructions in the same function
-    ASSERT_TRUE(TransformationSwapFunctionVariables(24, 28).IsApplicable(
-        context.get(), transformation_context));
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    transformation.Apply(context.get(), &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 }
 
