@@ -30,16 +30,16 @@ class TransformationSwapTwoFunctions : public Transformation {
 
   TransformationSwapTwoFunctions(uint32_t function_id1, uint32_t function_id2);
 
-  // - |function_id1| and  |function_id1| should all be existing ids.
-  //   Swap function operation is only permitted if:
-  //     - both ids must be ids of functions.
-  //     - both ids can be found in the module.
-  //     - function_id1 and function_id2 are not the same.
+  // |function_id1| and  |function_id1| should all be existing ids.
+  //  Swap function operation is only permitted if:
+  //  - both ids must be ids of functions.
+  //  - both ids can be found in the module.
+  //  - function_id1 and function_id2 are not the same.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // - OpFunction with |function_id1| and |function_id1| are swapped.
+  // OpFunction with |function_id1| and |function_id1| are swapped.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

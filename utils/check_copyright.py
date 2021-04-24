@@ -56,7 +56,9 @@ APACHE2_END_RE = re.compile('limitations under the License.')
 LICENSED = """Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
+
     http://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -97,6 +99,7 @@ def skip(line):
 
 def comment(text, prefix):
     """Returns commented-out text.
+
     Each line of text will be prefixed by prefix and a space character.  Any
     trailing whitespace will be trimmed.
     """
@@ -108,6 +111,7 @@ def insert_copyright(author, glob, comment_prefix):
     """Finds all glob-matching files under the current directory and inserts the
     copyright message, and license notice.  An MIT license or Khronos free
     use license (modified MIT) is replaced with an Apache 2 license.
+
     The copyright message goes into the first non-whitespace, non-shebang line
     in a file.  The license notice follows it.  Both are prefixed on each line
     by comment_prefix and a space.
@@ -157,9 +161,11 @@ def insert_copyright(author, glob, comment_prefix):
 
 def alert_if_no_copyright(glob, comment_prefix):
     """Prints names of all files missing either a copyright or Apache 2 license.
+
     Finds all glob-matching files under the current directory and checks if they
     contain the copyright message and license notice.  Prints the names of all the
     files that don't meet both criteria.
+
     Returns the total number of file names printed.
     """
     printed_count = 0
