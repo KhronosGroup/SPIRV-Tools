@@ -120,6 +120,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfMovingBlockDown = {20, 50};
 const std::pair<uint32_t, uint32_t> kChanceOfMutatingPointer = {20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfObfuscatingConstant = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfOutliningFunction = {10, 90};
+const std::pair<uint32_t, uint32_t> kChanceOfPermutingFunctionVariables = {30,
+                                                                           90};
 const std::pair<uint32_t, uint32_t> kChanceOfPermutingInstructions = {20, 70};
 const std::pair<uint32_t, uint32_t> kChanceOfPermutingParameters = {30, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfPermutingPhiOperands = {30, 90};
@@ -153,6 +155,8 @@ const std::pair<uint32_t, uint32_t> kChanceOfReplacingParametersWithStruct = {
 const std::pair<uint32_t, uint32_t> kChanceOfSplittingBlock = {40, 95};
 const std::pair<uint32_t, uint32_t> kChanceOfSwappingConditionalBranchOperands =
     {10, 70};
+const std::pair<uint32_t, uint32_t>
+    kChanceOfSwappingAnotherPairOfFunctionVariables = {30, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfTogglingAccessChainInstruction = {
     20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfWrappingRegionInSelection = {70,
@@ -315,6 +319,8 @@ FuzzerContext::FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
       ChooseBetweenMinAndMax(kChanceOfObfuscatingConstant);
   chance_of_outlining_function_ =
       ChooseBetweenMinAndMax(kChanceOfOutliningFunction);
+  chance_of_permuting_function_variables_ =
+      ChooseBetweenMinAndMax(kChanceOfPermutingFunctionVariables);
   chance_of_permuting_instructions_ =
       ChooseBetweenMinAndMax(kChanceOfPermutingInstructions);
   chance_of_permuting_parameters_ =
@@ -352,6 +358,8 @@ FuzzerContext::FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
   chance_of_replacing_parameters_with_struct_ =
       ChooseBetweenMinAndMax(kChanceOfReplacingParametersWithStruct);
   chance_of_splitting_block_ = ChooseBetweenMinAndMax(kChanceOfSplittingBlock);
+  chance_of_swapping_another_pair_of_function_variables_ =
+      ChooseBetweenMinAndMax(kChanceOfSwappingAnotherPairOfFunctionVariables);
   chance_of_swapping_conditional_branch_operands_ =
       ChooseBetweenMinAndMax(kChanceOfSwappingConditionalBranchOperands);
   chance_of_toggling_access_chain_instruction_ =

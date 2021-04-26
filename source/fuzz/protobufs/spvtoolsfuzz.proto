@@ -557,7 +557,7 @@ message Transformation {
     TransformationWrapEarlyTerminatorInFunction wrap_early_terminator_in_function = 83;
     TransformationMergeFunctionReturns merge_function_returns = 84;
     TransformationExpandVectorReduction expand_vector_reduction = 85;
-    TransformationSwapTwoFunctions swap_two_functions = 86;
+    TransformationSwapFunctionVariables swap_function_variables = 86;
     // Add additional option using the next available number.
   }
 }
@@ -2261,12 +2261,13 @@ message TransformationSwapConditionalBranchOperands {
 
 }
 
-message TransformationSwapTwoFunctions {
-   // A transformation that swaps the position of two functions within the same module.
-   
-   // the IDs for the two functions that are swapped.  
-    uint32 function_id1 = 1;
-    uint32 function_id2 = 2; 
+message TransformationSwapFunctionVariables {
+  // A transformation that swaps function variables
+
+  // Result id of the first variable.
+  uint32 result_id1 = 1;
+  // Result id of the second variable.
+  uint32 result_id2 = 2;
 }
 
 message TransformationToggleAccessChainInstruction {
