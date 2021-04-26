@@ -98,6 +98,7 @@
 #include "source/fuzz/transformation_store.h"
 #include "source/fuzz/transformation_swap_commutable_operands.h"
 #include "source/fuzz/transformation_swap_conditional_branch_operands.h"
+#include "source/fuzz/transformation_swap_function_variables.h"
 #include "source/fuzz/transformation_swap_two_functions.h"
 #include "source/fuzz/transformation_toggle_access_chain_instruction.h"
 #include "source/fuzz/transformation_vector_shuffle.h"
@@ -362,6 +363,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kSwapConditionalBranchOperands:
       return MakeUnique<TransformationSwapConditionalBranchOperands>(
           message.swap_conditional_branch_operands());
+    case protobufs::Transformation::TransformationCase::kSwapFunctionVariables:
+      return MakeUnique<TransformationSwapFunctionVariables>(
+          message.swap_function_variables());
     case protobufs::Transformation::TransformationCase::kSwapTwoFunctions:
       return MakeUnique<TransformationSwapTwoFunctions>(
           message.swap_two_functions());
