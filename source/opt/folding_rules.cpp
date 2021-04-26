@@ -2539,6 +2539,8 @@ void FoldingRules::AddFoldingRules() {
   // Note that the order in which rules are added to the list matters. If a rule
   // applies to the instruction, the rest of the rules will not be attempted.
   // Take that into consideration.
+  rules_[SpvOpBitcast].push_back(BitCastScalarOrVector());
+
   rules_[SpvOpCompositeConstruct].push_back(CompositeExtractFeedingConstruct);
 
   rules_[SpvOpCompositeExtract].push_back(InsertFeedingExtract());
@@ -2599,8 +2601,6 @@ void FoldingRules::AddFoldingRules() {
   rules_[SpvOpSNegate].push_back(MergeNegateArithmetic());
   rules_[SpvOpSNegate].push_back(MergeNegateMulDivArithmetic());
   rules_[SpvOpSNegate].push_back(MergeNegateAddSubArithmetic());
-
-  rules_[SpvOpBitcast].push_back(BitCastScalarOrVector());
 
   rules_[SpvOpSelect].push_back(RedundantSelect());
 
