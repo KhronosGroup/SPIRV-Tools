@@ -131,45 +131,46 @@ std::vector<uint32_t> ExtractInts(uint64_t val) {
   return words;
 }
 
+std::vector<uint32_t> GetWordsFromScalarIntConstant(
+    const analysis::IntConstant* c) {
+  assert(c != nullptr);
+  uint32_t width = c->type()->AsInteger()->width();
+  assert(width == 32 || width == 64);
+  if (width == 64) {
+    uint64_t uval = static_cast<uint64_t>(c->GetU64());
+    return ExtractInts(uval);
+  }
+  return {c->GetU32()};
+}
+
+std::vector<uint32_t> GetWordsFromScalarFloatConstant(
+    const analysis::FloatConstant* c) {
+  assert(c != nullptr);
+  uint32_t width = c->type()->AsFloat()->width();
+  assert(width == 32 || width == 64);
+  if (width == 64) {
+    utils::FloatProxy<double> result(c->GetDouble());
+    return result.GetWords();
+  }
+  utils::FloatProxy<float> result(c->GetFloat());
+  return result.GetWords();
+}
+
 std::vector<uint32_t> GetWordsFromNumericScalarOrVectorConstant(
     analysis::ConstantManager* const_mgr, const analysis::Constant* c) {
-  std::vector<uint32_t> words;
   if (const auto* float_constant = c->AsFloatConstant()) {
-    uint32_t width = float_constant->type()->AsFloat()->width();
-    assert(width == 32 || width == 64);
-    if (width == 64) {
-      utils::FloatProxy<double> result(float_constant->GetDouble());
-      words = result.GetWords();
-    } else {
-      utils::FloatProxy<float> result(float_constant->GetFloat());
-      words = result.GetWords();
-    }
+    return GetWordsFromScalarFloatConstant(float_constant);
   } else if (const auto* int_constant = c->AsIntConstant()) {
-    uint32_t width = int_constant->type()->AsInteger()->width();
-    assert(width == 32 || width == 64);
-    if (width == 64) {
-      uint64_t uval = static_cast<uint64_t>(int_constant->GetU64());
-      words = ExtractInts(uval);
-    } else {
-      words.push_back(static_cast<uint32_t>(int_constant->GetU32()));
-    }
+    return GetWordsFromScalarIntConstant(int_constant);
   } else if (const auto* vec_constant = c->AsVectorConstant()) {
-    if (const auto* vec_type = vec_constant->type()->AsVector()) {
-      if (vec_type->element_type()->AsInteger() == nullptr &&
-          vec_type->element_type()->AsFloat() == nullptr) {
-        return words;
-      }
-    } else {
-      return words;
-    }
-
+    std::vector<uint32_t> words;
     for (const auto* comp : vec_constant->GetComponents()) {
       auto comp_in_words =
           GetWordsFromNumericScalarOrVectorConstant(const_mgr, comp);
       words.insert(words.end(), comp_in_words.begin(), comp_in_words.end());
     }
   }
-  return words;
+  return {};
 }
 
 const analysis::Constant* ConvertWordsToNumericScalarOrVectorConstant(
