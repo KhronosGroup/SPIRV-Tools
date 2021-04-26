@@ -178,46 +178,8 @@ const analysis::Constant* ConvertWordsToNumericScalarOrVectorConstant(
     const analysis::Type* type) {
   if (type->AsInteger() || type->AsFloat())
     return const_mgr->GetConstant(type, words);
-
-  if (const auto* vec_type = type->AsVector()) {
-    const auto* element_type = vec_type->element_type();
-    uint32_t width_in_bits = 0;
-    if (const auto* float_type = element_type->AsFloat())
-      width_in_bits = float_type->width();
-    else if (const auto* int_type = element_type->AsInteger())
-      width_in_bits = int_type->width();
-
-    if (width_in_bits == 32) {
-      if (vec_type->element_count() != static_cast<uint32_t>(words.size()))
-        return nullptr;
-
-      std::vector<uint32_t> element_ids;
-      for (uint32_t i = 0; i < vec_type->element_count(); ++i) {
-        const analysis::Constant* element_constant =
-            const_mgr->GetConstant(element_type, {words[i]});
-        auto element_id =
-            const_mgr->GetDefiningInstruction(element_constant)->result_id();
-        element_ids.push_back(element_id);
-      }
-      return const_mgr->GetConstant(type, element_ids);
-    }
-
-    if (width_in_bits == 64) {
-      if (2 * vec_type->element_count() != static_cast<uint32_t>(words.size()))
-        return nullptr;
-
-      std::vector<uint32_t> element_ids;
-      for (uint32_t i = 0; i < vec_type->element_count(); ++i) {
-        const analysis::Constant* element_constant = const_mgr->GetConstant(
-            element_type, {words[2 * i], words[2 * i + 1]});
-        auto element_id =
-            const_mgr->GetDefiningInstruction(element_constant)->result_id();
-        element_ids.push_back(element_id);
-      }
-      return const_mgr->GetConstant(type, element_ids);
-    }
-  }
-
+  if (const auto* vec_type = type->AsVector())
+    return const_mgr->GetNumericVectorConstantWithWords(vec_type, words);
   return nullptr;
 }
 
