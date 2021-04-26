@@ -132,10 +132,12 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
+#ifndef NDEBUG
   // Function should not swap with itself.
   ASSERT_DEATH(TransformationSwapTwoFunctions(4, 4).IsApplicable(
                    context.get(), transformation_context),
                "The two function ids cannot be the same.");
+#endif
 
   // Function with id 29 does not exist.
   ASSERT_FALSE(TransformationSwapTwoFunctions(10, 29).IsApplicable(

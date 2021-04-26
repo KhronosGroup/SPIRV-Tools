@@ -153,7 +153,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfReplacingParametersWithStruct = {
 const std::pair<uint32_t, uint32_t> kChanceOfSplittingBlock = {40, 95};
 const std::pair<uint32_t, uint32_t> kChanceOfSwappingConditionalBranchOperands =
     {10, 70};
-const std::pair<uint32_t, uint32_t> kChanceOfSwappingFunctions = {10, 10};
+const std::pair<uint32_t, uint32_t> kChanceOfSwappingFunctions = {10, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfTogglingAccessChainInstruction = {
     20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfWrappingRegionInSelection = {70,

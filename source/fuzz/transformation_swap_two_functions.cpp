@@ -37,8 +37,7 @@ bool TransformationSwapTwoFunctions::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   auto func1_ptr = ir_context->GetFunction(message_.function_id1());
   auto func2_ptr = ir_context->GetFunction(message_.function_id2());
-  if (!func1_ptr || !func2_ptr) return false;
-  return true;
+  return func1_ptr != nullptr && func2_ptr != nullptr;
 }
 
 void TransformationSwapTwoFunctions::Apply(
