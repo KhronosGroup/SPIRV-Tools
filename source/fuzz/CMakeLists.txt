@@ -121,6 +121,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_split_blocks.h
         fuzzer_pass_swap_commutable_operands.h
         fuzzer_pass_swap_conditional_branch_operands.h
+        fuzzer_pass_swap_functions.h
         fuzzer_pass_toggle_access_chain_instruction.h
         fuzzer_pass_wrap_regions_in_selections.h
         fuzzer_util.h
@@ -224,6 +225,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_swap_commutable_operands.h
         transformation_swap_conditional_branch_operands.h
         transformation_swap_function_variables.h
+        transformation_swap_two_functions.h
         transformation_toggle_access_chain_instruction.h
         transformation_vector_shuffle.h
         transformation_wrap_early_terminator_in_function.h
@@ -314,6 +316,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_split_blocks.cpp
         fuzzer_pass_swap_commutable_operands.cpp
         fuzzer_pass_swap_conditional_branch_operands.cpp
+        fuzzer_pass_swap_functions.cpp
         fuzzer_pass_toggle_access_chain_instruction.cpp
         fuzzer_pass_wrap_regions_in_selections.cpp
         fuzzer_util.cpp
@@ -415,6 +418,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_swap_commutable_operands.cpp
         transformation_swap_conditional_branch_operands.cpp
         transformation_swap_function_variables.cpp
+        transformation_swap_two_functions.cpp
         transformation_toggle_access_chain_instruction.cpp
         transformation_vector_shuffle.cpp
         transformation_wrap_early_terminator_in_function.cpp

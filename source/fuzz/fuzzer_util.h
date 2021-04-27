@@ -24,6 +24,7 @@
 #include "source/opt/basic_block.h"
 #include "source/opt/instruction.h"
 #include "source/opt/ir_context.h"
+#include "source/opt/module.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
@@ -595,6 +596,12 @@ std::set<uint32_t> GetReachableReturnBlocks(opt::IRContext* ir_context,
 bool NewTerminatorPreservesDominationRules(opt::IRContext* ir_context,
                                            uint32_t block_id,
                                            opt::Instruction new_terminator);
+
+// Return the iterator that points to the function with the corresponding
+// function id. If the function is not found, return the pointer pointing to
+// module()->end().
+opt::Module::iterator GetFunctionIterator(opt::IRContext* ir_context,
+                                          uint32_t function_id);
 
 }  // namespace fuzzerutil
 }  // namespace fuzz

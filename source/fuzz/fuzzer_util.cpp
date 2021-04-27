@@ -1925,6 +1925,15 @@ bool NewTerminatorPreservesDominationRules(opt::IRContext* ir_context,
   return true;
 }
 
+opt::Module::iterator GetFunctionIterator(opt::IRContext* ir_context,
+                                          uint32_t function_id) {
+  for (auto iter = ir_context->module()->begin();
+       iter != ir_context->module()->end(); ++iter) {
+    if ((*iter).result_id() == function_id) return iter;
+  }
+  return ir_context->module()->end();
+}
+
 }  // namespace fuzzerutil
 }  // namespace fuzz
 }  // namespace spvtools
