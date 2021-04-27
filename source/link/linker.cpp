@@ -87,10 +87,6 @@ spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
 //
 // |header| should not be null, |modules| should not be empty and pointers
 // should be non-null. |max_id_bound| should be strictly greater than 0.
-//
-// TODO(pierremoreau): What to do when binaries use different versions of
-//                     SPIR-V? For now, use the max of all versions found in
-//                     the input modules.
 spv_result_t GenerateHeader(const MessageConsumer& consumer,
                             const std::vector<opt::Module*>& modules,
                             uint32_t max_id_bound, opt::ModuleHeader* header);
@@ -209,12 +205,22 @@ spv_result_t GenerateHeader(const MessageConsumer& consumer,
     return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_DATA)
            << "|max_id_bound| of GenerateHeader should not be null.";
 
-  uint32_t version = 0u;
-  for (const auto& module : modules)
-    version = std::max(version, module->version());
+  const uint32_t linked_version = modules.front()->version();
+  for (std::size_t i = 1; i < modules.size(); ++i) {
+    const uint32_t module_version = modules[i]->version();
+    if (module_version != linked_version)
+      return DiagnosticStream({0, 0, 1}, consumer, "", SPV_ERROR_INTERNAL)
+             << "Conflicting SPIR-V versions: "
+             << SPV_SPIRV_VERSION_MAJOR_PART(linked_version) << "."
+             << SPV_SPIRV_VERSION_MINOR_PART(linked_version)
+             << " (input modules 1 through " << i << ") vs "
+             << SPV_SPIRV_VERSION_MAJOR_PART(module_version) << "."
+             << SPV_SPIRV_VERSION_MINOR_PART(module_version)
+             << " (input module " << (i + 1) << ").";
+  }
 
   header->magic_number = SpvMagicNumber;
-  header->version = version;
+  header->version = linked_version;
   header->generator = SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS_LINKER, 0);
   header->bound = max_id_bound;
   header->schema = 0u;

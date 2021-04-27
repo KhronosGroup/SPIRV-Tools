@@ -20,6 +20,7 @@
 namespace spvtools {
 namespace {
 
+using ::testing::HasSubstr;
 using BinaryVersion = spvtest::LinkerTest;
 
 spvtest::Binary CreateBinary(uint32_t version) {
@@ -44,17 +45,32 @@ spvtest::Binary CreateBinary(uint32_t version) {
   };
 }
 
-TEST_F(BinaryVersion, LinkerChoosesMaxSpirvVersion) {
+TEST_F(BinaryVersion, Match) {
   // clang-format off
   spvtest::Binaries binaries = {
       CreateBinary(SPV_SPIRV_VERSION_WORD(1, 3)),
-      CreateBinary(SPV_SPIRV_VERSION_WORD(1, 5)),
-      CreateBinary(SPV_SPIRV_VERSION_WORD(1, 1))
+      CreateBinary(SPV_SPIRV_VERSION_WORD(1, 3)),
   };
   // clang-format on
   spvtest::Binary linked_binary;
   ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary)) << GetErrorMessage();
-  EXPECT_EQ(SPV_SPIRV_VERSION_WORD(1, 5), linked_binary[1]);
+  EXPECT_THAT(GetErrorMessage(), std::string());
+  EXPECT_EQ(SPV_SPIRV_VERSION_WORD(1, 3), linked_binary[1]);
+}
+
+TEST_F(BinaryVersion, Mismatch) {
+  // clang-format off
+  spvtest::Binaries binaries = {
+      CreateBinary(SPV_SPIRV_VERSION_WORD(1, 3)),
+      CreateBinary(SPV_SPIRV_VERSION_WORD(1, 5)),
+  };
+  // clang-format on
+  spvtest::Binary linked_binary;
+  ASSERT_EQ(SPV_ERROR_INTERNAL, Link(binaries, &linked_binary))
+      << GetErrorMessage();
+  EXPECT_THAT(GetErrorMessage(),
+              HasSubstr("Conflicting SPIR-V versions: 1.3 (input modules 1 "
+                        "through 1) vs 1.5 (input module 2)."));
 }
 
 }  // namespace
