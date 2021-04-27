@@ -34,10 +34,9 @@ void FuzzerPassSwapFunctions::Apply() {
     function_ids.emplace_back(function.result_id());
   }
 
-  size_t id_size = function_ids.size();
   // Iterate through every combination of id i & j where i!=j.
-  for (size_t i = 0; i < id_size - 1; ++i) {
-    for (size_t j = i + 1; j < id_size; ++j) {
+  for (size_t i = 0; i < function_ids.size(); ++i) {
+    for (size_t j = i + 1; j < function_ids.size(); ++j) {
       // Perform function swap randomly.
       if (!GetFuzzerContext()->ChoosePercentage(
               GetFuzzerContext()->GetChanceOfSwappingFunctions())) {
