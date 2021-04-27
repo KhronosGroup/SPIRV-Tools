@@ -854,11 +854,10 @@ TEST_P(DoubleVectorInstructionFoldingTest, Case) {
   // Fold the instruction to test.
   analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  SpvOp original_opcode = inst->opcode();
   bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
 
   // Make sure the instruction folded as expected.
-  EXPECT_EQ(succeeded, inst == nullptr || inst->opcode() != original_opcode);
+  EXPECT_TRUE(succeeded);
   if (succeeded && inst != nullptr) {
     EXPECT_EQ(inst->opcode(), SpvOpCopyObject);
     inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));

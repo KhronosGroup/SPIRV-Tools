@@ -169,6 +169,7 @@ std::vector<uint32_t> GetWordsFromNumericScalarOrVectorConstant(
           GetWordsFromNumericScalarOrVectorConstant(const_mgr, comp);
       words.insert(words.end(), comp_in_words.begin(), comp_in_words.end());
     }
+    return words;
   }
   return {};
 }
