@@ -47,14 +47,14 @@ spvtest::Binary CreateBinary(uint32_t version) {
 TEST_F(BinaryVersion, LinkerChoosesMaxSpirvVersion) {
   // clang-format off
   spvtest::Binaries binaries = {
-      CreateBinary(0x00010300u),
-      CreateBinary(0x00010500u),
-      CreateBinary(0x00010100u)
+      CreateBinary(SPV_SPIRV_VERSION_WORD(1, 3)),
+      CreateBinary(SPV_SPIRV_VERSION_WORD(1, 5)),
+      CreateBinary(SPV_SPIRV_VERSION_WORD(1, 1))
   };
   // clang-format on
   spvtest::Binary linked_binary;
   ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary)) << GetErrorMessage();
-  EXPECT_EQ(0x00010500u, linked_binary[1]);
+  EXPECT_EQ(SPV_SPIRV_VERSION_WORD(1, 5), linked_binary[1]);
 }
 
 }  // namespace

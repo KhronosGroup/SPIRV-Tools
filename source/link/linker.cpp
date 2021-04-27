@@ -349,7 +349,7 @@ spv_result_t MergeModules(const MessageConsumer& consumer,
 
   // If the generated module uses SPIR-V 1.1 or higher, add an
   // OpModuleProcessed instruction about the linking step.
-  if (linked_module->version() >= 0x10100) {
+  if (linked_module->version() >= SPV_SPIRV_VERSION_WORD(1, 1)) {
     const std::string processed_string("Linked by SPIR-V Tools Linker");
     std::vector<uint32_t> processed_words =
         spvtools::utils::MakeVector(processed_string);
