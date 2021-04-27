@@ -49,7 +49,7 @@ Options (in lexicographical order):
   --create-library
                Link the binaries into a library, keeping all exported symbols.
   -h, --help
-                  Print this help.
+               Print this help.
   --target-env <env>
                Set the target environment. Without this flag the target
                environment defaults to spv1.5. <env> must be one of
@@ -57,7 +57,7 @@ Options (in lexicographical order):
   --verify-ids
                Verify that IDs in the resulting modules are truly unique.
   --version
-               Display linker version information
+               Display linker version information.
 )",
       program, program, target_env_list.c_str());
 }
