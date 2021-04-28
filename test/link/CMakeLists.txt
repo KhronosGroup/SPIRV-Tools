@@ -16,6 +16,7 @@
 add_spvtools_unittest(TARGET link
   SRCS
        binary_version_test.cpp
+       consolidating_workgroup_size_test.cpp
        entry_points_test.cpp
        global_values_amount_test.cpp
        ids_limit_test.cpp

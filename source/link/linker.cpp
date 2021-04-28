@@ -82,6 +82,20 @@ spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
                                std::vector<opt::Module*>* modules,
                                uint32_t* max_id_bound);
 
+// Consolidates eventual constant WorkgroupSize built-in into LocalSize
+// execution mode.
+//
+// Multiple constant WorkgroupSize into a single module seem to confuse
+// some drivers.
+//
+// Neither |module| nor |context| should be a null pointer.
+// TODO(pierremoreau): WorkgroupSize built-ins applied by a group decoration
+//                     are currently not handled. (You could have a group being
+//                     applied to a single ID.)
+spv_result_t ConsolidateWorkgroupSize(const MessageConsumer& consumer,
+                                      uint32_t moduleIndex, opt::Module* module,
+                                      opt::IRContext* context);
+
 // Generates the header for the linked module and returns it in |header|.
 //
 // |header| should not be null, |modules| should not be empty and pointers
@@ -186,6 +200,134 @@ spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
            << " " << id_bound << " is the current ID bound.";
 
   *max_id_bound = id_bound;
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ConsolidateWorkgroupSize(const MessageConsumer& consumer,
+                                      std::uint32_t moduleIndex,
+                                      opt::Module* module,
+                                      opt::IRContext* context) {
+  spv_position_t position = {};
+
+  if (module == nullptr)
+    return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_DATA)
+           << "Input module " << moduleIndex << ": "
+           << "|module| of ConsolidateWorkgroupSize should not be null.";
+  if (context == nullptr)
+    return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_DATA)
+           << "Input module " << moduleIndex << ": "
+           << "|context| of ConsolidateWorkgroupSize should not be null.";
+
+  std::vector<SpvId> entry_point_ids;
+  for (const auto& entry_point : module->entry_points()) {
+    const SpvExecutionModel execution_model =
+        static_cast<SpvExecutionModel>(entry_point.GetSingleWordInOperand(0u));
+    if (execution_model != SpvExecutionModelGLCompute &&
+        execution_model != SpvExecutionModelKernel)
+      continue;
+
+    entry_point_ids.push_back(entry_point.GetSingleWordInOperand(1u));
+  }
+
+  struct WorkgroupSizeData {
+    Instruction* decoration;
+    SpvId constant_id;
+    uint32_t workgroup_size_x;
+    uint32_t workgroup_size_y;
+    uint32_t workgroup_size_z;
+  };
+  std::vector<WorkgroupSizeData> workgroup_sizes;
+
+  opt::analysis::ConstantManager& constant_manager =
+      *context->get_constant_mgr();
+  for (auto& decoration : context->annotations()) {
+    if (decoration.opcode() != SpvOpDecorate ||
+        decoration.GetSingleWordInOperand(1u) != SpvDecorationBuiltIn ||
+        decoration.GetSingleWordInOperand(2u) != SpvBuiltInWorkgroupSize)
+      continue;
+
+    const SpvId id = decoration.GetSingleWordInOperand(0u);
+    const auto* constant = constant_manager.FindDeclaredConstant(id);
+    // We only consolidate constants.
+    if (constant == nullptr) continue;
+
+    const auto* vec_constant = constant->AsVectorConstant();
+    assert(vec_constant != nullptr);
+    const auto components = vec_constant->GetComponents();
+    if (components.size() != 3)
+      return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_DATA)
+             << "Input module " << moduleIndex << ": "
+             << "WorkgroupSize constants should be 3-component vectors; only "
+             << components.size() << " components were retrieved.";
+
+    workgroup_sizes.push_back({&decoration, id, components[0]->GetU32(),
+                               components[1]->GetU32(),
+                               components[2]->GetU32()});
+  }
+
+  if (workgroup_sizes.empty()) return SPV_SUCCESS;
+  if (entry_point_ids.empty())
+    return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_DATA)
+           << "Input module " << moduleIndex << ": "
+           << "No GLCompute or Kernel entry points found to match the "
+              "different WorkgroupSize constants to.";
+  if (entry_point_ids.size() > 1)
+    return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_DATA)
+           << "Input module " << moduleIndex << ": "
+           << "More than one GLCompute or Kernel entry point was found: unable "
+              "to consolidate the WorkgroupSize constant.";
+  if (workgroup_sizes.size() > 1)
+    return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_DATA)
+           << "Input module " << moduleIndex << ": "
+           << "More than one WorkgroupSize constant was found: they will not "
+              "be consolidated into LocalSize execution mode.";
+
+  const auto& workgroup_size = workgroup_sizes.front();
+  const SpvId entry_point_id = entry_point_ids.front();
+  bool has_matching_execution_mode = false;
+  for (const auto& execution_mode : module->execution_modes()) {
+    if (execution_mode.GetSingleWordInOperand(0u) != entry_point_id ||
+        execution_mode.GetSingleWordInOperand(1u) != SpvExecutionModeLocalSize)
+      continue;
+
+    const uint32_t local_size_x = execution_mode.GetSingleWordInOperand(2u);
+    const uint32_t local_size_y = execution_mode.GetSingleWordInOperand(3u);
+    const uint32_t local_size_z = execution_mode.GetSingleWordInOperand(4u);
+    if (local_size_x != workgroup_size.workgroup_size_x ||
+        local_size_y != workgroup_size.workgroup_size_y ||
+        local_size_z != workgroup_size.workgroup_size_z)
+      return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_DATA)
+             << "Input module " << moduleIndex << ": "
+             << "Unable to consolidate WorkgroupSize constant %"
+             << workgroup_size.constant_id << ": entry point %"
+             << entry_point_id << " already has a specified LocalSize, ("
+             << local_size_x << "," << local_size_y << "," << local_size_z
+             << "), which differs from the specified constant WorkgroupSize, ("
+             << workgroup_size.workgroup_size_x << ","
+             << workgroup_size.workgroup_size_y << ","
+             << workgroup_size.workgroup_size_z << ").";
+
+    // If we reach here, we have found an OpExecutionMode LocalSize for our
+    // targeted entry point and it has the same size as what was specified by
+    // the WorkgroupSize constant.
+    has_matching_execution_mode = true;
+    break;
+  }
+
+  if (!has_matching_execution_mode)
+    module->AddExecutionMode(std::unique_ptr<Instruction>(new Instruction(
+        context, SpvOpExecutionMode, 0u, 0u,
+        {{SPV_OPERAND_TYPE_ID, {entry_point_id}},
+         {SPV_OPERAND_TYPE_EXECUTION_MODE, {SpvExecutionModeLocalSize}},
+         {SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER,
+          {workgroup_size.workgroup_size_x}},
+         {SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER,
+          {workgroup_size.workgroup_size_y}},
+         {SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER,
+          {workgroup_size.workgroup_size_z}}})));
+
+  context->KillInst(workgroup_size.decoration);
 
   return SPV_SUCCESS;
 }
@@ -696,14 +838,22 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
   spv_result_t res = ShiftIdsInModules(consumer, &modules, &max_id_bound);
   if (res != SPV_SUCCESS) return res;
 
-  // Phase 2: Generate the header
+  // Phase 2: Remove declarations of constant WorkgroupSize built-ins and
+  //          instead define the execution mode for the corresponding kernel.
+  for (uint32_t i = 0u; i < num_binaries; ++i) {
+    res =
+        ConsolidateWorkgroupSize(consumer, i, modules[i], ir_contexts[i].get());
+    if (res != SPV_SUCCESS && res != SPV_WARNING) return res;
+  }
+
+  // Phase 3: Generate the header
   opt::ModuleHeader header;
   res = GenerateHeader(consumer, modules, max_id_bound, &header);
   if (res != SPV_SUCCESS) return res;
   IRContext linked_context(c_context->target_env, consumer);
   linked_context.module()->SetHeader(header);
 
-  // Phase 3: Merge all the binaries into a single one.
+  // Phase 4: Merge all the binaries into a single one.
   AssemblyGrammar grammar(c_context);
   res = MergeModules(consumer, modules, grammar, &linked_context);
   if (res != SPV_SUCCESS) return res;
@@ -713,7 +863,7 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
     if (res != SPV_SUCCESS) return res;
   }
 
-  // Phase 4: Find the import/export pairs
+  // Phase 5: Find the import/export pairs
   LinkageTable linkings_to_do;
   res = GetImportExportPairs(consumer, linked_context,
                              *linked_context.get_def_use_mgr(),
@@ -721,19 +871,19 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
                              options.GetAllowPartialLinkage(), &linkings_to_do);
   if (res != SPV_SUCCESS) return res;
 
-  // Phase 5: Ensure the import and export have the same types and decorations.
+  // Phase 6: Ensure the import and export have the same types and decorations.
   res =
       CheckImportExportCompatibility(consumer, linkings_to_do, &linked_context);
   if (res != SPV_SUCCESS) return res;
 
-  // Phase 6: Remove duplicates
+  // Phase 7: Remove duplicates
   PassManager manager;
   manager.SetMessageConsumer(consumer);
   manager.AddPass<RemoveDuplicatesPass>();
   opt::Pass::Status pass_res = manager.Run(&linked_context);
   if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
-  // Phase 7: Remove all names and decorations of import variables/functions
+  // Phase 8: Remove all names and decorations of import variables/functions
   for (const auto& linking_entry : linkings_to_do) {
     linked_context.KillNamesAndDecorates(linking_entry.imported_symbol.id);
     for (const auto parameter_id :
@@ -742,25 +892,25 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
     }
   }
 
-  // Phase 8: Rematch import variables/functions to export variables/functions
+  // Phase 9: Rematch import variables/functions to export variables/functions
   for (const auto& linking_entry : linkings_to_do) {
     linked_context.ReplaceAllUsesWith(linking_entry.imported_symbol.id,
                                       linking_entry.exported_symbol.id);
   }
 
-  // Phase 9: Remove linkage specific instructions, such as import/export
-  // attributes, linkage capability, etc. if applicable
+  // Phase 10: Remove linkage specific instructions, such as import/export
+  //           attributes, linkage capability, etc. if applicable
   res = RemoveLinkageSpecificInstructions(consumer, options, linkings_to_do,
                                           linked_context.get_decoration_mgr(),
                                           &linked_context);
   if (res != SPV_SUCCESS) return res;
 
-  // Phase 10: Compact the IDs used in the module
+  // Phase 11: Compact the IDs used in the module
   manager.AddPass<opt::CompactIdsPass>();
   pass_res = manager.Run(&linked_context);
   if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
-  // Phase 11: Output the module
+  // Phase 12: Output the module
   linked_context.module()->ToBinary(linked_binary, true);
 
   return SPV_SUCCESS;
