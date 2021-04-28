@@ -47,13 +47,14 @@ def check_library(library):
     then return 0.  Otherwise emit a message and return 1."""
 
     # The pattern for a global symbol record
-    symbol_pattern = re.compile(r'^[0-aA-Fa-f]+ g *F \.text.*[0-9A-Fa-f]+ +(.*)')
+    symbol_pattern = re.compile(r'^[0-aA-Fa-f]+ +[wg] *F \.text.*[0-9A-Fa-f]+ +(.*)')
 
     # Ok patterns are as follows, assuming Itanium name mangling:
     #   spv[A-Z]          :  extern "C" symbol starting with spv
     #   _ZN               :  something in a namespace
+    #   _ZSt              :  something in the standard namespace
     #   _Z[0-9]+spv[A-Z_] :  C++ symbol starting with spv[A-Z_]
-    symbol_ok_pattern = re.compile(r'^(spv[A-Z]|_ZN|_Z[0-9]+spv[A-Z_])')
+    symbol_ok_pattern = re.compile(r'^(spv[A-Z]|_ZN|_ZSt|_Z[0-9]+spv[A-Z_])')
 
     # In addition, the following pattern allowlists global functions that are added
     # by the protobuf compiler:
