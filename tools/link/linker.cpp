@@ -160,10 +160,11 @@ int main(int argc, char** argv) {
 
   std::vector<uint32_t> linkingResult;
   spv_result_t status = Link(context, contents, &linkingResult, options);
+  if (status != SPV_SUCCESS && status != SPV_WARNING) return 1;
 
   if (!WriteFile<uint32_t>(outFile, "wb", linkingResult.data(),
                            linkingResult.size()))
     return 1;
 
-  return status == SPV_SUCCESS ? 0 : 1;
+  return 0;
 }
