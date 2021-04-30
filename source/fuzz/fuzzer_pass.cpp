@@ -184,6 +184,35 @@ void FuzzerPass::ForEachInstructionWithInstructionDescriptor(
   }
 }
 
+void FuzzerPass::ApplyTransformation(const Transformation& transformation) {
+  assert(transformation.IsApplicable(GetIRContext(),
+                                     *GetTransformationContext()) &&
+         "Transformation should be applicable by construction.");
+  transformation.Apply(GetIRContext(), GetTransformationContext());
+  auto transformation_message = transformation.ToMessage();
+  assert(transformation_message.transformation_case() !=
+             protobufs::Transformation::TRANSFORMATION_NOT_SET &&
+         "Bad transformation.");
+  *GetTransformations()->add_transformation() =
+      std::move(transformation_message);
+}
+
+bool FuzzerPass::MaybeApplyTransformation(
+    const Transformation& transformation) {
+  if (transformation.IsApplicable(GetIRContext(),
+                                  *GetTransformationContext())) {
+    transformation.Apply(GetIRContext(), GetTransformationContext());
+    auto transformation_message = transformation.ToMessage();
+    assert(transformation_message.transformation_case() !=
+               protobufs::Transformation::TRANSFORMATION_NOT_SET &&
+           "Bad transformation.");
+    *GetTransformations()->add_transformation() =
+        std::move(transformation_message);
+    return true;
+  }
+  return false;
+}
+
 uint32_t FuzzerPass::FindOrCreateBoolType() {
   if (auto existing_id = fuzzerutil::MaybeGetBoolType(GetIRContext())) {
     return existing_id;
