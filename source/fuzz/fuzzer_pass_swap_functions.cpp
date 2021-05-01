@@ -34,15 +34,19 @@ FuzzerPassSwapFunctions::FuzzerPassSwapFunctions(
 
 void FuzzerPassSwapFunctions::Apply() {
   // This function iterates over the set of all result_ids
-  // and it swaps two functions with 0.1 <= probability <=0.5
-  // After each transformation it decides with a random probability
-  // whether to perform another transformation or exit.
+  // and it swaps two functions with a probability defined in
+  // source/fuzz/fuzzer_context.cpp. After each transformation
+  // it decides with a random probability whether to perform
+  // another transformation or exit.
   std::vector<uint32_t> result_ids;
   for (auto &function : *GetIRContext()->module()) {
     result_ids.push_back(function.result_id());
   }
   for (auto id1 : result_ids) {
     for (auto id2 : result_ids) {
+      if (id1 == id2) {
+        continue;
+      }
       if (!GetFuzzerContext()->ChoosePercentage(
               GetFuzzerContext()->GetChanceOfSwappingFunctions())) {
         continue;

@@ -217,14 +217,15 @@ TEST(TransformationSwapFunctions, BasicTest) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-  // Cannot swap a function with itself
+  // Cannot swap a function with itself.
   ASSERT_FALSE(TransformationSwapFunctions(96, 96).IsApplicable(
       context.get(), transformation_context));
 
-  ASSERT_FALSE(TransformationSwapFunctions({96, 1000})
-                   .IsApplicable(context.get(), transformation_context));
+  // The second result_id is invalid.
+  ASSERT_FALSE(TransformationSwapFunctions(96, 1000).IsApplicable(
+      context.get(), transformation_context));
 
-  // Try random valid permutations
+  // Try random valid permutations.
   {
 
     TransformationSwapFunctions transformation(12, 22);

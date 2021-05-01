@@ -44,7 +44,7 @@ public:
   // Returns true if and only if a randomly-chosen integer in the range [0, 100]
   // is less than |percentage_chance|.
   bool ChoosePercentage(uint32_t percentage_chance);
-  
+
   // Returns a random index into |sequence|, which is expected to have a 'size'
   // method, and which must be non-empty.  Typically 'HasSizeMethod' will be an
   // std::vector.

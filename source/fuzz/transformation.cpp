@@ -261,8 +261,6 @@ Transformation::FromMessage(const protobufs::Transformation &message) {
       kPermuteFunctionParameters:
     return MakeUnique<TransformationPermuteFunctionParameters>(
         message.permute_function_parameters());
-  case protobufs::Transformation::TransformationCase::kSwapFunctions:
-    return MakeUnique<TransformationSwapFunctions>(message.swap_functions());
   case protobufs::Transformation::TransformationCase::kPermutePhiOperands:
     return MakeUnique<TransformationPermutePhiOperands>(
         message.permute_phi_operands());
@@ -354,6 +352,8 @@ Transformation::FromMessage(const protobufs::Transformation &message) {
       kSwapConditionalBranchOperands:
     return MakeUnique<TransformationSwapConditionalBranchOperands>(
         message.swap_conditional_branch_operands());
+  case protobufs::Transformation::TransformationCase::kSwapFunctions:
+    return MakeUnique<TransformationSwapFunctions>(message.swap_functions());
   case protobufs::Transformation::TransformationCase::
       kToggleAccessChainInstruction:
     return MakeUnique<TransformationToggleAccessChainInstruction>(

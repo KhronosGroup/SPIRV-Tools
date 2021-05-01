@@ -1768,8 +1768,10 @@ message TransformationPermuteFunctionParameters {
 
 message TransformationSwapFunctions {
 
-  // A transformation that, given two function ids
-  // it swaps the functions if their ids are not equal
+  // A transformation that swaps two functions with result ids
+  // |message_.result_id1|  and |message_.result_id2| where
+  // |message_.result_id1| and |message_.result_id2| must be unique 
+  // result_ids of some function in the module.
   
   // The result id of the first function
   uint32 result_id1 = 1;

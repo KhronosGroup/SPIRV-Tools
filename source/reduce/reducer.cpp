@@ -39,10 +39,10 @@ Reducer::Reducer(spv_target_env target_env) : target_env_(target_env) {}
 Reducer::~Reducer() = default;
 
 void Reducer::SetMessageConsumer(MessageConsumer c) {
-  for (auto& pass : passes_) {
+  for (auto &pass : passes_) {
     pass->SetMessageConsumer(c);
   }
-  for (auto& pass : cleanup_passes_) {
+  for (auto &pass : cleanup_passes_) {
     pass->SetMessageConsumer(c);
   }
   consumer_ = std::move(c);
@@ -53,10 +53,11 @@ void Reducer::SetInterestingnessFunction(
   interestingness_function_ = std::move(interestingness_function);
 }
 
-Reducer::ReductionResultStatus Reducer::Run(
-    std::vector<uint32_t>&& binary_in, std::vector<uint32_t>* binary_out,
-    spv_const_reducer_options options,
-    spv_validator_options validator_options) {
+Reducer::ReductionResultStatus
+Reducer::Run(std::vector<uint32_t> &&binary_in,
+             std::vector<uint32_t> *binary_out,
+             spv_const_reducer_options options,
+             spv_validator_options validator_options) {
   std::vector<uint32_t> current_binary(std::move(binary_in));
 
   spvtools::SpirvTools tools(target_env_);
@@ -138,13 +139,13 @@ void Reducer::AddDefaultReductionPasses() {
 }
 
 void Reducer::AddReductionPass(
-    std::unique_ptr<ReductionOpportunityFinder>&& finder) {
+    std::unique_ptr<ReductionOpportunityFinder> &&finder) {
   passes_.push_back(
       spvtools::MakeUnique<ReductionPass>(target_env_, std::move(finder)));
 }
 
 void Reducer::AddCleanupReductionPass(
-    std::unique_ptr<ReductionOpportunityFinder>&& finder) {
+    std::unique_ptr<ReductionOpportunityFinder> &&finder) {
   cleanup_passes_.push_back(
       spvtools::MakeUnique<ReductionPass>(target_env_, std::move(finder)));
 }
@@ -155,10 +156,10 @@ bool Reducer::ReachedStepLimit(uint32_t current_step,
 }
 
 Reducer::ReductionResultStatus Reducer::RunPasses(
-    std::vector<std::unique_ptr<ReductionPass>>* passes,
+    std::vector<std::unique_ptr<ReductionPass>> *passes,
     spv_const_reducer_options options, spv_validator_options validator_options,
-    const SpirvTools& tools, std::vector<uint32_t>* current_binary,
-    uint32_t* const reductions_applied) {
+    const SpirvTools &tools, std::vector<uint32_t> *current_binary,
+    uint32_t *const reductions_applied) {
   // Determines whether, on completing one round of reduction passes, it is
   // worthwhile trying a further round.
   bool another_round_worthwhile = true;
@@ -172,7 +173,7 @@ Reducer::ReductionResultStatus Reducer::RunPasses(
     another_round_worthwhile = false;
 
     // Iterate through the available passes.
-    for (auto& pass : *passes) {
+    for (auto &pass : *passes) {
       // If this pass hasn't reached its minimum granularity then it's
       // worth eventually doing another round of reductions, in order to
       // try this pass at a finer granularity.
@@ -242,5 +243,5 @@ Reducer::ReductionResultStatus Reducer::RunPasses(
   return Reducer::ReductionResultStatus::kComplete;
 }
 
-}  // namespace reduce
-}  // namespace spvtools
+} // namespace reduce
+} // namespace spvtools

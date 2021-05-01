@@ -30,9 +30,10 @@ public:
 
   TransformationSwapFunctions(uint32_t result_id1, uint32_t result_id2);
 
-  // Swaps two functions with result_ids result_id1
-  // and result_id2 if they are valid function ids
-  // and they are not equal.
+  // Swaps two functions with result ids |message_.result_id1|
+  // and |message_.result_id2| where |message_.result_id1| and
+  // |message_.result_id2| must be unique result_ids of some
+  // function in the module
   bool IsApplicable(
       opt::IRContext *ir_context,
       const TransformationContext &transformation_context) const override;
@@ -42,6 +43,7 @@ public:
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
   protobufs::Transformation ToMessage() const override;
+
 private:
   protobufs::TransformationSwapFunctions message_;
 };
