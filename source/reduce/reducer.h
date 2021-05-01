@@ -27,7 +27,7 @@ namespace reduce {
 // This class manages the process of applying a reduction -- parameterized by a
 // number of reduction passes and an interestingness test, to a SPIR-V binary.
 class Reducer {
-public:
+ public:
   // Possible statuses that can result from running a reduction.
   enum ReductionResultStatus {
     kInitialStateNotInteresting,
@@ -48,7 +48,7 @@ public:
   // The notion of "interesting" depends on what properties of the binary or
   // tools that process the binary we are trying to maintain during reduction.
   using InterestingnessFunction =
-      std::function<bool(const std::vector<uint32_t> &, uint32_t)>;
+      std::function<bool(const std::vector<uint32_t>&, uint32_t)>;
 
   // Constructs an instance with the given target |target_env|, which is used to
   // decode the binary to be reduced later.
@@ -62,10 +62,10 @@ public:
   explicit Reducer(spv_target_env target_env);
 
   // Disables copy/move constructor/assignment operations.
-  Reducer(const Reducer &) = delete;
-  Reducer(Reducer &&) = delete;
-  Reducer &operator=(const Reducer &) = delete;
-  Reducer &operator=(Reducer &&) = delete;
+  Reducer(const Reducer&) = delete;
+  Reducer(Reducer&&) = delete;
+  Reducer& operator=(const Reducer&) = delete;
+  Reducer& operator=(Reducer&&) = delete;
 
   // Destructs this instance.
   ~Reducer();
@@ -76,39 +76,38 @@ public:
 
   // Sets the function that will be used to decide whether a reduced binary
   // turned out to be interesting.
-  void
-  SetInterestingnessFunction(InterestingnessFunction interestingness_function);
+  void SetInterestingnessFunction(
+      InterestingnessFunction interestingness_function);
 
   // Adds all default reduction passes.
   void AddDefaultReductionPasses();
 
   // Adds a reduction pass based on the given finder to the sequence of passes
   // that will be iterated over.
-  void AddReductionPass(std::unique_ptr<ReductionOpportunityFinder> &&finder);
+  void AddReductionPass(std::unique_ptr<ReductionOpportunityFinder>&& finder);
 
   // Adds a cleanup reduction pass based on the given finder to the sequence of
   // passes that will run after other passes.
-  void
-  AddCleanupReductionPass(std::unique_ptr<ReductionOpportunityFinder> &&finder);
+  void AddCleanupReductionPass(
+      std::unique_ptr<ReductionOpportunityFinder>&& finder);
 
   // Reduces the given SPIR-V module |binary_out|.
   // The reduced binary ends up in |binary_out|.
   // A status is returned.
-  ReductionResultStatus Run(std::vector<uint32_t> &&binary_in,
-                            std::vector<uint32_t> *binary_out,
+  ReductionResultStatus Run(std::vector<uint32_t>&& binary_in,
+                            std::vector<uint32_t>* binary_out,
                             spv_const_reducer_options options,
                             spv_validator_options validator_options);
 
-private:
+ private:
   static bool ReachedStepLimit(uint32_t current_step,
                                spv_const_reducer_options options);
 
-  ReductionResultStatus
-  RunPasses(std::vector<std::unique_ptr<ReductionPass>> *passes,
-            spv_const_reducer_options options,
-            spv_validator_options validator_options, const SpirvTools &tools,
-            std::vector<uint32_t> *current_binary,
-            uint32_t *reductions_applied);
+  ReductionResultStatus RunPasses(
+      std::vector<std::unique_ptr<ReductionPass>>* passes,
+      spv_const_reducer_options options,
+      spv_validator_options validator_options, const SpirvTools& tools,
+      std::vector<uint32_t>* current_binary, uint32_t* reductions_applied);
 
   const spv_target_env target_env_;
   MessageConsumer consumer_;
@@ -117,7 +116,7 @@ private:
   std::vector<std::unique_ptr<ReductionPass>> cleanup_passes_;
 };
 
-} // namespace reduce
-} // namespace spvtools
+}  // namespace reduce
+}  // namespace spvtools
 
-#endif // SOURCE_REDUCE_REDUCER_H_
+#endif  // SOURCE_REDUCE_REDUCER_H_
