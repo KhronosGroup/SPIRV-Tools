@@ -69,6 +69,11 @@ void TransformationSwapFunctionVariables::Apply(
       ir_context->get_def_use_mgr()->GetDef(message_.result_id2());
 
   std::swap(*instruction1, *instruction2);
+
+  // Inform the def-use manager about the new instruction to Analyzes the
+  // definitions and uses in the given instruction for optimization purposes.
+  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(instruction1);
+  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(instruction2);
 }
 
 protobufs::Transformation TransformationSwapFunctionVariables::ToMessage()
