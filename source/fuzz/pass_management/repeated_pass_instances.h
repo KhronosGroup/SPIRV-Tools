@@ -99,17 +99,17 @@ class RepeatedPassInstances {
 // // previously registered via SetPass(), or nullptr if no such instance was
 // // registered
 // FuzzerPassFoo* GetFoo();
-#define REPEATED_PASS_INSTANCE(NAME)                                           \
-public:                                                                        \
-  FuzzerPass##NAME *Get##NAME() const { return NAME##_; }                      \
-  void SetPass(std::unique_ptr<FuzzerPass##NAME> pass) {                       \
-    assert(NAME##_ == nullptr && "Attempt to set pass multiple times.");       \
-    NAME##_ = pass.get();                                                      \
-    passes_.push_back(std::move(pass));                                        \
-  }                                                                            \
-                                                                               \
-private:                                                                       \
-  FuzzerPass##NAME *NAME##_ = nullptr
+#define REPEATED_PASS_INSTANCE(NAME)                                     \
+ public:                                                                 \
+  FuzzerPass##NAME* Get##NAME() const { return NAME##_; }                \
+  void SetPass(std::unique_ptr<FuzzerPass##NAME> pass) {                 \
+    assert(NAME##_ == nullptr && "Attempt to set pass multiple times."); \
+    NAME##_ = pass.get();                                                \
+    passes_.push_back(std::move(pass));                                  \
+  }                                                                      \
+                                                                         \
+ private:                                                                \
+  FuzzerPass##NAME* NAME##_ = nullptr
 
   REPEATED_PASS_INSTANCE(AddAccessChains);
   REPEATED_PASS_INSTANCE(AddBitInstructionSynonyms);
@@ -171,18 +171,18 @@ private:                                                                       \
   REPEATED_PASS_INSTANCE(WrapRegionsInSelections);
 #undef REPEATED_PASS_INSTANCE
 
-public:
+ public:
   // Yields the sequence of fuzzer pass instances that have been registered.
-  const std::vector<std::unique_ptr<FuzzerPass>> &GetPasses() const {
+  const std::vector<std::unique_ptr<FuzzerPass>>& GetPasses() const {
     return passes_;
   }
 
-private:
+ private:
   // The distinct fuzzer pass instances that have been registered via SetPass().
   std::vector<std::unique_ptr<FuzzerPass>> passes_;
 };
 
-} // namespace fuzz
-} // namespace spvtools
+}  // namespace fuzz
+}  // namespace spvtools
 
-#endif // SOURCE_FUZZ_REPEATED_PASS_INSTANCES_H_
+#endif  // SOURCE_FUZZ_REPEATED_PASS_INSTANCES_H_

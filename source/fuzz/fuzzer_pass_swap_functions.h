@@ -23,16 +23,16 @@ namespace fuzz {
 // it checks whether there exist functions with the given ids
 // and Swaps the functions if that is the case.
 class FuzzerPassSwapFunctions : public FuzzerPass {
-public:
-  FuzzerPassSwapFunctions(opt::IRContext *ir_context,
-                          TransformationContext *transformation_context,
-                          FuzzerContext *fuzzer_context,
-                          protobufs::TransformationSequence *transformations);
+ public:
+  FuzzerPassSwapFunctions(opt::IRContext* ir_context,
+                          TransformationContext* transformation_context,
+                          FuzzerContext* fuzzer_context,
+                          protobufs::TransformationSequence* transformations);
 
   void Apply() override;
 };
 
-} // namespace fuzz
-} // namespace spvtools
+}  // namespace fuzz
+}  // namespace spvtools
 
-#endif // SOURCE_FUZZ_FUZZER_PASS_SWAP_FUNCTIONS_H_
+#endif  // SOURCE_FUZZ_FUZZER_PASS_SWAP_FUNCTIONS_H_

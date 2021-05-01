@@ -26,9 +26,9 @@ namespace spvtools {
 namespace fuzz {
 
 FuzzerPassSwapFunctions::FuzzerPassSwapFunctions(
-    opt::IRContext *ir_context, TransformationContext *transformation_context,
-    FuzzerContext *fuzzer_context,
-    protobufs::TransformationSequence *transformations)
+    opt::IRContext* ir_context, TransformationContext* transformation_context,
+    FuzzerContext* fuzzer_context,
+    protobufs::TransformationSequence* transformations)
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations) {}
 
@@ -39,7 +39,7 @@ void FuzzerPassSwapFunctions::Apply() {
   // it decides with a random probability whether to perform
   // another transformation or exit.
   std::vector<uint32_t> result_ids;
-  for (auto &function : *GetIRContext()->module()) {
+  for (auto& function : *GetIRContext()->module()) {
     result_ids.push_back(function.result_id());
   }
   for (auto id1 : result_ids) {
@@ -60,5 +60,5 @@ void FuzzerPassSwapFunctions::Apply() {
   }
 }
 
-} // namespace fuzz
-} // namespace spvtools
+}  // namespace fuzz
+}  // namespace spvtools

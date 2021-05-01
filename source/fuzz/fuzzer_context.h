@@ -30,7 +30,7 @@ namespace fuzz {
 // source of randomness and the probabilities with which transformations are
 // applied.
 class FuzzerContext {
-public:
+ public:
   // Constructs a fuzzer context with a given random generator and the minimum
   // value that can be used for fresh ids.
   FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
@@ -49,7 +49,7 @@ public:
   // method, and which must be non-empty.  Typically 'HasSizeMethod' will be an
   // std::vector.
   template <typename HasSizeMethod>
-  uint32_t RandomIndex(const HasSizeMethod &sequence) const {
+  uint32_t RandomIndex(const HasSizeMethod& sequence) const {
     assert(sequence.size() > 0);
     return random_generator_->RandomUint32(
         static_cast<uint32_t>(sequence.size()));
@@ -57,7 +57,8 @@ public:
 
   // Selects a random index into |sequence|, removes the element at that index
   // and returns it.
-  template <typename T> T RemoveAtRandomIndex(std::vector<T> *sequence) const {
+  template <typename T>
+  T RemoveAtRandomIndex(std::vector<T>* sequence) const {
     uint32_t index = RandomIndex(*sequence);
     T result = sequence->at(index);
     sequence->erase(sequence->begin() + index);
@@ -67,8 +68,8 @@ public:
   // Randomly shuffles a |sequence| between |lo| and |hi| indices inclusively.
   // |lo| and |hi| must be valid indices to the |sequence|.
   template <typename T>
-  void Shuffle(std::vector<T> *sequence, size_t lo, size_t hi) const {
-    auto &array = *sequence;
+  void Shuffle(std::vector<T>* sequence, size_t lo, size_t hi) const {
+    auto& array = *sequence;
 
     if (array.empty()) {
       return;
@@ -91,7 +92,8 @@ public:
   }
 
   // Randomly shuffles a |sequence|.
-  template <typename T> void Shuffle(std::vector<T> *sequence) const {
+  template <typename T>
+  void Shuffle(std::vector<T>* sequence) const {
     if (!sequence->empty()) {
       Shuffle(sequence, 0, sequence->size() - 1);
     }
@@ -116,7 +118,7 @@ public:
   uint32_t GetTransformationLimit() const;
 
   // Returns the minimum fresh id that can be used given the |ir_context|.
-  static uint32_t GetMinFreshId(opt::IRContext *ir_context);
+  static uint32_t GetMinFreshId(opt::IRContext* ir_context);
 
   // Returns true if all transformations should be compatible with WGSL.
   bool IsWgslCompatible() const { return is_wgsl_compatible_; }
@@ -395,12 +397,12 @@ public:
 
     return branch_weights;
   }
-  std::vector<uint32_t>
-  GetRandomComponentsForVectorShuffle(uint32_t max_component_index) {
+  std::vector<uint32_t> GetRandomComponentsForVectorShuffle(
+      uint32_t max_component_index) {
     // Component count must be in range [2, 4].
     std::vector<uint32_t> components(random_generator_->RandomUint32(2) + 2);
 
-    for (uint32_t &component : components) {
+    for (uint32_t& component : components) {
       component = random_generator_->RandomUint32(max_component_index);
     }
 
@@ -457,7 +459,7 @@ public:
     return go_deeper_in_constant_obfuscation_(depth, random_generator_.get());
   }
 
-private:
+ private:
   // The source of randomness.
   std::unique_ptr<RandomGenerator> random_generator_;
   // The next fresh id to be issued.
@@ -567,15 +569,15 @@ private:
 
   // Functions to determine with what probability to go deeper when generating
   // or mutating constructs recursively.
-  const std::function<bool(uint32_t, RandomGenerator *)>
-      &go_deeper_in_constant_obfuscation_;
+  const std::function<bool(uint32_t, RandomGenerator*)>&
+      go_deeper_in_constant_obfuscation_;
 
   // Requires |min_max.first| <= |min_max.second|, and returns a value in the
   // range [ |min_max.first|, |min_max.second| ]
-  uint32_t ChooseBetweenMinAndMax(const std::pair<uint32_t, uint32_t> &min_max);
+  uint32_t ChooseBetweenMinAndMax(const std::pair<uint32_t, uint32_t>& min_max);
 };
 
-} // namespace fuzz
-} // namespace spvtools
+}  // namespace fuzz
+}  // namespace spvtools
 
-#endif // SOURCE_FUZZ_FUZZER_CONTEXT_H_
+#endif  // SOURCE_FUZZ_FUZZER_CONTEXT_H_

@@ -177,19 +177,20 @@ const uint32_t kGetDefaultMaxNumberOfParametersReplacedWithStruct = 5;
 // Default functions for controlling how deep to go during recursive
 // generation/transformation. Keep them in alphabetical order.
 
-const std::function<bool(uint32_t, RandomGenerator *)>
+const std::function<bool(uint32_t, RandomGenerator*)>
     kDefaultGoDeeperInConstantObfuscation =
-        [](uint32_t current_depth, RandomGenerator *random_generator) -> bool {
+        [](uint32_t current_depth, RandomGenerator* random_generator) -> bool {
   double chance = 1.0 / std::pow(3.0, static_cast<float>(current_depth + 1));
   return random_generator->RandomDouble() < chance;
 };
 
-} // namespace
+}  // namespace
 
 FuzzerContext::FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
                              uint32_t min_fresh_id, bool is_wgsl_compatible)
     : random_generator_(std::move(random_generator)),
-      next_fresh_id_(min_fresh_id), is_wgsl_compatible_(is_wgsl_compatible),
+      next_fresh_id_(min_fresh_id),
+      is_wgsl_compatible_(is_wgsl_compatible),
       max_equivalence_class_size_for_data_synonym_fact_closure_(
           kDefaultMaxEquivalenceClassSizeForDataSynonymFactClosure),
       max_loop_control_partial_count_(kDefaultMaxLoopControlPartialCount),
@@ -373,7 +374,7 @@ uint32_t FuzzerContext::GetFreshId() { return next_fresh_id_++; }
 std::vector<uint32_t> FuzzerContext::GetFreshIds(const uint32_t count) {
   std::vector<uint32_t> fresh_ids(count);
 
-  for (uint32_t &fresh_id : fresh_ids) {
+  for (uint32_t& fresh_id : fresh_ids) {
     fresh_id = next_fresh_id_++;
   }
 
@@ -388,7 +389,7 @@ bool FuzzerContext::ChoosePercentage(uint32_t percentage_chance) {
 }
 
 uint32_t FuzzerContext::ChooseBetweenMinAndMax(
-    const std::pair<uint32_t, uint32_t> &min_max) {
+    const std::pair<uint32_t, uint32_t>& min_max) {
   assert(min_max.first <= min_max.second);
   return min_max.first +
          random_generator_->RandomUint32(min_max.second - min_max.first + 1);
@@ -416,9 +417,9 @@ uint32_t FuzzerContext::GetTransformationLimit() const {
   return kTransformationLimit;
 }
 
-uint32_t FuzzerContext::GetMinFreshId(opt::IRContext *ir_context) {
+uint32_t FuzzerContext::GetMinFreshId(opt::IRContext* ir_context) {
   return ir_context->module()->id_bound() + kIdBoundGap;
 }
 
-} // namespace fuzz
-} // namespace spvtools
+}  // namespace fuzz
+}  // namespace spvtools

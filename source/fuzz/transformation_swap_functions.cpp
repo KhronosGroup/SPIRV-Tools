@@ -34,37 +34,33 @@ TransformationSwapFunctions::TransformationSwapFunctions(uint32_t result_id1,
 }
 
 bool TransformationSwapFunctions::IsApplicable(
-    opt::IRContext *ir_context,
-    const TransformationContext & /*unused*/) const {
-
+    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
   // A swap transformation is possible if:
   // - Both the result_ids are valid result_ids of some functions in the module
   // and
   // - The result_ids are not equal
-  opt::Function *f1 = ir_context->GetFunction(message_.result_id1());
-  opt::Function *f2 = ir_context->GetFunction(message_.result_id2());
+  opt::Function* f1 = ir_context->GetFunction(message_.result_id1());
+  opt::Function* f2 = ir_context->GetFunction(message_.result_id2());
 
   if (f1 == nullptr || f2 == nullptr) {
     return false;
   }
-  assert(f1 != nullptr && "Function 1 doesn't exist");
-  assert(f2 != nullptr && "Function 2 doesn't exist");
   assert(message_.result_id1() != message_.result_id2() &&
          "Cannot swap a function with itself");
   return true;
 }
 
 void TransformationSwapFunctions::Apply(
-    opt::IRContext *ir_context, TransformationContext * /*unused*/) const {
+    opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
   // Function that swaps two functions based on their result_ids
   auto fp1 =
       std::find_if(ir_context->module()->begin(), ir_context->module()->end(),
-                   [this](const opt::Function &function) {
+                   [this](const opt::Function& function) {
                      return function.result_id() == message_.result_id1();
                    });
   auto fp2 =
       std::find_if(ir_context->module()->begin(), ir_context->module()->end(),
-                   [this](const opt::Function &function) {
+                   [this](const opt::Function& function) {
                      return function.result_id() == message_.result_id2();
                    });
   std::iter_swap(fp1.Get(), fp2.Get());
@@ -80,5 +76,5 @@ protobufs::Transformation TransformationSwapFunctions::ToMessage() const {
   return result;
 }
 
-} // namespace fuzz
-} // namespace spvtools
+}  // namespace fuzz
+}  // namespace spvtools

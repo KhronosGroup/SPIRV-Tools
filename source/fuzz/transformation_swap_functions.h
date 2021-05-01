@@ -24,7 +24,7 @@ namespace spvtools {
 namespace fuzz {
 
 class TransformationSwapFunctions : public Transformation {
-public:
+ public:
   explicit TransformationSwapFunctions(
       protobufs::TransformationSwapFunctions message);
 
@@ -35,20 +35,20 @@ public:
   // |message_.result_id2| must be unique result_ids of some
   // function in the module
   bool IsApplicable(
-      opt::IRContext *ir_context,
-      const TransformationContext &transformation_context) const override;
+      opt::IRContext* ir_context,
+      const TransformationContext& transformation_context) const override;
 
-  void Apply(opt::IRContext *ir_context,
-             TransformationContext *transformation_context) const override;
+  void Apply(opt::IRContext* ir_context,
+             TransformationContext* transformation_context) const override;
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
   protobufs::Transformation ToMessage() const override;
 
-private:
+ private:
   protobufs::TransformationSwapFunctions message_;
 };
 
-} // namespace fuzz
-} // namespace spvtools
+}  // namespace fuzz
+}  // namespace spvtools
 
-#endif // SOURCE_FUZZ_TRANSFORMATION_SWAP_FUNCTIONS_H_
+#endif  // SOURCE_FUZZ_TRANSFORMATION_SWAP_FUNCTIONS_H_

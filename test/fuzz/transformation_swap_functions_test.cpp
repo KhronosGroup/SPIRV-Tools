@@ -14,9 +14,9 @@
 
 #include "source/fuzz/transformation_swap_functions.h"
 
+#include "gtest/gtest.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
-#include "gtest/gtest.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -225,9 +225,12 @@ TEST(TransformationSwapFunctions, BasicTest) {
   ASSERT_FALSE(TransformationSwapFunctions(96, 1000).IsApplicable(
       context.get(), transformation_context));
 
+  ASSERT_DEATH(TransformationSwapFunctions(96, 96).IsApplicable(
+                   context.get(), transformation_context),
+               "Equal Result_ids.");
+
   // Try random valid permutations.
   {
-
     TransformationSwapFunctions transformation(12, 22);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
@@ -237,7 +240,6 @@ TEST(TransformationSwapFunctions, BasicTest) {
         context.get(), validator_options, kConsoleMessageConsumer));
   }
   {
-
     TransformationSwapFunctions transformation(22, 28);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
@@ -444,6 +446,6 @@ TEST(TransformationSwapFunctions, BasicTest) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
-} // namespace
-} // namespace fuzz
-} // namespace spvtools
+}  // namespace
+}  // namespace fuzz
+}  // namespace spvtools
