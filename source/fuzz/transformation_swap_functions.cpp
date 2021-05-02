@@ -64,6 +64,7 @@ void TransformationSwapFunctions::Apply(
                      return function.result_id() == message_.result_id2();
                    });
   std::iter_swap(fp1.Get(), fp2.Get());
+  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
 std::unordered_set<uint32_t> TransformationSwapFunctions::GetFreshIds() const {
