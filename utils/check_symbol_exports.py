@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Ensures that all externally visible functions in the library have an appropriate name
+
 Appropriate function names are:
   - names starting with spv,
   - anything in a namespace,
