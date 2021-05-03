@@ -427,10 +427,6 @@ if(SPIRV_BUILD_FUZZER)
         ${CMAKE_CURRENT_BINARY_DIR}/protobufs/spvtoolsfuzz.pb.cc
         )
 
-  if(MSVC AND (NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")))
-    # Enable parallel builds across four cores for this lib
-    add_definitions(/MP4)
-  endif()
 
   spvtools_pch(SPIRV_TOOLS_FUZZ_SOURCES pch_source_fuzz)
 
