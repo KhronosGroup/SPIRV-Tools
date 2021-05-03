@@ -31,6 +31,13 @@ if (${SPIRV_BUILD_FUZZER})
           fuzzer_pass_construct_composites_test.cpp
           fuzzer_pass_donate_modules_test.cpp
           fuzzer_pass_outline_functions_test.cpp
+          fuzzer_util_maybe_find_block_test.cpp
+          fuzzer_util_maybe_get_bool_type_test.cpp
+          fuzzer_util_maybe_get_float_type_test.cpp
+          fuzzer_util_maybe_get_integer_type_test.cpp
+          fuzzer_util_maybe_get_pointer_type_test.cpp
+          fuzzer_util_maybe_get_struct_type_test.cpp
+          fuzzer_util_maybe_get_void_type_test.cpp
           instruction_descriptor_test.cpp
           fuzzer_pass_test.cpp
           replayer_test.cpp
