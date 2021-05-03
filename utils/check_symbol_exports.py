@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Ensures that all externally visible functions in the library have an appropriate name
-
 Appropriate function names are:
   - names starting with spv,
   - anything in a namespace,
@@ -31,9 +30,7 @@ PROG = 'check_symbol_exports'
 
 def command_output(cmd, directory):
     """Runs a command in a directory and returns its standard output stream.
-
     Captures the standard error stream.
-
     Raises a RuntimeError if the command fails to launch or otherwise fails.
     """
     p = subprocess.Popen(cmd,
