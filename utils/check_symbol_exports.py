@@ -31,7 +31,9 @@ PROG = 'check_symbol_exports'
 
 def command_output(cmd, directory):
     """Runs a command in a directory and returns its standard output stream.
+
     Captures the standard error stream.
+
     Raises a RuntimeError if the command fails to launch or otherwise fails.
     """
     p = subprocess.Popen(cmd,
