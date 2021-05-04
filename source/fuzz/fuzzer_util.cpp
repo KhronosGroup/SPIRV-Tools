@@ -1927,11 +1927,11 @@ bool NewTerminatorPreservesDominationRules(opt::IRContext* ir_context,
 
 opt::Module::iterator GetFunctionIterator(opt::IRContext* ir_context,
                                           uint32_t function_id) {
-  for (auto iter = ir_context->module()->begin();
-       iter != ir_context->module()->end(); ++iter) {
-    if ((*iter).result_id() == function_id) return iter;
-  }
-  return ir_context->module()->end();
+  return std::find_if(ir_context->module()->begin(),
+                      ir_context->module()->end(),
+                      [function_id](const opt::Function& f) {
+                        return f.result_id() == function_id;
+                      });
 }
 
 }  // namespace fuzzerutil
