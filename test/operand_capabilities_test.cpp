@@ -199,7 +199,8 @@ INSTANTIATE_TEST_SUITE_P(
                 CASE1(STORAGE_CLASS, StorageClassOutput, Shader),
                 CASE0(STORAGE_CLASS, StorageClassWorkgroup),
                 CASE0(STORAGE_CLASS, StorageClassCrossWorkgroup),
-                CASE1(STORAGE_CLASS, StorageClassPrivate, Shader),
+                CASE2(STORAGE_CLASS, StorageClassPrivate, Shader,
+                      VectorComputeINTEL),
                 CASE0(STORAGE_CLASS, StorageClassFunction),
                 CASE1(STORAGE_CLASS, StorageClassGeneric,
                       GenericPointer),  // Bug 14287
