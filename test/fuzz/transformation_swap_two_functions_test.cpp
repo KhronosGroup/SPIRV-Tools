@@ -154,7 +154,20 @@ TEST(TransformationSwapTwoFunctionsTest, SimpleTest) {
   // Function with result_id 10 and 13 should swap successfully.
   auto swap_test5 = TransformationSwapTwoFunctions(10, 13);
   ASSERT_TRUE(swap_test5.IsApplicable(context.get(), transformation_context));
+
+  // Get the definitions of functions 10 and 13, as recorded by the def-use
+  // manager.
+  auto def_use_manager = context->get_def_use_mgr();
+  auto function_10_inst = def_use_manager->GetDef(10);
+  auto function_13_inst = def_use_manager->GetDef(13);
+
   ApplyAndCheckFreshIds(swap_test5, context.get(), &transformation_context);
+
+  // Check that def-use information for functions 10 and 13 has been preserved
+  // by the transformation.
+  ASSERT_EQ(function_10_inst, def_use_manager->GetDef(10));
+  ASSERT_EQ(function_13_inst, def_use_manager->GetDef(13));
+
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
 
