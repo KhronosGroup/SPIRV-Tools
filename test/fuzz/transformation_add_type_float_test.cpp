@@ -24,23 +24,23 @@ namespace {
 
 TEST(TransformationAddTypeFloatTest, IsApplicable) {
   std::string reference_shader = R"(
-         OpCapability Shader
-         OpCapability Float16
-    %1 = OpExtInstImport "GLSL.std.450"
-         OpMemoryModel Logical GLSL450
-         OpEntryPoint Vertex %5 "main"
+		    OpCapability Shader
+		    OpCapability Float16
+		%1 = OpExtInstImport "GLSL.std.450"
+		    OpMemoryModel Logical GLSL450
+		    OpEntryPoint Vertex %5 "main"
 
-; Types
-    %2 = OpTypeFloat 16
-    %3 = OpTypeVoid
-    %4 = OpTypeFunction %3
+	    ; Types
+		%2 = OpTypeFloat 16
+		%3 = OpTypeVoid
+		%4 = OpTypeFunction %3
 
-; main function
-    %5 = OpFunction %3 None %4
-    %6 = OpLabel
-         OpReturn
-         OpFunctionEnd
-  )";
+	    ; main function
+		%5 = OpFunction %3 None %4
+		%6 = OpLabel
+		    OpReturn
+		    OpFunctionEnd
+	    )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
@@ -61,7 +61,7 @@ TEST(TransformationAddTypeFloatTest, IsApplicable) {
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
-  // Tests existing 16-bit float type.
+  // Tests missing 16-bit float type.
   transformation = TransformationAddTypeFloat(7, 16);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
@@ -70,27 +70,38 @@ TEST(TransformationAddTypeFloatTest, IsApplicable) {
   transformation = TransformationAddTypeFloat(7, 32);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
+
+  // By default, SPIR-V does not support 64-bit float types.
+  // Below we add such capability, so the test should now pass.
+  context.get()->get_feature_mgr()->AddCapability(SpvCapabilityFloat64);
+  ASSERT_TRUE(TransformationAddTypeFloat(7, 64).IsApplicable(
+      context.get(), transformation_context));
+
+  // Should not be able to add float type of width different from 16/32/64
+  ASSERT_DEATH(TransformationAddTypeFloat(7, 20).IsApplicable(
+                   context.get(), transformation_context),
+               "Unexpected float type width");
 }
 
 TEST(TransformationAddTypeFloatTest, Apply) {
   std::string reference_shader = R"(
-         OpCapability Shader
-         OpCapability Float16
-         OpCapability Float64
-    %1 = OpExtInstImport "GLSL.std.450"
-         OpMemoryModel Logical GLSL450
-         OpEntryPoint Vertex %4 "main"
+		    OpCapability Shader
+		    OpCapability Float16
+		    OpCapability Float64
+		%1 = OpExtInstImport "GLSL.std.450"
+		    OpMemoryModel Logical GLSL450
+		    OpEntryPoint Vertex %4 "main"
 
-; Types
-    %2 = OpTypeVoid
-    %3 = OpTypeFunction %2
+	    ; Types
+		%2 = OpTypeVoid
+		%3 = OpTypeFunction %2
 
-; main function
-    %4 = OpFunction %2 None %3
-    %5 = OpLabel
-         OpReturn
-         OpFunctionEnd
-  )";
+	    ; main function
+		%4 = OpFunction %2 None %3
+		%5 = OpLabel
+		    OpReturn
+		    OpFunctionEnd
+	    )";
 
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
@@ -126,26 +137,26 @@ TEST(TransformationAddTypeFloatTest, Apply) {
   ASSERT_NE(nullptr, context->get_type_mgr()->GetType(8)->AsFloat());
 
   std::string variant_shader = R"(
-         OpCapability Shader
-         OpCapability Float16
-         OpCapability Float64
-    %1 = OpExtInstImport "GLSL.std.450"
-         OpMemoryModel Logical GLSL450
-         OpEntryPoint Vertex %4 "main"
+		    OpCapability Shader
+		    OpCapability Float16
+		    OpCapability Float64
+		%1 = OpExtInstImport "GLSL.std.450"
+		    OpMemoryModel Logical GLSL450
+		    OpEntryPoint Vertex %4 "main"
 
-; Types
-    %2 = OpTypeVoid
-    %3 = OpTypeFunction %2
-    %6 = OpTypeFloat 16
-    %7 = OpTypeFloat 32
-    %8 = OpTypeFloat 64
+	    ; Types
+		%2 = OpTypeVoid
+		%3 = OpTypeFunction %2
+		%6 = OpTypeFloat 16
+		%7 = OpTypeFloat 32
+		%8 = OpTypeFloat 64
 
-; main function
-    %4 = OpFunction %2 None %3
-    %5 = OpLabel
-         OpReturn
-         OpFunctionEnd
-  )";
+	    ; main function
+		%4 = OpFunction %2 None %3
+		%5 = OpLabel
+		    OpReturn
+		    OpFunctionEnd
+	    )";
 
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
