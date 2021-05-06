@@ -109,11 +109,11 @@ TEST(FuzzerUtilMaybeGetBoolConstantTest, BasicTest) {
 
   opt::IRContext* ir_context = context.get();
   // A bool constant with value false exists and the id is 11.
-  ASSERT_TRUE(fuzzerutil::MaybeGetBoolConstant(
-                  ir_context, transformation_context, false, false) == 11);
+  ASSERT_EQ(11, fuzzerutil::MaybeGetBoolConstant(
+                    ir_context, transformation_context, false, false));
   // A bool constant with value true exists and the id is 9.
-  ASSERT_TRUE(fuzzerutil::MaybeGetBoolConstant(
-                  ir_context, transformation_context, true, false) == 9);
+  ASSERT_EQ(9, fuzzerutil::MaybeGetBoolConstant(
+                   ir_context, transformation_context, true, false));
 }
 
 }  // namespace

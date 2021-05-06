@@ -102,13 +102,13 @@ TEST(FuzzerUtilMaybeGetFloatTypeTest, BasicTest) {
 
   opt::IRContext* ir_context = context.get();
   // A float type with width = 32 and result id of 7 exists.
-  ASSERT_TRUE(fuzzerutil::MaybeGetFloatType(ir_context, 32) == 7);
+  ASSERT_EQ(7, fuzzerutil::MaybeGetFloatType(ir_context, 32));
 
   // A float int type with width = 32 exists, but the id should be 7.
   ASSERT_FALSE(fuzzerutil::MaybeGetFloatType(ir_context, 32) == 5);
 
   // A float type with width 30 does not exist.
-  ASSERT_TRUE(fuzzerutil::MaybeGetFloatType(ir_context, 30) == 0);
+  ASSERT_EQ(0, fuzzerutil::MaybeGetFloatType(ir_context, 30));
 }
 
 }  // namespace

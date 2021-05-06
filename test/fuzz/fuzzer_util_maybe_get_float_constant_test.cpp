@@ -109,8 +109,8 @@ TEST(FuzzerUtilMaybeGetFloatConstantTest, BasicTest) {
 
   opt::IRContext* ir_context = context.get();
   // A 32 bit float constant with width 14 exists and the id is 17.
-  // ASSERT_TRUE(fuzzerutil::MaybeGetFloatConstant(ir_context,
-  // transformation_context, std::vector<uint32_t> {1, 23}, 14, false)==17);
+  // ASSERT_EQ(17, fuzzerutil::MaybeGetFloatConstant(ir_context,
+  // transformation_context, std::vector<uint32_t> {123}, 32, false));
 }
 
 }  // namespace

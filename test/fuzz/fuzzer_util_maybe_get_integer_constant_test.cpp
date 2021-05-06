@@ -22,10 +22,11 @@ namespace {
 
 TEST(FuzzerUtilMaybeGetIntegerConstantTest, BasicTest) {
   std::string shader = R"(
+OpCapability Shader
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main" %32
+               OpEntryPoint Fragment %4 "main" %36
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
@@ -35,16 +36,18 @@ TEST(FuzzerUtilMaybeGetIntegerConstantTest, BasicTest) {
                OpName %13 "b4"
                OpName %16 "f1"
                OpName %18 "f2"
-               OpName %22 "i1"
-               OpName %24 "i2"
-               OpName %26 "i3"
-               OpName %28 "i4"
-               OpName %32 "value"
+               OpName %22 "zc"
+               OpName %24 "i1"
+               OpName %28 "i2"
+               OpName %30 "i3"
+               OpName %32 "i4"
+               OpName %36 "value"
                OpDecorate %22 RelaxedPrecision
                OpDecorate %24 RelaxedPrecision
-               OpDecorate %26 RelaxedPrecision
                OpDecorate %28 RelaxedPrecision
-               OpDecorate %32 Location 0
+               OpDecorate %30 RelaxedPrecision
+               OpDecorate %32 RelaxedPrecision
+               OpDecorate %36 Location 0
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeBool
@@ -57,12 +60,15 @@ TEST(FuzzerUtilMaybeGetIntegerConstantTest, BasicTest) {
          %19 = OpConstant %14 1.11000001
          %20 = OpTypeInt 32 1
          %21 = OpTypePointer Function %20
-         %23 = OpConstant %20 1
-         %25 = OpConstant %20 100
-         %27 = OpConstant %20 -1
-         %29 = OpConstant %20 -99
-         %31 = OpTypePointer Input %14
-         %32 = OpVariable %31 Input
+         %23 = OpConstant %20 0
+         %25 = OpConstant %20 1
+         %26 = OpTypeInt 32 0
+         %27 = OpTypePointer Function %26
+         %29 = OpConstant %26 100
+         %31 = OpConstant %20 -1
+         %33 = OpConstant %20 -99
+         %35 = OpTypePointer Input %14
+         %36 = OpVariable %35 Input
           %4 = OpFunction %2 None %3
           %5 = OpLabel
           %8 = OpVariable %7 Function
@@ -73,8 +79,9 @@ TEST(FuzzerUtilMaybeGetIntegerConstantTest, BasicTest) {
          %18 = OpVariable %15 Function
          %22 = OpVariable %21 Function
          %24 = OpVariable %21 Function
-         %26 = OpVariable %21 Function
-         %28 = OpVariable %21 Function
+         %28 = OpVariable %27 Function
+         %30 = OpVariable %21 Function
+         %32 = OpVariable %21 Function
                OpStore %8 %9
                OpStore %10 %11
                OpStore %12 %9
@@ -83,8 +90,9 @@ TEST(FuzzerUtilMaybeGetIntegerConstantTest, BasicTest) {
                OpStore %18 %19
                OpStore %22 %23
                OpStore %24 %25
-               OpStore %26 %27
                OpStore %28 %29
+               OpStore %30 %31
+               OpStore %32 %33
                OpReturn
                OpFunctionEnd
   )";
@@ -100,28 +108,20 @@ TEST(FuzzerUtilMaybeGetIntegerConstantTest, BasicTest) {
       MakeUnique<FactManager>(context.get()), validator_options);
 
   opt::IRContext* ir_context = context.get();
-  // All integer constants:
-  //  %23 = OpConstant %20 1
-  //  %25 = OpConstant %20 100
-  //  %27 = OpConstant %20 -1
-  //  %29 = OpConstant %20 -99
-  // A 32 bit unsigned int constant with value 1 exists and the id is 23.
-  ASSERT_TRUE(fuzzerutil::MaybeGetIntegerConstant(
-                  ir_context, transformation_context, std::vector<uint32_t>{1},
-                  32, true, false) == 23);
-  // A 32 bit signed int constant with value 100 exists and the id is 25.
-  ASSERT_TRUE(fuzzerutil::MaybeGetIntegerConstant(
-                  ir_context, transformation_context,
-                  std::vector<uint32_t>{100}, 32, true, false) == 25);
+
+  // A 32 bit unsigned int constant with value 1 exists and the id is 25.
+  ASSERT_EQ(25, fuzzerutil::MaybeGetIntegerConstant(
+                    ir_context, transformation_context,
+                    std::vector<uint32_t>{1}, 32, true, false));
+  // A 32 bit unsigned int constant with value 100 exists and the id is 29.
+  ASSERT_EQ(29, fuzzerutil::MaybeGetIntegerConstant(
+                    ir_context, transformation_context,
+                    std::vector<uint32_t>{100}, 32, false, false));
   // A 32 bit signed int constant with value 99 doesn't not exist and should
   // return 0.
-  ASSERT_TRUE(fuzzerutil::MaybeGetIntegerConstant(
-                  ir_context, transformation_context, std::vector<uint32_t>{99},
-                  32, true, false) == 0);
-
-  // A 32 bit signed int constant with value -1 exists and id is 27.
-  // ASSERT_TRUE(fuzzerutil::MaybeGetIntegerConstant(ir_context,
-  // transformation_context, std::vector<uint32_t> {1}, 32, true, false)==27);
+  ASSERT_EQ(0, fuzzerutil::MaybeGetIntegerConstant(
+                   ir_context, transformation_context,
+                   std::vector<uint32_t>{99}, 32, true, false));
 }
 
 }  // namespace

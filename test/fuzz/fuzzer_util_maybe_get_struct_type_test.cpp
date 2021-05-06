@@ -101,25 +101,21 @@ TEST(FuzzerUtilMaybeGetStructTypeTest, BasicTest) {
       MakeUnique<FactManager>(context.get()), validator_options);
 
   opt::IRContext* ir_context = context.get();
-  // %6 = OpTypeInt 32 1
-  // %7 = OpTypeFloat 32
-  // %8 = OpTypeStruct %6 %7
 
   // 6 and 7 are all valid ids from OpTypeInt and OpTypeFloat
   // so the result id of 8 should be found.
-  // Note: The current one should be found but didnt. Might be a bug.
-  // ASSERT_TRUE(fuzzerutil::MaybeGetStructType(ir_context,
-  // std::vector<uint32_t>(6, 7))==8);
+  ASSERT_EQ(8, fuzzerutil::MaybeGetStructType(ir_context,
+                                              std::vector<uint32_t>{6, 7}));
 
   // |component_type_id| of 16 does not exist in the module, so such a struct
   // type cannot be found.
-  ASSERT_TRUE(fuzzerutil::MaybeGetStructType(
-                  ir_context, std::vector<uint32_t>(6, 16)) == 0);
+  ASSERT_EQ(0, fuzzerutil::MaybeGetStructType(ir_context,
+                                              std::vector<uint32_t>(6, 16)));
 
   // |component_type_id| of 10 is of OpTypeFunction type and thus the struct
   // cannot be found.
-  ASSERT_TRUE(fuzzerutil::MaybeGetStructType(
-                  ir_context, std::vector<uint32_t>(6, 10)) == 0);
+  ASSERT_EQ(0, fuzzerutil::MaybeGetStructType(ir_context,
+                                              std::vector<uint32_t>(6, 10)));
 }
 
 }  // namespace

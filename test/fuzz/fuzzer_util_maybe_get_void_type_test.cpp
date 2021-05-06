@@ -102,7 +102,7 @@ TEST(FuzzerUtilMaybeGetVoidTypeTest, BasicTest) {
 
   opt::IRContext* ir_context = context.get();
   // A void type with a result id of 2 can be found.
-  ASSERT_TRUE(fuzzerutil::MaybeGetVoidType(ir_context) == 2);
+  ASSERT_EQ(2, fuzzerutil::MaybeGetVoidType(ir_context));
 }
 
 }  // namespace

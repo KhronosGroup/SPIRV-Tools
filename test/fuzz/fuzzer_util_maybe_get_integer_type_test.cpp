@@ -103,18 +103,18 @@ TEST(FuzzerUtilMaybeGetIntegerTypeTest, BasicTest) {
   opt::IRContext* ir_context = context.get();
 
   // A signed int type with width = 32 and result id of 6 exists.
-  ASSERT_TRUE(fuzzerutil::MaybeGetIntegerType(ir_context, 32, true) == 6);
+  ASSERT_EQ(6, fuzzerutil::MaybeGetIntegerType(ir_context, 32, true));
 
   // A signed int type with width = 32 exists, but the id should be 6.
   ASSERT_FALSE(fuzzerutil::MaybeGetIntegerType(ir_context, 32, true) == 5);
 
   // A int type with width = 32 and result id of 6 exists, but it should be a
   // signed int.
-  ASSERT_TRUE(fuzzerutil::MaybeGetIntegerType(ir_context, 32, false) == 0);
+  ASSERT_EQ(0, fuzzerutil::MaybeGetIntegerType(ir_context, 32, false));
   // A signed int type with width 30 does not exist.
-  ASSERT_TRUE(fuzzerutil::MaybeGetIntegerType(ir_context, 30, true) == 0);
+  ASSERT_EQ(0, fuzzerutil::MaybeGetIntegerType(ir_context, 30, true));
   // An unsigned int type with width 22 does not exist.
-  ASSERT_TRUE(fuzzerutil::MaybeGetIntegerType(ir_context, 22, false) == 0);
+  ASSERT_EQ(0, fuzzerutil::MaybeGetIntegerType(ir_context, 22, false));
 }
 
 }  // namespace
