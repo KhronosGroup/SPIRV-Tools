@@ -514,6 +514,11 @@ Optimizer::PassToken CreateDeadInsertElimPass();
 // eliminated with standard dead code elimination.
 Optimizer::PassToken CreateAggressiveDCEPass();
 
+// Interfaces of entry points may list incorrect or suboptimal global-IDs.
+// For example, DXC generated SPIR-V often list more than necessary.
+// This pass can traverse OpEntryPoint instructions and fix.
+Optimizer::PassToken CreateInterfaceRepairPass();
+
 // Creates an empty pass.
 // This is deprecated and will be removed.
 // TODO(jaebaek): remove this pass after handling glslang's broken unit tests.

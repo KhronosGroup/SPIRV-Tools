@@ -489,6 +489,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterSizePasses();
   } else if (pass_name == "legalize-hlsl") {
     RegisterLegalizationPasses();
+  } else if (pass_name == "interface-repair") {
+	  RegisterPass(CreateInterfaceRepairPass());
   } else if (pass_name == "graphics-robust-access") {
     RegisterPass(CreateGraphicsRobustAccessPass());
   } else if (pass_name == "wrap-opkill") {
@@ -727,6 +729,11 @@ Optimizer::PassToken CreateLocalMultiStoreElimPass() {
 Optimizer::PassToken CreateAggressiveDCEPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::AggressiveDCEPass>());
+}
+
+Optimizer::PassToken CreateInterfaceRepairPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::InterfaceRepairPass>());
 }
 
 Optimizer::PassToken CreatePropagateLineInfoPass() {
