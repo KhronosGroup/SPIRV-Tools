@@ -101,7 +101,7 @@ std::string GenerateShaderCode(
 OpEntryPoint Fragment %main "main"
 OpExecutionMode %main OriginUpperLeft
 )";
-  const std::string defintions = R"(
+  const std::string definitions = R"(
 %u64 = OpTypeInt 64 0
 %s64 = OpTypeInt 64 1
 
@@ -115,7 +115,7 @@ OpExecutionMode %main OriginUpperLeft
 )";
   return GenerateShaderCodeImpl(
       body, "OpCapability Int64\n" + capabilities_and_extensions,
-      defintions + extra_defs,
+      definitions + extra_defs,
       memory_model, execution);
 }
 
@@ -128,7 +128,7 @@ std::string GenerateShaderComputeCode(
 OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 32 1 1
 )";
-  const std::string defintions = R"(
+  const std::string definitions = R"(
 %u64 = OpTypeInt 64 0
 %s64 = OpTypeInt 64 1
 
@@ -142,7 +142,7 @@ OpExecutionMode %main LocalSize 32 1 1
 )";
   return GenerateShaderCodeImpl(
       body, "OpCapability Int64\n" + capabilities_and_extensions,
-      defintions + extra_defs, memory_model, execution);
+      definitions + extra_defs, memory_model, execution);
 }
 
 std::string GenerateKernelCode(

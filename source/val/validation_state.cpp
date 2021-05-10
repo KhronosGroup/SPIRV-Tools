@@ -581,7 +581,8 @@ void ValidationState_t::RegisterStorageClassConsumer(
           ->RegisterExecutionModelLimitation([errorVUID](
                                                  SpvExecutionModel model,
                                                  std::string* message) {
-            if (model == SpvExecutionModelRayGenerationKHR ||
+            if (model == SpvExecutionModelGLCompute ||
+                model == SpvExecutionModelRayGenerationKHR ||
                 model == SpvExecutionModelIntersectionKHR ||
                 model == SpvExecutionModelAnyHitKHR ||
                 model == SpvExecutionModelClosestHitKHR ||
