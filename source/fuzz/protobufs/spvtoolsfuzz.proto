@@ -1634,6 +1634,9 @@ message TransformationMergeFunctionReturns {
   // A fresh id for the header of the new outer loop.
   uint32 outer_header_id = 2;
 
+  // A fresh id for an unreachable continue construct for the new outer loop.
+  uint32 unreachable_continue_id = 7;
+
   // A fresh id for the new return block of the function,
   // i.e. the merge block of the new outer loop.
   uint32 outer_return_id = 3;
