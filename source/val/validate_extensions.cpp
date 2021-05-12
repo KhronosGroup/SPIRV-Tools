@@ -130,16 +130,6 @@ spv_result_t ValidateDebugInfoOperand(
   } while (0)
 
 // Check that the operand of a debug info instruction |inst| at |word_index|
-// is a result id of an debug info instruction with DebugTypeBasic.
-spv_result_t ValidateOperandBaseType(
-    ValidationState_t& _, const Instruction* inst, uint32_t word_index,
-    const std::function<std::string()>& ext_inst_name) {
-  return ValidateDebugInfoOperand(_, "Base Type",
-                                  OpenCLDebugInfo100DebugTypeBasic, inst,
-                                  word_index, ext_inst_name);
-}
-
-// Check that the operand of a debug info instruction |inst| at |word_index|
 // is a result id of a debug lexical scope instruction which is one of
 // DebugCompilationUnit, DebugFunction, DebugLexicalBlock, or
 // DebugTypeComposite.
@@ -2703,17 +2693,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         // "Encoding" param is already validated by the binary parsing stage.
         break;
       }
-      case OpenCLDebugInfo100DebugTypePointer:
-      case OpenCLDebugInfo100DebugTypeQualifier: {
-        auto validate_base_type =
-            ValidateOperandBaseType(_, inst, 5, ext_inst_name);
-        if (validate_base_type != SPV_SUCCESS) return validate_base_type;
-        break;
-      }
       case OpenCLDebugInfo100DebugTypeVector: {
-        auto validate_base_type =
-            ValidateOperandBaseType(_, inst, 5, ext_inst_name);
-        if (validate_base_type != SPV_SUCCESS) return validate_base_type;
 
         uint32_t component_count = inst->word(6);
         if (!component_count || component_count > 4) {
@@ -2777,9 +2757,6 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       }
       case OpenCLDebugInfo100DebugTypedef: {
         CHECK_OPERAND("Name", SpvOpString, 5);
-        auto validate_base_type =
-            ValidateOperandBaseType(_, inst, 6, ext_inst_name);
-        if (validate_base_type != SPV_SUCCESS) return validate_base_type;
         CHECK_DEBUG_OPERAND("Source", OpenCLDebugInfo100DebugSource, 7);
         auto validate_parent =
             ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
@@ -3104,6 +3081,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       }
 
       // TODO: Add validation rules for remaining cases as well.
+      case OpenCLDebugInfo100DebugTypePointer:
+      case OpenCLDebugInfo100DebugTypeQualifier:
       case OpenCLDebugInfo100DebugTypePtrToMember:
       case OpenCLDebugInfo100DebugTypeTemplateTemplateParameter:
       case OpenCLDebugInfo100DebugTypeTemplateParameterPack:
