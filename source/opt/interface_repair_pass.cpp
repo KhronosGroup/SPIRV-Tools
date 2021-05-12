@@ -35,6 +35,7 @@ InterfaceRepairPass::Status InterfaceRepairPass::Process() {
                 auto id = op.words[0];
                 if (used_variables.count(id)) continue;
                 auto* var = get_def_use_mgr()->GetDef(id);
+                if (!var || var->opcode() != SpvOpVariable) continue;
                 auto storage_class = var->GetSingleWordInOperand(0);
                 if (storage_class != SpvStorageClassFunction &&
                     (get_module()->version() >= SPV_SPIRV_VERSION_WORD(1, 4) ||
