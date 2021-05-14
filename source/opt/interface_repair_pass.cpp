@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Google LLC.
+// Copyright (c) 2021 ZHOU He
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,20 +27,18 @@ class EntryRepairContext {
   bool processFunction(Function* func) {
     for (const auto& basicBlock : *func)
       for (const auto& instruction : basicBlock)
-        for (const auto& operand : instruction)
-          if (operand.type == SPV_OPERAND_TYPE_ID) {
-            auto id = operand.words[0];
-            if (used_variables_.count(id)) continue;
-            auto* var = parent_.get_def_use_mgr()->GetDef(id);
-            if (!var || var->opcode() != SpvOpVariable) continue;
-            auto storage_class = var->GetSingleWordInOperand(0);
-            if (storage_class != SpvStorageClassFunction &&
-                (parent_.get_module()->version() >=
-                     SPV_SPIRV_VERSION_WORD(1, 4) ||
-                 storage_class == SpvStorageClassInput ||
-                 storage_class == SpvStorageClassOutput))
-              used_variables_.insert(id);
-          }
+        instruction.ForEachInId([&](const uint32_t* id) {
+          if (used_variables_.count(*id)) return;
+          auto* var = parent_.get_def_use_mgr()->GetDef(*id);
+          if (!var || var->opcode() != SpvOpVariable) return;
+          auto storage_class = var->GetSingleWordInOperand(0);
+          if (storage_class != SpvStorageClassFunction &&
+              (parent_.get_module()->version() >=
+                   SPV_SPIRV_VERSION_WORD(1, 4) ||
+               storage_class == SpvStorageClassInput ||
+               storage_class == SpvStorageClassOutput))
+            used_variables_.insert(*id);
+        });
     return false;
   }
 
@@ -50,7 +48,7 @@ class EntryRepairContext {
 
   void collectUsedVariables() {
     std::queue<uint32_t> roots;
-    roots.push(entry_.result_id());
+    roots.push(entry_.GetSingleWordInOperand(1));
     parent_.context()->ProcessCallTreeFromRoots(pfn_, &roots);
   }
 
