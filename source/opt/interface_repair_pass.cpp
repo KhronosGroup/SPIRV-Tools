@@ -25,8 +25,8 @@ class EntryRepairContext {
       &EntryRepairContext::processFunction, this, std::placeholders::_1);
 
   bool processFunction(Function* func) {
-    for (const auto& basicBlock : *func)
-      for (const auto& instruction : basicBlock)
+    for (const auto& basic_block : *func)
+      for (const auto& instruction : basic_block)
         instruction.ForEachInId([&](const uint32_t* id) {
           if (used_variables_.count(*id)) return;
           auto* var = parent_.get_def_use_mgr()->GetDef(*id);
@@ -46,13 +46,13 @@ class EntryRepairContext {
   EntryRepairContext(InterfaceRepairPass& parent, Instruction& entry)
       : parent_(parent), entry_(entry) {}
 
-  void collectUsedVariables() {
+  void CollectUsedVariables() {
     std::queue<uint32_t> roots;
     roots.push(entry_.GetSingleWordInOperand(1));
     parent_.context()->ProcessCallTreeFromRoots(pfn_, &roots);
   }
 
-  bool shouldRepair() {
+  bool ShouldRepair() {
     std::unordered_set<uint32_t> old_variables;
     for (int i = entry_.NumInOperands() - 1; i >= 3; --i) {
       auto variable = entry_.GetInOperand(i).words[0];
@@ -65,7 +65,7 @@ class EntryRepairContext {
     return false;
   }
 
-  void repair() {
+  void Repair() {
     for (int i = entry_.NumInOperands() - 1; i >= 3; --i)
       entry_.RemoveInOperand(i);
     for (auto id : used_variables_) {
@@ -78,9 +78,9 @@ InterfaceRepairPass::Status InterfaceRepairPass::Process() {
   bool modified = false;
   for (auto& entry : get_module()->entry_points()) {
     EntryRepairContext context(*this, entry);
-    context.collectUsedVariables();
-    if (context.shouldRepair()) {
-      context.repair();
+    context.CollectUsedVariables();
+    if (context.ShouldRepair()) {
+      context.Repair();
       modified = true;
     }
   }
