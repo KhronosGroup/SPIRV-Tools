@@ -1130,9 +1130,9 @@ uint32_t MaybeGetVectorType(opt::IRContext* ir_context,
   assert(component_type &&
          (component_type->AsInteger() || component_type->AsFloat() ||
           component_type->AsBool()) &&
-         "|component_type_id| is invalid");
+         "'component_type_id' is invalid");
   assert(element_count >= 2 && element_count <= 4 &&
-         "Precondition: component count must be in range [2, 4].");
+         "Precondition: component count must be in range 2 to 4.");
   opt::analysis::Vector type(component_type, element_count);
   return ir_context->get_type_mgr()->GetId(&type);
 }
