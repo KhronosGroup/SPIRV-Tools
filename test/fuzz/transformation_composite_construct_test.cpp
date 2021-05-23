@@ -142,9 +142,14 @@ TEST(TransformationCompositeConstructTest, ConstructArrays) {
   TransformationCompositeConstruct make_vec2_array_length_3_bad(
       37, {41, 45, 27, 27}, MakeInstructionDescriptor(46, SpvOpAccessChain, 0),
       200);
+  // This test covers line 164.
+  TransformationCompositeConstruct make_vec2_array_length_3_cover(
+      37, {2, 45, 27}, MakeInstructionDescriptor(46, SpvOpAccessChain, 0), 200);
   ASSERT_TRUE(make_vec2_array_length_3.IsApplicable(context.get(),
                                                     transformation_context));
   ASSERT_FALSE(make_vec2_array_length_3_bad.IsApplicable(
+      context.get(), transformation_context));
+  ASSERT_FALSE(make_vec2_array_length_3_cover.IsApplicable(
       context.get(), transformation_context));
   ASSERT_EQ(nullptr, context->get_def_use_mgr()->GetDef(200));
   ASSERT_EQ(nullptr, context->get_instr_block(200));
@@ -423,9 +428,14 @@ TEST(TransformationCompositeConstructTest, ConstructMatrices) {
   // Bad: %35 is mat4x3, not mat3x4.
   TransformationCompositeConstruct make_mat34_bad(
       35, {25, 28, 31}, MakeInstructionDescriptor(31, SpvOpReturn, 0), 200);
+  // This test covers line 191.
+  TransformationCompositeConstruct make_mat34_cover(
+      32, {2, 28, 31}, MakeInstructionDescriptor(31, SpvOpReturn, 0), 200);
   ASSERT_TRUE(make_mat34.IsApplicable(context.get(), transformation_context));
   ASSERT_FALSE(
       make_mat34_bad.IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(
+      make_mat34_cover.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_mat34, context.get(), &transformation_context);
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
@@ -636,9 +646,14 @@ TEST(TransformationCompositeConstructTest, ConstructStructs) {
   // Bad: Too few fields to make the struct.
   TransformationCompositeConstruct make_inner_bad(
       9, {25}, MakeInstructionDescriptor(57, SpvOpAccessChain, 0), 200);
+  // This test covers line 220.
+  TransformationCompositeConstruct make_inner_cover(
+      9, {2, 19}, MakeInstructionDescriptor(57, SpvOpAccessChain, 0), 200);
   ASSERT_TRUE(make_inner.IsApplicable(context.get(), transformation_context));
   ASSERT_FALSE(
       make_inner_bad.IsApplicable(context.get(), transformation_context));
+  ASSERT_FALSE(
+      make_inner_cover.IsApplicable(context.get(), transformation_context));
   ApplyAndCheckFreshIds(make_inner, context.get(), &transformation_context);
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
