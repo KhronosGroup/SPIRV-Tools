@@ -579,8 +579,7 @@ void ValidationState_t::RegisterStorageClassConsumer(
       std::string errorVUID = VkErrorID(4644);
       function(consumer->function()->id())
           ->RegisterExecutionModelLimitation([errorVUID](
-                                                 SpvExecutionModel model,
-                                                 std::string* message) {
+              SpvExecutionModel model, std::string* message) {
             if (model == SpvExecutionModelGLCompute ||
                 model == SpvExecutionModelRayGenerationKHR ||
                 model == SpvExecutionModelIntersectionKHR ||
@@ -605,8 +604,7 @@ void ValidationState_t::RegisterStorageClassConsumer(
       std::string errorVUID = VkErrorID(4645);
       function(consumer->function()->id())
           ->RegisterExecutionModelLimitation([errorVUID](
-                                                 SpvExecutionModel model,
-                                                 std::string* message) {
+              SpvExecutionModel model, std::string* message) {
             if (model != SpvExecutionModelGLCompute &&
                 model != SpvExecutionModelTaskNV &&
                 model != SpvExecutionModelMeshNV) {

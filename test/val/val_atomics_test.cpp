@@ -115,8 +115,7 @@ OpExecutionMode %main OriginUpperLeft
 )";
   return GenerateShaderCodeImpl(
       body, "OpCapability Int64\n" + capabilities_and_extensions,
-      definitions + extra_defs,
-      memory_model, execution);
+      definitions + extra_defs, memory_model, execution);
 }
 
 std::string GenerateShaderComputeCode(
