@@ -49,7 +49,9 @@ void FuzzerPassPermuteFunctionVariables::Apply() {
         variables.push_back(&instruction);
       }
     }
-
+    if (variables.size() <= 1) {
+      continue;
+    }
     do {
       uint32_t instruction_1_index = GetFuzzerContext()->RandomIndex(variables);
       uint32_t instruction_2_index = GetFuzzerContext()->RandomIndex(variables);
@@ -61,8 +63,9 @@ void FuzzerPassPermuteFunctionVariables::Apply() {
       }
 
     } while (GetFuzzerContext()->ChoosePercentage(
-        GetFuzzerContext()
-            ->GetChanceOfSwappingAnotherPairOfFunctionVariables()));
+                 GetFuzzerContext()
+                     ->GetChanceOfSwappingAnotherPairOfFunctionVariables()) &&
+             variables.size() > 2);
   }
 }
 
