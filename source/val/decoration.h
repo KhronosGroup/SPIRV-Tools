@@ -24,6 +24,8 @@
 namespace spvtools {
 namespace val {
 
+std::string LogStringForDecoration(uint32_t decoration);
+
 // An object of this class represents a specific decoration including its
 // parameters (if any). Decorations are used by OpDecorate and OpMemberDecorate,
 // and they describe certain properties that can be assigned to one or several

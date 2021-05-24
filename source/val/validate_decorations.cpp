@@ -769,6 +769,57 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
               ++num_workgroup_variables_with_aliased;
           }
         }
+
+        if (spvIsVulkanEnv(vstate.context()->target_env)) {
+          const auto* models = vstate.GetExecutionModels(entry_point);
+          for (const auto& decoration :
+               vstate.id_decorations(var_instr->id())) {
+            // Vulkan restricts interpolation and auxiliary interface to be only
+            // fragment input
+            if (decoration == SpvDecorationFlat ||
+                decoration == SpvDecorationNoPerspective ||
+                decoration == SpvDecorationSample ||
+                decoration == SpvDecorationCentroid) {
+              if (storage_class != SpvStorageClassInput) {
+                return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
+                       << vstate.VkErrorID(4670)
+                       << "OpEntryPoint interfaces with "
+                       << LogStringForDecoration(decoration.dec_type())
+                       << " decoration must be OpVariable with Storage Class "
+                          "of Input(1). Found Storage Class "
+                       << storage_class << " for Entry Point id " << entry_point
+                       << ".";
+              }
+              for (const auto model : *models) {
+                if (model != SpvExecutionModelFragment) {
+                  return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
+                         << vstate.VkErrorID(4670)
+                         << "OpEntryPoint interfaces with "
+                         << LogStringForDecoration(decoration.dec_type())
+                         << " decoration must be fragment execution model for "
+                            "Entry Point id "
+                         << entry_point << ".";
+                }
+              }
+            }
+          }
+
+          if (models->find(SpvExecutionModelFragment) != models->end()) {
+            if (storage_class == SpvStorageClassInput &&
+                !hasDecoration(var_instr->id(), SpvDecorationFlat, vstate) &&
+                ((vstate.IsFloatScalarType(type_id) &&
+                  vstate.GetBitWidth(type_id) == 64) ||
+                 vstate.IsIntScalarOrVectorType(type_id))) {
+              return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
+                     << vstate.VkErrorID(4744)
+                     << "Fragment OpEntryPoint operand "
+                     << interface << " with Input interfaces with integer or "
+                                     "float type must have a Flat decoration "
+                                     "for Entry Point id "
+                     << entry_point << ".";
+            }
+          }
+        }
       }
       if (num_builtin_inputs > 1 || num_builtin_outputs > 1) {
         return vstate.diag(SPV_ERROR_INVALID_BINARY,
