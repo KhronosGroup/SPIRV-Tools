@@ -472,8 +472,8 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetFloatConstantTest) {
 
   opt::IRContext* ir_context = context.get();
   // A 32 bit float constant with width 14 exists and the id is 17.
-  // ASSERT_EQ(17, fuzzerutil::MaybeGetFloatConstant(ir_context,
-  // transformation_context, std::vector<uint32_t> {123}, 32, false));
+//   ASSERT_EQ(17, fuzzerutil::MaybeGetFloatConstant(ir_context,
+//   transformation_context, std::vector<uint32_t> {14}, 32, false));
 }
 
 TEST(FuzzerutilTest, FuzzerUtilMaybeGetFloatTypeTest) {
@@ -1278,12 +1278,12 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetVectorTypeTest) {
   // |component_type_id| must be a valid result id of an OpTypeInt,
   // OpTypeFloat or OpTypeBool instruction in the module.
   ASSERT_DEATH(fuzzerutil::MaybeGetVectorType(ir_context, 100, 4),
-               "'component_type_id' is invalid");
+               "\\|component_type_id\\| is invalid");
 
   // It should abort with |element_count| of 5.
   // |element_count| must be in the range [2,4].
   ASSERT_DEATH(fuzzerutil::MaybeGetVectorType(ir_context, 7, 5),
-               "Precondition: component count must be in range 2 to 4.");
+               "Precondition: component count must be in range \\[2 to 4\\].");
 #endif
 }
 
@@ -1377,7 +1377,7 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetZeroConstantTest) {
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main" %54
+               OpEntryPoint Fragment %4 "main" %56
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
@@ -1390,18 +1390,20 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetZeroConstantTest) {
                OpName %22 "zc"
                OpName %24 "i1"
                OpName %28 "i2"
-               OpName %30 "i3"
-               OpName %32 "i4"
-               OpName %37 "f_arr"
-               OpName %47 "i_arr"
-               OpName %54 "value"
+               OpName %30 "i"
+               OpName %32 "i3"
+               OpName %34 "i4"
+               OpName %39 "f_arr"
+               OpName %49 "i_arr"
+               OpName %56 "value"
                OpDecorate %22 RelaxedPrecision
                OpDecorate %24 RelaxedPrecision
                OpDecorate %28 RelaxedPrecision
                OpDecorate %30 RelaxedPrecision
                OpDecorate %32 RelaxedPrecision
-               OpDecorate %47 RelaxedPrecision
-               OpDecorate %54 Location 0
+               OpDecorate %34 RelaxedPrecision
+               OpDecorate %49 RelaxedPrecision
+               OpDecorate %56 Location 0
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeBool
@@ -1419,26 +1421,27 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetZeroConstantTest) {
          %26 = OpTypeInt 32 0
          %27 = OpTypePointer Function %26
          %29 = OpConstant %26 100
-         %31 = OpConstant %20 -1
-         %33 = OpConstant %20 -99
-         %34 = OpConstant %26 5
-         %35 = OpTypeArray %14 %34
-         %36 = OpTypePointer Function %35
-         %38 = OpConstant %14 5.5
-         %39 = OpConstant %14 4.4000001
-         %40 = OpConstant %14 3.29999995
-         %41 = OpConstant %14 2.20000005
-         %42 = OpConstant %14 1.10000002
-         %43 = OpConstantComposite %35 %38 %39 %40 %41 %42
-         %44 = OpConstant %26 3
-         %45 = OpTypeArray %20 %44
-         %46 = OpTypePointer Function %45
-         %48 = OpConstant %20 3
-         %49 = OpConstant %20 7
-         %50 = OpConstant %20 9
-         %51 = OpConstantComposite %45 %48 %49 %50
-         %53 = OpTypePointer Input %14
-         %54 = OpVariable %53 Input
+         %31 = OpConstant %26 0
+         %33 = OpConstant %20 -1
+         %35 = OpConstant %20 -99
+         %36 = OpConstant %26 5
+         %37 = OpTypeArray %14 %36
+         %38 = OpTypePointer Function %37
+         %40 = OpConstant %14 5.5
+         %41 = OpConstant %14 4.4000001
+         %42 = OpConstant %14 3.29999995
+         %43 = OpConstant %14 2.20000005
+         %44 = OpConstant %14 1.10000002
+         %45 = OpConstantComposite %37 %40 %41 %42 %43 %44
+         %46 = OpConstant %26 3
+         %47 = OpTypeArray %20 %46
+         %48 = OpTypePointer Function %47
+         %50 = OpConstant %20 3
+         %51 = OpConstant %20 7
+         %52 = OpConstant %20 9
+         %53 = OpConstantComposite %47 %50 %51 %52
+         %55 = OpTypePointer Input %14
+         %56 = OpVariable %55 Input
           %4 = OpFunction %2 None %3
           %5 = OpLabel
           %8 = OpVariable %7 Function
@@ -1450,10 +1453,11 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetZeroConstantTest) {
          %22 = OpVariable %21 Function
          %24 = OpVariable %21 Function
          %28 = OpVariable %27 Function
-         %30 = OpVariable %21 Function
+         %30 = OpVariable %27 Function
          %32 = OpVariable %21 Function
-         %37 = OpVariable %36 Function
-         %47 = OpVariable %46 Function
+         %34 = OpVariable %21 Function
+         %39 = OpVariable %38 Function
+         %49 = OpVariable %48 Function
                OpStore %8 %9
                OpStore %10 %11
                OpStore %12 %9
@@ -1465,8 +1469,9 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetZeroConstantTest) {
                OpStore %28 %29
                OpStore %30 %31
                OpStore %32 %33
-               OpStore %37 %43
-               OpStore %47 %51
+               OpStore %34 %35
+               OpStore %39 %45
+               OpStore %49 %53
                OpReturn
                OpFunctionEnd
   )";
@@ -1506,12 +1511,12 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetZeroConstantTest) {
   // All following tests for float, unsigned integer and arrays fail, even
   // though they should not. All of them return 0 (meaning not found).
 
-  //   ASSERT_EQ(29, maybe_unsigned_int_id);
-  //   ASSERT_TRUE(std::find(float_ids.begin(), float_ids.end(), maybe_float_id)
-  //   != float_ids.end()); ASSERT_EQ(43,
-  //   fuzzerutil::MaybeGetZeroConstant(ir_context, transformation_context, 35,
-  //   false)); ASSERT_EQ(51, fuzzerutil::MaybeGetZeroConstant(ir_context,
-  //   transformation_context, 45, false));
+  ASSERT_EQ(31, maybe_unsigned_int_id);
+  ASSERT_TRUE(std::find(float_ids.begin(), float_ids.end(), maybe_float_id)
+    != float_ids.end()); 
+//   ASSERT_EQ(43, fuzzerutil::MaybeGetZeroConstant(ir_context, transformation_context, 35, false)); 
+//   ASSERT_EQ(51, fuzzerutil::MaybeGetZeroConstant(ir_context,
+//     transformation_context, 45, false));
 }
 
 }  // namespace
