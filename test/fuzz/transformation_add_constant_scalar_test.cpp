@@ -115,10 +115,10 @@ TEST(TransformationAddConstantScalarTest, IsApplicable) {
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
 
-  // Tests |words| having 2 words for a 32-bit float type. 
+  // Tests |words| having 2 words for a 32-bit float type.
   transformation = TransformationAddConstantScalar(19, 4, {0, 1}, false);
   ASSERT_FALSE(
-      transformation.IsApplicable(context.get(), transformation_context));    
+      transformation.IsApplicable(context.get(), transformation_context));
 }
 
 TEST(TransformationAddConstantScalarTest, Apply) {
