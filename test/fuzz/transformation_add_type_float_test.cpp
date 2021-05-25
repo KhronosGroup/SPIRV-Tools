@@ -62,7 +62,7 @@ TEST(TransformationAddTypeFloatTest, IsApplicable) {
       transformation.IsApplicable(context.get(), transformation_context));
 
   // The transformation is not applicable because there is already a 16-bit
-  // float type declared in the module
+  // float type declared in the module.
   transformation = TransformationAddTypeFloat(7, 16);
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
