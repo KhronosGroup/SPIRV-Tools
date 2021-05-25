@@ -11617,6 +11617,150 @@ var (
 			}, 
 		},
 	}
+	OpConvertUToImageNV = &Opcode {
+		Opname:   "OpConvertUToImageNV",
+		Class:    "Reserved",
+		Opcode:   5391,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Operand'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpConvertUToSamplerNV = &Opcode {
+		Opname:   "OpConvertUToSamplerNV",
+		Class:    "Reserved",
+		Opcode:   5392,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Operand'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpConvertImageToUNV = &Opcode {
+		Opname:   "OpConvertImageToUNV",
+		Class:    "Reserved",
+		Opcode:   5393,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Operand'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpConvertSamplerToUNV = &Opcode {
+		Opname:   "OpConvertSamplerToUNV",
+		Class:    "Reserved",
+		Opcode:   5394,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Operand'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpConvertSamplerToUNV = &Opcode {
+		Opname:   "OpConvertUToSampledImageNV",
+		Class:    "Reserved",
+		Opcode:   5395,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Operand'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpConvertSamplerToUNV = &Opcode {
+		Opname:   "OpConvertSampledImageToUNV",
+		Class:    "Reserved",
+		Opcode:   5396,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindIdResultType,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdResult,
+				Name:       "",
+				Quantifier: "",
+			}, 
+			Operand {
+				Kind:       OperandKindIdRef,
+				Name:       "'Operand'",
+				Quantifier: "",
+			}, 
+		},
+	}
+	OpMemoryModel = &Opcode {
+		Opname:   "OpSamplerImageAddressingModeNV",
+		Class:    "Reserved",
+		Opcode:   5397,
+		Operands: []Operand {
+			Operand {
+				Kind:       OperandKindLiteralInteger,
+				Name:       "'bit width'",
+				Quantifier: "",
+			}, 
+		},
+	}
 	OpSubgroupShuffleINTEL = &Opcode {
 		Opname:   "OpSubgroupShuffleINTEL",
 		Class:    "Group",
@@ -22421,6 +22565,34 @@ var (
 				Version:      "1.5",
 			},
 			Enumerant{
+				Enumerant:    "BindlessSamplerNV",
+				Value:        5398,
+				Capabilities: []string{"BindlessTextureNV",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "BindlessImageNV",
+				Value:        5399,
+				Capabilities: []string{"BindlessTextureNV",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "BoundSamplerNV",
+				Value:        5400,
+				Capabilities: []string{"BindlessTextureNV",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "BoundImageNV",
+				Value:        5401,
+				Capabilities: []string{"BindlessTextureNV",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
 				Enumerant:    "CounterBuffer",
 				Value:        5634,
 				Capabilities: []string{},
@@ -24510,6 +24682,13 @@ var (
 				Enumerant:    "DemoteToHelperInvocationEXT",
 				Value:        5379,
 				Capabilities: []string{"Shader",},
+				Parameters:   []Parameter{},
+				Version:      "None",
+			},
+			Enumerant{
+				Enumerant:    "BindlessTextureNV",
+				Value:        5390,
+				Capabilities: []string{},
 				Parameters:   []Parameter{},
 				Version:      "None",
 			},

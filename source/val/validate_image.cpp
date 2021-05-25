@@ -918,7 +918,8 @@ spv_result_t ValidateTypeSampledImage(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-bool IsAllowedSampledImageOperand(SpvOp opcode) {
+bool IsAllowedSampledImageOperand(SpvOp opcode,
+                                  ValidationState_t& _) {
   switch (opcode) {
     case SpvOpSampledImage:
     case SpvOpImageSampleImplicitLod:
@@ -941,6 +942,10 @@ bool IsAllowedSampledImageOperand(SpvOp opcode) {
     case SpvOpImageSparseDrefGather:
     case SpvOpCopyObject:
       return true;
+    case SpvOpStore:
+      if(_.HasCapability(SpvCapabilityBindlessTextureNV))
+        return true;
+      return false;
     default:
       return false;
   }
@@ -1025,7 +1030,7 @@ spv_result_t ValidateSampledImage(ValidationState_t& _,
                << _.getIdName(consumer_instr->id()) << "'.";
       }
 
-      if (!IsAllowedSampledImageOperand(consumer_opcode)) {
+      if (!IsAllowedSampledImageOperand(consumer_opcode, _)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "Result <id> from OpSampledImage instruction must not appear "
                   "as operand for Op"

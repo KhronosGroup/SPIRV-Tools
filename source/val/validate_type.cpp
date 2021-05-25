@@ -306,12 +306,13 @@ spv_result_t ValidateTypeRuntimeArray(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-bool ContainsOpaqueType(ValidationState_t& _, const Instruction* str) {
+bool ContainsOpaqueType(ValidationState_t& _, const Instruction* str, SpvOp &baseOpcode) {
   const size_t elem_type_index = 1;
   uint32_t elem_type_id;
   Instruction* elem_type;
 
   if (spvOpcodeIsBaseOpaqueType(str->opcode())) {
+    baseOpcode = str->opcode();
     return true;
   }
 
@@ -320,13 +321,13 @@ bool ContainsOpaqueType(ValidationState_t& _, const Instruction* str) {
     case SpvOpTypeRuntimeArray:
       elem_type_id = str->GetOperandAs<uint32_t>(elem_type_index);
       elem_type = _.FindDef(elem_type_id);
-      return ContainsOpaqueType(_, elem_type);
+      return ContainsOpaqueType(_, elem_type, baseOpcode);
     case SpvOpTypeStruct:
       for (size_t member_type_index = 1;
            member_type_index < str->operands().size(); ++member_type_index) {
         auto member_type_id = str->GetOperandAs<uint32_t>(member_type_index);
         auto member_type = _.FindDef(member_type_id);
-        if (ContainsOpaqueType(_, member_type)) return true;
+        if (ContainsOpaqueType(_, member_type, baseOpcode)) return true;
       }
       break;
     default:
@@ -424,8 +425,13 @@ spv_result_t ValidateTypeStruct(ValidationState_t& _, const Instruction* inst) {
     _.RegisterStructTypeWithBuiltInMember(struct_id);
   }
 
+  SpvOp baseOpcode;
   if (spvIsVulkanEnv(_.context()->target_env) &&
-      !_.options()->before_hlsl_legalization && ContainsOpaqueType(_, inst)) {
+      !_.options()->before_hlsl_legalization && ContainsOpaqueType(_, inst, baseOpcode)) {
+    if(_.HasCapability(SpvCapabilityBindlessTextureNV) && 
+       (baseOpcode == SpvOpTypeImage || baseOpcode == SpvOpTypeSampler ||
+       baseOpcode == SpvOpTypeSampledImage ))
+       return SPV_SUCCESS;
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << _.VkErrorID(4667) << "In "
            << spvLogStringForEnv(_.context()->target_env)

@@ -180,6 +180,16 @@ uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
   // Minimal alignment is byte-aligned.
   uint32_t baseAlignment = 1;
   switch (inst->opcode()) {
+    case SpvOpTypeSampledImage:
+    case SpvOpTypeSampler:
+    case SpvOpTypeImage:
+      if (vstate.HasCapability(SpvCapabilityBindlessTextureNV))
+        baseAlignment = vstate.samplerimage_variable_address_mode()/8;
+      else
+        vstate.diag(SPV_ERROR_INVALID_ID, inst) 
+            << "Sample/Image types are not supported inside a block/structure";
+        assert(0);
+      break;
     case SpvOpTypeInt:
     case SpvOpTypeFloat:
       baseAlignment = words[2] / 8;
@@ -246,6 +256,16 @@ uint32_t getScalarAlignment(uint32_t type_id, ValidationState_t& vstate) {
   const auto inst = vstate.FindDef(type_id);
   const auto& words = inst->words();
   switch (inst->opcode()) {
+    case SpvOpTypeSampledImage:
+    case SpvOpTypeSampler:
+    case SpvOpTypeImage:
+      if (vstate.HasCapability(SpvCapabilityBindlessTextureNV))
+        return vstate.samplerimage_variable_address_mode()/8;
+      else
+        vstate.diag(SPV_ERROR_INVALID_ID, inst)
+            << "Sample/Image types are not supported inside a block/structure";
+      assert(0);
+      break;
     case SpvOpTypeInt:
     case SpvOpTypeFloat:
       return words[2] / 8;
@@ -286,6 +306,14 @@ uint32_t getSize(uint32_t member_id, const LayoutConstraints& inherited,
   const auto inst = vstate.FindDef(member_id);
   const auto& words = inst->words();
   switch (inst->opcode()) {
+    case SpvOpTypeSampledImage:
+    case SpvOpTypeSampler:
+    case SpvOpTypeImage:
+      if (vstate.HasCapability(SpvCapabilityBindlessTextureNV))
+        return vstate.samplerimage_variable_address_mode()/8;
+      else
+        assert(0);
+        return 0;
     case SpvOpTypeInt:
     case SpvOpTypeFloat:
       return words[2] / 8;
