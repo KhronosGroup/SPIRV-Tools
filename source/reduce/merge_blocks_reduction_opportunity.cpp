@@ -47,8 +47,8 @@ bool MergeBlocksReductionOpportunity::PreconditionHolds() {
   const uint32_t predecessor_id = predecessors[0];
   opt::BasicBlock* predecessor_block =
       context_->get_instr_block(predecessor_id);
-  return opt::blockmergeutil::CanMergeWithSuccessor(context_,
-                                                    predecessor_block);
+  return opt::blockmergeutil::CanMergeWithSuccessor(context_, predecessor_block,
+                                                    true);
 }
 
 void MergeBlocksReductionOpportunity::Apply() {

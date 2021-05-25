@@ -32,7 +32,7 @@ MergeBlocksReductionOpportunityFinder::GetAvailableOpportunities(
   for (auto* function : GetTargetFunctions(context, target_function)) {
     for (auto& block : *function) {
       // See whether it is possible to merge this block with its successor.
-      if (opt::blockmergeutil::CanMergeWithSuccessor(context, &block)) {
+      if (opt::blockmergeutil::CanMergeWithSuccessor(context, &block, true)) {
         // It is, so record an opportunity to do this.
         result.push_back(spvtools::MakeUnique<MergeBlocksReductionOpportunity>(
             context, function, &block));

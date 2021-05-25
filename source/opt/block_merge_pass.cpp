@@ -28,7 +28,7 @@ namespace opt {
 bool BlockMergePass::MergeBlocks(Function* func) {
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end();) {
-    if (blockmergeutil::CanMergeWithSuccessor(context(), &*bi)) {
+    if (blockmergeutil::CanMergeWithSuccessor(context(), &*bi, false)) {
       blockmergeutil::MergeWithSuccessor(context(), func, bi);
       // Reprocess block.
       modified = true;

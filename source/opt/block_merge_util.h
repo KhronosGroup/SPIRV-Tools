@@ -29,8 +29,10 @@ namespace blockmergeutil {
 
 // Returns true if and only if |block| has exactly one successor and merging
 // this successor into |block| has no impact on the semantics or validity of the
-// SPIR-V module.
-bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block);
+// SPIR-V module. |merge_unreachable| determines whether unreachable blocks
+// should be considered for merging.
+bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block,
+                           bool merge_unreachable);
 
 // Requires that |bi| has a successor that can be safely merged into |bi|, and
 // performs the merge.
