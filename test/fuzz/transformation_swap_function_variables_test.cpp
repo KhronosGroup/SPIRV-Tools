@@ -200,8 +200,8 @@ TEST(TransformationSwapFunctionVariables, IsApplicable) {
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
         context.get(), validator_options, kConsoleMessageConsumer));
 
-    ASSERT_EQ(first_instruction, context->get_def_use_mgr()->GetDef(28));
-    ASSERT_EQ(second_instruction, context->get_def_use_mgr()->GetDef(24));
+    ASSERT_EQ(first_instruction, context->get_def_use_mgr()->GetDef(24));
+    ASSERT_EQ(second_instruction, context->get_def_use_mgr()->GetDef(28));
   }
   {
     auto first_instruction = context->get_def_use_mgr()->GetDef(38);
@@ -218,8 +218,8 @@ TEST(TransformationSwapFunctionVariables, IsApplicable) {
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
         context.get(), validator_options, kConsoleMessageConsumer));
 
-    ASSERT_EQ(first_instruction, context->get_def_use_mgr()->GetDef(40));
-    ASSERT_EQ(second_instruction, context->get_def_use_mgr()->GetDef(38));
+    ASSERT_EQ(first_instruction, context->get_def_use_mgr()->GetDef(38));
+    ASSERT_EQ(second_instruction, context->get_def_use_mgr()->GetDef(40));
   }
   std::string after_transformation = R"(
                OpCapability Shader
