@@ -261,8 +261,6 @@ TEST(TransformationAccessChainTest, BasicTest) {
         context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(103));
-
-
   }
 
   {
@@ -597,7 +595,6 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
                                                kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-
   // Bad: no ids given for clamping
   ASSERT_FALSE(TransformationAccessChain(
                    100, 29, {17}, MakeInstructionDescriptor(36, SpvOpLoad, 0))
