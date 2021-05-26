@@ -374,7 +374,7 @@ std::pair<bool, uint32_t> TransformationAccessChain::GetIndexValue(
   uint32_t bound = fuzzerutil::GetBoundForCompositeIndex(
       *ir_context->get_def_use_mgr()->GetDef(object_type_id), ir_context);
 
-  // The index must be a constant
+  // The index must be a constant.
   if (!spvOpcodeIsConstant(index_instruction->opcode())) {
     return {false, 0};
   }
