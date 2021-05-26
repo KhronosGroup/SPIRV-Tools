@@ -88,8 +88,8 @@ class TransformationAccessChain : public Transformation {
   // Otherwise, returns {true, value}, where value is the value of the constant
   // at |index_id|.
   std::pair<bool, uint32_t> GetStructIndexValue(opt::IRContext* ir_context,
-                                          uint32_t index_id,
-                                          uint32_t object_type_id) const;
+                                                uint32_t index_id,
+                                                uint32_t object_type_id) const;
 
   // Returns true if |index_id| corresponds, in the given context, to a 32-bit
   // integer which can be used to index an object of the type specified by
