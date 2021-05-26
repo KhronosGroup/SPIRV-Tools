@@ -43,7 +43,8 @@ bool TransformationMergeBlocks::IsApplicable(
   }
   auto first_block = ir_context->cfg()->block(predecessors.at(0));
 
-  return opt::blockmergeutil::CanMergeWithSuccessor(ir_context, first_block);
+  return opt::blockmergeutil::CanMergeWithSuccessor(ir_context, first_block,
+                                                    false);
 }
 
 void TransformationMergeBlocks::Apply(opt::IRContext* ir_context,
@@ -57,9 +58,10 @@ void TransformationMergeBlocks::Apply(opt::IRContext* ir_context,
   // We need an iterator pointing to the predecessor, hence the loop.
   for (auto bi = function->begin(); bi != function->end(); ++bi) {
     if (bi->id() == first_block->id()) {
-      assert(opt::blockmergeutil::CanMergeWithSuccessor(ir_context, &*bi) &&
-             "Because 'Apply' should only be invoked if 'IsApplicable' holds, "
-             "it must be possible to merge |bi| with its successor.");
+      assert(
+          opt::blockmergeutil::CanMergeWithSuccessor(ir_context, &*bi, false) &&
+          "Because 'Apply' should only be invoked if 'IsApplicable' holds, "
+          "it must be possible to merge |bi| with its successor.");
       opt::blockmergeutil::MergeWithSuccessor(ir_context, function, bi);
       // Invalidate all analyses, since we have changed the module
       // significantly.
