@@ -128,7 +128,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
       54);
 
   // Check the case where the index type is not a 32-bit integer.
-  TransformationAccessChain invalid_index_example1 (
+  TransformationAccessChain invalid_index_example1(
       101, 28, {29}, MakeInstructionDescriptor(42, SpvOpReturn, 0));
 
   // Since the index  is not a 32-bit integer type but a 32-bit float type,
@@ -315,7 +315,8 @@ TEST(TransformationAccessChainTest, BasicTest) {
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(107));
   }
   {
-    // Check the case where the access chain's base pointer has the irrelevant pointee fact; the resulting access chain should inherit this fact.
+    // Check the case where the access chain's base pointer has the irrelevant
+    // pointee fact; the resulting access chain should inherit this fact.
     TransformationAccessChain transformation(
         107, 54, {}, MakeInstructionDescriptor(24, SpvOpLoad, 0));
     ASSERT_TRUE(
