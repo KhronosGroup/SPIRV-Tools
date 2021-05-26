@@ -175,6 +175,7 @@ TEST(TransformationSwapFunctionVariables, IsApplicable) {
 
   const auto env = SPV_ENV_UNIVERSAL_1_5;
   const auto consumer = nullptr;
+  // Get Unique pointer of IRContext.
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
 
@@ -185,24 +186,40 @@ TEST(TransformationSwapFunctionVariables, IsApplicable) {
 
   // Successful transformations
   {
+    auto first_instruction = context->get_def_use_mgr()->GetDef(24);
+    auto second_instruction = context->get_def_use_mgr()->GetDef(28);
     // Swap two OpVariable instructions in the same function.
     TransformationSwapFunctionVariables transformation(24, 28);
+
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
+
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
+
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
         context.get(), validator_options, kConsoleMessageConsumer));
+
+    ASSERT_EQ(first_instruction, context->get_def_use_mgr()->GetDef(24));
+    ASSERT_EQ(second_instruction, context->get_def_use_mgr()->GetDef(28));
   }
   {
+    auto first_instruction = context->get_def_use_mgr()->GetDef(38);
+    auto second_instruction = context->get_def_use_mgr()->GetDef(40);
     // Swap two OpVariable instructions in the same function.
     TransformationSwapFunctionVariables transformation(38, 40);
+
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
+
     ApplyAndCheckFreshIds(transformation, context.get(),
                           &transformation_context);
+
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
         context.get(), validator_options, kConsoleMessageConsumer));
+
+    ASSERT_EQ(first_instruction, context->get_def_use_mgr()->GetDef(38));
+    ASSERT_EQ(second_instruction, context->get_def_use_mgr()->GetDef(40));
   }
   std::string after_transformation = R"(
                OpCapability Shader

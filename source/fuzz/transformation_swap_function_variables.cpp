@@ -68,7 +68,13 @@ void TransformationSwapFunctionVariables::Apply(
   auto instruction2 =
       ir_context->get_def_use_mgr()->GetDef(message_.result_id2());
 
-  std::swap(*instruction1, *instruction2);
+  std::unique_ptr<opt::Instruction> temp_instruction =
+      MakeUnique<opt::Instruction>();
+
+  temp_instruction->InsertBefore(instruction1);
+  instruction1->InsertAfter(instruction2);
+  instruction2->InsertAfter(temp_instruction.get());
+  temp_instruction->RemoveFromList();
 }
 
 protobufs::Transformation TransformationSwapFunctionVariables::ToMessage()

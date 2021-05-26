@@ -14,7 +14,6 @@
 
 #include "transformation_composite_insert.h"
 
-#include "source/fuzz/fuzzer_pass_add_composite_inserts.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 
