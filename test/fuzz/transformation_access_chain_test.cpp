@@ -130,12 +130,14 @@ TEST(TransformationAccessChainTest, BasicTest) {
   // Additional tests for full coverage.
   // Index type is not a 32-bit integer.
 
-  TransformationAccessChain invalid_index_example1 (
+  TransformationAccessChain invalid_index_example1(
       101, 28, {29}, MakeInstructionDescriptor(42, SpvOpReturn, 0));
 
   // Since the index  is not a 32-bit integer type but a 32-bit float type,
-  // ValidIndexComposite should return false and thus the transformation is not applicable.
-  ASSERT_FALSE(invalid_index_example1.IsApplicable(context.get(), transformation_context));
+  // ValidIndexComposite should return false and thus the transformation is not
+  // applicable.
+  ASSERT_FALSE(invalid_index_example1.IsApplicable(context.get(),
+                                                   transformation_context));
 
   // After ValidIndexToComposite:
   // - the index is a composite
@@ -144,7 +146,8 @@ TEST(TransformationAccessChainTest, BasicTest) {
   // - if the type def is struct, then it must be in bound
 
   // In GetIndexValue to cover :
-  // - the index is not a constant, it is a composite, where instruction is obtainable, 32-bit integer type
+  // - the index is not a constant, it is a composite, where instruction is
+  // obtainable, 32-bit integer type
   // - pointer not referring to a struct type
 
   // Bad: id is not fresh
@@ -271,8 +274,6 @@ TEST(TransformationAccessChainTest, BasicTest) {
         context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(103));
-
-
   }
 
   {
@@ -327,7 +328,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(107));
   }
   {
-    // Additional test for coveraging access chain pointee irrelevance. 
+    // Additional test for coveraging access chain pointee irrelevance.
     TransformationAccessChain transformation(
         107, 54, {}, MakeInstructionDescriptor(24, SpvOpLoad, 0));
     ASSERT_TRUE(
@@ -568,7 +569,6 @@ TEST(TransformationAccessChainTest, ClampingVariables) {
                                                kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-
   // Bad: no ids given for clamping
   ASSERT_FALSE(TransformationAccessChain(
                    100, 29, {17}, MakeInstructionDescriptor(36, SpvOpLoad, 0))
