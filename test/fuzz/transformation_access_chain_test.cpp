@@ -127,25 +127,13 @@ TEST(TransformationAccessChainTest, BasicTest) {
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
       54);
 
-  // Additional tests for full coverage.
-  // Index type is not a 32-bit integer.
-
+  // Check the case where the index type is not a 32-bit integer.
   TransformationAccessChain invalid_index_example1 (
       101, 28, {29}, MakeInstructionDescriptor(42, SpvOpReturn, 0));
 
   // Since the index  is not a 32-bit integer type but a 32-bit float type,
   // ValidIndexComposite should return false and thus the transformation is not applicable.
   ASSERT_FALSE(invalid_index_example1.IsApplicable(context.get(), transformation_context));
-
-  // After ValidIndexToComposite:
-  // - the index is a composite
-  // - defining instruction of the index is obtainable
-  // - the index is a 32-bit integer type
-  // - if the type def is struct, then it must be in bound
-
-  // In GetIndexValue to cover :
-  // - the index is not a constant, it is a composite, where instruction is obtainable, 32-bit integer type
-  // - pointer not referring to a struct type
 
   // Bad: id is not fresh
   ASSERT_FALSE(TransformationAccessChain(
@@ -327,7 +315,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(107));
   }
   {
-    // Additional test for coveraging access chain pointee irrelevance. 
+    // Check the case where the access chain's base pointer has the irrelevant pointee fact; the resulting access chain should inherit this fact.
     TransformationAccessChain transformation(
         107, 54, {}, MakeInstructionDescriptor(24, SpvOpLoad, 0));
     ASSERT_TRUE(
@@ -425,6 +413,44 @@ TEST(TransformationAccessChainTest, BasicTest) {
                OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationAccessChainTest, StructIndexMustBeConstant) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+         %20 = OpUndef %6
+          %7 = OpTypeStruct %6 %6
+          %8 = OpTypePointer Function %7
+         %10 = OpConstant %6 0
+         %11 = OpConstant %6 2
+         %12 = OpTypePointer Function %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %9 = OpVariable %8 Function
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  // Bad: %9 is a pointer to a struct, but %20 is not a constant.
+  ASSERT_FALSE(TransformationAccessChain(
+                   100, 9, {20}, MakeInstructionDescriptor(9, SpvOpReturn, 0))
+                   .IsApplicable(context.get(), transformation_context));
 }
 
 TEST(TransformationAccessChainTest, IsomorphicStructs) {
