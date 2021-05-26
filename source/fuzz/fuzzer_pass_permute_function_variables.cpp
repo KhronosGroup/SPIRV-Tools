@@ -31,10 +31,10 @@ FuzzerPassPermuteFunctionVariables::FuzzerPassPermuteFunctionVariables(
     FuzzerContext* fuzzer_context,
     protobufs::TransformationSequence* transformations)
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
-                 transformations) {}  // Here we call parent constructor
+                 transformations) {}  // Here we call parent constructor.
 
 void FuzzerPassPermuteFunctionVariables::Apply() {
-  // Permuting OpVariable instructions in each function
+  // Permuting OpVariable instructions in each function.
   for (auto& function : *GetIRContext()->module()) {
     if (!GetFuzzerContext()->ChoosePercentage(
             GetFuzzerContext()->GetChanceOfPermutingFunctionVariables())) {
@@ -49,7 +49,9 @@ void FuzzerPassPermuteFunctionVariables::Apply() {
         variables.push_back(&instruction);
       }
     }
-
+    if (variables.size() <= 1) {
+      continue;
+    }
     do {
       uint32_t instruction_1_index = GetFuzzerContext()->RandomIndex(variables);
       uint32_t instruction_2_index = GetFuzzerContext()->RandomIndex(variables);
@@ -61,8 +63,9 @@ void FuzzerPassPermuteFunctionVariables::Apply() {
       }
 
     } while (GetFuzzerContext()->ChoosePercentage(
-        GetFuzzerContext()
-            ->GetChanceOfSwappingAnotherPairOfFunctionVariables()));
+                 GetFuzzerContext()
+                     ->GetChanceOfSwappingAnotherPairOfFunctionVariables()) &&
+             variables.size() > 2);
   }
 }
 
