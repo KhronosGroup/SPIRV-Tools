@@ -53,7 +53,7 @@ bool TransformationAccessChain::IsApplicable(
 
   // The result id must be fresh.
   if (!CheckIdIsFreshAndNotUsedByThisTransformation(
-          message_.fresh_id(), ir_context, &fresh_ids_used)) {
+      message_.fresh_id(), ir_context, &fresh_ids_used)) {
     return false;
   }
   // The pointer id must exist and have a type.
@@ -75,7 +75,7 @@ bool TransformationAccessChain::IsApplicable(
     return false;
   }
   if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(
-          SpvOpAccessChain, instruction_to_insert_before)) {
+      SpvOpAccessChain, instruction_to_insert_before)) {
     return false;
   }
 
@@ -96,7 +96,7 @@ bool TransformationAccessChain::IsApplicable(
   // The pointer on which the access chain is to be based needs to be available
   // (according to dominance rules) at the insertion point.
   if (!fuzzerutil::IdIsAvailableBeforeInstruction(
-          ir_context, instruction_to_insert_before, message_.pointer_id())) {
+      ir_context, instruction_to_insert_before, message_.pointer_id())) {
     return false;
   }
 
@@ -147,7 +147,7 @@ bool TransformationAccessChain::IsApplicable(
       // Check that the ids are actually fresh and not already used by this
       // transformation.
       if (!CheckIdIsFreshAndNotUsedByThisTransformation(
-              fresh_ids.first(), ir_context, &fresh_ids_used) ||
+          fresh_ids.first(), ir_context, &fresh_ids_used) ||
           !CheckIdIsFreshAndNotUsedByThisTransformation(
               fresh_ids.second(), ir_context, &fresh_ids_used)) {
         return false;
@@ -167,7 +167,7 @@ bool TransformationAccessChain::IsApplicable(
       // The module must have an integer constant of value bound-1 of the same
       // type as the index.
       if (!fuzzerutil::MaybeGetIntegerConstantFromValueAndType(
-              ir_context, bound - 1, index_instruction->type_id())) {
+          ir_context, bound - 1, index_instruction->type_id())) {
         return false;
       }
 
@@ -201,9 +201,9 @@ bool TransformationAccessChain::IsApplicable(
   // We do not use the type manager to look up this type, due to problems
   // associated with pointers to isomorphic structs being regarded as the same.
   return fuzzerutil::MaybeGetPointerType(
-             ir_context, subobject_type_id,
-             static_cast<SpvStorageClass>(
-                 pointer_type->GetSingleWordInOperand(0))) != 0;
+      ir_context, subobject_type_id,
+      static_cast<SpvStorageClass>(
+          pointer_type->GetSingleWordInOperand(0))) != 0;
 }
 
 void TransformationAccessChain::Apply(
@@ -272,13 +272,13 @@ void TransformationAccessChain::Apply(
               ir_context, bound - 1, index_instruction->type_id());
 
       assert(bound_minus_one_id &&
-             "A constant of value bound - 1 and the same type as the index "
-             "must exist as a precondition.");
+                 "A constant of value bound - 1 and the same type as the index "
+                 "must exist as a precondition.");
 
       uint32_t bool_type_id = fuzzerutil::MaybeGetBoolType(ir_context);
 
       assert(bool_type_id &&
-             "An OpTypeBool instruction must exist as a precondition.");
+                 "An OpTypeBool instruction must exist as a precondition.");
 
       auto int_type_inst =
           ir_context->get_def_use_mgr()->GetDef(index_instruction->type_id());
@@ -351,7 +351,7 @@ void TransformationAccessChain::Apply(
   // If the base pointer's pointee value was irrelevant, the same is true of
   // the pointee value of the result of this access chain.
   if (transformation_context->GetFactManager()->PointeeValueIsIrrelevant(
-          message_.pointer_id())) {
+      message_.pointer_id())) {
     transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
         message_.fresh_id());
   }
@@ -376,8 +376,7 @@ std::pair<bool, uint32_t> TransformationAccessChain::GetStructIndexValue(
       *ir_context->get_def_use_mgr()->GetDef(object_type_id), ir_context);
 
   // Ensure that the index given must represent a constant.
-  assert(spvOpcodeIsConstant(index_instruction->opcode()) &&
-         "A non-constant index should already have been rejected.");
+  assert(spvOpcodeIsConstant(index_instruction->opcode()) && "A non-constant index should already have been rejected.");
 
   // The index must be in bounds.
   uint32_t value = index_instruction->GetSingleWordInOperand(0);
