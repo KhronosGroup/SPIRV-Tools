@@ -78,8 +78,8 @@ TEST(TransformationAddTypeFloatTest, IsApplicable) {
   ASSERT_TRUE(TransformationAddTypeFloat(7, 64).IsApplicable(
       context.get(), transformation_context));
 
-  // Should not be able to add float type of width different from 16/32/64
 #ifndef NDEBUG
+  // Should not be able to add float type of width different from 16/32/64
   ASSERT_DEATH(TransformationAddTypeFloat(7, 20).IsApplicable(
                    context.get(), transformation_context),
                "Unexpected float type width");

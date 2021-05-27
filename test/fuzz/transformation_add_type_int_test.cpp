@@ -98,9 +98,9 @@ TEST(TransformationAddTypeIntTest, IsApplicable) {
   ASSERT_TRUE(TransformationAddTypeInt(7, 64, true)
                   .IsApplicable(context.get(), transformation_context));
 
+#ifndef NDEBUG
   // Should not be able to add signed/unsigned integers of width different from
   // 16/32/64 bits.
-#ifndef NDEBUG
   ASSERT_DEATH(TransformationAddTypeInt(7, 20, false)
                    .IsApplicable(context.get(), transformation_context),
                "Unexpected integer type width");
