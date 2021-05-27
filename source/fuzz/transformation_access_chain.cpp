@@ -376,8 +376,7 @@ std::pair<bool, uint32_t> TransformationAccessChain::GetStructIndexValue(
       *ir_context->get_def_use_mgr()->GetDef(object_type_id), ir_context);
 
   // Ensure that the index given must represent a constant.
-  assert(spvOpcodeIsConstant(index_instruction->opcode()) &&
-         "A non-constant index should already have been rejected.");
+  assert(spvOpcodeIsConstant(index_instruction->opcode()) && "A non-constant index should already have been rejected.");
 
   // The index must be in bounds.
   uint32_t value = index_instruction->GetSingleWordInOperand(0);
