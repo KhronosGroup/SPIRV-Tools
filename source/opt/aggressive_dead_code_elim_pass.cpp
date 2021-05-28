@@ -441,6 +441,14 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
   // Perform closure on live instruction set.
   while (!worklist_.empty()) {
     Instruction* liveInst = worklist_.front();
+    // Add all operand instructions of Debug[No]Lines
+    for (auto& lineInst : liveInst->dbg_line_insts()) {
+      if (lineInst.IsDebugLineInst()) {
+        lineInst.ForEachInId([this](const uint32_t* iid) {
+          AddToWorklist(get_def_use_mgr()->GetDef(*iid));
+        });
+      }
+    }
     // Add all operand instructions if not already live
     liveInst->ForEachInId([&liveInst, this](const uint32_t* iid) {
       Instruction* inInst = get_def_use_mgr()->GetDef(*iid);

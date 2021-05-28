@@ -92,7 +92,7 @@ void InlinePass::AddStore(uint32_t ptr_id, uint32_t val_id,
                       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ptr_id}},
                        {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {val_id}}}));
   if (line_inst != nullptr) {
-    newStore->dbg_line_insts().push_back(*line_inst);
+    newStore->AddDebugLine(line_inst);
   }
   newStore->SetDebugScope(dbg_scope);
   (*block_ptr)->AddInstruction(std::move(newStore));
@@ -106,7 +106,7 @@ void InlinePass::AddLoad(uint32_t type_id, uint32_t resultId, uint32_t ptr_id,
       new Instruction(context(), SpvOpLoad, type_id, resultId,
                       {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {ptr_id}}}));
   if (line_inst != nullptr) {
-    newLoad->dbg_line_insts().push_back(*line_inst);
+    newLoad->AddDebugLine(line_inst);
   }
   newLoad->SetDebugScope(dbg_scope);
   (*block_ptr)->AddInstruction(std::move(newLoad));

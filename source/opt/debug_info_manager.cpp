@@ -86,7 +86,7 @@ uint32_t DebugInfoManager::GetDbgSetImportId() {
       context()->get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo();
   if (setId == 0) {
     setId =
-        context()->get_feature_mgr()->GetExtInstImportId_Vulkan100DebugInfo();
+        context()->get_feature_mgr()->GetExtInstImportId_Shader100DebugInfo();
   }
   return setId;
 }
@@ -158,7 +158,7 @@ uint32_t DebugInfoManager::CreateDebugInlinedAt(const Instruction* line,
   // In NonSemantic.Shader.DebugInfo.100, all constants are IDs of OpConstant,
   // not literals.
   if (setId ==
-      context()->get_feature_mgr()->GetExtInstImportId_Vulkan100DebugInfo())
+      context()->get_feature_mgr()->GetExtInstImportId_Shader100DebugInfo())
     line_number_type = spv_operand_type_t::SPV_OPERAND_TYPE_ID;
 
   uint32_t line_number = 0;

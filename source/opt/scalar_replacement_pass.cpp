@@ -27,6 +27,7 @@
 
 static const uint32_t kDebugValueOperandValueIndex = 5;
 static const uint32_t kDebugValueOperandExpressionIndex = 6;
+static const uint32_t kDebugDeclareOperandVariableIndex = 5;
 
 namespace spvtools {
 namespace opt {
@@ -868,6 +869,11 @@ bool ScalarReplacementPass::CheckUsesRelaxed(const Instruction* inst) const {
           case SpvOpImageTexelPointer:
             if (!CheckImageTexelPointer(index)) ok = false;
             break;
+          case SpvOpExtInst:
+            if (user->GetCommonDebugOpcode() != CommonDebugInfoDebugDeclare ||
+                !CheckDebugDeclare(index))
+              ok = false;
+            break;
           default:
             ok = false;
             break;
@@ -898,6 +904,12 @@ bool ScalarReplacementPass::CheckStore(const Instruction* inst,
     return false;
   return true;
 }
+
+bool ScalarReplacementPass::CheckDebugDeclare(uint32_t index) const {
+  if (index != kDebugDeclareOperandVariableIndex) return false;
+  return true;
+}
+
 bool ScalarReplacementPass::IsLargerThanSizeLimit(uint64_t length) const {
   if (max_num_elements_ == 0) {
     return false;
