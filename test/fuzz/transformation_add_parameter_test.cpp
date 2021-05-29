@@ -145,6 +145,14 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
     ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(60));
   }
   {
+    TransformationAddParameter correct(9, 68, 52, {{{13, 54}}}, 69);
+    ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(correct, context.get(), &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
+    ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(68));
+  }
+  {
     TransformationAddParameter correct(17, 62, 7, {{}}, 63);
     ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(correct, context.get(), &transformation_context);
@@ -167,15 +175,6 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
     ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
         context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(66));
-  }
-  // Adds array as parameter to a function.
-  {
-    TransformationAddParameter correct(9, 68, 52, {{{13, 54}}}, 69);
-    ASSERT_TRUE(correct.IsApplicable(context.get(), transformation_context));
-    ApplyAndCheckFreshIds(correct, context.get(), &transformation_context);
-    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
-        context.get(), validator_options, kConsoleMessageConsumer));
-    ASSERT_TRUE(transformation_context.GetFactManager()->IdIsIrrelevant(68));
   }
 
   std::string expected_shader = R"(
@@ -205,7 +204,7 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
          %41 = OpTypeStruct %11 %16
          %42 = OpConstantComposite %41 %8 %32
          %44 = OpTypeFunction %2 %41 %7
-          %6 = OpTypeFunction %7 %7 %11 %52
+         %6 = OpTypeFunction %7 %7 %11 %52
          %65 = OpTypeFunction %2 %31
           %4 = OpFunction %2 None %3
           %5 = OpLabel
@@ -217,7 +216,7 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
           %9 = OpFunction %7 None %6
          %14 = OpFunctionParameter %7
          %60 = OpFunctionParameter %11
-         %70 = OpFunctionParameter %52
+         %68 = OpFunctionParameter %52
          %10 = OpLabel
                OpReturnValue %12
                OpFunctionEnd
