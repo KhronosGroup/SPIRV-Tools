@@ -82,16 +82,16 @@ TEST(TransformationAddSynonymTest, NotApplicable) {
 #ifndef NDEBUG
   ASSERT_DEATH(
       TransformationAddSynonym(
-      9, static_cast<protobufs::TransformationAddSynonym::SynonymType>(-1),
+          9, static_cast<protobufs::TransformationAddSynonym::SynonymType>(-1),
           40, insert_before)
-      .IsApplicable(context.get(), transformation_context),
+          .IsApplicable(context.get(), transformation_context),
       "Synonym type is invalid");
 #endif
 
   // These tests should succeed regardless of the synonym type.
   for (int i = 0;
        i < protobufs::TransformationAddSynonym::SynonymType_descriptor()
-           ->value_count();
+               ->value_count();
        ++i) {
     const auto* synonym_value =
         protobufs::TransformationAddSynonym::SynonymType_descriptor()->value(i);
@@ -138,11 +138,11 @@ TEST(TransformationAddSynonymTest, NotApplicable) {
             .IsApplicable(context.get(), transformation_context));
     ASSERT_FALSE(TransformationAddSynonym(
                      9, synonym_type, 40,
-                         MakeInstructionDescriptor(22, SpvOpVariable, 0))
+                     MakeInstructionDescriptor(22, SpvOpVariable, 0))
                      .IsApplicable(context.get(), transformation_context));
     ASSERT_FALSE(TransformationAddSynonym(
                      9, synonym_type, 40,
-                         MakeInstructionDescriptor(25, SpvOpFunctionEnd, 0))
+                     MakeInstructionDescriptor(25, SpvOpFunctionEnd, 0))
                      .IsApplicable(context.get(), transformation_context));
 
     // Domination rules are not satisfied.
@@ -660,8 +660,8 @@ TEST(TransformationAddSynonymTest, CopyBooleanConstants) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_EQ(0, transformation_context.GetFactManager()
-      ->GetIdsForWhichSynonymsAreKnown()
-      .size());
+                   ->GetIdsForWhichSynonymsAreKnown()
+                   .size());
 
   {
     TransformationAddSynonym copy_true(
@@ -970,128 +970,128 @@ TEST(TransformationAddSynonymTest, CheckIllegalCases) {
   // Inapplicable because %18 is decorated.
   ASSERT_FALSE(TransformationAddSynonym(
                    18, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(21, SpvOpAccessChain, 0))
+                   MakeInstructionDescriptor(21, SpvOpAccessChain, 0))
                    .IsApplicable(context.get(), transformation_context));
 
   // Inapplicable because %77 is decorated.
   ASSERT_FALSE(TransformationAddSynonym(
                    77, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(77, SpvOpBranch, 0))
+                   MakeInstructionDescriptor(77, SpvOpBranch, 0))
                    .IsApplicable(context.get(), transformation_context));
 
   // Inapplicable because %80 is decorated.
   ASSERT_FALSE(TransformationAddSynonym(
                    80, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(77, SpvOpIAdd, 0))
+                   MakeInstructionDescriptor(77, SpvOpIAdd, 0))
                    .IsApplicable(context.get(), transformation_context));
 
   // Inapplicable because %84 is not available at the requested point
   ASSERT_FALSE(TransformationAddSynonym(
                    84, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(32, SpvOpCompositeExtract, 0))
+                   MakeInstructionDescriptor(32, SpvOpCompositeExtract, 0))
                    .IsApplicable(context.get(), transformation_context));
 
   // Fine because %84 is available at the requested point
   ASSERT_TRUE(TransformationAddSynonym(
                   84, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                      MakeInstructionDescriptor(32, SpvOpCompositeConstruct, 0))
+                  MakeInstructionDescriptor(32, SpvOpCompositeConstruct, 0))
                   .IsApplicable(context.get(), transformation_context));
 
   // Inapplicable because id %9 is already in use
   ASSERT_FALSE(TransformationAddSynonym(
                    84, protobufs::TransformationAddSynonym::COPY_OBJECT, 9,
-                       MakeInstructionDescriptor(32, SpvOpCompositeConstruct, 0))
+                   MakeInstructionDescriptor(32, SpvOpCompositeConstruct, 0))
                    .IsApplicable(context.get(), transformation_context));
 
   // Inapplicable because the requested point does not exist
   ASSERT_FALSE(TransformationAddSynonym(
                    84, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(86, SpvOpReturn, 2))
+                   MakeInstructionDescriptor(86, SpvOpReturn, 2))
                    .IsApplicable(context.get(), transformation_context));
 
   // Inapplicable because %9 is not in a function
   ASSERT_FALSE(TransformationAddSynonym(
                    9, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(9, SpvOpTypeInt, 0))
+                   MakeInstructionDescriptor(9, SpvOpTypeInt, 0))
                    .IsApplicable(context.get(), transformation_context));
 
   // Inapplicable because the insert point is right before, or inside, a chunk
   // of OpPhis
   ASSERT_FALSE(TransformationAddSynonym(
                    9, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(30, SpvOpPhi, 0))
+                   MakeInstructionDescriptor(30, SpvOpPhi, 0))
                    .IsApplicable(context.get(), transformation_context));
   ASSERT_FALSE(TransformationAddSynonym(
                    9, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(99, SpvOpPhi, 1))
+                   MakeInstructionDescriptor(99, SpvOpPhi, 1))
                    .IsApplicable(context.get(), transformation_context));
 
   // OK, because the insert point is just after a chunk of OpPhis.
   ASSERT_TRUE(TransformationAddSynonym(
                   9, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                      MakeInstructionDescriptor(96, SpvOpAccessChain, 0))
+                  MakeInstructionDescriptor(96, SpvOpAccessChain, 0))
                   .IsApplicable(context.get(), transformation_context));
 
   // Inapplicable because the insert point is right after an OpSelectionMerge
   ASSERT_FALSE(TransformationAddSynonym(
                    9, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(58, SpvOpBranchConditional, 0))
+                   MakeInstructionDescriptor(58, SpvOpBranchConditional, 0))
                    .IsApplicable(context.get(), transformation_context));
 
   // OK, because the insert point is right before the OpSelectionMerge
   ASSERT_TRUE(TransformationAddSynonym(
                   9, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                      MakeInstructionDescriptor(58, SpvOpSelectionMerge, 0))
+                  MakeInstructionDescriptor(58, SpvOpSelectionMerge, 0))
                   .IsApplicable(context.get(), transformation_context));
 
   // Inapplicable because the insert point is right after an OpSelectionMerge
   ASSERT_FALSE(TransformationAddSynonym(
                    9, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(43, SpvOpSwitch, 0))
+                   MakeInstructionDescriptor(43, SpvOpSwitch, 0))
                    .IsApplicable(context.get(), transformation_context));
 
   // OK, because the insert point is right before the OpSelectionMerge
   ASSERT_TRUE(TransformationAddSynonym(
                   9, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                      MakeInstructionDescriptor(43, SpvOpSelectionMerge, 0))
+                  MakeInstructionDescriptor(43, SpvOpSelectionMerge, 0))
                   .IsApplicable(context.get(), transformation_context));
 
   // Inapplicable because the insert point is right after an OpLoopMerge
   ASSERT_FALSE(TransformationAddSynonym(
                    9, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(40, SpvOpBranchConditional, 0))
+                   MakeInstructionDescriptor(40, SpvOpBranchConditional, 0))
                    .IsApplicable(context.get(), transformation_context));
 
   // OK, because the insert point is right before the OpLoopMerge
   ASSERT_TRUE(TransformationAddSynonym(
                   9, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                      MakeInstructionDescriptor(40, SpvOpLoopMerge, 0))
+                  MakeInstructionDescriptor(40, SpvOpLoopMerge, 0))
                   .IsApplicable(context.get(), transformation_context));
 
   // Inapplicable because id %300 does not exist
   ASSERT_FALSE(TransformationAddSynonym(
                    300, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(40, SpvOpLoopMerge, 0))
+                   MakeInstructionDescriptor(40, SpvOpLoopMerge, 0))
                    .IsApplicable(context.get(), transformation_context));
 
   // Inapplicable because the following instruction is OpVariable
   ASSERT_FALSE(TransformationAddSynonym(
                    9, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(180, SpvOpVariable, 0))
+                   MakeInstructionDescriptor(180, SpvOpVariable, 0))
                    .IsApplicable(context.get(), transformation_context));
   ASSERT_FALSE(TransformationAddSynonym(
                    9, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(181, SpvOpVariable, 0))
+                   MakeInstructionDescriptor(181, SpvOpVariable, 0))
                    .IsApplicable(context.get(), transformation_context));
   ASSERT_FALSE(TransformationAddSynonym(
                    9, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                       MakeInstructionDescriptor(182, SpvOpVariable, 0))
+                   MakeInstructionDescriptor(182, SpvOpVariable, 0))
                    .IsApplicable(context.get(), transformation_context));
 
   // OK, because this is just past the group of OpVariable instructions.
   ASSERT_TRUE(TransformationAddSynonym(
                   9, protobufs::TransformationAddSynonym::COPY_OBJECT, 200,
-                      MakeInstructionDescriptor(182, SpvOpAccessChain, 0))
+                  MakeInstructionDescriptor(182, SpvOpAccessChain, 0))
                   .IsApplicable(context.get(), transformation_context));
 }
 
@@ -1273,13 +1273,13 @@ TEST(TransformationAddSynonymTest, DoNotCopyNullOrUndefPointers) {
   // Illegal to copy null.
   ASSERT_FALSE(TransformationAddSynonym(
                    8, protobufs::TransformationAddSynonym::COPY_OBJECT, 100,
-                       MakeInstructionDescriptor(5, SpvOpReturn, 0))
+                   MakeInstructionDescriptor(5, SpvOpReturn, 0))
                    .IsApplicable(context.get(), transformation_context));
 
   // Illegal to copy an OpUndef of pointer type.
   ASSERT_FALSE(TransformationAddSynonym(
                    9, protobufs::TransformationAddSynonym::COPY_OBJECT, 100,
-                       MakeInstructionDescriptor(5, SpvOpReturn, 0))
+                   MakeInstructionDescriptor(5, SpvOpReturn, 0))
                    .IsApplicable(context.get(), transformation_context));
 }
 
@@ -1402,9 +1402,9 @@ TEST(TransformationAddSynonymTest, DoNotCopyOpSampledImage) {
       MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_FALSE(
       TransformationAddSynonym(
-      216, protobufs::TransformationAddSynonym::COPY_OBJECT, 500,
+          216, protobufs::TransformationAddSynonym::COPY_OBJECT, 500,
           MakeInstructionDescriptor(217, SpvOpImageSampleImplicitLod, 0))
-      .IsApplicable(context.get(), transformation_context));
+          .IsApplicable(context.get(), transformation_context));
 }
 
 TEST(TransformationAddSynonymTest, DoNotCopyVoidRunctionResult) {
@@ -1440,7 +1440,7 @@ TEST(TransformationAddSynonymTest, DoNotCopyVoidRunctionResult) {
       MakeUnique<FactManager>(context.get()), validator_options);
   ASSERT_FALSE(TransformationAddSynonym(
                    8, protobufs::TransformationAddSynonym::COPY_OBJECT, 500,
-                       MakeInstructionDescriptor(8, SpvOpReturn, 0))
+                   MakeInstructionDescriptor(8, SpvOpReturn, 0))
                    .IsApplicable(context.get(), transformation_context));
 }
 
@@ -1485,12 +1485,12 @@ TEST(TransformationAddSynonymTest, HandlesDeadBlocks) {
 
   ASSERT_FALSE(TransformationAddSynonym(
                    7, protobufs::TransformationAddSynonym::COPY_OBJECT, 100,
-                       insert_before)
+                   insert_before)
                    .IsApplicable(context.get(), transformation_context));
 
   ASSERT_FALSE(TransformationAddSynonym(
                    12, protobufs::TransformationAddSynonym::COPY_OBJECT, 100,
-                       insert_before)
+                   insert_before)
                    .IsApplicable(context.get(), transformation_context));
 }
 
