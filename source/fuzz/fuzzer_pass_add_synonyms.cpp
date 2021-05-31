@@ -79,6 +79,8 @@ void FuzzerPassAddSynonyms::Apply() {
           case protobufs::TransformationAddSynonym::ADD_ZERO:
           case protobufs::TransformationAddSynonym::SUB_ZERO:
           case protobufs::TransformationAddSynonym::LOGICAL_OR:
+          case protobufs::TransformationAddSynonym::BITWISE_OR:
+          case protobufs::TransformationAddSynonym::BITWISE_XOR:
             // Create a zero constant to be used as an operand of the synonymous
             // instruction.
             FindOrCreateZeroConstant(existing_synonym->type_id(), false);
