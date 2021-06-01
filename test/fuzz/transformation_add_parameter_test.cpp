@@ -204,7 +204,7 @@ TEST(TransformationAddParameterTest, NonPointerBasicTest) {
          %41 = OpTypeStruct %11 %16
          %42 = OpConstantComposite %41 %8 %32
          %44 = OpTypeFunction %2 %41 %7
-         %6 = OpTypeFunction %7 %7 %11 %52
+          %6 = OpTypeFunction %7 %7 %11 %52
          %65 = OpTypeFunction %2 %31
           %4 = OpFunction %2 None %3
           %5 = OpLabel
