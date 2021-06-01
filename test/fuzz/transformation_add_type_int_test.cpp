@@ -85,6 +85,29 @@ TEST(TransformationAddTypeIntTest, IsApplicable) {
   transformation = TransformationAddTypeInt(7, 32, true);
   ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
+
+  // By default SPIR-V does not support 16-bit integers.
+  // Below we add such capability, so the test should now be succesful.
+  context.get()->get_feature_mgr()->AddCapability(SpvCapabilityInt16);
+  ASSERT_TRUE(TransformationAddTypeInt(7, 16, true)
+                  .IsApplicable(context.get(), transformation_context));
+
+  // By default SPIR-V does not support 64-bit integers.
+  // Below we add such capability, so the test should now pass.
+  context.get()->get_feature_mgr()->AddCapability(SpvCapabilityInt64);
+  ASSERT_TRUE(TransformationAddTypeInt(7, 64, true)
+                  .IsApplicable(context.get(), transformation_context));
+
+#ifndef NDEBUG
+  // Should not be able to add signed/unsigned integers of width different from
+  // 16/32/64 bits.
+  ASSERT_DEATH(TransformationAddTypeInt(7, 20, false)
+                   .IsApplicable(context.get(), transformation_context),
+               "Unexpected integer type width");
+  ASSERT_DEATH(TransformationAddTypeInt(12, 15, false)
+                   .IsApplicable(context.get(), transformation_context),
+               "Unexpected integer type width");
+#endif
 }
 
 TEST(TransformationAddTypeIntTest, Apply) {
