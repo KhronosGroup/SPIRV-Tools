@@ -142,7 +142,7 @@ TEST(TransformationAddDeadBlockTest, BasicTest) {
   ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
-TEST(TransformationAddDeadBlockTest, Applicable) {
+TEST(TransformationAddDeadBlockTest, ApplicableWithFalseCondition) {
   std::string reference_shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -156,7 +156,7 @@ TEST(TransformationAddDeadBlockTest, Applicable) {
           %4 = OpTypeFunction %3
 
 ; Constants
-          %5 = OpConstantTrue %2
+          %5 = OpConstantFalse %2
 
 ; main function
           %6 = OpFunction %3 None %4
@@ -187,12 +187,10 @@ TEST(TransformationAddDeadBlockTest, Applicable) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
   auto transformation = TransformationAddDeadBlock(14, 11, false);
-  ASSERT_FALSE(
+
+  ASSERT_TRUE(
       transformation.IsApplicable(context.get(), transformation_context));
-
   ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
-
-  ASSERT_TRUE(transformation_context.GetFactManager()->BlockIsDead(14));
 
   std::string variant_shader = R"(
                OpCapability Shader
@@ -207,7 +205,7 @@ TEST(TransformationAddDeadBlockTest, Applicable) {
           %4 = OpTypeFunction %3
 
 ; Constants
-          %5 = OpConstantTrue %2
+          %5 = OpConstantFalse %2
 
 ; main function
           %6 = OpFunction %3 None %4
@@ -222,7 +220,7 @@ TEST(TransformationAddDeadBlockTest, Applicable) {
                OpBranch %11
          %11 = OpLabel
                OpSelectionMerge %13 None
-               OpBranchConditional %5 %13 %14
+               OpBranchConditional %5 %14 %13
          %14 = OpLabel
                OpBranch %13
          %12 = OpLabel
@@ -232,9 +230,9 @@ TEST(TransformationAddDeadBlockTest, Applicable) {
                OpFunctionEnd
   )";
 
-  ASSERT_FALSE(fuzzerutil::IsValidAndWellFormed(
-      context.get(), validator_options, kConsoleMessageConsumer));
-  ASSERT_FALSE(IsEqual(env, variant_shader, context.get()));
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  ASSERT_TRUE(IsEqual(env, variant_shader, context.get()));
 }
 
 TEST(TransformationAddDeadBlockTest, TargetBlockMustNotBeSelectionMerge) {
