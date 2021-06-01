@@ -31,6 +31,7 @@ if (${SPIRV_BUILD_FUZZER})
           fuzzer_pass_construct_composites_test.cpp
           fuzzer_pass_donate_modules_test.cpp
           fuzzer_pass_outline_functions_test.cpp
+          fuzzerutil_test.cpp
           instruction_descriptor_test.cpp
           fuzzer_pass_test.cpp
           replayer_test.cpp
