@@ -953,36 +953,37 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetPointerTypeTest) {
 
   // A valid pointer must have the correct |pointee_type_id| and |storageClass|.
   // A function type pointer with id = 9 and pointee type id 8 should be found.
-  ASSERT_EQ(9, fuzzerutil::MaybeGetPointerType(
-                   ir_context, 8, function_storage_class));
+  ASSERT_EQ(9, fuzzerutil::MaybeGetPointerType(ir_context, 8,
+                                               function_storage_class));
   // A function type pointer with id = 15 and pointee type id 6 should be found.
-  ASSERT_EQ(15, fuzzerutil::MaybeGetPointerType(
-                    ir_context, 6, function_storage_class));
+  ASSERT_EQ(15, fuzzerutil::MaybeGetPointerType(ir_context, 6,
+                                                function_storage_class));
   // A function type pointer with id = 25 and pointee type id 7 should be found.
-  ASSERT_EQ(25, fuzzerutil::MaybeGetPointerType(
-                    ir_context, 7, function_storage_class));
+  ASSERT_EQ(25, fuzzerutil::MaybeGetPointerType(ir_context, 7,
+                                                function_storage_class));
 
   // A private type pointer with id=51 and pointee type id 6 should be found.
-  ASSERT_EQ(51, fuzzerutil::MaybeGetPointerType(
-                    ir_context, 6, private_storage_class));
+  ASSERT_EQ(51, fuzzerutil::MaybeGetPointerType(ir_context, 6,
+                                                private_storage_class));
   // A function pointer with id=50 and pointee type id 7 should be found.
-  ASSERT_EQ(50, fuzzerutil::MaybeGetPointerType(
-                    ir_context, 7, private_storage_class));
+  ASSERT_EQ(50, fuzzerutil::MaybeGetPointerType(ir_context, 7,
+                                                private_storage_class));
 
   // A input type pointer with id=91 and pointee type id 90 should be found.
-  ASSERT_EQ(91, fuzzerutil::MaybeGetPointerType(
-                    ir_context, 90, input_storage_class));
+  ASSERT_EQ(
+      91, fuzzerutil::MaybeGetPointerType(ir_context, 90, input_storage_class));
 
   // A pointer with id=91 and pointee type 90 exisits, but the type should be
   // input.
-  ASSERT_EQ(0, fuzzerutil::MaybeGetPointerType(
-                   ir_context, 90, function_storage_class));
+  ASSERT_EQ(0, fuzzerutil::MaybeGetPointerType(ir_context, 90,
+                                               function_storage_class));
   // A input type pointer with id=91 exists but the pointee id should be 90.
-  ASSERT_EQ(0, fuzzerutil::MaybeGetPointerType(
-                   ir_context, 89, input_storage_class));
+  ASSERT_EQ(
+      0, fuzzerutil::MaybeGetPointerType(ir_context, 89, input_storage_class));
   // A input type pointer with pointee id 90 exists but result id of the pointer
   // should be 91.
-  ASSERT_NE(58, fuzzerutil::MaybeGetPointerType(ir_context, 90, input_storage_class));
+  ASSERT_NE(
+      58, fuzzerutil::MaybeGetPointerType(ir_context, 90, input_storage_class));
 }
 
 TEST(FuzzerutilTest, FuzzerUtilMaybeGetScalarConstantTest) {
