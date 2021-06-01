@@ -55,8 +55,6 @@ TEST(FuzzerUtilMaybeFindBlockTest, BasicTest) {
   spvtools::ValidatorOptions validator_options;
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
-  TransformationContext transformation_context(
-      MakeUnique<FactManager>(context.get()), validator_options);
 
   // Only blocks with id 11 and 12 can be found.
   // Should return nullptr when id is not a label or id was not found.
@@ -249,8 +247,6 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetBoolTypeTest) {
   spvtools::ValidatorOptions validator_options;
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
-  TransformationContext transformation_context(
-      MakeUnique<FactManager>(context.get()), validator_options);
 
   opt::IRContext* ir_context = context.get();
   // A bool type with result id of 34 exists.
@@ -562,15 +558,13 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetFloatTypeTest) {
   spvtools::ValidatorOptions validator_options;
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
-  TransformationContext transformation_context(
-      MakeUnique<FactManager>(context.get()), validator_options);
 
   opt::IRContext* ir_context = context.get();
   // A float type with width = 32 and result id of 7 exists.
   ASSERT_EQ(7, fuzzerutil::MaybeGetFloatType(ir_context, 32));
 
   // A float int type with width = 32 exists, but the id should be 7.
-  ASSERT_FALSE(fuzzerutil::MaybeGetFloatType(ir_context, 32) == 5);
+  ASSERT_NE(5, fuzzerutil::MaybeGetFloatType(ir_context, 32));
 
   // A float type with width 30 does not exist.
   ASSERT_EQ(0, fuzzerutil::MaybeGetFloatType(ir_context, 30));
@@ -659,8 +653,6 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetIntegerConstantFromValueAndTypeTest) {
   spvtools::ValidatorOptions validator_options;
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
-  TransformationContext transformation_context(
-      MakeUnique<FactManager>(context.get()), validator_options);
 
   opt::IRContext* ir_context = context.get();
 
@@ -858,8 +850,6 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetIntegerTypeTest) {
   spvtools::ValidatorOptions validator_options;
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
-  TransformationContext transformation_context(
-      MakeUnique<FactManager>(context.get()), validator_options);
 
   opt::IRContext* ir_context = context.get();
 
@@ -955,56 +945,44 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetPointerTypeTest) {
   spvtools::ValidatorOptions validator_options;
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
-  TransformationContext transformation_context(
-      MakeUnique<FactManager>(context.get()), validator_options);
 
   opt::IRContext* ir_context = context.get();
-  uint32_t private_storage_class = SpvStorageClassPrivate;
-  uint32_t function_storage_class = SpvStorageClassFunction;
-  uint32_t input_storage_class = SpvStorageClassInput;
+  auto private_storage_class = SpvStorageClassPrivate;
+  auto function_storage_class = SpvStorageClassFunction;
+  auto input_storage_class = SpvStorageClassInput;
 
   // A valid pointer must have the correct |pointee_type_id| and |storageClass|.
   // A function type pointer with id = 9 and pointee type id 8 should be found.
   ASSERT_EQ(9, fuzzerutil::MaybeGetPointerType(
-                   ir_context, 8,
-                   static_cast<SpvStorageClass>(function_storage_class)));
+                   ir_context, 8, function_storage_class));
   // A function type pointer with id = 15 and pointee type id 6 should be found.
   ASSERT_EQ(15, fuzzerutil::MaybeGetPointerType(
-                    ir_context, 6,
-                    static_cast<SpvStorageClass>(function_storage_class)));
+                    ir_context, 6, function_storage_class));
   // A function type pointer with id = 25 and pointee type id 7 should be found.
   ASSERT_EQ(25, fuzzerutil::MaybeGetPointerType(
-                    ir_context, 7,
-                    static_cast<SpvStorageClass>(function_storage_class)));
+                    ir_context, 7, function_storage_class));
 
   // A private type pointer with id=51 and pointee type id 6 should be found.
   ASSERT_EQ(51, fuzzerutil::MaybeGetPointerType(
-                    ir_context, 6,
-                    static_cast<SpvStorageClass>(private_storage_class)));
+                    ir_context, 6, private_storage_class));
   // A function pointer with id=50 and pointee type id 7 should be found.
   ASSERT_EQ(50, fuzzerutil::MaybeGetPointerType(
-                    ir_context, 7,
-                    static_cast<SpvStorageClass>(private_storage_class)));
+                    ir_context, 7, private_storage_class));
 
   // A input type pointer with id=91 and pointee type id 90 should be found.
   ASSERT_EQ(91, fuzzerutil::MaybeGetPointerType(
-                    ir_context, 90,
-                    static_cast<SpvStorageClass>(input_storage_class)));
+                    ir_context, 90, input_storage_class));
 
   // A pointer with id=91 and pointee type 90 exisits, but the type should be
   // input.
   ASSERT_EQ(0, fuzzerutil::MaybeGetPointerType(
-                   ir_context, 90,
-                   static_cast<SpvStorageClass>(function_storage_class)));
+                   ir_context, 90, function_storage_class));
   // A input type pointer with id=91 exists but the pointee id should be 90.
   ASSERT_EQ(0, fuzzerutil::MaybeGetPointerType(
-                   ir_context, 89,
-                   static_cast<SpvStorageClass>(input_storage_class)));
+                   ir_context, 89, input_storage_class));
   // A input type pointer with pointee id 90 exists but result id of the pointer
   // should be 91.
-  ASSERT_FALSE(fuzzerutil::MaybeGetPointerType(
-                   ir_context, 90,
-                   static_cast<SpvStorageClass>(input_storage_class)) == 58);
+  ASSERT_NE(58, fuzzerutil::MaybeGetPointerType(ir_context, 90, input_storage_class));
 }
 
 TEST(FuzzerutilTest, FuzzerUtilMaybeGetScalarConstantTest) {
@@ -1237,8 +1215,6 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetStructTypeTest) {
   spvtools::ValidatorOptions validator_options;
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
-  TransformationContext transformation_context(
-      MakeUnique<FactManager>(context.get()), validator_options);
 
   opt::IRContext* ir_context = context.get();
 
@@ -1335,8 +1311,6 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetVectorTypeTest) {
   spvtools::ValidatorOptions validator_options;
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
-  TransformationContext transformation_context(
-      MakeUnique<FactManager>(context.get()), validator_options);
 
   opt::IRContext* ir_context = context.get();
   // The vector type with |element_count| 4 and |component_type_id| 7
@@ -1438,8 +1412,6 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetVoidTypeTest) {
   spvtools::ValidatorOptions validator_options;
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
-  TransformationContext transformation_context(
-      MakeUnique<FactManager>(context.get()), validator_options);
 
   opt::IRContext* ir_context = context.get();
   // A void type with a result id of 2 can be found.
