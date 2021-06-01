@@ -3244,7 +3244,6 @@ TEST(TransformationOutlineFunctionTest, NoOutlineWithUnreachableBlocks) {
                                                /* not relevant */ 201, {}, {});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
-  ApplyAndCheckFreshIds(transformation, context.get(), &transformation_context);
 }
 
 }  // namespace
