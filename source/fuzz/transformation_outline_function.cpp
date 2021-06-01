@@ -175,6 +175,19 @@ bool TransformationOutlineFunction::IsApplicable(
   // This is achieved by going through every block in the function that contains
   // the region.
   for (auto& block : *entry_block->GetParent()) {
+    if (region_set.count(&block) != 0) {
+      // The block is in the region. Check that it does not have any unreachable
+      // predecessors. If it does, then we do not regard the region as single-
+      // entry-single-exit and hence do not outline it.
+      for (auto pred : ir_context->cfg()->preds(block.id())) {
+        if (!fuzzerutil::BlockIsReachableInItsFunction(
+                ir_context, ir_context->cfg()->block(pred))) {
+          // The predecessor is unreachable.
+          return false;
+        }
+      }
+    }
+
     if (&block == exit_block) {
       // It is OK (and typically expected) for the exit block of the region to
       // have successors outside the region.
