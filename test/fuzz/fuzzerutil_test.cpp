@@ -1332,7 +1332,7 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetVectorTypeTest) {
   // It should abort with |element_count| of 5.
   // |element_count| must be in the range [2,4].
   ASSERT_DEATH(fuzzerutil::MaybeGetVectorType(ir_context, 7, 5),
-               "Precondition: component count must be in range \\[2 to 4\\].");
+               "Precondition: component count must be in range \\[2, 4\\].");
 #endif
 }
 
