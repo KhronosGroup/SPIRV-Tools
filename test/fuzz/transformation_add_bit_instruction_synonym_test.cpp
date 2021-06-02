@@ -937,7 +937,7 @@ TEST(TransformationAddBitInstructionSynonymTest, NoSynonymWhenBlockIsDead) {
       MakeDataDescriptor(166, {}), MakeDataDescriptor(39, {})));
 }
 
-TEST(TransformationAddBitInstructionSynonymTest, DISABLED_DifferentSingedness) {
+TEST(TransformationAddBitInstructionSynonymTest, ENABLED_DifferentSingedness) {
   // This test will fail due to a bug in the transformation. The reason is that
   // OpNot supports its operand and result type having different signedness.
   // OpBitFieldUExtract and OpBitFieldInsert, however, don't support this
