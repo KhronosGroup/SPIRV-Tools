@@ -122,7 +122,7 @@ bool TransformationAccessChain::IsApplicable(
 
       bool successful;
       std::tie(successful, index_value) =
-          GetIndexValue(ir_context, index_id, subobject_type_id);
+          GetStructIndexValue(ir_context, index_id, subobject_type_id);
 
       if (!successful) {
         return false;
@@ -247,7 +247,7 @@ void TransformationAccessChain::Apply(
       // It is a struct: we need to retrieve the integer value.
 
       index_value =
-          GetIndexValue(ir_context, index_id, subobject_type_id).second;
+          GetStructIndexValue(ir_context, index_id, subobject_type_id).second;
 
       new_index_id = index_id;
 
@@ -363,9 +363,12 @@ protobufs::Transformation TransformationAccessChain::ToMessage() const {
   return result;
 }
 
-std::pair<bool, uint32_t> TransformationAccessChain::GetIndexValue(
+std::pair<bool, uint32_t> TransformationAccessChain::GetStructIndexValue(
     opt::IRContext* ir_context, uint32_t index_id,
     uint32_t object_type_id) const {
+  assert(ir_context->get_def_use_mgr()->GetDef(object_type_id)->opcode() ==
+             SpvOpTypeStruct &&
+         "Precondition: the type must be a struct type.");
   if (!ValidIndexToComposite(ir_context, index_id, object_type_id)) {
     return {false, 0};
   }
@@ -374,10 +377,9 @@ std::pair<bool, uint32_t> TransformationAccessChain::GetIndexValue(
   uint32_t bound = fuzzerutil::GetBoundForCompositeIndex(
       *ir_context->get_def_use_mgr()->GetDef(object_type_id), ir_context);
 
-  // The index must be a constant
-  if (!spvOpcodeIsConstant(index_instruction->opcode())) {
-    return {false, 0};
-  }
+  // Ensure that the index given must represent a constant.
+  assert(spvOpcodeIsConstant(index_instruction->opcode()) &&
+         "A non-constant index should already have been rejected.");
 
   // The index must be in bounds.
   uint32_t value = index_instruction->GetSingleWordInOperand(0);

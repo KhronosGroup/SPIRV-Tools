@@ -60,6 +60,7 @@ TEST(TransformationPermutePhiOperandsTest, BasicTest) {
                OpBranch %17
          %17 = OpLabel
          %25 = OpPhi %6 %20 %16 %24 %21
+         %30 = OpIAdd %6 %25 %25
                OpStore %8 %25
                OpReturn
                OpFunctionEnd
@@ -121,6 +122,30 @@ TEST(TransformationPermutePhiOperandsTest, BasicTest) {
           return true;
         });
   }
+  bool found_use_in_store = false;
+  bool found_use_in_add_lhs = false;
+  bool found_use_in_add_rhs = false;
+  context->get_def_use_mgr()->ForEachUse(
+      25, [&found_use_in_store, &found_use_in_add_lhs, &found_use_in_add_rhs](
+              opt::Instruction* inst, uint32_t operand_index) {
+        if (inst->opcode() == SpvOpStore) {
+          ASSERT_FALSE(found_use_in_store);
+          found_use_in_store = true;
+        } else {
+          ASSERT_EQ(SpvOpIAdd, inst->opcode());
+          if (operand_index == 2) {
+            ASSERT_FALSE(found_use_in_add_lhs);
+            found_use_in_add_lhs = true;
+          } else {
+            ASSERT_EQ(3, operand_index);
+            ASSERT_FALSE(found_use_in_add_rhs);
+            found_use_in_add_rhs = true;
+          }
+        }
+      });
+  ASSERT_TRUE(found_use_in_store);
+  ASSERT_TRUE(found_use_in_add_lhs);
+  ASSERT_TRUE(found_use_in_add_rhs);
 
   std::string after_transformation = R"(
                OpCapability Shader
@@ -159,6 +184,7 @@ TEST(TransformationPermutePhiOperandsTest, BasicTest) {
                OpBranch %17
          %17 = OpLabel
          %25 = OpPhi %6 %24 %21 %20 %16
+         %30 = OpIAdd %6 %25 %25
                OpStore %8 %25
                OpReturn
                OpFunctionEnd

@@ -81,8 +81,7 @@ void TransformationPermutePhiOperands::Apply(
   inst->SetInOperands(std::move(permuted_operands));
 
   // Update the def-use manager.
-  ir_context->get_def_use_mgr()->ClearInst(inst);
-  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(inst);
+  ir_context->UpdateDefUse(inst);
 }
 
 protobufs::Transformation TransformationPermutePhiOperands::ToMessage() const {
