@@ -938,10 +938,6 @@ TEST(TransformationAddBitInstructionSynonymTest, NoSynonymWhenBlockIsDead) {
 }
 
 TEST(TransformationAddBitInstructionSynonymTest, DifferentSingedness) {
-  // This test will fail due to a bug in the transformation. The reason is that
-  // OpNot supports its operand and result type having different signedness.
-  // OpBitFieldUExtract and OpBitFieldInsert, however, don't support this
-  // (these instructions are added by the transformation).
   std::string reference_shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -987,13 +983,14 @@ TEST(TransformationAddBitInstructionSynonymTest, DifferentSingedness) {
          %34 = OpConstant %2 29
          %35 = OpConstant %2 30
          %36 = OpConstant %2 31
+         %45 = OpConstant %200 32
 
 ; main function
          %37 = OpFunction %3 None %4
          %38 = OpLabel
-         %39 = OpBitwiseOr %200 %5 %6 ; bit instruction
-         %40 = OpBitwiseAnd %2 %7 %8  ; bit instruction
-         %41 = OpNot %200 %5 ; bit instruction
+         %39 = OpNot %200 %5 ; bit instruction
+         %40 = OpBitwiseOr %200 %6 %45  ; bit instruction
+         %41 = OpBitwiseAnd %2 %5 %6 ; bit instruction
                OpReturn
                OpFunctionEnd
   )";
@@ -1008,7 +1005,8 @@ TEST(TransformationAddBitInstructionSynonymTest, DifferentSingedness) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-  // Adds OpNot synonym.
+  // Invalid because the sign of id 200 result is not equal to the sign of id 5
+  // operand in OpNot.
   auto transformation = TransformationAddBitInstructionSynonym(
       39, {40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52,  53,
            54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,
@@ -1019,6 +1017,46 @@ TEST(TransformationAddBitInstructionSynonymTest, DifferentSingedness) {
            124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
+
+  // Invalid because the sign of two operands not the same and the first operand
+  // sign not equal the result sign in OpBitwiseOr.
+  transformation = TransformationAddBitInstructionSynonym(
+      40, {46,  47,  48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,
+           59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,
+           72,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,
+           85,  86,  87,  88,  89,  90,  91,  92,  93,  94,  95,  96,  97,
+           98,  99,  100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
+           111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123,
+           124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136,
+           137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149,
+           150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162,
+           163, 164, 165, 166, 167, 168, 169, 170, 171, 172});
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  // Successful transformation
+  {
+    // Instruction operands are the same and it's equal with the result sign in
+    // OpBitwiseAnd bitwise operation.
+    auto transformation = TransformationAddBitInstructionSynonym(
+        41, {46,  47,  48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,
+             59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,
+             72,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,
+             85,  86,  87,  88,  89,  90,  91,  92,  93,  94,  95,  96,  97,
+             98,  99,  100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
+             111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123,
+             124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136,
+             137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149,
+             150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162,
+             163, 164, 165, 166, 167, 168, 169, 170, 171, 172});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
+  }
 }
 
 }  // namespace
