@@ -31,7 +31,6 @@ if (${SPIRV_BUILD_FUZZER})
           fuzzer_pass_construct_composites_test.cpp
           fuzzer_pass_donate_modules_test.cpp
           fuzzer_pass_outline_functions_test.cpp
-          fuzzerutil_test.cpp
           instruction_descriptor_test.cpp
           fuzzer_pass_test.cpp
           replayer_test.cpp
@@ -122,6 +121,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_vector_shuffle_test.cpp
           transformation_wrap_early_terminator_in_function_test.cpp
           transformation_wrap_region_in_selection_test.cpp
+          transformation_wrap_vector_synonym_test.cpp
           uniform_buffer_element_descriptor_test.cpp)
 
   if (${SPIRV_ENABLE_LONG_FUZZER_TESTS})

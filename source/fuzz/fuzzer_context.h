@@ -381,6 +381,10 @@ class FuzzerContext {
     return chance_of_wrapping_region_in_selection_;
   }
 
+  uint32_t GetChanceOfWrappingVectorSynonym() const {
+    return chance_of_wrapping_vector_synonym_;
+  }
+
   // Other functions to control transformations. Keep them in alphabetical
   // order.
   uint32_t GetMaximumEquivalenceClassSizeForDataSynonymFactClosure() const {
@@ -562,6 +566,7 @@ class FuzzerContext {
   uint32_t chance_of_swapping_functions_;
   uint32_t chance_of_toggling_access_chain_instruction_;
   uint32_t chance_of_wrapping_region_in_selection_;
+  uint32_t chance_of_wrapping_vector_synonym_;
 
   // Limits associated with various quantities for which random values are
   // chosen during fuzzing.

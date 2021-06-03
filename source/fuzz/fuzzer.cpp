@@ -90,6 +90,7 @@
 #include "source/fuzz/fuzzer_pass_swap_functions.h"
 #include "source/fuzz/fuzzer_pass_toggle_access_chain_instruction.h"
 #include "source/fuzz/fuzzer_pass_wrap_regions_in_selections.h"
+#include "source/fuzz/fuzzer_pass_wrap_vector_synonym.h"
 #include "source/fuzz/pass_management/repeated_pass_manager.h"
 #include "source/fuzz/pass_management/repeated_pass_recommender_standard.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
@@ -243,6 +244,7 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
   MaybeAddFinalPass<FuzzerPassSwapCommutableOperands>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassSwapFunctions>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassToggleAccessChainInstruction>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassWrapVectorSynonym>(&final_passes_);
 }
 
 Fuzzer::~Fuzzer() = default;
