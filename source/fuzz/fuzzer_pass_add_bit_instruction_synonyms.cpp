@@ -64,51 +64,12 @@ void FuzzerPassAddBitInstructionSynonyms::Apply() {
           continue;
         }
 
-        auto ir_context = GetIRContext();
-
         // Make sure fuzzer never applies a transformation to a bitwise
         // instruction with differently signed operands.
-        if (instruction.opcode() == SpvOpNot) {
-          auto operand = instruction.GetInOperand(0).words[0];
-          auto operand_inst = ir_context->get_def_use_mgr()->GetDef(operand);
-          auto operand_type =
-              ir_context->get_type_mgr()->GetType(operand_inst->type_id());
-          auto operand_sign = operand_type->AsInteger()->IsSigned();
-
-          auto type_id_sign = ir_context->get_type_mgr()
-                                  ->GetType(instruction.type_id())
-                                  ->AsInteger()
-                                  ->IsSigned();
-
-          if (operand_sign != type_id_sign) {
-            continue;
-          }
-        } else {
-          // Other BitWise operations that takes two operands.
-          auto first_operand = instruction.GetInOperand(0).words[0];
-          auto first_operand_inst =
-              ir_context->get_def_use_mgr()->GetDef(first_operand);
-          auto first_operand_type = ir_context->get_type_mgr()->GetType(
-              first_operand_inst->type_id());
-          auto first_operand_sign = first_operand_type->AsInteger()->IsSigned();
-
-          auto second_operand = instruction.GetInOperand(1).words[0];
-          auto second_operand_inst =
-              ir_context->get_def_use_mgr()->GetDef(second_operand);
-          auto second_operand_type = ir_context->get_type_mgr()->GetType(
-              second_operand_inst->type_id());
-          auto second_operand_sign =
-              second_operand_type->AsInteger()->IsSigned();
-
-          auto type_id_sign = ir_context->get_type_mgr()
-                                  ->GetType(instruction.type_id())
-                                  ->AsInteger()
-                                  ->IsSigned();
-
-          if (first_operand_sign != second_operand_sign ||
-              first_operand_sign != type_id_sign) {
-            continue;
-          }
+        if (TransformationAddBitInstructionSynonym::
+                IsInstructionOperandsHasSameSign(GetIRContext(),
+                                                 &instruction)) {
+          continue;
         }
 
         // Make sure all bit indexes are defined as 32-bit unsigned integers.

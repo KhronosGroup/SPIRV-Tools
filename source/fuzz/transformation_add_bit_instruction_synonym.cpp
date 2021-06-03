@@ -57,42 +57,8 @@ bool TransformationAddBitInstructionSynonym::IsApplicable(
   }
 
   // Signedness of the operands must be the same.
-  if (instruction->opcode() == SpvOpNot) {
-    auto operand = instruction->GetInOperand(0).words[0];
-    auto operand_inst = ir_context->get_def_use_mgr()->GetDef(operand);
-    auto operand_type =
-        ir_context->get_type_mgr()->GetType(operand_inst->type_id());
-    auto operand_sign = operand_type->AsInteger()->IsSigned();
-
-    auto type_id_sign = ir_context->get_type_mgr()
-                            ->GetType(instruction->type_id())
-                            ->AsInteger()
-                            ->IsSigned();
-
-    return operand_sign == type_id_sign;
-  } else {
-    // Other BitWise operations that takes two operands.
-    auto first_operand = instruction->GetInOperand(0).words[0];
-    auto first_operand_inst =
-        ir_context->get_def_use_mgr()->GetDef(first_operand);
-    auto first_operand_type =
-        ir_context->get_type_mgr()->GetType(first_operand_inst->type_id());
-    auto first_operand_sign = first_operand_type->AsInteger()->IsSigned();
-
-    auto second_operand = instruction->GetInOperand(1).words[0];
-    auto second_operand_inst =
-        ir_context->get_def_use_mgr()->GetDef(second_operand);
-    auto second_operand_type =
-        ir_context->get_type_mgr()->GetType(second_operand_inst->type_id());
-    auto second_operand_sign = second_operand_type->AsInteger()->IsSigned();
-
-    auto type_id_sign = ir_context->get_type_mgr()
-                            ->GetType(instruction->type_id())
-                            ->AsInteger()
-                            ->IsSigned();
-
-    return first_operand_sign == second_operand_sign &&
-           first_operand_sign == type_id_sign;
+  if (IsInstructionOperandsHasSameSign(ir_context, instruction)) {
+    return false;
   }
 
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3791):
@@ -147,6 +113,48 @@ void TransformationAddBitInstructionSynonym::Apply(
     default:
       assert(false && "Should be unreachable.");
       break;
+  }
+}
+
+bool TransformationAddBitInstructionSynonym::IsInstructionOperandsHasSameSign(
+    opt::IRContext* ir_context, opt::Instruction* instruction) {
+  if (instruction->opcode() == SpvOpNot) {
+    auto operand = instruction->GetInOperand(0).words[0];
+    auto operand_inst = ir_context->get_def_use_mgr()->GetDef(operand);
+    auto operand_type =
+        ir_context->get_type_mgr()->GetType(operand_inst->type_id());
+    auto operand_sign = operand_type->AsInteger()->IsSigned();
+
+    auto type_id_sign = ir_context->get_type_mgr()
+                            ->GetType(instruction->type_id())
+                            ->AsInteger()
+                            ->IsSigned();
+
+    return operand_sign != type_id_sign;
+
+  } else {
+    // Other BitWise operations that takes two operands.
+    auto first_operand = instruction->GetInOperand(0).words[0];
+    auto first_operand_inst =
+        ir_context->get_def_use_mgr()->GetDef(first_operand);
+    auto first_operand_type =
+        ir_context->get_type_mgr()->GetType(first_operand_inst->type_id());
+    auto first_operand_sign = first_operand_type->AsInteger()->IsSigned();
+
+    auto second_operand = instruction->GetInOperand(1).words[0];
+    auto second_operand_inst =
+        ir_context->get_def_use_mgr()->GetDef(second_operand);
+    auto second_operand_type =
+        ir_context->get_type_mgr()->GetType(second_operand_inst->type_id());
+    auto second_operand_sign = second_operand_type->AsInteger()->IsSigned();
+
+    auto type_id_sign = ir_context->get_type_mgr()
+                            ->GetType(instruction->type_id())
+                            ->AsInteger()
+                            ->IsSigned();
+
+    return first_operand_sign != second_operand_sign &&
+           first_operand_sign != type_id_sign;
   }
 }
 
