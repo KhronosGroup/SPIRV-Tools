@@ -57,7 +57,6 @@ add_spvtools_unittest(TARGET opt
        inst_debug_printf_test.cpp
        instruction_list_test.cpp
        instruction_test.cpp
-	   interface_repair_test.cpp
        interp_fixup_test.cpp
        ir_builder.cpp
        ir_context_test.cpp
@@ -80,6 +79,7 @@ add_spvtools_unittest(TARGET opt
        propagator_test.cpp
        reduce_load_size_test.cpp
        redundancy_elimination_test.cpp
+	   remove_unused_interface_variables_test.cpp
        register_liveness.cpp
        relax_float_ops_test.cpp
        replace_invalid_opc_test.cpp

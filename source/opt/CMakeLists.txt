@@ -62,7 +62,6 @@ set(SPIRV_TOOLS_OPT_SOURCES
   instruction.h
   instruction_list.h
   instrument_pass.h
-  interface_repair_pass.h
   interp_fixup_pass.h
   ir_builder.h
   ir_context.h
@@ -97,6 +96,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   register_pressure.h
   relax_float_ops_pass.h
   remove_duplicates_pass.h
+  remove_unused_interface_variables_pass.h
   replace_invalid_opc.h
   scalar_analysis.h
   scalar_analysis_nodes.h
@@ -167,7 +167,6 @@ set(SPIRV_TOOLS_OPT_SOURCES
   instruction.cpp
   instruction_list.cpp
   instrument_pass.cpp
-  interface_repair_pass.cpp
   interp_fixup_pass.cpp
   ir_context.cpp
   ir_loader.cpp
@@ -199,6 +198,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   register_pressure.cpp
   relax_float_ops_pass.cpp
   remove_duplicates_pass.cpp
+  remove_unused_interface_variables_pass.cpp
   replace_invalid_opc.cpp
   scalar_analysis.cpp
   scalar_analysis_simplification.cpp

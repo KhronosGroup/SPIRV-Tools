@@ -21,7 +21,7 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-using InterfaceRepairTest = PassTest<::testing::Test>;
+using RemoveUnusedInterfaceVariablesTest = PassTest<::testing::Test>;
 
 static const std::string expected = R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -72,7 +72,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-TEST_F(InterfaceRepairTest, RemoveUnusedVariable) {
+TEST_F(RemoveUnusedInterfaceVariablesTest, RemoveUnusedVariable) {
   const std::string text = R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %_Z5func1v "_Z5func1v" %out_var_SV_TARGET %out_var_SV_TARGET_0
@@ -122,10 +122,11 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<InterfaceRepairPass>(text, expected, true, true);
+  SinglePassRunAndCheck<RemoveUnusedInterfaceVariablesPass>(text, expected,
+                                                            true, true);
 }
 
-TEST_F(InterfaceRepairTest, FixMissingVariable) {
+TEST_F(RemoveUnusedInterfaceVariablesTest, FixMissingVariable) {
   const std::string text = R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %_Z5func1v "_Z5func1v"
@@ -175,7 +176,8 @@ OpReturn
 OpFunctionEnd
 )";
 
-  SinglePassRunAndCheck<InterfaceRepairPass>(text, expected, true, true);
+  SinglePassRunAndCheck<RemoveUnusedInterfaceVariablesPass>(text, expected,
+                                                            true, true);
 }
 
 }  // namespace

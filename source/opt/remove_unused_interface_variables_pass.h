@@ -16,8 +16,8 @@
 namespace spvtools {
 namespace opt {
 
-class InterfaceRepairPass : public Pass {
-  const char* name() const override { return "repair-interface-pass"; }
+class RemoveUnusedInterfaceVariablesPass : public Pass {
+  const char* name() const override { return "remove-unused-interface-variables-pass"; }
   Status Process() override;
 };
 }  // namespace opt

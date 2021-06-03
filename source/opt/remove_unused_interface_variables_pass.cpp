@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "interface_repair_pass.h"
+#include "remove_unused_interface_variables_pass.h"
 #include "source/spirv_constant.h"
 namespace spvtools {
 namespace opt {
 
-class EntryRepairContext {
-  InterfaceRepairPass& parent_;
+class RemoveUnusedInterfaceVariablesContext {
+  RemoveUnusedInterfaceVariablesPass& parent_;
   Instruction& entry_;
   std::unordered_set<uint32_t> used_variables_;
-  IRContext::ProcessFunction pfn_ = std::bind(
-      &EntryRepairContext::processFunction, this, std::placeholders::_1);
+  IRContext::ProcessFunction pfn_ =
+      std::bind(&RemoveUnusedInterfaceVariablesContext::processFunction, this,
+                std::placeholders::_1);
 
   bool processFunction(Function* func) {
     for (const auto& basic_block : *func)
@@ -43,7 +44,8 @@ class EntryRepairContext {
   }
 
  public:
-  EntryRepairContext(InterfaceRepairPass& parent, Instruction& entry)
+  RemoveUnusedInterfaceVariablesContext(
+      RemoveUnusedInterfaceVariablesPass& parent, Instruction& entry)
       : parent_(parent), entry_(entry) {}
 
   void CollectUsedVariables() {
@@ -52,7 +54,7 @@ class EntryRepairContext {
     parent_.context()->ProcessCallTreeFromRoots(pfn_, &roots);
   }
 
-  bool ShouldRepair() {
+  bool ShouldModify() {
     std::unordered_set<uint32_t> old_variables;
     for (int i = entry_.NumInOperands() - 1; i >= 3; --i) {
       auto variable = entry_.GetInOperand(i).words[0];
@@ -65,7 +67,7 @@ class EntryRepairContext {
     return false;
   }
 
-  void Repair() {
+  void Modify() {
     for (int i = entry_.NumInOperands() - 1; i >= 3; --i)
       entry_.RemoveInOperand(i);
     for (auto id : used_variables_) {
@@ -74,13 +76,14 @@ class EntryRepairContext {
   }
 };
 
-InterfaceRepairPass::Status InterfaceRepairPass::Process() {
+RemoveUnusedInterfaceVariablesPass::Status
+RemoveUnusedInterfaceVariablesPass::Process() {
   bool modified = false;
   for (auto& entry : get_module()->entry_points()) {
-    EntryRepairContext context(*this, entry);
+    RemoveUnusedInterfaceVariablesContext context(*this, entry);
     context.CollectUsedVariables();
-    if (context.ShouldRepair()) {
-      context.Repair();
+    if (context.ShouldModify()) {
+      context.Modify();
       modified = true;
     }
   }
