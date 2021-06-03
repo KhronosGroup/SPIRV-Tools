@@ -50,27 +50,27 @@ bool TransformationAddBitInstructionSynonym::IsApplicable(
     return false;
   }
 
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3792):
+  //  Right now, only integer operands are supported.
+  if (ir_context->get_type_mgr()->GetType(instruction->type_id())->AsVector()) {
+    return false;
+  }
+
   // Signedness of the operands must be the same.
-  if ((instruction->opcode() == SpvOpBitwiseOr ||
-       instruction->opcode() == SpvOpBitwiseXor ||
-       instruction->opcode() == SpvOpBitwiseAnd ||
-       instruction->opcode() == SpvOpNot)) {
-    // Operations on SpvOpNot.
-    if (instruction->opcode() == SpvOpNot) {
-      auto operand = instruction->GetInOperand(0).words[0];
-      auto operand_inst = ir_context->get_def_use_mgr()->GetDef(operand);
-      auto operand_type =
-          ir_context->get_type_mgr()->GetType(operand_inst->type_id());
-      auto operand_sign = operand_type->AsInteger()->IsSigned();
+  if (instruction->opcode() == SpvOpNot) {
+    auto operand = instruction->GetInOperand(0).words[0];
+    auto operand_inst = ir_context->get_def_use_mgr()->GetDef(operand);
+    auto operand_type =
+        ir_context->get_type_mgr()->GetType(operand_inst->type_id());
+    auto operand_sign = operand_type->AsInteger()->IsSigned();
 
-      auto type_id_sign = ir_context->get_type_mgr()
-                              ->GetType(instruction->type_id())
-                              ->AsInteger()
-                              ->IsSigned();
+    auto type_id_sign = ir_context->get_type_mgr()
+                            ->GetType(instruction->type_id())
+                            ->AsInteger()
+                            ->IsSigned();
 
-      return operand_sign == type_id_sign;
-    }
-
+    return operand_sign == type_id_sign;
+  } else {
     // Other BitWise operations that takes two operands.
     auto first_operand = instruction->GetInOperand(0).words[0];
     auto first_operand_inst =
@@ -91,13 +91,8 @@ bool TransformationAddBitInstructionSynonym::IsApplicable(
                             ->AsInteger()
                             ->IsSigned();
 
-    return (first_operand_sign == second_operand_sign) && type_id_sign;
-  }
-
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3792):
-  //  Right now, only integer operands are supported.
-  if (ir_context->get_type_mgr()->GetType(instruction->type_id())->AsVector()) {
-    return false;
+    return first_operand_sign == second_operand_sign &&
+           first_operand_sign == type_id_sign;
   }
 
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3791):

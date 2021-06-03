@@ -56,31 +56,34 @@ void FuzzerPassAddBitInstructionSynonyms::Apply() {
           continue;
         }
 
+        // Right now, only integer operands are supported.
+        if (GetIRContext()
+                ->get_type_mgr()
+                ->GetType(instruction.type_id())
+                ->AsVector()) {
+          continue;
+        }
+
+        auto ir_context = GetIRContext();
+
         // Make sure fuzzer never applies a transformation to a bitwise
         // instruction with differently signed operands.
-        if (instruction.opcode() == SpvOpBitwiseOr ||
-            instruction.opcode() == SpvOpBitwiseXor ||
-            instruction.opcode() == SpvOpBitwiseAnd ||
-            instruction.opcode() == SpvOpNot) {
-          auto ir_context = this->GetIRContext();
+        if (instruction.opcode() == SpvOpNot) {
+          auto operand = instruction.GetInOperand(0).words[0];
+          auto operand_inst = ir_context->get_def_use_mgr()->GetDef(operand);
+          auto operand_type =
+              ir_context->get_type_mgr()->GetType(operand_inst->type_id());
+          auto operand_sign = operand_type->AsInteger()->IsSigned();
 
-          if (instruction.opcode() == SpvOpNot) {
-            auto operand = instruction.GetInOperand(0).words[0];
-            auto operand_inst = ir_context->get_def_use_mgr()->GetDef(operand);
-            auto operand_type =
-                ir_context->get_type_mgr()->GetType(operand_inst->type_id());
-            auto operand_sign = operand_type->AsInteger()->IsSigned();
+          auto type_id_sign = ir_context->get_type_mgr()
+                                  ->GetType(instruction.type_id())
+                                  ->AsInteger()
+                                  ->IsSigned();
 
-            auto type_id_sign = ir_context->get_type_mgr()
-                                    ->GetType(instruction.type_id())
-                                    ->AsInteger()
-                                    ->IsSigned();
-
-            if (operand_sign != type_id_sign) {
-              continue;
-            }
+          if (operand_sign != type_id_sign) {
+            continue;
           }
-
+        } else {
           // Other BitWise operations that takes two operands.
           auto first_operand = instruction.GetInOperand(0).words[0];
           auto first_operand_inst =
@@ -102,17 +105,10 @@ void FuzzerPassAddBitInstructionSynonyms::Apply() {
                                   ->AsInteger()
                                   ->IsSigned();
 
-          if ((first_operand_sign != second_operand_sign) && type_id_sign) {
+          if (first_operand_sign != second_operand_sign ||
+              first_operand_sign != type_id_sign) {
             continue;
           }
-        }
-
-        // Right now, only integer operands are supported.
-        if (GetIRContext()
-                ->get_type_mgr()
-                ->GetType(instruction.type_id())
-                ->AsVector()) {
-          continue;
         }
 
         // Make sure all bit indexes are defined as 32-bit unsigned integers.
