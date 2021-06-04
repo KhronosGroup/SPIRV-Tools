@@ -208,22 +208,25 @@ TransformationAddSynonym::MakeSynonymousInstruction(
       fuzzerutil::GetTypeId(ir_context, message_.result_id());
   assert(synonym_type_id && "Synonym has invalid type id");
   auto opcode = SpvOpNop;
+  const auto* synonym_type =
+      ir_context->get_type_mgr()->GetType(synonym_type_id);
+  assert(synonym_type && "Synonym has invalid type");
+
+  auto is_integral = (synonym_type->AsVector() &&
+                      synonym_type->AsVector()->element_type()->AsInteger()) ||
+                     synonym_type->AsInteger();
 
   switch (message_.synonym_type()) {
     case protobufs::TransformationAddSynonym::SUB_ZERO:
     case protobufs::TransformationAddSynonym::MUL_ONE:
-    case protobufs::TransformationAddSynonym::ADD_ZERO: {
-      const auto* synonym_type =
-          ir_context->get_type_mgr()->GetType(synonym_type_id);
-      assert(synonym_type && "Synonym has invalid type");
-
+    case protobufs::TransformationAddSynonym::ADD_ZERO:
+    case protobufs::TransformationAddSynonym::LOGICAL_OR:
+    case protobufs::TransformationAddSynonym::LOGICAL_AND:
+    case protobufs::TransformationAddSynonym::BITWISE_OR:
+    case protobufs::TransformationAddSynonym::BITWISE_XOR: {
       // Compute instruction's opcode based on the type of the operand.
       // We have already checked that the operand is either a scalar or a vector
       // of either integers or floats.
-      auto is_integral =
-          (synonym_type->AsVector() &&
-           synonym_type->AsVector()->element_type()->AsInteger()) ||
-          synonym_type->AsInteger();
 
       switch (message_.synonym_type()) {
         case protobufs::TransformationAddSynonym::SUB_ZERO:
@@ -235,24 +238,7 @@ TransformationAddSynonym::MakeSynonymousInstruction(
         case protobufs::TransformationAddSynonym::ADD_ZERO:
           opcode = is_integral ? SpvOpIAdd : SpvOpFAdd;
           break;
-        default:
-          assert(false && "Unreachable");
-          break;
-      }
 
-      break;
-    }
-    case protobufs::TransformationAddSynonym::COPY_OBJECT:
-      return MakeUnique<opt::Instruction>(
-          ir_context, SpvOpCopyObject, synonym_type_id,
-          message_.synonym_fresh_id(),
-          opt::Instruction::OperandList{
-              {SPV_OPERAND_TYPE_ID, {message_.result_id()}}});
-    case protobufs::TransformationAddSynonym::LOGICAL_OR:
-    case protobufs::TransformationAddSynonym::LOGICAL_AND:
-    case protobufs::TransformationAddSynonym::BITWISE_OR:
-    case protobufs::TransformationAddSynonym::BITWISE_XOR: {
-      switch (message_.synonym_type()) {
         case protobufs::TransformationAddSynonym::LOGICAL_OR:
           opcode = SpvOpLogicalOr;
           break;
@@ -273,8 +259,16 @@ TransformationAddSynonym::MakeSynonymousInstruction(
           assert(false && "Unreachable");
           break;
       }
+
       break;
     }
+    case protobufs::TransformationAddSynonym::COPY_OBJECT:
+      return MakeUnique<opt::Instruction>(
+          ir_context, SpvOpCopyObject, synonym_type_id,
+          message_.synonym_fresh_id(),
+          opt::Instruction::OperandList{
+              {SPV_OPERAND_TYPE_ID, {message_.result_id()}}});
+
     default:
       assert(false && "Unhandled synonym type");
       return nullptr;
