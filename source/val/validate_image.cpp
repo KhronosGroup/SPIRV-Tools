@@ -442,7 +442,8 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << " components, but given " << offset_size;
     }
 
-    if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (!_.options()->before_hlsl_legalization &&
+        spvIsVulkanEnv(_.context()->target_env)) {
       if (opcode != SpvOpImageGather && opcode != SpvOpImageDrefGather &&
           opcode != SpvOpImageSparseGather &&
           opcode != SpvOpImageSparseDrefGather) {
