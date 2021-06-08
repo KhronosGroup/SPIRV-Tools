@@ -218,50 +218,27 @@ TransformationAddSynonym::MakeSynonymousInstruction(
 
   switch (message_.synonym_type()) {
     case protobufs::TransformationAddSynonym::SUB_ZERO:
-    case protobufs::TransformationAddSynonym::MUL_ONE:
-    case protobufs::TransformationAddSynonym::ADD_ZERO:
-    case protobufs::TransformationAddSynonym::LOGICAL_OR:
-    case protobufs::TransformationAddSynonym::LOGICAL_AND:
-    case protobufs::TransformationAddSynonym::BITWISE_OR:
-    case protobufs::TransformationAddSynonym::BITWISE_XOR: {
-      // Compute instruction's opcode based on the type of the operand.
-      // We have already checked that the operand is either a scalar or a vector
-      // of either integers or floats.
-
-      switch (message_.synonym_type()) {
-        case protobufs::TransformationAddSynonym::SUB_ZERO:
-          opcode = is_integral ? SpvOpISub : SpvOpFSub;
-          break;
-        case protobufs::TransformationAddSynonym::MUL_ONE:
-          opcode = is_integral ? SpvOpIMul : SpvOpFMul;
-          break;
-        case protobufs::TransformationAddSynonym::ADD_ZERO:
-          opcode = is_integral ? SpvOpIAdd : SpvOpFAdd;
-          break;
-
-        case protobufs::TransformationAddSynonym::LOGICAL_OR:
-          opcode = SpvOpLogicalOr;
-          break;
-
-        case protobufs::TransformationAddSynonym::LOGICAL_AND:
-          opcode = SpvOpLogicalAnd;
-          break;
-
-        case protobufs::TransformationAddSynonym::BITWISE_OR:
-          opcode = SpvOpBitwiseOr;
-          break;
-
-        case protobufs::TransformationAddSynonym::BITWISE_XOR:
-          opcode = SpvOpBitwiseXor;
-          break;
-
-        default:
-          assert(false && "Unreachable");
-          break;
-      }
-
+      opcode = is_integral ? SpvOpISub : SpvOpFSub;
       break;
-    }
+    case protobufs::TransformationAddSynonym::MUL_ONE:
+      opcode = is_integral ? SpvOpIMul : SpvOpFMul;
+      break;
+    case protobufs::TransformationAddSynonym::ADD_ZERO:
+      opcode = is_integral ? SpvOpIAdd : SpvOpFAdd;
+      break;
+    case protobufs::TransformationAddSynonym::LOGICAL_OR:
+      opcode = SpvOpLogicalOr;
+      break;
+    case protobufs::TransformationAddSynonym::LOGICAL_AND:
+      opcode = SpvOpLogicalAnd;
+      break;
+    case protobufs::TransformationAddSynonym::BITWISE_OR:
+      opcode = SpvOpBitwiseOr;
+      break;
+    case protobufs::TransformationAddSynonym::BITWISE_XOR:
+      opcode = SpvOpBitwiseXor;
+      break;
+
     case protobufs::TransformationAddSynonym::COPY_OBJECT:
       return MakeUnique<opt::Instruction>(
           ir_context, SpvOpCopyObject, synonym_type_id,
