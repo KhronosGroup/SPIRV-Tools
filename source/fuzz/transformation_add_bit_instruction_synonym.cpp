@@ -107,9 +107,9 @@ bool TransformationAddBitInstructionSynonym::IsInstructionSupported(
   //  the following conditional can use the function |spvOpcodeIsBit|.
   // |instruction| must be defined and must be a supported bit instruction.
   if (!instruction || (instruction->opcode() != SpvOpBitwiseOr &&
-       instruction->opcode() != SpvOpBitwiseXor &&
-       instruction->opcode() != SpvOpBitwiseAnd &&
-       instruction->opcode() != SpvOpNot)) {
+                       instruction->opcode() != SpvOpBitwiseXor &&
+                       instruction->opcode() != SpvOpBitwiseAnd &&
+                       instruction->opcode() != SpvOpNot)) {
     return false;
   }
 
