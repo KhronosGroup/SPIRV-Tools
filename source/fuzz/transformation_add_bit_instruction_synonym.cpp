@@ -39,25 +39,13 @@ bool TransformationAddBitInstructionSynonym::IsApplicable(
   auto instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.instruction_result_id());
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3557):
-  //  Right now we only support certain operations. When this issue is addressed
-  //  the following conditional can use the function |spvOpcodeIsBit|.
-  // |instruction| must be defined and must be a supported bit instruction.
-  if (!instruction || (instruction->opcode() != SpvOpBitwiseOr &&
-                       instruction->opcode() != SpvOpBitwiseXor &&
-                       instruction->opcode() != SpvOpBitwiseAnd &&
-                       instruction->opcode() != SpvOpNot)) {
+  if (!instruction) {
     return false;
   }
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3792):
-  //  Right now, only integer operands are supported.
-  if (ir_context->get_type_mgr()->GetType(instruction->type_id())->AsVector()) {
-    return false;
-  }
-
-  // Signedness of the operands must be the same.
-  if (IsInstructionOperandsHasSameSign(ir_context, instruction)) {
+  // Checks on: only integer operands are supported, instructions are bitwise
+  // operations only. Signedness of the operands must be the same.
+  if (!IsInstructionSupported(ir_context, instruction)) {
     return false;
   }
 
@@ -116,8 +104,25 @@ void TransformationAddBitInstructionSynonym::Apply(
   }
 }
 
-bool TransformationAddBitInstructionSynonym::IsInstructionOperandsHasSameSign(
+bool TransformationAddBitInstructionSynonym::IsInstructionSupported(
     opt::IRContext* ir_context, opt::Instruction* instruction) {
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3557):
+  //  Right now we only support certain operations. When this issue is addressed
+  //  the following conditional can use the function |spvOpcodeIsBit|.
+  // |instruction| must be defined and must be a supported bit instruction.
+  if ((instruction->opcode() != SpvOpBitwiseOr &&
+       instruction->opcode() != SpvOpBitwiseXor &&
+       instruction->opcode() != SpvOpBitwiseAnd &&
+       instruction->opcode() != SpvOpNot)) {
+    return false;
+  }
+
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3792):
+  //  Right now, only integer operands are supported.
+  if (ir_context->get_type_mgr()->GetType(instruction->type_id())->AsVector()) {
+    return false;
+  }
+
   if (instruction->opcode() == SpvOpNot) {
     auto operand = instruction->GetInOperand(0).words[0];
     auto operand_inst = ir_context->get_def_use_mgr()->GetDef(operand);
@@ -130,7 +135,7 @@ bool TransformationAddBitInstructionSynonym::IsInstructionOperandsHasSameSign(
                             ->AsInteger()
                             ->IsSigned();
 
-    return operand_sign != type_id_sign;
+    return operand_sign == type_id_sign;
 
   } else {
     // Other BitWise operations that takes two operands.
@@ -153,8 +158,8 @@ bool TransformationAddBitInstructionSynonym::IsInstructionOperandsHasSameSign(
                             ->AsInteger()
                             ->IsSigned();
 
-    return first_operand_sign != second_operand_sign &&
-           first_operand_sign != type_id_sign;
+    return first_operand_sign == second_operand_sign &&
+           first_operand_sign == type_id_sign;
   }
 }
 

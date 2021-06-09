@@ -130,8 +130,8 @@ class TransformationAddBitInstructionSynonym : public Transformation {
 
   // Return true, if instructions operands have the same sign, otherwise,
   // returns false.
-  static bool IsInstructionOperandsHasSameSign(opt::IRContext* ir_context,
-                                               opt::Instruction* instruction);
+  static bool IsInstructionSupported(opt::IRContext* ir_context,
+                                     opt::Instruction* instruction);
 
  private:
   protobufs::TransformationAddBitInstructionSynonym message_;
