@@ -39,10 +39,6 @@ bool TransformationAddBitInstructionSynonym::IsApplicable(
   auto instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.instruction_result_id());
 
-  if (!instruction) {
-    return false;
-  }
-
   // Checks on: only integer operands are supported, instructions are bitwise
   // operations only. Signedness of the operands must be the same.
   if (!IsInstructionSupported(ir_context, instruction)) {
@@ -110,7 +106,7 @@ bool TransformationAddBitInstructionSynonym::IsInstructionSupported(
   //  Right now we only support certain operations. When this issue is addressed
   //  the following conditional can use the function |spvOpcodeIsBit|.
   // |instruction| must be defined and must be a supported bit instruction.
-  if ((instruction->opcode() != SpvOpBitwiseOr &&
+  if (!instruction || (instruction->opcode() != SpvOpBitwiseOr &&
        instruction->opcode() != SpvOpBitwiseXor &&
        instruction->opcode() != SpvOpBitwiseAnd &&
        instruction->opcode() != SpvOpNot)) {
