@@ -1136,6 +1136,14 @@ message TransformationAddSynonym {
     // New synonym is derived by applying OpLogicalAnd to |result_id| with the second
     // operand being 'true'.
     LOGICAL_AND = 5;
+
+    // New synonym is derived by applying OpBitwiseOr to |result_id| with the second
+    // operand being 0 taken with the same bit length as |result_id|
+    BITWISE_OR = 6;
+
+    // New synonym is derived by applying OpBitwiseXor to |result_id| with the second
+    // operand being 0 taken with the same bit length as |result_id|
+    BITWISE_XOR = 7;
   }
 
   // Type of the synonym to create. See SynonymType for more details.
