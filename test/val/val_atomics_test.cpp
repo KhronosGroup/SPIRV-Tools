@@ -101,7 +101,7 @@ std::string GenerateShaderCode(
 OpEntryPoint Fragment %main "main"
 OpExecutionMode %main OriginUpperLeft
 )";
-  const std::string defintions = R"(
+  const std::string definitions = R"(
 %u64 = OpTypeInt 64 0
 %s64 = OpTypeInt 64 1
 
@@ -115,19 +115,19 @@ OpExecutionMode %main OriginUpperLeft
 )";
   return GenerateShaderCodeImpl(
       body, "OpCapability Int64\n" + capabilities_and_extensions,
-      defintions + extra_defs,
-      memory_model, execution);
+      definitions + extra_defs, memory_model, execution);
 }
 
 std::string GenerateShaderComputeCode(
     const std::string& body,
     const std::string& capabilities_and_extensions = "",
+    const std::string& extra_defs = "",
     const std::string& memory_model = "GLSL450") {
   const std::string execution = R"(
 OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 32 1 1
 )";
-  const std::string defintions = R"(
+  const std::string definitions = R"(
 %u64 = OpTypeInt 64 0
 %s64 = OpTypeInt 64 1
 
@@ -140,8 +140,8 @@ OpExecutionMode %main LocalSize 32 1 1
 %s64_var = OpVariable %s64_ptr Workgroup
 )";
   return GenerateShaderCodeImpl(
-      body, "OpCapability Int64\n" + capabilities_and_extensions, defintions,
-      memory_model, execution);
+      body, "OpCapability Int64\n" + capabilities_and_extensions,
+      definitions + extra_defs, memory_model, execution);
 }
 
 std::string GenerateKernelCode(
@@ -267,6 +267,21 @@ TEST_F(ValidateAtomics, AtomicLoadInt32VulkanSuccess) {
 
   CompileSuccessfully(GenerateShaderComputeCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateAtomics, AtomicLoadVulkanWrongStorageClass) {
+  const std::string body = R"(
+%val1 = OpAtomicLoad %u32 %u32_var %device %relaxed
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-04645"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("in Vulkan evironment, Workgroup Storage Class is limited to "
+                "MeshNV, TaskNV, and GLCompute execution model"));
 }
 
 TEST_F(ValidateAtomics, AtomicAddIntVulkanWrongType1) {
@@ -534,7 +549,8 @@ OpCapability AtomicFloat32AddEXT
 OpExtension "SPV_EXT_shader_atomic_float_add"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra), SPV_ENV_VULKAN_1_0);
+  CompileSuccessfully(GenerateShaderComputeCode(body, extra),
+                      SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -554,7 +570,8 @@ OpCapability AtomicFloat16MinMaxEXT
 OpExtension "SPV_EXT_shader_atomic_float_min_max"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, defs), SPV_ENV_VULKAN_1_0);
+  CompileSuccessfully(GenerateShaderComputeCode(body, extra, defs),
+                      SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -574,7 +591,8 @@ OpCapability AtomicFloat16MinMaxEXT
 OpExtension "SPV_EXT_shader_atomic_float_min_max"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, defs), SPV_ENV_VULKAN_1_0);
+  CompileSuccessfully(GenerateShaderComputeCode(body, extra, defs),
+                      SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -587,7 +605,8 @@ OpCapability AtomicFloat32MinMaxEXT
 OpExtension "SPV_EXT_shader_atomic_float_min_max"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra), SPV_ENV_VULKAN_1_0);
+  CompileSuccessfully(GenerateShaderComputeCode(body, extra),
+                      SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -600,7 +619,8 @@ OpCapability AtomicFloat32MinMaxEXT
 OpExtension "SPV_EXT_shader_atomic_float_min_max"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra), SPV_ENV_VULKAN_1_0);
+  CompileSuccessfully(GenerateShaderComputeCode(body, extra),
+                      SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -620,7 +640,8 @@ OpCapability AtomicFloat64MinMaxEXT
 OpExtension "SPV_EXT_shader_atomic_float_min_max"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, defs), SPV_ENV_VULKAN_1_0);
+  CompileSuccessfully(GenerateShaderComputeCode(body, extra, defs),
+                      SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -640,7 +661,8 @@ OpCapability AtomicFloat64MinMaxEXT
 OpExtension "SPV_EXT_shader_atomic_float_min_max"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, defs), SPV_ENV_VULKAN_1_0);
+  CompileSuccessfully(GenerateShaderComputeCode(body, extra, defs),
+                      SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -654,12 +676,27 @@ TEST_F(ValidateAtomics, AtomicLoadFloatVulkan) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
-TEST_F(ValidateAtomics, AtomicStoreFloatVulkan) {
+TEST_F(ValidateAtomics, AtomicStoreVulkanWrongStorageClass) {
   const std::string body = R"(
 OpAtomicStore %f32_var %device %relaxed %f32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-04645"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("in Vulkan evironment, Workgroup Storage Class is limited to "
+                "MeshNV, TaskNV, and GLCompute execution model"));
+}
+
+TEST_F(ValidateAtomics, AtomicStoreFloatVulkan) {
+  const std::string body = R"(
+OpAtomicStore %f32_var %device %relaxed %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderComputeCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -668,7 +705,7 @@ TEST_F(ValidateAtomics, AtomicExchangeFloatVulkan) {
 %val2 = OpAtomicExchange %f32 %f32_var %device %relaxed %f32_0
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
+  CompileSuccessfully(GenerateShaderComputeCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -903,8 +940,9 @@ OpAtomicStore %u64_var %device %relaxed %u64_1
 OpAtomicStore %s64_var %device %relaxed %s64_1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, "OpCapability Int64Atomics\n"),
-                      SPV_ENV_VULKAN_1_0);
+  CompileSuccessfully(
+      GenerateShaderComputeCode(body, "OpCapability Int64Atomics\n"),
+      SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -1007,7 +1045,7 @@ OpAtomicStore %u32_var %device %release %u32_1
 OpAtomicStore %u32_var %invocation %relaxed %u32_1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
+  CompileSuccessfully(GenerateShaderComputeCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
@@ -2297,7 +2335,7 @@ OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_vulkan_memory_model"
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
+  CompileSuccessfully(GenerateShaderComputeCode(body, extra, "", "VulkanKHR"),
                       SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
