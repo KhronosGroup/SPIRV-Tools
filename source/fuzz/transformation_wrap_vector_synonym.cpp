@@ -19,6 +19,8 @@
 
 #include "source/fuzz/fuzzer_util.h"
 
+#include<algorithm>
+
 namespace spvtools {
 namespace fuzz {
 
@@ -26,13 +28,58 @@ TransformationWrapVectorSynonym:TransformationWrapVectorSynonym(
     protobufs::TransformationWrapVectorSynonym message)
     : message_(std::move(message)) {}
 
-TransformationWrapVectorSynonym::TransformationWrapVectorSynonym(uint32_t vector_size,
-                                                                  uint32_t instruction_id) {
-
+TransformationWrapVectorSynonym::TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t vec_id1, uint32_t vec_id2,
+                                                                 uint32_t arith_id,  uint32_t vec_len, uint32_t pos,
+                                                                 vector<uint32_t> vec1_elements, vector<uint32_t> vec2_elements) {
+    message_.set_instruction_id(instruction_id);
+    message_.set_vec_id1(vec_id1);
+    message_.set_vec_id2(vec_id2);
+    message_.set_vec_id3(arith_id);
+    message_.set_vec_length(vec_len);
+    message_.set_scalar_position(pos);
+    message_.set_vec1_elements(vec1_elements);
+    message_.set_vec2_elements(vec2_elements);
 }
 
 bool TransformationWrapVectorSynonym::IsApplicable(
+      opt::IRContext* ir_context. const TransformationContext& /*unused*/) const {
+    auto valid_arithmetic_types = std::unordered_set<SpvOp> {SpvOpIAdd, SpvOpISub, SpvOpIMul, SpvOpFAdd, SpvOpFSub, SpvOpFMul};
+    auto instruction = ir_context->get_def_use_mgr()->GetDef(message_.instruction_id());
 
+    // |instruction_id| must refer to an existing instruction.
+    if(instruction == nullptr) return false;
+
+    // |instruction_id| must be a valid arithmetic type.
+    assert(valid_arithmetic_types.count(instruction->opcode()) && "The instruction must be of a valid arithmetic type.");
+    assert((vec_len >= 2 && vec_len <= 4) && "Vector length must be in range [2, 4].");
+
+    // |vec_id1|, |vec_id2| and |arith_id3| must be fresh.
+    if(!fuzzerutil::IsFreshId(ir_context, message_.vec_id1()) || !fuzzerutil::IsFreshId(ir_context, message_.vec_id2())
+        || !fuzzerutil::IsFreshId(ir_context, message_.arith_id())) return false;
+
+    // |vec_id1|, |vec_id2| and |arith_id3| should have disparate ids.
+    if(message_.vec_id1() == message_vec_id2() || message_.vec_id2() == message_.arith_id() || message_.vec_id1() == message_.arith_id()) return false;
+
+    // |pos| needs to be a non-negative integer less than the vector length.
+    if(pos < 0 || pos >= vec_len) return false;
+
+    vector<uint32_t> vec1 = message_.vec1_elements();
+    vector<uint32_t> vec2 = message_.vec2_elements();
+
+    auto type_id = instruction.type_id();
+    auto matchType = [&ir_context, &type_id](uint32_t id) {return ir_context->get_def_use_mgr()->GetDef(id)->type_id() == type_id;};
+
+    // All ids should match the type_id specified in the instruction.
+    if(!std::all_of(vec1.begin(), vec1.end(), matchType) || !std::all_of(vec2.begin(), vec2.end(), matchType)) return false;
+
+    // Get the OpConstant instruction with id corresponding to index |pos|.
+    auto constant1 = ir_context->get_def_use_mgr()->GetDef(vec1[message_.scalar_position()]);
+    auto constant2 = ir_context->get_def_use_mgr()->GetDef(vec2[message_.scalar_position()]);
+
+    // The constants at position |pos| of the vectors should be zero constants.
+    if(constant1.GetSingleWordOperand(1) || constant2.GetSingleWordOperand(1)) return false;
+
+    return true;
 }
 
 void TransformationWrapVectorSynonym::Apply(

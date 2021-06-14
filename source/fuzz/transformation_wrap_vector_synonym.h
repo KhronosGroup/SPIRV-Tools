@@ -28,8 +28,22 @@ class TransformationWrapVectorSynonym : public Transformation {
   explicit TransformationWrapVectorSynonym(
       protobufs::TransformationWrapVectorSynonym message);
 
-  TransformationWrapVectorSynonym(uint32_t vector_size, uint32_t instruction_id);
+  TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t vec_id1, uint32_t vec_id2,uint32_t arith_id,
+                                  uint32_t vec_len, uint32_t pos, vector<uint32_t> vec1_elements, vector<uint32_t> vec2_elements);
 
+// - |instruction_id| must be the id of a arithmetic operation.
+// - |vec_id1| and |vec_id2| represents the ids of the two added vector.
+// - |arith_id| is the id of the arithmetic operation that performs vector arithmetic.
+// - |vec_id1|, |vec_id2| and |arith_id3| must be fresh ids.
+// - and they should be different from each other.
+// - |vec_len| must be in range [2, 4] coresponding to vec2 to vec4.
+// - |pos| is a 0-indexed position of the component that contains the
+// - value of a and b. pos must be smaller than the number of
+// - elements that the vector type can has.
+// - |vec1_elements_ids| and |vec2_elements_ids| must contain scalar type ids.
+// - They should have an id of a zero constant at position
+// - |pos|. All ids must be valid ids that has the type as the variables
+// - in the original instruction.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
