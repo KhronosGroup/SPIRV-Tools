@@ -29,13 +29,13 @@ TransformationWrapVectorSynonym:TransformationWrapVectorSynonym(
     : message_(std::move(message)) {}
 
 TransformationWrapVectorSynonym::TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t vec_id1, uint32_t vec_id2,
-                                                                 uint32_t arith_id,  uint32_t vec_len, uint32_t pos,
+                                                                 uint32_t arith_id,  uint32_t vec_type_id, uint32_t pos,
                                                                  vector<uint32_t> vec1_elements, vector<uint32_t> vec2_elements) {
     message_.set_instruction_id(instruction_id);
     message_.set_vec_id1(vec_id1);
     message_.set_vec_id2(vec_id2);
     message_.set_vec_id3(arith_id);
-    message_.set_vec_length(vec_len);
+    message_.set_vec_type_id(vec_type_id);
     message_.set_scalar_position(pos);
     message_.set_vec1_elements(vec1_elements);
     message_.set_vec2_elements(vec2_elements);
@@ -45,13 +45,16 @@ bool TransformationWrapVectorSynonym::IsApplicable(
       opt::IRContext* ir_context. const TransformationContext& /*unused*/) const {
     auto valid_arithmetic_types = std::unordered_set<SpvOp> {SpvOpIAdd, SpvOpISub, SpvOpIMul, SpvOpFAdd, SpvOpFSub, SpvOpFMul};
     auto instruction = ir_context->get_def_use_mgr()->GetDef(message_.instruction_id());
+    auto vector_type = ir_context->get_def_use_mgr()->GetDef(message_.vec_type_id());
 
     // |instruction_id| must refer to an existing instruction.
     if(instruction == nullptr) return false;
 
     // |instruction_id| must be a valid arithmetic type.
     assert(valid_arithmetic_types.count(instruction->opcode()) && "The instruction must be of a valid arithmetic type.");
-    assert((vec_len >= 2 && vec_len <= 4) && "Vector length must be in range [2, 4].");
+
+    // |vector_type_id| must correspond to a valid vector type.
+    assert((vector_type->opcode() == SpvOpTypeVector) && "Vector type id must correspond to a valid vector type.");
 
     // |vec_id1|, |vec_id2| and |arith_id3| must be fresh.
     if(!fuzzerutil::IsFreshId(ir_context, message_.vec_id1()) || !fuzzerutil::IsFreshId(ir_context, message_.vec_id2())
@@ -61,10 +64,14 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     if(message_.vec_id1() == message_vec_id2() || message_.vec_id2() == message_.arith_id() || message_.vec_id1() == message_.arith_id()) return false;
 
     // |pos| needs to be a non-negative integer less than the vector length.
+    auto vec_len = vector_type.GetSingleWordOperand(1);
     if(pos < 0 || pos >= vec_len) return false;
 
     vector<uint32_t> vec1 = message_.vec1_elements();
     vector<uint32_t> vec2 = message_.vec2_elements();
+
+    // The vectors being populated must have the same length as specified by vector type.
+    if(vec1.size() != vec_len || vec2.size() != vec_len) return false;
 
     auto type_id = instruction.type_id();
     auto matchType = [&ir_context, &type_id](uint32_t id) {return ir_context->get_def_use_mgr()->GetDef(id)->type_id() == type_id;};
@@ -83,7 +90,51 @@ bool TransformationWrapVectorSynonym::IsApplicable(
 }
 
 void TransformationWrapVectorSynonym::Apply(
-    opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
+    opt::IRContext* ir_context, TransformationContext* transformation_context) const {
+    // OpCompositeConstructs are inserted before the original arithmetic type instruction.
+    auto instruction = ir_context->get_def_use_mgr()->GetDef(message_.instruction_id());
+    vector<uint32_t> vec1 = message_.vec1_elements();
+    vector<uint32_t> vec2 = message_.vec2_elements();
+
+    // Change the target position with variable from the original instruction.
+    vec1[messgae_.pos()] = insert_before_inst.GetSingleWordOperand(1);
+    vec2[messgae_.pos()] = insert_before_inst.GetSingleWordOperand(2);
+
+    auto inst_descriptor = MakeInstructionDescriptor(message_.instruction_id(), instruction.opcode(), 0);
+
+    TransformationCompositeConstruct make_vec1(
+            message_.vec_type_id(), message_.vec1_elements(), inst_descriptor, message_.vec_id1());
+    TransformationCompositeConstruct make_vec2(
+            message_.vec_type_id(), message_.vec2_elements(), inst_descriptor, message_.vec_id2());
+
+    // Add two composite construction to the context.
+    ApplyAndCheckFreshIds(make_vec1, ir_context, transformation_context);
+    ApplyAndCheckFreshIds(make_vec2, ir_context, transformation_context);
+
+    // Insert an arithmetic operation that combines the two vector into a new vector with id |vec_id3|.
+    // New instruction has the same opcode as the original instruction.
+    // New instruction has a return type specified by |vec_type_id| and takes
+    // two vector as input specified by |vec_id1| and |vec_id2|.
+    auto insert_before_inst =
+            FindInstruction(inst_descriptor, ir_context);
+    auto destination_block = ir_context->get_instr_block(insert_before_inst);
+    auto insert_before = fuzzerutil::GetIteratorForInstruction(
+            destination_block, insert_before_inst);
+    auto new_instruction = MakeUnique<opt::Instruction>(
+            ir_context, instruction.opcode(), message_.vec_type_id(),
+            message_.vec_id1(), message_.vec_id2());
+    auto new_instruction_ptr = new_instruction.get();
+    insert_before.InsertBefore(std::move(new_instruction));
+    ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);
+    ir_context->set_instr_block(new_instruction_ptr, destination_block);
+    
+    // Add |vec_id3| to id bound.
+    fuzzerutil::UpdateModuleIdBound(ir_context, message_.vec_id3());
+
+    // Add synonyms.
+
+
+    AddDataSynonymFacts(ir_context, transformation_context);
 
 }
 
