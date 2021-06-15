@@ -16,10 +16,11 @@
 
 #include "source/opt/function.h"
 #include "source/opt/module.h"
-
 #include "source/fuzz/fuzzer_util.h"
-
-#include<algorithm>
+#include "source/opt/instruction.h"
+#include "source/fuzz/data_descriptor.h"
+#include "source/fuzz/instruction_descriptor.h"
+#include <algorithm>
 
 namespace spvtools {
 namespace fuzz {
@@ -29,12 +30,12 @@ TransformationWrapVectorSynonym:TransformationWrapVectorSynonym(
     : message_(std::move(message)) {}
 
 TransformationWrapVectorSynonym::TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t vec_id1, uint32_t vec_id2,
-                                                                 uint32_t arith_id,  uint32_t vec_type_id, uint32_t pos,
+                                                                 uint32_t vec_id3,  uint32_t vec_type_id, uint32_t pos,
                                                                  vector<uint32_t> vec1_elements, vector<uint32_t> vec2_elements) {
     message_.set_instruction_id(instruction_id);
     message_.set_vec_id1(vec_id1);
     message_.set_vec_id2(vec_id2);
-    message_.set_vec_id3(arith_id);
+    message_.set_vec_id3(vec_id3);
     message_.set_vec_type_id(vec_type_id);
     message_.set_scalar_position(pos);
     message_.set_vec1_elements(vec1_elements);
@@ -56,12 +57,12 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     // |vector_type_id| must correspond to a valid vector type.
     assert((vector_type->opcode() == SpvOpTypeVector) && "Vector type id must correspond to a valid vector type.");
 
-    // |vec_id1|, |vec_id2| and |arith_id3| must be fresh.
+    // |vec_id1|, |vec_id2| and |vec_id3| must be fresh.
     if(!fuzzerutil::IsFreshId(ir_context, message_.vec_id1()) || !fuzzerutil::IsFreshId(ir_context, message_.vec_id2())
-        || !fuzzerutil::IsFreshId(ir_context, message_.arith_id())) return false;
+        || !fuzzerutil::IsFreshId(ir_context, message_.vec_id3())) return false;
 
-    // |vec_id1|, |vec_id2| and |arith_id3| should have disparate ids.
-    if(message_.vec_id1() == message_vec_id2() || message_.vec_id2() == message_.arith_id() || message_.vec_id1() == message_.arith_id()) return false;
+    // |vec_id1|, |vec_id2| and |vec_id3| should have disparate ids.
+    if(message_.vec_id1() == message_vec_id2() || message_.vec_id2() == message_.vec_id3() || message_.vec_id1() == message_.vec_id3()) return false;
 
     // |pos| needs to be a non-negative integer less than the vector length.
     auto vec_len = vector_type.GetSingleWordOperand(1);
@@ -69,7 +70,6 @@ bool TransformationWrapVectorSynonym::IsApplicable(
 
     vector<uint32_t> vec1 = message_.vec1_elements();
     vector<uint32_t> vec2 = message_.vec2_elements();
-
     // The vectors being populated must have the same length as specified by vector type.
     if(vec1.size() != vec_len || vec2.size() != vec_len) return false;
 
@@ -82,7 +82,6 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     // Get the OpConstant instruction with id corresponding to index |pos|.
     auto constant1 = ir_context->get_def_use_mgr()->GetDef(vec1[message_.scalar_position()]);
     auto constant2 = ir_context->get_def_use_mgr()->GetDef(vec2[message_.scalar_position()]);
-
     // The constants at position |pos| of the vectors should be zero constants.
     if(constant1.GetSingleWordOperand(1) || constant2.GetSingleWordOperand(1)) return false;
 
@@ -120,9 +119,11 @@ void TransformationWrapVectorSynonym::Apply(
     auto destination_block = ir_context->get_instr_block(insert_before_inst);
     auto insert_before = fuzzerutil::GetIteratorForInstruction(
             destination_block, insert_before_inst);
+
+    // Make a new arithmetic instruction: %vec_id3 = OpXX %type_id %vec_id1 %vec_id2
     auto new_instruction = MakeUnique<opt::Instruction>(
             ir_context, instruction.opcode(), message_.vec_type_id(),
-            message_.vec_id1(), message_.vec_id2());
+            message_.vec_id3(), message_.vec_id1(), message_vec_id2());
     auto new_instruction_ptr = new_instruction.get();
     insert_before.InsertBefore(std::move(new_instruction));
     ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);
@@ -131,11 +132,12 @@ void TransformationWrapVectorSynonym::Apply(
     // Add |vec_id3| to id bound.
     fuzzerutil::UpdateModuleIdBound(ir_context, message_.vec_id3());
 
-    // Add synonyms.
-
+    // Add synonyms between |vec_id3| and |instruction_id|.
+    auto result_vec_descriptor = MakeDataDescriptor(message_.vec_id3(), {});
+    auto original_inst_descriptor = MakeDataDescriptor(message_.instruction_id(), {});
+    AddFactDataSynonym(*result_vec_descriptor, *original_inst_descriptor);
 
     AddDataSynonymFacts(ir_context, transformation_context);
-
 }
 
 protobufs::Transformation TransformationWrapVectorSynonym::ToMessage() const {

@@ -30,7 +30,7 @@ class TransformationWrapVectorSynonym : public Transformation {
   explicit TransformationWrapVectorSynonym(
       protobufs::TransformationWrapVectorSynonym message);
 
-  TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t vec_id1, uint32_t vec_id2,uint32_t arith_id,
+  TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t vec_id1, uint32_t vec_id2,uint32_t vec_id3,
                                   uint32_t vec_type_id, uint32_t pos, vector<uint32_t> vec1_elements, vector<uint32_t> vec2_elements);
 
 // - |instruction_id| must be the id of a arithmetic operation.
