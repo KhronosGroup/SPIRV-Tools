@@ -89,6 +89,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/const_folding_rules.cpp \
 		source/opt/constants.cpp \
 		source/opt/control_dependence.cpp \
+		source/opt/convert_to_sampled_image_pass.cpp \
 		source/opt/convert_to_half_pass.cpp \
 		source/opt/copy_prop_arrays.cpp \
 		source/opt/dataflow.cpp \
