@@ -441,16 +441,16 @@ bool TransformationFlattenConditionalBranch::
          header->terminator()->opcode() == SpvOpBranchConditional &&
          "|header| must be the header of a conditional.");
 
+  // |header| must be reachable.
+  if (!ir_context->IsReachable(*header)) {
+    return false;
+  }
+
   auto enclosing_function = header->GetParent();
   auto dominator_analysis =
       ir_context->GetDominatorAnalysis(enclosing_function);
   auto postdominator_analysis =
       ir_context->GetPostDominatorAnalysis(enclosing_function);
-
-  // |header| must be reachable.
-  if (!dominator_analysis->IsReachable(header)) {
-    return false;
-  }
 
   // Check that the header and the merge block describe a single-entry,
   // single-exit region.

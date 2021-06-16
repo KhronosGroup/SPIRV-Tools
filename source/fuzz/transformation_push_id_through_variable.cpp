@@ -61,7 +61,7 @@ bool TransformationPushIdThroughVariable::IsApplicable(
 
   // The instruction to insert before must belong to a reachable block.
   auto basic_block = ir_context->get_instr_block(instruction_to_insert_before);
-  if (!fuzzerutil::BlockIsReachableInItsFunction(ir_context, basic_block)) {
+  if (!ir_context->IsReachable(*basic_block)) {
     return false;
   }
 

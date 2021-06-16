@@ -134,7 +134,7 @@ bool TransformationAddDeadBreak::IsApplicable(
     return false;
   }
 
-  if (!fuzzerutil::BlockIsReachableInItsFunction(ir_context, bb_to)) {
+  if (!ir_context->IsReachable(*bb_to)) {
     // If the target of the break is unreachable, we conservatively do not
     // allow adding a dead break, to avoid the compilations that arise due to
     // the lack of sensible dominance information for unreachable blocks.

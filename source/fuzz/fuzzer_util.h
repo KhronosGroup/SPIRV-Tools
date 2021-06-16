@@ -108,11 +108,6 @@ bool BlockIsInLoopContinueConstruct(opt::IRContext* context, uint32_t block_id,
 opt::BasicBlock::iterator GetIteratorForInstruction(
     opt::BasicBlock* block, const opt::Instruction* inst);
 
-// Returns true if and only if there is a path to |bb| from the entry block of
-// the function that contains |bb|.
-bool BlockIsReachableInItsFunction(opt::IRContext* context,
-                                   opt::BasicBlock* bb);
-
 // Determines whether it is OK to insert an instruction with opcode |opcode|
 // before |instruction_in_block|.
 bool CanInsertOpcodeBeforeInstruction(

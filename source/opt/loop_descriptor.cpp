@@ -268,7 +268,7 @@ bool Loop::IsBasicBlockInLoopSlow(const BasicBlock* bb) {
   assert(bb->GetParent() && "The basic block does not belong to a function");
   DominatorAnalysis* dom_analysis =
       context_->GetDominatorAnalysis(bb->GetParent());
-  if (dom_analysis->IsReachable(bb) &&
+  if (context_->IsReachable(*bb) &&
       !dom_analysis->Dominates(GetHeaderBlock(), bb))
     return false;
 
@@ -530,7 +530,7 @@ void LoopDescriptor::PopulateList(IRContext* context, const Function* f) {
     if (merge_inst) {
       bool all_backedge_unreachable = true;
       for (uint32_t pid : context->cfg()->preds(node.bb_->id())) {
-        if (dom_analysis->IsReachable(pid) &&
+        if (context->IsReachable(*context->cfg()->block(pid)) &&
             dom_analysis->Dominates(node.bb_->id(), pid)) {
           all_backedge_unreachable = false;
           break;

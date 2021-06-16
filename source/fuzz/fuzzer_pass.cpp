@@ -111,10 +111,8 @@ void FuzzerPass::ForEachInstructionWithInstructionDescriptor(
   // module.
   std::vector<opt::BasicBlock*> reachable_blocks;
 
-  const auto* dominator_analysis =
-      GetIRContext()->GetDominatorAnalysis(function);
   for (auto& block : *function) {
-    if (dominator_analysis->IsReachable(&block)) {
+    if (GetIRContext()->IsReachable(block)) {
       reachable_blocks.push_back(&block);
     }
   }

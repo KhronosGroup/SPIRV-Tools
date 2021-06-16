@@ -47,7 +47,7 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
 
         // The block containing the instruction we are going to insert before
         // must be reachable.
-        if (!fuzzerutil::BlockIsReachableInItsFunction(GetIRContext(), block)) {
+        if (!GetIRContext()->IsReachable(*block)) {
           return;
         }
 
