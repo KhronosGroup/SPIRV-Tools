@@ -43,8 +43,11 @@ bool TransformationMergeBlocks::IsApplicable(
   }
   auto first_block = ir_context->cfg()->block(predecessors.at(0));
 
-  return opt::blockmergeutil::CanMergeWithSuccessor(ir_context, first_block,
-                                                    false);
+  auto dominator_analysis = ir_context->GetDominatorAnalysis(second_block->GetParent());
+  if (!dominator_analysis->IsReachable(first_block)) {
+    return false;
+  }
+  return opt::blockmergeutil::CanMergeWithSuccessor(ir_context, first_block);
 }
 
 void TransformationMergeBlocks::Apply(opt::IRContext* ir_context,
@@ -59,7 +62,7 @@ void TransformationMergeBlocks::Apply(opt::IRContext* ir_context,
   for (auto bi = function->begin(); bi != function->end(); ++bi) {
     if (bi->id() == first_block->id()) {
       assert(
-          opt::blockmergeutil::CanMergeWithSuccessor(ir_context, &*bi, false) &&
+          opt::blockmergeutil::CanMergeWithSuccessor(ir_context, &*bi) &&
           "Because 'Apply' should only be invoked if 'IsApplicable' holds, "
           "it must be possible to merge |bi| with its successor.");
       opt::blockmergeutil::MergeWithSuccessor(ir_context, function, bi);

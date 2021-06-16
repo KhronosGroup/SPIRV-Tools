@@ -77,8 +77,7 @@ void EliminateOpPhiInstructions(IRContext* context, BasicBlock* block) {
 
 }  // Anonymous namespace
 
-bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block,
-                           bool merge_unreachable) {
+bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block) {
   // Find block with single successor which has no other predecessors.
   auto ii = block->end();
   --ii;
@@ -102,13 +101,6 @@ bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block,
   if (pred_is_merge && IsContinue(context, lab_id)) {
     // Cannot merge a continue target with a merge block.
     return false;
-  }
-
-  if (!merge_unreachable) {
-    // Don't bother trying to merge unreachable blocks.
-    if (auto dominators = context->GetDominatorAnalysis(block->GetParent())) {
-      if (!dominators->IsReachable(block)) return false;
-    }
   }
 
   Instruction* merge_inst = block->GetMergeInst();
@@ -138,10 +130,6 @@ bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block,
 
 void MergeWithSuccessor(IRContext* context, Function* func,
                         Function::iterator bi) {
-  assert(CanMergeWithSuccessor(context, &*bi, true) &&
-         "Precondition failure for MergeWithSuccessor: it must be legal to "
-         "merge the block and its successor.");
-
   auto ii = bi->end();
   --ii;
   Instruction* br = &*ii;
