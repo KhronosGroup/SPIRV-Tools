@@ -530,7 +530,7 @@ void LoopDescriptor::PopulateList(IRContext* context, const Function* f) {
     if (merge_inst) {
       bool all_backedge_unreachable = true;
       for (uint32_t pid : context->cfg()->preds(node.bb_->id())) {
-        if (context->IsReachable(*context->cfg()->block(pid)) &&
+        if (dom_analysis->IsReachable(pid) &&
             dom_analysis->Dominates(node.bb_->id(), pid)) {
           all_backedge_unreachable = false;
           break;
