@@ -523,17 +523,17 @@ def generate_operand_kind_table(enums):
     enums = [generate_enum_operand_kind(e, exts) for e in enums]
     exts_arrays = generate_extension_arrays(exts)
 
-    # We have three operand kinds that requires their optional counterpart to
+    # We have a few operand kinds that require their optional counterpart to
     # exist in the operand info table.
-    three_optional_enums = ['ImageOperands', 'AccessQualifier', 'MemoryAccess']
-    three_optional_enums = [e for e in enums if e[0] in three_optional_enums]
-    enums.extend(three_optional_enums)
+    optional_enums = ['ImageOperands', 'AccessQualifier', 'MemoryAccess', 'PackedVectorFormat']
+    optional_enums = [e for e in enums if e[0] in optional_enums]
+    enums.extend(optional_enums)
 
     enum_kinds, enum_names, enum_entries = zip(*enums)
-    # Mark the last three as optional ones.
-    enum_quantifiers = [''] * (len(enums) - 3) + ['?'] * 3
+    # Mark the last few as optional ones.
+    enum_quantifiers = [''] * (len(enums) - len(optional_enums)) + ['?'] * len(optional_enums)
     # And we don't want redefinition of them.
-    enum_entries = enum_entries[:-3]
+    enum_entries = enum_entries[:-len(optional_enums)]
     enum_kinds = [convert_operand_kind(e)
                   for e in zip(enum_kinds, enum_quantifiers)]
     table_entries = zip(enum_kinds, enum_names, enum_names)

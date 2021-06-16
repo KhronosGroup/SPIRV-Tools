@@ -347,7 +347,17 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
       EmitMaskOperand(operand.type, word);
       break;
     default:
-      assert(false && "unhandled or invalid case");
+      if (spvOperandIsConcreteMask(operand.type)) {
+        EmitMaskOperand(operand.type, word);
+      } else if (spvOperandIsConcrete(operand.type)) {
+        spv_operand_desc entry;
+        if (grammar_.lookupOperand(operand.type, word, &entry))
+          assert(false && "should have caught this earlier");
+        stream_ << entry->name;
+      } else {
+        assert(false && "unhandled or invalid case");
+      }
+      break;
   }
   ResetColor();
 }
