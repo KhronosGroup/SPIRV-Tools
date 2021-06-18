@@ -1,7 +1,23 @@
 Revision history for SPIRV-Tools
 
-v2021.2-dev 2021-04-21
- - Start v2021.2-dev
+v2021.2-dev 2021-06-18
+ - General
+    - Support SPV_KHR_subgroup_uniform_control_flow (#4318)
+    - Support Intel extensions for fixed point and hls-float (#4321)
+    - Fix crash when optimizing shaders with DebugPrintf (#4280)
+
+ - Validator
+    - Support Vulkan Storage Class for Execution Model (#4212)
+
+ - Optimizer
+    - Handle SPV_KHR_vulkan_memory_model in dead-code elimination (#4320)
+    - Support folding OpBitcast with numeric constants (#4247)
+
+ - Fuzz
+    - Add tests for MaybeGet* functions in fuzzerutil (#4284)
+    - Fix OutlineFunction in presence of unreachable blocks (#4308)
+    - Fix def-use update in PermutePhiOperands (#4309)
+    - Swap positions of two functions in a module (#4236)
 
 v2021.1 2021-04-19
  - General
@@ -18,10 +34,6 @@ v2021.1 2021-04-19
     - Do not add too many dead blocks (#4217)
     - Add WGSL compatibility flag to context (#4193)
     - Add persistent state to the fuzzer (#4137)
- - Debug Info
- - Instrumentation
- - Linker
- - Reduce
 
 v2020.7 2021-02-16
  - General
