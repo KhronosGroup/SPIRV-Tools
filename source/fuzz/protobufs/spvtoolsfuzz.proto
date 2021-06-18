@@ -2379,7 +2379,7 @@ message TransformationWrapVectorSynonym {
   uint32 vec_id2 = 3;
   uint32 vec_id3 = 4;
   uint32 vec_type_id = 5;
-  uint32 pos = 6;
+  uint32 scalar_position = 6;
   repeated uint32 vec1_elements = 7;
   repeated uint32 vec2_elements = 8;
 }

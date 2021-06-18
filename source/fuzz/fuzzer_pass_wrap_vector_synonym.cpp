@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_wrap_vector_synonym.h"
-
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/transformation_wrap_vector_synonym.h"
 
@@ -28,22 +28,30 @@ FuzzerPassWrapVectorSynonym::FuzzerPassWrapVectorSynonym(
                  transformations) {}
 
 void FuzzerPassWrapVectorSynonym::Apply() {
-//  std::vector<uint32_t> function_ids;
-//  for (auto& function : *GetIRContext()->module()) {
-//    function_ids.emplace_back(function.result_id());
-//  }
+//  ForEachInstructionWithInstructionDescriptor(
+//      [this](opt::Function* function, opt::BasicBlock* block,
+//             opt::BasicBlock::iterator instruction_iterator,
+//             const protobufs::InstructionDescriptor& instruction_descriptor)
+//          -> void {
+//        assert(instruction_iterator->opcode() ==
+//               instruction_descriptor.target_instruction_opcode() &&
+//               "The opcode of the instruction we might insert before must be "
+//               "the same as the opcode in the descriptor for the instruction");
 //
-//  for (size_t i = 0; i < function_ids.size(); ++i) {
-//    for (size_t j = i + 1; j < function_ids.size(); ++j) {
-//      // Perform function swap randomly.
-//      if (!GetFuzzerContext()->ChoosePercentage(
-//              GetFuzzerContext()->GetChanceOfSwappingFunctions())) {
-//        continue;
-//      }
-//      TransformationSwapTwoFunctions transformation(function_ids[i],
-//                                                    function_ids[j]);
-//    }
-//  }
+//        // Randomly decide whether to try adding an OpVectorShuffle instruction.
+//        if (!GetFuzzerContext()->ChoosePercentage(
+//            GetFuzzerContext()->GetChanceOfWrappingVectorSynonym())) {
+//          return;
+//        }
+//
+//        // It must be valid to insert an OpVectorShuffle instruction
+//        // before |instruction_iterator|.
+//        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(
+//            SpvOpCompositeConstruct, instruction_iterator)) {
+//          return;
+//        }
+//
+//      });
 }
 
 }  // namespace fuzz
