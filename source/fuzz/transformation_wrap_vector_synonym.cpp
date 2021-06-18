@@ -20,6 +20,7 @@
 #include "source/opt/instruction.h"
 #include "source/fuzz/data_descriptor.h"
 #include "source/fuzz/instruction_descriptor.h"
+#include "test/fuzz/fuzz_test_util.h"
 #include <algorithm>
 
 namespace spvtools {
@@ -31,7 +32,7 @@ TransformationWrapVectorSynonym:TransformationWrapVectorSynonym(
 
 TransformationWrapVectorSynonym::TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t vec_id1, uint32_t vec_id2,
                                                                  uint32_t vec_id3,  uint32_t vec_type_id, uint32_t pos,
-                                                                 vector<uint32_t> vec1_elements, vector<uint32_t> vec2_elements) {
+                                                                 std::vector<uint32_t> vec1_elements, std::vector<uint32_t> vec2_elements) {
     message_.set_instruction_id(instruction_id);
     message_.set_vec_id1(vec_id1);
     message_.set_vec_id2(vec_id2);
@@ -62,14 +63,14 @@ bool TransformationWrapVectorSynonym::IsApplicable(
         || !fuzzerutil::IsFreshId(ir_context, message_.vec_id3())) return false;
 
     // |vec_id1|, |vec_id2| and |vec_id3| should have disparate ids.
-    if(message_.vec_id1() == message_vec_id2() || message_.vec_id2() == message_.vec_id3() || message_.vec_id1() == message_.vec_id3()) return false;
+    if(message_.vec_id1() == message_.vec_id2() || message_.vec_id2() == message_.vec_id3() || message_.vec_id1() == message_.vec_id3()) return false;
 
     // |pos| needs to be a non-negative integer less than the vector length.
     auto vec_len = vector_type.GetSingleWordOperand(1);
-    if(pos < 0 || pos >= vec_len) return false;
+    if(message_.pos() < 0 || message_.pos() >= vec_len) return false;
 
-    vector<uint32_t> vec1 = message_.vec1_elements();
-    vector<uint32_t> vec2 = message_.vec2_elements();
+    std::vector<uint32_t> vec1 = message_.vec1_elements();
+    std::vector<uint32_t> vec2 = message_.vec2_elements();
     // The vectors being populated must have the same length as specified by vector type.
     if(vec1.size() != vec_len || vec2.size() != vec_len) return false;
 
@@ -92,23 +93,23 @@ void TransformationWrapVectorSynonym::Apply(
     opt::IRContext* ir_context, TransformationContext* transformation_context) const {
     // OpCompositeConstructs are inserted before the original arithmetic type instruction.
     auto instruction = ir_context->get_def_use_mgr()->GetDef(message_.instruction_id());
-    vector<uint32_t> vec1 = message_.vec1_elements();
-    vector<uint32_t> vec2 = message_.vec2_elements();
+    std::vector<uint32_t> vec1 = message_.vec1_elements();
+    std::vector<uint32_t> vec2 = message_.vec2_elements();
 
     // Change the target position with variable from the original instruction.
-    vec1[messgae_.pos()] = insert_before_inst.GetSingleWordOperand(1);
-    vec2[messgae_.pos()] = insert_before_inst.GetSingleWordOperand(2);
+    vec1[message_.pos()] = instruction.GetSingleWordOperand(1);
+    vec2[message_.pos()] = instruction.GetSingleWordOperand(2);
 
     auto inst_descriptor = MakeInstructionDescriptor(message_.instruction_id(), instruction.opcode(), 0);
 
-    TransformationCompositeConstruct make_vec1(
+    TransformationCompositeConstruct* make_vec1(
             message_.vec_type_id(), message_.vec1_elements(), inst_descriptor, message_.vec_id1());
     TransformationCompositeConstruct make_vec2(
             message_.vec_type_id(), message_.vec2_elements(), inst_descriptor, message_.vec_id2());
 
     // Add two composite construction to the context.
-    ApplyAndCheckFreshIds(make_vec1, ir_context, transformation_context);
-    ApplyAndCheckFreshIds(make_vec2, ir_context, transformation_context);
+//    ApplyAndCheckFreshIds(make_vec1, ir_context, transformation_context);
+//    ApplyAndCheckFreshIds(make_vec2, ir_context, transformation_context);
 
     // Insert an arithmetic operation that combines the two vector into a new vector with id |vec_id3|.
     // New instruction has the same opcode as the original instruction.
@@ -123,7 +124,7 @@ void TransformationWrapVectorSynonym::Apply(
     // Make a new arithmetic instruction: %vec_id3 = OpXX %type_id %vec_id1 %vec_id2
     auto new_instruction = MakeUnique<opt::Instruction>(
             ir_context, instruction.opcode(), message_.vec_type_id(),
-            message_.vec_id3(), message_.vec_id1(), message_vec_id2());
+            message_.vec_id3(), message_.vec_id1(), message_.vec_id2());
     auto new_instruction_ptr = new_instruction.get();
     insert_before.InsertBefore(std::move(new_instruction));
     ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);
@@ -135,9 +136,7 @@ void TransformationWrapVectorSynonym::Apply(
     // Add synonyms between |vec_id3| and |instruction_id|.
     auto result_vec_descriptor = MakeDataDescriptor(message_.vec_id3(), {});
     auto original_inst_descriptor = MakeDataDescriptor(message_.instruction_id(), {});
-    AddFactDataSynonym(*result_vec_descriptor, *original_inst_descriptor);
-
-    AddDataSynonymFacts(ir_context, transformation_context);
+    AddFactDataSynonym(result_vec_descriptor, original_inst_descriptor);
 }
 
 protobufs::Transformation TransformationWrapVectorSynonym::ToMessage() const {

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #ifndef SOURCE_FUZZ_TRANSFORMATION_WRAP_VECTOR_SYNONYM_H_
-#define SOURCE_FUZZ_TRANSFORMATION_WRAP_TWO_SYNONYM_H_
+#define SOURCE_FUZZ_TRANSFORMATION_WRAP_VECTOR_SYNONYM_H_
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
@@ -54,7 +54,7 @@ class TransformationWrapVectorSynonym : public Transformation {
              TransformationContext* transformation_context) const override;
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
-  protobufs::Transformation ToMessage() const override;
+  protobuf::Transformation ToMessage() const override;
 
  private:
   protobufs::TransformationWrapVectorSynonym message_;
@@ -63,4 +63,4 @@ class TransformationWrapVectorSynonym : public Transformation {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_TRANSFORMATION_SWAP_TWO_FUNCTIONS_H_
+#endif //SOURCE_FUZZ_TRANSFORMATION_WRAP_VECTOR_SYNONYM_H_
