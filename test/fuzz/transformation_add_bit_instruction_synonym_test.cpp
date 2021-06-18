@@ -937,11 +937,7 @@ TEST(TransformationAddBitInstructionSynonymTest, NoSynonymWhenBlockIsDead) {
       MakeDataDescriptor(166, {}), MakeDataDescriptor(39, {})));
 }
 
-TEST(TransformationAddBitInstructionSynonymTest, DISABLED_DifferentSingedness) {
-  // This test will fail due to a bug in the transformation. The reason is that
-  // OpNot supports its operand and result type having different signedness.
-  // OpBitFieldUExtract and OpBitFieldInsert, however, don't support this
-  // (these instructions are added by the transformation).
+TEST(TransformationAddBitInstructionSynonymTest, DifferentSingedness) {
   std::string reference_shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -987,11 +983,14 @@ TEST(TransformationAddBitInstructionSynonymTest, DISABLED_DifferentSingedness) {
          %34 = OpConstant %2 29
          %35 = OpConstant %2 30
          %36 = OpConstant %2 31
+         %45 = OpConstant %200 32
 
 ; main function
          %37 = OpFunction %3 None %4
          %38 = OpLabel
          %39 = OpNot %200 %5 ; bit instruction
+         %40 = OpBitwiseOr %200 %6 %45  ; bit instruction
+         %41 = OpBitwiseAnd %2 %5 %6 ; bit instruction
                OpReturn
                OpFunctionEnd
   )";
@@ -1006,17 +1005,61 @@ TEST(TransformationAddBitInstructionSynonymTest, DISABLED_DifferentSingedness) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-  // Adds OpNot synonym.
+  // Invalid because the sign of id 200 result is not equal to the sign of id 5
+  // operand in OpNot.
   auto transformation = TransformationAddBitInstructionSynonym(
-      39, {40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52,  53,
-           54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,
-           68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78,  79,  80,  81,
-           82,  83,  84,  85,  86,  87,  88,  89,  90,  91,  92,  93,  94,  95,
-           96,  97,  98,  99,  100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
-           110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123,
-           124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134});
+      39, {300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312,
+           313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325,
+           326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338,
+           339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351,
+           352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364,
+           365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377,
+           378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390,
+           391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403,
+           404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416,
+           417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427});
   ASSERT_FALSE(
       transformation.IsApplicable(context.get(), transformation_context));
+
+  // Invalid because the sign of two operands not the same and the first operand
+  // sign not equal the result sign in OpBitwiseOr.
+  transformation = TransformationAddBitInstructionSynonym(
+      40, {300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312,
+           313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325,
+           326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338,
+           339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351,
+           352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364,
+           365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377,
+           378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390,
+           391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403,
+           404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416,
+           417, 418, 419, 420, 421, 422, 423, 424, 425, 426, 427});
+  ASSERT_FALSE(
+      transformation.IsApplicable(context.get(), transformation_context));
+
+  // Successful transformation
+  {
+    // Instruction operands are the same and it's equal with the result sign in
+    // OpBitwiseAnd bitwise operation.
+    transformation = TransformationAddBitInstructionSynonym(
+        41, {46,  47,  48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,
+             59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,
+             72,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,
+             85,  86,  87,  88,  89,  90,  91,  92,  93,  94,  95,  96,  97,
+             98,  99,  100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
+             111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123,
+             124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136,
+             137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149,
+             150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162,
+             163, 164, 165, 166, 167, 168, 169, 170, 171, 172});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
+  }
 }
 
 }  // namespace

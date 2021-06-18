@@ -269,6 +269,10 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
       return "FP denorm mode";
     case SPV_OPERAND_TYPE_FPOPERATION_MODE:
       return "FP operation mode";
+    case SPV_OPERAND_TYPE_QUANTIZATION_MODES:
+      return "quantization mode";
+    case SPV_OPERAND_TYPE_OVERFLOW_MODES:
+      return "overflow mode";
 
     case SPV_OPERAND_TYPE_NONE:
       return "NONE";
@@ -355,6 +359,8 @@ bool spvOperandIsConcrete(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_CLDEBUG100_DEBUG_IMPORTED_ENTITY:
     case SPV_OPERAND_TYPE_FPDENORM_MODE:
     case SPV_OPERAND_TYPE_FPOPERATION_MODE:
+    case SPV_OPERAND_TYPE_QUANTIZATION_MODES:
+    case SPV_OPERAND_TYPE_OVERFLOW_MODES:
       return true;
     default:
       break;

@@ -935,6 +935,22 @@ INSTANTIATE_TEST_SUITE_P(
                                  MakeVector("SPV_KHR_expect_assume"))},
                 {"OpAssumeTrueKHR %1\n",
                  MakeInstruction(SpvOpAssumeTrueKHR, {1})}})));
+// SPV_KHR_subgroup_uniform_control_flow
+
+INSTANTIATE_TEST_SUITE_P(
+    SPV_KHR_subgroup_uniform_control_flow, ExtensionRoundTripTest,
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_3,
+                   SPV_ENV_VULKAN_1_0, SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_2),
+            ValuesIn(std::vector<AssemblyCase>{
+                {"OpExtension \"SPV_KHR_subgroup_uniform_control_flow\"\n",
+                 MakeInstruction(
+                     SpvOpExtension,
+                     MakeVector("SPV_KHR_subgroup_uniform_control_flow"))},
+                {"OpExecutionMode %1 SubgroupUniformControlFlowKHR\n",
+                 MakeInstruction(
+                     SpvOpExecutionMode,
+                     {1, SpvExecutionModeSubgroupUniformControlFlowKHR})},
+            })));
 
 }  // namespace
 }  // namespace spvtools

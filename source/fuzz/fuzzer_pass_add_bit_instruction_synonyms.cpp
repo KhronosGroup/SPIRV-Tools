@@ -45,22 +45,11 @@ void FuzzerPassAddBitInstructionSynonyms::Apply() {
           continue;
         }
 
-        // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3557):
-        //  Right now we only support certain operations. When this issue is
-        //  addressed the following conditional can use the function
-        //  |spvOpcodeIsBit|.
-        if (instruction.opcode() != SpvOpBitwiseOr &&
-            instruction.opcode() != SpvOpBitwiseXor &&
-            instruction.opcode() != SpvOpBitwiseAnd &&
-            instruction.opcode() != SpvOpNot) {
-          continue;
-        }
-
-        // Right now, only integer operands are supported.
-        if (GetIRContext()
-                ->get_type_mgr()
-                ->GetType(instruction.type_id())
-                ->AsVector()) {
+        // Make sure fuzzer never applies a transformation to a bitwise
+        // instruction with differently signed operands, only integer operands
+        // are supported and bitwise operations are supported only.
+        if (!TransformationAddBitInstructionSynonym::IsInstructionSupported(
+                GetIRContext(), &instruction)) {
           continue;
         }
 
