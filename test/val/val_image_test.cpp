@@ -3389,6 +3389,8 @@ TEST_F(ValidateImage, ReadWrongNumComponentsResultType_Vulkan) {
           .c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Result-04780"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type to have 4 components"));
 }
 
