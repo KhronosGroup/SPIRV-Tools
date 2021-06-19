@@ -57,7 +57,7 @@ class FactManager {
 
   // Record the fact that |data1| and |data2| are synonymous. Neither |data1|
   // nor |data2| may contain an irrelevant id.
-  static void AddFactDataSynonym(const protobufs::DataDescriptor& data1,
+  void AddFactDataSynonym(const protobufs::DataDescriptor& data1,
                           const protobufs::DataDescriptor& data2);
 
   // Records the fact that |block_id| is dead. |block_id| must be a result id

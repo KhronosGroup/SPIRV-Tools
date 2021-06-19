@@ -57,6 +57,9 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     // |instruction_id| must refer to an existing instruction.
     if(instruction == nullptr) return false;
 
+    // |vec_type_id| must refer to a valid type instruction.
+    if(vector_type == nullptr) return false;
+
     // |instruction_id| must be a valid arithmetic type.
     assert(valid_arithmetic_types.count(instruction->opcode()) && "The instruction must be of a valid arithmetic type.");
 
@@ -138,7 +141,7 @@ void TransformationWrapVectorSynonym::Apply(
     // Add synonyms between |vec_id3| and |instruction_id|.
     auto result_vec_descriptor = MakeDataDescriptor(message_.vec_id3(), {});
     auto original_inst_descriptor = MakeDataDescriptor(message_.instruction_id(), {});
-//    FactManager::AddFactDataSynonym(result_vec_descriptor, original_inst_descriptor);
+    FactManager::AddFactDataSynonym(result_vec_descriptor, original_inst_descriptor);
 }
 
 protobufs::Transformation TransformationWrapVectorSynonym::ToMessage() const {
