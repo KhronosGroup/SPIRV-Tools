@@ -281,7 +281,7 @@ TEST_P(ValidateStorageExecutionModel, VulkanOutsideStoreFailure) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("in Vulkan evironment, Output Storage Class must not be used "
-                "in RayGenerationKHR, IntersectionKHR, AnyHitKHR, "
+                "in GLCompute, RayGenerationKHR, IntersectionKHR, AnyHitKHR, "
                 "ClosestHitKHR, MissKHR, or CallableKHR execution models"));
 }
 
