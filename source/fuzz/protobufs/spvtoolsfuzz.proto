@@ -2374,12 +2374,39 @@ message TransformationWrapRegionInSelection {
 }
 
 message TransformationWrapVectorSynonym {
+  // A transformation that wraps an arithmetic operation into a vector operation
+  // and get the result of the original operation from the corresponding index.
+  // For instance, after the transformation, an addition operation between two scalars:
+  // c = a + b
+  //
+  // will be wrapped into vectors:
+  //
+  // va = vector(..., a, ...)
+  // vb = vector(..., b, ...)
+  // vc = va + vb
+  //
+  // where the result will be updated from the corresponding index of the result vector:
+  //
+  // c = vc[corresponding_idx]
+
+  // The result if of the original scalar operation instruction.
   uint32 instruction_id = 1;
+
+  // A fresh id for the first vector that contains the first value of the scalar operation.
   uint32 vec_id1 = 2;
+  // A fresh id for the second vector that contains the second value of the scalar operation.
   uint32 vec_id2 = 3;
+  // A fresh id for the resulted vector from the addition of the first and second vector.
   uint32 vec_id3 = 4;
+  // Id of the vector type. Must be a valid type that is either vec2, vec3 or vec4.
   uint32 vec_type_id = 5;
+  // The position in the vector where the value of original instruction is located in. Must be in
+  // the corresponding vector range.
   uint32 scalar_position = 6;
+  // A vector of ids to populate the first vector. The position at |scalar_positoin| will be replaced with
+  // the id of the first value from the scalar operation.
   repeated uint32 vec1_elements = 7;
+  // A vector of ids to populate the second vector. The position at |scalar_positoin| will be replaced with
+  // the id of the second value from the scalar operation.
   repeated uint32 vec2_elements = 8;
 }

@@ -33,7 +33,7 @@ TransformationWrapVectorSynonym::TransformationWrapVectorSynonym(
 
 TransformationWrapVectorSynonym::TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t vec_id1, uint32_t vec_id2,
                                                                  uint32_t vec_id3,  uint32_t vec_type_id, uint32_t pos,
-                                                                 std::vector<uint32_t>& vec1_elements, std::vector<uint32_t>& vec2_elements) {
+                                                                 const std::vector<uint32_t>& vec1_elements, const std::vector<uint32_t>& vec2_elements) {
     message_.set_instruction_id(instruction_id);
     message_.set_vec_id1(vec_id1);
     message_.set_vec_id2(vec_id2);
@@ -50,55 +50,75 @@ TransformationWrapVectorSynonym::TransformationWrapVectorSynonym(uint32_t instru
 
 bool TransformationWrapVectorSynonym::IsApplicable(
       opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
-    auto valid_arithmetic_types = std::unordered_set<SpvOp> {SpvOpIAdd, SpvOpISub, SpvOpIMul, SpvOpFAdd, SpvOpFSub, SpvOpFMul};
+    std::unordered_set<SpvOp> valid_arithmetic_types {SpvOpIAdd, SpvOpISub, SpvOpIMul, SpvOpFAdd, SpvOpFSub, SpvOpFMul};
     auto instruction = ir_context->get_def_use_mgr()->GetDef(message_.instruction_id());
     auto vector_type = ir_context->get_def_use_mgr()->GetDef(message_.vec_type_id());
 
     // |instruction_id| must refer to an existing instruction.
-    if(instruction == nullptr) return false;
+    if(instruction == nullptr) {
+      return false;
+    }
 
     // |vec_type_id| must refer to a valid type instruction.
-    if(vector_type == nullptr) return false;
+    if(vector_type == nullptr) {
+      return false;
+    }
 
     // |instruction_id| must be a valid arithmetic type.
-    assert(valid_arithmetic_types.count(instruction->opcode()) && "The instruction must be of a valid arithmetic type.");
+    if(valid_arithmetic_types.count(instruction->opcode())) {
+      return false;
+    }
 
     // |vector_type_id| must correspond to a valid vector type.
-    assert((vector_type->opcode() == SpvOpTypeVector) && "Vector type id must correspond to a valid vector type.");
+    if(vector_type->opcode() == SpvOpTypeVector) {
+      return false;
+    }
 
     // |vec_id1|, |vec_id2| and |vec_id3| must be fresh.
     if(!fuzzerutil::IsFreshId(ir_context, message_.vec_id1()) || !fuzzerutil::IsFreshId(ir_context, message_.vec_id2())
-        || !fuzzerutil::IsFreshId(ir_context, message_.vec_id3())) return false;
+        || !fuzzerutil::IsFreshId(ir_context, message_.vec_id3())) {
+      return false;
+    }
 
     // |vec_id1|, |vec_id2| and |vec_id3| should have disparate ids.
-    if(message_.vec_id1() == message_.vec_id2() || message_.vec_id2() == message_.vec_id3() || message_.vec_id1() == message_.vec_id3()) return false;
+    if(fuzzerutil::HasDuplicates({message_.vec_id1(), message_.vec_id2(), message_.vec_id3()})) {
+      return false;
+    }
 
-    // |pos| needs to be a non-negative integer less than the vector length.
+    // |scalar_position| needs to be a non-negative integer less than the vector length.
     auto vec_len = vector_type->GetSingleWordOperand(1);
-    if(message_.scalar_position() >= vec_len) return false;
+    if(message_.scalar_position() >= vec_len) {
+      return false;
+    }
 
     auto vec1 = message_.vec1_elements();
     auto vec2 = message_.vec2_elements();
     // The vectors being populated must have the same length as specified by vector type.
-    if(vec1.size() != (int)vec_len || vec2.size() != (int)vec_len) return false;
+    if(vec1.size() != (int)vec_len || vec2.size() != (int)vec_len) {
+      return false;
+    }
 
     auto type_id = instruction->type_id();
-    auto matchType = [&ir_context, &type_id](uint32_t id) {return ir_context->get_def_use_mgr()->GetDef(id)->type_id() == type_id;};
+    auto matchType = [&ir_context, &type_id](uint32_t id) { return ir_context->get_def_use_mgr()->GetDef(id)->type_id() == type_id;};
 
     // All ids should match the type_id specified in the instruction.
-    if(!std::all_of(vec1.begin(), vec1.end(), matchType) || !std::all_of(vec2.begin(), vec2.end(), matchType)) return false;
+    if(!std::all_of(vec1.begin(), vec1.end(), matchType) || !std::all_of(vec2.begin(), vec2.end(), matchType)) {
+      return false;
+    }
 
     // Get the OpConstant instruction with id corresponding to index |pos|.
     auto constant1 = ir_context->get_def_use_mgr()->GetDef(vec1[message_.scalar_position()]);
     auto constant2 = ir_context->get_def_use_mgr()->GetDef(vec2[message_.scalar_position()]);
     // The constants at position |pos| of the vectors should be zero constants.
-    if(constant1->GetSingleWordOperand(1) || constant2->GetSingleWordOperand(1)) return false;
+    if(constant1->GetSingleWordOperand(1) || constant2->GetSingleWordOperand(1)) {
+      return false;
+    }
 
     return true;
 }
 
 void TransformationWrapVectorSynonym::Apply(
-    opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
+    opt::IRContext* ir_context, TransformationContext* transformation_context) const {
     // OpCompositeConstructs are inserted before the original arithmetic type instruction.
     auto instruction = ir_context->get_def_use_mgr()->GetDef(message_.instruction_id());
     auto vec1 = message_.vec1_elements();
@@ -141,7 +161,7 @@ void TransformationWrapVectorSynonym::Apply(
     // Add synonyms between |vec_id3| and |instruction_id|.
     auto result_vec_descriptor = MakeDataDescriptor(message_.vec_id3(), {});
     auto original_inst_descriptor = MakeDataDescriptor(message_.instruction_id(), {});
-    FactManager::AddFactDataSynonym(result_vec_descriptor, original_inst_descriptor);
+    transformation_context->GetFactManager()->AddFactDataSynonym(result_vec_descriptor, original_inst_descriptor);
 }
 
 protobufs::Transformation TransformationWrapVectorSynonym::ToMessage() const {

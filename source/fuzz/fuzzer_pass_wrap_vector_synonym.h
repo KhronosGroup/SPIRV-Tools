@@ -20,7 +20,7 @@
 namespace spvtools {
 namespace fuzz {
 
-// Randomly swap functions within a module.
+// Randomly wrap a scalar operation into a vector operation.
 class FuzzerPassWrapVectorSynonym : public FuzzerPass {
  public:
   FuzzerPassWrapVectorSynonym(opt::IRContext* ir_context,

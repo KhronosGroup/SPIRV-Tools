@@ -38,8 +38,8 @@ class TransformationWrapVectorSynonym : public Transformation {
   TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t vec_id1,
                                   uint32_t vec_id2, uint32_t vec_id3,
                                   uint32_t vec_type_id, uint32_t pos,
-                                  std::vector<uint32_t>& vec1_elements,
-                                  std::vector<uint32_t>& vec2_elements);
+                                  const std::vector<uint32_t>& vec1_elements,
+                                  const std::vector<uint32_t>& vec2_elements);
   // - |instruction_id| must be the id of a arithmetic operation.
 // - |vec_id1| and |vec_id2| represents the ids of the two added vector.
 // - |arith_id| is the id of the arithmetic operation that performs vector arithmetic.
