@@ -591,8 +591,9 @@ void ValidationState_t::RegisterStorageClassConsumer(
                 *message =
                     errorVUID +
                     "in Vulkan evironment, Output Storage Class must not be "
-                    "used in RayGenerationKHR, IntersectionKHR, AnyHitKHR, "
-                    "ClosestHitKHR, MissKHR, or CallableKHR execution models";
+                    "used in GLCompute, RayGenerationKHR, IntersectionKHR, "
+                    "AnyHitKHR, ClosestHitKHR, MissKHR, or CallableKHR "
+                    "execution models";
               }
               return false;
             }
