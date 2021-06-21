@@ -86,7 +86,7 @@ void FuzzerPassAddLoads::Apply() {
             relevant_instructions[GetFuzzerContext()->RandomIndex(
                                       relevant_instructions)]
                 ->result_id(),
-            instruction_descriptor));
+            false, 0, 0, instruction_descriptor));
       });
 }
 
