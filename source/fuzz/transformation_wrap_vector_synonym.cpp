@@ -13,16 +13,11 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_wrap_vector_synonym.h"
-#include "source/fuzz/transformation_composite_construct.h"
-#include "source/opt/function.h"
-#include "source/opt/module.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/opt/instruction.h"
 #include "source/fuzz/data_descriptor.h"
 #include "source/fuzz/instruction_descriptor.h"
-#include "test/fuzz/fuzz_test_util.h"
 #include <algorithm>
-#include "source/fuzz/fact_manager/fact_manager.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -65,12 +60,12 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     }
 
     // |instruction_id| must be a valid arithmetic type.
-    if(valid_arithmetic_types.count(instruction->opcode())) {
+    if(!valid_arithmetic_types.count(instruction->opcode())) {
       return false;
     }
 
     // |vector_type_id| must correspond to a valid vector type.
-    if(vector_type->opcode() == SpvOpTypeVector) {
+    if(vector_type->opcode() != SpvOpTypeVector) {
       return false;
     }
 
@@ -131,10 +126,10 @@ void TransformationWrapVectorSynonym::Apply(
     auto inst_descriptor = MakeInstructionDescriptor(message_.instruction_id(), instruction->opcode(), 0);
 
     // Apply transformation to add two composite construct.
-    ApplyTransformation(TransformationCompositeConstruct(
-        message_.vec_type_id(), message_.vec1_elements(), inst_descriptor, message_.vec_id1()));
-    ApplyTransformation(TransformationCompositeConstruct(
-        message_.vec_type_id(), message_.vec1_elements(), inst_descriptor, message_.vec_id2()));
+//    ApplyTransformation(TransformationCompositeConstruct(
+//        message_.vec_type_id(), message_.vec1_elements(), inst_descriptor, message_.vec_id1()));
+//    ApplyTransformation(TransformationCompositeConstruct(
+//        message_.vec_type_id(), message_.vec1_elements(), inst_descriptor, message_.vec_id2()));
 
     // Insert an arithmetic operation that combines the two vector into a new vector with id |vec_id3|.
     // New instruction has the same opcode as the original instruction.
@@ -146,10 +141,15 @@ void TransformationWrapVectorSynonym::Apply(
     auto insert_before = fuzzerutil::GetIteratorForInstruction(
             destination_block, insert_before_inst);
 
-    // Make a new arithmetic instruction: %vec_id3 = OpXX %type_id %vec_id1 %vec_id2
+    //  Populate input operand list with two vectors for vector operation.
+    opt::Instruction::OperandList in_operands;
+    in_operands.push_back({SPV_OPERAND_TYPE_ID, {message_.vec_id1()}});
+    in_operands.push_back({SPV_OPERAND_TYPE_ID, {message_.vec_id2()}});
+
+    // Make a new arithmetic instruction: %vec_id3 = OpXX %type_id %vec_id1 %vec_id2.
     auto new_instruction = MakeUnique<opt::Instruction>(
             ir_context, instruction->opcode(), message_.vec_type_id(),
-            message_.vec_id3(), message_.vec_id1(), message_.vec_id2());
+            message_.vec_id3(), in_operands);
     auto new_instruction_ptr = new_instruction.get();
     insert_before.InsertBefore(std::move(new_instruction));
     ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);
