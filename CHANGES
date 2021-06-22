@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2021.2-dev 2021-06-18
+v2021.2 2021-06-18
  - General
     - Support SPV_KHR_subgroup_uniform_control_flow (#4318)
     - Support Intel extensions for fixed point and hls-float (#4321)
