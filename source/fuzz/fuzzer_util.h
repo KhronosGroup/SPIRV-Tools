@@ -129,6 +129,12 @@ bool CanMakeSynonymOf(opt::IRContext* ir_context,
 // struct or vector.
 bool IsCompositeType(const opt::analysis::Type* type);
 
+// Determine whether the instruction associated with given id is a valid constant type.
+bool IsValidConstant(opt::IRContext* ir_context, uint32_t id);
+
+// Determine whether instruction is a zero constant.
+bool IsZeroConstant(opt::IRContext* ir_context, uint32_t id);
+
 // Returns a vector containing the same elements as |repeated_field|.
 std::vector<uint32_t> RepeatedFieldToVector(
     const google::protobuf::RepeatedField<uint32_t>& repeated_field);

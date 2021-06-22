@@ -35,24 +35,17 @@ class TransformationWrapVectorSynonym : public Transformation {
   explicit TransformationWrapVectorSynonym(
       protobufs::TransformationWrapVectorSynonym message);
 
-  TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t vec_id1,
-                                  uint32_t vec_id2, uint32_t vec_id3,
-                                  uint32_t vec_type_id, uint32_t pos,
-                                  const std::vector<uint32_t>& vec1_elements,
-                                  const std::vector<uint32_t>& vec2_elements);
+  TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t result_id1, uint32_t result_id2, uint32_t vec_id, uint32_t vec_type_id, uint32_t pos);
   // - |instruction_id| must be the id of a arithmetic operation.
-// - |vec_id1| and |vec_id2| represents the ids of the two added vector.
-// - |arith_id| is the id of the arithmetic operation that performs vector arithmetic.
-// - |vec_id1|, |vec_id2| and |arith_id3| must be fresh ids.
-// - and they should be different from each other.
-// - |vec_type_id| must be a valid vector type from vec2 to vec4.
-// - |pos| is a 0-indexed position of the component that contains the
-// - value of a and b. pos must be smaller than the number of
-// - elements that the vector type can has.
-// - |vec1_elements_ids| and |vec2_elements_ids| must contain scalar type ids.
-// - They should have an id of a zero constant at position
-// - |pos|. All ids must be valid ids that has the type as the variables
-// - in the original instruction.
+  // - |result_id1| and |result_id2| represents the result ids of the two added vector.
+  // - |vec_id| is a vector type for the result of the transformation.
+  // - result vector type must match the type of two vectors being added.
+  // - |vec_id| must be fresh.
+  // - |result_id1|, |result_id2| and |vec_id| should be different from each other.
+  // - They must be of a valid vector type.
+  // - |pos| is a 0-indexed position of the component that contains the
+  // - value of a and b. pos must be smaller than the number of
+  // - elements that the vector type can has.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
