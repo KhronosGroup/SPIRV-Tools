@@ -1018,5 +1018,20 @@ INSTANTIATE_TEST_SUITE_P(
                   SpvPackedVectorFormatPackedVectorFormat4x8BitKHR})},
         })));
 
+// SPV_KHR_bit_instructions
+
+INSTANTIATE_TEST_SUITE_P(
+    SPV_KHR_bit_instructions, ExtensionRoundTripTest,
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_5,
+                   SPV_ENV_VULKAN_1_0, SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_2),
+            ValuesIn(std::vector<AssemblyCase>{
+                {"OpExtension \"SPV_KHR_bit_instructions\"\n",
+                 MakeInstruction(SpvOpExtension,
+                                 MakeVector("SPV_KHR_bit_instructions"))},
+                {"OpCapability BitInstructions\n",
+                 MakeInstruction(SpvOpCapability,
+                                 {SpvCapabilityBitInstructions})},
+            })));
+
 }  // namespace
 }  // namespace spvtools
