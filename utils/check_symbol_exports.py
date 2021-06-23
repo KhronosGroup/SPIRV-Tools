@@ -70,6 +70,12 @@ def check_library(library):
     symbol_allowlist_pattern = re.compile(r'_Z[0-9]+(InitDefaults|AddDescriptors)_spvtoolsfuzz_2eprotov')
 
     symbol_is_new_or_delete = re.compile(r'^(_Zna|_Znw|_Zdl|_Zda)')
+    # Compilaion for Arm has various thunks for constructors, destructors, vtables.
+    # They are weak.
+    symbol_is_thunk = re.compile(r'^_ZT')
+
+    # This occurs in NDK builds.
+    symbol_is_hidden = re.compile(r'^\.hidden ')
 
     seen = set()
     result = 0
@@ -82,9 +88,12 @@ def check_library(library):
                 seen.add(symbol)
                 #print("look at '{}'".format(symbol))
                 if not (symbol_is_new_or_delete.match(symbol) and linkage == 'w'):
-                    if not (symbol_allowlist_pattern.match(symbol) or symbol_ok_pattern.match(symbol)):
-                        print('{}: error: Unescaped exported symbol: {}'.format(PROG, symbol))
-                        result = 1
+                    if not (symbol_is_thunk.match(symbol) and linkage == 'w'):
+                        if not (symbol_allowlist_pattern.match(symbol) or
+                                symbol_ok_pattern.match(symbol) or
+                                symbol_is_hidden.match(symbol)):
+                            print('{}: error: Unescaped exported symbol: {}'.format(PROG, symbol))
+                            result = 1
     return result
 
 
