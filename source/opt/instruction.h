@@ -80,8 +80,10 @@ struct Operand {
 
   Operand(spv_operand_type_t t, const OperandData& w) : type(t), words(w) {}
 
-  spv_operand_type_t type;  // Type of this logical operand.
-  OperandData words;        // Binary segments of this logical operand.
+  // Type of this logical operand.
+  spv_operand_type_t type = SPV_OPERAND_TYPE_NONE;
+  // Binary segments of this logical operand.
+  OperandData words = {};
 
   // Returns a string operand as a C-style string.
   const char* AsCString() const {
