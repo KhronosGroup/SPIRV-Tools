@@ -16,7 +16,7 @@
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/transformation_wrap_vector_synonym.h"
-#include "source/fuzz/random_generator.h"
+#include <stdlib.h>
 
 namespace spvtools {
 namespace fuzz {
@@ -57,16 +57,14 @@ void FuzzerPassWrapVectorSynonym::Apply() {
         // Get the scalar type represented by the targeted instruction id.
         uint32_t scalar_type_id = instruction_iterator->type_id();
 
-        RandomGenerator* random_generator;
-
         // Get a random vector size from 2 to 4.
-        uint32_t component_count = random_generator->RandomUint32(3) + 2;
+        uint32_t component_count = 2 + std::rand() % 3;
         // Get the vector type of size range from 2 to 4 of the corresponding scalar type.
         uint32_t vec_type_id =  FindOrCreateVectorType(scalar_type_id, component_count);
 
         // Randomly choose a position that target ids should be placed at.
         // The position is in range [0, n - 1], where n is the size of the vector.
-        uint32_t position = random_generator->RandomUint32(component_count);
+        uint32_t position = std::rand() % component_count;
 
         uint32_t target_id1 = instruction_iterator->GetSingleWordOperand(1);
         uint32_t target_id2 = instruction_iterator->GetSingleWordOperand(2);
@@ -90,13 +88,13 @@ void FuzzerPassWrapVectorSynonym::Apply() {
           } else {
             switch (instruction_iterator->opcode()) {
               case SpvOpTypeInt: {
-                AddRandomIntConstant(vec1_components, width, is_signed, random_generator);
-                AddRandomIntConstant(vec2_components, width, is_signed, random_generator);
+                AddRandomIntConstant(vec1_components, width, is_signed);
+                AddRandomIntConstant(vec2_components, width, is_signed);
                 break;
               }
               case SpvOpTypeFloat: {
-                AddRandomFloatConstant(vec1_components, width, random_generator);
-                AddRandomFloatConstant(vec2_components, width, random_generator);
+                AddRandomFloatConstant(vec1_components, width);
+                AddRandomFloatConstant(vec2_components, width);
                 break;
               }
               default:
@@ -125,12 +123,10 @@ uint32_t FuzzerPassWrapVectorSynonym::AddNewVecNType(uint32_t composite_type_id,
   return current_fresh_id;
 }
 
-void FuzzerPassWrapVectorSynonym::AddRandomFloatConstant(std::vector<uint32_t>& vec, uint32_t width, RandomGenerator* random_generator) {
+void FuzzerPassWrapVectorSynonym::AddRandomFloatConstant(std::vector<uint32_t>& vec, uint32_t width) {
 
-  float multiplier = random_generator->RandomBool() ? 1 : -1;
-  float random_float = multiplier *
-      (float)(random_generator->RandomUint32(1000) +
-              random_generator->RandomDouble());
+  float multiplier = std::rand() % 2 ? 1 : -1;
+  float random_float = multiplier * (float)(std::rand() / 100 + std::rand() % 10);
   // Make sure the created float is not zero.
   if(random_float == 0) random_float += (float)0.1;
   std::vector<uint32_t> words = {
@@ -139,10 +135,10 @@ void FuzzerPassWrapVectorSynonym::AddRandomFloatConstant(std::vector<uint32_t>& 
       FindOrCreateFloatConstant(words, width, false));
 }
 
-void FuzzerPassWrapVectorSynonym::AddRandomIntConstant(std::vector<uint32_t>& vec, uint32_t width, bool is_signed, RandomGenerator* random_generator) {
-  auto multiplier = is_signed ? (random_generator->RandomBool() ? 1 : -1) : 1;
+void FuzzerPassWrapVectorSynonym::AddRandomIntConstant(std::vector<uint32_t>& vec, uint32_t width, bool is_signed) {
+  auto multiplier = is_signed ? (std::rand() % 2 ? 1 : -1) : 1;
   // Make sure the random integer is not zero.
-  auto random_int = multiplier * (random_generator->RandomUint32(1000) + 1);
+  auto random_int = multiplier * (std::rand() % 100 + 1);
   std::vector<uint32_t> words = fuzzerutil::IntToWords(random_int, width, is_signed);
   vec.emplace_back(FindOrCreateIntegerConstant(words,width, is_signed,false));
 }

@@ -35,10 +35,10 @@ class FuzzerPassWrapVectorSynonym : public FuzzerPass {
                       const protobufs::InstructionDescriptor& inst_to_insert_before);
 
   // Randomly add a float constant id with specified width to a vector.
-  void AddRandomFloatConstant(std::vector<uint32_t>& vec, uint32_t width, RandomGenerator* random_generator);
+  void AddRandomFloatConstant(std::vector<uint32_t>& vec, uint32_t width);
 
   // Randomly add a integer constant id with specified width and sign to a vector.
-  void AddRandomIntConstant(std::vector<uint32_t>& vec, uint32_t width, bool is_signed, RandomGenerator* random_generator);
+  void AddRandomIntConstant(std::vector<uint32_t>& vec, uint32_t width, bool is_signed);
 
   std::unordered_set<SpvOp> valid_arithmetic_types {SpvOpIAdd, SpvOpISub, SpvOpIMul, SpvOpFAdd, SpvOpFSub, SpvOpFMul};
 };
