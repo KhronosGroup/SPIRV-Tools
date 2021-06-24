@@ -318,7 +318,7 @@ TEST_F(ValidateAtomics, AtomicAddFloatVulkan) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Opcode AtomicFAddEXT requires one of these capabilities: "
-                "AtomicFloat32AddEXT AtomicFloat64AddEXT"));
+                "AtomicFloat32AddEXT AtomicFloat64AddEXT AtomicFloat16AddEXT"));
 }
 
 TEST_F(ValidateAtomics, AtomicMinFloatVulkan) {
@@ -537,6 +537,27 @@ OpExtension "SPV_EXT_shader_atomic_float_min_max"
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("AtomicFMaxEXT: float min/max atomics "
                         "require the AtomicFloat32MinMaxEXT capability"));
+}
+
+TEST_F(ValidateAtomics, AtomicAddFloat16VulkanSuccess) {
+  const std::string defs = R"(
+%f16 = OpTypeFloat 16
+%f16_1 = OpConstant %f16 1
+%f16_ptr = OpTypePointer Workgroup %f16
+%f16_var = OpVariable %f16_ptr Workgroup
+)";
+  const std::string body = R"(
+%val1 = OpAtomicFAddEXT %f16 %f16_var %device %relaxed %f16_1
+)";
+  const std::string extra = R"(
+OpCapability Float16
+OpCapability AtomicFloat16AddEXT
+OpExtension "SPV_EXT_shader_atomic_float16_add"
+)";
+
+  CompileSuccessfully(GenerateShaderComputeCode(body, extra, defs),
+                      SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
 TEST_F(ValidateAtomics, AtomicAddFloatVulkanSuccess) {
