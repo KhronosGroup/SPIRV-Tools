@@ -1972,6 +1972,8 @@ TEST(TransformationReplaceIdWithSynonymTest,
         replace_scope.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(replace_scope, context.get(),
                           &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   {
@@ -1983,10 +1985,9 @@ TEST(TransformationReplaceIdWithSynonymTest,
         replace_semantics.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(replace_semantics, context.get(),
                           &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
-
-  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
-                                               kConsoleMessageConsumer));
 
   const std::string after_transformation = R"(
                OpCapability Shader
