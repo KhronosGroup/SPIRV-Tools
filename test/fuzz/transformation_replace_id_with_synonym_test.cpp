@@ -1970,7 +1970,8 @@ TEST(TransformationReplaceIdWithSynonymTest,
     TransformationReplaceIdWithSynonym replace_scope(scope_operand, 100);
     ASSERT_TRUE(
         replace_scope.IsApplicable(context.get(), transformation_context));
-    replace_scope.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(replace_scope, context.get(),
+                          &transformation_context);
   }
 
   {
@@ -1980,7 +1981,8 @@ TEST(TransformationReplaceIdWithSynonymTest,
                                                          101);
     ASSERT_TRUE(
         replace_semantics.IsApplicable(context.get(), transformation_context));
-    replace_semantics.Apply(context.get(), &transformation_context);
+    ApplyAndCheckFreshIds(replace_semantics, context.get(),
+                          &transformation_context);
   }
 
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
