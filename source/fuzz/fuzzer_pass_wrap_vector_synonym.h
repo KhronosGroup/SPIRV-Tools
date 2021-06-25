@@ -23,24 +23,30 @@ namespace fuzz {
 // Randomly wrap a scalar operation into a vector operation.
 class FuzzerPassWrapVectorSynonym : public FuzzerPass {
  public:
-  FuzzerPassWrapVectorSynonym(opt::IRContext* ir_context,
-                          TransformationContext* transformation_context,
-                          FuzzerContext* fuzzer_context,
-                          protobufs::TransformationSequence* transformations);
+  FuzzerPassWrapVectorSynonym(
+      opt::IRContext* ir_context, TransformationContext* transformation_context,
+      FuzzerContext* fuzzer_context,
+      protobufs::TransformationSequence* transformations);
 
   void Apply() override;
+
  private:
-  // Add a vector type of the given size from 2 to 4 to the module and return the result id back.
-  uint32_t AddNewVecNType(uint32_t composite_type_id, std::vector<uint32_t> component,
-                      const protobufs::InstructionDescriptor& inst_to_insert_before);
+  // Add a vector type of the given size from 2 to 4 to the module and return
+  // the result id back.
+  uint32_t AddNewVecNType(
+      uint32_t composite_type_id, std::vector<uint32_t> component,
+      const protobufs::InstructionDescriptor& inst_to_insert_before);
 
   // Randomly add a float constant id with specified width to a vector.
   void AddRandomFloatConstant(std::vector<uint32_t>& vec, uint32_t width);
 
-  // Randomly add a integer constant id with specified width and sign to a vector.
-  void AddRandomIntConstant(std::vector<uint32_t>& vec, uint32_t width, bool is_signed);
+  // Randomly add a integer constant id with specified width and sign to a
+  // vector.
+  void AddRandomIntConstant(std::vector<uint32_t>& vec, uint32_t width,
+                            bool is_signed);
 
-  std::unordered_set<SpvOp> valid_arithmetic_types {SpvOpIAdd, SpvOpISub, SpvOpIMul, SpvOpFAdd, SpvOpFSub, SpvOpFMul};
+  std::unordered_set<SpvOp> valid_arithmetic_types{
+      SpvOpIAdd, SpvOpISub, SpvOpIMul, SpvOpFAdd, SpvOpFSub, SpvOpFMul};
 };
 
 }  // namespace fuzz

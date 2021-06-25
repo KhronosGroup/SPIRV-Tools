@@ -17,15 +17,15 @@
 
 #include <utility>
 
+#include "source/fuzz/data_descriptor.h"
+#include "source/fuzz/fuzzer_util.h"
+#include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
 #include "source/fuzz/transformation_composite_construct.h"
 #include "source/fuzz/transformation_context.h"
-#include "source/opt/ir_context.h"
-#include "source/fuzz/fuzzer_util.h"
 #include "source/opt/instruction.h"
-#include "source/fuzz/data_descriptor.h"
-#include "source/fuzz/instruction_descriptor.h"
+#include "source/opt/ir_context.h"
 
 namespace spvtools {
 namespace fuzz {
@@ -35,13 +35,17 @@ class TransformationWrapVectorSynonym : public Transformation {
   explicit TransformationWrapVectorSynonym(
       protobufs::TransformationWrapVectorSynonym message);
 
-  TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t result_id1, uint32_t result_id2, uint32_t vec_id, uint32_t vec_type_id, uint32_t pos);
+  TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t result_id1,
+                                  uint32_t result_id2, uint32_t vec_id,
+                                  uint32_t vec_type_id, uint32_t pos);
   // - |instruction_id| must be the id of a arithmetic operation.
-  // - |result_id1| and |result_id2| represents the result ids of the two added vector.
+  // - |result_id1| and |result_id2| represents the result ids of the two added
+  // vector.
   // - |vec_id| is a vector type for the result of the transformation.
   // - result vector type must match the type of two vectors being added.
   // - |vec_id| must be fresh.
-  // - |result_id1|, |result_id2| and |vec_id| should be different from each other.
+  // - |result_id1|, |result_id2| and |vec_id| should be different from each
+  // other.
   // - They must be of a valid vector type.
   // - |pos| is a 0-indexed position of the component that contains the
   // - value of a and b. pos must be smaller than the number of
@@ -63,4 +67,4 @@ class TransformationWrapVectorSynonym : public Transformation {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif //SOURCE_FUZZ_TRANSFORMATION_WRAP_VECTOR_SYNONYM_H_
+#endif  // SOURCE_FUZZ_TRANSFORMATION_WRAP_VECTOR_SYNONYM_H_
