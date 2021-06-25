@@ -38,11 +38,20 @@ TransformationWrapVectorSynonym:: TransformationWrapVectorSynonym(uint32_t instr
 
 bool TransformationWrapVectorSynonym::IsApplicable(
       opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+
     auto instruction = ir_context->get_def_use_mgr()->GetDef(message_.instruction_id());
     auto vector_type = ir_context->get_type_mgr()->GetType(message_.vec_type_id());
+    auto vec1 = ir_context->get_def_use_mgr()->GetDef(message_.result_id1());
+    auto vec2 = ir_context->get_def_use_mgr()->GetDef(message_.result_id2());
 
     // |instruction_id| must refer to an existing instruction.
     if(instruction == nullptr) {
+      return false;
+    }
+
+    std::unordered_set<SpvOp_> valid_opcodes {SpvOpIAdd, SpvOpISub, SpvOpIMul, SpvOpSDiv, SpvOpUDiv, SpvOpFAdd, SpvOpFSub, SpvOpFMul, SpvOpFDiv};
+
+    if(!valid_opcodes.count(instruction->opcode())) {
       return false;
     }
 
@@ -51,8 +60,18 @@ bool TransformationWrapVectorSynonym::IsApplicable(
       return false;
     }
 
+    // |result_id1| and |result_id2| must exists.
+    if(vec1 == nullptr || vec2 == nullptr) {
+      return false;
+    }
+
     // |vector_type_id| must correspond to a valid vector type.
     if(vector_type->AsVector() == nullptr) {
+      return false;
+    }
+
+    // |vec_id| must be fresh.
+    if(!fuzzerutil::IsFreshId(ir_context, message_.vec_id())) {
       return false;
     }
 
@@ -70,11 +89,10 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     }
 
     // The 2 vectors must have the same type as the result vector type.
-    auto vec1_type_id = ir_context->get_type_mgr()->GetType(message_.result_id1());
+    auto vec1_type_id = vec1->GetSingleWordOperand(0);
+    auto vec2_type_id = vec2->GetSingleWordOperand(0);
 
-    auto vec2_type_id = ir_context->get_type_mgr()->GetType(message_.result_id1());
-
-    if(vec1_type_id != vector_type || vec2_type_id != vector_type) {
+    if(vec1_type_id != message_.vec_type_id() || vec2_type_id!= message_.vec_type_id()) {
       return false;
     }
 
@@ -83,8 +101,8 @@ bool TransformationWrapVectorSynonym::IsApplicable(
 
 void TransformationWrapVectorSynonym::Apply(
     opt::IRContext* ir_context, TransformationContext* transformation_context) const {
-    auto instruction = ir_context->get_def_use_mgr()->GetDef(message_.instruction_id());
 
+    auto instruction = ir_context->get_def_use_mgr()->GetDef(message_.instruction_id());
     // Create an instruction descriptor for the original instruction.
     auto inst_descriptor = MakeInstructionDescriptor(message_.instruction_id(), instruction->opcode(), 0);
     auto insert_before_inst =
@@ -111,9 +129,10 @@ void TransformationWrapVectorSynonym::Apply(
     fuzzerutil::UpdateModuleIdBound(ir_context, message_.vec_id());
 
     // Add synonyms between |vec_id| and |instruction_id|.
-    auto result_vec_descriptor = MakeDataDescriptor(message_.vec_id(), {});
+    auto result_vec_descriptor = MakeDataDescriptor(message_.vec_id(), {message_.scalar_position()});
     auto original_inst_descriptor = MakeDataDescriptor(message_.instruction_id(), {});
     transformation_context->GetFactManager()->AddFactDataSynonym(result_vec_descriptor, original_inst_descriptor);
+
 }
 
 protobufs::Transformation TransformationWrapVectorSynonym::ToMessage() const {
