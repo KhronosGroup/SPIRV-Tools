@@ -139,6 +139,26 @@ bool TransformationReplaceIdWithSynonym::IsAgnosticToSignednessOfOperand(
     case SpvOpSLessThanEqual:
     case SpvOpUGreaterThanEqual:
     case SpvOpSGreaterThanEqual:
+    case SpvOpAtomicLoad:
+    case SpvOpAtomicStore:
+    case SpvOpAtomicExchange:
+    case SpvOpAtomicCompareExchange:
+    case SpvOpAtomicCompareExchangeWeak:
+    case SpvOpAtomicIIncrement:
+    case SpvOpAtomicIDecrement:
+    case SpvOpAtomicIAdd:
+    case SpvOpAtomicISub:
+    case SpvOpAtomicSMin:
+    case SpvOpAtomicUMin:
+    case SpvOpAtomicSMax:
+    case SpvOpAtomicUMax:
+    case SpvOpAtomicAnd:
+    case SpvOpAtomicOr:
+    case SpvOpAtomicXor:
+    // These instructions required another capability.
+    case SpvOpAtomicFlagTestAndSet:
+    case SpvOpAtomicFlagClear:
+    case SpvOpAtomicFAddEXT:
       return true;
     case SpvOpAccessChain:
       // The signedness of indices does not matter.
