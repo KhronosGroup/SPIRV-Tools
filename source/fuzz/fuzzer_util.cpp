@@ -364,16 +364,6 @@ bool IsCompositeType(const opt::analysis::Type* type) {
                   type->AsVector());
 }
 
-bool IsValidConstant(opt::IRContext* ir_context, uint32_t id) {
-  return ir_context->get_def_use_mgr()->GetDef(id)->opcode() == SpvOpConstant;
-}
-
-bool IsZeroConstant(opt::IRContext* ir_context, uint32_t id) {
-  auto inst = ir_context->get_def_use_mgr()->GetDef(id);
-  return (inst->opcode() == SpvOpTypeInt || inst->opcode() == SpvOpTypeFloat)
-            && inst->GetSingleWordOperand(1) == 0;
-}
-
 std::vector<uint32_t> RepeatedFieldToVector(
     const google::protobuf::RepeatedField<uint32_t>& repeated_field) {
   std::vector<uint32_t> result;

@@ -323,11 +323,10 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
   }
 
   // Good: The following transformation should be applicable.
-  TransformationWrapVectorSynonym wrap_add_int(50, 100, 101, 102, 12, 1);
+  TransformationWrapVectorSynonym wrap_add_int(50, 100, 101, 105, 12, 1);
   ASSERT_TRUE(wrap_add_int.IsApplicable(context.get(), transformation_context));
   // Insert an arithmetic instruction of the same type to add two vectors.
   ApplyAndCheckFreshIds(wrap_add_int, context.get(), &transformation_context);
-
 
   // After applying transformations, three instructions:
   // %100 = OpCompositeConstruct %12 $48 %48

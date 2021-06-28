@@ -16,7 +16,6 @@
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/transformation_wrap_vector_synonym.h"
-#include <stdlib.h>
 
 namespace spvtools {
 namespace fuzz {
@@ -55,32 +54,32 @@ void FuzzerPassWrapVectorSynonym::Apply() {
           return;
         }
         // Get the scalar type represented by the targeted instruction id.
-        uint32_t scalar_type_id = instruction_iterator->type_id();
+        uint32_t operand_type_id = instruction_iterator->type_id();
 
         // Get a random vector size from 2 to 4.
-        uint32_t component_count = 2 + std::rand() % 3;
+        uint32_t component_count = GetFuzzerContext()->GetRandomIntegerFromRange(2,4);
         // Get the vector type of size range from 2 to 4 of the corresponding scalar type.
-        uint32_t vec_type_id =  FindOrCreateVectorType(scalar_type_id, component_count);
+        uint32_t vec_type_id =  FindOrCreateVectorType(operand_type_id, component_count);
 
         // Randomly choose a position that target ids should be placed at.
         // The position is in range [0, n - 1], where n is the size of the vector.
-        uint32_t position = std::rand() % component_count;
+        uint32_t position = GetFuzzerContext()->GetRandomIntegerFromRange(0, component_count - 1);
 
-        // target ids are the two scalar ids from the original instruction.
-        uint32_t target_id1 = instruction_iterator->GetSingleWordOperand(1);
-        uint32_t target_id2 = instruction_iterator->GetSingleWordOperand(2);
+        // Target ids are the two scalar ids from the original instruction.
+        uint32_t target_id1 = instruction_iterator->GetSingleWordInOperand(0);
+        uint32_t target_id2 = instruction_iterator->GetSingleWordInOperand(1);
 
         // Stores the ids of scalar constants.
         std::vector<uint32_t> vec1_components;
         std::vector<uint32_t> vec2_components;
 
         // Width is specified in the first index for either OpTypeInt or OpTypeFloat.
-        uint32_t width = GetIRContext()->get_def_use_mgr()->GetDef(scalar_type_id)->GetSingleWordOperand(0);
+        uint32_t width = GetIRContext()->get_def_use_mgr()->GetDef(operand_type_id)->GetSingleWordOperand(0);
         // Get the scalar type.
-        auto type = GetIRContext()->get_type_mgr()->GetType(scalar_type_id);
+        auto type = GetIRContext()->get_type_mgr()->GetType(operand_type_id);
 
         // Whether the constant is signed, not used for float type so default set to true.
-        bool is_signed = type->AsInteger() ? type->AsInteger()->IsSigned() : true;
+        bool is_signed_constant = type->AsInteger() ? type->AsInteger()->IsSigned() : true;
 
         // Populate components based on vector type and size.
         for(uint32_t i = 0; i < component_count; ++i) {
@@ -88,59 +87,43 @@ void FuzzerPassWrapVectorSynonym::Apply() {
             vec1_components.emplace_back(target_id1);
             vec2_components.emplace_back(target_id2);
           } else {
-            switch (instruction_iterator->opcode()) {
-              case SpvOpTypeInt: {
-                AddRandomIntConstant(vec1_components, width, is_signed);
-                AddRandomIntConstant(vec2_components, width, is_signed);
-                break;
-              }
-              case SpvOpTypeFloat: {
-                AddRandomFloatConstant(vec1_components, width);
-                AddRandomFloatConstant(vec2_components, width);
-                break;
-              }
-              default:
-                assert(false && "Instruction opcode must be a valid numeric constant type.");
+            if (type->AsInteger()) {
+              // Operands are integers. Add random integers to each vector.
+              int sign1 = is_signed_constant ? (GetFuzzerContext()->ChooseEven() ? 1 : -1) : 1;
+              int sign2 = is_signed_constant ? (GetFuzzerContext()->ChooseEven() ? 1 : -1) : 1;
+              int random_int1 = sign1 * (GetFuzzerContext()->GetRandomIntegerFromRange(1, 100));
+              int random_int2 = sign2 * (GetFuzzerContext()->GetRandomIntegerFromRange(1, 100));
+              vec1_components.emplace_back(FindOrCreateIntegerConstant(fuzzerutil::IntToWords(random_int1, width, is_signed_constant) ,width, is_signed_constant,false));
+              vec2_components.emplace_back(FindOrCreateIntegerConstant(fuzzerutil::IntToWords(random_int2, width, is_signed_constant) ,width, is_signed_constant,false));
+            } else if (type->AsFloat()) {
+              // Operands are floats. Add random floats to each vector.
+              float sign1 = GetFuzzerContext()->ChooseEven() ? 1.0f : -1.0f;
+              float sign2 = GetFuzzerContext()->ChooseEven() ? 1.0f : -1.0f;
+              float random_float1 = sign1 * GetFuzzerContext()->GetRandomFloatFromRange(0.1f, 10.0f);
+              float random_float2 = sign2 * GetFuzzerContext()->GetRandomFloatFromRange(0.1f, 10.0f);
+              vec1_components.emplace_back(FindOrCreateFloatConstant({fuzzerutil::FloatToWord(random_float1)}, width, false));
+              vec2_components.emplace_back(FindOrCreateFloatConstant({fuzzerutil::FloatToWord(random_float2)}, width, false));
+            } else {
+              assert(false && "Instruction opcode must be a valid numeric constant type.");
             }
           }
         }
         // Add two OpCompositeConstruct to the module with result id returned.
-        uint32_t result_id1 = AddNewVecNType(scalar_type_id, vec1_components, instruction_descriptor);
-        uint32_t result_id2 = AddNewVecNType(scalar_type_id, vec2_components, instruction_descriptor);
+        // Add the first OpCompositeConstruct that wraps the id of the first operand.
+        uint32_t result_id1 = GetFuzzerContext()->GetFreshId();
+        ApplyTransformation(TransformationCompositeConstruct(operand_type_id, vec1_components,
+                                                             instruction_descriptor, result_id1));
+
+        // Add the second OpCompositeConstruct that wraps the id of the second operand.
+        uint32_t result_id2 = GetFuzzerContext()->GetFreshId();
+        ApplyTransformation(TransformationCompositeConstruct(operand_type_id, vec2_components,
+                                                             instruction_descriptor, result_id2));
 
         // Apply transformation to do vector operation and add synonym between the result
         // vector id and the id of the original instruction.
         ApplyTransformation(TransformationWrapVectorSynonym(instruction_iterator->result_id(), result_id1,
                                                             result_id2, GetFuzzerContext()->GetFreshId(), vec_type_id, position));
       });
-}
-
-uint32_t FuzzerPassWrapVectorSynonym::AddNewVecNType(uint32_t composite_type_id, std::vector<uint32_t> component,
-                                                     const protobufs::InstructionDescriptor& inst_to_insert_before) {
-  uint32_t current_fresh_id = GetFuzzerContext()->GetFreshId();
-  ApplyTransformation(TransformationCompositeConstruct(composite_type_id, component,
-                                                       inst_to_insert_before, current_fresh_id));
-  return current_fresh_id;
-}
-
-void FuzzerPassWrapVectorSynonym::AddRandomFloatConstant(std::vector<uint32_t>& vec, uint32_t width) {
-  // Randomly decide whether the float is positive or negative.
-  float sign = std::rand() % 2 ? 1 : -1;
-  float random_float = sign * (float)(std::rand() / 100 + std::rand() % 10);
-  // Make sure the created float is not zero.
-  if(random_float == 0) random_float += (float)0.1;
-  std::vector<uint32_t> words = {
-      fuzzerutil::FloatToWord(random_float)};
-  vec.emplace_back(
-      FindOrCreateFloatConstant(words, width, false));
-}
-
-void FuzzerPassWrapVectorSynonym::AddRandomIntConstant(std::vector<uint32_t>& vec, uint32_t width, bool is_signed) {
-  auto sign = is_signed ? (std::rand() % 2 ? 1 : -1) : 1;
-  // Make sure the random integer is not zero.
-  auto random_int = sign * (std::rand() % 100 + 1);
-  std::vector<uint32_t> words = fuzzerutil::IntToWords(random_int, width, is_signed);
-  vec.emplace_back(FindOrCreateIntegerConstant(words,width, is_signed,false));
 }
 
 }  // namespace fuzz

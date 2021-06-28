@@ -16,6 +16,7 @@
 #define SOURCE_FUZZ_FUZZER_CONTEXT_H_
 
 #include <functional>
+#include <stdlib.h>
 #include <utility>
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
@@ -422,6 +423,12 @@ class FuzzerContext {
   uint32_t GetRandomCompositeExtractIndex(uint32_t number_of_members) {
     assert(number_of_members > 0 && "Composite object must have some members");
     return ChooseBetweenMinAndMax({0, number_of_members - 1});
+  }
+  float GetRandomFloatFromRange(float lower_bound, float upper_bound) {
+    return lower_bound + (float)random_generator_->RandomDouble() * (upper_bound - lower_bound);
+  }
+  uint32_t GetRandomIntegerFromRange(uint32_t lower_bound, uint32_t upper_bound) {
+    return lower_bound + random_generator_->RandomUint32(upper_bound + 1);
   }
   uint32_t GetRandomIndexForAccessChain(uint32_t composite_size_bound) {
     return random_generator_->RandomUint32(composite_size_bound);
