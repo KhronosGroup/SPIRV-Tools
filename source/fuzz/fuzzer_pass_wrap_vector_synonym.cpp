@@ -13,8 +13,9 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_wrap_vector_synonym.h"
-#include "source/fuzz/fuzzer_util.h"
+#include <stdlib.h>
 #include "source/fuzz/fuzzer_context.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/transformation_wrap_vector_synonym.h"
 
 namespace spvtools {
@@ -34,23 +35,24 @@ void FuzzerPassWrapVectorSynonym::Apply() {
              const protobufs::InstructionDescriptor& instruction_descriptor)
           -> void {
         // Only run fuzzer pass on valid arithmetic operation instruction.
-        if(!valid_arithmetic_types.count(instruction_iterator->opcode())) return;
+        if (!valid_arithmetic_types.count(instruction_iterator->opcode()))
+          return;
 
         assert(instruction_iterator->opcode() ==
-               instruction_descriptor.target_instruction_opcode() &&
+                   instruction_descriptor.target_instruction_opcode() &&
                "The opcode of the instruction we might insert before must be "
                "the same as the opcode in the descriptor for the instruction");
 
         // Randomly decide whether to wrap it to a vector operation.
         if (!GetFuzzerContext()->ChoosePercentage(
-            GetFuzzerContext()->GetChanceOfWrappingVectorSynonym())) {
+                GetFuzzerContext()->GetChanceOfWrappingVectorSynonym())) {
           return;
         }
 
         // It must be valid to insert an OpCompositeConstruct instruction
         // before |instruction_iterator|.
         if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(
-            SpvOpCompositeConstruct, instruction_iterator)) {
+                SpvOpCompositeConstruct, instruction_iterator)) {
           return;
         }
         // Get the scalar type represented by the targeted instruction id.
@@ -73,17 +75,22 @@ void FuzzerPassWrapVectorSynonym::Apply() {
         std::vector<uint32_t> vec1_components;
         std::vector<uint32_t> vec2_components;
 
-        // Width is specified in the first index for either OpTypeInt or OpTypeFloat.
-        uint32_t width = GetIRContext()->get_def_use_mgr()->GetDef(operand_type_id)->GetSingleWordOperand(0);
+        // Width is specified in the first index for either OpTypeInt or
+        // OpTypeFloat.
+        uint32_t width = GetIRContext()
+                             ->get_def_use_mgr()
+                             ->GetDef(operand_type_id)
+                             ->GetSingleWordOperand(0);
         // Get the scalar type.
         auto type = GetIRContext()->get_type_mgr()->GetType(operand_type_id);
-
-        // Whether the constant is signed, not used for float type so default set to true.
-        bool is_signed_constant = type->AsInteger() ? type->AsInteger()->IsSigned() : true;
+        // Whether the constant is signed, not used for float type so default
+        // set to true.
+        bool is_signed_constant =
+            type->AsInteger() ? type->AsInteger()->IsSigned() : true;
 
         // Populate components based on vector type and size.
-        for(uint32_t i = 0; i < component_count; ++i) {
-          if(i == position) {
+        for (uint32_t i = 0; i < component_count; ++i) {
+          if (i == position) {
             vec1_components.emplace_back(target_id1);
             vec2_components.emplace_back(target_id2);
           } else {

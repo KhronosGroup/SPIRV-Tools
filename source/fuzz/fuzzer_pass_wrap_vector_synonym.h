@@ -23,12 +23,13 @@ namespace fuzz {
 // Randomly wrap a scalar operation into a vector operation.
 class FuzzerPassWrapVectorSynonym : public FuzzerPass {
  public:
-  FuzzerPassWrapVectorSynonym(opt::IRContext* ir_context,
-                          TransformationContext* transformation_context,
-                          FuzzerContext* fuzzer_context,
-                          protobufs::TransformationSequence* transformations);
+  FuzzerPassWrapVectorSynonym(
+      opt::IRContext* ir_context, TransformationContext* transformation_context,
+      FuzzerContext* fuzzer_context,
+      protobufs::TransformationSequence* transformations);
 
   void Apply() override;
+
  private:
   // All valid arithmetic operation types that are allowed to be transformed.
   std::unordered_set<SpvOp> valid_arithmetic_types {SpvOpIAdd, SpvOpISub, SpvOpIMul, SpvOpFAdd, SpvOpFSub, SpvOpFMul};

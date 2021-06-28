@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/fuzz/transformation_composite_construct.h"
 #include "source/fuzz/transformation_wrap_vector_synonym.h"
 #include "gtest/gtest.h"
 #include "source/fuzz/data_descriptor.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
+#include "source/fuzz/transformation_composite_construct.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -25,7 +25,6 @@ namespace fuzz {
 namespace {
 
 TEST(TransformationWrapVectorSynonym, SimpleTest) {
-
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -233,55 +232,57 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-    // Type Id |   Type   |
-    // --------+----------+
-    //    6    |   int32  |
-    //    18   |  uint32  |
-    //    31   |   float  |
+  // Type Id |   Type   |
+  // --------+----------+
+  //    6    |   int32  |
+  //    18   |  uint32  |
+  //    31   |   float  |
 
-    // Vec Type Id |   Vector Type  |  Element Type id |   Element Type  |
-    // ------------+----------------+------------------+-----------------+
-    //     12      |      vec2      |         6        |      int32      |
-    //     24      |      vec3      |        18        |     uint32      |
-    //     37      |      vec4      |        31        |      float      |
+  // Vec Type Id |   Vector Type  |  Element Type id |   Element Type  |
+  // ------------+----------------+------------------+-----------------+
+  //     12      |      vec2      |         6        |      int32      |
+  //     24      |      vec3      |        18        |     uint32      |
+  //     37      |      vec4      |        31        |      float      |
 
-    // Instruction Id | Opcode  | Type Id | constant id 1 | constant id 2 |
-    // ---------------+---------+---------+---------------+---------------+
-    //       50       | OpIAdd  |    6    |      48       |      49       |
-    //       54       | OpISub  |    6    |      52       |      53       |
-    //       58       | OpIMul  |    6    |      56       |      56       |
-    //       62       | OpSDiv  |    6    |      60       |      61       |
-    //       66       | OpIAdd  |    18   |      64       |      65       |
-    //       70       | OpISub  |    18   |      68       |      69       |
-    //       74       | OpIMul  |    18   |      72       |      73       |
-    //       78       | OpUDiv  |    18   |      76       |      77       |
-    //       82       | OpFAdd  |    31   |      80       |      81       |
-    //       86       | OpFSub  |    31   |      84       |      85       |
-    //       90       | OpFMul  |    31   |      88       |      89       |
-    //       94       | OpFDiv  |    31   |      92       |      93       |
+  // Instruction Id | Opcode  | Type Id | constant id 1 | constant id 2 |
+  // ---------------+---------+---------+---------------+---------------+
+  //       50       | OpIAdd  |    6    |      48       |      49       |
+  //       54       | OpISub  |    6    |      52       |      53       |
+  //       58       | OpIMul  |    6    |      56       |      56       |
+  //       62       | OpSDiv  |    6    |      60       |      61       |
+  //       66       | OpIAdd  |    18   |      64       |      65       |
+  //       70       | OpISub  |    18   |      68       |      69       |
+  //       74       | OpIMul  |    18   |      72       |      73       |
+  //       78       | OpUDiv  |    18   |      76       |      77       |
+  //       82       | OpFAdd  |    31   |      80       |      81       |
+  //       86       | OpFSub  |    31   |      84       |      85       |
+  //       90       | OpFMul  |    31   |      88       |      89       |
+  //       94       | OpFDiv  |    31   |      92       |      93       |
 
   // Transformation Syntax:
   //  TransformationCompositeConstruct( uint32_t composite_type_id,
   //                                    std::vector<uint32_t> component,
-  //                                    const protobufs::InstructionDescriptor& instruction_to_insert_before,
-  //                                    uint32_t fresh_id);
+  //                                    const protobufs::InstructionDescriptor&
+  //                                    instruction_to_insert_before, uint32_t
+  //                                    fresh_id);
   //
-  //  TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t result_id1,
+  //  TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t
+  //  result_id1,
   //                                  uint32_t result_id2, uint32_t vec_id,
   //                                  uint32_t vec_type_id, uint32_t pos);
 
-  TransformationCompositeConstruct add_int_vec1 (12, {48, 48},
-                                                MakeInstructionDescriptor(50, SpvOpIAdd, 0),
-                                                100);
+  TransformationCompositeConstruct add_int_vec1(
+      12, {48, 48}, MakeInstructionDescriptor(50, SpvOpIAdd, 0), 100);
   ASSERT_TRUE(add_int_vec1.IsApplicable(context.get(), transformation_context));
 
-  TransformationCompositeConstruct add_int_vec2 (12, {49, 49},
-                                                 MakeInstructionDescriptor(50, SpvOpIAdd, 0),
-                                                 101);
+  TransformationCompositeConstruct add_int_vec2(
+      12, {49, 49}, MakeInstructionDescriptor(50, SpvOpIAdd, 0), 101);
   ASSERT_TRUE(add_int_vec2.IsApplicable(context.get(), transformation_context));
-  // Insert vec2 of id 100 with the first value of OpIAdd instruction with id 50.
+  // Insert vec2 of id 100 with the first value of OpIAdd instruction with
+  // id 50.
   ApplyAndCheckFreshIds(add_int_vec1, context.get(), &transformation_context);
-  // Insert vec2 of id 101 with the second value of OpIAdd instruction with id 50.
+  // Insert vec2 of id 101 with the second value of OpIAdd instruction with
+  // id 50.
   ApplyAndCheckFreshIds(add_int_vec2, context.get(), &transformation_context);
 
   // The following are all invalid use.
@@ -292,34 +293,41 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
     ASSERT_FALSE(
         wrap_add_int_bad1.IsApplicable(context.get(), transformation_context));
 
-    // Bad: Instruction id given is not of a valid arithmetic operation typed instruction.
+    // Bad: Instruction id given is not of a valid arithmetic operation typed
+    // instruction.
     TransformationWrapVectorSynonym wrap_add_int_bad2(80, 100, 101, 102, 12, 1);
     ASSERT_FALSE(
         wrap_add_int_bad1.IsApplicable(context.get(), transformation_context));
 
     // Bad: the id for the first vector does not exist.
     TransformationWrapVectorSynonym wrap_add_int_bad3(50, 105, 101, 102, 12, 1);
-    ASSERT_FALSE(wrap_add_int_bad3.IsApplicable(context.get(), transformation_context));
+    ASSERT_FALSE(
+        wrap_add_int_bad3.IsApplicable(context.get(), transformation_context));
 
     // Bad: the id for the second vector does not exist.
     TransformationWrapVectorSynonym wrap_add_int_bad4(50, 100, 105, 102, 12, 1);
-    ASSERT_FALSE(wrap_add_int_bad4.IsApplicable(context.get(), transformation_context));
+    ASSERT_FALSE(
+        wrap_add_int_bad4.IsApplicable(context.get(), transformation_context));
 
     // Bad: vector type id does not correspond to a valid vector type.
     TransformationWrapVectorSynonym wrap_add_int_bad5(50, 100, 101, 102, 13, 1);
-    ASSERT_FALSE(wrap_add_int_bad5.IsApplicable(context.get(), transformation_context));
+    ASSERT_FALSE(
+        wrap_add_int_bad5.IsApplicable(context.get(), transformation_context));
 
     // Bad: vector id is not fresh.
     TransformationWrapVectorSynonym wrap_add_int_bad6(50, 100, 101, 94, 12, 1);
-    ASSERT_FALSE(wrap_add_int_bad6.IsApplicable(context.get(), transformation_context));
+    ASSERT_FALSE(
+        wrap_add_int_bad6.IsApplicable(context.get(), transformation_context));
 
     // Bad: the two vectors being added are the same.
     TransformationWrapVectorSynonym wrap_add_int_bad7(50, 100, 100, 94, 12, 1);
-    ASSERT_FALSE(wrap_add_int_bad7.IsApplicable(context.get(), transformation_context));
+    ASSERT_FALSE(
+        wrap_add_int_bad7.IsApplicable(context.get(), transformation_context));
 
     // Bad: The position goes out of bound for the given vector type.
     TransformationWrapVectorSynonym wrap_add_int_bad8(50, 100, 100, 94, 12, 2);
-    ASSERT_FALSE(wrap_add_int_bad8.IsApplicable(context.get(), transformation_context));
+    ASSERT_FALSE(
+        wrap_add_int_bad8.IsApplicable(context.get(), transformation_context));
   }
 
   // Good: The following transformation should be applicable.
@@ -333,8 +341,8 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
   // %101 = OpCompositeConstruct %12 $49 %49
   // %102 = OpIAdd %12 %100 %101
   //
-  // that wraps the variables of the original instruction and perform vector operation,
-  // should be added before:
+  // that wraps the variables of the original instruction and perform vector
+  // operation, should be added before:
   //
   // %50 = OpIAdd %6 %48 %49
   std::string after_transformation = R"(
@@ -535,7 +543,7 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
                OpReturn
                OpFunctionEnd
   )";
-//  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+  //  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 }  // namespace
