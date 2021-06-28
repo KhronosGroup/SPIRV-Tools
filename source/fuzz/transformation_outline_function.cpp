@@ -180,8 +180,7 @@ bool TransformationOutlineFunction::IsApplicable(
       // predecessors. If it does, then we do not regard the region as single-
       // entry-single-exit and hence do not outline it.
       for (auto pred : ir_context->cfg()->preds(block.id())) {
-        if (!fuzzerutil::BlockIsReachableInItsFunction(
-                ir_context, ir_context->cfg()->block(pred))) {
+        if (!ir_context->IsReachable(*ir_context->cfg()->block(pred))) {
           // The predecessor is unreachable.
           return false;
         }

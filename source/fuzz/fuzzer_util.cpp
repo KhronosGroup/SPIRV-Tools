@@ -252,11 +252,11 @@ bool BlockIsBackEdge(opt::IRContext* context, uint32_t block_id,
     return false;
   }
 
-  // |block_id| must be reachable and be dominated by |loop_header|.
+  // |block| must be reachable and be dominated by |loop_header|.
   opt::DominatorAnalysis* dominator_analysis =
       context->GetDominatorAnalysis(loop_header->GetParent());
-  return dominator_analysis->IsReachable(block_id) &&
-         dominator_analysis->Dominates(loop_header_id, block_id);
+  return context->IsReachable(*block) &&
+         dominator_analysis->Dominates(loop_header, block);
 }
 
 bool BlockIsInLoopContinueConstruct(opt::IRContext* context, uint32_t block_id,
@@ -282,13 +282,6 @@ opt::BasicBlock::iterator GetIteratorForInstruction(
     }
   }
   return block->end();
-}
-
-bool BlockIsReachableInItsFunction(opt::IRContext* context,
-                                   opt::BasicBlock* bb) {
-  auto enclosing_function = bb->GetParent();
-  return context->GetDominatorAnalysis(enclosing_function)
-      ->Dominates(enclosing_function->entry().get(), bb);
 }
 
 bool CanInsertOpcodeBeforeInstruction(
@@ -660,13 +653,12 @@ bool IdIsAvailableAtUse(opt::IRContext* context,
     // It is not OK for a definition to use itself.
     return false;
   }
-  auto dominator_analysis = context->GetDominatorAnalysis(enclosing_function);
-  if (!dominator_analysis->IsReachable(
-          context->get_instr_block(use_instruction)) ||
-      !dominator_analysis->IsReachable(context->get_instr_block(id))) {
+  if (!context->IsReachable(*context->get_instr_block(use_instruction)) ||
+      !context->IsReachable(*context->get_instr_block(id))) {
     // Skip unreachable blocks.
     return false;
   }
+  auto dominator_analysis = context->GetDominatorAnalysis(enclosing_function);
   if (use_instruction->opcode() == SpvOpPhi) {
     // In the case where the use is an operand to OpPhi, it is actually the
     // *parent* block associated with the operand that must be dominated by
@@ -704,8 +696,8 @@ bool IdIsAvailableBeforeInstruction(opt::IRContext* context,
   }
   const auto* dominator_analysis =
       context->GetDominatorAnalysis(function_enclosing_instruction);
-  if (dominator_analysis->IsReachable(context->get_instr_block(instruction)) &&
-      dominator_analysis->IsReachable(context->get_instr_block(id)) &&
+  if (context->IsReachable(*context->get_instr_block(instruction)) &&
+      context->IsReachable(*context->get_instr_block(id)) &&
       dominator_analysis->Dominates(id_definition, instruction)) {
     // The id's definition dominates the instruction, and both the definition
     // and the instruction are in reachable blocks, thus the id is available at
@@ -715,8 +707,7 @@ bool IdIsAvailableBeforeInstruction(opt::IRContext* context,
   if (id_definition->opcode() == SpvOpVariable &&
       function_enclosing_instruction ==
           context->get_instr_block(id)->GetParent()) {
-    assert(!dominator_analysis->IsReachable(
-               context->get_instr_block(instruction)) &&
+    assert(!context->IsReachable(*context->get_instr_block(instruction)) &&
            "If the instruction were in a reachable block we should already "
            "have returned true.");
     // The id is a variable and it is in the same function as |instruction|.
@@ -1883,7 +1874,7 @@ bool NewTerminatorPreservesDominationRules(opt::IRContext* ir_context,
   // all its dependencies satisfy domination rules (i.e. all id operands
   // dominate that instruction).
   for (const auto& block : *mutated_block->GetParent()) {
-    if (!dominator_analysis.IsReachable(&block)) {
+    if (!ir_context->IsReachable(block)) {
       // If some block is not reachable then we don't need to worry about the
       // preservation of domination rules for its instructions.
       continue;

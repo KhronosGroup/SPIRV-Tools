@@ -1034,5 +1034,11 @@ bool IRContext::CheckCFG() {
 
   return true;
 }
+
+bool IRContext::IsReachable(const opt::BasicBlock& bb) {
+  auto enclosing_function = bb.GetParent();
+  return GetDominatorAnalysis(enclosing_function)
+      ->Dominates(enclosing_function->entry().get(), &bb);
+}
 }  // namespace opt
 }  // namespace spvtools

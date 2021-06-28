@@ -44,7 +44,7 @@ AvailableInstructions::AvailableInstructions(
     // Consider every reachable block in the function.
     auto dominator_analysis = ir_context->GetDominatorAnalysis(&function);
     for (auto& block : function) {
-      if (!fuzzerutil::BlockIsReachableInItsFunction(ir_context, &block)) {
+      if (!ir_context->IsReachable(block)) {
         // The block is not reachable.
         continue;
       }

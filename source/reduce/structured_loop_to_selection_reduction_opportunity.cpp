@@ -27,10 +27,8 @@ const uint32_t kMergeNodeIndex = 0;
 
 bool StructuredLoopToSelectionReductionOpportunity::PreconditionHolds() {
   // Is the loop header reachable?
-  return loop_construct_header_->GetLabel()
-      ->context()
-      ->GetDominatorAnalysis(loop_construct_header_->GetParent())
-      ->IsReachable(loop_construct_header_);
+  return loop_construct_header_->GetLabel()->context()->IsReachable(
+      *loop_construct_header_);
 }
 
 void StructuredLoopToSelectionReductionOpportunity::Apply() {
@@ -78,8 +76,7 @@ void StructuredLoopToSelectionReductionOpportunity::RedirectToClosestMergeBlock(
     }
     already_seen.insert(pred);
 
-    if (!context_->GetDominatorAnalysis(loop_construct_header_->GetParent())
-             ->IsReachable(pred)) {
+    if (!context_->IsReachable(*context_->cfg()->block(pred))) {
       // We do not care about unreachable predecessors (and dominance
       // information, and thus the notion of structured control flow, makes
       // little sense for unreachable blocks).

@@ -83,8 +83,7 @@ bool TransformationAddDeadContinue::IsApplicable(
   auto continue_block =
       ir_context->cfg()->block(loop_header)->ContinueBlockId();
 
-  if (!fuzzerutil::BlockIsReachableInItsFunction(
-          ir_context, ir_context->cfg()->block(continue_block))) {
+  if (!ir_context->IsReachable(*ir_context->cfg()->block(continue_block))) {
     // If the loop's continue block is unreachable, we conservatively do not
     // allow adding a dead continue, to avoid the compilations that arise due to
     // the lack of sensible dominance information for unreachable blocks.

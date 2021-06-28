@@ -598,9 +598,13 @@ class IRContext {
   bool ProcessCallTreeFromRoots(ProcessFunction& pfn,
                                 std::queue<uint32_t>* roots);
 
-  // Emmits a error message to the message consumer indicating the error
+  // Emits a error message to the message consumer indicating the error
   // described by |message| occurred in |inst|.
   void EmitErrorMessage(std::string message, Instruction* inst);
+
+  // Returns true if and only if there is a path to |bb| from the entry block of
+  // the function that contains |bb|.
+  bool IsReachable(const opt::BasicBlock& bb);
 
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
