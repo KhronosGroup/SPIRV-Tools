@@ -43,6 +43,9 @@ bool TransformationMergeBlocks::IsApplicable(
   }
   auto first_block = ir_context->cfg()->block(predecessors.at(0));
 
+  if (!ir_context->IsReachable(*first_block)) {
+    return false;
+  }
   return opt::blockmergeutil::CanMergeWithSuccessor(ir_context, first_block);
 }
 

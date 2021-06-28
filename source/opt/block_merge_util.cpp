@@ -103,9 +103,6 @@ bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block) {
     return false;
   }
 
-  // Don't bother trying to merge unreachable blocks.
-  if (!context->IsReachable(*block)) return false;
-
   Instruction* merge_inst = block->GetMergeInst();
   const bool pred_is_header = IsHeader(block);
   if (pred_is_header && lab_id != merge_inst->GetSingleWordInOperand(0u)) {
