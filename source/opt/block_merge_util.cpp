@@ -130,6 +130,10 @@ bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block) {
 
 void MergeWithSuccessor(IRContext* context, Function* func,
                         Function::iterator bi) {
+  assert(CanMergeWithSuccessor(context, &*bi) &&
+         "Precondition failure for MergeWithSuccessor: it must be legal to "
+         "merge the block and its successor.");
+
   auto ii = bi->end();
   --ii;
   Instruction* br = &*ii;

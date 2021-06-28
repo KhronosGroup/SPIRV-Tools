@@ -28,10 +28,9 @@ namespace opt {
 bool BlockMergePass::MergeBlocks(Function* func) {
   bool modified = false;
   for (auto bi = func->begin(); bi != func->end();) {
-
     // Don't bother trying to merge unreachable blocks.
-    auto dominators = context()->GetDominatorAnalysis(bi->GetParent());
-    if (dominators->IsReachable(&*bi) && blockmergeutil::CanMergeWithSuccessor(context(), &*bi)) {
+    if (context()->IsReachable(*bi) &&
+        blockmergeutil::CanMergeWithSuccessor(context(), &*bi)) {
       blockmergeutil::MergeWithSuccessor(context(), func, bi);
       // Reprocess block.
       modified = true;
