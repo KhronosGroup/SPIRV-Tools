@@ -38,6 +38,8 @@ set(SPIRV_TOOLS_REDUCE_SOURCES
         remove_unused_struct_member_reduction_opportunity_finder.h
         simple_conditional_branch_to_branch_opportunity_finder.h
         simple_conditional_branch_to_branch_reduction_opportunity.h
+        structured_construct_to_block_reduction_opportunity.h
+        structured_construct_to_block_reduction_opportunity_finder.h
         structured_loop_to_selection_reduction_opportunity.h
         structured_loop_to_selection_reduction_opportunity_finder.h
 
@@ -67,6 +69,8 @@ set(SPIRV_TOOLS_REDUCE_SOURCES
         remove_unused_struct_member_reduction_opportunity_finder.cpp
         simple_conditional_branch_to_branch_opportunity_finder.cpp
         simple_conditional_branch_to_branch_reduction_opportunity.cpp
+        structured_construct_to_block_reduction_opportunity.cpp
+        structured_construct_to_block_reduction_opportunity_finder.cpp
         structured_loop_to_selection_reduction_opportunity.cpp
         structured_loop_to_selection_reduction_opportunity_finder.cpp
 )
