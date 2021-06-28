@@ -268,7 +268,7 @@ bool Loop::IsBasicBlockInLoopSlow(const BasicBlock* bb) {
   assert(bb->GetParent() && "The basic block does not belong to a function");
   DominatorAnalysis* dom_analysis =
       context_->GetDominatorAnalysis(bb->GetParent());
-  if (context_->IsReachable(*bb) &&
+  if (dom_analysis->IsReachable(bb) &&
       !dom_analysis->Dominates(GetHeaderBlock(), bb))
     return false;
 
