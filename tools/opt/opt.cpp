@@ -406,6 +406,12 @@ Options (in lexicographical order):)",
                Removes duplicate types, decorations, capabilities and extension
                instructions.)");
   printf(R"(
+  --remove-unused-interface-variables
+               Removes variables referenced on the |OpEntryPoint| instruction 
+               that are not referenced in the entry point function or any function 
+               in its call tree.  Note that this could cause the shader interface 
+               to no longer match other shader stages.)");
+  printf(R"(
   --replace-invalid-opcode
                Replaces instructions whose opcode is valid for shader modules,
                but not for the current shader stage.  To have an effect, all

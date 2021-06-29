@@ -153,6 +153,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/register_pressure.cpp \
 		source/opt/relax_float_ops_pass.cpp \
 		source/opt/remove_duplicates_pass.cpp \
+		source/opt/remove_unused_interface_variables_pass.cpp \
 		source/opt/replace_invalid_opc.cpp \
 		source/opt/scalar_analysis.cpp \
 		source/opt/scalar_analysis_simplification.cpp \
