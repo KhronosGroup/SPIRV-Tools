@@ -297,6 +297,221 @@ OpEntryPoint Vertex %func "shader"
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Invalid storage class for target environment"));
 }
+
+struct UndefCase {
+  std::string model;
+  std::string storage_class;
+  bool variable_pointers;
+  bool variable_pointers_storage_buffer;
+  std::string expected_error;  // empty if validation should pass.
+};
+std::ostream& operator<<(std::ostream& os, const UndefCase& uc) {
+  os << "UndefCase(" << uc.model << " " << uc.storage_class
+     << (uc.variable_pointers ? " vp" : "")
+     << (uc.variable_pointers_storage_buffer ? " vpsb" : "") << ")";
+  return os;
+}
+
+using ValidateMiscUndef = spvtest::ValidateBase<UndefCase>;
+
+std::string Preamble(const UndefCase& undef_case) {
+  const auto addresses_cap = std::string(
+      (undef_case.model == "Physical32" || undef_case.model == "Physical64")
+          ? "OpCapability Addresses\n"
+          : "");
+
+  const auto storage_buffer_ext =
+      std::string((undef_case.storage_class == "StorageBuffer")
+                      ? "OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
+                      : "");
+
+  const auto physical_buffer_cap =
+      std::string(undef_case.model == "PhysicalStorageBuffer64"
+                      ? "OpCapability PhysicalStorageBufferAddresses\n"
+                      : "");
+  const auto physical_buffer_ext =
+      std::string(undef_case.model == "PhysicalStorageBuffer64"
+                      ? "OpExtension \"SPV_KHR_physical_storage_buffer\"\n"
+                      : "");
+
+  const auto var_ptr_cap =
+      std::string(undef_case.variable_pointers
+                      ? "OpCapability VariablePointers\n"
+                      : "") +
+      std::string(undef_case.variable_pointers_storage_buffer
+                      ? "OpCapability VariablePointersStorageBuffer\n"
+                      : "");
+  const auto var_ptr_ext = std::string(
+      !var_ptr_cap.empty() ? "OpExtension \"SPV_KHR_variable_pointers\"\n"
+                           : "");
+
+  return addresses_cap + physical_buffer_cap + var_ptr_cap +
+         "OpCapability Shader\n" + storage_buffer_ext + physical_buffer_ext +
+         var_ptr_ext +
+
+         R"(
+OpMemoryModel )" +
+         undef_case.model + R"( Simple
+)";
+}
+
+TEST_P(ValidateMiscUndef, Undef_ModuleScope) {
+  const std::string spirv = Preamble(GetParam()) + R"(
+OpEntryPoint Vertex %func "shader"
+%int = OpTypeInt 32 0
+%ptr = OpTypePointer )" + GetParam().storage_class +
+                            R"( %int
+%undef = OpUndef %ptr
+
+%void   = OpTypeVoid
+%void_f = OpTypeFunction %void
+%func   = OpFunction %void None %void_f
+%label  = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  if (GetParam().expected_error.empty()) {
+    EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+    EXPECT_EQ(getDiagnosticString(), "") << spirv;
+  } else {
+    EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(GetParam().expected_error));
+  }
+}
+
+TEST_P(ValidateMiscUndef, Undef_FunctionScope) {
+  const std::string spirv = Preamble(GetParam()) + R"(
+OpEntryPoint Vertex %func "shader"
+%int = OpTypeInt 32 0
+%ptr = OpTypePointer )" + 
+                            GetParam().storage_class +
+                            R"( %int
+
+%void   = OpTypeVoid
+%void_f = OpTypeFunction %void
+%func   = OpFunction %void None %void_f
+%label  = OpLabel
+%undef = OpUndef %ptr
+          OpReturn
+          OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  if (GetParam().expected_error.empty()) {
+    EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+    EXPECT_EQ(getDiagnosticString(), "") << spirv;
+  } else {
+    EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(GetParam().expected_error));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    WithoutVariablePointers, ValidateMiscUndef,
+    ::testing::ValuesIn(std::vector<UndefCase>{
+        {"Physical32", "Private", false, false, ""},
+        {"Physical64", "Private", false, false, ""},
+        // PhysicalStorageBuffer64 addressing model
+        {"PhysicalStorageBuffer64", "PhysicalStorageBuffer", false, false,
+         "Cannot create undefined ponter for PhysicalStorageBuffer storage "
+         "class"},
+        {"PhysicalStorageBuffer64", "Function", false, false,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "Private", false, false,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "StorageBuffer", false, false,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "Uniform", false, false,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "UniformConstant", false, false,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "Workgroup", false, false,
+         "Cannot create undefined logical pointer"},
+        // Logical addressing model
+        {"Logical", "Function", false, false,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "Private", false, false,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "StorageBuffer", false, false,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "Uniform", false, false,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "UniformConstant", false, false,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "Workgroup", false, false,
+         "Cannot create undefined logical pointer"},
+    }));
+
+INSTANTIATE_TEST_SUITE_P(
+    VariablePointers, ValidateMiscUndef,
+    ::testing::ValuesIn(std::vector<UndefCase>{
+        // PhysicalStorageBuffer64 addressing model
+        {"PhysicalStorageBuffer64", "PhysicalStorageBuffer", false, false,
+         "Cannot create undefined ponter for PhysicalStorageBuffer storage "
+         "class"},
+        {"PhysicalStorageBuffer64", "Function", true, false,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "Private", true, false,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "StorageBuffer", true, false,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "Uniform", true, false,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "UniformConstant", true, false,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "Workgroup", true, false,
+         "Cannot create undefined logical pointer"},
+        // Logical addressing model
+        {"Logical", "Function", true, false,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "Private", true, false,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "StorageBuffer", true, false,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "Uniform", true, false,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "UniformConstant", true, false,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "Workgroup", true, false,
+         "Cannot create undefined logical pointer"},
+    }));
+
+INSTANTIATE_TEST_SUITE_P(
+    VariablePointersStorageBuffer, ValidateMiscUndef,
+    ::testing::ValuesIn(std::vector<UndefCase>{
+        // PhysicalStorageBuffer64 addressing model
+        {"PhysicalStorageBuffer64", "PhysicalStorageBuffer", false, false,
+         "Cannot create undefined ponter for PhysicalStorageBuffer storage "
+         "class"},
+        {"PhysicalStorageBuffer64", "Function", false, true,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "Private", false, true,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "StorageBuffer", false, true,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "Uniform", false, true,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "UniformConstant", false, true,
+         "Cannot create undefined logical pointer"},
+        {"PhysicalStorageBuffer64", "Workgroup", false, true,
+         "Cannot create undefined logical pointer"},
+        // Logical addressing model
+        {"Logical", "Function", false, true,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "Private", false, true,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "StorageBuffer", false, true,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "Uniform", false, true,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "UniformConstant", false, true,
+         "Cannot create undefined logical pointer"},
+        {"Logical", "Workgroup", false, true,
+         "Cannot create undefined logical pointer"},
+    }));
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

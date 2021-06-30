@@ -324,14 +324,15 @@ bool IsTypeNullable(const std::vector<uint32_t>& instruction,
       }
       return true;
     }
-    case SpvOpTypePointer:
-      if (instruction[2] == SpvStorageClassPhysicalStorageBuffer) {
-        return false;
-      }
-      return true;
+    case SpvOpTypePointer: {
+      const auto type_id = instruction[1];
+      return !_.SupportsLogicalPointers() ||
+             _.TypeSupportsVariablePointers(type_id);
+    }
     default:
-      return false;
+      break;
   }
+  return false;
 }
 
 spv_result_t ValidateConstantNull(ValidationState_t& _,
