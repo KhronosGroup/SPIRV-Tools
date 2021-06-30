@@ -26,17 +26,32 @@ namespace val {
 namespace {
 
 spv_result_t ValidateUndef(ValidationState_t& _, const Instruction* inst) {
-  if (_.IsVoidType(inst->type_id())) {
+  const auto type_id = inst->type_id();
+  if (_.IsVoidType(type_id)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Cannot create undefined values with void type";
   }
   if (_.HasCapability(SpvCapabilityShader) &&
-      _.ContainsLimitedUseIntOrFloatType(inst->type_id()) &&
-      !_.IsPointerType(inst->type_id())) {
+      _.ContainsLimitedUseIntOrFloatType(type_id) &&
+      !_.IsPointerType(type_id)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Cannot create undefined values with 8- or 16-bit types";
   }
-
+  if (_.IsLogicalPointerType(type_id)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Cannot create undefined logical pointer";
+  }
+  uint32_t data_type = 0;
+  uint32_t storage_class = 0;
+  if (_.GetPointerTypeInfo(type_id, &data_type, &storage_class)) {
+    // OpUndef of pointer into PhysicalStorageBuffer storage is disallowed.
+    // Khronos SPIR-V internal issue #660
+    if (storage_class == SpvStorageClassPhysicalStorageBuffer) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "Cannot create undefined pointer for PhysicalStorageBuffer "
+                "storage class";
+    }
+  }
   return SPV_SUCCESS;
 }
 
@@ -110,10 +125,6 @@ spv_result_t MiscPass(ValidationState_t& _, const Instruction* inst) {
     case SpvOpUndef:
       if (auto error = ValidateUndef(_, inst)) return error;
       break;
-    default:
-      break;
-  }
-  switch (inst->opcode()) {
     case SpvOpBeginInvocationInterlockEXT:
     case SpvOpEndInvocationInterlockEXT:
       _.function(inst->function()->id())

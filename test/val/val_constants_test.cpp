@@ -37,18 +37,23 @@ using ::testing::ValuesIn;
 
 using ValidateConstant = spvtest::ValidateBase<bool>;
 
-#define kBasicTypes                             \
-  "%bool = OpTypeBool "                         \
-  "%uint = OpTypeInt 32 0 "                     \
-  "%uint2 = OpTypeVector %uint 2 "              \
-  "%float = OpTypeFloat 32 "                    \
-  "%_ptr_uint = OpTypePointer Workgroup %uint " \
-  "%uint_0 = OpConstantNull %uint "             \
-  "%uint2_0 = OpConstantNull %uint "            \
-  "%float_0 = OpConstantNull %float "           \
-  "%false = OpConstantFalse %bool "             \
-  "%true = OpConstantTrue %bool "               \
-  "%null = OpConstantNull %_ptr_uint "
+#define kBasicTypes                                      \
+  "%bool = OpTypeBool                                \n" \
+  "%uint = OpTypeInt 32 0                            \n" \
+  "%uint2 = OpTypeVector %uint 2                     \n" \
+  "%float = OpTypeFloat 32                           \n" \
+  "%_ptr_uint = OpTypePointer Workgroup %uint        \n" \
+  "%uint_0 = OpConstantNull %uint                    \n" \
+  "%uint2_0 = OpConstantNull %uint                   \n" \
+  "%float_0 = OpConstantNull %float                  \n" \
+  "%false = OpConstantFalse %bool                    \n" \
+  "%true = OpConstantTrue %bool                      \n" \
+  "%uint_1 = OpConstant %uint 1                      \n" \
+  "%uint_arr_1 = OpTypeArray %uint %uint_1           \n" \
+  "%_ptr_arr = OpTypePointer Workgroup %uint_arr_1   \n" \
+  "%wgvar = OpVariable %_ptr_arr Workgroup           \n"
+
+#define kNullPtrTypes "%null = OpConstantNull %_ptr_uint "
 
 #define kShaderPreamble    \
   "OpCapability Shader\n"  \
@@ -67,6 +72,12 @@ struct ConstantOpCase {
   bool expect_success;
   std::string expect_err;
 };
+std::ostream& operator<<(std::ostream& os, const ConstantOpCase& c) {
+  os << "ConstantOpCase(" << int(c.env) << " " << c.assembly << " "
+     << (c.expect_success ? "expect_pass" : "expect_fail)") << " "
+     << c.expect_err << ")";
+  return os;
+}
 
 using ValidateConstantOp = spvtest::ValidateBase<ConstantOpCase>;
 
@@ -85,8 +96,11 @@ TEST_P(ValidateConstantOp, Samples) {
 
 #define GOOD_SHADER_10(STR) \
   { SPV_ENV_UNIVERSAL_1_0, kShaderPreamble kBasicTypes STR, true, "" }
-#define GOOD_KERNEL_10(STR) \
-  { SPV_ENV_UNIVERSAL_1_0, kKernelPreamble kBasicTypes STR, true, "" }
+#define GOOD_KERNEL_10(STR)                                               \
+  {                                                                       \
+    SPV_ENV_UNIVERSAL_1_0, kKernelPreamble kBasicTypes kNullPtrTypes STR, \
+        true, ""                                                          \
+  }
 INSTANTIATE_TEST_SUITE_P(
     UniversalInShader, ValidateConstantOp,
     ValuesIn(std::vector<ConstantOpCase>{
@@ -304,9 +318,9 @@ INSTANTIATE_TEST_SUITE_P(
                       "ConvertFToU"),
         BAD_SHADER_10("%v = OpSpecConstantOp %float ConvertUToF %uint_0",
                       "ConvertUToF"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %_ptr_uint GenericCastToPtr %null",
+        BAD_SHADER_10("%v = OpSpecConstantOp %_ptr_arr GenericCastToPtr %wgvar",
                       "GenericCastToPtr"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %_ptr_uint PtrCastToGeneric %null",
+        BAD_SHADER_10("%v = OpSpecConstantOp %_ptr_arr PtrCastToGeneric %wgvar",
                       "PtrCastToGeneric"),
         BAD_SHADER_10("%v = OpSpecConstantOp %uint Bitcast %uint_0", "Bitcast"),
         BAD_SHADER_10("%v = OpSpecConstantOp %float FNegate %float_0",
@@ -324,16 +338,16 @@ INSTANTIATE_TEST_SUITE_P(
         BAD_SHADER_10("%v = OpSpecConstantOp %float FMod %float_0 %float_0",
                       "FMod"),
         BAD_SHADER_10(
-            "%v = OpSpecConstantOp %_ptr_uint AccessChain %null %uint_0",
+            "%v = OpSpecConstantOp %_ptr_uint AccessChain %wgvar %uint_0",
             "AccessChain"),
         BAD_SHADER_10("%v = OpSpecConstantOp %_ptr_uint InBoundsAccessChain "
-                      "%null %uint_0",
+                      "%wgvar %uint_0",
                       "InBoundsAccessChain"),
         BAD_SHADER_10(
-            "%v = OpSpecConstantOp %_ptr_uint PtrAccessChain %null %uint_0",
+            "%v = OpSpecConstantOp %_ptr_uint PtrAccessChain %wgvar %uint_0",
             "PtrAccessChain"),
         BAD_SHADER_10("%v = OpSpecConstantOp %_ptr_uint "
-                      "InBoundsPtrAccessChain %null %uint_0",
+                      "InBoundsPtrAccessChain %wgvar %uint_0",
                       "InBoundsPtrAccessChain"),
     }));
 
@@ -477,6 +491,172 @@ OpName %ptr "ptr"
               HasSubstr("OpConstantNull Result Type <id> '1[%ptr]' cannot have "
                         "a null value"));
 }
+
+struct NullPointerCase {
+  std::string model;
+  std::string storage_class;
+  bool variable_pointers;
+  bool variable_pointers_storage_buffer;
+  std::string expected_error;  // empty if validation should pass.
+};
+std::ostream& operator<<(std::ostream& os, const NullPointerCase& npc) {
+  os << "NullPointerCase(" << npc.model << " " << npc.storage_class
+     << (npc.variable_pointers ? " vp" : "")
+     << (npc.variable_pointers_storage_buffer ? " vpsb" : "") << ")";
+  return os;
+}
+
+using ValidateConstantNullPointer = spvtest::ValidateBase<NullPointerCase>;
+
+std::string Preamble(const NullPointerCase& npc) {
+  const auto addresses_cap =
+      std::string((npc.model == "Physical32" || npc.model == "Physical64")
+                      ? "OpCapability Addresses\n"
+                      : "");
+
+  const auto storage_buffer_ext =
+      std::string((npc.storage_class == "StorageBuffer")
+                      ? "OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
+                      : "");
+
+  const auto physical_buffer_cap =
+      std::string(npc.model == "PhysicalStorageBuffer64"
+                      ? "OpCapability PhysicalStorageBufferAddresses\n"
+                      : "");
+  const auto physical_buffer_ext =
+      std::string(npc.model == "PhysicalStorageBuffer64"
+                      ? "OpExtension \"SPV_KHR_physical_storage_buffer\"\n"
+                      : "");
+
+  const auto var_ptr_cap =
+      std::string(npc.variable_pointers ? "OpCapability VariablePointers\n"
+                                        : "") +
+      std::string(npc.variable_pointers_storage_buffer
+                      ? "OpCapability VariablePointersStorageBuffer\n"
+                      : "");
+  const auto var_ptr_ext = std::string(
+      !var_ptr_cap.empty() ? "OpExtension \"SPV_KHR_variable_pointers\"\n"
+                           : "");
+
+  return addresses_cap + physical_buffer_cap + var_ptr_cap +
+         "OpCapability Shader\n" + storage_buffer_ext + physical_buffer_ext +
+         var_ptr_ext +
+
+         R"(
+OpMemoryModel )" +
+         npc.model + R"( Simple
+)";
+}
+
+TEST_P(ValidateConstantNullPointer, ConstantNull) {
+  const std::string spirv = Preamble(GetParam()) + R"(
+OpEntryPoint Vertex %func "shader"
+%int = OpTypeInt 32 0
+%ptr = OpTypePointer )" +
+                            GetParam().storage_class +
+                            R"( %int
+%null = OpConstantNull %ptr
+
+%void   = OpTypeVoid
+%void_f = OpTypeFunction %void
+%func   = OpFunction %void None %void_f
+%label  = OpLabel
+          OpReturn
+          OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  if (GetParam().expected_error.empty()) {
+    EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+    EXPECT_EQ(getDiagnosticString(), "") << spirv;
+  } else {
+    EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+    EXPECT_THAT(getDiagnosticString(), HasSubstr(GetParam().expected_error));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    WithoutVariablePointers, ValidateConstantNullPointer,
+    ::testing::ValuesIn(std::vector<NullPointerCase>{
+        {"Physical32", "Private", false, false, ""},
+        {"Physical64", "Private", false, false, ""},
+        // PhysicalStorageBuffer64 addressing model
+        {"PhysicalStorageBuffer64", "PhysicalStorageBuffer", false, false,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "Function", false, false,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "Private", false, false,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "StorageBuffer", false, false,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "Uniform", false, false,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "UniformConstant", false, false,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "Workgroup", false, false,
+         "cannot have a null value"},
+        // Logical addressing model
+        {"Logical", "Function", false, false, "cannot have a null value"},
+        {"Logical", "Private", false, false, "cannot have a null value"},
+        {"Logical", "StorageBuffer", false, false, "cannot have a null value"},
+        {"Logical", "Uniform", false, false, "cannot have a null value"},
+        {"Logical", "UniformConstant", false, false,
+         "cannot have a null value"},
+        {"Logical", "Workgroup", false, false, "cannot have a null value"},
+    }));
+
+INSTANTIATE_TEST_SUITE_P(
+    VariablePointers, ValidateConstantNullPointer,
+    ::testing::ValuesIn(std::vector<NullPointerCase>{
+        // PhysicalStorageBuffer64 addressing model
+        {"PhysicalStorageBuffer64", "PhysicalStorageBuffer", true, false,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "Function", true, false,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "Private", true, false,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "StorageBuffer", true, false,
+         ""},  // allowed
+        {"PhysicalStorageBuffer64", "Uniform", true, false,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "UniformConstant", true, false,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "Workgroup", true, false, ""},  // allowed
+        // Logical addressing model
+        {"Logical", "Function", true, false, "cannot have a null value"},
+        {"Logical", "Private", true, false, "cannot have a null value"},
+        {"Logical", "StorageBuffer", true, false, ""},  // allowed
+        {"Logical", "Uniform", true, false, "cannot have a null value"},
+        {"Logical", "UniformConstant", true, false, "cannot have a null value"},
+        {"Logical", "Workgroup", true, false, ""},  // allowed
+    }));
+
+INSTANTIATE_TEST_SUITE_P(
+    VariablePointersStorageBuffer, ValidateConstantNullPointer,
+    ::testing::ValuesIn(std::vector<NullPointerCase>{
+        // PhysicalStorageBuffer64 addressing model
+        {"PhysicalStorageBuffer64", "PhysicalStorageBuffer", false, true,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "Function", false, true,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "Private", false, true,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "StorageBuffer", false, true,
+         ""},  // allowed
+        {"PhysicalStorageBuffer64", "Uniform", false, true,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "UniformConstant", false, true,
+         "cannot have a null value"},
+        {"PhysicalStorageBuffer64", "Workgroup", false, true,
+         "cannot have a null value"},
+        // Logical addressing model
+        {"Logical", "Function", false, true, "cannot have a null value"},
+        {"Logical", "Private", false, true, "cannot have a null value"},
+        {"Logical", "StorageBuffer", false, true, ""},  // allowed
+        {"Logical", "Uniform", false, true, "cannot have a null value"},
+        {"Logical", "UniformConstant", false, true, "cannot have a null value"},
+        {"Logical", "Workgroup", false, true, "cannot have a null value"},
+    }));
 
 }  // namespace
 }  // namespace val

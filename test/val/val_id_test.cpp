@@ -1484,8 +1484,7 @@ TEST_F(ValidateIdWithMessage, OpConstantNullGood) {
  %4 = OpConstantNull %3
  %5 = OpTypeFloat 32
  %6 = OpConstantNull %5
- %7 = OpTypePointer UniformConstant %3
- %8 = OpConstantNull %7
+ ; OpConstantNull on pointer types is tested in val_constants_test.cpp
  %9 = OpTypeEvent
 %10 = OpConstantNull %9
 %11 = OpTypeDeviceEvent
@@ -1505,7 +1504,7 @@ TEST_F(ValidateIdWithMessage, OpConstantNullGood) {
 %24 = OpConstantNull %23
 %26 = OpTypeArray %17 %25
 %27 = OpConstantNull %26
-%28 = OpTypeStruct %7 %26 %26 %1
+%28 = OpTypeStruct %26 %26 %1
 %29 = OpConstantNull %28
 )";
   CompileSuccessfully(spirv.c_str());

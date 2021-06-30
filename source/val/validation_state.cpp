@@ -924,6 +924,51 @@ bool ValidationState_t::IsPointerType(uint32_t id) const {
   return inst->opcode() == SpvOpTypePointer;
 }
 
+bool ValidationState_t::SupportsLogicalPointers() const {
+  switch (addressing_model()) {
+    case SpvAddressingModelLogical:
+    case SpvAddressingModelPhysicalStorageBuffer64:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
+bool ValidationState_t::IsLogicalPointerType(uint32_t id) const {
+  if (!SupportsLogicalPointers()) {
+    return false;
+  }
+  uint32_t data_type_id = 0;
+  uint32_t storage_class = 0;
+  if (!GetPointerTypeInfo(id, &data_type_id, &storage_class)) {
+    return false;
+  }
+  return storage_class != SpvStorageClassPhysicalStorageBuffer;
+}
+
+bool ValidationState_t::TypeSupportsVariablePointers(uint32_t id) const {
+  if (!IsLogicalPointerType(id)) {
+    return false;
+  }
+  uint32_t data_type_id = 0;
+  uint32_t storage_class = 0;
+  if (!GetPointerTypeInfo(id, &data_type_id, &storage_class)) {
+    return false;
+  }
+  switch (storage_class) {
+    case SpvStorageClassStorageBuffer:
+      return features().variable_pointers_storage_buffer ||
+             features().variable_pointers;
+    case SpvStorageClassWorkgroup:
+      return features().variable_pointers;
+      break;
+    default:
+      break;
+  }
+  return false;
+}
+
 bool ValidationState_t::GetPointerTypeInfo(uint32_t id, uint32_t* data_type,
                                            uint32_t* storage_class) const {
   if (!id) return false;
