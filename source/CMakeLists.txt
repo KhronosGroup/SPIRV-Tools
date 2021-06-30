@@ -329,21 +329,6 @@ if (${SPIRV_TIMER_ENABLED})
     ${CMAKE_CURRENT_SOURCE_DIR}/util/timer.cpp)
 endif()
 
-# The software_version.cpp file includes build-version.inc.
-# Rebuild the software_version.cpp object file if it is older than
-# build-version.inc or whenever build-version.inc itself is out of
-# date.  In the latter case, rebuild build-version.inc first.
-# CMake is not smart enough to detect this dependency automatically.
-# Without this, the dependency detection system for #included files
-# does not kick in on a clean build for the following reason:  The
-# build will fail early because it doesn't know how to build the
-# missing source file build-version.inc. That occurs before the
-# preprocessor is run on software_version.cpp to detect the
-# #include dependency.
-set_source_files_properties(
-  ${CMAKE_CURRENT_SOURCE_DIR}/software_version.cpp
-  PROPERTIES OBJECT_DEPENDS "${SPIRV_TOOLS_BUILD_VERSION_INC}")
-
 spvtools_pch(SPIRV_SOURCES pch_source)
 
 # spirv_tools_default_target_options() sets the target options that are common
@@ -365,6 +350,7 @@ endfunction()
 # Always build ${SPIRV_TOOLS}-shared. This is expected distro packages, and
 # unlike the other SPIRV_TOOLS target, defaults to hidden symbol visibility.
 add_library(${SPIRV_TOOLS}-shared SHARED ${SPIRV_SOURCES})
+add_dependencies(${SPIRV_TOOLS}-shared spirv-tools-build-version)
 spirv_tools_default_target_options(${SPIRV_TOOLS}-shared)
 set_target_properties(${SPIRV_TOOLS}-shared PROPERTIES CXX_VISIBILITY_PRESET hidden)
 target_compile_definitions(${SPIRV_TOOLS}-shared
@@ -374,6 +360,7 @@ target_compile_definitions(${SPIRV_TOOLS}-shared
 
 if(SPIRV_TOOLS_BUILD_STATIC)
   add_library(${SPIRV_TOOLS}-static STATIC ${SPIRV_SOURCES})
+  add_dependencies(${SPIRV_TOOLS}-static spirv-tools-build-version)
   spirv_tools_default_target_options(${SPIRV_TOOLS}-static)
   # The static target does not have the '-static' suffix.
   set_target_properties(${SPIRV_TOOLS}-static PROPERTIES OUTPUT_NAME "${SPIRV_TOOLS}")
