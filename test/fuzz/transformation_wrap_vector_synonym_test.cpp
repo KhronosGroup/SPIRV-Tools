@@ -14,7 +14,6 @@
 
 #include "source/fuzz/transformation_wrap_vector_synonym.h"
 #include "gtest/gtest.h"
-#include "source/fuzz/data_descriptor.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/transformation_composite_construct.h"
@@ -232,12 +231,6 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-  // Type Id |   Type   |
-  // --------+----------+
-  //    6    |   int32  |
-  //    18   |  uint32  |
-  //    31   |   float  |
-
   // Vec Type Id |   Vector Type  |  Element Type id |   Element Type  |
   // ------------+----------------+------------------+-----------------+
   //     12      |      vec2      |         6        |      int32      |
@@ -269,7 +262,7 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
   //  TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t
   //  result_id1,
   //                                  uint32_t result_id2, uint32_t vec_id,
-  //                                  uint32_t vec_type_id, uint32_t pos);
+  //                                  uint32_t pos);
 
   TransformationCompositeConstruct add_int_vec1(
       12, {48, 48}, MakeInstructionDescriptor(50, SpvOpIAdd, 0), 100);
@@ -288,50 +281,49 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
   // The following are all invalid use.
   {
     // Bad: Instruction id does not exist.
-    TransformationWrapVectorSynonym wrap_add_int_bad1(103, 100, 101, 102, 12,
-                                                      1);
+    TransformationWrapVectorSynonym wrap_add_int_bad1(103, 100, 101, 102, 1);
     ASSERT_FALSE(
         wrap_add_int_bad1.IsApplicable(context.get(), transformation_context));
 
     // Bad: Instruction id given is not of a valid arithmetic operation typed
     // instruction.
-    TransformationWrapVectorSynonym wrap_add_int_bad2(80, 100, 101, 102, 12, 1);
+    TransformationWrapVectorSynonym wrap_add_int_bad2(80, 100, 101, 102, 1);
     ASSERT_FALSE(
         wrap_add_int_bad1.IsApplicable(context.get(), transformation_context));
 
     // Bad: the id for the first vector does not exist.
-    TransformationWrapVectorSynonym wrap_add_int_bad3(50, 105, 101, 102, 12, 1);
+    TransformationWrapVectorSynonym wrap_add_int_bad3(50, 105, 101, 102, 1);
     ASSERT_FALSE(
         wrap_add_int_bad3.IsApplicable(context.get(), transformation_context));
 
     // Bad: the id for the second vector does not exist.
-    TransformationWrapVectorSynonym wrap_add_int_bad4(50, 100, 105, 102, 12, 1);
+    TransformationWrapVectorSynonym wrap_add_int_bad4(50, 100, 105, 102, 1);
     ASSERT_FALSE(
         wrap_add_int_bad4.IsApplicable(context.get(), transformation_context));
 
-    // Bad: vector type id does not correspond to a valid vector type.
-    TransformationWrapVectorSynonym wrap_add_int_bad5(50, 100, 101, 102, 13, 1);
-    ASSERT_FALSE(
-        wrap_add_int_bad5.IsApplicable(context.get(), transformation_context));
-
     // Bad: vector id is not fresh.
-    TransformationWrapVectorSynonym wrap_add_int_bad6(50, 100, 101, 94, 12, 1);
+    TransformationWrapVectorSynonym wrap_add_int_bad6(50, 100, 101, 94, 1);
     ASSERT_FALSE(
         wrap_add_int_bad6.IsApplicable(context.get(), transformation_context));
 
     // Bad: the two vectors being added are the same.
-    TransformationWrapVectorSynonym wrap_add_int_bad7(50, 100, 100, 94, 12, 1);
+    TransformationWrapVectorSynonym wrap_add_int_bad7(50, 100, 100, 94, 1);
     ASSERT_FALSE(
         wrap_add_int_bad7.IsApplicable(context.get(), transformation_context));
 
     // Bad: The position goes out of bound for the given vector type.
-    TransformationWrapVectorSynonym wrap_add_int_bad8(50, 100, 100, 94, 12, 2);
+    TransformationWrapVectorSynonym wrap_add_int_bad8(50, 100, 100, 94, 2);
     ASSERT_FALSE(
         wrap_add_int_bad8.IsApplicable(context.get(), transformation_context));
   }
 
+  transformation_context.GetFactManager()->AddFactDataSynonym(MakeDataDescriptor(100, {1}),
+                                                              MakeDataDescriptor(48, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(MakeDataDescriptor(101, {1}),
+                                                              MakeDataDescriptor(49, {}));
+
   // Good: The following transformation should be applicable.
-  TransformationWrapVectorSynonym wrap_add_int(50, 100, 101, 105, 12, 1);
+  TransformationWrapVectorSynonym wrap_add_int(50, 100, 101, 105, 1);
   ASSERT_TRUE(wrap_add_int.IsApplicable(context.get(), transformation_context));
   // Insert an arithmetic instruction of the same type to add two vectors.
   ApplyAndCheckFreshIds(wrap_add_int, context.get(), &transformation_context);

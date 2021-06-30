@@ -2393,19 +2393,16 @@ message TransformationWrapVectorSynonym {
   uint32 instruction_id = 1;
 
   // The result id for the first vector that contains the first value of the scalar operation.
-  uint32 result_id1 = 2;
+  uint32 vector_operand1 = 2;
 
   // The result id for the second vector that contains the second value of the scalar operation.
-  uint32 result_id2 = 3;
+  uint32 vector_operand2 = 3;
 
   // A fresh id for the resulted vector from the addition of the first and second vector.
   uint32 vec_id = 4;
 
-  // Id of the vector type. Must be a valid type that is either vec2, vec3 or vec4.
-  uint32 vec_type_id = 5;
-
-  // The position in the vector where the value of original instruction is located in. Must be in
+  // The position in the vector where the value of original instruction is located. Must be in
   // the corresponding vector range.
-  uint32 scalar_position = 6;
+  uint32 scalar_position = 5;
 
 }

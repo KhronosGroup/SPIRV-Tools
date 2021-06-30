@@ -35,16 +35,16 @@ class TransformationWrapVectorSynonym : public Transformation {
   explicit TransformationWrapVectorSynonym(
       protobufs::TransformationWrapVectorSynonym message);
 
-  TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t result_id1,
-                                  uint32_t result_id2, uint32_t vec_id,
-                                  uint32_t vec_type_id, uint32_t pos);
+  TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t vector_operand1,
+                                  uint32_t vector_operand2, uint32_t vec_id,
+                                  uint32_t pos);
   // - |instruction_id| must be the id of a arithmetic operation.
-  // - |result_id1| and |result_id2| represents the result ids of the two added
+  // - |vector_operand1| and |vector_operand2| represents the result ids of the two added
   // vector.
   // - |vec_id| is a vector type for the result of the transformation.
   // - result vector type must match the type of two vectors being added.
   // - |vec_id| must be fresh.
-  // - |result_id1|, |result_id2| and |vec_id| should be different from each
+  // - |vector_operand1|, |vector_operand2| and |vec_id| should be different from each
   // other.
   // - They must be of a valid vector type.
   // - |pos| is a 0-indexed position of the component that contains the

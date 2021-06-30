@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "source/fuzz/fuzzer_pass_wrap_vector_synonym.h"
-#include <stdlib.h>
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/transformation_wrap_vector_synonym.h"
@@ -60,8 +59,6 @@ void FuzzerPassWrapVectorSynonym::Apply() {
 
         // Get a random vector size from 2 to 4.
         uint32_t component_count = GetFuzzerContext()->GetRandomIntegerFromRange(2,4);
-        // Get the vector type of size range from 2 to 4 of the corresponding scalar type.
-        uint32_t vec_type_id =  FindOrCreateVectorType(operand_type_id, component_count);
 
         // Randomly choose a position that target ids should be placed at.
         // The position is in range [0, n - 1], where n is the size of the vector.
@@ -126,10 +123,19 @@ void FuzzerPassWrapVectorSynonym::Apply() {
         ApplyTransformation(TransformationCompositeConstruct(operand_type_id, vec2_components,
                                                              instruction_descriptor, result_id2));
 
+        // Add synonym facts between original operands and id from the |scalar_position| of the vectors created.
+        GetTransformationContext()->GetFactManager()->AddFactDataSynonym(
+            MakeDataDescriptor(result_id1, {position}),
+            MakeDataDescriptor(instruction_iterator->GetSingleWordInOperand(0), {}));
+
+        GetTransformationContext()->GetFactManager()->AddFactDataSynonym(
+            MakeDataDescriptor(result_id2, {position}),
+            MakeDataDescriptor(instruction_iterator->GetSingleWordInOperand(1), {}));
+
         // Apply transformation to do vector operation and add synonym between the result
         // vector id and the id of the original instruction.
         ApplyTransformation(TransformationWrapVectorSynonym(instruction_iterator->result_id(), result_id1,
-                                                            result_id2, GetFuzzerContext()->GetFreshId(), vec_type_id, position));
+                                                            result_id2, GetFuzzerContext()->GetFreshId(), position));
       });
 }
 
