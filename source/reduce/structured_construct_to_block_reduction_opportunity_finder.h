@@ -36,6 +36,13 @@ class StructuredConstructToBlockReductionOpportunityFinder
       opt::IRContext* context, uint32_t target_function) const final;
 
  private:
+  static bool DefinitionsRestrictedToRegion(
+      const opt::BasicBlock& header,
+      const std::unordered_set<opt::BasicBlock*>& region,
+      opt::IRContext* context);
+
+  static bool HasUnreachablePredecessor(const opt::BasicBlock& block,
+                                        opt::IRContext* context);
 };
 
 }  // namespace reduce
