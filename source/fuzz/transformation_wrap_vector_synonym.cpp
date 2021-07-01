@@ -159,7 +159,7 @@ protobufs::Transformation TransformationWrapVectorSynonym::ToMessage() const {
 
 std::unordered_set<uint32_t> TransformationWrapVectorSynonym::GetFreshIds()
     const {
-  return std::unordered_set<uint32_t>();
+  return std::unordered_set<uint32_t>{message_.vec_id()};
 }
 
 }  // namespace fuzz

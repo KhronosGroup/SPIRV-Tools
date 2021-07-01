@@ -323,7 +323,7 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
                                                               MakeDataDescriptor(49, {}));
 
   // Good: The following transformation should be applicable.
-  TransformationWrapVectorSynonym wrap_add_int(50, 100, 101, 105, 1);
+  TransformationWrapVectorSynonym wrap_add_int(50, 100, 101, 102, 1);
   ASSERT_TRUE(wrap_add_int.IsApplicable(context.get(), transformation_context));
   // Insert an arithmetic instruction of the same type to add two vectors.
   ApplyAndCheckFreshIds(wrap_add_int, context.get(), &transformation_context);
@@ -483,9 +483,9 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
                OpStore %39 %46
          %48 = OpLoad %6 %8
          %49 = OpLoad %6 %10
-         %100 = OpCompositeConstruct %12 $48 %48
-         %101 = OpCompositeConstruct %12 $49 %49
-         %102 = OpIAdd %12 %100 %101
+        %100 = OpCompositeConstruct %12 %48 %48
+        %101 = OpCompositeConstruct %12 %49 %49
+        %102 = OpIAdd %12 %100 %101
          %50 = OpIAdd %6 %48 %49
                OpStore %47 %50
          %52 = OpLoad %6 %8
@@ -535,7 +535,7 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
                OpReturn
                OpFunctionEnd
   )";
-  //  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 }  // namespace
