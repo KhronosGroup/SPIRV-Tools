@@ -317,10 +317,10 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
         wrap_add_int_bad8.IsApplicable(context.get(), transformation_context));
   }
 
-  transformation_context.GetFactManager()->AddFactDataSynonym(MakeDataDescriptor(100, {1}),
-                                                              MakeDataDescriptor(48, {}));
-  transformation_context.GetFactManager()->AddFactDataSynonym(MakeDataDescriptor(101, {1}),
-                                                              MakeDataDescriptor(49, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(100, {1}), MakeDataDescriptor(48, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(101, {1}), MakeDataDescriptor(49, {}));
 
   // Good: The following transformation should be applicable.
   TransformationWrapVectorSynonym wrap_add_int(50, 100, 101, 102, 1);

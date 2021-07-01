@@ -37,7 +37,8 @@ TransformationWrapVectorSynonym::TransformationWrapVectorSynonym(
 }
 
 bool TransformationWrapVectorSynonym::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& transformation_context) const {
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context) const {
   auto instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.instruction_id());
   auto vec1 = ir_context->get_def_use_mgr()->GetDef(message_.vector_operand1());
@@ -49,13 +50,12 @@ bool TransformationWrapVectorSynonym::IsApplicable(
   }
 
   std::unordered_set<SpvOp> valid_opcodes{SpvOpIAdd, SpvOpISub, SpvOpIMul,
-                                           SpvOpSDiv, SpvOpUDiv, SpvOpFAdd,
-                                           SpvOpFSub, SpvOpFMul, SpvOpFDiv};
+                                          SpvOpSDiv, SpvOpUDiv, SpvOpFAdd,
+                                          SpvOpFSub, SpvOpFMul, SpvOpFDiv};
 
   if (!valid_opcodes.count(instruction->opcode())) {
     return false;
   }
-
 
   // |vector_operand1| and |vector_operand2| must exist.
   if (vec1 == nullptr || vec2 == nullptr) {
@@ -71,7 +71,7 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     return false;
   }
 
-  if(vec_type->AsVector() == nullptr) {
+  if (vec_type->AsVector() == nullptr) {
     return false;
   }
 
@@ -80,8 +80,8 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     return false;
   }
 
-  std::vector<uint32_t> vec_ids{message_.vector_operand1(), message_.vector_operand2(),
-                                message_.vec_id()};
+  std::vector<uint32_t> vec_ids{message_.vector_operand1(),
+                                message_.vector_operand2(), message_.vec_id()};
 
   // |vec_id|, |result_id1| and |result_id2| should be disparate ids.
   if (fuzzerutil::HasDuplicates(vec_ids)) {
@@ -98,17 +98,21 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     return false;
   }
 
-  // Check the id in the corresponding position from the result vectors are synonyms with the
-  // operands from the original instruction.
+  // Check the id in the corresponding position from the result vectors are
+  // synonyms with the operands from the original instruction.
   uint32_t pos = message_.scalar_position();
   uint32_t inst_operand1 = instruction->GetSingleWordInOperand(0);
   uint32_t inst_operand2 = instruction->GetSingleWordInOperand(1);
-  bool check_synonym_operand1 = transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(message_.vector_operand1(), {pos}), MakeDataDescriptor(inst_operand1, {}));
-  bool check_synonym_operand2 = transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(message_.vector_operand2(), {pos}), MakeDataDescriptor(inst_operand2, {}));
+  bool check_synonym_operand1 =
+      transformation_context.GetFactManager()->IsSynonymous(
+          MakeDataDescriptor(message_.vector_operand1(), {pos}),
+          MakeDataDescriptor(inst_operand1, {}));
+  bool check_synonym_operand2 =
+      transformation_context.GetFactManager()->IsSynonymous(
+          MakeDataDescriptor(message_.vector_operand2(), {pos}),
+          MakeDataDescriptor(inst_operand2, {}));
 
-  if(!check_synonym_operand1 || !check_synonym_operand2) {
+  if (!check_synonym_operand1 || !check_synonym_operand2) {
     return false;
   }
 
@@ -130,10 +134,12 @@ void TransformationWrapVectorSynonym::Apply(
 
   // Make a new arithmetic instruction: %vec_id = OpXX %type_id %result_id1
   // %result_id2.
-  auto vec_type_id = ir_context->get_def_use_mgr()->GetDef(message_.vector_operand1())->type_id();
-  auto new_instruction = MakeUnique<opt::Instruction>(
-      ir_context, instruction->opcode(), vec_type_id,
-      message_.vec_id(), in_operands);
+  auto vec_type_id = ir_context->get_def_use_mgr()
+                         ->GetDef(message_.vector_operand1())
+                         ->type_id();
+  auto new_instruction =
+      MakeUnique<opt::Instruction>(ir_context, instruction->opcode(),
+                                   vec_type_id, message_.vec_id(), in_operands);
   auto new_instruction_ptr = new_instruction.get();
   instruction->InsertBefore(std::move(new_instruction));
   ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);
