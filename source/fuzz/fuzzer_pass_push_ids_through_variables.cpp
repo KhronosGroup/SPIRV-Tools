@@ -69,6 +69,12 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
         auto basic_type_ids_and_pointers =
             GetAvailableBasicTypesAndPointers(variable_storage_class);
         auto& basic_types = basic_type_ids_and_pointers.first;
+
+        // There must be at least some basic types.
+        if (basic_types.empty()) {
+          return;
+        }
+
         uint32_t basic_type_id =
             basic_types[GetFuzzerContext()->RandomIndex(basic_types)];
 
