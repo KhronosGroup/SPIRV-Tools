@@ -24,11 +24,16 @@ bool StructuredConstructToBlockReductionOpportunity::PreconditionHolds() {
 void StructuredConstructToBlockReductionOpportunity::Apply() {
   auto header_block = context_->cfg()->block(construct_header_);
   auto merge_block = context_->cfg()->block(header_block->MergeBlockId());
-  std::unordered_set<opt::BasicBlock*> to_erase;
+
   auto* enclosing_function = header_block->GetParent();
+
+  // A region of blocks is defined in terms of dominators and post-dominators,
+  // so we compute these for the enclosing function.
   auto* dominators = context_->GetDominatorAnalysis(enclosing_function);
   auto* postdominators = context_->GetPostDominatorAnalysis(enclosing_function);
 
+  // For each block in the function, determine whether it is inside the region.
+  // If it is, delete it.
   for (auto block_it = enclosing_function->begin();
        block_it != enclosing_function->end();) {
     if (header_block != &*block_it && merge_block != &*block_it &&
@@ -39,11 +44,17 @@ void StructuredConstructToBlockReductionOpportunity::Apply() {
       ++block_it;
     }
   }
+  // We demote the header of the region to a regular block by deleting its merge
+  // instruction.
   context_->KillInst(header_block->GetMergeInst());
+
+  // The terminator for the header block is changed to be an unconditional
+  // branch to the merge block.
   header_block->terminator()->SetOpcode(SpvOpBranch);
-  opt::Instruction::OperandList operands;
-  operands.push_back(opt::Operand(SPV_OPERAND_TYPE_ID, {merge_block->id()}));
-  header_block->terminator()->SetInOperands(std::move(operands));
+  header_block->terminator()->SetInOperands(
+      {{SPV_OPERAND_TYPE_ID, {merge_block->id()}}});
+
+  // This is an intrusive change, so we invalidate all analyses.
   context_->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 

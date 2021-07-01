@@ -121,26 +121,36 @@ bool StructuredConstructToBlockReductionOpportunityFinder::
         const opt::BasicBlock& header,
         const std::unordered_set<opt::BasicBlock*>& region,
         opt::IRContext* context) {
+  // Consider every block in the region.
   for (auto& block : region) {
+    // Consider every instruction in the block - this includes the label
+    // instruction
     if (!block->WhileEachInst(
             [context, &header, &region](opt::Instruction* inst) -> bool {
               if (inst->result_id() == 0) {
+                // The instruction does not genreate a result id, thus it cannot
+                // be referred to outside the region - this is fine.
                 return true;
               }
+              // Consider every use of the instruction's result id.
               if (!context->get_def_use_mgr()->WhileEachUse(
                       inst->result_id(),
                       [context, &header, &region](opt::Instruction* user,
                                                   uint32_t) -> bool {
                         auto user_block = context->get_instr_block(user);
-                        if (user_block == &header &&
-                            (user->opcode() == SpvOpLoopMerge ||
-                             user->opcode() == SpvOpBranch ||
-                             user->opcode() == SpvOpBranchConditional ||
-                             user->opcode() == SpvOpSwitch)) {
+                        if (user == header.GetMergeInst() ||
+                            user == header.terminator()) {
+                          // We are going to delete the header's merge
+                          // instruction and rewrite its terminator, so it does
+                          // not matter if the user is one of these
+                          // instructions.
                           return true;
                         }
                         if (user_block == nullptr ||
                             region.count(user_block) == 0) {
+                          // The user is either a global instruction, or an
+                          // instruction in a block outside the region. Removing
+                          // the region would invalidate this user.
                           return false;
                         }
                         return true;

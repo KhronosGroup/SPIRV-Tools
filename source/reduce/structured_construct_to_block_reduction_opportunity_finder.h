@@ -36,11 +36,17 @@ class StructuredConstructToBlockReductionOpportunityFinder
       opt::IRContext* context, uint32_t target_function) const final;
 
  private:
+  // Returns true if and only if all instructions defined in |region| are used
+  // only inside |region|, with the exception that they may be used by the merge
+  // or terminator instruction of |header|, which must be the header block for
+  // the region.
   static bool DefinitionsRestrictedToRegion(
       const opt::BasicBlock& header,
       const std::unordered_set<opt::BasicBlock*>& region,
       opt::IRContext* context);
 
+  // Returns true if and only if |block| has at least one predecessor that is
+  // unreachable in the control flow graph of its function.
   static bool HasUnreachablePredecessor(const opt::BasicBlock& block,
                                         opt::IRContext* context);
 };
