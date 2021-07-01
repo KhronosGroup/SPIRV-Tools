@@ -2031,6 +2031,65 @@ TEST(TransformationReplaceIdWithSynonymTest,
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+// TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4345): Improve this
+//  test so that it covers more atomic operations, and enable the test once the
+//  issue is fixed.
+TEST(TransformationReplaceIdWithSynonymTest, DISABLED_TypesAreCompatible) {
+  const std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %9 = OpTypeInt 32 0
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+
+  const uint32_t int_type = 6;   // The id of OpTypeInt 32 1
+  const uint32_t uint_type = 9;  // The id of OpTypeInt 32 0
+
+  // OpAtomicLoad
+#ifndef NDEBUG
+  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+                   context.get(), SpvOpAtomicLoad, 0, int_type, uint_type),
+               "Invalid operand index");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicLoad, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicLoad, 2, int_type, uint_type));
+
+  // OpAtomicExchange
+#ifndef NDEBUG
+  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+                   context.get(), SpvOpAtomicExchange, 0, int_type, uint_type),
+               "Invalid operand index");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicExchange, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicExchange, 2, int_type, uint_type));
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicExchange, 2, int_type, uint_type));
+
+  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4345): Similar for
+  // other atomic instructions
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
