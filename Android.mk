@@ -33,6 +33,7 @@ SPVTOOLS_SRC_FILES := \
 		source/util/timer.cpp \
 		source/val/basic_block.cpp \
 		source/val/construct.cpp \
+		source/val/decoration.cpp \
 		source/val/function.cpp \
 		source/val/instruction.cpp \
 		source/val/validation_state.cpp \

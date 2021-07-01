@@ -449,6 +449,7 @@ static_library("spvtools_val") {
     "source/val/basic_block.h",
     "source/val/construct.cpp",
     "source/val/construct.h",
+    "source/val/decoration.cpp",
     "source/val/decoration.h",
     "source/val/function.cpp",
     "source/val/function.h",

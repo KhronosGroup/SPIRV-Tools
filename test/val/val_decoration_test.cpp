@@ -42,6 +42,7 @@ struct TestResult {
 };
 
 using ValidateDecorations = spvtest::ValidateBase<bool>;
+using ValidateDecorationString = spvtest::ValidateBase<std::string>;
 using ValidateVulkanCombineDecorationResult =
     spvtest::ValidateBase<std::tuple<const char*, const char*, TestResult>>;
 
@@ -7647,6 +7648,292 @@ TEST_F(ValidateDecorations, WorkgroupSingleBlockVariableBadLayout) {
           "standard storage buffer layout rules: "
           "member 0 at offset 1 is not aligned to 4"));
 }
+
+TEST_F(ValidateDecorations, VulkanFlatMultipleInterfaceGood) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Geometry
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %layer %gl_Layer
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+               OpDecorate %layer Location 0
+               OpDecorate %gl_Layer Flat
+               OpDecorate %gl_Layer BuiltIn Layer
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Output_int = OpTypePointer Output %int
+      %layer = OpVariable %_ptr_Output_int Output
+%_ptr_Input_int = OpTypePointer Input %int
+   %gl_Layer = OpVariable %_ptr_Input_int Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %11 = OpLoad %int %gl_Layer
+               OpStore %layer %11
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateDecorations, VulkanFlatMultipleInterfaceBad) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Geometry
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %layer %gl_Layer
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+               OpDecorate %layer Location 0
+               OpDecorate %gl_Layer BuiltIn Layer
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Output_int = OpTypePointer Output %int
+      %layer = OpVariable %_ptr_Output_int Output
+%_ptr_Input_int = OpTypePointer Input %int
+   %gl_Layer = OpVariable %_ptr_Input_int Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %11 = OpLoad %int %gl_Layer
+               OpStore %layer %11
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Flat-04744"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Fragment OpEntryPoint operand 4 with Input interfaces with integer "
+          "or float type must have a Flat decoration for Entry Point id 2."));
+}
+
+TEST_F(ValidateDecorations, VulkanNoFlatFloat32) {
+  std::string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %in
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+               OpDecorate %in Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%_ptr_Input_float = OpTypePointer Input %float
+         %in = OpVariable %_ptr_Input_float Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %b = OpVariable %_ptr_Function_float Function
+         %11 = OpLoad %float %in
+               OpStore %b %11
+               OpReturn
+               OpFunctionEnd
+
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateDecorations, VulkanNoFlatFloat64) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Float64
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %in
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+               OpDecorate %in Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+     %double = OpTypeFloat 64
+%_ptr_Function_double = OpTypePointer Function %double
+%_ptr_Input_double = OpTypePointer Input %double
+         %in = OpVariable %_ptr_Input_double Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %b = OpVariable %_ptr_Function_double Function
+         %11 = OpLoad %double %in
+               OpStore %b %11
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Flat-04744"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Fragment OpEntryPoint operand 3 with Input interfaces with integer "
+          "or float type must have a Flat decoration for Entry Point id 2."));
+}
+
+TEST_F(ValidateDecorations, VulkanNoFlatVectorFloat64) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Float64
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %in
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+               OpDecorate %in Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+     %double = OpTypeFloat 64
+   %v2double = OpTypeVector %double 2
+%_ptr_Function_v2double = OpTypePointer Function %v2double
+%_ptr_Input_v2double = OpTypePointer Input %v2double
+         %in = OpVariable %_ptr_Input_v2double Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %b = OpVariable %_ptr_Function_v2double Function
+         %11 = OpLoad %v2double %in
+               OpStore %b %11
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateDecorations, VulkanNoFlatIntVector) {
+  std::string spirv = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %in
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+               OpDecorate %in Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+      %v2int = OpTypeVector %int 2
+%_ptr_Function_v2int = OpTypePointer Function %v2int
+%_ptr_Input_v2int = OpTypePointer Input %v2int
+         %in = OpVariable %_ptr_Input_v2int Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %b = OpVariable %_ptr_Function_v2int Function
+         %12 = OpLoad %v2int %in
+               OpStore %b %12
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Flat-04744"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Fragment OpEntryPoint operand 3 with Input interfaces with integer "
+          "or float type must have a Flat decoration for Entry Point id 2."));
+}
+
+TEST_P(ValidateDecorationString, VulkanOutputInvalidInterface) {
+  const std::string decoration = GetParam();
+  std::stringstream ss;
+  ss << R"(
+               OpCapability Shader
+               OpCapability SampleRateShading
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %out
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+               OpDecorate %out )"
+     << decoration << R"(
+               OpDecorate %out Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Output_int = OpTypePointer Output %int
+        %out = OpVariable %_ptr_Output_int Output
+      %int_1 = OpConstant %int 1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpStore %out %int_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(ss.str(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Flat-04670"));
+  const std::string message =
+      "OpEntryPoint interfaces with " + decoration +
+      " decoration must be OpVariable with Storage Class of Input(1). Found "
+      "Storage Class 3 for Entry Point id 2";
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(message));
+}
+
+TEST_P(ValidateDecorationString, VulkanVertexInputInvalidInterface) {
+  const std::string decoration = GetParam();
+  std::stringstream ss;
+  ss << R"(
+               OpCapability Shader
+               OpCapability SampleRateShading
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %out %in
+               OpSource GLSL 450
+               OpDecorate %in )"
+     << decoration << R"(
+               OpDecorate %out Location 0
+               OpDecorate %in Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Output_int = OpTypePointer Output %int
+          %out = OpVariable %_ptr_Output_int Output
+%_ptr_Input_int = OpTypePointer Input %int
+          %in = OpVariable %_ptr_Input_int Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %11 = OpLoad %int %in
+               OpStore %out %11
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(ss.str(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Flat-04670"));
+  const std::string message =
+      "OpEntryPoint interfaces with " + decoration +
+      " decoration must be fragment execution model for Entry Point id 2";
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(message));
+}
+
+INSTANTIATE_TEST_SUITE_P(FragmentInputInterface, ValidateDecorationString,
+                         ::testing::Values("Flat", "NoPerspective", "Sample",
+                                           "Centroid"));
 
 }  // namespace
 }  // namespace val
