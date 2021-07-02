@@ -252,18 +252,6 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
   //       90       | OpFMul  |    31   |      88       |      89       |
   //       94       | OpFDiv  |    31   |      92       |      93       |
 
-  // Transformation Syntax:
-  //  TransformationCompositeConstruct( uint32_t composite_type_id,
-  //                                    std::vector<uint32_t> component,
-  //                                    const protobufs::InstructionDescriptor&
-  //                                    instruction_to_insert_before, uint32_t
-  //                                    fresh_id);
-  //
-  //  TransformationWrapVectorSynonym(uint32_t instruction_id, uint32_t
-  //  result_id1,
-  //                                  uint32_t result_id2, uint32_t vec_id,
-  //                                  uint32_t pos);
-
   TransformationCompositeConstruct add_int_vec1(
       12, {48, 48}, MakeInstructionDescriptor(50, SpvOpIAdd, 0), 100);
   ASSERT_TRUE(add_int_vec1.IsApplicable(context.get(), transformation_context));
@@ -277,6 +265,11 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
   // Insert vec2 of id 101 with the second value of OpIAdd instruction with
   // id 50.
   ApplyAndCheckFreshIds(add_int_vec2, context.get(), &transformation_context);
+
+  transformation_context.GetFactManager()->AddFactDataSynonym(MakeDataDescriptor(100, {1}),
+                                                              MakeDataDescriptor(48, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(MakeDataDescriptor(101, {1}),
+                                                              MakeDataDescriptor(49, {}));
 
   // The following are all invalid use.
   {
@@ -315,18 +308,21 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
     TransformationWrapVectorSynonym wrap_add_int_bad8(50, 100, 100, 94, 2);
     ASSERT_FALSE(
         wrap_add_int_bad8.IsApplicable(context.get(), transformation_context));
-  }
 
-  transformation_context.GetFactManager()->AddFactDataSynonym(MakeDataDescriptor(100, {1}),
-                                                              MakeDataDescriptor(48, {}));
-  transformation_context.GetFactManager()->AddFactDataSynonym(MakeDataDescriptor(101, {1}),
-                                                              MakeDataDescriptor(49, {}));
+    // Bad: The original instruction is not a valid scalar operation instruction.
+    TransformationWrapVectorSynonym wrap_add_int(27, 100, 101, 102, 1);
+    ASSERT_FALSE(wrap_add_int.IsApplicable(context.get(), transformation_context));
+  }
 
   // Good: The following transformation should be applicable.
   TransformationWrapVectorSynonym wrap_add_int(50, 100, 101, 102, 1);
   ASSERT_TRUE(wrap_add_int.IsApplicable(context.get(), transformation_context));
   // Insert an arithmetic instruction of the same type to add two vectors.
   ApplyAndCheckFreshIds(wrap_add_int, context.get(), &transformation_context);
+
+  // |instruction_id| and id at |scalar_position of the result vector should be synonyms.
+  ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+      MakeDataDescriptor(102, {1}), MakeDataDescriptor(50, {})));
 
   // After applying transformations, three instructions:
   // %100 = OpCompositeConstruct %12 $48 %48
