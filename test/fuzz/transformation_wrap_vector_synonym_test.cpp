@@ -314,6 +314,7 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
     ASSERT_FALSE(wrap_add_int.IsApplicable(context.get(), transformation_context));
   }
 
+
   // Good: The following transformation should be applicable.
   TransformationWrapVectorSynonym wrap_add_int(50, 100, 101, 102, 1);
   ASSERT_TRUE(wrap_add_int.IsApplicable(context.get(), transformation_context));

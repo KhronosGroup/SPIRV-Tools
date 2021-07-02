@@ -15,8 +15,8 @@
 #ifndef SOURCE_FUZZ_FUZZER_CONTEXT_H_
 #define SOURCE_FUZZ_FUZZER_CONTEXT_H_
 
-#include <functional>
 #include <stdlib.h>
+#include <functional>
 #include <utility>
 
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
@@ -122,9 +122,7 @@ class FuzzerContext {
   static uint32_t GetMinFreshId(opt::IRContext* ir_context);
 
   // Returns true if all transformations should be compatible with WGSL.
-  bool IsWgslCompatible() const {
-    return is_wgsl_compatible_;
-  }
+  bool IsWgslCompatible() const { return is_wgsl_compatible_; }
 
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.
@@ -425,9 +423,11 @@ class FuzzerContext {
     return ChooseBetweenMinAndMax({0, number_of_members - 1});
   }
   float GetRandomFloatFromRange(float lower_bound, float upper_bound) {
-    return lower_bound + (float)random_generator_->RandomDouble() * (upper_bound - lower_bound);
+    return lower_bound + (float)random_generator_->RandomDouble() *
+                             (upper_bound - lower_bound);
   }
-  uint32_t GetRandomIntegerFromRange(uint32_t lower_bound, uint32_t upper_bound) {
+  uint32_t GetRandomIntegerFromRange(uint32_t lower_bound,
+                                     uint32_t upper_bound) {
     return lower_bound + random_generator_->RandomUint32(upper_bound + 1);
   }
   uint32_t GetRandomIndexForAccessChain(uint32_t composite_size_bound) {
