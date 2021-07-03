@@ -683,7 +683,7 @@ void DumpTransformationsJson(
   json_options.add_whitespace = true;
   auto json_generation_status = google::protobuf::util::MessageToJsonString(
       transformations, &json_string, json_options);
-  if (json_generation_status == google::protobuf::util::Status::OK) {
+  if (json_generation_status == google::protobuf::util::Status(google::protobuf::util::Status::OK)) {
     std::ofstream transformations_json_file(filename);
     transformations_json_file << json_string;
     transformations_json_file.close();
@@ -734,7 +734,7 @@ int main(int argc, const char** argv) {
     std::string facts_json_string((std::istreambuf_iterator<char>(facts_input)),
                                   std::istreambuf_iterator<char>());
     facts_input.close();
-    if (google::protobuf::util::Status::OK !=
+    if (google::protobuf::util::Status(google::protobuf::util::Status::OK) !=
         google::protobuf::util::JsonStringToMessage(facts_json_string,
                                                     &initial_facts)) {
       spvtools::Error(FuzzDiagnostic, nullptr, {}, "Error reading facts data");
@@ -816,7 +816,7 @@ int main(int argc, const char** argv) {
     json_options.add_whitespace = true;
     auto json_generation_status = google::protobuf::util::MessageToJsonString(
         transformations_applied, &json_string, json_options);
-    if (json_generation_status != google::protobuf::util::Status::OK) {
+    if (json_generation_status != google::protobuf::util::Status(google::protobuf::util::Status::OK)) {
       spvtools::Error(FuzzDiagnostic, nullptr, {},
                       "Error writing out transformations in JSON format");
       return 1;
