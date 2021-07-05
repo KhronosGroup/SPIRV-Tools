@@ -44,6 +44,11 @@ void StructuredConstructToBlockReductionOpportunity::Apply() {
       ++block_it;
     }
   }
+  // Having removed some blocks from the module it is necessary to invalidate
+  // analyses, since the remaining patch-up work depends on various analyses
+  // which will otherwise reference blocks that have been deleted.
+  context_->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+
   // We demote the header of the region to a regular block by deleting its merge
   // instruction.
   context_->KillInst(header_block->GetMergeInst());
