@@ -1414,21 +1414,6 @@ executable("spirv-opt") {
   configs += [ ":spvtools_internal_config" ]
 }
 
-executable("spirv-fuzz") {
-  sources = [ "tools/fuzz/fuzz.cpp" ]
-  deps = [
-    "//third_party/protobuf:protobuf_full",
-    ":spvtools",
-    ":spvtools_fuzz",
-    ":spvtools_reduce",
-    ":spvtools_opt",
-    ":spvtools_software_version",
-    ":spvtools_util_cli_consumer",
-    ":spvtools_val",
-  ]
-  configs += [ ":spvtools_internal_config" ]
-}
-
 executable("spirv-link") {
   sources = [ "tools/link/linker.cpp" ]
   deps = [
@@ -1442,7 +1427,25 @@ executable("spirv-link") {
 }
 
 if (!is_ios && !spirv_is_winuwp) {
-  # iOS and UWP do not allow std::system calls which spirv-reduce requires
+
+  # iOS and UWP do not allow std::system calls which spirv-fuzz and
+  # spirv-reduce require
+
+  executable("spirv-fuzz") {
+    sources = [ "tools/fuzz/fuzz.cpp" ]
+    deps = [
+      "//third_party/protobuf:protobuf_full",
+      ":spvtools",
+      ":spvtools_fuzz",
+      ":spvtools_reduce",
+      ":spvtools_opt",
+      ":spvtools_software_version",
+      ":spvtools_util_cli_consumer",
+      ":spvtools_val",
+    ]
+    configs += [ ":spvtools_internal_config" ]
+  }
+
   executable("spirv-reduce") {
     sources = [ "tools/reduce/reduce.cpp" ]
     deps = [
@@ -1462,12 +1465,14 @@ group("all_spirv_tools") {
     ":spirv-as",
     ":spirv-cfg",
     ":spirv-dis",
-    ":spirv-fuzz",
     ":spirv-link",
     ":spirv-opt",
     ":spirv-val",
   ]
   if (!is_ios && !spirv_is_winuwp) {
-    deps += [ ":spirv-reduce" ]
+    deps += [
+      ":spirv-fuzz",
+      ":spirv-reduce",
+    ]
   }
 }
