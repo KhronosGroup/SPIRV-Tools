@@ -14,6 +14,7 @@
 
 import("//build_overrides/build.gni")
 import("//build_overrides/spirv_tools.gni")
+import("//third_party/protobuf/proto_library.gni")
 if (build_with_chromium) {
   import("//testing/test.gni")
 }
@@ -828,28 +829,12 @@ static_library("spvtools_reduce") {
   configs += [ ":spvtools_internal_config" ]
 }
 
-action("spirv_fuzz_proto") {
-
-  deps = [
-    "//third_party/protobuf:protoc",
+proto_library("spvtools_fuzz_proto") {
+  sources = [
+    "source/fuzz/protobufs/spvtoolsfuzz.proto",
   ]
-
-  script = "source/fuzz/protobufs/run_protoc.py"
-  in_protobuf_file = "source/fuzz/protobufs/spvtoolsfuzz.proto"
-
-  inputs = [
-    in_protobuf_file,
-  ]
-
-  outputs = [
-    "${target_gen_dir}/source/fuzz/protobufs/spvtoolsfuzz.pb.cc",
-    "${target_gen_dir}/source/fuzz/protobufs/spvtoolsfuzz.pb.h",
-  ]
-
-  args = [
-    rebase_path("${target_gen_dir}/source/fuzz/protobufs", root_build_dir),
-    rebase_path("source/fuzz/protobufs", root_build_dir),
-  ]
+  generate_python = false
+  use_protobuf_full = true
 }
 
 static_library("spvtools_fuzz") {
@@ -1240,14 +1225,12 @@ static_library("spvtools_fuzz") {
     "source/fuzz/transformation_wrap_region_in_selection.h",
     "source/fuzz/uniform_buffer_element_descriptor.cpp",
     "source/fuzz/uniform_buffer_element_descriptor.h",
-    "${target_gen_dir}/source/fuzz/protobufs/spvtoolsfuzz.pb.cc",
-    "${target_gen_dir}/source/fuzz/protobufs/spvtoolsfuzz.pb.h",
   ]
   deps = [
-    ":spirv_fuzz_proto",
+    "//third_party/protobuf:protobuf_full",
+    ":spvtools_fuzz_proto",
     ":spvtools",
     ":spvtools_opt",
-    "//third_party/protobuf:protobuf_full",
   ]
   public_deps = [ ":spvtools_headers" ]
   if (build_with_chromium) {
