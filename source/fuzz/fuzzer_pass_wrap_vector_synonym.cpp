@@ -34,7 +34,8 @@ void FuzzerPassWrapVectorSynonym::Apply() {
              const protobufs::InstructionDescriptor& instruction_descriptor)
           -> void {
         // Only run fuzzer pass on supported scalar operation type instruction.
-        if(!TransformationWrapVectorSynonym::OpcodeIsSupported(instruction_iterator->opcode()))
+        if (!TransformationWrapVectorSynonym::OpcodeIsSupported(
+                instruction_iterator->opcode()))
           return;
 
         assert(instruction_iterator->opcode() ==
@@ -63,7 +64,8 @@ void FuzzerPassWrapVectorSynonym::Apply() {
         // Randomly choose a position that target ids should be placed at.
         // The position is in range [0, n - 1], where n is the size of the
         // vector.
-        uint32_t position = GetFuzzerContext()->GetRandomIndexForWrappingVector(vector_size);
+        uint32_t position =
+            GetFuzzerContext()->GetRandomIndexForWrappingVector(vector_size);
 
         // Target ids are the two scalar ids from the original instruction.
         uint32_t target_id1 = instruction_iterator->GetSingleWordInOperand(0);
@@ -95,25 +97,21 @@ void FuzzerPassWrapVectorSynonym::Apply() {
             if (type->AsInteger()) {
               // Operands are integers. Fill other positions with zero
               // integer constants.
-              vec1_components.emplace_back(
-                  FuzzerPass::FindOrCreateZeroConstant(
-                      FuzzerPass::FindOrCreateIntegerType(width, is_signed_constant),
-                      true));
-              vec2_components.emplace_back(
-                  FuzzerPass::FindOrCreateZeroConstant(
-                      FuzzerPass::FindOrCreateIntegerType(width, is_signed_constant),
-                      true));
+              vec1_components.emplace_back(FuzzerPass::FindOrCreateZeroConstant(
+                  FuzzerPass::FindOrCreateIntegerType(width,
+                                                      is_signed_constant),
+                  true));
+              vec2_components.emplace_back(FuzzerPass::FindOrCreateZeroConstant(
+                  FuzzerPass::FindOrCreateIntegerType(width,
+                                                      is_signed_constant),
+                  true));
             } else if (type->AsFloat()) {
               // Operands are floats. Fill other positions with zero
               // float constants.
-              vec1_components.emplace_back(
-                  FuzzerPass::FindOrCreateZeroConstant(
-                      FuzzerPass::FindOrCreateFloatType(width),
-                      true));
-              vec2_components.emplace_back(
-                  FuzzerPass::FindOrCreateZeroConstant(
-                      FuzzerPass::FindOrCreateFloatType(width),
-                      true));
+              vec1_components.emplace_back(FuzzerPass::FindOrCreateZeroConstant(
+                  FuzzerPass::FindOrCreateFloatType(width), true));
+              vec2_components.emplace_back(FuzzerPass::FindOrCreateZeroConstant(
+                  FuzzerPass::FindOrCreateFloatType(width), true));
             } else {
               assert(
                   false &&

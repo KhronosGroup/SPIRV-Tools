@@ -198,10 +198,10 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
   // id 50.
   ApplyAndCheckFreshIds(add_int_vec2, context.get(), &transformation_context);
 
-  transformation_context.GetFactManager()->AddFactDataSynonym(MakeDataDescriptor(100, {1}),
-                                                              MakeDataDescriptor(48, {}));
-  transformation_context.GetFactManager()->AddFactDataSynonym(MakeDataDescriptor(101, {1}),
-                                                              MakeDataDescriptor(49, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(100, {1}), MakeDataDescriptor(48, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(101, {1}), MakeDataDescriptor(49, {}));
 
   // The following are all invalid use.
   {
@@ -236,11 +236,12 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
     ASSERT_FALSE(
         wrap_add_int_bad8.IsApplicable(context.get(), transformation_context));
 
-    // Bad: The original instruction is not a valid scalar operation instruction.
+    // Bad: The original instruction is not a valid scalar operation
+    // instruction.
     TransformationWrapVectorSynonym wrap_add_int(27, 100, 101, 102, 1);
-    ASSERT_FALSE(wrap_add_int.IsApplicable(context.get(), transformation_context));
+    ASSERT_FALSE(
+        wrap_add_int.IsApplicable(context.get(), transformation_context));
   }
-
 
   // Good: The following transformation should be applicable.
   TransformationWrapVectorSynonym wrap_add_int(50, 100, 101, 102, 1);
@@ -248,7 +249,8 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
   // Insert an arithmetic instruction of the same type to add two vectors.
   ApplyAndCheckFreshIds(wrap_add_int, context.get(), &transformation_context);
 
-  // |instruction_id| and id at |scalar_position of the result vector should be synonyms.
+  // |instruction_id| and id at |scalar_position of the result vector should be
+  // synonyms.
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(102, {1}), MakeDataDescriptor(50, {})));
 

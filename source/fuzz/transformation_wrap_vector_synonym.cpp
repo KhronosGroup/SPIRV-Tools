@@ -50,7 +50,7 @@ bool TransformationWrapVectorSynonym::IsApplicable(
   }
 
   // the instruction must be of a valid scalar operation type.
-  if(!OpcodeIsSupported(instruction->opcode())) {
+  if (!OpcodeIsSupported(instruction->opcode())) {
     return false;
   }
 
@@ -90,15 +90,17 @@ bool TransformationWrapVectorSynonym::IsApplicable(
 
   // Check the id in the corresponding position from the result vectors are
   // synonyms with the operands from the original instruction.
-  if(!transformation_context.GetFactManager()->IsSynonymous(
-          MakeDataDescriptor(message_.vector_operand1(), {message_.scalar_position()}),
+  if (!transformation_context.GetFactManager()->IsSynonymous(
+          MakeDataDescriptor(message_.vector_operand1(),
+                             {message_.scalar_position()}),
           MakeDataDescriptor(instruction->GetSingleWordInOperand(0), {}))) {
     return false;
   }
 
-  if(!transformation_context.GetFactManager()->IsSynonymous(
-      MakeDataDescriptor(message_.vector_operand2(), {message_.scalar_position()}),
-      MakeDataDescriptor(instruction->GetSingleWordInOperand(1), {}))) {
+  if (!transformation_context.GetFactManager()->IsSynonymous(
+          MakeDataDescriptor(message_.vector_operand2(),
+                             {message_.scalar_position()}),
+          MakeDataDescriptor(instruction->GetSingleWordInOperand(1), {}))) {
     return false;
   }
 
@@ -123,9 +125,9 @@ void TransformationWrapVectorSynonym::Apply(
   auto vec_type_id = ir_context->get_def_use_mgr()
                          ->GetDef(message_.vector_operand1())
                          ->type_id();
-  auto new_instruction =
-      MakeUnique<opt::Instruction>(ir_context, instruction->opcode(),
-                                   vec_type_id, message_.fresh_id(), in_operands);
+  auto new_instruction = MakeUnique<opt::Instruction>(
+      ir_context, instruction->opcode(), vec_type_id, message_.fresh_id(),
+      in_operands);
   auto new_instruction_ptr = new_instruction.get();
   instruction->InsertBefore(std::move(new_instruction));
   ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);

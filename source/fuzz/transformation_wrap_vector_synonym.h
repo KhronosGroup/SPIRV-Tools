@@ -60,8 +60,9 @@ class TransformationWrapVectorSynonym : public Transformation {
   protobufs::Transformation ToMessage() const override;
 
   static bool OpcodeIsSupported(SpvOp_ opcode) {
-    return std::unordered_set<SpvOp> {SpvOpIAdd, SpvOpISub, SpvOpIMul, SpvOpFAdd,
-                                    SpvOpFSub, SpvOpFMul}.count(opcode);
+    return std::unordered_set<SpvOp>{SpvOpIAdd, SpvOpISub, SpvOpIMul,
+                                     SpvOpFAdd, SpvOpFSub, SpvOpFMul}
+        .count(opcode);
   }
 
  private:
