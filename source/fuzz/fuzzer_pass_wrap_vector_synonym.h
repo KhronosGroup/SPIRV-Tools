@@ -29,11 +29,6 @@ class FuzzerPassWrapVectorSynonym : public FuzzerPass {
       protobufs::TransformationSequence* transformations);
 
   void Apply() override;
-
- private:
-  // All valid arithmetic operation types that are allowed to be transformed.
-  std::unordered_set<SpvOp> valid_arithmetic_types{
-      SpvOpIAdd, SpvOpISub, SpvOpIMul, SpvOpFAdd, SpvOpFSub, SpvOpFMul};
 };
 
 }  // namespace fuzz

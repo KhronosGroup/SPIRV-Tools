@@ -33,8 +33,8 @@ void FuzzerPassWrapVectorSynonym::Apply() {
              opt::BasicBlock::iterator instruction_iterator,
              const protobufs::InstructionDescriptor& instruction_descriptor)
           -> void {
-        // Only run fuzzer pass on valid arithmetic operation instruction.
-        if (!valid_arithmetic_types.count(instruction_iterator->opcode()))
+        // Only run fuzzer pass on supported scalar operation type instruction.
+        if(!TransformationWrapVectorSynonym::OpcodeIsSupported(instruction_iterator->opcode()))
           return;
 
         assert(instruction_iterator->opcode() ==
@@ -58,14 +58,12 @@ void FuzzerPassWrapVectorSynonym::Apply() {
         uint32_t operand_type_id = instruction_iterator->type_id();
 
         // Get a random vector size from 2 to 4.
-        uint32_t component_count =
-            GetFuzzerContext()->GetRandomIntegerFromRange(2, 4);
+        uint32_t vector_size = GetFuzzerContext()->GetWidthOfWrappingVector();
 
         // Randomly choose a position that target ids should be placed at.
         // The position is in range [0, n - 1], where n is the size of the
         // vector.
-        uint32_t position = GetFuzzerContext()->GetRandomIntegerFromRange(
-            0, component_count - 1);
+        uint32_t position = GetFuzzerContext()->GetRandomIndexForWrappingVector(vector_size);
 
         // Target ids are the two scalar ids from the original instruction.
         uint32_t target_id1 = instruction_iterator->GetSingleWordInOperand(0);
@@ -89,47 +87,33 @@ void FuzzerPassWrapVectorSynonym::Apply() {
             type->AsInteger() ? type->AsInteger()->IsSigned() : true;
 
         // Populate components based on vector type and size.
-        for (uint32_t i = 0; i < component_count; ++i) {
+        for (uint32_t i = 0; i < vector_size; ++i) {
           if (i == position) {
             vec1_components.emplace_back(target_id1);
             vec2_components.emplace_back(target_id2);
           } else {
             if (type->AsInteger()) {
-              // Operands are integers. Add random integers to each vector.
-              int sign1 = is_signed_constant
-                              ? (GetFuzzerContext()->ChooseEven() ? 1 : -1)
-                              : 1;
-              int sign2 = is_signed_constant
-                              ? (GetFuzzerContext()->ChooseEven() ? 1 : -1)
-                              : 1;
-              int random_int1 =
-                  sign1 *
-                  (GetFuzzerContext()->GetRandomIntegerFromRange(1, 100));
-              int random_int2 =
-                  sign2 *
-                  (GetFuzzerContext()->GetRandomIntegerFromRange(1, 100));
-              vec1_components.emplace_back(FindOrCreateIntegerConstant(
-                  fuzzerutil::IntToWords(random_int1, width,
-                                         is_signed_constant),
-                  width, is_signed_constant, false));
-              vec2_components.emplace_back(FindOrCreateIntegerConstant(
-                  fuzzerutil::IntToWords(random_int2, width,
-                                         is_signed_constant),
-                  width, is_signed_constant, false));
+              // Operands are integers. Fill other positions with zero
+              // integer constants.
+              vec1_components.emplace_back(
+                  FuzzerPass::FindOrCreateZeroConstant(
+                      FuzzerPass::FindOrCreateIntegerType(width, is_signed_constant),
+                      true));
+              vec2_components.emplace_back(
+                  FuzzerPass::FindOrCreateZeroConstant(
+                      FuzzerPass::FindOrCreateIntegerType(width, is_signed_constant),
+                      true));
             } else if (type->AsFloat()) {
-              // Operands are floats. Add random floats to each vector.
-              float sign1 = GetFuzzerContext()->ChooseEven() ? 1.0f : -1.0f;
-              float sign2 = GetFuzzerContext()->ChooseEven() ? 1.0f : -1.0f;
-              float random_float1 =
-                  sign1 *
-                  GetFuzzerContext()->GetRandomFloatFromRange(0.1f, 10.0f);
-              float random_float2 =
-                  sign2 *
-                  GetFuzzerContext()->GetRandomFloatFromRange(0.1f, 10.0f);
-              vec1_components.emplace_back(FindOrCreateFloatConstant(
-                  {fuzzerutil::FloatToWord(random_float1)}, width, false));
-              vec2_components.emplace_back(FindOrCreateFloatConstant(
-                  {fuzzerutil::FloatToWord(random_float2)}, width, false));
+              // Operands are floats. Fill other positions with zero
+              // float constants.
+              vec1_components.emplace_back(
+                  FuzzerPass::FindOrCreateZeroConstant(
+                      FuzzerPass::FindOrCreateFloatType(width),
+                      true));
+              vec2_components.emplace_back(
+                  FuzzerPass::FindOrCreateZeroConstant(
+                      FuzzerPass::FindOrCreateFloatType(width),
+                      true));
             } else {
               assert(
                   false &&
@@ -153,7 +137,7 @@ void FuzzerPassWrapVectorSynonym::Apply() {
             result_id2));
 
         // Add synonym facts between original operands and id from the
-        // |scalar_position| of the vectors created.
+        // |scalar_position| of the vectors are added.
         GetTransformationContext()->GetFactManager()->AddFactDataSynonym(
             MakeDataDescriptor(result_id1, {position}),
             MakeDataDescriptor(instruction_iterator->GetSingleWordInOperand(0),

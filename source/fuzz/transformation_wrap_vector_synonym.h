@@ -37,20 +37,18 @@ class TransformationWrapVectorSynonym : public Transformation {
 
   TransformationWrapVectorSynonym(uint32_t instruction_id,
                                   uint32_t vector_operand1,
-                                  uint32_t vector_operand2, uint32_t vec_id,
+                                  uint32_t vector_operand2, uint32_t fresh_id,
                                   uint32_t pos);
   // - |instruction_id| must be the id of a arithmetic operation.
   // - |vector_operand1| and |vector_operand2| represents the result ids of the
-  // two added vector.
-  // - |vec_id| is a vector type for the result of the transformation.
+  //   two added vector.
+  // - |fresh_id| is a vector type for the result of the transformation.
   // - result vector type must match the type of two vectors being added.
-  // - |vec_id| must be fresh.
-  // - |vector_operand1|, |vector_operand2| and |vec_id| should be different
-  // from each other.
-  // - They must be of a valid vector type.
+  // - |fresh_id| must be fresh.
+  // - |vector_operand1| and |vector_operand2| must have the same vector type.
   // - |pos| is a 0-indexed position of the component that contains the
-  // - value of a and b. pos must be smaller than the number of
-  // - elements that the vector type can has.
+  //   value of a and b. pos must be smaller than the number of
+  //   elements that the vector type can has.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
@@ -60,6 +58,11 @@ class TransformationWrapVectorSynonym : public Transformation {
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
   protobufs::Transformation ToMessage() const override;
+
+  static bool OpcodeIsSupported(SpvOp_ opcode) {
+    return std::unordered_set<SpvOp> {SpvOpIAdd, SpvOpISub, SpvOpIMul, SpvOpFAdd,
+                                    SpvOpFSub, SpvOpFMul}.count(opcode);
+  }
 
  private:
   protobufs::TransformationWrapVectorSynonym message_;

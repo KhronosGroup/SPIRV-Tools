@@ -32,74 +32,6 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
-               OpName %8 "i1"
-               OpName %10 "i2"
-               OpName %14 "v2"
-               OpName %20 "ui1"
-               OpName %22 "ui2"
-               OpName %26 "v3"
-               OpName %33 "f1"
-               OpName %35 "f2"
-               OpName %39 "v4"
-               OpName %47 "int_add"
-               OpName %51 "int_sub"
-               OpName %55 "int_mul"
-               OpName %59 "int_div"
-               OpName %63 "uint_add"
-               OpName %67 "uint_sub"
-               OpName %71 "uint_mul"
-               OpName %75 "uint_div"
-               OpName %79 "float_add"
-               OpName %83 "float_sub"
-               OpName %87 "float_mul"
-               OpName %91 "float_div"
-               OpName %97 "value"
-               OpDecorate %8 RelaxedPrecision
-               OpDecorate %10 RelaxedPrecision
-               OpDecorate %14 RelaxedPrecision
-               OpDecorate %15 RelaxedPrecision
-               OpDecorate %16 RelaxedPrecision
-               OpDecorate %17 RelaxedPrecision
-               OpDecorate %20 RelaxedPrecision
-               OpDecorate %22 RelaxedPrecision
-               OpDecorate %26 RelaxedPrecision
-               OpDecorate %27 RelaxedPrecision
-               OpDecorate %28 RelaxedPrecision
-               OpDecorate %29 RelaxedPrecision
-               OpDecorate %30 RelaxedPrecision
-               OpDecorate %47 RelaxedPrecision
-               OpDecorate %48 RelaxedPrecision
-               OpDecorate %49 RelaxedPrecision
-               OpDecorate %50 RelaxedPrecision
-               OpDecorate %51 RelaxedPrecision
-               OpDecorate %52 RelaxedPrecision
-               OpDecorate %53 RelaxedPrecision
-               OpDecorate %54 RelaxedPrecision
-               OpDecorate %55 RelaxedPrecision
-               OpDecorate %56 RelaxedPrecision
-               OpDecorate %57 RelaxedPrecision
-               OpDecorate %58 RelaxedPrecision
-               OpDecorate %59 RelaxedPrecision
-               OpDecorate %60 RelaxedPrecision
-               OpDecorate %61 RelaxedPrecision
-               OpDecorate %62 RelaxedPrecision
-               OpDecorate %63 RelaxedPrecision
-               OpDecorate %64 RelaxedPrecision
-               OpDecorate %65 RelaxedPrecision
-               OpDecorate %66 RelaxedPrecision
-               OpDecorate %67 RelaxedPrecision
-               OpDecorate %68 RelaxedPrecision
-               OpDecorate %69 RelaxedPrecision
-               OpDecorate %70 RelaxedPrecision
-               OpDecorate %71 RelaxedPrecision
-               OpDecorate %72 RelaxedPrecision
-               OpDecorate %73 RelaxedPrecision
-               OpDecorate %74 RelaxedPrecision
-               OpDecorate %75 RelaxedPrecision
-               OpDecorate %76 RelaxedPrecision
-               OpDecorate %77 RelaxedPrecision
-               OpDecorate %78 RelaxedPrecision
-               OpDecorate %97 Location 0
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
@@ -299,11 +231,6 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
     ASSERT_FALSE(
         wrap_add_int_bad6.IsApplicable(context.get(), transformation_context));
 
-    // Bad: the two vectors being added are the same.
-    TransformationWrapVectorSynonym wrap_add_int_bad7(50, 100, 100, 94, 1);
-    ASSERT_FALSE(
-        wrap_add_int_bad7.IsApplicable(context.get(), transformation_context));
-
     // Bad: The position goes out of bound for the given vector type.
     TransformationWrapVectorSynonym wrap_add_int_bad8(50, 100, 100, 94, 2);
     ASSERT_FALSE(
@@ -342,74 +269,6 @@ TEST(TransformationWrapVectorSynonym, SimpleTest) {
                OpExecutionMode %4 OriginUpperLeft
                OpSource ESSL 310
                OpName %4 "main"
-               OpName %8 "i1"
-               OpName %10 "i2"
-               OpName %14 "v2"
-               OpName %20 "ui1"
-               OpName %22 "ui2"
-               OpName %26 "v3"
-               OpName %33 "f1"
-               OpName %35 "f2"
-               OpName %39 "v4"
-               OpName %47 "int_add"
-               OpName %51 "int_sub"
-               OpName %55 "int_mul"
-               OpName %59 "int_div"
-               OpName %63 "uint_add"
-               OpName %67 "uint_sub"
-               OpName %71 "uint_mul"
-               OpName %75 "uint_div"
-               OpName %79 "float_add"
-               OpName %83 "float_sub"
-               OpName %87 "float_mul"
-               OpName %91 "float_div"
-               OpName %97 "value"
-               OpDecorate %8 RelaxedPrecision
-               OpDecorate %10 RelaxedPrecision
-               OpDecorate %14 RelaxedPrecision
-               OpDecorate %15 RelaxedPrecision
-               OpDecorate %16 RelaxedPrecision
-               OpDecorate %17 RelaxedPrecision
-               OpDecorate %20 RelaxedPrecision
-               OpDecorate %22 RelaxedPrecision
-               OpDecorate %26 RelaxedPrecision
-               OpDecorate %27 RelaxedPrecision
-               OpDecorate %28 RelaxedPrecision
-               OpDecorate %29 RelaxedPrecision
-               OpDecorate %30 RelaxedPrecision
-               OpDecorate %47 RelaxedPrecision
-               OpDecorate %48 RelaxedPrecision
-               OpDecorate %49 RelaxedPrecision
-               OpDecorate %50 RelaxedPrecision
-               OpDecorate %51 RelaxedPrecision
-               OpDecorate %52 RelaxedPrecision
-               OpDecorate %53 RelaxedPrecision
-               OpDecorate %54 RelaxedPrecision
-               OpDecorate %55 RelaxedPrecision
-               OpDecorate %56 RelaxedPrecision
-               OpDecorate %57 RelaxedPrecision
-               OpDecorate %58 RelaxedPrecision
-               OpDecorate %59 RelaxedPrecision
-               OpDecorate %60 RelaxedPrecision
-               OpDecorate %61 RelaxedPrecision
-               OpDecorate %62 RelaxedPrecision
-               OpDecorate %63 RelaxedPrecision
-               OpDecorate %64 RelaxedPrecision
-               OpDecorate %65 RelaxedPrecision
-               OpDecorate %66 RelaxedPrecision
-               OpDecorate %67 RelaxedPrecision
-               OpDecorate %68 RelaxedPrecision
-               OpDecorate %69 RelaxedPrecision
-               OpDecorate %70 RelaxedPrecision
-               OpDecorate %71 RelaxedPrecision
-               OpDecorate %72 RelaxedPrecision
-               OpDecorate %73 RelaxedPrecision
-               OpDecorate %74 RelaxedPrecision
-               OpDecorate %75 RelaxedPrecision
-               OpDecorate %76 RelaxedPrecision
-               OpDecorate %77 RelaxedPrecision
-               OpDecorate %78 RelaxedPrecision
-               OpDecorate %97 Location 0
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1

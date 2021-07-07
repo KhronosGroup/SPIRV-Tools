@@ -15,7 +15,6 @@
 #ifndef SOURCE_FUZZ_FUZZER_CONTEXT_H_
 #define SOURCE_FUZZ_FUZZER_CONTEXT_H_
 
-#include <stdlib.h>
 #include <functional>
 #include <utility>
 
@@ -122,7 +121,9 @@ class FuzzerContext {
   static uint32_t GetMinFreshId(opt::IRContext* ir_context);
 
   // Returns true if all transformations should be compatible with WGSL.
-  bool IsWgslCompatible() const { return is_wgsl_compatible_; }
+  bool IsWgslCompatible() const {
+    return is_wgsl_compatible_;
+  }
 
   // Probabilities associated with applying various transformations.
   // Keep them in alphabetical order.
@@ -422,19 +423,14 @@ class FuzzerContext {
     assert(number_of_members > 0 && "Composite object must have some members");
     return ChooseBetweenMinAndMax({0, number_of_members - 1});
   }
-  float GetRandomFloatFromRange(float lower_bound, float upper_bound) {
-    return lower_bound + (float)random_generator_->RandomDouble() *
-                             (upper_bound - lower_bound);
-  }
-  uint32_t GetRandomIntegerFromRange(uint32_t lower_bound,
-                                     uint32_t upper_bound) {
-    return lower_bound + random_generator_->RandomUint32(upper_bound + 1);
-  }
   uint32_t GetRandomIndexForAccessChain(uint32_t composite_size_bound) {
     return random_generator_->RandomUint32(composite_size_bound);
   }
   uint32_t GetRandomIndexForCompositeInsert(uint32_t number_of_components) {
     return random_generator_->RandomUint32(number_of_components);
+  }
+  uint32_t GetRandomIndexForWrappingVector(uint32_t vector_width) {
+    return random_generator_->RandomUint32(vector_width);
   }
   int64_t GetRandomValueForStepConstantInLoop() {
     return random_generator_->RandomUint64(UINT64_MAX);
@@ -472,6 +468,9 @@ class FuzzerContext {
       uint32_t max_unused_component_count) {
     // Ensure that the number of unused components is non-zero.
     return random_generator_->RandomUint32(max_unused_component_count) + 1;
+  }
+  uint32_t GetWidthOfWrappingVector() {
+    return 2 + random_generator_->RandomUint32(3);
   }
   bool GoDeeperInConstantObfuscation(uint32_t depth) {
     return go_deeper_in_constant_obfuscation_(depth, random_generator_.get());

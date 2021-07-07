@@ -2376,18 +2376,20 @@ message TransformationWrapRegionInSelection {
 message TransformationWrapVectorSynonym {
   // A transformation that wraps an arithmetic operation into a vector operation
   // and get the result of the original operation from the corresponding index.
-  // For instance, after the transformation, an addition operation between two scalars:
-  // c = a + b
+  // For instance, for this transformation, an scalar operation between two scalars:
+  // define op ∈ {+, -, *}
+  // c = a op b
   //
-  // will be wrapped into vectors:
+  // requires the availability of two vectors:
   //
   // va = vector(..., a, ...)
   // vb = vector(..., b, ...)
-  // vc = va + vb
   //
-  // where the result will be updated from the corresponding index of the result vector:
+  // where a and b are in the same position i in each of their correponding vector
+  // and a is synonymous with va[i] and b is synonymous with vb[i].
   //
-  // c = vc[corresponding_idx]
+  // The transformation then add an instruction vc = va op vb where c is synonymous
+  // with vc[i].
 
   // The result if of the original scalar operation instruction.
   uint32 instruction_id = 1;
@@ -2399,7 +2401,7 @@ message TransformationWrapVectorSynonym {
   uint32 vector_operand2 = 3;
 
   // A fresh id for the resulted vector from the addition of the first and second vector.
-  uint32 vec_id = 4;
+  uint32 fresh_id = 4;
 
   // The position in the vector where the value of original instruction is located. Must be in
   // the corresponding vector range.
