@@ -16,7 +16,6 @@
 #include "gtest/gtest.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
-#include "source/fuzz/transformation_composite_construct.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -102,6 +101,8 @@ TEST(TransformationWrapVectorSynonym, BasicTest) {
                OpStore %39 %46
          %48 = OpLoad %6 %8
          %49 = OpLoad %6 %10
+        %100 = OpCompositeConstruct %12 %48 %48
+        %101 = OpCompositeConstruct %12 %49 %49
          %50 = OpIAdd %6 %48 %49
                OpStore %47 %50
          %52 = OpLoad %6 %8
@@ -184,25 +185,6 @@ TEST(TransformationWrapVectorSynonym, BasicTest) {
   //       90       | OpFMul  |    31   |      88       |      89       |
   //       94       | OpFDiv  |    31   |      92       |      93       |
 
-  TransformationCompositeConstruct add_int_vec1(
-      12, {48, 48}, MakeInstructionDescriptor(50, SpvOpIAdd, 0), 100);
-  ASSERT_TRUE(add_int_vec1.IsApplicable(context.get(), transformation_context));
-
-  TransformationCompositeConstruct add_int_vec2(
-      12, {49, 49}, MakeInstructionDescriptor(50, SpvOpIAdd, 0), 101);
-  ASSERT_TRUE(add_int_vec2.IsApplicable(context.get(), transformation_context));
-  // Insert vec2 of id 100 with the first value of OpIAdd instruction with
-  // id 50.
-  ApplyAndCheckFreshIds(add_int_vec1, context.get(), &transformation_context);
-  // Insert vec2 of id 101 with the second value of OpIAdd instruction with
-  // id 50.
-  ApplyAndCheckFreshIds(add_int_vec2, context.get(), &transformation_context);
-
-  transformation_context.GetFactManager()->AddFactDataSynonym(
-      MakeDataDescriptor(100, {1}), MakeDataDescriptor(48, {}));
-  transformation_context.GetFactManager()->AddFactDataSynonym(
-      MakeDataDescriptor(101, {1}), MakeDataDescriptor(49, {}));
-
   // The following are all invalid use.
   {
     // Bad: Instruction id does not exist.
@@ -254,13 +236,11 @@ TEST(TransformationWrapVectorSynonym, BasicTest) {
   ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
       MakeDataDescriptor(102, {1}), MakeDataDescriptor(50, {})));
 
-  // After applying transformations, three instructions:
-  // %100 = OpCompositeConstruct %12 $48 %48
-  // %101 = OpCompositeConstruct %12 $49 %49
+  // After applying transformations, the instruction:
+  //
   // %102 = OpIAdd %12 %100 %101
   //
-  // that wraps the variables of the original instruction and perform vector
-  // operation, should be added before:
+  // should be added before:
   //
   // %50 = OpIAdd %6 %48 %49
   std::string after_transformation = R"(
@@ -479,10 +459,14 @@ TEST(TransformationWrapVectorSynonym, OperationSupportTest) {
                OpStore %47 %50
          %52 = OpLoad %6 %8
          %53 = OpLoad %6 %10
+        %100 = OpCompositeConstruct %12 %52 %52
+        %101 = OpCompositeConstruct %12 %53 %53
          %54 = OpISub %6 %52 %53
                OpStore %51 %54
          %56 = OpLoad %6 %8
          %57 = OpLoad %6 %10
+        %103 = OpCompositeConstruct %12 %56 %56
+        %104 = OpCompositeConstruct %12 %57 %57
          %58 = OpIMul %6 %56 %57
                OpStore %55 %58
          %60 = OpLoad %6 %8
@@ -491,14 +475,20 @@ TEST(TransformationWrapVectorSynonym, OperationSupportTest) {
                OpStore %59 %62
          %64 = OpLoad %18 %20
          %65 = OpLoad %18 %22
+        %106 = OpCompositeConstruct %24 %64 %64 %64
+        %107 = OpCompositeConstruct %24 %65 %65 %65
          %66 = OpIAdd %18 %64 %65
                OpStore %63 %66
          %68 = OpLoad %18 %20
          %69 = OpLoad %18 %22
+        %109 = OpCompositeConstruct %24 %68 %68 %68
+        %110 = OpCompositeConstruct %24 %69 %69 %69
          %70 = OpISub %18 %68 %69
                OpStore %67 %70
          %72 = OpLoad %18 %20
          %73 = OpLoad %18 %22
+        %112 = OpCompositeConstruct %24 %72 %72 %72
+        %113 = OpCompositeConstruct %24 %73 %73 %73
          %74 = OpIMul %18 %72 %73
                OpStore %71 %74
          %76 = OpLoad %18 %20
@@ -507,14 +497,20 @@ TEST(TransformationWrapVectorSynonym, OperationSupportTest) {
                OpStore %75 %78
          %80 = OpLoad %31 %33
          %81 = OpLoad %31 %35
+        %115 = OpCompositeConstruct %37 %80 %80 %80 %80
+        %116 = OpCompositeConstruct %37 %81 %81 %81 %81
          %82 = OpFAdd %31 %80 %81
                OpStore %79 %82
          %84 = OpLoad %31 %33
          %85 = OpLoad %31 %35
+        %118 = OpCompositeConstruct %37 %84 %84 %84 %84
+        %119 = OpCompositeConstruct %37 %85 %85 %85 %85
          %86 = OpFSub %31 %84 %85
                OpStore %83 %86
          %88 = OpLoad %31 %33
          %89 = OpLoad %31 %35
+        %121 = OpCompositeConstruct %37 %88 %88 %88 %88
+        %122 = OpCompositeConstruct %37 %89 %89 %89 %89
          %90 = OpFMul %31 %88 %89
                OpStore %87 %90
          %92 = OpLoad %31 %33
@@ -529,7 +525,6 @@ TEST(TransformationWrapVectorSynonym, OperationSupportTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
 
-  // Check context validity.
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
 
@@ -538,24 +533,6 @@ TEST(TransformationWrapVectorSynonym, OperationSupportTest) {
 
   // Test OpISub for signed integer.
   {
-    TransformationCompositeConstruct sub_int_vec1(
-        12, {52, 52}, MakeInstructionDescriptor(54, SpvOpISub, 0), 100);
-    ASSERT_TRUE(
-        sub_int_vec1.IsApplicable(context.get(), transformation_context));
-
-    TransformationCompositeConstruct sub_int_vec2(
-        12, {53, 53}, MakeInstructionDescriptor(54, SpvOpISub, 0), 101);
-    ASSERT_TRUE(
-        sub_int_vec2.IsApplicable(context.get(), transformation_context));
-
-    ApplyAndCheckFreshIds(sub_int_vec1, context.get(), &transformation_context);
-    ApplyAndCheckFreshIds(sub_int_vec2, context.get(), &transformation_context);
-
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(100, {1}), MakeDataDescriptor(52, {}));
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(101, {1}), MakeDataDescriptor(53, {}));
-
     // Good: The following transformation should be applicable.
     TransformationWrapVectorSynonym wrap_sub_int(54, 100, 101, 102, 1);
     ASSERT_TRUE(
@@ -570,24 +547,6 @@ TEST(TransformationWrapVectorSynonym, OperationSupportTest) {
 
   // Test OpIMul for signed integer.
   {
-    TransformationCompositeConstruct mul_int_vec1(
-        12, {56, 56}, MakeInstructionDescriptor(58, SpvOpIMul, 0), 103);
-    ASSERT_TRUE(
-        mul_int_vec1.IsApplicable(context.get(), transformation_context));
-
-    TransformationCompositeConstruct mul_int_vec2(
-        12, {57, 57}, MakeInstructionDescriptor(58, SpvOpIMul, 0), 104);
-    ASSERT_TRUE(
-        mul_int_vec2.IsApplicable(context.get(), transformation_context));
-
-    ApplyAndCheckFreshIds(mul_int_vec1, context.get(), &transformation_context);
-    ApplyAndCheckFreshIds(mul_int_vec2, context.get(), &transformation_context);
-
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(103, {0}), MakeDataDescriptor(56, {}));
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(104, {0}), MakeDataDescriptor(57, {}));
-
     // Good: The following transformation should be applicable.
     TransformationWrapVectorSynonym wrap_mul_int(58, 103, 104, 105, 0);
     ASSERT_TRUE(
@@ -602,26 +561,6 @@ TEST(TransformationWrapVectorSynonym, OperationSupportTest) {
 
   // Test OpIAdd for unsigned integer.
   {
-    TransformationCompositeConstruct add_uint_vec1(
-        24, {64, 64, 64}, MakeInstructionDescriptor(66, SpvOpIAdd, 0), 106);
-    ASSERT_TRUE(
-        add_uint_vec1.IsApplicable(context.get(), transformation_context));
-
-    TransformationCompositeConstruct add_uint_vec2(
-        24, {65, 65, 65}, MakeInstructionDescriptor(66, SpvOpIAdd, 0), 107);
-    ASSERT_TRUE(
-        add_uint_vec2.IsApplicable(context.get(), transformation_context));
-
-    ApplyAndCheckFreshIds(add_uint_vec1, context.get(),
-                          &transformation_context);
-    ApplyAndCheckFreshIds(add_uint_vec2, context.get(),
-                          &transformation_context);
-
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(106, {2}), MakeDataDescriptor(64, {}));
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(107, {2}), MakeDataDescriptor(65, {}));
-
     // Good: The following transformation should be applicable.
     TransformationWrapVectorSynonym wrap_add_uint(66, 106, 107, 108, 2);
     ASSERT_TRUE(
@@ -637,26 +576,6 @@ TEST(TransformationWrapVectorSynonym, OperationSupportTest) {
 
   // Test OpISub for signed integer.
   {
-    TransformationCompositeConstruct sub_uint_vec1(
-        24, {68, 68, 68}, MakeInstructionDescriptor(70, SpvOpISub, 0), 109);
-    ASSERT_TRUE(
-        sub_uint_vec1.IsApplicable(context.get(), transformation_context));
-
-    TransformationCompositeConstruct sub_uint_vec2(
-        24, {69, 69, 69}, MakeInstructionDescriptor(70, SpvOpISub, 0), 110);
-    ASSERT_TRUE(
-        sub_uint_vec2.IsApplicable(context.get(), transformation_context));
-
-    ApplyAndCheckFreshIds(sub_uint_vec1, context.get(),
-                          &transformation_context);
-    ApplyAndCheckFreshIds(sub_uint_vec2, context.get(),
-                          &transformation_context);
-
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(109, {2}), MakeDataDescriptor(68, {}));
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(109, {2}), MakeDataDescriptor(69, {}));
-
     // Good: The following transformation should be applicable.
     TransformationWrapVectorSynonym wrap_sub_uint(70, 109, 110, 111, 2);
     ASSERT_TRUE(
@@ -672,26 +591,6 @@ TEST(TransformationWrapVectorSynonym, OperationSupportTest) {
 
   // Test OpIMul for signed integer.
   {
-    TransformationCompositeConstruct mul_uint_vec1(
-        24, {72, 72, 72}, MakeInstructionDescriptor(74, SpvOpIMul, 0), 112);
-    ASSERT_TRUE(
-        mul_uint_vec1.IsApplicable(context.get(), transformation_context));
-
-    TransformationCompositeConstruct mul_uint_vec2(
-        24, {73, 73, 73}, MakeInstructionDescriptor(74, SpvOpIMul, 0), 113);
-    ASSERT_TRUE(
-        mul_uint_vec2.IsApplicable(context.get(), transformation_context));
-
-    ApplyAndCheckFreshIds(mul_uint_vec1, context.get(),
-                          &transformation_context);
-    ApplyAndCheckFreshIds(mul_uint_vec2, context.get(),
-                          &transformation_context);
-
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(112, {1}), MakeDataDescriptor(72, {}));
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(113, {1}), MakeDataDescriptor(73, {}));
-
     // Good: The following transformation should be applicable.
     TransformationWrapVectorSynonym wrap_mul_uint(74, 112, 113, 114, 1);
     ASSERT_TRUE(
@@ -707,26 +606,6 @@ TEST(TransformationWrapVectorSynonym, OperationSupportTest) {
 
   // Test OpFAdd for float.
   {
-    TransformationCompositeConstruct add_float_vec1(
-        37, {80, 80, 80, 80}, MakeInstructionDescriptor(82, SpvOpFAdd, 0), 115);
-    ASSERT_TRUE(
-        add_float_vec1.IsApplicable(context.get(), transformation_context));
-
-    TransformationCompositeConstruct add_float_vec2(
-        37, {81, 81, 81, 81}, MakeInstructionDescriptor(82, SpvOpFAdd, 0), 116);
-    ASSERT_TRUE(
-        add_float_vec2.IsApplicable(context.get(), transformation_context));
-
-    ApplyAndCheckFreshIds(add_float_vec1, context.get(),
-                          &transformation_context);
-    ApplyAndCheckFreshIds(add_float_vec2, context.get(),
-                          &transformation_context);
-
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(115, {2}), MakeDataDescriptor(80, {}));
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(116, {2}), MakeDataDescriptor(81, {}));
-
     // Good: The following transformation should be applicable.
     TransformationWrapVectorSynonym wrap_add_float(82, 115, 116, 117, 2);
     ASSERT_TRUE(
@@ -742,26 +621,6 @@ TEST(TransformationWrapVectorSynonym, OperationSupportTest) {
 
   // Test OpFSub for float.
   {
-    TransformationCompositeConstruct sub_float_vec1(
-        37, {84, 84, 84, 84}, MakeInstructionDescriptor(86, SpvOpFSub, 0), 118);
-    ASSERT_TRUE(
-        sub_float_vec1.IsApplicable(context.get(), transformation_context));
-
-    TransformationCompositeConstruct sub_float_vec2(
-        37, {85, 85, 85, 85}, MakeInstructionDescriptor(86, SpvOpFSub, 0), 119);
-    ASSERT_TRUE(
-        sub_float_vec2.IsApplicable(context.get(), transformation_context));
-
-    ApplyAndCheckFreshIds(sub_float_vec1, context.get(),
-                          &transformation_context);
-    ApplyAndCheckFreshIds(sub_float_vec2, context.get(),
-                          &transformation_context);
-
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(118, {3}), MakeDataDescriptor(84, {}));
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(119, {3}), MakeDataDescriptor(85, {}));
-
     // Good: The following transformation should be applicable.
     TransformationWrapVectorSynonym wrap_add_float(86, 118, 119, 120, 3);
     ASSERT_TRUE(
@@ -777,26 +636,6 @@ TEST(TransformationWrapVectorSynonym, OperationSupportTest) {
 
   // Test OpFMul for float.
   {
-    TransformationCompositeConstruct mul_float_vec1(
-        37, {88, 88, 88, 88}, MakeInstructionDescriptor(90, SpvOpFMul, 0), 121);
-    ASSERT_TRUE(
-        mul_float_vec1.IsApplicable(context.get(), transformation_context));
-
-    TransformationCompositeConstruct mul_float_vec2(
-        37, {89, 89, 89, 89}, MakeInstructionDescriptor(86, SpvOpFMul, 0), 122);
-    ASSERT_TRUE(
-        mul_float_vec2.IsApplicable(context.get(), transformation_context));
-
-    ApplyAndCheckFreshIds(mul_float_vec1, context.get(),
-                          &transformation_context);
-    ApplyAndCheckFreshIds(mul_float_vec2, context.get(),
-                          &transformation_context);
-
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(121, {1}), MakeDataDescriptor(88, {}));
-    transformation_context.GetFactManager()->AddFactDataSynonym(
-        MakeDataDescriptor(122, {1}), MakeDataDescriptor(89, {}));
-
     // Good: The following transformation should be applicable.
     TransformationWrapVectorSynonym wrap_mul_float(90, 121, 122, 123, 1);
     ASSERT_TRUE(
@@ -1055,6 +894,8 @@ TEST(TransformationWrapVectorSynonym, DivSupportTest) {
                OpStore %55 %58
          %60 = OpLoad %6 %8
          %61 = OpLoad %6 %10
+        %100 = OpCompositeConstruct %12 %60 %60
+        %101 = OpCompositeConstruct %12 %61 %61
          %62 = OpSDiv %6 %60 %61
                OpStore %59 %62
          %64 = OpLoad %18 %20
@@ -1071,6 +912,8 @@ TEST(TransformationWrapVectorSynonym, DivSupportTest) {
                OpStore %71 %74
          %76 = OpLoad %18 %20
          %77 = OpLoad %18 %22
+        %102 = OpCompositeConstruct %24 %76 %76 %76
+        %103 = OpCompositeConstruct %24 %77 %77 %77
          %78 = OpUDiv %18 %76 %77
                OpStore %75 %78
          %80 = OpLoad %31 %33
@@ -1087,6 +930,8 @@ TEST(TransformationWrapVectorSynonym, DivSupportTest) {
                OpStore %87 %90
          %92 = OpLoad %31 %33
          %93 = OpLoad %31 %35
+        %104 = OpCompositeConstruct %37 %92 %92 %92 %92
+        %105 = OpCompositeConstruct %37 %93 %93 %93 %93
          %94 = OpFDiv %31 %92 %93
                OpStore %91 %94
                OpReturn
@@ -1097,76 +942,11 @@ TEST(TransformationWrapVectorSynonym, DivSupportTest) {
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
   spvtools::ValidatorOptions validator_options;
 
-  // Check context validity.
   ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
                                                kConsoleMessageConsumer));
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-
-  // Vec Type Id |   Vector Type  |  Element Type id |   Element Type  |
-  // ------------+----------------+------------------+-----------------+
-  //     12      |      vec2      |         6        |      int32      |
-  //     24      |      vec3      |        18        |     uint32      |
-  //     37      |      vec4      |        31        |      float      |
-
-  // Instruction Id | Opcode  | Type Id | constant id 1 | constant id 2 |
-  // ---------------+---------+---------+---------------+---------------+
-  //       62       | OpSDiv  |    6    |      60       |      61       |
-  //       78       | OpUDiv  |    18   |      76       |      77       |
-  //       94       | OpFDiv  |    31   |      92       |      93       |
-
-  TransformationCompositeConstruct div_int_vec1(
-      12, {60, 60}, MakeInstructionDescriptor(62, SpvOpSDiv, 0), 100);
-  ASSERT_TRUE(div_int_vec1.IsApplicable(context.get(), transformation_context));
-
-  TransformationCompositeConstruct div_int_vec2(
-      12, {61, 61}, MakeInstructionDescriptor(62, SpvOpSDiv, 0), 101);
-  ASSERT_TRUE(div_int_vec2.IsApplicable(context.get(), transformation_context));
-
-  ApplyAndCheckFreshIds(div_int_vec1, context.get(), &transformation_context);
-  ApplyAndCheckFreshIds(div_int_vec2, context.get(), &transformation_context);
-
-  transformation_context.GetFactManager()->AddFactDataSynonym(
-      MakeDataDescriptor(100, {1}), MakeDataDescriptor(60, {}));
-  transformation_context.GetFactManager()->AddFactDataSynonym(
-      MakeDataDescriptor(101, {1}), MakeDataDescriptor(61, {}));
-
-  TransformationCompositeConstruct div_uint_vec1(
-      24, {76, 76, 76}, MakeInstructionDescriptor(78, SpvOpUDiv, 0), 102);
-  ASSERT_TRUE(
-      div_uint_vec1.IsApplicable(context.get(), transformation_context));
-
-  TransformationCompositeConstruct div_uint_vec2(
-      24, {77, 77, 77}, MakeInstructionDescriptor(78, SpvOpUDiv, 0), 103);
-  ASSERT_TRUE(
-      div_uint_vec2.IsApplicable(context.get(), transformation_context));
-
-  ApplyAndCheckFreshIds(div_uint_vec1, context.get(), &transformation_context);
-  ApplyAndCheckFreshIds(div_uint_vec2, context.get(), &transformation_context);
-
-  transformation_context.GetFactManager()->AddFactDataSynonym(
-      MakeDataDescriptor(102, {1}), MakeDataDescriptor(76, {}));
-  transformation_context.GetFactManager()->AddFactDataSynonym(
-      MakeDataDescriptor(103, {1}), MakeDataDescriptor(77, {}));
-
-  TransformationCompositeConstruct div_float_vec1(
-      37, {92, 92, 92, 92}, MakeInstructionDescriptor(94, SpvOpFDiv, 0), 104);
-  ASSERT_TRUE(
-      div_float_vec1.IsApplicable(context.get(), transformation_context));
-
-  TransformationCompositeConstruct div_float_vec2(
-      37, {93, 93, 93, 93}, MakeInstructionDescriptor(94, SpvOpFDiv, 0), 105);
-  ASSERT_TRUE(
-      div_float_vec2.IsApplicable(context.get(), transformation_context));
-
-  ApplyAndCheckFreshIds(div_float_vec1, context.get(), &transformation_context);
-  ApplyAndCheckFreshIds(div_float_vec2, context.get(), &transformation_context);
-
-  transformation_context.GetFactManager()->AddFactDataSynonym(
-      MakeDataDescriptor(104, {1}), MakeDataDescriptor(92, {}));
-  transformation_context.GetFactManager()->AddFactDataSynonym(
-      MakeDataDescriptor(105, {1}), MakeDataDescriptor(93, {}));
 
   // Div operations are not currently supported.
   {

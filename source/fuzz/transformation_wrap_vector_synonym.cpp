@@ -13,10 +13,9 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_wrap_vector_synonym.h"
-#include <algorithm>
+
 #include "source/fuzz/data_descriptor.h"
 #include "source/fuzz/fuzzer_util.h"
-#include "source/fuzz/instruction_descriptor.h"
 #include "source/opt/instruction.h"
 
 namespace spvtools {
@@ -49,10 +48,18 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     return false;
   }
 
-  // the instruction must be of a valid scalar operation type.
-  if (!OpcodeIsSupported(instruction->opcode())) {
+  auto type_instruction =
+      ir_context->get_def_use_mgr()->GetDef(instruction->type_id());
+
+  // The instruction must be of a valid scalar operation type.
+  if (!OpcodeIsSupported(instruction->opcode()) ||
+      !OperandTypeIsSupported(type_instruction)) {
     return false;
   }
+
+  assert(!transformation_context.GetFactManager()->IdIsIrrelevant(
+             instruction->result_id()) &&
+         "Result id of the scalar operation must be relevant.");
 
   // |vector_operand1| and |vector_operand2| must exist.
   if (vec1 == nullptr || vec2 == nullptr) {
@@ -85,22 +92,6 @@ bool TransformationWrapVectorSynonym::IsApplicable(
                      ->GetDef(vec1_type_id)
                      ->GetSingleWordInOperand(0);
   if (message_.scalar_position() >= vec_len) {
-    return false;
-  }
-
-  // Check the id in the corresponding position from the result vectors are
-  // synonyms with the operands from the original instruction.
-  if (!transformation_context.GetFactManager()->IsSynonymous(
-          MakeDataDescriptor(message_.vector_operand1(),
-                             {message_.scalar_position()}),
-          MakeDataDescriptor(instruction->GetSingleWordInOperand(0), {}))) {
-    return false;
-  }
-
-  if (!transformation_context.GetFactManager()->IsSynonymous(
-          MakeDataDescriptor(message_.vector_operand2(),
-                             {message_.scalar_position()}),
-          MakeDataDescriptor(instruction->GetSingleWordInOperand(1), {}))) {
     return false;
   }
 

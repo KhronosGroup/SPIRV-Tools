@@ -15,6 +15,7 @@
 #include "source/fuzz/fuzzer_pass_wrap_vector_synonym.h"
 #include "source/fuzz/fuzzer_context.h"
 #include "source/fuzz/fuzzer_util.h"
+#include "source/fuzz/transformation_composite_construct.h"
 #include "source/fuzz/transformation_wrap_vector_synonym.h"
 
 namespace spvtools {
@@ -33,19 +34,28 @@ void FuzzerPassWrapVectorSynonym::Apply() {
              opt::BasicBlock::iterator instruction_iterator,
              const protobufs::InstructionDescriptor& instruction_descriptor)
           -> void {
-        // Only run fuzzer pass on supported scalar operation type instruction.
-        if (!TransformationWrapVectorSynonym::OpcodeIsSupported(
-                instruction_iterator->opcode()))
-          return;
-
-        assert(instruction_iterator->opcode() ==
-                   instruction_descriptor.target_instruction_opcode() &&
-               "The opcode of the instruction we might insert before must be "
-               "the same as the opcode in the descriptor for the instruction");
 
         // Randomly decide whether to wrap it to a vector operation.
         if (!GetFuzzerContext()->ChoosePercentage(
                 GetFuzzerContext()->GetChanceOfWrappingVectorSynonym())) {
+          return;
+        }
+
+        // The transformation will not be applicable if the id of the scalar
+        // operation is irrelevant.
+        if (GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
+                instruction_iterator->result_id())) {
+          return;
+        }
+
+        auto type_instruction = GetIRContext()->get_def_use_mgr()->GetDef(
+            instruction_iterator->type_id());
+
+        // The instruction must be of a valid scalar operation type.
+        if (!TransformationWrapVectorSynonym::OpcodeIsSupported(
+                instruction_iterator->opcode()) ||
+            !TransformationWrapVectorSynonym::OperandTypeIsSupported(
+                type_instruction)) {
           return;
         }
 
@@ -75,51 +85,21 @@ void FuzzerPassWrapVectorSynonym::Apply() {
         std::vector<uint32_t> vec1_components;
         std::vector<uint32_t> vec2_components;
 
-        // Width is specified in the first index for either OpTypeInt or
-        // OpTypeFloat.
-        uint32_t width = GetIRContext()
-                             ->get_def_use_mgr()
-                             ->GetDef(operand_type_id)
-                             ->GetSingleWordOperand(0);
-        // Get the scalar type.
-        auto type = GetIRContext()->get_type_mgr()->GetType(operand_type_id);
-        // Whether the constant is signed, not used for float type so default
-        // set to true.
-        bool is_signed_constant =
-            type->AsInteger() ? type->AsInteger()->IsSigned() : true;
-
         // Populate components based on vector type and size.
         for (uint32_t i = 0; i < vector_size; ++i) {
           if (i == position) {
             vec1_components.emplace_back(target_id1);
             vec2_components.emplace_back(target_id2);
           } else {
-            if (type->AsInteger()) {
-              // Operands are integers. Fill other positions with zero
-              // integer constants.
-              vec1_components.emplace_back(FuzzerPass::FindOrCreateZeroConstant(
-                  FuzzerPass::FindOrCreateIntegerType(width,
-                                                      is_signed_constant),
-                  true));
-              vec2_components.emplace_back(FuzzerPass::FindOrCreateZeroConstant(
-                  FuzzerPass::FindOrCreateIntegerType(width,
-                                                      is_signed_constant),
-                  true));
-            } else if (type->AsFloat()) {
-              // Operands are floats. Fill other positions with zero
-              // float constants.
-              vec1_components.emplace_back(FuzzerPass::FindOrCreateZeroConstant(
-                  FuzzerPass::FindOrCreateFloatType(width), true));
-              vec2_components.emplace_back(FuzzerPass::FindOrCreateZeroConstant(
-                  FuzzerPass::FindOrCreateFloatType(width), true));
-            } else {
-              assert(
-                  false &&
-                  "Instruction opcode must be a valid numeric constant type.");
-            }
+            vec1_components.emplace_back(
+                FindOrCreateZeroConstant(operand_type_id, true));
+            vec2_components.emplace_back(
+                FindOrCreateZeroConstant(operand_type_id, true));
           }
         }
+
         // Add two OpCompositeConstruct to the module with result id returned.
+
         // Add the first OpCompositeConstruct that wraps the id of the first
         // operand.
         uint32_t result_id1 = GetFuzzerContext()->GetFreshId();
@@ -133,18 +113,6 @@ void FuzzerPassWrapVectorSynonym::Apply() {
         ApplyTransformation(TransformationCompositeConstruct(
             operand_type_id, vec2_components, instruction_descriptor,
             result_id2));
-
-        // Add synonym facts between original operands and id from the
-        // |scalar_position| of the vectors are added.
-        GetTransformationContext()->GetFactManager()->AddFactDataSynonym(
-            MakeDataDescriptor(result_id1, {position}),
-            MakeDataDescriptor(instruction_iterator->GetSingleWordInOperand(0),
-                               {}));
-
-        GetTransformationContext()->GetFactManager()->AddFactDataSynonym(
-            MakeDataDescriptor(result_id2, {position}),
-            MakeDataDescriptor(instruction_iterator->GetSingleWordInOperand(1),
-                               {}));
 
         // Apply transformation to do vector operation and add synonym between
         // the result vector id and the id of the original instruction.

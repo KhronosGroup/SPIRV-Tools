@@ -15,16 +15,9 @@
 #ifndef SOURCE_FUZZ_TRANSFORMATION_WRAP_VECTOR_SYNONYM_H_
 #define SOURCE_FUZZ_TRANSFORMATION_WRAP_VECTOR_SYNONYM_H_
 
-#include <utility>
-
-#include "source/fuzz/data_descriptor.h"
-#include "source/fuzz/fuzzer_util.h"
-#include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/protobufs/spirvfuzz_protobufs.h"
 #include "source/fuzz/transformation.h"
-#include "source/fuzz/transformation_composite_construct.h"
 #include "source/fuzz/transformation_context.h"
-#include "source/opt/instruction.h"
 #include "source/opt/ir_context.h"
 
 namespace spvtools {
@@ -59,10 +52,24 @@ class TransformationWrapVectorSynonym : public Transformation {
   std::unordered_set<uint32_t> GetFreshIds() const override;
   protobufs::Transformation ToMessage() const override;
 
-  static bool OpcodeIsSupported(SpvOp_ opcode) {
-    return std::unordered_set<SpvOp>{SpvOpIAdd, SpvOpISub, SpvOpIMul,
-                                     SpvOpFAdd, SpvOpFSub, SpvOpFMul}
-        .count(opcode);
+  static bool OperandTypeIsSupported(opt::Instruction* type_instruction) {
+    return (type_instruction->opcode() == SpvOpTypeFloat ||
+            type_instruction->opcode() == SpvOpTypeInt) &&
+           type_instruction->GetSingleWordInOperand(0) == 32;
+  }
+
+  static bool OpcodeIsSupported(SpvOp opcode) {
+    switch (opcode) {
+      case SpvOpIAdd:
+      case SpvOpISub:
+      case SpvOpIMul:
+      case SpvOpFAdd:
+      case SpvOpFSub:
+      case SpvOpFMul:
+        return true;
+      default:
+        return false;
+    }
   }
 
  private:
