@@ -787,7 +787,7 @@ uint32_t InOperandIndexFromOperandIndex(const opt::Instruction& inst,
   return absolute_index - inst.NumOperands() + inst.NumInOperands();
 }
 
-bool IsNullConstantSupported(const opt::IRContext& ir_context,
+bool IsNullConstantSupported(opt::IRContext* ir_context,
                              const opt::Instruction& type_inst) {
   switch (type_inst.opcode()) {
     case SpvOpTypeArray:
@@ -806,20 +806,12 @@ bool IsNullConstantSupported(const opt::IRContext& ir_context,
       // Null pointers are allowed if the VariablePointers capability is
       // enabled, or if the VariablePointersStorageBuffer capability is enabled
       // and the pointer type has StorageBuffer as its storage class.
-      if (std::find_if(ir_context.capabilities().begin(),
-                       ir_context.capabilities().end(),
-                       [](const opt::Instruction& capability) -> bool {
-                         return capability.GetSingleWordInOperand(0) ==
-                                SpvCapabilityVariablePointers;
-                       }) != ir_context.capabilities().end()) {
+      if (ir_context->get_feature_mgr()->HasCapability(
+              SpvCapabilityVariablePointers)) {
         return true;
       }
-      if (std::find_if(ir_context.capabilities().begin(),
-                       ir_context.capabilities().end(),
-                       [](const opt::Instruction& capability) -> bool {
-                         return capability.GetSingleWordInOperand(0) ==
-                                SpvCapabilityVariablePointersStorageBuffer;
-                       }) != ir_context.capabilities().end()) {
+      if (ir_context->get_feature_mgr()->HasCapability(
+              SpvCapabilityVariablePointersStorageBuffer)) {
         return type_inst.GetSingleWordInOperand(0) ==
                SpvStorageClassStorageBuffer;
       }
