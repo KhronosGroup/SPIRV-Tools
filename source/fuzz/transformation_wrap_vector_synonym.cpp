@@ -38,10 +38,13 @@ TransformationWrapVectorSynonym::TransformationWrapVectorSynonym(
 bool TransformationWrapVectorSynonym::IsApplicable(
     opt::IRContext* ir_context,
     const TransformationContext& transformation_context) const {
+  // |fresh_id| must be fresh.
+  if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_id())) {
+    return false;
+  }
+
   auto instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.instruction_id());
-  auto vec1 = ir_context->get_def_use_mgr()->GetDef(message_.vector_operand1());
-  auto vec2 = ir_context->get_def_use_mgr()->GetDef(message_.vector_operand2());
 
   // |instruction_id| must refer to an existing instruction.
   if (instruction == nullptr) {
@@ -62,6 +65,9 @@ bool TransformationWrapVectorSynonym::IsApplicable(
          "Result id of the scalar operation must be relevant.");
 
   // |vector_operand1| and |vector_operand2| must exist.
+  auto vec1 = ir_context->get_def_use_mgr()->GetDef(message_.vector_operand1());
+  auto vec2 = ir_context->get_def_use_mgr()->GetDef(message_.vector_operand2());
+
   if (vec1 == nullptr || vec2 == nullptr) {
     return false;
   }
@@ -74,24 +80,31 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     return false;
   }
 
-  auto vec_type = ir_context->get_def_use_mgr()->GetDef(vec1_type_id)->opcode();
-
-  if (vec_type != SpvOpTypeVector) {
-    return false;
-  }
-
-  // |fresh_id| must be fresh.
-  if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_id())) {
+  if (ir_context->get_def_use_mgr()->GetDef(vec1_type_id)->opcode() !=
+      SpvOpTypeVector) {
     return false;
   }
 
   // |scalar_position| needs to be a non-negative integer less than the vector
   // length.
   // OpTypeVector instruction has the component count at index 2.
-  auto vec_len = ir_context->get_def_use_mgr()
-                     ->GetDef(vec1_type_id)
-                     ->GetSingleWordInOperand(0);
-  if (message_.scalar_position() >= vec_len) {
+  if (message_.scalar_position() >= ir_context->get_def_use_mgr()
+                                        ->GetDef(vec1_type_id)
+                                        ->GetSingleWordInOperand(0)) {
+    return false;
+  }
+
+  if (!transformation_context.GetFactManager()->IsSynonymous(
+          MakeDataDescriptor(message_.vector_operand1(),
+                             {message_.scalar_position()}),
+          MakeDataDescriptor(instruction->GetSingleWordInOperand(0), {}))) {
+    return false;
+  }
+
+  if (!transformation_context.GetFactManager()->IsSynonymous(
+          MakeDataDescriptor(message_.vector_operand2(),
+                             {message_.scalar_position()}),
+          MakeDataDescriptor(instruction->GetSingleWordInOperand(1), {}))) {
     return false;
   }
 

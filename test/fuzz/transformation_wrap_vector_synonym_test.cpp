@@ -18,6 +18,8 @@
 #include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
+#include "source/fuzz/transformation_composite_construct.h"
+
 namespace spvtools {
 namespace fuzz {
 namespace {
@@ -101,8 +103,6 @@ TEST(TransformationWrapVectorSynonym, BasicTest) {
                OpStore %39 %46
          %48 = OpLoad %6 %8
          %49 = OpLoad %6 %10
-        %100 = OpCompositeConstruct %12 %48 %48
-        %101 = OpCompositeConstruct %12 %49 %49
          %50 = OpIAdd %6 %48 %49
                OpStore %47 %50
          %52 = OpLoad %6 %8
@@ -184,6 +184,13 @@ TEST(TransformationWrapVectorSynonym, BasicTest) {
   //       86       | OpFSub  |    31   |      84       |      85       |
   //       90       | OpFMul  |    31   |      88       |      89       |
   //       94       | OpFDiv  |    31   |      92       |      93       |
+
+  // Assert that the target scalar instruction result id is relevant.
+  ASSERT_FALSE(transformation_context.GetFactManager()->IdIsIrrelevant(50));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(100, {1}), MakeDataDescriptor(48, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(101, {1}), MakeDataDescriptor(49, {}));
 
   // The following are all invalid use.
   {
@@ -530,6 +537,50 @@ TEST(TransformationWrapVectorSynonym, OperationSupportTest) {
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
+
+  {
+    // Add synonym facts between the vector operands at pos and the operands to
+    // the scalar instruction.
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(100, {1}), MakeDataDescriptor(52, {}));
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(101, {1}), MakeDataDescriptor(53, {}));
+
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(103, {0}), MakeDataDescriptor(56, {}));
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(104, {0}), MakeDataDescriptor(57, {}));
+
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(106, {2}), MakeDataDescriptor(64, {}));
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(107, {2}), MakeDataDescriptor(65, {}));
+
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(109, {2}), MakeDataDescriptor(68, {}));
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(110, {2}), MakeDataDescriptor(69, {}));
+
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(112, {1}), MakeDataDescriptor(72, {}));
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(113, {1}), MakeDataDescriptor(73, {}));
+
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(115, {2}), MakeDataDescriptor(80, {}));
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(116, {2}), MakeDataDescriptor(81, {}));
+
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(118, {3}), MakeDataDescriptor(84, {}));
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(119, {3}), MakeDataDescriptor(85, {}));
+
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(121, {1}), MakeDataDescriptor(88, {}));
+    transformation_context.GetFactManager()->AddFactDataSynonym(
+        MakeDataDescriptor(122, {1}), MakeDataDescriptor(89, {}));
+  }
 
   // Test OpISub for signed integer.
   {
@@ -947,6 +998,21 @@ TEST(TransformationWrapVectorSynonym, DivSupportTest) {
 
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
+
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(100, {1}), MakeDataDescriptor(60, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(101, {1}), MakeDataDescriptor(61, {}));
+
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(102, {1}), MakeDataDescriptor(76, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(103, {1}), MakeDataDescriptor(77, {}));
+
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(104, {1}), MakeDataDescriptor(92, {}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(105, {1}), MakeDataDescriptor(93, {}));
 
   // Div operations are not currently supported.
   {
