@@ -22,7 +22,7 @@
 namespace spvtools {
 namespace fuzz {
 
-  // Some other changes!
+  // Some other changes! Example change for demo.
   
 namespace fuzzerutil {
 namespace {
