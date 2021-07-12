@@ -1616,21 +1616,36 @@ bool IdUseCanBeReplaced(opt::IRContext* ir_context,
     return false;
   }
 
-  auto opCode = use_instruction->opcode();
-  if ((opCode == SpvOpAtomicLoad || opCode == SpvOpAtomicStore ||
-       opCode == SpvOpAtomicExchange || opCode == SpvOpAtomicCompareExchange ||
-       opCode == SpvOpAtomicCompareExchangeWeak ||
-       opCode == SpvOpAtomicIIncrement || opCode == SpvOpAtomicIDecrement ||
-       opCode == SpvOpAtomicIAdd || opCode == SpvOpAtomicISub ||
-       opCode == SpvOpAtomicSMin || opCode == SpvOpAtomicUMin ||
-       opCode == SpvOpAtomicSMax || opCode == SpvOpAtomicUMax ||
-       opCode == SpvOpAtomicAnd || opCode == SpvOpAtomicOr ||
-       opCode == SpvOpAtomicXor) &&
+  switch (use_instruction->opcode()) {
+    case SpvOpAtomicLoad:
+    case SpvOpAtomicStore:
+    case SpvOpAtomicExchange:
+    case SpvOpAtomicCompareExchange:
+    case SpvOpAtomicCompareExchangeWeak:
+    case SpvOpAtomicIIncrement:
+    case SpvOpAtomicIDecrement:
+    case SpvOpAtomicIAdd:
+    case SpvOpAtomicISub:
+    case SpvOpAtomicSMin:
+    case SpvOpAtomicUMin:
+    case SpvOpAtomicSMax:
+    case SpvOpAtomicUMax:
+    case SpvOpAtomicAnd:
+    case SpvOpAtomicOr:
+    case SpvOpAtomicXor:
+
       // use_in_operand_index Should be the replaced by synonymous_id (I think
       // so)??
-      ir_context->get_def_use_mgr()->GetDef(use_in_operand_index)->opcode() !=
-          SpvOpConstant) {
-    return false;
+      if (ir_context->get_def_use_mgr()
+                  ->GetDef(use_in_operand_index)
+                  ->opcode() != SpvOpConstant &&
+          (use_in_operand_index == 1 || use_in_operand_index == 2)) {
+        return false;
+      }
+      break;
+
+    default:
+      break;
   }
 
   return true;
@@ -1664,8 +1679,9 @@ bool MembersHaveBuiltInDecoration(opt::IRContext* ir_context,
 bool HasBlockOrBufferBlockDecoration(opt::IRContext* ir_context, uint32_t id) {
   for (auto decoration : {SpvDecorationBlock, SpvDecorationBufferBlock}) {
     if (!ir_context->get_decoration_mgr()->WhileEachDecoration(
-            id, decoration,
-            [](const opt::Instruction& /*unused*/) -> bool { return false; })) {
+            id, decoration, [](const opt::Instruction & /*unused*/) -> bool {
+              return false;
+            })) {
       return true;
     }
   }

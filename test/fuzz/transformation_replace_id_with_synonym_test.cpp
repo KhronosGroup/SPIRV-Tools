@@ -1800,7 +1800,7 @@ TEST(TransformationReplaceIdWithSynonymTest, IncompatibleTypes) {
 //  should be updated to cover more atomic operations, and once the issue is
 //  fixed the test should be enabled.
 TEST(TransformationReplaceIdWithSynonymTest,
-     DISABLED_AtomicScopeAndMemorySemanticsMustBeConstant) {
+     AtomicScopeAndMemorySemanticsMustBeConstant) {
   // The following SPIR-V came from this GLSL, edited to add some synonyms:
   //
   // #version 320 es
@@ -1852,6 +1852,7 @@ TEST(TransformationReplaceIdWithSynonymTest,
          %14 = OpAccessChain %13 %11 %12
          %21 = OpAtomicLoad %6 %14 %15 %20
                OpStore %8 %21
+               OpAtomicStore %14 %15 %20 %12
                OpReturn
                OpFunctionEnd
   )";
