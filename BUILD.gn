@@ -224,6 +224,30 @@ template("spvtools_vendor_table") {
   }
 }
 
+template("spvtools_vendor_table_local") {
+  assert(defined(invoker.name), "Need name in $target_name generation.")
+
+  action("spvtools_vendor_tables_" + target_name) {
+    script = "utils/generate_grammar_tables.py"
+
+    name = invoker.name
+    extinst_vendor_grammar =
+        "source/extinst.${name}.grammar.json"
+    extinst_file = "${target_gen_dir}/${name}.insts.inc"
+
+    args = [
+      "--extinst-vendor-grammar",
+      rebase_path(extinst_vendor_grammar, root_build_dir),
+      "--vendor-insts-output",
+      rebase_path(extinst_file, root_build_dir),
+      "--vendor-operand-kind-prefix",
+      invoker.operand_kind_prefix,
+    ]
+    inputs = [ extinst_vendor_grammar ]
+    outputs = [ extinst_file ]
+  }
+}
+
 action("spvtools_generators_inc") {
   script = "utils/generate_registry_tables.py"
 
@@ -306,17 +330,27 @@ spvtools_vendor_tables = [
     "CLDEBUG100_",
   ],
   [
-    "nonsemantic.vulkan.debuginfo.100",
-    "VKDEBUG100_",
-  ],
-  [
     "nonsemantic.clspvreflection",
     "...nil...",
   ],
 ]
 
+spvtools_vendor_tables_local = [
+  [
+    "nonsemantic.vulkan.debuginfo.100",
+    "VKDEBUG100_",
+  ],
+]
+
 foreach(table_def, spvtools_vendor_tables) {
   spvtools_vendor_table(table_def[0]) {
+    name = table_def[0]
+    operand_kind_prefix = table_def[1]
+  }
+}
+
+foreach(table_def, spvtools_vendor_tables_local) {
+  spvtools_vendor_table_local(table_def[0]) {
     name = table_def[0]
     operand_kind_prefix = table_def[1]
   }
@@ -370,6 +404,10 @@ static_library("spvtools") {
     ":spvtools_opencl_tables_opencl1-0",
   ]
   foreach(table_def, spvtools_vendor_tables) {
+    target_name = table_def[0]
+    deps += [ ":spvtools_vendor_tables_$target_name" ]
+  }
+  foreach(table_def, spvtools_vendor_tables_local) {
     target_name = table_def[0]
     deps += [ ":spvtools_vendor_tables_$target_name" ]
   }
