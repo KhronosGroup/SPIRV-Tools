@@ -678,7 +678,10 @@ void DumpTransformationsBinary(
 // source.chromium.org/chromium/chromium/src/+/main:third_party/protobuf/patches/0003-remove-static-initializers.patch
 //
 // This affects how Status objects must be constructed. This method provides a
-// convenient way to get the OK status.
+// convenient way to get the OK status that works both with and without the
+// patch. With the patch OK is a StatusPod, from which a Status can be
+// constructed. Without the patch, OK is already a Status, and we harmlessly
+// copy-construct the result from it.
 google::protobuf::util::Status GetProtobufOkStatus() {
   return google::protobuf::util::Status(google::protobuf::util::Status::OK);
 }
