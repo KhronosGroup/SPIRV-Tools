@@ -51,7 +51,7 @@ clone_if_missing https://github.com/google/googletest          external/googlete
 pushd external/googletest; git reset --hard 1fb1bb23bb8418dc73a5a9a82bbed31dc610fec7; popd
 clone_if_missing https://github.com/google/effcee              external/effcee        --depth=1
 clone_if_missing https://github.com/google/re2                 external/re2           --depth=1
-clone_if_missing https://github.com/protocolbuffers/protobuf   external/protobuf      --branch v3.13.0
+clone_if_missing https://github.com/protocolbuffers/protobuf   external/protobuf      --branch v3.13.0.1
 
 if [ $TOOL = "cmake" ]; then
   using cmake-3.17.2
