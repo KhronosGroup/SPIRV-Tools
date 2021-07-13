@@ -175,7 +175,7 @@ bool TransformationOutlineFunction::IsApplicable(
   // This is achieved by going through every block in the function that contains
   // the region.
   for (auto& block : *entry_block->GetParent()) {
-   if (region_set.count(&block) != 0) {
+    if (region_set.count(&block) != 0) {
       // The block is in the region. Check that it does not have any unreachable
       // predecessors. If it does, then we do not regard the region as single-
       // entry-single-exit and hence do not outline it.

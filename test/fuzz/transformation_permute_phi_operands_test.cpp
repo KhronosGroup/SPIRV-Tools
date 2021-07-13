@@ -60,7 +60,7 @@ TEST(TransformationPermutePhiOperandsTest, BasicTest) {
                OpBranch %17
          %17 = OpLabel
          %25 = OpPhi %6 %20 %16 %24 %21
-	 %30 = OpIAdd %6 %25 %25
+	   %30 = OpIAdd %6 %25 %25
                OpStore %8 %25
                OpReturn
                OpFunctionEnd
