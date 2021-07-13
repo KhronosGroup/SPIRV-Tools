@@ -18,8 +18,6 @@
 #include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
-#include "source/fuzz/transformation_composite_construct.h"
-
 namespace spvtools {
 namespace fuzz {
 namespace {
@@ -103,6 +101,8 @@ TEST(TransformationWrapVectorSynonym, BasicTest) {
                OpStore %39 %46
          %48 = OpLoad %6 %8
          %49 = OpLoad %6 %10
+        %100 = OpCompositeConstruct %12 %48 %48
+        %101 = OpCompositeConstruct %12 %49 %49
          %50 = OpIAdd %6 %48 %49
                OpStore %47 %50
          %52 = OpLoad %6 %8
