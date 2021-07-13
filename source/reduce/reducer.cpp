@@ -141,7 +141,7 @@ void Reducer::AddReductionPass(
     std::unique_ptr<ReductionOpportunityFinder> finder) {
   passes_.push_back(
       spvtools::MakeUnique<ReductionPass>(target_env_, std::move(finder)));
-} 
+}
 
 void Reducer::AddCleanupReductionPass(
     std::unique_ptr<ReductionOpportunityFinder> finder) {
