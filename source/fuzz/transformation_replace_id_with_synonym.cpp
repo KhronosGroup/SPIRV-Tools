@@ -139,13 +139,10 @@ bool TransformationReplaceIdWithSynonym::IsAgnosticToSignednessOfOperand(
     case SpvOpSLessThanEqual:
     case SpvOpUGreaterThanEqual:
     case SpvOpSGreaterThanEqual:
-    case SpvOpAtomicLoad:
+      return true;
+
     case SpvOpAtomicStore:
     case SpvOpAtomicExchange:
-    case SpvOpAtomicCompareExchange:
-    case SpvOpAtomicCompareExchangeWeak:
-    case SpvOpAtomicIIncrement:
-    case SpvOpAtomicIDecrement:
     case SpvOpAtomicIAdd:
     case SpvOpAtomicISub:
     case SpvOpAtomicSMin:
@@ -155,11 +152,39 @@ bool TransformationReplaceIdWithSynonym::IsAgnosticToSignednessOfOperand(
     case SpvOpAtomicAnd:
     case SpvOpAtomicOr:
     case SpvOpAtomicXor:
-    // These instructions required another capability.
-    case SpvOpAtomicFlagTestAndSet:
-    case SpvOpAtomicFlagClear:
-    case SpvOpAtomicFAddEXT:
-      return true;
+    // TBD(To Be Discussed),
+    // https://github.com/KhronosGroup/SPIRV-Registry/blob/master/extensions/EXT/SPV_EXT_shader_atomic_float_add.asciidoc#modifications-to-the-spir-v-specification-version-15
+    case SpvOpAtomicFAddEXT:  // Capability (AtomicFloat32AddEXT,
+                              // AtomicFloat64AddEXT)
+      assert(use_in_operand_index != 0 && "Forbidden.");
+
+      if (opcode == SpvOpAtomicFAddEXT) {
+        // Would you like to check Capability here?
+      }
+      return use_in_operand_index == 1 || use_in_operand_index == 2;
+
+    case SpvOpAtomicCompareExchange:
+    // Deprecated, missing after version 1.3.
+    // Would you like to remove it?
+    case SpvOpAtomicCompareExchangeWeak:  // Capability (Kernel)
+      assert(use_in_operand_index != 0 && "Forbidden.");
+      // This opcode is Deprecated!
+      if (opcode == SpvOpAtomicCompareExchangeWeak) {
+        // Would you like to check Capability here?
+      }
+      return use_in_operand_index >= 1 && use_in_operand_index <= 3;
+    case SpvOpAtomicLoad:
+    case SpvOpAtomicIIncrement:
+    case SpvOpAtomicIDecrement:
+    case SpvOpAtomicFlagTestAndSet:  // Capability (Kernel)
+    case SpvOpAtomicFlagClear:       // Capability (Kernel)
+      assert(use_in_operand_index != 0 && "Forbidden.");
+      if (opcode == SpvOpAtomicFlagTestAndSet ||
+          opcode == SpvOpAtomicFlagClear) {
+        // Would you like to check Capability here?
+      }
+      return use_in_operand_index >= 1;
+
     case SpvOpAccessChain:
       // The signedness of indices does not matter.
       return use_in_operand_index > 0;

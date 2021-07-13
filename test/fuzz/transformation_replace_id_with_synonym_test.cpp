@@ -2030,7 +2030,7 @@ TEST(TransformationReplaceIdWithSynonymTest,
 //  test so that it covers more atomic operations, and enable the test once the
 //  issue is fixed.
 TEST(TransformationReplaceIdWithSynonymTest,
-     DISABLED_SignOfAtomicScopeAndMemorySemanticsDoesNotMatter) {
+     SignOfAtomicScopeAndMemorySemanticsDoesNotMatter) {
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4345): both the
   //  GLSL comment and the corresponding SPIR-V should be updated to cover a
   //  larger number of atomic operations.
@@ -2176,7 +2176,7 @@ TEST(TransformationReplaceIdWithSynonymTest,
 // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4345): Improve this
 //  test so that it covers more atomic operations, and enable the test once the
 //  issue is fixed.
-TEST(TransformationReplaceIdWithSynonymTest, DISABLED_TypesAreCompatible) {
+TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
   const std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -2188,8 +2188,20 @@ TEST(TransformationReplaceIdWithSynonymTest, DISABLED_TypesAreCompatible) {
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
           %9 = OpTypeInt 32 0
+          %8 = OpTypeStruct %6
+         %10 = OpTypePointer StorageBuffer %8
+         %11 = OpVariable %10 StorageBuffer
+         %12 = OpConstant %6 0
+         %13 = OpTypePointer StorageBuffer %6
+         %15 = OpConstant %6 2
+         %16 = OpConstant %6 7
+         %20 = OpConstant %9 64
           %4 = OpFunction %2 None %3
           %5 = OpLabel
+         %14 = OpAccessChain %13 %11 %12
+         %21 = OpAtomicLoad %6 %14 %15 %20
+         %22 = OpAtomicExchange %6 %14 %15 %20 %16
+               OpAtomicStore %14 %15 %20 %16
                OpReturn
                OpFunctionEnd
   )";
@@ -2226,7 +2238,20 @@ TEST(TransformationReplaceIdWithSynonymTest, DISABLED_TypesAreCompatible) {
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicExchange, 2, int_type, uint_type));
   ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
-      context.get(), SpvOpAtomicExchange, 2, int_type, uint_type));
+      context.get(), SpvOpAtomicExchange, 3, int_type, uint_type));
+
+  // OpAtomicStore
+#ifndef NDEBUG
+  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+                   context.get(), SpvOpAtomicStore, 0, int_type, uint_type),
+               "Invalid operand index");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicStore, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicStore, 2, int_type, uint_type));
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicStore, 3, int_type, uint_type));
 
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4345): Similar for
   // other atomic instructions
