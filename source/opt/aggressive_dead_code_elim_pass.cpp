@@ -999,6 +999,7 @@ void AggressiveDCEPass::InitExtensions() {
       "SPV_KHR_vulkan_memory_model",
       "SPV_KHR_subgroup_uniform_control_flow",
       "SPV_KHR_integer_dot_product",
+      "SPV_EXT_shader_image_int64",
   });
 }
 
