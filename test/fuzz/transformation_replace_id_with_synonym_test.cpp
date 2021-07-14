@@ -1851,6 +1851,7 @@ TEST(TransformationReplaceIdWithSynonymTest,
         %101 = OpCopyObject %17 %20 ; A non-constant version of %20
          %14 = OpAccessChain %13 %11 %12
          %21 = OpAtomicLoad %6 %14 %15 %20
+         %22 = OpAtomicExchange %6 %14 %15 %20 %16
                OpStore %8 %21
                OpAtomicStore %14 %15 %20 %12
                OpReturn
@@ -1882,6 +1883,16 @@ TEST(TransformationReplaceIdWithSynonymTest,
   const auto& semantics_operand = MakeIdUseDescriptorFromUse(
       context.get(), context->get_def_use_mgr()->GetDef(21), 2);
   ASSERT_FALSE(TransformationReplaceIdWithSynonym(semantics_operand, 101)
+                   .IsApplicable(context.get(), transformation_context));
+
+  const auto& scope_operand2 = MakeIdUseDescriptorFromUse(
+      context.get(), context->get_def_use_mgr()->GetDef(22), 1);
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym(scope_operand2, 100)
+                   .IsApplicable(context.get(), transformation_context));
+
+  const auto& semantics_operand2 = MakeIdUseDescriptorFromUse(
+      context.get(), context->get_def_use_mgr()->GetDef(22), 2);
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym(semantics_operand2, 101)
                    .IsApplicable(context.get(), transformation_context));
 }
 

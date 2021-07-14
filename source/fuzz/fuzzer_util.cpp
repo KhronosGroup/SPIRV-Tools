@@ -1616,36 +1616,43 @@ bool IdUseCanBeReplaced(opt::IRContext* ir_context,
     return false;
   }
 
-  switch (use_instruction->opcode()) {
-    case SpvOpAtomicLoad:
-    case SpvOpAtomicStore:
-    case SpvOpAtomicExchange:
-    case SpvOpAtomicCompareExchange:
-    case SpvOpAtomicCompareExchangeWeak:
-    case SpvOpAtomicIIncrement:
-    case SpvOpAtomicIDecrement:
-    case SpvOpAtomicIAdd:
-    case SpvOpAtomicISub:
-    case SpvOpAtomicSMin:
-    case SpvOpAtomicUMin:
-    case SpvOpAtomicSMax:
-    case SpvOpAtomicUMax:
-    case SpvOpAtomicAnd:
-    case SpvOpAtomicOr:
-    case SpvOpAtomicXor:
+  if (ir_context->get_feature_mgr()->HasCapability(SpvCapabilityShader)) {
+    switch (use_instruction->opcode()) {
+      case SpvOpAtomicLoad:
+      case SpvOpAtomicStore:
+      case SpvOpAtomicExchange:
+      case SpvOpAtomicCompareExchange:
+      case SpvOpAtomicIIncrement:
+      case SpvOpAtomicIDecrement:
+      case SpvOpAtomicIAdd:
+      case SpvOpAtomicISub:
+      case SpvOpAtomicSMin:
+      case SpvOpAtomicUMin:
+      case SpvOpAtomicSMax:
+      case SpvOpAtomicUMax:
+      case SpvOpAtomicAnd:
+      case SpvOpAtomicOr:
+      case SpvOpAtomicXor:
+        if (use_instruction->opcode() == SpvOpAtomicCompareExchange &&
+            (use_in_operand_index == 1 || use_in_operand_index == 2 ||
+             use_in_operand_index == 3)) {
+          return false;
+        }
+        if (use_in_operand_index == 1 || use_in_operand_index == 2) {
+          return false;
+        }
+        break;
 
-      // use_in_operand_index Should be the replaced by synonymous_id (I think
-      // so)??
-      if (ir_context->get_def_use_mgr()
-                  ->GetDef(use_in_operand_index)
-                  ->opcode() != SpvOpConstant &&
-          (use_in_operand_index == 1 || use_in_operand_index == 2)) {
-        return false;
-      }
-      break;
+      // Deprecated after version 1.3.
+      case SpvOpAtomicCompareExchangeWeak:
+      case SpvOpAtomicFlagTestAndSet:
+      case SpvOpAtomicFlagClear:
+      case SpvOpAtomicFAddEXT:
+        assert(false && "Not allowed in shader capability.");
 
-    default:
-      break;
+      default:
+        break;
+    }
   }
 
   return true;
