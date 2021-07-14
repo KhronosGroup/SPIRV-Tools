@@ -1568,10 +1568,10 @@ message TransformationLoad {
   // The pointer to be loaded from.
   uint32 pointer_id = 2;
 
-  // Flag to check current load opCode is atomic or not, to take action for each one.
+  // True if and only if the load should be atomic.
   bool is_atomic = 3;
 
-  // Define the scope of execution.
+  // Memory scope for the load. Ignored unless the load is atomic.
   uint32 memory_scope = 4;
 
   // The control masks define bitmask hints for function optimization.
