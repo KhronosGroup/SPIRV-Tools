@@ -1615,10 +1615,10 @@ bool IdUseCanBeReplaced(opt::IRContext* ir_context,
     // that requirement, we do not replace this argument to that instruction.
     return false;
   }
-  // With the Shader capability, memory scope and memory semantics operands are
-  // required to be constants, so they cannot be replaced arbitrarily.
 
   if (ir_context->get_feature_mgr()->HasCapability(SpvCapabilityShader)) {
+  // With the Shader capability, memory scope and memory semantics operands are
+  // required to be constants, so they cannot be replaced arbitrarily.
     switch (use_instruction->opcode()) {
       case SpvOpAtomicLoad:
       case SpvOpAtomicStore:
@@ -1634,7 +1634,6 @@ bool IdUseCanBeReplaced(opt::IRContext* ir_context,
       case SpvOpAtomicAnd:
       case SpvOpAtomicOr:
       case SpvOpAtomicXor:
-
         if (use_in_operand_index == 1 || use_in_operand_index == 2) {
           return false;
         }
@@ -1650,7 +1649,6 @@ bool IdUseCanBeReplaced(opt::IRContext* ir_context,
       case SpvOpAtomicFlagClear:
       case SpvOpAtomicFAddEXT:
         assert(false && "Not allowed with the Shader capability.");
-
       default:
         break;
     }
