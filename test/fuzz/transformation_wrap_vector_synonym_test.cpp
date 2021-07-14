@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_wrap_vector_synonym.h"
+
 #include "gtest/gtest.h"
 #include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
