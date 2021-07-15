@@ -59,14 +59,32 @@ class TransformationWrapVectorSynonym : public Transformation {
   std::unordered_set<uint32_t> GetFreshIds() const override;
   protobufs::Transformation ToMessage() const override;
 
-  static bool OperandTypeIsSupported(opt::Instruction* type_instruction) {
-    return (type_instruction->opcode() == SpvOpTypeFloat ||
-            type_instruction->opcode() == SpvOpTypeInt) &&
-           type_instruction->GetSingleWordInOperand(0) == 32;
-  }
+  // Checks whether the instruction given is supported by the transformation.
+  // A valid instruction must:
+  // - has both result id and type id.
+  // - is a supported scalar operation instruction.
+  // - has a supported type that is either int or float.
+  static bool IsInstructionSupported(opt::IRContext* ir_context,
+                                     opt::Instruction* instruction) {
+    if (ir_context->get_def_use_mgr()->GetDef(instruction->result_id()) ==
+        nullptr) {
+      return false;
+    }
 
-  static bool OpcodeIsSupported(SpvOp opcode) {
-    switch (opcode) {
+    auto type_instruction =
+        ir_context->get_def_use_mgr()->GetDef(instruction->type_id());
+
+    if (type_instruction == nullptr) {
+      return false;
+    }
+
+    if ((type_instruction->opcode() != SpvOpTypeInt &&
+         type_instruction->opcode() != SpvOpTypeFloat) ||
+        type_instruction->GetSingleWordInOperand(0) != 32) {
+      return false;
+    }
+
+    switch (instruction->opcode()) {
       case SpvOpIAdd:
       case SpvOpISub:
       case SpvOpIMul:

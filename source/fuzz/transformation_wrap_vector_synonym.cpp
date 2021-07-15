@@ -51,12 +51,7 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     return false;
   }
 
-  auto type_instruction =
-      ir_context->get_def_use_mgr()->GetDef(instruction->type_id());
-
-  // The instruction must be of a valid scalar operation type.
-  if (!OpcodeIsSupported(instruction->opcode()) ||
-      !OperandTypeIsSupported(type_instruction)) {
+  if (!IsInstructionSupported(ir_context, instruction)) {
     return false;
   }
 

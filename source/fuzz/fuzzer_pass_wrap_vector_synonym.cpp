@@ -41,21 +41,17 @@ void FuzzerPassWrapVectorSynonym::Apply() {
           return;
         }
 
+        // The transformation is not applicable if the instruction has missing
+        // result id, type id, or is not supported type.
+        if (!TransformationWrapVectorSynonym::IsInstructionSupported(
+                GetIRContext(), &*instruction_iterator)) {
+          return;
+        }
+
         // The transformation will not be applicable if the id of the scalar
         // operation is irrelevant.
         if (GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
                 instruction_iterator->result_id())) {
-          return;
-        }
-
-        auto type_instruction = GetIRContext()->get_def_use_mgr()->GetDef(
-            instruction_iterator->type_id());
-
-        // The instruction must be of a valid scalar operation type.
-        if (!TransformationWrapVectorSynonym::OpcodeIsSupported(
-                instruction_iterator->opcode()) ||
-            !TransformationWrapVectorSynonym::OperandTypeIsSupported(
-                type_instruction)) {
           return;
         }
 
