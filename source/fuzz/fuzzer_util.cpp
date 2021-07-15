@@ -1617,8 +1617,8 @@ bool IdUseCanBeReplaced(opt::IRContext* ir_context,
   }
 
   if (ir_context->get_feature_mgr()->HasCapability(SpvCapabilityShader)) {
-  // With the Shader capability, memory scope and memory semantics operands are
-  // required to be constants, so they cannot be replaced arbitrarily.
+    // With the Shader capability, memory scope and memory semantics operands
+    // are required to be constants, so they cannot be replaced arbitrarily.
     switch (use_instruction->opcode()) {
       case SpvOpAtomicLoad:
       case SpvOpAtomicStore:
