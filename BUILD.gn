@@ -232,8 +232,7 @@ template("spvtools_vendor_table_local") {
     script = "utils/generate_grammar_tables.py"
 
     name = invoker.name
-    extinst_vendor_grammar =
-        "source/extinst.${name}.grammar.json"
+    extinst_vendor_grammar = "source/extinst.${name}.grammar.json"
     extinst_file = "${target_gen_dir}/${name}.insts.inc"
 
     args = [
@@ -336,12 +335,10 @@ spvtools_vendor_tables = [
   ],
 ]
 
-spvtools_vendor_tables_local = [
-  [
-    "nonsemantic.vulkan.debuginfo.100",
-    "VKDEBUG100_",
-  ],
-]
+spvtools_vendor_tables_local = [ [
+      "nonsemantic.vulkan.debuginfo.100",
+      "VKDEBUG100_",
+    ] ]
 
 foreach(table_def, spvtools_vendor_tables) {
   spvtools_vendor_table(table_def[0]) {
@@ -400,8 +397,8 @@ static_library("spvtools") {
     ":spvtools_generators_inc",
     ":spvtools_glsl_tables_glsl1-0",
     ":spvtools_language_header_cldebuginfo100",
-    ":spvtools_language_header_vkdebuginfo100",
     ":spvtools_language_header_debuginfo",
+    ":spvtools_language_header_vkdebuginfo100",
     ":spvtools_opencl_tables_opencl1-0",
   ]
   foreach(table_def, spvtools_vendor_tables) {
@@ -550,8 +547,8 @@ static_library("spvtools_val") {
   deps = [
     ":spvtools",
     ":spvtools_language_header_cldebuginfo100",
-    ":spvtools_language_header_vkdebuginfo100",
     ":spvtools_language_header_debuginfo",
+    ":spvtools_language_header_vkdebuginfo100",
   ]
   public_deps = [ ":spvtools_headers" ]
 
@@ -775,8 +772,8 @@ static_library("spvtools_opt") {
   deps = [
     ":spvtools",
     ":spvtools_language_header_cldebuginfo100",
-    ":spvtools_language_header_vkdebuginfo100",
     ":spvtools_language_header_debuginfo",
+    ":spvtools_language_header_vkdebuginfo100",
     ":spvtools_vendor_tables_spv-amd-shader-ballot",
   ]
   public_deps = [ ":spvtools_headers" ]
@@ -879,14 +876,11 @@ static_library("spvtools_reduce") {
 }
 
 if (build_with_chromium) {
-
   # The spirv-fuzz library is only built when in a Chromium checkout
   # due to its dependency on protobuf.
 
   proto_library("spvtools_fuzz_proto") {
-    sources = [
-      "source/fuzz/protobufs/spvtoolsfuzz.proto",
-    ]
+    sources = [ "source/fuzz/protobufs/spvtoolsfuzz.proto" ]
     generate_python = false
     use_protobuf_full = true
   }
@@ -1281,10 +1275,11 @@ if (build_with_chromium) {
       "source/fuzz/uniform_buffer_element_descriptor.h",
     ]
     deps = [
-      "//third_party/protobuf:protobuf_full",
-      ":spvtools_fuzz_proto",
       ":spvtools",
+      ":spvtools_fuzz_proto",
       ":spvtools_opt",
+      ":spvtools_reduce",
+      "//third_party/protobuf:protobuf_full",
     ]
     public_deps = [ ":spvtools_headers" ]
     configs -= [ "//build/config/compiler:chromium_code" ]
@@ -1371,8 +1366,8 @@ if (build_with_chromium) {
     deps = [
       ":spvtools",
       ":spvtools_language_header_cldebuginfo100",
-      ":spvtools_language_header_vkdebuginfo100",
       ":spvtools_language_header_debuginfo",
+      ":spvtools_language_header_vkdebuginfo100",
       ":spvtools_val",
       "//testing/gmock",
       "//testing/gtest",
@@ -1481,7 +1476,6 @@ executable("spirv-link") {
 }
 
 if (!is_ios && !spirv_is_winuwp && build_with_chromium) {
-
   # iOS and UWP do not allow std::system calls which spirv-fuzz
   # requires. Additionally, spirv-fuzz is only built when in a
   # Chromium checkout due to its dependency on protobuf.
@@ -1489,21 +1483,20 @@ if (!is_ios && !spirv_is_winuwp && build_with_chromium) {
   executable("spirv-fuzz") {
     sources = [ "tools/fuzz/fuzz.cpp" ]
     deps = [
-      "//third_party/protobuf:protobuf_full",
       ":spvtools",
       ":spvtools_fuzz",
-      ":spvtools_reduce",
       ":spvtools_opt",
+      ":spvtools_reduce",
       ":spvtools_software_version",
       ":spvtools_util_cli_consumer",
       ":spvtools_val",
+      "//third_party/protobuf:protobuf_full",
     ]
     configs += [ ":spvtools_internal_config" ]
   }
 }
 
 if (!is_ios && !spirv_is_winuwp) {
-
   # iOS and UWP do not allow std::system calls which spirv-reduce
   # requires.
 
