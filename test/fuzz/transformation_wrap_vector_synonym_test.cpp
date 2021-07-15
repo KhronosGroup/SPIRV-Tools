@@ -221,7 +221,7 @@ TEST(TransformationWrapVectorSynonym, BasicTest) {
         wrap_add_int_bad6.IsApplicable(context.get(), transformation_context));
 
     // Bad: The position goes out of bound for the given vector type.
-    TransformationWrapVectorSynonym wrap_add_int_bad8(50, 100, 100, 94, 2);
+    TransformationWrapVectorSynonym wrap_add_int_bad8(50, 100, 101, 102, 2);
     ASSERT_FALSE(
         wrap_add_int_bad8.IsApplicable(context.get(), transformation_context));
 

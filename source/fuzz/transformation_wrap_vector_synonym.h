@@ -32,20 +32,29 @@ class TransformationWrapVectorSynonym : public Transformation {
                                   uint32_t vector_operand1,
                                   uint32_t vector_operand2, uint32_t fresh_id,
                                   uint32_t pos);
-  // - |instruction_id| must be the id of a arithmetic operation.
+  // - |instruction_id| must be the id of a supported arithmetic operation
+  //   and must be relevant.
   // - |vector_operand1| and |vector_operand2| represents the result ids of the
-  //   two added vector.
-  // - |fresh_id| is a vector type for the result of the transformation.
-  // - result vector type must match the type of two vectors being added.
-  // - |fresh_id| must be fresh.
-  // - |vector_operand1| and |vector_operand2| must have the same vector type.
-  // - |pos| is a 0-indexed position of the component that contains the
-  //   value of a and b. pos must be smaller than the number of
-  //   elements that the vector type can has.
+  //   two vector operands.
+  // - |fresh_id| is an unused id that will be used as a result id of the
+  // created
+  //   instruction.
+  // - |vector_operand1| and |vector_operand2| must have the same vector type
+  //   that is supported by this transformation.
+  // - |pos| is an index of the operands of |instruction_id| in the
+  // |vector_operand1|
+  //   and |vector_operand2|. It must be less than the size of those vector
+  //   operands.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
+  // Adds a new instruction before the |instruction_id| with |fresh_id|
+  // result id and |instruction_id|'s opcode. The added instruction has
+  // two operands: |vector_operand1| and |vector_operand2| and its type
+  // id is equal to the type ids of those operands. A new fact is added
+  // to the fact manager specifying that |fresh_id[pos]| is synonymous
+  // to |instruction_id|.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 

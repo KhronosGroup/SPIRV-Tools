@@ -90,7 +90,7 @@ bool TransformationWrapVectorSynonym::IsApplicable(
   // OpTypeVector instruction has the component count at index 2.
   if (message_.scalar_position() >= ir_context->get_def_use_mgr()
                                         ->GetDef(vec1_type_id)
-                                        ->GetSingleWordInOperand(0)) {
+                                        ->GetSingleWordInOperand(1)) {
     return false;
   }
 
@@ -131,7 +131,7 @@ void TransformationWrapVectorSynonym::Apply(
                          ->type_id();
   auto new_instruction = MakeUnique<opt::Instruction>(
       ir_context, instruction->opcode(), vec_type_id, message_.fresh_id(),
-      in_operands);
+      std::move(in_operands));
   auto new_instruction_ptr = new_instruction.get();
   instruction->InsertBefore(std::move(new_instruction));
   ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);
@@ -141,12 +141,9 @@ void TransformationWrapVectorSynonym::Apply(
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
 
   // Add synonyms between |fresh_id| and |instruction_id|.
-  auto result_vec_descriptor =
-      MakeDataDescriptor(message_.fresh_id(), {message_.scalar_position()});
-  auto original_inst_descriptor =
-      MakeDataDescriptor(message_.instruction_id(), {});
   transformation_context->GetFactManager()->AddFactDataSynonym(
-      result_vec_descriptor, original_inst_descriptor);
+      MakeDataDescriptor(message_.fresh_id(), {message_.scalar_position()}),
+      MakeDataDescriptor(message_.instruction_id(), {}));
 }
 
 protobufs::Transformation TransformationWrapVectorSynonym::ToMessage() const {
