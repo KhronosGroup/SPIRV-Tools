@@ -37,14 +37,12 @@ class TransformationWrapVectorSynonym : public Transformation {
   // - |vector_operand1| and |vector_operand2| represents the result ids of the
   //   two vector operands.
   // - |fresh_id| is an unused id that will be used as a result id of the
-  // created
-  //   instruction.
+  //   created instruction.
   // - |vector_operand1| and |vector_operand2| must have the same vector type
   //   that is supported by this transformation.
   // - |pos| is an index of the operands of |instruction_id| in the
-  // |vector_operand1|
-  //   and |vector_operand2|. It must be less than the size of those vector
-  //   operands.
+  //   |vector_operand1| and |vector_operand2|. It must be less than the size
+  //   of those vector operands.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
