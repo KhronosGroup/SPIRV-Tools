@@ -150,6 +150,7 @@ TEST(Optimizer, CanRegisterPassesFromFlags) {
       "--strip-reflect",
       "--set-spec-const-default-value=23:42 21:12",
       "--if-conversion",
+      "--freeze-spec-const=23 21",
       "--freeze-spec-const",
       "--inline-entry-points-exhaustive",
       "--inline-entry-points-opaque",
@@ -206,6 +207,9 @@ TEST(Optimizer, CanRegisterPassesFromFlags) {
   EXPECT_EQ(msg_level, SPV_MSG_ERROR);
 
   EXPECT_FALSE(opt.RegisterPassFromFlag("--set-spec-const-default-value"));
+  EXPECT_EQ(msg_level, SPV_MSG_ERROR);
+
+  EXPECT_FALSE(opt.RegisterPassFromFlag("--freeze-spec-const=s"));
   EXPECT_EQ(msg_level, SPV_MSG_ERROR);
 
   EXPECT_FALSE(opt.RegisterPassFromFlag("--scalar-replacement=s"));

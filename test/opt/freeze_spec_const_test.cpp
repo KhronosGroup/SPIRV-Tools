@@ -128,6 +128,65 @@ TEST_F(FreezeSpecConstantValueRemoveDecorationTest,
                                                      /* skip_nop = */ true);
 }
 
+TEST_F(FreezeSpecConstantValueRemoveDecorationTest,
+       RemoveDecorationInstWithSpecIdSubset) {
+  std::vector<const char*> text = {
+      // clang-format off
+               "OpCapability Shader",
+               "OpCapability Float64",
+          "%1 = OpExtInstImport \"GLSL.std.450\"",
+               "OpMemoryModel Logical GLSL450",
+               "OpEntryPoint Vertex %main \"main\"",
+               "OpSource GLSL 450",
+               "OpSourceExtension \"GL_GOOGLE_cpp_style_line_directive\"",
+               "OpSourceExtension \"GL_GOOGLE_include_directive\"",
+               "OpName %main \"main\"",
+               "OpDecorate %3 SpecId 200",
+               "OpDecorate %4 SpecId 201",
+               "OpDecorate %5 SpecId 202",
+               "OpDecorate %6 SpecId 203",
+       "%void = OpTypeVoid",
+          "%8 = OpTypeFunction %void",
+        "%int = OpTypeInt 32 1",
+          "%3 = OpSpecConstant %int 3",
+      "%float = OpTypeFloat 32",
+          "%4 = OpSpecConstant %float 3.1415",
+     "%double = OpTypeFloat 64",
+          "%5 = OpSpecConstant %double 3.14159265358979",
+       "%bool = OpTypeBool",
+          "%6 = OpSpecConstantTrue %bool",
+          "%13 = OpSpecConstantFalse %bool",
+       "%main = OpFunction %void None %8",
+         "%14 = OpLabel",
+               "OpReturn",
+               "OpFunctionEnd",
+      // clang-format on
+  };
+  std::string expected_disassembly = SelectiveJoin(text, [](const char* line) {
+    std::string line_ = line;
+    return line_.find("SpecId 201") != std::string::npos ||
+           line_.find("SpecId 203") != std::string::npos;
+  });
+  std::vector<std::pair<const char*, const char*>> replacement_pairs = {
+      {"%4 = OpSpecConstant %float 3.1415",
+       "%float_3_1415 = OpConstant %float 3.1415"},
+      {"%6 = OpSpecConstantTrue ", "%true = OpConstantTrue "},
+  };
+  for (auto& p : replacement_pairs) {
+    EXPECT_TRUE(FindAndReplace(&expected_disassembly, p.first, p.second))
+        << "text:\n"
+        << expected_disassembly << "\n"
+        << "find_str:\n"
+        << p.first << "\n"
+        << "replace_str:\n"
+        << p.second << "\n";
+  }
+  auto spec_ids = std::unordered_set<uint32_t>({201, 203, 205});
+  SinglePassRunAndCheck<FreezeSpecConstantValuePass>(
+      JoinAllInsts(text), expected_disassembly,
+      /* skip_nop = */ true, spec_ids);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

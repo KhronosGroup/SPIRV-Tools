@@ -122,72 +122,6 @@ bool CanHaveSpecIdDecoration(const Instruction& inst) {
       return false;
   }
 }
-
-// Given a decoration group defining instruction that is decorated with SpecId
-// decoration, finds the spec constant defining instruction which is the real
-// target of the SpecId decoration. Returns the spec constant defining
-// instruction if such an instruction is found, otherwise returns a nullptr.
-Instruction* GetSpecIdTargetFromDecorationGroup(
-    const Instruction& decoration_group_defining_inst,
-    analysis::DefUseManager* def_use_mgr) {
-  // Find the OpGroupDecorate instruction which consumes the given decoration
-  // group. Note that the given decoration group has SpecId decoration, which
-  // is unique for different spec constants. So the decoration group cannot be
-  // consumed by different OpGroupDecorate instructions. Therefore we only need
-  // the first OpGroupDecoration instruction that uses the given decoration
-  // group.
-  Instruction* group_decorate_inst = nullptr;
-  if (def_use_mgr->WhileEachUser(&decoration_group_defining_inst,
-                                 [&group_decorate_inst](Instruction* user) {
-                                   if (user->opcode() ==
-                                       SpvOp::SpvOpGroupDecorate) {
-                                     group_decorate_inst = user;
-                                     return false;
-                                   }
-                                   return true;
-                                 }))
-    return nullptr;
-
-  // Scan through the target ids of the OpGroupDecorate instruction. There
-  // should be only one spec constant target consumes the SpecId decoration.
-  // If multiple target ids are presented in the OpGroupDecorate instruction,
-  // they must be the same one that defined by an eligible spec constant
-  // instruction. If the OpGroupDecorate instruction has different target ids
-  // or a target id is not defined by an eligible spec cosntant instruction,
-  // returns a nullptr.
-  Instruction* target_inst = nullptr;
-  for (uint32_t i = 1; i < group_decorate_inst->NumInOperands(); i++) {
-    // All the operands of a OpGroupDecorate instruction should be of type
-    // SPV_OPERAND_TYPE_ID.
-    uint32_t candidate_id = group_decorate_inst->GetSingleWordInOperand(i);
-    Instruction* candidate_inst = def_use_mgr->GetDef(candidate_id);
-
-    if (!candidate_inst) {
-      continue;
-    }
-
-    if (!target_inst) {
-      // If the spec constant target has not been found yet, check if the
-      // candidate instruction is the target.
-      if (CanHaveSpecIdDecoration(*candidate_inst)) {
-        target_inst = candidate_inst;
-      } else {
-        // Spec id decoration should not be applied on other instructions.
-        // TODO(qining): Emit an error message in the invalid case once the
-        // error handling is done.
-        return nullptr;
-      }
-    } else {
-      // If the spec constant target has been found, check if the candidate
-      // instruction is the same one as the target. The module is invalid if
-      // the candidate instruction is different with the found target.
-      // TODO(qining): Emit an error messaage in the invalid case once the
-      // error handling is done.
-      if (candidate_inst != target_inst) return nullptr;
-    }
-  }
-  return target_inst;
-}
 }  // namespace
 
 Pass::Status SetSpecConstantDefaultValuePass::Process() {
@@ -362,6 +296,69 @@ SetSpecConstantDefaultValuePass::ParseDefaultValuesString(const char* str) {
   }
 
   return spec_id_to_value;
+}
+
+Instruction*
+SetSpecConstantDefaultValuePass::GetSpecIdTargetFromDecorationGroup(
+    const Instruction& decoration_group_defining_inst,
+    analysis::DefUseManager* def_use_mgr) {
+  // Find the OpGroupDecorate instruction which consumes the given decoration
+  // group. Note that the given decoration group has SpecId decoration, which
+  // is unique for different spec constants. So the decoration group cannot be
+  // consumed by different OpGroupDecorate instructions. Therefore we only need
+  // the first OpGroupDecoration instruction that uses the given decoration
+  // group.
+  Instruction* group_decorate_inst = nullptr;
+  if (def_use_mgr->WhileEachUser(&decoration_group_defining_inst,
+                                 [&group_decorate_inst](Instruction* user) {
+                                   if (user->opcode() ==
+                                       SpvOp::SpvOpGroupDecorate) {
+                                     group_decorate_inst = user;
+                                     return false;
+                                   }
+                                   return true;
+                                 }))
+    return nullptr;
+
+  // Scan through the target ids of the OpGroupDecorate instruction. There
+  // should be only one spec constant target consumes the SpecId decoration.
+  // If multiple target ids are presented in the OpGroupDecorate instruction,
+  // they must be the same one that defined by an eligible spec constant
+  // instruction. If the OpGroupDecorate instruction has different target ids
+  // or a target id is not defined by an eligible spec cosntant instruction,
+  // returns a nullptr.
+  Instruction* target_inst = nullptr;
+  for (uint32_t i = 1; i < group_decorate_inst->NumInOperands(); i++) {
+    // All the operands of a OpGroupDecorate instruction should be of type
+    // SPV_OPERAND_TYPE_ID.
+    uint32_t candidate_id = group_decorate_inst->GetSingleWordInOperand(i);
+    Instruction* candidate_inst = def_use_mgr->GetDef(candidate_id);
+
+    if (!candidate_inst) {
+      continue;
+    }
+
+    if (!target_inst) {
+      // If the spec constant target has not been found yet, check if the
+      // candidate instruction is the target.
+      if (CanHaveSpecIdDecoration(*candidate_inst)) {
+        target_inst = candidate_inst;
+      } else {
+        // Spec id decoration should not be applied on other instructions.
+        // TODO(qining): Emit an error message in the invalid case once the
+        // error handling is done.
+        return nullptr;
+      }
+    } else {
+      // If the spec constant target has been found, check if the candidate
+      // instruction is the same one as the target. The module is invalid if
+      // the candidate instruction is different with the found target.
+      // TODO(qining): Emit an error messaage in the invalid case once the
+      // error handling is done.
+      if (candidate_inst != target_inst) return nullptr;
+    }
+  }
+  return target_inst;
 }
 
 }  // namespace opt
