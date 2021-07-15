@@ -1616,6 +1616,44 @@ bool IdUseCanBeReplaced(opt::IRContext* ir_context,
     return false;
   }
 
+  if (ir_context->get_feature_mgr()->HasCapability(SpvCapabilityShader)) {
+    // With the Shader capability, memory scope and memory semantics operands
+    // are required to be constants, so they cannot be replaced arbitrarily.
+    switch (use_instruction->opcode()) {
+      case SpvOpAtomicLoad:
+      case SpvOpAtomicStore:
+      case SpvOpAtomicExchange:
+      case SpvOpAtomicIIncrement:
+      case SpvOpAtomicIDecrement:
+      case SpvOpAtomicIAdd:
+      case SpvOpAtomicISub:
+      case SpvOpAtomicSMin:
+      case SpvOpAtomicUMin:
+      case SpvOpAtomicSMax:
+      case SpvOpAtomicUMax:
+      case SpvOpAtomicAnd:
+      case SpvOpAtomicOr:
+      case SpvOpAtomicXor:
+        if (use_in_operand_index == 1 || use_in_operand_index == 2) {
+          return false;
+        }
+        break;
+      case SpvOpAtomicCompareExchange:
+        if (use_in_operand_index == 1 || use_in_operand_index == 2 ||
+            use_in_operand_index == 3) {
+          return false;
+        }
+        break;
+      case SpvOpAtomicCompareExchangeWeak:
+      case SpvOpAtomicFlagTestAndSet:
+      case SpvOpAtomicFlagClear:
+      case SpvOpAtomicFAddEXT:
+        assert(false && "Not allowed with the Shader capability.");
+      default:
+        break;
+    }
+  }
+
   return true;
 }
 
