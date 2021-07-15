@@ -531,6 +531,7 @@ TEST(FuzzerPassDonateModulesTest, DonateOpConstantNull) {
   std::string recipient_shader = R"(
                OpCapability Shader
                OpCapability ImageQuery
+               OpCapability VariablePointers
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main"
@@ -548,6 +549,7 @@ TEST(FuzzerPassDonateModulesTest, DonateOpConstantNull) {
   std::string donor_shader = R"(
                OpCapability Shader
                OpCapability ImageQuery
+               OpCapability VariablePointers
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main"

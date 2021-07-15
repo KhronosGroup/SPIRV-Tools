@@ -26,6 +26,7 @@ namespace {
 TEST(TransformationStoreTest, BasicTest) {
   std::string shader = R"(
                OpCapability Shader
+               OpCapability VariablePointers
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main" %92 %52 %53
@@ -50,7 +51,6 @@ TEST(TransformationStoreTest, BasicTest) {
          %34 = OpTypeBool
          %35 = OpConstantFalse %34
          %60 = OpConstantNull %50
-         %61 = OpUndef %51
          %52 = OpVariable %50 Private
          %53 = OpVariable %51 Private
          %80 = OpConstantComposite %8 %21 %24
@@ -290,6 +290,7 @@ TEST(TransformationStoreTest, BasicTest) {
 
   std::string after_transformation = R"(
                OpCapability Shader
+               OpCapability VariablePointers
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main" %92 %52 %53
@@ -314,7 +315,6 @@ TEST(TransformationStoreTest, BasicTest) {
          %34 = OpTypeBool
          %35 = OpConstantFalse %34
          %60 = OpConstantNull %50
-         %61 = OpUndef %51
          %52 = OpVariable %50 Private
          %53 = OpVariable %51 Private
          %80 = OpConstantComposite %8 %21 %24
