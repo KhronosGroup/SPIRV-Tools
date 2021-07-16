@@ -43,7 +43,7 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     return false;
   }
 
-  auto instruction =
+  const opt::Instruction* instruction =
       ir_context->get_def_use_mgr()->GetDef(message_.instruction_id());
 
   // |instruction_id| must refer to an existing instruction.
