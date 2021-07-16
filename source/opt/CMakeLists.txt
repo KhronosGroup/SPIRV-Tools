@@ -27,6 +27,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   composite.h
   const_folding_rules.h
   constants.h
+  control_dependence.h
   convert_to_half_pass.h
   copy_prop_arrays.h
   dead_branch_elim_pass.h
@@ -133,6 +134,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   composite.cpp
   const_folding_rules.cpp
   constants.cpp
+  control_dependence.cpp
   convert_to_half_pass.cpp
   copy_prop_arrays.cpp
   dead_branch_elim_pass.cpp
