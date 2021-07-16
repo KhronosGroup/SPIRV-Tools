@@ -2026,10 +2026,11 @@ TEST(TransformationReplaceIdWithSynonymTest,
                    .IsApplicable(context.get(), transformation_context));
 }
 
+// TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4345): Improve this
+//  test so that it covers more atomic operations, and enable the test once the
+//  issue is fixed.
 TEST(TransformationReplaceIdWithSynonymTest,
      DISABLED_SignOfAtomicScopeAndMemorySemanticsDoesNotMatter) {
-  //  This test is failed at (IsApplicable) line, because of updates from PR
-  //  #4349.
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4345): both the
   //  GLSL comment and the corresponding SPIR-V should be updated to cover a
   //  larger number of atomic operations.
