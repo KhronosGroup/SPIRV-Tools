@@ -65,31 +65,7 @@ class TransformationWrapVectorSynonym : public Transformation {
   // - is a supported scalar operation instruction.
   // - has a supported type that is either int or float.
   static bool IsInstructionSupported(opt::IRContext* ir_context,
-                                     const opt::Instruction*& instruction) {
-    if (!instruction->result_id() || !instruction->type_id()) {
-      return false;
-    }
-    auto type_instruction =
-        ir_context->get_def_use_mgr()->GetDef(instruction->type_id());
-
-    if ((type_instruction->opcode() != SpvOpTypeInt &&
-         type_instruction->opcode() != SpvOpTypeFloat) ||
-        type_instruction->GetSingleWordInOperand(0) != 32) {
-      return false;
-    }
-
-    switch (instruction->opcode()) {
-      case SpvOpIAdd:
-      case SpvOpISub:
-      case SpvOpIMul:
-      case SpvOpFAdd:
-      case SpvOpFSub:
-      case SpvOpFMul:
-        return true;
-      default:
-        return false;
-    }
-  }
+                                     const opt::Instruction*& instruction);
 
  private:
   protobufs::TransformationWrapVectorSynonym message_;
