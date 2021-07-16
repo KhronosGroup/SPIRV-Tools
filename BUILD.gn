@@ -416,6 +416,7 @@ static_library("spvtools") {
     "source/binary.cpp",
     "source/binary.h",
     "source/cfa.h",
+    "source/common_debug_info.h",
     "source/diagnostic.cpp",
     "source/diagnostic.h",
     "source/disassemble.cpp",
