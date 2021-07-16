@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Google Inc.
+// Copyright (c) 2021 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,88 +14,46 @@
 
 #include "source/opt/control_dependence.h"
 
-#include <gmock/gmock-matchers.h>
-
 #include <algorithm>
 #include <vector>
 
+#include "gmock/gmock-matchers.h"
 #include "gtest/gtest.h"
 #include "source/opt/build_module.h"
+#include "source/opt/cfg.h"
 #include "test/opt/function_utils.h"
 
 namespace spvtools {
 namespace opt {
-// Readable output for test failures
-static std::ostream& operator<<(std::ostream& os,
-                                const ControlDependence& dep) {
-  os << dep.source << "->" << dep.target;
-  switch (dep.dependence_type) {
-    case ControlDependence::DependenceType::kConditionalBranch:
-      os << " if %" << dep.dependent_value_label << " is "
-         << (dep.condition_value ? "true" : "false");
-      break;
-    case ControlDependence::DependenceType::kSwitchCase: {
-      os << " switch %" << dep.dependent_value_label << " case ";
-      bool first = true;
-      for (uint32_t case_value : dep.switch_case_values) {
-        if (first) {
-          first = false;
-        } else {
-          os << ", ";
-        }
-        os << case_value;
-      }
-      if (dep.is_switch_default) {
-        if (!first) {
-          first = false;
-          os << ", ";
-        }
-        os << "default";
-      }
-    } break;
-    case ControlDependence::DependenceType::kEntry:
-      os << " entry";
-      break;
-    default:
-      os << " (unknown)";
-  }
-  return os;
-}
-
-bool operator<(const ControlDependence& dep1, const ControlDependence& dep2) {
-  // Compare dep1 < dep2 lexicographically.
-  if (dep1.source != dep2.source) return dep1.source < dep2.source;
-  return dep1.target < dep2.target;
-}
 
 namespace {
-static void GatherEdges(const ControlDependenceGraph& cdg,
-                        std::vector<ControlDependence>* ret) {
+void GatherEdges(const ControlDependenceAnalysis& cdg,
+                 std::vector<ControlDependence>& ret) {
   cdg.ForEachBlockLabel([&](uint32_t label) {
-    ret->reserve(ret->size() + cdg.GetDependents(label).size());
-    ret->insert(ret->end(), cdg.GetDependents(label).begin(),
-                cdg.GetDependents(label).end());
+    ret.reserve(ret.size() + cdg.GetDependents(label).size());
+    ret.insert(ret.end(), cdg.GetDependents(label).begin(),
+               cdg.GetDependents(label).end());
   });
-  std::sort(ret->begin(), ret->end());
+  std::sort(ret.begin(), ret.end());
   // Verify that reverse graph is the same.
   std::vector<ControlDependence> reverse_edges;
-  reverse_edges.reserve(ret->size());
+  reverse_edges.reserve(ret.size());
   cdg.ForEachBlockLabel([&](uint32_t label) {
     reverse_edges.insert(reverse_edges.end(), cdg.GetDependees(label).begin(),
                          cdg.GetDependees(label).end());
   });
   std::sort(reverse_edges.begin(), reverse_edges.end());
-  ASSERT_THAT(reverse_edges, testing::ElementsAreArray(*ret));
+  ASSERT_THAT(reverse_edges, testing::ElementsAreArray(ret));
 }
 
 static ControlDependence MakeCondBranchDep(uint32_t source, uint32_t target,
                                            uint32_t condition_label,
                                            bool value) {
   ControlDependence dep;
-  dep.source = source;
-  dep.target = target;
+  dep.source_bb_id = source;
+  dep.target_bb_id = target;
   dep.dependence_type = ControlDependence::DependenceType::kConditionalBranch;
-  dep.dependent_value_label = condition_label;
+  dep.dependent_value_id = condition_label;
   dep.condition_value = value;
   return dep;
 }
@@ -105,10 +63,10 @@ static ControlDependence MakeSwitchCaseDep(uint32_t source, uint32_t target,
                                            bool is_default,
                                            std::vector<uint32_t> cases) {
   ControlDependence dep;
-  dep.source = source;
-  dep.target = target;
+  dep.source_bb_id = source;
+  dep.target_bb_id = target;
   dep.dependence_type = ControlDependence::DependenceType::kSwitchCase;
-  dep.dependent_value_label = switch_value;
+  dep.dependent_value_id = switch_value;
   dep.is_switch_default = is_default;
   dep.switch_case_values = cases;
   return dep;
@@ -116,8 +74,8 @@ static ControlDependence MakeSwitchCaseDep(uint32_t source, uint32_t target,
 
 static ControlDependence MakeEntryDep(uint32_t target) {
   ControlDependence dep;
-  dep.source = ControlDependenceGraph::kPseudoEntryBlock;
-  dep.target = target;
+  dep.source_bb_id = ControlDependenceAnalysis::kPseudoEntryBlock;
+  dep.target_bb_id = target;
   dep.dependence_type = ControlDependence::DependenceType::kEntry;
   return dep;
 }
@@ -161,6 +119,24 @@ TEST(ControlDependenceTest, DependenceSimpleCFG) {
                OpReturn
                OpFunctionEnd
 )";
+
+  // CFG: (all edges pointing downward)
+  //   %10
+  //    |
+  //   %11
+  //  /   \ (R: %6 == 1, L: default)
+  // %12 %13
+  //  \   /
+  //   %14
+  // T/   \F
+  // %15  %16
+  //  | T/ |F
+  //  | %17|
+  //  |  \ |
+  //  |   %18
+  //  |  /
+  // %19
+
   std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_0, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -176,7 +152,7 @@ TEST(ControlDependenceTest, DependenceSimpleCFG) {
     PostDominatorAnalysis pdom;
     const CFG& cfg = *context->cfg();
     pdom.InitializeTree(cfg, fn);
-    ControlDependenceGraph cdg;
+    ControlDependenceAnalysis cdg;
     cdg.InitializeGraph(cfg, pdom);
 
     EXPECT_TRUE(cdg.IsDependent(12, 11));
@@ -195,7 +171,7 @@ TEST(ControlDependenceTest, DependenceSimpleCFG) {
     EXPECT_FALSE(cdg.IsDependent(12, 0));
 
     std::vector<ControlDependence> edges;
-    GatherEdges(cdg, &edges);
+    GatherEdges(cdg, edges);
     EXPECT_THAT(edges,
                 testing::ElementsAre(MakeEntryDep(10), MakeEntryDep(11),
                                      MakeEntryDep(14), MakeEntryDep(19),
@@ -247,6 +223,30 @@ TEST(ControlDependenceTest, DependencePaperCFG) {
                OpReturn
                OpFunctionEnd
 )";
+
+  // CFG: (edges pointing downward if no arrow)
+  //         %1
+  //         |
+  //         %2 <----+
+  //       T/  \F    |
+  //      %3    \    |
+  //    T/  \F   \   |
+  //    %4  %5    %7 |
+  //     \  /    /   |
+  //      %6    /    |
+  //        \  /     |
+  //         %8      |
+  //         |       |
+  //         %9 <-+  |
+  //       T/  |  |  |
+  //       %10 |  |  |
+  //        \  |  |  |
+  //         %11-F+  |
+  //         T|      |
+  //         %12-F---+
+  //         T|
+  //         %13
+
   std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_0, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -262,11 +262,11 @@ TEST(ControlDependenceTest, DependencePaperCFG) {
     PostDominatorAnalysis pdom;
     const CFG& cfg = *context->cfg();
     pdom.InitializeTree(cfg, fn);
-    ControlDependenceGraph cdg;
+    ControlDependenceAnalysis cdg;
     cdg.InitializeGraph(cfg, pdom);
 
     std::vector<ControlDependence> edges;
-    GatherEdges(cdg, &edges);
+    GatherEdges(cdg, edges);
     EXPECT_THAT(edges, testing::ElementsAre(
                            MakeEntryDep(1), MakeEntryDep(2), MakeEntryDep(8),
                            MakeEntryDep(9), MakeEntryDep(11), MakeEntryDep(12),
