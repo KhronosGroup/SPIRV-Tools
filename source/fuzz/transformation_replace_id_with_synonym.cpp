@@ -140,9 +140,43 @@ bool TransformationReplaceIdWithSynonym::IsAgnosticToSignednessOfOperand(
     case SpvOpUGreaterThanEqual:
     case SpvOpSGreaterThanEqual:
       return true;
+
+    case SpvOpAtomicStore:
+    case SpvOpAtomicExchange:
+    case SpvOpAtomicIAdd:
+    case SpvOpAtomicISub:
+    case SpvOpAtomicSMin:
+    case SpvOpAtomicUMin:
+    case SpvOpAtomicSMax:
+    case SpvOpAtomicUMax:
+    case SpvOpAtomicAnd:
+    case SpvOpAtomicOr:
+    case SpvOpAtomicXor:
+    case SpvOpAtomicFAddEXT:  // Capability AtomicFloat32AddEXT,
+                              // AtomicFloat64AddEXT.
+      assert(use_in_operand_index != 0 &&
+             "Signedness check should not occur on a pointer operand.");
+      return use_in_operand_index == 1 || use_in_operand_index == 2;
+
+    case SpvOpAtomicCompareExchange:
+    case SpvOpAtomicCompareExchangeWeak:  // Capability Kernel.
+      assert(use_in_operand_index != 0 &&
+             "Signedness check should not occur on a pointer operand.");
+      return use_in_operand_index >= 1 && use_in_operand_index <= 3;
+
+    case SpvOpAtomicLoad:
+    case SpvOpAtomicIIncrement:
+    case SpvOpAtomicIDecrement:
+    case SpvOpAtomicFlagTestAndSet:  // Capability Kernel.
+    case SpvOpAtomicFlagClear:       // Capability Kernel.
+      assert(use_in_operand_index != 0 &&
+             "Signedness check should not occur on a pointer operand.");
+      return use_in_operand_index >= 1;
+
     case SpvOpAccessChain:
       // The signedness of indices does not matter.
       return use_in_operand_index > 0;
+
     default:
       // Conservatively assume that the id cannot be swapped in other
       // instructions.
