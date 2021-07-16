@@ -3423,6 +3423,29 @@ INSTANTIATE_TEST_SUITE_P(IntegerArithmeticTestCases, GeneralInstructionFoldingTe
         2, 0)
 ));
 
+INSTANTIATE_TEST_SUITE_P(IndexlessAccesschainFoldingTest, GeneralInstructionFoldingTest,
+::testing::Values(
+    // Test case 0: fold Insert feeding extract
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpVariable %_ptr_int Function\n" +
+            "%3 = OpAccessChain %_ptr_int %2\n" +
+            "%4 = OpLoad %int %3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, 2),
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpVariable %_ptr_int Function\n" +
+            "%3 = OpAccessChain %_ptr_int %2 %100\n" +
+            "%4 = OpLoad %int %3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        3, 2)
+));
+
 INSTANTIATE_TEST_SUITE_P(CompositeExtractFoldingTest, GeneralInstructionFoldingTest,
 ::testing::Values(
     // Test case 0: fold Insert feeding extract

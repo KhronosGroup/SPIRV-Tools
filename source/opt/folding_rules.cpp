@@ -2498,6 +2498,23 @@ FoldingRule UpdateImageOperands() {
   };
 }
 
+// Optimizes out indexless accesschains.
+bool IndexlessAccesschain(IRContext*, Instruction* inst,
+                          const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == SpvOpAccessChain &&
+           "Wrong opcode.  Should be OpAccessChain.");
+    if (inst->NumOperandWords() == 3 ||
+        inst->NumOperandWords() == 4 && constants[1]->IsZero()) {
+      // Eliminate OpAccessChain
+      inst->SetOpcode(SpvOpCopyObject);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(0)}}});
+      return true;
+    }
+    return false;
+}
+
+
 }  // namespace
 
 void FoldingRules::AddFoldingRules() {
@@ -2505,6 +2522,8 @@ void FoldingRules::AddFoldingRules() {
   // Note that the order in which rules are added to the list matters. If a rule
   // applies to the instruction, the rest of the rules will not be attempted.
   // Take that into consideration.
+  rules_[SpvOpAccessChain].push_back(IndexlessAccesschain);
+
   rules_[SpvOpBitcast].push_back(BitCastScalarOrVector());
 
   rules_[SpvOpCompositeConstruct].push_back(CompositeExtractFeedingConstruct);
