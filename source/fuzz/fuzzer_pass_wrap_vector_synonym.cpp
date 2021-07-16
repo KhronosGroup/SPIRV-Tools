@@ -44,8 +44,7 @@ void FuzzerPassWrapVectorSynonym::Apply() {
         // The transformation is not applicable if the instruction has missing
         // result id, type id, or is not supported type.
         if (!TransformationWrapVectorSynonym::IsInstructionSupported(
-                GetIRContext(),
-                (const opt::Instruction*&)instruction_iterator)) {
+                GetIRContext(), *instruction_iterator)) {
           return;
         }
 

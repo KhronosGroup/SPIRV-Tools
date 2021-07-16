@@ -65,7 +65,7 @@ class TransformationWrapVectorSynonym : public Transformation {
   // - is a supported scalar operation instruction.
   // - has a supported type that is either int or float.
   static bool IsInstructionSupported(opt::IRContext* ir_context,
-                                     const opt::Instruction*& instruction);
+                                     const opt::Instruction& instruction);
 
  private:
   protobufs::TransformationWrapVectorSynonym message_;

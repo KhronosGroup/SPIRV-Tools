@@ -51,7 +51,7 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     return false;
   }
 
-  if (!IsInstructionSupported(ir_context, instruction)) {
+  if (!IsInstructionSupported(ir_context, *instruction)) {
     return false;
   }
 
@@ -152,13 +152,13 @@ std::unordered_set<uint32_t> TransformationWrapVectorSynonym::GetFreshIds()
   return std::unordered_set<uint32_t>{message_.fresh_id()};
 }
 
-bool TransformationWrapVectorSynonym::IsInstructionSupported(opt::IRContext* ir_context,
-                                   const opt::Instruction*& instruction) {
-  if (!instruction->result_id() || !instruction->type_id()) {
+bool TransformationWrapVectorSynonym::IsInstructionSupported(
+    opt::IRContext* ir_context, const opt::Instruction& instruction) {
+  if (!instruction.result_id() || !instruction.type_id()) {
     return false;
   }
   auto type_instruction =
-      ir_context->get_def_use_mgr()->GetDef(instruction->type_id());
+      ir_context->get_def_use_mgr()->GetDef(instruction.type_id());
 
   if ((type_instruction->opcode() != SpvOpTypeInt &&
        type_instruction->opcode() != SpvOpTypeFloat) ||
@@ -166,7 +166,7 @@ bool TransformationWrapVectorSynonym::IsInstructionSupported(opt::IRContext* ir_
     return false;
   }
 
-  switch (instruction->opcode()) {
+  switch (instruction.opcode()) {
     case SpvOpIAdd:
     case SpvOpISub:
     case SpvOpIMul:
