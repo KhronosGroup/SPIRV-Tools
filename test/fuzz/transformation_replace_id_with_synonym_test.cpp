@@ -2028,6 +2028,8 @@ TEST(TransformationReplaceIdWithSynonymTest,
 
 TEST(TransformationReplaceIdWithSynonymTest,
      DISABLED_SignOfAtomicScopeAndMemorySemanticsDoesNotMatter) {
+  //  This test is failed at (IsApplicable) line, because of updates from PR
+  //  #4349.
   // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4345): both the
   //  GLSL comment and the corresponding SPIR-V should be updated to cover a
   //  larger number of atomic operations.
@@ -2287,9 +2289,10 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
 
   // OpAtomicIIncrement
 #ifndef NDEBUG
-  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
-                   context.get(), OpAtomicIIncrement, 0, int_type, uint_type),
-               "Invalid operand index");
+  ASSERT_DEATH(
+      TransformationReplaceIdWithSynonym::TypesAreCompatible(
+          context.get(), SpvOpAtomicIIncrement, 0, int_type, uint_type),
+      "Invalid operand index");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicIIncrement, 1, int_type, uint_type));
