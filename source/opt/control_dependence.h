@@ -94,8 +94,6 @@ class ControlDependenceAnalysis {
   // vice versa.
   static constexpr uint32_t kPseudoEntryBlock = 0;
 
-  ControlDependenceAnalysis() {}
-
   // Build the control dependence graph for the given control flow graph |cfg|
   // and corresponding post-dominator analysis |pdom|.
   void InitializeGraph(const CFG& cfg, const PostDominatorAnalysis& pdom);
