@@ -24,10 +24,16 @@ TransformationLoad::TransformationLoad(protobufs::TransformationLoad message)
     : message_(std::move(message)) {}
 
 TransformationLoad::TransformationLoad(
-    uint32_t fresh_id, uint32_t pointer_id,
+    uint32_t fresh_id, uint32_t pointer_id, bool is_atomic,
+    uint32_t memory_scope, uint32_t memory_semantics,
     const protobufs::InstructionDescriptor& instruction_to_insert_before) {
+  assert(!is_atomic && "Atomic load not fully developed yet.");
   message_.set_fresh_id(fresh_id);
   message_.set_pointer_id(pointer_id);
+  message_.set_is_atomic(is_atomic);
+  message_.set_memory_scope(memory_scope);
+  message_.set_memory_semantics(memory_semantics);
+
   *message_.mutable_instruction_to_insert_before() =
       instruction_to_insert_before;
 }
