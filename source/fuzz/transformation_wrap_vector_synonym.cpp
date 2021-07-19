@@ -161,8 +161,7 @@ bool TransformationWrapVectorSynonym::IsInstructionSupported(
       ir_context->get_def_use_mgr()->GetDef(instruction.type_id());
 
   if ((type_instruction->opcode() != SpvOpTypeInt &&
-       type_instruction->opcode() != SpvOpTypeFloat) ||
-      type_instruction->GetSingleWordInOperand(0) != 32) {
+       type_instruction->opcode() != SpvOpTypeFloat)) {
     return false;
   }
 
