@@ -1062,6 +1062,8 @@ if (build_with_chromium) {
       "source/fuzz/fuzzer_pass_toggle_access_chain_instruction.h",
       "source/fuzz/fuzzer_pass_wrap_regions_in_selections.cpp",
       "source/fuzz/fuzzer_pass_wrap_regions_in_selections.h",
+      "source/fuzz/fuzzer_pass_wrap_vector_synonym.cpp",
+      "source/fuzz/fuzzer_pass_wrap_vector_synonym.h",
       "source/fuzz/fuzzer_util.cpp",
       "source/fuzz/fuzzer_util.h",
       "source/fuzz/id_use_descriptor.cpp",
@@ -1272,6 +1274,8 @@ if (build_with_chromium) {
       "source/fuzz/transformation_wrap_early_terminator_in_function.h",
       "source/fuzz/transformation_wrap_region_in_selection.cpp",
       "source/fuzz/transformation_wrap_region_in_selection.h",
+      "source/fuzz/transformation_wrap_vector_synonym.cpp",
+      "source/fuzz/transformation_wrap_vector_synonym.h",
       "source/fuzz/uniform_buffer_element_descriptor.cpp",
       "source/fuzz/uniform_buffer_element_descriptor.h",
     ]

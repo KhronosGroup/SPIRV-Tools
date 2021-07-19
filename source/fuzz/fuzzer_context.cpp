@@ -162,6 +162,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfTogglingAccessChainInstruction = {
     20, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfWrappingRegionInSelection = {70,
                                                                           90};
+const std::pair<uint32_t, uint32_t> kChanceOfWrappingVectorSynonym = {10, 90};
 
 // Default limits for various quantities that are chosen during fuzzing.
 // Keep them in alphabetical order.
@@ -369,6 +370,8 @@ FuzzerContext::FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
       ChooseBetweenMinAndMax(kChanceOfTogglingAccessChainInstruction);
   chance_of_wrapping_region_in_selection_ =
       ChooseBetweenMinAndMax(kChanceOfWrappingRegionInSelection);
+  chance_of_wrapping_vector_synonym_ =
+      ChooseBetweenMinAndMax(kChanceOfWrappingVectorSynonym);
 }
 
 FuzzerContext::~FuzzerContext() = default;

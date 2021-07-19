@@ -381,6 +381,10 @@ class FuzzerContext {
     return chance_of_wrapping_region_in_selection_;
   }
 
+  uint32_t GetChanceOfWrappingVectorSynonym() const {
+    return chance_of_wrapping_vector_synonym_;
+  }
+
   // Other functions to control transformations. Keep them in alphabetical
   // order.
   uint32_t GetMaximumEquivalenceClassSizeForDataSynonymFactClosure() const {
@@ -425,6 +429,9 @@ class FuzzerContext {
   uint32_t GetRandomIndexForCompositeInsert(uint32_t number_of_components) {
     return random_generator_->RandomUint32(number_of_components);
   }
+  uint32_t GetRandomIndexForWrappingVector(uint32_t vector_width) {
+    return random_generator_->RandomUint32(vector_width);
+  }
   int64_t GetRandomValueForStepConstantInLoop() {
     return random_generator_->RandomUint64(UINT64_MAX);
   }
@@ -461,6 +468,9 @@ class FuzzerContext {
       uint32_t max_unused_component_count) {
     // Ensure that the number of unused components is non-zero.
     return random_generator_->RandomUint32(max_unused_component_count) + 1;
+  }
+  uint32_t GetWidthOfWrappingVector() {
+    return 2 + random_generator_->RandomUint32(3);
   }
   bool GoDeeperInConstantObfuscation(uint32_t depth) {
     return go_deeper_in_constant_obfuscation_(depth, random_generator_.get());
@@ -562,6 +572,7 @@ class FuzzerContext {
   uint32_t chance_of_swapping_functions_;
   uint32_t chance_of_toggling_access_chain_instruction_;
   uint32_t chance_of_wrapping_region_in_selection_;
+  uint32_t chance_of_wrapping_vector_synonym_;
 
   // Limits associated with various quantities for which random values are
   // chosen during fuzzing.
