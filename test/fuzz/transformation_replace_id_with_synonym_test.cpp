@@ -2176,7 +2176,7 @@ TEST(TransformationReplaceIdWithSynonymTest,
 // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4345): Improve this
 //  test so that it covers more atomic operations, and enable the test once the
 //  issue is fixed.
-TEST(TransformationReplaceIdWithSynonymTest, DISABLED_TypesAreCompatible) {
+TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
   const std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -2188,8 +2188,39 @@ TEST(TransformationReplaceIdWithSynonymTest, DISABLED_TypesAreCompatible) {
           %3 = OpTypeFunction %2
           %6 = OpTypeInt 32 1
           %9 = OpTypeInt 32 0
+          %8 = OpTypeStruct %6
+         %10 = OpTypePointer StorageBuffer %8
+         %11 = OpVariable %10 StorageBuffer
+         %86 = OpTypeStruct %9
+         %87 = OpTypePointer Workgroup %86
+         %88 = OpVariable %87 Workgroup
+         %89 = OpTypePointer Workgroup %9
+         %19 = OpConstant %9 0
+         %18 = OpConstant %9 1
+         %12 = OpConstant %6 0
+         %13 = OpTypePointer StorageBuffer %6
+         %15 = OpConstant %6 2
+         %16 = OpConstant %6 7
+         %20 = OpConstant %9 64
           %4 = OpFunction %2 None %3
           %5 = OpLabel
+         %14 = OpAccessChain %13 %11 %12
+         %90 = OpAccessChain %89 %88 %19
+         %21 = OpAtomicLoad %6 %14 %15 %20
+         %22 = OpAtomicExchange %6 %14 %15 %20 %16
+         %23 = OpAtomicCompareExchange %6 %14 %15 %20 %12 %16 %15
+         %24 = OpAtomicIIncrement %6 %14 %15 %20
+         %25 = OpAtomicIDecrement %6 %14 %15 %20
+         %26 = OpAtomicIAdd %6  %14 %15 %20 %16
+         %27 = OpAtomicISub %6  %14 %15 %20 %16
+         %28 = OpAtomicSMin %6  %14 %15 %20 %16
+         %29 = OpAtomicUMin %9 %90 %15 %20 %18
+         %30 = OpAtomicSMax %6  %14 %15 %20 %15
+         %31 = OpAtomicUMax %9 %90 %15 %20 %18
+         %32 = OpAtomicAnd  %6  %14 %15 %20 %16
+         %33 = OpAtomicOr   %6  %14 %15 %20 %16
+         %34 = OpAtomicXor  %6  %14 %15 %20 %16
+               OpAtomicStore %14 %15 %20 %16
                OpReturn
                OpFunctionEnd
   )";
@@ -2208,7 +2239,7 @@ TEST(TransformationReplaceIdWithSynonymTest, DISABLED_TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicLoad, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicLoad, 1, int_type, uint_type));
@@ -2219,17 +2250,183 @@ TEST(TransformationReplaceIdWithSynonymTest, DISABLED_TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicExchange, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicExchange, 1, int_type, uint_type));
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicExchange, 2, int_type, uint_type));
   ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
-      context.get(), SpvOpAtomicExchange, 2, int_type, uint_type));
+      context.get(), SpvOpAtomicExchange, 3, int_type, uint_type));
 
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4345): Similar for
-  // other atomic instructions
+  // OpAtomicStore
+#ifndef NDEBUG
+  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+                   context.get(), SpvOpAtomicStore, 0, int_type, uint_type),
+               "Signedness check should not occur on a pointer operand.");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicStore, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicStore, 2, int_type, uint_type));
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicStore, 3, int_type, uint_type));
+
+  // OpAtomicCompareExchange
+#ifndef NDEBUG
+  ASSERT_DEATH(
+      TransformationReplaceIdWithSynonym::TypesAreCompatible(
+          context.get(), SpvOpAtomicCompareExchange, 0, int_type, uint_type),
+      "Signedness check should not occur on a pointer operand.");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicCompareExchange, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicCompareExchange, 2, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicCompareExchange, 3, int_type, uint_type));
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicCompareExchange, 4, int_type, uint_type));
+
+  // OpAtomicIIncrement
+#ifndef NDEBUG
+  ASSERT_DEATH(
+      TransformationReplaceIdWithSynonym::TypesAreCompatible(
+          context.get(), SpvOpAtomicIIncrement, 0, int_type, uint_type),
+      "Signedness check should not occur on a pointer operand.");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicIIncrement, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicIIncrement, 2, int_type, uint_type));
+
+// OpAtomicIDecrement
+#ifndef NDEBUG
+  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+                   context.get(), SpvOpAtomicStore, 0, int_type, uint_type),
+               "Signedness check should not occur on a pointer operand.");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicStore, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicStore, 2, int_type, uint_type));
+
+// OpAtomicIAdd
+#ifndef NDEBUG
+  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+                   context.get(), SpvOpAtomicIAdd, 0, int_type, uint_type),
+               "Signedness check should not occur on a pointer operand.");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicIAdd, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicIAdd, 2, int_type, uint_type));
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicIAdd, 3, int_type, uint_type));
+
+// OpAtomicISub
+#ifndef NDEBUG
+  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+                   context.get(), SpvOpAtomicISub, 0, int_type, uint_type),
+               "Signedness check should not occur on a pointer operand.");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicISub, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicISub, 2, int_type, uint_type));
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicISub, 3, int_type, uint_type));
+
+// OpAtomicSMin
+#ifndef NDEBUG
+  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+                   context.get(), SpvOpAtomicSMin, 0, int_type, uint_type),
+               "Signedness check should not occur on a pointer operand.");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicSMin, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicSMin, 2, int_type, uint_type));
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicSMin, 3, int_type, uint_type));
+
+// OpAtomicUMin
+#ifndef NDEBUG
+  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+                   context.get(), SpvOpAtomicUMin, 0, int_type, uint_type),
+               "Signedness check should not occur on a pointer operand.");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicUMin, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicUMin, 2, int_type, uint_type));
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicUMin, 3, int_type, uint_type));
+
+// OpAtomicSMax
+#ifndef NDEBUG
+  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+                   context.get(), SpvOpAtomicSMax, 0, int_type, uint_type),
+               "Signedness check should not occur on a pointer operand.");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicSMax, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicSMax, 2, int_type, uint_type));
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicSMax, 3, int_type, uint_type));
+
+// OpAtomicUMax
+#ifndef NDEBUG
+  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+                   context.get(), SpvOpAtomicUMax, 0, int_type, uint_type),
+               "Signedness check should not occur on a pointer operand.");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicUMax, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicUMax, 2, int_type, uint_type));
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicUMax, 3, int_type, uint_type));
+
+// OpAtomicAnd
+#ifndef NDEBUG
+  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+                   context.get(), SpvOpAtomicAnd, 0, int_type, uint_type),
+               "Signedness check should not occur on a pointer operand.");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicAnd, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicAnd, 2, int_type, uint_type));
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicAnd, 3, int_type, uint_type));
+
+// OpAtomicOr
+#ifndef NDEBUG
+  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+                   context.get(), SpvOpAtomicOr, 0, int_type, uint_type),
+               "Signedness check should not occur on a pointer operand.");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicOr, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicOr, 2, int_type, uint_type));
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicOr, 3, int_type, uint_type));
+
+// OpAtomicXor
+#ifndef NDEBUG
+  ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+                   context.get(), SpvOpAtomicXor, 0, int_type, uint_type),
+               "Signedness check should not occur on a pointer operand.");
+#endif
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicXor, 1, int_type, uint_type));
+  ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicXor, 2, int_type, uint_type));
+  ASSERT_FALSE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
+      context.get(), SpvOpAtomicXor, 3, int_type, uint_type));
 }
 
 }  // namespace
