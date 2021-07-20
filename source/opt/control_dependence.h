@@ -142,6 +142,13 @@ class ControlDependenceAnalysis {
     });
   }
 
+  // Does the block |id| exist in this graph? This can be false even if the
+  // block exists in the function when it is part of an infinite loop, as then
+  // it is not part of the post-dominator tree.
+  bool DoesBlockExist(uint32_t id) const {
+    return forward_nodes_.count(id) > 0;
+  }
+
   // Is block |a| (directly) dependent on block |b|?
   bool IsDependent(uint32_t a, uint32_t b) const {
     if (forward_nodes_.find(a) == forward_nodes_.end()) return false;
