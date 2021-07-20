@@ -2239,7 +2239,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicLoad, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicLoad, 1, int_type, uint_type));
@@ -2250,7 +2250,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicExchange, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicExchange, 1, int_type, uint_type));
@@ -2263,7 +2263,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicStore, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicStore, 1, int_type, uint_type));
@@ -2277,7 +2277,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
   ASSERT_DEATH(
       TransformationReplaceIdWithSynonym::TypesAreCompatible(
           context.get(), SpvOpAtomicCompareExchange, 0, int_type, uint_type),
-      "Invalid operand index");
+      "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicCompareExchange, 1, int_type, uint_type));
@@ -2293,7 +2293,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
   ASSERT_DEATH(
       TransformationReplaceIdWithSynonym::TypesAreCompatible(
           context.get(), SpvOpAtomicIIncrement, 0, int_type, uint_type),
-      "Invalid operand index");
+      "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicIIncrement, 1, int_type, uint_type));
@@ -2304,7 +2304,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicStore, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicStore, 1, int_type, uint_type));
@@ -2315,7 +2315,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicIAdd, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicIAdd, 1, int_type, uint_type));
@@ -2328,7 +2328,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicISub, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicISub, 1, int_type, uint_type));
@@ -2341,7 +2341,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicSMin, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicSMin, 1, int_type, uint_type));
@@ -2354,7 +2354,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicUMin, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicUMin, 1, int_type, uint_type));
@@ -2367,7 +2367,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicSMax, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicSMax, 1, int_type, uint_type));
@@ -2380,7 +2380,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicUMax, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicUMax, 1, int_type, uint_type));
@@ -2393,7 +2393,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicAnd, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicAnd, 1, int_type, uint_type));
@@ -2406,7 +2406,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicOr, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicOr, 1, int_type, uint_type));
@@ -2419,7 +2419,7 @@ TEST(TransformationReplaceIdWithSynonymTest, TypesAreCompatible) {
 #ifndef NDEBUG
   ASSERT_DEATH(TransformationReplaceIdWithSynonym::TypesAreCompatible(
                    context.get(), SpvOpAtomicXor, 0, int_type, uint_type),
-               "Invalid operand index");
+               "Signedness check should not occur on a pointer operand.");
 #endif
   ASSERT_TRUE(TransformationReplaceIdWithSynonym::TypesAreCompatible(
       context.get(), SpvOpAtomicXor, 1, int_type, uint_type));
