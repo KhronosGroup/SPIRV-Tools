@@ -29,31 +29,42 @@ namespace spvtools {
 namespace opt {
 
 struct ControlDependence {
-  enum class DependenceType {
-    kConditionalBranch,
-    kSwitchCase,
-    kEntry,
-  };
-  // The label of the source of this dependence, i.e. the dependee.
-  uint32_t source_bb_id = 0;
-  // The label of the target of this dependence, i.e. the dependent.
-  uint32_t target_bb_id = 0;
-  // The type of dependence: either a conditional branch, switch-case (any
-  // combination of numbered labels and default), or entry (the only condition
-  // for this block is that the function is entered.)
-  DependenceType dependence_type = DependenceType::kEntry;
-  // The id for the value which this dependence is on.
-  // For conditional branches, this is the branch condition, and
-  // for switch cases, this is the value on which the switch is performed.
-  uint32_t dependent_value_id = 0;
-  // For switch cases, the values of the cases for this dependence.
-  std::vector<uint32_t> switch_case_values;
-  // For switch cases, true if this dependence happens when the default branch
-  // is taken.
-  bool is_switch_default = false;
-  // For conditional branches, the value of the condition required for the
-  // dependence to happen.
-  bool condition_value = false;
+  // The label of the source of this dependence, i.e. the block on which the
+  // target is dependent on.
+  // A |source_bb_id| of 0 represents an "entry" dependence, meaning that the
+  // execution of |target_bb_id| is only dependent on entry to the function.
+  uint32_t source_bb_id;
+  // The label of the target of this dependence, i.e. the block which is
+  // dependent on the source.
+  uint32_t target_bb_id;
+  // The label of the target of the *branch* for this dependence.
+  // Equal to the ID of the entry block for entry dependences.
+  //
+  // For example, for the CFG pictured below:
+  // 1 - 2 - 4 - 6
+  //   \   \   /
+  //     3   5
+  // Block 6 is control dependent on block 2, but this dependence comes from the
+  // branch 2 -> 4, so in this case the branch target ID would be 4.
+  uint32_t branch_target_bb_id;
+
+  // Create a direct control dependence from BB ID |source| to |target|.
+  ControlDependence(uint32_t source, uint32_t target)
+      : source_bb_id(source),
+        target_bb_id(target),
+        branch_target_bb_id(target) {}
+  // Create a control dependence from BB ID |source| to |target| through the
+  // branch from |source| to |branch_target|.
+  ControlDependence(uint32_t source, uint32_t target, uint32_t branch_target)
+      : source_bb_id(source),
+        target_bb_id(target),
+        branch_target_bb_id(branch_target) {}
+
+  // Gets the ID of the conditional value for the branch corresponding to this
+  // control dependence. This is the first input operand for both
+  // OpConditionalBranch and OpSwitch.
+  // Returns 0 for entry dependences.
+  uint32_t GetConditionID(const CFG& cfg) const;
 
   bool operator==(const ControlDependence& other) const;
 
@@ -68,10 +79,9 @@ struct ControlDependence {
   }
 };
 
-// Prints |dep| to |os| in a human-readable way. Examples:
-//   %1 -> %2 if %3 is true
-//   %4 -> %5 switch %6 case 1, default
-//   %0 -> %7 entry
+// Prints |dep| to |os| in a human-readable way. For example,
+//   1->2           (target_bb_id = branch_target_bb_id = 2)
+//   3->4 through 5 (target_bb_id = 4, branch_target_bb_id = 5)
 std::ostream& operator<<(std::ostream& os, const ControlDependence& dep);
 
 // Represents the control dependence graph. A basic block is control dependent
@@ -100,13 +110,13 @@ class ControlDependenceAnalysis {
 
   // Get the list of the nodes that depend on a block.
   // Return value is not guaranteed to be in any particular order.
-  const ControlDependenceList& GetDependents(uint32_t block) const {
+  const ControlDependenceList& GetDependenceTargets(uint32_t block) const {
     return forward_nodes_.at(block);
   }
 
   // Get the list of the nodes on which a block depends on.
   // Return value is not guaranteed to be in any particular order.
-  const ControlDependenceList& GetDependees(uint32_t block) const {
+  const ControlDependenceList& GetDependenceSources(uint32_t block) const {
     return reverse_nodes_.at(block);
   }
 
@@ -135,12 +145,13 @@ class ControlDependenceAnalysis {
   // Is block |a| (directly) dependent on block |b|?
   bool IsDependent(uint32_t a, uint32_t b) const {
     if (forward_nodes_.find(a) == forward_nodes_.end()) return false;
-    // BBs tend to have more dependents than dependees, so search dependees.
-    const ControlDependenceList& a_dependees = GetDependees(a);
-    return std::find_if(a_dependees.begin(), a_dependees.end(),
+    // BBs tend to have more dependents (targets) than they are dependent on
+    // (sources), so search sources.
+    const ControlDependenceList& a_sources = GetDependenceSources(a);
+    return std::find_if(a_sources.begin(), a_sources.end(),
                         [b](const ControlDependence& dep) {
                           return dep.source_bb_id == b;
-                        }) != a_dependees.end();
+                        }) != a_sources.end();
   }
 
  private:

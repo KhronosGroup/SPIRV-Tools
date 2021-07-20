@@ -30,54 +30,21 @@ namespace {
 void GatherEdges(const ControlDependenceAnalysis& cdg,
                  std::vector<ControlDependence>& ret) {
   cdg.ForEachBlockLabel([&](uint32_t label) {
-    ret.reserve(ret.size() + cdg.GetDependents(label).size());
-    ret.insert(ret.end(), cdg.GetDependents(label).begin(),
-               cdg.GetDependents(label).end());
+    ret.reserve(ret.size() + cdg.GetDependenceTargets(label).size());
+    ret.insert(ret.end(), cdg.GetDependenceTargets(label).begin(),
+               cdg.GetDependenceTargets(label).end());
   });
   std::sort(ret.begin(), ret.end());
   // Verify that reverse graph is the same.
   std::vector<ControlDependence> reverse_edges;
   reverse_edges.reserve(ret.size());
   cdg.ForEachBlockLabel([&](uint32_t label) {
-    reverse_edges.insert(reverse_edges.end(), cdg.GetDependees(label).begin(),
-                         cdg.GetDependees(label).end());
+    reverse_edges.insert(reverse_edges.end(),
+                         cdg.GetDependenceSources(label).begin(),
+                         cdg.GetDependenceSources(label).end());
   });
   std::sort(reverse_edges.begin(), reverse_edges.end());
   ASSERT_THAT(reverse_edges, testing::ElementsAreArray(ret));
-}
-
-static ControlDependence MakeCondBranchDep(uint32_t source, uint32_t target,
-                                           uint32_t condition_label,
-                                           bool value) {
-  ControlDependence dep;
-  dep.source_bb_id = source;
-  dep.target_bb_id = target;
-  dep.dependence_type = ControlDependence::DependenceType::kConditionalBranch;
-  dep.dependent_value_id = condition_label;
-  dep.condition_value = value;
-  return dep;
-}
-
-static ControlDependence MakeSwitchCaseDep(uint32_t source, uint32_t target,
-                                           uint32_t switch_value,
-                                           bool is_default,
-                                           std::vector<uint32_t> cases) {
-  ControlDependence dep;
-  dep.source_bb_id = source;
-  dep.target_bb_id = target;
-  dep.dependence_type = ControlDependence::DependenceType::kSwitchCase;
-  dep.dependent_value_id = switch_value;
-  dep.is_switch_default = is_default;
-  dep.switch_case_values = cases;
-  return dep;
-}
-
-static ControlDependence MakeEntryDep(uint32_t target) {
-  ControlDependence dep;
-  dep.source_bb_id = ControlDependenceAnalysis::kPseudoEntryBlock;
-  dep.target_bb_id = target;
-  dep.dependence_type = ControlDependence::DependenceType::kEntry;
-  return dep;
 }
 
 using ControlDependenceTest = ::testing::Test;
@@ -173,14 +140,20 @@ TEST(ControlDependenceTest, DependenceSimpleCFG) {
     std::vector<ControlDependence> edges;
     GatherEdges(cdg, edges);
     EXPECT_THAT(edges,
-                testing::ElementsAre(MakeEntryDep(10), MakeEntryDep(11),
-                                     MakeEntryDep(14), MakeEntryDep(19),
-                                     MakeSwitchCaseDep(11, 12, 6, true, {}),
-                                     MakeSwitchCaseDep(11, 13, 6, false, {1}),
-                                     MakeCondBranchDep(14, 15, 8, true),
-                                     MakeCondBranchDep(14, 16, 8, false),
-                                     MakeCondBranchDep(14, 18, 8, false),
-                                     MakeCondBranchDep(16, 17, 8, true)));
+                testing::ElementsAre(
+                    ControlDependence(0, 10), ControlDependence(0, 11, 10),
+                    ControlDependence(0, 14, 10), ControlDependence(0, 19, 10),
+                    ControlDependence(11, 12), ControlDependence(11, 13),
+                    ControlDependence(14, 15), ControlDependence(14, 16),
+                    ControlDependence(14, 18, 16), ControlDependence(16, 17)));
+
+    const uint32_t expected_condition_ids[] = {
+        0, 0, 0, 0, 6, 6, 8, 8, 8, 8,
+    };
+
+    for (uint32_t i = 0; i < edges.size(); i++) {
+      EXPECT_EQ(expected_condition_ids[i], edges[i].GetConditionID(cfg));
+    }
   }
 }
 
@@ -267,22 +240,27 @@ TEST(ControlDependenceTest, DependencePaperCFG) {
 
     std::vector<ControlDependence> edges;
     GatherEdges(cdg, edges);
-    EXPECT_THAT(edges, testing::ElementsAre(
-                           MakeEntryDep(1), MakeEntryDep(2), MakeEntryDep(8),
-                           MakeEntryDep(9), MakeEntryDep(11), MakeEntryDep(12),
-                           MakeEntryDep(13), MakeCondBranchDep(2, 3, 108, true),
-                           MakeCondBranchDep(2, 6, 108, true),
-                           MakeCondBranchDep(2, 7, 108, false),
-                           MakeCondBranchDep(3, 4, 108, true),
-                           MakeCondBranchDep(3, 5, 108, false),
-                           MakeCondBranchDep(9, 10, 108, true),
-                           MakeCondBranchDep(11, 9, 108, false),
-                           MakeCondBranchDep(11, 11, 108, false),
-                           MakeCondBranchDep(12, 2, 108, false),
-                           MakeCondBranchDep(12, 8, 108, false),
-                           MakeCondBranchDep(12, 9, 108, false),
-                           MakeCondBranchDep(12, 11, 108, false),
-                           MakeCondBranchDep(12, 12, 108, false)));
+    EXPECT_THAT(
+        edges, testing::ElementsAre(
+                   ControlDependence(0, 1), ControlDependence(0, 2, 1),
+                   ControlDependence(0, 8, 1), ControlDependence(0, 9, 1),
+                   ControlDependence(0, 11, 1), ControlDependence(0, 12, 1),
+                   ControlDependence(0, 13, 1), ControlDependence(2, 3),
+                   ControlDependence(2, 6, 3), ControlDependence(2, 7),
+                   ControlDependence(3, 4), ControlDependence(3, 5),
+                   ControlDependence(9, 10), ControlDependence(11, 9),
+                   ControlDependence(11, 11, 9), ControlDependence(12, 2),
+                   ControlDependence(12, 8, 2), ControlDependence(12, 9, 2),
+                   ControlDependence(12, 11, 2), ControlDependence(12, 12, 2)));
+
+    const uint32_t expected_condition_ids[] = {
+        0,   0,   0,   0,   0,   0,   0,   108, 108, 108,
+        108, 108, 108, 108, 108, 108, 108, 108, 108, 108,
+    };
+
+    for (uint32_t i = 0; i < edges.size(); i++) {
+      EXPECT_EQ(expected_condition_ids[i], edges[i].GetConditionID(cfg));
+    }
   }
 }
 

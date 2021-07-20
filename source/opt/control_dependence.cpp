@@ -28,10 +28,10 @@
 
 // Computes the control dependence graph (CDG). The algorithm in Cytron 1991,
 // "Efficiently Computing Static Single Assignment Form and the Control
-// Dependence Graph." It relies on the fact that the control dependees (blocks
-// on which a block is control dependent on) are exactly the post-dominance
-// frontier for that block. The explanation and proofs are given in Section 6 of
-// that paper.
+// Dependence Graph." It relies on the fact that the control dependence sources
+// (blocks on which a block is control dependent on) are exactly the
+// post-dominance frontier for that block. The explanation and proofs are given
+// in Section 6 of that paper.
 // Link: https://www.cs.utexas.edu/~pingali/CS380C/2010/papers/ssaCytron.pdf
 //
 // The algorithm in Section 4.2 of the same paper is used to construct the
@@ -40,129 +40,38 @@
 
 namespace spvtools {
 namespace opt {
-namespace {
-// Returns a list of (case value, label id) pairs associated with the given
-// OpSwitch instruction.
-std::vector<std::pair<uint32_t, uint32_t>> GetSwitchCases(
-    const Instruction& inst) {
-  assert(inst.opcode() == SpvOpSwitch);
-  uint32_t num_labels = (inst.NumInOperands() - 2) / 2;
-  std::vector<std::pair<uint32_t, uint32_t>> ret;
-  ret.reserve(num_labels);
-  for (uint32_t i = 0; i < num_labels; ++i) {
-    ret.push_back(std::make_pair(inst.GetSingleWordInOperand(2 + 2 * i),
-                                 inst.GetSingleWordInOperand(2 + 2 * i + 1)));
-  }
-  return ret;
-}
-
-// Returns the control dependence corresponding to the CFG edge between |source|
-// and |target| (label IDs). Fails if there is no direct edge.
-ControlDependence ClassifyControlDependence(const CFG& cfg, uint32_t source,
-                                            uint32_t target) {
-  ControlDependence dep;
-  dep.source_bb_id = source;
-  dep.target_bb_id = target;
-  if (source == ControlDependenceAnalysis::kPseudoEntryBlock) {
-    dep.dependence_type = ControlDependence::DependenceType::kEntry;
-    return dep;
-  }
-  BasicBlock* bb = cfg.block(source);
-  const Instruction& branch = *bb->rbegin();
-  switch (branch.opcode()) {
-    case SpvOpBranchConditional: {
-      uint32_t label_true = branch.GetSingleWordInOperand(1);
-      uint32_t label_false = branch.GetSingleWordInOperand(2);
-      dep.dependence_type =
-          ControlDependence::DependenceType::kConditionalBranch;
-      dep.dependent_value_id = branch.GetSingleWordInOperand(0);
-      assert(label_true != label_false &&
-             "true and false labels are the same; control dependence "
-             "impossible");
-      if (target == label_true) {
-        dep.condition_value = true;
-      } else if (target == label_false) {
-        dep.condition_value = false;
-      } else {
-        assert(false && "impossible control dependence; non-existent edge");
-      }
-      break;
-    }
-    case SpvOpSwitch: {
-      dep.dependence_type = ControlDependence::DependenceType::kSwitchCase;
-      dep.dependent_value_id = branch.GetSingleWordInOperand(0);
-      for (const auto& switch_case : GetSwitchCases(branch)) {
-        uint32_t case_value = switch_case.first;
-        uint32_t label = switch_case.second;
-        if (target == label) {
-          dep.switch_case_values.push_back(case_value);
-        }
-      }
-      dep.is_switch_default = target == branch.GetSingleWordInOperand(1);
-      assert((dep.is_switch_default || !dep.switch_case_values.empty()) &&
-             "impossible control dependence; non-existent edge");
-      break;
-    }
-    default:
-      assert(false &&
-             "invalid control dependence; opcode of last instruction is not "
-             "conditional branch");
-  }
-  return dep;
-}
-}  // namespace
-
 constexpr uint32_t ControlDependenceAnalysis::kPseudoEntryBlock;
 
+uint32_t ControlDependence::GetConditionID(const CFG& cfg) const {
+  if (source_bb_id == 0) {
+    // Entry dependence; return 0.
+    return 0;
+  }
+  const BasicBlock* source_bb = cfg.block(source_bb_id);
+  const Instruction* branch = source_bb->terminator();
+  assert((branch->opcode() == SpvOpBranchConditional ||
+          branch->opcode() == SpvOpSwitch) &&
+         "invalid control dependence; last instruction must be conditional "
+         "branch or switch");
+  return branch->GetSingleWordInOperand(0);
+}
+
 bool ControlDependence::operator<(const ControlDependence& other) const {
-  return std::tie(source_bb_id, target_bb_id, dependence_type,
-                  dependent_value_id, switch_case_values, is_switch_default,
-                  condition_value) <
-         std::tie(other.source_bb_id, other.target_bb_id, other.dependence_type,
-                  other.dependent_value_id, other.switch_case_values,
-                  other.is_switch_default, other.condition_value);
+  return std::tie(source_bb_id, target_bb_id, branch_target_bb_id) <
+         std::tie(other.source_bb_id, other.target_bb_id,
+                  other.branch_target_bb_id);
 }
 
 bool ControlDependence::operator==(const ControlDependence& other) const {
-  return std::tie(source_bb_id, target_bb_id, dependence_type,
-                  dependent_value_id, switch_case_values, is_switch_default,
-                  condition_value) ==
-         std::tie(other.source_bb_id, other.target_bb_id, other.dependence_type,
-                  other.dependent_value_id, other.switch_case_values,
-                  other.is_switch_default, other.condition_value);
+  return std::tie(source_bb_id, target_bb_id, branch_target_bb_id) ==
+         std::tie(other.source_bb_id, other.target_bb_id,
+                  other.branch_target_bb_id);
 }
 
 std::ostream& operator<<(std::ostream& os, const ControlDependence& dep) {
   os << dep.source_bb_id << "->" << dep.target_bb_id;
-  switch (dep.dependence_type) {
-    case ControlDependence::DependenceType::kConditionalBranch:
-      os << " if %" << dep.dependent_value_id << " is "
-         << (dep.condition_value ? "true" : "false");
-      break;
-    case ControlDependence::DependenceType::kSwitchCase: {
-      os << " switch %" << dep.dependent_value_id << " case ";
-      bool first = true;
-      for (uint32_t case_value : dep.switch_case_values) {
-        if (first) {
-          first = false;
-        } else {
-          os << ", ";
-        }
-        os << case_value;
-      }
-      if (dep.is_switch_default) {
-        if (!first) {
-          first = false;
-          os << ", ";
-        }
-        os << "default";
-      }
-    } break;
-    case ControlDependence::DependenceType::kEntry:
-      os << " entry";
-      break;
-    default:
-      os << " (unknown)";
+  if (dep.branch_target_bb_id != dep.target_bb_id) {
+    os << " through " << dep.branch_target_bb_id;
   }
   return os;
 }
@@ -189,7 +98,8 @@ void ControlDependenceAnalysis::ComputePostDominanceFrontiers(
   assert(!cfg.IsPseudoExitBlock(pdom.GetDomTree().post_begin()->bb_));
   Function* function = pdom.GetDomTree().post_begin()->bb_->GetParent();
   uint32_t function_entry = function->entry()->id();
-  reverse_nodes_[kPseudoEntryBlock];  // Ensure GetDependees(0) does not crash.
+  reverse_nodes_[kPseudoEntryBlock];  // Ensure GetDependenceSources(0) does not
+                                      // crash.
   for (auto it = pdom.GetDomTree().post_cbegin();
        it != pdom.GetDomTree().post_cend(); ++it) {
     const uint32_t label = it->id();
@@ -203,14 +113,14 @@ void ControlDependenceAnalysis::ComputePostDominanceFrontiers(
     edges.reserve(new_size);
     for (uint32_t pred : cfg.preds(label)) {
       if (!pdom.StrictlyDominates(label, pred)) {
-        edges.push_back(ClassifyControlDependence(cfg, pred, label));
+        edges.push_back(ControlDependence(pred, label));
       }
     }
     if (label == function_entry) {
       // Add edge from pseudo-entry to entry.
       // In CDG construction, an edge is added from entry to exit, so only the
       // exit node can post-dominate entry.
-      edges.push_back(ClassifyControlDependence(cfg, kPseudoEntryBlock, label));
+      edges.push_back(ControlDependence(kPseudoEntryBlock, label));
     }
     for (DominatorTreeNode* child : *it) {
       // Note: iterate dependences by value, as we need a copy.
