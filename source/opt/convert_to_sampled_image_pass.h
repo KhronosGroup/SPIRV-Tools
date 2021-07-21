@@ -71,16 +71,16 @@ class ConvertToSampledImagePass : public Pass {
   //
   //  "<descriptor set>:<binding> <descriptor set>:<binding> ..."
   //  Example:
-  //    "3:5   2:1   0:4"
+  //    "3:5 2:1 0:4"
   //
   //  Entries are separated with blank spaces (i.e.:' ', '\n', '\r', '\t',
-  //  '\f', '\v'). Each entry corresponds to a descriptor set and binding  pair.
+  //  '\f', '\v'). Each entry corresponds to a descriptor set and binding pair.
   //  Multiple spaces between, before or after entries are allowed. However,
   //  spaces are not allowed within a descriptor set or binding.
   //
   //  In each entry, the descriptor set and binding are separated by ':'.
-  //  Missing  ':' in any entry is invalid. And it is invalid to have blank
-  //  spaces in  between the spec id and ':' or the default value and ':'.
+  //  Missing ':' in any entry is invalid. And it is invalid to have blank
+  //  spaces in between the descriptor set and ':' or ':' and the binding.
   //
   //  <descriptor set>: the descriptor set.
   //    The text must represent a valid uint32_t number.
