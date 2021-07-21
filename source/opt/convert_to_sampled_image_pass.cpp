@@ -237,12 +237,11 @@ void ConvertToSampledImagePass::FindUsesOfImage(
 void ConvertToSampledImagePass::ReplaceUsesWith(
     const Instruction* inst, uint32_t replaced_inst_id) const {
   auto* def_use_mgr = context()->get_def_use_mgr();
-  def_use_mgr->ForEachUser(
-      inst, [inst, replaced_inst_id, this](Instruction* user) {
-        user->ForEachInOperand([inst, replaced_inst_id](uint32_t* operand) {
-          if (*operand == inst->result_id()) *operand = replaced_inst_id;
-        });
-      });
+  def_use_mgr->ForEachUser(inst, [inst, replaced_inst_id](Instruction* user) {
+    user->ForEachInOperand([inst, replaced_inst_id](uint32_t* operand) {
+      if (*operand == inst->result_id()) *operand = replaced_inst_id;
+    });
+  });
 }
 
 Instruction* ConvertToSampledImagePass::CreateImageExtraction(
@@ -283,8 +282,7 @@ Instruction* ConvertToSampledImagePass::UpdateImageUses(
 
   auto* extracted_image = CreateImageExtraction(sampled_image_load);
   for (auto* user : uses_of_load) {
-    user->SetInOperand(0, {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-                           {extracted_image->result_id()}});
+    user->SetInOperand(0, {extracted_image->result_id()});
     context()->get_def_use_mgr()->AnalyzeInstUse(user);
   }
   return extracted_image;
