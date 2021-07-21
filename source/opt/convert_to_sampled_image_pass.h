@@ -97,8 +97,8 @@ class ConvertToSampledImagePass : public Pass {
   // image. Returns false if two samplers or two images have the same descriptor
   // set and binding. Otherwise, returns true.
   bool CollectResourcesToConvert(
-      DescriptorSetBindingToInstruction& descriptor_set_binding_pair_to_sampler,
-      DescriptorSetBindingToInstruction& descriptor_set_binding_pair_to_image)
+      DescriptorSetBindingToInstruction* descriptor_set_binding_pair_to_sampler,
+      DescriptorSetBindingToInstruction* descriptor_set_binding_pair_to_image)
       const;
 
   // Finds an OpDecorate with DescriptorSet decorating |inst| and another
@@ -156,6 +156,9 @@ class ConvertToSampledImagePass : public Pass {
   // Returns the id of type sampled image type whose image type is the one of
   // |image_variable|.
   uint32_t GetSampledImageTypeForImage(Instruction* image_variable);
+
+  // Moves |inst| next to the OpType* instruction with |type_id|.
+  void MoveInstructionNextToType(Instruction* inst, uint32_t type_id);
 
   // Converts |image_variable| whose type is an image pointer to sampled image
   // with the type id |sampled_image_type_id|. Returns whether it successfully

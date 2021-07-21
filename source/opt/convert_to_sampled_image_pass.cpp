@@ -35,16 +35,15 @@ using utils::ParseNumber;
 
 // Inserts a pair of |descriptor_set_binding| and |inst| to
 // |descriptor_set_binding_to_inst| if the map does not contain
-// |descriptor_set_binding_to_inst| key. Returns true if the insertion took
-// place.
+// |descriptor_set_binding_to| key. Returns true if the insertion took place.
 bool InsertDescriptorSetBindingAndInstructionPair(
-    DescriptorSetBindingToInstruction& descriptor_set_binding_to_inst,
+    DescriptorSetBindingToInstruction* descriptor_set_binding_to_inst,
     const DescriptorSetAndBinding& descriptor_set_binding, Instruction* inst) {
-  if (descriptor_set_binding_to_inst.find(descriptor_set_binding) !=
-      descriptor_set_binding_to_inst.end()) {
+  if (descriptor_set_binding_to_inst->find(descriptor_set_binding) !=
+      descriptor_set_binding_to_inst->end()) {
     return false;
   }
-  return descriptor_set_binding_to_inst.insert({descriptor_set_binding, inst})
+  return descriptor_set_binding_to_inst->insert({descriptor_set_binding, inst})
       .second;
 }
 
@@ -128,8 +127,8 @@ SpvStorageClass ConvertToSampledImagePass::GetStorageClass(
 }
 
 bool ConvertToSampledImagePass::CollectResourcesToConvert(
-    DescriptorSetBindingToInstruction& descriptor_set_binding_pair_to_sampler,
-    DescriptorSetBindingToInstruction& descriptor_set_binding_pair_to_image)
+    DescriptorSetBindingToInstruction* descriptor_set_binding_pair_to_sampler,
+    DescriptorSetBindingToInstruction* descriptor_set_binding_pair_to_image)
     const {
   for (auto& inst : context()->types_values()) {
     const auto* variable_type = GetVariableType(inst);
@@ -165,8 +164,8 @@ Pass::Status ConvertToSampledImagePass::Process() {
 
   DescriptorSetBindingToInstruction descriptor_set_binding_pair_to_sampler,
       descriptor_set_binding_pair_to_image;
-  if (!CollectResourcesToConvert(descriptor_set_binding_pair_to_sampler,
-                                 descriptor_set_binding_pair_to_image)) {
+  if (!CollectResourcesToConvert(&descriptor_set_binding_pair_to_sampler,
+                                 &descriptor_set_binding_pair_to_image)) {
     return Status::Failure;
   }
 
@@ -327,6 +326,14 @@ void ConvertToSampledImagePass::UpdateSampledImageUses(
   }
 }
 
+void ConvertToSampledImagePass::MoveInstructionNextToType(Instruction* inst,
+                                                          uint32_t type_id) {
+  auto* type_inst = context()->get_def_use_mgr()->GetDef(type_id);
+  inst->SetResultType(type_id);
+  inst->RemoveFromList();
+  inst->InsertAfter(type_inst);
+}
+
 bool ConvertToSampledImagePass::ConvertImageVariableToSampledImage(
     Instruction* image_variable, uint32_t sampled_image_type_id) {
   auto* sampled_image_type =
@@ -340,10 +347,7 @@ bool ConvertToSampledImagePass::ConvertImageVariableToSampledImage(
   // reference.
   uint32_t type_id =
       context()->get_type_mgr()->GetTypeInstruction(&sampled_image_pointer);
-  auto* type_inst = context()->get_def_use_mgr()->GetDef(type_id);
-  image_variable->SetResultType(type_id);
-  image_variable->RemoveFromList();
-  image_variable->InsertAfter(type_inst);
+  MoveInstructionNextToType(image_variable, type_id);
   return true;
 }
 
