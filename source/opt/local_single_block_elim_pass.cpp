@@ -31,9 +31,9 @@ const uint32_t kStoreValIdInIdx = 1;
 bool LocalSingleBlockLoadStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
   if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end()) return true;
   if (get_def_use_mgr()->WhileEachUser(ptrId, [this](Instruction* user) {
-        auto dbg_op = user->GetOpenCL100DebugOpcode();
-        if (dbg_op == OpenCLDebugInfo100DebugDeclare ||
-            dbg_op == OpenCLDebugInfo100DebugValue) {
+        auto dbg_op = user->GetCommonDebugOpcode();
+        if (dbg_op == CommonDebugInfoDebugDeclare ||
+            dbg_op == CommonDebugInfoDebugValue) {
           return true;
         }
         SpvOp op = user->opcode();
