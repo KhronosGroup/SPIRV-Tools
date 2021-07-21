@@ -25,19 +25,29 @@
 namespace spvtools {
 namespace opt {
 
+// A struct for a pair of descriptor set and binding.
+struct DescriptorSetAndBinding {
+  uint32_t descriptor_set;
+  uint32_t binding;
+
+  bool operator==(const DescriptorSetAndBinding& descriptor_set_binding) const {
+    return descriptor_set_binding.descriptor_set == descriptor_set &&
+           descriptor_set_binding.binding == binding;
+  }
+};
+
 // See optimizer.hpp for documentation.
 class ConvertToSampledImagePass : public Pass {
  public:
   // Hashing functor for the pair of descriptor set and binding.
   struct DescriptorSetAndBindingHash {
     size_t operator()(
-        const std::pair<uint32_t, uint32_t>& descriptor_set_binding) const {
-      return std::hash<uint32_t>()(descriptor_set_binding.first) ^
-             std::hash<uint32_t>()(descriptor_set_binding.second);
+        const DescriptorSetAndBinding& descriptor_set_binding) const {
+      return std::hash<uint32_t>()(descriptor_set_binding.descriptor_set) ^
+             std::hash<uint32_t>()(descriptor_set_binding.binding);
     }
   };
 
-  using DescriptorSetAndBinding = std::pair<uint32_t, uint32_t>;
   using SetOfDescriptorSetAndBindingPairs =
       std::unordered_set<DescriptorSetAndBinding, DescriptorSetAndBindingHash>;
   using DescriptorSetBindingToInstruction =

@@ -24,8 +24,6 @@
 namespace spvtools {
 namespace opt {
 
-using DescriptorSetAndBinding =
-    ConvertToSampledImagePass::DescriptorSetAndBinding;
 using VectorOfDescriptorSetAndBindingPairs =
     std::vector<DescriptorSetAndBinding>;
 using DescriptorSetBindingToInstruction =
@@ -87,14 +85,15 @@ bool ConvertToSampledImagePass::GetDescriptorSetBinding(
         assert(false && "A resource has two OpDecorate for the descriptor set");
         return false;
       }
-      descriptor_set_binding->first = decorate->GetSingleWordInOperand(2u);
+      descriptor_set_binding->descriptor_set =
+          decorate->GetSingleWordInOperand(2u);
       found_descriptor_set_to_convert = true;
     } else if (decoration == SpvDecorationBinding) {
       if (found_binding_to_convert) {
         assert(false && "A resource has two OpDecorate for the binding");
         return false;
       }
-      descriptor_set_binding->second = decorate->GetSingleWordInOperand(2u);
+      descriptor_set_binding->binding = decorate->GetSingleWordInOperand(2u);
       found_binding_to_convert = true;
     }
   }
@@ -432,8 +431,7 @@ ConvertToSampledImagePass::ParseDescriptorSetBindingPairsString(
     str = ParseNumberUntilSeparator(str, &binding);
     if (str == nullptr) return nullptr;
 
-    descriptor_set_binding_pairs->push_back(
-        std::make_pair(std::move(descriptor_set), std::move(binding)));
+    descriptor_set_binding_pairs->push_back({descriptor_set, binding});
 
     // Skip trailing spaces.
     while (std::isspace(*str)) str++;

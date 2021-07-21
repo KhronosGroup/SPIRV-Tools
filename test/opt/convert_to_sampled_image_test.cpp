@@ -24,8 +24,6 @@ namespace opt {
 namespace {
 
 using testing::Eq;
-using DescriptorSetAndBinding =
-    ConvertToSampledImagePass::DescriptorSetAndBinding;
 using VectorOfDescriptorSetAndBindingPairs =
     std::vector<DescriptorSetAndBinding>;
 

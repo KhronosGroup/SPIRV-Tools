@@ -28,6 +28,7 @@ namespace spvtools {
 
 namespace opt {
 class Pass;
+struct DescriptorSetAndBinding;
 }
 
 // C++ interface for SPIR-V optimization functionalities. It wraps the context
@@ -862,7 +863,7 @@ Optimizer::PassToken CreateInterpolateFixupPass();
 // image. In addition, if only an image has the descriptor set and binding that
 // is one of the given pairs, it will be converted to a sampled image as well.
 Optimizer::PassToken CreateConvertToSampledImagePass(
-    const std::vector<std::pair<uint32_t, uint32_t>>&
+    const std::vector<opt::DescriptorSetAndBinding>&
         descriptor_set_binding_pairs);
 
 }  // namespace spvtools

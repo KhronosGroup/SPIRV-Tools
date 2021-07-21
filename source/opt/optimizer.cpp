@@ -961,7 +961,7 @@ Optimizer::PassToken CreateInterpolateFixupPass() {
 }
 
 Optimizer::PassToken CreateConvertToSampledImagePass(
-    const std::vector<std::pair<uint32_t, uint32_t>>&
+    const std::vector<opt::DescriptorSetAndBinding>&
         descriptor_set_binding_pairs) {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::ConvertToSampledImagePass>(descriptor_set_binding_pairs));
