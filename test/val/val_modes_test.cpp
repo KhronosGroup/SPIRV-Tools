@@ -672,7 +672,7 @@ INSTANTIATE_TEST_SUITE_P(ValidateModeKernelOnlyGoodSpv13, ValidateModeExecution,
                                  Values("Kernel"),
                                  Values("LocalSizeHint 1 1 1", "VecTypeHint 4",
                                         "ContractionOff",
-                                        "LocalSizeHintId %int1"),
+                                        "LocalSizeHintId %int1 %int1 %int1"),
                                  Values(SPV_ENV_UNIVERSAL_1_3)));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -684,7 +684,7 @@ INSTANTIATE_TEST_SUITE_P(
         Values("Geometry", "TessellationControl", "TessellationEvaluation",
                "GLCompute", "Vertex", "Fragment"),
         Values("LocalSizeHint 1 1 1", "VecTypeHint 4", "ContractionOff",
-               "LocalSizeHintId %int1"),
+               "LocalSizeHintId %int1 %int1 %int1"),
         Values(SPV_ENV_UNIVERSAL_1_3)));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -863,7 +863,7 @@ OpCapability Kernel
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Kernel %main "main"
-OpExecutionMode %main LocalSizeHintId %int_1
+OpExecutionMode %main LocalSizeHintId %int_1 %int_1 %int_1
 %int = OpTypeInt 32 0
 %int_1 = OpConstant %int 1
 )" + kVoidFunction;
@@ -882,7 +882,7 @@ OpCapability Kernel
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Kernel %main "main"
-OpExecutionModeId %main LocalSizeHintId %int_1
+OpExecutionModeId %main LocalSizeHintId %int_1 %int_1 %int_1
 %int = OpTypeInt 32 0
 %int_1 = OpConstant %int 1
 )" + kVoidFunction;
@@ -898,7 +898,7 @@ OpCapability Kernel
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Vertex %main "main"
-OpExecutionModeId %main LocalSizeHintId %int_1
+OpExecutionModeId %main LocalSizeHintId %int_1 %int_1 %int_1
 %int = OpTypeInt 32 0
 %int_ptr = OpTypePointer Private %int
 %int_1 = OpVariable %int_ptr Private
