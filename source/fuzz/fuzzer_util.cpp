@@ -305,7 +305,7 @@ bool CanInsertOpcodeBeforeInstruction(
 
 bool CanMakeSynonymOf(opt::IRContext* ir_context,
                       const TransformationContext& transformation_context,
-                      opt::Instruction* inst) {
+                      const opt::Instruction* inst) {
   if (inst->opcode() == SpvOpSampledImage) {
     // The SPIR-V data rules say that only very specific instructions may
     // may consume the result id of an OpSampledImage, and this excludes the

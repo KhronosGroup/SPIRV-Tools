@@ -55,9 +55,12 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     return false;
   }
 
-  assert(!transformation_context.GetFactManager()->IdIsIrrelevant(
-             instruction->result_id()) &&
-         "Result id of the scalar operation must be relevant.");
+  // It must be possible to make a synonym of the result id of the scalar
+  // operation
+  if (!fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
+                                    instruction)) {
+    return false;
+  }
 
   // |vector_operand1| and |vector_operand2| must exist.
   auto vec1 = ir_context->get_def_use_mgr()->GetDef(message_.vector_operand1());
