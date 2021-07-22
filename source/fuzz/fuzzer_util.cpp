@@ -502,8 +502,12 @@ bool IsValidAndWellFormed(const opt::IRContext* ir_context,
   // this is a useful aid to debugging.
   std::unordered_map<uint32_t, opt::Instruction*> unique_ids;
   bool found_duplicate = false;
-  ir_context->module()->ForEachInst([&consumer, &found_duplicate,
+  ir_context->module()->ForEachInst([&consumer, &found_duplicate, ir_context,
                                      &unique_ids](opt::Instruction* inst) {
+    (void)ir_context;  // Only used in an assertion; keep release-mode compilers
+                       // happy.
+    assert(inst->context() == ir_context &&
+           "Instruction has wrong IR context.");
     if (unique_ids.count(inst->unique_id()) != 0) {
       consumer(SPV_MSG_INFO, nullptr, {},
                "Two instructions have the same unique id (set a breakpoint to "
