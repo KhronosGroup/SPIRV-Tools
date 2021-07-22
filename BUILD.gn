@@ -358,14 +358,20 @@ config("spvtools_public_config") {
   include_dirs = [ "include" ]
 }
 
+config("spvtools_include_gen_dirs") {
+  include_dirs = [ "$target_gen_dir" ]
+}
+
 config("spvtools_internal_config") {
   include_dirs = [
     ".",
-    "$target_gen_dir",
     "${spirv_headers}/include",
   ]
 
-  configs = [ ":spvtools_public_config" ]
+  configs = [
+    ":spvtools_public_config",
+    ":spvtools_include_gen_dirs",
+  ]
 
   cflags = []
   if (is_clang) {
@@ -389,6 +395,14 @@ source_set("spvtools_headers") {
   ]
 
   public_configs = [ ":spvtools_public_config" ]
+}
+
+group("spvtools_language_headers") {
+  public_deps = [
+    ":spvtools_language_header_cldebuginfo100",
+    ":spvtools_language_header_debuginfo",
+    ":spvtools_language_header_vkdebuginfo100",
+  ]
 }
 
 static_library("spvtools") {
