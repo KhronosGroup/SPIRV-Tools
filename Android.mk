@@ -91,6 +91,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/control_dependence.cpp \
 		source/opt/convert_to_half_pass.cpp \
 		source/opt/copy_prop_arrays.cpp \
+		source/opt/dataflow.cpp \
 		source/opt/dead_branch_elim_pass.cpp \
 		source/opt/dead_insert_elim_pass.cpp \
 		source/opt/dead_variable_elimination.cpp \
