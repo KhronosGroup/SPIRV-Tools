@@ -75,7 +75,7 @@ void FuzzerPassWrapVectorSynonym::Apply() {
         // irrelevant).
         if (!fuzzerutil::CanMakeSynonymOf(GetIRContext(),
                                           *GetTransformationContext(),
-                                          &*instruction_iterator)) {
+                                          *instruction_iterator)) {
           return;
         }
         if (!fuzzerutil::CanMakeSynonymOf(

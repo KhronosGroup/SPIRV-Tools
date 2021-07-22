@@ -61,7 +61,7 @@ void FuzzerPassConstructComposites::Apply() {
         return GetTransformationContext()->GetFactManager()->IdIsIrrelevant(
                    inst->result_id()) ||
                fuzzerutil::CanMakeSynonymOf(ir_context,
-                                            *GetTransformationContext(), inst);
+                                            *GetTransformationContext(), *inst);
       });
 
   ForEachInstructionWithInstructionDescriptor(

@@ -46,7 +46,7 @@ void FuzzerPassExpandVectorReductions::Apply() {
 
         // It must be able to make a synonym of |instruction|.
         if (!fuzzerutil::CanMakeSynonymOf(
-                GetIRContext(), *GetTransformationContext(), &instruction)) {
+                GetIRContext(), *GetTransformationContext(), instruction)) {
           continue;
         }
 

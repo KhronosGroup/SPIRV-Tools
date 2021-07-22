@@ -118,7 +118,7 @@ bool CanInsertOpcodeBeforeInstruction(
 // does not participate in IdIsIrrelevant fact.
 bool CanMakeSynonymOf(opt::IRContext* ir_context,
                       const TransformationContext& transformation_context,
-                      const opt::Instruction* inst);
+                      const opt::Instruction& inst);
 
 // Determines whether the given type is a composite; that is: an array, matrix,
 // struct or vector.
