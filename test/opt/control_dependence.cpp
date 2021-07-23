@@ -120,7 +120,7 @@ TEST(ControlDependenceTest, DependenceSimpleCFG) {
     const CFG& cfg = *context->cfg();
     pdom.InitializeTree(cfg, fn);
     ControlDependenceAnalysis cdg;
-    cdg.InitializeGraph(cfg, pdom);
+    cdg.ComputeControlDependenceGraph(cfg, pdom);
 
     EXPECT_TRUE(cdg.IsDependent(12, 11));
     EXPECT_TRUE(cdg.IsDependent(13, 11));
@@ -236,7 +236,7 @@ TEST(ControlDependenceTest, DependencePaperCFG) {
     const CFG& cfg = *context->cfg();
     pdom.InitializeTree(cfg, fn);
     ControlDependenceAnalysis cdg;
-    cdg.InitializeGraph(cfg, pdom);
+    cdg.ComputeControlDependenceGraph(cfg, pdom);
 
     std::vector<ControlDependence> edges;
     GatherEdges(cdg, edges);

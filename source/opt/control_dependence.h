@@ -18,8 +18,8 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
-#include <map>
 #include <ostream>
+#include <unordered_map>
 #include <vector>
 
 #include "source/opt/cfg.h"
@@ -28,37 +28,38 @@
 namespace spvtools {
 namespace opt {
 
-struct ControlDependence {
+class ControlDependence {
+ public:
   // The label of the source of this dependence, i.e. the block on which the
   // target is dependent on.
   // A |source_bb_id| of 0 represents an "entry" dependence, meaning that the
   // execution of |target_bb_id| is only dependent on entry to the function.
-  uint32_t source_bb_id;
+  uint32_t source_bb_id() const { return source_bb_id_; }
   // The label of the target of this dependence, i.e. the block which is
   // dependent on the source.
-  uint32_t target_bb_id;
+  uint32_t target_bb_id() const { return target_bb_id_; }
   // The label of the target of the *branch* for this dependence.
   // Equal to the ID of the entry block for entry dependences.
   //
-  // For example, for the CFG pictured below:
-  // 1 - 2 - 4 - 6
-  //   \   \   /
-  //     3   5
-  // Block 6 is control dependent on block 2, but this dependence comes from the
-  // branch 2 -> 4, so in this case the branch target ID would be 4.
-  uint32_t branch_target_bb_id;
+  // For example, for the partial CFG pictured below:
+  // 1 ---> 2 ---> 4 ---> 6
+  //  \      \            ^
+  //   \-> 3  \-> 5 -----/
+  // Block 6 is control dependent on block 1, but this dependence comes from the
+  // branch 1 -> 2, so in this case the branch target ID would be 2.
+  uint32_t branch_target_bb_id() const { return branch_target_bb_id_; }
 
   // Create a direct control dependence from BB ID |source| to |target|.
   ControlDependence(uint32_t source, uint32_t target)
-      : source_bb_id(source),
-        target_bb_id(target),
-        branch_target_bb_id(target) {}
+      : source_bb_id_(source),
+        target_bb_id_(target),
+        branch_target_bb_id_(target) {}
   // Create a control dependence from BB ID |source| to |target| through the
   // branch from |source| to |branch_target|.
   ControlDependence(uint32_t source, uint32_t target, uint32_t branch_target)
-      : source_bb_id(source),
-        target_bb_id(target),
-        branch_target_bb_id(branch_target) {}
+      : source_bb_id_(source),
+        target_bb_id_(target),
+        branch_target_bb_id_(branch_target) {}
 
   // Gets the ID of the conditional value for the branch corresponding to this
   // control dependence. This is the first input operand for both
@@ -67,6 +68,9 @@ struct ControlDependence {
   uint32_t GetConditionID(const CFG& cfg) const;
 
   bool operator==(const ControlDependence& other) const;
+  bool operator!=(const ControlDependence& other) const {
+    return !(*this == other);
+  }
 
   // Comparison operators, ordered lexicographically. Total ordering.
   bool operator<(const ControlDependence& other) const;
@@ -77,6 +81,11 @@ struct ControlDependence {
   bool operator>=(const ControlDependence& other) const {
     return !(*this < other);
   }
+
+ private:
+  uint32_t source_bb_id_;
+  uint32_t target_bb_id_;
+  uint32_t branch_target_bb_id_;
 };
 
 // Prints |dep| to |os| in a human-readable way. For example,
@@ -97,7 +106,8 @@ class ControlDependenceAnalysis {
   // Map basic block labels to control dependencies/dependents.
   // Not guaranteed to be in any particular order.
   using ControlDependenceList = std::vector<ControlDependence>;
-  using ControlDependenceListMap = std::map<uint32_t, ControlDependenceList>;
+  using ControlDependenceListMap =
+      std::unordered_map<uint32_t, ControlDependenceList>;
 
   // 0, the label number for the pseudo entry block.
   // All control dependences on the pseudo entry block are of type kEntry, and
@@ -106,7 +116,8 @@ class ControlDependenceAnalysis {
 
   // Build the control dependence graph for the given control flow graph |cfg|
   // and corresponding post-dominator analysis |pdom|.
-  void InitializeGraph(const CFG& cfg, const PostDominatorAnalysis& pdom);
+  void ComputeControlDependenceGraph(const CFG& cfg,
+                                     const PostDominatorAnalysis& pdom);
 
   // Get the list of the nodes that depend on a block.
   // Return value is not guaranteed to be in any particular order.
@@ -122,7 +133,7 @@ class ControlDependenceAnalysis {
 
   // Runs the function |f| on each block label in the CDG. If any iteration
   // returns false, immediately stops iteration and returns false. Otherwise
-  // returns true. Nodes are iterated in order of label, including the
+  // returns true. Nodes are iterated in some undefined order, including the
   // pseudo-entry block.
   bool WhileEachBlockLabel(std::function<bool(uint32_t)> f) const {
     for (const auto& entry : forward_nodes_) {
@@ -134,7 +145,7 @@ class ControlDependenceAnalysis {
   }
 
   // Runs the function |f| on each block label in the CDG. Nodes are iterated in
-  // order of label, including the pseudo-entry block.
+  // some undefined order, including the pseudo-entry block.
   void ForEachBlockLabel(std::function<void(uint32_t)> f) const {
     WhileEachBlockLabel([&f](uint32_t label) {
       f(label);
@@ -142,31 +153,44 @@ class ControlDependenceAnalysis {
     });
   }
 
-  // Does the block |id| exist in this graph? This can be false even if the
-  // block exists in the function when it is part of an infinite loop, as then
-  // it is not part of the post-dominator tree.
+  // Returns true if the block |id| exists in the control dependence graph.
+  // This can be false even if the block exists in the function when it is part
+  // of an infinite loop, since it is not part of the post-dominator tree.
   bool DoesBlockExist(uint32_t id) const {
     return forward_nodes_.count(id) > 0;
   }
 
-  // Is block |a| (directly) dependent on block |b|?
+  // Returns true if block |a| is dependent on block |b|.
   bool IsDependent(uint32_t a, uint32_t b) const {
-    if (forward_nodes_.find(a) == forward_nodes_.end()) return false;
+    if (!DoesBlockExist(a)) return false;
     // BBs tend to have more dependents (targets) than they are dependent on
     // (sources), so search sources.
     const ControlDependenceList& a_sources = GetDependenceSources(a);
     return std::find_if(a_sources.begin(), a_sources.end(),
                         [b](const ControlDependence& dep) {
-                          return dep.source_bb_id == b;
+                          return dep.source_bb_id() == b;
                         }) != a_sources.end();
   }
 
  private:
-  ControlDependenceListMap forward_nodes_;
-  ControlDependenceListMap reverse_nodes_;
-
+  // Computes the post-dominance frontiers (i.e. the reverse CDG) for each node
+  // in the post-dominator tree. Only modifies reverse_nodes_; forward_nodes_ is
+  // not modified.
   void ComputePostDominanceFrontiers(const CFG& cfg,
                                      const PostDominatorAnalysis& pdom);
+  // Computes the post-dominance frontier for a specific node |pdom_node| in the
+  // post-dominator tree. Result is placed in reverse_nodes_[pdom_node.id()].
+  void ComputePostDominanceFrontierForNode(const CFG& cfg,
+                                           const PostDominatorAnalysis& pdom,
+                                           uint32_t function_entry,
+                                           const DominatorTreeNode& pdom_node);
+
+  // Computes the forward graph (forward_nodes_) from the reverse graph
+  // (reverse_nodes_).
+  void ComputeForwardGraphFromReverse();
+
+  ControlDependenceListMap forward_nodes_;
+  ControlDependenceListMap reverse_nodes_;
 };
 
 }  // namespace opt

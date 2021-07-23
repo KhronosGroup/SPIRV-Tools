@@ -43,11 +43,11 @@ namespace opt {
 constexpr uint32_t ControlDependenceAnalysis::kPseudoEntryBlock;
 
 uint32_t ControlDependence::GetConditionID(const CFG& cfg) const {
-  if (source_bb_id == 0) {
+  if (source_bb_id() == 0) {
     // Entry dependence; return 0.
     return 0;
   }
-  const BasicBlock* source_bb = cfg.block(source_bb_id);
+  const BasicBlock* source_bb = cfg.block(source_bb_id());
   const Instruction* branch = source_bb->terminator();
   assert((branch->opcode() == SpvOpBranchConditional ||
           branch->opcode() == SpvOpSwitch) &&
@@ -57,21 +57,21 @@ uint32_t ControlDependence::GetConditionID(const CFG& cfg) const {
 }
 
 bool ControlDependence::operator<(const ControlDependence& other) const {
-  return std::tie(source_bb_id, target_bb_id, branch_target_bb_id) <
-         std::tie(other.source_bb_id, other.target_bb_id,
-                  other.branch_target_bb_id);
+  return std::tie(source_bb_id_, target_bb_id_, branch_target_bb_id_) <
+         std::tie(other.source_bb_id_, other.target_bb_id_,
+                  other.branch_target_bb_id_);
 }
 
 bool ControlDependence::operator==(const ControlDependence& other) const {
-  return std::tie(source_bb_id, target_bb_id, branch_target_bb_id) ==
-         std::tie(other.source_bb_id, other.target_bb_id,
-                  other.branch_target_bb_id);
+  return std::tie(source_bb_id_, target_bb_id_, branch_target_bb_id_) ==
+         std::tie(other.source_bb_id_, other.target_bb_id_,
+                  other.branch_target_bb_id_);
 }
 
 std::ostream& operator<<(std::ostream& os, const ControlDependence& dep) {
-  os << dep.source_bb_id << "->" << dep.target_bb_id;
-  if (dep.branch_target_bb_id != dep.target_bb_id) {
-    os << " through " << dep.branch_target_bb_id;
+  os << dep.source_bb_id() << "->" << dep.target_bb_id();
+  if (dep.branch_target_bb_id() != dep.target_bb_id()) {
+    os << " through " << dep.branch_target_bb_id();
   }
   return os;
 }
@@ -98,53 +98,56 @@ void ControlDependenceAnalysis::ComputePostDominanceFrontiers(
   assert(!cfg.IsPseudoExitBlock(pdom.GetDomTree().post_begin()->bb_));
   Function* function = pdom.GetDomTree().post_begin()->bb_->GetParent();
   uint32_t function_entry = function->entry()->id();
-  reverse_nodes_[kPseudoEntryBlock];  // Ensure GetDependenceSources(0) does not
-                                      // crash.
+  // Explicitly initialize pseudo-entry block, as it doesn't depend on anything,
+  // so it won't be initialized in the following loop.
+  reverse_nodes_[kPseudoEntryBlock] = {};
   for (auto it = pdom.GetDomTree().post_cbegin();
        it != pdom.GetDomTree().post_cend(); ++it) {
-    const uint32_t label = it->id();
-    ControlDependenceList& edges = reverse_nodes_[label];
-    size_t new_size = edges.size();
-    new_size += cfg.preds(label).size();
-    for (DominatorTreeNode* child : *it) {
-      const ControlDependenceList& child_edges = reverse_nodes_[child->id()];
-      new_size += child_edges.size();
+    ComputePostDominanceFrontierForNode(cfg, pdom, function_entry, *it);
+  }
+}
+
+void ControlDependenceAnalysis::ComputePostDominanceFrontierForNode(
+    const CFG& cfg, const PostDominatorAnalysis& pdom, uint32_t function_entry,
+    const DominatorTreeNode& pdom_node) {
+  const uint32_t label = pdom_node.id();
+  ControlDependenceList& edges = reverse_nodes_[label];
+  for (uint32_t pred : cfg.preds(label)) {
+    if (!pdom.StrictlyDominates(label, pred)) {
+      edges.push_back(ControlDependence(pred, label));
     }
-    edges.reserve(new_size);
-    for (uint32_t pred : cfg.preds(label)) {
-      if (!pdom.StrictlyDominates(label, pred)) {
-        edges.push_back(ControlDependence(pred, label));
-      }
-    }
-    if (label == function_entry) {
-      // Add edge from pseudo-entry to entry.
-      // In CDG construction, an edge is added from entry to exit, so only the
-      // exit node can post-dominate entry.
-      edges.push_back(ControlDependence(kPseudoEntryBlock, label));
-    }
-    for (DominatorTreeNode* child : *it) {
-      // Note: iterate dependences by value, as we need a copy.
-      for (ControlDependence dep : reverse_nodes_[child->id()]) {
-        // Special-case pseudo-entry, as above.
-        if (dep.source_bb_id == kPseudoEntryBlock ||
-            !pdom.StrictlyDominates(label, dep.source_bb_id)) {
-          dep.target_bb_id = label;
-          edges.push_back(dep);
-        }
+  }
+  if (label == function_entry) {
+    // Add edge from pseudo-entry to entry.
+    // In CDG construction, an edge is added from entry to exit, so only the
+    // exit node can post-dominate entry.
+    edges.push_back(ControlDependence(kPseudoEntryBlock, label));
+  }
+  for (DominatorTreeNode* child : pdom_node) {
+    // Note: iterate dependences by value, as we need a copy.
+    for (const ControlDependence& dep : reverse_nodes_[child->id()]) {
+      // Special-case pseudo-entry, as above.
+      if (dep.source_bb_id() == kPseudoEntryBlock ||
+          !pdom.StrictlyDominates(label, dep.source_bb_id())) {
+        edges.push_back(ControlDependence(dep.source_bb_id(), label,
+                                          dep.branch_target_bb_id()));
       }
     }
   }
 }
 
-void ControlDependenceAnalysis::InitializeGraph(
+void ControlDependenceAnalysis::ComputeControlDependenceGraph(
     const CFG& cfg, const PostDominatorAnalysis& pdom) {
   ComputePostDominanceFrontiers(cfg, pdom);
-  // Compute the forward graph from the reverse graph.
+  ComputeForwardGraphFromReverse();
+}
+
+void ControlDependenceAnalysis::ComputeForwardGraphFromReverse() {
   for (const auto& entry : reverse_nodes_) {
     // Ensure an entry is created for each node.
     forward_nodes_[entry.first];
     for (const ControlDependence& dep : entry.second) {
-      forward_nodes_[dep.source_bb_id].push_back(dep);
+      forward_nodes_[dep.source_bb_id()].push_back(dep);
     }
   }
 }
