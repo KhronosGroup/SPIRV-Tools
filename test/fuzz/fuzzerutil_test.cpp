@@ -196,8 +196,6 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetBoolTypeTest) {
          %50 = OpTypePointer Private %7
          %34 = OpTypeBool
          %35 = OpConstantFalse %34
-         %60 = OpConstantNull %50
-         %61 = OpUndef %51
          %52 = OpVariable %50 Private
          %53 = OpVariable %51 Private
          %80 = OpConstantComposite %8 %21 %24
@@ -507,8 +505,6 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetFloatTypeTest) {
          %50 = OpTypePointer Private %7
          %34 = OpTypeBool
          %35 = OpConstantFalse %34
-         %60 = OpConstantNull %50
-         %61 = OpUndef %51
          %52 = OpVariable %50 Private
          %53 = OpVariable %51 Private
          %80 = OpConstantComposite %8 %21 %24
@@ -799,8 +795,6 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetIntegerTypeTest) {
          %50 = OpTypePointer Private %7
          %34 = OpTypeBool
          %35 = OpConstantFalse %34
-         %60 = OpConstantNull %50
-         %61 = OpUndef %51
          %52 = OpVariable %50 Private
          %53 = OpVariable %51 Private
          %80 = OpConstantComposite %8 %21 %24
@@ -894,8 +888,6 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetPointerTypeTest) {
          %50 = OpTypePointer Private %7
          %34 = OpTypeBool
          %35 = OpConstantFalse %34
-         %60 = OpConstantNull %50
-         %61 = OpUndef %51
          %52 = OpVariable %50 Private
          %53 = OpVariable %51 Private
          %80 = OpConstantComposite %8 %21 %24
@@ -1165,8 +1157,6 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetStructTypeTest) {
          %50 = OpTypePointer Private %7
          %34 = OpTypeBool
          %35 = OpConstantFalse %34
-         %60 = OpConstantNull %50
-         %61 = OpUndef %51
          %52 = OpVariable %50 Private
          %53 = OpVariable %51 Private
          %80 = OpConstantComposite %8 %21 %24
@@ -1261,8 +1251,6 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetVectorTypeTest) {
          %50 = OpTypePointer Private %7
          %34 = OpTypeBool
          %35 = OpConstantFalse %34
-         %60 = OpConstantNull %50
-         %61 = OpUndef %51
          %52 = OpVariable %50 Private
          %53 = OpVariable %51 Private
          %80 = OpConstantComposite %8 %21 %24
@@ -1362,8 +1350,6 @@ TEST(FuzzerutilTest, FuzzerUtilMaybeGetVoidTypeTest) {
          %50 = OpTypePointer Private %7
          %34 = OpTypeBool
          %35 = OpConstantFalse %34
-         %60 = OpConstantNull %50
-         %61 = OpUndef %51
          %52 = OpVariable %50 Private
          %53 = OpVariable %51 Private
          %80 = OpConstantComposite %8 %21 %24

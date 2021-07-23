@@ -26,6 +26,7 @@ namespace {
 TEST(TransformationLoadTest, BasicTest) {
   std::string shader = R"(
                OpCapability Shader
+               OpCapability VariablePointers
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main"
@@ -49,7 +50,6 @@ TEST(TransformationLoadTest, BasicTest) {
          %34 = OpTypeBool
          %35 = OpConstantFalse %34
          %60 = OpConstantNull %50
-         %61 = OpUndef %51
          %52 = OpVariable %50 Private
          %53 = OpVariable %51 Private
           %4 = OpFunction %2 None %3
@@ -171,10 +171,6 @@ TEST(TransformationLoadTest, BasicTest) {
                    100, 60, MakeInstructionDescriptor(38, SpvOpAccessChain, 0))
                    .IsApplicable(context.get(), transformation_context));
 
-  // Bad: attempt to load from undefined pointer
-  ASSERT_FALSE(TransformationLoad(
-                   100, 61, MakeInstructionDescriptor(38, SpvOpAccessChain, 0))
-                   .IsApplicable(context.get(), transformation_context));
   // Bad: %40 is not available at the program point
   ASSERT_FALSE(
       TransformationLoad(100, 40, MakeInstructionDescriptor(37, SpvOpReturn, 0))
@@ -231,6 +227,7 @@ TEST(TransformationLoadTest, BasicTest) {
 
   std::string after_transformation = R"(
                OpCapability Shader
+               OpCapability VariablePointers
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main"
@@ -254,7 +251,6 @@ TEST(TransformationLoadTest, BasicTest) {
          %34 = OpTypeBool
          %35 = OpConstantFalse %34
          %60 = OpConstantNull %50
-         %61 = OpUndef %51
          %52 = OpVariable %50 Private
          %53 = OpVariable %51 Private
           %4 = OpFunction %2 None %3

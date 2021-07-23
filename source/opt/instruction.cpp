@@ -66,7 +66,8 @@ Instruction::Instruction(IRContext* c, SpvOp op)
 
 Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
                          std::vector<Instruction>&& dbg_line)
-    : context_(c),
+    : utils::IntrusiveNodeBase<Instruction>(),
+      context_(c),
       opcode_(static_cast<SpvOp>(inst.opcode)),
       has_type_id_(inst.type_id != 0),
       has_result_id_(inst.result_id != 0),
@@ -86,7 +87,8 @@ Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
 
 Instruction::Instruction(IRContext* c, const spv_parsed_instruction_t& inst,
                          const DebugScope& dbg_scope)
-    : context_(c),
+    : utils::IntrusiveNodeBase<Instruction>(),
+      context_(c),
       opcode_(static_cast<SpvOp>(inst.opcode)),
       has_type_id_(inst.type_id != 0),
       has_result_id_(inst.result_id != 0),
@@ -124,6 +126,7 @@ Instruction::Instruction(IRContext* c, SpvOp op, uint32_t ty_id,
 
 Instruction::Instruction(Instruction&& that)
     : utils::IntrusiveNodeBase<Instruction>(),
+      context_(that.context_),
       opcode_(that.opcode_),
       has_type_id_(that.has_type_id_),
       has_result_id_(that.has_result_id_),
@@ -137,6 +140,7 @@ Instruction::Instruction(Instruction&& that)
 }
 
 Instruction& Instruction::operator=(Instruction&& that) {
+  context_ = that.context_;
   opcode_ = that.opcode_;
   has_type_id_ = that.has_type_id_;
   has_result_id_ = that.has_result_id_;
@@ -985,10 +989,10 @@ void DebugScope::ToBinary(uint32_t type_id, uint32_t result_id,
                           uint32_t ext_set,
                           std::vector<uint32_t>* binary) const {
   uint32_t num_words = kDebugScopeNumWords;
-  OpenCLDebugInfo100Instructions dbg_opcode = OpenCLDebugInfo100DebugScope;
+  CommonDebugInfoInstructions dbg_opcode = CommonDebugInfoDebugScope;
   if (GetLexicalScope() == kNoDebugScope) {
     num_words = kDebugNoScopeNumWords;
-    dbg_opcode = OpenCLDebugInfo100DebugNoScope;
+    dbg_opcode = CommonDebugInfoDebugNoScope;
   } else if (GetInlinedAt() == kNoInlinedAt) {
     num_words = kDebugScopeNumWordsWithoutInlinedAt;
   }
