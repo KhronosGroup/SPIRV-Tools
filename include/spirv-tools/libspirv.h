@@ -659,6 +659,11 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetWorkgroupScalarBlockLayout(
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetSkipBlockLayout(
     spv_validator_options options, bool val);
 
+// Records whether or not the validator should allow the LocalSizeId
+// decoration where the environment otherwise would not allow it.
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetAllowLocalSizeId(
+    spv_validator_options options, bool val);
+
 // Creates an optimizer options object with default options. Returns a valid
 // options object. The object remains valid until it is passed into
 // |spvOptimizerOptionsDestroy|.

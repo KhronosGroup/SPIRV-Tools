@@ -175,6 +175,9 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
     }
   }
 
+  // LocalSizeId is always allowed in non-Vulkan environments.
+  features_.env_allow_localsizeid = !spvIsVulkanEnv(env);
+
   // Only attempt to count if we have words, otherwise let the other validation
   // fail and generate an error.
   if (num_words > 0) {
