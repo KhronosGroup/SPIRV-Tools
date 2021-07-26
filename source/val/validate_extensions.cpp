@@ -142,7 +142,8 @@ spv_result_t ValidateOperandLexicalScope(
         return dbg_inst == OpenCLDebugInfo100DebugCompilationUnit ||
                dbg_inst == OpenCLDebugInfo100DebugFunction ||
                dbg_inst == OpenCLDebugInfo100DebugLexicalBlock ||
-               dbg_inst == OpenCLDebugInfo100DebugTypeComposite;
+               dbg_inst == OpenCLDebugInfo100DebugTypeComposite ||
+               dbg_inst == OpenCLDebugInfo100DebugTypeTemplate;
       };
   if (DoesDebugInfoOperandMatchExpectation(_, expectation, inst, word_index))
     return SPV_SUCCESS;
