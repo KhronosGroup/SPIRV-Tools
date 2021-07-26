@@ -786,12 +786,14 @@ static_library("spvtools_opt") {
 
   deps = [
     ":spvtools",
-    ":spvtools_language_header_cldebuginfo100",
     ":spvtools_language_header_debuginfo",
-    ":spvtools_language_header_vkdebuginfo100",
     ":spvtools_vendor_tables_spv-amd-shader-ballot",
   ]
-  public_deps = [ ":spvtools_headers" ]
+  public_deps = [
+    ":spvtools_headers",
+    ":spvtools_language_header_cldebuginfo100",
+    ":spvtools_language_header_vkdebuginfo100",
+  ]
 
   if (build_with_chromium) {
     configs -= [ "//build/config/compiler:chromium_code" ]
