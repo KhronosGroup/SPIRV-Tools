@@ -340,6 +340,49 @@ TEST(TransformationLoadTest, AtomicLoadTestCase) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
+  // Bad: id is not fresh.
+  ASSERT_FALSE(
+      TransformationLoad(14, 14, true, 15, 20,
+                         MakeInstructionDescriptor(24, SpvOpAccessChain, 0))
+          .IsApplicable(context.get(), transformation_context));
+
+  // Bad: id 100 of memory scope instruction does not exist.
+  ASSERT_FALSE(
+      TransformationLoad(21, 14, true, 100, 20,
+                         MakeInstructionDescriptor(24, SpvOpAccessChain, 0))
+          .IsApplicable(context.get(), transformation_context));
+  // Bad: id 100 of memory semantics instruction does not exist.
+  ASSERT_FALSE(
+      TransformationLoad(21, 14, true, 15, 100,
+                         MakeInstructionDescriptor(24, SpvOpAccessChain, 0))
+          .IsApplicable(context.get(), transformation_context));
+  // Bad: memory scope should be |OpConstant| opcode.
+  ASSERT_FALSE(
+      TransformationLoad(21, 14, true, 5, 20,
+                         MakeInstructionDescriptor(24, SpvOpAccessChain, 0))
+          .IsApplicable(context.get(), transformation_context));
+  // Bad: memory semantics should be |OpConstant| opcode.
+  ASSERT_FALSE(
+      TransformationLoad(21, 14, true, 15, 5,
+                         MakeInstructionDescriptor(24, SpvOpAccessChain, 0))
+          .IsApplicable(context.get(), transformation_context));
+
+  // Bad: memory scope value should be equal to 4 related to
+  // |SpvScopeInvocation|.
+  ASSERT_FALSE(
+      TransformationLoad(21, 14, true, 16, 20,
+                         MakeInstructionDescriptor(24, SpvOpAccessChain, 0))
+          .IsApplicable(context.get(), transformation_context));
+
+  // Bad: memory semantics value should be equal to 64 or 256 related to
+  // |SpvMemorySemanticsUniform MemoryMask|, |SpvMemorySemantics
+  // WorkgroupMemoryMask| respectively.
+  ASSERT_FALSE(
+      TransformationLoad(21, 14, true, 15, 16,
+                         MakeInstructionDescriptor(24, SpvOpAccessChain, 0))
+          .IsApplicable(context.get(), transformation_context));
+
+  // Successful transformations.
   {
     TransformationLoad transformation(
         21, 14, true, 15, 20,

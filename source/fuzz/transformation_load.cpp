@@ -79,8 +79,10 @@ bool TransformationLoad::IsApplicable(
     }
     // The memory scope and memory semantics instructions must have the
     // 'OpConstant' opcode.
-    if (memory_scope_instruction->opcode() != SpvOpConstant &&
-        memory_semantics_instruction->opcode() != SpvOpConstant) {
+    if (memory_scope_instruction->opcode() != SpvOpConstant) {
+      return false;
+    }
+    if (memory_semantics_instruction->opcode() != SpvOpConstant) {
       return false;
     }
 
@@ -88,8 +90,10 @@ bool TransformationLoad::IsApplicable(
     // operand type with signedness does not matters.
     if (!ir_context->get_type_mgr()
              ->GetType(memory_scope_instruction->type_id())
-             ->AsInteger() ||
-        !ir_context->get_type_mgr()
+             ->AsInteger()) {
+      return false;
+    }
+    if (!ir_context->get_type_mgr()
              ->GetType(memory_semantics_instruction->type_id())
              ->AsInteger()) {
       return false;
@@ -106,8 +110,8 @@ bool TransformationLoad::IsApplicable(
     // SpvMemorySemanticsUniformMemoryMask.
     auto memory_semantics_const_value =
         memory_semantics_instruction->GetInOperand(0).words[0];
-    if (memory_semantics_const_value != SpvMemorySemanticsWorkgroupMemoryMask ||
-        memory_semantics_const_value != SpvMemorySemanticsUniformMemoryMask) {
+    if (memory_semantics_const_value != SpvMemorySemanticsUniformMemoryMask &&
+        memory_semantics_const_value != SpvMemorySemanticsWorkgroupMemoryMask) {
       return false;
     }
   }
