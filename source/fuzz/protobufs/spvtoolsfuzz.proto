@@ -1569,7 +1569,7 @@ message TransformationInvertComparisonOperator {
 
 message TransformationLoad {
 
-  // Transformation that adds an OpLoad instruction from a pointer into an id.
+  // Transformation that adds an OpLoad or OpAtomicLoad instruction from a pointer into an id.
 
   // The result of the load instruction.
   uint32 fresh_id = 1;
@@ -1580,11 +1580,11 @@ message TransformationLoad {
   // True if and only if the load should be atomic.
   bool is_atomic = 3;
 
-  // Memory scope for the load. Ignored unless the load is atomic.
-  uint32 memory_scope = 4;
+  // The memory scope for the atomic load. Ignored unless |is_atomic| is true.
+  uint32 memory_scope_id = 4;
 
-  // The control masks define bitmask hints for function optimization.
-  uint32 memory_semantics = 5;
+  // The memory semantics for the atomic load. Ignored unless |is_atomic| is true.
+  uint32 memory_semantics_id = 5;
 
   // A descriptor for an instruction in a block before which the new OpLoad
   // instruction should be inserted.

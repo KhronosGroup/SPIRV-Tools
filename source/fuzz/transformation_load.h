@@ -35,10 +35,10 @@ class TransformationLoad : public Transformation {
   // - |message_.fresh_id| must be fresh
   // - |message_.pointer_id| must be the id of a pointer
   // - |message_.is_atomic| must be true if want to work with OpAtomicLoad
-  // - |message_.memory_scope| must be value to specific scope if the opcode is
-  // OpAtomicLoad, and 0 if opcode is OpLoad
-  // - |message_.memory_semantics| mask we set when work with OpAtomicLoad, and
-  // 0 if opcode is OpLoad
+  // - |message_.memory_scope_id| must be SpvScopeInvocation if is_atomic is true,
+  // 0 otherwise.
+  // - |message_.memory_semantics_id| must be SpvMemorySemanticsWorkgroupMemoryMask
+  // or SpvMemorySemanticsUniformMemoryMask if is_atomic is true, 0 otherwise.
   // - The pointer must not be OpConstantNull or OpUndef
   // - |message_.instruction_to_insert_before| must identify an instruction
   //   before which it is valid to insert an OpLoad, and where
