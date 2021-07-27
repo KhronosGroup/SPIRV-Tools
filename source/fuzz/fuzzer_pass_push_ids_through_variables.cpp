@@ -102,7 +102,7 @@ void FuzzerPassPushIdsThroughVariables::Apply() {
                            ->IdIsIrrelevant(instruction->result_id()) &&
                       !fuzzerutil::CanMakeSynonymOf(ir_context,
                                                     *GetTransformationContext(),
-                                                    instruction)) {
+                                                    *instruction)) {
                     return false;
                   }
 

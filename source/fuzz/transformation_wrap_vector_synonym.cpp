@@ -58,7 +58,7 @@ bool TransformationWrapVectorSynonym::IsApplicable(
   // It must be possible to make a synonym of the result id of the scalar
   // operation
   if (!fuzzerutil::CanMakeSynonymOf(ir_context, transformation_context,
-                                    instruction)) {
+                                    *instruction)) {
     return false;
   }
 

@@ -75,17 +75,17 @@ void FuzzerPassWrapVectorSynonym::Apply() {
         // irrelevant).
         if (!fuzzerutil::CanMakeSynonymOf(GetIRContext(),
                                           *GetTransformationContext(),
-                                          &*instruction_iterator)) {
+                                          *instruction_iterator)) {
           return;
         }
         if (!fuzzerutil::CanMakeSynonymOf(
                 GetIRContext(), *GetTransformationContext(),
-                GetIRContext()->get_def_use_mgr()->GetDef(target_id1))) {
+                *GetIRContext()->get_def_use_mgr()->GetDef(target_id1))) {
           return;
         }
         if (!fuzzerutil::CanMakeSynonymOf(
                 GetIRContext(), *GetTransformationContext(),
-                GetIRContext()->get_def_use_mgr()->GetDef(target_id2))) {
+                *GetIRContext()->get_def_use_mgr()->GetDef(target_id2))) {
           return;
         }
 
