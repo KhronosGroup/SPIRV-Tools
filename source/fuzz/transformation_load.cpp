@@ -67,51 +67,52 @@ bool TransformationLoad::IsApplicable(
       break;
   }
 
-  // Check the exists of memory scope and memory semantics ids.
-  auto memory_scope_instruction =
-      ir_context->get_def_use_mgr()->GetDef(message_.memory_scope_id());
-  auto memory_semantics_instruction =
-      ir_context->get_def_use_mgr()->GetDef(message_.memory_semantics_id());
+  if (message_.is_atomic()) {
+    // Check the exists of memory scope and memory semantics ids.
+    auto memory_scope_instruction =
+        ir_context->get_def_use_mgr()->GetDef(message_.memory_scope_id());
+    auto memory_semantics_instruction =
+        ir_context->get_def_use_mgr()->GetDef(message_.memory_semantics_id());
 
-  if (message_.is_atomic() && !memory_scope_instruction &&
-      !memory_semantics_instruction) {
-    return false;
-  }
-  // The memory scope and memory semantics instructions must have the
-  // 'OpConstant' opcode.
-  if (memory_scope_instruction->opcode() != SpvOpConstant &&
-      memory_semantics_instruction->opcode() != SpvOpConstant) {
-    return false;
-  }
-
-  // The memory scope and memory semantics instructions must have an Integer
-  // operand type with signedness matters.
-  if (!ir_context->get_type_mgr()
-           ->GetType(memory_scope_instruction->type_id())
-           ->AsInteger() &&
-      !ir_context->get_type_mgr()
-           ->GetType(memory_semantics_instruction->type_id())
-           ->AsInteger()) {
-    return false;
-  }
-
-  // The memory scope constant value must be that of SpvScopeInvocation.
-  auto memory_scope_const_value = memory_scope_instruction->GetInOperand(0);
-  if (memory_scope_const_value.words[0] != SpvScopeInvocation) {
-    return false;
-  }
-
-  // The memory semantics constant value must be either
-  // SpvMemorySemanticsWorkgroupMemoryMask or
-  // SpvMemorySemanticsUniformMemoryMask.
-  auto memory_semantics_const_value =
-      memory_semantics_instruction->GetInOperand(0);
-  switch (memory_semantics_const_value.words[0]) {
-    case SpvMemorySemanticsWorkgroupMemoryMask:
-    case SpvMemorySemanticsUniformMemoryMask:
+    if (!memory_scope_instruction && !memory_semantics_instruction) {
       return false;
-    default:
-      break;
+    }
+    // The memory scope and memory semantics instructions must have the
+    // 'OpConstant' opcode.
+    if (memory_scope_instruction->opcode() != SpvOpConstant &&
+        memory_semantics_instruction->opcode() != SpvOpConstant) {
+      return false;
+    }
+
+    // The memory scope and memory semantics instructions must have an Integer
+    // operand type with signedness matters.
+    if (!ir_context->get_type_mgr()
+             ->GetType(memory_scope_instruction->type_id())
+             ->AsInteger() &&
+        !ir_context->get_type_mgr()
+             ->GetType(memory_semantics_instruction->type_id())
+             ->AsInteger()) {
+      return false;
+    }
+
+    // The memory scope constant value must be that of SpvScopeInvocation.
+    auto memory_scope_const_value = memory_scope_instruction->GetInOperand(0);
+    if (memory_scope_const_value.words[0] != SpvScopeInvocation) {
+      return false;
+    }
+
+    // The memory semantics constant value must be either
+    // SpvMemorySemanticsWorkgroupMemoryMask or
+    // SpvMemorySemanticsUniformMemoryMask.
+    auto memory_semantics_const_value =
+        memory_semantics_instruction->GetInOperand(0);
+    switch (memory_semantics_const_value.words[0]) {
+      case SpvMemorySemanticsWorkgroupMemoryMask:
+      case SpvMemorySemanticsUniformMemoryMask:
+        return false;
+      default:
+        break;
+    }
   }
 
   // Determine which instruction we should be inserting before.
