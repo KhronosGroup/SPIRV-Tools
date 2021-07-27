@@ -74,7 +74,7 @@ bool TransformationLoad::IsApplicable(
     auto memory_semantics_instruction =
         ir_context->get_def_use_mgr()->GetDef(message_.memory_semantics_id());
 
-    if (!memory_scope_instruction && !memory_semantics_instruction) {
+    if (!memory_scope_instruction || !memory_semantics_instruction) {
       return false;
     }
     // The memory scope and memory semantics instructions must have the
@@ -85,10 +85,10 @@ bool TransformationLoad::IsApplicable(
     }
 
     // The memory scope and memory semantics instructions must have an Integer
-    // operand type with signedness matters.
+    // operand type with signedness does not matters.
     if (!ir_context->get_type_mgr()
              ->GetType(memory_scope_instruction->type_id())
-             ->AsInteger() &&
+             ->AsInteger() ||
         !ir_context->get_type_mgr()
              ->GetType(memory_semantics_instruction->type_id())
              ->AsInteger()) {
@@ -105,13 +105,10 @@ bool TransformationLoad::IsApplicable(
     // SpvMemorySemanticsWorkgroupMemoryMask or
     // SpvMemorySemanticsUniformMemoryMask.
     auto memory_semantics_const_value =
-        memory_semantics_instruction->GetInOperand(0);
-    switch (memory_semantics_const_value.words[0]) {
-      case SpvMemorySemanticsWorkgroupMemoryMask:
-      case SpvMemorySemanticsUniformMemoryMask:
-        return false;
-      default:
-        break;
+        memory_semantics_instruction->GetInOperand(0).words[0];
+    if (memory_semantics_const_value != SpvMemorySemanticsWorkgroupMemoryMask ||
+        memory_semantics_const_value != SpvMemorySemanticsUniformMemoryMask) {
+      return false;
     }
   }
 
@@ -122,7 +119,7 @@ bool TransformationLoad::IsApplicable(
   if (!insert_before) {
     return false;
   }
-  // ... and it must be legitimate to insert a store before it.
+  // ... and it must be legitimate to insert a load before it.
   if (!message_.is_atomic() &&
       !fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, insert_before)) {
     return false;
