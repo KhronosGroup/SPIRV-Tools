@@ -66,6 +66,24 @@ bool TransformationLoad::IsApplicable(
       break;
   }
 
+  // Determine which instruction we should be inserting before.
+  auto insert_before =
+      FindInstruction(message_.instruction_to_insert_before(), ir_context);
+  // It must exist, ...
+  if (!insert_before) {
+    return false;
+  }
+  // ... and it must be legitimate to insert a load before it.
+  if (!message_.is_atomic() &&
+      !fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, insert_before)) {
+    return false;
+  }
+
+  if (message_.is_atomic() && !fuzzerutil::CanInsertOpcodeBeforeInstruction(
+                                  SpvOpAtomicLoad, insert_before)) {
+    return false;
+  }
+
   if (message_.is_atomic()) {
     // Check the exists of memory scope and memory semantics ids.
     auto memory_scope_instruction =
@@ -137,24 +155,6 @@ bool TransformationLoad::IsApplicable(
         memory_semantics_const_value != SpvMemorySemanticsWorkgroupMemoryMask) {
       return false;
     }
-  }
-
-  // Determine which instruction we should be inserting before.
-  auto insert_before =
-      FindInstruction(message_.instruction_to_insert_before(), ir_context);
-  // It must exist, ...
-  if (!insert_before) {
-    return false;
-  }
-  // ... and it must be legitimate to insert a load before it.
-  if (!message_.is_atomic() &&
-      !fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, insert_before)) {
-    return false;
-  }
-
-  if (message_.is_atomic() && !fuzzerutil::CanInsertOpcodeBeforeInstruction(
-                                  SpvOpAtomicLoad, insert_before)) {
-    return false;
   }
 
   // The pointer needs to be available at the insertion point.
