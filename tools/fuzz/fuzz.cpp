@@ -630,7 +630,7 @@ bool Fuzz(const spv_target_env& target_env,
       std::move(ir_context), std::move(transformation_context),
       std::move(fuzzer_context), message_consumer, donor_suppliers,
       fuzzer_options->all_passes_enabled, repeated_pass_strategy,
-      fuzzer_options->fuzzer_pass_validation_enabled, validator_options);
+      fuzzer_options->fuzzer_pass_validation_enabled, validator_options, false);
   auto fuzz_result = fuzzer.Run(0);
   if (fuzz_result.status ==
       spvtools::fuzz::Fuzzer::Status::kFuzzerPassLedToInvalidModule) {

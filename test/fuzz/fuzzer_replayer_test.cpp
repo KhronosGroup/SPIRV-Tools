@@ -1668,7 +1668,7 @@ void RunFuzzerAndReplayer(const std::string& shader,
     Fuzzer fuzzer(std::move(ir_context), std::move(transformation_context),
                   std::move(fuzzer_context), kConsoleMessageConsumer,
                   donor_suppliers, enable_all_passes,
-                  strategies[strategy_index], true, validator_options);
+                  strategies[strategy_index], true, validator_options, false);
     auto fuzzer_result = fuzzer.Run(0);
 
     // Cycle the repeated pass strategy so that we try a different one next time
