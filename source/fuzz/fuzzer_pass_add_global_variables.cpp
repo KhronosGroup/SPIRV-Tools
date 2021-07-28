@@ -47,6 +47,10 @@ void FuzzerPassAddGlobalVariables::Apply() {
 
   // These are the basic types that are available to this fuzzer pass.
   auto& basic_types = basic_type_ids_and_pointers.first;
+  if (basic_types.empty()) {
+    // There are no basic types, so there is nothing this fuzzer pass can do.
+    return;
+  }
 
   // These are the pointers to those basic types that are *initially* available
   // to the fuzzer pass.  The fuzzer pass might add pointer types in cases where
