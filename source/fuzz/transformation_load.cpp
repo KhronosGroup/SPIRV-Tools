@@ -174,9 +174,10 @@ void TransformationLoad::Apply(opt::IRContext* ir_context,
     auto new_instruction = MakeUnique<opt::Instruction>(
         ir_context, SpvOpAtomicLoad, result_type, message_.fresh_id(),
         opt::Instruction::OperandList(
-            {{SPV_OPERAND_TYPE_ID,
-              {message_.pointer_id(), message_.memory_scope_id(),
-               message_.memory_semantics_id()}}}));
+            {{SPV_OPERAND_TYPE_ID, {message_.pointer_id()}},
+             {SPV_OPERAND_TYPE_SCOPE_ID, {message_.memory_scope_id()}},
+             {SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID,
+              {message_.memory_semantics_id()}}}));
     auto new_instruction_ptr = new_instruction.get();
     insert_before->InsertBefore(std::move(new_instruction));
     // Inform the def-use manager about the new instruction and record its basic
