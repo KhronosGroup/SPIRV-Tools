@@ -126,7 +126,8 @@ TEST(ControlDependenceTest, DependenceSimpleCFG) {
     for (uint32_t id = 10; id <= 19; id++) {
       EXPECT_TRUE(cdg.DoesBlockExist(id));
     }
-    EXPECT_TRUE(cdg.DoesBlockExist(ControlDependenceAnalysis::kPseudoEntryBlock));
+    EXPECT_TRUE(
+        cdg.DoesBlockExist(ControlDependenceAnalysis::kPseudoEntryBlock));
     // Check blocks before/after valid range.
     EXPECT_FALSE(cdg.DoesBlockExist(5));
     EXPECT_FALSE(cdg.DoesBlockExist(25));
@@ -138,8 +139,8 @@ TEST(ControlDependenceTest, DependenceSimpleCFG) {
       bool inserted = block_labels.insert(id).second;
       EXPECT_TRUE(inserted);  // Should have no duplicates.
     });
-    EXPECT_THAT(block_labels, testing::ElementsAre(
-        0, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
+    EXPECT_THAT(block_labels, testing::ElementsAre(0, 10, 11, 12, 13, 14, 15,
+                                                   16, 17, 18, 19));
 
     {
       // Test WhileEachBlockLabel.
@@ -148,7 +149,7 @@ TEST(ControlDependenceTest, DependenceSimpleCFG) {
         ++iters;
         return true;
       }));
-      EXPECT_EQ((uint32_t) block_labels.size(), iters);
+      EXPECT_EQ((uint32_t)block_labels.size(), iters);
       iters = 0;
       EXPECT_FALSE(cdg.WhileEachBlockLabel([&iters](uint32_t) {
         ++iters;
