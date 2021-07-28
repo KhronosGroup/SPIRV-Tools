@@ -606,6 +606,8 @@ static_library("spvtools_opt") {
     "source/opt/const_folding_rules.h",
     "source/opt/constants.cpp",
     "source/opt/constants.h",
+    "source/opt/control_dependence.cpp",
+    "source/opt/control_dependence.h",
     "source/opt/convert_to_half_pass.cpp",
     "source/opt/convert_to_half_pass.h",
     "source/opt/copy_prop_arrays.cpp",
