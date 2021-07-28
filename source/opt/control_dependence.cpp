@@ -26,17 +26,17 @@
 #include "source/opt/instruction.h"
 #include "spirv/unified1/spirv.h"
 
-// Computes the control dependence graph (CDG). The algorithm in Cytron 1991,
-// "Efficiently Computing Static Single Assignment Form and the Control
+// Computes the control dependence graph (CDG) using the algorithm in Cytron
+// 1991, "Efficiently Computing Static Single Assignment Form and the Control
 // Dependence Graph." It relies on the fact that the control dependence sources
-// (blocks on which a block is control dependent on) are exactly the
-// post-dominance frontier for that block. The explanation and proofs are given
-// in Section 6 of that paper.
+// (blocks on which a block is control dependent) are exactly the post-dominance
+// frontier for that block. The explanation and proofs are given in Section 6 of
+// that paper.
 // Link: https://www.cs.utexas.edu/~pingali/CS380C/2010/papers/ssaCytron.pdf
 //
 // The algorithm in Section 4.2 of the same paper is used to construct the
 // dominance frontier. It uses the post-dominance tree, which is available in
-// the IR context).
+// the IR context.
 
 namespace spvtools {
 namespace opt {
