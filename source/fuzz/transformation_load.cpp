@@ -27,7 +27,6 @@ TransformationLoad::TransformationLoad(
     uint32_t fresh_id, uint32_t pointer_id, bool is_atomic,
     uint32_t memory_scope, uint32_t memory_semantics,
     const protobufs::InstructionDescriptor& instruction_to_insert_before) {
-  assert(!is_atomic && "Atomic load not fully developed yet.");
   message_.set_fresh_id(fresh_id);
   message_.set_pointer_id(pointer_id);
   message_.set_is_atomic(is_atomic);
@@ -74,7 +73,10 @@ bool TransformationLoad::IsApplicable(
     auto memory_semantics_instruction =
         ir_context->get_def_use_mgr()->GetDef(message_.memory_semantics_id());
 
-    if (!memory_scope_instruction || !memory_semantics_instruction) {
+    if (!memory_scope_instruction) {
+      return false;
+    }
+    if (!memory_semantics_instruction) {
       return false;
     }
     // The memory scope and memory semantics instructions must have the
@@ -88,20 +90,41 @@ bool TransformationLoad::IsApplicable(
 
     // The memory scope and memory semantics instructions must have an Integer
     // operand type with signedness does not matters.
-    if (!ir_context->get_type_mgr()
-             ->GetType(memory_scope_instruction->type_id())
-             ->AsInteger()) {
+    if (ir_context->get_def_use_mgr()
+            ->GetDef(memory_scope_instruction->type_id())
+            ->opcode() != SpvOpTypeInt) {
       return false;
     }
-    if (!ir_context->get_type_mgr()
-             ->GetType(memory_semantics_instruction->type_id())
-             ->AsInteger()) {
+    if (ir_context->get_def_use_mgr()
+            ->GetDef(memory_semantics_instruction->type_id())
+            ->opcode() != SpvOpTypeInt) {
+      return false;
+    }
+
+    // The size of the integer for memory scope and memory semantics
+    // instructions must be equal to 32 bits.
+    auto memory_scope_int_width =
+        ir_context->get_def_use_mgr()
+            ->GetDef(memory_scope_instruction->type_id())
+            ->GetInOperand(0)
+            .words[0];
+    auto memory_semantics_int_width =
+        ir_context->get_def_use_mgr()
+            ->GetDef(memory_semantics_instruction->type_id())
+            ->GetInOperand(0)
+            .words[0];
+
+    if (memory_scope_int_width != 32) {
+      return false;
+    }
+    if (memory_semantics_int_width != 32) {
       return false;
     }
 
     // The memory scope constant value must be that of SpvScopeInvocation.
-    auto memory_scope_const_value = memory_scope_instruction->GetInOperand(0);
-    if (memory_scope_const_value.words[0] != SpvScopeInvocation) {
+    auto memory_scope_const_value =
+        memory_scope_instruction->GetInOperand(0).words[0];
+    if (memory_scope_const_value != SpvScopeInvocation) {
       return false;
     }
 
