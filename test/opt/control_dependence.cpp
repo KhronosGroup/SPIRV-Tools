@@ -122,6 +122,43 @@ TEST(ControlDependenceTest, DependenceSimpleCFG) {
     ControlDependenceAnalysis cdg;
     cdg.ComputeControlDependenceGraph(cfg, pdom);
 
+    // Test DoesBlockExist.
+    for (uint32_t id = 10; id <= 19; id++) {
+      EXPECT_TRUE(cdg.DoesBlockExist(id));
+    }
+    EXPECT_TRUE(
+        cdg.DoesBlockExist(ControlDependenceAnalysis::kPseudoEntryBlock));
+    // Check blocks before/after valid range.
+    EXPECT_FALSE(cdg.DoesBlockExist(5));
+    EXPECT_FALSE(cdg.DoesBlockExist(25));
+    EXPECT_FALSE(cdg.DoesBlockExist(UINT32_MAX));
+
+    // Test ForEachBlockLabel.
+    std::set<uint32_t> block_labels;
+    cdg.ForEachBlockLabel([&block_labels](uint32_t id) {
+      bool inserted = block_labels.insert(id).second;
+      EXPECT_TRUE(inserted);  // Should have no duplicates.
+    });
+    EXPECT_THAT(block_labels, testing::ElementsAre(0, 10, 11, 12, 13, 14, 15,
+                                                   16, 17, 18, 19));
+
+    {
+      // Test WhileEachBlockLabel.
+      uint32_t iters = 0;
+      EXPECT_TRUE(cdg.WhileEachBlockLabel([&iters](uint32_t) {
+        ++iters;
+        return true;
+      }));
+      EXPECT_EQ((uint32_t)block_labels.size(), iters);
+      iters = 0;
+      EXPECT_FALSE(cdg.WhileEachBlockLabel([&iters](uint32_t) {
+        ++iters;
+        return false;
+      }));
+      EXPECT_EQ(1, iters);
+    }
+
+    // Test IsDependent.
     EXPECT_TRUE(cdg.IsDependent(12, 11));
     EXPECT_TRUE(cdg.IsDependent(13, 11));
     EXPECT_TRUE(cdg.IsDependent(15, 14));
@@ -137,6 +174,7 @@ TEST(ControlDependenceTest, DependenceSimpleCFG) {
     EXPECT_FALSE(cdg.IsDependent(19, 14));
     EXPECT_FALSE(cdg.IsDependent(12, 0));
 
+    // Test GetDependenceSources/Targets.
     std::vector<ControlDependence> edges;
     GatherEdges(cdg, edges);
     EXPECT_THAT(edges,
