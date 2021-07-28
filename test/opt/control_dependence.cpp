@@ -126,8 +126,7 @@ TEST(ControlDependenceTest, DependenceSimpleCFG) {
     for (uint32_t id = 10; id <= 19; id++) {
       EXPECT_TRUE(cdg.HasBlock(id));
     }
-    EXPECT_TRUE(
-        cdg.HasBlock(ControlDependenceAnalysis::kPseudoEntryBlock));
+    EXPECT_TRUE(cdg.HasBlock(ControlDependenceAnalysis::kPseudoEntryBlock));
     // Check blocks before/after valid range.
     EXPECT_FALSE(cdg.HasBlock(5));
     EXPECT_FALSE(cdg.HasBlock(25));

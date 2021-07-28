@@ -156,9 +156,7 @@ class ControlDependenceAnalysis {
   // Returns true if the block |id| exists in the control dependence graph.
   // This can be false even if the block exists in the function when it is part
   // of an infinite loop, since it is not part of the post-dominator tree.
-  bool HasBlock(uint32_t id) const {
-    return forward_nodes_.count(id) > 0;
-  }
+  bool HasBlock(uint32_t id) const { return forward_nodes_.count(id) > 0; }
 
   // Returns true if block |a| is dependent on block |b|.
   bool IsDependent(uint32_t a, uint32_t b) const {
