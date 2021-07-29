@@ -84,6 +84,12 @@ bool TransformationLoad::IsApplicable(
     return false;
   }
 
+  // The pointer needs to be available at the insertion point.
+  if (!fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, insert_before,
+                                                  message_.pointer_id())) {
+    return false;
+  }
+
   if (message_.is_atomic()) {
     // Check the exists of memory scope and memory semantics ids.
     auto memory_scope_instruction =
@@ -157,9 +163,7 @@ bool TransformationLoad::IsApplicable(
     }
   }
 
-  // The pointer needs to be available at the insertion point.
-  return fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, insert_before,
-                                                    message_.pointer_id());
+  return true;
 }
 
 void TransformationLoad::Apply(opt::IRContext* ir_context,
