@@ -122,16 +122,15 @@ TEST(ControlDependenceTest, DependenceSimpleCFG) {
     ControlDependenceAnalysis cdg;
     cdg.ComputeControlDependenceGraph(cfg, pdom);
 
-    // Test DoesBlockExist.
+    // Test HasBlock.
     for (uint32_t id = 10; id <= 19; id++) {
-      EXPECT_TRUE(cdg.DoesBlockExist(id));
+      EXPECT_TRUE(cdg.HasBlock(id));
     }
-    EXPECT_TRUE(
-        cdg.DoesBlockExist(ControlDependenceAnalysis::kPseudoEntryBlock));
+    EXPECT_TRUE(cdg.HasBlock(ControlDependenceAnalysis::kPseudoEntryBlock));
     // Check blocks before/after valid range.
-    EXPECT_FALSE(cdg.DoesBlockExist(5));
-    EXPECT_FALSE(cdg.DoesBlockExist(25));
-    EXPECT_FALSE(cdg.DoesBlockExist(UINT32_MAX));
+    EXPECT_FALSE(cdg.HasBlock(5));
+    EXPECT_FALSE(cdg.HasBlock(25));
+    EXPECT_FALSE(cdg.HasBlock(UINT32_MAX));
 
     // Test ForEachBlockLabel.
     std::set<uint32_t> block_labels;
