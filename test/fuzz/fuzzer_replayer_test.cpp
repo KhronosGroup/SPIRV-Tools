@@ -1596,6 +1596,23 @@ const std::string kTestShader6 = R"(
                OpFunctionEnd
   )";
 
+// A virtually empty piece of SPIR-V.
+
+const std::string kTestShader7 = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
 void AddConstantUniformFact(protobufs::FactSequence* facts,
                             uint32_t descriptor_set, uint32_t binding,
                             std::vector<uint32_t>&& indices, uint32_t value) {
@@ -1757,6 +1774,13 @@ TEST(FuzzerReplayerTest, Miscellaneous6) {
   // Do some fuzzer runs, starting from an initial seed of 57 (seed value chosen
   // arbitrarily).
   RunFuzzerAndReplayer(kTestShader6, protobufs::FactSequence(), 57,
+                       kNumFuzzerRuns);
+}
+
+TEST(FuzzerReplayerTest, Miscellaneous7) {
+  // Do some fuzzer runs, starting from an initial seed of 1 (seed value chosen
+  // arbitrarily).
+  RunFuzzerAndReplayer(kTestShader7, protobufs::FactSequence(), 1,
                        kNumFuzzerRuns);
 }
 
