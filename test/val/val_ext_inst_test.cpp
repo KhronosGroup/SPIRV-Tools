@@ -3671,8 +3671,8 @@ TEST_P(ValidateGlslStd450UMinLike, WrongBitWidthOperand2) {
 
 TEST_P(ValidateGlslStd450UMinLike, TypelessOperand) {
   const std::string ext_inst_name = GetParam();
-  const std::string body =
-      "%val1 = OpExtInst %s64 %extinst " + ext_inst_name + " %s64_0 %main_entry\n";
+  const std::string body = "%val1 = OpExtInst %s64 %extinst " + ext_inst_name +
+                           " %s64_0 %main_entry\n";
 
   CompileSuccessfully(GenerateShaderCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
