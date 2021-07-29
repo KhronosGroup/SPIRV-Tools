@@ -84,12 +84,6 @@ bool TransformationLoad::IsApplicable(
     return false;
   }
 
-  // The pointer needs to be available at the insertion point.
-  if (!fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, insert_before,
-                                                  message_.pointer_id())) {
-    return false;
-  }
-
   if (message_.is_atomic()) {
     // Check the exists of memory scope and memory semantics ids.
     auto memory_scope_instruction =
@@ -111,7 +105,16 @@ bool TransformationLoad::IsApplicable(
     if (memory_semantics_instruction->opcode() != SpvOpConstant) {
       return false;
     }
-
+    // The memory scope and memory semantics need to be available before
+    // |insert_before|.
+    if (!fuzzerutil::IdIsAvailableBeforeInstruction(
+            ir_context, insert_before, message_.memory_scope_id())) {
+      return false;
+    }
+    if (!fuzzerutil::IdIsAvailableBeforeInstruction(
+            ir_context, insert_before, message_.memory_semantics_id())) {
+      return false;
+    }
     // The memory scope and memory semantics instructions must have an Integer
     // operand type with signedness does not matters.
     if (ir_context->get_def_use_mgr()
@@ -163,7 +166,9 @@ bool TransformationLoad::IsApplicable(
     }
   }
 
-  return true;
+  // The pointer needs to be available at the insertion point.
+  return fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, insert_before,
+                                                    message_.pointer_id());
 }
 
 void TransformationLoad::Apply(opt::IRContext* ir_context,
