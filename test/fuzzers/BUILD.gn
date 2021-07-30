@@ -39,6 +39,7 @@ if (!build_with_chromium || use_fuzzing_engine) {
       ":spvtools_opt_legalization_fuzzer",
       ":spvtools_opt_performance_fuzzer",
       ":spvtools_opt_size_fuzzer",
+      ":spvtools_reduce_fuzzer",
       ":spvtools_val_fuzzer",
     ]
   }
@@ -66,104 +67,92 @@ template("spvtools_fuzzer") {
 }
 
 spvtools_fuzzer("spvtools_as_fuzzer_src") {
-  sources = [
-    "spvtools_as_fuzzer.cpp",
-  ]
+  sources = [ "spvtools_as_fuzzer.cpp" ]
 }
 
 spvtools_fuzzer("spvtools_binary_parser_fuzzer_src") {
-  sources = [
-    "spvtools_binary_parser_fuzzer.cpp",
-  ]
+  sources = [ "spvtools_binary_parser_fuzzer.cpp" ]
 }
 
 spvtools_fuzzer("spvtools_dis_fuzzer_src") {
-  sources = [
-    "spvtools_dis_fuzzer.cpp",
-  ]
+  sources = [ "spvtools_dis_fuzzer.cpp" ]
 }
 
 spvtools_fuzzer("spvtools_opt_performance_fuzzer_src") {
-  sources = [
-    "spvtools_opt_performance_fuzzer.cpp",
-  ]
+  sources = [ "spvtools_opt_performance_fuzzer.cpp" ]
 }
 
 spvtools_fuzzer("spvtools_opt_legalization_fuzzer_src") {
-  sources = [
-    "spvtools_opt_legalization_fuzzer.cpp",
-  ]
+  sources = [ "spvtools_opt_legalization_fuzzer.cpp" ]
 }
 
 spvtools_fuzzer("spvtools_opt_size_fuzzer_src") {
-  sources = [
-    "spvtools_opt_size_fuzzer.cpp",
-  ]
+  sources = [ "spvtools_opt_size_fuzzer.cpp" ]
+}
+
+spvtools_fuzzer("spvtools_reduce_fuzzer_src") {
+  sources = [ "spvtools_reduce_fuzzer.cpp" ]
 }
 
 spvtools_fuzzer("spvtools_val_fuzzer_src") {
-  sources = [
-    "spvtools_val_fuzzer.cpp",
-  ]
+  sources = [ "spvtools_val_fuzzer.cpp" ]
 }
 
 if (!build_with_chromium || use_fuzzing_engine) {
   fuzzer_test("spvtools_as_fuzzer") {
     sources = []
-    deps = [
-      ":spvtools_as_fuzzer_src",
-    ]
+    deps = [ ":spvtools_as_fuzzer_src" ]
+
     # Intentionally doesn't use the seed corpus, because it consumes
     #  part of the input as not part of the file.
   }
 
   fuzzer_test("spvtools_binary_parser_fuzzer") {
     sources = []
-    deps = [
-      ":spvtools_binary_parser_fuzzer_src",
-    ]
+    deps = [ ":spvtools_binary_parser_fuzzer_src" ]
+
     # Intentionally doesn't use the seed corpus, because it consumes
     #  part of the input as not part of the file.
   }
 
   fuzzer_test("spvtools_dis_fuzzer") {
     sources = []
-    deps = [
-      ":spvtools_dis_fuzzer_src",
-    ]
+    deps = [ ":spvtools_dis_fuzzer_src" ]
+
     # Intentionally doesn't use the seed corpus, because it consumes
     #  part of the input as not part of the file.
   }
 
   fuzzer_test("spvtools_opt_performance_fuzzer") {
     sources = []
-    deps = [
-      ":spvtools_opt_performance_fuzzer_src",
-    ]
+    deps = [ ":spvtools_opt_performance_fuzzer_src" ]
     seed_corpus = "corpora/spv"
   }
 
   fuzzer_test("spvtools_opt_legalization_fuzzer") {
     sources = []
-    deps = [
-      ":spvtools_opt_legalization_fuzzer_src",
-    ]
+    deps = [ ":spvtools_opt_legalization_fuzzer_src" ]
     seed_corpus = "corpora/spv"
   }
 
   fuzzer_test("spvtools_opt_size_fuzzer") {
     sources = []
+    deps = [ ":spvtools_opt_size_fuzzer_src" ]
+    seed_corpus = "corpora/spv"
+  }
+
+  fuzzer_test("spvtools_reduce_fuzzer") {
+    sources = []
     deps = [
-      ":spvtools_opt_size_fuzzer_src",
+      ":spvtools_reduce_fuzzer_src",
+      "../..:spvtools_reduce",
     ]
     seed_corpus = "corpora/spv"
   }
 
   fuzzer_test("spvtools_val_fuzzer") {
     sources = []
-    deps = [
-      ":spvtools_val_fuzzer_src",
-    ]
+    deps = [ ":spvtools_val_fuzzer_src" ]
     seed_corpus = "corpora/spv"
   }
 }
