@@ -36,6 +36,7 @@ if (!build_with_chromium || use_fuzzing_engine) {
       ":spvtools_as_fuzzer",
       ":spvtools_binary_parser_fuzzer",
       ":spvtools_dis_fuzzer",
+      ":spvtools_opt_fine_grained_fuzzer",
       ":spvtools_opt_legalization_fuzzer",
       ":spvtools_opt_performance_fuzzer",
       ":spvtools_opt_size_fuzzer",
@@ -82,6 +83,10 @@ spvtools_fuzzer("spvtools_opt_performance_fuzzer_src") {
   sources = [ "spvtools_opt_performance_fuzzer.cpp" ]
 }
 
+spvtools_fuzzer("spvtools_opt_fine_grained_fuzzer_src") {
+  sources = [ "spvtools_opt_fine_grained_fuzzer.cpp" ]
+}
+
 spvtools_fuzzer("spvtools_opt_legalization_fuzzer_src") {
   sources = [ "spvtools_opt_legalization_fuzzer.cpp" ]
 }
@@ -126,6 +131,12 @@ if (!build_with_chromium || use_fuzzing_engine) {
   fuzzer_test("spvtools_opt_performance_fuzzer") {
     sources = []
     deps = [ ":spvtools_opt_performance_fuzzer_src" ]
+    seed_corpus = "corpora/spv"
+  }
+
+  fuzzer_test("spvtools_opt_fine_grained_fuzzer") {
+    sources = []
+    deps = [ ":spvtools_opt_fine_grained_fuzzer_src" ]
     seed_corpus = "corpora/spv"
   }
 
