@@ -99,6 +99,15 @@ spv_target_env RandomGenerator::GetTargetEnv() {
   return result;
 }
 
+uint32_t RandomGenerator::GetUInt32(uint32_t lower, uint32_t upper) {
+  return RandomUInt(&engine_, lower, upper);
+}
+
+uint32_t RandomGenerator::GetUInt32(uint32_t bound) {
+  assert(bound > 0 && "|bound| must be greater than 0");
+  return RandomUInt(&engine_, 0u, bound);
+}
+
 uint64_t RandomGenerator::CalculateSeed(const uint8_t* data, size_t size) {
   assert(data != nullptr && "|data| must be !nullptr");
 

@@ -47,6 +47,17 @@ class RandomGenerator {
   /// Get random valid target env.
   spv_target_env GetTargetEnv();
 
+  /// Get uint32_t value from uniform distribution.
+  /// @param lower - lower bound of integer generated
+  /// @param upper - upper bound of integer generated
+  /// @returns i, where lower <= i < upper
+  uint32_t GetUInt32(uint32_t lower, uint32_t upper);
+
+  /// Get uint32_t value from uniform distribution.
+  /// @param bound - Upper bound of integer generated
+  /// @returns i, where 0 <= i < bound
+  uint32_t GetUInt32(uint32_t bound);
+
  private:
   std::mt19937_64 engine_;
 };  // class RandomGenerator
