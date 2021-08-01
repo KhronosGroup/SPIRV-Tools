@@ -517,74 +517,16 @@ TEST(TransformationLoadTest, AtomicLoadTestCaseForWorkgroupMemory) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-  // Bad: id is not fresh.
-  ASSERT_FALSE(
-      TransformationLoad(14, 38, true, 21, 23,
-                         MakeInstructionDescriptor(40, SpvOpAccessChain, 0))
-          .IsApplicable(context.get(), transformation_context));
-
-  // Bad: id 100 of memory scope instruction does not exist.
-  ASSERT_FALSE(
-      TransformationLoad(60, 38, true, 100, 23,
-                         MakeInstructionDescriptor(40, SpvOpAccessChain, 0))
-          .IsApplicable(context.get(), transformation_context));
-  // Bad: id 100 of memory semantics instruction does not exist.
-  ASSERT_FALSE(
-      TransformationLoad(60, 38, true, 21, 100,
-                         MakeInstructionDescriptor(40, SpvOpAccessChain, 0))
-          .IsApplicable(context.get(), transformation_context));
-  // Bad: memory scope should be |OpConstant| opcode.
-  ASSERT_FALSE(
-      TransformationLoad(60, 38, true, 5, 23,
-                         MakeInstructionDescriptor(40, SpvOpAccessChain, 0))
-          .IsApplicable(context.get(), transformation_context));
-  // Bad: memory semantics should be |OpConstant| opcode.
-  ASSERT_FALSE(
-      TransformationLoad(60, 38, true, 21, 5,
-                         MakeInstructionDescriptor(40, SpvOpAccessChain, 0))
-          .IsApplicable(context.get(), transformation_context));
-
-  // Bad: The memory scope instruction must have an Integer operand.
-  ASSERT_FALSE(
-      TransformationLoad(60, 38, true, 19, 23,
-                         MakeInstructionDescriptor(40, SpvOpAccessChain, 0))
-          .IsApplicable(context.get(), transformation_context));
-  // Bad: The memory memory semantics instruction must have an Integer operand.
-  ASSERT_FALSE(
-      TransformationLoad(60, 38, true, 21, 19,
-                         MakeInstructionDescriptor(40, SpvOpAccessChain, 0))
-          .IsApplicable(context.get(), transformation_context));
-
-  // Bad: Integer size of the memory scope must be equal to 32 bits.
-  ASSERT_FALSE(
-      TransformationLoad(60, 38, true, 17, 23,
-                         MakeInstructionDescriptor(40, SpvOpAccessChain, 0))
-          .IsApplicable(context.get(), transformation_context));
-
-  // Bad: Integer size of memory semantics must be equal to 32 bits.
-  ASSERT_FALSE(
-      TransformationLoad(60, 38, true, 21, 17,
-                         MakeInstructionDescriptor(40, SpvOpAccessChain, 0))
-          .IsApplicable(context.get(), transformation_context));
-
-  // Bad: memory scope value must be 4 (SpvScopeInvocation).
-  ASSERT_FALSE(
-      TransformationLoad(60, 38, true, 14, 23,
-                         MakeInstructionDescriptor(40, SpvOpAccessChain, 0))
-          .IsApplicable(context.get(), transformation_context));
-
-  // Bad: memory semantics value must be either:
-  // 64 (SpvMemorySemanticsUniformMemoryMask)
-  // 256 (SpvMemorySemanticsWorkgroupMemoryMask)
-  ASSERT_FALSE(
-      TransformationLoad(60, 38, true, 21, 14,
-                         MakeInstructionDescriptor(40, SpvOpAccessChain, 0))
-          .IsApplicable(context.get(), transformation_context));
-
-  // Bad: The described instruction does not exist
+  // Bad: Can't insert OppAccessChin before the id 23 of memory scope.
   ASSERT_FALSE(
       TransformationLoad(60, 38, false, 21, 23,
-                         MakeInstructionDescriptor(150, SpvOpAccessChain, 0))
+                         MakeInstructionDescriptor(23, SpvOpAccessChain, 0))
+          .IsApplicable(context.get(), transformation_context));
+
+  // Bad: Can't insert OppAccessChin before the id 23 of memory semantics.
+  ASSERT_FALSE(
+      TransformationLoad(60, 38, false, 21, 23,
+                         MakeInstructionDescriptor(21, SpvOpAccessChain, 0))
           .IsApplicable(context.get(), transformation_context));
 
   // Successful transformations.

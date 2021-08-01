@@ -39,15 +39,19 @@ void FuzzerPassAddLoads::Apply() {
                "The opcode of the instruction we might insert before must be "
                "the same as the opcode in the descriptor for the instruction");
 
-        // Check whether it is legitimate to insert a load before this
-        // instruction.
-        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, inst_it)) {
-          return;
-        }
-
         // Randomly decide whether to try inserting a load here.
         if (!GetFuzzerContext()->ChoosePercentage(
                 GetFuzzerContext()->GetChanceOfAddingLoad())) {
+          return;
+        }
+
+        // Check whether it is legitimate to insert a load or atomicLoad before
+        // this instruction.
+        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, inst_it)) {
+          return;
+        }
+        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpAtomicLoad,
+                                                          inst_it)) {
           return;
         }
 
@@ -80,14 +84,37 @@ void FuzzerPassAddLoads::Apply() {
           return;
         }
 
+        auto choosen_instruction =
+            relevant_instructions[GetFuzzerContext()->RandomIndex(
+                relevant_instructions)];
+
+        bool is_atomic_load = false;
+        uint32_t memory_scope_id = 0;
+        uint32_t memory_semtantics_id = 0;
+
+        // has work group or storage buffer (storage class)
+        if (choosen_instruction) {
+          if (GetFuzzerContext()->ChoosePercentage(
+                  GetFuzzerContext()->GetChanceOfAddingAtomicLoad())) {
+            is_atomic_load = true;
+            memory_scope_id =
+                FindOrCreateConstant({SpvScopeInvocation},
+                                     FindOrCreateIntegerType(32, false), false);
+            memory_semtantics_id =
+                FindOrCreateConstant(/*NOTE: I think the value(Words) here needs
+                                        to be selected under a condition? */
+                                     {SpvMemorySemanticsWorkgroupMemoryMask,
+                                      SpvMemorySemanticsUniformMemoryMask},
+                                     FindOrCreateIntegerType(32, false), false);
+          }
+        }
+
         // Choose a pointer at random, and create and apply a loading
         // transformation based on it.
         ApplyTransformation(TransformationLoad(
-            GetFuzzerContext()->GetFreshId(),
-            relevant_instructions[GetFuzzerContext()->RandomIndex(
-                                      relevant_instructions)]
-                ->result_id(),
-            false, 0, 0, instruction_descriptor));
+            GetFuzzerContext()->GetFreshId(), choosen_instruction->result_id(),
+            is_atomic_load, memory_scope_id, memory_semtantics_id,
+            instruction_descriptor));
       });
 }
 

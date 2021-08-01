@@ -42,6 +42,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfAddingAnotherPassToPassLoop = {50,
 const std::pair<uint32_t, uint32_t> kChanceOfAddingAnotherStructField = {20,
                                                                          90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingArrayOrStructType = {20, 90};
+const std::pair<uint32_t, uint32_t> KChanceOfAddingAtomicLoad = {30, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfAddingBitInstructionSynonym = {5,
                                                                             20};
 const std::pair<uint32_t, uint32_t>
@@ -216,6 +217,8 @@ FuzzerContext::FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
       ChooseBetweenMinAndMax(kChanceOfAddingAnotherStructField);
   chance_of_adding_array_or_struct_type_ =
       ChooseBetweenMinAndMax(kChanceOfAddingArrayOrStructType);
+  chance_of_adding_atomic_load_ =
+      ChooseBetweenMinAndMax(KChanceOfAddingAtomicLoad);
   chance_of_adding_bit_instruction_synonym_ =
       ChooseBetweenMinAndMax(kChanceOfAddingBitInstructionSynonym);
   chance_of_adding_both_branches_when_replacing_opselect_ =
