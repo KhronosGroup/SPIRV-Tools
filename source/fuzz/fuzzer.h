@@ -63,7 +63,7 @@ class Fuzzer {
          bool enable_all_passes, RepeatedPassStrategy repeated_pass_strategy,
          bool validate_after_each_fuzzer_pass,
          spv_validator_options validator_options,
-         bool ignore_inapplicable_transformations);
+         bool ignore_inapplicable_transformations = true);
 
   // Disables copy/move constructor/assignment operations.
   Fuzzer(const Fuzzer&) = delete;

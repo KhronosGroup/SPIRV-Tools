@@ -111,7 +111,7 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
                RepeatedPassStrategy repeated_pass_strategy,
                bool validate_after_each_fuzzer_pass,
                spv_validator_options validator_options,
-               bool ignore_inapplicable_transformations)
+               bool ignore_inapplicable_transformations /* = true */)
     : consumer_(std::move(consumer)),
       enable_all_passes_(enable_all_passes),
       validate_after_each_fuzzer_pass_(validate_after_each_fuzzer_pass),
