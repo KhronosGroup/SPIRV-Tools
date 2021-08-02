@@ -84,7 +84,7 @@ void FuzzerPassAddLoads::Apply() {
           return;
         }
 
-        auto choosen_instruction =
+        auto chosen_instruction =
             relevant_instructions[GetFuzzerContext()->RandomIndex(
                 relevant_instructions)];
 
@@ -93,26 +93,36 @@ void FuzzerPassAddLoads::Apply() {
         uint32_t memory_semtantics_id = 0;
 
         // has work group or storage buffer (storage class)
-        if (choosen_instruction) {
+        if (chosen_instruction->GetInOperand(0).words[0] ==
+                SpvMemorySemanticsUniformMemoryMask ||
+            chosen_instruction->GetInOperand(0).words[0] ==
+                SpvMemorySemanticsWorkgroupMemoryMask) {
           if (GetFuzzerContext()->ChoosePercentage(
                   GetFuzzerContext()->GetChanceOfAddingAtomicLoad())) {
             is_atomic_load = true;
-            memory_scope_id =
-                FindOrCreateConstant({SpvScopeInvocation},
-                                     FindOrCreateIntegerType(32, false), false);
-            memory_semtantics_id =
-                FindOrCreateConstant(/*NOTE: I think the value(Words) here needs
-                                        to be selected under a condition? */
-                                     {SpvMemorySemanticsWorkgroupMemoryMask,
-                                      SpvMemorySemanticsUniformMemoryMask},
-                                     FindOrCreateIntegerType(32, false), false);
+
+            memory_scope_id = FindOrCreateConstant(
+                {SpvScopeInvocation},
+                FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
+                false);
+
+            memory_semtantics_id = FindOrCreateConstant(
+                {static_cast<uint32_t>(
+                    chosen_instruction->GetInOperand(0).words[0] ==
+                            SpvMemorySemanticsUniformMemoryMask
+                        ? SpvMemorySemanticsUniformMemoryMask
+                        : SpvMemorySemanticsUniformMemoryMask)},
+                FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
+                false);
           }
         }
 
-        // Choose a pointer at random, and create and apply a loading
-        // transformation based on it.
+        // Choose a pointer at random, also choose a probabilistic chance for
+        // atomic load, if atomic load become true so will create constants for
+        // memory scope and semantics else they will be still zero, then create
+        // and apply a loading transformation based on a pointer and is_atomic.
         ApplyTransformation(TransformationLoad(
-            GetFuzzerContext()->GetFreshId(), choosen_instruction->result_id(),
+            GetFuzzerContext()->GetFreshId(), chosen_instruction->result_id(),
             is_atomic_load, memory_scope_id, memory_semtantics_id,
             instruction_descriptor));
       });

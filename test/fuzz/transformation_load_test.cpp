@@ -517,15 +517,15 @@ TEST(TransformationLoadTest, AtomicLoadTestCaseForWorkgroupMemory) {
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
-  // Bad: Can't insert OppAccessChin before the id 23 of memory scope.
+  // Bad: Can't insert OpAccessChain before the id 23 of memory scope.
   ASSERT_FALSE(
-      TransformationLoad(60, 38, false, 21, 23,
+      TransformationLoad(60, 38, true, 21, 23,
                          MakeInstructionDescriptor(23, SpvOpAccessChain, 0))
           .IsApplicable(context.get(), transformation_context));
 
-  // Bad: Can't insert OppAccessChin before the id 23 of memory semantics.
+  // Bad: Can't insert OpAccessChain before the id 23 of memory semantics.
   ASSERT_FALSE(
-      TransformationLoad(60, 38, false, 21, 23,
+      TransformationLoad(60, 38, true, 21, 23,
                          MakeInstructionDescriptor(21, SpvOpAccessChain, 0))
           .IsApplicable(context.get(), transformation_context));
 
