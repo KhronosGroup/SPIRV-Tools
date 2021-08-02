@@ -23,7 +23,7 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
-TEST(TransformationStoreTest, DISABLED_BasicTest) {
+TEST(TransformationStoreTest, BasicTest) {
   std::string shader = R"(
                OpCapability Shader
                OpCapability VariablePointers
