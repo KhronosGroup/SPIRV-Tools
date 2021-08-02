@@ -92,36 +92,35 @@ void FuzzerPassAddLoads::Apply() {
         uint32_t memory_scope_id = 0;
         uint32_t memory_semtantics_id = 0;
 
-        if (chosen_instruction->opcode() == SpvOpAccessChain) {
-          auto storage_class = GetIRContext()
-                                   ->get_def_use_mgr()
-                                   ->GetDef(chosen_instruction->type_id())
-                                   ->GetInOperand(0)
-                                   .words[0];
-          if (storage_class == SpvStorageClassUniform ||
-              storage_class == SpvStorageClassStorageBuffer ||
-              storage_class == SpvStorageClassWorkgroup ||
-              storage_class == SpvStorageClassFunction ||
-              storage_class == SpvStorageClassPrivate) {
-            if (GetFuzzerContext()->ChoosePercentage(
-                    GetFuzzerContext()->GetChanceOfAddingAtomicLoad())) {
-              is_atomic_load = true;
+        auto storage_class = GetIRContext()
+                                 ->get_def_use_mgr()
+                                 ->GetDef(chosen_instruction->type_id())
+                                 ->GetInOperand(0)
+                                 .words[0];
 
-              memory_scope_id = FindOrCreateConstant(
-                  {SpvScopeInvocation},
-                  FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
-                  false);
+        if (storage_class == SpvStorageClassUniform ||
+            storage_class == SpvStorageClassStorageBuffer ||
+            storage_class == SpvStorageClassWorkgroup) {
+          if (GetFuzzerContext()->ChoosePercentage(
+                  GetFuzzerContext()->GetChanceOfAddingAtomicLoad())) {
+            is_atomic_load = true;
 
-              memory_semtantics_id = FindOrCreateConstant(
-                  {static_cast<uint32_t>(
-                      storage_class == SpvStorageClassWorkgroup
-                          ? SpvMemorySemanticsWorkgroupMemoryMask
-                          : storage_class == SpvStorageClassUniform
-                                ? SpvMemorySemanticsUniformMemoryMask
-                                : SpvMemorySemanticsUniformMemoryMask)},
-                  FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
-                  false);
+            memory_scope_id = FindOrCreateConstant(
+                {SpvScopeInvocation},
+                FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
+                false);
+            uint32_t words = 0;
+            if (storage_class == SpvStorageClassWorkgroup) {
+              words =
+                  static_cast<uint32_t>(SpvMemorySemanticsWorkgroupMemoryMask);
+            } else if (storage_class == SpvStorageClassUniform) {
+              words =
+                  static_cast<uint32_t>(SpvMemorySemanticsUniformMemoryMask);
             }
+            memory_semtantics_id = FindOrCreateConstant(
+                {words},
+                FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
+                false);
           }
         }
 
