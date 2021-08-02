@@ -28,7 +28,8 @@ class TransformationStore : public Transformation {
   explicit TransformationStore(protobufs::TransformationStore message);
 
   TransformationStore(
-      uint32_t pointer_id, uint32_t value_id,
+      uint32_t pointer_id, bool is_atomic, uint32_t memory_scope,
+      uint32_t memory_semantics, uint32_t value_id,
       const protobufs::InstructionDescriptor& instruction_to_insert_before);
 
   // - |message_.pointer_id| must be the id of a pointer
@@ -40,6 +41,14 @@ class TransformationStore : public Transformation {
   //   before which it is valid to insert an OpStore, and where both
   //   |message_.pointer_id| and |message_.value_id| are available (according
   //   to dominance rules)
+  // - |message_.is_atomic| must be true if want to work with OpAtomicLoad
+  // - |message_.memory_scope_id| if |is_atomic| is true then this must be the
+  // id of an OpConstant 32 bit integer instruction with the value
+  // SpvScopeInvocation.
+  // - |message_.memory_semantics_id| if |is_atomic| is true then this must be
+  // the id of an OpConstant 32 bit integer instruction with the values
+  // SpvMemorySemanticsWorkgroupMemoryMask or
+  // SpvMemorySemanticsUniformMemoryMask.
   // - Either the insertion point must be in a dead block, or it must be known
   //   that the pointee value of |message_.pointer_id| is irrelevant
   bool IsApplicable(
