@@ -35,20 +35,20 @@ class TransformationStore : public Transformation {
   // - |message_.pointer_id| must be the id of a pointer
   // - The pointer type must not have read-only storage class
   // - The pointer must not be OpConstantNull or OpUndef
+  // - |message_.is_atomic| must be true if want to work with OpAtomicStore.
+  // - If |is_atomic| is true then |message_memory_scope_id| must be the id of
+  //   an OpConstant 32 bit integer instruction with the value
+  //   SpvScopeInvocation.
+  // - If |is_atomic| is true then |message_.memory_semantics_id| must be the id
+  //   of an OpConstant 32 bit integer instruction with the values
+  //   SpvMemorySemanticsWorkgroupMemoryMask or
+  //   SpvMemorySemanticsUniformMemoryMask.
   // - |message_.value_id| must be an instruction result id that has the same
   //   type as the pointee type of |message_.pointer_id|
   // - |message_.instruction_to_insert_before| must identify an instruction
   //   before which it is valid to insert an OpStore, and where both
   //   |message_.pointer_id| and |message_.value_id| are available (according
   //   to dominance rules)
-  // - |message_.is_atomic| must be true if want to work with OpAtomicLoad
-  // - |message_.memory_scope_id| if |is_atomic| is true then this must be the
-  // id of an OpConstant 32 bit integer instruction with the value
-  // SpvScopeInvocation.
-  // - |message_.memory_semantics_id| if |is_atomic| is true then this must be
-  // the id of an OpConstant 32 bit integer instruction with the values
-  // SpvMemorySemanticsWorkgroupMemoryMask or
-  // SpvMemorySemanticsUniformMemoryMask.
   // - Either the insertion point must be in a dead block, or it must be known
   //   that the pointee value of |message_.pointer_id| is irrelevant
   bool IsApplicable(
@@ -61,6 +61,10 @@ class TransformationStore : public Transformation {
   // |message_.instruction_to_insert_before|.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  // Returns memory semantics mask for specific storage class.
+  static SpvMemorySemanticsMask GetMemorySemanticsForStorageClass(
+      SpvStorageClass storage_class);
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
 

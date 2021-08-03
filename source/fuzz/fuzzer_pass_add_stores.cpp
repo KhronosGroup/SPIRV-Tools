@@ -123,40 +123,46 @@ void FuzzerPassAddStores::Apply() {
 
         bool is_atomic_store = false;
         uint32_t memory_scope_id = 0;
-        uint32_t memory_semtantics_id = 0;
+        uint32_t memory_semantics_id = 0;
 
-        if (pointer->GetInOperand(0).words[0] ==
-                SpvMemorySemanticsUniformMemoryMask ||
-            pointer->GetInOperand(0).words[0] ==
-                SpvMemorySemanticsWorkgroupMemoryMask) {
-          if (GetFuzzerContext()->ChoosePercentage(
-                  GetFuzzerContext()->GetChanceOfAddingAtomicStore())) {
-            is_atomic_store = true;
+        auto storage_class = GetIRContext()
+                                 ->get_def_use_mgr()
+                                 ->GetDef(pointer->type_id())
+                                 ->GetSingleWordInOperand(0);
 
-            memory_scope_id = FindOrCreateConstant(
-                {SpvScopeInvocation},
-                FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
-                false);
+        switch (storage_class) {
+          case SpvStorageClassStorageBuffer:
+          case SpvStorageClassPhysicalStorageBuffer:
+          case SpvStorageClassWorkgroup:
+          case SpvStorageClassCrossWorkgroup:
+          case SpvStorageClassAtomicCounter:
+          case SpvStorageClassImage:
+            if (GetFuzzerContext()->ChoosePercentage(
+                    GetFuzzerContext()->GetChanceOfAddingAtomicStore())) {
+              is_atomic_store = true;
 
-            memory_semtantics_id = FindOrCreateConstant(
-                {static_cast<uint32_t>(
-                    pointer->GetInOperand(0).words[0] ==
-                            SpvMemorySemanticsUniformMemoryMask
-                        ? SpvMemorySemanticsUniformMemoryMask
-                        : SpvMemorySemanticsUniformMemoryMask)},
-                FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
-                false);
-          }
+              memory_scope_id = FindOrCreateConstant(
+                  {SpvScopeInvocation},
+                  FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
+                  false);
+
+              memory_semantics_id = FindOrCreateConstant(
+                  {static_cast<uint32_t>(
+                      TransformationStore::GetMemorySemanticsForStorageClass(
+                          static_cast<SpvStorageClass>(storage_class)))},
+                  FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
+                  false);
+            }
+            break;
+
+          default:
+            break;
         }
 
-        // Choose a value at random, also choose a probabilistic chance for
-        // atomic store, if atomic store become true so will create constants
-        // for memory scope and semantics else they will be still zero, then
-        // create and apply a storing transformation based on a pointer and
-        // is_atomic_store.
+        // Create and apply the transformation.
         ApplyTransformation(TransformationStore(
             pointer->result_id(), is_atomic_store, memory_scope_id,
-            memory_semtantics_id,
+            memory_semantics_id,
             relevant_values[GetFuzzerContext()->RandomIndex(relevant_values)]
                 ->result_id(),
             instruction_descriptor));

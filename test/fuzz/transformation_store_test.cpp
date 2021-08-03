@@ -383,7 +383,7 @@ TEST(TransformationStoreTest, BasicTest) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
-TEST(TransformationStoreTest, DISABLED_DoNotAllowStoresToReadOnlyMemory) {
+TEST(TransformationStoreTest, DoNotAllowStoresToReadOnlyMemory) {
   std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"

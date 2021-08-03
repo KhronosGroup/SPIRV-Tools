@@ -159,13 +159,11 @@ bool TransformationStore::IsApplicable(
     auto memory_scope_int_width =
         ir_context->get_def_use_mgr()
             ->GetDef(memory_scope_instruction->type_id())
-            ->GetInOperand(0)
-            .words[0];
+            ->GetSingleWordInOperand(0);
     auto memory_semantics_int_width =
         ir_context->get_def_use_mgr()
             ->GetDef(memory_semantics_instruction->type_id())
-            ->GetInOperand(0)
-            .words[0];
+            ->GetSingleWordInOperand(0);
 
     if (memory_scope_int_width != 32) {
       return false;
@@ -176,18 +174,18 @@ bool TransformationStore::IsApplicable(
 
     // The memory scope constant value must be that of SpvScopeInvocation.
     auto memory_scope_const_value =
-        memory_scope_instruction->GetInOperand(0).words[0];
+        memory_scope_instruction->GetSingleWordInOperand(0);
     if (memory_scope_const_value != SpvScopeInvocation) {
       return false;
     }
 
-    // The memory semantics constant value must be either
-    // SpvMemorySemanticsWorkgroupMemoryMask or
-    // SpvMemorySemanticsUniformMemoryMask.
-    auto memory_semantics_const_value =
-        memory_semantics_instruction->GetInOperand(0).words[0];
-    if (memory_semantics_const_value != SpvMemorySemanticsUniformMemoryMask &&
-        memory_semantics_const_value != SpvMemorySemanticsWorkgroupMemoryMask) {
+    // The memory semantics constant value must match the storage class of the
+    // pointer being loaded from.
+    auto memory_semantics_const_value = static_cast<SpvMemorySemanticsMask>(
+        memory_semantics_instruction->GetSingleWordInOperand(0));
+    if (memory_semantics_const_value !=
+        GetMemorySemanticsForStorageClass(static_cast<SpvStorageClass>(
+            pointer_type->GetSingleWordInOperand(0)))) {
       return false;
     }
   }
@@ -235,6 +233,30 @@ void TransformationStore::Apply(opt::IRContext* ir_context,
     ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);
     ir_context->set_instr_block(new_instruction_ptr,
                                 ir_context->get_instr_block(insert_before));
+  }
+}
+
+SpvMemorySemanticsMask TransformationStore::GetMemorySemanticsForStorageClass(
+    SpvStorageClass storage_class) {
+  switch (storage_class) {
+    case SpvStorageClassWorkgroup:
+      return SpvMemorySemanticsWorkgroupMemoryMask;
+
+    case SpvStorageClassStorageBuffer:
+    case SpvStorageClassPhysicalStorageBuffer:
+      return SpvMemorySemanticsUniformMemoryMask;
+
+    case SpvStorageClassCrossWorkgroup:
+      return SpvMemorySemanticsCrossWorkgroupMemoryMask;
+
+    case SpvStorageClassAtomicCounter:
+      return SpvMemorySemanticsAtomicCounterMemoryMask;
+
+    case SpvStorageClassImage:
+      return SpvMemorySemanticsImageMemoryMask;
+
+    default:
+      return SpvMemorySemanticsMaskNone;
   }
 }
 
