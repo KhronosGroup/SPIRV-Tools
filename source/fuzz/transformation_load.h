@@ -35,13 +35,13 @@ class TransformationLoad : public Transformation {
   // - |message_.fresh_id| must be fresh
   // - |message_.pointer_id| must be the id of a pointer
   // - |message_.is_atomic| must be true if want to work with OpAtomicLoad
-  // - |message_.memory_scope_id| if |is_atomic| is true then this must be the
-  // id of an OpConstant 32 bit integer instruction with the value
-  // SpvScopeInvocation.
-  // - |message_.memory_semantics_id| if |is_atomic| is true then this must be
-  // the id of an OpConstant 32 bit integer instruction with the values
-  // SpvMemorySemanticsWorkgroupMemoryMask or
-  // SpvMemorySemanticsUniformMemoryMask.
+  // - If |is_atomic| is true then |message_memory_scope_id| must be the id of
+  //   an OpConstant 32 bit integer instruction with the value
+  //   SpvScopeInvocation.
+  // - If |is_atomic| is true then |message_.memory_semantics_id| must be the id
+  //   of an OpConstant 32 bit integer instruction with the values
+  //   SpvMemorySemanticsWorkgroupMemoryMask or
+  //   SpvMemorySemanticsUniformMemoryMask.
   // - The pointer must not be OpConstantNull or OpUndef
   // - |message_.instruction_to_insert_before| must identify an instruction
   //   before which it is valid to insert an OpLoad, and where
@@ -59,7 +59,8 @@ class TransformationLoad : public Transformation {
              TransformationContext* transformation_context) const override;
 
   // Returns memory semantics mask for specific storage class.
-  static uint32_t GetMemorySemanticsForStorageClass(uint32_t storage_class);
+  static SpvMemorySemanticsMask GetMemorySemanticsForStorageClass(
+      uint32_t storage_class);
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
 

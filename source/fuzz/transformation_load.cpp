@@ -153,9 +153,8 @@ bool TransformationLoad::IsApplicable(
       return false;
     }
 
-    // The memory semantics constant value must be either
-    // SpvMemorySemanticsWorkgroupMemoryMask or
-    // SpvMemorySemanticsUniformMemoryMask.
+    // The memory semantics constant value must match the storage class of the
+    // pointer being loaded from.
     auto memory_semantics_const_value =
         memory_semantics_instruction->GetSingleWordInOperand(0);
     if (memory_semantics_const_value !=
@@ -214,27 +213,27 @@ void TransformationLoad::Apply(opt::IRContext* ir_context,
   }
 }
 
-uint32_t TransformationLoad::GetMemorySemanticsForStorageClass(
+SpvMemorySemanticsMask TransformationLoad::GetMemorySemanticsForStorageClass(
     uint32_t storage_class) {
   switch (storage_class) {
     case SpvStorageClassWorkgroup:
-      return static_cast<uint32_t>(SpvMemorySemanticsWorkgroupMemoryMask);
+      return SpvMemorySemanticsWorkgroupMemoryMask;
 
     case SpvStorageClassStorageBuffer:
     case SpvStorageClassPhysicalStorageBuffer:
-      return static_cast<uint32_t>(SpvMemorySemanticsUniformMemoryMask);
+      return SpvMemorySemanticsUniformMemoryMask;
 
     case SpvStorageClassCrossWorkgroup:
-      return static_cast<uint32_t>(SpvMemorySemanticsCrossWorkgroupMemoryMask);
+      return SpvMemorySemanticsCrossWorkgroupMemoryMask;
 
     case SpvStorageClassAtomicCounter:
-      return static_cast<uint32_t>(SpvMemorySemanticsAtomicCounterMemoryMask);
+      return SpvMemorySemanticsAtomicCounterMemoryMask;
 
     case SpvStorageClassImage:
-      return static_cast<uint32_t>(SpvMemorySemanticsImageMemoryMask);
+      return SpvMemorySemanticsImageMemoryMask;
 
     default:
-      return 0;
+      return SpvMemorySemanticsMaskNone;
   }
 }
 

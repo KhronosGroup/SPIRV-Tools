@@ -90,7 +90,7 @@ void FuzzerPassAddLoads::Apply() {
 
         bool is_atomic_load = false;
         uint32_t memory_scope_id = 0;
-        uint32_t memory_semtantics_id = 0;
+        uint32_t memory_semantics_id = 0;
 
         auto storage_class = GetIRContext()
                                  ->get_def_use_mgr()
@@ -113,9 +113,10 @@ void FuzzerPassAddLoads::Apply() {
                   FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
                   false);
 
-              memory_semtantics_id = FindOrCreateConstant(
-                  {TransformationLoad::GetMemorySemanticsForStorageClass(
-                      storage_class)},
+              memory_semantics_id = FindOrCreateConstant(
+                  {static_cast<uint32_t>(
+                      TransformationLoad::GetMemorySemanticsForStorageClass(
+                          storage_class))},
                   FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
                   false);
             }
@@ -128,7 +129,7 @@ void FuzzerPassAddLoads::Apply() {
         // Create and apply the transformation.
         ApplyTransformation(TransformationLoad(
             GetFuzzerContext()->GetFreshId(), chosen_instruction->result_id(),
-            is_atomic_load, memory_scope_id, memory_semtantics_id,
+            is_atomic_load, memory_scope_id, memory_semantics_id,
             instruction_descriptor));
       });
 }
