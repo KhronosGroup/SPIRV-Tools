@@ -60,7 +60,7 @@ class TransformationLoad : public Transformation {
 
   // Returns memory semantics mask for specific storage class.
   static SpvMemorySemanticsMask GetMemorySemanticsForStorageClass(
-      uint32_t storage_class);
+      SpvStorageClass storage_class);
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
 

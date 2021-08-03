@@ -155,11 +155,11 @@ bool TransformationLoad::IsApplicable(
 
     // The memory semantics constant value must match the storage class of the
     // pointer being loaded from.
-    auto memory_semantics_const_value =
-        memory_semantics_instruction->GetSingleWordInOperand(0);
+    auto memory_semantics_const_value = static_cast<SpvMemorySemanticsMask>(
+        memory_semantics_instruction->GetSingleWordInOperand(0));
     if (memory_semantics_const_value !=
-        GetMemorySemanticsForStorageClass(
-            pointer_type->GetSingleWordInOperand(0))) {
+        GetMemorySemanticsForStorageClass(static_cast<SpvStorageClass>(
+            pointer_type->GetSingleWordInOperand(0)))) {
       return false;
     }
   }
@@ -214,7 +214,7 @@ void TransformationLoad::Apply(opt::IRContext* ir_context,
 }
 
 SpvMemorySemanticsMask TransformationLoad::GetMemorySemanticsForStorageClass(
-    uint32_t storage_class) {
+    SpvStorageClass storage_class) {
   switch (storage_class) {
     case SpvStorageClassWorkgroup:
       return SpvMemorySemanticsWorkgroupMemoryMask;

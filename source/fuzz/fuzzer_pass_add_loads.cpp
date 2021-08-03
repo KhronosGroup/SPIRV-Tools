@@ -116,7 +116,7 @@ void FuzzerPassAddLoads::Apply() {
               memory_semantics_id = FindOrCreateConstant(
                   {static_cast<uint32_t>(
                       TransformationLoad::GetMemorySemanticsForStorageClass(
-                          storage_class))},
+                          static_cast<SpvStorageClass>(storage_class)))},
                   FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
                   false);
             }
