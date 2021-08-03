@@ -144,6 +144,7 @@ class FuzzerContext {
   }
   uint32_t GetChanceOfAddingAtomicLoad() const {
     return chance_of_adding_atomic_load_;
+  }
   uint32_t GetChanceOfAddingAtomicStore() const {
     return chance_of_adding_atomic_store_;
   }
