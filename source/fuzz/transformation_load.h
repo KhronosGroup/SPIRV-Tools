@@ -58,6 +58,9 @@ class TransformationLoad : public Transformation {
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
+  // Returns memory semantics mask for specific storage class.
+  static uint32_t GetMemorySemanticsForStorageClass(uint32_t storage_class);
+
   std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;

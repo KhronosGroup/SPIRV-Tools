@@ -45,7 +45,7 @@ void FuzzerPassAddLoads::Apply() {
           return;
         }
 
-        // Check whether it is legitimate to insert a load or atomicLoad before
+        // Check whether it is legitimate to insert a load or atomic load before
         // this instruction.
         if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpLoad, inst_it)) {
           return;
@@ -95,33 +95,34 @@ void FuzzerPassAddLoads::Apply() {
         auto storage_class = GetIRContext()
                                  ->get_def_use_mgr()
                                  ->GetDef(chosen_instruction->type_id())
-                                 ->GetInOperand(0)
-                                 .words[0];
+                                 ->GetSingleWordInOperand(0);
 
-        if (storage_class == SpvStorageClassUniform ||
-            storage_class == SpvStorageClassStorageBuffer ||
-            storage_class == SpvStorageClassWorkgroup) {
-          if (GetFuzzerContext()->ChoosePercentage(
-                  GetFuzzerContext()->GetChanceOfAddingAtomicLoad())) {
-            is_atomic_load = true;
+        switch (storage_class) {
+          case SpvStorageClassStorageBuffer:
+          case SpvStorageClassPhysicalStorageBuffer:
+          case SpvStorageClassWorkgroup:
+          case SpvStorageClassCrossWorkgroup:
+          case SpvStorageClassAtomicCounter:
+          case SpvStorageClassImage:
+            if (GetFuzzerContext()->ChoosePercentage(
+                    GetFuzzerContext()->GetChanceOfAddingAtomicLoad())) {
+              is_atomic_load = true;
 
-            memory_scope_id = FindOrCreateConstant(
-                {SpvScopeInvocation},
-                FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
-                false);
-            uint32_t words = 0;
-            if (storage_class == SpvStorageClassWorkgroup) {
-              words =
-                  static_cast<uint32_t>(SpvMemorySemanticsWorkgroupMemoryMask);
-            } else if (storage_class == SpvStorageClassUniform) {
-              words =
-                  static_cast<uint32_t>(SpvMemorySemanticsUniformMemoryMask);
+              memory_scope_id = FindOrCreateConstant(
+                  {SpvScopeInvocation},
+                  FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
+                  false);
+
+              memory_semtantics_id = FindOrCreateConstant(
+                  {TransformationLoad::GetMemorySemanticsForStorageClass(
+                      storage_class)},
+                  FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
+                  false);
             }
-            memory_semtantics_id = FindOrCreateConstant(
-                {words},
-                FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
-                false);
-          }
+            break;
+
+          default:
+            break;
         }
 
         // Create and apply the transformation.

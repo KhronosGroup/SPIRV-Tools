@@ -133,13 +133,11 @@ bool TransformationLoad::IsApplicable(
     auto memory_scope_int_width =
         ir_context->get_def_use_mgr()
             ->GetDef(memory_scope_instruction->type_id())
-            ->GetInOperand(0)
-            .words[0];
+            ->GetSingleWordInOperand(0);
     auto memory_semantics_int_width =
         ir_context->get_def_use_mgr()
             ->GetDef(memory_semantics_instruction->type_id())
-            ->GetInOperand(0)
-            .words[0];
+            ->GetSingleWordInOperand(0);
 
     if (memory_scope_int_width != 32) {
       return false;
@@ -150,7 +148,7 @@ bool TransformationLoad::IsApplicable(
 
     // The memory scope constant value must be that of SpvScopeInvocation.
     auto memory_scope_const_value =
-        memory_scope_instruction->GetInOperand(0).words[0];
+        memory_scope_instruction->GetSingleWordInOperand(0);
     if (memory_scope_const_value != SpvScopeInvocation) {
       return false;
     }
@@ -159,9 +157,10 @@ bool TransformationLoad::IsApplicable(
     // SpvMemorySemanticsWorkgroupMemoryMask or
     // SpvMemorySemanticsUniformMemoryMask.
     auto memory_semantics_const_value =
-        memory_semantics_instruction->GetInOperand(0).words[0];
-    if (memory_semantics_const_value != SpvMemorySemanticsUniformMemoryMask &&
-        memory_semantics_const_value != SpvMemorySemanticsWorkgroupMemoryMask) {
+        memory_semantics_instruction->GetSingleWordInOperand(0);
+    if (memory_semantics_const_value !=
+        GetMemorySemanticsForStorageClass(
+            pointer_type->GetSingleWordInOperand(0))) {
       return false;
     }
   }
@@ -212,6 +211,30 @@ void TransformationLoad::Apply(opt::IRContext* ir_context,
     ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);
     ir_context->set_instr_block(new_instruction_ptr,
                                 ir_context->get_instr_block(insert_before));
+  }
+}
+
+uint32_t TransformationLoad::GetMemorySemanticsForStorageClass(
+    uint32_t storage_class) {
+  switch (storage_class) {
+    case SpvStorageClassWorkgroup:
+      return static_cast<uint32_t>(SpvMemorySemanticsWorkgroupMemoryMask);
+
+    case SpvStorageClassStorageBuffer:
+    case SpvStorageClassPhysicalStorageBuffer:
+      return static_cast<uint32_t>(SpvMemorySemanticsUniformMemoryMask);
+
+    case SpvStorageClassCrossWorkgroup:
+      return static_cast<uint32_t>(SpvMemorySemanticsCrossWorkgroupMemoryMask);
+
+    case SpvStorageClassAtomicCounter:
+      return static_cast<uint32_t>(SpvMemorySemanticsAtomicCounterMemoryMask);
+
+    case SpvStorageClassImage:
+      return static_cast<uint32_t>(SpvMemorySemanticsImageMemoryMask);
+
+    default:
+      return 0;
   }
 }
 
