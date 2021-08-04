@@ -14,6 +14,7 @@ load(
     "generate_vendor_tables",
     "generate_vendor_tables_local",
     "link_test",
+    "lint_test",
     "opt_test",
     "reduce_test",
     "util_test",
@@ -234,6 +235,19 @@ cc_library(
 )
 
 cc_library(
+    name = "spirv_tools_lint",
+    srcs = glob(["source/lint/*.cpp"]),
+    hdrs = ["include/spirv-tools/linter.hpp"],
+    copts = COMMON_COPTS,
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":spirv_tools",
+        ":spirv_tools_opt",
+    ],
+)
+
+cc_library(
     name = "tools_util",
     srcs = glob(["tools/util/*.cpp"]),
     hdrs = glob(["tools/util/*.h"]),
@@ -327,6 +341,20 @@ cc_binary(
     deps = [
         ":spirv_tools",
         ":spirv_tools_link",
+    ],
+)
+
+cc_binary(
+    name = "spirv-lint",
+    srcs = [
+        "tools/lint/lint.cpp",
+    ],
+    copts = COMMON_COPTS,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":spirv_tools",
+        ":spirv_tools_lint",
+        ":tools_util",
     ],
 )
 
@@ -471,6 +499,13 @@ base_test(
     srcs = [f],
 ) for f in glob(
     ["test/link/*.cpp"],
+)]
+
+[lint_test(
+    name = f[10:-4],  # strip test/lint/, .cpp
+    srcs = [f],
+) for f in glob(
+    ["test/lint/*.cpp"],
 )]
 
 [opt_test(
