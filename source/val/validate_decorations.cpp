@@ -554,8 +554,9 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
         for (uint32_t i = 0; i < num_elements; ++i) {
           uint32_t next_offset = i * array_stride + offset;
           // Stop checking if offsets repeat in terms of 16-byte multiples.
-          if (seen[next_offset % 16])
+          if (seen[next_offset % 16]) {
             break;
+          }
 
           if (SPV_SUCCESS !=
               (recursive_status = checkLayout(
