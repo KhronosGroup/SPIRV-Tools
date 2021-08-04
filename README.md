@@ -56,7 +56,7 @@ in the DEPS file.
 The release generally uses the most recent compatible version of SPIRV-Headers
 available at the time of release.
 No version of SPIRV-Headers other than the one listed in the DEPS file is
-guaranteed to work the SPIRV-Tools release.
+guaranteed to work with the SPIRV-Tools release.
 
 ## Supported features
 
