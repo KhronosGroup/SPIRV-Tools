@@ -169,6 +169,10 @@ uint32_t GetArraySize(const opt::Instruction& array_type_instruction,
 uint32_t GetBoundForCompositeIndex(const opt::Instruction& composite_type_inst,
                                    opt::IRContext* ir_context);
 
+// Returns memory semantics mask for specific storage class.
+SpvMemorySemanticsMask GetMemorySemanticsForStorageClass(
+    SpvStorageClass storage_class);
+
 // Returns true if and only if |context| is valid, according to the validator
 // instantiated with |validator_options|.  |consumer| is used for error
 // reporting.

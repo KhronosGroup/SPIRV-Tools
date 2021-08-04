@@ -92,10 +92,11 @@ void FuzzerPassAddLoads::Apply() {
         uint32_t memory_scope_id = 0;
         uint32_t memory_semantics_id = 0;
 
-        auto storage_class = GetIRContext()
-                                 ->get_def_use_mgr()
-                                 ->GetDef(chosen_instruction->type_id())
-                                 ->GetSingleWordInOperand(0);
+        auto storage_class = static_cast<SpvStorageClass>(
+            GetIRContext()
+                ->get_def_use_mgr()
+                ->GetDef(chosen_instruction->type_id())
+                ->GetSingleWordInOperand(0));
 
         switch (storage_class) {
           case SpvStorageClassStorageBuffer:
@@ -115,8 +116,8 @@ void FuzzerPassAddLoads::Apply() {
 
               memory_semantics_id = FindOrCreateConstant(
                   {static_cast<uint32_t>(
-                      TransformationLoad::GetMemorySemanticsForStorageClass(
-                          static_cast<SpvStorageClass>(storage_class)))},
+                      fuzzerutil::GetMemorySemanticsForStorageClass(
+                          storage_class))},
                   FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
                   false);
             }
