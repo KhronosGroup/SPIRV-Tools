@@ -19,8 +19,6 @@
 #include "source/spirv_target_env.h"
 #include "spirv-tools/libspirv.hpp"
 
-ERROR: this should break the clang builds
-
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   if (size < sizeof(spv_target_env) + 1) return 0;
 

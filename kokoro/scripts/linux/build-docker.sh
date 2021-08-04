@@ -82,7 +82,7 @@ if [ $TOOL = "cmake" ]; then
   if [ $COMPILER = "clang" ]; then
     ADDITIONAL_CMAKE_FLAGS="$ADDITIONAL_CMAKE_FLAGS -DSPIRV_BUILD_LIBFUZZER_TARGETS=ON"
   fi
-  
+
   clean_dir "$ROOT_DIR/build"
   cd "$ROOT_DIR/build"
 
