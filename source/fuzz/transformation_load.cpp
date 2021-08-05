@@ -158,8 +158,9 @@ bool TransformationLoad::IsApplicable(
     auto memory_semantics_const_value = static_cast<SpvMemorySemanticsMask>(
         memory_semantics_instruction->GetSingleWordInOperand(0));
     if (memory_semantics_const_value !=
-        GetMemorySemanticsForStorageClass(static_cast<SpvStorageClass>(
-            pointer_type->GetSingleWordInOperand(0)))) {
+        fuzzerutil::GetMemorySemanticsForStorageClass(
+            static_cast<SpvStorageClass>(
+                pointer_type->GetSingleWordInOperand(0)))) {
       return false;
     }
   }
@@ -210,30 +211,6 @@ void TransformationLoad::Apply(opt::IRContext* ir_context,
     ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);
     ir_context->set_instr_block(new_instruction_ptr,
                                 ir_context->get_instr_block(insert_before));
-  }
-}
-
-SpvMemorySemanticsMask TransformationLoad::GetMemorySemanticsForStorageClass(
-    SpvStorageClass storage_class) {
-  switch (storage_class) {
-    case SpvStorageClassWorkgroup:
-      return SpvMemorySemanticsWorkgroupMemoryMask;
-
-    case SpvStorageClassStorageBuffer:
-    case SpvStorageClassPhysicalStorageBuffer:
-      return SpvMemorySemanticsUniformMemoryMask;
-
-    case SpvStorageClassCrossWorkgroup:
-      return SpvMemorySemanticsCrossWorkgroupMemoryMask;
-
-    case SpvStorageClassAtomicCounter:
-      return SpvMemorySemanticsAtomicCounterMemoryMask;
-
-    case SpvStorageClassImage:
-      return SpvMemorySemanticsImageMemoryMask;
-
-    default:
-      return SpvMemorySemanticsMaskNone;
   }
 }
 

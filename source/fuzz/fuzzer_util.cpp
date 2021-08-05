@@ -455,6 +455,30 @@ uint32_t GetBoundForCompositeIndex(const opt::Instruction& composite_type_inst,
   }
 }
 
+SpvMemorySemanticsMask GetMemorySemanticsForStorageClass(
+    SpvStorageClass storage_class) {
+  switch (storage_class) {
+    case SpvStorageClassWorkgroup:
+      return SpvMemorySemanticsWorkgroupMemoryMask;
+
+    case SpvStorageClassStorageBuffer:
+    case SpvStorageClassPhysicalStorageBuffer:
+      return SpvMemorySemanticsUniformMemoryMask;
+
+    case SpvStorageClassCrossWorkgroup:
+      return SpvMemorySemanticsCrossWorkgroupMemoryMask;
+
+    case SpvStorageClassAtomicCounter:
+      return SpvMemorySemanticsAtomicCounterMemoryMask;
+
+    case SpvStorageClassImage:
+      return SpvMemorySemanticsImageMemoryMask;
+
+    default:
+      return SpvMemorySemanticsMaskNone;
+  }
+}
+
 bool IsValid(const opt::IRContext* context,
              spv_validator_options validator_options,
              MessageConsumer consumer) {

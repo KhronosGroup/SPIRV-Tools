@@ -2245,17 +2245,26 @@ message TransformationSplitBlock {
 
 message TransformationStore {
 
-  // Transformation that adds an OpStore instruction of an id to a pointer.
+  // Transformation that adds an OpStore or OpAtomicStore instruction of an id to a pointer.
 
-  // The pointer to be stored to
+  // The pointer to be stored to.
   uint32 pointer_id = 1;
 
-  // The value to be stored
-  uint32 value_id = 2;
+  // True if and only if the load should be atomic.
+  bool is_atomic = 2;
+
+  // The memory scope for the atomic load. Ignored unless |is_atomic| is true.
+  uint32 memory_scope_id = 3;
+
+  // The memory semantics for the atomic load. Ignored unless |is_atomic| is true.
+  uint32 memory_semantics_id = 4;
+
+  // The value to be stored.
+  uint32 value_id = 5;
 
   // A descriptor for an instruction in a block before which the new OpStore
-  // instruction should be inserted
-  InstructionDescriptor instruction_to_insert_before = 3;
+  // instruction should be inserted.
+  InstructionDescriptor instruction_to_insert_before = 6;
 
 }
 
