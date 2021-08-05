@@ -47,7 +47,8 @@ version.  An API call reports the software version as a C-style string.
 
 ## Releases
 
-Some versions of SPIRV-Tools are tagged as stable releases (see tags on github).
+Some versions of SPIRV-Tools are tagged as stable releases (see
+[tags](https://github.com/KhronosGroup/SPIRV-Tools/tags) on github).
 These versions undergo extra testing.
 Releases are not directly related to releases (or versions) of
 [SPIRV-Headers][spirv-headers].
