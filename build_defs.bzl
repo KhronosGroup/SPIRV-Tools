@@ -224,6 +224,23 @@ def base_test(name, srcs, deps = []):
         ] + deps,
     )
 
+def lint_test(name, srcs, deps = []):
+    if name[-5:] != "_test":
+        name = name + "_test"
+    native.cc_test(
+        name = "lint_" + name,
+        srcs = srcs,
+        compatible_with = [],
+        copts = TEST_COPTS,
+        size = "large",
+        deps = [
+            ":spirv_tools_lint",
+            "@com_google_googletest//:gtest_main",
+            "@com_google_googletest//:gtest",
+            "@com_google_effcee//:effcee",
+        ] + deps,
+    )
+
 def link_test(name, srcs, deps = []):
     if name[-5:] != "_test":
         name = name + "_test"

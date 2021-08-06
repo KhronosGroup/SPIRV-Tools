@@ -186,6 +186,7 @@ endif()
 
 
 add_subdirectory(link)
+add_subdirectory(lint)
 add_subdirectory(opt)
 add_subdirectory(reduce)
 add_subdirectory(fuzz)
