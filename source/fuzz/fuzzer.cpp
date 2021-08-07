@@ -49,6 +49,7 @@
 #include "source/fuzz/fuzzer_pass_adjust_memory_operands_masks.h"
 #include "source/fuzz/fuzzer_pass_adjust_selection_controls.h"
 #include "source/fuzz/fuzzer_pass_apply_id_synonyms.h"
+#include "source/fuzz/fuzzer_pass_changing_memory_semantics.h"
 #include "source/fuzz/fuzzer_pass_construct_composites.h"
 #include "source/fuzz/fuzzer_pass_copy_objects.h"
 #include "source/fuzz/fuzzer_pass_donate_modules.h"
@@ -235,6 +236,7 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
   MaybeAddFinalPass<FuzzerPassAdjustMemoryOperandsMasks>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassAdjustSelectionControls>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassAddNoContractionDecorations>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassChangingMemorySemantics>(&final_passes_);
   if (!fuzzer_context_->IsWgslCompatible()) {
     // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4214):
     //  this is disabled temporarily due to some issues in the Tint compiler.
