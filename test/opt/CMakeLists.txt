@@ -31,6 +31,7 @@ add_spvtools_unittest(TARGET opt
        control_dependence.cpp
        convert_relaxed_to_half_test.cpp
        copy_prop_array_test.cpp
+       dataflow.cpp
        dead_branch_elim_test.cpp
        dead_insert_elim_test.cpp
        dead_variable_elim_test.cpp

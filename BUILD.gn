@@ -612,6 +612,8 @@ static_library("spvtools_opt") {
     "source/opt/convert_to_half_pass.h",
     "source/opt/copy_prop_arrays.cpp",
     "source/opt/copy_prop_arrays.h",
+    "source/opt/dataflow.h",
+    "source/opt/dataflow.cpp",
     "source/opt/dead_branch_elim_pass.cpp",
     "source/opt/dead_branch_elim_pass.h",
     "source/opt/dead_insert_elim_pass.cpp",
