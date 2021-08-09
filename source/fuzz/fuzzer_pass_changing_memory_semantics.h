@@ -20,6 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
+// This fuzzer pass changes the memory semantics value for specific atomic
+// operations with a new one.
 class FuzzerPassChangingMemorySemantics : public FuzzerPass {
  public:
   FuzzerPassChangingMemorySemantics(

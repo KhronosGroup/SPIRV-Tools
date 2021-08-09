@@ -31,7 +31,88 @@ FuzzerPassChangingMemorySemantics::FuzzerPassChangingMemorySemantics(
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations, ignore_inapplicable_transformations) {}
 
-void FuzzerPassChangingMemorySemantics::Apply() { return; }
+void FuzzerPassChangingMemorySemantics::Apply() {
+  ForEachInstructionWithInstructionDescriptor(
+      [this](opt::Function* function, opt::BasicBlock* block,
+             opt::BasicBlock::iterator inst_it,
+             const protobufs::InstructionDescriptor& /*unused*/) {
+        if (!GetFuzzerContext()->ChoosePercentage(
+                GetFuzzerContext()->GetChanceOfChangingMemorySemantics())) {
+          return;
+        }
+
+        // Get all atomic instructions.
+        std::vector<opt::Instruction*> atomic_instructions =
+            FindAvailableInstructions(
+                function, block, inst_it,
+                [this](opt::IRContext* /*unused*/,
+                       opt::Instruction* instruction) -> bool {
+                  switch (instruction->opcode()) {
+                    case SpvOpAtomicLoad:
+                    case SpvOpAtomicStore:
+                    case SpvOpAtomicExchange:
+                    case SpvOpAtomicIIncrement:
+                    case SpvOpAtomicIDecrement:
+                    case SpvOpAtomicIAdd:
+                    case SpvOpAtomicISub:
+                    case SpvOpAtomicSMin:
+                    case SpvOpAtomicUMin:
+                    case SpvOpAtomicSMax:
+                    case SpvOpAtomicUMax:
+                    case SpvOpAtomicAnd:
+                    case SpvOpAtomicOr:
+                    case SpvOpAtomicXor:
+                    case SpvOpAtomicFlagTestAndSet:
+                    case SpvOpAtomicFlagClear:
+                    case SpvOpAtomicFAddEXT:
+                    case SpvOpAtomicCompareExchange:
+                    case SpvOpAtomicCompareExchangeWeak:
+                      return true;
+                    default:
+                      return false;
+                  }
+                });
+
+        if (atomic_instructions.empty()) {
+          return;
+        }
+        auto chosen_instruction =
+            atomic_instructions[GetFuzzerContext()->RandomIndex(
+                atomic_instructions)];
+
+        // It will have a value of range from 0 to 3.
+        uint32_t index =
+            GetFuzzerContext()->RandomIndex(atomic_instructions) % 4;
+
+        std::vector<SpvMemorySemanticsMask> memory_semanitcs_masks{
+            SpvMemorySemanticsMaskNone, SpvMemorySemanticsAcquireMask,
+            SpvMemorySemanticsReleaseMask, SpvMemorySemanticsAcquireReleaseMask,
+            SpvMemorySemanticsSequentiallyConsistentMask};
+        uint32_t new_memory_semantics_id = FindOrCreateConstant(
+            {static_cast<uint32_t>(
+                memory_semanitcs_masks[GetFuzzerContext()->RandomIndex(
+                    memory_semanitcs_masks)])},
+            FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
+            false);
+
+        // (NOTE - Need suggestion here) This valid for atomic instructions has
+        // result id only (NOT FINAL).
+        ApplyTransformation(TransformationChangingMemorySemantics(
+            MakeInstructionDescriptor(chosen_instruction->result_id(),
+                                      chosen_instruction->opcode(), 0),
+            index, new_memory_semantics_id));
+        // ANOTHER SOLUTION.
+        /*
+        - First will check instruction related to instruction_descriptor, then
+          check if the instruction is atomic instruction. Then....
+
+        - ApplyTransformation(TransformationChangingMemorySemantics(
+        instruction_descriptor,
+        index, new_memory_semantics_id));
+
+        */
+      });
+}
 
 }  // namespace fuzz
 }  // namespace spvtools

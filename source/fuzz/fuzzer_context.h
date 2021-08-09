@@ -234,6 +234,9 @@ class FuzzerContext {
   uint32_t GetChanceOfCallingFunction() const {
     return chance_of_calling_function_;
   }
+  uint32_t GetChanceOfChangingMemorySemantics() const {
+    return chance_of_changing_memory_semantics_;
+  }
   uint32_t GetChanceOfChoosingStructTypeVsArrayType() const {
     return chance_of_choosing_struct_type_vs_array_type_;
   }
@@ -530,6 +533,7 @@ class FuzzerContext {
   uint32_t chance_of_adjusting_memory_operands_mask_;
   uint32_t chance_of_adjusting_selection_control_;
   uint32_t chance_of_calling_function_;
+  uint32_t chance_of_changing_memory_semantics_;
   uint32_t chance_of_choosing_struct_type_vs_array_type_;
   uint32_t chance_of_choosing_workgroup_storage_class_;
   uint32_t chance_of_constructing_composite_;
