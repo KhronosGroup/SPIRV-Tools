@@ -20,8 +20,6 @@ if(MSVC AND (NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")))
   add_definitions(/MP4)
 endif()
 
-spvtools_pch(SPIRV_TOOLS_LINT_SOURCES pch_source_lint)
-
 add_library(SPIRV-Tools-lint ${SPIRV_TOOLS_LIBRARY_TYPE} ${SPIRV_TOOLS_LINT_SOURCES})
 
 spvtools_default_compile_options(SPIRV-Tools-lint)
