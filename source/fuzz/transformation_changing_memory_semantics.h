@@ -49,10 +49,17 @@ class TransformationChangingMemorySemantics : public Transformation {
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
+  // Check if instruction is atomic instruction only. Check if Memory semantics
+  // operand Index equal to 0 or 1. Check if operand index equal to 0 in the
+  // case of instruction that takes one memory semantics operand and 0 or 1 for
+  // instructions that takes two operands.
+  bool IsNeededOpcodeWithAppropriateIndex(SpvOp opcode, uint32_t index) const;
+
   // Check if new memory semantics is appropriate for specific atomic
   // instruction opcode.
-  static bool IsValidConverstion(SpvOp opcode,
-                                 SpvMemorySemanticsMask new_memory_sematics);
+  static bool IsValidConverstion(
+      SpvOp opcode, SpvMemorySemanticsMask old_memory_sematics_value,
+      SpvMemorySemanticsMask new_memory_sematics, SpvMemoryModel memory_model);
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
 
