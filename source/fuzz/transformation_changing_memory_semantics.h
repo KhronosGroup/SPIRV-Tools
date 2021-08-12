@@ -58,8 +58,9 @@ class TransformationChangingMemorySemantics : public Transformation {
   // Check if new memory semantics is appropriate for specific atomic
   // instruction opcode.
   static bool IsValidConverstion(
-      SpvOp opcode, SpvMemorySemanticsMask old_memory_sematics_value,
-      SpvMemorySemanticsMask new_memory_sematics, SpvMemoryModel memory_model);
+      SpvOp opcode, SpvMemorySemanticsMask first_5bits_old_memory_semantics,
+      SpvMemorySemanticsMask first_5bits_new_memory_semantics,
+      SpvMemoryModel memory_model);
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
 
