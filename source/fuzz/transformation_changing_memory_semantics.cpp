@@ -106,7 +106,8 @@ bool TransformationChangingMemorySemantics::IsApplicable(
         ir_context->get_def_use_mgr()
             ->GetDef(needed_atomic_instruction->GetSingleWordInOperand(
                 GetMemorySemanticsOperandIndex(
-                    message_.memory_semantics_operand_index())))
+                    needed_atomic_instruction->opcode(),
+                        message_.memory_semantics_operand_index())))
             ->GetSingleWordInOperand(0);
   }
   auto first_5bits_new_memory_semantics = static_cast<SpvMemorySemanticsMask>(
@@ -203,6 +204,7 @@ uint32_t TransformationChangingMemorySemantics::GetMemorySemanticsOperandIndex(
 
     default:
       assert(false);
+      return -1;
   }
 }
 
