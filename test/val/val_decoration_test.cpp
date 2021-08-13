@@ -7648,6 +7648,149 @@ TEST_F(ValidateDecorations, WorkgroupSingleBlockVariableBadLayout) {
           "member 0 at offset 1 is not aligned to 4"));
 }
 
+TEST_F(ValidateDecorations, BadMatrixStrideUniform) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+OpMemberDecorate %block 0 MatrixStride 3
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%float4 = OpTypeVector %float 4
+%matrix4x4 = OpTypeMatrix %float4 4
+%block = OpTypeStruct %matrix4x4
+%block_ptr = OpTypePointer Uniform %block
+%var = OpVariable %block_ptr Uniform
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure id 2 decorated as Block for variable in Uniform storage "
+          "class must follow standard uniform buffer layout rules: member 0 is "
+          "a matrix with stride 3 not satisfying alignment to 16"));
+}
+
+TEST_F(ValidateDecorations, BadMatrixStrideStorageBuffer) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+OpMemberDecorate %block 0 MatrixStride 3
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%float4 = OpTypeVector %float 4
+%matrix4x4 = OpTypeMatrix %float4 4
+%block = OpTypeStruct %matrix4x4
+%block_ptr = OpTypePointer StorageBuffer %block
+%var = OpVariable %block_ptr StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure id 2 decorated as Block for variable in StorageBuffer "
+          "storage class must follow standard storage buffer layout rules: "
+          "member 0 is a matrix with stride 3 not satisfying alignment to 16"));
+}
+
+TEST_F(ValidateDecorations, BadMatrixStridePushConstant) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+OpMemberDecorate %block 0 MatrixStride 3
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%float4 = OpTypeVector %float 4
+%matrix4x4 = OpTypeMatrix %float4 4
+%block = OpTypeStruct %matrix4x4
+%block_ptr = OpTypePointer PushConstant %block
+%var = OpVariable %block_ptr PushConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure id 2 decorated as Block for variable in PushConstant "
+          "storage class must follow standard storage buffer layout rules: "
+          "member 0 is a matrix with stride 3 not satisfying alignment to 16"));
+}
+
+TEST_F(ValidateDecorations, BadMatrixStrideStorageBufferScalarLayout) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+OpMemberDecorate %block 0 MatrixStride 3
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%float4 = OpTypeVector %float 4
+%matrix4x4 = OpTypeMatrix %float4 4
+%block = OpTypeStruct %matrix4x4
+%block_ptr = OpTypePointer StorageBuffer %block
+%var = OpVariable %block_ptr StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  options_->scalar_block_layout = true;
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Structure id 2 decorated as Block for variable in StorageBuffer "
+          "storage class must follow scalar storage buffer layout rules: "
+          "member 0 is a matrix with stride 3 not satisfying alignment to 4"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
