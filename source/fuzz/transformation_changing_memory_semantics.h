@@ -53,14 +53,42 @@ class TransformationChangingMemorySemantics : public Transformation {
   // operand Index equal to 0 or 1. Check if operand index equal to 0 in the
   // case of instruction that takes one memory semantics operand and 0 or 1 for
   // instructions that takes two operands.
-  bool IsNeededOpcodeWithAppropriateIndex(SpvOp opcode, uint32_t index) const;
+  static bool IsNeededOpcodeWithAppropriateIndex(SpvOp opcode, uint32_t index);
 
-  // Check if new memory semantics is appropriate for specific atomic
-  // instruction opcode.
-  static bool IsValidConverstion(
+  // - |opcode| each opcode must have suitable memory semantics e.g Atomic Load
+  //   must one
+  //   of(SpvMemorySemanticsMaskNone|SpvMemorySemanticsAcquireMask|SpvMemorySemanticsSequentiallyConsistentMask).
+  // - |first_5bits_old_memory_semantics| must be suitable for specific atomic
+  //   or barrier instruction.
+  // - |first_5bits_new_memory_semantics| should be larger than the old one,
+  //   must be suitable for specific atomic or barrier instruction.
+  // - |memory_model| return false if the memory model is Vulkan and memory
+  //   semantics is Sequentially Consistent.
+  static bool IsValidConversion(
       SpvOp opcode, SpvMemorySemanticsMask first_5bits_old_memory_semantics,
       SpvMemorySemanticsMask first_5bits_new_memory_semantics,
       SpvMemoryModel memory_model);
+
+  // Check available memory semantics values for the atomic load instruction.
+  static bool IsAtomicLoadMemorySemanticsValue(
+      SpvMemorySemanticsMask memory_semantics_value);
+
+  // Check available memory semantics values for the atomic store instruction.
+  static bool IsAtomicStoreMemorySemanticsValue(
+      SpvMemorySemanticsMask memory_semantics_value);
+
+  // Check available memory semantics values for the atomic read modify write
+  // instructions.
+  static bool IsAtomicRMWInstructionsemorySemanticsValue(
+      SpvMemorySemanticsMask memory_semantics_value);
+
+  // Check available memory semantics values for the barrier instructions.
+  static bool IsBarrierInstructionsMemorySemanticsValue(
+      SpvMemorySemanticsMask memory_semantics_value);
+
+  // Return one if atomic instruction is OpMemoryBarrier else will return
+  // suitable index value (two or three).
+  static uint32_t GetNeededIndex(SpvOp opcode, uint32_t temp_index);
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
 

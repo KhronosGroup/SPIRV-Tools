@@ -58,7 +58,7 @@ TEST(TransformationChangingMemorySemanticsTest, NotApplicable) {
          %14 = OpAccessChain %13 %11 %12
          %21 = OpAtomicLoad %6 %14 %15 %20
          %23 = OpAtomicExchange %6 %14 %15 %98 %16
-         %25 = OpAtomicCompareExchange %6 %14 %15 %20 %20 %16 %15
+         %25 = OpAtomicCompareExchange %6 %14 %15 %20 %97 %16 %15
          %24 = OpAccessChain %13 %11 %12
                OpAtomicStore %14 %15 %99 %16
                OpReturn
@@ -78,22 +78,25 @@ TEST(TransformationChangingMemorySemanticsTest, NotApplicable) {
                    MakeInstructionDescriptor(150, SpvOpAtomicLoad, 0), 0, 100)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Bad: Operand index does not equal 2 or 3.
-  ASSERT_FALSE(TransformationChangingMemorySemantics(
-                   MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 1, 100)
-                   .IsApplicable(context.get(), transformation_context));
+#ifndef NDEBUG
 
-  // Bad: The Instruction is not an atomic operation.
-  ASSERT_FALSE(TransformationChangingMemorySemantics(
-                   MakeInstructionDescriptor(14, SpvOpAccessChain, 0), 0, 100)
-                   .IsApplicable(context.get(), transformation_context));
+  // Bad: Operand index does not equal 0 or 1.
+  ASSERT_DEATH(TransformationChangingMemorySemantics(
+                   MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 2, 100)
+                   .IsApplicable(context.get(), transformation_context),
+               "The instruction may not be an atomic or barrier instruction. \
+                The operands index may be not equal 0 or 1. \
+                The index may be equal to one and the expected is zero.");
 
   // Bad: The SpvOpAtomicLoad takes one memory semantic value and the operand
   // index passed is 1.
-  ASSERT_FALSE(TransformationChangingMemorySemantics(
+  ASSERT_DEATH(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 1, 100)
-                   .IsApplicable(context.get(), transformation_context));
-
+                   .IsApplicable(context.get(), transformation_context),
+               "The instruction may not be an atomic or barrier instruction. \
+                The operands index may be not equal 0 or 1. \
+                The index may be equal to one and the expected is zero.");
+#endif
   // Bad: The new Id instruction does not exist.
   ASSERT_FALSE(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 0, 101)
@@ -112,14 +115,14 @@ TEST(TransformationChangingMemorySemanticsTest, NotApplicable) {
   // Bad: The OpAtomicExchange(read-modify-write) memory semantics value cannot
   // be changed from Acquire to Release.
   ASSERT_FALSE(TransformationChangingMemorySemantics(
-                   MakeInstructionDescriptor(23, SpvOpAtomicExchange, 0), 2, 99)
+                   MakeInstructionDescriptor(23, SpvOpAtomicExchange, 0), 0, 99)
                    .IsApplicable(context.get(), transformation_context));
 
   // Bad: The SpvOpAtomicCompareExchange(read-modify-write) takes two memory
-  // semantics, one of the values must be stronger than the other.
+  // semantics, unequal can't acquire/release value.
   ASSERT_FALSE(
       TransformationChangingMemorySemantics(
-          MakeInstructionDescriptor(25, SpvOpAtomicCompareExchange, 0), 2, 100)
+          MakeInstructionDescriptor(25, SpvOpAtomicCompareExchange, 0), 1, 100)
           .IsApplicable(context.get(), transformation_context));
 }
 
@@ -146,7 +149,7 @@ TEST(TransformationChangingMemorySemanticsTest, AtomicInstructionsTestCases) {
          %15 = OpConstant %6 4
          %16 = OpConstant %6 7
          %17 = OpConstant %7 4
-         %25 = OpConstant %6 66  ; Acquire | UniformMemory
+         %250 = OpConstant %6 66  ; Acquire | UniformMemory
          %26 = OpConstant %6 258 ; Acquire | WorkgroupMemory
          %27 = OpConstant %6 68  ; Release | UniformMemory
          %28 = OpConstant %6 80  ; SequentiallyConsistent | UniformMemory
@@ -156,7 +159,7 @@ TEST(TransformationChangingMemorySemanticsTest, AtomicInstructionsTestCases) {
           %4 = OpFunction %2 None %3
           %5 = OpLabel
          %14 = OpAccessChain %13 %11 %12
-         %21 = OpAtomicLoad %6 %14 %15 %25
+         %21 = OpAtomicLoad %6 %14 %15 %250
          %22 = OpAtomicLoad %6 %14 %15 %29
          %23 = OpAtomicLoad %6 %14 %15 %27
          %32 = OpAtomicExchange %6 %14 %15 %31 %16
@@ -206,7 +209,7 @@ TEST(TransformationChangingMemorySemanticsTest, AtomicInstructionsTestCases) {
 
   // Bad: OpAtomicLoad memory semantics can't be a release value.
   ASSERT_FALSE(TransformationChangingMemorySemantics(
-                   MakeInstructionDescriptor(23, SpvOpAtomicLoad, 0), 0, 25)
+                   MakeInstructionDescriptor(23, SpvOpAtomicLoad, 0), 0, 250)
                    .IsApplicable(context.get(), transformation_context));
 
   // Bad: OpAtomicLoad memory semantics can't be a release value.
@@ -232,7 +235,7 @@ TEST(TransformationChangingMemorySemanticsTest, AtomicInstructionsTestCases) {
     // Changing memory semantics from |None| to |Acquire| with keeping
     // the old higher bits value.
     TransformationChangingMemorySemantics transformation(
-        MakeInstructionDescriptor(22, SpvOpAtomicLoad, 0), 0, 25);
+        MakeInstructionDescriptor(22, SpvOpAtomicLoad, 0), 0, 250);
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
     ApplyAndCheckFreshIds(transformation, context.get(),
@@ -289,7 +292,7 @@ TEST(TransformationChangingMemorySemanticsTest, AtomicInstructionsTestCases) {
          %15 = OpConstant %6 4
          %16 = OpConstant %6 7
          %17 = OpConstant %7 4
-         %25 = OpConstant %6 66  ; Acquire | UniformMemory
+         %250 = OpConstant %6 66  ; Acquire | UniformMemory
          %26 = OpConstant %6 258 ; Acquire | WorkgroupMemory
          %27 = OpConstant %6 68  ; Release | UniformMemory
          %28 = OpConstant %6 80  ; SequentiallyConsistent | UniformMemory
@@ -300,7 +303,7 @@ TEST(TransformationChangingMemorySemanticsTest, AtomicInstructionsTestCases) {
           %5 = OpLabel
          %14 = OpAccessChain %13 %11 %12
          %21 = OpAtomicLoad %6 %14 %15 %28
-         %22 = OpAtomicLoad %6 %14 %15 %25
+         %22 = OpAtomicLoad %6 %14 %15 %250
          %23 = OpAtomicLoad %6 %14 %15 %27
          %32 = OpAtomicExchange %6 %14 %15 %28 %16
          %24 = OpAccessChain %13 %11 %12

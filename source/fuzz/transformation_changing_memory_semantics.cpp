@@ -20,9 +20,22 @@
 namespace spvtools {
 namespace fuzz {
 
+namespace {
+const uint32_t kMemorySemanticsHigherBitmask = 0xFFFFFFE0;
+const uint32_t kMemorySemanticsLowerBitmask = 0x1F;
+}  // namespace
+
 TransformationChangingMemorySemantics::TransformationChangingMemorySemantics(
     protobufs::TransformationChangingMemorySemantics message)
-    : message_(std::move(message)) {}
+    : message_(std::move(message)) {
+  assert(IsNeededOpcodeWithAppropriateIndex(
+             static_cast<SpvOp>(
+                 message_.atomic_instruction().target_instruction_opcode()),
+             message_.memory_semantics_operand_index()) &&
+         "The instruction may not be an atomic or barrier instruction. \
+                The operands index may be not equal 0 or 1. \
+                The index may be equal to one and the expected is zero.");
+}
 
 TransformationChangingMemorySemantics::TransformationChangingMemorySemantics(
     const protobufs::InstructionDescriptor& atomic_instruction,
@@ -33,8 +46,9 @@ TransformationChangingMemorySemantics::TransformationChangingMemorySemantics(
   assert(IsNeededOpcodeWithAppropriateIndex(
              static_cast<SpvOp>(atomic_instruction.target_instruction_opcode()),
              memory_semantics_operand_index) &&
-         "The instruction may not be an atomic instruction, or an operand "
-         "index does not equal 0 or 1.");
+         "The instruction may not be an atomic or barrier instruction. \
+                The operands index may be not equal 0 or 1. \
+                The index may be equal to one and the expected is zero.");
 
   message_.set_memory_semantics_operand_index(memory_semantics_operand_index);
   message_.set_memory_semantics_new_value_id(memory_semantics_new_value_id);
@@ -48,15 +62,6 @@ bool TransformationChangingMemorySemantics::IsApplicable(
   if (!needed_atomic_instruction) {
     return false;
   }
-  // Instruction must be atomic instruction only. Memory semantics operand Index
-  // must be equal to 0 or 1 only. Operand index must be equal to 0 in the case
-  // of instruction that takes one memory semantics operand and 0 or 1 for
-  // instructions that takes two operands.
-  if (!IsNeededOpcodeWithAppropriateIndex(
-          needed_atomic_instruction->opcode(),
-          message_.memory_semantics_operand_index())) {
-    return false;
-  }
 
   // The new value instruction must exist and must be OpConstant.
   auto value_instruction = ir_context->get_def_use_mgr()->GetDef(
@@ -65,6 +70,15 @@ bool TransformationChangingMemorySemantics::IsApplicable(
     return false;
   }
   if (value_instruction->opcode() != SpvOpConstant) {
+    return false;
+  }
+
+  // The size of the integer for value instruction must be equal to 32 bits.
+  auto value_instruction_int_width = ir_context->get_def_use_mgr()
+                                         ->GetDef(value_instruction->type_id())
+                                         ->GetSingleWordInOperand(0);
+
+  if (value_instruction_int_width != 32) {
     return false;
   }
 
@@ -87,40 +101,48 @@ bool TransformationChangingMemorySemantics::IsApplicable(
                 message_.memory_semantics_operand_index() == 0 ? 2 : 3))
             ->GetSingleWordInOperand(0);
   }
-  auto first_5bits_new_memory_semantics =
-      static_cast<SpvMemorySemanticsMask>(new_memory_sematics_value & 0x1F);
-  auto first_5bits_old_memory_semantics =
-      static_cast<SpvMemorySemanticsMask>(old_memory_sematics_value & 0x1F);
+  auto first_5bits_new_memory_semantics = static_cast<SpvMemorySemanticsMask>(
+      new_memory_sematics_value & kMemorySemanticsLowerBitmask);
+  auto first_5bits_old_memory_semantics = static_cast<SpvMemorySemanticsMask>(
+      old_memory_sematics_value & kMemorySemanticsLowerBitmask);
   auto memory_model = static_cast<SpvMemoryModel>(
       ir_context->module()->GetMemoryModel()->GetSingleWordInOperand(1));
 
-  if (!IsValidConverstion(needed_atomic_instruction->opcode(),
-                          first_5bits_old_memory_semantics,
-                          first_5bits_new_memory_semantics, memory_model)) {
+  if (!IsValidConversion(needed_atomic_instruction->opcode(),
+                         first_5bits_old_memory_semantics,
+                         first_5bits_new_memory_semantics, memory_model)) {
     return false;
   }
 
   // The higher bits value of old and new memory semantics id must be equal.
   auto higher_bits_new_memory_semantics = static_cast<SpvMemorySemanticsMask>(
-      new_memory_sematics_value & 0xFFFFFFE0);
+      new_memory_sematics_value & kMemorySemanticsHigherBitmask);
   auto higher_bits_old_memory_semantics = static_cast<SpvMemorySemanticsMask>(
-      old_memory_sematics_value & 0xFFFFFFE0);
+      old_memory_sematics_value & kMemorySemanticsHigherBitmask);
   if (higher_bits_new_memory_semantics != higher_bits_old_memory_semantics) {
     return false;
   }
 
-  // Instructions that takes two memory semantics, one of the value must be
-  // stronger than the other.
-  if (needed_atomic_instruction->opcode() == SpvOpAtomicCompareExchange ||
-      needed_atomic_instruction->opcode() == SpvOpAtomicCompareExchangeWeak) {
-    auto other_memory_semantics_index = static_cast<SpvMemorySemanticsMask>(
-        ir_context->get_def_use_mgr()
-            ->GetDef(needed_atomic_instruction->GetSingleWordInOperand(
-                message_.memory_semantics_operand_index() == 1 ? 2 : 3))
-            ->GetSingleWordInOperand(0) &
-        0x1F);
+  // Instructions that take two memory semantics and id needed to change are
+  // unequal, the equal id must be stronger than unequal id. Unequal id can't be
+  // released or acquire/release memory semantics.
+  if ((needed_atomic_instruction->opcode() == SpvOpAtomicCompareExchange ||
+       needed_atomic_instruction->opcode() == SpvOpAtomicCompareExchangeWeak) &&
+      message_.memory_semantics_operand_index() == 1) {
+    auto equal_id_memory_semantics_first_5bits =
+        static_cast<SpvMemorySemanticsMask>(
+            ir_context->get_def_use_mgr()
+                ->GetDef(needed_atomic_instruction->GetSingleWordInOperand(2))
+                ->GetSingleWordInOperand(0) &
+            kMemorySemanticsLowerBitmask);
 
-    if (first_5bits_new_memory_semantics == other_memory_semantics_index) {
+    if (first_5bits_new_memory_semantics >
+        equal_id_memory_semantics_first_5bits) {
+      return false;
+    }
+    if (first_5bits_new_memory_semantics == SpvMemorySemanticsReleaseMask ||
+        first_5bits_new_memory_semantics ==
+            SpvMemorySemanticsAcquireReleaseMask) {
       return false;
     }
   }
@@ -133,32 +155,40 @@ void TransformationChangingMemorySemantics::Apply(
   auto needed_atomic_instruction =
       FindInstruction(message_.atomic_instruction(), ir_context);
 
-  uint32_t needed_index = 0;
-  if (needed_atomic_instruction->opcode() == SpvOpMemoryBarrier) {
-    needed_index = 1;
-  } else {
-    needed_index = message_.memory_semantics_operand_index() == 0 ? 2 : 3;
-  }
+  uint32_t needed_index =
+      GetNeededIndex(needed_atomic_instruction->opcode(),
+                     message_.memory_semantics_operand_index());
 
-  uint32_t higher_bits_memory_semantics =
-      needed_atomic_instruction->GetSingleWordInOperand(needed_index) &
-      0xFFFFFFE0;
+  // uint32_t higher_bits_memory_semantics =
+  //     needed_atomic_instruction->GetSingleWordInOperand(needed_index) &
+  //     kMemorySemanticsHigherBitmask;
 
-  auto new_memory_semantics_instruction = ir_context->get_def_use_mgr()->GetDef(
-      message_.memory_semantics_new_value_id());
-  // New memory semantics value is OR-ed with the second 27bits of old memory
-  // semantics value.
-  uint32_t total_value =
-      new_memory_semantics_instruction->GetSingleWordInOperand(0) |
-      higher_bits_memory_semantics;
-  new_memory_semantics_instruction->SetInOperand(0, {total_value});
+  // auto new_memory_semantics_instruction =
+  // ir_context->get_def_use_mgr()->GetDef(
+  //     message_.memory_semantics_new_value_id());
+  // // New memory semantics value is OR-ed with the second 27bits of old memory
+  // // semantics value.
+  // uint32_t total_value =
+  //     new_memory_semantics_instruction->GetSingleWordInOperand(0) |
+  //     higher_bits_memory_semantics;
+  // new_memory_semantics_instruction->SetInOperand(0, {total_value});
 
   needed_atomic_instruction->SetInOperand(
       needed_index, {message_.memory_semantics_new_value_id()});
 }
 
+uint32_t TransformationChangingMemorySemantics::GetNeededIndex(
+    SpvOp opcode, uint32_t temp_index) {
+  switch (opcode) {
+    case SpvOpMemoryBarrier:
+      return 1;
+    default:
+      return temp_index == 0 ? 2 : 3;
+  }
+}
+
 bool TransformationChangingMemorySemantics::IsNeededOpcodeWithAppropriateIndex(
-    SpvOp opcode, uint32_t operand_index) const {
+    SpvOp opcode, uint32_t operand_index) {
   switch (opcode) {
     // Atomic Instructions
     case SpvOpAtomicLoad:
@@ -200,27 +230,66 @@ bool TransformationChangingMemorySemantics::IsNeededOpcodeWithAppropriateIndex(
   return true;
 }
 
-bool TransformationChangingMemorySemantics::IsValidConverstion(
+bool TransformationChangingMemorySemantics::IsAtomicLoadMemorySemanticsValue(
+    SpvMemorySemanticsMask memory_semantics_value) {
+  switch (memory_semantics_value) {
+    case SpvMemorySemanticsMaskNone:
+    case SpvMemorySemanticsAcquireMask:
+    case SpvMemorySemanticsSequentiallyConsistentMask:
+      return true;
+
+    default:
+      return false;
+  }
+}
+
+bool TransformationChangingMemorySemantics::IsAtomicStoreMemorySemanticsValue(
+    SpvMemorySemanticsMask memory_semantics_value) {
+  switch (memory_semantics_value) {
+    case SpvMemorySemanticsMaskNone:
+    case SpvMemorySemanticsReleaseMask:
+    case SpvMemorySemanticsSequentiallyConsistentMask:
+      return true;
+
+    default:
+      return false;
+  }
+}
+
+bool TransformationChangingMemorySemantics::
+    IsAtomicRMWInstructionsemorySemanticsValue(
+        SpvMemorySemanticsMask memory_semantics_value) {
+  switch (memory_semantics_value) {
+    case SpvMemorySemanticsMaskNone:
+    case SpvMemorySemanticsAcquireReleaseMask:
+    case SpvMemorySemanticsSequentiallyConsistentMask:
+      return true;
+
+    default:
+      return false;
+  }
+}
+
+bool TransformationChangingMemorySemantics::
+    IsBarrierInstructionsMemorySemanticsValue(
+        SpvMemorySemanticsMask memory_semantics_value) {
+  switch (memory_semantics_value) {
+    case SpvMemorySemanticsMaskNone:
+    case SpvMemorySemanticsAcquireMask:
+    case SpvMemorySemanticsReleaseMask:
+    case SpvMemorySemanticsAcquireReleaseMask:
+    case SpvMemorySemanticsSequentiallyConsistentMask:
+      return true;
+
+    default:
+      return false;
+  }
+}
+
+bool TransformationChangingMemorySemantics::IsValidConversion(
     SpvOp opcode, SpvMemorySemanticsMask first_5bits_old_memory_semantics,
     SpvMemorySemanticsMask first_5bits_new_memory_semantics,
     SpvMemoryModel memory_model) {
-  std::set<SpvMemorySemanticsMask> atomic_load_set{
-      SpvMemorySemanticsMaskNone, SpvMemorySemanticsAcquireMask,
-      SpvMemorySemanticsSequentiallyConsistentMask};
-
-  std::set<SpvMemorySemanticsMask> atomic_store_set{
-      SpvMemorySemanticsMaskNone, SpvMemorySemanticsReleaseMask,
-      SpvMemorySemanticsSequentiallyConsistentMask};
-
-  std::set<SpvMemorySemanticsMask> atomic_rmw_set{
-      SpvMemorySemanticsMaskNone, SpvMemorySemanticsAcquireReleaseMask,
-      SpvMemorySemanticsSequentiallyConsistentMask};
-
-  std::set<SpvMemorySemanticsMask> barrier_set{
-      SpvMemorySemanticsMaskNone, SpvMemorySemanticsAcquireMask,
-      SpvMemorySemanticsReleaseMask, SpvMemorySemanticsAcquireReleaseMask,
-      SpvMemorySemanticsSequentiallyConsistentMask};
-
   if (first_5bits_new_memory_semantics ==
           SpvMemorySemanticsSequentiallyConsistentMask &&
       memory_model == SpvMemoryModelVulkan) {
@@ -231,16 +300,15 @@ bool TransformationChangingMemorySemantics::IsValidConverstion(
   }
   switch (opcode) {
     case SpvOpAtomicLoad:
-      return (atomic_load_set.find(first_5bits_old_memory_semantics) !=
-                  atomic_load_set.end() &&
-              atomic_load_set.find(first_5bits_new_memory_semantics) !=
-                  atomic_load_set.end());
+      return IsAtomicLoadMemorySemanticsValue(
+                 first_5bits_old_memory_semantics) &&
+             IsAtomicLoadMemorySemanticsValue(first_5bits_new_memory_semantics);
 
     case SpvOpAtomicStore:
-      return (atomic_store_set.find(first_5bits_old_memory_semantics) !=
-                  atomic_store_set.end() &&
-              atomic_store_set.find(first_5bits_new_memory_semantics) !=
-                  atomic_store_set.end());
+      return IsAtomicStoreMemorySemanticsValue(
+                 first_5bits_old_memory_semantics) &&
+             IsAtomicStoreMemorySemanticsValue(
+                 first_5bits_new_memory_semantics);
 
     case SpvOpAtomicExchange:
     case SpvOpAtomicIIncrement:
@@ -257,10 +325,10 @@ bool TransformationChangingMemorySemantics::IsValidConverstion(
     case SpvOpAtomicCompareExchange:
     case SpvOpAtomicCompareExchangeWeak:
 
-      return (atomic_rmw_set.find(first_5bits_old_memory_semantics) !=
-                  atomic_rmw_set.end() &&
-              atomic_rmw_set.find(first_5bits_new_memory_semantics) !=
-                  atomic_rmw_set.end());
+      return IsAtomicRMWInstructionsemorySemanticsValue(
+                 first_5bits_old_memory_semantics) &&
+             IsAtomicRMWInstructionsemorySemanticsValue(
+                 first_5bits_new_memory_semantics);
 
     case SpvOpControlBarrier:
     case SpvOpMemoryBarrier:
@@ -270,10 +338,10 @@ bool TransformationChangingMemorySemantics::IsValidConverstion(
           first_5bits_new_memory_semantics == SpvMemorySemanticsReleaseMask) {
         return false;
       }
-      return (barrier_set.find(first_5bits_old_memory_semantics) !=
-                  barrier_set.end() &&
-              barrier_set.find(first_5bits_new_memory_semantics) !=
-                  barrier_set.end());
+      return IsBarrierInstructionsMemorySemanticsValue(
+                 first_5bits_old_memory_semantics) &&
+             IsBarrierInstructionsMemorySemanticsValue(
+                 first_5bits_new_memory_semantics);
 
     default:
       return false;
