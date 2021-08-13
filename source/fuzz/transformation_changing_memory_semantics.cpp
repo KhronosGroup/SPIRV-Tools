@@ -159,20 +159,6 @@ void TransformationChangingMemorySemantics::Apply(
       GetNeededIndex(needed_atomic_instruction->opcode(),
                      message_.memory_semantics_operand_index());
 
-  // uint32_t higher_bits_memory_semantics =
-  //     needed_atomic_instruction->GetSingleWordInOperand(needed_index) &
-  //     kMemorySemanticsHigherBitmask;
-
-  // auto new_memory_semantics_instruction =
-  // ir_context->get_def_use_mgr()->GetDef(
-  //     message_.memory_semantics_new_value_id());
-  // // New memory semantics value is OR-ed with the second 27bits of old memory
-  // // semantics value.
-  // uint32_t total_value =
-  //     new_memory_semantics_instruction->GetSingleWordInOperand(0) |
-  //     higher_bits_memory_semantics;
-  // new_memory_semantics_instruction->SetInOperand(0, {total_value});
-
   needed_atomic_instruction->SetInOperand(
       needed_index, {message_.memory_semantics_new_value_id()});
 }
