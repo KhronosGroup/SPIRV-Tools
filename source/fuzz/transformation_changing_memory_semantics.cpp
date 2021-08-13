@@ -73,6 +73,13 @@ bool TransformationChangingMemorySemantics::IsApplicable(
     return false;
   }
 
+  // The value instruction must be an Integer.
+  if (ir_context->get_def_use_mgr()
+          ->GetDef(value_instruction->type_id())
+          ->opcode() != SpvOpTypeInt) {
+    return false;
+  }
+
   // The size of the integer for value instruction must be equal to 32 bits.
   auto value_instruction_int_width = ir_context->get_def_use_mgr()
                                          ->GetDef(value_instruction->type_id())
@@ -98,7 +105,8 @@ bool TransformationChangingMemorySemantics::IsApplicable(
     old_memory_sematics_value =
         ir_context->get_def_use_mgr()
             ->GetDef(needed_atomic_instruction->GetSingleWordInOperand(
-                message_.memory_semantics_operand_index() == 0 ? 2 : 3))
+                GetMemorySemanticsOperandIndex(
+                    message_.memory_semantics_operand_index())))
             ->GetSingleWordInOperand(0);
   }
   auto first_5bits_new_memory_semantics = static_cast<SpvMemorySemanticsMask>(
@@ -156,20 +164,45 @@ void TransformationChangingMemorySemantics::Apply(
       FindInstruction(message_.atomic_instruction(), ir_context);
 
   uint32_t needed_index =
-      GetNeededIndex(needed_atomic_instruction->opcode(),
-                     message_.memory_semantics_operand_index());
+      GetMemorySemanticsOperandIndex(needed_atomic_instruction->opcode(),
+                                     message_.memory_semantics_operand_index());
 
   needed_atomic_instruction->SetInOperand(
       needed_index, {message_.memory_semantics_new_value_id()});
 }
 
-uint32_t TransformationChangingMemorySemantics::GetNeededIndex(
-    SpvOp opcode, uint32_t temp_index) {
+uint32_t TransformationChangingMemorySemantics::GetMemorySemanticsOperandIndex(
+    SpvOp opcode, uint32_t zero_or_one) {
   switch (opcode) {
     case SpvOpMemoryBarrier:
+      assert(zero_or_one == 0 && "Zero_or_one not equal zero.");
       return 1;
+
+    case SpvOpAtomicLoad:
+    case SpvOpAtomicStore:
+    case SpvOpAtomicExchange:
+    case SpvOpAtomicIIncrement:
+    case SpvOpAtomicIDecrement:
+    case SpvOpAtomicIAdd:
+    case SpvOpAtomicISub:
+    case SpvOpAtomicSMin:
+    case SpvOpAtomicUMin:
+    case SpvOpAtomicSMax:
+    case SpvOpAtomicUMax:
+    case SpvOpAtomicAnd:
+    case SpvOpAtomicOr:
+    case SpvOpAtomicXor:
+    case SpvOpAtomicFlagTestAndSet:
+    case SpvOpAtomicFlagClear:
+    case SpvOpAtomicFAddEXT:
+    case SpvOpAtomicCompareExchange:
+    case SpvOpAtomicCompareExchangeWeak:
+    case SpvOpControlBarrier:
+    case SpvOpMemoryNamedBarrier:
+      return zero_or_one == 0 ? 2 : 3;
+
     default:
-      return temp_index == 0 ? 2 : 3;
+      assert(false);
   }
 }
 
@@ -320,6 +353,7 @@ bool TransformationChangingMemorySemantics::IsValidConversion(
     case SpvOpMemoryBarrier:
     case SpvOpMemoryNamedBarrier:
 
+      // Forbidden because it will change the semantics.
       if (first_5bits_old_memory_semantics == SpvMemorySemanticsAcquireMask &&
           first_5bits_new_memory_semantics == SpvMemorySemanticsReleaseMask) {
         return false;

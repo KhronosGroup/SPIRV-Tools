@@ -86,9 +86,9 @@ class TransformationChangingMemorySemantics : public Transformation {
   static bool IsBarrierInstructionsMemorySemanticsValue(
       SpvMemorySemanticsMask memory_semantics_value);
 
-  // Return one if atomic instruction is OpMemoryBarrier else will return
+  // Return one if instruction is OpMemoryBarrier, else will return
   // suitable index value (two or three).
-  static uint32_t GetNeededIndex(SpvOp opcode, uint32_t temp_index);
+  static uint32_t GetMemorySemanticsOperandIndex(SpvOp opcode, uint32_t zero_or_one);
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
 
