@@ -32,12 +32,13 @@ class TransformationChangingMemorySemantics : public Transformation {
 
   TransformationChangingMemorySemantics(
       const protobufs::InstructionDescriptor& atomic_instruction,
-      uint32_t memory_semantics_operand_index,
+      uint32_t memory_semantics_operand_position,
       uint32_t memory_semantics_new_value_id);
 
   // - |message_.atomic_instruction| atomic instruction that would like to
   //   change its memory semantics value.
-  // - |message_.memory_semantics_operand_index| index of atomic instruction
+  // - |message_.memory_semantics_operand_position| position of atomic
+  // instruction
   //   would like to change, must be equal to 2 or 3 only.
   // - |message_.memory_semantics_new_value_id| the new id of memory semantics
   //   that is will change with the old.
@@ -45,22 +46,27 @@ class TransformationChangingMemorySemantics : public Transformation {
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // Change id of memory semantics for specific index with a new one.
+  // Change id of memory semantics for specific position with a new one.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
   // Check if instruction is atomic instruction only. Check if Memory semantics
-  // operand Index equal to 0 or 1. Check if operand index equal to 0 in the
-  // case of instruction that takes one memory semantics operand and 0 or 1 for
-  // instructions that takes two operands.
-  static bool IsNeededOpcodeWithAppropriateIndex(SpvOp opcode, uint32_t index);
+  // operand Position equal to 0 or 1. Check if operand position equal to 0 in
+  // the case of instruction that takes one memory semantics operand and 0 or 1
+  // for instructions that takes two operands.
+  static bool IsNeededOpcodeWithAppropriatePosition(SpvOp opcode,
+                                                    uint32_t position);
 
-  // - |opcode| each opcode must have suitable memory semantics e.g Atomic Load
-  //   must one
-  //   of(SpvMemorySemanticsMaskNone|SpvMemorySemanticsAcquireMask|SpvMemorySemanticsSequentiallyConsistentMask).
-  // - |first_5bits_old_memory_semantics| must be suitable for specific atomic
+  // - |opcode| opcode must be atomic or barrier instruction.
+  //   Valid memory semantics masks:
+  //   OpAtomicLoad: None | Acquire | SequentiallyConsistent
+  //   OpAtomicStore: None | Release | SequentiallyConsistent
+  //   OpAtomicRMW instructions: None | AcquireRelease | SequentiallyConsistent
+  //   Barrier instructions:  None | Acquire | Release | AcquireRelease |
+  //   SequentiallyConsistent
+  // - |lower_bits_old_memory_semantics| must be suitable for specific atomic
   //   or barrier instruction.
-  // - |first_5bits_new_memory_semantics| should be larger than the old one,
+  // - |lower_bits_new_memory_semantics| should be larger than the old one,
   //   must be suitable for specific atomic or barrier instruction.
   // - |memory_model| return false if the memory model is Vulkan and memory
   //   semantics is Sequentially Consistent.
@@ -87,12 +93,20 @@ class TransformationChangingMemorySemantics : public Transformation {
       SpvMemorySemanticsMask memory_semantics_value);
 
   // Return one if instruction is OpMemoryBarrier, else will return
-  // suitable index value (two or three).
-  static uint32_t GetMemorySemanticsOperandIndex(SpvOp opcode, uint32_t zero_or_one);
+  // suitable position value (two or three).
+  static uint32_t GetMemorySemanticsOperandIndex(SpvOp opcode,
+                                                 uint32_t zero_or_one);
+
+  // Return number of memory semantic operands for the specific atomic or
+  // barrier instruction.
+  static uint32_t GetNumberOfMemorySemantics(SpvOp opcode);
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
+
+  static const uint32_t kMemorySemanticsHigherBitmask = 0xFFFFFFE0;
+  static const uint32_t kMemorySemanticsLowerBitmask = 0x1F;
 
  private:
   protobufs::TransformationChangingMemorySemantics message_;

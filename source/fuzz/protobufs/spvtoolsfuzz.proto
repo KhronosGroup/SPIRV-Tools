@@ -1305,9 +1305,9 @@ message TransformationChangingMemorySemantics {
   // The atomic instruction we are looking for.
   InstructionDescriptor atomic_instruction = 1;
 
-  // The operand index needs to change, 0 for the first memory semantics operand, 1 for the second memory 
+  // The operand position needs to change, 0 for the first memory semantics operand, 1 for the second memory 
   // semantics operand(if found).
-  uint32  memory_semantics_operand_index = 2;
+  uint32  memory_semantics_operand_position = 2;
 
   // The id of new value.
   uint32  memory_semantics_new_value_id = 3;

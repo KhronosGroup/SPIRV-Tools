@@ -33,84 +33,123 @@ FuzzerPassChangingMemorySemantics::FuzzerPassChangingMemorySemantics(
 
 void FuzzerPassChangingMemorySemantics::Apply() {
   ForEachInstructionWithInstructionDescriptor(
-      [this](opt::Function* function, opt::BasicBlock* block,
+      [this](opt::Function* /* unused */, opt::BasicBlock* /* unused */,
              opt::BasicBlock::iterator inst_it,
-             const protobufs::InstructionDescriptor& /*unused*/) {
+             const protobufs::InstructionDescriptor& instruction_descriptor) {
+        // Instruction must be atomic or barrier instruction, return the number
+        // of memory semantic operands for instruction.
+        auto number_of_memory_semantics =
+            TransformationChangingMemorySemantics::GetNumberOfMemorySemantics(
+                inst_it->opcode());
+
+        // Equal zero if no atomic or barrier instruction is found.
+        if (number_of_memory_semantics == 0) {
+          return;
+        }
+
         if (!GetFuzzerContext()->ChoosePercentage(
                 GetFuzzerContext()->GetChanceOfChangingMemorySemantics())) {
           return;
         }
 
-        // Get all atomic instructions.
-        std::vector<opt::Instruction*> atomic_instructions =
-            FindAvailableInstructions(
-                function, block, inst_it,
-                [this](opt::IRContext* /*unused*/,
-                       opt::Instruction* instruction) -> bool {
-                  switch (instruction->opcode()) {
-                    case SpvOpAtomicLoad:
-                    case SpvOpAtomicStore:
-                    case SpvOpAtomicExchange:
-                    case SpvOpAtomicIIncrement:
-                    case SpvOpAtomicIDecrement:
-                    case SpvOpAtomicIAdd:
-                    case SpvOpAtomicISub:
-                    case SpvOpAtomicSMin:
-                    case SpvOpAtomicUMin:
-                    case SpvOpAtomicSMax:
-                    case SpvOpAtomicUMax:
-                    case SpvOpAtomicAnd:
-                    case SpvOpAtomicOr:
-                    case SpvOpAtomicXor:
-                    case SpvOpAtomicFlagTestAndSet:
-                    case SpvOpAtomicFlagClear:
-                    case SpvOpAtomicFAddEXT:
-                    case SpvOpAtomicCompareExchange:
-                    case SpvOpAtomicCompareExchangeWeak:
-                      return true;
-                    default:
-                      return false;
-                  }
-                });
-
-        if (atomic_instructions.empty()) {
-          return;
+        // If the instruction has two memory semantic operands pick one
+        // randomly.
+        uint32_t memory_semantics_operand_position = 0;
+        if (number_of_memory_semantics == 2) {
+          std::vector<uint32_t> operand_positions{0, 1};
+          memory_semantics_operand_position =
+              GetFuzzerContext()->RandomIndex(operand_positions);
         }
-        auto chosen_instruction =
-            atomic_instructions[GetFuzzerContext()->RandomIndex(
-                atomic_instructions)];
 
-        // It will have a value of range from 0 to 3.
-        uint32_t index =
-            GetFuzzerContext()->RandomIndex(atomic_instructions) % 4;
+        auto needed_index = TransformationChangingMemorySemantics::
+            GetMemorySemanticsOperandIndex(inst_it->opcode(),
+                                           memory_semantics_operand_position);
+
+        auto memory_semantics_value =
+            GetIRContext()
+                ->get_def_use_mgr()
+                ->GetDef(inst_it->GetSingleWordInOperand(needed_index))
+                ->GetSingleWordInOperand(0);
+
+        auto lower_bits_old_memory_semantics =
+            static_cast<SpvMemorySemanticsMask>(
+                memory_semantics_value & TransformationChangingMemorySemantics::
+                                             kMemorySemanticsLowerBitmask);
+        auto higher_bits_old_memory_semantics =
+            static_cast<SpvMemorySemanticsMask>(
+                memory_semantics_value & TransformationChangingMemorySemantics::
+                                             kMemorySemanticsHigherBitmask);
 
         std::vector<SpvMemorySemanticsMask> memory_semanitcs_masks{
             SpvMemorySemanticsMaskNone, SpvMemorySemanticsAcquireMask,
             SpvMemorySemanticsReleaseMask, SpvMemorySemanticsAcquireReleaseMask,
             SpvMemorySemanticsSequentiallyConsistentMask};
+
+        // Remove the memory mask is not applicable for instruction.
+        memory_semanitcs_masks.erase(
+            std::remove_if(memory_semanitcs_masks.begin(),
+                           memory_semanitcs_masks.end(),
+                           [inst_it, lower_bits_old_memory_semantics](
+                               SpvMemorySemanticsMask /*unused*/) {
+                             switch (inst_it->opcode()) {
+                               case SpvOpAtomicLoad:
+                                 return TransformationChangingMemorySemantics::
+                                     IsAtomicLoadMemorySemanticsValue(
+                                         lower_bits_old_memory_semantics);
+
+                               case SpvOpAtomicStore:
+                                 return TransformationChangingMemorySemantics::
+                                     IsAtomicStoreMemorySemanticsValue(
+                                         lower_bits_old_memory_semantics);
+
+                               case SpvOpAtomicExchange:
+                               case SpvOpAtomicIIncrement:
+                               case SpvOpAtomicIDecrement:
+                               case SpvOpAtomicIAdd:
+                               case SpvOpAtomicISub:
+                               case SpvOpAtomicSMin:
+                               case SpvOpAtomicUMin:
+                               case SpvOpAtomicSMax:
+                               case SpvOpAtomicUMax:
+                               case SpvOpAtomicAnd:
+                               case SpvOpAtomicOr:
+                               case SpvOpAtomicXor:
+                               case SpvOpAtomicCompareExchange:
+                               case SpvOpAtomicCompareExchangeWeak:
+
+                                 return TransformationChangingMemorySemantics::
+                                     IsAtomicRMWInstructionsemorySemanticsValue(
+                                         lower_bits_old_memory_semantics);
+
+                               case SpvOpControlBarrier:
+                               case SpvOpMemoryBarrier:
+                               case SpvOpMemoryNamedBarrier:
+
+                                 return TransformationChangingMemorySemantics::
+                                     IsBarrierInstructionsMemorySemanticsValue(
+                                         lower_bits_old_memory_semantics);
+
+                               default:
+                                 return false;
+                             }
+                           }),
+            memory_semanitcs_masks.end());
+
+        // The lower bits of new memory semantic value if OR-ed with higher bits
+        // of old memory semantic value.
+        auto memory_semantic_new_value =
+            memory_semanitcs_masks[GetFuzzerContext()->RandomIndex(
+                memory_semanitcs_masks)] |
+            higher_bits_old_memory_semantics;
+
         uint32_t new_memory_semantics_id = FindOrCreateConstant(
-            {static_cast<uint32_t>(
-                memory_semanitcs_masks[GetFuzzerContext()->RandomIndex(
-                    memory_semanitcs_masks)])},
+            {static_cast<uint32_t>(memory_semantic_new_value)},
             FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
             false);
 
-        // (NOTE - Need suggestion here) This valid for atomic instructions has
-        // result id only (NOT FINAL).
         ApplyTransformation(TransformationChangingMemorySemantics(
-            MakeInstructionDescriptor(chosen_instruction->result_id(),
-                                      chosen_instruction->opcode(), 0),
-            index, new_memory_semantics_id));
-        // ANOTHER SOLUTION.
-        /*
-        - First will check instruction related to instruction_descriptor, then
-          check if the instruction is atomic instruction. Then....
-
-        - ApplyTransformation(TransformationChangingMemorySemantics(
-        instruction_descriptor,
-        index, new_memory_semantics_id));
-
-        */
+            instruction_descriptor, memory_semantics_operand_position,
+            new_memory_semantics_id));
       });
 }
 

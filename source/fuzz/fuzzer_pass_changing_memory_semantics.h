@@ -15,6 +15,8 @@
 #ifndef SOURCE_FUZZ_FUZZER_PASS_CHANGING_MEMORY_SEMANTICS_H_
 #define SOURCE_FUZZ_FUZZER_PASS_CHANGING_MEMORY_SEMANTICS_H_
 
+#include <algorithm>
+
 #include "source/fuzz/fuzzer_pass.h"
 
 namespace spvtools {

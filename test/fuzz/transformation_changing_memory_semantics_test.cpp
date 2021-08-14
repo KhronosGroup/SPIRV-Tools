@@ -57,7 +57,7 @@ TEST(TransformationChangingMemorySemanticsTest, NotApplicable) {
           %5 = OpLabel
          %14 = OpAccessChain %13 %11 %12
          %21 = OpAtomicLoad %6 %14 %15 %20
-         %23 = OpAtomicExchange %6 %14 %15 %98 %16
+         %23 = OpAtomicExchange %6 %14 %15 %100 %16
          %25 = OpAtomicCompareExchange %6 %14 %15 %20 %97 %16 %15
          %24 = OpAccessChain %13 %11 %12
                OpAtomicStore %14 %15 %99 %16
@@ -80,22 +80,22 @@ TEST(TransformationChangingMemorySemanticsTest, NotApplicable) {
 
 #ifndef NDEBUG
 
-  // Bad: Operand index does not equal 0 or 1.
+  // Bad: Operand position does not equal 0 or 1.
   ASSERT_DEATH(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 2, 100)
                    .IsApplicable(context.get(), transformation_context),
                "The instruction may not be an atomic or barrier instruction. \
-                The operands index may be not equal 0 or 1. \
-                The index may be equal to one and the expected is zero.");
+                The operands position may be not equal 0 or 1. \
+                The position may be equal to one and the expected is zero.");
 
   // Bad: The SpvOpAtomicLoad takes one memory semantic value and the operand
-  // index passed is 1.
+  // position passed is 1.
   ASSERT_DEATH(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 1, 100)
                    .IsApplicable(context.get(), transformation_context),
                "The instruction may not be an atomic or barrier instruction. \
-                The operands index may be not equal 0 or 1. \
-                The index may be equal to one and the expected is zero.");
+                The operands position may be not equal 0 or 1. \
+                The position may be equal to one and the expected is zero.");
 #endif
   // Bad: The new Id instruction does not exist.
   ASSERT_FALSE(TransformationChangingMemorySemantics(
@@ -107,23 +107,30 @@ TEST(TransformationChangingMemorySemanticsTest, NotApplicable) {
                    MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 0, 13)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Bad: The OpAtomicStore memory semantics value cannot be AcquireRelease.
+  // Bad transformation:
+  // OpAtomicStore Release | UniformMemory
+  // to:
+  // OpAtomicStore AcquireRelease | UniformMemory
   ASSERT_FALSE(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(24, SpvOpAtomicStore, 0), 0, 100)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Bad: The OpAtomicExchange(read-modify-write) memory semantics value cannot
-  // be changed from Acquire to Release.
+  // Bad transformation:
+  // OpAtomicExchange AcquireRelease | UniformMemory
+  // to:
+  // OpAtomicExchange None           | UniformMemory
   ASSERT_FALSE(TransformationChangingMemorySemantics(
-                   MakeInstructionDescriptor(23, SpvOpAtomicExchange, 0), 0, 99)
+                   MakeInstructionDescriptor(23, SpvOpAtomicExchange, 0), 0, 97)
                    .IsApplicable(context.get(), transformation_context));
 
+  // Value (one) is pointing to the unequal position operand.
+  auto memory_semantics_unequal_position = 1;
   // Bad: The SpvOpAtomicCompareExchange(read-modify-write) takes two memory
-  // semantics, unequal can't acquire/release value.
-  ASSERT_FALSE(
-      TransformationChangingMemorySemantics(
-          MakeInstructionDescriptor(25, SpvOpAtomicCompareExchange, 0), 1, 100)
-          .IsApplicable(context.get(), transformation_context));
+  // semantics operands. The second operand cannot be AcquireRelease value.
+  ASSERT_FALSE(TransformationChangingMemorySemantics(
+                   MakeInstructionDescriptor(25, SpvOpAtomicCompareExchange, 0),
+                   memory_semantics_unequal_position, 100)
+                   .IsApplicable(context.get(), transformation_context));
 }
 
 TEST(TransformationChangingMemorySemanticsTest, AtomicInstructionsTestCases) {
@@ -176,51 +183,76 @@ TEST(TransformationChangingMemorySemanticsTest, AtomicInstructionsTestCases) {
                                                kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  // Bad: Memory semantics can't change with the same value.
+
+  // Bad transformation:
+  // OpAtomicLoad Acquire | UniformMemory
+  // to:
+  // OpAtomicLoad Acquire | WorkgroupMemory
   ASSERT_FALSE(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 0, 26)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Bad: OpAtomicLoad memory semantics can't be a release value.
+  // Bad transformation:
+  // OpAtomicLoad Acquire    | UniformMemory
+  // to:
+  // OpAtomicLoad Release    | UniformMemory
   ASSERT_FALSE(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 0, 27)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Bad: Can't change memory semantics higher bits value.
+  // Bad transformation:
+  // OpAtomicLoad None    | UniformMemory
+  // to:
+  // OpAtomicLoad None    | WorkgroupMemory
   ASSERT_FALSE(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(22, SpvOpAtomicLoad, 0), 0, 30)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Bad:OpAtomicLoad memory semantics can't be a release value.
+  // Bad transformation:
+  // OpAtomicLoad None    | UniformMemory
+  // to:
+  // OpAtomicLoad Release | UniformMemory
   ASSERT_FALSE(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(22, SpvOpAtomicLoad, 0), 0, 27)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Bad: OpAtomicLoad memory semantics can't be a release value. Old memory
-  // semantics value must be lower than new.
+  // Bad transformation:
+  // OpAtomicLoad Release | UniformMemory
+  // to:
+  // OpAtomicLoad None    | UniformMemory
   ASSERT_FALSE(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(23, SpvOpAtomicLoad, 0), 0, 29)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Bad: OpAtomicLoad memory semantics can't be a release value.
+  // Bad transformation:
+  // OpAtomicLoad Release | UniformMemory
+  // to:
+  // OpAtomicLoad Release | UniformMemory
   ASSERT_FALSE(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(23, SpvOpAtomicLoad, 0), 0, 27)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Bad: OpAtomicLoad memory semantics can't be a release value.
+  // Bad transformation:
+  // OpAtomicLoad Release | UniformMemory
+  // to:
+  // OpAtomicLoad Acquire | UniformMemory
   ASSERT_FALSE(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(23, SpvOpAtomicLoad, 0), 0, 250)
                    .IsApplicable(context.get(), transformation_context));
 
-  // Bad: OpAtomicLoad memory semantics can't be a release value.
+  // Bad transformation:
+  // OpAtomicLoad Release                | UniformMemory
+  // to:
+  // OpAtomicLoad SequentiallyConsistent | UniformMemory
   ASSERT_FALSE(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(23, SpvOpAtomicLoad, 0), 0, 28)
                    .IsApplicable(context.get(), transformation_context));
 
   // Successful transformations.
   {
-    // Changing memory semantics from |Acquire| to |SequentiallyConsistent| with
-    // keeping the old higher bits value.
+    // OpAtomicLoad Acquire                | UniformMemory
+    // to:
+    // OpAtomicLoad SequentiallyConsistent | UniformMemory
     TransformationChangingMemorySemantics transformation(
         MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 0, 28);
     ASSERT_TRUE(
@@ -232,8 +264,9 @@ TEST(TransformationChangingMemorySemanticsTest, AtomicInstructionsTestCases) {
   }
 
   {
-    // Changing memory semantics from |None| to |Acquire| with keeping
-    // the old higher bits value.
+    // OpAtomicLoad None    | UniformMemory
+    // to:
+    // OpAtomicLoad Acquire | UniformMemory
     TransformationChangingMemorySemantics transformation(
         MakeInstructionDescriptor(22, SpvOpAtomicLoad, 0), 0, 250);
     ASSERT_TRUE(
@@ -245,8 +278,9 @@ TEST(TransformationChangingMemorySemanticsTest, AtomicInstructionsTestCases) {
   }
 
   {
-    // Changing memory semantics from |Release| to |SequentiallyConsistent| with
-    // keeping the old higher bits value.
+    // OpAtomicStore Release                | UniformMemory
+    // to:
+    // OpAtomicStore SequentiallyConsistent | UniformMemory
     TransformationChangingMemorySemantics transformation(
         MakeInstructionDescriptor(24, SpvOpAtomicStore, 0), 0, 28);
     ASSERT_TRUE(
@@ -258,8 +292,9 @@ TEST(TransformationChangingMemorySemanticsTest, AtomicInstructionsTestCases) {
   }
 
   {
-    // Changing memory semantics from |AcquireRelease| to
-    // |SequentiallyConsistent| with keeping the old higher bits value.
+    // OpAtomicExchange AcquireRelease         | UniformMemory
+    // to:
+    // OpAtomicExchange SequentiallyConsistent | UniformMemory
     TransformationChangingMemorySemantics transformation(
         MakeInstructionDescriptor(32, SpvOpAtomicExchange, 0), 0, 28);
     ASSERT_TRUE(
@@ -417,20 +452,29 @@ TEST(TransformationChangingMemorySemanticsTest, OpMemoryBarrierTestCases) {
                                                kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
-  // Bad: Can not be change memory semantics Acquire to Release because it will
-  // change the semantics.
+
+  // Bad transformation:
+  // OpMemoryBarrier Acquire | UniformMemory
+  // to:
+  // OpMemoryBarrier Release | UniformMemory
+  // This will change the semantics.
   ASSERT_FALSE(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(23, SpvOpMemoryBarrier, 0), 0, 27)
                    .IsApplicable(context.get(), transformation_context));
-  // Bad: Cannot be changed from |UniformMemory| to |WorkgroupMemory|.
+
+  // Bad transformation:
+  // OpMemoryBarrier Acquire        | UniformMemory
+  // to:
+  // OpMemoryBarrier AcquireRelease | WorkgroupMemory
   ASSERT_FALSE(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(23, SpvOpMemoryBarrier, 0), 0, 26)
                    .IsApplicable(context.get(), transformation_context));
 
   // Successful transformations.
   {
-    // Changing memory semantics from |Acquire| to |AcquireRelease| with keeping
-    // the old higher bits value.
+    // OpMemoryBarrier Acquire        | UniformMemory
+    // to:
+    // OpMemoryBarrier AcquireRelease | UniformMemory
     TransformationChangingMemorySemantics transformation(
         MakeInstructionDescriptor(23, SpvOpMemoryBarrier, 0), 0, 28);
     ASSERT_TRUE(
