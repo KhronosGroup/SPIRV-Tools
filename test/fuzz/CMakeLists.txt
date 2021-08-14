@@ -57,6 +57,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_add_no_contraction_decoration_test.cpp
           transformation_add_opphi_synonym_test.cpp
           transformation_add_parameter_test.cpp
+          transformation_add_read_modify_write_atomic_instruction_test.cpp
           transformation_add_relaxed_decoration_test.cpp
           transformation_add_synonym_test.cpp
           transformation_add_type_array_test.cpp

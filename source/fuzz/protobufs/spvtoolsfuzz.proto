@@ -560,6 +560,7 @@ message Transformation {
     TransformationSwapFunctionVariables swap_function_variables = 86;
     TransformationSwapTwoFunctions swap_two_functions = 87;
     TransformationWrapVectorSynonym wrap_vector_synonym = 88;
+    TransformationAddReadModifyWriteAtomicInstruction add_read_modify_write_atomic_instruction = 90;
     // Add additional option using the next available number.
   }
 }
@@ -1072,6 +1073,41 @@ message TransformationAddParameter {
   // if a required function type already exists or if we can change
   // the old function type.
   uint32 function_type_fresh_id = 5;
+
+}
+
+message TransformationAddReadModifyWriteAtomicInstruction {
+
+  // Transformation that adds Read Modify Write atomic instruction from a pointer into an id.
+
+  // The result of the atomic instruction.
+  uint32 fresh_id = 1;
+
+  // The pointer to be work on.
+  uint32 pointer_id = 2;
+
+  // Read Modify Write atomic instruction opcode.
+  uint32 opcode = 3;
+
+  // The memory scope for the atomic operation
+  uint32 memory_scope_id = 4;
+
+  // The memory semantics for the atomic operation.
+  uint32 memory_semantics_id_1 = 5;
+
+  // The memory semantics for the atomic operation for the instruction
+  // that takes two memory semantics.
+  uint32 memory_semantics_id_2 = 6;
+
+  // The value to be used in specific instructions.
+  uint32 value_id = 7;
+
+  // The comparator will be used in specific instructions.
+  uint32  comparator_id = 8;
+
+  // A descriptor for instruction in a block before which the new Read Modify Write
+  // atomic instruction should be inserted.
+  InstructionDescriptor instruction_to_insert_before = 9;
 
 }
 

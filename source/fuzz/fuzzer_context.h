@@ -200,6 +200,9 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingParameters() const {
     return chance_of_adding_parameters;
   }
+  uint32_t GetChanceOfAddingReadModifyWriteAtomicInstruction() const {
+    return chance_of_adding_read_modify_write_atomic_instruction_;
+  }
   uint32_t GetChanceOfAddingRelaxedDecoration() const {
     return chance_of_adding_relaxed_decoration_;
   }
@@ -518,6 +521,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_no_contraction_decoration_;
   uint32_t chance_of_adding_opphi_synonym_;
   uint32_t chance_of_adding_parameters;
+  uint32_t chance_of_adding_read_modify_write_atomic_instruction_;
   uint32_t chance_of_adding_relaxed_decoration_;
   uint32_t chance_of_adding_store_;
   uint32_t chance_of_adding_synonyms_;

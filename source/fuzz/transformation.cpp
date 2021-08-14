@@ -38,6 +38,7 @@
 #include "source/fuzz/transformation_add_no_contraction_decoration.h"
 #include "source/fuzz/transformation_add_opphi_synonym.h"
 #include "source/fuzz/transformation_add_parameter.h"
+#include "source/fuzz/transformation_add_read_modify_write_atomic_instruction.h"
 #include "source/fuzz/transformation_add_relaxed_decoration.h"
 #include "source/fuzz/transformation_add_spec_constant_op.h"
 #include "source/fuzz/transformation_add_synonym.h"
@@ -180,6 +181,10 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kAddRelaxedDecoration:
       return MakeUnique<TransformationAddRelaxedDecoration>(
           message.add_relaxed_decoration());
+    case protobufs::Transformation::TransformationCase::
+        kAddReadModifyWriteAtomicInstruction:
+      return MakeUnique<TransformationAddReadModifyWriteAtomicInstruction>(
+          message.add_read_modify_write_atomic_instruction());
     case protobufs::Transformation::TransformationCase::kAddSpecConstantOp:
       return MakeUnique<TransformationAddSpecConstantOp>(
           message.add_spec_constant_op());

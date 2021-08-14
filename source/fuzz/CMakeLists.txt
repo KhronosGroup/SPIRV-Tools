@@ -73,6 +73,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_no_contraction_decorations.h
         fuzzer_pass_add_opphi_synonyms.h
         fuzzer_pass_add_parameters.h
+        fuzzer_pass_add_read_modify_write_atomic_instruction.h
         fuzzer_pass_add_relaxed_decorations.h
         fuzzer_pass_add_stores.h
         fuzzer_pass_add_synonyms.h
@@ -164,6 +165,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_no_contraction_decoration.h
         transformation_add_opphi_synonym.h
         transformation_add_parameter.h
+        transformation_add_read_modify_write_atomic_instruction.h
         transformation_add_relaxed_decoration.h
         transformation_add_spec_constant_op.h
         transformation_add_synonym.h
@@ -270,6 +272,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_no_contraction_decorations.cpp
         fuzzer_pass_add_opphi_synonyms.cpp
         fuzzer_pass_add_parameters.cpp
+        fuzzer_pass_add_read_modify_write_atomic_instruction.cpp
         fuzzer_pass_add_relaxed_decorations.cpp
         fuzzer_pass_add_stores.cpp
         fuzzer_pass_add_synonyms.cpp
@@ -359,6 +362,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_no_contraction_decoration.cpp
         transformation_add_opphi_synonym.cpp
         transformation_add_parameter.cpp
+        transformation_add_read_modify_write_atomic_instruction.cpp
         transformation_add_relaxed_decoration.cpp
         transformation_add_spec_constant_op.cpp
         transformation_add_synonym.cpp

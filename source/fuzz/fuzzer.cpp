@@ -39,6 +39,7 @@
 #include "source/fuzz/fuzzer_pass_add_no_contraction_decorations.h"
 #include "source/fuzz/fuzzer_pass_add_opphi_synonyms.h"
 #include "source/fuzz/fuzzer_pass_add_parameters.h"
+#include "source/fuzz/fuzzer_pass_add_read_modify_write_atomic_instruction.h"
 #include "source/fuzz/fuzzer_pass_add_relaxed_decorations.h"
 #include "source/fuzz/fuzzer_pass_add_stores.h"
 #include "source/fuzz/fuzzer_pass_add_synonyms.h"
@@ -234,6 +235,8 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
   MaybeAddFinalPass<FuzzerPassAdjustLoopControls>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassAdjustMemoryOperandsMasks>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassAdjustSelectionControls>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassAddReadModifyWriteAtomicInstruction>(
+      &final_passes_);
   MaybeAddFinalPass<FuzzerPassAddNoContractionDecorations>(&final_passes_);
   if (!fuzzer_context_->IsWgslCompatible()) {
     // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4214):
