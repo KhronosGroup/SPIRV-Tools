@@ -746,7 +746,7 @@ TEST_F(ValidateMemory, ArrayLenIndexNotPointerToStruct) {
       %float = OpTypeFloat 32
      %uint = OpTypeInt 32 0
 %_runtimearr_float = OpTypeRuntimeArray %float
-  %_struct_7 = OpTypeStruct %float %_runtimearr_float
+  %_struct_7 = OpTypeStruct %float
 %_ptr_Function__struct_7  = OpTypePointer Function %_struct_7
           %1 = OpFunction %void None %3
           %9 = OpLabel
@@ -4282,6 +4282,94 @@ OpFunctionEnd
 )";
   CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_0);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateMemory, LoadRuntimeArray) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%rta = OpTypeRuntimeArray %int
+%block = OpTypeStruct %rta
+%ptr_rta = OpTypePointer StorageBuffer %rta
+%ptr_block = OpTypePointer StorageBuffer %block
+%var = OpVariable %ptr_block StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpAccessChain %ptr_rta %var %int_0
+%ld = OpLoad %rta %gep
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Cannot load a runtime-sized array"));
+}
+
+TEST_F(ValidateMemory, LoadRuntimeArrayInStruct) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%rta = OpTypeRuntimeArray %int
+%block = OpTypeStruct %rta
+%ptr_rta = OpTypePointer StorageBuffer %rta
+%ptr_block = OpTypePointer StorageBuffer %block
+%var = OpVariable %ptr_block StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%ld = OpLoad %block %var
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Cannot load a runtime-sized array"));
+}
+
+TEST_F(ValidateMemory, LoadRuntimeArrayInArray) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%rta = OpTypeRuntimeArray %int
+%block = OpTypeStruct %rta
+%array = OpTypeArray %block %int_4
+%ptr_rta = OpTypePointer StorageBuffer %rta
+%ptr_block = OpTypePointer StorageBuffer %block
+%ptr_array = OpTypePointer StorageBuffer %array
+%var = OpVariable %ptr_array StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%ld = OpLoad %array %var
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Cannot load a runtime-sized array"));
 }
 
 }  // namespace

@@ -576,7 +576,6 @@ TEST_F(EliminateDeadMemberTest, RemoveMembersUpdateArrayLength) {
    %_Globals = OpVariable %_ptr_Uniform_type__Globals Uniform
        %main = OpFunction %void None %9
          %10 = OpLabel
-         %11 = OpLoad %type__Globals %_Globals
          %12 = OpArrayLength %uint %_Globals 2
                OpReturn
                OpFunctionEnd
