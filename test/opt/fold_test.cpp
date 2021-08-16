@@ -5818,7 +5818,33 @@ INSTANTIATE_TEST_SUITE_P(MergeDivTest, MatchingInstructionFoldingTest,
         "%5 = OpFDiv %float %4 %2\n" +
         "OpReturn\n" +
         "OpFunctionEnd\n",
-    5, true)
+    5, true),
+  // Test case 16: Do not merge udiv of snegate
+  // (-x) / 2u
+  InstructionFoldingCase<bool>(
+    Header() +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_uint Function\n" +
+      "%2 = OpLoad %uint %var\n" +
+      "%3 = OpSNegate %uint %2\n" +
+      "%4 = OpUDiv %uint %3 %uint_2\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, false),
+  // Test case 17: Do not merge udiv of snegate
+  // 2u / (-x)
+  InstructionFoldingCase<bool>(
+    Header() +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var = OpVariable %_ptr_uint Function\n" +
+      "%2 = OpLoad %uint %var\n" +
+      "%3 = OpSNegate %uint %2\n" +
+      "%4 = OpUDiv %uint %uint_2 %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+    4, false)
 ));
 
 INSTANTIATE_TEST_SUITE_P(MergeAddTest, MatchingInstructionFoldingTest,
