@@ -729,9 +729,12 @@ bool InlinePass::IsInlinableFunction(Function* func) {
   // We can only inline a function if it has blocks.
   if (func->cbegin() == func->cend()) return false;
 
-  // Do not inline functions with DontInline flag.
+  // Do not inline functions with DontInline flag, unless overridden by the
+  // optimizer option.
   if (func->control_mask() & SpvFunctionControlDontInlineMask) {
-    return false;
+    if (!context()->force_inline()) {
+      return false;
+    }
   }
 
   // Do not inline functions with returns in loops. Currently early return

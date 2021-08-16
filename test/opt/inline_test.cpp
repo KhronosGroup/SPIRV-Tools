@@ -2430,6 +2430,39 @@ OpFunctionEnd
   SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
 }
 
+TEST_F(InlineTest, ForceInlineFuncWithDontInline) {
+  // Check that the function with DontInline flag is inlined when enabling the
+  // force inline optimizer option.
+  const std::string text = R"(
+; CHECK-NOT: OpFunctionCall
+
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpSource HLSL 600
+OpName %main "main"
+OpName %foo "foo"
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%7 = OpTypeFunction %int
+%main = OpFunction %void None %6
+%8 = OpLabel
+%9 = OpFunctionCall %int %foo
+OpReturn
+OpFunctionEnd
+%foo = OpFunction %int DontInline %7
+%10 = OpLabel
+OpReturnValue %int_0
+OpFunctionEnd
+)";
+
+  OptimizerOptions()->force_inline_ = true;
+  SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
+}
+
 TEST_F(InlineTest, InlineFuncWithOpKillNotInContinue) {
   const std::string before =
       R"(OpCapability Shader

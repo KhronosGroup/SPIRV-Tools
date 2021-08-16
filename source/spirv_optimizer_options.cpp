@@ -49,3 +49,8 @@ SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetPreserveSpecConstants(
     spv_optimizer_options options, bool val) {
   options->preserve_spec_constants_ = val;
 }
+
+SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetForceInline(
+    spv_optimizer_options options, bool val) {
+  options->force_inline_ = val;
+}

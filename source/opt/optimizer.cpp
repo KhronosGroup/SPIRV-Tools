@@ -551,6 +551,7 @@ bool Optimizer::Run(const uint32_t* original_binary,
   context->set_max_id_bound(opt_options->max_id_bound_);
   context->set_preserve_bindings(opt_options->preserve_bindings_);
   context->set_preserve_spec_constants(opt_options->preserve_spec_constants_);
+  context->set_force_inline(opt_options->force_inline_);
 
   impl_->pass_manager.SetValidatorOptions(&opt_options->val_options_);
   impl_->pass_manager.SetTargetEnv(impl_->target_env);

@@ -691,6 +691,11 @@ SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetPreserveBindings(
 SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetPreserveSpecConstants(
     spv_optimizer_options options, bool val);
 
+// Records whether to try inlining all functions, even ones using the DontInline
+// function control bit.
+SPIRV_TOOLS_EXPORT void spvOptimizerOptionsSetForceInline(
+    spv_optimizer_options options, bool val);
+
 // Creates a reducer options object with default options. Returns a valid
 // options object. The object remains valid until it is passed into
 // |spvReducerOptionsDestroy|.

@@ -184,6 +184,12 @@ class OptimizerOptions {
                                                 preserve_spec_constants);
   }
 
+  // Records whether to try inlining all functions, even ones using the
+  // DontInline function control bit.
+  void set_force_inline(bool force_inline) {
+    spvOptimizerOptionsSetForceInline(options_, force_inline);
+  }
+
  private:
   spv_optimizer_options options_;
 };

@@ -218,6 +218,10 @@ Options (in lexicographical order):)",
                OpSpecConstantComposite instructions to front-end constants
                when possible.)");
   printf(R"(
+  --force-inline
+               Try inlining all functions, even ones using the DontInline
+               function control bit.)");
+  printf(R"(
   --freeze-spec-const
                Freeze the values of specialization constants to their default
                values.)");
@@ -709,6 +713,8 @@ OptStatus ParseFlags(int argc, const char** argv,
         optimizer_options->set_preserve_bindings(true);
       } else if (0 == strcmp(cur_arg, "--preserve-spec-constants")) {
         optimizer_options->set_preserve_spec_constants(true);
+      } else if (0 == strcmp(cur_arg, "--force-inline")) {
+        optimizer_options->set_force_inline(true);
       } else if (0 == strcmp(cur_arg, "--time-report")) {
         optimizer->SetTimeReport(&std::cerr);
       } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {

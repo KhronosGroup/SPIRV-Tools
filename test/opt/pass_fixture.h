@@ -70,6 +70,7 @@ class PassTest : public TestT {
     context()->set_preserve_bindings(OptimizerOptions()->preserve_bindings_);
     context()->set_preserve_spec_constants(
         OptimizerOptions()->preserve_spec_constants_);
+    context()->set_force_inline(OptimizerOptions()->force_inline_);
 
     const auto status = pass->Run(context());
 
@@ -242,6 +243,7 @@ class PassTest : public TestT {
     context()->set_preserve_bindings(OptimizerOptions()->preserve_bindings_);
     context()->set_preserve_spec_constants(
         OptimizerOptions()->preserve_spec_constants_);
+    context()->set_force_inline(OptimizerOptions()->force_inline_);
 
     auto status = manager_->Run(context());
     EXPECT_NE(status, Pass::Status::Failure);
