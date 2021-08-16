@@ -603,7 +603,7 @@ class ValidationState_t {
   // Only traverse pointers and functions if |traverse_all_types| is true.
   // Recursively tests |f| against the type hierarchy headed by |id|.
   bool ContainsType(uint32_t id,
-                    const std::function<bool(const Instruction* inst)>& f,
+                    const std::function<bool(const Instruction*)>& f,
                     bool traverse_all_types = true) const;
 
   // Gets value from OpConstant and OpSpecConstant as uint64.

@@ -1263,7 +1263,7 @@ const Instruction* ValidationState_t::TracePointer(
 }
 
 bool ValidationState_t::ContainsType(
-    uint32_t id, const std::function<bool(const Instruction* inst)>& f,
+    uint32_t id, const std::function<bool(const Instruction*)>& f,
     bool traverse_all_types) const {
   const auto inst = FindDef(id);
   if (!inst) return false;
@@ -1310,9 +1310,6 @@ bool ValidationState_t::ContainsSizedIntOrFloatType(uint32_t id, SpvOp type,
                                                     uint32_t width) const {
   if (type != SpvOpTypeInt && type != SpvOpTypeFloat) return false;
 
-  const auto inst = FindDef(id);
-  if (!inst) return false;
-
   const auto f = [type, width](const Instruction* inst) {
     if (inst->opcode() == type) {
       return inst->GetOperandAs<uint32_t>(1u) == width;
@@ -1335,9 +1332,6 @@ bool ValidationState_t::ContainsLimitedUseIntOrFloatType(uint32_t id) const {
 }
 
 bool ValidationState_t::ContainsRuntimeArray(uint32_t id) const {
-  const auto inst = FindDef(id);
-  if (!inst) return false;
-
   const auto f = [](const Instruction* inst) {
     return inst->opcode() == SpvOpTypeRuntimeArray;
   };
