@@ -4372,7 +4372,6 @@ OpFunctionEnd
               HasSubstr("Cannot load a runtime-sized array"));
 }
 
-
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
