@@ -28,6 +28,7 @@ if (${SPIRV_BUILD_FUZZER})
           fact_manager/irrelevant_value_facts_test.cpp
           fuzz_test_util.cpp
           fuzzer_pass_add_opphi_synonyms_test.cpp
+          fuzzer_pass_changing_memory_semantics_test.cpp
           fuzzer_pass_construct_composites_test.cpp
           fuzzer_pass_donate_modules_test.cpp
           fuzzer_pass_outline_functions_test.cpp

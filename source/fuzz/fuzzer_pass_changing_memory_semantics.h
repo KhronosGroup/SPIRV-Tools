@@ -32,6 +32,13 @@ class FuzzerPassChangingMemorySemantics : public FuzzerPass {
       protobufs::TransformationSequence* transformations,
       bool ignore_inapplicable_transformations);
 
+  static std::vector<SpvMemorySemanticsMask>
+  GetSuitableNewMemorySemanticsLowerBitValues(
+      opt::IRContext* ir_context,
+      spvtools::opt::Instruction* needed_instruction,
+      SpvMemorySemanticsMask lower_bits_old_memory_semantics_value,
+      uint32_t memory_semantics_operand_position, SpvMemoryModel memory_model);
+
   void Apply() override;
 };
 

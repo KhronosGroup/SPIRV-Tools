@@ -51,15 +51,15 @@ class TransformationChangingMemorySemantics : public Transformation {
              TransformationContext* transformation_context) const override;
 
   // Returns true if the proposed memory order strengthening from
-  // |first_5bits_old_memory_semantics| to |first_5bits_new_memory_semantics| is
+  // |lower_bits_old_memory_semantics| to |lower_bits_new_memory_semantics| is
   // both valid (according to the SPIR-V specification) and is actually a
   // strengthening that would not change the semantics of a SPIR-V module. For
   // full details, see the comments within the function body.
   static bool IsSuitableStrengthening(
       opt::IRContext* ir_context,
       spvtools::opt::Instruction* needed_atomic_instruction,
-      SpvMemorySemanticsMask first_5bits_old_memory_semantics,
-      SpvMemorySemanticsMask first_5bits_new_memory_semantics,
+      SpvMemorySemanticsMask lower_bits_old_memory_semantics,
+      SpvMemorySemanticsMask lower_bits_new_memory_semantics,
       uint32_t memory_semantics_operand_position, SpvMemoryModel memory_model);
 
   // Returns true if |memory_semantics_value| is suitable for the atomic load
