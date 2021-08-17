@@ -38,8 +38,8 @@ void FuzzerPassChangingMemorySemantics::Apply() {
              const protobufs::InstructionDescriptor& instruction_descriptor) {
         // The instruction must have at least one memory semantics operand.
         auto number_of_memory_semantics =
-            TransformationChangingMemorySemantics::GetNumberOfMemorySemantics(
-                inst_it->opcode());
+            TransformationChangingMemorySemantics::
+                GetNumberOfMemorySemanticsOperands(inst_it->opcode());
         if (number_of_memory_semantics == 0) {
           return;
         }
@@ -77,20 +77,16 @@ void FuzzerPassChangingMemorySemantics::Apply() {
                 memory_semantics_value & TransformationChangingMemorySemantics::
                                              kMemorySemanticsHigherBitmask);
 
-        auto needed_instruction =
-            FindInstruction(instruction_descriptor, GetIRContext());
         auto memory_model = static_cast<SpvMemoryModel>(
             GetIRContext()->module()->GetMemoryModel()->GetSingleWordInOperand(
                 1));
         auto potential_new_memory_orders =
             GetSuitableNewMemorySemanticsLowerBitValues(
-                GetIRContext(), needed_instruction,
-                lower_bits_old_memory_semantics,
+                GetIRContext(), &*inst_it, lower_bits_old_memory_semantics,
                 memory_semantics_operand_position, memory_model);
 
-        // If the size of the vector equals zero, the current atomic or barrier
-        // instruction doesn't have any valid memory semantics.
-        if (potential_new_memory_orders.size() == 0) {
+        // We need at least one suitable memory order.
+        if (potential_new_memory_orders.empty()) {
           return;
         }
         // Randomly choose a new memory semantics value (lower bits).
@@ -118,6 +114,7 @@ FuzzerPassChangingMemorySemantics::GetSuitableNewMemorySemanticsLowerBitValues(
     opt::IRContext* ir_context, spvtools::opt::Instruction* needed_instruction,
     SpvMemorySemanticsMask lower_bits_old_memory_semantics_value,
     uint32_t memory_semantics_operand_position, SpvMemoryModel memory_model) {
+  // Filter a list of all possible memory orders using IsSuitableStrengthening.
   std::vector<SpvMemorySemanticsMask> potential_new_memory_orders{
       SpvMemorySemanticsMaskNone, SpvMemorySemanticsAcquireMask,
       SpvMemorySemanticsReleaseMask, SpvMemorySemanticsAcquireReleaseMask,
@@ -136,8 +133,7 @@ FuzzerPassChangingMemorySemantics::GetSuitableNewMemorySemanticsLowerBitValues(
             memory_semantics_operand_position, memory_model);
       });
 
-  // Removes the memory masks are not applicable for the atomic or barrier
-  // instructions, or it has the same value.
+  // Erase the unsuitable memory order values.
   potential_new_memory_orders.erase(reordered_memory_semantics,
                                     potential_new_memory_orders.end());
 

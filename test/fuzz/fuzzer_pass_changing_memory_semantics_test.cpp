@@ -16,6 +16,7 @@
 
 #include "gtest/gtest.h"
 #include "source/fuzz/fuzzer_util.h"
+#include "source/fuzz/instruction_descriptor.h"
 #include "source/fuzz/pseudo_random_generator.h"
 #include "source/fuzz/transformation_changing_memory_semantics.h"
 #include "test/fuzz/fuzz_test_util.h"
@@ -42,7 +43,7 @@ TEST(FuzzerPassChangingMemorySemanticsTest,
           %8 = OpTypeStruct %6
          %10 = OpTypePointer StorageBuffer %8
          %11 = OpVariable %10 StorageBuffer
-         %18 = OpConstant %9 1
+         %18 = OpConstant %6 2
          %12 = OpConstant %6 0
          %13 = OpTypePointer StorageBuffer %6
          %15 = OpConstant %6 4
@@ -62,8 +63,10 @@ TEST(FuzzerPassChangingMemorySemanticsTest,
          %22 = OpAtomicLoad %6 %14 %15 %29
          %23 = OpAtomicLoad %6 %14 %15 %27
          %32 = OpAtomicExchange %6 %14 %15 %31 %16
+         %33 = OpAtomicCompareExchange %6 %14 %15 %28 %29 %16 %15
          %24 = OpAccessChain %13 %11 %12
                OpAtomicStore %14 %15 %27 %16
+               OpMemoryBarrier %18 %31
                OpReturn
                OpFunctionEnd
   )";
@@ -85,31 +88,92 @@ TEST(FuzzerPassChangingMemorySemanticsTest,
 
   fuzzer_pass_changing_memory_semantics.Apply();
 
-  // Check |GetSuitableNewMemorySemanticsLowerBitValues| method, its should be
-  // returns the expected vector below.
   auto ir_context = context.get();
-  auto needed_instruction = ir_context->get_def_use_mgr()->GetDef(21);
-  auto memory_model = static_cast<SpvMemoryModel>(
-      ir_context->module()->GetMemoryModel()->GetSingleWordInOperand(1));
-  uint32_t memory_semantics_operand_position = 0;
 
-  auto memory_semantics_value =
-      ir_context->get_def_use_mgr()
-          ->GetDef(needed_instruction->GetSingleWordInOperand(2))
-          ->GetSingleWordInOperand(0);
+  // Check |GetSuitableNewMemorySemanticsLowerBitValues| method, its should be
+  // returns the expected vector as the examples below.
 
-  auto lower_bits_old_memory_semantics = static_cast<SpvMemorySemanticsMask>(
-      memory_semantics_value &
-      TransformationChangingMemorySemantics::kMemorySemanticsLowerBitmask);
+  // OpAtomicLoad: None -> [Acquire, SequentiallyConsistent].
+  {
+    auto atomic_load_instruction = ir_context->get_def_use_mgr()->GetDef(21);
+    auto old_value = SpvMemorySemanticsMaskNone;
+    auto expected = std::vector<SpvMemorySemanticsMask>{
+        SpvMemorySemanticsAcquireMask,
+        SpvMemorySemanticsSequentiallyConsistentMask};
+    auto actual = FuzzerPassChangingMemorySemantics::
+        GetSuitableNewMemorySemanticsLowerBitValues(
+            context.get(), atomic_load_instruction, old_value, 0,
+            SpvMemoryModelGLSL450);
+    ASSERT_EQ(expected, actual);
+  }
 
-  std::vector<SpvMemorySemanticsMask> expected_potential_new_memory_orders{
-      SpvMemorySemanticsSequentiallyConsistentMask};
-  auto actual_potential_new_memory_orders = FuzzerPassChangingMemorySemantics::
-      GetSuitableNewMemorySemanticsLowerBitValues(
-          ir_context, needed_instruction, lower_bits_old_memory_semantics,
-          memory_semantics_operand_position, memory_model);
-  ASSERT_TRUE(expected_potential_new_memory_orders ==
-              actual_potential_new_memory_orders);
+  // OpAtomicLoad: Acquire -> [SequentiallyConsistent].
+  {
+    auto atomic_load_instruction = ir_context->get_def_use_mgr()->GetDef(22);
+    auto old_value = SpvMemorySemanticsAcquireMask;
+    auto expected = std::vector<SpvMemorySemanticsMask>{
+        SpvMemorySemanticsSequentiallyConsistentMask};
+    auto actual = FuzzerPassChangingMemorySemantics::
+        GetSuitableNewMemorySemanticsLowerBitValues(
+            context.get(), atomic_load_instruction, old_value, 0,
+            SpvMemoryModelGLSL450);
+    ASSERT_EQ(expected, actual);
+  }
+
+  // OpAtomicLoad: Acquire -> []
+  // (with Vulkan memory model).
+  {
+    auto atomic_load_instruction = ir_context->get_def_use_mgr()->GetDef(22);
+    auto old_value = SpvMemorySemanticsAcquireMask;
+    auto expected = std::vector<SpvMemorySemanticsMask>{};
+    auto actual = FuzzerPassChangingMemorySemantics::
+        GetSuitableNewMemorySemanticsLowerBitValues(
+            context.get(), atomic_load_instruction, old_value, 0,
+            SpvMemoryModelVulkan);
+    ASSERT_EQ(expected, actual);
+  }
+
+  // OpAtomicExchange: AcquireRelease -> [SequentiallyConsistent].
+  {
+    auto atomic_exchange_instruction =
+        ir_context->get_def_use_mgr()->GetDef(32);
+    auto old_value = SpvMemorySemanticsAcquireReleaseMask;
+    auto expected = std::vector<SpvMemorySemanticsMask>{
+        SpvMemorySemanticsSequentiallyConsistentMask};
+    auto actual = FuzzerPassChangingMemorySemantics::
+        GetSuitableNewMemorySemanticsLowerBitValues(
+            context.get(), atomic_exchange_instruction, old_value, 0,
+            SpvMemoryModelGLSL450);
+    ASSERT_EQ(expected, actual);
+  }
+
+  // OpAtomicCompareExchange: None -> [SequentiallyConsistent].
+  {
+    auto atomic_compare_exchange_instruction =
+        ir_context->get_def_use_mgr()->GetDef(33);
+    auto old_value = SpvMemorySemanticsMaskNone;
+    auto expected = std::vector<SpvMemorySemanticsMask>{
+        SpvMemorySemanticsSequentiallyConsistentMask};
+    auto actual = FuzzerPassChangingMemorySemantics::
+        GetSuitableNewMemorySemanticsLowerBitValues(
+            context.get(), atomic_compare_exchange_instruction, old_value, 1,
+            SpvMemoryModelGLSL450);
+    ASSERT_EQ(expected, actual);
+  }
+
+  // OpMemoryBarrier: AcquireRelease -> [SequentiallyConsistent].
+  {
+    auto memory_barrier_instruction = FindInstruction(
+        MakeInstructionDescriptor(24, SpvOpMemoryBarrier, 0), ir_context);
+    auto old_value = SpvMemorySemanticsAcquireReleaseMask;
+    auto expected = std::vector<SpvMemorySemanticsMask>{
+        SpvMemorySemanticsSequentiallyConsistentMask};
+    auto actual = FuzzerPassChangingMemorySemantics::
+        GetSuitableNewMemorySemanticsLowerBitValues(
+            context.get(), memory_barrier_instruction, old_value, 0,
+            SpvMemoryModelGLSL450);
+    ASSERT_EQ(expected, actual);
+  }
 }
 
 }  // namespace

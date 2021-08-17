@@ -170,6 +170,7 @@ TEST(TransformationChangingMemorySemanticsTest, AtomicInstructionsTestCases) {
          %22 = OpAtomicLoad %6 %14 %15 %29
          %23 = OpAtomicLoad %6 %14 %15 %27
          %32 = OpAtomicExchange %6 %14 %15 %31 %16
+         %33 = OpAtomicCompareExchange %6 %14 %15 %28 %29 %16 %15
          %24 = OpAccessChain %13 %11 %12
                OpAtomicStore %14 %15 %27 %16
                OpReturn
@@ -305,6 +306,23 @@ TEST(TransformationChangingMemorySemanticsTest, AtomicInstructionsTestCases) {
         context.get(), validator_options, kConsoleMessageConsumer));
   }
 
+  {
+    // Value (one) is pointing to the unequal position operand.
+    auto memory_semantics_operand_second_position = 1;
+    // OpAtomicCompareExchange None                   | UniformMemory
+    // to:
+    // OpAtomicCompareExchange SequentiallyConsistent | UniformMemory
+    TransformationChangingMemorySemantics transformation(
+        MakeInstructionDescriptor(33, SpvOpAtomicCompareExchange, 0),
+        memory_semantics_operand_second_position, 28);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
+  }
+
   const std::string after_transformation = R"(
                OpCapability Shader
                OpCapability Int8
@@ -341,6 +359,7 @@ TEST(TransformationChangingMemorySemanticsTest, AtomicInstructionsTestCases) {
          %22 = OpAtomicLoad %6 %14 %15 %250
          %23 = OpAtomicLoad %6 %14 %15 %27
          %32 = OpAtomicExchange %6 %14 %15 %28 %16
+         %33 = OpAtomicCompareExchange %6 %14 %15 %28 %28 %16 %15
          %24 = OpAccessChain %13 %11 %12
                OpAtomicStore %14 %15 %28 %16
                OpReturn

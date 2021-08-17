@@ -35,13 +35,10 @@ class TransformationChangingMemorySemantics : public Transformation {
       uint32_t memory_semantics_operand_position,
       uint32_t memory_semantics_new_value_id);
 
-  // - |message_.atomic_instruction| atomic or barrier instruction that would
-  //   like to change its memory semantics value.
-  // - |message_.memory_semantics_operand_position| position of atomic
-  //   or barrier instruction would like to change, must be equal to 0 or 1
-  //   only.
-  // - |message_.memory_semantics_new_value_id| the new id of memory semantics
-  //   that is will change with the old.
+  // Responsible for check if the new memory semantics id is existing, suitable
+  // for specific atomic or barrier instruction, the old value of memory
+  // semantics is smaller than the new value. Also, it should return false is
+  // memory model is Vulkan and new memory semantics is sequentially consistent.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
@@ -90,9 +87,8 @@ class TransformationChangingMemorySemantics : public Transformation {
   static uint32_t GetMemorySemanticsInOperandIndex(
       SpvOp opcode, uint32_t memory_semantics_operand_position);
 
-  // Returns number of memory semantic operands for the specific atomic or
-  // barrier instruction.
-  static uint32_t GetNumberOfMemorySemantics(SpvOp opcode);
+  // Returns the number of memory semantic operands for |opcode|.
+  static uint32_t GetNumberOfMemorySemanticsOperands(SpvOp opcode);
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
 
