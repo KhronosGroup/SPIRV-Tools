@@ -1299,18 +1299,19 @@ message TransformationAdjustBranchWeights {
 
 message TransformationChangingMemorySemantics {
 
-  // This transformation is responsible for changing the mask of memory 
-  // semantics with a range of 5 bits of values.
+  // Strengthens a memory semantics operand within an instruction. 
+  // Only the memory order (the first 5 bits) is changed.
 
   // The atomic instruction we are looking for.
   InstructionDescriptor atomic_instruction = 1;
 
-  // The operand position needs to change, 0 for the first memory semantics operand, 1 for the second memory 
-  // semantics operand(if found).
-  uint32  memory_semantics_operand_position = 2;
+  // The operand position of the memory semantics operand within |atomic_instruction|; 
+  // 0 for the first memory semantics operand, 
+  // 1 for the second memory semantics operand.
+  uint32 memory_semantics_operand_position = 2;
 
   // The id of new value.
-  uint32  memory_semantics_new_value_id = 3;
+  uint32 memory_semantics_new_value_id = 3;
 
 }
 

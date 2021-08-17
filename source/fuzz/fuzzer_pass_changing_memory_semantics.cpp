@@ -36,13 +36,10 @@ void FuzzerPassChangingMemorySemantics::Apply() {
       [this](opt::Function* /* unused */, opt::BasicBlock* /* unused */,
              opt::BasicBlock::iterator inst_it,
              const protobufs::InstructionDescriptor& instruction_descriptor) {
-        // Instruction must be atomic or barrier instruction, return the number
-        // of memory semantic operands for instruction.
+        // The instruction must have at least one memory semantics operand.
         auto number_of_memory_semantics =
             TransformationChangingMemorySemantics::GetNumberOfMemorySemantics(
                 inst_it->opcode());
-
-        // Equal zero if no atomic or barrier instruction is found.
         if (number_of_memory_semantics == 0) {
           return;
         }
@@ -62,8 +59,8 @@ void FuzzerPassChangingMemorySemantics::Apply() {
         }
 
         auto needed_index = TransformationChangingMemorySemantics::
-            GetMemorySemanticsOperandIndex(inst_it->opcode(),
-                                           memory_semantics_operand_position);
+            GetMemorySemanticsInOperandIndex(inst_it->opcode(),
+                                             memory_semantics_operand_position);
 
         auto memory_semantics_value =
             GetIRContext()
@@ -80,72 +77,86 @@ void FuzzerPassChangingMemorySemantics::Apply() {
                 memory_semantics_value & TransformationChangingMemorySemantics::
                                              kMemorySemanticsHigherBitmask);
 
-        std::vector<SpvMemorySemanticsMask> memory_semanitcs_masks{
+        std::vector<SpvMemorySemanticsMask> potential_new_memory_orders{
             SpvMemorySemanticsMaskNone, SpvMemorySemanticsAcquireMask,
             SpvMemorySemanticsReleaseMask, SpvMemorySemanticsAcquireReleaseMask,
             SpvMemorySemanticsSequentiallyConsistentMask};
 
-        // Remove the memory mask is not applicable for instruction.
-        memory_semanitcs_masks.erase(
-            std::remove_if(memory_semanitcs_masks.begin(),
-                           memory_semanitcs_masks.end(),
-                           [inst_it, lower_bits_old_memory_semantics](
-                               SpvMemorySemanticsMask /*unused*/) {
-                             switch (inst_it->opcode()) {
-                               case SpvOpAtomicLoad:
-                                 return TransformationChangingMemorySemantics::
-                                     IsAtomicLoadMemorySemanticsValue(
-                                         lower_bits_old_memory_semantics);
+        // Remove the memory mask is not applicable for the new instruction.
+        std::remove_if(potential_new_memory_orders.begin(),
+                       potential_new_memory_orders.end(),
+                       [inst_it, lower_bits_old_memory_semantics](
+                           SpvMemorySemanticsMask /*unused*/) {
+                         switch (inst_it->opcode()) {
+                           case SpvOpAtomicLoad:
+                             return TransformationChangingMemorySemantics::
+                                 IsAtomicLoadMemorySemanticsValue(
+                                     lower_bits_old_memory_semantics);
 
-                               case SpvOpAtomicStore:
-                                 return TransformationChangingMemorySemantics::
-                                     IsAtomicStoreMemorySemanticsValue(
-                                         lower_bits_old_memory_semantics);
+                           case SpvOpAtomicStore:
+                             return TransformationChangingMemorySemantics::
+                                 IsAtomicStoreMemorySemanticsValue(
+                                     lower_bits_old_memory_semantics);
 
-                               case SpvOpAtomicExchange:
-                               case SpvOpAtomicIIncrement:
-                               case SpvOpAtomicIDecrement:
-                               case SpvOpAtomicIAdd:
-                               case SpvOpAtomicISub:
-                               case SpvOpAtomicSMin:
-                               case SpvOpAtomicUMin:
-                               case SpvOpAtomicSMax:
-                               case SpvOpAtomicUMax:
-                               case SpvOpAtomicAnd:
-                               case SpvOpAtomicOr:
-                               case SpvOpAtomicXor:
-                               case SpvOpAtomicCompareExchange:
-                               case SpvOpAtomicCompareExchangeWeak:
+                           case SpvOpAtomicExchange:
+                           case SpvOpAtomicIIncrement:
+                           case SpvOpAtomicIDecrement:
+                           case SpvOpAtomicIAdd:
+                           case SpvOpAtomicISub:
+                           case SpvOpAtomicSMin:
+                           case SpvOpAtomicUMin:
+                           case SpvOpAtomicSMax:
+                           case SpvOpAtomicUMax:
+                           case SpvOpAtomicAnd:
+                           case SpvOpAtomicOr:
+                           case SpvOpAtomicXor:
+                           case SpvOpAtomicCompareExchange:
+                           case SpvOpAtomicCompareExchangeWeak:
 
-                                 return TransformationChangingMemorySemantics::
-                                     IsAtomicRMWInstructionsemorySemanticsValue(
-                                         lower_bits_old_memory_semantics);
+                             return TransformationChangingMemorySemantics::
+                                 IsAtomicRMWInstructionsemorySemanticsValue(
+                                     lower_bits_old_memory_semantics);
 
-                               case SpvOpControlBarrier:
-                               case SpvOpMemoryBarrier:
-                               case SpvOpMemoryNamedBarrier:
+                           case SpvOpControlBarrier:
+                           case SpvOpMemoryBarrier:
+                           case SpvOpMemoryNamedBarrier:
 
-                                 return TransformationChangingMemorySemantics::
-                                     IsBarrierInstructionsMemorySemanticsValue(
-                                         lower_bits_old_memory_semantics);
+                             return TransformationChangingMemorySemantics::
+                                 IsBarrierInstructionsMemorySemanticsValue(
+                                     lower_bits_old_memory_semantics);
 
-                               default:
-                                 return false;
-                             }
-                           }),
-            memory_semanitcs_masks.end());
+                           default:
+                             return false;
+                         }
+                       });
 
-        // The lower bits of new memory semantic value if OR-ed with higher bits
-        // of old memory semantic value.
-        auto memory_semantic_new_value =
-            memory_semanitcs_masks[GetFuzzerContext()->RandomIndex(
-                memory_semanitcs_masks)] |
-            higher_bits_old_memory_semantics;
+        // Randomly choose a new memory semantics value (lower bits).
+        auto lower_bits_new_memory_semantics =
+            potential_new_memory_orders[GetFuzzerContext()->RandomIndex(
+                potential_new_memory_orders)];
+        // Bitwise-OR with the higher bits of the old value, to get the new
+        // value (all bits).
+        auto memory_semantic_new_total_value =
+            lower_bits_new_memory_semantics | higher_bits_old_memory_semantics;
 
         uint32_t new_memory_semantics_id = FindOrCreateConstant(
-            {static_cast<uint32_t>(memory_semantic_new_value)},
+            {static_cast<uint32_t>(memory_semantic_new_total_value)},
             FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
             false);
+
+        auto needed_instruction =
+            FindInstruction(instruction_descriptor, GetIRContext());
+        auto memory_model = static_cast<SpvMemoryModel>(
+            GetIRContext()->module()->GetMemoryModel()->GetSingleWordInOperand(
+                1));
+
+        if (!TransformationChangingMemorySemantics::IsSuitableStrengthening(
+                GetIRContext(), needed_instruction,
+                lower_bits_old_memory_semantics,
+                lower_bits_new_memory_semantics,
+                memory_semantics_operand_position, memory_model)) {
+          return;
+        }
 
         ApplyTransformation(TransformationChangingMemorySemantics(
             instruction_descriptor, memory_semantics_operand_position,

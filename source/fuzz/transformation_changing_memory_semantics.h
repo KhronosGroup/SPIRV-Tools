@@ -23,8 +23,8 @@
 namespace spvtools {
 namespace fuzz {
 
-// This transformation is responsible for changing the mask of memory
-// semantics with a range of 5 bits of values.
+// Strengthens a memory semantics operand within an instruction. Only the memory
+// order (the first 5 bits) is changed.
 class TransformationChangingMemorySemantics : public Transformation {
  public:
   explicit TransformationChangingMemorySemantics(
@@ -35,11 +35,11 @@ class TransformationChangingMemorySemantics : public Transformation {
       uint32_t memory_semantics_operand_position,
       uint32_t memory_semantics_new_value_id);
 
-  // - |message_.atomic_instruction| atomic instruction that would like to
-  //   change its memory semantics value.
+  // - |message_.atomic_instruction| atomic or barrier instruction that would
+  //   like to change its memory semantics value.
   // - |message_.memory_semantics_operand_position| position of atomic
-  // instruction
-  //   would like to change, must be equal to 2 or 3 only.
+  //   or barrier instruction would like to change, must be equal to 0 or 1
+  //   only.
   // - |message_.memory_semantics_new_value_id| the new id of memory semantics
   //   that is will change with the old.
   bool IsApplicable(
@@ -50,54 +50,47 @@ class TransformationChangingMemorySemantics : public Transformation {
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
-  // Check if instruction is atomic instruction only. Check if Memory semantics
-  // operand Position equal to 0 or 1. Check if operand position equal to 0 in
-  // the case of instruction that takes one memory semantics operand and 0 or 1
-  // for instructions that takes two operands.
-  static bool IsNeededOpcodeWithAppropriatePosition(SpvOp opcode,
-                                                    uint32_t position);
-
-  // - |opcode| opcode must be atomic or barrier instruction.
-  //   Valid memory semantics masks:
-  //   OpAtomicLoad: None | Acquire | SequentiallyConsistent
-  //   OpAtomicStore: None | Release | SequentiallyConsistent
-  //   OpAtomicRMW instructions: None | AcquireRelease | SequentiallyConsistent
-  //   Barrier instructions:  None | Acquire | Release | AcquireRelease |
-  //   SequentiallyConsistent
-  // - |lower_bits_old_memory_semantics| must be suitable for specific atomic
-  //   or barrier instruction.
-  // - |lower_bits_new_memory_semantics| should be larger than the old one,
-  //   must be suitable for specific atomic or barrier instruction.
-  // - |memory_model| return false if the memory model is Vulkan and memory
-  //   semantics is Sequentially Consistent.
-  static bool IsValidConversion(
-      SpvOp opcode, SpvMemorySemanticsMask first_5bits_old_memory_semantics,
+  // Returns true if the proposed memory order strengthening from
+  // |first_5bits_old_memory_semantics| to |first_5bits_new_memory_semantics| is
+  // both valid (according to the SPIR-V specification) and is actually a
+  // strengthening that would not change the semantics of a SPIR-V module. For
+  // full details, see the comments within the function body.
+  static bool IsSuitableStrengthening(
+      opt::IRContext* ir_context,
+      spvtools::opt::Instruction* needed_atomic_instruction,
+      SpvMemorySemanticsMask first_5bits_old_memory_semantics,
       SpvMemorySemanticsMask first_5bits_new_memory_semantics,
-      SpvMemoryModel memory_model);
+      uint32_t memory_semantics_operand_position, SpvMemoryModel memory_model);
 
-  // Check available memory semantics values for the atomic load instruction.
+  // Returns true if |memory_semantics_value| is suitable for the atomic load
+  // instruction.
   static bool IsAtomicLoadMemorySemanticsValue(
       SpvMemorySemanticsMask memory_semantics_value);
 
-  // Check available memory semantics values for the atomic store instruction.
+  // Returns true if |memory_semantics_value| is suitable for the atomic store
+  // instruction.
   static bool IsAtomicStoreMemorySemanticsValue(
       SpvMemorySemanticsMask memory_semantics_value);
 
-  // Check available memory semantics values for the atomic read modify write
-  // instructions.
+  // Returns true if |memory_semantics_value| is suitable for the
+  // atomic(read-modify-write) instructions.
   static bool IsAtomicRMWInstructionsemorySemanticsValue(
       SpvMemorySemanticsMask memory_semantics_value);
 
-  // Check available memory semantics values for the barrier instructions.
+  // Returns true if |memory_semantics_value| is suitable for the barrier
+  // instructions.
   static bool IsBarrierInstructionsMemorySemanticsValue(
       SpvMemorySemanticsMask memory_semantics_value);
 
-  // Return one if instruction is OpMemoryBarrier, else will return
-  // suitable position value (two or three).
-  static uint32_t GetMemorySemanticsOperandIndex(SpvOp opcode,
-                                                 uint32_t zero_or_one);
+  // Returns the "in operand" index of the memory semantics operand for the
+  // instruction.
+  // |opcode|: the instruction opcode.
+  // |memory_semantics_operand_position|: 0 for the first memory semantics
+  // operand or 1 for the second memory semantics operand in the instruction.
+  static uint32_t GetMemorySemanticsInOperandIndex(
+      SpvOp opcode, uint32_t memory_semantics_operand_position);
 
-  // Return number of memory semantic operands for the specific atomic or
+  // Returns number of memory semantic operands for the specific atomic or
   // barrier instruction.
   static uint32_t GetNumberOfMemorySemantics(SpvOp opcode);
 
@@ -107,6 +100,7 @@ class TransformationChangingMemorySemantics : public Transformation {
 
   static const uint32_t kMemorySemanticsHigherBitmask = 0xFFFFFFE0;
   static const uint32_t kMemorySemanticsLowerBitmask = 0x1F;
+  static const uint32_t kUnequalMemorySemanticsOperandPosition = 1;
 
  private:
   protobufs::TransformationChangingMemorySemantics message_;

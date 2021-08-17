@@ -80,23 +80,23 @@ TEST(TransformationChangingMemorySemanticsTest, NotApplicable) {
 
 #ifndef NDEBUG
 
+  // Bad: Instruction exists, but not an atomic or barrier instruction.
+  ASSERT_DEATH(TransformationChangingMemorySemantics(
+                   MakeInstructionDescriptor(19, SpvOpConstant, 0), 0, 101),
+               "The instruction does not have any memory semantics operands.");
+
   // Bad: Operand position does not equal 0 or 1.
   ASSERT_DEATH(TransformationChangingMemorySemantics(
-                   MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 2, 100)
-                   .IsApplicable(context.get(), transformation_context),
-               "The instruction may not be an atomic or barrier instruction. \
-                The operands position may be not equal 0 or 1. \
-                The position may be equal to one and the expected is zero.");
+                   MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 2, 100),
+               "The operand position is out of bounds.");
 
   // Bad: The SpvOpAtomicLoad takes one memory semantic value and the operand
   // position passed is 1.
   ASSERT_DEATH(TransformationChangingMemorySemantics(
-                   MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 1, 100)
-                   .IsApplicable(context.get(), transformation_context),
-               "The instruction may not be an atomic or barrier instruction. \
-                The operands position may be not equal 0 or 1. \
-                The position may be equal to one and the expected is zero.");
+                   MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 1, 100),
+               "The operand position is out of bounds.");
 #endif
+
   // Bad: The new Id instruction does not exist.
   ASSERT_FALSE(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(21, SpvOpAtomicLoad, 0), 0, 101)
@@ -124,12 +124,12 @@ TEST(TransformationChangingMemorySemanticsTest, NotApplicable) {
                    .IsApplicable(context.get(), transformation_context));
 
   // Value (one) is pointing to the unequal position operand.
-  auto memory_semantics_unequal_position = 1;
+  auto memory_semantics_operand_second_position = 1;
   // Bad: The SpvOpAtomicCompareExchange(read-modify-write) takes two memory
   // semantics operands. The second operand cannot be AcquireRelease value.
   ASSERT_FALSE(TransformationChangingMemorySemantics(
                    MakeInstructionDescriptor(25, SpvOpAtomicCompareExchange, 0),
-                   memory_semantics_unequal_position, 100)
+                   memory_semantics_operand_second_position, 100)
                    .IsApplicable(context.get(), transformation_context));
 }
 
@@ -452,6 +452,25 @@ TEST(TransformationChangingMemorySemanticsTest, OpMemoryBarrierTestCases) {
                                                kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
+
+#ifndef NDEBUG
+
+  // Bad: Instruction exists, but not an atomic or barrier instruction.
+  ASSERT_DEATH(TransformationChangingMemorySemantics(
+                   MakeInstructionDescriptor(7, SpvOpConstant, 0), 0, 27),
+               "The instruction does not have any memory semantics operands.");
+
+  // Bad: Operand position does not equal 0 or 1.
+  ASSERT_DEATH(TransformationChangingMemorySemantics(
+                   MakeInstructionDescriptor(23, SpvOpMemoryBarrier, 0), 3, 27),
+               "The operand position is out of bounds.");
+
+  // Bad: The SpvOpMemoryBarrier takes one memory semantic value and the operand
+  // position passed is 1.
+  ASSERT_DEATH(TransformationChangingMemorySemantics(
+                   MakeInstructionDescriptor(23, SpvOpMemoryBarrier, 0), 1, 27),
+               "The operand position is out of bounds.");
+#endif
 
   // Bad transformation:
   // OpMemoryBarrier Acquire | UniformMemory
