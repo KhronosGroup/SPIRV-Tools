@@ -378,6 +378,8 @@ config("spvtools_internal_config") {
     cflags += [
       "-Wno-implicit-fallthrough",
       "-Wno-newline-eof",
+      "-Wno-unreachable-code-break",
+      "-Wno-unreachable-code-return",
     ]
   } else if (!is_win) {
     # Work around a false-positive on a Skia GCC 10 builder.
