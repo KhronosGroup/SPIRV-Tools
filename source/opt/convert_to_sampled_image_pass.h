@@ -112,7 +112,7 @@ class ConvertToSampledImagePass : public Pass {
   // Returns whether |descriptor_set_binding| is a pair of a descriptor set
   // and a binding that we have to convert resources with it to a sampled image
   // or not.
-  bool IsDescriptorSetBindingPairForSampledImageConversion(
+  bool ShouldResourceBeConverted(
       const DescriptorSetAndBinding& descriptor_set_binding) const;
 
   // Returns the pointee type of the type of variable |variable|. If |variable|
@@ -136,10 +136,6 @@ class ConvertToSampledImagePass : public Pass {
   // Creates an OpImage instruction that extracts the image from the sampled
   // image |sampled_image|.
   Instruction* CreateImageExtraction(Instruction* sampled_image);
-
-  // Replaces uses of |inst| with |replaced_inst_id|.
-  void ReplaceUsesWith(const Instruction* inst,
-                       uint32_t replaced_inst_id) const;
 
   // Converts |image_variable| whose type is an image pointer to sampled image
   // type. Updates users of |image_variable| accordingly. If some instructions

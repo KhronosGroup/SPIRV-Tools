@@ -18,6 +18,7 @@
 #include <cstring>
 #include <tuple>
 
+#include "source/opt/ir_builder.h"
 #include "source/util/make_unique.h"
 #include "source/util/parse_number.h"
 
@@ -32,20 +33,6 @@ using DescriptorSetBindingToInstruction =
 namespace {
 
 using utils::ParseNumber;
-
-// Inserts a pair of |descriptor_set_binding| and |inst| to
-// |descriptor_set_binding_to_inst| if the map does not contain
-// |descriptor_set_binding_to| key. Returns true if the insertion took place.
-bool InsertDescriptorSetBindingAndInstructionPair(
-    DescriptorSetBindingToInstruction* descriptor_set_binding_to_inst,
-    const DescriptorSetAndBinding& descriptor_set_binding, Instruction* inst) {
-  if (descriptor_set_binding_to_inst->find(descriptor_set_binding) !=
-      descriptor_set_binding_to_inst->end()) {
-    return false;
-  }
-  return descriptor_set_binding_to_inst->insert({descriptor_set_binding, inst})
-      .second;
-}
 
 // Returns true if the given char is ':', '\0' or considered as blank space
 // (i.e.: '\n', '\r', '\v', '\t', '\f' and ' ').
@@ -66,6 +53,28 @@ const char* ParseNumberUntilSeparator(const char* str, uint32_t* number) {
     return nullptr;
   }
   return str;
+}
+
+// Returns id of the image type used for the sampled image type of
+// |sampled_image|.
+uint32_t GetImageTypeOfSampledImage(analysis::TypeManager* type_mgr,
+                                    Instruction* sampled_image) {
+  auto* sampled_image_type =
+      type_mgr->GetType(sampled_image->type_id())->AsSampledImage();
+  return type_mgr->GetTypeInstruction(sampled_image_type->image_type());
+}
+
+// Finds the instruction whose id is |inst_id|. Follows the operand of
+// OpCopyObject recursively if the opcode of the instruction is OpCopyObject
+// and returns the first instruction that does not have OpCopyObject as opcode.
+Instruction* GetNonCopyObjectDef(analysis::DefUseManager* def_use_mgr,
+                                 uint32_t inst_id) {
+  Instruction* inst = def_use_mgr->GetDef(inst_id);
+  while (inst->opcode() == SpvOpCopyObject) {
+    inst_id = inst->GetSingleWordInOperand(0u);
+    inst = def_use_mgr->GetDef(inst_id);
+  }
+  return inst;
 }
 
 }  // namespace
@@ -99,9 +108,8 @@ bool ConvertToSampledImagePass::GetDescriptorSetBinding(
   return found_descriptor_set_to_convert && found_binding_to_convert;
 }
 
-bool ConvertToSampledImagePass::
-    IsDescriptorSetBindingPairForSampledImageConversion(
-        const DescriptorSetAndBinding& descriptor_set_binding) const {
+bool ConvertToSampledImagePass::ShouldResourceBeConverted(
+    const DescriptorSetAndBinding& descriptor_set_binding) const {
   return descriptor_set_binding_pairs_.find(descriptor_set_binding) !=
          descriptor_set_binding_pairs_.end();
 }
@@ -137,21 +145,20 @@ bool ConvertToSampledImagePass::CollectResourcesToConvert(
     DescriptorSetAndBinding descriptor_set_binding;
     if (!GetDescriptorSetBinding(inst, &descriptor_set_binding)) continue;
 
-    if (!IsDescriptorSetBindingPairForSampledImageConversion(
-            descriptor_set_binding)) {
+    if (!ShouldResourceBeConverted(descriptor_set_binding)) {
       continue;
     }
 
     if (variable_type->AsImage()) {
-      if (!InsertDescriptorSetBindingAndInstructionPair(
-              descriptor_set_binding_pair_to_image, descriptor_set_binding,
-              &inst)) {
+      if (!descriptor_set_binding_pair_to_image
+               ->insert({descriptor_set_binding, &inst})
+               .second) {
         return false;
       }
     } else if (variable_type->AsSampler()) {
-      if (!InsertDescriptorSetBindingAndInstructionPair(
-              descriptor_set_binding_pair_to_sampler, descriptor_set_binding,
-              &inst)) {
+      if (!descriptor_set_binding_pair_to_sampler
+               ->insert({descriptor_set_binding, &inst})
+               .second) {
         return false;
       }
     }
@@ -234,32 +241,14 @@ void ConvertToSampledImagePass::FindUsesOfImage(
   });
 }
 
-void ConvertToSampledImagePass::ReplaceUsesWith(
-    const Instruction* inst, uint32_t replaced_inst_id) const {
-  auto* def_use_mgr = context()->get_def_use_mgr();
-  def_use_mgr->ForEachUser(inst, [inst, replaced_inst_id](Instruction* user) {
-    user->ForEachInOperand([inst, replaced_inst_id](uint32_t* operand) {
-      if (*operand == inst->result_id()) *operand = replaced_inst_id;
-    });
-  });
-}
-
 Instruction* ConvertToSampledImagePass::CreateImageExtraction(
     Instruction* sampled_image) {
-  auto* type_mgr = context()->get_type_mgr();
-  auto* sampled_image_type =
-      type_mgr->GetType(sampled_image->type_id())->AsSampledImage();
-  std::unique_ptr<Instruction> image_extraction(new Instruction(
-      context(), SpvOpImage,
-      type_mgr->GetTypeInstruction(sampled_image_type->image_type()),
-      context()->TakeNextId(),
-      {
-          {spv_operand_type_t::SPV_OPERAND_TYPE_ID,
-           {sampled_image->result_id()}},
-      }));
-  context()->get_def_use_mgr()->AnalyzeInstDefUse(image_extraction.get());
-  sampled_image->NextNode()->InsertBefore(std::move(image_extraction));
-  return sampled_image->NextNode();
+  InstructionBuilder builder(
+      context(), sampled_image->NextNode(),
+      IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+  return builder.AddUnaryOp(
+      GetImageTypeOfSampledImage(context()->get_type_mgr(), sampled_image),
+      SpvOpImage, sampled_image->result_id());
 }
 
 uint32_t ConvertToSampledImagePass::GetSampledImageTypeForImage(
@@ -312,7 +301,8 @@ void ConvertToSampledImagePass::UpdateSampledImageUses(
   for (auto* sampled_image_inst : sampled_image_users) {
     if (IsSamplerOfSampledImageDecoratedByDescriptorSetBinding(
             sampled_image_inst, image_descriptor_set_binding)) {
-      ReplaceUsesWith(sampled_image_inst, image_load->result_id());
+      context()->ReplaceAllUsesWith(sampled_image_inst->result_id(),
+                                    image_load->result_id());
       def_use_mgr->AnalyzeInstUse(image_load);
       context()->KillInst(sampled_image_inst);
     } else {
@@ -376,10 +366,11 @@ bool ConvertToSampledImagePass::DoesSampledImageReferenceImage(
     Instruction* sampled_image_inst, Instruction* image_variable) {
   if (sampled_image_inst->opcode() != SpvOpSampledImage) return false;
   auto* def_use_mgr = context()->get_def_use_mgr();
-  auto* image_load =
-      def_use_mgr->GetDef(sampled_image_inst->GetSingleWordInOperand(0u));
+  auto* image_load = GetNonCopyObjectDef(
+      def_use_mgr, sampled_image_inst->GetSingleWordInOperand(0u));
   if (image_load->opcode() != SpvOpLoad) return false;
-  auto* image = def_use_mgr->GetDef(image_load->GetSingleWordInOperand(0u));
+  auto* image =
+      GetNonCopyObjectDef(def_use_mgr, image_load->GetSingleWordInOperand(0u));
   return image->opcode() == SpvOpVariable &&
          image->result_id() == image_variable->result_id();
 }
@@ -412,10 +403,10 @@ ConvertToSampledImagePass::ParseDescriptorSetBindingPairsString(
   auto descriptor_set_binding_pairs =
       MakeUnique<VectorOfDescriptorSetAndBindingPairs>();
 
+  while (std::isspace(*str)) str++;  // skip leading spaces.
+
   // The parsing loop, break when points to the end.
   while (*str) {
-    while (std::isspace(*str)) str++;  // skip leading spaces.
-
     // Parse the descriptor set.
     uint32_t descriptor_set = 0;
     str = ParseNumberUntilSeparator(str, &descriptor_set);
