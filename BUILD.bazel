@@ -347,6 +347,7 @@ cc_binary(
 cc_binary(
     name = "spirv-lint",
     srcs = [
+        "tools/io.h",
         "tools/lint/lint.cpp",
     ],
     copts = COMMON_COPTS,
