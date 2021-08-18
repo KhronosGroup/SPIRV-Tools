@@ -14,6 +14,13 @@
 
 #include "spirv-tools/linter.hpp"
 
+#include "source/lint/lints.h"
+#include "source/opt/build_module.h"
+#include "source/opt/ir_context.h"
+#include "spirv-tools/libspirv.h"
+#include "spirv-tools/libspirv.hpp"
+#include "spirv/unified1/spirv.h"
+
 namespace spvtools {
 
 struct Linter::Impl {
@@ -40,12 +47,14 @@ const MessageConsumer& Linter::consumer() const {
 }
 
 bool Linter::Run(const uint32_t* binary, size_t binary_size) {
-  (void)binary;
-  (void)binary_size;
+  std::unique_ptr<opt::IRContext> context =
+      BuildModule(SPV_ENV_VULKAN_1_2, consumer(), binary, binary_size);
+  if (context == nullptr) return false;
 
-  consumer()(SPV_MSG_INFO, "", {0, 0, 0}, "Hello, world!");
+  bool result = true;
+  result &= lint::lints::CheckDivergentDerivatives(context.get());
 
-  return true;
+  return result;
 }
 
 }  // namespace spvtools
