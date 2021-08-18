@@ -1410,6 +1410,31 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 
+TEST_F(ValidateInterfacesTest, DuplicateInterfaceVariableSuccess) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in %out %in
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %in Location 0
+OpDecorate %out Location 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%in_ptr = OpTypePointer Input %float
+%out_ptr = OpTypePointer Output %float
+%in = OpVariable %in_ptr Input
+%out = OpVariable %out_ptr Output
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
