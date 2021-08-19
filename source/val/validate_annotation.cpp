@@ -174,7 +174,9 @@ bool IsMemberDecorationOnly(SpvDecoration dec) {
     case SpvDecorationRowMajor:
     case SpvDecorationColMajor:
     case SpvDecorationMatrixStride:
-    case SpvDecorationOffset:
+      // SPIR-V spec bug? Offset is generated on variables when dealing with
+      // transform feedback.
+      // case SpvDecorationOffset:
       return true;
     default:
       break;
@@ -191,7 +193,9 @@ bool IsNotMemberDecoration(SpvDecoration dec) {
     case SpvDecorationGLSLShared:
     case SpvDecorationGLSLPacked:
     case SpvDecorationCPacked:
-    case SpvDecorationRestrict:
+    // TODO: https://github.com/KhronosGroup/glslang/issues/703:
+    // glslang applies Restrict to structure members.
+    // case SpvDecorationRestrict:
     case SpvDecorationAliased:
     case SpvDecorationConstant:
     case SpvDecorationUniform:
@@ -234,18 +238,6 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
     return ds;
   };
   switch (dec) {
-    case SpvDecorationRelaxedPrecision:
-      // This is check is a bit permissive.
-      if (!_.ContainsType(target->type_id(), [](const Instruction* type) {
-            if (type->opcode() == SpvOpTypeInt ||
-                type->opcode() == SpvOpTypeFloat) {
-              return type->GetOperandAs<uint32_t>(1) == 32;
-            }
-            return false;
-          })) {
-        return fail() << "must contain a 32-bit numerical type";
-      }
-      break;
     case SpvDecorationSpecId:
       if (!spvOpcodeIsScalarSpecConstant(target->opcode())) {
         return fail() << "must be a scalar specialization constant";
@@ -323,8 +315,14 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
     switch (dec) {
       case SpvDecorationLocation:
       case SpvDecorationComponent:
-        if (sc != SpvStorageClassInput && sc != SpvStorageClassOutput) {
-          return fail() << "must be in the Input or Output storage class";
+        if (sc == SpvStorageClassStorageBuffer ||
+            sc == SpvStorageClassUniform ||
+            sc == SpvStorageClassUniformConstant ||
+            sc == SpvStorageClassWorkgroup || sc == SpvStorageClassPrivate ||
+            sc == SpvStorageClassFunction) {
+          return _.diag(SPV_ERROR_INVALID_ID, target)
+                 << LogStringForDecoration(dec)
+                 << " decroration must not be applied to this storage class";
         }
         break;
       case SpvDecorationIndex:
@@ -380,7 +378,7 @@ spv_result_t ValidateDecorate(ValidationState_t& _, const Instruction* inst) {
   if (target->opcode() != SpvOpDecorationGroup) {
     if (IsMemberDecorationOnly(decoration)) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << LogStringForDecoration
+             << LogStringForDecoration(decoration)
              << " can only be applied to structure members";
     }
 
