@@ -60,8 +60,8 @@ bool TransformationAddReadModifyWriteAtomicInstruction::IsApplicable(
   }
 
   // Read-Modify-Write atomic instructions are valid only.
-  if (pointer->opcode() == SpvOpAtomicLoad ||
-      pointer->opcode() == SpvOpAtomicStore) {
+  if (message_.opcode() == SpvOpAtomicLoad ||
+      message_.opcode() == SpvOpAtomicStore) {
     return false;
   }
 
@@ -90,8 +90,8 @@ bool TransformationAddReadModifyWriteAtomicInstruction::IsApplicable(
     return false;
   }
 
-  if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(pointer->opcode(),
-                                                    insert_before)) {
+  if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(
+          static_cast<SpvOp>(message_.opcode()), insert_before)) {
     return false;
   }
 
@@ -107,9 +107,59 @@ bool TransformationAddReadModifyWriteAtomicInstruction::IsApplicable(
   // Instruction must RMW be atomic instruction, Id must be suitable for
   // instruction, Check the validity of (Value, second memory semantics id,
   // comparator id) for instruction if found.
-  if (!IsOperandIdsValidForInstruction(pointer->opcode(), ir_context,
-                                       insert_before, pointer_type)) {
-    return false;
+  switch (message_.opcode()) {
+    case SpvOpAtomicExchange:
+    case SpvOpAtomicIAdd:
+    case SpvOpAtomicISub:
+    case SpvOpAtomicSMin:
+    case SpvOpAtomicUMin:
+    case SpvOpAtomicSMax:
+    case SpvOpAtomicUMax:
+    case SpvOpAtomicAnd:
+    case SpvOpAtomicOr:
+    case SpvOpAtomicXor:
+    case SpvOpAtomicFAddEXT:
+
+      if (message_.value_id() == 0 || message_.memory_semantics_id_2() != 0 ||
+          message_.comparator_id() != 0) {
+        return false;
+      }
+      if (!IsValueIdValid(ir_context, insert_before)) {
+        return false;
+      }
+      break;
+
+    case SpvOpAtomicCompareExchange:
+    case SpvOpAtomicCompareExchangeWeak:
+
+      if (message_.value_id() == 0 || message_.memory_semantics_id_2() == 0 ||
+          message_.comparator_id() == 0) {
+        return false;
+      }
+      if (!IsValueIdValid(ir_context, insert_before)) {
+        return false;
+      }
+      if (!IsMemorySemanticsId2Valid(ir_context, insert_before, pointer_type)) {
+        return false;
+      }
+      if (!IsComparatorIdValid(ir_context, insert_before)) {
+        return false;
+      }
+      break;
+
+    case SpvOpAtomicIIncrement:
+    case SpvOpAtomicIDecrement:
+    case SpvOpAtomicFlagTestAndSet:
+    case SpvOpAtomicFlagClear:
+
+      if (message_.value_id() != 0 || message_.memory_semantics_id_2() != 0 ||
+          message_.comparator_id() != 0) {
+        return false;
+      }
+      break;
+
+    default:
+      break;
   }
 
   // Check the validity of memory scope.
@@ -155,19 +205,18 @@ bool TransformationAddReadModifyWriteAtomicInstruction::IsMemoryScopeValid(
     return false;
   }
 
-  // The memory scope and memory semantics instructions must have the
+  // The memory scope instruction must have the
   // 'OpConstant' opcode.
   if (memory_scope_instruction->opcode() != SpvOpConstant) {
     return false;
   }
 
-  // The memory scope and
   if (!fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, insert_before,
                                                   message_.memory_scope_id())) {
     return false;
   }
 
-  // The memory scope and memory semantics instructions must have an Integer
+  // The memory scope instruction must be an integer
   // operand type with signedness does not matters.
   if (ir_context->get_def_use_mgr()
           ->GetDef(memory_scope_instruction->type_id())
@@ -175,8 +224,8 @@ bool TransformationAddReadModifyWriteAtomicInstruction::IsMemoryScopeValid(
     return false;
   }
 
-  // The size of the integer for memory scope and memory semantics
-  // instructions must be equal to 32 bits.
+  // The size of the integer for memory scope
+  // instruction must be equal to 32 bits.
   auto memory_scope_int_width =
       ir_context->get_def_use_mgr()
           ->GetDef(memory_scope_instruction->type_id())
@@ -227,16 +276,39 @@ bool TransformationAddReadModifyWriteAtomicInstruction::
   if (memory_semantics_1_int_width != 32) {
     return false;
   }
-  // The memory semantics constant value must match the storage class of the
-  // pointer being loaded from.
+
+  // The memory semantics constant higher bits value must match the storage
+  // class of the pointer being loaded from.
   auto memory_semantics_1_const_value = static_cast<SpvMemorySemanticsMask>(
       memory_semantics_instruction_1->GetSingleWordInOperand(0));
-  if (memory_semantics_1_const_value !=
+
+  auto memory_semantics_from_storage_class =
       fuzzerutil::GetMemorySemanticsForStorageClass(
           static_cast<SpvStorageClass>(
-              pointer_type->GetSingleWordInOperand(0)))) {
+              pointer_type->GetSingleWordInOperand(0)));
+
+  auto higher_bits_from_current_memory_semantics_1 =
+      (memory_semantics_1_const_value & kMemorySemanticsHigherBitmask);
+  if (higher_bits_from_current_memory_semantics_1 !=
+      memory_semantics_from_storage_class) {
     return false;
   }
+
+  // The memory semantics constant lower bits value equal to available masks for
+  // the atomic(read-modify-write) instruction.
+  auto lower_bits_from_current_memory_semantics_1 =
+      static_cast<SpvMemorySemanticsMask>(memory_semantics_1_const_value &
+                                          kMemorySemanticsLowerBitmask);
+
+  if (lower_bits_from_current_memory_semantics_1 !=
+          SpvMemorySemanticsMaskNone &&
+      lower_bits_from_current_memory_semantics_1 !=
+          SpvMemorySemanticsAcquireReleaseMask &&
+      lower_bits_from_current_memory_semantics_1 !=
+          SpvMemorySemanticsSequentiallyConsistentMask) {
+    return false;
+  }
+
   return true;
 }
 
@@ -252,7 +324,8 @@ bool TransformationAddReadModifyWriteAtomicInstruction::
   if (memory_semantics_instruction_2->opcode() != SpvOpConstant) {
     return false;
   }
-
+  // The memory semantics second operand need to be available before
+  // |insert_before|.
   if (!fuzzerutil::IdIsAvailableBeforeInstruction(
           ir_context, insert_before, message_.memory_semantics_id_2())) {
     return false;
@@ -272,14 +345,39 @@ bool TransformationAddReadModifyWriteAtomicInstruction::
   if (memory_semantics_2_int_width != 32) {
     return false;
   }
+
+  // The memory semantics second operand constant higher bits value must match
+  // the storage class of the pointer being loaded from.
   auto memory_semantics_2_const_value = static_cast<SpvMemorySemanticsMask>(
       memory_semantics_instruction_2->GetSingleWordInOperand(0));
-  if (memory_semantics_2_const_value !=
+
+  auto memory_semantics_from_storage_class =
       fuzzerutil::GetMemorySemanticsForStorageClass(
           static_cast<SpvStorageClass>(
-              pointer_type->GetSingleWordInOperand(0)))) {
+              pointer_type->GetSingleWordInOperand(0)));
+
+  auto higher_bits_from_current_memory_semantics_2 =
+      (memory_semantics_2_const_value & kMemorySemanticsHigherBitmask);
+  if (higher_bits_from_current_memory_semantics_2 !=
+      memory_semantics_from_storage_class) {
     return false;
   }
+
+  // The memory semantics second operand constant lower bits value equal to
+  // available masks for the atomic(read-modify-write) instruction.
+  auto lower_bits_from_current_memory_semantics_2 =
+      static_cast<SpvMemorySemanticsMask>(memory_semantics_2_const_value &
+                                          kMemorySemanticsLowerBitmask);
+
+  if (lower_bits_from_current_memory_semantics_2 !=
+          SpvMemorySemanticsMaskNone &&
+      lower_bits_from_current_memory_semantics_2 !=
+          SpvMemorySemanticsAcquireReleaseMask &&
+      lower_bits_from_current_memory_semantics_2 !=
+          SpvMemorySemanticsSequentiallyConsistentMask) {
+    return false;
+  }
+
   return true;
 }
 
@@ -354,6 +452,10 @@ bool TransformationAddReadModifyWriteAtomicInstruction::IsComparatorIdValid(
 std::unique_ptr<spvtools::opt::Instruction>
 TransformationAddReadModifyWriteAtomicInstruction::GetInstruction(
     opt::IRContext* ir_context, SpvOp opcode) const {
+  uint32_t result_type = fuzzerutil::GetPointeeTypeIdFromPointerType(
+      ir_context, fuzzerutil::GetTypeId(ir_context, message_.pointer_id()));
+  fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
+
   std::unique_ptr<spvtools::opt::Instruction> new_instruction;
   switch (opcode) {
     case SpvOpAtomicExchange:
@@ -369,7 +471,7 @@ TransformationAddReadModifyWriteAtomicInstruction::GetInstruction(
     case SpvOpAtomicFAddEXT:
 
       return MakeUnique<opt::Instruction>(
-          ir_context, opcode, 0, 0,
+          ir_context, opcode, result_type, message_.fresh_id(),
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {message_.pointer_id()}},
                {SPV_OPERAND_TYPE_SCOPE_ID, {message_.memory_scope_id()}},
@@ -381,7 +483,7 @@ TransformationAddReadModifyWriteAtomicInstruction::GetInstruction(
     case SpvOpAtomicCompareExchangeWeak:
 
       return MakeUnique<opt::Instruction>(
-          ir_context, opcode, 0, 0,
+          ir_context, opcode, result_type, message_.fresh_id(),
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {message_.pointer_id()}},
                {SPV_OPERAND_TYPE_SCOPE_ID, {message_.memory_scope_id()}},
@@ -398,7 +500,7 @@ TransformationAddReadModifyWriteAtomicInstruction::GetInstruction(
     case SpvOpAtomicFlagClear:
 
       return MakeUnique<opt::Instruction>(
-          ir_context, opcode, 0, 0,
+          ir_context, opcode, result_type, message_.fresh_id(),
           opt::Instruction::OperandList(
               {{SPV_OPERAND_TYPE_ID, {message_.pointer_id()}},
                {SPV_OPERAND_TYPE_SCOPE_ID, {message_.memory_scope_id()}},
@@ -406,69 +508,9 @@ TransformationAddReadModifyWriteAtomicInstruction::GetInstruction(
                 {message_.memory_semantics_id_1()}}}));
 
     default:
+      assert(false);
       return new_instruction;
   }
-}
-bool TransformationAddReadModifyWriteAtomicInstruction::
-    IsOperandIdsValidForInstruction(
-        SpvOp opcode, opt::IRContext* ir_context,
-        spvtools::opt::Instruction* insert_before,
-        spvtools::opt::Instruction* pointer_type) const {
-  switch (opcode) {
-    case SpvOpAtomicExchange:
-    case SpvOpAtomicIAdd:
-    case SpvOpAtomicISub:
-    case SpvOpAtomicSMin:
-    case SpvOpAtomicUMin:
-    case SpvOpAtomicSMax:
-    case SpvOpAtomicUMax:
-    case SpvOpAtomicAnd:
-    case SpvOpAtomicOr:
-    case SpvOpAtomicXor:
-    case SpvOpAtomicFAddEXT:
-
-      if (message_.value_id() == 0 || message_.memory_semantics_id_2() != 0 ||
-          message_.comparator_id() != 0) {
-        return false;
-      }
-      if (!IsValueIdValid(ir_context, insert_before)) {
-        return false;
-      }
-      break;
-
-    case SpvOpAtomicCompareExchange:
-    case SpvOpAtomicCompareExchangeWeak:
-
-      if (message_.value_id() == 0 || message_.memory_semantics_id_2() == 0 ||
-          message_.comparator_id() == 0) {
-        return false;
-      }
-      if (!IsValueIdValid(ir_context, insert_before)) {
-        return false;
-      }
-      if (!IsMemorySemanticsId2Valid(ir_context, insert_before, pointer_type)) {
-        return false;
-      }
-      if (!IsComparatorIdValid(ir_context, insert_before)) {
-        return false;
-      }
-      break;
-
-    case SpvOpAtomicIIncrement:
-    case SpvOpAtomicIDecrement:
-    case SpvOpAtomicFlagTestAndSet:
-    case SpvOpAtomicFlagClear:
-
-      if (message_.value_id() != 0 || message_.memory_semantics_id_2() != 0 ||
-          message_.comparator_id() != 0) {
-        return false;
-      }
-      break;
-
-    default:
-      return false;
-  }
-  return true;
 }
 
 protobufs::Transformation

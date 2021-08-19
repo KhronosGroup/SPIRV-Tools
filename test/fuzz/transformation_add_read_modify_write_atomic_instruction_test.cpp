@@ -23,34 +23,81 @@ namespace spvtools {
 namespace fuzz {
 namespace {
 
-// Draft WIP - NOT FINAL.
-TEST(TransformationAddReadModifyWriteAtomicInstructionTest, DISABLED_NotApplicable) {
+TEST(TransformationAddReadModifyWriteAtomicInstructionTest, NotApplicable) {
   const std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 320
+               OpEntryPoint GLCompute %4 "main" %16
+               OpExecutionMode %4 LocalSize 1 1 1
+               OpSource GLSL 450
+               OpName %4 "main"
+               OpName %8 "result"
+               OpName %10 "temp_val"
+               OpName %13 "id"
+               OpName %16 "gl_LocalInvocationID"
+               OpName %21 "chunkStart"
+               OpName %23 "i"
+               OpName %37 "shared_memory"
+               OpDecorate %16 BuiltIn LocalInvocationId
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
-          %6 = OpTypeInt 32 1g
-          %9 = OpTypeInt 32 0
-         %26 = OpTypeFloat 32 
-          %8 = OpTypeStruct %6
-         %10 = OpTypePointer StorageBuffer %8
-         %11 = OpVariable %10 StorageBuffer
-         %19 = OpConstant %26 0    
-         %18 = OpConstant %9 1
-         %12 = OpConstant %6 0
-         %13 = OpTypePointer StorageBuffer %6
-         %15 = OpConstant %6 4
-         %16 = OpConstant %6 7
-         %20 = OpConstant %9 80
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %11 = OpTypeInt 32 0
+         %12 = OpTypePointer Function %11
+         %14 = OpTypeVector %11 3
+         %15 = OpTypePointer Input %14
+         %16 = OpVariable %15 Input
+         %17 = OpConstant %11 272
+         %18 = OpTypePointer Input %11
+         %32 = OpTypeBool
+         %34 = OpConstant %11 16
+         %35 = OpTypeArray %11 %34
+         %36 = OpTypePointer Workgroup %35
+         %37 = OpVariable %36 Workgroup
+         %39 = OpTypePointer Workgroup %11
+         %41 = OpConstant %11 4
+         %43 = OpConstant %6 1
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %14 = OpAccessChain %13 %11 %12
-         %24 = OpAccessChain %13 %11 %12
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+         %13 = OpVariable %12 Function
+         %21 = OpVariable %12 Function
+         %23 = OpVariable %12 Function
+               OpStore %8 %9
+               OpStore %10 %9
+         %19 = OpAccessChain %18 %16 %17
+         %20 = OpLoad %11 %19
+               OpStore %13 %20
+         %22 = OpLoad %11 %13
+               OpStore %21 %22
+         %24 = OpLoad %11 %21
+               OpStore %23 %24
+               OpBranch %25
+         %25 = OpLabel
+               OpLoopMerge %27 %28 None
+               OpBranch %29
+         %29 = OpLabel
+         %30 = OpLoad %11 %23
+         %31 = OpLoad %11 %21
+         %33 = OpULessThan %32 %30 %31
+               OpBranchConditional %33 %26 %27
+         %26 = OpLabel
+         %38 = OpLoad %11 %23
+         %40 = OpAccessChain %39 %37 %38
+         %44 = OpLoad %6 %10
+         %45 = OpIAdd %6 %44 %43
+               OpStore %10 %45
+               OpBranch %28
+         %28 = OpLabel
+         %46 = OpLoad %11 %23
+         %47 = OpIAdd %11 %46 %43
+               OpStore %23 %47
+               OpBranch %25
+         %27 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
@@ -63,36 +110,137 @@ TEST(TransformationAddReadModifyWriteAtomicInstructionTest, DISABLED_NotApplicab
                                                kConsoleMessageConsumer));
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
+
+  // Bad: id is not fresh.
+  ASSERT_FALSE(TransformationAddReadModifyWriteAtomicInstruction(
+                   40, 40, static_cast<uint32_t>(SpvOpAtomicIAdd), 41, 17, 0,
+                   41, 0, MakeInstructionDescriptor(44, SpvOpLoad, 0))
+                   .IsApplicable(context.get(), transformation_context));
+  // Pointer does not exist.
+  ASSERT_FALSE(TransformationAddReadModifyWriteAtomicInstruction(
+                   100, 70, static_cast<uint32_t>(SpvOpAtomicIAdd), 41, 17, 0,
+                   41, 0, MakeInstructionDescriptor(44, SpvOpLoad, 0))
+                   .IsApplicable(context.get(), transformation_context));
+
+  // This transformation is not responsible for AtomicLoad or AtomicStore.
+  ASSERT_FALSE(TransformationAddReadModifyWriteAtomicInstruction(
+                   100, 40, static_cast<uint32_t>(SpvOpAtomicLoad), 41, 17, 0,
+                   0, 0, MakeInstructionDescriptor(44, SpvOpLoad, 0))
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: id 100 of memory scope instruction does not exist.
+  ASSERT_FALSE(TransformationAddReadModifyWriteAtomicInstruction(
+                   100, 40, static_cast<uint32_t>(SpvOpAtomicIAdd), 100, 17, 0,
+                   41, 0, MakeInstructionDescriptor(44, SpvOpLoad, 0))
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: memory scope should be |OpConstant| opcode.
+  ASSERT_FALSE(TransformationAddReadModifyWriteAtomicInstruction(
+                   100, 40, static_cast<uint32_t>(SpvOpAtomicIAdd), 37, 17, 0,
+                   41, 0, MakeInstructionDescriptor(44, SpvOpLoad, 0))
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: memory scope not SpvScopeInvocation.
+  ASSERT_FALSE(TransformationAddReadModifyWriteAtomicInstruction(
+                   100, 40, static_cast<uint32_t>(SpvOpAtomicIAdd), 17, 17, 0,
+                   41, 0, MakeInstructionDescriptor(44, SpvOpLoad, 0))
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: id 100 of memory semantics instruction does not exist.
+  ASSERT_FALSE(TransformationAddReadModifyWriteAtomicInstruction(
+                   100, 40, static_cast<uint32_t>(SpvOpAtomicIAdd), 41, 100, 0,
+                   41, 0, MakeInstructionDescriptor(44, SpvOpLoad, 0))
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: Can't insert OpLoad before the id 41 of memory scope.
+  ASSERT_FALSE(TransformationAddReadModifyWriteAtomicInstruction(
+                   100, 40, static_cast<uint32_t>(SpvOpAtomicIAdd), 41, 17, 0,
+                   41, 0, MakeInstructionDescriptor(41, SpvOpLoad, 0))
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: Can't insert OpLoad before the id 41 of memory semantics.
+  ASSERT_FALSE(TransformationAddReadModifyWriteAtomicInstruction(
+                   100, 40, static_cast<uint32_t>(SpvOpAtomicIAdd), 41, 17, 0,
+                   41, 0, MakeInstructionDescriptor(17, SpvOpLoad, 0))
+                   .IsApplicable(context.get(), transformation_context));
 }
 
-// Draft WIP - NOT FINAL.
-TEST(TransformationAddReadModifyWriteAtomicInstructionTest, DISABLED_IsApplicable) {
+TEST(TransformationAddReadModifyWriteAtomicInstructionTest, IsApplicable) {
   const std::string shader = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %4 "main"
-               OpExecutionMode %4 OriginUpperLeft
-               OpSource ESSL 320
+               OpEntryPoint GLCompute %4 "main" %16
+               OpExecutionMode %4 LocalSize 1 1 1
+               OpSource GLSL 450
+               OpName %4 "main"
+               OpName %8 "result"
+               OpName %10 "temp_val"
+               OpName %13 "id"
+               OpName %16 "gl_LocalInvocationID"
+               OpName %21 "chunkStart"
+               OpName %23 "i"
+               OpName %37 "shared_memory"
+               OpDecorate %16 BuiltIn LocalInvocationId
           %2 = OpTypeVoid
           %3 = OpTypeFunction %2
-          %6 = OpTypeInt 32 1g
-          %9 = OpTypeInt 32 0
-         %26 = OpTypeFloat 32 
-          %8 = OpTypeStruct %6
-         %10 = OpTypePointer StorageBuffer %8
-         %11 = OpVariable %10 StorageBuffer
-         %19 = OpConstant %26 0    
-         %18 = OpConstant %9 1
-         %12 = OpConstant %6 0
-         %13 = OpTypePointer StorageBuffer %6
-         %15 = OpConstant %6 4
-         %16 = OpConstant %6 7
-         %20 = OpConstant %9 80
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %11 = OpTypeInt 32 0
+         %12 = OpTypePointer Function %11
+         %14 = OpTypeVector %11 3
+         %15 = OpTypePointer Input %14
+         %16 = OpVariable %15 Input
+         %17 = OpConstant %11 272 ; SequentiallyConsistent | WorkgroupMemory
+         %62 = OpConstant %11 256 ; None                   | WorkgroupMemory
+         %18 = OpTypePointer Input %11
+         %32 = OpTypeBool
+         %34 = OpConstant %11 16
+         %35 = OpTypeArray %11 %34
+         %36 = OpTypePointer Workgroup %35
+         %37 = OpVariable %36 Workgroup
+         %39 = OpTypePointer Workgroup %11
+         %41 = OpConstant %11 4
+         %43 = OpConstant %6 1
           %4 = OpFunction %2 None %3
           %5 = OpLabel
-         %14 = OpAccessChain %13 %11 %12
-         %24 = OpAccessChain %13 %11 %12
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+         %13 = OpVariable %12 Function
+         %21 = OpVariable %12 Function
+         %23 = OpVariable %12 Function
+               OpStore %8 %9
+               OpStore %10 %9
+         %19 = OpAccessChain %18 %16 %17
+         %20 = OpLoad %11 %19
+               OpStore %13 %20
+         %22 = OpLoad %11 %13
+               OpStore %21 %22
+         %24 = OpLoad %11 %21
+               OpStore %23 %24
+               OpBranch %25
+         %25 = OpLabel
+               OpLoopMerge %27 %28 None
+               OpBranch %29
+         %29 = OpLabel
+         %30 = OpLoad %11 %23
+         %31 = OpLoad %11 %21
+         %33 = OpULessThan %32 %30 %31
+               OpBranchConditional %33 %26 %27
+         %26 = OpLabel
+         %38 = OpLoad %11 %23
+         %40 = OpAccessChain %39 %37 %38
+         %44 = OpLoad %6 %10
+         %45 = OpIAdd %6 %44 %43
+               OpStore %10 %45
+               OpBranch %28
+         %28 = OpLabel
+         %46 = OpLoad %11 %23
+         %47 = OpIAdd %11 %46 %43
+               OpStore %23 %47
+               OpBranch %25
+         %27 = OpLabel
                OpReturn
                OpFunctionEnd
   )";
@@ -106,47 +254,129 @@ TEST(TransformationAddReadModifyWriteAtomicInstructionTest, DISABLED_IsApplicabl
   TransformationContext transformation_context(
       MakeUnique<FactManager>(context.get()), validator_options);
 
+  transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
+      40);
+  // Successful transformations.
+  {
+    // Added |OpAtomicIAdd| instruction, takes |value_id| only.
+    TransformationAddReadModifyWriteAtomicInstruction transformation(
+        42, 40, static_cast<uint32_t>(SpvOpAtomicIAdd), 41, 17, 0, 41, 0,
+        MakeInstructionDescriptor(44, SpvOpLoad, 0));
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
+  }
+  {
+    // Added |OpAtomicIIncrement| instruction, don't need any extra ids.
+    TransformationAddReadModifyWriteAtomicInstruction transformation(
+        60, 40, static_cast<uint32_t>(SpvOpAtomicIIncrement), 41, 17, 0, 0, 0,
+        MakeInstructionDescriptor(44, SpvOpLoad, 0));
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
+  }
+  {
+    // Added |OpAtomicCompareExchange| instruction, that takes
+    // 'memory_semantics_unequal', |value_id|, |comparator_id|.
+    TransformationAddReadModifyWriteAtomicInstruction transformation(
+        61, 40, static_cast<uint32_t>(SpvOpAtomicCompareExchange), 41, 17, 62,
+        41, 17, MakeInstructionDescriptor(44, SpvOpLoad, 0));
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
+  }
+
   const std::string after_transformation = R"(
-                 OpCapability Shader
-            %1 = OpExtInstImport "GLSL.std.450"
-                 OpMemoryModel Logical GLSL450
-                 OpEntryPoint Fragment %4 "main"
-                 OpExecutionMode %4 OriginUpperLeft
-                 OpSource ESSL 320
-            %2 = OpTypeVoid
-            %3 = OpTypeFunction %2
-            %6 = OpTypeInt 32 1
-            %9 = OpTypeInt 32 0
-           %26 = OpTypeFloat 32
-            %8 = OpTypeStruct %6
-           %10 = OpTypePointer StorageBuffer %8
-           %11 = OpVariable %10 StorageBuffer
-           %19 = OpConstant %26 0
-           %18 = OpConstant %9 1
-           %12 = OpConstant %6 0
-           %13 = OpTypePointer StorageBuffer %6
-           %15 = OpConstant %6 4
-           %16 = OpConstant %6 7
-           %20 = OpConstant %9 80
-            %4 = OpFunction %2 None %3
-            %5 = OpLabel
-           %14 = OpAccessChain %13 %11 %12
-           %25 = OpAtomicExchange %6 %14 %15 %20 %16
-           %26 = OpAtomicCompareExchange %6 %14 %15 %20 %12 %16 %15
-           %27 = OpAtomicIIncrement %6 %14 %15 %20
-           %28 = OpAtomicIDecrement %6 %14 %15 %20
-           %29 = OpAtomicIAdd %6  %14 %15 %20 %16
-           %30 = OpAtomicISub %6  %14 %15 %20 %16
-           %31 = OpAtomicSMin %6  %14 %15 %20 %16
-           %32 = OpAtomicUMin %9 %90 %15 %20 %18
-           %33 = OpAtomicSMax %6  %14 %15 %20 %15
-           %34 = OpAtomicAnd  %6  %14 %15 %20 %16
-           %35 = OpAtomicOr   %6  %14 %15 %20 %16
-           %36 = OpAtomicXor  %6  %14 %15 %20 %16
-           %24 = OpAccessChain %13 %11 %12
-                 OpReturn
-                 OpFunctionEnd
-    )";
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %4 "main" %16
+               OpExecutionMode %4 LocalSize 1 1 1
+               OpSource GLSL 450
+               OpName %4 "main"
+               OpName %8 "result"
+               OpName %10 "temp_val"
+               OpName %13 "id"
+               OpName %16 "gl_LocalInvocationID"
+               OpName %21 "chunkStart"
+               OpName %23 "i"
+               OpName %37 "shared_memory"
+               OpDecorate %16 BuiltIn LocalInvocationId
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypePointer Function %6
+          %9 = OpConstant %6 0
+         %11 = OpTypeInt 32 0
+         %12 = OpTypePointer Function %11
+         %14 = OpTypeVector %11 3
+         %15 = OpTypePointer Input %14
+         %16 = OpVariable %15 Input
+         %17 = OpConstant %11 272 ; SequentiallyConsistent | WorkgroupMemory
+         %62 = OpConstant %11 256 ; None                   | WorkgroupMemory
+         %18 = OpTypePointer Input %11
+         %32 = OpTypeBool
+         %34 = OpConstant %11 16
+         %35 = OpTypeArray %11 %34
+         %36 = OpTypePointer Workgroup %35
+         %37 = OpVariable %36 Workgroup
+         %39 = OpTypePointer Workgroup %11
+         %41 = OpConstant %11 4
+         %43 = OpConstant %6 1
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %8 = OpVariable %7 Function
+         %10 = OpVariable %7 Function
+         %13 = OpVariable %12 Function
+         %21 = OpVariable %12 Function
+         %23 = OpVariable %12 Function
+               OpStore %8 %9
+               OpStore %10 %9
+         %19 = OpAccessChain %18 %16 %17
+         %20 = OpLoad %11 %19
+               OpStore %13 %20
+         %22 = OpLoad %11 %13
+               OpStore %21 %22
+         %24 = OpLoad %11 %21
+               OpStore %23 %24
+               OpBranch %25
+         %25 = OpLabel
+               OpLoopMerge %27 %28 None
+               OpBranch %29
+         %29 = OpLabel
+         %30 = OpLoad %11 %23
+         %31 = OpLoad %11 %21
+         %33 = OpULessThan %32 %30 %31
+               OpBranchConditional %33 %26 %27
+         %26 = OpLabel
+         %38 = OpLoad %11 %23
+         %40 = OpAccessChain %39 %37 %38
+         %42 = OpAtomicIAdd %11 %40 %41 %17 %41
+         %60 = OpAtomicIIncrement %11 %40 %41 %17
+         %61 = OpAtomicCompareExchange %11 %40 %41 %17 %62 %41 %17
+         %44 = OpLoad %6 %10
+         %45 = OpIAdd %6 %44 %43
+               OpStore %10 %45
+               OpBranch %28
+         %28 = OpLabel
+         %46 = OpLoad %11 %23
+         %47 = OpIAdd %11 %46 %43
+               OpStore %23 %47
+               OpBranch %25
+         %27 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
 }  // namespace

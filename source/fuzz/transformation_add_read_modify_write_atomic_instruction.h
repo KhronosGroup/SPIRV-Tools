@@ -74,12 +74,6 @@ class TransformationAddReadModifyWriteAtomicInstruction
   std::unique_ptr<spvtools::opt::Instruction> GetInstruction(
       opt::IRContext* ir_context, SpvOp opcode) const;
 
-  // Validate atomic instruction with its operands.
-  bool IsOperandIdsValidForInstruction(
-      SpvOp opcode, opt::IRContext* ir_context,
-      spvtools::opt::Instruction* insert_before,
-      spvtools::opt::Instruction* pointer_type) const;
-
   // Memory scope id must exist and be valid.
   bool IsMemoryScopeValid(opt::IRContext* ir_context,
                           spvtools::opt::Instruction* insert_before) const;
@@ -103,6 +97,9 @@ class TransformationAddReadModifyWriteAtomicInstruction
   // Comparator id must exist and be valid for atomic instruction that uses it.
   bool IsComparatorIdValid(opt::IRContext* ir_context,
                            spvtools::opt::Instruction* insert_before) const;
+
+  static const uint32_t kMemorySemanticsHigherBitmask = 0xFFFFFFE0;
+  static const uint32_t kMemorySemanticsLowerBitmask = 0x1F;
 
   std::unordered_set<uint32_t> GetFreshIds() const override;
 
