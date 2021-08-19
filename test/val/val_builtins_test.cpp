@@ -767,18 +767,18 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3NotGLCompute,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
-    Combine(
-        Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups",
-               "WorkgroupId"),
-        Values("Vertex", "Fragment", "Geometry", "TessellationControl",
-               "TessellationEvaluation"),
-        Values("Input"), Values("%u32vec3"),
-        Values("VUID-GlobalInvocationId-GlobalInvocationId-04236 "
-               "VUID-LocalInvocationId-LocalInvocationId-04281 "
-               "VUID-NumWorkgroups-NumWorkgroups-04296 "
-               "VUID-WorkgroupId-WorkgroupId-04422"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with GLCompute execution model"))));
+    Combine(Values("GlobalInvocationId", "LocalInvocationId", "NumWorkgroups",
+                   "WorkgroupId"),
+            Values("Vertex", "Fragment", "Geometry", "TessellationControl",
+                   "TessellationEvaluation"),
+            Values("Input"), Values("%u32vec3"),
+            Values("VUID-GlobalInvocationId-GlobalInvocationId-04236 "
+                   "VUID-LocalInvocationId-LocalInvocationId-04281 "
+                   "VUID-NumWorkgroups-NumWorkgroups-04296 "
+                   "VUID-WorkgroupId-WorkgroupId-04422"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "to be used only with GLCompute, MeshNV, or "
+                              "TaskNV execution model"))));
 
 INSTANTIATE_TEST_SUITE_P(
     ComputeShaderInputInt32Vec3NotInput,
@@ -2828,9 +2828,10 @@ TEST_F(ValidateBuiltIns, VulkanWorkgroupSizeFragment) {
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Vulkan spec allows BuiltIn WorkgroupSize to be used "
-                        "only with GLCompute execution model"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Vulkan spec allows BuiltIn WorkgroupSize to be used "
+                "only with GLCompute, MeshNV, or TaskNV execution model"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("is referencing ID <2> (OpConstantComposite) which is "
                         "decorated with BuiltIn WorkgroupSize in function <1> "
@@ -3711,13 +3712,13 @@ OpFunctionEnd
 
 INSTANTIATE_TEST_SUITE_P(
     SubgroupNumAndIdNotCompute, ValidateVulkanSubgroupBuiltIns,
-    Combine(
-        Values("SubgroupId", "NumSubgroups"), Values("Vertex"), Values("Input"),
-        Values("%u32"),
-        Values("VUID-SubgroupId-SubgroupId-04367 "
-               "VUID-NumSubgroups-NumSubgroups-04293"),
-        Values(TestResult(SPV_ERROR_INVALID_DATA,
-                          "to be used only with GLCompute execution model"))));
+    Combine(Values("SubgroupId", "NumSubgroups"), Values("Vertex"),
+            Values("Input"), Values("%u32"),
+            Values("VUID-SubgroupId-SubgroupId-04367 "
+                   "VUID-NumSubgroups-NumSubgroups-04293"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "to be used only with GLCompute, MeshNV, or "
+                              "TaskNV execution model"))));
 
 INSTANTIATE_TEST_SUITE_P(
     SubgroupNumAndIdNotU32, ValidateVulkanSubgroupBuiltIns,
