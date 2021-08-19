@@ -1302,10 +1302,10 @@ message TransformationChangingMemorySemantics {
   // Strengthens a memory semantics operand within an instruction. 
   // Only the memory order (the first 5 bits) is changed.
 
-  // The atomic instruction we are looking for.
-  InstructionDescriptor atomic_instruction = 1;
+  // The atomic or barrier instruction we are looking for.
+  InstructionDescriptor instruction = 1;
 
-  // The operand position of the memory semantics operand within |atomic_instruction|; 
+  // The operand position of the memory semantics operand within |instruction|;
   // 0 for the first memory semantics operand, 
   // 1 for the second memory semantics operand.
   uint32 memory_semantics_operand_position = 2;

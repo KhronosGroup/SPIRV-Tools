@@ -31,14 +31,15 @@ class TransformationChangingMemorySemantics : public Transformation {
       protobufs::TransformationChangingMemorySemantics message);
 
   TransformationChangingMemorySemantics(
-      const protobufs::InstructionDescriptor& atomic_instruction,
+      const protobufs::InstructionDescriptor& instruction,
       uint32_t memory_semantics_operand_position,
       uint32_t memory_semantics_new_value_id);
 
-  // Responsible for check if the new memory semantics id is existing, suitable
-  // for specific atomic or barrier instruction, the old value of memory
-  // semantics is smaller than the new value. Also, it should return false is
-  // memory model is Vulkan and new memory semantics is sequentially consistent.
+  // - |instruction| must exist and be atomic or barrier instruction.
+  // - |new_memory_semantic_operand| must be OpConstant with integer type and
+  //   width 32 bits and must be a suitable strengthening (according to
+  //   IsSuitableStrengthening).
+  // - The higher bits value of old and new memory semantics id must be equal.
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
@@ -54,7 +55,7 @@ class TransformationChangingMemorySemantics : public Transformation {
   // full details, see the comments within the function body.
   static bool IsSuitableStrengthening(
       opt::IRContext* ir_context,
-      spvtools::opt::Instruction* needed_atomic_instruction,
+      spvtools::opt::Instruction* needed_instruction,
       SpvMemorySemanticsMask lower_bits_old_memory_semantics,
       SpvMemorySemanticsMask lower_bits_new_memory_semantics,
       uint32_t memory_semantics_operand_position, SpvMemoryModel memory_model);
