@@ -126,9 +126,13 @@ DivergenceAnalysis::ComputeInstructionDivergence(opt::Instruction* inst) {
   if (inst->opcode() == SpvOpFunctionParameter) {
     divergence_source_[id] = 0;
     return divergence_[id] = DivergenceLevel::kDivergent;
-  } else if (inst->opcode() == SpvOpLoad) {
-    spvtools::opt::Instruction* var =
-        context().get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0));
+  } else if (inst->IsLoad()) {
+    spvtools::opt::Instruction* var = inst->GetBaseAddress();
+    if (var->opcode() != SpvOpVariable) {
+      // Assume divergent.
+      divergence_source_[id] = 0;
+      return DivergenceLevel::kDivergent;
+    }
     DivergenceLevel ret = ComputeVariableDivergence(var);
     if (ret > DivergenceLevel::kUniform) {
       divergence_source_[inst->result_id()] = 0;
@@ -163,6 +167,9 @@ DivergenceAnalysis::ComputeVariableDivergence(opt::Instruction* var) {
     case SpvStorageClassStorageBuffer:
     case SpvStorageClassPhysicalStorageBuffer:
     case SpvStorageClassOutput:
+    case SpvStorageClassWorkgroup:
+    case SpvStorageClassImage:  // Image atomics probably aren't uniform.
+    case SpvStorageClassPrivate:
       ret = DivergenceLevel::kDivergent;
       break;
     case SpvStorageClassInput:
@@ -175,12 +182,17 @@ DivergenceAnalysis::ComputeVariableDivergence(opt::Instruction* var) {
           });
       break;
     case SpvStorageClassUniformConstant:
+      // May be a storage image which is also written to; mark those as
+      // divergent.
+      if (!var->IsVulkanStorageImage() || var->IsReadOnlyPointer()) {
+        ret = DivergenceLevel::kUniform;
+      } else {
+        ret = DivergenceLevel::kDivergent;
+      }
+      break;
     case SpvStorageClassUniform:
-    case SpvStorageClassWorkgroup:
-    case SpvStorageClassCrossWorkgroup:
-    case SpvStorageClassPrivate:
     case SpvStorageClassPushConstant:
-    case SpvStorageClassImage:
+    case SpvStorageClassCrossWorkgroup:  // Not for shaders; default uniform.
     default:
       ret = DivergenceLevel::kUniform;
       break;
