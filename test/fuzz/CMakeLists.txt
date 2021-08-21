@@ -69,6 +69,7 @@ if (${SPIRV_BUILD_FUZZER})
           transformation_add_type_struct_test.cpp
           transformation_add_type_vector_test.cpp
           transformation_adjust_branch_weights_test.cpp
+          transformation_changing_memory_scope_test.cpp
           transformation_composite_construct_test.cpp
           transformation_composite_extract_test.cpp
           transformation_composite_insert_test.cpp

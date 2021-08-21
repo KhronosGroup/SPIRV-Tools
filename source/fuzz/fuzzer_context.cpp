@@ -83,6 +83,7 @@ const std::pair<uint32_t, uint32_t> kChanceOfAdjustingMemoryOperandsMask = {20,
 const std::pair<uint32_t, uint32_t> kChanceOfAdjustingSelectionControl = {20,
                                                                           90};
 const std::pair<uint32_t, uint32_t> kChanceOfCallingFunction = {1, 10};
+const std::pair<uint32_t, uint32_t> kChanceOfChangingMemoryScope = {30, 90};
 const std::pair<uint32_t, uint32_t> kChanceOfChoosingStructTypeVsArrayType = {
     20, 80};
 const std::pair<uint32_t, uint32_t> kChanceOfChoosingWorkgroupStorageClass = {
@@ -279,6 +280,8 @@ FuzzerContext::FuzzerContext(std::unique_ptr<RandomGenerator> random_generator,
       ChooseBetweenMinAndMax(kChanceOfAdjustingSelectionControl);
   chance_of_calling_function_ =
       ChooseBetweenMinAndMax(kChanceOfCallingFunction);
+  chance_of_changing_memory_scope_ =
+      ChooseBetweenMinAndMax(kChanceOfChangingMemoryScope);
   chance_of_choosing_struct_type_vs_array_type_ =
       ChooseBetweenMinAndMax(kChanceOfChoosingStructTypeVsArrayType);
   chance_of_choosing_workgroup_storage_class_ =

@@ -51,6 +51,7 @@
 #include "source/fuzz/transformation_add_type_struct.h"
 #include "source/fuzz/transformation_add_type_vector.h"
 #include "source/fuzz/transformation_adjust_branch_weights.h"
+#include "source/fuzz/transformation_changing_memory_scope.h"
 #include "source/fuzz/transformation_composite_construct.h"
 #include "source/fuzz/transformation_composite_extract.h"
 #include "source/fuzz/transformation_composite_insert.h"
@@ -209,6 +210,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
     case protobufs::Transformation::TransformationCase::kAdjustBranchWeights:
       return MakeUnique<TransformationAdjustBranchWeights>(
           message.adjust_branch_weights());
+    case protobufs::Transformation::TransformationCase::kChangingMemoryScope:
+      return MakeUnique<TransformationChangingMemoryScope>(
+          message.changing_memory_scope());
     case protobufs::Transformation::TransformationCase::kCompositeConstruct:
       return MakeUnique<TransformationCompositeConstruct>(
           message.composite_construct());

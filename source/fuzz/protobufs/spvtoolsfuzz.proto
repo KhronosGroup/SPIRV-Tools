@@ -560,6 +560,7 @@ message Transformation {
     TransformationSwapFunctionVariables swap_function_variables = 86;
     TransformationSwapTwoFunctions swap_two_functions = 87;
     TransformationWrapVectorSynonym wrap_vector_synonym = 88;
+    TransformationChangingMemoryScope changing_memory_scope = 91;
     // Add additional option using the next available number.
   }
 }
@@ -1293,6 +1294,19 @@ message TransformationAdjustBranchWeights {
 
   // Branch weights of a branch conditional instruction.
   UInt32Pair branch_weights = 2;
+
+}
+
+message TransformationChangingMemoryScope {
+
+  // This transformation is responsible for strengthens the memory scope
+  // operand within an atomic instruction.
+
+  // The atomic instruction we are looking for.
+  InstructionDescriptor needed_instruction = 1;
+
+  // The id of new value.
+  uint32 memory_scope_new_value_id = 2;
 
 }
 

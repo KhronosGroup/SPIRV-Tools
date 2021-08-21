@@ -177,6 +177,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_type_struct.h
         transformation_add_type_vector.h
         transformation_adjust_branch_weights.h
+        transformation_changing_memory_scope.h
         transformation_composite_construct.h
         transformation_composite_extract.h
         transformation_composite_insert.h
@@ -372,6 +373,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_type_struct.cpp
         transformation_add_type_vector.cpp
         transformation_adjust_branch_weights.cpp
+        transformation_changing_memory_scope.cpp
         transformation_composite_construct.cpp
         transformation_composite_extract.cpp
         transformation_composite_insert.cpp
