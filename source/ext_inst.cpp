@@ -155,6 +155,7 @@ bool spvExtInstIsNonSemantic(const spv_ext_inst_type_t type) {
 
 bool spvExtInstIsDebugInfo(const spv_ext_inst_type_t type) {
   if (type == SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100 ||
+      type == SPV_EXT_INST_TYPE_NONSEMANTIC_VULKAN_DEBUGINFO_100 ||
       type == SPV_EXT_INST_TYPE_DEBUGINFO) {
     return true;
   }

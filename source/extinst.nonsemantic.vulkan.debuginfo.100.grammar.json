@@ -47,7 +47,8 @@
       "operands" : [
         { "kind" : "IdRef", "name" : "'Name'" },
         { "kind" : "IdRef", "name" : "'Size'" },
-        { "kind" : "IdRef", "name" : "'Encoding'" }
+        { "kind" : "IdRef", "name" : "'Encoding'" },
+        { "kind" : "IdRef", "name" : "'Flags'" }
       ]
     },
     {
