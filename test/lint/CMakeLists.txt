@@ -13,6 +13,6 @@
 # limitations under the License.
 
 add_spvtools_unittest(TARGET lint
-  SRCS placeholder_test.cpp
+  SRCS divergence_analysis_test.cpp
   LIBS SPIRV-Tools-lint SPIRV-Tools-opt
 )

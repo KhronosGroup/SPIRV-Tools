@@ -236,7 +236,7 @@ cc_library(
 
 cc_library(
     name = "spirv_tools_lint",
-    srcs = glob(["source/lint/*.cpp"]),
+    srcs = glob(["source/lint/*.cpp", "source/lint/*.h"]),
     hdrs = ["include/spirv-tools/linter.hpp"],
     copts = COMMON_COPTS,
     linkstatic = 1,
