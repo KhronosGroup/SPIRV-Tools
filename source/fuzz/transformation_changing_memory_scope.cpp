@@ -22,12 +22,21 @@ namespace fuzz {
 
 TransformationChangingMemoryScope::TransformationChangingMemoryScope(
     protobufs::TransformationChangingMemoryScope message)
-    : message_(std::move(message)) {}
+    : message_(std::move(message)) {
+  assert(HasMemoryScopeOperand(static_cast<SpvOp>(
+             message_.needed_instruction().target_instruction_opcode())) &&
+         "Instruction must be atomic or barrier instruction only.");
+}
 
 TransformationChangingMemoryScope::TransformationChangingMemoryScope(
     const protobufs::InstructionDescriptor& needed_instruction,
     uint32_t memory_scope_new_value_id) {
   *message_.mutable_needed_instruction() = needed_instruction;
+
+  assert(HasMemoryScopeOperand(static_cast<SpvOp>(
+             needed_instruction.target_instruction_opcode())) &&
+         "Instruction must be atomic or barrier instruction only.");
+
   message_.set_memory_scope_new_value_id(memory_scope_new_value_id);
 }
 
@@ -37,11 +46,6 @@ bool TransformationChangingMemoryScope::IsApplicable(
   auto needed_instruction =
       FindInstruction(message_.needed_instruction(), ir_context);
   if (!needed_instruction) {
-    return false;
-  }
-
-  // Instruction must be atomic instruction only.
-  if (!IsAtomicInstruction(needed_instruction->opcode())) {
     return false;
   }
 
@@ -99,11 +103,17 @@ void TransformationChangingMemoryScope::Apply(
 
   needed_instruction->SetInOperand(needed_index,
                                    {message_.memory_scope_new_value_id()});
+
+  ir_context->UpdateDefUse(needed_instruction);
+
+  ir_context->set_instr_block(needed_instruction,
+                              ir_context->get_instr_block(needed_instruction));
 }
 
 uint32_t TransformationChangingMemoryScope::GetMemoryScopeInOperandIndex(
     SpvOp opcode) {
   switch (opcode) {
+    // Atomic instructions.
     case SpvOpAtomicLoad:
     case SpvOpAtomicStore:
     case SpvOpAtomicExchange:
@@ -123,7 +133,13 @@ uint32_t TransformationChangingMemoryScope::GetMemoryScopeInOperandIndex(
     case SpvOpAtomicFAddEXT:
     case SpvOpAtomicCompareExchange:
     case SpvOpAtomicCompareExchangeWeak:
+    // Barrier instructions.
+    case SpvOpControlBarrier:
+    case SpvOpMemoryNamedBarrier:
       return 1;
+
+    case SpvOpMemoryBarrier:
+      return 0;
 
     default:
       assert(false);
@@ -131,9 +147,9 @@ uint32_t TransformationChangingMemoryScope::GetMemoryScopeInOperandIndex(
   }
 }
 
-bool TransformationChangingMemoryScope::IsAtomicInstruction(SpvOp opcode) {
+bool TransformationChangingMemoryScope::HasMemoryScopeOperand(SpvOp opcode) {
   switch (opcode) {
-    // Atomic Instructions.
+    // Atomic instructions.
     case SpvOpAtomicLoad:
     case SpvOpAtomicStore:
     case SpvOpAtomicExchange:
@@ -153,6 +169,10 @@ bool TransformationChangingMemoryScope::IsAtomicInstruction(SpvOp opcode) {
     case SpvOpAtomicFlagTestAndSet:
     case SpvOpAtomicFlagClear:
     case SpvOpAtomicFAddEXT:
+    // Barrier instructions.
+    case SpvOpControlBarrier:
+    case SpvOpMemoryBarrier:
+    case SpvOpMemoryNamedBarrier:
       return true;
 
     default:
@@ -162,13 +182,25 @@ bool TransformationChangingMemoryScope::IsAtomicInstruction(SpvOp opcode) {
 
 bool TransformationChangingMemoryScope::IsValidScope(
     SpvScope new_memory_scope_value, SpvScope old_memory_scope_value) {
+  switch (old_memory_scope_value) {
+    case SpvScopeCrossDevice:
+    case SpvScopeDevice:
+    case SpvScopeWorkgroup:
+    case SpvScopeSubgroup:
+    case SpvScopeInvocation:
+      break;
+
+    default:
+      return false;
+  }
+
   switch (new_memory_scope_value) {
     case SpvScopeCrossDevice:
     case SpvScopeDevice:
     case SpvScopeWorkgroup:
     case SpvScopeSubgroup:
     case SpvScopeInvocation:
-      if (new_memory_scope_value > old_memory_scope_value) {
+      if (new_memory_scope_value >= old_memory_scope_value) {
         return false;
       }
       return true;

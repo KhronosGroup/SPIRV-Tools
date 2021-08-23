@@ -20,8 +20,8 @@
 namespace spvtools {
 namespace fuzz {
 
-// This fuzzer pass changes the memory scope for atomic instruction with a new
-// one.
+// This fuzzer pass changes the memory scope for atomic or barrier instruction
+// with a new one.
 class FuzzerPassChangingMemoryScope : public FuzzerPass {
  public:
   FuzzerPassChangingMemoryScope(

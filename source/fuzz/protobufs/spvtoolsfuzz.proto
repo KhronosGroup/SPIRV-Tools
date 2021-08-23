@@ -1299,10 +1299,9 @@ message TransformationAdjustBranchWeights {
 
 message TransformationChangingMemoryScope {
 
-  // This transformation is responsible for strengthens the memory scope
-  // operand within an atomic instruction.
+  // Widens a memory scope operand within an instruction.
 
-  // The atomic instruction we are looking for.
+  // The atomic or barrier instruction we are looking for.
   InstructionDescriptor needed_instruction = 1;
 
   // The id of new value.

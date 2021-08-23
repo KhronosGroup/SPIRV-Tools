@@ -23,7 +23,7 @@
 namespace spvtools {
 namespace fuzz {
 
-// This transformation is responsible for changing memory scope.
+// This transformation is responsible for changing memory scope to wider scope.
 class TransformationChangingMemoryScope : public Transformation {
  public:
   explicit TransformationChangingMemoryScope(
@@ -33,12 +33,14 @@ class TransformationChangingMemoryScope : public Transformation {
       const protobufs::InstructionDescriptor& needed_instruction,
       uint32_t memory_scope_new_value_id);
 
-  //
+  // - |needed_instruction| must exist and be atomic or barrier instruction.
+  // - |memory_scope_new_value_id| must be OpConstant with integer type and
+  //   width 32 bits and must be wider (according to IsValidScope).
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  //
+  // Changes id of memory scope with a new one.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
@@ -48,7 +50,7 @@ class TransformationChangingMemoryScope : public Transformation {
   static uint32_t GetMemoryScopeInOperandIndex(SpvOp opcode);
 
   // Returns false incase of opcode not atomic instruction.
-  static bool IsAtomicInstruction(SpvOp opcode);
+  static bool HasMemoryScopeOperand(SpvOp opcode);
 
   // Returns false if new memory scope not valid scope and if old memory scope
   // is wider than new.

@@ -124,6 +124,100 @@ TEST(TransformationChangingMemoryScopeTest, AtomicInstructionsTestCases) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationChangingMemoryScopeTest, BarrierInstructionsTestCases) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %4 "main"
+               OpExecutionMode %4 LocalSize 16 1 1
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 0
+         %15 = OpConstant %6 4 ; Scope Invocation
+         %19 = OpConstant %6 2 ; Scope Workgroup
+          %7 = OpConstant %6 2
+         %26 = OpConstant %6 4
+         %28 = OpConstant %6 72
+         %20 = OpTypePointer Function %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %21 = OpVariable %20 Function %7
+          %9 = OpFunctionCall %2 %12
+          %8 = OpCopyObject %6 %7
+         %22 = OpLoad %6 %21
+         %23 = OpFunctionCall %2 %12
+               OpMemoryBarrier %15 %28
+         %24 = OpFunctionCall %2 %12
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  // Successful transformations.
+  {
+    // OpMemoryBarrier Invocation
+    // to:
+    // OpMemoryBarrier Workgroup
+    TransformationChangingMemoryScope transformation(
+        MakeInstructionDescriptor(23, SpvOpMemoryBarrier, 0), 19);
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
+  }
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %4 "main"
+               OpExecutionMode %4 LocalSize 16 1 1
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 0
+         %15 = OpConstant %6 4 ; Scope Invocation
+         %19 = OpConstant %6 2 ; Scope Workgroup
+          %7 = OpConstant %6 2
+         %26 = OpConstant %6 4
+         %28 = OpConstant %6 72
+         %20 = OpTypePointer Function %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+         %21 = OpVariable %20 Function %7
+          %9 = OpFunctionCall %2 %12
+          %8 = OpCopyObject %6 %7
+         %22 = OpLoad %6 %21
+         %23 = OpFunctionCall %2 %12
+               OpMemoryBarrier %19 %28
+         %24 = OpFunctionCall %2 %12
+               OpReturn
+               OpFunctionEnd
+         %12 = OpFunction %2 None %3
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools

@@ -41,8 +41,8 @@ void FuzzerPassChangingMemoryScope::Apply() {
           return;
         }
 
-        // Instruction must be atomic instruction only.
-        if (!TransformationChangingMemoryScope::IsAtomicInstruction(
+        // Instruction must be atomic or barrier instruction only.
+        if (!TransformationChangingMemoryScope::HasMemoryScopeOperand(
                 inst_it->opcode())) {
           return;
         }
@@ -89,8 +89,8 @@ std::vector<SpvScope> FuzzerPassChangingMemoryScope::GetSuitableNewMemoryScope(
   auto reordered_memory_semantics = std::remove_if(
       potential_new_scopes_orders.begin(), potential_new_scopes_orders.end(),
       [old_memory_scope_value](SpvScope memory_scope) {
-        return (old_memory_scope_value == memory_scope ||
-                memory_scope > old_memory_scope_value);
+        return TransformationChangingMemoryScope::IsValidScope(
+            memory_scope, old_memory_scope_value);
       });
 
   // Erase the old memory scope and scopes narrower than older.
