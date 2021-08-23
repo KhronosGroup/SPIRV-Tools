@@ -37,7 +37,9 @@ namespace lint {
 // Control flow through a block is uniform if for any possible execution and
 // point in time, all threads are executing it, or no threads are executing it.
 // In particular, it is never possible for some threads to be inside the block
-// and some threads not executing. (Partially uniform is defined analogously.)
+// and some threads not executing.
+// TODO(kuhar): Clarify the difference between uniform, divergent, and
+// partially-uniform execution in this analysis.
 //
 // Caveat:
 // As we use control dependence to determine how divergence is propagated, this
@@ -46,7 +48,8 @@ namespace lint {
 // block, which is the immediate postdominator. However, this is not expected to
 // be a problem in practice, given that SPIR-V is generally output by compilers
 // and other automated tools, which would assign the earliest possible merge
-// block, rather than written by hand. (TODO(dongja): implement late merges.)
+// block, rather than written by hand.
+// TODO(kuhar): Handle late merges.
 class DivergenceAnalysis : public opt::ForwardDataFlowAnalysis {
  public:
   // The tightest (most uniform) level of divergence that can be determined
@@ -54,6 +57,8 @@ class DivergenceAnalysis : public opt::ForwardDataFlowAnalysis {
   //
   // The values are ordered such that A > B means that A is potentially more
   // divergent than B.
+  // TODO(kuhar): Rename |PartiallyUniform' to something less confusing. For
+  // example, the enum could be based on scopes.
   enum class DivergenceLevel {
     // The value or control flow is uniform across the entire invocation group.
     kUniform = 0,

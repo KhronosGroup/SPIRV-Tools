@@ -28,7 +28,7 @@ void DivergenceAnalysis::EnqueueSuccessors(opt::Instruction* inst) {
   // Enqueue control dependents of block, if applicable.
   // There are two ways for a dependence source to be updated:
   // 1. control -> control: source block is marked divergent.
-  // 1. data -> control: branch condition is marked divergent.
+  // 2. data -> control: branch condition is marked divergent.
   uint32_t block_id;
   if (inst->IsBlockTerminator()) {
     block_id = context().get_instr_block(inst)->id();
@@ -121,6 +121,11 @@ opt::DataFlowAnalysis::VisitResult DivergenceAnalysis::VisitInstruction(
 
 DivergenceAnalysis::DivergenceLevel
 DivergenceAnalysis::ComputeInstructionDivergence(opt::Instruction* inst) {
+  // TODO(kuhar): Check to see if inst is decorated with Uniform or UniformId
+  // and use that to short circuit other checks. Uniform is for subgroups which
+  // would satisfy derivative groups too. UniformId takes a scope, so if it is
+  // subgroup or greater it could satisfy derivative group and
+  // Device/QueueFamily could satisfy fully uniform.
   uint32_t id = inst->result_id();
   // Handle divergence roots.
   if (inst->opcode() == SpvOpFunctionParameter) {
@@ -175,6 +180,8 @@ DivergenceAnalysis::ComputeVariableDivergence(opt::Instruction* var) {
     case SpvStorageClassInput:
       ret = DivergenceLevel::kDivergent;
       // If this variable has a Flat decoration, it is partially uniform.
+      // TODO(kuhar): Track access chain indices and also consider Flat members
+      // of a structure.
       context().get_decoration_mgr()->WhileEachDecoration(
           def_id, SpvDecorationFlat, [&ret](const opt::Instruction&) {
             ret = DivergenceLevel::kPartiallyUniform;
@@ -201,7 +208,7 @@ DivergenceAnalysis::ComputeVariableDivergence(opt::Instruction* var) {
 }
 
 void DivergenceAnalysis::Setup(opt::Function* function) {
-  // TODO(dongja): run functions called by |function| so we can detect
+  // TODO(kuhar): Run functions called by |function| so we can detect
   // reconvergence caused by multiple returns.
   cd_.ComputeControlDependenceGraph(
       *context().cfg(), *context().GetPostDominatorAnalysis(function));
