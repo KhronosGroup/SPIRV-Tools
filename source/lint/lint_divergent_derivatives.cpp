@@ -35,7 +35,7 @@ namespace lints {
 namespace {
 // Returns the %name[id], where `name` is the first name associated with the
 // given id, or just %id if one is not found.
-std::string FriendlyName(opt::IRContext* context, uint32_t id) {
+std::string GetFriendlyName(opt::IRContext* context, uint32_t id) {
   auto names = context->GetNames(id);
   std::stringstream ss;
   ss << "%";
@@ -55,7 +55,7 @@ std::string FriendlyName(opt::IRContext* context, uint32_t id) {
 
 bool InstructionHasDerivative(const opt::Instruction& inst) {
   static const SpvOp derivative_opcodes[] = {
-      // implicit derivatives
+      // Implicit derivatives.
       SpvOpImageSampleImplicitLod,
       SpvOpImageSampleDrefImplicitLod,
       SpvOpImageSampleProjImplicitLod,
@@ -64,7 +64,7 @@ bool InstructionHasDerivative(const opt::Instruction& inst) {
       SpvOpImageSparseSampleDrefImplicitLod,
       SpvOpImageSparseSampleProjImplicitLod,
       SpvOpImageSparseSampleProjDrefImplicitLod,
-      // explicit derivatives
+      // Explicit derivatives.
       SpvOpDPdx,
       SpvOpDPdy,
       SpvOpFwidth,
@@ -84,7 +84,7 @@ spvtools::DiagnosticStream Warn(opt::IRContext* context,
   if (inst == nullptr) {
     return DiagnosticStream({0, 0, 0}, context->consumer(), "", SPV_WARNING);
   } else {
-    // TODO(dongja): line numbers based on debug info
+    // TODO(kuhar): Use line numbers based on debug info.
     return DiagnosticStream(
         {0, 0, 0}, context->consumer(),
         inst->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES),
@@ -100,7 +100,7 @@ void PrintDivergenceFlow(opt::IRContext* context, DivergenceAnalysis div,
     bool is_block = def_use->GetDef(id)->opcode() == SpvOpLabel;
     if (is_block) {
       Warn(context, nullptr)
-          << "block " << FriendlyName(context, id) << " is divergent";
+          << "block " << GetFriendlyName(context, id) << " is divergent";
       uint32_t source = div.GetDivergenceSource(id);
       // Skip intermediate blocks.
       while (source != 0 && def_use->GetDef(source)->opcode() == SpvOpLabel) {
@@ -112,11 +112,11 @@ void PrintDivergenceFlow(opt::IRContext* context, DivergenceAnalysis div,
           cfg->block(div.GetDivergenceDependenceSource(id))->terminator();
       Warn(context, branch)
           << "because it depends on a conditional branch on divergent value "
-          << FriendlyName(context, source) << "";
+          << GetFriendlyName(context, source) << "";
       id = source;
     } else {
       Warn(context, nullptr)
-          << "value " << FriendlyName(context, id) << " is divergent";
+          << "value " << GetFriendlyName(context, id) << " is divergent";
       uint32_t source = div.GetDivergenceSource(id);
       opt::Instruction* def = def_use->GetDef(id);
       opt::Instruction* source_def =
@@ -124,8 +124,8 @@ void PrintDivergenceFlow(opt::IRContext* context, DivergenceAnalysis div,
       // First print data -> data dependencies.
       while (source != 0 && source_def->opcode() != SpvOpLabel) {
         Warn(context, def_use->GetDef(id))
-            << "because " << FriendlyName(context, id) << " uses value "
-            << FriendlyName(context, source)
+            << "because " << GetFriendlyName(context, id) << " uses value "
+            << GetFriendlyName(context, source)
             << "in its definition, which is divergent";
         id = source;
         def = source_def;
@@ -137,7 +137,7 @@ void PrintDivergenceFlow(opt::IRContext* context, DivergenceAnalysis div,
         break;
       }
       Warn(context, def) << "because it is conditionally set in block "
-                         << FriendlyName(context, source);
+                         << GetFriendlyName(context, source);
       id = source;
     }
   }
@@ -155,7 +155,7 @@ bool CheckDivergentDerivatives(opt::IRContext* context) {
                 DivergenceAnalysis::DivergenceLevel::kPartiallyUniform) {
           Warn(context, nullptr)
               << "derivative with divergent control flow"
-              << " located in block " << FriendlyName(context, bb.id());
+              << " located in block " << GetFriendlyName(context, bb.id());
           PrintDivergenceFlow(context, div, bb.id());
         }
       }

@@ -39,16 +39,16 @@ Linter::Linter(spv_target_env env) : impl_(new Impl(env)) {}
 Linter::~Linter() {}
 
 void Linter::SetMessageConsumer(MessageConsumer consumer) {
-  impl_->message_consumer = consumer;
+  impl_->message_consumer = std::move(consumer);
 }
 
-const MessageConsumer& Linter::consumer() const {
+const MessageConsumer& Linter::Consumer() const {
   return impl_->message_consumer;
 }
 
 bool Linter::Run(const uint32_t* binary, size_t binary_size) {
   std::unique_ptr<opt::IRContext> context =
-      BuildModule(SPV_ENV_VULKAN_1_2, consumer(), binary, binary_size);
+      BuildModule(SPV_ENV_VULKAN_1_2, Consumer(), binary, binary_size);
   if (context == nullptr) return false;
 
   bool result = true;
