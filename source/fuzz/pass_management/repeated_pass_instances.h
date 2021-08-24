@@ -34,6 +34,7 @@
 #include "source/fuzz/fuzzer_pass_add_loops_to_create_int_constant_synonyms.h"
 #include "source/fuzz/fuzzer_pass_add_opphi_synonyms.h"
 #include "source/fuzz/fuzzer_pass_add_parameters.h"
+#include "source/fuzz/fuzzer_pass_add_read_modify_write_atomic_instruction.h"
 #include "source/fuzz/fuzzer_pass_add_relaxed_decorations.h"
 #include "source/fuzz/fuzzer_pass_add_stores.h"
 #include "source/fuzz/fuzzer_pass_add_synonyms.h"
@@ -130,6 +131,7 @@ class RepeatedPassInstances {
   REPEATED_PASS_INSTANCE(AddLoopsToCreateIntConstantSynonyms);
   REPEATED_PASS_INSTANCE(AddOpPhiSynonyms);
   REPEATED_PASS_INSTANCE(AddParameters);
+  REPEATED_PASS_INSTANCE(AddReadModifyWriteAtomicInstruction);
   REPEATED_PASS_INSTANCE(AddRelaxedDecorations);
   REPEATED_PASS_INSTANCE(AddStores);
   REPEATED_PASS_INSTANCE(AddSynonyms);

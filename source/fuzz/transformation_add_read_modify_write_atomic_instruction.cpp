@@ -23,7 +23,10 @@ namespace fuzz {
 TransformationAddReadModifyWriteAtomicInstruction::
     TransformationAddReadModifyWriteAtomicInstruction(
         protobufs::TransformationAddReadModifyWriteAtomicInstruction message)
-    : message_(std::move(message)) {}
+    : message_(std::move(message)) {
+  assert(IsAtomicRMW(static_cast<SpvOp>(message.opcode())) &&
+         "Opcode must be atomic(read-modify-write) only.");
+}
 
 TransformationAddReadModifyWriteAtomicInstruction::
     TransformationAddReadModifyWriteAtomicInstruction(
@@ -32,6 +35,8 @@ TransformationAddReadModifyWriteAtomicInstruction::
         uint32_t memory_semantics_id_2, uint32_t value_id,
         uint32_t comparator_id,
         const protobufs::InstructionDescriptor& instruction_to_insert_before) {
+  assert(IsAtomicRMW(static_cast<SpvOp>(opcode)) &&
+         "Opcode must be atomic(read-modify-write) only.");
   message_.set_fresh_id(fresh_id);
   message_.set_pointer_id(pointer_id);
   message_.set_opcode(opcode);
@@ -56,12 +61,6 @@ bool TransformationAddReadModifyWriteAtomicInstruction::IsApplicable(
   // The pointer must exist and have a type.
   auto pointer = ir_context->get_def_use_mgr()->GetDef(message_.pointer_id());
   if (!pointer || !pointer->type_id()) {
-    return false;
-  }
-
-  // Read-Modify-Write atomic instructions are valid only.
-  if (message_.opcode() == SpvOpAtomicLoad ||
-      message_.opcode() == SpvOpAtomicStore) {
     return false;
   }
 
@@ -104,9 +103,8 @@ bool TransformationAddReadModifyWriteAtomicInstruction::IsApplicable(
     return false;
   }
 
-  // Instruction must RMW be atomic instruction, Id must be suitable for
-  // instruction, Check the validity of (Value, second memory semantics id,
-  // comparator id) for instruction if found.
+  // Id must be suitable for instruction, Check the validity of (Value, second
+  // memory semantics id, comparator id) for instruction if found.
   switch (message_.opcode()) {
     case SpvOpAtomicExchange:
     case SpvOpAtomicIAdd:
@@ -159,7 +157,7 @@ bool TransformationAddReadModifyWriteAtomicInstruction::IsApplicable(
       break;
 
     default:
-      break;
+      return false;
   }
 
   // Check the validity of memory scope.
@@ -447,6 +445,32 @@ bool TransformationAddReadModifyWriteAtomicInstruction::IsComparatorIdValid(
   }
 
   return true;
+}
+
+bool TransformationAddReadModifyWriteAtomicInstruction::IsAtomicRMW(
+    SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpAtomicIAdd:
+    case SpvOpAtomicISub:
+    case SpvOpAtomicSMin:
+    case SpvOpAtomicUMin:
+    case SpvOpAtomicSMax:
+    case SpvOpAtomicUMax:
+    case SpvOpAtomicAnd:
+    case SpvOpAtomicOr:
+    case SpvOpAtomicXor:
+    case SpvOpAtomicFAddEXT:
+    case SpvOpAtomicCompareExchange:
+    case SpvOpAtomicCompareExchangeWeak:
+    case SpvOpAtomicIIncrement:
+    case SpvOpAtomicIDecrement:
+    case SpvOpAtomicFlagTestAndSet:
+    case SpvOpAtomicFlagClear:
+      return true;
+
+    default:
+      return false;
+  }
 }
 
 std::unique_ptr<spvtools::opt::Instruction>

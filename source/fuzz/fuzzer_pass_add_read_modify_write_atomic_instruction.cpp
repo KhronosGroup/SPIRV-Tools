@@ -49,10 +49,7 @@ void FuzzerPassAddReadModifyWriteAtomicInstruction::Apply() {
           return;
         }
 
-        std::vector<SpvOp> atomic_opcodes{SpvOpAtomicLoad,
-                                          SpvOpAtomicIAdd,
-                                          SpvOpAtomicStore,
-                                          SpvOpAtomicIAdd,
+        std::vector<SpvOp> atomic_opcodes{SpvOpAtomicIAdd,
                                           SpvOpAtomicISub,
                                           SpvOpAtomicSMin,
                                           SpvOpAtomicUMin,

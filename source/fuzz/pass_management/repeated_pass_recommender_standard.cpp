@@ -147,6 +147,10 @@ RepeatedPassRecommenderStandard::GetFuturePassRecommendations(
     return RandomOrderAndNonNull({pass_instances_->GetAddSynonyms(),
                                   pass_instances_->GetReplaceIrrelevantIds()});
   }
+  if (&pass == pass_instances_->GetAddReadModifyWriteAtomicInstruction()) {
+    // TODO(mostafa-ashraf19): [What should exactly doing here?]
+    return {};
+  }
   if (&pass == pass_instances_->GetAddRelaxedDecorations()) {
     // - No obvious follow-on passes
     return {};

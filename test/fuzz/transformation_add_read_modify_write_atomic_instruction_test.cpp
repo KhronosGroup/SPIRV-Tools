@@ -116,17 +116,21 @@ TEST(TransformationAddReadModifyWriteAtomicInstructionTest, NotApplicable) {
                    40, 40, static_cast<uint32_t>(SpvOpAtomicIAdd), 41, 17, 0,
                    41, 0, MakeInstructionDescriptor(44, SpvOpLoad, 0))
                    .IsApplicable(context.get(), transformation_context));
-  // Pointer does not exist.
+  // Bad: Pointer does not exist.
   ASSERT_FALSE(TransformationAddReadModifyWriteAtomicInstruction(
                    100, 70, static_cast<uint32_t>(SpvOpAtomicIAdd), 41, 17, 0,
                    41, 0, MakeInstructionDescriptor(44, SpvOpLoad, 0))
                    .IsApplicable(context.get(), transformation_context));
 
-  // This transformation is not responsible for AtomicLoad or AtomicStore.
-  ASSERT_FALSE(TransformationAddReadModifyWriteAtomicInstruction(
+#ifndef NDEBUG
+
+  // Bad: This transformation is not responsible for AtomicLoad or AtomicStore.
+  ASSERT_DEATH(TransformationAddReadModifyWriteAtomicInstruction(
                    100, 40, static_cast<uint32_t>(SpvOpAtomicLoad), 41, 17, 0,
-                   0, 0, MakeInstructionDescriptor(44, SpvOpLoad, 0))
-                   .IsApplicable(context.get(), transformation_context));
+                   0, 0, MakeInstructionDescriptor(44, SpvOpLoad, 0)),
+               "Opcode must be atomic(read-modify-write) only.");
+
+#endif
 
   // Bad: id 100 of memory scope instruction does not exist.
   ASSERT_FALSE(TransformationAddReadModifyWriteAtomicInstruction(

@@ -168,6 +168,8 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
         &pass_instances_);
     MaybeAddRepeatedPass<FuzzerPassAddOpPhiSynonyms>(&pass_instances_);
     MaybeAddRepeatedPass<FuzzerPassAddParameters>(&pass_instances_);
+    MaybeAddRepeatedPass<FuzzerPassAddReadModifyWriteAtomicInstruction>(
+        &pass_instances_);
     MaybeAddRepeatedPass<FuzzerPassAddRelaxedDecorations>(&pass_instances_);
     MaybeAddRepeatedPass<FuzzerPassAddStores>(&pass_instances_);
     MaybeAddRepeatedPass<FuzzerPassAddSynonyms>(&pass_instances_);
@@ -235,8 +237,6 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
   MaybeAddFinalPass<FuzzerPassAdjustLoopControls>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassAdjustMemoryOperandsMasks>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassAdjustSelectionControls>(&final_passes_);
-  MaybeAddFinalPass<FuzzerPassAddReadModifyWriteAtomicInstruction>(
-      &final_passes_);
   MaybeAddFinalPass<FuzzerPassAddNoContractionDecorations>(&final_passes_);
   if (!fuzzer_context_->IsWgslCompatible()) {
     // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4214):

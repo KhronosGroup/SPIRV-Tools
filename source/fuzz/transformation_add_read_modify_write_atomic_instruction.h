@@ -98,6 +98,9 @@ class TransformationAddReadModifyWriteAtomicInstruction
   bool IsComparatorIdValid(opt::IRContext* ir_context,
                            spvtools::opt::Instruction* insert_before) const;
 
+  // Return false if opcode is not atomic(read-modify-write).
+  static bool IsAtomicRMW(SpvOp opcode);
+
   static const uint32_t kMemorySemanticsHigherBitmask = 0xFFFFFFE0;
   static const uint32_t kMemorySemanticsLowerBitmask = 0x1F;
 
