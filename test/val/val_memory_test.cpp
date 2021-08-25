@@ -2344,11 +2344,12 @@ OpExtension "SPV_EXT_descriptor_indexing"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
 OpExecutionMode %func OriginUpperLeft
-OpDecorate %array_t Block
+OpDecorate %struct Block
 %uint_t = OpTypeInt 32 0
 %inner_array_t = OpTypeRuntimeArray %uint_t
 %array_t = OpTypeRuntimeArray %inner_array_t
-%array_ptr = OpTypePointer StorageBuffer %array_t
+%struct = OpTypeStruct %array_t
+%array_ptr = OpTypePointer StorageBuffer %struct
 %2 = OpVariable %array_ptr StorageBuffer
 %void = OpTypeVoid
 %func_t = OpTypeFunction %void
@@ -2504,13 +2505,14 @@ OpExtension "SPV_EXT_descriptor_indexing"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
 OpExecutionMode %func OriginUpperLeft
-OpDecorate %array_t Block
+OpDecorate %struct Block
 %uint_t = OpTypeInt 32 0
 %dim = OpConstant %uint_t 1
 %sampler_t = OpTypeSampler
 %inner_array_t = OpTypeRuntimeArray %uint_t
 %array_t = OpTypeRuntimeArray %inner_array_t
-%array_ptr = OpTypePointer StorageBuffer %array_t
+%struct = OpTypeStruct %array_t
+%array_ptr = OpTypePointer StorageBuffer %struct
 %2 = OpVariable %array_ptr StorageBuffer
 %void = OpTypeVoid
 %func_t = OpTypeFunction %void
