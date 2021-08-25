@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2021.4-dev 2021-08-25
+   - Start v2021.4-dev
+
 v2021.3 2021-08-24
  - General
     - Initial support for SPV_KHR_integer_dot_product (#4327)
