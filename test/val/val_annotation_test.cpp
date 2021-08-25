@@ -669,7 +669,8 @@ OpExecutionMode %main OriginUpperLeft
 OpDecorate %var )" + deco + R"( 0
 %void = OpTypeVoid
 %float = OpTypeFloat 32
-%ptr = OpTypePointer )" + sc +
+%ptr = OpTypePointer )" +
+                           sc +
                            R"( %float
 %var = OpVariable %ptr )" + sc +
                            R"(
@@ -707,7 +708,8 @@ OpExecutionMode %main OriginUpperLeft
 OpDecorate %var )" + deco + R"( 0
 %void = OpTypeVoid
 %float = OpTypeFloat 32
-%ptr = OpTypePointer )" + sc +
+%ptr = OpTypePointer )" +
+                           sc +
                            R"( %float
 %var = OpVariable %ptr )" + sc +
                            R"(

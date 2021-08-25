@@ -687,8 +687,7 @@ TEST_F(ValidateDecorations, BlockDecoratingArrayBad) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a structure type"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a structure type"));
 }
 
 TEST_F(ValidateDecorations, BlockDecoratingIntBad) {
@@ -713,8 +712,7 @@ TEST_F(ValidateDecorations, BlockDecoratingIntBad) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a structure type"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a structure type"));
 }
 
 TEST_F(ValidateDecorations, BlockMissingOffsetBad) {
@@ -6460,8 +6458,7 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a variable"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a variable"));
 }
 
 TEST_F(ValidateDecorations, ComponentDecorationBadStorageClass) {
@@ -6761,8 +6758,7 @@ TEST_F(ValidateDecorations, ComponentDecorationFunctionParameter) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a variable"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a variable"));
 }
 
 TEST_F(ValidateDecorations, VulkanStorageBufferBlock) {
@@ -7158,8 +7154,7 @@ OpDecorate %struct Location 0
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a variable"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a variable"));
 }
 
 TEST_F(ValidateDecorations, LocationFloatBad) {
@@ -7173,8 +7168,7 @@ OpDecorate %float Location 0
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a variable"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a variable"));
 }
 
 TEST_F(ValidateDecorations, WorkgroupSingleBlockVariable) {
