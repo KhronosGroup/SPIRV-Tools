@@ -322,7 +322,7 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
             sc == SpvStorageClassFunction) {
           return _.diag(SPV_ERROR_INVALID_ID, target)
                  << LogStringForDecoration(dec)
-                 << " decroration must not be applied to this storage class";
+                 << " decoration must not be applied to this storage class";
         }
         break;
       case SpvDecorationIndex:
@@ -399,14 +399,8 @@ spv_result_t ValidateDecorateId(ValidationState_t& _, const Instruction* inst) {
               "OpDecorateId";
   }
 
-  const auto target_id = inst->GetOperandAs<uint32_t>(0);
-  const auto target = _.FindDef(target_id);
-  if (target->opcode() != SpvOpDecorationGroup &&
-      IsMemberDecorationOnly(decoration)) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << LogStringForDecoration
-           << " can only be applied to structure members";
-  }
+  // No member decorations take id parameters, so we don't bother checking if
+  // we are using a member only decoration here.
 
   // TODO: Add validations for these decorations.
   // UniformId is covered elsewhere.
