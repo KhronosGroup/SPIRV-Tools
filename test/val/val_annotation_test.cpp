@@ -73,9 +73,7 @@ OpDecorate %struct )" + deco +
 }
 
 INSTANTIATE_TEST_SUITE_P(ValidateMemberOnlyDecorations, MemberOnlyDecorations,
-                         Values("RowMajor",
-                                "ColMajor",
-                                "MatrixStride 16"
+                         Values("RowMajor", "ColMajor", "MatrixStride 16"
                                 // SPIR-V spec bug?
                                 /*,"Offset 0"*/));
 
@@ -96,7 +94,8 @@ OpExtension "SPV_KHR_physical_storage_buffer"
 OpExtension "SPV_GOOGLE_hlsl_functionality1"
 OpExtension "SPV_EXT_descriptor_indexing"
 OpMemoryModel Logical GLSL450
-OpMemberDecorate %struct 0 )" + deco + R"(
+OpMemberDecorate %struct 0 )" +
+                    deco + R"(
 %float = OpTypeFloat 32
 %float2 = OpTypeVector %float 2
 %float2x2 = OpTypeMatrix %float2 2
@@ -109,40 +108,21 @@ OpMemberDecorate %struct 0 )" + deco + R"(
               HasSubstr("cannot be applied to structure members"));
 }
 
-INSTANTIATE_TEST_SUITE_P(ValidateNonMemberOnlyDecorations, NonMemberOnlyDecorations,
-                         Values("SpecId 1",
-                                "Block",
-                                "BufferBlock",
-                                "ArrayStride 4",
-                                "GLSLShared",
-                                "GLSLPacked",
-                                "CPacked",
-                                // TODO: https://github.com/KhronosGroup/glslang/issues/703:
-                                // glslang applies Restrict to structure members.
-                                //"Restrict",
-                                "Aliased",
-                                "Constant",
-                                "Uniform",
-                                "SaturatedConversion",
-                                "Index 0",
-                                "Binding 0",
-                                "DescriptorSet 0",
-                                "FuncParamAttr Zext",
-                                "FPRoundingMode RTE",
-                                "FPFastMathMode None",
-                                "LinkageAttributes \"ext\" Import",
-                                "NoContraction",
-                                "InputAttachmentIndex 0",
-                                "Alignment 4",
-                                "MaxByteOffset 4",
-                                "AlignmentId %float",
-                                "MaxByteOffsetId %float",
-                                "NoSignedWrap",
-                                "NoUnsignedWrap",
-                                "NonUniform",
-                                "RestrictPointer",
-                                "AliasedPointer",
-                                "CounterBuffer %float"));
+INSTANTIATE_TEST_SUITE_P(
+    ValidateNonMemberOnlyDecorations, NonMemberOnlyDecorations,
+    Values("SpecId 1", "Block", "BufferBlock", "ArrayStride 4", "GLSLShared",
+           "GLSLPacked", "CPacked",
+           // TODO: https://github.com/KhronosGroup/glslang/issues/703:
+           // glslang applies Restrict to structure members.
+           //"Restrict",
+           "Aliased", "Constant", "Uniform", "SaturatedConversion", "Index 0",
+           "Binding 0", "DescriptorSet 0", "FuncParamAttr Zext",
+           "FPRoundingMode RTE", "FPFastMathMode None",
+           "LinkageAttributes \"ext\" Import", "NoContraction",
+           "InputAttachmentIndex 0", "Alignment 4", "MaxByteOffset 4",
+           "AlignmentId %float", "MaxByteOffsetId %float", "NoSignedWrap",
+           "NoUnsignedWrap", "NonUniform", "RestrictPointer", "AliasedPointer",
+           "CounterBuffer %float"));
 
 using StructDecorations = spvtest::ValidateBase<std::string>;
 
@@ -152,7 +132,8 @@ TEST_P(StructDecorations, Struct) {
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
-OpDecorate %struct )" + deco + R"(
+OpDecorate %struct )" + deco +
+                           R"(
 %struct = OpTypeStruct
 )";
 
@@ -172,8 +153,7 @@ OpDecorate %int )" + deco + R"(
 
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a structure type"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a structure type"));
 }
 
 TEST_P(StructDecorations, Variable) {
@@ -190,8 +170,7 @@ OpDecorate %var )" + deco + R"(
 
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a structure type"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a structure type"));
 }
 
 TEST_P(StructDecorations, FunctionParameter) {
@@ -201,7 +180,8 @@ OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %func LinkageAttributes "import" Import
-OpDecorate %param )" + deco + R"(
+OpDecorate %param )" + deco +
+                           R"(
 %int = OpTypeInt 32 0
 %void = OpTypeVoid
 %fn = OpTypeFunction %void %int
@@ -212,8 +192,7 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a structure type"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a structure type"));
 }
 
 TEST_P(StructDecorations, Constant) {
@@ -222,15 +201,15 @@ TEST_P(StructDecorations, Constant) {
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
-OpDecorate %int_0 )" + deco + R"(
+OpDecorate %int_0 )" + deco +
+                           R"(
 %int = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
 )";
 
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a structure type"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a structure type"));
 }
 
 INSTANTIATE_TEST_SUITE_P(ValidateStructDecorations, StructDecorations,
@@ -244,7 +223,8 @@ TEST_P(ArrayDecorations, Array) {
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
-OpDecorate %array )" + deco + R"(
+OpDecorate %array )" + deco +
+                           R"(
 %int = OpTypeInt 32 0
 %int_4 = OpConstant %int 4
 %array = OpTypeArray %int %int_4
@@ -260,7 +240,8 @@ TEST_P(ArrayDecorations, RuntimeArray) {
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
-OpDecorate %array )" + deco + R"(
+OpDecorate %array )" + deco +
+                           R"(
 %int = OpTypeInt 32 0
 %array = OpTypeRuntimeArray %int
 )";
@@ -290,7 +271,8 @@ TEST_P(ArrayDecorations, Struct) {
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
-OpDecorate %struct )" + deco + R"(
+OpDecorate %struct )" + deco +
+                           R"(
 %int = OpTypeInt 32 0
 %struct = OpTypeStruct %int
 )";
@@ -326,7 +308,8 @@ OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %func LinkageAttributes "import" Import
-OpDecorate %param )" + deco + R"(
+OpDecorate %param )" + deco +
+                           R"(
 %int = OpTypeInt 32 0
 %void = OpTypeVoid
 %fn = OpTypeFunction %void %int
@@ -347,7 +330,8 @@ TEST_P(ArrayDecorations, Constant) {
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
-OpDecorate %null )" + deco + R"(
+OpDecorate %null )" + deco +
+                           R"(
 %int = OpTypeInt 32 0
 %int_4 = OpConstant %int 4
 %array = OpTypeArray %int %int_4
@@ -371,7 +355,8 @@ TEST_P(BuiltInDecorations, Variable) {
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
-OpDecorate %var BuiltIn )" + deco + R"(
+OpDecorate %var BuiltIn )" +
+                           deco + R"(
 %int = OpTypeInt 32 0
 %ptr = OpTypePointer Input %int
 %var = OpVariable %ptr Input
@@ -393,7 +378,8 @@ TEST_P(BuiltInDecorations, IntegerType) {
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
-OpDecorate %int BuiltIn )" + deco + R"(
+OpDecorate %int BuiltIn )" +
+                           deco + R"(
 %int = OpTypeInt 32 0
 )";
 
@@ -411,7 +397,8 @@ OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %func LinkageAttributes "import" Import
-OpDecorate %param BuiltIn )" + deco + R"(
+OpDecorate %param BuiltIn )" +
+                           deco + R"(
 %int = OpTypeInt 32 0
 %void = OpTypeVoid
 %fn = OpTypeFunction %void %int
@@ -433,7 +420,8 @@ TEST_P(BuiltInDecorations, Constant) {
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
-OpDecorate %const BuiltIn )" + deco + R"(
+OpDecorate %const BuiltIn )" +
+                           deco + R"(
 %int = OpTypeInt 32 0
 %int3 = OpTypeVector %int 3
 %int_1 = OpConstant %int 1
@@ -445,8 +433,7 @@ OpDecorate %const BuiltIn )" + deco + R"(
     EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
   } else {
     EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-    EXPECT_THAT(getDiagnosticString(),
-                HasSubstr("must be a variable"));
+    EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a variable"));
   }
 }
 
@@ -456,7 +443,8 @@ TEST_P(BuiltInDecorations, SpecConstant) {
 OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
-OpDecorate %const BuiltIn )" + deco + R"(
+OpDecorate %const BuiltIn )" +
+                           deco + R"(
 %int = OpTypeInt 32 0
 %int3 = OpTypeVector %int 3
 %int_1 = OpConstant %int 1
@@ -468,22 +456,15 @@ OpDecorate %const BuiltIn )" + deco + R"(
     EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
   } else {
     EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-    EXPECT_THAT(getDiagnosticString(),
-                HasSubstr("must be a variable"));
+    EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a variable"));
   }
 }
 
 INSTANTIATE_TEST_SUITE_P(ValidateBuiltInDecorations, BuiltInDecorations,
-                         Values("Position",
-                                "PointSize",
-                                "VertexId",
-                                "InstanceId",
-                                "FragCoord",
-                                "FrontFacing",
-                                "NumWorkgroups",
-                                "WorkgroupSize",
-                                "LocalInvocationId",
-                                "GlobalInvocationId"));
+                         Values("Position", "PointSize", "VertexId",
+                                "InstanceId", "FragCoord", "FrontFacing",
+                                "NumWorkgroups", "WorkgroupSize",
+                                "LocalInvocationId", "GlobalInvocationId"));
 
 using MemoryObjectDecorations = spvtest::ValidateBase<std::string>;
 
@@ -516,7 +497,8 @@ OpCapability TransformFeedback
 OpCapability Tessellation
 OpMemoryModel Logical GLSL450
 OpDecorate %func LinkageAttributes "import" Import
-OpDecorate %param )" + deco + R"(
+OpDecorate %param )" + deco +
+                           R"(
 %float = OpTypeFloat 32
 %void = OpTypeVoid
 %fn = OpTypeFunction %void %float
@@ -538,7 +520,8 @@ OpCapability SampleRateShading
 OpCapability TransformFeedback
 OpCapability Tessellation
 OpMemoryModel Logical GLSL450
-OpDecorate %float )" + deco + R"(
+OpDecorate %float )" + deco +
+                           R"(
 %float = OpTypeFloat 32
 )";
 
@@ -557,7 +540,8 @@ OpCapability SampleRateShading
 OpCapability TransformFeedback
 OpCapability Tessellation
 OpMemoryModel Logical GLSL450
-OpDecorate %const )" + deco + R"(
+OpDecorate %const )" + deco +
+                           R"(
 %float = OpTypeFloat 32
 %const = OpConstant %float 0
 )";
@@ -571,17 +555,9 @@ OpDecorate %const )" + deco + R"(
 // NonWritable and NonReadable are covered by other tests.
 INSTANTIATE_TEST_SUITE_P(ValidateMemoryObjectDecorations,
                          MemoryObjectDecorations,
-                         Values("NoPerspective",
-                                "Flat",
-                                "Patch",
-                                "Centroid",
-                                "Sample",
-                                "Restrict",
-                                "Aliased",
-                                "Volatile",
-                                "Coherent",
-                                "XfbBuffer 1",
-                                "XfbStride 1"));
+                         Values("NoPerspective", "Flat", "Patch", "Centroid",
+                                "Sample", "Restrict", "Aliased", "Volatile",
+                                "Coherent", "XfbBuffer 1", "XfbStride 1"));
 
 using VariableDecorations = spvtest::ValidateBase<std::string>;
 
@@ -616,7 +592,8 @@ OpCapability PhysicalStorageBufferAddresses
 OpExtension "SPV_KHR_physical_storage_buffer"
 OpMemoryModel Logical GLSL450
 OpDecorate %func LinkageAttributes "import" Import
-OpDecorate %param )" + deco + R"(
+OpDecorate %param )" + deco +
+                           R"(
 %float = OpTypeFloat 32
 %void = OpTypeVoid
 %fn = OpTypeFunction %void %float
@@ -627,8 +604,7 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a variable"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a variable"));
 }
 
 TEST_P(VariableDecorations, FloatType) {
@@ -641,14 +617,14 @@ OpCapability InputAttachment
 OpCapability PhysicalStorageBufferAddresses
 OpExtension "SPV_KHR_physical_storage_buffer"
 OpMemoryModel Logical GLSL450
-OpDecorate %float )" + deco + R"(
+OpDecorate %float )" + deco +
+                           R"(
 %float = OpTypeFloat 32
 )";
 
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a variable"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a variable"));
 }
 
 TEST_P(VariableDecorations, Constant) {
@@ -661,30 +637,25 @@ OpCapability InputAttachment
 OpCapability PhysicalStorageBufferAddresses
 OpExtension "SPV_KHR_physical_storage_buffer"
 OpMemoryModel Logical GLSL450
-OpDecorate %const )" + deco + R"(
+OpDecorate %const )" + deco +
+                           R"(
 %float = OpTypeFloat 32
 %const = OpConstant %float 0
 )";
 
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a variable"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a variable"));
 }
 
 INSTANTIATE_TEST_SUITE_P(ValidateVariableDecorations, VariableDecorations,
-                         Values("Invariant",
-                                "Constant",
-                                "Location 0",
-                                "Component 0",
-                                "Index 0",
-                                "Binding 0",
-                                "DescriptorSet 0",
-                                "InputAttachmentIndex 0",
-                                "RestrictPointer",
-                                "AliasedPointer"));
+                         Values("Invariant", "Constant", "Location 0",
+                                "Component 0", "Index 0", "Binding 0",
+                                "DescriptorSet 0", "InputAttachmentIndex 0",
+                                "RestrictPointer", "AliasedPointer"));
 
-using VulkanIOStorageClass = spvtest::ValidateBase<std::tuple<std::string, std::string>>;
+using VulkanIOStorageClass =
+    spvtest::ValidateBase<std::tuple<std::string, std::string>>;
 
 TEST_P(VulkanIOStorageClass, Invalid) {
   const auto deco = std::get<0>(GetParam());
@@ -698,8 +669,10 @@ OpExecutionMode %main OriginUpperLeft
 OpDecorate %var )" + deco + R"( 0
 %void = OpTypeVoid
 %float = OpTypeFloat 32
-%ptr = OpTypePointer )" + sc + R"( %float
-%var = OpVariable %ptr )" + sc + R"(
+%ptr = OpTypePointer )" + sc +
+                           R"( %float
+%var = OpVariable %ptr )" + sc +
+                           R"(
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
@@ -709,19 +682,19 @@ OpFunctionEnd
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("decoration must not be applied to this storage class"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("decoration must not be applied to this storage class"));
 }
 
 INSTANTIATE_TEST_SUITE_P(ValidateVulkanIOStorageClass, VulkanIOStorageClass,
                          Combine(Values("Location", "Component"),
-                                 Values("StorageBuffer",
-                                        "Uniform",
-                                        "UniformConstant",
-                                        "Workgroup",
+                                 Values("StorageBuffer", "Uniform",
+                                        "UniformConstant", "Workgroup",
                                         "Private")));
 
-using VulkanResourceStorageClass = spvtest::ValidateBase<std::tuple<std::string, std::string>>;
+using VulkanResourceStorageClass =
+    spvtest::ValidateBase<std::tuple<std::string, std::string>>;
 
 TEST_P(VulkanResourceStorageClass, Invalid) {
   const auto deco = std::get<0>(GetParam());
@@ -734,8 +707,10 @@ OpExecutionMode %main OriginUpperLeft
 OpDecorate %var )" + deco + R"( 0
 %void = OpTypeVoid
 %float = OpTypeFloat 32
-%ptr = OpTypePointer )" + sc + R"( %float
-%var = OpVariable %ptr )" + sc + R"(
+%ptr = OpTypePointer )" + sc +
+                           R"( %float
+%var = OpVariable %ptr )" + sc +
+                           R"(
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
@@ -750,11 +725,10 @@ OpFunctionEnd
                         "UniformConstant storage class"));
 }
 
-INSTANTIATE_TEST_SUITE_P(ValidateVulkanResourceStorageClass, VulkanResourceStorageClass,
+INSTANTIATE_TEST_SUITE_P(ValidateVulkanResourceStorageClass,
+                         VulkanResourceStorageClass,
                          Combine(Values("DescriptorSet", "Binding"),
-                                 Values("Private",
-                                        "Input",
-                                        "Output",
+                                 Values("Private", "Input", "Output",
                                         "Workgroup")));
 
 }  // namespace

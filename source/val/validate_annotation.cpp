@@ -308,7 +308,7 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
 
   if (spvIsVulkanEnv(_.context()->target_env)) {
     // The following were all checked as variables above.
-    SpvStorageClass sc;
+    SpvStorageClass sc = SpvStorageClassUniform;
     if (target->operands().size() > 2) {
       sc = target->GetOperandAs<SpvStorageClass>(2);
     }
