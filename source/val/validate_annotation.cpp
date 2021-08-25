@@ -245,6 +245,9 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
       break;
     case SpvDecorationBlock:
     case SpvDecorationBufferBlock:
+    case SpvDecorationGLSLShared:
+    case SpvDecorationGLSLPacked:
+    case SpvDecorationCPacked:
       if (target->opcode() != SpvOpTypeStruct) {
         return fail() << "must be a structure type";
       }

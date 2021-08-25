@@ -130,6 +130,7 @@ TEST_P(StructDecorations, Struct) {
   const std::string deco = GetParam();
   const std::string text = R"(
 OpCapability Shader
+OpCapability Kernel
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %struct )" + deco +
@@ -145,6 +146,7 @@ TEST_P(StructDecorations, OtherType) {
   const std::string deco = GetParam();
   const std::string text = R"(
 OpCapability Shader
+OpCapability Kernel
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %int )" + deco + R"(
@@ -160,6 +162,7 @@ TEST_P(StructDecorations, Variable) {
   const std::string deco = GetParam();
   const std::string text = R"(
 OpCapability Shader
+OpCapability Kernel
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %var )" + deco + R"(
@@ -177,6 +180,7 @@ TEST_P(StructDecorations, FunctionParameter) {
   const auto deco = GetParam();
   const std::string text = R"(
 OpCapability Shader
+OpCapability Kernel
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %func LinkageAttributes "import" Import
@@ -199,6 +203,7 @@ TEST_P(StructDecorations, Constant) {
   const std::string deco = GetParam();
   const std::string text = R"(
 OpCapability Shader
+OpCapability Kernel
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpDecorate %int_0 )" + deco +
@@ -213,7 +218,8 @@ OpDecorate %int_0 )" + deco +
 }
 
 INSTANTIATE_TEST_SUITE_P(ValidateStructDecorations, StructDecorations,
-                         Values("Block", "BufferBlock"));
+                         Values("Block", "BufferBlock", "GLSLShared",
+                                "GLSLPacked", "CPacked"));
 
 using ArrayDecorations = spvtest::ValidateBase<std::string>;
 
