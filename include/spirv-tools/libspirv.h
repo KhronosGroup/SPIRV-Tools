@@ -482,6 +482,7 @@ SPIRV_TOOLS_EXPORT const char* spvSoftwareVersionDetailsString(void);
 //    SPV_ENV_VULKAN_1_1           ->  SPIR-V 1.3
 //    SPV_ENV_VULKAN_1_1_SPIRV_1_4 ->  SPIR-V 1.4
 //    SPV_ENV_VULKAN_1_2           ->  SPIR-V 1.5
+//    SPV_ENV_VULKAN_1_3           ->  SPIR-V 1.6
 // Consult the description of API entry points for specific rules.
 typedef enum {
   SPV_ENV_UNIVERSAL_1_0,  // SPIR-V 1.0 latest revision, no other restrictions.
@@ -518,6 +519,8 @@ typedef enum {
   SPV_ENV_VULKAN_1_2,     // Vulkan 1.2 latest revision.
 
   SPV_ENV_UNIVERSAL_1_6,  // SPIR-V 1.6 latest revision, no other restrictions.
+  SPV_ENV_VULKAN_1_3,     // Vulkan 1.3 latest revision.
+
   SPV_ENV_MAX             // Keep this as the last enum value.
 } spv_target_env;
 
