@@ -25,7 +25,7 @@
 
 namespace {
 
-const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_5;
+const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_6;
 
 void print_usage(const char* program) {
   std::string target_env_list = spvTargetEnvList(16, 80);
