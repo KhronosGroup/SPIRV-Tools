@@ -560,6 +560,7 @@ message Transformation {
     TransformationSwapFunctionVariables swap_function_variables = 86;
     TransformationSwapTwoFunctions swap_two_functions = 87;
     TransformationWrapVectorSynonym wrap_vector_synonym = 88;
+    TransformationAddMemoryBarrier add_memory_barrier = 91;
     // Add additional option using the next available number.
   }
 }
@@ -1022,6 +1023,22 @@ message TransformationAddLoopToCreateIntConstantSynonym {
   // A fresh id for the additional block. If this is 0, it means that only one
   // block is to be created.
   uint32 additional_block_id = 13;
+}
+
+message TransformationAddMemoryBarrier {
+
+  // Transformation is responsible for adding an OpMemoryBarrier.
+
+  // The memory scope for the OpMemoryBarrier.
+  uint32 memory_scope_id = 1;
+
+  // The memory semantics for the OpMemoryBarrier.
+  uint32 memory_semantics_id = 2;
+
+  // A descriptor for instruction which the new OpMemoryBarrier instruction
+  // should be inserted before.
+  InstructionDescriptor instruction_to_insert_before = 3;
+
 }
 
 message TransformationAddNoContractionDecoration {

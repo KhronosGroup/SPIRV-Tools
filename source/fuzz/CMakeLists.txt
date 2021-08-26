@@ -70,6 +70,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_local_variables.h
         fuzzer_pass_add_loop_preheaders.h
         fuzzer_pass_add_loops_to_create_int_constant_synonyms.h
+        fuzzer_pass_add_memory_barrier.h
         fuzzer_pass_add_no_contraction_decorations.h
         fuzzer_pass_add_opphi_synonyms.h
         fuzzer_pass_add_parameters.h
@@ -161,6 +162,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_local_variable.h
         transformation_add_loop_preheader.h
         transformation_add_loop_to_create_int_constant_synonym.h
+        transformation_add_memory_barrier.h
         transformation_add_no_contraction_decoration.h
         transformation_add_opphi_synonym.h
         transformation_add_parameter.h
@@ -267,6 +269,7 @@ if(SPIRV_BUILD_FUZZER)
         fuzzer_pass_add_local_variables.cpp
         fuzzer_pass_add_loop_preheaders.cpp
         fuzzer_pass_add_loops_to_create_int_constant_synonyms.cpp
+        fuzzer_pass_add_memory_barrier.cpp
         fuzzer_pass_add_no_contraction_decorations.cpp
         fuzzer_pass_add_opphi_synonyms.cpp
         fuzzer_pass_add_parameters.cpp
@@ -356,6 +359,7 @@ if(SPIRV_BUILD_FUZZER)
         transformation_add_local_variable.cpp
         transformation_add_loop_preheader.cpp
         transformation_add_loop_to_create_int_constant_synonym.cpp
+        transformation_add_memory_barrier.cpp
         transformation_add_no_contraction_decoration.cpp
         transformation_add_opphi_synonym.cpp
         transformation_add_parameter.cpp

@@ -35,6 +35,7 @@
 #include "source/fuzz/transformation_add_local_variable.h"
 #include "source/fuzz/transformation_add_loop_preheader.h"
 #include "source/fuzz/transformation_add_loop_to_create_int_constant_synonym.h"
+#include "source/fuzz/transformation_add_memory_barrier.h"
 #include "source/fuzz/transformation_add_no_contraction_decoration.h"
 #include "source/fuzz/transformation_add_opphi_synonym.h"
 #include "source/fuzz/transformation_add_parameter.h"
@@ -168,6 +169,9 @@ std::unique_ptr<Transformation> Transformation::FromMessage(
         kAddLoopToCreateIntConstantSynonym:
       return MakeUnique<TransformationAddLoopToCreateIntConstantSynonym>(
           message.add_loop_to_create_int_constant_synonym());
+    case protobufs::Transformation::TransformationCase::kAddMemoryBarrier:
+      return MakeUnique<TransformationAddMemoryBarrier>(
+          message.add_memory_barrier());
     case protobufs::Transformation::TransformationCase::
         kAddNoContractionDecoration:
       return MakeUnique<TransformationAddNoContractionDecoration>(
