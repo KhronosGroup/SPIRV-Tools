@@ -440,6 +440,11 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
     if (liveInst->type_id() != 0) {
       AddToWorklist(get_def_use_mgr()->GetDef(liveInst->type_id()));
     }
+    BasicBlock* basic_block = context()->get_instr_block(liveInst);
+    if (basic_block != nullptr) {
+      AddToWorklist(basic_block->GetLabelInst());
+    }
+
     // If in a structured if or loop construct, add the controlling
     // conditional branch and its merge.
     BasicBlock* blk = context()->get_instr_block(liveInst);
@@ -690,7 +695,7 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
 
   // Process all entry point functions.
   ProcessFunction pfn = [this](Function* fp) { return AggressiveDCE(fp); };
-  modified |= context()->ProcessEntryPointCallTree(pfn);
+  modified |= context()->ProcessReachableCallTree(pfn);
 
   // If the decoration manager is kept live then the context will try to keep it
   // up to date.  ADCE deals with group decorations by changing the operands in
@@ -717,21 +722,20 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
 
   // Cleanup all CFG including all unreachable blocks.
   ProcessFunction cleanup = [this](Function* f) { return CFGCleanup(f); };
-  modified |= context()->ProcessEntryPointCallTree(cleanup);
+  modified |= context()->ProcessReachableCallTree(cleanup);
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 bool AggressiveDCEPass::EliminateDeadFunctions() {
   // Identify live functions first. Those that are not live
-  // are dead. ADCE is disabled for non-shaders so we do not check for exported
-  // functions here.
+  // are dead.
   std::unordered_set<const Function*> live_function_set;
   ProcessFunction mark_live = [&live_function_set](Function* fp) {
     live_function_set.insert(fp);
     return false;
   };
-  context()->ProcessEntryPointCallTree(mark_live);
+  context()->ProcessReachableCallTree(mark_live);
 
   bool modified = false;
   for (auto funcIter = get_module()->begin();

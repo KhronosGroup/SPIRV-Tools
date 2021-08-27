@@ -7584,6 +7584,111 @@ TEST_F(AggressiveDCETest, KeepDebugScopeParent) {
   SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
 }
 
+TEST_F(AggressiveDCETest, KeepExportFunctions) {
+  // All functions are reachable.  In particular, ExportedFunc and Constant are
+  // reachable because ExportedFunc is exported.  Nothing should be removed.
+  const std::vector<const char*> text = {
+      // clang-format off
+               "OpCapability Shader",
+               "OpCapability Linkage",
+               "OpMemoryModel Logical GLSL450",
+               "OpEntryPoint Fragment %main \"main\"",
+               "OpName %main \"main\"",
+               "OpName %ExportedFunc \"ExportedFunc\"",
+               "OpName %Live \"Live\"",
+               "OpDecorate %ExportedFunc LinkageAttributes \"ExportedFunc\" Export",
+       "%void = OpTypeVoid",
+          "%7 = OpTypeFunction %void",
+       "%main = OpFunction %void None %7",
+         "%15 = OpLabel",
+               "OpReturn",
+               "OpFunctionEnd",
+"%ExportedFunc = OpFunction %void None %7",
+         "%19 = OpLabel",
+         "%16 = OpFunctionCall %void %Live",
+               "OpReturn",
+               "OpFunctionEnd",
+  "%Live = OpFunction %void None %7",
+         "%20 = OpLabel",
+               "OpReturn",
+               "OpFunctionEnd"
+      // clang-format on
+  };
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  std::string assembly = JoinAllInsts(text);
+  auto result = SinglePassRunAndDisassemble<AggressiveDCEPass>(
+      assembly, /* skip_nop = */ true, /* do_validation = */ false);
+  EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
+  EXPECT_EQ(assembly, std::get<0>(result));
+}
+
+TEST_F(AggressiveDCETest, KeepPrivateVarInExportFunctions) {
+  // The loads and stores from the private variable should not be removed
+  // because the functions are exported and could be called.
+  const std::string text = R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpSource HLSL 630
+OpName %privateVar "privateVar"
+OpName %ReadPrivate "ReadPrivate"
+OpName %WritePrivate "WritePrivate"
+OpName %value "value"
+OpDecorate %ReadPrivate LinkageAttributes "ReadPrivate" Export
+OpDecorate %WritePrivate LinkageAttributes "WritePrivate" Export
+%int = OpTypeInt 32 1
+%_ptr_Private_int = OpTypePointer Private %int
+%6 = OpTypeFunction %int
+%void = OpTypeVoid
+%_ptr_Function_int = OpTypePointer Function %int
+%10 = OpTypeFunction %void %_ptr_Function_int
+%privateVar = OpVariable %_ptr_Private_int Private
+%ReadPrivate = OpFunction %int None %6
+%12 = OpLabel
+%8 = OpLoad %int %privateVar
+OpReturnValue %8
+OpFunctionEnd
+%WritePrivate = OpFunction %void None %10
+%value = OpFunctionParameter %_ptr_Function_int
+%13 = OpLabel
+%14 = OpLoad %int %value
+OpStore %privateVar %14
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  auto result = SinglePassRunAndDisassemble<AggressiveDCEPass>(
+      text, /* skip_nop = */ true, /* do_validation = */ false);
+  EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
+  EXPECT_EQ(text, std::get<0>(result));
+}
+
+TEST_F(AggressiveDCETest, KeepLableNames) {
+  const std::string text = R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpSource HLSL 630
+OpName %WritePrivate "WritePrivate"
+OpName %entry "entry"
+OpName %target "target"
+OpDecorate %WritePrivate LinkageAttributes "WritePrivate" Export
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%WritePrivate = OpFunction %void None %3
+%entry = OpLabel
+OpBranch %target
+%target = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  auto result = SinglePassRunAndDisassemble<AggressiveDCEPass>(
+      text, /* skip_nop = */ true, /* do_validation = */ false);
+  EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
+  EXPECT_EQ(text, std::get<0>(result));
+}
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Check that logical addressing required
