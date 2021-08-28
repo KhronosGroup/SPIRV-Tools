@@ -28,7 +28,57 @@ FuzzerPassAddMemoryBarrier::FuzzerPassAddMemoryBarrier(
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
                  transformations, ignore_inapplicable_transformations) {}
 
-void FuzzerPassAddMemoryBarrier::Apply() {}
+void FuzzerPassAddMemoryBarrier::Apply() {
+  ForEachInstructionWithInstructionDescriptor(
+      [this](opt::Function* /* Unused */, opt::BasicBlock* /* Unused */,
+             opt::BasicBlock::iterator inst_it,
+             const protobufs::InstructionDescriptor& instruction_descriptor)
+          -> void {
+        assert(inst_it->opcode() ==
+                   instruction_descriptor.target_instruction_opcode() &&
+               "The opcode of the instruction we might insert before must be "
+               "the same as the opcode in the descriptor for the instruction");
+
+        // Randomly decide whether to try inserting memory barrier instruction
+        // here.
+        if (!GetFuzzerContext()->ChoosePercentage(
+                GetFuzzerContext()->GetChanceOfAddingMemoryBarrier())) {
+          return;
+        }
+
+        // Check whether if legitimate to insert memory barrier instruction
+        // before this instruction.
+        if (!fuzzerutil::CanInsertOpcodeBeforeInstruction(SpvOpMemoryBarrier,
+                                                          inst_it)) {
+          return;
+        }
+
+        uint32_t memory_scope_id = FindOrCreateConstant(
+            {SpvScopeInvocation},
+            FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
+            false);
+
+        std::vector<SpvMemorySemanticsMask>
+            potential_memory_semantics_values_higher_bits{
+                SpvMemorySemanticsUniformMemoryMask,
+                SpvMemorySemanticsWorkgroupMemoryMask};
+
+        auto total_memory_semantics_value = static_cast<uint32_t>(
+            SpvMemorySemanticsMaskNone |
+            potential_memory_semantics_values_higher_bits
+                [GetFuzzerContext()->RandomIndex(
+                    potential_memory_semantics_values_higher_bits)]);
+
+        uint32_t memory_semantics_id = FindOrCreateConstant(
+            {total_memory_semantics_value},
+            FindOrCreateIntegerType(32, GetFuzzerContext()->ChooseEven()),
+            false);
+
+        // Create and apply the transformation.
+        ApplyTransformation(TransformationAddMemoryBarrier(
+            memory_scope_id, memory_semantics_id, instruction_descriptor));
+      });
+}
 
 }  // namespace fuzz
 }  // namespace spvtools

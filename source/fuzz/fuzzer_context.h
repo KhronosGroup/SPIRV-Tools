@@ -191,6 +191,9 @@ class FuzzerContext {
   uint32_t GetChanceOfAddingMatrixType() const {
     return chance_of_adding_matrix_type_;
   }
+  uint32_t GetChanceOfAddingMemoryBarrier() const {
+    return chance_of_adding_memory_barrier_;
+  }
   uint32_t GetChanceOfAddingNoContractionDecoration() const {
     return chance_of_adding_no_contraction_decoration_;
   }
@@ -515,6 +518,7 @@ class FuzzerContext {
   uint32_t chance_of_adding_local_variable_;
   uint32_t chance_of_adding_loop_preheader_;
   uint32_t chance_of_adding_matrix_type_;
+  uint32_t chance_of_adding_memory_barrier_;
   uint32_t chance_of_adding_no_contraction_decoration_;
   uint32_t chance_of_adding_opphi_synonym_;
   uint32_t chance_of_adding_parameters;

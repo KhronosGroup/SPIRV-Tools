@@ -36,6 +36,7 @@
 #include "source/fuzz/fuzzer_pass_add_local_variables.h"
 #include "source/fuzz/fuzzer_pass_add_loop_preheaders.h"
 #include "source/fuzz/fuzzer_pass_add_loops_to_create_int_constant_synonyms.h"
+#include "source/fuzz/fuzzer_pass_add_memory_barrier.h"
 #include "source/fuzz/fuzzer_pass_add_no_contraction_decorations.h"
 #include "source/fuzz/fuzzer_pass_add_opphi_synonyms.h"
 #include "source/fuzz/fuzzer_pass_add_parameters.h"
@@ -234,6 +235,7 @@ Fuzzer::Fuzzer(std::unique_ptr<opt::IRContext> ir_context,
   MaybeAddFinalPass<FuzzerPassAdjustLoopControls>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassAdjustMemoryOperandsMasks>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassAdjustSelectionControls>(&final_passes_);
+  MaybeAddFinalPass<FuzzerPassAddMemoryBarrier>(&final_passes_);
   MaybeAddFinalPass<FuzzerPassAddNoContractionDecorations>(&final_passes_);
   if (!fuzzer_context_->IsWgslCompatible()) {
     // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4214):
