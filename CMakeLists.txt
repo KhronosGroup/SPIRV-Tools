@@ -294,7 +294,7 @@ endif()
 # Turn off if they take too long.
 option(SPIRV_CHECK_CONTEXT "In a debug build, check if the IR context is in a valid state." ON)
 if (${SPIRV_CHECK_CONTEXT})
-  add_definitions(-DSPIRV_CHECK_CONTEXT)
+  add_compile_options($<$<CONFIG:Debug>:-DSPIRV_CHECK_CONTEXT>)
 endif()
 
 # Precompiled header macro. Parameters are source file list and filename for pch cpp file.
