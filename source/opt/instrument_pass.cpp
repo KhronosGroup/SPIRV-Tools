@@ -200,7 +200,9 @@ void InstrumentPass::GenStageStreamWriteCode(uint32_t stage_idx,
     } break;
     case SpvExecutionModelGLCompute:
     case SpvExecutionModelTaskNV:
-    case SpvExecutionModelMeshNV: {
+    case SpvExecutionModelMeshNV:
+    case SpvExecutionModelTaskEXT:
+    case SpvExecutionModelMeshEXT: {
       // Load and store GlobalInvocationId.
       uint32_t load_id = GenVarLoad(
           context()->GetBuiltinInputVarId(SpvBuiltInGlobalInvocationId),
@@ -1001,7 +1003,8 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
       stage != SpvExecutionModelAnyHitNV &&
       stage != SpvExecutionModelClosestHitNV &&
       stage != SpvExecutionModelMissNV &&
-      stage != SpvExecutionModelCallableNV) {
+      stage != SpvExecutionModelCallableNV &&
+      stage != SpvExecutionModelTaskEXT && stage != SpvExecutionModelMeshEXT) {
     if (consumer()) {
       std::string message = "Stage not supported by instrumentation";
       consumer()(SPV_MSG_ERROR, 0, {0, 0, 0}, message.c_str());

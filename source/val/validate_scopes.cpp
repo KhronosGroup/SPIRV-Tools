@@ -144,14 +144,16 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
               [errorVUID](SpvExecutionModel model, std::string* message) {
                 if (model != SpvExecutionModelTaskNV &&
                     model != SpvExecutionModelMeshNV &&
+                    model != SpvExecutionModelTaskEXT &&
+                    model != SpvExecutionModelMeshEXT &&
                     model != SpvExecutionModelTessellationControl &&
                     model != SpvExecutionModelGLCompute) {
                   if (message) {
                     *message =
                         errorVUID +
                         "in Vulkan environment, Workgroup execution scope is "
-                        "only for TaskNV, MeshNV, TessellationControl, and "
-                        "GLCompute execution models";
+                        "only for TaskNV, MeshNV, TaskEXT, MeshEXT, "
+                        "TessellationControl, and GLCompute execution models";
                   }
                   return false;
                 }
@@ -269,11 +271,14 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
               [errorVUID](SpvExecutionModel model, std::string* message) {
                 if (model != SpvExecutionModelGLCompute &&
                     model != SpvExecutionModelTaskNV &&
-                    model != SpvExecutionModelMeshNV) {
+                    model != SpvExecutionModelMeshNV &&
+                    model != SpvExecutionModelTaskEXT &&
+                    model != SpvExecutionModelMeshEXT) {
                   if (message) {
                     *message = errorVUID +
                                "Workgroup Memory Scope is limited to MeshNV, "
-                               "TaskNV, and GLCompute execution model";
+                               "TaskNV, MeshEXT, TaskEXT and GLCompute "
+                               "execution model";
                   }
                   return false;
                 }
