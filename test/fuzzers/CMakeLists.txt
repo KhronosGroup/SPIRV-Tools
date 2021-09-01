@@ -26,8 +26,17 @@ function(add_spvtools_libfuzzer_target)
     ${spirv-tools_BINARY_DIR}
   )
   set_property(TARGET ${ARG_TARGET} PROPERTY FOLDER "SPIRV-Tools libFuzzer targets")
-  target_compile_options(${ARG_TARGET} PRIVATE "-fsanitize=fuzzer")
-  target_link_options(${ARG_TARGET} PRIVATE "-fsanitize=fuzzer")
+  if(NOT ${SPIRV_LIB_FUZZING_ENGINE_LINK_OPTIONS} STREQUAL "")
+    # This is set when the fuzzers are being built by OSS-Fuzz. In this case the
+    # variable provides the necessary linker flags, and OSS-Fuzz will take care
+    # of passing suitable compiler flags.
+    target_link_options(${ARG_TARGET} PRIVATE ${SPIRV_LIB_FUZZING_ENGINE_LINK_OPTIONS})
+  else()
+    # When the fuzzers are being built outside of OSS-Fuzz, standard libFuzzer
+    # arguments to enable fuzzing are used.
+    target_compile_options(${ARG_TARGET} PRIVATE "-fsanitize=fuzzer")
+    target_link_options(${ARG_TARGET} PRIVATE "-fsanitize=fuzzer")    
+  endif()
 endfunction()
 
 if (${SPIRV_BUILD_LIBFUZZER_TARGETS})
