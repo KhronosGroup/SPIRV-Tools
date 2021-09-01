@@ -385,7 +385,23 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
   } else if (pass_name == "loop-invariant-code-motion") {
     RegisterPass(CreateLoopInvariantCodeMotionPass());
   } else if (pass_name == "reduce-load-size") {
-    RegisterPass(CreateReduceLoadSizePass());
+    if (pass_args.size() == 0) {
+      RegisterPass(CreateReduceLoadSizePass());
+    } else {
+      double load_replacement_threshold = 0.9;
+      if (pass_args.find_first_not_of(".0123456789") == std::string::npos) {
+        load_replacement_threshold = atof(pass_args.c_str());
+      }
+
+      if (load_replacement_threshold >= 0) {
+        RegisterPass(CreateReduceLoadSizePass(load_replacement_threshold));
+      } else {
+        Error(consumer(), nullptr, {},
+              "--reduce-load-size must have no arguments or a non-negative "
+              "double argument");
+        return false;
+      }
+    }
   } else if (pass_name == "redundancy-elimination") {
     RegisterPass(CreateRedundancyEliminationPass());
   } else if (pass_name == "private-to-local") {
@@ -879,9 +895,10 @@ Optimizer::PassToken CreateVectorDCEPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(MakeUnique<opt::VectorDCE>());
 }
 
-Optimizer::PassToken CreateReduceLoadSizePass() {
+Optimizer::PassToken CreateReduceLoadSizePass(
+    double load_replacement_threshold) {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::ReduceLoadSize>());
+      MakeUnique<opt::ReduceLoadSize>(load_replacement_threshold));
 }
 
 Optimizer::PassToken CreateCombineAccessChainsPass() {

@@ -701,8 +701,11 @@ Optimizer::PassToken CreateVectorDCEPass();
 // Create a pass to reduce the size of loads.
 // This pass looks for loads of structures where only a few of its members are
 // used.  It replaces the loads feeding an OpExtract with an OpAccessChain and
-// a load of the specific elements.
-Optimizer::PassToken CreateReduceLoadSizePass();
+// a load of the specific elements.  The parameter is a threshold to determine
+// whether we have to replace the load or not.  If the ratio of the used
+// components of the load is less than the threshold, we replace the load.
+Optimizer::PassToken CreateReduceLoadSizePass(
+    double load_replacement_threshold = 0.9);
 
 // Create a pass to combine chained access chains.
 // This pass looks for access chains fed by other access chains and combines
