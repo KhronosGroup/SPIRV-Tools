@@ -17,6 +17,12 @@
 #include "test/opt/pass_fixture.h"
 #include "test/opt/pass_utils.h"
 
+namespace {
+
+const double kDefaultLoadReductionThreshold = 0.9;
+
+}  // namespace
+
 namespace spvtools {
 namespace opt {
 namespace {
@@ -104,7 +110,8 @@ TEST_F(ReduceLoadSizeTest, cbuffer_load_extract) {
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndMatch<ReduceLoadSize>(test, false, 0.9);
+  SinglePassRunAndMatch<ReduceLoadSize>(test, false,
+                                        kDefaultLoadReductionThreshold);
 }
 
 TEST_F(ReduceLoadSizeTest, cbuffer_load_extract_not_affected_by_debug_instr) {
@@ -202,7 +209,8 @@ TEST_F(ReduceLoadSizeTest, cbuffer_load_extract_not_affected_by_debug_instr) {
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndMatch<ReduceLoadSize>(test, false, 0.9);
+  SinglePassRunAndMatch<ReduceLoadSize>(test, false,
+                                        kDefaultLoadReductionThreshold);
 }
 
 TEST_F(ReduceLoadSizeTest, cbuffer_load_extract_vector) {
@@ -280,7 +288,8 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndCheck<ReduceLoadSize>(test, test, true, false, 0.9);
+  SinglePassRunAndCheck<ReduceLoadSize>(test, test, true, false,
+                                        kDefaultLoadReductionThreshold);
 }
 
 TEST_F(ReduceLoadSizeTest, cbuffer_load_5_extract) {
@@ -351,7 +360,8 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndCheck<ReduceLoadSize>(test, test, true, false, 0.9);
+  SinglePassRunAndCheck<ReduceLoadSize>(test, test, true, false,
+                                        kDefaultLoadReductionThreshold);
 }
 
 TEST_F(ReduceLoadSizeTest, cbuffer_load_fully_used) {
@@ -416,7 +426,8 @@ OpFunctionEnd
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  SinglePassRunAndCheck<ReduceLoadSize>(test, test, true, false, 0.9);
+  SinglePassRunAndCheck<ReduceLoadSize>(test, test, true, false,
+                                        kDefaultLoadReductionThreshold);
 }
 
 TEST_F(ReduceLoadSizeTest, replace_cbuffer_load_fully_used) {
