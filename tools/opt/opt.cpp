@@ -387,9 +387,12 @@ Options (in lexicographical order):)",
                Change the scope of private variables that are used in a single
                function to that function.)");
   printf(R"(
-  --reduce-load-size
+  --reduce-load-size[=<threshold>]
                Replaces loads of composite objects where not every component is
-               used by loads of just the elements that are used.)");
+               used by loads of just the elements that are used.  If the ratio
+               of the used components of the load is less than the <threshold>,
+               we replace the load.  <threshold> is a double type number.  If
+               it is bigger than 1.0, we always replaces the load.)");
   printf(R"(
   --redundancy-elimination
                Looks for instructions in the same function that compute the
