@@ -4399,6 +4399,56 @@ OpFunctionEnd
                         "1[%BAD], but not via a structured exit"));
 }
 
+TEST_F(ValidateCFG, SwitchSelectorNotAnInt) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%float_1 = OpConstant %float 1
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpSelectionMerge %default None
+OpSwitch %float_1 %default
+%default = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Selector type must be OpTypeInt"));
+}
+
+TEST_F(ValidateCFG, SwitchDefaultNotALabel) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_1 = OpConstant %int 1
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpSelectionMerge %default None
+OpSwitch %int_1 %int_1
+%default = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Default must be an OpLabel instruction"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
