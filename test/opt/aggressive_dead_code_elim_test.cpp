@@ -7689,6 +7689,44 @@ OpFunctionEnd
   EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
   EXPECT_EQ(text, std::get<0>(result));
 }
+
+TEST_F(AggressiveDCETest, PreserveInterface) {
+  // Set preserve_interface to true. Verify that unused uniform
+  // constant in entry point interface is not eliminated.
+  const std::string text = R"(OpCapability RayTracingKHR
+OpExtension "SPV_KHR_ray_tracing"
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint RayGenerationNV %2 "main" %3 %4
+OpDecorate %3 Location 0
+OpDecorate %4 DescriptorSet 2
+OpDecorate %4 Binding 0
+%void = OpTypeVoid
+%6 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%float = OpTypeFloat 32
+%_ptr_CallableDataNV_float = OpTypePointer CallableDataNV %float
+%3 = OpVariable %_ptr_CallableDataNV_float CallableDataNV
+%13 = OpTypeAccelerationStructureKHR
+%_ptr_UniformConstant_13 = OpTypePointer UniformConstant %13
+%4 = OpVariable %_ptr_UniformConstant_13 UniformConstant
+%2 = OpFunction %void None %6
+%15 = OpLabel
+OpExecuteCallableKHR %uint_0 %3
+OpReturn
+OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_2);
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  auto result = SinglePassRunAndDisassemble<AggressiveDCEPass>(
+      text, /* skip_nop = */ true, /* do_validation = */ false,
+      /* preserve_interface */ true);
+  EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
+  EXPECT_EQ(text, std::get<0>(result));
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Check that logical addressing required
