@@ -111,7 +111,7 @@ void VectorDCE::MarkExtractUseAsLive(const Instruction* current_inst,
       new_item.components = live_elements;
     } else {
       uint32_t element_index = current_inst->GetSingleWordInOperand(1);
-      uint32_t item_size = GetVectorTypeSize(operand_inst->type_id());
+      uint32_t item_size = GetVectorComponentCount(operand_inst->type_id());
       if (element_index < item_size) {
         new_item.components.Set(element_index);
       }
@@ -181,9 +181,9 @@ void VectorDCE::MarkVectorShuffleUsesAsLive(
       def_use_mgr->GetDef(current_item.instruction->GetSingleWordInOperand(1));
 
   uint32_t size_of_first_operand =
-      GetVectorTypeSize(first_operand.instruction->type_id());
+      GetVectorComponentCount(first_operand.instruction->type_id());
   uint32_t size_of_second_operand =
-      GetVectorTypeSize(second_operand.instruction->type_id());
+      GetVectorComponentCount(second_operand.instruction->type_id());
 
   for (uint32_t in_op = 2; in_op < current_item.instruction->NumInOperands();
        ++in_op) {
@@ -226,7 +226,7 @@ void VectorDCE::MarkCompositeContructUsesAsLive(
       assert(HasVectorResult(op_inst));
       WorkListItem new_work_item;
       new_work_item.instruction = op_inst;
-      uint32_t op_vector_size = GetVectorTypeSize(op_inst->type_id());
+      uint32_t op_vector_size = GetVectorComponentCount(op_inst->type_id());
 
       for (uint32_t op_vector_idx = 0; op_vector_idx < op_vector_size;
            op_vector_idx++, current_component++) {
@@ -299,17 +299,14 @@ bool VectorDCE::HasScalarResult(const Instruction* inst) const {
   }
 }
 
-uint32_t VectorDCE::GetVectorTypeSize(uint32_t type_id) {
+uint32_t VectorDCE::GetVectorComponentCount(uint32_t type_id) {
+  assert(type_id != 0 &&
+         "Trying to get the vector element count, but the type id is 0");
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
-  if (type_id == 0) {
-    return 0;
-  }
-
   const analysis::Type* type = type_mgr->GetType(type_id);
   const analysis::Vector* vector_type = type->AsVector();
-  if (vector_type == nullptr) {
-    return 0;
-  }
+  assert(vector_type &&
+         "Trying to get the vector element count, but the type vector");
   return vector_type->element_count();
 }
 

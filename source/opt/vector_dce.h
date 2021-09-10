@@ -100,9 +100,8 @@ class VectorDCE : public MemPass {
   // Returns true if the result of |inst| is a scalar.
   bool HasScalarResult(const Instruction* inst) const;
 
-  // Returns the number of elements in the vector type if |type_id| is the id of
-  // a veoctor type. Returns 0 otherwise.
-  uint32_t GetVectorTypeSize(uint32_t type_id);
+  // Returns the number of elements in the vector type with id |type_id|.
+  uint32_t GetVectorComponentCount(uint32_t type_id);
 
   // Adds |work_item| to |work_list| if it is not already live according to
   // |live_components|.  |live_components| is updated to indicate that
