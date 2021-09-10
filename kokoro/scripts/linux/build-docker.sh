@@ -72,6 +72,8 @@ if [ $TOOL = "cmake" ]; then
   elif [ $CONFIG = "UBSAN" ]; then
     # UBSan requires RTTI, and by default UBSan does not exit when errors are
     # encountered - additional compiler options are required to force this.
+    # The -DSPIRV_USE_SANITIZER=undefined option instructs SPIR-V Tools to be
+    # built with UBSan enabled.
     ADDITIONAL_CMAKE_FLAGS="-DSPIRV_USE_SANITIZER=undefined -DENABLE_RTTI=ON -DCMAKE_C_FLAGS=-fno-sanitize-recover -DCMAKE_CXX_FLAGS=-fno-sanitize-recover"
     [ $COMPILER = "clang" ] || { echo "$CONFIG requires clang"; exit 1; }
   elif [ $CONFIG = "COVERAGE" ]; then
