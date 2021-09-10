@@ -4449,6 +4449,39 @@ OpFunctionEnd
               HasSubstr("Default must be an OpLabel instruction"));
 }
 
+TEST_F(ValidateCFG, BlockDepthRecursion) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%1 = OpLabel
+OpBranch %2
+%2 = OpLabel
+OpLoopMerge %3 %4 None
+OpBranchConditional %undef %3 %4
+%4 = OpLabel
+OpBranch %2
+%3 = OpLabel
+OpBranch %5
+%5 = OpLabel
+OpSelectionMerge %2 None
+OpBranchConditional %undef %6 %7
+%6 = OpLabel
+OpReturn
+%7 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
