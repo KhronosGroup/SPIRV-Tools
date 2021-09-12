@@ -1580,6 +1580,19 @@ TEST_F(ValidateExtInst, GlslStd450LdexpExpWrongSize) {
                         "number as Result Type"));
 }
 
+TEST_F(ValidateExtInst, GlslStd450LdexpExpNoType) {
+  const std::string body = R"(
+%val1 = OpExtInst %f32 %extinst Ldexp %f32_1 %main_entry
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("GLSL.std.450 Ldexp: "
+                        "expected operand Exp to be a 32-bit int scalar "
+                        "or vector type"));
+}
+
 TEST_F(ValidateExtInst, GlslStd450FrexpStructSuccess) {
   const std::string body = R"(
 %val1 = OpExtInst %struct_f32_u32 %extinst FrexpStruct %f32_h
