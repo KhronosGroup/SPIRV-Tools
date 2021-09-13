@@ -4482,6 +4482,42 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
 }
 
+TEST_F(ValidateCFG, BadStructuredExitBackwardsMerge) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+%void = OpTypeVoid
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%1 = OpLabel
+OpBranch %2
+%2 = OpLabel
+OpLoopMerge %4 %5 None
+OpBranchConditional %undef %4 %6
+%6 = OpLabel
+OpSelectionMerge %7 None
+OpBranchConditional %undef %8 %9
+%7 = OpLabel
+OpReturn
+%8 = OpLabel
+OpBranch %5
+%9 = OpLabel
+OpSelectionMerge %6 None
+OpBranchConditional %undef %5 %5
+%5 = OpLabel
+OpBranch %2
+%4 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
