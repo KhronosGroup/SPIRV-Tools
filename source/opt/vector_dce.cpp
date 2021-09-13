@@ -305,8 +305,9 @@ uint32_t VectorDCE::GetVectorComponentCount(uint32_t type_id) {
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
   const analysis::Type* type = type_mgr->GetType(type_id);
   const analysis::Vector* vector_type = type->AsVector();
-  assert(vector_type &&
-         "Trying to get the vector element count, but the type vector");
+  assert(
+      vector_type &&
+      "Trying to get the vector element count, but the type is not a vector");
   return vector_type->element_count();
 }
 
