@@ -74,7 +74,7 @@ if [ $TOOL = "cmake" ]; then
     # encountered - additional compiler options are required to force this.
     # The -DSPIRV_USE_SANITIZER=undefined option instructs SPIR-V Tools to be
     # built with UBSan enabled.
-    ADDITIONAL_CMAKE_FLAGS="-DSPIRV_USE_SANITIZER=undefined -DENABLE_RTTI=ON -DCMAKE_C_FLAGS=-fno-sanitize-recover -DCMAKE_CXX_FLAGS=-fno-sanitize-recover"
+    ADDITIONAL_CMAKE_FLAGS="-DSPIRV_USE_SANITIZER=undefined -DENABLE_RTTI=ON -DCMAKE_C_FLAGS=-fno-sanitize-recover=all -DCMAKE_CXX_FLAGS=-fno-sanitize-recover=all"
     [ $COMPILER = "clang" ] || { echo "$CONFIG requires clang"; exit 1; }
   elif [ $CONFIG = "COVERAGE" ]; then
     ADDITIONAL_CMAKE_FLAGS="-DENABLE_CODE_COVERAGE=ON"
