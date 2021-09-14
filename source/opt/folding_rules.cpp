@@ -523,7 +523,8 @@ uint32_t PerformFloatingPointOperation(analysis::ConstantManager* const_mgr,
     float fval = val.getAsFloat();                                           \
     if (!IsValidResult(fval)) return 0;                                      \
     words = val.GetWords();                                                  \
-  } static_assert(true, "require extra semicolon")
+  }                                                                          \
+  static_assert(true, "require extra semicolon")
   switch (opcode) {
     case SpvOpFMul:
       FOLD_OP(*);
@@ -558,24 +559,19 @@ uint32_t PerformIntegerOperation(analysis::ConstantManager* const_mgr,
   uint32_t width = type->AsInteger()->width();
   assert(width == 32 || width == 64);
   std::vector<uint32_t> words;
-#define FOLD_OP(op)                                        \
-  if (width == 64) {                                       \
-    if (type->IsSigned()) {                                \
-      int64_t val = input1->GetS64() op input2->GetS64();  \
-      words = ExtractInts(static_cast<uint64_t>(val));     \
-    } else {                                               \
-      uint64_t val = input1->GetU64() op input2->GetU64(); \
-      words = ExtractInts(val);                            \
-    }                                                      \
-  } else {                                                 \
-    if (type->IsSigned()) {                                \
-      int32_t val = input1->GetS32() op input2->GetS32();  \
-      words.push_back(static_cast<uint32_t>(val));         \
-    } else {                                               \
-      uint32_t val = input1->GetU32() op input2->GetU32(); \
-      words.push_back(val);                                \
-    }                                                      \
-  } static_assert(true, "require extra semicalon")
+  // Regardless of the sign of the constant, folding is performed on an unsigned
+  // interpretation of the constant data. This avoids signed integer overflow
+  // while folding, and works because sign is irrelevant for the IAdd, ISub and
+  // IMul instructions.
+#define FOLD_OP(op)                                      \
+  if (width == 64) {                                     \
+    uint64_t val = input1->GetU64() op input2->GetU64(); \
+    words = ExtractInts(val);                            \
+  } else {                                               \
+    uint32_t val = input1->GetU32() op input2->GetU32(); \
+    words.push_back(val);                                \
+  }                                                      \
+  static_assert(true, "require extra semicolon")
   switch (opcode) {
     case SpvOpIMul:
       FOLD_OP(*);
