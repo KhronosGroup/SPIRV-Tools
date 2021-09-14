@@ -55,21 +55,12 @@ void FuzzerPassWrapVectorSynonym::Apply() {
                 SpvOpCompositeConstruct, instruction_iterator)) {
           return;
         }
-        // Get the scalar type represented by the targeted instruction id.
-        uint32_t operand_type_id = instruction_iterator->type_id();
 
-        // Get a random vector size from 2 to 4.
-        uint32_t vector_size = GetFuzzerContext()->GetWidthOfWrappingVector();
-
-        // Randomly choose a position that target ids should be placed at.
-        // The position is in range [0, n - 1], where n is the size of the
-        // vector.
-        uint32_t position =
-            GetFuzzerContext()->GetRandomIndexForWrappingVector(vector_size);
-
-        // Target ids are the two scalar ids from the original instruction.
-        uint32_t target_id1 = instruction_iterator->GetSingleWordInOperand(0);
-        uint32_t target_id2 = instruction_iterator->GetSingleWordInOperand(1);
+        // Get the scalar operands from the original instruction.
+        opt::Instruction* operand1 = GetIRContext()->get_def_use_mgr()->GetDef(
+            instruction_iterator->GetSingleWordInOperand(0));
+        opt::Instruction* operand2 = GetIRContext()->get_def_use_mgr()->GetDef(
+            instruction_iterator->GetSingleWordInOperand(1));
 
         // We need to be able to make a synonym of the scalar operation's result
         // id, as well as the operand ids (for example, they cannot be
@@ -80,15 +71,22 @@ void FuzzerPassWrapVectorSynonym::Apply() {
           return;
         }
         if (!fuzzerutil::CanMakeSynonymOf(
-                GetIRContext(), *GetTransformationContext(),
-                *GetIRContext()->get_def_use_mgr()->GetDef(target_id1))) {
+                GetIRContext(), *GetTransformationContext(), *operand1)) {
           return;
         }
         if (!fuzzerutil::CanMakeSynonymOf(
-                GetIRContext(), *GetTransformationContext(),
-                *GetIRContext()->get_def_use_mgr()->GetDef(target_id2))) {
+                GetIRContext(), *GetTransformationContext(), *operand2)) {
           return;
         }
+
+        // Get a random vector size from 2 to 4.
+        uint32_t vector_size = GetFuzzerContext()->GetWidthOfWrappingVector();
+
+        // Randomly choose a position that target ids should be placed at.
+        // The position is in range [0, n - 1], where n is the size of the
+        // vector.
+        uint32_t position =
+            GetFuzzerContext()->GetRandomIndexForWrappingVector(vector_size);
 
         // Stores the ids of scalar constants.
         std::vector<uint32_t> vec1_components;
@@ -97,33 +95,42 @@ void FuzzerPassWrapVectorSynonym::Apply() {
         // Populate components based on vector type and size.
         for (uint32_t i = 0; i < vector_size; ++i) {
           if (i == position) {
-            vec1_components.emplace_back(target_id1);
-            vec2_components.emplace_back(target_id2);
+            vec1_components.emplace_back(operand1->result_id());
+            vec2_components.emplace_back(operand2->result_id());
           } else {
             vec1_components.emplace_back(
-                FindOrCreateZeroConstant(operand_type_id, true));
+                FindOrCreateZeroConstant(operand1->type_id(), true));
             vec2_components.emplace_back(
-                FindOrCreateZeroConstant(operand_type_id, true));
+                FindOrCreateZeroConstant(operand2->type_id(), true));
           }
         }
 
         // Add two OpCompositeConstruct to the module with result id returned.
-        const uint32_t vector_type_id =
-            FindOrCreateVectorType(operand_type_id, vector_size);
+        // The added vectors may have different types, for instance if the
+        // scalar instruction operates on integers with differing sign.
 
         // Add the first OpCompositeConstruct that wraps the id of the first
         // operand.
         uint32_t result_id1 = GetFuzzerContext()->GetFreshId();
         ApplyTransformation(TransformationCompositeConstruct(
-            vector_type_id, vec1_components, instruction_descriptor,
-            result_id1));
+            FindOrCreateVectorType(operand1->type_id(), vector_size),
+            vec1_components, instruction_descriptor, result_id1));
 
         // Add the second OpCompositeConstruct that wraps the id of the second
         // operand.
         uint32_t result_id2 = GetFuzzerContext()->GetFreshId();
         ApplyTransformation(TransformationCompositeConstruct(
-            vector_type_id, vec2_components, instruction_descriptor,
-            result_id2));
+            FindOrCreateVectorType(operand2->type_id(), vector_size),
+            vec2_components, instruction_descriptor, result_id2));
+
+        // The result of the vector instruction that
+        // TransformationWrapVectorSynonym will create should be a vector of the
+        // right size, with the scalar instruction's result type as its element
+        // type. This can be distinct from the types of the operands, if the
+        // scalar instruction adds two signed integers and stores the result in
+        // an unsigned id, for example. A transformation is applied to add the
+        // right type to the module.
+        FindOrCreateVectorType(instruction_iterator->type_id(), vector_size);
 
         // Apply transformation to do vector operation and add synonym between
         // the result vector id and the id of the original instruction.

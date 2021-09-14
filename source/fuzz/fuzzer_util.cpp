@@ -2018,6 +2018,93 @@ opt::Module::iterator GetFunctionIterator(opt::IRContext* ir_context,
                       });
 }
 
+// TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3582): Add all
+//  opcodes that are agnostic to signedness of operands to function.
+//  This is not exhaustive yet.
+bool IsAgnosticToSignednessOfOperand(SpvOp opcode,
+                                     uint32_t use_in_operand_index) {
+  switch (opcode) {
+    case SpvOpSNegate:
+    case SpvOpNot:
+    case SpvOpIAdd:
+    case SpvOpISub:
+    case SpvOpIMul:
+    case SpvOpSDiv:
+    case SpvOpSRem:
+    case SpvOpSMod:
+    case SpvOpShiftRightLogical:
+    case SpvOpShiftRightArithmetic:
+    case SpvOpShiftLeftLogical:
+    case SpvOpBitwiseOr:
+    case SpvOpBitwiseXor:
+    case SpvOpBitwiseAnd:
+    case SpvOpIEqual:
+    case SpvOpINotEqual:
+    case SpvOpULessThan:
+    case SpvOpSLessThan:
+    case SpvOpUGreaterThan:
+    case SpvOpSGreaterThan:
+    case SpvOpULessThanEqual:
+    case SpvOpSLessThanEqual:
+    case SpvOpUGreaterThanEqual:
+    case SpvOpSGreaterThanEqual:
+      return true;
+
+    case SpvOpAtomicStore:
+    case SpvOpAtomicExchange:
+    case SpvOpAtomicIAdd:
+    case SpvOpAtomicISub:
+    case SpvOpAtomicSMin:
+    case SpvOpAtomicUMin:
+    case SpvOpAtomicSMax:
+    case SpvOpAtomicUMax:
+    case SpvOpAtomicAnd:
+    case SpvOpAtomicOr:
+    case SpvOpAtomicXor:
+    case SpvOpAtomicFAddEXT:  // Capability AtomicFloat32AddEXT,
+      // AtomicFloat64AddEXT.
+      assert(use_in_operand_index != 0 &&
+             "Signedness check should not occur on a pointer operand.");
+      return use_in_operand_index == 1 || use_in_operand_index == 2;
+
+    case SpvOpAtomicCompareExchange:
+    case SpvOpAtomicCompareExchangeWeak:  // Capability Kernel.
+      assert(use_in_operand_index != 0 &&
+             "Signedness check should not occur on a pointer operand.");
+      return use_in_operand_index >= 1 && use_in_operand_index <= 3;
+
+    case SpvOpAtomicLoad:
+    case SpvOpAtomicIIncrement:
+    case SpvOpAtomicIDecrement:
+    case SpvOpAtomicFlagTestAndSet:  // Capability Kernel.
+    case SpvOpAtomicFlagClear:       // Capability Kernel.
+      assert(use_in_operand_index != 0 &&
+             "Signedness check should not occur on a pointer operand.");
+      return use_in_operand_index >= 1;
+
+    case SpvOpAccessChain:
+      // The signedness of indices does not matter.
+      return use_in_operand_index > 0;
+
+    default:
+      // Conservatively assume that the id cannot be swapped in other
+      // instructions.
+      return false;
+  }
+}
+
+bool TypesAreCompatible(opt::IRContext* ir_context, SpvOp opcode,
+                        uint32_t use_in_operand_index, uint32_t type_id_1,
+                        uint32_t type_id_2) {
+  assert(ir_context->get_type_mgr()->GetType(type_id_1) &&
+         ir_context->get_type_mgr()->GetType(type_id_2) &&
+         "Type ids are invalid");
+
+  return type_id_1 == type_id_2 ||
+         (IsAgnosticToSignednessOfOperand(opcode, use_in_operand_index) &&
+          fuzzerutil::TypesAreEqualUpToSign(ir_context, type_id_1, type_id_2));
+}
+
 }  // namespace fuzzerutil
 }  // namespace fuzz
 }  // namespace spvtools

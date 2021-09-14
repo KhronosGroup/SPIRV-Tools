@@ -70,16 +70,29 @@ bool TransformationWrapVectorSynonym::IsApplicable(
     return false;
   }
 
-  // The 2 vectors must be the same valid vector type.
+  // The 2 vectors must have compatible vector types.
   auto vec1_type_id = vec1->type_id();
   auto vec2_type_id = vec2->type_id();
 
-  if (vec1_type_id != vec2_type_id) {
+  for (auto operand_index : {0, 1}) {
+    if (!fuzzerutil::TypesAreCompatible(ir_context, instruction->opcode(),
+                                        operand_index, vec1_type_id,
+                                        vec2_type_id)) {
+      return false;
+    }
+  }
+
+  auto vec1_type = ir_context->get_def_use_mgr()->GetDef(vec1_type_id);
+  if (vec1_type->opcode() != SpvOpTypeVector) {
     return false;
   }
 
-  if (ir_context->get_def_use_mgr()->GetDef(vec1_type_id)->opcode() !=
-      SpvOpTypeVector) {
+  // A suitable vector for the result type of the new vector instruction must
+  // exist in the module. This is a vector of the right length, whose element
+  // type matches the result type of the scalar instruction.
+  uint32_t vector_size = vec1_type->GetSingleWordInOperand(1);
+  if (!fuzzerutil::MaybeGetVectorType(ir_context, instruction->type_id(),
+                                      vector_size)) {
     return false;
   }
 
@@ -124,9 +137,11 @@ void TransformationWrapVectorSynonym::Apply(
 
   // Make a new arithmetic instruction: %fresh_id = OpXX %type_id %result_id1
   // %result_id2.
-  auto vec_type_id = ir_context->get_def_use_mgr()
-                         ->GetDef(message_.vector_operand1())
-                         ->type_id();
+  auto vector_operand_type = ir_context->get_def_use_mgr()->GetDef(
+      fuzzerutil::GetTypeId(ir_context, message_.vector_operand1()));
+  uint32_t vector_size = vector_operand_type->GetSingleWordInOperand(1);
+  auto vec_type_id = fuzzerutil::MaybeGetVectorType(
+      ir_context, instruction->type_id(), vector_size);
   auto new_instruction = MakeUnique<opt::Instruction>(
       ir_context, instruction->opcode(), vec_type_id, message_.fresh_id(),
       std::move(in_operands));

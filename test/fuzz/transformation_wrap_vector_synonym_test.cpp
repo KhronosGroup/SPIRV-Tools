@@ -1389,6 +1389,165 @@ TEST(TransformationWrapVectorSynonym, AdditionalWidthSupportTest) {
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
 }
 
+TEST(TransformationWrapVectorSynonym, DifferentVectorSignedness) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeVector %6 2
+          %8 = OpTypePointer Function %7
+         %10 = OpConstant %6 1
+         %11 = OpConstant %6 0
+         %12 = OpConstantComposite %7 %10 %11
+         %14 = OpTypeInt 32 0
+         %15 = OpTypeVector %14 2
+         %18 = OpConstant %14 3
+         %19 = OpConstant %14 0
+         %20 = OpConstantComposite %15 %18 %19
+         %21 = OpConstantComposite %15 %19 %18
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+        %100 = OpIAdd %14 %10 %18
+        %101 = OpIAdd %6 %10 %18
+        %102 = OpIAdd %6 %18 %19
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+
+  // Check context validity.
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(10, {}), MakeDataDescriptor(12, {0}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(18, {}), MakeDataDescriptor(20, {0}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(19, {}), MakeDataDescriptor(21, {0}));
+
+  {
+    TransformationWrapVectorSynonym transformation1(100, 12, 20, 200, 0);
+    ASSERT_TRUE(
+        transformation1.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation1, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+        MakeDataDescriptor(200, {0}), MakeDataDescriptor(100, {})));
+  }
+
+  {
+    TransformationWrapVectorSynonym transformation2(101, 12, 20, 201, 0);
+    ASSERT_TRUE(
+        transformation2.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation2, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+        MakeDataDescriptor(201, {0}), MakeDataDescriptor(101, {})));
+  }
+
+  {
+    TransformationWrapVectorSynonym transformation3(102, 20, 21, 202, 0);
+    ASSERT_TRUE(
+        transformation3.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation3, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(transformation_context.GetFactManager()->IsSynonymous(
+        MakeDataDescriptor(202, {0}), MakeDataDescriptor(102, {})));
+  }
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeVector %6 2
+          %8 = OpTypePointer Function %7
+         %10 = OpConstant %6 1
+         %11 = OpConstant %6 0
+         %12 = OpConstantComposite %7 %10 %11
+         %14 = OpTypeInt 32 0
+         %15 = OpTypeVector %14 2
+         %18 = OpConstant %14 3
+         %19 = OpConstant %14 0
+         %20 = OpConstantComposite %15 %18 %19
+         %21 = OpConstantComposite %15 %19 %18
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+        %200 = OpIAdd %15 %12 %20
+        %100 = OpIAdd %14 %10 %18
+        %201 = OpIAdd %7 %12 %20
+        %101 = OpIAdd %6 %10 %18
+        %202 = OpIAdd %7 %20 %21
+        %102 = OpIAdd %6 %18 %19
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationWrapVectorSynonym, SignednessDoesNotMatchResultType) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+          %7 = OpTypeVector %6 2
+          %8 = OpTypePointer Function %7
+         %10 = OpConstant %6 1
+         %11 = OpConstant %6 0
+         %12 = OpConstantComposite %7 %10 %11
+         %13 = OpConstantComposite %7 %11 %10
+         %14 = OpTypeInt 32 0
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+        %100 = OpIAdd %14 %10 %11
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto env = SPV_ENV_UNIVERSAL_1_3;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+
+  // Check context validity.
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(10, {}), MakeDataDescriptor(12, {0}));
+  transformation_context.GetFactManager()->AddFactDataSynonym(
+      MakeDataDescriptor(11, {}), MakeDataDescriptor(13, {0}));
+
+  ASSERT_FALSE(TransformationWrapVectorSynonym(100, 12, 13, 200, 0)
+                   .IsApplicable(context.get(), transformation_context));
+}
+
 }  // namespace
 }  // namespace fuzz
 }  // namespace spvtools
