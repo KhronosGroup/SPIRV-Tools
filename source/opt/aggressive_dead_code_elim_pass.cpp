@@ -607,7 +607,8 @@ void AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
   }
   // Keep all entry points.
   for (auto& entry : get_module()->entry_points()) {
-    if (get_module()->version() >= SPV_SPIRV_VERSION_WORD(1, 4)) {
+    if (get_module()->version() >= SPV_SPIRV_VERSION_WORD(1, 4) &&
+        !preserve_interface_) {
       // In SPIR-V 1.4 and later, entry points must list all global variables
       // used. DCE can still remove non-input/output variables and update the
       // interface list. Mark the entry point as live and inputs and outputs as
@@ -913,7 +914,8 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
     }
   }
 
-  if (get_module()->version() >= SPV_SPIRV_VERSION_WORD(1, 4)) {
+  if (get_module()->version() >= SPV_SPIRV_VERSION_WORD(1, 4) &&
+      !preserve_interface_) {
     // Remove the dead interface variables from the entry point interface list.
     for (auto& entry : get_module()->entry_points()) {
       std::vector<Operand> new_operands;
@@ -938,8 +940,6 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
 
   return modified;
 }
-
-AggressiveDCEPass::AggressiveDCEPass() = default;
 
 Pass::Status AggressiveDCEPass::Process() {
   // Initialize extensions allowlist

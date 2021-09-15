@@ -44,7 +44,9 @@ class AggressiveDCEPass : public MemPass {
   using GetBlocksFunction =
       std::function<std::vector<BasicBlock*>*(const BasicBlock*)>;
 
-  AggressiveDCEPass();
+  AggressiveDCEPass(bool preserve_interface = false)
+      : preserve_interface_(preserve_interface) {}
+
   const char* name() const override { return "eliminate-dead-code-aggressive"; }
   Status Process() override;
 
@@ -55,6 +57,12 @@ class AggressiveDCEPass : public MemPass {
   }
 
  private:
+  // Preserve entry point interface if true. All variables in interface
+  // will be marked live and will not be eliminated. This mode is needed by
+  // GPU-Assisted Validation instrumentation where a change in the interface
+  // is not allowed.
+  bool preserve_interface_;
+
   // Return true if |varId| is a variable of |storageClass|. |varId| must either
   // be 0 or the result of an instruction.
   bool IsVarOfStorage(uint32_t varId, uint32_t storageClass);

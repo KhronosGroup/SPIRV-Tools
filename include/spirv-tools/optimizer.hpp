@@ -29,7 +29,7 @@ namespace spvtools {
 namespace opt {
 class Pass;
 struct DescriptorSetAndBinding;
-}
+}  // namespace opt
 
 // C++ interface for SPIR-V optimization functionalities. It wraps the context
 // (including target environment and the corresponding SPIR-V grammar) and
@@ -514,7 +514,12 @@ Optimizer::PassToken CreateDeadInsertElimPass();
 // Conversion, which tends to cause cycles of dead code to be left after
 // Store/Load elimination passes are completed. These cycles cannot be
 // eliminated with standard dead code elimination.
-Optimizer::PassToken CreateAggressiveDCEPass();
+//
+// If |preserve_interface| is true, all non-io variables in the entry point
+// interface are considered live and are not eliminated. This mode is needed
+// by GPU-Assisted validation instrumentation, where a change in the interface
+// is not allowed.
+Optimizer::PassToken CreateAggressiveDCEPass(bool preserve_interface = false);
 
 // Creates a remove-unused-interface-variables pass.
 // Removes variables referenced on the |OpEntryPoint| instruction that are not
