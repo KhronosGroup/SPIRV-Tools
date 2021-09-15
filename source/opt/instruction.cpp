@@ -16,7 +16,6 @@
 
 #include <initializer_list>
 
-#include "NonSemanticVulkanDebugInfo100.h"
 #include "OpenCLDebugInfo100.h"
 #include "source/disassemble.h"
 #include "source/opt/fold.h"
@@ -33,7 +32,7 @@ const uint32_t kLoadBaseIndex = 0;
 const uint32_t kPointerTypeStorageClassIndex = 0;
 const uint32_t kTypeImageSampledIndex = 5;
 
-// Constants for OpenCL.DebugInfo.100 / NonSemantic.Vulkan.DebugInfo.100
+// Constants for OpenCL.DebugInfo.100 / NonSemantic.Shader.DebugInfo.100
 // extension instructions.
 const uint32_t kExtInstSetIdInIdx = 0;
 const uint32_t kExtInstInstructionInIdx = 1;
@@ -624,22 +623,22 @@ OpenCLDebugInfo100Instructions Instruction::GetOpenCL100DebugOpcode() const {
       GetSingleWordInOperand(kExtInstInstructionInIdx));
 }
 
-NonSemanticVulkanDebugInfo100Instructions Instruction::GetVulkan100DebugOpcode()
+NonSemanticShaderDebugInfo100Instructions Instruction::GetShader100DebugOpcode()
     const {
   if (opcode() != SpvOpExtInst) {
-    return NonSemanticVulkanDebugInfo100InstructionsMax;
+    return NonSemanticShaderDebugInfo100InstructionsMax;
   }
 
   if (!context()->get_feature_mgr()->GetExtInstImportId_Vulkan100DebugInfo()) {
-    return NonSemanticVulkanDebugInfo100InstructionsMax;
+    return NonSemanticShaderDebugInfo100InstructionsMax;
   }
 
   if (GetSingleWordInOperand(kExtInstSetIdInIdx) !=
       context()->get_feature_mgr()->GetExtInstImportId_Vulkan100DebugInfo()) {
-    return NonSemanticVulkanDebugInfo100InstructionsMax;
+    return NonSemanticShaderDebugInfo100InstructionsMax;
   }
 
-  return NonSemanticVulkanDebugInfo100Instructions(
+  return NonSemanticShaderDebugInfo100Instructions(
       GetSingleWordInOperand(kExtInstInstructionInIdx));
 }
 

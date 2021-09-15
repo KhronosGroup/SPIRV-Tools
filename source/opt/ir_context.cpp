@@ -30,7 +30,7 @@ static const int kSpvDecorateBuiltinInIdx = 2;
 static const int kEntryPointInterfaceInIdx = 3;
 static const int kEntryPointFunctionIdInIdx = 1;
 
-// Constants for OpenCL.DebugInfo.100 / NonSemantic.Vulkan.DebugInfo.100
+// Constants for OpenCL.DebugInfo.100 / NonSemantic.Shader.DebugInfo.100
 // extension instructions.
 static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
 static const uint32_t kDebugGlobalVariableOperandVariableIndex = 11;

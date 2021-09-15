@@ -81,7 +81,7 @@ void FeatureManager::AddExtInstImportIds(Module* module) {
   extinst_importid_OpenCL100DebugInfo_ =
       module->GetExtInstImportId("OpenCL.DebugInfo.100");
   extinst_importid_Vulkan100DebugInfo_ =
-      module->GetExtInstImportId("NonSemantic.Vulkan.DebugInfo.100");
+      module->GetExtInstImportId("NonSemantic.Shader.DebugInfo.100");
 }
 
 bool operator==(const FeatureManager& a, const FeatureManager& b) {
