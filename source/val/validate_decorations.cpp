@@ -129,7 +129,7 @@ std::vector<uint32_t> getStructMembers(uint32_t struct_id, SpvOp type,
 // Returns whether the given structure is missing Offset decoration for any
 // member. Handles also nested structures.
 bool isMissingOffsetInStruct(uint32_t struct_id, ValidationState_t& vstate) {
-  const auto *inst = vstate.FindDef(struct_id);
+  const auto* inst = vstate.FindDef(struct_id);
   std::vector<bool> hasOffset;
   std::vector<uint32_t> struct_members;
   if (inst->opcode() == SpvOpTypeStruct) {
