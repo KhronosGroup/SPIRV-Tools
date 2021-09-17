@@ -1467,8 +1467,9 @@ FoldingRule IntMultipleBy1() {
 // Returns the number of elements that the |index|th in operand in |inst|
 // contributes to the result of |inst|.  |inst| must be an
 // OpCompositeConstructInstruction.
-uint32_t GetOperandElementCount(IRContext* context, const Instruction* inst,
-                                uint32_t index) {
+uint32_t GetNumOfElementsContributedByOperand(IRContext* context,
+                                              const Instruction* inst,
+                                              uint32_t index) {
   assert(inst->opcode() == SpvOpCompositeConstruct);
   analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
   analysis::TypeManager* type_mgr = context->get_type_mgr();
@@ -1483,7 +1484,7 @@ uint32_t GetOperandElementCount(IRContext* context, const Instruction* inst,
 
   // If the result type is a vector then the operands are either scalars or
   // vectors. If it is a scalar, then it corresponds to a single element.  If it
-  // is a vector, then each element in the vector will be and element in the
+  // is a vector, then each element in the vector will be an element in the
   // result.
   uint32_t id = inst->GetSingleWordInOperand(index);
   Instruction* def = def_use_mgr->GetDef(id);
@@ -1494,11 +1495,11 @@ uint32_t GetOperandElementCount(IRContext* context, const Instruction* inst,
   return type->element_count();
 }
 
-// Returns the id and the literal index into the id from which the value of the
-// |result_index|th element in the result of |inst| gets its value.  Returns
-// the empty vector is no id can be found.  |inst| must be an
-// |OpCompositeConstruct| instruction.
-std::vector<Operand> GetElementSourceFromCompositeConstruct(
+// Returns the in-operands for an OpCompositeExtract instruction that are needed
+// to extract the |result_index|th element in the result of |inst| without using
+// the result of |inst|. Returns the empty vector if |result_index| is
+// out-of-bounds. |inst| must be an |OpCompositeConstruct| instruction.
+std::vector<Operand> GetExtractOperandsForElementOfCompositeConstruct(
     IRContext* context, const Instruction* inst, uint32_t result_index) {
   assert(inst->opcode() == SpvOpCompositeConstruct);
   analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
@@ -1512,7 +1513,8 @@ std::vector<Operand> GetElementSourceFromCompositeConstruct(
 
   // If the result type is a vector, then vector operands are concatenated.
   for (uint32_t idx = 0; idx < inst->NumInOperands(); ++idx) {
-    uint32_t element_count = GetOperandElementCount(context, inst, idx);
+    uint32_t element_count =
+        GetNumOfElementsContributedByOperand(context, inst, idx);
     if (result_index < element_count) {
       std::vector<Operand> operands;
       uint32_t id = inst->GetSingleWordInOperand(idx);
@@ -1553,7 +1555,8 @@ bool CompositeConstructFeedingExtract(
 
   uint32_t index_into_result = inst->GetSingleWordInOperand(1);
   std::vector<Operand> operands =
-      GetElementSourceFromCompositeConstruct(context, cinst, index_into_result);
+      GetExtractOperandsForElementOfCompositeConstruct(context, cinst,
+                                                       index_into_result);
 
   if (operands.empty()) {
     return false;
