@@ -1514,8 +1514,9 @@ std::vector<Operand> GetExtractOperandsForElementOfCompositeConstruct(
   // If the result type is a vector, then vector operands are concatenated.
   uint32_t total_element_count = 0;
   for (uint32_t idx = 0; idx < inst->NumInOperands(); ++idx) {
-    total_element_count +=
+    uint32_t element_count =
         GetNumOfElementsContributedByOperand(context, inst, idx);
+    total_element_count += element_count;
     if (result_index < total_element_count) {
       std::vector<Operand> operands;
       uint32_t id = inst->GetSingleWordInOperand(idx);
@@ -1524,8 +1525,9 @@ std::vector<Operand> GetExtractOperandsForElementOfCompositeConstruct(
 
       operands.push_back({SPV_OPERAND_TYPE_ID, {id}});
       if (operand_type->AsVector()) {
-        operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER,
-                            {total_element_count - result_index}});
+        uint32_t start_index_of_id = total_element_count - element_count;
+        uint32_t index_into_id = result_index - start_index_of_id;
+        operands.push_back({SPV_OPERAND_TYPE_LITERAL_INTEGER, {index_into_id}});
       }
       return operands;
     }
