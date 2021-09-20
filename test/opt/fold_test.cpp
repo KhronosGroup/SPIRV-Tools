@@ -3608,7 +3608,19 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractFoldingTest, GeneralInstructionFoldingT
             "%4 = OpCompositeExtract %int %3 2\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        4, INT_0_ID)
+        4, INT_0_ID),
+    // Test case 15:
+    // Don't fold extract fed by construct with vector result if the index is
+    // past the last element.
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpCompositeConstruct %v2int %int_0 %int_0\n" +
+            "%3 = OpCompositeConstruct %v4int %2 %100 %int_0\n" +
+            "%4 = OpCompositeExtract %int %3 4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        4, 0)
 ));
 
 INSTANTIATE_TEST_SUITE_P(CompositeConstructFoldingTest, GeneralInstructionFoldingTest,
