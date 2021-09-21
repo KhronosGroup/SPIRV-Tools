@@ -225,29 +225,6 @@ template("spvtools_vendor_table") {
   }
 }
 
-template("spvtools_vendor_table_local") {
-  assert(defined(invoker.name), "Need name in $target_name generation.")
-
-  action("spvtools_vendor_tables_" + target_name) {
-    script = "utils/generate_grammar_tables.py"
-
-    name = invoker.name
-    extinst_vendor_grammar = "source/extinst.${name}.grammar.json"
-    extinst_file = "${target_gen_dir}/${name}.insts.inc"
-
-    args = [
-      "--extinst-vendor-grammar",
-      rebase_path(extinst_vendor_grammar, root_build_dir),
-      "--vendor-insts-output",
-      rebase_path(extinst_file, root_build_dir),
-      "--vendor-operand-kind-prefix",
-      invoker.operand_kind_prefix,
-    ]
-    inputs = [ extinst_vendor_grammar ]
-    outputs = [ extinst_file ]
-  }
-}
-
 action("spvtools_generators_inc") {
   script = "utils/generate_registry_tables.py"
 
@@ -333,22 +310,14 @@ spvtools_vendor_tables = [
     "nonsemantic.clspvreflection",
     "...nil...",
   ],
+  [
+    "nonsemantic.shader.debuginfo.100",
+    "SHDEBUG100_",
+  ],
 ]
-
-spvtools_vendor_tables_local = [ [
-      "nonsemantic.shader.debuginfo.100",
-      "SHDEBUG100_",
-    ] ]
 
 foreach(table_def, spvtools_vendor_tables) {
   spvtools_vendor_table(table_def[0]) {
-    name = table_def[0]
-    operand_kind_prefix = table_def[1]
-  }
-}
-
-foreach(table_def, spvtools_vendor_tables_local) {
-  spvtools_vendor_table_local(table_def[0]) {
     name = table_def[0]
     operand_kind_prefix = table_def[1]
   }
@@ -418,10 +387,6 @@ static_library("spvtools") {
     ":spvtools_opencl_tables_opencl1-0",
   ]
   foreach(table_def, spvtools_vendor_tables) {
-    target_name = table_def[0]
-    deps += [ ":spvtools_vendor_tables_$target_name" ]
-  }
-  foreach(table_def, spvtools_vendor_tables_local) {
     target_name = table_def[0]
     deps += [ ":spvtools_vendor_tables_$target_name" ]
   }
@@ -610,14 +575,14 @@ static_library("spvtools_opt") {
     "source/opt/constants.h",
     "source/opt/control_dependence.cpp",
     "source/opt/control_dependence.h",
-    "source/opt/convert_to_sampled_image_pass.cpp",
-    "source/opt/convert_to_sampled_image_pass.h",
     "source/opt/convert_to_half_pass.cpp",
     "source/opt/convert_to_half_pass.h",
+    "source/opt/convert_to_sampled_image_pass.cpp",
+    "source/opt/convert_to_sampled_image_pass.h",
     "source/opt/copy_prop_arrays.cpp",
     "source/opt/copy_prop_arrays.h",
-    "source/opt/dataflow.h",
     "source/opt/dataflow.cpp",
+    "source/opt/dataflow.h",
     "source/opt/dead_branch_elim_pass.cpp",
     "source/opt/dead_branch_elim_pass.h",
     "source/opt/dead_insert_elim_pass.cpp",
