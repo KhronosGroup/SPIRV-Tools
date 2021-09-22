@@ -18,25 +18,18 @@
 
 #include "source/spirv_target_env.h"
 #include "spirv-tools/libspirv.hpp"
+#include "test/fuzzers/random_generator.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  if (size < sizeof(spv_target_env) + 1) return 0;
-
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4450): A more
-  //  general solution to choosing the target environment based on the input
-  //  buffer should ultimately be used.
-  uint32_t first_data_word = *reinterpret_cast<const uint32_t*>(data);
-  spv_target_env target_env = static_cast<spv_target_env>(
-      first_data_word % (static_cast<uint32_t>(SPV_ENV_VULKAN_1_2) + 1));
-  const spv_context context = spvContextCreate(target_env);
-  if (context == nullptr) return 0;
-
-  data += sizeof(spv_target_env);
-  size -= sizeof(spv_target_env);
-
   if (size < 4) {
     // There are not enough bytes to constitute a binary that can be
     // disassembled.
+    return 0;
+  }
+
+  spvtools::fuzzers::RandomGenerator random_gen(data, size);
+  const spv_context context = spvContextCreate(random_gen.GetTargetEnv());
+  if (context == nullptr) {
     return 0;
   }
 
