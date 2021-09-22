@@ -4372,6 +4372,29 @@ OpFunctionEnd
               HasSubstr("Cannot load a runtime-sized array"));
 }
 
+TEST_F(ValidateMemory, Pre1p4WorkgroupMemoryBadLayoutOk) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+%void = OpTypeVoid
+%bool = OpTypeBool
+%struct = OpTypeStruct %bool
+%ptr = OpTypePointer Workgroup %struct
+%var = OpVariable %ptr Workgroup
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
