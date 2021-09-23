@@ -164,8 +164,7 @@ bool AggressiveDCEPass::AllExtensionsSupported() const {
 bool AggressiveDCEPass::IsDead(Instruction* inst) {
   if (IsLive(inst)) return false;
   if ((inst->IsBranch() || inst->opcode() == SpvOpUnreachable) &&
-      !IsStructuredHeader(context()->get_instr_block(inst), nullptr, nullptr,
-                          nullptr))
+      context()->get_instr_block(inst)->GetMergeInst() == nullptr)
     return false;
   return true;
 }
@@ -200,66 +199,6 @@ void AggressiveDCEPass::ProcessLoad(Function* func, uint32_t varId) {
   live_local_vars_.insert(varId);
 }
 
-bool AggressiveDCEPass::IsStructuredHeader(BasicBlock* bp,
-                                           Instruction** mergeInst,
-                                           Instruction** branchInst,
-                                           uint32_t* mergeBlockId) {
-  if (!bp) return false;
-  Instruction* mi = bp->GetMergeInst();
-  if (mi == nullptr) return false;
-  Instruction* bri = &*bp->tail();
-  if (branchInst != nullptr) *branchInst = bri;
-  if (mergeInst != nullptr) *mergeInst = mi;
-  if (mergeBlockId != nullptr) *mergeBlockId = mi->GetSingleWordInOperand(0);
-  return true;
-}
-
-void AggressiveDCEPass::ComputeBlock2HeaderMaps(
-    std::list<BasicBlock*>& structuredOrder) {
-  block2headerBranch_.clear();
-  header2nextHeaderBranch_.clear();
-  branch2merge_.clear();
-  structured_order_index_.clear();
-  std::stack<Instruction*> currentHeaderBranch;
-  currentHeaderBranch.push(nullptr);
-  uint32_t currentMergeBlockId = 0;
-  uint32_t index = 0;
-  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end();
-       ++bi, ++index) {
-    structured_order_index_[*bi] = index;
-    // If this block is the merge block of the current control construct,
-    // we are leaving the current construct so we must update state
-    if ((*bi)->id() == currentMergeBlockId) {
-      currentHeaderBranch.pop();
-      Instruction* chb = currentHeaderBranch.top();
-      if (chb != nullptr)
-        currentMergeBlockId = branch2merge_[chb]->GetSingleWordInOperand(0);
-    }
-    Instruction* mergeInst;
-    Instruction* branchInst;
-    uint32_t mergeBlockId;
-    bool is_header =
-        IsStructuredHeader(*bi, &mergeInst, &branchInst, &mergeBlockId);
-    // Map header block to next enclosing header.
-    if (is_header) header2nextHeaderBranch_[*bi] = currentHeaderBranch.top();
-    // If this is a loop header, update state first so the block will map to
-    // itself.
-    if (is_header && mergeInst->opcode() == SpvOpLoopMerge) {
-      currentHeaderBranch.push(branchInst);
-      branch2merge_[branchInst] = mergeInst;
-      currentMergeBlockId = mergeBlockId;
-    }
-    // Map the block to the current construct.
-    block2headerBranch_[*bi] = currentHeaderBranch.top();
-    // If this is an if header, update state so following blocks map to the if.
-    if (is_header && mergeInst->opcode() == SpvOpSelectionMerge) {
-      currentHeaderBranch.push(branchInst);
-      branch2merge_[branchInst] = mergeInst;
-      currentMergeBlockId = mergeBlockId;
-    }
-  }
-}
-
 void AggressiveDCEPass::AddBranch(uint32_t labelId, BasicBlock* bp) {
   std::unique_ptr<Instruction> newBranch(
       new Instruction(context(), SpvOpBranch, 0, 0,
@@ -275,23 +214,18 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
          mergeInst->opcode() == SpvOpLoopMerge);
 
   BasicBlock* header = context()->get_instr_block(mergeInst);
-  uint32_t headerIndex = structured_order_index_[header];
   const uint32_t mergeId = mergeInst->GetSingleWordInOperand(0);
-  BasicBlock* merge = context()->get_instr_block(mergeId);
-  uint32_t mergeIndex = structured_order_index_[merge];
-  get_def_use_mgr()->ForEachUser(
-      mergeId, [headerIndex, mergeIndex, this](Instruction* user) {
-        if (!user->IsBranch()) return;
-        BasicBlock* block = context()->get_instr_block(user);
-        uint32_t index = structured_order_index_[block];
-        if (headerIndex < index && index < mergeIndex) {
-          // This is a break from the loop.
-          AddToWorklist(user);
-          // Add branch's merge if there is one.
-          Instruction* userMerge = branch2merge_[user];
-          if (userMerge != nullptr) AddToWorklist(userMerge);
-        }
-      });
+  get_def_use_mgr()->ForEachUser(mergeId, [header, this](Instruction* user) {
+    if (!user->IsBranch()) return;
+    BasicBlock* block = context()->get_instr_block(user);
+    if (BlockIsInConstruct(header, block)) {
+      // This is a break from the loop.
+      AddToWorklist(user);
+      // Add branch's merge if there is one.
+      Instruction* userMerge = GetMergeInstruction(user);
+      if (userMerge != nullptr) AddToWorklist(userMerge);
+    }
+  });
 
   if (mergeInst->opcode() != SpvOpLoopMerge) {
     return;
@@ -305,7 +239,7 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
     if (op == SpvOpBranchConditional || op == SpvOpSwitch) {
       // A conditional branch or switch can only be a continue if it does not
       // have a merge instruction or its merge block is not the continue block.
-      Instruction* hdrMerge = branch2merge_[user];
+      Instruction* hdrMerge = GetMergeInstruction(user);
       if (hdrMerge != nullptr && hdrMerge->opcode() == SpvOpSelectionMerge) {
         uint32_t hdrMergeId =
             hdrMerge->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
@@ -317,9 +251,9 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
       // An unconditional branch can only be a continue if it is not
       // branching to its own merge block.
       BasicBlock* blk = context()->get_instr_block(user);
-      Instruction* hdrBranch = block2headerBranch_[blk];
+      Instruction* hdrBranch = GetHeaderBranch(blk);
       if (hdrBranch == nullptr) return;
-      Instruction* hdrMerge = branch2merge_[hdrBranch];
+      Instruction* hdrMerge = GetMergeInstruction(hdrBranch);
       if (hdrMerge->opcode() == SpvOpLoopMerge) return;
       uint32_t hdrMergeId =
           hdrMerge->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx);
@@ -334,16 +268,11 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
 bool AggressiveDCEPass::AggressiveDCE(Function* func) {
   // Mark function parameters as live.
   AddToWorklist(&func->DefInst());
-  func->ForEachParam(
-      [this](const Instruction* param) {
-        AddToWorklist(const_cast<Instruction*>(param));
-      },
-      false);
+  MarkFunctionParameterAsLive(func);
 
   // Compute map from block to controlling conditional branch
   std::list<BasicBlock*> structuredOrder;
   cfg()->ComputeStructuredOrder(func, &*func->begin(), &structuredOrder);
-  ComputeBlock2HeaderMaps(structuredOrder);
   bool modified = false;
   // Add instructions with external side effects to worklist. Also add branches
   // EXCEPT those immediately contained in an "if" selection construct or a loop
@@ -461,18 +390,18 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
     // If in a structured if or loop construct, add the controlling
     // conditional branch and its merge.
     BasicBlock* blk = context()->get_instr_block(liveInst);
-    Instruction* branchInst = block2headerBranch_[blk];
+    Instruction* branchInst = GetHeaderBranch(blk);
     if (branchInst != nullptr) {
       AddToWorklist(branchInst);
-      Instruction* mergeInst = branch2merge_[branchInst];
+      Instruction* mergeInst = GetMergeInstruction(branchInst);
       AddToWorklist(mergeInst);
     }
     // If the block is a header, add the next outermost controlling
     // conditional branch and its merge.
-    Instruction* nextBranchInst = header2nextHeaderBranch_[blk];
+    Instruction* nextBranchInst = GetBranchForNextHeader(blk);
     if (nextBranchInst != nullptr) {
       AddToWorklist(nextBranchInst);
-      Instruction* mergeInst = branch2merge_[nextBranchInst];
+      Instruction* mergeInst = GetMergeInstruction(nextBranchInst);
       AddToWorklist(mergeInst);
     }
     // If local load, add all variable's stores if variable not already live
@@ -1017,6 +946,77 @@ void AggressiveDCEPass::InitExtensions() {
       "SPV_EXT_shader_image_int64",
       "SPV_KHR_non_semantic_info",
   });
+}
+
+Instruction* AggressiveDCEPass::GetHeaderBranch(BasicBlock* blk) {
+  if (blk == nullptr) {
+    return nullptr;
+  }
+  BasicBlock* header_block = GetHeaderBlock(blk);
+  if (header_block == nullptr) {
+    return nullptr;
+  }
+  return header_block->terminator();
+}
+
+BasicBlock* AggressiveDCEPass::GetHeaderBlock(BasicBlock* blk) const {
+  if (blk == nullptr) {
+    return nullptr;
+  }
+
+  BasicBlock* header_block = nullptr;
+  if (blk->IsLoopHeader()) {
+    header_block = blk;
+  } else {
+    uint32_t header =
+        context()->GetStructuredCFGAnalysis()->ContainingConstruct(blk->id());
+    header_block = context()->get_instr_block(header);
+  }
+  return header_block;
+}
+
+Instruction* AggressiveDCEPass::GetMergeInstruction(Instruction* inst) {
+  BasicBlock* bb = context()->get_instr_block(inst);
+  if (bb == nullptr) {
+    return nullptr;
+  }
+  return bb->GetMergeInst();
+}
+
+Instruction* AggressiveDCEPass::GetBranchForNextHeader(BasicBlock* blk) {
+  if (blk == nullptr) {
+    return nullptr;
+  }
+
+  if (blk->IsLoopHeader()) {
+    uint32_t header =
+        context()->GetStructuredCFGAnalysis()->ContainingConstruct(blk->id());
+    blk = context()->get_instr_block(header);
+  }
+  return GetHeaderBranch(blk);
+}
+
+void AggressiveDCEPass::MarkFunctionParameterAsLive(const Function* func) {
+  func->ForEachParam(
+      [this](const Instruction* param) {
+        AddToWorklist(const_cast<Instruction*>(param));
+      },
+      false);
+}
+
+bool AggressiveDCEPass::BlockIsInConstruct(BasicBlock* header_block,
+                                           BasicBlock* bb) {
+  if (bb == nullptr || header_block == nullptr) {
+    return false;
+  }
+
+  uint32_t current_header = bb->id();
+  while (current_header != 0) {
+    if (current_header == header_block->id()) return true;
+    current_header = context()->GetStructuredCFGAnalysis()->ContainingConstruct(
+        current_header);
+  }
+  return false;
 }
 
 }  // namespace opt
