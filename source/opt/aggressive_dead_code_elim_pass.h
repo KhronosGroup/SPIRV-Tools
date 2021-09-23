@@ -136,6 +136,11 @@ class AggressiveDCEPass : public MemPass {
 
   Pass::Status ProcessImpl();
 
+  // Adds instructions which must be kept because of they have side-effects
+  // that ADCE cannot model to the work list.
+  void InitializeWorkList(Function* func,
+                          std::list<BasicBlock*>& structuredOrder);
+
   // Marks all of the OpFunctionParameter instructions in |func| as live.
   void MarkFunctionParameterAsLive(const Function* func);
 
@@ -159,12 +164,6 @@ class AggressiveDCEPass : public MemPass {
   // Returns true if |bb| is in the construct with header |header_block|.
   bool BlockIsInConstruct(BasicBlock* header_block, BasicBlock* bb);
 
-  // True if current function has a call instruction contained in it
-  bool call_in_func_;
-
-  // True if current function is an entry point
-  bool func_is_entry_point_;
-
   // True if current function is entry point and has no function calls.
   bool private_like_local_;
 
@@ -174,9 +173,6 @@ class AggressiveDCEPass : public MemPass {
   // removed from this list as the algorithm traces side effects,
   // building up the live instructions set |live_insts_|.
   std::queue<Instruction*> worklist_;
-
-  // Store instructions to variables of private storage
-  std::vector<Instruction*> private_stores_;
 
   // Live Instructions
   utils::BitVector live_insts_;

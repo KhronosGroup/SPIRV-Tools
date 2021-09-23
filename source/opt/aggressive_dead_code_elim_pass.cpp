@@ -35,7 +35,6 @@ namespace {
 const uint32_t kTypePointerStorageClassInIdx = 0;
 const uint32_t kEntryPointFunctionIdInIdx = 1;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
-const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 const uint32_t kCopyMemoryTargetAddrInIdx = 0;
 const uint32_t kCopyMemorySourceAddrInIdx = 1;
@@ -270,103 +269,12 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
   AddToWorklist(&func->DefInst());
   MarkFunctionParameterAsLive(func);
 
-  // Compute map from block to controlling conditional branch
   std::list<BasicBlock*> structuredOrder;
   cfg()->ComputeStructuredOrder(func, &*func->begin(), &structuredOrder);
   bool modified = false;
-  // Add instructions with external side effects to worklist. Also add branches
-  // EXCEPT those immediately contained in an "if" selection construct or a loop
-  // or continue construct.
-  // TODO(greg-lunarg): Handle Frexp, Modf more optimally
-  call_in_func_ = false;
-  func_is_entry_point_ = false;
-  private_stores_.clear();
   live_local_vars_.clear();
-  // Stacks to keep track of when we are inside an if- or loop-construct.
-  // When immediately inside an if- or loop-construct, we do not initially
-  // mark branches live. All other branches must be marked live.
-  std::stack<bool> assume_branches_live;
-  std::stack<uint32_t> currentMergeBlockId;
-  // Push sentinel values on stack for when outside of any control flow.
-  assume_branches_live.push(true);
-  currentMergeBlockId.push(0);
-  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
-    // If exiting if or loop, update stacks
-    if ((*bi)->id() == currentMergeBlockId.top()) {
-      assume_branches_live.pop();
-      currentMergeBlockId.pop();
-    }
-    for (auto ii = (*bi)->begin(); ii != (*bi)->end(); ++ii) {
-      SpvOp op = ii->opcode();
-      switch (op) {
-        case SpvOpStore: {
-          uint32_t varId;
-          (void)GetPtr(&*ii, &varId);
-          // Mark stores as live if their variable is not function scope
-          // and is not private scope. Remember private stores for possible
-          // later inclusion.  We cannot call IsLocalVar at this point because
-          // private_like_local_ has not been set yet.
-          if (IsVarOfStorage(varId, SpvStorageClassPrivate) ||
-              IsVarOfStorage(varId, SpvStorageClassWorkgroup))
-            private_stores_.push_back(&*ii);
-          else if (!IsVarOfStorage(varId, SpvStorageClassFunction))
-            AddToWorklist(&*ii);
-        } break;
-        case SpvOpCopyMemory:
-        case SpvOpCopyMemorySized: {
-          uint32_t varId;
-          (void)GetPtr(ii->GetSingleWordInOperand(kCopyMemoryTargetAddrInIdx),
-                       &varId);
-          if (IsVarOfStorage(varId, SpvStorageClassPrivate) ||
-              IsVarOfStorage(varId, SpvStorageClassWorkgroup))
-            private_stores_.push_back(&*ii);
-          else if (!IsVarOfStorage(varId, SpvStorageClassFunction))
-            AddToWorklist(&*ii);
-        } break;
-        case SpvOpLoopMerge: {
-          assume_branches_live.push(false);
-          currentMergeBlockId.push(
-              ii->GetSingleWordInOperand(kLoopMergeMergeBlockIdInIdx));
-        } break;
-        case SpvOpSelectionMerge: {
-          assume_branches_live.push(false);
-          currentMergeBlockId.push(
-              ii->GetSingleWordInOperand(kSelectionMergeMergeBlockIdInIdx));
-        } break;
-        case SpvOpSwitch:
-        case SpvOpBranch:
-        case SpvOpBranchConditional:
-        case SpvOpUnreachable: {
-          if (assume_branches_live.top()) {
-            AddToWorklist(&*ii);
-          }
-        } break;
-        default: {
-          // Function calls, atomics, function params, function returns, etc.
-          // TODO(greg-lunarg): function calls live only if write to non-local
-          if (!ii->IsOpcodeSafeToDelete()) {
-            AddToWorklist(&*ii);
-          }
-          // Remember function calls
-          if (op == SpvOpFunctionCall) call_in_func_ = true;
-        } break;
-      }
-    }
-  }
-  // See if current function is an entry point
-  for (auto& ei : get_module()->entry_points()) {
-    if (ei.GetSingleWordInOperand(kEntryPointFunctionIdInIdx) ==
-        func->result_id()) {
-      func_is_entry_point_ = true;
-      break;
-    }
-  }
-  // If the current function is an entry point and has no function calls,
-  // we can optimize private variables as locals
-  private_like_local_ = func_is_entry_point_ && !call_in_func_;
-  // If privates are not like local, add their stores to worklist
-  if (!private_like_local_)
-    for (auto& ps : private_stores_) AddToWorklist(ps);
+  InitializeWorkList(func, structuredOrder);
+
   // Perform closure on live instruction set.
   while (!worklist_.empty()) {
     Instruction* liveInst = worklist_.front();
@@ -540,6 +448,86 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
   }
 
   return modified;
+}
+
+void AggressiveDCEPass::InitializeWorkList(
+    Function* func, std::list<BasicBlock*>& structuredOrder) {
+  // Add instructions with external side effects to the worklist. Also add
+  // branches that are not attached to a structured construct.
+  // TODO(s-perron): The handling of branch seems to be adhoc.  This needs to be
+  // cleaned up.
+  bool call_in_func = false;
+  bool func_is_entry_point = false;
+
+  // TODO(s-perron): We need to check if this is actually needed.  In cases
+  // where private variable can be treated as if they are function scope, the
+  // private-to-local pass should be able to change them to function scope.
+  std::vector<Instruction*> private_stores;
+
+  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
+    for (auto ii = (*bi)->begin(); ii != (*bi)->end(); ++ii) {
+      SpvOp op = ii->opcode();
+      switch (op) {
+        case SpvOpStore: {
+          uint32_t varId;
+          (void)GetPtr(&*ii, &varId);
+          // Mark stores as live if their variable is not function scope
+          // and is not private scope. Remember private stores for possible
+          // later inclusion.  We cannot call IsLocalVar at this point because
+          // private_like_local_ has not been set yet.
+          if (IsVarOfStorage(varId, SpvStorageClassPrivate) ||
+              IsVarOfStorage(varId, SpvStorageClassWorkgroup))
+            private_stores.push_back(&*ii);
+          else if (!IsVarOfStorage(varId, SpvStorageClassFunction))
+            AddToWorklist(&*ii);
+        } break;
+        case SpvOpCopyMemory:
+        case SpvOpCopyMemorySized: {
+          uint32_t varId;
+          (void)GetPtr(ii->GetSingleWordInOperand(kCopyMemoryTargetAddrInIdx),
+                       &varId);
+          if (IsVarOfStorage(varId, SpvStorageClassPrivate) ||
+              IsVarOfStorage(varId, SpvStorageClassWorkgroup))
+            private_stores.push_back(&*ii);
+          else if (!IsVarOfStorage(varId, SpvStorageClassFunction))
+            AddToWorklist(&*ii);
+        } break;
+        case SpvOpSwitch:
+        case SpvOpBranch:
+        case SpvOpBranchConditional:
+        case SpvOpUnreachable: {
+          bool branchRelatedToConstruct =
+              (GetMergeInstruction(&*ii) == nullptr &&
+               GetHeaderBlock(context()->get_instr_block(&*ii)) == nullptr);
+          if (branchRelatedToConstruct) {
+            AddToWorklist(&*ii);
+          }
+        } break;
+        default: {
+          // Function calls, atomics, function params, function returns, etc.
+          if (!ii->IsOpcodeSafeToDelete()) {
+            AddToWorklist(&*ii);
+          }
+          // Remember function calls
+          if (op == SpvOpFunctionCall) call_in_func = true;
+        } break;
+      }
+    }
+  }
+  // See if current function is an entry point
+  for (auto& ei : get_module()->entry_points()) {
+    if (ei.GetSingleWordInOperand(kEntryPointFunctionIdInIdx) ==
+        func->result_id()) {
+      func_is_entry_point = true;
+      break;
+    }
+  }
+  // If the current function is an entry point and has no function calls,
+  // we can optimize private variables as locals
+  private_like_local_ = func_is_entry_point && !call_in_func;
+  // If privates are not like local, add their stores to worklist
+  if (!private_like_local_)
+    for (auto& ps : private_stores) AddToWorklist(ps);
 }
 
 void AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
