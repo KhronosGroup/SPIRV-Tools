@@ -231,11 +231,10 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
                                       const Instruction* inst,
                                       const Instruction* target) {
   auto fail = [&_, dec, inst, target](uint32_t vuid = 0) -> DiagnosticStream {
-    DiagnosticStream ds = std::move(_.diag(SPV_ERROR_INVALID_ID, inst)
-                                    << _.VkErrorID(vuid)
-                                    << LogStringForDecoration(dec)
-                                    << " decoration on target <id> '"
-                                    << _.getIdName(target->id()) << "' ");
+    DiagnosticStream ds = std::move(
+        _.diag(SPV_ERROR_INVALID_ID, inst)
+        << _.VkErrorID(vuid) << LogStringForDecoration(dec)
+        << " decoration on target <id> '" << _.getIdName(target->id()) << "' ");
     return ds;
   };
   switch (dec) {
