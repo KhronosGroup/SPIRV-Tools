@@ -4190,8 +4190,8 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     case SpvBuiltInLayerPerViewNV:
     case SpvBuiltInMeshViewCountNV:
     case SpvBuiltInMeshViewIndicesNV:
-    case SpvBuiltInBaryCoordNV:
-    case SpvBuiltInBaryCoordNoPerspNV:
+    case SpvBuiltInBaryCoordKHR:
+    case SpvBuiltInBaryCoordNoPerspKHR:
     case SpvBuiltInCurrentRayTimeNV:
       // No validation rules (for the moment).
       break;
