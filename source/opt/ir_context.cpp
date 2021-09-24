@@ -612,9 +612,7 @@ void IRContext::AddCombinatorsForCapability(uint32_t capability) {
                                SpvOpImageSparseDrefGather,
                                SpvOpImageSparseTexelsResident,
                                SpvOpImageSparseRead,
-                               SpvOpSizeOf,
-                               SpvOpSelectionMerge,
-                               SpvOpLoopMerge});
+                               SpvOpSizeOf});
   }
 }
 

@@ -503,6 +503,9 @@ void AggressiveDCEPass::InitializeWorkList(
             AddToWorklist(&*ii);
           }
         } break;
+        case SpvOpLoopMerge:
+        case SpvOpSelectionMerge:
+          break;
         default: {
           // Function calls, atomics, function params, function returns, etc.
           if (!ii->IsOpcodeSafeToDelete()) {
