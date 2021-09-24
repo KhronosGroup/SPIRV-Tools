@@ -58,6 +58,8 @@ spv_result_t ModuleScopedInstructions(ValidationState_t& _,
               ext_inst_key == NonSemanticShaderDebugInfo100DebugNoScope ||
               ext_inst_key == NonSemanticShaderDebugInfo100DebugDeclare ||
               ext_inst_key == NonSemanticShaderDebugInfo100DebugValue ||
+              ext_inst_key == NonSemanticShaderDebugInfo100DebugLine ||
+              ext_inst_key == NonSemanticShaderDebugInfo100DebugNoLine ||
               ext_inst_key ==
                   NonSemanticShaderDebugInfo100DebugFunctionDefinition) {
             local_debug_info = true;
@@ -263,6 +265,8 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
                 ext_inst_key == NonSemanticShaderDebugInfo100DebugNoScope ||
                 ext_inst_key == NonSemanticShaderDebugInfo100DebugDeclare ||
                 ext_inst_key == NonSemanticShaderDebugInfo100DebugValue ||
+                ext_inst_key == NonSemanticShaderDebugInfo100DebugLine ||
+                ext_inst_key == NonSemanticShaderDebugInfo100DebugNoLine ||
                 ext_inst_key ==
                     NonSemanticShaderDebugInfo100DebugFunctionDefinition) {
               local_debug_info = true;

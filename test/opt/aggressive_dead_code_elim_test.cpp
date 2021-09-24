@@ -7141,7 +7141,15 @@ TEST_F(AggressiveDCETest, ShaderDebugInfoKeepInFunctionElimStoreVar) {
     %uint_16 = OpConstant %uint 16
     %uint_17 = OpConstant %uint 17
     %uint_19 = OpConstant %uint 19
+    %uint_20 = OpConstant %uint 20
+    %uint_21 = OpConstant %uint 21
+    %uint_25 = OpConstant %uint 25
     %uint_29 = OpConstant %uint 29
+    %uint_30 = OpConstant %uint 30
+    %uint_35 = OpConstant %uint 35
+    %uint_41 = OpConstant %uint 41
+    %uint_48 = OpConstant %uint 48
+    %uint_53 = OpConstant %uint 53
     %uint_64 = OpConstant %uint 64
          %45 = OpTypeFunction %void
    %PS_INPUT = OpTypeStruct %v2float
@@ -7198,20 +7206,33 @@ TEST_F(AggressiveDCETest, ShaderDebugInfoKeepInFunctionElimStoreVar) {
 ;CHECK: {{%\w+}} = OpExtInst %void %1 DebugDeclare %72 %param_var_i %52
 ;CHECK: {{%\w+}} = OpExtInst %void %1 DebugScope %69
 ;CHECK: {{%\w+}} = OpExtInst %void %1 DebugDeclare %71 %78 %52
+        %300 = OpExtInst %void %1 DebugLine %55 %uint_19 %uint_19 %uint_17 %uint_30
+;CHECK: {{%\w+}} = OpExtInst %void %1 DebugLine %55 %uint_19 %uint_19 %uint_17 %uint_30
          %88 = OpAccessChain %_ptr_Function_v2float %param_var_i %int_0
          %89 = OpLoad %v2float %88
+        %301 = OpExtInst %void %1 DebugLine %55 %uint_19 %uint_19 %uint_12 %uint_35
                OpStore %79 %89
 ;CHECK-NOT:    OpStore %79 %89
+        %302 = OpExtInst %void %1 DebugLine %55 %uint_19 %uint_19 %uint_12 %uint_35
+;CHECK: {{%\w+}} = OpExtInst %void %1 DebugLine %55 %uint_19 %uint_19 %uint_12 %uint_35
         %106 = OpExtInst %void %1 DebugValue %70 %89 %52
 ;CHECK: {{%\w+}} = OpExtInst %void %1 DebugValue %70 %89 %52
+        %303 = OpExtInst %void %1 DebugLine %55 %uint_20 %uint_20 %uint_25 %uint_32
          %91 = OpLoad %type_2d_image %g_tColor
+        %304 = OpExtInst %void %1 DebugLine %55 %uint_20 %uint_20 %uint_41 %uint_48
          %92 = OpLoad %type_sampler %g_sAniso
+        %305 = OpExtInst %void %1 DebugLine %55 %uint_20 %uint_20 %uint_25 %uint_53
          %94 = OpSampledImage %type_sampled_image %91 %92
          %95 = OpImageSampleImplicitLod %v4float %94 %89 None
+        %306 = OpExtInst %void %1 DebugLine %55 %uint_20 %uint_20 %uint_5 %uint_53
          %96 = OpAccessChain %_ptr_Function_v4float %78 %int_0
                OpStore %96 %95
+        %307 = OpExtInst %void %1 DebugLine %55 %uint_21 %uint_21 %uint_12 %uint_20
          %97 = OpLoad %PS_OUTPUT %78
+        %308 = OpExtInst %void %1 DebugLine %55 %uint_21 %uint_21 %uint_5 %uint_20
                OpStore %81 %97
+        %309 = OpExtInst %void %1 DebugNoLine
+;CHECK: {{%\w+}} = OpExtInst %void %1 DebugNoLine
         %111 = OpExtInst %void %1 DebugNoScope
 ;CHECK: {{%\w+}} = OpExtInst %void %1 DebugNoScope
         %100 = OpCompositeExtract %v4float %97 0

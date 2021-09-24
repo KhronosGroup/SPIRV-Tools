@@ -19,6 +19,7 @@
 #include "DebugInfo.h"
 #include "OpenCLDebugInfo100.h"
 #include "source/ext_inst.h"
+#include "source/opt/ir_context.h"
 #include "source/opt/log.h"
 #include "source/opt/reflect.h"
 #include "source/util/make_unique.h"
@@ -37,20 +38,32 @@ IrLoader::IrLoader(const MessageConsumer& consumer, Module* m)
       inst_index_(0),
       last_dbg_scope_(kNoDebugScope, kNoInlinedAt) {}
 
+bool IsLineInst(const spv_parsed_instruction_t* inst) {
+  const auto opcode = static_cast<SpvOp>(inst->opcode);
+  if (IsOpLineInst(opcode)) return true;
+  if (opcode != SpvOpExtInst) return false;
+  if (inst->ext_inst_type != SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100)
+    return false;
+  const uint32_t ext_inst_index = inst->words[kExtInstSetIndex];
+  const NonSemanticShaderDebugInfo100Instructions ext_inst_key =
+      NonSemanticShaderDebugInfo100Instructions(ext_inst_index);
+  return ext_inst_key == NonSemanticShaderDebugInfo100DebugLine ||
+         ext_inst_key == NonSemanticShaderDebugInfo100DebugNoLine;
+}
+
 bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
   ++inst_index_;
-  const auto opcode = static_cast<SpvOp>(inst->opcode);
-  if (IsDebugLineInst(opcode)) {
+  if (IsLineInst(inst)) {
     module()->SetContainsDebugInfo();
     last_line_inst_.reset();
-    dbg_line_info_.push_back(
-        Instruction(module()->context(), *inst, last_dbg_scope_));
+    dbg_line_info_.emplace_back(module()->context(), *inst, last_dbg_scope_);
     return true;
   }
 
   // If it is a DebugScope or DebugNoScope of debug extension, we do not
   // create a new instruction, but simply keep the information in
   // struct DebugScope.
+  const auto opcode = static_cast<SpvOp>(inst->opcode);
   if (opcode == SpvOpExtInst && spvExtInstIsDebugInfo(inst->ext_inst_type)) {
     const uint32_t ext_inst_index = inst->words[kExtInstSetIndex];
     if (inst->ext_inst_type == SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100 ||
@@ -96,14 +109,20 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
       new Instruction(module()->context(), *inst, std::move(dbg_line_info_)));
   if (!spv_inst->dbg_line_insts().empty()) {
     if (extra_line_tracking_ &&
-        (spv_inst->dbg_line_insts().back().opcode() != SpvOpNoLine)) {
+        (!spv_inst->dbg_line_insts().back().IsNoLine())) {
       last_line_inst_ = std::unique_ptr<Instruction>(
           spv_inst->dbg_line_insts().back().Clone(module()->context()));
+      if (last_line_inst_->IsDebugLineInst())
+        last_line_inst_->SetResultId(module()->context()->TakeNextId());
     }
     dbg_line_info_.clear();
   } else if (last_line_inst_ != nullptr) {
     last_line_inst_->SetDebugScope(last_dbg_scope_);
     spv_inst->dbg_line_insts().push_back(*last_line_inst_);
+    last_line_inst_ = std::unique_ptr<Instruction>(
+        spv_inst->dbg_line_insts().back().Clone(module()->context()));
+    if (last_line_inst_->IsDebugLineInst())
+      last_line_inst_->SetResultId(module()->context()->TakeNextId());
   }
 
   const char* src = source_.c_str();
