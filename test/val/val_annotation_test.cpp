@@ -483,6 +483,8 @@ OpCapability SampleRateShading
 OpCapability TransformFeedback
 OpCapability GeometryStreams
 OpCapability Tessellation
+OpCapability PhysicalStorageBufferAddresses
+OpExtension "SPV_KHR_physical_storage_buffer"
 OpMemoryModel Logical GLSL450
 OpDecorate %var )" + deco + R"(
 %float = OpTypeFloat 32
@@ -503,6 +505,8 @@ OpCapability SampleRateShading
 OpCapability TransformFeedback
 OpCapability GeometryStreams
 OpCapability Tessellation
+OpCapability PhysicalStorageBufferAddresses
+OpExtension "SPV_KHR_physical_storage_buffer"
 OpMemoryModel Logical GLSL450
 OpDecorate %func LinkageAttributes "import" Import
 OpDecorate %param )" + deco +
@@ -529,6 +533,8 @@ OpCapability SampleRateShading
 OpCapability TransformFeedback
 OpCapability GeometryStreams
 OpCapability Tessellation
+OpCapability PhysicalStorageBufferAddresses
+OpExtension "SPV_KHR_physical_storage_buffer"
 OpMemoryModel Logical GLSL450
 OpDecorate %func LinkageAttributes "import" Import
 OpDecorate %param )" + deco +
@@ -555,6 +561,8 @@ OpCapability SampleRateShading
 OpCapability TransformFeedback
 OpCapability GeometryStreams
 OpCapability Tessellation
+OpCapability PhysicalStorageBufferAddresses
+OpExtension "SPV_KHR_physical_storage_buffer"
 OpMemoryModel Logical GLSL450
 OpDecorate %float )" + deco +
                            R"(
@@ -576,6 +584,8 @@ OpCapability SampleRateShading
 OpCapability TransformFeedback
 OpCapability GeometryStreams
 OpCapability Tessellation
+OpCapability PhysicalStorageBufferAddresses
+OpExtension "SPV_KHR_physical_storage_buffer"
 OpMemoryModel Logical GLSL450
 OpDecorate %const )" + deco +
                            R"(
@@ -590,12 +600,11 @@ OpDecorate %const )" + deco +
 }
 
 // NonWritable and NonReadable are covered by other tests.
-INSTANTIATE_TEST_SUITE_P(ValidateMemoryObjectDecorations,
-                         MemoryObjectDecorations,
-                         Values("NoPerspective", "Flat", "Patch", "Centroid",
-                                "Component 0", "Sample", "Restrict", "Aliased",
-                                "Volatile", "Coherent", "Stream 0",
-                                "XfbBuffer 1", "XfbStride 1"));
+INSTANTIATE_TEST_SUITE_P(
+    ValidateMemoryObjectDecorations, MemoryObjectDecorations,
+    Values("NoPerspective", "Flat", "Patch", "Centroid", "Component 0",
+           "Sample", "Restrict", "Aliased", "Volatile", "Coherent", "Stream 0",
+           "XfbBuffer 1", "XfbStride 1", "AliasedPointer", "RestrictPointer"));
 
 using VariableDecorations = spvtest::ValidateBase<std::string>;
 
@@ -606,8 +615,6 @@ OpCapability Shader
 OpCapability Kernel
 OpCapability Linkage
 OpCapability InputAttachment
-OpCapability PhysicalStorageBufferAddresses
-OpExtension "SPV_KHR_physical_storage_buffer"
 OpMemoryModel Logical GLSL450
 OpDecorate %var )" + deco + R"(
 %float = OpTypeFloat 32
@@ -626,8 +633,6 @@ OpCapability Shader
 OpCapability Kernel
 OpCapability Linkage
 OpCapability InputAttachment
-OpCapability PhysicalStorageBufferAddresses
-OpExtension "SPV_KHR_physical_storage_buffer"
 OpMemoryModel Logical GLSL450
 OpDecorate %func LinkageAttributes "import" Import
 OpDecorate %param )" + deco +
@@ -652,8 +657,6 @@ OpCapability Shader
 OpCapability Kernel
 OpCapability Linkage
 OpCapability InputAttachment
-OpCapability PhysicalStorageBufferAddresses
-OpExtension "SPV_KHR_physical_storage_buffer"
 OpMemoryModel Logical GLSL450
 OpDecorate %float )" + deco +
                            R"(
@@ -672,8 +675,6 @@ OpCapability Shader
 OpCapability Kernel
 OpCapability Linkage
 OpCapability InputAttachment
-OpCapability PhysicalStorageBufferAddresses
-OpExtension "SPV_KHR_physical_storage_buffer"
 OpMemoryModel Logical GLSL450
 OpDecorate %const )" + deco +
                            R"(
@@ -688,9 +689,7 @@ OpDecorate %const )" + deco +
 
 INSTANTIATE_TEST_SUITE_P(ValidateVariableDecorations, VariableDecorations,
                          Values("Invariant", "Constant", "Location 0",
-                                "Index 0", "Binding 0", "DescriptorSet 0",
-                                "InputAttachmentIndex 0", "RestrictPointer",
-                                "AliasedPointer"));
+                                "Index 0", "Binding 0", "DescriptorSet 0"));
 
 using VulkanIOStorageClass =
     spvtest::ValidateBase<std::tuple<std::string, std::string>>;

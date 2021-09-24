@@ -289,6 +289,8 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
     case SpvDecorationXfbStride:
     case SpvDecorationComponent:
     case SpvDecorationStream:
+    case SpvDecorationRestrictPointer:
+    case SpvDecorationAliasedPointer:
       if (target->opcode() != SpvOpVariable &&
           target->opcode() != SpvOpFunctionParameter) {
         return fail() << "must be a memory object declaration";
@@ -304,8 +306,6 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
     case SpvDecorationBinding:
     case SpvDecorationDescriptorSet:
     case SpvDecorationInputAttachmentIndex:
-    case SpvDecorationRestrictPointer:
-    case SpvDecorationAliasedPointer:
       if (target->opcode() != SpvOpVariable) {
         return fail() << "must be a variable";
       }
