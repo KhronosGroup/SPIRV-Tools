@@ -2861,9 +2861,9 @@ OpDecorate %copy BuiltIn WorkgroupSize
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("BuiltIns can only target variables, structs or constants"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("BuiltIns can only target variables, structure "
+                        "members or constants"));
 }
 
 CodeGenerator GetWorkgroupSizeNotVectorGenerator() {
@@ -3752,9 +3752,9 @@ OpDecorate %void BuiltIn Position
 
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("BuiltIns can only target variables, structs or constants"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("BuiltIns can only target variables, structure members "
+                        "or constants"));
 }
 
 TEST_F(ValidateBuiltIns, TargetIsVariable) {

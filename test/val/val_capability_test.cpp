@@ -1380,8 +1380,10 @@ std::make_pair(std::string(kGLSL450MemoryModel) +
           KernelDependencies()),
 std::make_pair(std::string(kOpenCLMemoryModel) +
           "OpEntryPoint Kernel %func \"compute\" \n"
-          "OpDecorate %intt Stream 0\n"
-          "%intt = OpTypeInt 32 0\n" + std::string(kVoidFVoid),
+          "OpDecorate %var Stream 0\n"
+          "%intt = OpTypeInt 32 0\n"
+          "%ptr = OpTypePointer Output %intt\n"
+          "%var = OpVariable %ptr Output\n" + std::string(kVoidFVoid),
           std::vector<std::string>{"GeometryStreams"}),
 std::make_pair(std::string(kOpenCLMemoryModel) +
           "OpEntryPoint Kernel %func \"compute\" \n"

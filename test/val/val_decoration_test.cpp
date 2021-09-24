@@ -6153,10 +6153,7 @@ TEST_F(ValidateDecorations, NonWritableValueParamBad) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Target of NonWritable decoration is invalid: must "
-                        "point to a storage image, uniform block, or storage "
-                        "buffer\n  %param_f = OpFunctionParameter %float"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a pointer type"));
 }
 
 TEST_F(ValidateDecorations, NonWritablePointerParamButWrongTypeBad) {
@@ -6458,7 +6455,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a variable"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must be a memory object declaration"));
 }
 
 TEST_F(ValidateDecorations, ComponentDecorationBadStorageClass) {
@@ -6758,7 +6756,7 @@ TEST_F(ValidateDecorations, ComponentDecorationFunctionParameter) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a variable"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a pointer type"));
 }
 
 TEST_F(ValidateDecorations, VulkanStorageBufferBlock) {

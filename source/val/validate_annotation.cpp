@@ -230,8 +230,9 @@ bool IsNotMemberDecoration(SpvDecoration dec) {
 spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
                                       const Instruction* inst,
                                       const Instruction* target) {
-  auto fail = [&_, dec, inst, target]() -> DiagnosticStream {
+  auto fail = [&_, dec, inst, target](uint32_t vuid = 0) -> DiagnosticStream {
     DiagnosticStream ds = std::move(_.diag(SPV_ERROR_INVALID_ID, inst)
+                                    << _.VkErrorID(vuid)
                                     << LogStringForDecoration(dec)
                                     << " decoration on target <id> '"
                                     << _.getIdName(target->id()) << "' ");
@@ -263,7 +264,8 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
       if (target->opcode() != SpvOpVariable &&
           !spvOpcodeIsConstant(target->opcode())) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "BuiltIns can only target variables, structs or constants";
+               << "BuiltIns can only target variables, structure members or "
+                  "constants";
       }
       if (inst->GetOperandAs<SpvBuiltIn>(2) == SpvBuiltInWorkgroupSize) {
         if (!spvOpcodeIsConstant(target->opcode())) {
@@ -286,15 +288,19 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
     case SpvDecorationNonReadable:
     case SpvDecorationXfbBuffer:
     case SpvDecorationXfbStride:
+    case SpvDecorationComponent:
+    case SpvDecorationStream:
       if (target->opcode() != SpvOpVariable &&
           target->opcode() != SpvOpFunctionParameter) {
         return fail() << "must be a memory object declaration";
+      }
+      if (_.GetIdOpcode(target->type_id()) != SpvOpTypePointer) {
+        return fail() << "must be a pointer type";
       }
       break;
     case SpvDecorationInvariant:
     case SpvDecorationConstant:
     case SpvDecorationLocation:
-    case SpvDecorationComponent:
     case SpvDecorationIndex:
     case SpvDecorationBinding:
     case SpvDecorationDescriptorSet:
@@ -310,14 +316,16 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
   }
 
   if (spvIsVulkanEnv(_.context()->target_env)) {
-    // The following were all checked as variables above.
+    // The following were all checked as pointer types above.
     SpvStorageClass sc = SpvStorageClassUniform;
-    if (target->operands().size() > 2) {
-      sc = target->GetOperandAs<SpvStorageClass>(2);
+    const auto type = _.FindDef(target->type_id());
+    if (type && type->operands().size() > 2) {
+      sc = type->GetOperandAs<SpvStorageClass>(1);
     }
     switch (dec) {
       case SpvDecorationLocation:
       case SpvDecorationComponent:
+        // Location is used for input, output and ray tracing stages.
         if (sc == SpvStorageClassStorageBuffer ||
             sc == SpvStorageClassUniform ||
             sc == SpvStorageClassUniformConstant ||
@@ -345,6 +353,14 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
       case SpvDecorationInputAttachmentIndex:
         if (sc != SpvStorageClassUniformConstant) {
           return fail() << "must be in the UniformConstant storage class";
+        }
+        break;
+      case SpvDecorationFlat:
+      case SpvDecorationNoPerspective:
+      case SpvDecorationCentroid:
+      case SpvDecorationSample:
+        if (sc != SpvStorageClassInput && sc != SpvStorageClassOutput) {
+          return fail(4670) << "storage class must be Input or Output";
         }
         break;
       default:

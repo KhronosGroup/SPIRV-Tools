@@ -391,9 +391,9 @@ OpDecorate %int BuiltIn )" +
 
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("BuiltIns can only target variables, structs or constants"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("BuiltIns can only target variables, structure members "
+                        "or constants"));
 }
 
 TEST_P(BuiltInDecorations, FunctionParameter) {
@@ -415,9 +415,9 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("BuiltIns can only target variables, structs or constants"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("BuiltIns can only target variables, structure members "
+                        "or constants"));
 }
 
 TEST_P(BuiltInDecorations, Constant) {
@@ -481,6 +481,7 @@ OpCapability Shader
 OpCapability Linkage
 OpCapability SampleRateShading
 OpCapability TransformFeedback
+OpCapability GeometryStreams
 OpCapability Tessellation
 OpMemoryModel Logical GLSL450
 OpDecorate %var )" + deco + R"(
@@ -493,13 +494,40 @@ OpDecorate %var )" + deco + R"(
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_P(MemoryObjectDecorations, FunctionParameter) {
+TEST_P(MemoryObjectDecorations, FunctionParameterGood) {
   const auto deco = GetParam();
   const std::string text = R"(
 OpCapability Shader
 OpCapability Linkage
 OpCapability SampleRateShading
 OpCapability TransformFeedback
+OpCapability GeometryStreams
+OpCapability Tessellation
+OpMemoryModel Logical GLSL450
+OpDecorate %func LinkageAttributes "import" Import
+OpDecorate %param )" + deco +
+                           R"(
+%float = OpTypeFloat 32
+%ptr = OpTypePointer Input %float
+%void = OpTypeVoid
+%fn = OpTypeFunction %void %ptr
+%func = OpFunction %void None %fn
+%param = OpFunctionParameter %ptr
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_P(MemoryObjectDecorations, FunctionParameterNotAPointer) {
+  const auto deco = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability SampleRateShading
+OpCapability TransformFeedback
+OpCapability GeometryStreams
 OpCapability Tessellation
 OpMemoryModel Logical GLSL450
 OpDecorate %func LinkageAttributes "import" Import
@@ -514,7 +542,8 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(text);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a pointer type"));
 }
 
 TEST_P(MemoryObjectDecorations, FloatType) {
@@ -524,6 +553,7 @@ OpCapability Shader
 OpCapability Linkage
 OpCapability SampleRateShading
 OpCapability TransformFeedback
+OpCapability GeometryStreams
 OpCapability Tessellation
 OpMemoryModel Logical GLSL450
 OpDecorate %float )" + deco +
@@ -544,6 +574,7 @@ OpCapability Shader
 OpCapability Linkage
 OpCapability SampleRateShading
 OpCapability TransformFeedback
+OpCapability GeometryStreams
 OpCapability Tessellation
 OpMemoryModel Logical GLSL450
 OpDecorate %const )" + deco +
@@ -562,8 +593,9 @@ OpDecorate %const )" + deco +
 INSTANTIATE_TEST_SUITE_P(ValidateMemoryObjectDecorations,
                          MemoryObjectDecorations,
                          Values("NoPerspective", "Flat", "Patch", "Centroid",
-                                "Sample", "Restrict", "Aliased", "Volatile",
-                                "Coherent", "XfbBuffer 1", "XfbStride 1"));
+                                "Component 0", "Sample", "Restrict", "Aliased",
+                                "Volatile", "Coherent", "Stream 0",
+                                "XfbBuffer 1", "XfbStride 1"));
 
 using VariableDecorations = spvtest::ValidateBase<std::string>;
 
@@ -656,9 +688,9 @@ OpDecorate %const )" + deco +
 
 INSTANTIATE_TEST_SUITE_P(ValidateVariableDecorations, VariableDecorations,
                          Values("Invariant", "Constant", "Location 0",
-                                "Component 0", "Index 0", "Binding 0",
-                                "DescriptorSet 0", "InputAttachmentIndex 0",
-                                "RestrictPointer", "AliasedPointer"));
+                                "Index 0", "Binding 0", "DescriptorSet 0",
+                                "InputAttachmentIndex 0", "RestrictPointer",
+                                "AliasedPointer"));
 
 using VulkanIOStorageClass =
     spvtest::ValidateBase<std::tuple<std::string, std::string>>;
@@ -738,6 +770,148 @@ INSTANTIATE_TEST_SUITE_P(ValidateVulkanResourceStorageClass,
                          Combine(Values("DescriptorSet", "Binding"),
                                  Values("Private", "Input", "Output",
                                         "Workgroup")));
+
+using VulkanInterpolationStorageClass = spvtest::ValidateBase<std::string>;
+
+TEST_P(VulkanInterpolationStorageClass, Input) {
+  const auto deco = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpCapability SampleRateShading
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %var )" + deco + R"(
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%void_fn = OpTypeFunction %void
+%ptr = OpTypePointer Input %float
+%var = OpVariable %ptr Input
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_P(VulkanInterpolationStorageClass, Output) {
+  const auto deco = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpCapability SampleRateShading
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpDecorate %var )" + deco + R"(
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%void_fn = OpTypeFunction %void
+%ptr = OpTypePointer Output %float
+%var = OpVariable %ptr Output
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_P(VulkanInterpolationStorageClass, Private) {
+  const auto deco = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpCapability SampleRateShading
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %var )" + deco + R"(
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%void_fn = OpTypeFunction %void
+%ptr = OpTypePointer Private %float
+%var = OpVariable %ptr Private
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("storage class must be Input or Output"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("[VUID-StandaloneSpirv-Flat-04670"));
+}
+
+TEST_P(VulkanInterpolationStorageClass, Uniform) {
+  const auto deco = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpCapability SampleRateShading
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %var )" + deco + R"(
+OpDecorate %var Binding 0
+OpDecorate %var DescriptorSet 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%void_fn = OpTypeFunction %void
+%ptr = OpTypePointer Uniform %float
+%var = OpVariable %ptr Uniform
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("storage class must be Input or Output"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("[VUID-StandaloneSpirv-Flat-04670"));
+}
+
+TEST_P(VulkanInterpolationStorageClass, StorageBuffer) {
+  const auto deco = GetParam();
+  const std::string text = R"(
+OpCapability Shader
+OpCapability SampleRateShading
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %var )" + deco + R"(
+OpDecorate %var Binding 0
+OpDecorate %var DescriptorSet 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%void_fn = OpTypeFunction %void
+%ptr = OpTypePointer StorageBuffer %float
+%var = OpVariable %ptr StorageBuffer
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("storage class must be Input or Output"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("[VUID-StandaloneSpirv-Flat-04670"));
+}
+
+INSTANTIATE_TEST_SUITE_P(ValidateVulkanInterpolationStorageClass,
+                         VulkanInterpolationStorageClass,
+                         Values("Flat", "NoPerspective", "Centroid", "Sample"));
 
 }  // namespace
 }  // namespace val
