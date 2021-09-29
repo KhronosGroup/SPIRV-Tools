@@ -64,6 +64,10 @@ void EliminateDeadMembersPass::FindLiveMembers() {
           MarkPointeeTypeAsFullUsed(inst.type_id());
           break;
         default:
+          // Ignore structured buffers as layout(offset) qualifiers cannot be
+          // applied to structure fields
+          if (inst.IsVulkanStorageBufferVariable())
+            MarkPointeeTypeAsFullUsed(inst.type_id());
           break;
       }
     }
