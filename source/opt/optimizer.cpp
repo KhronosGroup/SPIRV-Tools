@@ -320,6 +320,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateCombineAccessChainsPass());
   } else if (pass_name == "convert-local-access-chains") {
     RegisterPass(CreateLocalAccessChainConvertPass());
+  } else if (pass_name == "replace-descriptor-variable-index-access") {
+    RegisterPass(CreateReplaceDescriptorVariableIndexAccessPass());
   } else if (pass_name == "descriptor-scalar-replacement") {
     RegisterPass(CreateDescriptorScalarReplacementPass());
   } else if (pass_name == "eliminate-dead-code-aggressive") {
@@ -956,6 +958,11 @@ Optimizer::PassToken CreateFixStorageClassPass() {
 Optimizer::PassToken CreateGraphicsRobustAccessPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::GraphicsRobustAccessPass>());
+}
+
+Optimizer::PassToken CreateReplaceDescriptorVariableIndexAccessPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::ReplaceDescriptorVariableIndexAccess>());
 }
 
 Optimizer::PassToken CreateDescriptorScalarReplacementPass() {

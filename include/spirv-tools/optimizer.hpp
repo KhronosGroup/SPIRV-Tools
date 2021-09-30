@@ -833,6 +833,14 @@ Optimizer::PassToken CreateFixStorageClassPass();
 //   inclusive.
 Optimizer::PassToken CreateGraphicsRobustAccessPass();
 
+// Create a pass to replace descriptor access using variable index.
+// This pass replaces every access using a variable index to array variable
+// |desc| that has a DescriptorSet and Binding decorations with a constant
+// element of the array. In order to replace the access using a variable index
+// with the constant element, it uses a switch-case statement to determine the
+// value of the variable index for all the possible cases.
+Optimizer::PassToken CreateReplaceDescriptorVariableIndexAccessPass();
+
 // Create descriptor scalar replacement pass.
 // This pass replaces every array variable |desc| that has a DescriptorSet and
 // Binding decorations with a new variable for each element of the array.
