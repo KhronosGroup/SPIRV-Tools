@@ -517,7 +517,7 @@ void AggressiveDCEPass::InitializeWorkList(
       SpvOp op = ii->opcode();
       switch (op) {
         case SpvOpStore: {
-          uint32_t var_id;
+          uint32_t var_id = 0;
           (void)GetPtr(&*ii, &var_id);
           // Mark stores as live if their variable is not function scope
           // and is not private scope. Remember private stores for possible
@@ -531,7 +531,7 @@ void AggressiveDCEPass::InitializeWorkList(
         } break;
         case SpvOpCopyMemory:
         case SpvOpCopyMemorySized: {
-          uint32_t var_id;
+          uint32_t var_id = 0;
           (void)GetPtr(ii->GetSingleWordInOperand(kCopyMemoryTargetAddrInIdx),
                        &var_id);
           if (IsVarOfStorage(var_id, SpvStorageClassPrivate) ||
