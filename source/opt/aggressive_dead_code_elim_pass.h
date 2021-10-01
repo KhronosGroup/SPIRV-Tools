@@ -139,7 +139,7 @@ class AggressiveDCEPass : public MemPass {
   // Adds instructions which must be kept because of they have side-effects
   // that ADCE cannot model to the work list.
   void InitializeWorkList(Function* func,
-                          std::list<BasicBlock*>& structuredOrder);
+                          std::list<BasicBlock*>& structured_order);
 
   // Process each instruction in the work list by marking any instruction that
   // that it depends on as live, and adding it to the work list.  The work list
@@ -148,7 +148,7 @@ class AggressiveDCEPass : public MemPass {
 
   // Kills any instructions in |func| that have not been marked as live.
   bool KillDeadInstructions(const Function* func,
-                            std::list<BasicBlock*>& structuredOrder);
+                            std::list<BasicBlock*>& structured_order);
 
   // Adds the instructions that define the operands of |inst| to the work list.
   void AddOperandsToWorkList(const Instruction* inst);
