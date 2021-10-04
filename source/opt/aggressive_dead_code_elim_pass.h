@@ -139,7 +139,50 @@ class AggressiveDCEPass : public MemPass {
   // Adds instructions which must be kept because of they have side-effects
   // that ADCE cannot model to the work list.
   void InitializeWorkList(Function* func,
-                          std::list<BasicBlock*>& structuredOrder);
+                          std::list<BasicBlock*>& structured_order);
+
+  // Process each instruction in the work list by marking any instruction that
+  // that it depends on as live, and adding it to the work list.  The work list
+  // will be empty at the end.
+  void ProcessWorkList(Function* func);
+
+  // Kills any instructions in |func| that have not been marked as live.
+  bool KillDeadInstructions(const Function* func,
+                            std::list<BasicBlock*>& structured_order);
+
+  // Adds the instructions that define the operands of |inst| to the work list.
+  void AddOperandsToWorkList(const Instruction* inst);
+
+  // Marks all of the labels and branch that inst requires as live.
+  void MarkBlockAsLive(Instruction* inst);
+
+  // Marks any variables from which |inst| may require data as live.
+  void MarkLoadedVariablesAsLive(Function* opernad_id, Instruction* inst);
+
+  // Returns the id of the variable that |ptr_id| point to.  |ptr_id| must be a
+  // value whose type is a pointer.
+  uint32_t GetVariableId(uint32_t ptr_id);
+
+  // Returns all of the ids for the variables from which |inst| will load data.
+  std::vector<uint32_t> GetLoadedVariables(Instruction* inst);
+
+  // Returns all of the ids for the variables from which |inst| will load data.
+  // The opcode of |inst| must be  OpFunctionCall.
+  std::vector<uint32_t> GetLoadedVariablesFromFunctionCall(
+      const Instruction* inst);
+
+  // Returns the id of the variable from which |inst| will load data. |inst|
+  // must not be an OpFunctionCall.  Returns 0 if no data is read or the
+  // variable cannot be determined.  Note that in logical addressing mode the
+  // latter is not possible for function and private storage class because there
+  // cannot be variable pointers pointing to those storage classes.
+  uint32_t GetLoadedVariableFromNonFunctionCalls(Instruction* inst);
+
+  // Adds all decorations of |inst| to the work list.
+  void AddDecorationsToWorkList(const Instruction* inst);
+
+  // Adds all debug instruction associated with |inst| to the work list.
+  void AddDebugInstructionsToWorkList(const Instruction* inst);
 
   // Marks all of the OpFunctionParameter instructions in |func| as live.
   void MarkFunctionParameterAsLive(const Function* func);

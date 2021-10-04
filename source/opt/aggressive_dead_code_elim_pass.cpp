@@ -38,6 +38,7 @@ const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 const uint32_t kCopyMemoryTargetAddrInIdx = 0;
 const uint32_t kCopyMemorySourceAddrInIdx = 1;
+const uint32_t kLoadSourceAddrInIdx = 0;
 const uint32_t kDebugDeclareOperandVariableIndex = 5;
 const uint32_t kGlobalVariableVariableIndex = 12;
 
@@ -265,170 +266,36 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
 }
 
 bool AggressiveDCEPass::AggressiveDCE(Function* func) {
-  // Mark function parameters as live.
-  AddToWorklist(&func->DefInst());
-  MarkFunctionParameterAsLive(func);
-
-  std::list<BasicBlock*> structuredOrder;
-  cfg()->ComputeStructuredOrder(func, &*func->begin(), &structuredOrder);
-  bool modified = false;
+  std::list<BasicBlock*> structured_order;
+  cfg()->ComputeStructuredOrder(func, &*func->begin(), &structured_order);
   live_local_vars_.clear();
-  InitializeWorkList(func, structuredOrder);
+  InitializeWorkList(func, structured_order);
+  ProcessWorkList(func);
+  return KillDeadInstructions(func, structured_order);
+}
 
-  // Perform closure on live instruction set.
-  while (!worklist_.empty()) {
-    Instruction* liveInst = worklist_.front();
-    // Add all operand instructions of Debug[No]Lines
-    for (auto& lineInst : liveInst->dbg_line_insts()) {
-      if (lineInst.IsDebugLineInst()) {
-        lineInst.ForEachInId([this](const uint32_t* iid) {
-          AddToWorklist(get_def_use_mgr()->GetDef(*iid));
-        });
-      }
-    }
-    // Add all operand instructions if not already live
-    liveInst->ForEachInId([&liveInst, this](const uint32_t* iid) {
-      Instruction* inInst = get_def_use_mgr()->GetDef(*iid);
-      // Do not add label if an operand of a branch. This is not needed
-      // as part of live code discovery and can create false live code,
-      // for example, the branch to a header of a loop.
-      if (inInst->opcode() == SpvOpLabel && liveInst->IsBranch()) return;
-      AddToWorklist(inInst);
-    });
-    if (liveInst->type_id() != 0) {
-      AddToWorklist(get_def_use_mgr()->GetDef(liveInst->type_id()));
-    }
-    BasicBlock* basic_block = context()->get_instr_block(liveInst);
-    if (basic_block != nullptr) {
-      AddToWorklist(basic_block->GetLabelInst());
-    }
-
-    // If in a structured if or loop construct, add the controlling
-    // conditional branch and its merge.
-    BasicBlock* blk = context()->get_instr_block(liveInst);
-    Instruction* branchInst = GetHeaderBranch(blk);
-    if (branchInst != nullptr) {
-      AddToWorklist(branchInst);
-      Instruction* mergeInst = GetMergeInstruction(branchInst);
-      AddToWorklist(mergeInst);
-    }
-    // If the block is a header, add the next outermost controlling
-    // conditional branch and its merge.
-    Instruction* nextBranchInst = GetBranchForNextHeader(blk);
-    if (nextBranchInst != nullptr) {
-      AddToWorklist(nextBranchInst);
-      Instruction* mergeInst = GetMergeInstruction(nextBranchInst);
-      AddToWorklist(mergeInst);
-    }
-    // If local load, add all variable's stores if variable not already live
-    if (liveInst->opcode() == SpvOpLoad || liveInst->IsAtomicWithLoad()) {
-      uint32_t varId;
-      (void)GetPtr(liveInst, &varId);
-      if (varId != 0) {
-        ProcessLoad(func, varId);
-      }
-      // Process memory copies like loads
-    } else if (liveInst->opcode() == SpvOpCopyMemory ||
-               liveInst->opcode() == SpvOpCopyMemorySized) {
-      uint32_t varId;
-      (void)GetPtr(liveInst->GetSingleWordInOperand(kCopyMemorySourceAddrInIdx),
-                   &varId);
-      if (varId != 0) {
-        ProcessLoad(func, varId);
-      }
-      // If DebugDeclare, process as load of variable
-    } else if (liveInst->GetCommonDebugOpcode() ==
-               CommonDebugInfoDebugDeclare) {
-      uint32_t varId =
-          liveInst->GetSingleWordOperand(kDebugDeclareOperandVariableIndex);
-      ProcessLoad(func, varId);
-      // If DebugValue with Deref, process as load of variable
-    } else if (liveInst->GetCommonDebugOpcode() == CommonDebugInfoDebugValue) {
-      uint32_t varId = context()
-                           ->get_debug_info_mgr()
-                           ->GetVariableIdOfDebugValueUsedForDeclare(liveInst);
-      if (varId != 0) ProcessLoad(func, varId);
-      // If merge, add other branches that are part of its control structure
-    } else if (liveInst->opcode() == SpvOpLoopMerge ||
-               liveInst->opcode() == SpvOpSelectionMerge) {
-      AddBreaksAndContinuesToWorklist(liveInst);
-      // If function call, treat as if it loads from all pointer arguments
-    } else if (liveInst->opcode() == SpvOpFunctionCall) {
-      liveInst->ForEachInId([this, func](const uint32_t* iid) {
-        // Skip non-ptr args
-        if (!IsPtr(*iid)) return;
-        uint32_t varId;
-        (void)GetPtr(*iid, &varId);
-        ProcessLoad(func, varId);
-      });
-      // If function parameter, treat as if it's result id is loaded from
-    } else if (liveInst->opcode() == SpvOpFunctionParameter) {
-      ProcessLoad(func, liveInst->result_id());
-      // We treat an OpImageTexelPointer as a load of the pointer, and
-      // that value is manipulated to get the result.
-    } else if (liveInst->opcode() == SpvOpImageTexelPointer) {
-      uint32_t varId;
-      (void)GetPtr(liveInst, &varId);
-      if (varId != 0) {
-        ProcessLoad(func, varId);
-      }
-    }
-
-    // Add OpDecorateId instructions that apply to this instruction to the work
-    // list.  We use the decoration manager to look through the group
-    // decorations to get to the OpDecorate* instructions themselves.
-    auto decorations =
-        get_decoration_mgr()->GetDecorationsFor(liveInst->result_id(), false);
-    for (Instruction* dec : decorations) {
-      // We only care about OpDecorateId instructions because the are the only
-      // decorations that will reference an id that will have to be kept live
-      // because of that use.
-      if (dec->opcode() != SpvOpDecorateId) {
-        continue;
-      }
-      if (dec->GetSingleWordInOperand(1) ==
-          SpvDecorationHlslCounterBufferGOOGLE) {
-        // These decorations should not force the use id to be live.  It will be
-        // removed if either the target or the in operand are dead.
-        continue;
-      }
-      AddToWorklist(dec);
-    }
-
-    // Add DebugScope and DebugInlinedAt for |liveInst| to the work list.
-    if (liveInst->GetDebugScope().GetLexicalScope() != kNoDebugScope) {
-      auto* scope = get_def_use_mgr()->GetDef(
-          liveInst->GetDebugScope().GetLexicalScope());
-      AddToWorklist(scope);
-    }
-    if (liveInst->GetDebugInlinedAt() != kNoInlinedAt) {
-      auto* inlined_at =
-          get_def_use_mgr()->GetDef(liveInst->GetDebugInlinedAt());
-      AddToWorklist(inlined_at);
-    }
-    worklist_.pop();
-  }
-
-  // Kill dead instructions and remember dead blocks
-  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end();) {
-    uint32_t mergeBlockId = 0;
-    (*bi)->ForEachInst([this, &modified, &mergeBlockId](Instruction* inst) {
+bool AggressiveDCEPass::KillDeadInstructions(
+    const Function* func, std::list<BasicBlock*>& structured_order) {
+  bool modified = false;
+  for (auto bi = structured_order.begin(); bi != structured_order.end();) {
+    uint32_t merge_block_id = 0;
+    (*bi)->ForEachInst([this, &modified, &merge_block_id](Instruction* inst) {
       if (!IsDead(inst)) return;
       if (inst->opcode() == SpvOpLabel) return;
       // If dead instruction is selection merge, remember merge block
       // for new branch at end of block
       if (inst->opcode() == SpvOpSelectionMerge ||
           inst->opcode() == SpvOpLoopMerge)
-        mergeBlockId = inst->GetSingleWordInOperand(0);
+        merge_block_id = inst->GetSingleWordInOperand(0);
       to_kill_.push_back(inst);
       modified = true;
     });
     // If a structured if or loop was deleted, add a branch to its merge
     // block, and traverse to the merge block and continue processing there.
     // We know the block still exists because the label is not deleted.
-    if (mergeBlockId != 0) {
-      AddBranch(mergeBlockId, *bi);
-      for (++bi; (*bi)->id() != mergeBlockId; ++bi) {
+    if (merge_block_id != 0) {
+      AddBranch(merge_block_id, *bi);
+      for (++bi; (*bi)->id() != merge_block_id; ++bi) {
       }
 
       auto merge_terminator = (*bi)->terminator();
@@ -454,12 +321,185 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
       ++bi;
     }
   }
-
   return modified;
 }
 
+void AggressiveDCEPass::ProcessWorkList(Function* func) {
+  while (!worklist_.empty()) {
+    Instruction* live_inst = worklist_.front();
+    worklist_.pop();
+    AddOperandsToWorkList(live_inst);
+    MarkBlockAsLive(live_inst);
+    MarkLoadedVariablesAsLive(func, live_inst);
+    AddDecorationsToWorkList(live_inst);
+    AddDebugInstructionsToWorkList(live_inst);
+  }
+}
+
+void AggressiveDCEPass::AddDebugInstructionsToWorkList(
+    const Instruction* inst) {
+  for (auto& line_inst : inst->dbg_line_insts()) {
+    if (line_inst.IsDebugLineInst()) {
+      AddOperandsToWorkList(&line_inst);
+    }
+  }
+
+  if (inst->GetDebugScope().GetLexicalScope() != kNoDebugScope) {
+    auto* scope =
+        get_def_use_mgr()->GetDef(inst->GetDebugScope().GetLexicalScope());
+    AddToWorklist(scope);
+  }
+  if (inst->GetDebugInlinedAt() != kNoInlinedAt) {
+    auto* inlined_at = get_def_use_mgr()->GetDef(inst->GetDebugInlinedAt());
+    AddToWorklist(inlined_at);
+  }
+}
+
+void AggressiveDCEPass::AddDecorationsToWorkList(const Instruction* inst) {
+  // Add OpDecorateId instructions that apply to this instruction to the work
+  // list.  We use the decoration manager to look through the group
+  // decorations to get to the OpDecorate* instructions themselves.
+  auto decorations =
+      get_decoration_mgr()->GetDecorationsFor(inst->result_id(), false);
+  for (Instruction* dec : decorations) {
+    // We only care about OpDecorateId instructions because the are the only
+    // decorations that will reference an id that will have to be kept live
+    // because of that use.
+    if (dec->opcode() != SpvOpDecorateId) {
+      continue;
+    }
+    if (dec->GetSingleWordInOperand(1) ==
+        SpvDecorationHlslCounterBufferGOOGLE) {
+      // These decorations should not force the use id to be live.  It will be
+      // removed if either the target or the in operand are dead.
+      continue;
+    }
+    AddToWorklist(dec);
+  }
+}
+
+void AggressiveDCEPass::MarkLoadedVariablesAsLive(Function* func,
+                                                  Instruction* inst) {
+  std::vector<uint32_t> live_variables = GetLoadedVariables(inst);
+  for (uint32_t var_id : live_variables) {
+    ProcessLoad(func, var_id);
+  }
+}
+
+std::vector<uint32_t> AggressiveDCEPass::GetLoadedVariables(Instruction* inst) {
+  if (inst->opcode() == SpvOpFunctionCall) {
+    return GetLoadedVariablesFromFunctionCall(inst);
+  }
+  uint32_t var_id = GetLoadedVariableFromNonFunctionCalls(inst);
+  if (var_id == 0) {
+    return {};
+  }
+  return {var_id};
+}
+
+uint32_t AggressiveDCEPass::GetLoadedVariableFromNonFunctionCalls(
+    Instruction* inst) {
+  std::vector<uint32_t> live_variables;
+  if (inst->IsAtomicWithLoad()) {
+    return GetVariableId(inst->GetSingleWordInOperand(kLoadSourceAddrInIdx));
+  }
+
+  switch (inst->opcode()) {
+    case SpvOpLoad:
+    case SpvOpImageTexelPointer:
+      return GetVariableId(inst->GetSingleWordInOperand(kLoadSourceAddrInIdx));
+    case SpvOpCopyMemory:
+    case SpvOpCopyMemorySized:
+      return GetVariableId(
+          inst->GetSingleWordInOperand(kCopyMemorySourceAddrInIdx));
+    default:
+      break;
+  }
+
+  switch (inst->GetCommonDebugOpcode()) {
+    case CommonDebugInfoDebugDeclare:
+      return inst->GetSingleWordOperand(kDebugDeclareOperandVariableIndex);
+    case CommonDebugInfoDebugValue: {
+      analysis::DebugInfoManager* debug_info_mgr =
+          context()->get_debug_info_mgr();
+      return debug_info_mgr->GetVariableIdOfDebugValueUsedForDeclare(inst);
+    }
+    default:
+      break;
+  }
+  return 0;
+}
+
+std::vector<uint32_t> AggressiveDCEPass::GetLoadedVariablesFromFunctionCall(
+    const Instruction* inst) {
+  assert(inst->opcode() == SpvOpFunctionCall);
+  std::vector<uint32_t> live_variables;
+  inst->ForEachInId([this, &live_variables](const uint32_t* operand_id) {
+    if (!IsPtr(*operand_id)) return;
+    uint32_t var_id = GetVariableId(*operand_id);
+    live_variables.push_back(var_id);
+  });
+  return live_variables;
+}
+
+uint32_t AggressiveDCEPass::GetVariableId(uint32_t ptr_id) {
+  assert(IsPtr(ptr_id) &&
+         "Cannot get the variable when input is not a pointer.");
+  uint32_t varId = 0;
+  (void)GetPtr(ptr_id, &varId);
+  return varId;
+}
+
+void AggressiveDCEPass::MarkBlockAsLive(Instruction* inst) {
+  BasicBlock* basic_block = context()->get_instr_block(inst);
+  if (basic_block != nullptr) {
+    AddToWorklist(basic_block->GetLabelInst());
+  }
+
+  // If in a structured if or loop construct, add the controlling
+  // conditional branch and its merge.
+  BasicBlock* blk = context()->get_instr_block(inst);
+  Instruction* branchInst = GetHeaderBranch(blk);
+  if (branchInst != nullptr) {
+    AddToWorklist(branchInst);
+    Instruction* mergeInst = GetMergeInstruction(branchInst);
+    AddToWorklist(mergeInst);
+  }
+
+  // If the block is a header, add the next outermost controlling
+  // conditional branch and its merge.
+  Instruction* nextBranchInst = GetBranchForNextHeader(blk);
+  if (nextBranchInst != nullptr) {
+    AddToWorklist(nextBranchInst);
+    Instruction* mergeInst = GetMergeInstruction(nextBranchInst);
+    AddToWorklist(mergeInst);
+  }
+
+  if (inst->opcode() == SpvOpLoopMerge ||
+      inst->opcode() == SpvOpSelectionMerge) {
+    AddBreaksAndContinuesToWorklist(inst);
+  }
+}
+
+void AggressiveDCEPass::AddOperandsToWorkList(const Instruction* inst) {
+  inst->ForEachInId([&inst, this](const uint32_t* iid) {
+    Instruction* inInst = get_def_use_mgr()->GetDef(*iid);
+    // Do not add label if an operand of a branch. This is not needed
+    // as part of live code discovery and can create false live code,
+    // for example, the branch to a header of a loop.
+    if (inInst->opcode() == SpvOpLabel && inst->IsBranch()) return;
+    AddToWorklist(inInst);
+  });
+  if (inst->type_id() != 0) {
+    AddToWorklist(get_def_use_mgr()->GetDef(inst->type_id()));
+  }
+}
+
 void AggressiveDCEPass::InitializeWorkList(
-    Function* func, std::list<BasicBlock*>& structuredOrder) {
+    Function* func, std::list<BasicBlock*>& structured_order) {
+  AddToWorklist(&func->DefInst());
+  MarkFunctionParameterAsLive(func);
+
   // Add instructions with external side effects to the worklist. Also add
   // branches that are not attached to a structured construct.
   // TODO(s-perron): The handling of branch seems to be adhoc.  This needs to be
@@ -472,42 +512,42 @@ void AggressiveDCEPass::InitializeWorkList(
   // private-to-local pass should be able to change them to function scope.
   std::vector<Instruction*> private_stores;
 
-  for (auto bi = structuredOrder.begin(); bi != structuredOrder.end(); ++bi) {
-    for (auto ii = (*bi)->begin(); ii != (*bi)->end(); ++ii) {
+  for (auto& bi : structured_order) {
+    for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
       SpvOp op = ii->opcode();
       switch (op) {
         case SpvOpStore: {
-          uint32_t varId;
-          (void)GetPtr(&*ii, &varId);
+          uint32_t var_id = 0;
+          (void)GetPtr(&*ii, &var_id);
           // Mark stores as live if their variable is not function scope
           // and is not private scope. Remember private stores for possible
           // later inclusion.  We cannot call IsLocalVar at this point because
           // private_like_local_ has not been set yet.
-          if (IsVarOfStorage(varId, SpvStorageClassPrivate) ||
-              IsVarOfStorage(varId, SpvStorageClassWorkgroup))
+          if (IsVarOfStorage(var_id, SpvStorageClassPrivate) ||
+              IsVarOfStorage(var_id, SpvStorageClassWorkgroup))
             private_stores.push_back(&*ii);
-          else if (!IsVarOfStorage(varId, SpvStorageClassFunction))
+          else if (!IsVarOfStorage(var_id, SpvStorageClassFunction))
             AddToWorklist(&*ii);
         } break;
         case SpvOpCopyMemory:
         case SpvOpCopyMemorySized: {
-          uint32_t varId;
+          uint32_t var_id = 0;
           (void)GetPtr(ii->GetSingleWordInOperand(kCopyMemoryTargetAddrInIdx),
-                       &varId);
-          if (IsVarOfStorage(varId, SpvStorageClassPrivate) ||
-              IsVarOfStorage(varId, SpvStorageClassWorkgroup))
+                       &var_id);
+          if (IsVarOfStorage(var_id, SpvStorageClassPrivate) ||
+              IsVarOfStorage(var_id, SpvStorageClassWorkgroup))
             private_stores.push_back(&*ii);
-          else if (!IsVarOfStorage(varId, SpvStorageClassFunction))
+          else if (!IsVarOfStorage(var_id, SpvStorageClassFunction))
             AddToWorklist(&*ii);
         } break;
         case SpvOpSwitch:
         case SpvOpBranch:
         case SpvOpBranchConditional:
         case SpvOpUnreachable: {
-          bool branchRelatedToConstruct =
+          bool branch_related_to_construct =
               (GetMergeInstruction(&*ii) == nullptr &&
                GetHeaderBlock(context()->get_instr_block(&*ii)) == nullptr);
-          if (branchRelatedToConstruct) {
+          if (branch_related_to_construct) {
             AddToWorklist(&*ii);
           }
         } break;
@@ -601,9 +641,9 @@ void AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
     if (dbg.GetCommonDebugOpcode() != CommonDebugInfoDebugGlobalVariable)
       continue;
     dbg.ForEachInId([this](const uint32_t* iid) {
-      Instruction* inInst = get_def_use_mgr()->GetDef(*iid);
-      if (inInst->opcode() == SpvOpVariable) return;
-      AddToWorklist(inInst);
+      Instruction* in_inst = get_def_use_mgr()->GetDef(*iid);
+      if (in_inst->opcode() == SpvOpVariable) return;
+      AddToWorklist(in_inst);
     });
   }
 }
