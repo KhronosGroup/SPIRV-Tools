@@ -21,12 +21,13 @@
 #include "test/fuzzers/random_generator.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  if (size < 1) {
-    return 0;
+  spv_target_env target_env = SPV_ENV_UNIVERSAL_1_0;
+  if (size > 0) {
+    spvtools::fuzzers::RandomGenerator random_gen(data, size);
+    target_env = random_gen.GetTargetEnv();
   }
 
-  spvtools::fuzzers::RandomGenerator random_gen(data, size);
-  const spv_context context = spvContextCreate(random_gen.GetTargetEnv());
+  const spv_context context = spvContextCreate(target_env);
   if (context == nullptr) {
     return 0;
   }
