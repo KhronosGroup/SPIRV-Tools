@@ -87,23 +87,15 @@ RandomGenerator::RandomGenerator(const uint8_t* data, size_t size) {
 }
 
 spv_target_env RandomGenerator::GetTargetEnv() {
-  // SPV_ENV_WEBGPU_0 is intentionally omitted here, since it is deprecated and
-  // using it will cause asserts.
-  static const std::array<spv_target_env, 23> envs = {
-      SPV_ENV_UNIVERSAL_1_0,       SPV_ENV_VULKAN_1_0,
-      SPV_ENV_UNIVERSAL_1_1,       SPV_ENV_UNIVERSAL_1_2,
-      SPV_ENV_UNIVERSAL_1_3,       SPV_ENV_VULKAN_1_1,
-      SPV_ENV_OPENCL_1_2,          SPV_ENV_OPENCL_EMBEDDED_1_2,
-      SPV_ENV_OPENCL_2_0,          SPV_ENV_OPENCL_EMBEDDED_2_0,
-      SPV_ENV_OPENCL_EMBEDDED_2_1, SPV_ENV_OPENCL_EMBEDDED_2_2,
-      SPV_ENV_OPENCL_2_1,          SPV_ENV_OPENCL_2_2,
-      SPV_ENV_UNIVERSAL_1_4,       SPV_ENV_VULKAN_1_1_SPIRV_1_4,
-      SPV_ENV_UNIVERSAL_1_5,       SPV_ENV_VULKAN_1_2,
-      SPV_ENV_OPENGL_4_0,          SPV_ENV_OPENGL_4_1,
-      SPV_ENV_OPENGL_4_2,          SPV_ENV_OPENGL_4_3,
-      SPV_ENV_OPENGL_4_5};
+  spv_target_env result;
 
-  return envs[RandomUInt(&engine_, 0lu, envs.size())];
+  // Need to check that the generated value isn't for a deprecated target env.
+  do {
+    result = static_cast<spv_target_env>(
+        RandomUInt(&engine_, 0u, static_cast<unsigned int>(SPV_ENV_MAX)));
+  } while (!spvIsValidEnv(result));
+
+  return result;
 }
 
 uint64_t RandomGenerator::CalculateSeed(const uint8_t* data, size_t size) {
