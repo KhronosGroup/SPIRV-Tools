@@ -48,6 +48,7 @@ bool CheckAllImageOperandsHandled() {
     // Please update the validation rules in this module if you are changing
     // the list of image operands, and add new enum values to this switch.
     case SpvImageOperandsMaskNone:
+    case SpvImageOperandsOffsetsMask:
       return false;
     case SpvImageOperandsBiasMask:
     case SpvImageOperandsLodMask:
