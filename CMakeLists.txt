@@ -139,45 +139,10 @@ if (DEFINED SPIRV_TOOLS_EXTRA_DEFINITIONS)
   add_definitions(${SPIRV_TOOLS_EXTRA_DEFINITIONS})
 endif()
 
-# Library build setting definitions:
-#
-# * SPIRV_TOOLS_BUILD_STATIC - ON or OFF - Defaults to ON.
-#   If enabled the following targets will be created:
-#     ${SPIRV_TOOLS}-static - STATIC library.
-#                             Has full public symbol visibility.
-#     ${SPIRV_TOOLS}-shared - SHARED library.
-#                             Has default-hidden symbol visibility.
-#     ${SPIRV_TOOLS}        - will alias to one of above, based on BUILD_SHARED_LIBS.
-#   If disabled the following targets will be created:
-#     ${SPIRV_TOOLS}        - either STATIC or SHARED based on SPIRV_TOOLS_LIBRARY_TYPE.
-#                             Has full public symbol visibility.
-#     ${SPIRV_TOOLS}-shared - SHARED library.
-#                             Has default-hidden symbol visibility.
-#
-# * SPIRV_TOOLS_LIBRARY_TYPE - SHARED or STATIC.
-#   Specifies the library type used for building SPIRV-Tools libraries.
-#   Defaults to SHARED when BUILD_SHARED_LIBS=1, otherwise STATIC.
-#
-# * SPIRV_TOOLS_FULL_VISIBILITY - "${SPIRV_TOOLS}-static" or "${SPIRV_TOOLS}"
-#   Evaluates to the SPIRV_TOOLS target library name that has no hidden symbols.
-#   This is used by internal targets for accessing symbols that are non-public.
-#   Note this target provides no API stability guarantees.
-#
-# Ideally, all of these will go away - see https://github.com/KhronosGroup/SPIRV-Tools/issues/3909.
-option(SPIRV_TOOLS_BUILD_STATIC "Build ${SPIRV_TOOLS}-static target. ${SPIRV_TOOLS} will alias to ${SPIRV_TOOLS}-static or ${SPIRV_TOOLS}-shared based on BUILD_SHARED_LIBS" ON)
-if(SPIRV_TOOLS_BUILD_STATIC)
-  set(SPIRV_TOOLS_FULL_VISIBILITY ${SPIRV_TOOLS}-static)
-  set(SPIRV_TOOLS_LIBRARY_TYPE "STATIC")
-else(SPIRV_TOOLS_BUILD_STATIC)
-  set(SPIRV_TOOLS_FULL_VISIBILITY ${SPIRV_TOOLS})
-  if (NOT DEFINED SPIRV_TOOLS_LIBRARY_TYPE)
-      if(BUILD_SHARED_LIBS)
-        set(SPIRV_TOOLS_LIBRARY_TYPE "SHARED")
-      else()
-        set(SPIRV_TOOLS_LIBRARY_TYPE "STATIC")
-      endif()
-  endif()
-endif(SPIRV_TOOLS_BUILD_STATIC)
+option(SPIRV_INSTALL_STATIC_LIBS "Enable static libs" ON)
+option(BUILD_SHARED_LIBS "Enable shared libs" OFF)
+
+set(SPIRV_TOOLS_FULL_VISIBILITY ${SPIRV_TOOLS})
 
 function(spvtools_default_compile_options TARGET)
   target_compile_options(${TARGET} PRIVATE ${SPIRV_WARNINGS})
@@ -353,7 +318,6 @@ if (NOT "${SPIRV_SKIP_TESTS}")
 endif()
 
 set(SPIRV_LIBRARIES "-lSPIRV-Tools-opt -lSPIRV-Tools -lSPIRV-Tools-link")
-set(SPIRV_SHARED_LIBRARIES "-lSPIRV-Tools-shared")
 
 # Build pkg-config file
 # Use a first-class target so it's regenerated when relevant files are updated.
@@ -368,24 +332,14 @@ add_custom_target(spirv-tools-pkg-config ALL
                       -DSPIRV_LIBRARIES=${SPIRV_LIBRARIES}
                       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/write_pkg_config.cmake
         DEPENDS "CHANGES" "cmake/SPIRV-Tools.pc.in" "cmake/write_pkg_config.cmake")
-add_custom_target(spirv-tools-shared-pkg-config ALL
-        COMMAND ${CMAKE_COMMAND}
-                      -DCHANGES_FILE=${CMAKE_CURRENT_SOURCE_DIR}/CHANGES
-                      -DTEMPLATE_FILE=${CMAKE_CURRENT_SOURCE_DIR}/cmake/SPIRV-Tools-shared.pc.in
-                      -DOUT_FILE=${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools-shared.pc
-                      -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
-                      -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
-                      -DCMAKE_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}
-                      -DSPIRV_SHARED_LIBRARIES=${SPIRV_SHARED_LIBRARIES}
-                      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/write_pkg_config.cmake
-        DEPENDS "CHANGES" "cmake/SPIRV-Tools-shared.pc.in" "cmake/write_pkg_config.cmake")
 
 # Install pkg-config file
 if (ENABLE_SPIRV_TOOLS_INSTALL)
-  install(
-    FILES
-      ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools.pc
-      ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools-shared.pc
-    DESTINATION
-      ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+  if(BUILD_SHARED_LIBS OR SPIRV_TOOLS_INSTALL_STATIC_LIBS)
+    install(
+      FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools.pc
+      DESTINATION
+        ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+  endif()
 endif()

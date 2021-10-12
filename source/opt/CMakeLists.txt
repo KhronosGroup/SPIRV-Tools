@@ -233,34 +233,61 @@ endif()
 
 spvtools_pch(SPIRV_TOOLS_OPT_SOURCES pch_source_opt)
 
-add_library(SPIRV-Tools-opt ${SPIRV_TOOLS_LIBRARY_TYPE} ${SPIRV_TOOLS_OPT_SOURCES})
+add_library(SPIRV-Tools-opt STATIC ${SPIRV_TOOLS_OPT_SOURCES})
+if(SPIRV_INSTALL_STATIC_LIBS)
+  set(SPIRV_TOOLS_OPT_STATIC SPIRV-Tools-opt)
+endif()
 
-spvtools_default_compile_options(SPIRV-Tools-opt)
-target_include_directories(SPIRV-Tools-opt
-  PUBLIC
-	$<BUILD_INTERFACE:${spirv-tools_SOURCE_DIR}/include>
-	$<BUILD_INTERFACE:${SPIRV_HEADER_INCLUDE_DIR}>
-	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  PRIVATE ${spirv-tools_BINARY_DIR}
-)
+if(BUILD_SHARED_LIBS)
+  add_library(SPIRV-Tools-opt-shared SHARED ${SPIRV_TOOLS_OPT_SOURCES})
+  set(SPIRV_TOOLS_OPT_SHARED SPIRV-Tools-opt-shared)
+endif()
+
+spvtools_default_compile_options(SPIRV-Tools-opt ${SPIRV_TOOLS_OPT_SHARED})
+
+set(SPIRV_TOOLS_OPT_TARGET SPIRV-Tools-opt ${SPIRV_TOOLS_OPT_SHARED})
+
+foreach(target ${SPIRV_TOOLS_OPT_TARGET})
+  target_include_directories(${target}
+    PUBLIC
+      $<BUILD_INTERFACE:${spirv-tools_SOURCE_DIR}/include>
+      $<BUILD_INTERFACE:${SPIRV_HEADER_INCLUDE_DIR}>
+      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    PRIVATE ${spirv-tools_BINARY_DIR}
+  )
+endforeach()
+
 # We need the assembling and disassembling functionalities in the main library.
 target_link_libraries(SPIRV-Tools-opt
   PUBLIC ${SPIRV_TOOLS_FULL_VISIBILITY})
 
-set_property(TARGET SPIRV-Tools-opt PROPERTY FOLDER "SPIRV-Tools libraries")
-spvtools_check_symbol_exports(SPIRV-Tools-opt)
+if(BUILD_SHARED_LIBS)
+  target_link_libraries(SPIRV-Tools-opt-shared
+    PUBLIC ${SPIRV_TOOLS_FULL_VISIBILITY}-shared)
+endif()
+
+set_property(TARGET SPIRV-Tools-opt ${SPIRV_TOOLS_OPT_SHARED} PROPERTY FOLDER "SPIRV-Tools libraries")
+spvtools_check_symbol_exports(SPIRV-Tools-opt ${SPIRV_TOOLS_OPT_SHARED})
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
-  install(TARGETS SPIRV-Tools-opt EXPORT SPIRV-Tools-optTargets
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-  export(EXPORT SPIRV-Tools-optTargets FILE SPIRV-Tools-optTargets.cmake)
+  if(BUILD_SHARED_LIBS OR SPIRV_INSTALL_STATIC_LIBS)
+    if(BUILD_SHARED_LIBS)
+      set_target_properties(SPIRV-Tools-opt-shared PROPERTIES OUTPUT_NAME SPIRV-Tools-opt)
+    endif()
+    if(NOT SPIRV_INSTALL_STATIC_LIBS)
+        set_target_properties(SPIRV-Tools-opt-shared PROPERTIES EXPORT_NAME SPIRV-Tools-opt)
+    endif()
+    install(TARGETS ${SPIRV_TOOLS_OPT_STATIC} ${SPIRV_TOOLS_OPT_SHARED} EXPORT SPIRV-Tools-optTarget
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    export(EXPORT SPIRV-Tools-optTarget FILE SPIRV-Tools-optTargets.cmake)
 
-  spvtools_config_package_dir(SPIRV-Tools-opt PACKAGE_DIR)
-  install(EXPORT SPIRV-Tools-optTargets FILE SPIRV-Tools-optTargets.cmake
-  	DESTINATION ${PACKAGE_DIR})
+    spvtools_config_package_dir(SPIRV-Tools-opt PACKAGE_DIR)
+    install(EXPORT SPIRV-Tools-optTarget FILE SPIRV-Tools-optTargets.cmake
+      DESTINATION ${PACKAGE_DIR})
 
-  spvtools_generate_config_file(SPIRV-Tools-opt)
-  install(FILES ${CMAKE_BINARY_DIR}/SPIRV-Tools-optConfig.cmake DESTINATION ${PACKAGE_DIR})
+    spvtools_generate_config_file(SPIRV-Tools-opt)
+    install(FILES ${CMAKE_BINARY_DIR}/SPIRV-Tools-optConfig.cmake DESTINATION ${PACKAGE_DIR})
+  endif()
 endif(ENABLE_SPIRV_TOOLS_INSTALL)

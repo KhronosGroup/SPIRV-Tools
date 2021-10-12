@@ -166,11 +166,20 @@ add_spvtools_unittest(
   SRCS c_interface_test.cpp
   LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
 
-add_spvtools_unittest(
-  TARGET c_interface_shared
-  SRCS c_interface_test.cpp
-  LIBS ${SPIRV_TOOLS}-shared
-  ENVIRONMENT PATH=$<TARGET_FILE_DIR:${SPIRV_TOOLS}-shared>)
+if(BUILD_SHARED_LIBS AND NOT SPIRV_INSTALL_STATIC_LIBS)
+  add_spvtools_unittest(
+    TARGET c_interface_shared
+    SRCS c_interface_test.cpp
+    LIBS ${SPIRV_TOOLS}
+    ENVIRONMENT PATH=$<TARGET_FILE_DIR:${SPIRV_TOOLS}>)
+endif()
+if(BUILD_SHARED_LIBS AND SPIRV_INSTALL_STATIC_LIBS)
+  add_spvtools_unittest(
+    TARGET c_interface_shared
+    SRCS c_interface_test.cpp
+    LIBS ${SPIRV_TOOLS}
+    ENVIRONMENT PATH=$<TARGET_FILE_DIR:${SPIRV_TOOLS}-shared>)
+endif()
 
 add_spvtools_unittest(
   TARGET cpp_interface

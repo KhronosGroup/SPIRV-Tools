@@ -82,35 +82,63 @@ endif()
 
 spvtools_pch(SPIRV_TOOLS_REDUCE_SOURCES pch_source_reduce)
 
-add_library(SPIRV-Tools-reduce ${SPIRV_TOOLS_LIBRARY_TYPE} ${SPIRV_TOOLS_REDUCE_SOURCES})
+add_library(SPIRV-Tools-reduce STATIC ${SPIRV_TOOLS_REDUCE_SOURCES})
+if(SPIRV_INSTALL_STATIC_LIBS)
+  set(SPIRV_TOOLS_REDUCE_STATIC SPIRV-Tools-reduce)
+endif()
 
-spvtools_default_compile_options(SPIRV-Tools-reduce)
-target_include_directories(SPIRV-Tools-reduce
-  PUBLIC
-	$<BUILD_INTERFACE:${spirv-tools_SOURCE_DIR}/include>
-	$<BUILD_INTERFACE:${SPIRV_HEADER_INCLUDE_DIR}>
-	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  PRIVATE ${spirv-tools_BINARY_DIR}
-)
+if(BUILD_SHARED_LIBS)
+  add_library(SPIRV-Tools-reduce-shared SHARED ${SPIRV_TOOLS_REDUCE_SOURCES})
+  set(SPIRV_TOOLS_REDUCE_SHARED SPIRV-Tools-reduce-shared)
+endif()
+
+spvtools_default_compile_options(SPIRV-Tools-reduce ${SPIRV_TOOLS_REDUCE_SHARED})
+
+set(SPIRV_TOOLS_REDUCE_TARGET SPIRV-Tools-reduce ${SPIRV_TOOLS_REDUCE_SHARED})
+
+foreach(target ${SPIRV_TOOLS_REDUCE_TARGET})
+  target_include_directories(${target}
+    PUBLIC
+      $<BUILD_INTERFACE:${spirv-tools_SOURCE_DIR}/include>
+      $<BUILD_INTERFACE:${SPIRV_HEADER_INCLUDE_DIR}>
+      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    PRIVATE ${spirv-tools_BINARY_DIR}
+  )
+endforeach()
+
 # The reducer reuses a lot of functionality from the SPIRV-Tools library.
 target_link_libraries(SPIRV-Tools-reduce
   PUBLIC ${SPIRV_TOOLS_FULL_VISIBILITY}
   PUBLIC SPIRV-Tools-opt)
 
-set_property(TARGET SPIRV-Tools-reduce PROPERTY FOLDER "SPIRV-Tools libraries")
-spvtools_check_symbol_exports(SPIRV-Tools-reduce)
+if(BUILD_SHARED_LIBS)
+  target_link_libraries(SPIRV-Tools-reduce-shared
+    PUBLIC ${SPIRV_TOOLS_FULL_VISIBILITY}-shared
+    PUBLIC SPIRV-Tools-opt-shared)
+endif()
+
+set_property(TARGET SPIRV-Tools-reduce ${SPIRV_TOOLS_REDUCE_SHARED} PROPERTY FOLDER "SPIRV-Tools libraries")
+spvtools_check_symbol_exports(SPIRV-Tools-reduce ${SPIRV_TOOLS_REDUCE_SHARED})
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
-  install(TARGETS SPIRV-Tools-reduce EXPORT SPIRV-Tools-reduceTargets
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-  export(EXPORT SPIRV-Tools-reduceTargets FILE SPIRV-Tools-reduceTarget.cmake)
+  if(BUILD_SHARED_LIBS OR SPIRV_INSTALL_STATIC_LIBS)
+    if(BUILD_SHARED_LIBS)
+      set_target_properties(SPIRV-Tools-reduce-shared PROPERTIES OUTPUT_NAME SPIRV-Tools-reduce)
+    endif()
+    if(NOT SPIRV_INSTALL_STATIC_LIBS)
+        set_target_properties(SPIRV-Tools-reduce-shared PROPERTIES EXPORT_NAME SPIRV-Tools-reduce)
+    endif()
+    install(TARGETS ${SPIRV_TOOLS_REDUCE_STATIC} ${SPIRV_TOOLS_REDUCE_SHARED} EXPORT SPIRV-Tools-reduceTarget
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    export(EXPORT SPIRV-Tools-reduceTarget FILE SPIRV-Tools-reduceTargets.cmake)
 
-  spvtools_config_package_dir(SPIRV-Tools-reduce PACKAGE_DIR)
-  install(EXPORT SPIRV-Tools-reduceTargets FILE SPIRV-Tools-reduceTarget.cmake
-  	DESTINATION ${PACKAGE_DIR})
+    spvtools_config_package_dir(SPIRV-Tools-reduce PACKAGE_DIR)
+    install(EXPORT SPIRV-Tools-reduceTarget FILE SPIRV-Tools-reduceTargets.cmake
+      DESTINATION ${PACKAGE_DIR})
 
-  spvtools_generate_config_file(SPIRV-Tools-reduce)
-  install(FILES ${CMAKE_BINARY_DIR}/SPIRV-Tools-reduceConfig.cmake DESTINATION ${PACKAGE_DIR})
+    spvtools_generate_config_file(SPIRV-Tools-reduce)
+    install(FILES ${CMAKE_BINARY_DIR}/SPIRV-Tools-reduceConfig.cmake DESTINATION ${PACKAGE_DIR})
+  endif()
 endif(ENABLE_SPIRV_TOOLS_INSTALL)

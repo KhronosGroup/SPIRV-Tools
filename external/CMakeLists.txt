@@ -74,9 +74,10 @@ if (NOT ${SPIRV_SKIP_TESTS})
           "Use shared (DLL) run-time lib even when Google Test is built as static lib."
           ON)
       endif()
-      # gtest requires special defines for building as a shared
+      # Gtest requires special defines for building as a shared
       # library, simply always build as static.
       push_variable(BUILD_SHARED_LIBS 0)
+      set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disable build shared libs")
       add_subdirectory(${GMOCK_DIR} EXCLUDE_FROM_ALL)
       pop_variable(BUILD_SHARED_LIBS)
     endif()
@@ -102,7 +103,10 @@ if (NOT ${SPIRV_SKIP_TESTS})
     # If we are configuring RE2, then turn off its testing.  It takes a long time and
     # does not add much value for us.  If an enclosing project configured RE2, then it
     # has already chosen whether to enable RE2 testing.
-    set(RE2_BUILD_TESTING OFF CACHE STRING "Run RE2 Tests")
+    set(RE2_BUILD_TESTING OFF CACHE BOOL "Run RE2 Tests")
+    # Build static RE2. do less problems if run the test when you have already RE2
+    # in the system and have different library version.
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disable build shared libs")
     if (NOT RE2_SOURCE_DIR)
       if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/re2)
         set(RE2_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/re2" CACHE STRING "RE2 source dir" )
@@ -125,7 +129,10 @@ if (NOT ${SPIRV_SKIP_TESTS})
       if (NOT TARGET effcee)
         set(EFFCEE_BUILD_TESTING OFF CACHE BOOL "Do not build Effcee test suite")
       endif()
-      push_variable(BUILD_SHARED_LIBS 0) # effcee does not export any symbols for building as a DLL. Always build as static.
+      # Effcee does not export any symbols for building as a DLL. Always build as static.
+      push_variable(BUILD_SHARED_LIBS 0)
+      # Expands this if include RE2 in the effcee third_party folder
+      set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disable build shared libs")
       add_subdirectory(effcee EXCLUDE_FROM_ALL)
       pop_variable(BUILD_SHARED_LIBS)
       set_property(TARGET effcee PROPERTY FOLDER Effcee)
