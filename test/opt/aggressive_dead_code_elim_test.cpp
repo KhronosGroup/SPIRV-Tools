@@ -7246,6 +7246,104 @@ TEST_F(AggressiveDCETest, ShaderDebugInfoKeepInFunctionElimStoreVar) {
   SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
 }
 
+TEST_F(AggressiveDCETest, ShaderDebugInfoGlobalDCE) {
+  // Verify that DebugGlobalVariable for eliminated private variable has
+  // variable operand replaced with DebugInfoNone.
+
+  const std::string text = R"(OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %MainPs "MainPs" %out_var_SV_Target0 %a
+OpExecutionMode %MainPs OriginUpperLeft
+%5 = OpString "source2.hlsl"
+%24 = OpString "float"
+%29 = OpString "vColor"
+%33 = OpString "PS_OUTPUT"
+%37 = OpString "MainPs"
+%38 = OpString ""
+%42 = OpString "ps_output"
+%46 = OpString "a"
+OpName %a "a"
+OpName %out_var_SV_Target0 "out.var.SV_Target0"
+OpName %MainPs "MainPs"
+OpName %PS_OUTPUT "PS_OUTPUT"
+OpMemberName %PS_OUTPUT 0 "vColor"
+OpDecorate %out_var_SV_Target0 Location 0
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%8 = OpConstantNull %v4float
+%float_0 = OpConstant %float 0
+%10 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%_ptr_Private_v4float = OpTypePointer Private %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%void = OpTypeVoid
+%uint_1 = OpConstant %uint 1
+%uint_4 = OpConstant %uint 4
+%uint_5 = OpConstant %uint 5
+%uint_3 = OpConstant %uint 3
+%uint_0 = OpConstant %uint 0
+%uint_128 = OpConstant %uint 128
+%uint_12 = OpConstant %uint 12
+%uint_8 = OpConstant %uint 8
+%uint_9 = OpConstant %uint 9
+%uint_10 = OpConstant %uint 10
+%uint_15 = OpConstant %uint 15
+%48 = OpTypeFunction %void
+%PS_OUTPUT = OpTypeStruct %v4float
+%54 = OpTypeFunction %PS_OUTPUT
+%_ptr_Function_PS_OUTPUT = OpTypePointer Function %PS_OUTPUT
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%a = OpVariable %_ptr_Private_v4float Private
+;CHECK-NOT: %a = OpVariable %_ptr_Private_v4float Private
+%out_var_SV_Target0 = OpVariable %_ptr_Output_v4float Output
+;CHECK: [[dbg_none:%\w+]] = OpExtInst %void %1 DebugInfoNone
+%18 = OpExtInst %void %1 DebugExpression
+%19 = OpExtInst %void %1 DebugSource %5
+%20 = OpExtInst %void %1 DebugCompilationUnit %uint_1 %uint_4 %19 %uint_5
+%25 = OpExtInst %void %1 DebugTypeBasic %24 %uint_32 %uint_3 %uint_0
+%28 = OpExtInst %void %1 DebugTypeVector %25 %uint_4
+%31 = OpExtInst %void %1 DebugTypeMember %29 %28 %19 %uint_5 %uint_12 %uint_0 %uint_128 %uint_3
+%34 = OpExtInst %void %1 DebugTypeComposite %33 %uint_1 %19 %uint_3 %uint_8 %20 %33 %uint_128 %uint_3 %31
+%36 = OpExtInst %void %1 DebugTypeFunction %uint_3 %34
+%39 = OpExtInst %void %1 DebugFunction %37 %36 %19 %uint_8 %uint_1 %20 %38 %uint_3 %uint_9
+%41 = OpExtInst %void %1 DebugLexicalBlock %19 %uint_9 %uint_1 %39
+%43 = OpExtInst %void %1 DebugLocalVariable %42 %34 %19 %uint_10 %uint_15 %41 %uint_4
+%47 = OpExtInst %void %1 DebugGlobalVariable %46 %28 %19 %uint_1 %uint_15 %20 %46 %a %uint_8
+;CHECK: %47 = OpExtInst %void %1 DebugGlobalVariable %46 %28 %19 %uint_1 %uint_15 %20 %46 [[dbg_none]] %uint_8
+%MainPs = OpFunction %void None %48
+%49 = OpLabel
+%65 = OpVariable %_ptr_Function_PS_OUTPUT Function
+%66 = OpVariable %_ptr_Function_PS_OUTPUT Function
+OpStore %a %8
+%72 = OpExtInst %void %1 DebugScope %41
+%69 = OpExtInst %void %1 DebugDeclare %43 %65 %18
+OpLine %5 11 5
+%70 = OpAccessChain %_ptr_Function_v4float %65 %int_0
+OpStore %70 %10
+OpLine %5 12 12
+%71 = OpLoad %PS_OUTPUT %65
+OpLine %5 12 5
+OpStore %66 %71
+%73 = OpExtInst %void %1 DebugNoLine
+%74 = OpExtInst %void %1 DebugNoScope
+%51 = OpLoad %PS_OUTPUT %66
+%53 = OpCompositeExtract %v4float %51 0
+OpStore %out_var_SV_Target0 %53
+OpLine %5 13 1
+OpReturn
+OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_2);
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
+}
+
 TEST_F(AggressiveDCETest, DebugInfoDeclareKeepsStore) {
   // Verify that local variable tc and its store are kept by DebugDeclare.
   //

@@ -636,15 +636,24 @@ void AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
   }
 
   // For each DebugInfo GlobalVariable keep all operands except the Variable.
-  // Later, if the variable is dead, we will set the operand to DebugInfoNone.
+  // Later, if the variable is killed with KillInst(), we will set the operand
+  // to DebugInfoNone. Create and save DebugInfoNone now for this possible
+  // later use. This is slightly unoptimal, but it avoids generating it during
+  // instruction killing when the module is not consistent.
+  bool debug_global_seen = false;
   for (auto& dbg : get_module()->ext_inst_debuginfo()) {
     if (dbg.GetCommonDebugOpcode() != CommonDebugInfoDebugGlobalVariable)
       continue;
+    debug_global_seen = true;
     dbg.ForEachInId([this](const uint32_t* iid) {
       Instruction* in_inst = get_def_use_mgr()->GetDef(*iid);
       if (in_inst->opcode() == SpvOpVariable) return;
       AddToWorklist(in_inst);
     });
+  }
+  if (debug_global_seen) {
+    auto dbg_none = context()->get_debug_info_mgr()->GetDebugInfoNone();
+    AddToWorklist(dbg_none);
   }
 }
 
