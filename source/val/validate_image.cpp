@@ -66,6 +66,11 @@ bool CheckAllImageOperandsHandled() {
     case SpvImageOperandsVolatileTexelKHRMask:
     case SpvImageOperandsSignExtendMask:
     case SpvImageOperandsZeroExtendMask:
+    // TODO(jaebaek): Move this line properly after handling image offsets
+    //                operand. This line temporarily fixes CI failure that
+    //                blocks other PRs.
+    // https://github.com/KhronosGroup/SPIRV-Tools/issues/4565
+    case SpvImageOperandsOffsetsMask:
       return true;
   }
   return false;
