@@ -1410,6 +1410,68 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 
+TEST_F(ValidateInterfacesTest, VulkanLocationArrayWithComponent1) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Location 0
+OpMemberDecorate %struct 0 Component 0
+OpMemberDecorate %struct 1 Location 0
+OpMemberDecorate %struct 1 Component 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 0
+%int_2 = OpConstant %int 2
+%float_arr = OpTypeArray %float %int_2
+%struct = OpTypeStruct %float_arr %float_arr
+%ptr = OpTypePointer Input %struct
+%in = OpVariable %ptr Input
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanLocationArrayWithComponent2) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Float64
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Location 0
+OpMemberDecorate %struct 0 Component 0
+OpMemberDecorate %struct 1 Location 0
+OpMemberDecorate %struct 1 Component 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%double = OpTypeFloat 64
+%int = OpTypeInt 32 0
+%int_2 = OpConstant %int 2
+%double_arr = OpTypeArray %double %int_2
+%struct = OpTypeStruct %float %double_arr
+%ptr = OpTypePointer Input %struct
+%in = OpVariable %ptr Input
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
 TEST_F(ValidateInterfacesTest, DuplicateInterfaceVariableSuccess) {
   const std::string text = R"(
 OpCapability Shader
