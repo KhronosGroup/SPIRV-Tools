@@ -201,7 +201,8 @@ uint32_t NumConsumedComponents(ValidationState_t& _, const Instruction* type) {
       break;
     case SpvOpTypeArray:
       // Skip the array.
-      return NumConsumedComponents(_, _.FindDef(type->GetOperandAs<uint32_t>(1)));
+      return NumConsumedComponents(_,
+                                   _.FindDef(type->GetOperandAs<uint32_t>(1)));
     default:
       // This is an error that is validated elsewhere.
       break;
