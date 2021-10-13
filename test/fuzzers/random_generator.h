@@ -44,7 +44,7 @@ class RandomGenerator {
   /// @param size - number of elements in |data|, must be > 0
   static uint64_t CalculateSeed(const uint8_t* data, size_t size);
 
-  /// Get random target env.
+  /// Get random valid target env.
   spv_target_env GetTargetEnv();
 
  private:
