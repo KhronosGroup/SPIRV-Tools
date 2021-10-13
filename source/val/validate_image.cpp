@@ -286,13 +286,14 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
   // the module to be invalid.
   if (mask == 0) return SPV_SUCCESS;
 
-  if (spvtools::utils::CountSetBits(
-          mask & (SpvImageOperandsOffsetMask | SpvImageOperandsConstOffsetMask |
-                  SpvImageOperandsConstOffsetsMask)) > 1) {
+  if (spvtools::utils::CountSetBits(mask & (SpvImageOperandsOffsetMask |
+                                            SpvImageOperandsConstOffsetMask |
+                                            SpvImageOperandsConstOffsetsMask |
+                                            SpvImageOperandsOffsetsMask)) > 1) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << _.VkErrorID(4662)
-           << "Image Operands Offset, ConstOffset, ConstOffsets cannot be used "
-           << "together";
+           << "Image Operands Offset, ConstOffset, ConstOffsets, Offsets "
+              "cannot be used together";
   }
 
   const bool is_implicit_lod = IsImplicitLod(opcode);
@@ -623,6 +624,10 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     // void, and the Format is Unknown.
     // In Vulkan, the texel type is only known in all cases by the pipeline
     // setup.
+  }
+
+  if (mask & SpvImageOperandsOffsetsMask) {
+    // TODO: add validation
   }
 
   return SPV_SUCCESS;
