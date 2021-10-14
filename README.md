@@ -53,7 +53,7 @@ These versions undergo extra testing.
 Releases are not directly related to releases (or versions) of
 [SPIRV-Headers][spirv-headers].
 Releases of SPIRV-Tools are tested against the version of SPIRV-Headers listed
-in the DEPS file.
+in the [DEPS](DEPS) file.
 The release generally uses the most recent compatible version of SPIRV-Headers
 available at the time of release.
 No version of SPIRV-Headers other than the one listed in the DEPS file is
@@ -256,6 +256,34 @@ Contributions via merge request are welcome. Changes should:
 
 We intend to maintain a linear history on the GitHub `master` branch.
 
+### Getting the source
+
+Example of getting sources, assuming SPIRV-Tools is configured as a standalone project:
+
+    git clone https://github.com/KhronosGroup/SPIRV-Tools.git   spirv-tools
+    cd spirv-tools
+
+    # Check out sources for dependencies, at versions known to work together,
+    # as listed in the DEPS file.
+    python3 utils/git-sync-deps
+
+For some kinds of development, you may need the latest sources from the third-party projects:
+
+    git clone https://github.com/KhronosGroup/SPIRV-Headers.git spirv-tools/external/spirv-headers
+    git clone https://github.com/google/googletest.git          spirv-tools/external/googletest
+    git clone https://github.com/google/effcee.git              spirv-tools/external/effcee
+    git clone https://github.com/google/re2.git                 spirv-tools/external/re2
+
+#### Dependency on Effcee
+
+Some tests depend on the [Effcee][effcee] library for stateful matching.
+Effcee itself depends on [RE2][re2].
+
+* If SPIRV-Tools is configured as part of a larger project that already uses
+  Effcee, then that project should include Effcee before SPIRV-Tools.
+* Otherwise, SPIRV-Tools expects Effcee sources to appear in `external/effcee`
+  and RE2 sources to appear in `external/re2`.
+
 ### Source code organization
 
 * `example`: demo code of using SPIRV-Tools APIs
@@ -274,14 +302,6 @@ We intend to maintain a linear history on the GitHub `master` branch.
 * `test/`: Tests, using the [googletest][googletest] framework
 * `tools/`: Command line executables
 
-Example of getting sources, assuming SPIRV-Tools is configured as a standalone project:
-
-    git clone https://github.com/KhronosGroup/SPIRV-Tools.git   spirv-tools
-    git clone https://github.com/KhronosGroup/SPIRV-Headers.git spirv-tools/external/spirv-headers
-    git clone https://github.com/google/googletest.git          spirv-tools/external/googletest
-    git clone https://github.com/google/effcee.git              spirv-tools/external/effcee
-    git clone https://github.com/google/re2.git                 spirv-tools/external/re2
-
 ### Tests
 
 The project contains a number of tests, used to drive development
@@ -295,46 +315,12 @@ tests:
   `googletest` source into the `<spirv-dir>/external/googletest` directory before
   configuring and building the project.
 
-*Note*: You must use a version of googletest that includes
-[a fix][googletest-pull-612] for [googletest issue 610][googletest-issue-610].
-The fix is included on the googletest master branch any time after 2015-11-10.
-In particular, googletest must be newer than version 1.7.0.
-
-### Dependency on Effcee
-
-Some tests depend on the [Effcee][effcee] library for stateful matching.
-Effcee itself depends on [RE2][re2].
-
-* If SPIRV-Tools is configured as part of a larger project that already uses
-  Effcee, then that project should include Effcee before SPIRV-Tools.
-* Otherwise, SPIRV-Tools expects Effcee sources to appear in `external/effcee`
-  and RE2 sources to appear in `external/re2`.
-
-
 ## Build
 
-Instead of building manually, you can also download the binaries for your
-platform directly from the [master-tot release][master-tot-release] on GitHub.
-Those binaries are automatically uploaded by the buildbots after successful
-testing and they always reflect the current top of the tree of the master
-branch.
+*Note*: Prebuilt binaries are available from the [downloads](docs/downloads.md) page.
 
-In order to build the code, you first need to sync the external repositories
-that it depends on. Assume that `<spirv-dir>` is the root directory of the
-checked out code:
-
-```sh
-cd <spirv-dir>
-git clone https://github.com/KhronosGroup/SPIRV-Headers.git external/spirv-headers
-git clone https://github.com/google/effcee.git external/effcee
-git clone https://github.com/google/re2.git external/re2
-git clone https://github.com/google/googletest.git external/googletest # optional
-
-```
-
-*Note*:
-The script `utils/git-sync-deps` can be used to checkout and/or update the
-contents of the repos under `external/` instead of manually maintaining them.
+First [get the sources](#getting-the-source).
+Then build using CMake, Bazel, or Android ndk-build.
 
 ### Build using CMake
 You can build the project using [CMake][cmake]:
@@ -435,7 +421,7 @@ via setting `SPIRV_TOOLS_EXTRA_DEFINITIONS`. For example, by setting it to
 `/D_ITERATOR_DEBUG_LEVEL=0` on Windows, you can disable checked iterators and
 iterator debugging.
 
-### Android
+### Android ndk-build
 
 SPIR-V Tools supports building static libraries `libSPIRV-Tools.a` and
 `libSPIRV-Tools-opt.a` for Android:
@@ -456,7 +442,8 @@ $ANDROID_NDK/ndk-build -C ../android_test     \
 ```
 
 ### Updating DEPS
-Occasionally the entries in DEPS will need to be updated. This is done on demand
+
+Occasionally the entries in [DEPS](DEPS) will need to be updated. This is done on demand
 when there is a request to do this, often due to downstream breakages. There is
 a script `utils/roll_deps.sh` provided, which will generate a patch with the
 updated DEPS values. This will still need to be tested in your checkout to
@@ -743,4 +730,3 @@ limitations under the License.
 [CMake]: https://cmake.org/
 [cpp-style-guide]: https://google.github.io/styleguide/cppguide.html
 [clang-sanitizers]: http://clang.llvm.org/docs/UsersManual.html#controlling-code-generation
-[master-tot-release]: https://github.com/KhronosGroup/SPIRV-Tools/releases/tag/master-tot
