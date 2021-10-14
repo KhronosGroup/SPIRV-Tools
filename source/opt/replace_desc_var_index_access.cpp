@@ -14,6 +14,7 @@
 
 #include "source/opt/replace_desc_var_index_access.h"
 
+#include "source/opt/desc_sroa_util.h"
 #include "source/opt/ir_builder.h"
 #include "source/util/string_utils.h"
 
@@ -37,11 +38,10 @@ uint32_t GetValueWithKeyExistenceCheck(
 
 }  // namespace
 
-// TODO: move common code to *_util file
 Pass::Status ReplaceDescriptorVariableIndexAccess::Process() {
   Status status = Status::SuccessWithoutChange;
   for (Instruction& var : context()->types_values()) {
-    if (IsDescriptorArray(&var)) {
+    if (descsroautil::IsDescriptorArray(context(), &var)) {
       if (ReplaceVariableAccessesWithConstantElements(&var))
         status = Status::SuccessWithChange;
     }
@@ -49,85 +49,10 @@ Pass::Status ReplaceDescriptorVariableIndexAccess::Process() {
   return status;
 }
 
-bool ReplaceDescriptorVariableIndexAccess::IsDescriptorArray(
-    Instruction* var) const {
-  if (var->opcode() != SpvOpVariable) {
-    return false;
-  }
-
-  uint32_t ptr_type_id = var->type_id();
-  Instruction* ptr_type_inst =
-      context()->get_def_use_mgr()->GetDef(ptr_type_id);
-  if (ptr_type_inst->opcode() != SpvOpTypePointer) {
-    return false;
-  }
-
-  uint32_t var_type_id = ptr_type_inst->GetSingleWordInOperand(1);
-  Instruction* var_type_inst =
-      context()->get_def_use_mgr()->GetDef(var_type_id);
-  if (var_type_inst->opcode() != SpvOpTypeArray &&
-      var_type_inst->opcode() != SpvOpTypeStruct) {
-    return false;
-  }
-
-  // All structures with descriptor assignments must be replaced by variables,
-  // one for each of their members - with the exceptions of buffers.
-  if (IsTypeOfStructuredBuffer(var_type_inst)) {
-    return false;
-  }
-
-  bool has_desc_set_decoration = false;
-  context()->get_decoration_mgr()->ForEachDecoration(
-      var->result_id(), SpvDecorationDescriptorSet,
-      [&has_desc_set_decoration](const Instruction&) {
-        has_desc_set_decoration = true;
-      });
-  if (!has_desc_set_decoration) {
-    return false;
-  }
-
-  bool has_binding_decoration = false;
-  context()->get_decoration_mgr()->ForEachDecoration(
-      var->result_id(), SpvDecorationBinding,
-      [&has_binding_decoration](const Instruction&) {
-        has_binding_decoration = true;
-      });
-  if (!has_binding_decoration) {
-    return false;
-  }
-
-  return true;
-}
-
-bool ReplaceDescriptorVariableIndexAccess::IsTypeOfStructuredBuffer(
-    const Instruction* type) const {
-  if (type->opcode() != SpvOpTypeStruct) {
-    return false;
-  }
-
-  // All buffers have offset decorations for members of their structure types.
-  // This is how we distinguish it from a structure of descriptors.
-  bool has_offset_decoration = false;
-  context()->get_decoration_mgr()->ForEachDecoration(
-      type->result_id(), SpvDecorationOffset,
-      [&has_offset_decoration](const Instruction&) {
-        has_offset_decoration = true;
-      });
-  return has_offset_decoration;
-}
-
 bool ReplaceDescriptorVariableIndexAccess::
     ReplaceVariableAccessesWithConstantElements(Instruction* var) const {
   std::vector<Instruction*> work_list;
   get_def_use_mgr()->ForEachUser(var, [this, &work_list](Instruction* use) {
-    if (use->opcode() == SpvOpName) {
-      return;
-    }
-
-    if (use->IsDecoration()) {
-      return;
-    }
-
     switch (use->opcode()) {
       case SpvOpAccessChain:
       case SpvOpInBoundsAccessChain:
@@ -140,7 +65,8 @@ bool ReplaceDescriptorVariableIndexAccess::
 
   bool updated = false;
   for (Instruction* access_chain : work_list) {
-    if (DoesAccessChainUseVariableIndex(access_chain)) {
+    if (descsroautil::GetAccessChainIndexAsConst(context(), access_chain) ==
+        nullptr) {
       ReplaceAccessChain(var, access_chain);
       updated = true;
     }
@@ -150,21 +76,10 @@ bool ReplaceDescriptorVariableIndexAccess::
   return updated;
 }
 
-bool ReplaceDescriptorVariableIndexAccess::DoesAccessChainUseVariableIndex(
-    Instruction* access_chain) const {
-  if (access_chain->NumInOperands() <= 1) {
-    return false;
-  }
-  uint32_t idx_id = GetFirstIndexOfAccessChain(access_chain);
-  if (context()->get_constant_mgr()->FindDeclaredConstant(idx_id) != 0) {
-    return false;
-  }
-  return true;
-}
-
 void ReplaceDescriptorVariableIndexAccess::ReplaceAccessChain(
     Instruction* var, Instruction* access_chain) const {
-  uint32_t number_of_elements = GetNumberOfElements(var);
+  uint32_t number_of_elements =
+      descsroautil::GetNumberOfElementsForArrayOrStruct(context(), var);
   assert(number_of_elements != 0 && "Number of element is 0");
   if (number_of_elements == 1) {
     UseConstIndexForAccessChain(access_chain, 0);
@@ -172,35 +87,6 @@ void ReplaceDescriptorVariableIndexAccess::ReplaceAccessChain(
     return;
   }
   ReplaceUsersOfAccessChain(access_chain, number_of_elements);
-}
-
-uint32_t ReplaceDescriptorVariableIndexAccess::GetNumberOfElements(
-    Instruction* var) const {
-  uint32_t ptr_type_id = var->type_id();
-  Instruction* ptr_type_inst = get_def_use_mgr()->GetDef(ptr_type_id);
-  assert(ptr_type_inst->opcode() == SpvOpTypePointer &&
-         "Variable should be a pointer to an array or structure.");
-  uint32_t pointee_type_id = ptr_type_inst->GetSingleWordInOperand(1);
-  Instruction* pointee_type_inst = get_def_use_mgr()->GetDef(pointee_type_id);
-  if (pointee_type_inst->opcode() == SpvOpTypeArray) {
-    return GetLengthOfArrayType(pointee_type_inst);
-  }
-  assert(pointee_type_inst->opcode() == SpvOpTypeStruct &&
-         "Variable should be a pointer to an array or structure.");
-  return pointee_type_inst->NumInOperands();
-}
-
-uint32_t ReplaceDescriptorVariableIndexAccess::GetLengthOfArrayType(
-    Instruction* type) const {
-  assert(type->opcode() == SpvOpTypeArray && "type must be array");
-  uint32_t length_id = type->GetSingleWordInOperand(1);
-  const analysis::Constant* length_const =
-      context()->get_constant_mgr()->FindDeclaredConstant(length_id);
-  if (length_const == nullptr) {
-    context()->EmitErrorMessage("Invalid number of elements in array", type);
-    return 0;
-  }
-  return length_const->GetU32();
 }
 
 void ReplaceDescriptorVariableIndexAccess::ReplaceUsersOfAccessChain(
@@ -404,7 +290,8 @@ void ReplaceDescriptorVariableIndexAccess::
   function->InsertBasicBlockBefore(std::move(default_block), merge_block);
 
   // Create OpSwitch
-  uint32_t access_chain_index_var_id = GetFirstIndexOfAccessChain(access_chain);
+  uint32_t access_chain_index_var_id =
+      descsroautil::GetFirstIndexOfAccessChain(access_chain);
   AddSwitchForAccessChain(block, access_chain_index_var_id, default_block_id,
                           merge_block->id(), case_block_ids);
 
@@ -437,13 +324,6 @@ BasicBlock* ReplaceDescriptorVariableIndexAccess::CreateNewBlock() const {
   get_def_use_mgr()->AnalyzeInstDefUse(new_block->GetLabelInst());
   context()->set_instr_block(new_block->GetLabelInst(), new_block);
   return new_block;
-}
-
-uint32_t ReplaceDescriptorVariableIndexAccess::GetFirstIndexOfAccessChain(
-    Instruction* access_chain) const {
-  assert(access_chain->NumInOperands() > 1 &&
-         "OpAccessChain does not have Indexes operand");
-  return access_chain->GetSingleWordInOperand(kOpAccessChainInOperandIndexes);
 }
 
 void ReplaceDescriptorVariableIndexAccess::UseConstIndexForAccessChain(

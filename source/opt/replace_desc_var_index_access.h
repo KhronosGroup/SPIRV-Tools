@@ -47,36 +47,16 @@ class ReplaceDescriptorVariableIndexAccess : public Pass {
   }
 
  private:
-  // Returns true if |var| is an OpVariable instruction that represents a
-  // descriptor array.  These are the variables that we want to replace
-  // accesses to them.
-  bool IsDescriptorArray(Instruction* var) const;
-
-  // Returns true if |type| is a type that could be used for a structured buffer
-  // as opposed to a type that would be used for a structure of resource
-  // descriptors.
-  bool IsTypeOfStructuredBuffer(const Instruction* type) const;
-
   // Replaces all acceses to |var| using variable indices with constant
   // elements of the array |var|. Creates switch-case statements to determine
   // the value of the variable index for all the possible cases. Returns
   // whether replacement is done or not.
   bool ReplaceVariableAccessesWithConstantElements(Instruction* var) const;
 
-  // Returns whether the OpAccessChain instruction |access_chain| uses a
-  // non-constant index as its first Indexes operand or not.
-  bool DoesAccessChainUseVariableIndex(Instruction* access_chain) const;
-
   // Replaces the OpAccessChain or OpInBoundsAccessChain instruction |use| that
   // uses the descriptor variable |var| with the OpAccessChain or
   // OpInBoundsAccessChain instruction with a constant Indexes operand.
   void ReplaceAccessChain(Instruction* var, Instruction* use) const;
-
-  // Returns the number of elements of |var| whose type is an array or a struct.
-  uint32_t GetNumberOfElements(Instruction* var) const;
-
-  // Returns the length of array type |type|.
-  uint32_t GetLengthOfArrayType(Instruction* type) const;
 
   // Updates the first Indexes operand of the OpAccessChain or
   // OpInBoundsAccessChain instruction |access_chain| to let it use a constant

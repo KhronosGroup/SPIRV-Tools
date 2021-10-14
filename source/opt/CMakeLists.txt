@@ -39,6 +39,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   debug_info_manager.h
   def_use_manager.h
   desc_sroa.h
+  desc_sroa_util.h
   dominator_analysis.h
   dominator_tree.h
   eliminate_dead_constant_pass.h
@@ -149,6 +150,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   debug_info_manager.cpp
   def_use_manager.cpp
   desc_sroa.cpp
+  desc_sroa_util.cpp
   dominator_analysis.cpp
   dominator_tree.cpp
   eliminate_dead_constant_pass.cpp

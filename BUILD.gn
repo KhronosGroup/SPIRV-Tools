@@ -597,6 +597,8 @@ static_library("spvtools_opt") {
     "source/opt/def_use_manager.h",
     "source/opt/desc_sroa.cpp",
     "source/opt/desc_sroa.h",
+    "source/opt/desc_sroa_util.cpp",
+    "source/opt/desc_sroa_util.h",
     "source/opt/dominator_analysis.cpp",
     "source/opt/dominator_analysis.h",
     "source/opt/dominator_tree.cpp",
