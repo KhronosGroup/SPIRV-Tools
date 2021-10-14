@@ -52,7 +52,7 @@ Pass::Status ReplaceDescriptorVariableIndexAccess::Process() {
 bool ReplaceDescriptorVariableIndexAccess::
     ReplaceVariableAccessesWithConstantElements(Instruction* var) const {
   std::vector<Instruction*> work_list;
-  get_def_use_mgr()->ForEachUser(var, [this, &work_list](Instruction* use) {
+  get_def_use_mgr()->ForEachUser(var, [&work_list](Instruction* use) {
     switch (use->opcode()) {
       case SpvOpAccessChain:
       case SpvOpInBoundsAccessChain:
