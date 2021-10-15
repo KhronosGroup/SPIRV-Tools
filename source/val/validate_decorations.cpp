@@ -140,6 +140,8 @@ bool isMissingOffsetInStruct(uint32_t struct_id, ValidationState_t& vstate) {
     for (auto& decoration : vstate.id_decorations(struct_id)) {
       if (SpvDecorationOffset == decoration.dec_type() &&
           Decoration::kInvalidMember != decoration.struct_member_index()) {
+        // Offset 0xffffffff is not valid so ignore it for simplicity's sake.
+        if (decoration.params()[0] == 0xffffffff) return true;
         hasOffset[decoration.struct_member_index()] = true;
       }
     }
