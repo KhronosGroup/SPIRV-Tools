@@ -2581,6 +2581,132 @@ OpFunctionEnd
   SinglePassRunAndCheck<InlineExhaustivePass>(before, after, false, true);
 }
 
+TEST_F(InlineTest, InlineForLinkage) {
+  const std::string before =
+      R"(OpCapability SampledBuffer
+OpCapability ImageBuffer
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpSource HLSL 630
+OpName %type_buffer_image "type.buffer.image"
+OpName %output "output"
+OpName %main "main"
+OpName %color "color"
+OpName %bb_entry "bb.entry"
+OpName %param_var_color "param.var.color"
+OpName %fn "fn"
+OpName %color_0 "color"
+OpName %bb_entry_0 "bb.entry"
+OpName %v "v"
+OpDecorate %main LinkageAttributes "main" Export
+OpDecorate %output DescriptorSet 0
+OpDecorate %output Binding 1
+%float = OpTypeFloat 32
+%float_0_200000003 = OpConstant %float 0.200000003
+%v4float = OpTypeVector %float 4
+%6 = OpConstantComposite %v4float %float_0_200000003 %float_0_200000003 %float_0_200000003 %float_0_200000003
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%type_buffer_image = OpTypeImage %float Buffer 2 0 0 2 Rgba32f
+%_ptr_UniformConstant_type_buffer_image = OpTypePointer UniformConstant %type_buffer_image
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%11 = OpTypeFunction %float %_ptr_Function_v4float
+%_ptr_Function_float = OpTypePointer Function %float
+%output = OpVariable %_ptr_UniformConstant_type_buffer_image UniformConstant
+%main = OpFunction %float None %11
+%color = OpFunctionParameter %_ptr_Function_v4float
+%bb_entry = OpLabel
+%param_var_color = OpVariable %_ptr_Function_v4float Function
+%16 = OpLoad %v4float %color
+OpStore %param_var_color %16
+%17 = OpFunctionCall %float %fn %param_var_color
+OpReturnValue %17
+OpFunctionEnd
+%fn = OpFunction %float None %11
+%color_0 = OpFunctionParameter %_ptr_Function_v4float
+%bb_entry_0 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%22 = OpLoad %v4float %color_0
+OpStore %v %22
+%23 = OpLoad %v4float %v
+%24 = OpFMul %v4float %23 %6
+OpStore %v %24
+%26 = OpAccessChain %_ptr_Function_float %v %int_0
+%27 = OpLoad %float %26
+OpReturnValue %27
+OpFunctionEnd
+      )";
+
+  const std::string after =
+      R"(OpCapability SampledBuffer
+OpCapability ImageBuffer
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpSource HLSL 630
+OpName %type_buffer_image "type.buffer.image"
+OpName %output "output"
+OpName %main "main"
+OpName %color "color"
+OpName %bb_entry "bb.entry"
+OpName %param_var_color "param.var.color"
+OpName %fn "fn"
+OpName %color_0 "color"
+OpName %bb_entry_0 "bb.entry"
+OpName %v "v"
+OpDecorate %main LinkageAttributes "main" Export
+OpDecorate %output DescriptorSet 0
+OpDecorate %output Binding 1
+%float = OpTypeFloat 32
+%float_0_200000003 = OpConstant %float 0.200000003
+%v4float = OpTypeVector %float 4
+%6 = OpConstantComposite %v4float %float_0_200000003 %float_0_200000003 %float_0_200000003 %float_0_200000003
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%type_buffer_image = OpTypeImage %float Buffer 2 0 0 2 Rgba32f
+%_ptr_UniformConstant_type_buffer_image = OpTypePointer UniformConstant %type_buffer_image
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%11 = OpTypeFunction %float %_ptr_Function_v4float
+%_ptr_Function_float = OpTypePointer Function %float
+%output = OpVariable %_ptr_UniformConstant_type_buffer_image UniformConstant
+%main = OpFunction %float None %11
+%color = OpFunctionParameter %_ptr_Function_v4float
+%bb_entry = OpLabel
+%28 = OpVariable %_ptr_Function_v4float Function
+%29 = OpVariable %_ptr_Function_float Function
+%param_var_color = OpVariable %_ptr_Function_v4float Function
+%16 = OpLoad %v4float %color
+OpStore %param_var_color %16
+%31 = OpLoad %v4float %param_var_color
+OpStore %28 %31
+%32 = OpLoad %v4float %28
+%33 = OpFMul %v4float %32 %6
+OpStore %28 %33
+%34 = OpAccessChain %_ptr_Function_float %28 %int_0
+%35 = OpLoad %float %34
+OpStore %29 %35
+%17 = OpLoad %float %29
+OpReturnValue %17
+OpFunctionEnd
+%fn = OpFunction %float None %11
+%color_0 = OpFunctionParameter %_ptr_Function_v4float
+%bb_entry_0 = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%22 = OpLoad %v4float %color_0
+OpStore %v %22
+%23 = OpLoad %v4float %v
+%24 = OpFMul %v4float %23 %6
+OpStore %v %24
+%26 = OpAccessChain %_ptr_Function_float %v %int_0
+%27 = OpLoad %float %26
+OpReturnValue %27
+OpFunctionEnd
+)";
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<InlineExhaustivePass>(before, after, false, true);
+}
+
 TEST_F(InlineTest, InlineFuncWithOpTerminateRayNotInContinue) {
   const std::string text =
       R"(

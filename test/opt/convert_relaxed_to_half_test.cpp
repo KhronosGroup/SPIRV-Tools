@@ -204,6 +204,98 @@ OpFunctionEnd
                                            defs_after + func_after, true, true);
 }
 
+TEST_F(ConvertToHalfTest, ConvertToHalfForLinkage) {
+  const std::string before =
+      R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpSource HLSL 630
+OpName %type_cbuff "type.cbuff"
+OpMemberName %type_cbuff 0 "c"
+OpName %cbuff "cbuff"
+OpName %main "main"
+OpName %BaseColor "BaseColor"
+OpName %bb_entry "bb.entry"
+OpName %v "v"
+OpDecorate %main LinkageAttributes "main" Export
+OpDecorate %cbuff DescriptorSet 0
+OpDecorate %cbuff Binding 0
+OpMemberDecorate %type_cbuff 0 Offset 0
+OpDecorate %type_cbuff Block
+OpDecorate %18 RelaxedPrecision
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%float = OpTypeFloat 32
+%type_cbuff = OpTypeStruct %float
+%_ptr_Uniform_type_cbuff = OpTypePointer Uniform %type_cbuff
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%9 = OpTypeFunction %v4float %_ptr_Function_v4float
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+%cbuff = OpVariable %_ptr_Uniform_type_cbuff Uniform
+%main = OpFunction %v4float None %9
+%BaseColor = OpFunctionParameter %_ptr_Function_v4float
+%bb_entry = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%14 = OpLoad %v4float %BaseColor
+%16 = OpAccessChain %_ptr_Uniform_float %cbuff %int_0
+%17 = OpLoad %float %16
+%18 = OpVectorTimesScalar %v4float %14 %17
+OpStore %v %18
+%19 = OpLoad %v4float %v
+OpReturnValue %19
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+OpCapability Linkage
+OpCapability Float16
+OpMemoryModel Logical GLSL450
+OpSource HLSL 630
+OpName %type_cbuff "type.cbuff"
+OpMemberName %type_cbuff 0 "c"
+OpName %cbuff "cbuff"
+OpName %main "main"
+OpName %BaseColor "BaseColor"
+OpName %bb_entry "bb.entry"
+OpName %v "v"
+OpDecorate %main LinkageAttributes "main" Export
+OpDecorate %cbuff DescriptorSet 0
+OpDecorate %cbuff Binding 0
+OpMemberDecorate %type_cbuff 0 Offset 0
+OpDecorate %type_cbuff Block
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%float = OpTypeFloat 32
+%type_cbuff = OpTypeStruct %float
+%_ptr_Uniform_type_cbuff = OpTypePointer Uniform %type_cbuff
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%14 = OpTypeFunction %v4float %_ptr_Function_v4float
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+%cbuff = OpVariable %_ptr_Uniform_type_cbuff Uniform
+%half = OpTypeFloat 16
+%v4half = OpTypeVector %half 4
+%main = OpFunction %v4float None %14
+%BaseColor = OpFunctionParameter %_ptr_Function_v4float
+%bb_entry = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%16 = OpLoad %v4float %BaseColor
+%17 = OpAccessChain %_ptr_Uniform_float %cbuff %int_0
+%18 = OpLoad %float %17
+%22 = OpFConvert %v4half %16
+%23 = OpFConvert %half %18
+%7 = OpVectorTimesScalar %v4half %22 %23
+%24 = OpFConvert %v4float %7
+OpStore %v %24
+%19 = OpLoad %v4float %v
+OpReturnValue %19
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<ConvertToHalfPass>(before, after, true, true);
+}
 TEST_F(ConvertToHalfTest, ConvertToHalfWithDrefSample) {
   // The resulting SPIR-V was processed with --relax-float-ops.
   //

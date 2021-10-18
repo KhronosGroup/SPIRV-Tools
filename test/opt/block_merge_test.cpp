@@ -90,6 +90,63 @@ OpFunctionEnd
                                         true);
 }
 
+TEST_F(BlockMergeTest, BlockMergeForLinkage) {
+  const std::string before =
+      R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpSource HLSL 630
+OpName %main "main"
+OpName %BaseColor "BaseColor"
+OpName %bb_entry "bb.entry"
+OpName %v "v"
+OpDecorate %main LinkageAttributes "main" Export
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%8 = OpTypeFunction %v4float %_ptr_Function_v4float
+%main = OpFunction %v4float None %8
+%BaseColor = OpFunctionParameter %_ptr_Function_v4float
+%bb_entry = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%9 = OpLoad %v4float %BaseColor
+OpStore %v %9
+OpBranch %10
+%10 = OpLabel
+%11 = OpLoad %v4float %v
+OpBranch %12
+%12 = OpLabel
+OpReturnValue %11
+OpFunctionEnd
+)";
+
+  const std::string after =
+      R"(OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpSource HLSL 630
+OpName %main "main"
+OpName %BaseColor "BaseColor"
+OpName %bb_entry "bb.entry"
+OpName %v "v"
+OpDecorate %main LinkageAttributes "main" Export
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%8 = OpTypeFunction %v4float %_ptr_Function_v4float
+%main = OpFunction %v4float None %8
+%BaseColor = OpFunctionParameter %_ptr_Function_v4float
+%bb_entry = OpLabel
+%v = OpVariable %_ptr_Function_v4float Function
+%9 = OpLoad %v4float %BaseColor
+OpStore %v %9
+%11 = OpLoad %v4float %v
+OpReturnValue %11
+OpFunctionEnd
+)";
+  SinglePassRunAndCheck<BlockMergePass>(before, after, true, true);
+}
+
 TEST_F(BlockMergeTest, EmptyBlock) {
   // Note: SPIR-V hand edited to insert empty block
   // after two statements in main.
