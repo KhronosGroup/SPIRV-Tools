@@ -171,8 +171,8 @@ OpFunctionEnd
 }
 
 TEST_F(DeadInsertElimTest, DeadInsertForLinkage) {
-  const std::string before = 
-    R"(OpCapability Shader
+  const std::string before =
+      R"(OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpSource HLSL 630
@@ -204,8 +204,8 @@ OpDecorate %main LinkageAttributes "main" Export
 OpReturnValue %20
 OpFunctionEnd
 )";
-  const std::string after = 
-    R"(OpCapability Shader
+  const std::string after =
+      R"(OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpSource HLSL 630
@@ -233,7 +233,7 @@ OpDecorate %main LinkageAttributes "main" Export
 OpReturnValue %20
 OpFunctionEnd
 )";
-  SinglePassRunAndCheck<DeadInsertElimPass>(before, after, true, true);                                            
+  SinglePassRunAndCheck<DeadInsertElimPass>(before, after, true, true);
 }
 
 TEST_F(DeadInsertElimTest, DeadInsertInChainWithPhi) {

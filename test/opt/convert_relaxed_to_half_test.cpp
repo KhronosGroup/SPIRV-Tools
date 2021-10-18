@@ -205,8 +205,8 @@ OpFunctionEnd
 }
 
 TEST_F(ConvertToHalfTest, ConvertToHalfForLinkage) {
-  const std::string before = 
-    R"(OpCapability Shader
+  const std::string before =
+      R"(OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
 OpSource HLSL 630
@@ -247,8 +247,8 @@ OpReturnValue %19
 OpFunctionEnd
 )";
 
-const std::string after = 
-    R"(OpCapability Shader
+  const std::string after =
+      R"(OpCapability Shader
 OpCapability Linkage
 OpCapability Float16
 OpMemoryModel Logical GLSL450

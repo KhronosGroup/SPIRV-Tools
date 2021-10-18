@@ -91,7 +91,7 @@ OpFunctionEnd
 }
 
 TEST_F(BlockMergeTest, BlockMergeForLinkage) {
-  const std::string before = 
+  const std::string before =
       R"(OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
@@ -119,7 +119,8 @@ OpBranch %12
 OpReturnValue %11
 OpFunctionEnd
 )";
-  const std::string after = 
+
+  const std::string after =
       R"(OpCapability Shader
 OpCapability Linkage
 OpMemoryModel Logical GLSL450
@@ -143,7 +144,7 @@ OpStore %v %9
 OpReturnValue %11
 OpFunctionEnd
 )";
-  SinglePassRunAndCheck<BlockMergePass>(before, after, true, true);                                        
+  SinglePassRunAndCheck<BlockMergePass>(before, after, true, true);
 }
 
 TEST_F(BlockMergeTest, EmptyBlock) {

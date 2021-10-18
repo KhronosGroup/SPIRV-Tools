@@ -2637,9 +2637,9 @@ OpStore %v %24
 OpReturnValue %27
 OpFunctionEnd
       )";
-      
-  const std::string after = 
-  R"(OpCapability SampledBuffer
+
+  const std::string after =
+      R"(OpCapability SampledBuffer
 OpCapability ImageBuffer
 OpCapability Shader
 OpCapability Linkage
