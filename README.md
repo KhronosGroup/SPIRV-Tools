@@ -382,11 +382,11 @@ also work, but are not verified.
 SPIRV-Tools is regularly tested with the following compilers:
 
 On Linux
-- GCC version 4.8.5
-- Clang version 3.8
+- GCC version 9.3
+- Clang version 10.0
 
 On MacOS
-- AppleClang 10.0
+- AppleClang 11.0
 
 On Windows
 - Visual Studio 2015
