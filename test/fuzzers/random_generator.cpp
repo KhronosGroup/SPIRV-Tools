@@ -29,7 +29,7 @@ namespace {
 /// @param upper - Upper bound of integer generated
 /// @returns i, where lower <= i < upper
 template <typename I>
-I RandomUInt(std::mt19937* engine, I lower, I upper) {
+I RandomUInt(std::mt19937_64* engine, I lower, I upper) {
   assert(lower < upper && "|lower| must be stictly less than |upper|");
   return std::uniform_int_distribution<I>(lower, upper - 1)(*engine);
 }
@@ -70,7 +70,8 @@ void HashCombine(size_t* hash, const T& value) {
 /// @param size - number of elements in buffer
 /// @returns hash of the data in the buffer
 size_t HashBuffer(const uint8_t* data, const size_t size) {
-  size_t hash = 0xCA8945571519E991;  // seed with an arbitrary prime
+  size_t hash =
+      static_cast<size_t>(0xCA8945571519E991);  // seed with an arbitrary prime
   HashCombine(&hash, size);
   for (size_t i = 0; i < size; i++) {
     HashCombine(&hash, data[i]);
