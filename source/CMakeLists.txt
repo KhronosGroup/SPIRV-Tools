@@ -428,8 +428,10 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
   # Special config file for root library compared to other libs.
   file(WRITE ${CMAKE_BINARY_DIR}/${SPIRV_TOOLS}Config.cmake
     "include(\${CMAKE_CURRENT_LIST_DIR}/${SPIRV_TOOLS}Target.cmake)\n"
-    "set(${SPIRV_TOOLS}_LIBRARIES ${SPIRV_TOOLS})\n"
-    "get_target_property(${SPIRV_TOOLS}_INCLUDE_DIRS ${SPIRV_TOOLS} INTERFACE_INCLUDE_DIRECTORIES)\n")
+    "if(TARGET ${SPIRV_TOOLS})\n"
+    "    set(${SPIRV_TOOLS}_LIBRARIES ${SPIRV_TOOLS})\n"
+    "    get_target_property(${SPIRV_TOOLS}_INCLUDE_DIRS ${SPIRV_TOOLS} INTERFACE_INCLUDE_DIRECTORIES)\n"
+    "endif()\n")
   install(FILES ${CMAKE_BINARY_DIR}/${SPIRV_TOOLS}Config.cmake DESTINATION ${PACKAGE_DIR})
 endif(ENABLE_SPIRV_TOOLS_INSTALL)
 
