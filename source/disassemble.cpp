@@ -283,13 +283,11 @@ void Disassembler::EmitOperand(const spv_parsed_instruction_t& inst,
     case SPV_OPERAND_TYPE_LITERAL_STRING: {
       stream_ << "\"";
       SetGreen();
-      // Strings are always little-endian, and null-terminated.
-      // Write out the characters, escaping as needed, and without copying
-      // the entire string.
-      auto c_str = reinterpret_cast<const char*>(inst.words + operand.offset);
-      for (auto p = c_str; *p; ++p) {
-        if (*p == '"' || *p == '\\') stream_ << '\\';
-        stream_ << *p;
+
+      std::string str = spvDecodeLiteralStringOperand(inst, operand_index);
+      for (char const& c : str) {
+        if (c == '"' || c == '\\') stream_ << '\\';
+        stream_ << c;
       }
       ResetColor();
       stream_ << '"';
