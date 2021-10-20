@@ -98,11 +98,15 @@ std::vector<uint32_t> ParseDefaultValueBitPattern(
     }
     return result;
   } else if (const auto* IT = type->AsInteger()) {
-    if (IT->width() == input_bit_pattern.size() * sizeof(uint32_t) * 8) {
+    auto width = IT->width();
+    if (width == 8 || width == 16) width = 32;
+    if (width == input_bit_pattern.size() * sizeof(uint32_t) * 8) {
       return std::vector<uint32_t>(input_bit_pattern);
     }
   } else if (const auto* FT = type->AsFloat()) {
-    if (FT->width() == input_bit_pattern.size() * sizeof(uint32_t) * 8) {
+    auto width = FT->width();
+    if (width == 8 || width == 16) width = 32;
+    if (width == input_bit_pattern.size() * sizeof(uint32_t) * 8) {
       return std::vector<uint32_t>(input_bit_pattern);
     }
   }
