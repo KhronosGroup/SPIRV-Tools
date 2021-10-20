@@ -935,6 +935,50 @@ INSTANTIATE_TEST_SUITE_P(
             "%2 = OpSpecConstantTrue %bool\n"
             "%3 = OpSpecConstantTrue %bool\n",
         },
+        // 19. 16-bit int type.
+        {
+            // code
+            "OpDecorate %1 SpecId 100\n"
+            "OpDecorate %2 SpecId 101\n"
+            "OpDecorate %3 SpecId 102\n"
+            "%short = OpTypeInt 16 1\n"
+            "%1 = OpSpecConstant %short 10\n"
+            "%2 = OpSpecConstant %short 11\n"
+            "%3 = OpSpecConstant %short 11\n",
+            // default values
+            SpecIdToValueBitPatternMap{
+                {100, {32768}}, {101, {0xffff}}, {102, {0xffffffd6}}},
+            // expected
+            "OpDecorate %1 SpecId 100\n"
+            "OpDecorate %2 SpecId 101\n"
+            "OpDecorate %3 SpecId 102\n"
+            "%short = OpTypeInt 16 1\n"
+            "%1 = OpSpecConstant %short 32768\n"
+            "%2 = OpSpecConstant %short 65535\n"
+            "%3 = OpSpecConstant %short -42\n",
+        },
+        // 20. 8-bit int type.
+        {
+            // code
+            "OpDecorate %1 SpecId 100\n"
+            "OpDecorate %2 SpecId 101\n"
+            "OpDecorate %3 SpecId 102\n"
+            "%char = OpTypeInt 8 1\n"
+            "%1 = OpSpecConstant %char 10\n"
+            "%2 = OpSpecConstant %char 11\n"
+            "%3 = OpSpecConstant %char 11\n",
+            // default values
+            SpecIdToValueBitPatternMap{
+                {100, {128}}, {101, {129}}, {102, {0xffffffd6}}},
+            // expected
+            "OpDecorate %1 SpecId 100\n"
+            "OpDecorate %2 SpecId 101\n"
+            "OpDecorate %3 SpecId 102\n"
+            "%char = OpTypeInt 8 1\n"
+            "%1 = OpSpecConstant %char 128\n"
+            "%2 = OpSpecConstant %char 129\n"
+            "%3 = OpSpecConstant %char -42\n",
+        },
     }));
 
 INSTANTIATE_TEST_SUITE_P(
