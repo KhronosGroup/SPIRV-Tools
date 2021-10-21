@@ -26,10 +26,7 @@ uint32_t GetLengthOfArrayType(IRContext* context, Instruction* type) {
   uint32_t length_id = type->GetSingleWordInOperand(1);
   const analysis::Constant* length_const =
       context->get_constant_mgr()->FindDeclaredConstant(length_id);
-  if (length_const == nullptr) {
-    context->EmitErrorMessage("Invalid number of elements in array", type);
-    return 0;
-  }
+  assert(length_const != nullptr);
   return length_const->GetU32();
 }
 
@@ -61,27 +58,13 @@ bool IsDescriptorArray(IRContext* context, Instruction* var) {
     return false;
   }
 
-  bool has_desc_set_decoration = false;
-  context->get_decoration_mgr()->ForEachDecoration(
-      var->result_id(), SpvDecorationDescriptorSet,
-      [&has_desc_set_decoration](const Instruction&) {
-        has_desc_set_decoration = true;
-      });
-  if (!has_desc_set_decoration) {
+  if (!context->get_decoration_mgr()->HasDecoration(
+          var->result_id(), SpvDecorationDescriptorSet)) {
     return false;
   }
 
-  bool has_binding_decoration = false;
-  context->get_decoration_mgr()->ForEachDecoration(
-      var->result_id(), SpvDecorationBinding,
-      [&has_binding_decoration](const Instruction&) {
-        has_binding_decoration = true;
-      });
-  if (!has_binding_decoration) {
-    return false;
-  }
-
-  return true;
+  return context->get_decoration_mgr()->HasDecoration(var->result_id(),
+                                                      SpvDecorationBinding);
 }
 
 bool IsTypeOfStructuredBuffer(IRContext* context, const Instruction* type) {
@@ -91,13 +74,8 @@ bool IsTypeOfStructuredBuffer(IRContext* context, const Instruction* type) {
 
   // All buffers have offset decorations for members of their structure types.
   // This is how we distinguish it from a structure of descriptors.
-  bool has_offset_decoration = false;
-  context->get_decoration_mgr()->ForEachDecoration(
-      type->result_id(), SpvDecorationOffset,
-      [&has_offset_decoration](const Instruction&) {
-        has_offset_decoration = true;
-      });
-  return has_offset_decoration;
+  return context->get_decoration_mgr()->HasDecoration(type->result_id(),
+                                                      SpvDecorationOffset);
 }
 
 const analysis::Constant* GetAccessChainIndexAsConst(

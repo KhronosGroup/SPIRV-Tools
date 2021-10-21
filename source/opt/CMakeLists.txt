@@ -101,7 +101,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   relax_float_ops_pass.h
   remove_duplicates_pass.h
   remove_unused_interface_variables_pass.h
-  replace_desc_var_index_access.h
+  replace_desc_array_access_using_var_index.h
   replace_invalid_opc.h
   scalar_analysis.h
   scalar_analysis_nodes.h
@@ -208,7 +208,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   relax_float_ops_pass.cpp
   remove_duplicates_pass.cpp
   remove_unused_interface_variables_pass.cpp
-  replace_desc_var_index_access.cpp
+  replace_desc_array_access_using_var_index.cpp
   replace_invalid_opc.cpp
   scalar_analysis.cpp
   scalar_analysis_simplification.cpp

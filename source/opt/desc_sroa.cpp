@@ -97,7 +97,7 @@ bool DescriptorScalarReplacement::ReplaceAccessChain(Instruction* var,
     return false;
   }
 
-  const auto* const_index =
+  const analysis::Constant* const_index =
       descsroautil::GetAccessChainIndexAsConst(context(), use);
   if (const_index == nullptr) {
     context()->EmitErrorMessage("Variable cannot be replaced: invalid index",

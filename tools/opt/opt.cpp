@@ -163,13 +163,10 @@ Options (in lexicographical order):)",
                around known issues with some Vulkan drivers for initialize
                variables.)");
   printf(R"(
-  --replace-descriptor-variable-index-access
-               Replaces every access using a variable index to array variable
-               |desc| that has a DescriptorSet and Binding decorations with a
-               constant element of the array.  In order to replace the access
-               using a variable index with the constant element, it uses a
-               switch-case statement to determine the value of the variable
-               index for all the possible cases.)");
+  --replace-desc-array-access-using-var-index
+               Replaces accesses to descriptor arrays based on a variable index
+               with a switch that has a case for every possible value of the
+               index.)");
   printf(R"(
   --descriptor-scalar-replacement
                Replaces every array variable |desc| that has a DescriptorSet

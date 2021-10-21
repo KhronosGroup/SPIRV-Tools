@@ -30,12 +30,12 @@ namespace spvtools {
 namespace opt {
 
 // See optimizer.hpp for documentation.
-class ReplaceDescriptorVariableIndexAccess : public Pass {
+class ReplaceDescArrayAccessUsingVarIndex : public Pass {
  public:
-  ReplaceDescriptorVariableIndexAccess() {}
+  ReplaceDescArrayAccessUsingVarIndex() {}
 
   const char* name() const override {
-    return "replace-descriptor-variable-index-access";
+    return "replace-desc-array-access-using-var-index";
   }
 
   Status Process() override;

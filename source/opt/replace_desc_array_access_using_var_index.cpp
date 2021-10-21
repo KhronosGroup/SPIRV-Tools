@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/opt/replace_desc_var_index_access.h"
+#include "source/opt/replace_desc_array_access_using_var_index.h"
 
 #include "source/opt/desc_sroa_util.h"
 #include "source/opt/ir_builder.h"
@@ -38,7 +38,7 @@ uint32_t GetValueWithKeyExistenceCheck(
 
 }  // namespace
 
-Pass::Status ReplaceDescriptorVariableIndexAccess::Process() {
+Pass::Status ReplaceDescArrayAccessUsingVarIndex::Process() {
   Status status = Status::SuccessWithoutChange;
   for (Instruction& var : context()->types_values()) {
     if (descsroautil::IsDescriptorArray(context(), &var)) {
@@ -49,7 +49,7 @@ Pass::Status ReplaceDescriptorVariableIndexAccess::Process() {
   return status;
 }
 
-bool ReplaceDescriptorVariableIndexAccess::
+bool ReplaceDescArrayAccessUsingVarIndex::
     ReplaceVariableAccessesWithConstantElements(Instruction* var) const {
   std::vector<Instruction*> work_list;
   get_def_use_mgr()->ForEachUser(var, [&work_list](Instruction* use) {
@@ -76,7 +76,7 @@ bool ReplaceDescriptorVariableIndexAccess::
   return updated;
 }
 
-void ReplaceDescriptorVariableIndexAccess::ReplaceAccessChain(
+void ReplaceDescArrayAccessUsingVarIndex::ReplaceAccessChain(
     Instruction* var, Instruction* access_chain) const {
   uint32_t number_of_elements =
       descsroautil::GetNumberOfElementsForArrayOrStruct(context(), var);
@@ -89,7 +89,7 @@ void ReplaceDescriptorVariableIndexAccess::ReplaceAccessChain(
   ReplaceUsersOfAccessChain(access_chain, number_of_elements);
 }
 
-void ReplaceDescriptorVariableIndexAccess::ReplaceUsersOfAccessChain(
+void ReplaceDescArrayAccessUsingVarIndex::ReplaceUsersOfAccessChain(
     Instruction* access_chain, uint32_t number_of_elements) const {
   std::vector<Instruction*> final_users;
   CollectRecursiveUsersWithConcreteType(access_chain, &final_users);
@@ -101,10 +101,8 @@ void ReplaceDescriptorVariableIndexAccess::ReplaceUsersOfAccessChain(
   }
 }
 
-void ReplaceDescriptorVariableIndexAccess::
-    CollectRecursiveUsersWithConcreteType(
-        Instruction* access_chain,
-        std::vector<Instruction*>* final_users) const {
+void ReplaceDescArrayAccessUsingVarIndex::CollectRecursiveUsersWithConcreteType(
+    Instruction* access_chain, std::vector<Instruction*>* final_users) const {
   std::queue<Instruction*> work_list;
   work_list.push(access_chain);
   while (!work_list.empty()) {
@@ -123,7 +121,7 @@ void ReplaceDescriptorVariableIndexAccess::
 }
 
 std::deque<Instruction*>
-ReplaceDescriptorVariableIndexAccess::CollectRequiredImageInsts(
+ReplaceDescArrayAccessUsingVarIndex::CollectRequiredImageInsts(
     Instruction* user_of_image_insts) const {
   std::unordered_set<uint32_t> seen_inst_ids;
   std::queue<Instruction*> work_list;
@@ -150,13 +148,13 @@ ReplaceDescriptorVariableIndexAccess::CollectRequiredImageInsts(
   return required_image_insts;
 }
 
-bool ReplaceDescriptorVariableIndexAccess::HasImageOrImagePtrType(
+bool ReplaceDescArrayAccessUsingVarIndex::HasImageOrImagePtrType(
     const Instruction* inst) const {
   assert(inst != nullptr && inst->type_id() != 0 && "Invalid instruction");
   return IsImageOrImagePtrType(get_def_use_mgr()->GetDef(inst->type_id()));
 }
 
-bool ReplaceDescriptorVariableIndexAccess::IsImageOrImagePtrType(
+bool ReplaceDescArrayAccessUsingVarIndex::IsImageOrImagePtrType(
     const Instruction* type_inst) const {
   if (type_inst->opcode() == SpvOpTypeImage ||
       type_inst->opcode() == SpvOpTypeSampler ||
@@ -183,7 +181,7 @@ bool ReplaceDescriptorVariableIndexAccess::IsImageOrImagePtrType(
   return false;
 }
 
-bool ReplaceDescriptorVariableIndexAccess::IsConcreteType(
+bool ReplaceDescArrayAccessUsingVarIndex::IsConcreteType(
     uint32_t type_id) const {
   Instruction* type_inst = get_def_use_mgr()->GetDef(type_id);
   if (type_inst->opcode() == SpvOpTypeInt ||
@@ -204,7 +202,7 @@ bool ReplaceDescriptorVariableIndexAccess::IsConcreteType(
   return false;
 }
 
-BasicBlock* ReplaceDescriptorVariableIndexAccess::CreateCaseBlock(
+BasicBlock* ReplaceDescArrayAccessUsingVarIndex::CreateCaseBlock(
     Instruction* access_chain, uint32_t element_index,
     const std::deque<Instruction*>& insts_to_be_cloned,
     uint32_t branch_target_id,
@@ -219,7 +217,7 @@ BasicBlock* ReplaceDescriptorVariableIndexAccess::CreateCaseBlock(
   return case_block;
 }
 
-void ReplaceDescriptorVariableIndexAccess::CloneInstsToBlock(
+void ReplaceDescArrayAccessUsingVarIndex::CloneInstsToBlock(
     BasicBlock* block, Instruction* inst_to_skip_cloning,
     const std::deque<Instruction*>& insts_to_be_cloned,
     std::unordered_map<uint32_t, uint32_t>* old_ids_to_new_ids) const {
@@ -237,7 +235,7 @@ void ReplaceDescriptorVariableIndexAccess::CloneInstsToBlock(
   }
 }
 
-void ReplaceDescriptorVariableIndexAccess::UseNewIdsInBlock(
+void ReplaceDescArrayAccessUsingVarIndex::UseNewIdsInBlock(
     BasicBlock* block,
     const std::unordered_map<uint32_t, uint32_t>& old_ids_to_new_ids) const {
   for (auto block_itr = block->begin(); block_itr != block->end();
@@ -251,11 +249,10 @@ void ReplaceDescriptorVariableIndexAccess::UseNewIdsInBlock(
   }
 }
 
-void ReplaceDescriptorVariableIndexAccess::
-    ReplaceNonUniformAccessWithSwitchCase(
-        Instruction* access_chain_final_user, Instruction* access_chain,
-        uint32_t number_of_elements,
-        const std::deque<Instruction*>& insts_to_be_cloned) const {
+void ReplaceDescArrayAccessUsingVarIndex::ReplaceNonUniformAccessWithSwitchCase(
+    Instruction* access_chain_final_user, Instruction* access_chain,
+    uint32_t number_of_elements,
+    const std::deque<Instruction*>& insts_to_be_cloned) const {
   // Create merge block and add terminator
   auto* block = context()->get_instr_block(access_chain_final_user);
   auto* merge_block = SeparateInstructionsIntoNewBlock(
@@ -307,7 +304,7 @@ void ReplaceDescriptorVariableIndexAccess::
 }
 
 BasicBlock*
-ReplaceDescriptorVariableIndexAccess::SeparateInstructionsIntoNewBlock(
+ReplaceDescArrayAccessUsingVarIndex::SeparateInstructionsIntoNewBlock(
     BasicBlock* block, Instruction* separation_begin_inst) const {
   auto separation_begin = block->begin();
   while (separation_begin != block->end() &&
@@ -318,7 +315,7 @@ ReplaceDescriptorVariableIndexAccess::SeparateInstructionsIntoNewBlock(
                                 separation_begin);
 }
 
-BasicBlock* ReplaceDescriptorVariableIndexAccess::CreateNewBlock() const {
+BasicBlock* ReplaceDescArrayAccessUsingVarIndex::CreateNewBlock() const {
   auto* new_block = new BasicBlock(std::unique_ptr<Instruction>(
       new Instruction(context(), SpvOpLabel, 0, context()->TakeNextId(), {})));
   get_def_use_mgr()->AnalyzeInstDefUse(new_block->GetLabelInst());
@@ -326,7 +323,7 @@ BasicBlock* ReplaceDescriptorVariableIndexAccess::CreateNewBlock() const {
   return new_block;
 }
 
-void ReplaceDescriptorVariableIndexAccess::UseConstIndexForAccessChain(
+void ReplaceDescArrayAccessUsingVarIndex::UseConstIndexForAccessChain(
     Instruction* access_chain, uint32_t const_element_idx) const {
   uint32_t const_element_idx_id =
       context()->get_constant_mgr()->GetUIntConst(const_element_idx);
@@ -334,7 +331,7 @@ void ReplaceDescriptorVariableIndexAccess::UseConstIndexForAccessChain(
                              {const_element_idx_id});
 }
 
-void ReplaceDescriptorVariableIndexAccess::AddConstElementAccessToCaseBlock(
+void ReplaceDescArrayAccessUsingVarIndex::AddConstElementAccessToCaseBlock(
     BasicBlock* case_block, Instruction* access_chain,
     uint32_t const_element_idx,
     std::unordered_map<uint32_t, uint32_t>* old_ids_to_new_ids) const {
@@ -350,14 +347,14 @@ void ReplaceDescriptorVariableIndexAccess::AddConstElementAccessToCaseBlock(
   case_block->AddInstruction(std::move(access_clone));
 }
 
-void ReplaceDescriptorVariableIndexAccess::AddBranchToBlock(
+void ReplaceDescArrayAccessUsingVarIndex::AddBranchToBlock(
     BasicBlock* parent_block, uint32_t branch_destination) const {
   InstructionBuilder builder{context(), parent_block,
                              kAnalysisDefUseAndInstrToBlockMapping};
   builder.AddBranch(branch_destination);
 }
 
-BasicBlock* ReplaceDescriptorVariableIndexAccess::CreateDefaultBlock(
+BasicBlock* ReplaceDescArrayAccessUsingVarIndex::CreateDefaultBlock(
     bool null_const_for_phi_is_needed, std::vector<uint32_t>* phi_operands,
     uint32_t merge_block_id) const {
   auto* default_block = CreateNewBlock();
@@ -371,7 +368,7 @@ BasicBlock* ReplaceDescriptorVariableIndexAccess::CreateDefaultBlock(
   return default_block;
 }
 
-Instruction* ReplaceDescriptorVariableIndexAccess::GetConstNull(
+Instruction* ReplaceDescArrayAccessUsingVarIndex::GetConstNull(
     uint32_t type_id) const {
   assert(type_id != 0 && "Result type is expected");
   auto* type = context()->get_type_mgr()->GetType(type_id);
@@ -379,7 +376,7 @@ Instruction* ReplaceDescriptorVariableIndexAccess::GetConstNull(
   return context()->get_constant_mgr()->GetDefiningInstruction(null_const);
 }
 
-void ReplaceDescriptorVariableIndexAccess::AddSwitchForAccessChain(
+void ReplaceDescArrayAccessUsingVarIndex::AddSwitchForAccessChain(
     BasicBlock* parent_block, uint32_t access_chain_index_var_id,
     uint32_t default_id, uint32_t merge_id,
     const std::vector<uint32_t>& case_block_ids) const {
@@ -392,7 +389,7 @@ void ReplaceDescriptorVariableIndexAccess::AddSwitchForAccessChain(
   builder.AddSwitch(access_chain_index_var_id, default_id, cases, merge_id);
 }
 
-uint32_t ReplaceDescriptorVariableIndexAccess::CreatePhiInstruction(
+uint32_t ReplaceDescArrayAccessUsingVarIndex::CreatePhiInstruction(
     BasicBlock* parent_block, const std::vector<uint32_t>& phi_operands,
     const std::vector<uint32_t>& case_block_ids,
     uint32_t default_block_id) const {
@@ -415,7 +412,7 @@ uint32_t ReplaceDescriptorVariableIndexAccess::CreatePhiInstruction(
   return phi->result_id();
 }
 
-void ReplaceDescriptorVariableIndexAccess::ReplacePhiIncomingBlock(
+void ReplaceDescArrayAccessUsingVarIndex::ReplacePhiIncomingBlock(
     uint32_t old_incoming_block_id, uint32_t new_incoming_block_id) const {
   context()->ReplaceAllUsesWithPredicate(
       old_incoming_block_id, new_incoming_block_id,

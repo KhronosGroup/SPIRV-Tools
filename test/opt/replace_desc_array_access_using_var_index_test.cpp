@@ -23,9 +23,9 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-using ReplaceDescriptorVariableIndexAccessTest = PassTest<::testing::Test>;
+using ReplaceDescArrayAccessUsingVarIndexTest = PassTest<::testing::Test>;
 
-TEST_F(ReplaceDescriptorVariableIndexAccessTest,
+TEST_F(ReplaceDescArrayAccessUsingVarIndexTest,
        ReplaceAccessChainToTextureArray) {
   const std::string text = R"(
                OpCapability Shader
@@ -170,10 +170,10 @@ TEST_F(ReplaceDescriptorVariableIndexAccessTest,
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ReplaceDescriptorVariableIndexAccess>(text, true);
+  SinglePassRunAndMatch<ReplaceDescArrayAccessUsingVarIndex>(text, true);
 }
 
-TEST_F(ReplaceDescriptorVariableIndexAccessTest,
+TEST_F(ReplaceDescArrayAccessUsingVarIndexTest,
        ReplaceAccessChainToTextureArrayAndSamplerArray) {
   const std::string text = R"(
                OpCapability Shader
@@ -326,10 +326,10 @@ TEST_F(ReplaceDescriptorVariableIndexAccessTest,
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ReplaceDescriptorVariableIndexAccess>(text, true);
+  SinglePassRunAndMatch<ReplaceDescArrayAccessUsingVarIndex>(text, true);
 }
 
-TEST_F(ReplaceDescriptorVariableIndexAccessTest,
+TEST_F(ReplaceDescArrayAccessUsingVarIndexTest,
        ReplaceAccessChainToTextureArrayWithSingleElement) {
   const std::string text = R"(
                OpCapability Shader
@@ -403,7 +403,7 @@ TEST_F(ReplaceDescriptorVariableIndexAccessTest,
                OpFunctionEnd
   )";
 
-  SinglePassRunAndMatch<ReplaceDescriptorVariableIndexAccess>(text, true);
+  SinglePassRunAndMatch<ReplaceDescArrayAccessUsingVarIndex>(text, true);
 }
 
 }  // namespace

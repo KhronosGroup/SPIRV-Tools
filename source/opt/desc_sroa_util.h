@@ -24,8 +24,7 @@ namespace opt {
 namespace descsroautil {
 
 // Returns true if |var| is an OpVariable instruction that represents a
-// descriptor array.  These are the variables that we want to replace accesses
-// to them.
+// descriptor array.
 bool IsDescriptorArray(IRContext* context, Instruction* var);
 
 // Returns true if |type| is a type that could be used for a structured buffer
@@ -38,12 +37,14 @@ bool IsTypeOfStructuredBuffer(IRContext* context, const Instruction* type);
 const analysis::Constant* GetAccessChainIndexAsConst(IRContext* context,
                                                      Instruction* access_chain);
 
-// Returns the number of elements of |var| whose type is an array or a struct.
+// Returns the number of elements of an OpVariable instruction |var| whose type
+// must be a pointer to an array or a struct.
 uint32_t GetNumberOfElementsForArrayOrStruct(IRContext* context,
                                              Instruction* var);
 
-// Returns the first operand id of the OpAccessChain or OpInBoundsAccessChain
-// instruction |access_chain|.
+// Returns the first Indexes operand id of the OpAccessChain or
+// OpInBoundsAccessChain instruction |access_chain|. The access chain must have
+// at least 1 index.
 uint32_t GetFirstIndexOfAccessChain(Instruction* access_chain);
 
 }  // namespace descsroautil
