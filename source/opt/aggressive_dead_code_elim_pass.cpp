@@ -33,7 +33,6 @@ namespace opt {
 namespace {
 
 const uint32_t kTypePointerStorageClassInIdx = 0;
-const uint32_t kEntryPointFunctionIdInIdx = 1;
 const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
 const uint32_t kCopyMemoryTargetAddrInIdx = 0;
@@ -106,7 +105,7 @@ void AggressiveDCEPass::AddStores(uint32_t ptrId) {
       case SpvOpAccessChain:
       case SpvOpInBoundsAccessChain:
       case SpvOpCopyObject:
-        this->AddStores(user->result_id());
+        AddStores(user->result_id());
         break;
       case SpvOpLoad:
         break;
