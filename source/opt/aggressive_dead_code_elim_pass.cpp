@@ -502,9 +502,9 @@ void AggressiveDCEPass::InitializeWorkList(
         case SpvOpCopyMemory:
         case SpvOpCopyMemorySized: {
           uint32_t var_id = 0;
-          uint32_t tagetAddrId =
+          uint32_t target_addr_id =
               ii->GetSingleWordInOperand(kCopyMemoryTargetAddrInIdx);
-          (void)GetPtr(tagetAddrId, &var_id);
+          (void)GetPtr(target_addr_id, &var_id);
           if (!IsLocalVar(var_id)) AddToWorklist(&*ii);
         } break;
         case SpvOpSwitch:
