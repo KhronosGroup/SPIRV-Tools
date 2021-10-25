@@ -6063,6 +6063,42 @@ TEST_F(ValidateImage, ImageTexelPointerRgba16fVulkan) {
                         "R32f, R32i, or R32ui for Vulkan environment"));
 }
 
+TEST_F(ValidateImage, ImageExecutionModeLimitationNoMode) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %2 " " %4
+%void = OpTypeVoid
+%8 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%12 = OpTypeImage %float 2D 0 0 0 1 Rgba8ui
+%13 = OpTypeSampledImage %12
+%_ptr_UniformConstant_13 = OpTypePointer UniformConstant %13
+%5 = OpVariable %_ptr_UniformConstant_13 UniformConstant
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%4 = OpVariable %_ptr_Input_v4float Input
+%v2float = OpTypeVector %float 2
+%float_1_35631564en19 = OpConstant %float 1.35631564e-19
+%2 = OpFunction %void None %8
+%8224 = OpLabel
+%6 = OpLoad %13 %5
+%19 = OpLoad %v4float %4
+%20 = OpVectorShuffle %v2float %19 %19 0 1
+%21 = OpVectorTimesScalar %v2float %20 %float_1_35631564en19
+%65312 = OpImageSampleImplicitLod %v4float %6 %21
+OpUnreachable
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ImplicitLod instructions require "
+                        "DerivativeGroupQuadsNV or DerivativeGroupLinearNV "
+                        "execution mode for GLCompute execution model"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
