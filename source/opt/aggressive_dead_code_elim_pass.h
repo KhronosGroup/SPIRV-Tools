@@ -67,10 +67,10 @@ class AggressiveDCEPass : public MemPass {
   // be 0 or the result of an instruction.
   bool IsVarOfStorage(uint32_t varId, uint32_t storageClass);
 
-  // Return true if |varId| is variable of function storage class or is
-  // private variable and privates can be optimized like locals (see
-  // privates_like_local_).
-  bool IsLocalVar(uint32_t varId);
+  // Return true if the instance of the variable |varId| can only be access in
+  // |func|.  For example, a function scope variable, or a private variable
+  // where |func| is an entry point with no function calls.
+  bool IsLocalVar(uint32_t varId, Function* func);
 
   // Return true if |inst| is marked live.
   bool IsLive(const Instruction* inst) const {
@@ -157,7 +157,7 @@ class AggressiveDCEPass : public MemPass {
   void MarkBlockAsLive(Instruction* inst);
 
   // Marks any variables from which |inst| may require data as live.
-  void MarkLoadedVariablesAsLive(Function* opernad_id, Instruction* inst);
+  void MarkLoadedVariablesAsLive(Function* func, Instruction* inst);
 
   // Returns the id of the variable that |ptr_id| point to.  |ptr_id| must be a
   // value whose type is a pointer.
@@ -207,8 +207,19 @@ class AggressiveDCEPass : public MemPass {
   // Returns true if |bb| is in the construct with header |header_block|.
   bool BlockIsInConstruct(BasicBlock* header_block, BasicBlock* bb);
 
-  // True if current function is entry point and has no function calls.
-  bool private_like_local_;
+  // Returns true if |func| is an entry point that does not have any function
+  // calls.
+  bool IsEntryPointWithNoCalls(Function* func);
+
+  // Returns true if |func| is an entry point.
+  bool IsEntryPoint(Function* func);
+
+  // Returns true if |func| contains a function call.
+  bool HasCall(Function* func);
+
+  // The cached results for |IsEntryPointWithNoCalls|.  It maps the function's
+  // result id to the return value.
+  std::unordered_map<uint32_t, bool> entry_point_with_no_calls_cache_;
 
   // Live Instruction Worklist.  An instruction is added to this list
   // if it might have a side effect, either directly or indirectly.
