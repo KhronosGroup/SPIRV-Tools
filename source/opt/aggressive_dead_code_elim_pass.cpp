@@ -97,28 +97,16 @@ bool AggressiveDCEPass::IsVarOfStorage(uint32_t varId, uint32_t storageClass) {
 }
 
 bool AggressiveDCEPass::IsLocalVar(uint32_t varId) {
-  if (IsVarOfStorage(varId, SpvStorageClassFunction)) {
-    return true;
-  }
-  if (!private_like_local_) {
-    return false;
-  }
-
-  return IsVarOfStorage(varId, SpvStorageClassPrivate) ||
-         IsVarOfStorage(varId, SpvStorageClassWorkgroup);
+  return IsVarOfStorage(varId, SpvStorageClassFunction);
 }
 
-void AggressiveDCEPass::AddStores(Function* func, uint32_t ptrId) {
-  get_def_use_mgr()->ForEachUser(ptrId, [this, ptrId, func](Instruction* user) {
-    // If the user is not a part of |func|, skip it.
-    BasicBlock* blk = context()->get_instr_block(user);
-    if (blk && blk->GetParent() != func) return;
-
+void AggressiveDCEPass::AddStores(uint32_t ptrId) {
+  get_def_use_mgr()->ForEachUser(ptrId, [this, ptrId](Instruction* user) {
     switch (user->opcode()) {
       case SpvOpAccessChain:
       case SpvOpInBoundsAccessChain:
       case SpvOpCopyObject:
-        this->AddStores(func, user->result_id());
+        this->AddStores(user->result_id());
         break;
       case SpvOpLoad:
         break;
@@ -188,13 +176,13 @@ bool AggressiveDCEPass::IsTargetDead(Instruction* inst) {
   return IsDead(tInst);
 }
 
-void AggressiveDCEPass::ProcessLoad(Function* func, uint32_t varId) {
+void AggressiveDCEPass::ProcessLoad(uint32_t varId) {
   // Only process locals
   if (!IsLocalVar(varId)) return;
   // Return if already processed
   if (live_local_vars_.find(varId) != live_local_vars_.end()) return;
   // Mark all stores to varId as live
-  AddStores(func, varId);
+  AddStores(varId);
   // Cache varId as processed
   live_local_vars_.insert(varId);
 }
@@ -270,7 +258,7 @@ bool AggressiveDCEPass::AggressiveDCE(Function* func) {
   cfg()->ComputeStructuredOrder(func, &*func->begin(), &structured_order);
   live_local_vars_.clear();
   InitializeWorkList(func, structured_order);
-  ProcessWorkList(func);
+  ProcessWorkList();
   return KillDeadInstructions(func, structured_order);
 }
 
@@ -324,13 +312,13 @@ bool AggressiveDCEPass::KillDeadInstructions(
   return modified;
 }
 
-void AggressiveDCEPass::ProcessWorkList(Function* func) {
+void AggressiveDCEPass::ProcessWorkList() {
   while (!worklist_.empty()) {
     Instruction* live_inst = worklist_.front();
     worklist_.pop();
     AddOperandsToWorkList(live_inst);
     MarkBlockAsLive(live_inst);
-    MarkLoadedVariablesAsLive(func, live_inst);
+    MarkLoadedVariablesAsLive(live_inst);
     AddDecorationsToWorkList(live_inst);
     AddDebugInstructionsToWorkList(live_inst);
   }
@@ -378,11 +366,10 @@ void AggressiveDCEPass::AddDecorationsToWorkList(const Instruction* inst) {
   }
 }
 
-void AggressiveDCEPass::MarkLoadedVariablesAsLive(Function* func,
-                                                  Instruction* inst) {
+void AggressiveDCEPass::MarkLoadedVariablesAsLive(Instruction* inst) {
   std::vector<uint32_t> live_variables = GetLoadedVariables(inst);
   for (uint32_t var_id : live_variables) {
-    ProcessLoad(func, var_id);
+    ProcessLoad(var_id);
   }
 }
 
@@ -504,14 +491,6 @@ void AggressiveDCEPass::InitializeWorkList(
   // branches that are not attached to a structured construct.
   // TODO(s-perron): The handling of branch seems to be adhoc.  This needs to be
   // cleaned up.
-  bool call_in_func = false;
-  bool func_is_entry_point = false;
-
-  // TODO(s-perron): We need to check if this is actually needed.  In cases
-  // where private variable can be treated as if they are function scope, the
-  // private-to-local pass should be able to change them to function scope.
-  std::vector<Instruction*> private_stores;
-
   for (auto& bi : structured_order) {
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
       SpvOp op = ii->opcode();
@@ -519,26 +498,15 @@ void AggressiveDCEPass::InitializeWorkList(
         case SpvOpStore: {
           uint32_t var_id = 0;
           (void)GetPtr(&*ii, &var_id);
-          // Mark stores as live if their variable is not function scope
-          // and is not private scope. Remember private stores for possible
-          // later inclusion.  We cannot call IsLocalVar at this point because
-          // private_like_local_ has not been set yet.
-          if (IsVarOfStorage(var_id, SpvStorageClassPrivate) ||
-              IsVarOfStorage(var_id, SpvStorageClassWorkgroup))
-            private_stores.push_back(&*ii);
-          else if (!IsVarOfStorage(var_id, SpvStorageClassFunction))
-            AddToWorklist(&*ii);
+          if (!IsLocalVar(var_id)) AddToWorklist(&*ii);
         } break;
         case SpvOpCopyMemory:
         case SpvOpCopyMemorySized: {
           uint32_t var_id = 0;
-          (void)GetPtr(ii->GetSingleWordInOperand(kCopyMemoryTargetAddrInIdx),
-                       &var_id);
-          if (IsVarOfStorage(var_id, SpvStorageClassPrivate) ||
-              IsVarOfStorage(var_id, SpvStorageClassWorkgroup))
-            private_stores.push_back(&*ii);
-          else if (!IsVarOfStorage(var_id, SpvStorageClassFunction))
-            AddToWorklist(&*ii);
+          uint32_t tagetAddrId =
+              ii->GetSingleWordInOperand(kCopyMemoryTargetAddrInIdx);
+          (void)GetPtr(tagetAddrId, &var_id);
+          if (!IsLocalVar(var_id)) AddToWorklist(&*ii);
         } break;
         case SpvOpSwitch:
         case SpvOpBranch:
@@ -559,26 +527,10 @@ void AggressiveDCEPass::InitializeWorkList(
           if (!ii->IsOpcodeSafeToDelete()) {
             AddToWorklist(&*ii);
           }
-          // Remember function calls
-          if (op == SpvOpFunctionCall) call_in_func = true;
         } break;
       }
     }
   }
-  // See if current function is an entry point
-  for (auto& ei : get_module()->entry_points()) {
-    if (ei.GetSingleWordInOperand(kEntryPointFunctionIdInIdx) ==
-        func->result_id()) {
-      func_is_entry_point = true;
-      break;
-    }
-  }
-  // If the current function is an entry point and has no function calls,
-  // we can optimize private variables as locals
-  private_like_local_ = func_is_entry_point && !call_in_func;
-  // If privates are not like local, add their stores to worklist
-  if (!private_like_local_)
-    for (auto& ps : private_stores) AddToWorklist(ps);
 }
 
 void AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {

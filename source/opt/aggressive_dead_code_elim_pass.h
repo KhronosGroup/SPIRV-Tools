@@ -93,7 +93,7 @@ class AggressiveDCEPass : public MemPass {
 
   // Add all store instruction which use |ptrId|, directly or indirectly,
   // to the live instruction worklist.
-  void AddStores(Function* func, uint32_t ptrId);
+  void AddStores(uint32_t ptrId);
 
   // Initialize extensions allowlist
   void InitExtensions();
@@ -107,7 +107,7 @@ class AggressiveDCEPass : public MemPass {
   bool IsTargetDead(Instruction* inst);
 
   // If |varId| is local, mark all stores of varId as live.
-  void ProcessLoad(Function* func, uint32_t varId);
+  void ProcessLoad(uint32_t varId);
 
   // Add branch to |labelId| to end of block |bp|.
   void AddBranch(uint32_t labelId, BasicBlock* bp);
@@ -144,7 +144,7 @@ class AggressiveDCEPass : public MemPass {
   // Process each instruction in the work list by marking any instruction that
   // that it depends on as live, and adding it to the work list.  The work list
   // will be empty at the end.
-  void ProcessWorkList(Function* func);
+  void ProcessWorkList();
 
   // Kills any instructions in |func| that have not been marked as live.
   bool KillDeadInstructions(const Function* func,
@@ -157,7 +157,7 @@ class AggressiveDCEPass : public MemPass {
   void MarkBlockAsLive(Instruction* inst);
 
   // Marks any variables from which |inst| may require data as live.
-  void MarkLoadedVariablesAsLive(Function* opernad_id, Instruction* inst);
+  void MarkLoadedVariablesAsLive(Instruction* inst);
 
   // Returns the id of the variable that |ptr_id| point to.  |ptr_id| must be a
   // value whose type is a pointer.
@@ -206,9 +206,6 @@ class AggressiveDCEPass : public MemPass {
 
   // Returns true if |bb| is in the construct with header |header_block|.
   bool BlockIsInConstruct(BasicBlock* header_block, BasicBlock* bb);
-
-  // True if current function is entry point and has no function calls.
-  bool private_like_local_;
 
   // Live Instruction Worklist.  An instruction is added to this list
   // if it might have a side effect, either directly or indirectly.
