@@ -77,9 +77,6 @@ class AggressiveDCEPass : public MemPass {
     return live_insts_.Get(inst->unique_id());
   }
 
-  // Returns true if |inst| is dead.
-  bool IsDead(Instruction* inst);
-
   // Adds entry points, execution modes and workgroup size decorations to the
   // worklist for processing with the first function.
   void InitializeModuleScopeLiveInstructions();
@@ -216,6 +213,16 @@ class AggressiveDCEPass : public MemPass {
 
   // Returns true if |func| contains a function call.
   bool HasCall(Function* func);
+
+  // Marks the first block, which is the entry block, in |func| as live.
+  void MarkFirstBlockAsLive(Function* func);
+
+  // Adds an OpUnreachable instruction at the end of |block|.
+  void AddUnreachable(BasicBlock*& block);
+
+  // Marks the OpLoopMerge and the terminator in |basic_block| as live if
+  // |basic_block| is a loop header.
+  void MarkLoopConstructAsLiveIfLoopHeader(BasicBlock* basic_block);
 
   // The cached results for |IsEntryPointWithNoCalls|.  It maps the function's
   // result id to the return value.

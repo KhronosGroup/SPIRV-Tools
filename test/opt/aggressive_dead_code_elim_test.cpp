@@ -8008,11 +8008,35 @@ OpFunctionEnd
   EXPECT_EQ(text, std::get<0>(result));
 }
 
-// TODO(greg-lunarg): Add tests to verify handling of these cases:
-//
-//    Check that logical addressing required
-//    Check that function calls inhibit optimization
-//    Others?
+TEST_F(AggressiveDCETest, EmptyContinueWithConditionalBranch) {
+  const std::string text = R"(OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %2 "main"
+OpExecutionMode %2 OriginUpperLeft
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%2 = OpFunction %void None %4
+%9 = OpLabel
+OpBranch %10
+%10 = OpLabel
+OpLoopMerge %11 %12 None
+OpBranch %13
+%13 = OpLabel
+OpKill
+%12 = OpLabel
+OpBranchConditional %false %10 %10
+%11 = OpLabel
+OpUnreachable
+OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_2);
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<AggressiveDCEPass>(text, text, false);
+}
 
 }  // namespace
 }  // namespace opt
