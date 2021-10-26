@@ -508,7 +508,7 @@ void AggressiveDCEPass::MarkLoopConstructAsLiveIfLoopHeader(
 }
 
 void AggressiveDCEPass::AddOperandsToWorkList(const Instruction* inst) {
-  inst->ForEachInId([&inst, this](const uint32_t* iid) {
+  inst->ForEachInId([this](const uint32_t* iid) {
     Instruction* inInst = get_def_use_mgr()->GetDef(*iid);
     AddToWorklist(inInst);
   });
