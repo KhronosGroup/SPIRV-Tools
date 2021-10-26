@@ -85,6 +85,7 @@ add_spvtools_unittest(TARGET opt
 	   remove_unused_interface_variables_test.cpp
        register_liveness.cpp
        relax_float_ops_test.cpp
+       replace_desc_array_access_using_var_index_test.cpp
        replace_invalid_opc_test.cpp
        scalar_analysis.cpp
        scalar_replacement_test.cpp

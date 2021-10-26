@@ -100,6 +100,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/debug_info_manager.cpp \
 		source/opt/def_use_manager.cpp \
 		source/opt/desc_sroa.cpp \
+		source/opt/desc_sroa_util.cpp \
 		source/opt/dominator_analysis.cpp \
 		source/opt/dominator_tree.cpp \
 		source/opt/eliminate_dead_constant_pass.cpp \
@@ -157,6 +158,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/relax_float_ops_pass.cpp \
 		source/opt/remove_duplicates_pass.cpp \
 		source/opt/remove_unused_interface_variables_pass.cpp \
+		source/opt/replace_desc_array_access_using_var_index.cpp \
 		source/opt/replace_invalid_opc.cpp \
 		source/opt/scalar_analysis.cpp \
 		source/opt/scalar_analysis_simplification.cpp \
