@@ -3403,6 +3403,45 @@ OpFunctionEnd
   SinglePassRunAndMatch<DeadBranchElimPass>(text, true);
 }
 
+TEST_F(DeadBranchElimTest, DontTransferDecorations) {
+  // When replacing %4 with %14, we don't want %14 to inherit %4's decorations.
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate {{%\w+}} RelaxedPrecision
+; CHECK: [[div:%\w+]] = OpFDiv
+; CHECK: {{%\w+}} = OpCopyObject %float [[div]]
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+          %3 = OpString "STEVEN"
+               OpDecorate %4 RelaxedPrecision
+      %float = OpTypeFloat 32
+       %uint = OpTypeInt 32 0
+       %void = OpTypeVoid
+    %float_1 = OpConstant %float 1
+     %uint_0 = OpConstant %uint 0
+         %10 = OpTypeFunction %void
+          %2 = OpFunction %void None %10
+         %11 = OpLabel
+               OpSelectionMerge %12 None
+               OpSwitch %uint_0 %13
+         %13 = OpLabel
+         %14 = OpFDiv %float %float_1 %float_1
+               OpLine %3 0 0
+               OpBranch %12
+         %15 = OpLabel
+               OpBranch %12
+         %12 = OpLabel
+          %4 = OpPhi %float %float_1 %15 %14 %13
+         %16 = OpCopyObject %float %4
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<DeadBranchElimPass>(text, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    More complex control flow
