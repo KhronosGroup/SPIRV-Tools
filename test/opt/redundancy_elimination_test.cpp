@@ -335,7 +335,7 @@ TEST_F(RedundancyEliminationTest, OpenCLDebugInfo100) {
   SinglePassRunAndMatch<RedundancyEliminationPass>(text, false);
 }
 
-TEST_F((RedundancyEliminationTest, FunctionDeclaration) {
+TEST_F(RedundancyEliminationTest, FunctionDeclaration) {
   // Make sure the pass works with a function declaration that is called.
   const std::string text = R"(OpCapability Addresses
 OpCapability Linkage
