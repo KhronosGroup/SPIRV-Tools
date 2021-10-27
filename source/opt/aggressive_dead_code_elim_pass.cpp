@@ -278,7 +278,7 @@ bool AggressiveDCEPass::KillDeadInstructions(
   for (auto bi = structured_order.begin(); bi != structured_order.end();) {
     uint32_t merge_block_id = 0;
     (*bi)->ForEachInst([this, &modified, &merge_block_id](Instruction* inst) {
-      if (!!IsLive(inst)) return;
+      if (IsLive(inst)) return;
       if (inst->opcode() == SpvOpLabel) return;
       // If dead instruction is selection merge, remember merge block
       // for new branch at end of block
@@ -849,13 +849,13 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
   }
 
   for (auto& dbg : get_module()->ext_inst_debuginfo()) {
-    if (!!IsLive(&dbg)) continue;
+    if (IsLive(&dbg)) continue;
     // Save GlobalVariable if its variable is live, otherwise null out variable
     // index
     if (dbg.GetCommonDebugOpcode() == CommonDebugInfoDebugGlobalVariable) {
       auto var_id = dbg.GetSingleWordOperand(kGlobalVariableVariableIndex);
       Instruction* var_inst = get_def_use_mgr()->GetDef(var_id);
-      if (!!IsLive(var_inst)) continue;
+      if (IsLive(var_inst)) continue;
       context()->ForgetUses(&dbg);
       dbg.SetOperand(
           kGlobalVariableVariableIndex,
@@ -878,7 +878,7 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
       if (val.opcode() == SpvOpTypeForwardPointer) {
         uint32_t ptr_ty_id = val.GetSingleWordInOperand(0);
         Instruction* ptr_ty_inst = get_def_use_mgr()->GetDef(ptr_ty_id);
-        if (!!IsLive(ptr_ty_inst)) continue;
+        if (IsLive(ptr_ty_inst)) continue;
       }
       to_kill_.push_back(&val);
       modified = true;
@@ -897,7 +897,7 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
         } else {
           auto* var =
               get_def_use_mgr()->GetDef(entry.GetSingleWordInOperand(i));
-          if (!!IsLive(var)) {
+          if (IsLive(var)) {
             new_operands.push_back(entry.GetInOperand(i));
           }
         }
