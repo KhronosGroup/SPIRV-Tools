@@ -5865,15 +5865,11 @@ INSTANTIATE_TEST_SUITE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "OpReturn\n" +
       "OpFunctionEnd\n",
     4, false),
-  // Test case 11: merge sdiv of snegate
-  // (-x) / 2 = x / -2
+  // Test case 11: Do not merge sdiv of snegate.  If %2 is INT_MIN, then the
+  // sign of %3 will be the same as %2.  This cannot be accounted for in OpSDiv.
+  // Specifically, (-INT_MIN) / 2 != INT_MIN / -2.
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
-      "; CHECK: OpConstant [[int]] -2147483648\n" +
-      "; CHECK: [[int_n2:%\\w+]] = OpConstant [[int]] -2{{[[:space:]]}}\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
-      "; CHECK: %4 = OpSDiv [[int]] [[ld]] [[int_n2]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_int Function\n" +
@@ -5882,16 +5878,12 @@ INSTANTIATE_TEST_SUITE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "%4 = OpSDiv %int %3 %int_2\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true),
-  // Test case 12: merge sdiv of snegate
-  // 2 / (-x) = -2 / x
+    4, false),
+  // Test case 12: Do not merge sdiv of snegate.  If %2 is INT_MIN, then the
+  // sign of %3 will be the same as %2.  This cannot be accounted for in OpSDiv.
+  // Specifically, 2 / (-INT_MIN) != -2 / INT_MIN.
   InstructionFoldingCase<bool>(
     Header() +
-      "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
-      "; CHECK: OpConstant [[int]] -2147483648\n" +
-      "; CHECK: [[int_n2:%\\w+]] = OpConstant [[int]] -2{{[[:space:]]}}\n" +
-      "; CHECK: [[ld:%\\w+]] = OpLoad [[int]]\n" +
-      "; CHECK: %4 = OpSDiv [[int]] [[int_n2]] [[ld]]\n" +
       "%main = OpFunction %void None %void_func\n" +
       "%main_lab = OpLabel\n" +
       "%var = OpVariable %_ptr_int Function\n" +
@@ -5900,7 +5892,7 @@ INSTANTIATE_TEST_SUITE_P(MergeDivTest, MatchingInstructionFoldingTest,
       "%4 = OpSDiv %int %int_2 %3\n" +
       "OpReturn\n" +
       "OpFunctionEnd\n",
-    4, true),
+    4, false),
   // Test case 13: Don't merge
   // (x / {null}) / {null}
   InstructionFoldingCase<bool>(
