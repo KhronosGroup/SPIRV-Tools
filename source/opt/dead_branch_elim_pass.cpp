@@ -420,6 +420,10 @@ bool DeadBranchElimPass::EraseDeadBlocks(
 }
 
 bool DeadBranchElimPass::EliminateDeadBranches(Function* func) {
+  if (func->IsDeclaration()) {
+    return false;
+  }
+
   bool modified = false;
   std::unordered_set<BasicBlock*> live_blocks;
   modified |= MarkLiveBlocks(func, &live_blocks);
