@@ -997,7 +997,9 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
 
       const bool phys_storage_buffer =
           storageClass == SpvStorageClassPhysicalStorageBufferEXT;
-      const bool workgroup = storageClass == SpvStorageClassWorkgroup;
+      const bool workgroup =
+          storageClass == SpvStorageClassWorkgroup &&
+          vstate.HasCapability(SpvCapabilityWorkgroupMemoryExplicitLayoutKHR);
       if (uniform || push_constant || storage_buffer || phys_storage_buffer ||
           workgroup) {
         const auto ptrInst = vstate.FindDef(words[1]);
