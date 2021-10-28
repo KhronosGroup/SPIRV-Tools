@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_PASS_OBFUSCATE_CONSTANTS_
-#define SOURCE_FUZZ_FUZZER_PASS_OBFUSCATE_CONSTANTS_
+#ifndef SOURCE_FUZZ_FUZZER_PASS_OBFUSCATE_CONSTANTS_H_
+#define SOURCE_FUZZ_FUZZER_PASS_OBFUSCATE_CONSTANTS_H_
 
 #include <vector>
 
@@ -30,9 +30,8 @@ class FuzzerPassObfuscateConstants : public FuzzerPass {
   FuzzerPassObfuscateConstants(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       FuzzerContext* fuzzer_context,
-      protobufs::TransformationSequence* transformations);
-
-  ~FuzzerPassObfuscateConstants() override;
+      protobufs::TransformationSequence* transformations,
+      bool ignore_inapplicable_transformations);
 
   void Apply() override;
 
@@ -109,4 +108,4 @@ class FuzzerPassObfuscateConstants : public FuzzerPass {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_FUZZER_PASS_OBFUSCATE_CONSTANTS_
+#endif  // SOURCE_FUZZ_FUZZER_PASS_OBFUSCATE_CONSTANTS_H_

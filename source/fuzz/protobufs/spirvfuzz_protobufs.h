@@ -23,6 +23,10 @@
 
 #if defined(__clang__)
 #pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-warning-option"  // Must come first
+#pragma clang diagnostic ignored "-Wreserved-identifier"
+#pragma clang diagnostic ignored "-Wshadow"
+#pragma clang diagnostic ignored "-Wsuggest-destructor-override"
 #pragma clang diagnostic ignored "-Wunused-parameter"
 #elif defined(__GNUC__)
 #pragma GCC diagnostic push
@@ -39,6 +43,7 @@
 // where warnings are ignored.
 
 #include "google/protobuf/util/json_util.h"
+#include "google/protobuf/util/message_differencer.h"
 #include "source/fuzz/protobufs/spvtoolsfuzz.pb.h"
 
 #if defined(__clang__)

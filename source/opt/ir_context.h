@@ -98,6 +98,7 @@ class IRContext {
         module_(new Module()),
         consumer_(std::move(c)),
         def_use_mgr_(nullptr),
+        feature_mgr_(nullptr),
         valid_analyses_(kAnalysisNone),
         constant_mgr_(nullptr),
         type_mgr_(nullptr),
@@ -116,6 +117,7 @@ class IRContext {
         module_(std::move(m)),
         consumer_(std::move(c)),
         def_use_mgr_(nullptr),
+        feature_mgr_(nullptr),
         valid_analyses_(kAnalysisNone),
         type_mgr_(nullptr),
         id_to_name_(nullptr),
@@ -190,8 +192,8 @@ class IRContext {
   inline IteratorRange<Module::const_inst_iterator> debugs3() const;
 
   // Iterators for debug info instructions (excluding OpLine & OpNoLine)
-  // contained in this module.  These are OpExtInst for OpenCL.DebugInfo.100
-  // or DebugInfo extension placed between section 9 and 10.
+  // contained in this module.  These are OpExtInst for DebugInfo extension
+  // placed between section 9 and 10.
   inline Module::inst_iterator ext_inst_debuginfo_begin();
   inline Module::inst_iterator ext_inst_debuginfo_end();
   inline IteratorRange<Module::inst_iterator> ext_inst_debuginfo();
@@ -357,6 +359,13 @@ class IRContext {
   inline IteratorRange<std::multimap<uint32_t, Instruction*>::iterator>
   GetNames(uint32_t id);
 
+  // Returns an OpMemberName instruction that targets |struct_type_id| at
+  // index |index|. Returns nullptr if no such instruction exists.
+  // While the SPIR-V spec does not prohibit having multiple OpMemberName
+  // instructions for the same structure member, it is hard to imagine a member
+  // having more than one name. This method returns the first one it finds.
+  inline Instruction* GetMemberName(uint32_t struct_type_id, uint32_t index);
+
   // Sets the message consumer to the given |consumer|. |consumer| which will be
   // invoked every time there is a message to be communicated to the outside.
   void SetMessageConsumer(MessageConsumer c) { consumer_ = std::move(c); }
@@ -396,6 +405,11 @@ class IRContext {
   // instruction exists.
   Instruction* KillInst(Instruction* inst);
 
+  // Collects the non-semantic instruction tree that uses |inst|'s result id
+  // to be killed later.
+  void CollectNonSemanticTree(Instruction* inst,
+                              std::unordered_set<Instruction*>* to_kill);
+
   // Returns true if all of the given analyses are valid.
   bool AreAnalysesValid(Analysis set) { return (set & valid_analyses_) == set; }
 
@@ -408,13 +422,13 @@ class IRContext {
   bool ReplaceAllUsesWith(uint32_t before, uint32_t after);
 
   // Replace all uses of |before| id with |after| id if those uses
-  // (instruction, operand pair) return true for |predicate|. Returns true if
+  // (instruction) return true for |predicate|. Returns true if
   // any replacement happens. This method does not kill the definition of the
   // |before| id. If |after| is the same as |before|, does nothing and return
   // false.
   bool ReplaceAllUsesWithPredicate(
       uint32_t before, uint32_t after,
-      const std::function<bool(Instruction*, uint32_t)>& predicate);
+      const std::function<bool(Instruction*)>& predicate);
 
   // Returns true if all of the analyses that are suppose to be valid are
   // actually valid.
@@ -586,9 +600,13 @@ class IRContext {
   bool ProcessCallTreeFromRoots(ProcessFunction& pfn,
                                 std::queue<uint32_t>* roots);
 
-  // Emmits a error message to the message consumer indicating the error
+  // Emits a error message to the message consumer indicating the error
   // described by |message| occurred in |inst|.
   void EmitErrorMessage(std::string message, Instruction* inst);
+
+  // Returns true if and only if there is a path to |bb| from the entry block of
+  // the function that contains |bb|.
+  bool IsReachable(const opt::BasicBlock& bb);
 
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
@@ -753,6 +771,8 @@ class IRContext {
 
   // The instruction decoration manager for |module_|.
   std::unique_ptr<analysis::DecorationManager> decoration_mgr_;
+
+  // The feature manager for |module_|.
   std::unique_ptr<FeatureManager> feature_mgr_;
 
   // A map from instructions to the basic block they belong to. This mapping is
@@ -1061,7 +1081,9 @@ void IRContext::AddDebug1Inst(std::unique_ptr<Instruction>&& d) {
 void IRContext::AddDebug2Inst(std::unique_ptr<Instruction>&& d) {
   if (AreAnalysesValid(kAnalysisNameMap)) {
     if (d->opcode() == SpvOpName || d->opcode() == SpvOpMemberName) {
-      id_to_name_->insert({d->result_id(), d.get()});
+      // OpName and OpMemberName do not have result-ids. The target of the
+      // instruction is at InOperand index 0.
+      id_to_name_->insert({d->GetSingleWordInOperand(0), d.get()});
     }
   }
   module()->AddDebug2Inst(std::move(d));
@@ -1133,6 +1155,21 @@ IRContext::GetNames(uint32_t id) {
   }
   auto result = id_to_name_->equal_range(id);
   return make_range(std::move(result.first), std::move(result.second));
+}
+
+Instruction* IRContext::GetMemberName(uint32_t struct_type_id, uint32_t index) {
+  if (!AreAnalysesValid(kAnalysisNameMap)) {
+    BuildIdToNameMap();
+  }
+  auto result = id_to_name_->equal_range(struct_type_id);
+  for (auto i = result.first; i != result.second; ++i) {
+    auto* name_instr = i->second;
+    if (name_instr->opcode() == SpvOpMemberName &&
+        name_instr->GetSingleWordInOperand(1) == index) {
+      return name_instr;
+    }
+  }
+  return nullptr;
 }
 
 }  // namespace opt

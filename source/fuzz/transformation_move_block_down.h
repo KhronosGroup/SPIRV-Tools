@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationMoveBlockDown : public Transformation {
  public:
   explicit TransformationMoveBlockDown(
-      const protobufs::TransformationMoveBlockDown& message);
+      protobufs::TransformationMoveBlockDown message);
 
   explicit TransformationMoveBlockDown(uint32_t id);
 
@@ -43,6 +43,8 @@ class TransformationMoveBlockDown : public Transformation {
   // between it and the block that follows it is swapped.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

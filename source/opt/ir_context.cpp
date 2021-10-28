@@ -30,7 +30,8 @@ static const int kSpvDecorateBuiltinInIdx = 2;
 static const int kEntryPointInterfaceInIdx = 3;
 static const int kEntryPointFunctionIdInIdx = 1;
 
-// Constants for OpenCL.DebugInfo.100 extension instructions.
+// Constants for OpenCL.DebugInfo.100 / NonSemantic.Shader.DebugInfo.100
+// extension instructions.
 static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
 static const uint32_t kDebugGlobalVariableOperandVariableIndex = 11;
 
@@ -97,8 +98,9 @@ void IRContext::InvalidateAnalysesExceptFor(
 }
 
 void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
-  // The ConstantManager contains Type pointers. If the TypeManager goes
-  // away, the ConstantManager has to go away.
+  // The ConstantManager and DebugInfoManager contain Type pointers. If the
+  // TypeManager goes away, the ConstantManager and DebugInfoManager have to
+  // go away.
   if (analyses_to_invalidate & kAnalysisTypes) {
     analyses_to_invalidate |= kAnalysisConstants;
     analyses_to_invalidate |= kAnalysisDebugInfo;
@@ -169,7 +171,9 @@ Instruction* IRContext::KillInst(Instruction* inst) {
   KillOperandFromDebugInstructions(inst);
 
   if (AreAnalysesValid(kAnalysisDefUse)) {
-    get_def_use_mgr()->ClearInst(inst);
+    analysis::DefUseManager* def_use_mgr = get_def_use_mgr();
+    def_use_mgr->ClearInst(inst);
+    for (auto& l_inst : inst->dbg_line_insts()) def_use_mgr->ClearInst(&l_inst);
   }
   if (AreAnalysesValid(kAnalysisInstrToBlockMapping)) {
     instr_to_block_.erase(inst);
@@ -178,6 +182,10 @@ Instruction* IRContext::KillInst(Instruction* inst) {
     if (inst->IsDecoration()) {
       decoration_mgr_->RemoveDecoration(inst);
     }
+  }
+  if (AreAnalysesValid(kAnalysisDebugInfo)) {
+    get_debug_info_mgr()->ClearDebugScopeAndInlinedAtUses(inst);
+    get_debug_info_mgr()->ClearDebugInfo(inst);
   }
   if (type_mgr_ && IsTypeInst(inst->opcode())) {
     type_mgr_->RemoveId(inst->result_id());
@@ -209,6 +217,28 @@ Instruction* IRContext::KillInst(Instruction* inst) {
   return next_instruction;
 }
 
+void IRContext::CollectNonSemanticTree(
+    Instruction* inst, std::unordered_set<Instruction*>* to_kill) {
+  if (!inst->HasResultId()) return;
+  // Debug[No]Line result id is not used, so we are done
+  if (inst->IsDebugLineInst()) return;
+  std::vector<Instruction*> work_list;
+  std::unordered_set<Instruction*> seen;
+  work_list.push_back(inst);
+
+  while (!work_list.empty()) {
+    auto* i = work_list.back();
+    work_list.pop_back();
+    get_def_use_mgr()->ForEachUser(
+        i, [&work_list, to_kill, &seen](Instruction* user) {
+          if (user->IsNonSemanticInstruction() && seen.insert(user).second) {
+            work_list.push_back(user);
+            to_kill->insert(user);
+          }
+        });
+  }
+}
+
 bool IRContext::KillDef(uint32_t id) {
   Instruction* def = get_def_use_mgr()->GetDef(id);
   if (def != nullptr) {
@@ -219,14 +249,19 @@ bool IRContext::KillDef(uint32_t id) {
 }
 
 bool IRContext::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
-  return ReplaceAllUsesWithPredicate(
-      before, after, [](Instruction*, uint32_t) { return true; });
+  return ReplaceAllUsesWithPredicate(before, after,
+                                     [](Instruction*) { return true; });
 }
 
 bool IRContext::ReplaceAllUsesWithPredicate(
     uint32_t before, uint32_t after,
-    const std::function<bool(Instruction*, uint32_t)>& predicate) {
+    const std::function<bool(Instruction*)>& predicate) {
   if (before == after) return false;
+
+  if (AreAnalysesValid(kAnalysisDebugInfo)) {
+    get_debug_info_mgr()->ReplaceAllUsesInDebugScopeWithPredicate(before, after,
+                                                                  predicate);
+  }
 
   // Ensure that |after| has been registered as def.
   assert(get_def_use_mgr()->GetDef(after) &&
@@ -235,7 +270,7 @@ bool IRContext::ReplaceAllUsesWithPredicate(
   std::vector<std::pair<Instruction*, uint32_t>> uses_to_update;
   get_def_use_mgr()->ForEachUse(
       before, [&predicate, &uses_to_update](Instruction* user, uint32_t index) {
-        if (predicate(user, index)) {
+        if (predicate(user)) {
           uses_to_update.emplace_back(user, index);
         }
       });
@@ -273,7 +308,6 @@ bool IRContext::ReplaceAllUsesWithPredicate(
     }
     AnalyzeUses(user);
   }
-
   return true;
 }
 
@@ -344,6 +378,9 @@ void IRContext::ForgetUses(Instruction* inst) {
       get_decoration_mgr()->RemoveDecoration(inst);
     }
   }
+  if (AreAnalysesValid(kAnalysisDebugInfo)) {
+    get_debug_info_mgr()->ClearDebugInfo(inst);
+  }
   RemoveFromIdToName(inst);
 }
 
@@ -355,6 +392,9 @@ void IRContext::AnalyzeUses(Instruction* inst) {
     if (inst->IsDecoration()) {
       get_decoration_mgr()->AddDecoration(inst);
     }
+  }
+  if (AreAnalysesValid(kAnalysisDebugInfo)) {
+    get_debug_info_mgr()->AnalyzeDebugInst(inst);
   }
   if (id_to_name_ &&
       (inst->opcode() == SpvOpName || inst->opcode() == SpvOpMemberName)) {
@@ -394,6 +434,7 @@ void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
       if (operand.words[0] == id) {
         operand.words[0] =
             get_debug_info_mgr()->GetDebugInfoNone()->result_id();
+        get_def_use_mgr()->AnalyzeInstUse(&*it);
       }
     }
   }
@@ -401,20 +442,16 @@ void IRContext::KillOperandFromDebugInstructions(Instruction* inst) {
   if (opcode == SpvOpVariable || IsConstantInst(opcode)) {
     for (auto it = module()->ext_inst_debuginfo_begin();
          it != module()->ext_inst_debuginfo_end(); ++it) {
-      if (it->GetOpenCL100DebugOpcode() !=
-          OpenCLDebugInfo100DebugGlobalVariable)
+      if (it->GetCommonDebugOpcode() != CommonDebugInfoDebugGlobalVariable)
         continue;
       auto& operand = it->GetOperand(kDebugGlobalVariableOperandVariableIndex);
       if (operand.words[0] == id) {
         operand.words[0] =
             get_debug_info_mgr()->GetDebugInfoNone()->result_id();
+        get_def_use_mgr()->AnalyzeInstUse(&*it);
       }
     }
   }
-  // Notice that we do not need anythings to do for local variables.
-  // DebugLocalVariable does not have an OpVariable operand. Instead,
-  // DebugDeclare/DebugValue has an OpVariable operand for a local
-  // variable. The function inlining pass handles it properly.
 }
 
 void IRContext::AddCombinatorsForCapability(uint32_t capability) {
@@ -438,7 +475,7 @@ void IRContext::AddCombinatorsForCapability(uint32_t capability) {
                                SpvOpTypeSampledImage,
                                SpvOpTypeAccelerationStructureNV,
                                SpvOpTypeAccelerationStructureKHR,
-                               SpvOpTypeRayQueryProvisionalKHR,
+                               SpvOpTypeRayQueryKHR,
                                SpvOpTypeArray,
                                SpvOpTypeRuntimeArray,
                                SpvOpTypeStruct,
@@ -897,7 +934,7 @@ void IRContext::EmitErrorMessage(std::string message, Instruction* inst) {
   while (line_inst != nullptr) {  // Stop at the beginning of the basic block.
     if (!line_inst->dbg_line_insts().empty()) {
       line_inst = &line_inst->dbg_line_insts().back();
-      if (line_inst->opcode() == SpvOpNoLine) {
+      if (line_inst->IsNoLine()) {
         line_inst = nullptr;
       }
       break;
@@ -1000,6 +1037,12 @@ bool IRContext::CheckCFG() {
   }
 
   return true;
+}
+
+bool IRContext::IsReachable(const opt::BasicBlock& bb) {
+  auto enclosing_function = bb.GetParent();
+  return GetDominatorAnalysis(enclosing_function)
+      ->Dominates(enclosing_function->entry().get(), &bb);
 }
 }  // namespace opt
 }  // namespace spvtools

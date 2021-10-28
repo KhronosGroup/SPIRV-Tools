@@ -106,9 +106,6 @@ class BasicBlock {
   /// Returns the immedate post dominator of this basic block
   const BasicBlock* immediate_post_dominator() const;
 
-  /// Ends the block without a successor
-  void RegisterBranchInstruction(SpvOp branch_instruction);
-
   /// Returns the label instruction for the block, or nullptr if not set.
   const Instruction* label() const { return label_; }
 
@@ -142,9 +139,14 @@ class BasicBlock {
   /// @brief A BasicBlock dominator iterator class
   ///
   /// This iterator will iterate over the (post)dominators of the block
-  class DominatorIterator
-      : public std::iterator<std::forward_iterator_tag, BasicBlock*> {
+  class DominatorIterator {
    public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = BasicBlock*;
+    using pointer = value_type*;
+    using reference = value_type&;
+    using difference_type = std::ptrdiff_t;
+
     /// @brief Constructs the end of dominator iterator
     ///
     /// This will create an iterator which will represent the element

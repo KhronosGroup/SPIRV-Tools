@@ -199,7 +199,8 @@ INSTANTIATE_TEST_SUITE_P(
                 CASE1(STORAGE_CLASS, StorageClassOutput, Shader),
                 CASE0(STORAGE_CLASS, StorageClassWorkgroup),
                 CASE0(STORAGE_CLASS, StorageClassCrossWorkgroup),
-                CASE1(STORAGE_CLASS, StorageClassPrivate, Shader),
+                CASE2(STORAGE_CLASS, StorageClassPrivate, Shader,
+                      VectorComputeINTEL),
                 CASE0(STORAGE_CLASS, StorageClassFunction),
                 CASE1(STORAGE_CLASS, StorageClassGeneric,
                       GenericPointer),  // Bug 14287
@@ -367,19 +368,6 @@ INSTANTIATE_TEST_SUITE_P(
                 // clang-format on
             })));
 
-// See SPIR-V Section 3.15 FP Fast Math Mode
-INSTANTIATE_TEST_SUITE_P(
-    FPFastMathMode, EnumCapabilityTest,
-    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
-            ValuesIn(std::vector<EnumCapabilityCase>{
-                CASE0(FP_FAST_MATH_MODE, FPFastMathModeMaskNone),
-                CASE1(FP_FAST_MATH_MODE, FPFastMathModeNotNaNMask, Kernel),
-                CASE1(FP_FAST_MATH_MODE, FPFastMathModeNotInfMask, Kernel),
-                CASE1(FP_FAST_MATH_MODE, FPFastMathModeNSZMask, Kernel),
-                CASE1(FP_FAST_MATH_MODE, FPFastMathModeAllowRecipMask, Kernel),
-                CASE1(FP_FAST_MATH_MODE, FPFastMathModeFastMask, Kernel),
-            })));
-
 // See SPIR-V Section 3.17 Linkage Type
 INSTANTIATE_TEST_SUITE_P(
     LinkageType, EnumCapabilityTest,
@@ -498,11 +486,11 @@ INSTANTIATE_TEST_SUITE_P(
             CASE1(BUILT_IN, BuiltInCullDistance, CullDistance),  // Bug 1407, 15234
             CASE1(BUILT_IN, BuiltInVertexId, Shader),
             CASE1(BUILT_IN, BuiltInInstanceId, Shader),
-            CASE4(BUILT_IN, BuiltInPrimitiveId, Geometry, Tessellation,
-                  RayTracingNV, RayTracingProvisionalKHR),
+            CASE5(BUILT_IN, BuiltInPrimitiveId, Geometry, Tessellation,
+                  RayTracingNV, RayTracingKHR, MeshShadingNV),
             CASE2(BUILT_IN, BuiltInInvocationId, Geometry, Tessellation),
-            CASE2(BUILT_IN, BuiltInLayer, Geometry, ShaderViewportIndexLayerEXT),
-            CASE2(BUILT_IN, BuiltInViewportIndex, MultiViewport, ShaderViewportIndexLayerEXT),  // Bug 15234
+            CASE3(BUILT_IN, BuiltInLayer, Geometry, ShaderViewportIndexLayerEXT, MeshShadingNV),
+            CASE3(BUILT_IN, BuiltInViewportIndex, MultiViewport, ShaderViewportIndexLayerEXT, MeshShadingNV),  // Bug 15234
             CASE1(BUILT_IN, BuiltInTessLevelOuter, Tessellation),
             CASE1(BUILT_IN, BuiltInTessLevelInner, Tessellation),
             CASE1(BUILT_IN, BuiltInTessCoord, Tessellation),
@@ -545,10 +533,11 @@ INSTANTIATE_TEST_SUITE_P(
         Values(SPV_ENV_UNIVERSAL_1_5),
         ValuesIn(std::vector<EnumCapabilityCase>{
             // SPIR-V 1.5 adds new capabilities to enable these two builtins.
-            CASE3(BUILT_IN, BuiltInLayer, Geometry, ShaderLayer,
-                  ShaderViewportIndexLayerEXT),
-            CASE3(BUILT_IN, BuiltInViewportIndex, MultiViewport,
-                  ShaderViewportIndex, ShaderViewportIndexLayerEXT),
+            CASE4(BUILT_IN, BuiltInLayer, Geometry, ShaderLayer,
+                  ShaderViewportIndexLayerEXT, MeshShadingNV),
+            CASE4(BUILT_IN, BuiltInViewportIndex, MultiViewport,
+                  ShaderViewportIndex, ShaderViewportIndexLayerEXT,
+                  MeshShadingNV),
         })));
 
 // See SPIR-V Section 3.22 Selection Control

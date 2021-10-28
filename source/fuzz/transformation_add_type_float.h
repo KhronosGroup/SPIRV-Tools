@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationAddTypeFloat : public Transformation {
  public:
   explicit TransformationAddTypeFloat(
-      const protobufs::TransformationAddTypeFloat& message);
+      protobufs::TransformationAddTypeFloat message);
 
   TransformationAddTypeFloat(uint32_t fresh_id, uint32_t width);
 
@@ -40,6 +40,8 @@ class TransformationAddTypeFloat : public Transformation {
   // Adds an OpTypeFloat instruction to the module with the given width
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

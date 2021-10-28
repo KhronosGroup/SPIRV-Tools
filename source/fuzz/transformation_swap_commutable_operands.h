@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationSwapCommutableOperands : public Transformation {
  public:
   explicit TransformationSwapCommutableOperands(
-      const protobufs::TransformationSwapCommutableOperands& message);
+      protobufs::TransformationSwapCommutableOperands message);
 
   TransformationSwapCommutableOperands(
       const protobufs::InstructionDescriptor& instruction_descriptor);
@@ -40,6 +40,8 @@ class TransformationSwapCommutableOperands : public Transformation {
   // Swaps the commutable operands.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

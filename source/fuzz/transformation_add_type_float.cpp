@@ -26,8 +26,8 @@ TransformationAddTypeFloat::TransformationAddTypeFloat(uint32_t fresh_id,
 }
 
 TransformationAddTypeFloat::TransformationAddTypeFloat(
-    const spvtools::fuzz::protobufs::TransformationAddTypeFloat& message)
-    : message_(message) {}
+    protobufs::TransformationAddTypeFloat message)
+    : message_(std::move(message)) {}
 
 bool TransformationAddTypeFloat::IsApplicable(
     opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
@@ -36,29 +36,57 @@ bool TransformationAddTypeFloat::IsApplicable(
     return false;
   }
 
+  // Checks float type width capabilities.
+  switch (message_.width()) {
+    case 16:
+      // The Float16 capability must be present.
+      if (!ir_context->get_feature_mgr()->HasCapability(SpvCapabilityFloat16)) {
+        return false;
+      }
+      break;
+    case 32:
+      // No capabilities needed.
+      break;
+    case 64:
+      // The Float64 capability must be present.
+      if (!ir_context->get_feature_mgr()->HasCapability(SpvCapabilityFloat64)) {
+        return false;
+      }
+      break;
+    default:
+      assert(false && "Unexpected float type width");
+      return false;
+  }
+
   // Applicable if there is no float type with this width already declared in
   // the module.
-  opt::analysis::Float float_type(message_.width());
-  return ir_context->get_type_mgr()->GetId(&float_type) == 0;
+  return fuzzerutil::MaybeGetFloatType(ir_context, message_.width()) == 0;
 }
 
 void TransformationAddTypeFloat::Apply(
     opt::IRContext* ir_context, TransformationContext* /*unused*/) const {
-  opt::Instruction::OperandList width = {
-      {SPV_OPERAND_TYPE_LITERAL_INTEGER, {message_.width()}}};
-  ir_context->module()->AddType(MakeUnique<opt::Instruction>(
-      ir_context, SpvOpTypeFloat, 0, message_.fresh_id(), width));
+  auto type_instruction = MakeUnique<opt::Instruction>(
+      ir_context, SpvOpTypeFloat, 0, message_.fresh_id(),
+      opt::Instruction::OperandList{
+          {SPV_OPERAND_TYPE_LITERAL_INTEGER, {message_.width()}}});
+  auto type_instruction_ptr = type_instruction.get();
+  ir_context->module()->AddType(std::move(type_instruction));
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
-  // We have added an instruction to the module, so need to be careful about the
-  // validity of existing analyses.
-  ir_context->InvalidateAnalysesExceptFor(
-      opt::IRContext::Analysis::kAnalysisNone);
+
+  // Inform the def use manager that there is a new definition, and invalidate
+  // the type manager since we have added a new type.
+  ir_context->get_def_use_mgr()->AnalyzeInstDef(type_instruction_ptr);
+  ir_context->InvalidateAnalyses(opt::IRContext::kAnalysisTypes);
 }
 
 protobufs::Transformation TransformationAddTypeFloat::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_add_type_float() = message_;
   return result;
+}
+
+std::unordered_set<uint32_t> TransformationAddTypeFloat::GetFreshIds() const {
+  return {message_.fresh_id()};
 }
 
 }  // namespace fuzz

@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationAddTypePointer : public Transformation {
  public:
   explicit TransformationAddTypePointer(
-      const protobufs::TransformationAddTypePointer& message);
+      protobufs::TransformationAddTypePointer message);
 
   TransformationAddTypePointer(uint32_t fresh_id, SpvStorageClass storage_class,
                                uint32_t base_type_id);
@@ -42,6 +42,8 @@ class TransformationAddTypePointer : public Transformation {
   // type to the module.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

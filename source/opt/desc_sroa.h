@@ -46,10 +46,6 @@ class DescriptorScalarReplacement : public Pass {
   }
 
  private:
-  // Returns true if |var| is an OpVariable instruction that represents a
-  // descriptor array.  These are the variables that we want to replace.
-  bool IsCandidate(Instruction* var);
-
   // Replaces all references to |var| by new variables, one for each element of
   // the array |var|.  The binding for the new variables corresponding to
   // element i will be the binding of |var| plus i.  Returns true if successful.
@@ -61,6 +57,20 @@ class DescriptorScalarReplacement : public Pass {
   // |true| if successful.
   bool ReplaceAccessChain(Instruction* var, Instruction* use);
 
+  // Replaces the given compososite variable |var| loaded by OpLoad |value| with
+  // replacement variables, one for each component that's accessed in the
+  // shader. Assumes that |value| is only used by OpCompositeExtract
+  // instructions, one index at a time. Returns true on success, and false
+  // otherwise.
+  bool ReplaceLoadedValue(Instruction* var, Instruction* value);
+
+  // Replaces the given OpCompositeExtract |extract| and all of its references
+  // with an OpLoad of a replacement variable. |var| is the variable with
+  // composite type whose value is being used by |extract|. Assumes that
+  // |extract| is extracting one index only. Returns true on success, and false
+  // otherwise.
+  bool ReplaceCompositeExtract(Instruction* var, Instruction* extract);
+
   // Returns the id of the variable that will be used to replace the |idx|th
   // element of |var|.  The variable is created if it has not already been
   // created.
@@ -69,6 +79,15 @@ class DescriptorScalarReplacement : public Pass {
   // Returns the id of a new variable that can be used to replace the |idx|th
   // element of |var|.
   uint32_t CreateReplacementVariable(Instruction* var, uint32_t idx);
+
+  // Returns the number of bindings used by the given |type_id|.
+  // All types are considered to use 1 binding slot, except:
+  // 1- A pointer type consumes as many binding numbers as its pointee.
+  // 2- An array of size N consumes N*M binding numbers, where M is the number
+  // of bindings used by each array element.
+  // 3- The number of bindings consumed by a structure is the sum of the
+  // bindings used by its members.
+  uint32_t GetNumBindingsUsedByType(uint32_t type_id);
 
   // A map from an OpVariable instruction to the set of variables that will be
   // used to replace it. The entry |replacement_variables_[var][i]| is the id of

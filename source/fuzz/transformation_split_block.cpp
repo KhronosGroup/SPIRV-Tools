@@ -24,8 +24,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationSplitBlock::TransformationSplitBlock(
-    const spvtools::fuzz::protobufs::TransformationSplitBlock& message)
-    : message_(message) {}
+    protobufs::TransformationSplitBlock message)
+    : message_(std::move(message)) {}
 
 TransformationSplitBlock::TransformationSplitBlock(
     const protobufs::InstructionDescriptor& instruction_to_split_before,
@@ -83,27 +83,9 @@ bool TransformationSplitBlock::IsApplicable(
 
   // Splitting the block must not separate the definition of an OpSampledImage
   // from its use: the SPIR-V data rules require them to be in the same block.
-  std::set<uint32_t> sampled_image_result_ids;
-  bool before_split = true;
-  for (auto& instruction : *block_to_split) {
-    if (&instruction == &*split_before) {
-      before_split = false;
-    }
-    if (before_split) {
-      if (instruction.opcode() == SpvOpSampledImage) {
-        sampled_image_result_ids.insert(instruction.result_id());
-      }
-    } else {
-      if (!instruction.WhileEachInId(
-              [&sampled_image_result_ids](uint32_t* id) -> bool {
-                return !sampled_image_result_ids.count(*id);
-              })) {
-        return false;
-      }
-    }
-  }
-
-  return true;
+  return !fuzzerutil::
+      SplittingBeforeInstructionSeparatesOpSampledImageDefinitionFromUse(
+          block_to_split, instruction_to_split_before);
 }
 
 void TransformationSplitBlock::Apply(
@@ -127,21 +109,37 @@ void TransformationSplitBlock::Apply(
                                                 split_before);
   // The split does not automatically add a branch between the two parts of
   // the original block, so we add one.
-  block_to_split->AddInstruction(MakeUnique<opt::Instruction>(
+  auto branch_instruction = MakeUnique<opt::Instruction>(
       ir_context, SpvOpBranch, 0, 0,
       std::initializer_list<opt::Operand>{opt::Operand(
-          spv_operand_type_t::SPV_OPERAND_TYPE_ID, {message_.fresh_id()})}));
+          spv_operand_type_t::SPV_OPERAND_TYPE_ID, {message_.fresh_id()})});
+  auto branch_instruction_ptr = branch_instruction.get();
+  block_to_split->AddInstruction(std::move(branch_instruction));
+
+  // Inform the def-use manager about the branch instruction, and record its
+  // block.
+  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(branch_instruction_ptr);
+  ir_context->set_instr_block(branch_instruction_ptr, block_to_split);
+
   // If we split before OpPhi instructions, we need to update their
   // predecessor operand so that the block they used to be inside is now the
   // predecessor.
-  new_bb->ForEachPhiInst([block_to_split](opt::Instruction* phi_inst) {
-    // The following assertion is a sanity check.  It is guaranteed to hold
-    // if IsApplicable holds.
-    assert(phi_inst->NumInOperands() == 2 &&
-           "We can only split a block before an OpPhi if block has exactly "
-           "one predecessor.");
+  new_bb->ForEachPhiInst([block_to_split,
+                          ir_context](opt::Instruction* phi_inst) {
+    assert(
+        phi_inst->NumInOperands() == 2 &&
+        "Precondition: a block can only be split before an OpPhi if the block"
+        "has exactly one predecessor.");
     phi_inst->SetInOperand(1, {block_to_split->id()});
+    ir_context->UpdateDefUse(phi_inst);
   });
+
+  // We have updated the def-use manager and the instruction to block mapping,
+  // but other analyses (especially control flow-related ones) need to be
+  // recomputed.
+  ir_context->InvalidateAnalysesExceptFor(
+      opt::IRContext::Analysis::kAnalysisDefUse |
+      opt::IRContext::Analysis::kAnalysisInstrToBlockMapping);
 
   // If the block being split was dead, the new block arising from the split is
   // also dead.
@@ -150,16 +148,16 @@ void TransformationSplitBlock::Apply(
     transformation_context->GetFactManager()->AddFactBlockIsDead(
         message_.fresh_id());
   }
-
-  // Invalidate all analyses
-  ir_context->InvalidateAnalysesExceptFor(
-      opt::IRContext::Analysis::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationSplitBlock::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_split_block() = message_;
   return result;
+}
+
+std::unordered_set<uint32_t> TransformationSplitBlock::GetFreshIds() const {
+  return {message_.fresh_id()};
 }
 
 }  // namespace fuzz

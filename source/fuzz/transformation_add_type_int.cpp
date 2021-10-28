@@ -20,8 +20,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationAddTypeInt::TransformationAddTypeInt(
-    const spvtools::fuzz::protobufs::TransformationAddTypeInt& message)
-    : message_(message) {}
+    protobufs::TransformationAddTypeInt message)
+    : message_(std::move(message)) {}
 
 TransformationAddTypeInt::TransformationAddTypeInt(uint32_t fresh_id,
                                                    uint32_t width,
@@ -38,30 +38,67 @@ bool TransformationAddTypeInt::IsApplicable(
     return false;
   }
 
+  // Checks integer type width capabilities.
+  switch (message_.width()) {
+    case 8:
+      // The Int8 capability must be present.
+      if (!ir_context->get_feature_mgr()->HasCapability(SpvCapabilityInt8)) {
+        return false;
+      }
+      break;
+    case 16:
+      // The Int16 capability must be present.
+      if (!ir_context->get_feature_mgr()->HasCapability(SpvCapabilityInt16)) {
+        return false;
+      }
+      break;
+    case 32:
+      // No capabilities needed.
+      break;
+    case 64:
+      // The Int64 capability must be present.
+      if (!ir_context->get_feature_mgr()->HasCapability(SpvCapabilityInt64)) {
+        return false;
+      }
+      break;
+    default:
+      assert(false && "Unexpected integer type width");
+      return false;
+  }
+
   // Applicable if there is no int type with this width and signedness already
   // declared in the module.
-  opt::analysis::Integer int_type(message_.width(), message_.is_signed());
-  return ir_context->get_type_mgr()->GetId(&int_type) == 0;
+  return fuzzerutil::MaybeGetIntegerType(ir_context, message_.width(),
+                                         message_.is_signed()) == 0;
 }
 
 void TransformationAddTypeInt::Apply(opt::IRContext* ir_context,
                                      TransformationContext* /*unused*/) const {
-  opt::Instruction::OperandList in_operands = {
-      {SPV_OPERAND_TYPE_LITERAL_INTEGER, {message_.width()}},
-      {SPV_OPERAND_TYPE_LITERAL_INTEGER, {message_.is_signed() ? 1u : 0u}}};
-  ir_context->module()->AddType(MakeUnique<opt::Instruction>(
-      ir_context, SpvOpTypeInt, 0, message_.fresh_id(), in_operands));
+  auto type_instruction = MakeUnique<opt::Instruction>(
+      ir_context, SpvOpTypeInt, 0, message_.fresh_id(),
+      opt::Instruction::OperandList{
+          {SPV_OPERAND_TYPE_LITERAL_INTEGER, {message_.width()}},
+          {SPV_OPERAND_TYPE_LITERAL_INTEGER,
+           {message_.is_signed() ? 1u : 0u}}});
+  auto type_instruction_ptr = type_instruction.get();
+  ir_context->module()->AddType(std::move(type_instruction));
+
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
-  // We have added an instruction to the module, so need to be careful about the
-  // validity of existing analyses.
-  ir_context->InvalidateAnalysesExceptFor(
-      opt::IRContext::Analysis::kAnalysisNone);
+
+  // Inform the def use manager that there is a new definition. Invalidate the
+  // type manager since we have added a new type.
+  ir_context->get_def_use_mgr()->AnalyzeInstDef(type_instruction_ptr);
+  ir_context->InvalidateAnalyses(opt::IRContext::kAnalysisTypes);
 }
 
 protobufs::Transformation TransformationAddTypeInt::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_add_type_int() = message_;
   return result;
+}
+
+std::unordered_set<uint32_t> TransformationAddTypeInt::GetFreshIds() const {
+  return {message_.fresh_id()};
 }
 
 }  // namespace fuzz

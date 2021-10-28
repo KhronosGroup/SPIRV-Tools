@@ -38,23 +38,30 @@ add_spvtools_unittest(TARGET val_abcde
        val_entry_point.cpp
        val_explicit_reserved_test.cpp
        val_extensions_test.cpp
+       val_extension_spv_khr_expect_assume.cpp
+       val_extension_spv_khr_linkonce_odr.cpp
+       val_extension_spv_khr_subgroup_uniform_control_flow.cpp
+       val_extension_spv_khr_integer_dot_product.cpp
+       val_extension_spv_khr_bit_instructions.cpp
+       val_extension_spv_khr_terminate_invocation.cpp
        val_ext_inst_test.cpp
+       val_ext_inst_debug_test.cpp
        ${VAL_TEST_COMMON_SRCS}
-  LIBS ${SPIRV_TOOLS}
+  LIBS ${SPIRV_TOOLS_FULL_VISIBILITY}
   PCH_FILE pch_test_val
 )
 
 add_spvtools_unittest(TARGET val_capability
   SRCS
        val_capability_test.cpp
-  LIBS ${SPIRV_TOOLS}
+  LIBS ${SPIRV_TOOLS_FULL_VISIBILITY}
   PCH_FILE pch_test_val
 )
 
 add_spvtools_unittest(TARGET val_limits
   SRCS val_limits_test.cpp
        ${VAL_TEST_COMMON_SRCS}
-  LIBS ${SPIRV_TOOLS}
+  LIBS ${SPIRV_TOOLS_FULL_VISIBILITY}
   PCH_FILE pch_test_val
 )
 
@@ -75,7 +82,7 @@ add_spvtools_unittest(TARGET val_fghijklmnop
        val_opencl_test.cpp
        val_primitives_test.cpp
        ${VAL_TEST_COMMON_SRCS}
-  LIBS ${SPIRV_TOOLS}
+  LIBS ${SPIRV_TOOLS_FULL_VISIBILITY}
   PCH_FILE pch_test_val
 )
 
@@ -88,8 +95,7 @@ add_spvtools_unittest(TARGET val_stuvw
        val_type_unique_test.cpp
        val_validation_state_test.cpp
        val_version_test.cpp
-       val_webgpu_test.cpp
        ${VAL_TEST_COMMON_SRCS}
-  LIBS ${SPIRV_TOOLS}
+  LIBS ${SPIRV_TOOLS_FULL_VISIBILITY}
   PCH_FILE pch_test_val
 )

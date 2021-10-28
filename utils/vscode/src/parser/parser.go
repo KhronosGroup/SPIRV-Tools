@@ -23,7 +23,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"../schema"
+	"github.com/KhronosGroup/SPIRV-Tools/utils/vscode/src/schema"
 )
 
 // Type is an enumerator of token types.
@@ -356,7 +356,7 @@ func lex(source string) ([]*Token, []Diagnostic, error) {
 
 	lastPos := Position{}
 	for l.e == nil {
-		// Sanity check the parser is making progress
+		// Integrity check that the parser is making progress
 		if l.pos == lastPos {
 			log.Panicf("Parsing stuck at %v", l.pos)
 		}

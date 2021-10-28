@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationAdjustBranchWeights : public Transformation {
  public:
   explicit TransformationAdjustBranchWeights(
-      const protobufs::TransformationAdjustBranchWeights& message);
+      protobufs::TransformationAdjustBranchWeights message);
 
   TransformationAdjustBranchWeights(
       const protobufs::InstructionDescriptor& instruction_descriptor,
@@ -44,6 +44,8 @@ class TransformationAdjustBranchWeights : public Transformation {
   // Adjust the branch weights of a branch conditional instruction.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

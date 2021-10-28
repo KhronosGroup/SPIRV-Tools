@@ -20,8 +20,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationAddLocalVariable::TransformationAddLocalVariable(
-    const spvtools::fuzz::protobufs::TransformationAddLocalVariable& message)
-    : message_(message) {}
+    spvtools::fuzz::protobufs::TransformationAddLocalVariable message)
+    : message_(std::move(message)) {}
 
 TransformationAddLocalVariable::TransformationAddLocalVariable(
     uint32_t fresh_id, uint32_t type_id, uint32_t function_id,
@@ -70,29 +70,33 @@ bool TransformationAddLocalVariable::IsApplicable(
 void TransformationAddLocalVariable::Apply(
     opt::IRContext* ir_context,
     TransformationContext* transformation_context) const {
-  fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
-  fuzzerutil::FindFunction(ir_context, message_.function_id())
-      ->begin()
-      ->begin()
-      ->InsertBefore(MakeUnique<opt::Instruction>(
-          ir_context, SpvOpVariable, message_.type_id(), message_.fresh_id(),
-          opt::Instruction::OperandList(
-              {{SPV_OPERAND_TYPE_STORAGE_CLASS,
-                {
+  opt::Instruction* new_instruction = fuzzerutil::AddLocalVariable(
+      ir_context, message_.fresh_id(), message_.type_id(),
+      message_.function_id(), message_.initializer_id());
 
-                    SpvStorageClassFunction}},
-               {SPV_OPERAND_TYPE_ID, {message_.initializer_id()}}})));
+  // Inform the def-use manager about the new instruction.
+  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction);
+  ir_context->set_instr_block(
+      new_instruction,
+      fuzzerutil::FindFunction(ir_context, message_.function_id())
+          ->entry()
+          .get());
+
   if (message_.value_is_irrelevant()) {
     transformation_context->GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
         message_.fresh_id());
   }
-  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 }
 
 protobufs::Transformation TransformationAddLocalVariable::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_add_local_variable() = message_;
   return result;
+}
+
+std::unordered_set<uint32_t> TransformationAddLocalVariable::GetFreshIds()
+    const {
+  return {message_.fresh_id()};
 }
 
 }  // namespace fuzz

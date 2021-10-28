@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationAddTypeVector : public Transformation {
  public:
   explicit TransformationAddTypeVector(
-      const protobufs::TransformationAddTypeVector& message);
+      protobufs::TransformationAddTypeVector message);
 
   TransformationAddTypeVector(uint32_t fresh_id, uint32_t component_type_id,
                               uint32_t component_count);
@@ -42,6 +42,8 @@ class TransformationAddTypeVector : public Transformation {
   // with result id |message_.fresh_id|.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

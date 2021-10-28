@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationAddTypeMatrix : public Transformation {
  public:
   explicit TransformationAddTypeMatrix(
-      const protobufs::TransformationAddTypeMatrix& message);
+      protobufs::TransformationAddTypeMatrix message);
 
   TransformationAddTypeMatrix(uint32_t fresh_id, uint32_t column_type_id,
                               uint32_t column_count);
@@ -42,6 +42,8 @@ class TransformationAddTypeMatrix : public Transformation {
   // id |message_.fresh_id|.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

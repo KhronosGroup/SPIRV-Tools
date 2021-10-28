@@ -28,25 +28,31 @@ namespace fuzz {
 class TransformationAddConstantComposite : public Transformation {
  public:
   explicit TransformationAddConstantComposite(
-      const protobufs::TransformationAddConstantComposite& message);
+      protobufs::TransformationAddConstantComposite message);
 
   TransformationAddConstantComposite(
       uint32_t fresh_id, uint32_t type_id,
-      const std::vector<uint32_t>& constituent_ids);
+      const std::vector<uint32_t>& constituent_ids, bool is_irrelevant);
 
   // - |message_.fresh_id| must be a fresh id
   // - |message_.type_id| must be the id of a composite type
   // - |message_.constituent_id| must refer to ids that match the constituent
   //   types of this composite type
+  // - If |message_.type_id| is a struct type, it must not have the Block or
+  //   BufferBlock decoration
   bool IsApplicable(
       opt::IRContext* ir_context,
       const TransformationContext& transformation_context) const override;
 
-  // Adds an OpConstantComposite instruction defining a constant of type
-  // |message_.type_id|, using |message_.constituent_id| as constituents, with
-  // result id |message_.fresh_id|.
+  // - Adds an OpConstantComposite instruction defining a constant of type
+  //   |message_.type_id|, using |message_.constituent_id| as constituents, with
+  //   result id |message_.fresh_id|.
+  // - Creates an IdIsIrrelevant fact about |fresh_id| if |is_irrelevant| is
+  //   true.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

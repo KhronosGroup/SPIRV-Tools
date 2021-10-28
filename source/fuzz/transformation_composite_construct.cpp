@@ -23,8 +23,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationCompositeConstruct::TransformationCompositeConstruct(
-    const protobufs::TransformationCompositeConstruct& message)
-    : message_(message) {}
+    protobufs::TransformationCompositeConstruct message)
+    : message_(std::move(message)) {}
 
 TransformationCompositeConstruct::TransformationCompositeConstruct(
     uint32_t composite_type_id, std::vector<uint32_t> component,
@@ -87,7 +87,12 @@ bool TransformationCompositeConstruct::IsApplicable(
 
   // Now check whether every component being used to initialize the composite is
   // available at the desired program point.
-  for (auto& component : message_.component()) {
+  for (auto component : message_.component()) {
+    auto* inst = ir_context->get_def_use_mgr()->GetDef(component);
+    if (!inst) {
+      return false;
+    }
+
     if (!fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, insert_before,
                                                     component)) {
       return false;
@@ -115,49 +120,20 @@ void TransformationCompositeConstruct::Apply(
   }
 
   // Insert an OpCompositeConstruct instruction.
-  insert_before.InsertBefore(MakeUnique<opt::Instruction>(
+  auto new_instruction = MakeUnique<opt::Instruction>(
       ir_context, SpvOpCompositeConstruct, message_.composite_type_id(),
-      message_.fresh_id(), in_operands));
+      message_.fresh_id(), in_operands);
+  auto new_instruction_ptr = new_instruction.get();
+  insert_before.InsertBefore(std::move(new_instruction));
+  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction_ptr);
+  ir_context->set_instr_block(new_instruction_ptr, destination_block);
 
   fuzzerutil::UpdateModuleIdBound(ir_context, message_.fresh_id());
-  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
 
-  // Inform the fact manager that we now have new synonyms: every component of
-  // the composite is synonymous with the id used to construct that component,
-  // except in the case of a vector where a single vector id can span multiple
-  // components.
-  auto composite_type =
-      ir_context->get_type_mgr()->GetType(message_.composite_type_id());
-  uint32_t index = 0;
-  for (auto component : message_.component()) {
-    auto component_type = ir_context->get_type_mgr()->GetType(
-        ir_context->get_def_use_mgr()->GetDef(component)->type_id());
-    if (composite_type->AsVector() && component_type->AsVector()) {
-      // The case where the composite being constructed is a vector and the
-      // component provided for construction is also a vector is special.  It
-      // requires adding a synonym fact relating each element of the sub-vector
-      // to the corresponding element of the composite being constructed.
-      assert(component_type->AsVector()->element_type() ==
-             composite_type->AsVector()->element_type());
-      assert(component_type->AsVector()->element_count() <
-             composite_type->AsVector()->element_count());
-      for (uint32_t subvector_index = 0;
-           subvector_index < component_type->AsVector()->element_count();
-           subvector_index++) {
-        transformation_context->GetFactManager()->AddFactDataSynonym(
-            MakeDataDescriptor(component, {subvector_index}),
-            MakeDataDescriptor(message_.fresh_id(), {index}), ir_context);
-        index++;
-      }
-    } else {
-      // The other cases are simple: the component is made directly synonymous
-      // with the element of the composite being constructed.
-      transformation_context->GetFactManager()->AddFactDataSynonym(
-          MakeDataDescriptor(component, {}),
-          MakeDataDescriptor(message_.fresh_id(), {index}), ir_context);
-      index++;
-    }
-  }
+  // No analyses need to be invalidated since the transformation is local to a
+  // block and the def-use and instruction-to-block mappings have been updated.
+
+  AddDataSynonymFacts(ir_context, transformation_context);
 }
 
 bool TransformationCompositeConstruct::ComponentsForArrayConstructionAreOK(
@@ -288,6 +264,75 @@ protobufs::Transformation TransformationCompositeConstruct::ToMessage() const {
   protobufs::Transformation result;
   *result.mutable_composite_construct() = message_;
   return result;
+}
+
+std::unordered_set<uint32_t> TransformationCompositeConstruct::GetFreshIds()
+    const {
+  return {message_.fresh_id()};
+}
+
+void TransformationCompositeConstruct::AddDataSynonymFacts(
+    opt::IRContext* ir_context,
+    TransformationContext* transformation_context) const {
+  // If the result id of the composite we are constructing is irrelevant (e.g.
+  // because it is in a dead block) then we do not make any synonyms.
+  if (transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.fresh_id())) {
+    return;
+  }
+
+  // Inform the fact manager that we now have new synonyms: every component of
+  // the composite is synonymous with the id used to construct that component
+  // (so long as it is legitimate to create a synonym from that id), except in
+  // the case of a vector where a single vector id can span multiple components.
+  auto composite_type =
+      ir_context->get_type_mgr()->GetType(message_.composite_type_id());
+  uint32_t index = 0;
+  for (auto component : message_.component()) {
+    auto component_type = ir_context->get_type_mgr()->GetType(
+        ir_context->get_def_use_mgr()->GetDef(component)->type_id());
+    // Whether the component is a vector being packed into a vector determines
+    // how we should keep track of the indices associated with components.
+    const bool packing_vector_into_vector =
+        composite_type->AsVector() && component_type->AsVector();
+    if (!fuzzerutil::CanMakeSynonymOf(
+            ir_context, *transformation_context,
+            *ir_context->get_def_use_mgr()->GetDef(component))) {
+      // We can't make a synonym of this component, so we skip on to the next
+      // component.  In the case where we're packing a vector into a vector we
+      // have to skip as many components of the resulting vectors as there are
+      // elements of the component vector.
+      index += packing_vector_into_vector
+                   ? component_type->AsVector()->element_count()
+                   : 1;
+      continue;
+    }
+    if (packing_vector_into_vector) {
+      // The case where the composite being constructed is a vector and the
+      // component provided for construction is also a vector is special.  It
+      // requires adding a synonym fact relating each element of the sub-vector
+      // to the corresponding element of the composite being constructed.
+      assert(component_type->AsVector()->element_type() ==
+             composite_type->AsVector()->element_type());
+      assert(component_type->AsVector()->element_count() <
+             composite_type->AsVector()->element_count());
+      for (uint32_t subvector_index = 0;
+           subvector_index < component_type->AsVector()->element_count();
+           subvector_index++) {
+        transformation_context->GetFactManager()->AddFactDataSynonym(
+            MakeDataDescriptor(component, {subvector_index}),
+            MakeDataDescriptor(message_.fresh_id(), {index}));
+        index++;
+      }
+    } else {
+      // The other cases are simple: the component is made directly synonymous
+      // with the element of the composite being constructed.
+      transformation_context->GetFactManager()->AddFactDataSynonym(
+          MakeDataDescriptor(component, {}),
+          MakeDataDescriptor(message_.fresh_id(), {index}));
+      index++;
+    }
+  }
 }
 
 }  // namespace fuzz

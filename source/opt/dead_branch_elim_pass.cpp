@@ -41,6 +41,7 @@ bool DeadBranchElimPass::GetConstCondition(uint32_t condId, bool* condVal) {
   bool condIsConst;
   Instruction* cInst = get_def_use_mgr()->GetDef(condId);
   switch (cInst->opcode()) {
+    case SpvOpConstantNull:
     case SpvOpConstantFalse: {
       *condVal = false;
       condIsConst = true;
@@ -345,6 +346,7 @@ bool DeadBranchElimPass::FixPhiNodesInLiveBlocks(
           if (operands.size() == 4) {
             // First input data operands is at index 2.
             uint32_t replId = operands[2u].words[0];
+            context()->KillNamesAndDecorates(inst->result_id());
             context()->ReplaceAllUsesWith(inst->result_id(), replId);
             iter = context()->KillInst(&*inst);
           } else {

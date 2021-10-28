@@ -25,7 +25,7 @@ namespace fuzz {
 class TransformationAddTypeBoolean : public Transformation {
  public:
   explicit TransformationAddTypeBoolean(
-      const protobufs::TransformationAddTypeBoolean& message);
+      protobufs::TransformationAddTypeBoolean message);
 
   explicit TransformationAddTypeBoolean(uint32_t fresh_id);
 
@@ -38,6 +38,8 @@ class TransformationAddTypeBoolean : public Transformation {
   // Adds OpTypeBoolean with |message_.fresh_id| as result id.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

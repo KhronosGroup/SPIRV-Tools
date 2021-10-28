@@ -116,8 +116,6 @@ using ValidateCapabilityOpenGL40 = spvtest::ValidateBase<CapTestParameter>;
 using ValidateCapabilityVulkan11 = spvtest::ValidateBase<CapTestParameter>;
 // Always assembles using Vulkan 1.2.
 using ValidateCapabilityVulkan12 = spvtest::ValidateBase<CapTestParameter>;
-// Always assembles using WebGPU.
-using ValidateCapabilityWebGPU = spvtest::ValidateBase<CapTestParameter>;
 
 TEST_F(ValidateCapability, Default) {
   const char str[] = R"(
@@ -588,18 +586,6 @@ const std::vector<std::string>& AllVulkan12Capabilities() {
   return *r;
 }
 
-const std::vector<std::string>& AllWebGPUCapabilities() {
-  static const auto r = new std::vector<std::string>{
-    "",
-    "Shader",
-    "Matrix",
-    "Sampled1D",
-    "Image1D",
-    "ImageQuery",
-    "DerivativeControl"};
-    return *r;
-}
-
 const std::vector<std::string>& MatrixDependencies() {
   static const auto r = new std::vector<std::string>{
   "Matrix",
@@ -789,12 +775,6 @@ const char kOpenCLMemoryModel[] = \
 const char kGLSL450MemoryModel[] = \
   " OpCapability Shader"
   " OpMemoryModel Logical GLSL450 ";
-
-const char kVulkanMemoryModel[] = \
-  " OpCapability Shader"
-  " OpCapability VulkanMemoryModelKHR"
-  " OpExtension \"SPV_KHR_vulkan_memory_model\""
-  " OpMemoryModel Logical VulkanKHR ";
 
 const char kVoidFVoid[] = \
   " %void   = OpTypeVoid"
@@ -1367,8 +1347,9 @@ std::make_pair(std::string(kOpenCLMemoryModel) +
           std::vector<std::string>{"GeometryStreams"}),
 std::make_pair(std::string(kOpenCLMemoryModel) +
           "OpEntryPoint Kernel %func \"compute\" \n"
-          "OpDecorate %intt Location 0\n"
-          "%intt = OpTypeInt 32 0\n" + std::string(kVoidFVoid),
+          "OpMemberDecorate %struct 0 Location 0\n"
+          "%intt = OpTypeInt 32 0\n"
+          "%struct = OpTypeStruct %intt\n" + std::string(kVoidFVoid),
           ShaderDependencies()),
 std::make_pair(std::string(kOpenCLMemoryModel) +
           "OpEntryPoint Kernel %func \"compute\" \n"
@@ -1813,16 +1794,6 @@ std::make_pair(std::string(kGLSL450MemoryModel) +
           AllSpirV10Capabilities())
 )));
 
-INSTANTIATE_TEST_SUITE_P(Capabilities, ValidateCapabilityWebGPU,
-                        Combine(
-                            // All capabilities to try.
-                            ValuesIn(AllCapabilities()),
-                            Values(
-std::make_pair(std::string(kVulkanMemoryModel) +
-          "OpEntryPoint Vertex %func \"shader\" \n" + std::string(kVoidFVoid),
-          AllWebGPUCapabilities())
-)));
-
 INSTANTIATE_TEST_SUITE_P(Capabilities, ValidateCapabilityVulkan11,
                         Combine(
                             // All capabilities to try.
@@ -2042,17 +2013,6 @@ TEST_P(ValidateCapabilityOpenGL40, Capability) {
     CompileSuccessfully(test_code, SPV_ENV_OPENGL_4_0);
     ASSERT_EQ(ExpectedResult(GetParam()),
               ValidateInstructions(SPV_ENV_OPENGL_4_0))
-        << test_code;
-  }
-}
-
-TEST_P(ValidateCapabilityWebGPU, Capability) {
-  const std::string capability = Capability(GetParam());
-  if (Exists(capability, SPV_ENV_WEBGPU_0)) {
-    const std::string test_code = MakeAssembly(GetParam());
-    CompileSuccessfully(test_code, SPV_ENV_WEBGPU_0);
-    ASSERT_EQ(ExpectedResult(GetParam()),
-              ValidateInstructions(SPV_ENV_WEBGPU_0))
         << test_code;
   }
 }
@@ -2287,11 +2247,30 @@ OpMemoryModel Physical64 OpenCL
                         "Embedded Profile"));
 }
 
+TEST_F(ValidateCapability, OpenCL12EmbeddedNoLongerEnabledByCapability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Pipes
+OpMemoryModel Physical64 OpenCL
+%u32    = OpTypeInt 32 0
+)" + std::string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_OPENCL_EMBEDDED_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_OPENCL_EMBEDDED_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Capability Pipes is not allowed by OpenCL 1.2 "
+                        "Embedded Profile"));
+}
+
 TEST_F(ValidateCapability, OpenCL20FullCapability) {
   const std::string spirv = R"(
 OpCapability Kernel
 OpCapability Addresses
 OpCapability Linkage
+OpCapability Groups
 OpCapability Pipes
 OpMemoryModel Physical64 OpenCL
 %u32    = OpTypeInt 32 0

@@ -22,11 +22,10 @@ namespace fuzz {
 FuzzerPassPermuteBlocks::FuzzerPassPermuteBlocks(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
     FuzzerContext* fuzzer_context,
-    protobufs::TransformationSequence* transformations)
+    protobufs::TransformationSequence* transformations,
+    bool ignore_inapplicable_transformations)
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
-                 transformations) {}
-
-FuzzerPassPermuteBlocks::~FuzzerPassPermuteBlocks() = default;
+                 transformations, ignore_inapplicable_transformations) {}
 
 void FuzzerPassPermuteBlocks::Apply() {
   // For now we do something very simple: we randomly decide whether to move a
@@ -67,12 +66,7 @@ void FuzzerPassPermuteBlocks::Apply() {
       // down indefinitely.
       while (true) {
         TransformationMoveBlockDown transformation(*id);
-        if (transformation.IsApplicable(GetIRContext(),
-                                        *GetTransformationContext())) {
-          transformation.Apply(GetIRContext(), GetTransformationContext());
-          *GetTransformations()->add_transformation() =
-              transformation.ToMessage();
-        } else {
+        if (!MaybeApplyTransformation(transformation)) {
           break;
         }
       }

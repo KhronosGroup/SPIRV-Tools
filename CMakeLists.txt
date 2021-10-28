@@ -33,6 +33,7 @@ include(GNUInstallDirs)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 11)
 
+option(ENABLE_RTTI "Enables RTTI" OFF)
 option(SPIRV_ALLOW_TIMERS "Allow timers via clock_gettime on supported platforms" ON)
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
@@ -48,6 +49,8 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   add_definitions(-DSPIRV_MAC)
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS")
   add_definitions(-DSPIRV_IOS)
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "tvOS")
+  add_definitions(-DSPIRV_TVOS)
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
   add_definitions(-DSPIRV_ANDROID)
   set(SPIRV_TIMER_ENABLED ${SPIRV_ALLOW_TIMERS})
@@ -78,6 +81,12 @@ if(SPIRV_BUILD_COMPRESSION)
   message(FATAL_ERROR "SPIR-V compression codec has been removed from SPIR-V tools. "
           "Please remove SPIRV_BUILD_COMPRESSION from your build options.")
 endif(SPIRV_BUILD_COMPRESSION)
+
+option(SPIRV_BUILD_FUZZER "Build spirv-fuzz" OFF)
+
+set(SPIRV_LIB_FUZZING_ENGINE_LINK_OPTIONS "" CACHE STRING "Used by OSS-Fuzz to control, via link options, which fuzzing engine should be used")
+
+option(SPIRV_BUILD_LIBFUZZER_TARGETS "Build libFuzzer targets" OFF)
 
 option(SPIRV_WERROR "Enable error on warning" ON)
 if(("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR (("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") AND (NOT CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")))
@@ -130,15 +139,58 @@ if (DEFINED SPIRV_TOOLS_EXTRA_DEFINITIONS)
   add_definitions(${SPIRV_TOOLS_EXTRA_DEFINITIONS})
 endif()
 
+# Library build setting definitions:
+#
+# * SPIRV_TOOLS_BUILD_STATIC - ON or OFF - Defaults to ON.
+#   If enabled the following targets will be created:
+#     ${SPIRV_TOOLS}-static - STATIC library.
+#                             Has full public symbol visibility.
+#     ${SPIRV_TOOLS}-shared - SHARED library.
+#                             Has default-hidden symbol visibility.
+#     ${SPIRV_TOOLS}        - will alias to one of above, based on BUILD_SHARED_LIBS.
+#   If disabled the following targets will be created:
+#     ${SPIRV_TOOLS}        - either STATIC or SHARED based on SPIRV_TOOLS_LIBRARY_TYPE.
+#                             Has full public symbol visibility.
+#     ${SPIRV_TOOLS}-shared - SHARED library.
+#                             Has default-hidden symbol visibility.
+#
+# * SPIRV_TOOLS_LIBRARY_TYPE - SHARED or STATIC.
+#   Specifies the library type used for building SPIRV-Tools libraries.
+#   Defaults to SHARED when BUILD_SHARED_LIBS=1, otherwise STATIC.
+#
+# * SPIRV_TOOLS_FULL_VISIBILITY - "${SPIRV_TOOLS}-static" or "${SPIRV_TOOLS}"
+#   Evaluates to the SPIRV_TOOLS target library name that has no hidden symbols.
+#   This is used by internal targets for accessing symbols that are non-public.
+#   Note this target provides no API stability guarantees.
+#
+# Ideally, all of these will go away - see https://github.com/KhronosGroup/SPIRV-Tools/issues/3909.
+option(SPIRV_TOOLS_BUILD_STATIC "Build ${SPIRV_TOOLS}-static target. ${SPIRV_TOOLS} will alias to ${SPIRV_TOOLS}-static or ${SPIRV_TOOLS}-shared based on BUILD_SHARED_LIBS" ON)
+if(SPIRV_TOOLS_BUILD_STATIC)
+  set(SPIRV_TOOLS_FULL_VISIBILITY ${SPIRV_TOOLS}-static)
+  set(SPIRV_TOOLS_LIBRARY_TYPE "STATIC")
+else(SPIRV_TOOLS_BUILD_STATIC)
+  set(SPIRV_TOOLS_FULL_VISIBILITY ${SPIRV_TOOLS})
+  if (NOT DEFINED SPIRV_TOOLS_LIBRARY_TYPE)
+      if(BUILD_SHARED_LIBS)
+        set(SPIRV_TOOLS_LIBRARY_TYPE "SHARED")
+      else()
+        set(SPIRV_TOOLS_LIBRARY_TYPE "STATIC")
+      endif()
+  endif()
+endif(SPIRV_TOOLS_BUILD_STATIC)
+
 function(spvtools_default_compile_options TARGET)
   target_compile_options(${TARGET} PRIVATE ${SPIRV_WARNINGS})
 
   if (${COMPILER_IS_LIKE_GNU})
-    target_compile_options(${TARGET} PRIVATE
-      -std=c++11 -fno-exceptions -fno-rtti)
+    target_compile_options(${TARGET} PRIVATE -std=c++11 -fno-exceptions)
     target_compile_options(${TARGET} PRIVATE
       -Wall -Wextra -Wno-long-long -Wshadow -Wundef -Wconversion
       -Wno-sign-conversion)
+
+    if(NOT ENABLE_RTTI)
+        add_compile_options(-fno-rtti)
+    endif()
     # For good call stacks in profiles, keep the frame pointers.
     if(NOT "${SPIRV_PERF}" STREQUAL "")
       target_compile_options(${TARGET} PRIVATE -fno-omit-frame-pointer)
@@ -244,7 +296,7 @@ endif()
 # Turn off if they take too long.
 option(SPIRV_CHECK_CONTEXT "In a debug build, check if the IR context is in a valid state." ON)
 if (${SPIRV_CHECK_CONTEXT})
-  add_definitions(-DSPIRV_CHECK_CONTEXT)
+  add_compile_options($<$<CONFIG:Debug>:-DSPIRV_CHECK_CONTEXT>)
 endif()
 
 # Precompiled header macro. Parameters are source file list and filename for pch cpp file.

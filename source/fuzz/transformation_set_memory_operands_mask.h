@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationSetMemoryOperandsMask : public Transformation {
  public:
   explicit TransformationSetMemoryOperandsMask(
-      const protobufs::TransformationSetMemoryOperandsMask& message);
+      protobufs::TransformationSetMemoryOperandsMask message);
 
   TransformationSetMemoryOperandsMask(
       const protobufs::InstructionDescriptor& memory_access_instruction,
@@ -50,6 +50,8 @@ class TransformationSetMemoryOperandsMask : public Transformation {
   // creating an input operand for the mask if no such operand was present.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

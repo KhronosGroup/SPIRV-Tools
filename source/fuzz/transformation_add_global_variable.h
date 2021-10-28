@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationAddGlobalVariable : public Transformation {
  public:
   explicit TransformationAddGlobalVariable(
-      const protobufs::TransformationAddGlobalVariable& message);
+      protobufs::TransformationAddGlobalVariable message);
 
   TransformationAddGlobalVariable(uint32_t fresh_id, uint32_t type_id,
                                   SpvStorageClass storage_class,
@@ -54,6 +54,8 @@ class TransformationAddGlobalVariable : public Transformation {
   // fact manager in |transformation_context|.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

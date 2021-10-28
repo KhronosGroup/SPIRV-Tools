@@ -27,7 +27,7 @@ class TransformationReplaceBooleanConstantWithConstantBinary
     : public Transformation {
  public:
   explicit TransformationReplaceBooleanConstantWithConstantBinary(
-      const protobufs::TransformationReplaceBooleanConstantWithConstantBinary&
+      protobufs::TransformationReplaceBooleanConstantWithConstantBinary
           message);
 
   TransformationReplaceBooleanConstantWithConstantBinary(
@@ -66,6 +66,8 @@ class TransformationReplaceBooleanConstantWithConstantBinary
   opt::Instruction* ApplyWithResult(
       opt::IRContext* ir_context,
       TransformationContext* transformation_context) const;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

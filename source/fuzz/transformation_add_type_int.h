@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationAddTypeInt : public Transformation {
  public:
   explicit TransformationAddTypeInt(
-      const protobufs::TransformationAddTypeInt& message);
+      protobufs::TransformationAddTypeInt message);
 
   TransformationAddTypeInt(uint32_t fresh_id, uint32_t width, bool is_signed);
 
@@ -41,6 +41,8 @@ class TransformationAddTypeInt : public Transformation {
   // signedness.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

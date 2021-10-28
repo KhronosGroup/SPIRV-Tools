@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationSetSelectionControl : public Transformation {
  public:
   explicit TransformationSetSelectionControl(
-      const protobufs::TransformationSetSelectionControl& message);
+      protobufs::TransformationSetSelectionControl message);
 
   TransformationSetSelectionControl(uint32_t block_id,
                                     uint32_t selection_control);
@@ -43,6 +43,8 @@ class TransformationSetSelectionControl : public Transformation {
   //   |message_.block_id| is overwritten with |message_.selection_control|.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

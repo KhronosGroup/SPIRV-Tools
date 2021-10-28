@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_add_type_pointer.h"
+
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "test/fuzz/fuzz_test_util.h"
 
 namespace spvtools {
@@ -94,13 +97,11 @@ TEST(TransformationAddTypePointerTest, BasicTest) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   auto bad_type_id_does_not_exist =
       TransformationAddTypePointer(100, SpvStorageClassFunction, 101);
   auto bad_type_id_is_not_type =
@@ -132,17 +133,33 @@ TEST(TransformationAddTypePointerTest, BasicTest) {
   ASSERT_FALSE(bad_result_id_is_not_fresh.IsApplicable(context.get(),
                                                        transformation_context));
 
+  {
+    auto& transformation = good_new_private_pointer_to_t;
+    ASSERT_EQ(nullptr, context->get_def_use_mgr()->GetDef(101));
+    ASSERT_EQ(nullptr, context->get_type_mgr()->GetType(101));
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
+    ASSERT_EQ(SpvOpTypePointer,
+              context->get_def_use_mgr()->GetDef(101)->opcode());
+    ASSERT_NE(nullptr, context->get_type_mgr()->GetType(101)->AsPointer());
+  }
+
   for (auto& transformation :
-       {good_new_private_pointer_to_t, good_new_uniform_pointer_to_t,
-        good_another_function_pointer_to_s, good_new_uniform_pointer_to_s,
-        good_another_private_pointer_to_float,
+       {good_new_uniform_pointer_to_t, good_another_function_pointer_to_s,
+        good_new_uniform_pointer_to_s, good_another_private_pointer_to_float,
         good_new_private_pointer_to_private_pointer_to_float,
         good_new_uniform_pointer_to_vec2,
         good_new_private_pointer_to_uniform_pointer_to_vec2}) {
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   std::string after_transformation = R"(

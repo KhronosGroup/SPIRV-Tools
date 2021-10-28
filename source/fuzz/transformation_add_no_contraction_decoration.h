@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationAddNoContractionDecoration : public Transformation {
  public:
   explicit TransformationAddNoContractionDecoration(
-      const protobufs::TransformationAddNoContractionDecoration& message);
+      protobufs::TransformationAddNoContractionDecoration message);
 
   explicit TransformationAddNoContractionDecoration(uint32_t fresh_id);
 
@@ -43,6 +43,8 @@ class TransformationAddNoContractionDecoration : public Transformation {
   // to the module.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationAddLocalVariable : public Transformation {
  public:
   explicit TransformationAddLocalVariable(
-      const protobufs::TransformationAddLocalVariable& message);
+      protobufs::TransformationAddLocalVariable message);
 
   TransformationAddLocalVariable(uint32_t fresh_id, uint32_t type_id,
                                  uint32_t function_id, uint32_t initializer_id,
@@ -49,6 +49,8 @@ class TransformationAddLocalVariable : public Transformation {
   // fact manager in |transformation_context|.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

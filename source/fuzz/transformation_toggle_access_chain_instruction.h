@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationToggleAccessChainInstruction : public Transformation {
  public:
   explicit TransformationToggleAccessChainInstruction(
-      const protobufs::TransformationToggleAccessChainInstruction& message);
+      protobufs::TransformationToggleAccessChainInstruction message);
 
   TransformationToggleAccessChainInstruction(
       const protobufs::InstructionDescriptor& instruction_descriptor);
@@ -40,6 +40,8 @@ class TransformationToggleAccessChainInstruction : public Transformation {
   // Toggles the access chain instruction.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationSplitBlock : public Transformation {
  public:
   explicit TransformationSplitBlock(
-      const protobufs::TransformationSplitBlock& message);
+      protobufs::TransformationSplitBlock message);
 
   TransformationSplitBlock(
       const protobufs::InstructionDescriptor& instruction_to_split_before,
@@ -52,6 +52,8 @@ class TransformationSplitBlock : public Transformation {
   // - If 'blk' was dead, the new block is also dead.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

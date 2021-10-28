@@ -29,7 +29,7 @@ class TransformationSetLoopControl : public Transformation {
   const static uint32_t kLoopControlFirstLiteralInOperandIndex = 3;
 
   explicit TransformationSetLoopControl(
-      const protobufs::TransformationSetLoopControl& message);
+      protobufs::TransformationSetLoopControl message);
 
   TransformationSetLoopControl(uint32_t block_id, uint32_t loop_control,
                                uint32_t peel_count, uint32_t partial_count);
@@ -55,6 +55,8 @@ class TransformationSetLoopControl : public Transformation {
   //   PartialCount).
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

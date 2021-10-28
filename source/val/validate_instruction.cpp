@@ -296,7 +296,12 @@ spv_result_t VersionCheck(ValidationState_t& _, const Instruction* inst) {
            << SPV_SPIRV_VERSION_MINOR_PART(last_version) << " or earlier";
   }
 
-  if (inst_desc->numCapabilities > 0u) {
+  // OpTerminateInvocation is special because it is enabled by Shader
+  // capability, but also requries a extension and/or version check.
+  const bool capability_check_is_sufficient =
+      inst->opcode() != SpvOpTerminateInvocation;
+
+  if (capability_check_is_sufficient && (inst_desc->numCapabilities > 0u)) {
     // We already checked that the direct capability dependency has been
     // satisfied. We don't need to check any further.
     return SPV_SUCCESS;
@@ -313,10 +318,9 @@ spv_result_t VersionCheck(ValidationState_t& _, const Instruction* inst) {
 
     if (module_version < min_version) {
       return _.diag(SPV_ERROR_WRONG_VERSION, inst)
-             << spvOpcodeString(opcode) << " requires "
-             << spvTargetEnvDescription(
-                    static_cast<spv_target_env>(min_version))
-             << " at minimum.";
+             << spvOpcodeString(opcode) << " requires SPIR-V version "
+             << SPV_SPIRV_VERSION_MAJOR_PART(min_version) << "."
+             << SPV_SPIRV_VERSION_MINOR_PART(min_version) << " at minimum.";
     }
   } else if (!_.HasAnyOfExtensions(exts)) {
     // Otherwise, we only error out when no enabling extensions are

@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationComputeDataSynonymFactClosure : public Transformation {
  public:
   explicit TransformationComputeDataSynonymFactClosure(
-      const protobufs::TransformationComputeDataSynonymFactClosure& message);
+      protobufs::TransformationComputeDataSynonymFactClosure message);
 
   explicit TransformationComputeDataSynonymFactClosure(
       uint32_t maximum_equivalence_class_size);
@@ -40,6 +40,8 @@ class TransformationComputeDataSynonymFactClosure : public Transformation {
   // facts implied by existing facts are deduced.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationAddDeadBlock : public Transformation {
  public:
   explicit TransformationAddDeadBlock(
-      const protobufs::TransformationAddDeadBlock& message);
+      protobufs::TransformationAddDeadBlock message);
 
   TransformationAddDeadBlock(uint32_t fresh_id, uint32_t existing_block,
                              bool condition_value);
@@ -52,6 +52,8 @@ class TransformationAddDeadBlock : public Transformation {
   // arranged so that control will pass to 's' at runtime.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

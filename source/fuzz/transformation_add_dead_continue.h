@@ -28,7 +28,7 @@ namespace fuzz {
 class TransformationAddDeadContinue : public Transformation {
  public:
   explicit TransformationAddDeadContinue(
-      const protobufs::TransformationAddDeadContinue& message);
+      protobufs::TransformationAddDeadContinue message);
 
   TransformationAddDeadContinue(uint32_t from_block,
                                 bool continue_condition_value,
@@ -63,17 +63,11 @@ class TransformationAddDeadContinue : public Transformation {
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
 
+  std::unordered_set<uint32_t> GetFreshIds() const override;
+
   protobufs::Transformation ToMessage() const override;
 
  private:
-  // Used by 'Apply' to actually apply the transformation to the module of
-  // interest, and by 'IsApplicable' to do a dry-run of the transformation on a
-  // cloned module, in order to check that the transformation leads to a valid
-  // module.  This is only invoked by 'IsApplicable' after certain basic
-  // applicability checks have been made, ensuring that the invocation of this
-  // method is legal.
-  void ApplyImpl(opt::IRContext* ir_context) const;
-
   protobufs::TransformationAddDeadContinue message_;
 };
 

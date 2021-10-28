@@ -18,8 +18,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationSetFunctionControl::TransformationSetFunctionControl(
-    const spvtools::fuzz::protobufs::TransformationSetFunctionControl& message)
-    : message_(message) {}
+    protobufs::TransformationSetFunctionControl message)
+    : message_(std::move(message)) {}
 
 TransformationSetFunctionControl::TransformationSetFunctionControl(
     uint32_t function_id, uint32_t function_control) {
@@ -94,6 +94,11 @@ opt::Instruction* TransformationSetFunctionControl ::FindFunctionDefInstruction(
   }
   // A nullptr result indicates that no match was found.
   return nullptr;
+}
+
+std::unordered_set<uint32_t> TransformationSetFunctionControl::GetFreshIds()
+    const {
+  return std::unordered_set<uint32_t>();
 }
 
 }  // namespace fuzz

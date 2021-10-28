@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SOURCE_FUZZ_FUZZER_PASS_ADD_NO_CONTRACTION_DECORATIONS_
-#define SOURCE_FUZZ_FUZZER_PASS_ADD_NO_CONTRACTION_DECORATIONS_
+#ifndef SOURCE_FUZZ_FUZZER_PASS_ADD_NO_CONTRACTION_DECORATIONS_H_
+#define SOURCE_FUZZ_FUZZER_PASS_ADD_NO_CONTRACTION_DECORATIONS_H_
 
 #include "source/fuzz/fuzzer_pass.h"
 
@@ -26,9 +26,8 @@ class FuzzerPassAddNoContractionDecorations : public FuzzerPass {
   FuzzerPassAddNoContractionDecorations(
       opt::IRContext* ir_context, TransformationContext* transformation_context,
       FuzzerContext* fuzzer_context,
-      protobufs::TransformationSequence* transformations);
-
-  ~FuzzerPassAddNoContractionDecorations() override;
+      protobufs::TransformationSequence* transformations,
+      bool ignore_inapplicable_transformations);
 
   void Apply() override;
 };
@@ -36,4 +35,4 @@ class FuzzerPassAddNoContractionDecorations : public FuzzerPass {
 }  // namespace fuzz
 }  // namespace spvtools
 
-#endif  // SOURCE_FUZZ_FUZZER_PASS_ADD_NO_CONTRACTION_DECORATIONS_
+#endif  // SOURCE_FUZZ_FUZZER_PASS_ADD_NO_CONTRACTION_DECORATIONS_H_

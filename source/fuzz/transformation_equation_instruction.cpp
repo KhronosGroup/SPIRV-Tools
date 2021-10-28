@@ -21,8 +21,8 @@ namespace spvtools {
 namespace fuzz {
 
 TransformationEquationInstruction::TransformationEquationInstruction(
-    const spvtools::fuzz::protobufs::TransformationEquationInstruction& message)
-    : message_(message) {}
+    protobufs::TransformationEquationInstruction message)
+    : message_(std::move(message)) {}
 
 TransformationEquationInstruction::TransformationEquationInstruction(
     uint32_t fresh_id, SpvOp opcode, const std::vector<uint32_t>& in_operand_id,
@@ -37,19 +37,21 @@ TransformationEquationInstruction::TransformationEquationInstruction(
 }
 
 bool TransformationEquationInstruction::IsApplicable(
-    opt::IRContext* ir_context, const TransformationContext& /*unused*/) const {
+    opt::IRContext* ir_context,
+    const TransformationContext& transformation_context) const {
   // The result id must be fresh.
   if (!fuzzerutil::IsFreshId(ir_context, message_.fresh_id())) {
     return false;
   }
+
   // The instruction to insert before must exist.
   auto insert_before =
       FindInstruction(message_.instruction_to_insert_before(), ir_context);
   if (!insert_before) {
     return false;
   }
-  // The input ids must all exist, not be OpUndef, and be available before this
-  // instruction.
+  // The input ids must all exist, not be OpUndef, not be irrelevant, and be
+  // available before this instruction.
   for (auto id : message_.in_operand_id()) {
     auto inst = ir_context->get_def_use_mgr()->GetDef(id);
     if (!inst) {
@@ -58,13 +60,16 @@ bool TransformationEquationInstruction::IsApplicable(
     if (inst->opcode() == SpvOpUndef) {
       return false;
     }
+    if (transformation_context.GetFactManager()->IdIsIrrelevant(id)) {
+      return false;
+    }
     if (!fuzzerutil::IdIsAvailableBeforeInstruction(ir_context, insert_before,
                                                     id)) {
       return false;
     }
   }
 
-  return MaybeGetResultType(ir_context) != 0;
+  return MaybeGetResultTypeId(ir_context) != 0;
 }
 
 void TransformationEquationInstruction::Apply(
@@ -79,16 +84,25 @@ void TransformationEquationInstruction::Apply(
     rhs_id.push_back(id);
   }
 
-  FindInstruction(message_.instruction_to_insert_before(), ir_context)
-      ->InsertBefore(MakeUnique<opt::Instruction>(
+  auto insert_before =
+      FindInstruction(message_.instruction_to_insert_before(), ir_context);
+  opt::Instruction* new_instruction =
+      insert_before->InsertBefore(MakeUnique<opt::Instruction>(
           ir_context, static_cast<SpvOp>(message_.opcode()),
-          MaybeGetResultType(ir_context), message_.fresh_id(), in_operands));
+          MaybeGetResultTypeId(ir_context), message_.fresh_id(),
+          std::move(in_operands)));
 
-  ir_context->InvalidateAnalysesExceptFor(opt::IRContext::kAnalysisNone);
+  ir_context->get_def_use_mgr()->AnalyzeInstDefUse(new_instruction);
+  ir_context->set_instr_block(new_instruction,
+                              ir_context->get_instr_block(insert_before));
 
-  transformation_context->GetFactManager()->AddFactIdEquation(
-      message_.fresh_id(), static_cast<SpvOp>(message_.opcode()), rhs_id,
-      ir_context);
+  // Add an equation fact as long as the result id is not irrelevant (it could
+  // be if we are inserting into a dead block).
+  if (!transformation_context->GetFactManager()->IdIsIrrelevant(
+          message_.fresh_id())) {
+    transformation_context->GetFactManager()->AddFactIdEquation(
+        message_.fresh_id(), static_cast<SpvOp>(message_.opcode()), rhs_id);
+  }
 }
 
 protobufs::Transformation TransformationEquationInstruction::ToMessage() const {
@@ -97,12 +111,108 @@ protobufs::Transformation TransformationEquationInstruction::ToMessage() const {
   return result;
 }
 
-uint32_t TransformationEquationInstruction::MaybeGetResultType(
+uint32_t TransformationEquationInstruction::MaybeGetResultTypeId(
     opt::IRContext* ir_context) const {
-  switch (static_cast<SpvOp>(message_.opcode())) {
+  auto opcode = static_cast<SpvOp>(message_.opcode());
+  switch (opcode) {
+    case SpvOpConvertUToF:
+    case SpvOpConvertSToF: {
+      if (message_.in_operand_id_size() != 1) {
+        return 0;
+      }
+
+      const auto* type = ir_context->get_type_mgr()->GetType(
+          fuzzerutil::GetTypeId(ir_context, message_.in_operand_id(0)));
+      if (!type) {
+        return 0;
+      }
+
+      if (const auto* vector = type->AsVector()) {
+        if (!vector->element_type()->AsInteger()) {
+          return 0;
+        }
+
+        if (auto element_type_id = fuzzerutil::MaybeGetFloatType(
+                ir_context, vector->element_type()->AsInteger()->width())) {
+          return fuzzerutil::MaybeGetVectorType(ir_context, element_type_id,
+                                                vector->element_count());
+        }
+
+        return 0;
+      } else {
+        if (!type->AsInteger()) {
+          return 0;
+        }
+
+        return fuzzerutil::MaybeGetFloatType(ir_context,
+                                             type->AsInteger()->width());
+      }
+    }
+    case SpvOpBitcast: {
+      if (message_.in_operand_id_size() != 1) {
+        return 0;
+      }
+
+      const auto* operand_inst =
+          ir_context->get_def_use_mgr()->GetDef(message_.in_operand_id(0));
+      if (!operand_inst) {
+        return 0;
+      }
+
+      const auto* operand_type =
+          ir_context->get_type_mgr()->GetType(operand_inst->type_id());
+      if (!operand_type) {
+        return 0;
+      }
+
+      // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3539):
+      //  The only constraint on the types of OpBitcast's parameters is that
+      //  they must have the same number of bits. Consider improving the code
+      //  below to support this in full.
+      if (const auto* vector = operand_type->AsVector()) {
+        uint32_t component_type_id;
+        if (const auto* int_type = vector->element_type()->AsInteger()) {
+          component_type_id =
+              fuzzerutil::MaybeGetFloatType(ir_context, int_type->width());
+        } else if (const auto* float_type = vector->element_type()->AsFloat()) {
+          component_type_id = fuzzerutil::MaybeGetIntegerType(
+              ir_context, float_type->width(), true);
+          if (component_type_id == 0 ||
+              fuzzerutil::MaybeGetVectorType(ir_context, component_type_id,
+                                             vector->element_count()) == 0) {
+            component_type_id = fuzzerutil::MaybeGetIntegerType(
+                ir_context, float_type->width(), false);
+          }
+        } else {
+          assert(false && "Only vectors of numerical components are supported");
+          return 0;
+        }
+
+        if (component_type_id == 0) {
+          return 0;
+        }
+
+        return fuzzerutil::MaybeGetVectorType(ir_context, component_type_id,
+                                              vector->element_count());
+      } else if (const auto* int_type = operand_type->AsInteger()) {
+        return fuzzerutil::MaybeGetFloatType(ir_context, int_type->width());
+      } else if (const auto* float_type = operand_type->AsFloat()) {
+        if (auto existing_id = fuzzerutil::MaybeGetIntegerType(
+                ir_context, float_type->width(), true)) {
+          return existing_id;
+        }
+
+        return fuzzerutil::MaybeGetIntegerType(ir_context, float_type->width(),
+                                               false);
+      } else {
+        assert(false &&
+               "Operand is not a scalar or a vector of numerical type");
+        return 0;
+      }
+    }
     case SpvOpIAdd:
     case SpvOpISub: {
-      if (message_.in_operand_id().size() != 2) {
+      if (message_.in_operand_id_size() != 2) {
         return 0;
       }
       uint32_t first_operand_width = 0;
@@ -175,11 +285,15 @@ uint32_t TransformationEquationInstruction::MaybeGetResultType(
       }
       return operand_inst->type_id();
     }
-
     default:
       assert(false && "Inappropriate opcode for equation instruction.");
       return 0;
   }
+}
+
+std::unordered_set<uint32_t> TransformationEquationInstruction::GetFreshIds()
+    const {
+  return {message_.fresh_id()};
 }
 
 }  // namespace fuzz

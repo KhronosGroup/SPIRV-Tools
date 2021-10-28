@@ -159,12 +159,12 @@ spvtools_pch(TEST_SOURCES pch_test)
 add_spvtools_unittest(
   TARGET spirv_unit_tests
   SRCS ${TEST_SOURCES}
-  LIBS ${SPIRV_TOOLS})
+  LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
 
 add_spvtools_unittest(
   TARGET c_interface
   SRCS c_interface_test.cpp
-  LIBS ${SPIRV_TOOLS})
+  LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
 
 add_spvtools_unittest(
   TARGET c_interface_shared
@@ -181,14 +181,16 @@ if (${SPIRV_TIMER_ENABLED})
 add_spvtools_unittest(
   TARGET timer
   SRCS timer_test.cpp
-  LIBS ${SPIRV_TOOLS})
+  LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
 endif()
 
 
 add_subdirectory(link)
+add_subdirectory(lint)
 add_subdirectory(opt)
 add_subdirectory(reduce)
 add_subdirectory(fuzz)
 add_subdirectory(tools)
 add_subdirectory(util)
 add_subdirectory(val)
+add_subdirectory(fuzzers)

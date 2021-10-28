@@ -28,7 +28,7 @@ namespace fuzz {
 class TransformationAddTypeFunction : public Transformation {
  public:
   explicit TransformationAddTypeFunction(
-      const protobufs::TransformationAddTypeFunction& message);
+      protobufs::TransformationAddTypeFunction message);
 
   TransformationAddTypeFunction(uint32_t fresh_id, uint32_t return_type_id,
                                 const std::vector<uint32_t>& argument_type_ids);
@@ -48,6 +48,8 @@ class TransformationAddTypeFunction : public Transformation {
   // for the instruction is |message_.fresh_id|.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 

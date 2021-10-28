@@ -26,7 +26,7 @@ namespace fuzz {
 class TransformationCompositeConstruct : public Transformation {
  public:
   explicit TransformationCompositeConstruct(
-      const protobufs::TransformationCompositeConstruct& message);
+      protobufs::TransformationCompositeConstruct message);
 
   TransformationCompositeConstruct(
       uint32_t composite_type_id, std::vector<uint32_t> component,
@@ -58,8 +58,14 @@ class TransformationCompositeConstruct : public Transformation {
   // |message_.base_instruction_id| and |message_.offset|.  The instruction
   // creates a composite of type |message_.composite_type_id| using the ids of
   // |message_.component|.
+  //
+  // Synonym facts are added between the elements of the resulting composite
+  // and the components used to construct it, as long as the associated ids
+  // support synonym creation.
   void Apply(opt::IRContext* ir_context,
              TransformationContext* transformation_context) const override;
+
+  std::unordered_set<uint32_t> GetFreshIds() const override;
 
   protobufs::Transformation ToMessage() const override;
 
@@ -83,6 +89,11 @@ class TransformationCompositeConstruct : public Transformation {
   bool ComponentsForVectorConstructionAreOK(
       opt::IRContext* ir_context,
       const opt::analysis::Vector& vector_type) const;
+
+  // Helper method for adding data synonym facts when applying the
+  // transformation to |ir_context| and |transformation_context|.
+  void AddDataSynonymFacts(opt::IRContext* ir_context,
+                           TransformationContext* transformation_context) const;
 
   protobufs::TransformationCompositeConstruct message_;
 };

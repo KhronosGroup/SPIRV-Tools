@@ -27,22 +27,26 @@ set(SPIRV_TOOLS_OPT_SOURCES
   composite.h
   const_folding_rules.h
   constants.h
+  control_dependence.h
+  convert_to_sampled_image_pass.h
   convert_to_half_pass.h
   copy_prop_arrays.h
+  dataflow.h
   dead_branch_elim_pass.h
   dead_insert_elim_pass.h
   dead_variable_elimination.h
-  decompose_initialized_variables_pass.h
   decoration_manager.h
   debug_info_manager.h
   def_use_manager.h
   desc_sroa.h
+  desc_sroa_util.h
   dominator_analysis.h
   dominator_tree.h
   eliminate_dead_constant_pass.h
   eliminate_dead_functions_pass.h
   eliminate_dead_functions_util.h
   eliminate_dead_members_pass.h
+  empty_pass.h
   feature_manager.h
   fix_storage_class.h
   flatten_decoration_pass.h
@@ -51,7 +55,6 @@ set(SPIRV_TOOLS_OPT_SOURCES
   fold_spec_constant_op_and_composite_pass.h
   freeze_spec_constant_value_pass.h
   function.h
-  generate_webgpu_initializers_pass.h
   graphics_robust_access_pass.h
   if_conversion.h
   inline_exhaustive_pass.h
@@ -63,6 +66,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   instruction.h
   instruction_list.h
   instrument_pass.h
+  interp_fixup_pass.h
   ir_builder.h
   ir_context.h
   ir_loader.h
@@ -89,7 +93,6 @@ set(SPIRV_TOOLS_OPT_SOURCES
   pass.h
   pass_manager.h
   private_to_local_pass.h
-  process_lines_pass.h
   propagator.h
   reduce_load_size.h
   redundancy_elimination.h
@@ -97,16 +100,16 @@ set(SPIRV_TOOLS_OPT_SOURCES
   register_pressure.h
   relax_float_ops_pass.h
   remove_duplicates_pass.h
+  remove_unused_interface_variables_pass.h
+  replace_desc_array_access_using_var_index.h
   replace_invalid_opc.h
   scalar_analysis.h
   scalar_analysis_nodes.h
   scalar_replacement_pass.h
   set_spec_constant_default_value_pass.h
   simplification_pass.h
-  split_invalid_unreachable_pass.h
   ssa_rewrite_pass.h
   strength_reduction_pass.h
-  strip_atomic_counter_memory_pass.h
   strip_debug_info_pass.h
   strip_reflect_info_pass.h
   struct_cfg_analysis.h
@@ -135,16 +138,19 @@ set(SPIRV_TOOLS_OPT_SOURCES
   composite.cpp
   const_folding_rules.cpp
   constants.cpp
+  control_dependence.cpp
+  convert_to_sampled_image_pass.cpp
   convert_to_half_pass.cpp
   copy_prop_arrays.cpp
+  dataflow.cpp
   dead_branch_elim_pass.cpp
   dead_insert_elim_pass.cpp
   dead_variable_elimination.cpp
-  decompose_initialized_variables_pass.cpp
   decoration_manager.cpp
   debug_info_manager.cpp
   def_use_manager.cpp
   desc_sroa.cpp
+  desc_sroa_util.cpp
   dominator_analysis.cpp
   dominator_tree.cpp
   eliminate_dead_constant_pass.cpp
@@ -160,7 +166,6 @@ set(SPIRV_TOOLS_OPT_SOURCES
   freeze_spec_constant_value_pass.cpp
   function.cpp
   graphics_robust_access_pass.cpp
-  generate_webgpu_initializers_pass.cpp
   if_conversion.cpp
   inline_exhaustive_pass.cpp
   inline_opaque_pass.cpp
@@ -171,9 +176,9 @@ set(SPIRV_TOOLS_OPT_SOURCES
   instruction.cpp
   instruction_list.cpp
   instrument_pass.cpp
+  interp_fixup_pass.cpp
   ir_context.cpp
   ir_loader.cpp
-  legalize_vector_shuffle_pass.cpp
   licm_pass.cpp
   local_access_chain_convert_pass.cpp
   local_redundancy_elimination.cpp
@@ -196,23 +201,22 @@ set(SPIRV_TOOLS_OPT_SOURCES
   pass.cpp
   pass_manager.cpp
   private_to_local_pass.cpp
-  process_lines_pass.cpp
   propagator.cpp
   reduce_load_size.cpp
   redundancy_elimination.cpp
   register_pressure.cpp
   relax_float_ops_pass.cpp
   remove_duplicates_pass.cpp
+  remove_unused_interface_variables_pass.cpp
+  replace_desc_array_access_using_var_index.cpp
   replace_invalid_opc.cpp
   scalar_analysis.cpp
   scalar_analysis_simplification.cpp
   scalar_replacement_pass.cpp
   set_spec_constant_default_value_pass.cpp
   simplification_pass.cpp
-  split_invalid_unreachable_pass.cpp
   ssa_rewrite_pass.cpp
   strength_reduction_pass.cpp
-  strip_atomic_counter_memory_pass.cpp
   strip_debug_info_pass.cpp
   strip_reflect_info_pass.cpp
   struct_cfg_analysis.cpp
@@ -226,14 +230,14 @@ set(SPIRV_TOOLS_OPT_SOURCES
   wrap_opkill.cpp
 )
 
-if(MSVC)
+if(MSVC AND (NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")))
   # Enable parallel builds across four cores for this lib
   add_definitions(/MP4)
 endif()
 
 spvtools_pch(SPIRV_TOOLS_OPT_SOURCES pch_source_opt)
 
-add_library(SPIRV-Tools-opt ${SPIRV_TOOLS_OPT_SOURCES})
+add_library(SPIRV-Tools-opt ${SPIRV_TOOLS_LIBRARY_TYPE} ${SPIRV_TOOLS_OPT_SOURCES})
 
 spvtools_default_compile_options(SPIRV-Tools-opt)
 target_include_directories(SPIRV-Tools-opt
@@ -245,7 +249,7 @@ target_include_directories(SPIRV-Tools-opt
 )
 # We need the assembling and disassembling functionalities in the main library.
 target_link_libraries(SPIRV-Tools-opt
-  PUBLIC ${SPIRV_TOOLS})
+  PUBLIC ${SPIRV_TOOLS_FULL_VISIBILITY})
 
 set_property(TARGET SPIRV-Tools-opt PROPERTY FOLDER "SPIRV-Tools libraries")
 spvtools_check_symbol_exports(SPIRV-Tools-opt)

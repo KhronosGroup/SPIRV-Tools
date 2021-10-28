@@ -337,7 +337,7 @@ int32_t spvOpcodeGeneratesType(SpvOp op) {
     case SpvOpTypeCooperativeMatrixNV:
     // case SpvOpTypeAccelerationStructureKHR: covered by
     // SpvOpTypeAccelerationStructureNV
-    case SpvOpTypeRayQueryProvisionalKHR:
+    case SpvOpTypeRayQueryKHR:
       return true;
     default:
       // In particular, OpTypeForwardPointer does not generate a type,
@@ -413,11 +413,14 @@ bool spvOpcodeIsAtomicWithLoad(const SpvOp opcode) {
     case SpvOpAtomicIIncrement:
     case SpvOpAtomicIDecrement:
     case SpvOpAtomicIAdd:
+    case SpvOpAtomicFAddEXT:
     case SpvOpAtomicISub:
     case SpvOpAtomicSMin:
     case SpvOpAtomicUMin:
+    case SpvOpAtomicFMinEXT:
     case SpvOpAtomicSMax:
     case SpvOpAtomicUMax:
+    case SpvOpAtomicFMaxEXT:
     case SpvOpAtomicAnd:
     case SpvOpAtomicOr:
     case SpvOpAtomicXor:
@@ -443,13 +446,30 @@ bool spvOpcodeIsReturn(SpvOp opcode) {
   }
 }
 
+bool spvOpcodeIsAbort(SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpKill:
+    case SpvOpUnreachable:
+    case SpvOpTerminateInvocation:
+    case SpvOpTerminateRayKHR:
+    case SpvOpIgnoreIntersectionKHR:
+      return true;
+    default:
+      return false;
+  }
+}
+
 bool spvOpcodeIsReturnOrAbort(SpvOp opcode) {
-  return spvOpcodeIsReturn(opcode) || opcode == SpvOpKill ||
-         opcode == SpvOpUnreachable;
+  return spvOpcodeIsReturn(opcode) || spvOpcodeIsAbort(opcode);
 }
 
 bool spvOpcodeIsBlockTerminator(SpvOp opcode) {
   return spvOpcodeIsBranch(opcode) || spvOpcodeIsReturnOrAbort(opcode);
+}
+
+bool spvOpcodeTerminatesExecution(SpvOp opcode) {
+  return opcode == SpvOpKill || opcode == SpvOpTerminateInvocation ||
+         opcode == SpvOpTerminateRayKHR || opcode == SpvOpIgnoreIntersectionKHR;
 }
 
 bool spvOpcodeIsBaseOpaqueType(SpvOp opcode) {
@@ -650,6 +670,42 @@ bool spvOpcodeIsCommutativeBinaryOperator(SpvOp opcode) {
   }
 }
 
+bool spvOpcodeIsLinearAlgebra(SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpTranspose:
+    case SpvOpVectorTimesScalar:
+    case SpvOpMatrixTimesScalar:
+    case SpvOpVectorTimesMatrix:
+    case SpvOpMatrixTimesVector:
+    case SpvOpMatrixTimesMatrix:
+    case SpvOpOuterProduct:
+    case SpvOpDot:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool spvOpcodeIsImageSample(const SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpImageSampleImplicitLod:
+    case SpvOpImageSampleExplicitLod:
+    case SpvOpImageSampleDrefImplicitLod:
+    case SpvOpImageSampleDrefExplicitLod:
+    case SpvOpImageSampleProjImplicitLod:
+    case SpvOpImageSampleProjExplicitLod:
+    case SpvOpImageSampleProjDrefImplicitLod:
+    case SpvOpImageSampleProjDrefExplicitLod:
+    case SpvOpImageSparseSampleImplicitLod:
+    case SpvOpImageSparseSampleExplicitLod:
+    case SpvOpImageSparseSampleDrefImplicitLod:
+    case SpvOpImageSparseSampleDrefExplicitLod:
+      return true;
+    default:
+      return false;
+  }
+}
+
 std::vector<uint32_t> spvOpcodeMemorySemanticsOperandIndices(SpvOp opcode) {
   switch (opcode) {
     case SpvOpMemoryBarrier:
@@ -664,6 +720,7 @@ std::vector<uint32_t> spvOpcodeMemorySemanticsOperandIndices(SpvOp opcode) {
     case SpvOpAtomicIIncrement:
     case SpvOpAtomicIDecrement:
     case SpvOpAtomicIAdd:
+    case SpvOpAtomicFAddEXT:
     case SpvOpAtomicISub:
     case SpvOpAtomicSMin:
     case SpvOpAtomicUMin:
@@ -679,5 +736,34 @@ std::vector<uint32_t> spvOpcodeMemorySemanticsOperandIndices(SpvOp opcode) {
       return {4, 5};
     default:
       return {};
+  }
+}
+
+bool spvOpcodeIsAccessChain(SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpAccessChain:
+    case SpvOpInBoundsAccessChain:
+    case SpvOpPtrAccessChain:
+    case SpvOpInBoundsPtrAccessChain:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool spvOpcodeIsBit(SpvOp opcode) {
+  switch (opcode) {
+    case SpvOpShiftRightLogical:
+    case SpvOpShiftRightArithmetic:
+    case SpvOpShiftLeftLogical:
+    case SpvOpBitwiseOr:
+    case SpvOpBitwiseXor:
+    case SpvOpBitwiseAnd:
+    case SpvOpNot:
+    case SpvOpBitReverse:
+    case SpvOpBitCount:
+      return true;
+    default:
+      return false;
   }
 }

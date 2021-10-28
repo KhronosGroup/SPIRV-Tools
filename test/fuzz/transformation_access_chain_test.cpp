@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include "source/fuzz/transformation_access_chain.h"
+
+#include "gtest/gtest.h"
+#include "source/fuzz/fuzzer_util.h"
 #include "source/fuzz/instruction_descriptor.h"
 #include "test/fuzz/fuzz_test_util.h"
 
@@ -23,6 +26,7 @@ namespace {
 TEST(TransformationAccessChainTest, BasicTest) {
   std::string shader = R"(
                OpCapability Shader
+               OpCapability VariablePointers
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main" %48 %54
@@ -60,7 +64,6 @@ TEST(TransformationAccessChainTest, BasicTest) {
          %85 = OpConstant %10 5
          %52 = OpTypeArray %50 %51
          %53 = OpTypePointer Private %52
-         %45 = OpUndef %9
          %46 = OpConstantNull %9
          %47 = OpTypePointer Private %8
          %48 = OpVariable %47 Private
@@ -101,7 +104,9 @@ TEST(TransformationAccessChainTest, BasicTest) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
 
   // Types:
   // Ptr | Pointee | Storage class | GLSL for pointee    | Ids of this type
@@ -117,13 +122,20 @@ TEST(TransformationAccessChainTest, BasicTest) {
 
   // Indices 0-5 are in ids 80-85
 
-  FactManager fact_manager;
-  spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   transformation_context.GetFactManager()->AddFactValueOfPointeeIsIrrelevant(
       54);
+
+  // Check the case where the index type is not a 32-bit integer.
+  TransformationAccessChain invalid_index_example1(
+      101, 28, {29}, MakeInstructionDescriptor(42, SpvOpReturn, 0));
+
+  // Since the index  is not a 32-bit integer type but a 32-bit float type,
+  // ValidIndexComposite should return false and thus the transformation is not
+  // applicable.
+  ASSERT_FALSE(invalid_index_example1.IsApplicable(context.get(),
+                                                   transformation_context));
 
   // Bad: id is not fresh
   ASSERT_FALSE(TransformationAccessChain(
@@ -150,7 +162,7 @@ TEST(TransformationAccessChainTest, BasicTest) {
                    100, 43, {1000}, MakeInstructionDescriptor(24, SpvOpLoad, 0))
                    .IsApplicable(context.get(), transformation_context));
 
-  // Bad: index id is not a constant
+  // Bad: index id is not a constant and the pointer refers to a struct
   ASSERT_FALSE(TransformationAccessChain(
                    100, 43, {24}, MakeInstructionDescriptor(25, SpvOpIAdd, 0))
                    .IsApplicable(context.get(), transformation_context));
@@ -161,9 +173,9 @@ TEST(TransformationAccessChainTest, BasicTest) {
                                 MakeInstructionDescriptor(24, SpvOpLoad, 0))
           .IsApplicable(context.get(), transformation_context));
 
-  // Bad: index id is out of bounds
+  // Bad: index id is out of bounds when accessing a struct
   ASSERT_FALSE(
-      TransformationAccessChain(100, 43, {80, 83},
+      TransformationAccessChain(100, 43, {83, 80},
                                 MakeInstructionDescriptor(24, SpvOpLoad, 0))
           .IsApplicable(context.get(), transformation_context));
 
@@ -171,6 +183,12 @@ TEST(TransformationAccessChainTest, BasicTest) {
   ASSERT_FALSE(TransformationAccessChain(
                    100, 34, {}, MakeInstructionDescriptor(36, SpvOpVariable, 0))
                    .IsApplicable(context.get(), transformation_context));
+
+  // Bad: OpTypeBool must be present in the module to clamp an index
+  ASSERT_FALSE(
+      TransformationAccessChain(100, 36, {80, 81},
+                                MakeInstructionDescriptor(37, SpvOpStore, 0))
+          .IsApplicable(context.get(), transformation_context));
 
   // Bad: pointer not available
   ASSERT_FALSE(
@@ -183,15 +201,14 @@ TEST(TransformationAccessChainTest, BasicTest) {
                    100, 43, {80}, MakeInstructionDescriptor(24, SpvOpLoad, 100))
                    .IsApplicable(context.get(), transformation_context));
 
+#ifndef NDEBUG
   // Bad: pointer is null
-  ASSERT_FALSE(TransformationAccessChain(
-                   100, 45, {80}, MakeInstructionDescriptor(24, SpvOpLoad, 0))
-                   .IsApplicable(context.get(), transformation_context));
-
-  // Bad: pointer is undef
-  ASSERT_FALSE(TransformationAccessChain(
-                   100, 46, {80}, MakeInstructionDescriptor(24, SpvOpLoad, 0))
-                   .IsApplicable(context.get(), transformation_context));
+  ASSERT_DEATH(
+      TransformationAccessChain(100, 46, {80},
+                                MakeInstructionDescriptor(24, SpvOpLoad, 0))
+          .IsApplicable(context.get(), transformation_context),
+      "Access chains should not be created from null/undefined pointers");
+#endif
 
   // Bad: pointer to result type does not exist
   ASSERT_FALSE(TransformationAccessChain(
@@ -203,8 +220,10 @@ TEST(TransformationAccessChainTest, BasicTest) {
         100, 43, {80}, MakeInstructionDescriptor(24, SpvOpLoad, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(100));
   }
@@ -214,102 +233,96 @@ TEST(TransformationAccessChainTest, BasicTest) {
         101, 28, {81}, MakeInstructionDescriptor(42, SpvOpReturn, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(101));
   }
 
   {
     TransformationAccessChain transformation(
-        102, 36, {80, 81}, MakeInstructionDescriptor(37, SpvOpStore, 0));
+        102, 44, {}, MakeInstructionDescriptor(44, SpvOpStore, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_FALSE(
-        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(102));
-  }
-
-  {
-    TransformationAccessChain transformation(
-        103, 44, {}, MakeInstructionDescriptor(44, SpvOpStore, 0));
-    ASSERT_TRUE(
-        transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(103));
   }
 
   {
     TransformationAccessChain transformation(
-        104, 13, {80}, MakeInstructionDescriptor(21, SpvOpAccessChain, 0));
+        103, 13, {80}, MakeInstructionDescriptor(21, SpvOpAccessChain, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(104));
   }
 
   {
     TransformationAccessChain transformation(
-        105, 34, {}, MakeInstructionDescriptor(44, SpvOpStore, 1));
+        104, 34, {}, MakeInstructionDescriptor(44, SpvOpStore, 1));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(105));
   }
 
   {
     TransformationAccessChain transformation(
-        106, 38, {}, MakeInstructionDescriptor(40, SpvOpFunctionCall, 0));
+        105, 38, {}, MakeInstructionDescriptor(40, SpvOpFunctionCall, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(106));
   }
 
   {
     TransformationAccessChain transformation(
-        107, 14, {}, MakeInstructionDescriptor(24, SpvOpLoad, 0));
+        106, 14, {}, MakeInstructionDescriptor(24, SpvOpLoad, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_FALSE(
         transformation_context.GetFactManager()->PointeeValueIsIrrelevant(107));
   }
-
   {
+    // Check the case where the access chain's base pointer has the irrelevant
+    // pointee fact; the resulting access chain should inherit this fact.
     TransformationAccessChain transformation(
-        108, 54, {85, 81, 81}, MakeInstructionDescriptor(24, SpvOpLoad, 0));
+        107, 54, {}, MakeInstructionDescriptor(24, SpvOpLoad, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
     ASSERT_TRUE(
-        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(108));
-  }
-
-  {
-    TransformationAccessChain transformation(
-        109, 48, {80, 80}, MakeInstructionDescriptor(24, SpvOpLoad, 0));
-    ASSERT_TRUE(
-        transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
-    ASSERT_FALSE(
-        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(109));
+        transformation_context.GetFactManager()->PointeeValueIsIrrelevant(54));
   }
 
   std::string after_transformation = R"(
                OpCapability Shader
+               OpCapability VariablePointers
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %4 "main" %48 %54
@@ -347,7 +360,6 @@ TEST(TransformationAccessChainTest, BasicTest) {
          %85 = OpConstant %10 5
          %52 = OpTypeArray %50 %51
          %53 = OpTypePointer Private %52
-         %45 = OpUndef %9
          %46 = OpConstantNull %9
          %47 = OpTypePointer Private %8
          %48 = OpVariable %47 Private
@@ -359,16 +371,15 @@ TEST(TransformationAccessChainTest, BasicTest) {
          %36 = OpVariable %9 Function
          %38 = OpVariable %11 Function
          %44 = OpCopyObject %9 %36
-        %103 = OpAccessChain %9 %44
+        %102 = OpAccessChain %9 %44
                OpStore %28 %33
-        %105 = OpAccessChain %11 %34
+        %104 = OpAccessChain %11 %34
                OpStore %34 %35
          %37 = OpLoad %8 %28
-        %102 = OpAccessChain %20 %36 %80 %81
                OpStore %36 %37
          %39 = OpLoad %10 %34
                OpStore %38 %39
-        %106 = OpAccessChain %11 %38
+        %105 = OpAccessChain %11 %38
          %40 = OpFunctionCall %10 %15 %36 %38
          %41 = OpLoad %10 %34
          %42 = OpIAdd %10 %41 %40
@@ -380,21 +391,58 @@ TEST(TransformationAccessChainTest, BasicTest) {
          %13 = OpFunctionParameter %9
          %14 = OpFunctionParameter %11
          %16 = OpLabel
-        %104 = OpAccessChain %70 %13 %80
+        %103 = OpAccessChain %70 %13 %80
          %21 = OpAccessChain %20 %13 %17 %19
          %43 = OpCopyObject %9 %13
          %22 = OpLoad %6 %21
          %23 = OpConvertFToS %10 %22
         %100 = OpAccessChain %70 %43 %80
-        %107 = OpAccessChain %11 %14
-        %108 = OpAccessChain %99 %54 %85 %81 %81
-        %109 = OpAccessChain %99 %48 %80 %80
+        %106 = OpAccessChain %11 %14
+        %107 = OpAccessChain %53 %54
          %24 = OpLoad %10 %14
          %25 = OpIAdd %10 %23 %24
                OpReturnValue %25
                OpFunctionEnd
   )";
   ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationAccessChainTest, StructIndexMustBeConstant) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main"
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 320
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeInt 32 1
+         %20 = OpUndef %6
+          %7 = OpTypeStruct %6 %6
+          %8 = OpTypePointer Function %7
+         %10 = OpConstant %6 0
+         %11 = OpConstant %6 2
+         %12 = OpTypePointer Function %6
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %9 = OpVariable %8 Function
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  // Bad: %9 is a pointer to a struct, but %20 is not a constant.
+  ASSERT_FALSE(TransformationAccessChain(
+                   100, 9, {20}, MakeInstructionDescriptor(9, SpvOpReturn, 0))
+                   .IsApplicable(context.get(), transformation_context));
 }
 
 TEST(TransformationAccessChainTest, IsomorphicStructs) {
@@ -423,28 +471,30 @@ TEST(TransformationAccessChainTest, IsomorphicStructs) {
   const auto env = SPV_ENV_UNIVERSAL_1_4;
   const auto consumer = nullptr;
   const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
-  ASSERT_TRUE(IsValid(env, context.get()));
-
-  FactManager fact_manager;
   spvtools::ValidatorOptions validator_options;
-  TransformationContext transformation_context(&fact_manager,
-                                               validator_options);
-
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
   {
     TransformationAccessChain transformation(
         100, 11, {}, MakeInstructionDescriptor(5, SpvOpReturn, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
   {
     TransformationAccessChain transformation(
         101, 12, {}, MakeInstructionDescriptor(5, SpvOpReturn, 0));
     ASSERT_TRUE(
         transformation.IsApplicable(context.get(), transformation_context));
-    transformation.Apply(context.get(), &transformation_context);
-    ASSERT_TRUE(IsValid(env, context.get()));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
   }
 
   std::string after_transformation = R"(
@@ -467,6 +517,245 @@ TEST(TransformationAccessChainTest, IsomorphicStructs) {
           %5 = OpLabel
         %100 = OpAccessChain %8 %11
         %101 = OpAccessChain %10 %12
+               OpReturn
+               OpFunctionEnd
+  )";
+  ASSERT_TRUE(IsEqual(env, after_transformation, context.get()));
+}
+
+TEST(TransformationAccessChainTest, ClampingVariables) {
+  std::string shader = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %4 = OpTypeVoid
+          %5 = OpTypeBool
+          %6 = OpTypeFunction %4
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeVector %7 4
+          %9 = OpTypePointer Function %8
+         %10 = OpConstant %7 0
+         %11 = OpConstant %7 1
+         %12 = OpConstant %7 3
+         %13 = OpConstant %7 2
+         %14 = OpConstantComposite %8 %10 %11 %12 %13
+         %15 = OpTypePointer Function %7
+         %16 = OpTypeInt 32 0
+         %17 = OpConstant %16 1
+         %18 = OpConstant %16 3
+         %19 = OpTypeStruct %8
+         %20 = OpTypePointer Function %19
+         %21 = OpConstant %7 9
+         %22 = OpConstant %16 10
+         %23 = OpTypeArray %19 %22
+         %24 = OpTypePointer Function %23
+         %25 = OpTypeFloat 32
+         %26 = OpTypeVector %25 4
+         %27 = OpTypePointer Output %26
+          %3 = OpVariable %27 Output
+          %2 = OpFunction %4 None %6
+         %28 = OpLabel
+         %29 = OpVariable %9 Function
+         %30 = OpVariable %15 Function
+         %31 = OpVariable %15 Function
+         %32 = OpVariable %20 Function
+         %33 = OpVariable %15 Function
+         %34 = OpVariable %24 Function
+               OpStore %29 %14
+               OpStore %30 %10
+         %36 = OpLoad %7 %30
+         %38 = OpLoad %8 %29
+         %39 = OpCompositeConstruct %19 %38
+         %40 = OpLoad %7 %30
+         %42 = OpLoad %8 %29
+         %43 = OpCompositeConstruct %19 %42
+         %45 = OpLoad %7 %30
+         %46 = OpLoad %7 %33
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  const auto env = SPV_ENV_UNIVERSAL_1_4;
+  const auto consumer = nullptr;
+  const auto context = BuildModule(env, consumer, shader, kFuzzAssembleOption);
+  spvtools::ValidatorOptions validator_options;
+  ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(context.get(), validator_options,
+                                               kConsoleMessageConsumer));
+  TransformationContext transformation_context(
+      MakeUnique<FactManager>(context.get()), validator_options);
+  // Bad: no ids given for clamping
+  ASSERT_FALSE(TransformationAccessChain(
+                   100, 29, {17}, MakeInstructionDescriptor(36, SpvOpLoad, 0))
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: an id given for clamping is not fresh
+  ASSERT_FALSE(TransformationAccessChain(
+                   100, 29, {17}, MakeInstructionDescriptor(36, SpvOpLoad, 0),
+                   {{46, 201}})
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: an id given for clamping is not fresh
+  ASSERT_FALSE(TransformationAccessChain(
+                   100, 29, {17}, MakeInstructionDescriptor(36, SpvOpLoad, 0),
+                   {{200, 46}})
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: an id given for clamping is the same as the id for the access chain
+  ASSERT_FALSE(TransformationAccessChain(
+                   100, 29, {17}, MakeInstructionDescriptor(36, SpvOpLoad, 0),
+                   {{100, 201}})
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: the fresh ids given are not distinct
+  ASSERT_FALSE(TransformationAccessChain(
+                   100, 29, {17}, MakeInstructionDescriptor(36, SpvOpLoad, 0),
+                   {{200, 200}})
+                   .IsApplicable(context.get(), transformation_context));
+
+  // Bad: not enough ids given for clamping (2 pairs needed)
+  ASSERT_FALSE(
+      TransformationAccessChain(104, 34, {45, 10, 46},
+                                MakeInstructionDescriptor(46, SpvOpReturn, 0),
+                                {{208, 209}, {209, 211}})
+          .IsApplicable(context.get(), transformation_context));
+
+  // Bad: the fresh ids given are not distinct
+  ASSERT_FALSE(
+      TransformationAccessChain(104, 34, {45, 10, 46},
+                                MakeInstructionDescriptor(46, SpvOpReturn, 0),
+                                {{208, 209}, {209, 211}})
+          .IsApplicable(context.get(), transformation_context));
+
+  {
+    TransformationAccessChain transformation(
+        100, 29, {17}, MakeInstructionDescriptor(36, SpvOpLoad, 0),
+        {{200, 201}});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
+  }
+
+  {
+    TransformationAccessChain transformation(
+        101, 29, {36}, MakeInstructionDescriptor(38, SpvOpLoad, 0),
+        {{202, 203}});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
+  }
+
+  {
+    TransformationAccessChain transformation(
+        102, 32, {10, 40}, MakeInstructionDescriptor(42, SpvOpLoad, 0),
+        {{204, 205}});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
+  }
+
+  {
+    TransformationAccessChain transformation(
+        103, 34, {11}, MakeInstructionDescriptor(45, SpvOpLoad, 0),
+        {{206, 207}});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
+  }
+
+  {
+    TransformationAccessChain transformation(
+        104, 34, {45, 10, 46}, MakeInstructionDescriptor(46, SpvOpReturn, 0),
+        {{208, 209}, {210, 211}});
+    ASSERT_TRUE(
+        transformation.IsApplicable(context.get(), transformation_context));
+    ApplyAndCheckFreshIds(transformation, context.get(),
+                          &transformation_context);
+    ASSERT_TRUE(fuzzerutil::IsValidAndWellFormed(
+        context.get(), validator_options, kConsoleMessageConsumer));
+  }
+
+  std::string after_transformation = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource ESSL 310
+          %4 = OpTypeVoid
+          %5 = OpTypeBool
+          %6 = OpTypeFunction %4
+          %7 = OpTypeInt 32 1
+          %8 = OpTypeVector %7 4
+          %9 = OpTypePointer Function %8
+         %10 = OpConstant %7 0
+         %11 = OpConstant %7 1
+         %12 = OpConstant %7 3
+         %13 = OpConstant %7 2
+         %14 = OpConstantComposite %8 %10 %11 %12 %13
+         %15 = OpTypePointer Function %7
+         %16 = OpTypeInt 32 0
+         %17 = OpConstant %16 1
+         %18 = OpConstant %16 3
+         %19 = OpTypeStruct %8
+         %20 = OpTypePointer Function %19
+         %21 = OpConstant %7 9
+         %22 = OpConstant %16 10
+         %23 = OpTypeArray %19 %22
+         %24 = OpTypePointer Function %23
+         %25 = OpTypeFloat 32
+         %26 = OpTypeVector %25 4
+         %27 = OpTypePointer Output %26
+          %3 = OpVariable %27 Output
+          %2 = OpFunction %4 None %6
+         %28 = OpLabel
+         %29 = OpVariable %9 Function
+         %30 = OpVariable %15 Function
+         %31 = OpVariable %15 Function
+         %32 = OpVariable %20 Function
+         %33 = OpVariable %15 Function
+         %34 = OpVariable %24 Function
+               OpStore %29 %14
+               OpStore %30 %10
+        %200 = OpULessThanEqual %5 %17 %18
+        %201 = OpSelect %16 %200 %17 %18
+        %100 = OpAccessChain %15 %29 %201
+         %36 = OpLoad %7 %30
+        %202 = OpULessThanEqual %5 %36 %12
+        %203 = OpSelect %7 %202 %36 %12
+        %101 = OpAccessChain %15 %29 %203
+         %38 = OpLoad %8 %29
+         %39 = OpCompositeConstruct %19 %38
+         %40 = OpLoad %7 %30
+        %204 = OpULessThanEqual %5 %40 %12
+        %205 = OpSelect %7 %204 %40 %12
+        %102 = OpAccessChain %15 %32 %10 %205
+         %42 = OpLoad %8 %29
+         %43 = OpCompositeConstruct %19 %42
+        %206 = OpULessThanEqual %5 %11 %21
+        %207 = OpSelect %7 %206 %11 %21
+        %103 = OpAccessChain %20 %34 %207
+         %45 = OpLoad %7 %30
+         %46 = OpLoad %7 %33
+        %208 = OpULessThanEqual %5 %45 %21
+        %209 = OpSelect %7 %208 %45 %21
+        %210 = OpULessThanEqual %5 %46 %12
+        %211 = OpSelect %7 %210 %46 %12
+        %104 = OpAccessChain %15 %34 %209 %10 %211
                OpReturn
                OpFunctionEnd
   )";

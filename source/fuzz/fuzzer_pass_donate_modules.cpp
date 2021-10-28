@@ -27,6 +27,7 @@
 #include "source/fuzz/transformation_add_function.h"
 #include "source/fuzz/transformation_add_global_undef.h"
 #include "source/fuzz/transformation_add_global_variable.h"
+#include "source/fuzz/transformation_add_spec_constant_op.h"
 #include "source/fuzz/transformation_add_type_array.h"
 #include "source/fuzz/transformation_add_type_boolean.h"
 #include "source/fuzz/transformation_add_type_float.h"
@@ -44,12 +45,11 @@ FuzzerPassDonateModules::FuzzerPassDonateModules(
     opt::IRContext* ir_context, TransformationContext* transformation_context,
     FuzzerContext* fuzzer_context,
     protobufs::TransformationSequence* transformations,
-    const std::vector<fuzzerutil::ModuleSupplier>& donor_suppliers)
+    bool ignore_inapplicable_transformations,
+    std::vector<fuzzerutil::ModuleSupplier> donor_suppliers)
     : FuzzerPass(ir_context, transformation_context, fuzzer_context,
-                 transformations),
-      donor_suppliers_(donor_suppliers) {}
-
-FuzzerPassDonateModules::~FuzzerPassDonateModules() = default;
+                 transformations, ignore_inapplicable_transformations),
+      donor_suppliers_(std::move(donor_suppliers)) {}
 
 void FuzzerPassDonateModules::Apply() {
   // If there are no donor suppliers, this fuzzer pass is a no-op.
@@ -64,10 +64,11 @@ void FuzzerPassDonateModules::Apply() {
     std::unique_ptr<opt::IRContext> donor_ir_context = donor_suppliers_.at(
         GetFuzzerContext()->RandomIndex(donor_suppliers_))();
     assert(donor_ir_context != nullptr && "Supplying of donor failed");
-    assert(fuzzerutil::IsValid(
-               donor_ir_context.get(),
-               GetTransformationContext()->GetValidatorOptions()) &&
-           "The donor module must be valid");
+    assert(
+        fuzzerutil::IsValid(donor_ir_context.get(),
+                            GetTransformationContext()->GetValidatorOptions(),
+                            fuzzerutil::kSilentMessageConsumer) &&
+        "The donor module must be valid");
     // Donate the supplied module.
     //
     // Randomly decide whether to make the module livesafe (see
@@ -83,6 +84,16 @@ void FuzzerPassDonateModules::Apply() {
 
 void FuzzerPassDonateModules::DonateSingleModule(
     opt::IRContext* donor_ir_context, bool make_livesafe) {
+  // Check that the donated module has capabilities, supported by the recipient
+  // module.
+  for (const auto& capability_inst : donor_ir_context->capabilities()) {
+    auto capability =
+        static_cast<SpvCapability>(capability_inst.GetSingleWordInOperand(0));
+    if (!GetIRContext()->get_feature_mgr()->HasCapability(capability)) {
+      return;
+    }
+  }
+
   // The ids used by the donor module may very well clash with ids defined in
   // the recipient module.  Furthermore, some instructions defined in the donor
   // module will be equivalent to instructions defined in the recipient module,
@@ -327,7 +338,8 @@ void FuzzerPassDonateModules::HandleTypeOrValue(
       ApplyTransformation(TransformationAddTypeArray(
           new_result_id, original_id_to_donated_id->at(component_type_id),
           FindOrCreateIntegerConstant(
-              {GetFuzzerContext()->GetRandomSizeForNewArray()}, 32, false)));
+              {GetFuzzerContext()->GetRandomSizeForNewArray()}, 32, false,
+              false)));
     } break;
     case SpvOpTypeStruct: {
       // Similar to SpvOpTypeArray.
@@ -413,14 +425,41 @@ void FuzzerPassDonateModules::HandleTypeOrValue(
             argument_type_ids));
       }
     } break;
+    case SpvOpSpecConstantOp: {
+      new_result_id = GetFuzzerContext()->GetFreshId();
+      auto type_id = original_id_to_donated_id->at(type_or_value.type_id());
+      auto opcode = static_cast<SpvOp>(type_or_value.GetSingleWordInOperand(0));
+
+      // Make sure we take into account |original_id_to_donated_id| when
+      // computing operands for OpSpecConstantOp.
+      opt::Instruction::OperandList operands;
+      for (uint32_t i = 1; i < type_or_value.NumInOperands(); ++i) {
+        const auto& operand = type_or_value.GetInOperand(i);
+        auto data =
+            operand.type == SPV_OPERAND_TYPE_ID
+                ? opt::Operand::OperandData{original_id_to_donated_id->at(
+                      operand.words[0])}
+                : operand.words;
+
+        operands.push_back({operand.type, std::move(data)});
+      }
+
+      ApplyTransformation(TransformationAddSpecConstantOp(
+          new_result_id, type_id, opcode, std::move(operands)));
+    } break;
+    case SpvOpSpecConstantTrue:
+    case SpvOpSpecConstantFalse:
     case SpvOpConstantTrue:
     case SpvOpConstantFalse: {
       // It is OK to have duplicate definitions of True and False, so add
       // these to the module, using a remapped Bool type.
       new_result_id = GetFuzzerContext()->GetFreshId();
-      ApplyTransformation(TransformationAddConstantBoolean(
-          new_result_id, type_or_value.opcode() == SpvOpConstantTrue));
+      auto value = type_or_value.opcode() == SpvOpConstantTrue ||
+                   type_or_value.opcode() == SpvOpSpecConstantTrue;
+      ApplyTransformation(
+          TransformationAddConstantBoolean(new_result_id, value, false));
     } break;
+    case SpvOpSpecConstant:
     case SpvOpConstant: {
       // It is OK to have duplicate constant definitions, so add this to the
       // module using a remapped result type.
@@ -431,8 +470,9 @@ void FuzzerPassDonateModules::HandleTypeOrValue(
       });
       ApplyTransformation(TransformationAddConstantScalar(
           new_result_id, original_id_to_donated_id->at(type_or_value.type_id()),
-          data_words));
+          data_words, false));
     } break;
+    case SpvOpSpecConstantComposite:
     case SpvOpConstantComposite: {
       assert(original_id_to_donated_id->count(type_or_value.type_id()) &&
              "Composite types for which it is possible to create a constant "
@@ -453,7 +493,7 @@ void FuzzerPassDonateModules::HandleTypeOrValue(
       });
       ApplyTransformation(TransformationAddConstantComposite(
           new_result_id, original_id_to_donated_id->at(type_or_value.type_id()),
-          constituent_ids));
+          constituent_ids, false));
     } break;
     case SpvOpConstantNull: {
       if (!original_id_to_donated_id->count(type_or_value.type_id())) {
@@ -515,7 +555,8 @@ void FuzzerPassDonateModules::HandleTypeOrValue(
                              ? 0
                              : FindOrCreateZeroConstant(
                                    fuzzerutil::GetPointeeTypeIdFromPointerType(
-                                       GetIRContext(), remapped_pointer_type));
+                                       GetIRContext(), remapped_pointer_type),
+                                   false);
       } else {
         // The variable already had an initializer; use its remapped id.
         initializer_id = original_id_to_donated_id->at(
@@ -557,7 +598,7 @@ void FuzzerPassDonateModules::HandleFunctions(
   // Get the ids of functions in the donor module, topologically sorted
   // according to the donor's call graph.
   auto topological_order =
-      GetFunctionsInCallGraphTopologicalOrder(donor_ir_context);
+      CallGraph(donor_ir_context).GetFunctionsInTopologicalOrder();
 
   // Donate the functions in reverse topological order.  This ensures that a
   // function gets donated before any function that depends on it.  This allows
@@ -615,12 +656,13 @@ void FuzzerPassDonateModules::HandleFunctions(
           }
         });
 
-    if (make_livesafe) {
-      // Make the function livesafe and then add it.
-      AddLivesafeFunction(*function_to_donate, donor_ir_context,
-                          *original_id_to_donated_id, donated_instructions);
-    } else {
-      // Add the function in a non-livesafe manner.
+    // If |make_livesafe| is true, try to add the function in a livesafe manner.
+    // Otherwise (if |make_lifesafe| is false or an attempt to make the function
+    // livesafe has failed), add the function in a non-livesafe manner.
+    if (!make_livesafe ||
+        !MaybeAddLivesafeFunction(*function_to_donate, donor_ir_context,
+                                  *original_id_to_donated_id,
+                                  donated_instructions)) {
       ApplyTransformation(TransformationAddFunction(donated_instructions));
     }
   }
@@ -742,6 +784,7 @@ bool FuzzerPassDonateModules::IsBasicType(
     const opt::Instruction& instruction) const {
   switch (instruction.opcode()) {
     case SpvOpTypeArray:
+    case SpvOpTypeBool:
     case SpvOpTypeFloat:
     case SpvOpTypeInt:
     case SpvOpTypeMatrix:
@@ -751,52 +794,6 @@ bool FuzzerPassDonateModules::IsBasicType(
     default:
       return false;
   }
-}
-
-std::vector<uint32_t>
-FuzzerPassDonateModules::GetFunctionsInCallGraphTopologicalOrder(
-    opt::IRContext* context) {
-  CallGraph call_graph(context);
-
-  // This is an implementation of Kahn’s algorithm for topological sorting.
-
-  // This is the sorted order of function ids that we will eventually return.
-  std::vector<uint32_t> result;
-
-  // Get a copy of the initial in-degrees of all functions.  The algorithm
-  // involves decrementing these values, hence why we work on a copy.
-  std::map<uint32_t, uint32_t> function_in_degree =
-      call_graph.GetFunctionInDegree();
-
-  // Populate a queue with all those function ids with in-degree zero.
-  std::queue<uint32_t> queue;
-  for (auto& entry : function_in_degree) {
-    if (entry.second == 0) {
-      queue.push(entry.first);
-    }
-  }
-
-  // Pop ids from the queue, adding them to the sorted order and decreasing the
-  // in-degrees of their successors.  A successor who's in-degree becomes zero
-  // gets added to the queue.
-  while (!queue.empty()) {
-    auto next = queue.front();
-    queue.pop();
-    result.push_back(next);
-    for (auto successor : call_graph.GetDirectCallees(next)) {
-      assert(function_in_degree.at(successor) > 0 &&
-             "The in-degree cannot be zero if the function is a successor.");
-      function_in_degree[successor] = function_in_degree.at(successor) - 1;
-      if (function_in_degree.at(successor) == 0) {
-        queue.push(successor);
-      }
-    }
-  }
-
-  assert(result.size() == function_in_degree.size() &&
-         "Every function should appear in the sort.");
-
-  return result;
 }
 
 void FuzzerPassDonateModules::HandleOpArrayLength(
@@ -890,11 +887,10 @@ void FuzzerPassDonateModules::HandleDifficultInstruction(
 
   // We find or add a zero constant to the receiving module for the type in
   // question, and add an OpCopyObject instruction that copies this zero.
-  // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/3177):
-  //  Using this particular constant is arbitrary, so if we have a
-  //  mechanism for noting that an id use is arbitrary and could be
-  //  fuzzed we should use it here.
-  auto zero_constant = FindOrCreateZeroConstant(remapped_type_id);
+  //
+  // We mark the constant as irrelevant so that we can replace it with a
+  // more interesting value later.
+  auto zero_constant = FindOrCreateZeroConstant(remapped_type_id, true);
   donated_instructions->push_back(MakeInstructionMessage(
       SpvOpCopyObject, remapped_type_id,
       original_id_to_donated_id->at(instruction.result_id()),
@@ -951,9 +947,11 @@ void FuzzerPassDonateModules::PrepareInstructionForDonation(
     // This is an uninitialized local variable.  Initialize it to zero.
     input_operands.push_back(
         {SPV_OPERAND_TYPE_ID,
-         {FindOrCreateZeroConstant(fuzzerutil::GetPointeeTypeIdFromPointerType(
-             GetIRContext(),
-             original_id_to_donated_id->at(instruction.type_id())))}});
+         {FindOrCreateZeroConstant(
+             fuzzerutil::GetPointeeTypeIdFromPointerType(
+                 GetIRContext(),
+                 original_id_to_donated_id->at(instruction.type_id())),
+             false)}});
   }
 
   if (instruction.result_id() &&
@@ -975,7 +973,96 @@ void FuzzerPassDonateModules::PrepareInstructionForDonation(
       input_operands));
 }
 
-void FuzzerPassDonateModules::AddLivesafeFunction(
+bool FuzzerPassDonateModules::CreateLoopLimiterInfo(
+    opt::IRContext* donor_ir_context, const opt::BasicBlock& loop_header,
+    const std::map<uint32_t, uint32_t>& original_id_to_donated_id,
+    protobufs::LoopLimiterInfo* out) {
+  assert(loop_header.IsLoopHeader() && "|loop_header| is not a loop header");
+
+  // Grab the loop header's id, mapped to its donated value.
+  out->set_loop_header_id(original_id_to_donated_id.at(loop_header.id()));
+
+  // Get fresh ids that will be used to load the loop limiter, increment
+  // it, compare it with the loop limit, and an id for a new block that
+  // will contain the loop's original terminator.
+  out->set_load_id(GetFuzzerContext()->GetFreshId());
+  out->set_increment_id(GetFuzzerContext()->GetFreshId());
+  out->set_compare_id(GetFuzzerContext()->GetFreshId());
+  out->set_logical_op_id(GetFuzzerContext()->GetFreshId());
+
+  // We are creating a branch from the back-edge block to the merge block. Thus,
+  // if merge block has any OpPhi instructions, we might need to adjust
+  // them.
+
+  // Note that the loop might have an unreachable back-edge block. This means
+  // that the loop can't iterate, so we don't need to adjust anything.
+  const auto back_edge_block_id = TransformationAddFunction::GetBackEdgeBlockId(
+      donor_ir_context, loop_header.id());
+  if (!back_edge_block_id) {
+    return true;
+  }
+
+  auto* back_edge_block = donor_ir_context->cfg()->block(back_edge_block_id);
+  assert(back_edge_block && "|back_edge_block_id| is invalid");
+
+  const auto* merge_block =
+      donor_ir_context->cfg()->block(loop_header.MergeBlockId());
+  assert(merge_block && "Loop header has invalid merge block id");
+
+  // We don't need to adjust anything if there is already a branch from
+  // the back-edge block to the merge block.
+  if (back_edge_block->IsSuccessor(merge_block)) {
+    return true;
+  }
+
+  // Adjust OpPhi instructions in the |merge_block|.
+  for (const auto& inst : *merge_block) {
+    if (inst.opcode() != SpvOpPhi) {
+      break;
+    }
+
+    // There is no simple way to ensure that a chosen operand for the OpPhi
+    // instruction will never cause any problems (e.g. if we choose an
+    // integer id, it might have a zero value when we branch from the back
+    // edge block. This might cause a division by 0 later in the function.).
+    // Thus, we ignore possible problems and proceed as follows:
+    // - if any of the existing OpPhi operands dominates the back-edge
+    //   block - use it
+    // - if OpPhi has a basic type (see IsBasicType method) - create
+    //   a zero constant
+    // - otherwise, we can't add a livesafe function.
+    uint32_t suitable_operand_id = 0;
+    for (uint32_t i = 0; i < inst.NumInOperands(); i += 2) {
+      auto dependency_inst_id = inst.GetSingleWordInOperand(i);
+
+      if (fuzzerutil::IdIsAvailableBeforeInstruction(
+              donor_ir_context, back_edge_block->terminator(),
+              dependency_inst_id)) {
+        suitable_operand_id = original_id_to_donated_id.at(dependency_inst_id);
+        break;
+      }
+    }
+
+    if (suitable_operand_id == 0 &&
+        IsBasicType(
+            *donor_ir_context->get_def_use_mgr()->GetDef(inst.type_id()))) {
+      // We mark this constant as irrelevant so that we can replace it
+      // with more interesting value later.
+      suitable_operand_id = FindOrCreateZeroConstant(
+          original_id_to_donated_id.at(inst.type_id()), true);
+    }
+
+    if (suitable_operand_id == 0) {
+      return false;
+    }
+
+    out->add_phi_id(suitable_operand_id);
+  }
+
+  return true;
+}
+
+bool FuzzerPassDonateModules::MaybeAddLivesafeFunction(
     const opt::Function& function_to_donate, opt::IRContext* donor_ir_context,
     const std::map<uint32_t, uint32_t>& original_id_to_donated_id,
     const std::vector<protobufs::Instruction>& donated_instructions) {
@@ -984,9 +1071,9 @@ void FuzzerPassDonateModules::AddLivesafeFunction(
   FindOrCreateBoolType();  // Needed for comparisons
   FindOrCreatePointerToIntegerType(
       32, false, SpvStorageClassFunction);  // Needed for adding loop limiters
-  FindOrCreateIntegerConstant({0}, 32,
+  FindOrCreateIntegerConstant({0}, 32, false,
                               false);  // Needed for initializing loop limiters
-  FindOrCreateIntegerConstant({1}, 32,
+  FindOrCreateIntegerConstant({1}, 32, false,
                               false);  // Needed for incrementing loop limiters
 
   // Get a fresh id for the variable that will be used as a loop limiter.
@@ -994,7 +1081,7 @@ void FuzzerPassDonateModules::AddLivesafeFunction(
   // Choose a random loop limit, and add the required constant to the
   // module if not already there.
   const uint32_t loop_limit = FindOrCreateIntegerConstant(
-      {GetFuzzerContext()->GetRandomLoopLimit()}, 32, false);
+      {GetFuzzerContext()->GetRandomLoopLimit()}, 32, false, false);
 
   // Consider every loop header in the function to donate, and create a
   // structure capturing the ids to be used for manipulating the loop
@@ -1003,16 +1090,13 @@ void FuzzerPassDonateModules::AddLivesafeFunction(
   for (auto& block : function_to_donate) {
     if (block.IsLoopHeader()) {
       protobufs::LoopLimiterInfo loop_limiter;
-      // Grab the loop header's id, mapped to its donated value.
-      loop_limiter.set_loop_header_id(original_id_to_donated_id.at(block.id()));
-      // Get fresh ids that will be used to load the loop limiter, increment
-      // it, compare it with the loop limit, and an id for a new block that
-      // will contain the loop's original terminator.
-      loop_limiter.set_load_id(GetFuzzerContext()->GetFreshId());
-      loop_limiter.set_increment_id(GetFuzzerContext()->GetFreshId());
-      loop_limiter.set_compare_id(GetFuzzerContext()->GetFreshId());
-      loop_limiter.set_logical_op_id(GetFuzzerContext()->GetFreshId());
-      loop_limiters.emplace_back(loop_limiter);
+
+      if (!CreateLoopLimiterInfo(donor_ir_context, block,
+                                 original_id_to_donated_id, &loop_limiter)) {
+        return false;
+      }
+
+      loop_limiters.emplace_back(std::move(loop_limiter));
     }
   }
 
@@ -1068,11 +1152,11 @@ void FuzzerPassDonateModules::AddLivesafeFunction(
                      "A runtime array type in the donor should have been "
                      "replaced by a fixed-sized array in the recipient.");
               // The size of this fixed-size array is a suitable bound.
-              bound = TransformationAddFunction::GetBoundForCompositeIndex(
-                  GetIRContext(), *fixed_size_array_type);
+              bound = fuzzerutil::GetBoundForCompositeIndex(
+                  *fixed_size_array_type, GetIRContext());
             } else {
-              bound = TransformationAddFunction::GetBoundForCompositeIndex(
-                  donor_ir_context, *should_be_composite_type);
+              bound = fuzzerutil::GetBoundForCompositeIndex(
+                  *should_be_composite_type, donor_ir_context);
             }
             const uint32_t index_id = inst.GetSingleWordInOperand(index);
             auto index_inst =
@@ -1089,7 +1173,7 @@ void FuzzerPassDonateModules::AddLivesafeFunction(
               // whose value is one less than the bound, to compare
               // against and to use as the clamped value.
               FindOrCreateIntegerConstant({bound - 1}, 32,
-                                          index_int_type->IsSigned());
+                                          index_int_type->IsSigned(), false);
             }
             should_be_composite_type =
                 TransformationAddFunction::FollowCompositeIndex(
@@ -1104,24 +1188,25 @@ void FuzzerPassDonateModules::AddLivesafeFunction(
     }
   }
 
-  // If the function contains OpKill or OpUnreachable instructions, and has
-  // non-void return type, then we need a value %v to use in order to turn
-  // these into instructions of the form OpReturn %v.
-  uint32_t kill_unreachable_return_value_id;
+  // If |function_to_donate| has non-void return type and contains an
+  // OpKill/OpUnreachable instruction, then a value is needed in order to turn
+  // these into instructions of the form OpReturnValue %value_id.
+  uint32_t kill_unreachable_return_value_id = 0;
   auto function_return_type_inst =
       donor_ir_context->get_def_use_mgr()->GetDef(function_to_donate.type_id());
-  if (function_return_type_inst->opcode() == SpvOpTypeVoid) {
-    // The return type is void, so we don't need a return value.
-    kill_unreachable_return_value_id = 0;
-  } else {
-    // We do need a return value; we use zero.
-    assert(function_return_type_inst->opcode() != SpvOpTypePointer &&
-           "Function return type must not be a pointer.");
+  if (function_return_type_inst->opcode() != SpvOpTypeVoid &&
+      fuzzerutil::FunctionContainsOpKillOrUnreachable(function_to_donate)) {
     kill_unreachable_return_value_id = FindOrCreateZeroConstant(
-        original_id_to_donated_id.at(function_return_type_inst->result_id()));
+        original_id_to_donated_id.at(function_return_type_inst->result_id()),
+        false);
   }
-  // Add the function in a livesafe manner.
-  ApplyTransformation(TransformationAddFunction(
+
+  // Try to add the function in a livesafe manner. This may fail due to edge
+  // cases, e.g. where adding loop limiters changes dominance such that the
+  // module becomes invalid. It would be ideal to handle all such edge cases,
+  // but as they are rare it is more pragmatic to bail out of making the
+  // function livesafe if the transformation's precondition fails to hold.
+  return MaybeApplyTransformation(TransformationAddFunction(
       donated_instructions, loop_limiter_variable_id, loop_limit, loop_limiters,
       kill_unreachable_return_value_id, access_chain_clamping_info));
 }
