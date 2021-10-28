@@ -4229,6 +4229,67 @@ OpFunctionEnd
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateCFG, StructuredSelections_RegisterBothTrueAndFalse) {
+  // In this test, we try to make a case where the false branches
+  // to %20 and %60 from blocks %10 and %50 must be registered
+  // during the validity check for sturctured selections.
+  // However, an error is caught earlier in the flow, that the
+  // branches from %100 to %20 and %60 violate dominance.
+  const std::string text = R"(
+    OpCapability Shader
+    OpMemoryModel Logical Simple
+    OpEntryPoint Fragment %main "main"
+    OpExecutionMode %main OriginUpperLeft
+    
+    %void    = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+
+    %bool = OpTypeBool
+    %cond = OpUndef %bool
+
+    %main = OpFunction %void None %void_fn
+
+    %1 = OpLabel
+    OpSelectionMerge %999 None
+    OpBranchConditional %cond %10 %100
+
+    %10 = OpLabel
+    OpSelectionMerge %30 None  ; force registration of %30
+    OpBranchConditional %cond %30 %20 ; %20 should be registered too
+
+    %20 = OpLabel
+    OpBranch %30
+
+    %30 = OpLabel ; merge for first if
+    OpBranch %50
+
+
+    %50 = OpLabel
+    OpSelectionMerge %70 None  ; force registration of %70
+    OpBranchConditional %cond %70 %60 ; %60 should be registered
+
+    %60 = OpLabel
+    OpBranch %70
+
+    %70 = OpLabel ; merge for second if
+    OpBranch %999
+
+    %100 = OpLabel
+    OpBranchConditional %cond %20 %60 ; should require a merge
+
+    %999 = OpLabel
+    OpReturn
+
+    OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The selection construct with the selection header "
+                        "8[%8] does not dominate the merge block 10[%10]\n"));
+}
+
 TEST_F(ValidateCFG, UnreachableIsStaticallyReachable) {
   const std::string text = R"(
 OpCapability Shader
