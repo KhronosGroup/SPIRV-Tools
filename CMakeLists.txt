@@ -164,6 +164,7 @@ endif()
 #   Note this target provides no API stability guarantees.
 #
 # Ideally, all of these will go away - see https://github.com/KhronosGroup/SPIRV-Tools/issues/3909.
+option(ENABLE_EXCEPTIONS_ON_MSVC "Build SPIRV-TOOLS with c++ exceptions enabled in MSVC" ON)
 option(SPIRV_TOOLS_BUILD_STATIC "Build ${SPIRV_TOOLS}-static target. ${SPIRV_TOOLS} will alias to ${SPIRV_TOOLS}-static or ${SPIRV_TOOLS}-shared based on BUILD_SHARED_LIBS" ON)
 if(SPIRV_TOOLS_BUILD_STATIC)
   set(SPIRV_TOOLS_FULL_VISIBILITY ${SPIRV_TOOLS}-static)
@@ -215,7 +216,9 @@ function(spvtools_default_compile_options TARGET)
   if (MSVC)
     # Specify /EHs for exception handling. This makes using SPIRV-Tools as
     # dependencies in other projects easier.
-    target_compile_options(${TARGET} PRIVATE /EHs)
+    if(ENABLE_EXCEPTIONS_ON_MSVC)
+      target_compile_options(${TARGET} PRIVATE /EHs)
+    endif()
   endif()
 
   # For MinGW cross compile, statically link to the C++ runtime.
