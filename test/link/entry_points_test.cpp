@@ -41,7 +41,8 @@ OpFunctionEnd
 )";
 
   spvtest::Binary linked_binary;
-  EXPECT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary));
+  ASSERT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary))
+      << GetErrorMessage();
   EXPECT_THAT(GetErrorMessage(), std::string());
 }
 
@@ -62,7 +63,8 @@ OpFunctionEnd
 )";
 
   spvtest::Binary linked_binary;
-  EXPECT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary));
+  ASSERT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary))
+      << GetErrorMessage();
   EXPECT_THAT(GetErrorMessage(), std::string());
 }
 

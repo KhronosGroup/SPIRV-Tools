@@ -44,7 +44,8 @@ OpDecorate %1 LinkageAttributes "bar" Export
   LinkerOptions linker_options;
   linker_options.SetAllowPartialLinkage(true);
   ASSERT_EQ(SPV_SUCCESS,
-            AssembleAndLink({body1, body2}, &linked_binary, linker_options));
+            AssembleAndLink({body1, body2}, &linked_binary, linker_options))
+      << GetErrorMessage();
 
   const std::string expected_res = R"(OpCapability Linkage
 OpModuleProcessed "Linked by SPIR-V Tools Linker"

@@ -23,42 +23,32 @@ namespace {
 using ::testing::HasSubstr;
 using IdsLimit = spvtest::LinkerTest;
 
-TEST_F(IdsLimit, UnderLimit) {
-  spvtest::Binaries binaries = {
-      {
-          SpvMagicNumber, SpvVersion, SPV_GENERATOR_CODEPLAY,
-          0x2FFFFFu,  // NOTE: Bound
-          0u,         // NOTE: Schema; reserved
-      },
-      {
-          SpvMagicNumber, SpvVersion, SPV_GENERATOR_CODEPLAY,
-          0x100000u,  // NOTE: Bound
-          0u,         // NOTE: Schema; reserved
-      }};
-  spvtest::Binary linked_binary;
+spvtest::Binary CreateBinary(uint32_t id_bound) {
+  return {
+      // clang-format off
+      // Header
+      SpvMagicNumber,
+      SpvVersion,
+      SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS, 0),
+      id_bound,  // NOTE: Bound
+      0u         // NOTE: Schema; reserved
+      // clang-format on
+  };
+}
 
-  ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary));
+TEST_F(IdsLimit, UnderLimit) {
+  spvtest::Binaries binaries = {CreateBinary(0x2FFFFFu),
+                                CreateBinary(0x100000u)};
+
+  spvtest::Binary linked_binary;
+  ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary)) << GetErrorMessage();
   EXPECT_THAT(GetErrorMessage(), std::string());
-  EXPECT_EQ(0x3FFFFEu, linked_binary[3]);
+  EXPECT_EQ(0x3FFFFFu, linked_binary[3]);
 }
 
 TEST_F(IdsLimit, OverLimit) {
-  spvtest::Binaries binaries = {
-      {
-          SpvMagicNumber, SpvVersion, SPV_GENERATOR_CODEPLAY,
-          0x2FFFFFu,  // NOTE: Bound
-          0u,         // NOTE: Schema; reserved
-      },
-      {
-          SpvMagicNumber, SpvVersion, SPV_GENERATOR_CODEPLAY,
-          0x100000u,  // NOTE: Bound
-          0u,         // NOTE: Schema; reserved
-      },
-      {
-          SpvMagicNumber, SpvVersion, SPV_GENERATOR_CODEPLAY,
-          3u,  // NOTE: Bound
-          0u,  // NOTE: Schema; reserved
-      }};
+  spvtest::Binaries binaries = {CreateBinary(0x2FFFFFu),
+                                CreateBinary(0x100000u), CreateBinary(3u)};
 
   spvtest::Binary linked_binary;
 

@@ -22,37 +22,29 @@ namespace {
 
 using BinaryVersion = spvtest::LinkerTest;
 
+spvtest::Binary CreateBinary(uint32_t version) {
+  return {
+      // clang-format off
+      // Header
+      SpvMagicNumber,
+      version,
+      SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS, 0),
+      1u,  // NOTE: Bound
+      0u,  // NOTE: Schema; reserved
+      // clang-format on
+  };
+}
+
 TEST_F(BinaryVersion, LinkerChoosesMaxSpirvVersion) {
   // clang-format off
   spvtest::Binaries binaries = {
-      {
-          SpvMagicNumber,
-          0x00010300u,
-          SPV_GENERATOR_CODEPLAY,
-          1u,  // NOTE: Bound
-          0u   // NOTE: Schema; reserved
-      },
-      {
-          SpvMagicNumber,
-          0x00010500u,
-          SPV_GENERATOR_CODEPLAY,
-          1u,  // NOTE: Bound
-          0u   // NOTE: Schema; reserved
-      },
-      {
-          SpvMagicNumber,
-          0x00010100u,
-          SPV_GENERATOR_CODEPLAY,
-          1u,  // NOTE: Bound
-          0u   // NOTE: Schema; reserved
-      }
+      CreateBinary(0x00010300u),
+      CreateBinary(0x00010500u),
+      CreateBinary(0x00010100u)
   };
   // clang-format on
   spvtest::Binary linked_binary;
-
-  ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary));
-  EXPECT_THAT(GetErrorMessage(), std::string());
-
+  ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary)) << GetErrorMessage();
   EXPECT_EQ(0x00010500u, linked_binary[1]);
 }
 
