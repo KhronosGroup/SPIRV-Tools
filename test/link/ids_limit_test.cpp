@@ -52,10 +52,25 @@ TEST_F(IdsLimit, OverLimit) {
 
   spvtest::Binary linked_binary;
 
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, Link(binaries, &linked_binary));
-  EXPECT_THAT(GetErrorMessage(),
-              HasSubstr("The limit of IDs, 4194303, was exceeded: 4194304 is "
-                        "the current ID bound."));
+  ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary)) << GetErrorMessage();
+  EXPECT_THAT(
+      GetErrorMessage(),
+      HasSubstr("The minimum limit of IDs, 4194303, was exceeded: 4194304 is "
+                "the current ID bound."));
+  EXPECT_EQ(0x400000u, linked_binary[3]);
+}
+
+TEST_F(IdsLimit, Overflow) {
+  spvtest::Binaries binaries = {CreateBinary(0xFFFFFFFFu),
+                                CreateBinary(0x00000002u)};
+
+  spvtest::Binary linked_binary;
+
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, Link(binaries, &linked_binary));
+  EXPECT_THAT(
+      GetErrorMessage(),
+      HasSubstr("Too many IDs (4294967296): combining all modules would "
+                "overflow the 32-bit word of the SPIR-V header."));
 }
 
 }  // namespace

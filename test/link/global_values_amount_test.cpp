@@ -111,9 +111,10 @@ TEST_F(EntryPointsAmountTest, OverLimit) {
 
   spvtest::Binary linked_binary;
   ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary)) << GetErrorMessage();
-  EXPECT_THAT(GetErrorMessage(),
-              HasSubstr("The limit of global values, 65535, was exceeded; "
-                        "65536 global values were found."));
+  EXPECT_THAT(
+      GetErrorMessage(),
+      HasSubstr("The minimum limit of global values, 65535, was exceeded; "
+                "65536 global values were found."));
 }
 
 }  // namespace

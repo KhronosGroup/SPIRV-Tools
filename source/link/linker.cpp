@@ -149,6 +149,15 @@ spv_result_t RemoveLinkageSpecificInstructions(
 spv_result_t VerifyIds(const MessageConsumer& consumer,
                        opt::IRContext* linked_context);
 
+// Verify that the universal limits are not crossed, and warn the user
+// otherwise.
+//
+// TODO(pierremoreau):
+// - Verify against the limits of the environment (e.g. Vulkan limits if
+//   consuming vulkan1.x)
+spv_result_t VerifyLimits(const MessageConsumer& consumer,
+                          const opt::IRContext& linked_context);
+
 spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
                                std::vector<opt::Module*>* modules,
                                uint32_t* max_id_bound) {
@@ -164,7 +173,7 @@ spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
     return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_DATA)
            << "|max_id_bound| of ShiftIdsInModules should not be null.";
 
-  uint32_t id_bound = modules->front()->IdBound() - 1u;
+  size_t id_bound = modules->front()->IdBound() - 1u;
   for (auto module_iter = modules->begin() + 1; module_iter != modules->end();
        ++module_iter) {
     Module* module = *module_iter;
@@ -172,21 +181,18 @@ spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
       insn->ForEachId([&id_bound](uint32_t* id) { *id += id_bound; });
     });
     id_bound += module->IdBound() - 1u;
-    if (id_bound > 0x3FFFFF)
-      return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_ID)
-             << "The limit of IDs, 4194303, was exceeded:"
-             << " " << id_bound << " is the current ID bound.";
 
     // Invalidate the DefUseManager
     module->context()->InvalidateAnalyses(opt::IRContext::kAnalysisDefUse);
   }
   ++id_bound;
-  if (id_bound > 0x3FFFFF)
-    return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_ID)
-           << "The limit of IDs, 4194303, was exceeded:"
-           << " " << id_bound << " is the current ID bound.";
+  if (id_bound > std::numeric_limits<uint32_t>::max())
+    return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_DATA)
+           << "Too many IDs (" << id_bound
+           << "): combining all modules would overflow the 32-bit word of the "
+              "SPIR-V header.";
 
-  *max_id_bound = id_bound;
+  *max_id_bound = static_cast<uint32_t>(id_bound);
 
   return SPV_SUCCESS;
 }
@@ -349,18 +355,12 @@ spv_result_t MergeModules(const MessageConsumer& consumer,
   // TODO(pierremoreau): Since the modules have not been validate, should we
   //                     expect SpvStorageClassFunction variables outside
   //                     functions?
-  uint32_t num_global_values = 0u;
   for (const auto& module : input_modules) {
     for (const auto& inst : module->types_values()) {
       linked_module->AddType(
           std::unique_ptr<Instruction>(inst.Clone(linked_context)));
-      num_global_values += inst.opcode() == SpvOpVariable;
     }
   }
-  if (num_global_values > 0xFFFF)
-    return DiagnosticStream(position, consumer, "", SPV_ERROR_INTERNAL)
-           << "The limit of global values, 65535, was exceeded;"
-           << " " << num_global_values << " global values were found.";
 
   // Process functions and their basic blocks
   for (const auto& module : input_modules) {
@@ -632,6 +632,34 @@ spv_result_t VerifyIds(const MessageConsumer& consumer,
   return SPV_SUCCESS;
 }
 
+spv_result_t VerifyLimits(const MessageConsumer& consumer,
+                          const opt::IRContext& linked_context) {
+  spv_position_t position = {};
+
+  const uint32_t max_id_bound = linked_context.module()->id_bound();
+  if (max_id_bound >= SPV_LIMIT_RESULT_ID_BOUND)
+    DiagnosticStream({0u, 0u, 4u}, consumer, "", SPV_WARNING)
+        << "The minimum limit of IDs, " << (SPV_LIMIT_RESULT_ID_BOUND - 1)
+        << ", was exceeded:"
+        << " " << max_id_bound << " is the current ID bound.\n"
+        << "The resulting module might not be supported by all "
+           "implementations.";
+
+  size_t num_global_values = 0u;
+  for (const auto& inst : linked_context.module()->types_values()) {
+    num_global_values += inst.opcode() == SpvOpVariable;
+  }
+  if (num_global_values >= SPV_LIMIT_GLOBAL_VARIABLES_MAX)
+    DiagnosticStream(position, consumer, "", SPV_WARNING)
+        << "The minimum limit of global values, "
+        << (SPV_LIMIT_GLOBAL_VARIABLES_MAX - 1) << ", was exceeded;"
+        << " " << num_global_values << " global values were found.\n"
+        << "The resulting module might not be supported by all "
+           "implementations.";
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 spv_result_t Link(const Context& context,
@@ -756,7 +784,11 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
   pass_res = manager.Run(&linked_context);
   if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
-  // Phase 11: Output the module
+  // Phase 11: Warn if SPIR-V limits were exceeded
+  res = VerifyLimits(consumer, linked_context);
+  if (res != SPV_SUCCESS) return res;
+
+  // Phase 12: Output the module
   linked_context.module()->ToBinary(linked_binary, true);
 
   return SPV_SUCCESS;
