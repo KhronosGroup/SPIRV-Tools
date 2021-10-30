@@ -26,6 +26,8 @@ class EntryPoints : public spvtest::LinkerTest {};
 
 TEST_F(EntryPoints, SameModelDifferentName) {
   const std::string body1 = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %3 "foo"
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
@@ -33,6 +35,8 @@ OpEntryPoint GLCompute %3 "foo"
 OpFunctionEnd
 )";
   const std::string body2 = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %3 "bar"
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
@@ -48,6 +52,8 @@ OpFunctionEnd
 
 TEST_F(EntryPoints, DifferentModelSameName) {
   const std::string body1 = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %3 "foo"
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
@@ -55,6 +61,8 @@ OpEntryPoint GLCompute %3 "foo"
 OpFunctionEnd
 )";
   const std::string body2 = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
 OpEntryPoint Vertex %3 "foo"
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
@@ -70,6 +78,8 @@ OpFunctionEnd
 
 TEST_F(EntryPoints, SameModelAndName) {
   const std::string body1 = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %3 "foo"
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
@@ -77,6 +87,8 @@ OpEntryPoint GLCompute %3 "foo"
 OpFunctionEnd
 )";
   const std::string body2 = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %3 "foo"
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1

@@ -21,7 +21,54 @@ namespace spvtools {
 namespace {
 
 using ::testing::HasSubstr;
-using IdsLimit = spvtest::LinkerTest;
+
+class IdsLimit : public spvtest::LinkerTest {
+ public:
+  IdsLimit() { binaries.reserve(2u); }
+
+  void SetUp() override {
+    const uint32_t id_bound = SPV_LIMIT_RESULT_ID_BOUND - 1u;
+    const uint32_t constant_count =
+        id_bound -
+        2u;  // One ID is used for TypeBool, and (constant_count + 1) < id_bound
+
+    // This is needed, as otherwise the ID bound will get reset to 1 while
+    // running the RemoveDuplicates pass.
+    spvtest::Binary common_binary = {
+        // clang-format off
+        SpvMagicNumber,
+        SpvVersion,
+        SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS, 0),
+        id_bound,  // NOTE: Bound
+        0u,        // NOTE: Schema; reserved
+
+        SpvOpCapability | 2u << SpvWordCountShift,
+        SpvCapabilityShader,
+
+        SpvOpMemoryModel | 3u << SpvWordCountShift,
+        SpvAddressingModelLogical,
+        SpvMemoryModelSimple,
+
+        SpvOpTypeBool | 2u << SpvWordCountShift,
+        1u    // NOTE: Result ID
+        // clang-format on
+    };
+
+    binaries.push_back({});
+    spvtest::Binary& binary = binaries.back();
+    binary.reserve(common_binary.size() + constant_count * 3u);
+    binary.insert(binary.end(), common_binary.cbegin(), common_binary.cend());
+
+    for (uint32_t i = 0u; i < constant_count; ++i) {
+      binary.push_back(SpvOpConstantTrue | 3u << SpvWordCountShift);
+      binary.push_back(1u);      // NOTE: Type ID
+      binary.push_back(2u + i);  // NOTE: Result ID
+    }
+  }
+  void TearDown() override { binaries.clear(); }
+
+  spvtest::Binaries binaries;
+};
 
 spvtest::Binary CreateBinary(uint32_t id_bound) {
   return {
@@ -31,15 +78,21 @@ spvtest::Binary CreateBinary(uint32_t id_bound) {
       SpvVersion,
       SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS, 0),
       id_bound,  // NOTE: Bound
-      0u         // NOTE: Schema; reserved
+      0u,        // NOTE: Schema; reserved
+
+      // OpCapability Shader
+      SpvOpCapability | 2u << SpvWordCountShift,
+      SpvCapabilityShader,
+
+      // OpMemoryModel Logical Simple
+      SpvOpMemoryModel | 3u << SpvWordCountShift,
+      SpvAddressingModelLogical,
+      SpvMemoryModelSimple
       // clang-format on
   };
 }
 
 TEST_F(IdsLimit, UnderLimit) {
-  spvtest::Binaries binaries = {CreateBinary(0x2FFFFFu),
-                                CreateBinary(0x100000u)};
-
   spvtest::Binary linked_binary;
   ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary)) << GetErrorMessage();
   EXPECT_THAT(GetErrorMessage(), std::string());
@@ -47,11 +100,16 @@ TEST_F(IdsLimit, UnderLimit) {
 }
 
 TEST_F(IdsLimit, OverLimit) {
-  spvtest::Binaries binaries = {CreateBinary(0x2FFFFFu),
-                                CreateBinary(0x100000u), CreateBinary(3u)};
+  spvtest::Binary& binary = binaries.back();
+
+  const uint32_t id_bound = binary[3];
+  binary[3] = id_bound + 1u;
+
+  binary.push_back(SpvOpConstantFalse | 3u << SpvWordCountShift);
+  binary.push_back(1u);        // NOTE: Type ID
+  binary.push_back(id_bound);  // NOTE: Result ID
 
   spvtest::Binary linked_binary;
-
   ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary)) << GetErrorMessage();
   EXPECT_THAT(
       GetErrorMessage(),

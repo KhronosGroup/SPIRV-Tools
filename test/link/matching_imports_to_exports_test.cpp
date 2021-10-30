@@ -26,6 +26,9 @@ using MatchingImportsToExports = spvtest::LinkerTest;
 TEST_F(MatchingImportsToExports, Default) {
   const std::string body1 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Import
 %2 = OpTypeFloat 32
 %1 = OpVariable %2 Uniform
@@ -33,6 +36,9 @@ OpDecorate %1 LinkageAttributes "foo" Import
 )";
   const std::string body2 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Export
 %2 = OpTypeFloat 32
 %3 = OpConstant %2 42
@@ -44,7 +50,10 @@ OpDecorate %1 LinkageAttributes "foo" Export
       << GetErrorMessage();
 
   const std::string expected_res =
-      R"(OpModuleProcessed "Linked by SPIR-V Tools Linker"
+      R"(OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
+OpModuleProcessed "Linked by SPIR-V Tools Linker"
 %1 = OpTypeFloat 32
 %2 = OpVariable %1 Input
 %3 = OpConstant %1 42
@@ -60,6 +69,9 @@ OpDecorate %1 LinkageAttributes "foo" Export
 TEST_F(MatchingImportsToExports, NotALibraryExtraExports) {
   const std::string body = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Export
 %2 = OpTypeFloat 32
 %1 = OpVariable %2 Uniform
@@ -70,7 +82,10 @@ OpDecorate %1 LinkageAttributes "foo" Export
       << GetErrorMessage();
 
   const std::string expected_res =
-      R"(OpModuleProcessed "Linked by SPIR-V Tools Linker"
+      R"(OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
+OpModuleProcessed "Linked by SPIR-V Tools Linker"
 %1 = OpTypeFloat 32
 %2 = OpVariable %1 Uniform
 )";
@@ -84,6 +99,9 @@ OpDecorate %1 LinkageAttributes "foo" Export
 TEST_F(MatchingImportsToExports, LibraryExtraExports) {
   const std::string body = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Export
 %2 = OpTypeFloat 32
 %1 = OpVariable %2 Uniform
@@ -96,6 +114,9 @@ OpDecorate %1 LinkageAttributes "foo" Export
       << GetErrorMessage();
 
   const std::string expected_res = R"(OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpModuleProcessed "Linked by SPIR-V Tools Linker"
 OpDecorate %1 LinkageAttributes "foo" Export
 %2 = OpTypeFloat 32
@@ -111,11 +132,18 @@ OpDecorate %1 LinkageAttributes "foo" Export
 TEST_F(MatchingImportsToExports, UnresolvedImports) {
   const std::string body1 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Import
 %2 = OpTypeFloat 32
 %1 = OpVariable %2 Uniform
 )";
-  const std::string body2 = R"()";
+  const std::string body2 = R"(
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
+)";
 
   spvtest::Binary linked_binary;
   EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
@@ -127,6 +155,9 @@ OpDecorate %1 LinkageAttributes "foo" Import
 TEST_F(MatchingImportsToExports, TypeMismatch) {
   const std::string body1 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Import
 %2 = OpTypeFloat 32
 %1 = OpVariable %2 Uniform
@@ -134,6 +165,9 @@ OpDecorate %1 LinkageAttributes "foo" Import
 )";
   const std::string body2 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Export
 %2 = OpTypeInt 32 0
 %3 = OpConstant %2 42
@@ -153,6 +187,9 @@ OpDecorate %1 LinkageAttributes "foo" Export
 TEST_F(MatchingImportsToExports, MultipleDefinitions) {
   const std::string body1 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Import
 %2 = OpTypeFloat 32
 %1 = OpVariable %2 Uniform
@@ -160,6 +197,9 @@ OpDecorate %1 LinkageAttributes "foo" Import
 )";
   const std::string body2 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Export
 %2 = OpTypeFloat 32
 %3 = OpConstant %2 42
@@ -167,6 +207,9 @@ OpDecorate %1 LinkageAttributes "foo" Export
 )";
   const std::string body3 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Export
 %2 = OpTypeFloat 32
 %3 = OpConstant %2 -1
@@ -185,6 +228,9 @@ OpDecorate %1 LinkageAttributes "foo" Export
 TEST_F(MatchingImportsToExports, SameNameDifferentTypes) {
   const std::string body1 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Import
 %2 = OpTypeFloat 32
 %1 = OpVariable %2 Uniform
@@ -192,6 +238,9 @@ OpDecorate %1 LinkageAttributes "foo" Import
 )";
   const std::string body2 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Export
 %2 = OpTypeInt 32 0
 %3 = OpConstant %2 42
@@ -199,6 +248,9 @@ OpDecorate %1 LinkageAttributes "foo" Export
 )";
   const std::string body3 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Export
 %2 = OpTypeFloat 32
 %3 = OpConstant %2 12
@@ -217,6 +269,9 @@ OpDecorate %1 LinkageAttributes "foo" Export
 TEST_F(MatchingImportsToExports, DecorationMismatch) {
   const std::string body1 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Import
 OpDecorate %2 Constant
 %2 = OpTypeFloat 32
@@ -225,6 +280,9 @@ OpDecorate %2 Constant
 )";
   const std::string body2 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Export
 %2 = OpTypeFloat 32
 %3 = OpConstant %2 42
@@ -244,8 +302,10 @@ OpDecorate %1 LinkageAttributes "foo" Export
 TEST_F(MatchingImportsToExports,
        FuncParamAttrDifferButStillMatchExportToImport) {
   const std::string body1 = R"(
-OpCapability Kernel
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Import
 OpDecorate %2 FuncParamAttr Zext
 %3 = OpTypeVoid
@@ -256,8 +316,10 @@ OpDecorate %2 FuncParamAttr Zext
 OpFunctionEnd
 )";
   const std::string body2 = R"(
-OpCapability Kernel
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Export
 OpDecorate %2 FuncParamAttr Sext
 %3 = OpTypeVoid
@@ -274,7 +336,9 @@ OpFunctionEnd
   ASSERT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary))
       << GetErrorMessage();
 
-  const std::string expected_res = R"(OpCapability Kernel
+  const std::string expected_res = R"(OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpModuleProcessed "Linked by SPIR-V Tools Linker"
 OpDecorate %1 FuncParamAttr Sext
 %2 = OpTypeVoid
@@ -296,6 +360,9 @@ OpFunctionEnd
 TEST_F(MatchingImportsToExports, FunctionCtrl) {
   const std::string body1 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Import
 %2 = OpTypeVoid
 %3 = OpTypeFunction %2
@@ -306,6 +373,9 @@ OpFunctionEnd
 )";
   const std::string body2 = R"(
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Export
 %2 = OpTypeVoid
 %3 = OpTypeFunction %2
@@ -320,7 +390,10 @@ OpFunctionEnd
       << GetErrorMessage();
 
   const std::string expected_res =
-      R"(OpModuleProcessed "Linked by SPIR-V Tools Linker"
+      R"(OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
+OpModuleProcessed "Linked by SPIR-V Tools Linker"
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
 %3 = OpTypeFloat 32
@@ -339,8 +412,10 @@ OpFunctionEnd
 
 TEST_F(MatchingImportsToExports, UseExportedFuncParamAttr) {
   const std::string body1 = R"(
-OpCapability Kernel
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Import
 OpDecorate %2 FuncParamAttr Zext
 %2 = OpDecorationGroup
@@ -356,8 +431,10 @@ OpFunctionEnd
 OpFunctionEnd
 )";
   const std::string body2 = R"(
-OpCapability Kernel
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpDecorate %1 LinkageAttributes "foo" Export
 OpDecorate %2 FuncParamAttr Sext
 %3 = OpTypeVoid
@@ -374,7 +451,9 @@ OpFunctionEnd
   ASSERT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary))
       << GetErrorMessage();
 
-  const std::string expected_res = R"(OpCapability Kernel
+  const std::string expected_res = R"(OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpModuleProcessed "Linked by SPIR-V Tools Linker"
 OpDecorate %1 FuncParamAttr Zext
 %1 = OpDecorationGroup
@@ -401,8 +480,10 @@ OpFunctionEnd
 
 TEST_F(MatchingImportsToExports, NamesAndDecorations) {
   const std::string body1 = R"(
-OpCapability Kernel
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpName %1 "foo"
 OpName %3 "param"
 OpDecorate %1 LinkageAttributes "foo" Import
@@ -422,8 +503,10 @@ OpFunctionEnd
 OpFunctionEnd
 )";
   const std::string body2 = R"(
-OpCapability Kernel
 OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpName %1 "foo"
 OpName %2 "param"
 OpDecorate %1 LinkageAttributes "foo" Export
@@ -443,7 +526,9 @@ OpFunctionEnd
   ASSERT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary))
       << GetErrorMessage();
 
-  const std::string expected_res = R"(OpCapability Kernel
+  const std::string expected_res = R"(OpCapability Addresses
+OpCapability Kernel
+OpMemoryModel Physical64 OpenCL
 OpName %1 "foo"
 OpName %2 "param"
 OpModuleProcessed "Linked by SPIR-V Tools Linker"

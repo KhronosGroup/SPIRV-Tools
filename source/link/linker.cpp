@@ -250,44 +250,55 @@ spv_result_t MergeModules(const MessageConsumer& consumer,
       linked_module->AddExtInstImport(
           std::unique_ptr<Instruction>(inst.Clone(linked_context)));
 
-  do {
-    const Instruction* memory_model_inst = input_modules[0]->GetMemoryModel();
-    if (memory_model_inst == nullptr) break;
+  const Instruction* linked_memory_model_inst =
+      input_modules.front()->GetMemoryModel();
+  if (linked_memory_model_inst == nullptr) {
+    return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_BINARY)
+           << "Input module 1 is lacking an OpMemoryModel instruction.";
+  }
+  const uint32_t linked_addressing_model =
+      linked_memory_model_inst->GetSingleWordOperand(0u);
+  const uint32_t linked_memory_model =
+      linked_memory_model_inst->GetSingleWordOperand(1u);
 
-    uint32_t addressing_model = memory_model_inst->GetSingleWordOperand(0u);
-    uint32_t memory_model = memory_model_inst->GetSingleWordOperand(1u);
-    for (const auto& module : input_modules) {
-      memory_model_inst = module->GetMemoryModel();
-      if (memory_model_inst == nullptr) continue;
+  for (std::size_t i = 1; i < input_modules.size(); ++i) {
+    const Module* module = input_modules[i];
+    const Instruction* memory_model_inst = module->GetMemoryModel();
+    if (memory_model_inst == nullptr)
+      return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_BINARY)
+             << "Input module " << (i + 1)
+             << " is lacking an OpMemoryModel instruction.";
 
-      if (addressing_model != memory_model_inst->GetSingleWordOperand(0u)) {
-        spv_operand_desc initial_desc = nullptr, current_desc = nullptr;
-        grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
-                              addressing_model, &initial_desc);
-        grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
-                              memory_model_inst->GetSingleWordOperand(0u),
-                              &current_desc);
-        return DiagnosticStream(position, consumer, "", SPV_ERROR_INTERNAL)
-               << "Conflicting addressing models: " << initial_desc->name
-               << " vs " << current_desc->name << ".";
-      }
-      if (memory_model != memory_model_inst->GetSingleWordOperand(1u)) {
-        spv_operand_desc initial_desc = nullptr, current_desc = nullptr;
-        grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL, memory_model,
-                              &initial_desc);
-        grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL,
-                              memory_model_inst->GetSingleWordOperand(1u),
-                              &current_desc);
-        return DiagnosticStream(position, consumer, "", SPV_ERROR_INTERNAL)
-               << "Conflicting memory models: " << initial_desc->name << " vs "
-               << current_desc->name << ".";
-      }
+    const uint32_t module_addressing_model =
+        memory_model_inst->GetSingleWordOperand(0u);
+    if (module_addressing_model != linked_addressing_model) {
+      spv_operand_desc linked_desc = nullptr, module_desc = nullptr;
+      grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
+                            linked_addressing_model, &linked_desc);
+      grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
+                            module_addressing_model, &module_desc);
+      return DiagnosticStream(position, consumer, "", SPV_ERROR_INTERNAL)
+             << "Conflicting addressing models: " << linked_desc->name
+             << " (input modules 1 through " << i << ") vs "
+             << module_desc->name << " (input module " << (i + 1) << ").";
     }
 
-    if (memory_model_inst != nullptr)
-      linked_module->SetMemoryModel(std::unique_ptr<Instruction>(
-          memory_model_inst->Clone(linked_context)));
-  } while (false);
+    const uint32_t module_memory_model =
+        memory_model_inst->GetSingleWordOperand(1u);
+    if (module_memory_model != linked_memory_model) {
+      spv_operand_desc linked_desc = nullptr, module_desc = nullptr;
+      grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL, linked_memory_model,
+                            &linked_desc);
+      grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL, module_memory_model,
+                            &module_desc);
+      return DiagnosticStream(position, consumer, "", SPV_ERROR_INTERNAL)
+             << "Conflicting memory models: " << linked_desc->name
+             << " (input modules 1 through " << i << ") vs "
+             << module_desc->name << " (input module " << (i + 1) << ").";
+    }
+  }
+  linked_module->SetMemoryModel(std::unique_ptr<Instruction>(
+      linked_memory_model_inst->Clone(linked_context)));
 
   std::vector<std::pair<uint32_t, std::string>> entry_points;
   for (const auto& module : input_modules)

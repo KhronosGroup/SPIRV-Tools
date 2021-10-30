@@ -31,6 +31,15 @@ spvtest::Binary CreateBinary(uint32_t version) {
       SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS, 0),
       1u,  // NOTE: Bound
       0u,  // NOTE: Schema; reserved
+
+      // OpCapability Shader
+      SpvOpCapability | 2u << SpvWordCountShift,
+      SpvCapabilityShader,
+
+      // OpMemoryModel Logical Simple
+      SpvOpMemoryModel | 3u << SpvWordCountShift,
+      SpvAddressingModelLogical,
+      SpvMemoryModelSimple
       // clang-format on
   };
 }

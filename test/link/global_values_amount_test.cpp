@@ -40,6 +40,13 @@ class EntryPointsAmountTest : public spvtest::LinkerTest {
         3u + global_variable_count_per_binary,  // NOTE: Bound
         0u,                                     // NOTE: Schema; reserved
 
+        SpvOpCapability | 2u << SpvWordCountShift,
+        SpvCapabilityShader,
+
+        SpvOpMemoryModel | 3u << SpvWordCountShift,
+        SpvAddressingModelLogical,
+        SpvMemoryModelSimple,
+
         SpvOpTypeFloat | 3u << SpvWordCountShift,
         1u,   // NOTE: Result ID
         32u,  // NOTE: Width
@@ -87,6 +94,13 @@ TEST_F(EntryPointsAmountTest, OverLimit) {
       SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS, 0),
       5u,  // NOTE: Bound
       0u,  // NOTE: Schema; reserved
+
+      SpvOpCapability | 2u << SpvWordCountShift,
+      SpvCapabilityShader,
+
+      SpvOpMemoryModel | 3u << SpvWordCountShift,
+      SpvAddressingModelLogical,
+      SpvMemoryModelSimple,
 
       SpvOpTypeFloat | 3u << SpvWordCountShift,
       1u,   // NOTE: Result ID
