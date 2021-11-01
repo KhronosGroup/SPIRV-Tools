@@ -154,7 +154,7 @@ spv_result_t NumConsumedLocations(ValidationState_t& _, const Instruction* type,
       // Members cannot have location decorations at this point.
       if (_.HasDecoration(type->id(), SpvDecorationLocation)) {
         return _.diag(SPV_ERROR_INVALID_DATA, type)
-               << "Members cannot be assigned a location";
+               << _.VkErrorID(4918) << "Members cannot be assigned a location";
       }
 
       // Structs consume locations equal to the sum of the locations consumed
@@ -327,7 +327,7 @@ spv_result_t GetLocationsForVariable(
   const bool is_block = _.HasDecoration(type_id, SpvDecorationBlock);
   if (!has_location && !is_block) {
     return _.diag(SPV_ERROR_INVALID_DATA, variable)
-           << "Variable must be decorated with a location";
+           << _.VkErrorID(4917) << "Variable must be decorated with a location";
   }
 
   const std::string storage_class = is_output ? "output" : "input";
@@ -411,7 +411,7 @@ spv_result_t GetLocationsForVariable(
       auto where = member_locations.find(i - 1);
       if (where == member_locations.end()) {
         return _.diag(SPV_ERROR_INVALID_DATA, type)
-               << "Member index " << i - 1
+               << _.VkErrorID(4919) << "Member index " << i - 1
                << " is missing a location assignment";
       }
 

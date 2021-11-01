@@ -455,17 +455,28 @@ class ValidationState_t {
   void RegisterStorageClassConsumer(SpvStorageClass storage_class,
                                     Instruction* consumer);
 
+  /// Returns the set of Interface Variables.
+  std::unordered_set<uint32_t>& interface_vars() { return interface_vars_; }
+
   /// Returns the set of Global Variables.
   std::unordered_set<uint32_t>& global_vars() { return global_vars_; }
 
   /// Returns the set of Local Variables.
   std::unordered_set<uint32_t>& local_vars() { return local_vars_; }
 
+  /// Returns the number of Interface Variables.
+  size_t num_interface_vars() { return interface_vars_.size(); }
+
   /// Returns the number of Global Variables.
   size_t num_global_vars() { return global_vars_.size(); }
 
   /// Returns the number of Local Variables.
   size_t num_local_vars() { return local_vars_.size(); }
+
+  /// Inserts a new <id> to the set of Interface Variables.
+  void registerInterfaceVariable(const uint32_t id) {
+    interface_vars_.insert(id);
+  }
 
   /// Inserts a new <id> to the set of Global Variables.
   void registerGlobalVariable(const uint32_t id) { global_vars_.insert(id); }
@@ -810,6 +821,9 @@ class ValidationState_t {
 
   /// ID Bound from the Header
   uint32_t id_bound_;
+
+  /// Set of Interface Variable IDs (collection of all entry points)
+  std::unordered_set<uint32_t> interface_vars_;
 
   /// Set of Global Variable IDs (Storage Class other than 'Function')
   std::unordered_set<uint32_t> global_vars_;

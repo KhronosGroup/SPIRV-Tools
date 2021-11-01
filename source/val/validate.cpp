@@ -225,8 +225,11 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
         desc.name = desc_name;
 
         std::vector<uint32_t> interfaces;
-        for (size_t j = 3; j < inst->operands().size(); ++j)
-          desc.interfaces.push_back(inst->word(inst->operand(j).offset));
+        for (size_t j = 3; j < inst->operands().size(); ++j) {
+          const auto id = inst->word(inst->operand(j).offset);
+          desc.interfaces.push_back(id);
+          vstate->registerInterfaceVariable(id);
+        }
 
         vstate->RegisterEntryPoint(entry_point, execution_model,
                                    std::move(desc));

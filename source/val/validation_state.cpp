@@ -153,6 +153,7 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       module_extensions_(),
       ordered_instructions_(),
       all_definitions_(),
+      interface_vars_(),
       global_vars_(),
       local_vars_(),
       struct_nesting_depth_(),
@@ -1875,6 +1876,16 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpMemoryBarrier-04733);
     case 4780:
       return VUID_WRAP(VUID-StandaloneSpirv-Result-04780);
+    case 4915:
+      return VUID_WRAP(VUID-StandaloneSpirv-Location-04915);
+    case 4916:
+      return VUID_WRAP(VUID-StandaloneSpirv-Location-04916);
+    case 4917:
+      return VUID_WRAP(VUID-StandaloneSpirv-Location-04917);
+    case 4918:
+      return VUID_WRAP(VUID-StandaloneSpirv-Location-04918);
+    case 4919:
+      return VUID_WRAP(VUID-StandaloneSpirv-Location-04919);
     default:
       return "";  // unknown id
   }
