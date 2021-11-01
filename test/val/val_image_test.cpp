@@ -61,8 +61,11 @@ OpCapability ImageBuffer
 
   // In 1.4, the entry point must list all module-scope variables used.  Just
   // list all of them.
-  std::string interface_vars = (env != SPV_ENV_UNIVERSAL_1_4) ? "" :
-                                                              R"(
+  //
+  // For Vulkan, anything Location decoration needs to be an interface variable
+  std::string interface_vars =
+      (env != SPV_ENV_UNIVERSAL_1_4) ? "%input_flat_u32" :
+                                     R"(
 %uniform_image_f32_1d_0001
 %uniform_image_f32_1d_0002_rgba32f
 %uniform_image_f32_2d_0001
@@ -1059,7 +1062,7 @@ TEST_F(ValidateImage, ImageTexelPointerImageNotResultTypePointer) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 136[%136] cannot be a "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 137[%137] cannot be a "
                                                "type"));
 }
 

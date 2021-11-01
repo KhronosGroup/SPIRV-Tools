@@ -448,6 +448,8 @@ OpFunctionEnd
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Location-04918"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Members cannot be assigned a location"));
 }
 
@@ -474,9 +476,13 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Members cannot be assigned a location"));
+              AnyVUID("VUID-StandaloneSpirv-Location-04916"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Location decorations must be used on user-defined variables."));
 }
 
 TEST_F(ValidateInterfacesTest, VulkanLocationsDoubleAssignmentStructMember) {
