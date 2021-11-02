@@ -319,7 +319,7 @@ tests:
 *Note*: Prebuilt binaries are available from the [downloads](docs/downloads.md) page.
 
 First [get the sources](#getting-the-source).
-Then build using CMake, Bazel, or Android ndk-build.
+Then build using CMake, Bazel, Android ndk-build, or the Emscripten SDK.
 
 ### Build using CMake
 You can build the project using [CMake][cmake]:
@@ -364,6 +364,30 @@ You can also use [Bazel](https://bazel.build/) to build the project.
 cd <spirv-dir>
 bazel build :all
 ```
+### Build a node.js package using Emscripten
+
+The SPIRV-Tools core library can be built to a WebAssembly [node.js](https://nodejs.org)
+module. The resulting `SpirvTools` WebAssembly module only exports methods to
+assemble and disassemble SPIR-V modules.
+
+First, make sure you have the [Emscripten SDK](https://emscripten.org).
+Then:
+
+```sh
+cd <spirv-dir>
+./source/wasm/build.sh
+```
+
+The resulting node package, with JavaScript and TypeScript bindings, is
+written to `<spirv-dir>/out/web`.
+
+Note: This builds the package locally. It does *not* publish it to [npm](https://npmjs.org).
+
+To test the result:
+
+```sh
+node ./test/wasm/test.js
+```
 
 ### Tools you'll need
 
@@ -377,6 +401,8 @@ suite.
 - [Bazel](https://bazel.build/) (optional): if building the source with Bazel,
 you need to install Bazel Version 0.29.1 on your machine. Other versions may
 also work, but are not verified.
+- [Emscripten SDK](https://emscripten.org) (optional): if building the
+  WebAssembly module.
 
 SPIRV-Tools is regularly tested with the following compilers:
 
