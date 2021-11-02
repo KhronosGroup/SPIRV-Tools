@@ -12,9 +12,3 @@ jobs:
         run: docker-compose up
       - name: Run tests
         run: node test/wasm/test.js
-      - name: Publish to npm
-        uses: JS-DevTools/npm-publish@v1
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
-          package: ./out/web/package.json
-          dry-run: true
