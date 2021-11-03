@@ -216,8 +216,7 @@ void DescriptorScalarReplacement::CreateNewDecorationForNewVariable(
   std::unique_ptr<Instruction> new_decoration(old_decoration->Clone(context()));
   new_decoration->SetInOperand(0, {new_var_id});
 
-  uint32_t decoration = new_decoration->GetSingleWordInOperand(1u);
-  if (decoration == SpvDecorationBinding) {
+  if (IsDecorationBinding(new_decoration)) {
     new_decoration->SetInOperand(2, {new_binding});
   }
   context()->AddAnnotationInst(std::move(new_decoration));
