@@ -123,6 +123,12 @@ class DescriptorScalarReplacement : public Pass {
                                          uint32_t new_var_id,
                                          uint32_t new_binding);
 
+  // Create a new OpDecorate instruction whose operand is the same as an
+  // OpMemberDecorate instruction |old_member_decoration| except Target operand.
+  // The Target operand of the new OpDecorate instruction will be |new_var_id|.
+  void CreateNewDecorationForMemberDecorate(Instruction* old_decoration,
+                                            uint32_t new_var_id);
+
   // A map from an OpVariable instruction to the set of variables that will be
   // used to replace it. The entry |replacement_variables_[var][i]| is the id of
   // a variable that will be used in the place of the the ith element of the

@@ -169,6 +169,7 @@ void DescriptorScalarReplacement::CopyDecorationsForNewVariable(
     Instruction* old_var, uint32_t index, uint32_t new_var_id,
     uint32_t new_var_ptr_type_id, const bool is_old_var_array,
     const bool is_old_var_struct, Instruction* old_var_type) {
+  // Handle OpDecorate instructions.
   for (auto old_decoration :
        get_decoration_mgr()->GetDecorationsFor(old_var->result_id(), true)) {
     uint32_t new_binding = 0;
@@ -178,6 +179,14 @@ void DescriptorScalarReplacement::CopyDecorationsForNewVariable(
           is_old_var_array, is_old_var_struct, old_var_type);
     }
     CreateNewDecorationForNewVariable(old_decoration, new_var_id, new_binding);
+  }
+
+  // Handle OpMemberDecorate instructions.
+  for (auto old_decoration : get_decoration_mgr()->GetDecorationsFor(
+           old_var_type->result_id(), true)) {
+    assert(old_decoration->opcode() == SpvOpMemberDecorate);
+    if (old_decoration->GetSingleWordInOperand(1u) != index) continue;
+    CreateNewDecorationForMemberDecorate(old_decoration, new_var_id);
   }
 }
 
@@ -212,6 +221,17 @@ void DescriptorScalarReplacement::CreateNewDecorationForNewVariable(
     new_decoration->SetInOperand(2, {new_binding});
   }
   context()->AddAnnotationInst(std::move(new_decoration));
+}
+
+void DescriptorScalarReplacement::CreateNewDecorationForMemberDecorate(
+    Instruction* old_member_decoration, uint32_t new_var_id) {
+  std::vector<Operand> operands(
+      {{spv_operand_type_t::SPV_OPERAND_TYPE_ID, {new_var_id}}});
+  auto new_decorate_operand_begin = old_member_decoration->begin() + 2u;
+  auto new_decorate_operand_end = old_member_decoration->end();
+  operands.insert(operands.end(), new_decorate_operand_begin,
+                  new_decorate_operand_end);
+  get_decoration_mgr()->AddDecoration(SpvOpDecorate, std::move(operands));
 }
 
 uint32_t DescriptorScalarReplacement::CreateReplacementVariable(
