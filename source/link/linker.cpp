@@ -210,7 +210,7 @@ spv_result_t GenerateHeader(const MessageConsumer& consumer,
   header->version = version;
   header->generator = SPV_GENERATOR_WORD(SPV_GENERATOR_KHRONOS_LINKER, 0);
   header->bound = max_id_bound;
-  header->reserved = 0u;
+  header->schema = 0u;
 
   return SPV_SUCCESS;
 }
