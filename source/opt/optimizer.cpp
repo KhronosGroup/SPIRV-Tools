@@ -156,7 +156,8 @@ Optimizer& Optimizer::RegisterLegalizationPasses() {
           .RegisterPass(CreateDeadInsertElimPass())
           .RegisterPass(CreateReduceLoadSizePass())
           .RegisterPass(CreateAggressiveDCEPass())
-          .RegisterPass(CreateInterpolateFixupPass());
+          .RegisterPass(CreateInterpolateFixupPass())
+          .RegisterPass(CreateLegalizeImageOpsPass());
 }
 
 Optimizer& Optimizer::RegisterPerformancePasses() {
@@ -989,6 +990,11 @@ Optimizer::PassToken CreateConvertToSampledImagePass(
         descriptor_set_binding_pairs) {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::ConvertToSampledImagePass>(descriptor_set_binding_pairs));
+}
+
+Optimizer::PassToken CreateLegalizeImageOpsPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::LegalizeImageOpsPass>());
 }
 
 }  // namespace spvtools

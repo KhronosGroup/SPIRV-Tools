@@ -70,6 +70,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   ir_builder.h
   ir_context.h
   ir_loader.h
+  legalize_image_ops_pass.h
   licm_pass.h
   local_access_chain_convert_pass.h
   local_redundancy_elimination.h
@@ -179,6 +180,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   interp_fixup_pass.cpp
   ir_context.cpp
   ir_loader.cpp
+  legalize_image_ops_pass.cpp
   licm_pass.cpp
   local_access_chain_convert_pass.cpp
   local_redundancy_elimination.cpp

@@ -881,6 +881,11 @@ Optimizer::PassToken CreateConvertToSampledImagePass(
     const std::vector<opt::DescriptorSetAndBinding>&
         descriptor_set_binding_pairs);
 
+// Creates legalize-image-ops-pass to translate TypeImage related
+// operations from half to float for Vulkan. 
+// (VUID-StandaloneSpirv-OpTypeImage-04656)
+Optimizer::PassToken CreateLegalizeImageOpsPass();
+
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_
