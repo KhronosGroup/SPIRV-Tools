@@ -23,6 +23,7 @@ set(VAL_TEST_COMMON_SRCS
 add_spvtools_unittest(TARGET val_abcde
   SRCS
        val_adjacency_test.cpp
+       val_annotation_test.cpp
        val_arithmetics_test.cpp
        val_atomics_test.cpp
        val_barriers_test.cpp

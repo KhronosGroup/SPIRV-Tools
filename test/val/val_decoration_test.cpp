@@ -687,8 +687,7 @@ TEST_F(ValidateDecorations, BlockDecoratingArrayBad) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Block decoration on a non-struct type"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a structure type"));
 }
 
 TEST_F(ValidateDecorations, BlockDecoratingIntBad) {
@@ -713,8 +712,7 @@ TEST_F(ValidateDecorations, BlockDecoratingIntBad) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Block decoration on a non-struct type"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a structure type"));
 }
 
 TEST_F(ValidateDecorations, BlockMissingOffsetBad) {
@@ -6129,9 +6127,7 @@ TEST_F(ValidateDecorations, NonWritableLabelTargetBad) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Target of NonWritable decoration must be a "
-                        "memory object declaration (a variable or a function "
-                        "parameter)\n  %label = OpLabel"));
+              HasSubstr("must be a memory object declaration"));
 }
 
 TEST_F(ValidateDecorations, NonWritableTypeTargetBad) {
@@ -6140,9 +6136,7 @@ TEST_F(ValidateDecorations, NonWritableTypeTargetBad) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Target of NonWritable decoration must be a "
-                        "memory object declaration (a variable or a function "
-                        "parameter)\n  %void = OpTypeVoid"));
+              HasSubstr("must be a memory object declaration"));
 }
 
 TEST_F(ValidateDecorations, NonWritableValueTargetBad) {
@@ -6151,9 +6145,7 @@ TEST_F(ValidateDecorations, NonWritableValueTargetBad) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Target of NonWritable decoration must be a "
-                        "memory object declaration (a variable or a function "
-                        "parameter)\n  %float_0 = OpConstant %float 0"));
+              HasSubstr("must be a memory object declaration"));
 }
 
 TEST_F(ValidateDecorations, NonWritableValueParamBad) {
@@ -6161,10 +6153,7 @@ TEST_F(ValidateDecorations, NonWritableValueParamBad) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Target of NonWritable decoration is invalid: must "
-                        "point to a storage image, uniform block, or storage "
-                        "buffer\n  %param_f = OpFunctionParameter %float"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a pointer type"));
 }
 
 TEST_F(ValidateDecorations, NonWritablePointerParamButWrongTypeBad) {
@@ -6467,8 +6456,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Target of Component decoration must be "
-                        "a memory object declaration"));
+              HasSubstr("must be a memory object declaration"));
 }
 
 TEST_F(ValidateDecorations, ComponentDecorationBadStorageClass) {
@@ -6767,8 +6755,8 @@ TEST_F(ValidateDecorations, ComponentDecorationFunctionParameter) {
 )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
-  EXPECT_THAT(getDiagnosticString(), Eq(""));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a pointer type"));
 }
 
 TEST_F(ValidateDecorations, VulkanStorageBufferBlock) {
@@ -7164,9 +7152,7 @@ OpDecorate %struct Location 0
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Location decoration can only be applied to a variable "
-                        "or member of a structure type"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a variable"));
 }
 
 TEST_F(ValidateDecorations, LocationFloatBad) {
@@ -7180,9 +7166,7 @@ OpDecorate %float Location 0
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Location decoration can only be applied to a variable "
-                        "or member of a structure type"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a variable"));
 }
 
 TEST_F(ValidateDecorations, WorkgroupSingleBlockVariable) {
@@ -7571,9 +7555,7 @@ TEST_F(ValidateDecorations, WorkgroupSingleBlockVariableNotAStruct) {
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_ID,
             ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Block decoration on a non-struct type"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a structure type"));
 }
 
 TEST_F(ValidateDecorations, WorkgroupSingleBlockVariableMissingLayout) {

@@ -1267,10 +1267,9 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Index can only be applied to Fragment output variables"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must be in the Output storage class"));
 }
 
 TEST_F(ValidateInterfacesTest, VulkanLocationsArrayWithComponent) {

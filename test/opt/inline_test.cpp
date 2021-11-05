@@ -2300,7 +2300,6 @@ TEST_F(InlineTest, DontInlineDirectlyRecursiveFunc) {
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %1 "main"
 OpExecutionMode %1 OriginUpperLeft
-OpDecorate %2 DescriptorSet 439418829
 %void = OpTypeVoid
 %4 = OpTypeFunction %void
 %float = OpTypeFloat 32
@@ -2330,7 +2329,6 @@ TEST_F(InlineTest, DontInlineInDirectlyRecursiveFunc) {
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %1 "main"
 OpExecutionMode %1 OriginUpperLeft
-OpDecorate %2 DescriptorSet 439418829
 %void = OpTypeVoid
 %4 = OpTypeFunction %void
 %float = OpTypeFloat 32
