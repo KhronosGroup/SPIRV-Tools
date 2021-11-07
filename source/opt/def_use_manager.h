@@ -15,7 +15,6 @@
 #ifndef SOURCE_OPT_DEF_USE_MANAGER_H_
 #define SOURCE_OPT_DEF_USE_MANAGER_H_
 
-#include <list>
 #include <set>
 #include <unordered_map>
 #include <utility>
