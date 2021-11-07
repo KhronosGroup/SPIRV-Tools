@@ -58,7 +58,7 @@ void DefUseManager::AnalyzeInstUse(Instruction* inst) {
       case SPV_OPERAND_TYPE_SCOPE_ID: {
         uint32_t use_id = inst->GetSingleWordOperand(i);
         Instruction* def = GetDef(use_id);
-        if (!def) assert(false && "Definition is not registered.");
+        assert(def && "Definition is not registered.");
         id_to_users_.insert(UserEntry(def, inst));
         used_ids->push_back(use_id);
       } break;
