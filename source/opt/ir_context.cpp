@@ -317,7 +317,7 @@ bool IRContext::IsConsistent() {
 #else
   if (AreAnalysesValid(kAnalysisDefUse)) {
     analysis::DefUseManager new_def_use(module());
-    if (*get_def_use_mgr() != new_def_use) {
+    if (!CompareAndPrintDifferences(*get_def_use_mgr(), new_def_use)) {
       return false;
     }
   }
