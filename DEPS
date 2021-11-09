@@ -4,7 +4,7 @@ vars = {
   'github': 'https://github.com',
 
   'effcee_revision': 'ddf5e2bb92957dc8a12c5392f8495333d6844133',
-  'googletest_revision': '955c7f837efad184ec63e771c42542d37545eaef',
+  'googletest_revision': 'bf0701daa9f5b30e5882e2f8f9a5280bcba87e77',
   're2_revision': '4244cd1cb492fa1d10986ec67f862964c073f844',
   'spirv_headers_revision': '19e8350415ed9516c8afffa19ae2c58559495a67',
 }
