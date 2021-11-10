@@ -266,7 +266,8 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
                << "BuiltIns can only target variables, structure members or "
                   "constants";
       }
-      if (inst->GetOperandAs<SpvBuiltIn>(2) == SpvBuiltInWorkgroupSize) {
+      if (_.HasCapability(SpvCapabilityShader) &&
+          inst->GetOperandAs<SpvBuiltIn>(2) == SpvBuiltInWorkgroupSize) {
         if (!spvOpcodeIsConstant(target->opcode())) {
           return fail() << "must be a constant for WorkgroupSize";
         }
