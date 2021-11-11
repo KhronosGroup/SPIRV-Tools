@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2021.5-dev 2021-11-11
+  - Start v2021.5-dev
+
 v2021.4 2021-11-11
   - General
     - Add a WebAssembly build (#3752)
