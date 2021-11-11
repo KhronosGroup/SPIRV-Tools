@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2021.4-dev 2021-11-09
+v2021.4 2021-11-11
   - General
     - Add a WebAssembly build (#3752)
     - Make cxx exceptions controllable (#4591)
