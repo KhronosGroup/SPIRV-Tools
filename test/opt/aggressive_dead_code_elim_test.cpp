@@ -261,7 +261,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-    SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 
 TEST_F(AggressiveDCETest, Simple) {
@@ -322,7 +322,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-    SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 
 TEST_F(AggressiveDCETest, OptAllowListExtension) {
@@ -377,7 +377,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-    SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 
 TEST_F(AggressiveDCETest, NoOptDenyListExtension) {
@@ -508,7 +508,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-    SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
+  SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
 }
 
 TEST_F(AggressiveDCETest, NoParamElim) {
@@ -876,7 +876,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-    SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 
 TEST_F(AggressiveDCETest, NoPrivateStoreElimIfLoad) {
@@ -1126,7 +1126,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-    SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 
 TEST_F(AggressiveDCETest, EliminateDeadIfThenElse) {
@@ -1204,7 +1204,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-    SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 
 TEST_F(AggressiveDCETest, EliminateDeadIfThen) {
@@ -1274,7 +1274,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-    SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 
 TEST_F(AggressiveDCETest, EliminateDeadSwitch) {
@@ -1346,7 +1346,7 @@ TEST_F(AggressiveDCETest, EliminateDeadSwitch) {
                OpReturn
                OpFunctionEnd)";
 
-    SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 
 TEST_F(AggressiveDCETest, EliminateDeadIfThenElseNested) {
@@ -2257,7 +2257,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-    SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 
 TEST_F(AggressiveDCETest, EliminateUselessInnerLoop) {
