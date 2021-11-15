@@ -477,27 +477,27 @@ TEST_F(BinaryParseTest, EarlyReturnWithTwoPassingCallbacks) {
 }
 
 TEST_F(BinaryParseTest, InstructionWithStringOperand) {
-  const std::string str =
-      "the future is already here, it's just not evenly distributed";
-  const auto str_words = MakeVector(str);
-  const auto instruction = MakeInstruction(SpvOpName, {99}, str_words);
-  const auto words = Concatenate({ExpectedHeaderForBound(100), instruction});
-  InSequence calls_expected_in_specific_order;
-  EXPECT_HEADER(100).WillOnce(Return(SPV_SUCCESS));
-  const auto operands = std::vector<spv_parsed_operand_t>{
-      MakeSimpleOperand(1, SPV_OPERAND_TYPE_ID),
-      MakeLiteralStringOperand(2, static_cast<uint16_t>(str_words.size()))};
-  EXPECT_CALL(client_,
-              Instruction(ParsedInstruction(spv_parsed_instruction_t{
-                  instruction.data(), static_cast<uint16_t>(instruction.size()),
-                  SpvOpName, SPV_EXT_INST_TYPE_NONE, 0 /*type id*/,
-                  0 /* No result id for OpName*/, operands.data(),
-                  static_cast<uint16_t>(operands.size())})))
-      .WillOnce(Return(SPV_SUCCESS));
-  // Since we are actually checking the output, don't test the
-  // endian-swapped version.
-  Parse(words, SPV_SUCCESS, false);
-  EXPECT_EQ(nullptr, diagnostic_);
+  for (bool endian_swap : kSwapEndians) {
+    const std::string str =
+        "the future is already here, it's just not evenly distributed";
+    const auto str_words = MakeVector(str);
+    const auto instruction = MakeInstruction(SpvOpName, {99}, str_words);
+    const auto words = Concatenate({ExpectedHeaderForBound(100), instruction});
+    InSequence calls_expected_in_specific_order;
+    EXPECT_HEADER(100).WillOnce(Return(SPV_SUCCESS));
+    const auto operands = std::vector<spv_parsed_operand_t>{
+        MakeSimpleOperand(1, SPV_OPERAND_TYPE_ID),
+        MakeLiteralStringOperand(2, static_cast<uint16_t>(str_words.size()))};
+    EXPECT_CALL(client_, Instruction(ParsedInstruction(spv_parsed_instruction_t{
+                             instruction.data(),
+                             static_cast<uint16_t>(instruction.size()),
+                             SpvOpName, SPV_EXT_INST_TYPE_NONE, 0 /*type id*/,
+                             0 /* No result id for OpName*/, operands.data(),
+                             static_cast<uint16_t>(operands.size())})))
+        .WillOnce(Return(SPV_SUCCESS));
+    Parse(words, SPV_SUCCESS, endian_swap);
+    EXPECT_EQ(nullptr, diagnostic_);
+  }
 }
 
 // Checks for non-zero values for the result_id and ext_inst_type members
