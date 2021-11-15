@@ -203,16 +203,7 @@ class BinaryParseTest : public spvtest::TextToBinaryTestBase<::testing::Test> {
   void Parse(const SpirvVector& words, spv_result_t expected_result,
              bool flip_words = false) {
     SpirvVector flipped_words(words);
-    SCOPED_TRACE(flip_words ? "Flipped Endianness" : "Normal Endianness");
-    if (flip_words) {
-      std::transform(flipped_words.begin(), flipped_words.end(),
-                     flipped_words.begin(), [](const uint32_t raw_word) {
-                       return spvFixWord(raw_word,
-                                         I32_ENDIAN_HOST == I32_ENDIAN_BIG
-                                             ? SPV_ENDIANNESS_LITTLE
-                                             : SPV_ENDIANNESS_BIG);
-                     });
-    }
+    MaybeFlipWords(flip_words, flipped_words.begin(), flipped_words.end());
     EXPECT_EQ(expected_result,
               spvBinaryParse(ScopedContext().context, &client_,
                              flipped_words.data(), flipped_words.size(),
