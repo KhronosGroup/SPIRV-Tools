@@ -518,6 +518,18 @@ class IRContext {
         std::string message = "ID overflow. Try running compact-ids.";
         consumer()(SPV_MSG_ERROR, "", {0, 0, 0}, message.c_str());
       }
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+      // If TakeNextId returns 0, it is very likely that execution will
+      // subsequently fail. Such failures are false alarms from a fuzzing point
+      // of view: they are due to the fact that too many ids were used, rather
+      // than being due to an actual bug. Thus, during a fuzzing build, it is
+      // preferable to bail out when ID overflow occurs.
+      //
+      // A zero exit code is returned here because a non-zero code would cause
+      // ClusterFuzz/OSS-Fuzz to regard the termination as a crash, and spurious
+      // crash reports is what this guard aims to avoid.
+      exit(0);
+#endif
     }
     return next_id;
   }
