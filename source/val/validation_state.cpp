@@ -497,15 +497,13 @@ void ValidationState_t::RegisterDebugInstruction(const Instruction* inst) {
   switch (inst->opcode()) {
     case SpvOpName: {
       const auto target = inst->GetOperandAs<uint32_t>(0);
-      const auto* str = reinterpret_cast<const char*>(inst->words().data() +
-                                                      inst->operand(1).offset);
+      const std::string str = inst->GetOperandAs<std::string>(1);
       AssignNameToId(target, str);
       break;
     }
     case SpvOpMemberName: {
       const auto target = inst->GetOperandAs<uint32_t>(0);
-      const auto* str = reinterpret_cast<const char*>(inst->words().data() +
-                                                      inst->operand(2).offset);
+      const std::string str = inst->GetOperandAs<std::string>(2);
       AssignNameToId(target, str);
       break;
     }

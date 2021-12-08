@@ -19,6 +19,7 @@
 
 #include "source/opt/instruction.h"
 #include "source/opt/ir_context.h"
+#include "source/util/string_utils.h"
 
 namespace spvtools {
 namespace opt {
@@ -60,14 +61,13 @@ Pass::Status StripReflectInfoPass::Process() {
   }
 
   for (auto& inst : context()->module()->extensions()) {
-    const char* ext_name =
-        reinterpret_cast<const char*>(&inst.GetInOperand(0).words[0]);
-    if (0 == std::strcmp(ext_name, "SPV_GOOGLE_hlsl_functionality1")) {
+    const std::string ext_name = inst.GetInOperand(0).AsString();
+    if (ext_name == "SPV_GOOGLE_hlsl_functionality1") {
       to_remove.push_back(&inst);
     } else if (!other_uses_for_decorate_string &&
-               0 == std::strcmp(ext_name, "SPV_GOOGLE_decorate_string")) {
+               ext_name == "SPV_GOOGLE_decorate_string") {
       to_remove.push_back(&inst);
-    } else if (0 == std::strcmp(ext_name, "SPV_KHR_non_semantic_info")) {
+    } else if (ext_name == "SPV_KHR_non_semantic_info") {
       to_remove.push_back(&inst);
     }
   }
@@ -84,9 +84,8 @@ Pass::Status StripReflectInfoPass::Process() {
   for (auto& inst : context()->module()->ext_inst_imports()) {
     assert(inst.opcode() == SpvOpExtInstImport &&
            "Expecting an import of an extension's instruction set.");
-    const char* extension_name =
-        reinterpret_cast<const char*>(&inst.GetInOperand(0).words[0]);
-    if (0 == std::strncmp(extension_name, "NonSemantic.", 12)) {
+    const std::string extension_name = inst.GetInOperand(0).AsString();
+    if (spvtools::utils::starts_with(extension_name, "NonSemantic.")) {
       non_semantic_sets.insert(inst.result_id());
       to_remove.push_back(&inst);
     }
