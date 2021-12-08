@@ -260,7 +260,7 @@ void DefUseManager::EraseUseRecordsOfOperandIds(const Instruction* inst) {
       id_to_users_.erase(
           UserEntry(GetDef(use_id), const_cast<Instruction*>(inst)));
     }
-    inst_to_used_ids_.erase(inst);
+    inst_to_used_ids_.erase(iter);
   }
 }
 
