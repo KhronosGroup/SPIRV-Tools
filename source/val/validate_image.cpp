@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Google Inc.
+﻿// Copyright (c) 2017 Google Inc.
 // Modifications Copyright (C) 2020 Advanced Micro Devices, Inc. All rights
 // reserved.
 //
