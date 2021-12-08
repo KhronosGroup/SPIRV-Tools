@@ -139,7 +139,7 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
   // TODO(antiagainst): should we change the generator number?
   binary->push_back(header_.generator);
   binary->push_back(header_.bound);
-  binary->push_back(header_.reserved);
+  binary->push_back(header_.schema);
 
   size_t bound_idx = binary->size() - 2;
   DebugScope last_scope(kNoDebugScope, kNoInlinedAt);
