@@ -33,7 +33,8 @@ Pass::Status StripReflectInfoPass::Process() {
   for (auto& inst : context()->module()->annotations()) {
     switch (inst.opcode()) {
       case SpvOpDecorateStringGOOGLE:
-        if (inst.GetSingleWordInOperand(1) == SpvDecorationHlslSemanticGOOGLE) {
+        if (inst.GetSingleWordInOperand(1) == SpvDecorationHlslSemanticGOOGLE ||
+            inst.GetSingleWordInOperand(1) == SpvDecorationUserTypeGOOGLE) {
           to_remove.push_back(&inst);
         } else {
           other_uses_for_decorate_string = true;
@@ -41,7 +42,8 @@ Pass::Status StripReflectInfoPass::Process() {
         break;
 
       case SpvOpMemberDecorateStringGOOGLE:
-        if (inst.GetSingleWordInOperand(2) == SpvDecorationHlslSemanticGOOGLE) {
+        if (inst.GetSingleWordInOperand(2) == SpvDecorationHlslSemanticGOOGLE ||
+            inst.GetSingleWordInOperand(2) == SpvDecorationUserTypeGOOGLE) {
           to_remove.push_back(&inst);
         } else {
           other_uses_for_decorate_string = true;
@@ -63,6 +65,8 @@ Pass::Status StripReflectInfoPass::Process() {
   for (auto& inst : context()->module()->extensions()) {
     const std::string ext_name = inst.GetInOperand(0).AsString();
     if (ext_name == "SPV_GOOGLE_hlsl_functionality1") {
+      to_remove.push_back(&inst);
+    } else if (0 == std::strcmp(ext_name, "SPV_GOOGLE_user_type")) {
       to_remove.push_back(&inst);
     } else if (!other_uses_for_decorate_string &&
                ext_name == "SPV_GOOGLE_decorate_string") {
