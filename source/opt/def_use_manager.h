@@ -15,10 +15,8 @@
 #ifndef SOURCE_OPT_DEF_USE_MANAGER_H_
 #define SOURCE_OPT_DEF_USE_MANAGER_H_
 
-#include <list>
 #include <set>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "source/opt/instruction.h"
@@ -51,15 +49,17 @@ inline bool operator<(const Use& lhs, const Use& rhs) {
   return lhs.operand_index < rhs.operand_index;
 }
 
-// Definition and user pair.
-//
-// The first element of the pair is the definition.
-// The second element of the pair is the user.
-//
 // Definition should never be null. User can be null, however, such an entry
 // should be used only for searching (e.g. all users of a particular definition)
 // and never stored in a container.
-using UserEntry = std::pair<Instruction*, Instruction*>;
+struct UserEntry {
+  Instruction* def;
+  Instruction* user;
+};
+
+inline bool operator==(const UserEntry& lhs, const UserEntry& rhs) {
+  return lhs.def == rhs.def && lhs.user == rhs.user;
+}
 
 // Orders UserEntry for use in associative containers (i.e. less than ordering).
 //
@@ -72,24 +72,24 @@ using UserEntry = std::pair<Instruction*, Instruction*>;
 // definition (i.e. using {def, nullptr}).
 struct UserEntryLess {
   bool operator()(const UserEntry& lhs, const UserEntry& rhs) const {
-    // If lhs.first and rhs.first are both null, fall through to checking the
+    // If lhs.def and rhs.def are both null, fall through to checking the
     // second entries.
-    if (!lhs.first && rhs.first) return true;
-    if (lhs.first && !rhs.first) return false;
+    if (!lhs.def && rhs.def) return true;
+    if (lhs.def && !rhs.def) return false;
 
     // If neither definition is null, then compare unique ids.
-    if (lhs.first && rhs.first) {
-      if (lhs.first->unique_id() < rhs.first->unique_id()) return true;
-      if (rhs.first->unique_id() < lhs.first->unique_id()) return false;
+    if (lhs.def && rhs.def) {
+      if (lhs.def->unique_id() < rhs.def->unique_id()) return true;
+      if (rhs.def->unique_id() < lhs.def->unique_id()) return false;
     }
 
     // Return false on equality.
-    if (!lhs.second && !rhs.second) return false;
-    if (!lhs.second) return true;
-    if (!rhs.second) return false;
+    if (!lhs.user && !rhs.user) return false;
+    if (!lhs.user) return true;
+    if (!rhs.user) return false;
 
     // If neither user is null then compare unique ids.
-    return lhs.second->unique_id() < rhs.second->unique_id();
+    return lhs.user->unique_id() < rhs.user->unique_id();
   }
 };
 
