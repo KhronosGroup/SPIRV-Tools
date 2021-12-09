@@ -66,7 +66,7 @@ Pass::Status StripReflectInfoPass::Process() {
     const std::string ext_name = inst.GetInOperand(0).AsString();
     if (ext_name == "SPV_GOOGLE_hlsl_functionality1") {
       to_remove.push_back(&inst);
-    } else if (0 == std::strcmp(ext_name, "SPV_GOOGLE_user_type")) {
+    } else if (ext_name == "SPV_GOOGLE_user_type") {
       to_remove.push_back(&inst);
     } else if (!other_uses_for_decorate_string &&
                ext_name == "SPV_GOOGLE_decorate_string") {
