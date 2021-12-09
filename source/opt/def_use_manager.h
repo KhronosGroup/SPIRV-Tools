@@ -97,7 +97,6 @@ struct UserEntryLess {
 class DefUseManager {
  public:
   using IdToDefMap = std::unordered_map<uint32_t, Instruction*>;
-  using IdToUsersMap = std::set<UserEntry, UserEntryLess>;
 
   // Constructs a def-use manager from the given |module|. All internal messages
   // will be communicated to the outside via the given message |consumer|. This
@@ -197,8 +196,6 @@ class DefUseManager {
 
   // Returns the map from ids to their def instructions.
   const IdToDefMap& id_to_defs() const { return id_to_def_; }
-  // Returns the map from instructions to their users.
-  const IdToUsersMap& id_to_users() const { return id_to_users_; }
 
   // Clear the internal def-use record of the given instruction |inst|. This
   // method will update the use information of the operand ids of |inst|. The
@@ -218,6 +215,7 @@ class DefUseManager {
   void UpdateDefUse(Instruction* inst);
 
  private:
+  using IdToUsersMap = std::set<UserEntry, UserEntryLess>;
   using InstToUsedIdsMap =
       std::unordered_map<const Instruction*, std::vector<uint32_t>>;
 

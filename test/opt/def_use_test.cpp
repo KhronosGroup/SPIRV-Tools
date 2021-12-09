@@ -1707,9 +1707,10 @@ TEST_F(UpdateUsesTest, KeepOldUses) {
   def->SetInOperands({{SPV_OPERAND_TYPE_ID, {25}}});
   context->UpdateDefUse(def);
 
-  auto users = def_use_mgr->id_to_users();
-  UserEntry entry = {def, use};
-  EXPECT_THAT(users, Contains(entry));
+  auto scanUser = [&](Instruction* user) { return user != use; };
+  bool userFound = !def_use_mgr->WhileEachUser(def, scanUser);
+
+  EXPECT_TRUE(userFound);
 }
 // clang-format on
 
