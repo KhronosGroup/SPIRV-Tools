@@ -210,10 +210,8 @@ class DefUseManager {
   // Erases the records that a given instruction uses its operand ids.
   void EraseUseRecordsOfOperandIds(const Instruction* inst);
 
-  friend bool operator==(const DefUseManager&, const DefUseManager&);
-  friend bool operator!=(const DefUseManager& lhs, const DefUseManager& rhs) {
-    return !(lhs == rhs);
-  }
+  friend bool CompareAndPrintDifferences(const DefUseManager&,
+                                         const DefUseManager&);
 
   // If |inst| has not already been analysed, then analyses its defintion and
   // uses.

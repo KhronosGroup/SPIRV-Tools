@@ -259,49 +259,53 @@ void DefUseManager::EraseUseRecordsOfOperandIds(const Instruction* inst) {
   }
 }
 
-bool operator==(const DefUseManager& lhs, const DefUseManager& rhs) {
+bool CompareAndPrintDifferences(const DefUseManager& lhs,
+                                const DefUseManager& rhs) {
+  bool same = true;
+
   if (lhs.id_to_def_ != rhs.id_to_def_) {
     for (auto p : lhs.id_to_def_) {
       if (rhs.id_to_def_.find(p.first) == rhs.id_to_def_.end()) {
-        return false;
+        printf("Diff in id_to_def: missing value in rhs\n");
       }
     }
     for (auto p : rhs.id_to_def_) {
       if (lhs.id_to_def_.find(p.first) == lhs.id_to_def_.end()) {
-        return false;
+        printf("Diff in id_to_def: missing value in lhs\n");
       }
     }
-    return false;
+    same = false;
   }
 
   if (lhs.id_to_users_ != rhs.id_to_users_) {
     for (auto p : lhs.id_to_users_) {
       if (rhs.id_to_users_.count(p) == 0) {
-        return false;
+        printf("Diff in id_to_users: missing value in rhs\n");
       }
     }
     for (auto p : rhs.id_to_users_) {
       if (lhs.id_to_users_.count(p) == 0) {
-        return false;
+        printf("Diff in id_to_users: missing value in lhs\n");
       }
     }
-    return false;
+    same = false;
   }
 
   if (lhs.inst_to_used_ids_ != rhs.inst_to_used_ids_) {
     for (auto p : lhs.inst_to_used_ids_) {
       if (rhs.inst_to_used_ids_.count(p.first) == 0) {
-        return false;
+        printf("Diff in inst_to_used_ids: missing value in rhs\n");
       }
     }
     for (auto p : rhs.inst_to_used_ids_) {
       if (lhs.inst_to_used_ids_.count(p.first) == 0) {
-        return false;
+        printf("Diff in inst_to_used_ids: missing value in lhs\n");
       }
     }
-    return false;
+    same = false;
   }
-  return true;
+
+  return same;
 }
 
 }  // namespace analysis
