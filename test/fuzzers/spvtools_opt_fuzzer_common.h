@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Google Inc.
+// Copyright (c) 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,16 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifndef TEST_FUZZERS_SPVTOOLS_OPT_FUZZER_COMMON_H_
+#define TEST_FUZZERS_SPVTOOLS_OPT_FUZZER_COMMON_H_
+
 #include <cinttypes>
 #include <cstddef>
 #include <functional>
 
 #include "spirv-tools/optimizer.hpp"
-#include "test/fuzzers/spvtools_opt_fuzzer_common.h"
 
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  return spvtools::fuzzers::OptFuzzerTestOneInput(
-      data, size, [](spvtools::Optimizer& optimizer) -> void {
-        optimizer.RegisterSizePasses();
-      });
-}
+namespace spvtools {
+namespace fuzzers {
+
+// Helper function capturing the common logic for the various optimizer fuzzers.
+int OptFuzzerTestOneInput(
+    const uint8_t* data, size_t size,
+    std::function<void(spvtools::Optimizer&)> register_passes);
+
+}  // namespace fuzzers
+}  // namespace spvtools
+
+#endif  // TEST_FUZZERS_SPVTOOLS_OPT_FUZZER_COMMON_H_
