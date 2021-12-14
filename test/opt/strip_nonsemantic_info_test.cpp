@@ -244,6 +244,53 @@ OpFunctionEnd
   SinglePassRunAndCheck<StripNonSemanticInfoPass>(text, text, false);
 }
 
+TEST_F(StripNonSemanticInfoTest, RemovedNonSemanticDebugInfo) {
+  const std::string text = R"(
+;CHECK-NOT: OpExtension "SPV_KHR_non_semantic_info
+;CHECK-NOT: OpExtInstImport "NonSemantic.Shader.DebugInfo.100
+;CHECK-NOT: OpExtInst %void {{%\w+}} DebugSource
+;CHECK-NOT: OpExtInst %void {{%\w+}} DebugLine
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %PSMain "PSMain" %in_var_COLOR %out_var_SV_TARGET
+               OpExecutionMode %PSMain OriginUpperLeft
+          %5 = OpString "t.hlsl"
+          %6 = OpString "float"
+          %7 = OpString "color"
+          %8 = OpString "PSInput"
+          %9 = OpString "PSMain"
+         %10 = OpString ""
+         %11 = OpString "input"
+               OpName %in_var_COLOR "in.var.COLOR"
+               OpName %out_var_SV_TARGET "out.var.SV_TARGET"
+               OpName %PSMain "PSMain"
+               OpDecorate %in_var_COLOR Location 0
+               OpDecorate %out_var_SV_TARGET Location 0
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+       %void = OpTypeVoid
+     %uint_1 = OpConstant %uint 1
+     %uint_9 = OpConstant %uint 9
+         %21 = OpTypeFunction %void
+%in_var_COLOR = OpVariable %_ptr_Input_v4float Input
+%out_var_SV_TARGET = OpVariable %_ptr_Output_v4float Output
+         %13 = OpExtInst %void %1 DebugSource %5
+     %PSMain = OpFunction %void None %21
+         %22 = OpLabel
+         %23 = OpLoad %v4float %in_var_COLOR
+               OpStore %out_var_SV_TARGET %23
+         %24 = OpExtInst %void %1 DebugLine %13 %uint_9 %uint_9 %uint_1 %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+  SinglePassRunAndMatch<StripNonSemanticInfoPass>(text, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

@@ -99,7 +99,8 @@ Pass::Status StripNonSemanticInfoPass::Process() {
               to_remove.push_back(inst);
             }
           }
-        });
+        },
+        true);
   }
 
   for (auto* inst : to_remove) {
