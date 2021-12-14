@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/opt/strip_reflect_info_pass.h"
+#include "source/opt/strip_nonsemantic_info_pass.h"
 
 #include <cstring>
 #include <vector>
@@ -24,7 +24,7 @@
 namespace spvtools {
 namespace opt {
 
-Pass::Status StripReflectInfoPass::Process() {
+Pass::Status StripNonSemanticInfoPass::Process() {
   bool modified = false;
 
   std::vector<Instruction*> to_remove;
