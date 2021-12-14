@@ -47,7 +47,7 @@ OpDecorateStringGOOGLE %void HlslSemanticGOOGLE "my goodness"
   std::vector<uint32_t> binary_in;
   tools.Assemble(before, &binary_in);
 
-  // Instantiate the optimizer, and run the strip-reflection-info
+  // Instantiate the optimizer, and run the strip-nonsemantic-info
   // pass over the |binary_in| module, and place the modified module
   // into |binary_out|.
   spvtools::Optimizer optimizer(SPV_ENV_UNIVERSAL_1_1);

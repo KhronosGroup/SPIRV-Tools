@@ -72,7 +72,7 @@ class TestValidPassFlags(expect.ValidObjectFile1_5,
       '--private-to-local', '--reduce-load-size', '--redundancy-elimination',
       '--remove-duplicates', '--replace-invalid-opcode', '--ssa-rewrite',
       '--scalar-replacement', '--scalar-replacement=42', '--strength-reduction',
-      '--strip-debug', '--strip-reflect', '--vector-dce', '--workaround-1209',
+      '--strip-debug', '--strip-nonsemantic', '--vector-dce', '--workaround-1209',
       '--unify-const', '--graphics-robust-access', '--wrap-opkill', '--amd-ext-to-khr'
   ]
   expected_passes = [
@@ -117,7 +117,7 @@ class TestValidPassFlags(expect.ValidObjectFile1_5,
       'scalar-replacement=42',
       'strength-reduction',
       'strip-debug',
-      'strip-reflect',
+      'strip-nonsemantic',
       'vector-dce',
       'workaround-1209',
       'unify-const',
