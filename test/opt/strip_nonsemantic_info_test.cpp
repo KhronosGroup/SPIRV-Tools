@@ -224,6 +224,26 @@ OpFunctionEnd
   SinglePassRunAndMatch<StripNonSemanticInfoPass>(text, true);
 }
 
+// Make sure that strip reflect does not remove the debug info (OpString and
+// OpLine).
+TEST_F(StripNonSemanticInfoTest, DontStripDebug) {
+  std::string text = R"(OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint Fragment %1 "main"
+OpExecutionMode %1 OriginUpperLeft
+%2 = OpString "file"
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%1 = OpFunction %void None %4
+%5 = OpLabel
+OpLine %2 1 1
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<StripNonSemanticInfoPass>(text, text, false);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
