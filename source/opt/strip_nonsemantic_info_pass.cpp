@@ -76,13 +76,6 @@ Pass::Status StripNonSemanticInfoPass::Process() {
     }
   }
 
-  // clear all debug data now if it hasn't been cleared already, to remove any
-  // remaining OpString that may have been referenced by non-semantic extinsts
-  for (auto& dbg : context()->debugs1()) to_remove.push_back(&dbg);
-  for (auto& dbg : context()->debugs2()) to_remove.push_back(&dbg);
-  for (auto& dbg : context()->debugs3()) to_remove.push_back(&dbg);
-  for (auto& dbg : context()->ext_inst_debuginfo()) to_remove.push_back(&dbg);
-
   // remove any extended inst imports that are non semantic
   std::unordered_set<uint32_t> non_semantic_sets;
   for (auto& inst : context()->module()->ext_inst_imports()) {
@@ -106,18 +99,9 @@ Pass::Status StripNonSemanticInfoPass::Process() {
               to_remove.push_back(inst);
             }
           }
-        });
+        },
+        true);
   }
-
-  // OpName must come first, since they may refer to other debug instructions.
-  // If they are after the instructions that refer to, then they will be killed
-  // when that instruction is killed, which will lead to a double kill.
-  std::sort(to_remove.begin(), to_remove.end(),
-            [](Instruction* lhs, Instruction* rhs) -> bool {
-              if (lhs->opcode() == SpvOpName && rhs->opcode() != SpvOpName)
-                return true;
-              return false;
-            });
 
   for (auto* inst : to_remove) {
     modified = true;
