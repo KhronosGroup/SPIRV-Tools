@@ -230,12 +230,13 @@ Optimizer::PassToken CreateNullPass();
 // Section 3.32.2 of the SPIR-V spec) of the SPIR-V module to be optimized.
 Optimizer::PassToken CreateStripDebugInfoPass();
 
-// Creates a strip-reflect-info pass.
-// A strip-reflect-info pass removes all reflections instructions.
-// For now, this is limited to removing decorations defined in
-// SPV_GOOGLE_hlsl_functionality1.  The coverage may expand in
-// the future.
+// [Deprecated] This will create a strip-nonsemantic-info pass.  See below.
 Optimizer::PassToken CreateStripReflectInfoPass();
+
+// Creates a strip-nonsemantic-info pass.
+// A strip-nonsemantic-info pass removes all reflections and explicitly
+// non-semantic instructions.
+Optimizer::PassToken CreateStripNonSemanticInfoPass();
 
 // Creates an eliminate-dead-functions pass.
 // An eliminate-dead-functions pass will remove all functions that are not in

@@ -479,10 +479,13 @@ Options (in lexicographical order):)",
   --strip-debug
                Remove all debug instructions.)");
   printf(R"(
+  --strip-nonsemantic
+               Remove all reflection and nonsemantic information.)");
+  printf(R"(
   --strip-reflect
-               Remove all reflection information.  For now, this covers
-               reflection information defined by SPV_GOOGLE_hlsl_functionality1
-               and SPV_KHR_non_semantic_info)");
+               DEPRECATED.  Remove all reflection information.  For now, this
+               covers reflection information defined by
+               SPV_GOOGLE_hlsl_functionality1 and SPV_KHR_non_semantic_info)");
   printf(R"(
   --target-env=<env>
                Set the target environment. Without this flag the target

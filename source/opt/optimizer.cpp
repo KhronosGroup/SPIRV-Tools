@@ -288,6 +288,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateStripDebugInfoPass());
   } else if (pass_name == "strip-reflect") {
     RegisterPass(CreateStripReflectInfoPass());
+  } else if (pass_name == "strip-nonsemantic") {
+    RegisterPass(CreateStripNonSemanticInfoPass());
   } else if (pass_name == "set-spec-const-default-value") {
     if (pass_args.size() > 0) {
       auto spec_ids_vals =
@@ -653,8 +655,12 @@ Optimizer::PassToken CreateStripDebugInfoPass() {
 }
 
 Optimizer::PassToken CreateStripReflectInfoPass() {
+  return CreateStripNonSemanticInfoPass();
+}
+
+Optimizer::PassToken CreateStripNonSemanticInfoPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::StripReflectInfoPass>());
+      MakeUnique<opt::StripNonSemanticInfoPass>());
 }
 
 Optimizer::PassToken CreateEliminateDeadFunctionsPass() {

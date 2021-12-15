@@ -111,7 +111,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   ssa_rewrite_pass.h
   strength_reduction_pass.h
   strip_debug_info_pass.h
-  strip_reflect_info_pass.h
+  strip_nonsemantic_info_pass.h
   struct_cfg_analysis.h
   tree_iterator.h
   type_manager.h
@@ -218,7 +218,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   ssa_rewrite_pass.cpp
   strength_reduction_pass.cpp
   strip_debug_info_pass.cpp
-  strip_reflect_info_pass.cpp
+  strip_nonsemantic_info_pass.cpp
   struct_cfg_analysis.cpp
   type_manager.cpp
   types.cpp
