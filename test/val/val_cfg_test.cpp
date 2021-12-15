@@ -4579,6 +4579,51 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
 }
 
+TEST_F(ValidateCFG, BranchConditionalDifferentTargetsPre1p6) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpBranchConditional %undef %target %target
+%target = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_5);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
+}
+
+TEST_F(ValidateCFG, BranchConditionalDifferentTargetsPost1p6) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpBranchConditional %undef %target %target
+%target = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("In SPIR-V 1.6 or later, True Label and False Label "
+                        "must be different labels"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

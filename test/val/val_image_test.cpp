@@ -6099,6 +6099,24 @@ OpFunctionEnd
                         "execution mode for GLCompute execution model"));
 }
 
+TEST_F(ValidateImage, TypeSampledImageNotBufferPost1p6) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability SampledBuffer
+OpMemoryModel Logical GLSL450
+%float = OpTypeFloat 32
+%image = OpTypeImage %float Buffer 0 0 0 1 Unknown
+%sampled = OpTypeSampledImage %image
+)";
+
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("In SPIR-V 1.6 or later, sampled image dimension must "
+                        "not be Buffer"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
