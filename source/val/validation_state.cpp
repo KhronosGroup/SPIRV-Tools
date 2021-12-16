@@ -153,7 +153,6 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       module_extensions_(),
       ordered_instructions_(),
       all_definitions_(),
-      interface_vars_(),
       global_vars_(),
       local_vars_(),
       struct_nesting_depth_(),
@@ -400,6 +399,15 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
       features_.variable_pointers_storage_buffer = true;
       break;
     default:
+      // TODO(dneto): For now don't validate SPV_NV_ray_tracing, which uses
+      // capability SpvCapabilityRayTracingNV.
+      // SpvCapabilityRayTracingProvisionalKHR would need the same treatment.
+      // One of the differences going from SPV_KHR_ray_tracing from
+      // provisional to final spec was the provisional spec uses Locations
+      // for variables in certain storage classes, just like the
+      // SPV_NV_ray_tracing extension.  So it mimics the NVIDIA extension.
+      // The final SPV_KHR_ray_tracing uses a different capability token
+      // number, so it doesn't fall into this case.
       break;
   }
 }

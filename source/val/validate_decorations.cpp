@@ -1623,41 +1623,16 @@ spv_result_t CheckBlockDecoration(ValidationState_t& vstate,
 spv_result_t CheckLocationDecoration(ValidationState_t& vstate,
                                      const Instruction& inst,
                                      const Decoration& decoration) {
-  if (inst.opcode() != SpvOpVariable &&
-      (inst.opcode() != SpvOpTypeStruct ||
-       decoration.struct_member_index() == Decoration::kInvalidMember)) {
-    return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-           << "Location decoration can only be applied to a variable or member "
-              "of a structure type";
+  if (inst.opcode() == SpvOpVariable) return SPV_SUCCESS;
+
+  if (decoration.struct_member_index() != Decoration::kInvalidMember &&
+      inst.opcode() == SpvOpTypeStruct) {
+    return SPV_SUCCESS;
   }
 
-  if (spvIsVulkanEnv(vstate.context()->target_env)) {
-    bool found = false;
-    for (auto interface_var_id : vstate.interface_vars()) {
-      uint32_t var_struct_id = 0;
-      // for struct member need to see if interface variable is pointing to
-      // struct
-      if (inst.opcode() == SpvOpTypeStruct) {
-        auto var = vstate.FindDef(interface_var_id);
-        auto var_ptr = vstate.FindDef(var->GetOperandAs<uint32_t>(0));
-        var_struct_id =
-            vstate.FindDef(var_ptr->GetOperandAs<uint32_t>(2))->id();
-      }
-
-      if ((var_struct_id == inst.id() || interface_var_id == inst.id())) {
-        found = true;
-        break;
-      }
-    }
-
-    if (!found) {
-      return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-             << vstate.VkErrorID(4916)
-             << "Location decorations must be used on user-defined variables.";
-    }
-  }
-
-  return SPV_SUCCESS;
+  return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+         << "Location decoration can only be applied to a variable or member "
+            "of a structure type";
 }
 
 #define PASS_OR_BAIL_AT_LINE(X, LINE)           \

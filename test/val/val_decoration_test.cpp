@@ -602,7 +602,67 @@ OpFunctionEnd
                         "Component decorations"));
 }
 
-TEST_F(ValidateDecorations, LocationDecorationNonInterfaceVariableVulkan) {
+TEST_F(ValidateDecorations, LocationDecorationOnNumericTypeBad) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %fragCoord
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %fragCoord Location 0
+               OpDecorate %v4float Location 1
+       %void = OpTypeVoid
+      %voidfn = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%ptr_v4float = OpTypePointer Output %v4float
+  %fragCoord = OpVariable %ptr_v4float Output
+%non_interface = OpVariable %ptr_v4float Output
+       %main = OpFunction %void None %voidfn
+      %label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Location decoration on target <id> '3[%v4float]' must "
+                        "be a variable"));
+}
+
+TEST_F(ValidateDecorations, LocationDecorationOnStructBad) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %fragCoord
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %fragCoord Location 0
+               OpDecorate %struct Location 1
+       %void = OpTypeVoid
+      %voidfn = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %struct = OpTypeStruct %float
+    %v4float = OpTypeVector %float 4
+%ptr_v4float = OpTypePointer Output %v4float
+  %fragCoord = OpVariable %ptr_v4float Output
+%non_interface = OpVariable %ptr_v4float Output
+       %main = OpFunction %void None %voidfn
+      %label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Location decoration on target <id> '3[%_struct_3]' "
+                        "must be a variable"));
+}
+
+TEST_F(ValidateDecorations,
+       LocationDecorationUnusedNonInterfaceVariableVulkan_Ignored) {
   const spv_target_env env = SPV_ENV_VULKAN_1_0;
   std::string spirv = R"(
                OpCapability Shader
@@ -626,16 +686,12 @@ TEST_F(ValidateDecorations, LocationDecorationNonInterfaceVariableVulkan) {
 )";
 
   CompileSuccessfully(spirv, env);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
-  EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-Location-04916"));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Location decorations must be used on user-defined variables."));
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(env));
+  EXPECT_EQ(getDiagnosticString(), "");
 }
 
-TEST_F(ValidateDecorations, LocationDecorationNonInterfaceStructVulkanBad) {
+TEST_F(ValidateDecorations,
+       LocationDecorationNonInterfaceStructVulkan_Ignored) {
   const spv_target_env env = SPV_ENV_VULKAN_1_0;
   std::string spirv = R"(
               OpCapability Shader
@@ -662,13 +718,8 @@ TEST_F(ValidateDecorations, LocationDecorationNonInterfaceStructVulkanBad) {
 )";
 
   CompileSuccessfully(spirv, env);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
-  EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-Location-04916"));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Location decorations must be used on user-defined variables."));
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(env));
+  EXPECT_EQ(getDiagnosticString(), "");
 }
 
 TEST_F(ValidateDecorations, LocationDecorationNonInterfaceStructVulkanGood) {
@@ -690,7 +741,7 @@ TEST_F(ValidateDecorations, LocationDecorationNonInterfaceStructVulkanGood) {
  %fragCoord = OpVariable %outvar_ptr Output
      %block = OpTypeStruct %vec3
  %invar_ptr = OpTypePointer Input %block
- %interface = OpVariable %invar_ptr Input
+ %interface = OpVariable %invar_ptr Input ;; this variable is unused. Ignore it
       %main = OpFunction %void None %voidfn
      %label = OpLabel
               OpReturn
@@ -701,7 +752,37 @@ TEST_F(ValidateDecorations, LocationDecorationNonInterfaceStructVulkanGood) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(env));
 }
 
-TEST_F(ValidateDecorations, LocationDecorationVariableNoBlockVulkanBad) {
+TEST_F(ValidateDecorations, LocationDecorationVariableNonStructVulkanBad) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %fragCoord %nonblock_var
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+               OpDecorate %fragCoord Location 0
+       %void = OpTypeVoid
+      %voidfn = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%ptr_v4float = OpTypePointer Output %v4float
+  %fragCoord = OpVariable %ptr_v4float Output
+%nonblock_var = OpVariable %ptr_v4float Output
+       %main = OpFunction %void None %voidfn
+       %label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateAndRetrieveValidationState(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Location-04916"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variable must be decorated with a location"));
+}
+
+TEST_F(ValidateDecorations, LocationDecorationVariableStructNoBlockVulkanBad) {
   const spv_target_env env = SPV_ENV_VULKAN_1_0;
   std::string spirv = R"(
                OpCapability Shader
