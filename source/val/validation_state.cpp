@@ -399,6 +399,15 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
       features_.variable_pointers_storage_buffer = true;
       break;
     default:
+      // TODO(dneto): For now don't validate SPV_NV_ray_tracing, which uses
+      // capability SpvCapabilityRayTracingNV.
+      // SpvCapabilityRayTracingProvisionalKHR would need the same treatment.
+      // One of the differences going from SPV_KHR_ray_tracing from
+      // provisional to final spec was the provisional spec uses Locations
+      // for variables in certain storage classes, just like the
+      // SPV_NV_ray_tracing extension.  So it mimics the NVIDIA extension.
+      // The final SPV_KHR_ray_tracing uses a different capability token
+      // number, so it doesn't fall into this case.
       break;
   }
 }
@@ -1875,6 +1884,16 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpMemoryBarrier-04733);
     case 4780:
       return VUID_WRAP(VUID-StandaloneSpirv-Result-04780);
+    case 4915:
+      return VUID_WRAP(VUID-StandaloneSpirv-Location-04915);
+    case 4916:
+      return VUID_WRAP(VUID-StandaloneSpirv-Location-04916);
+    case 4917:
+      return VUID_WRAP(VUID-StandaloneSpirv-Location-04917);
+    case 4918:
+      return VUID_WRAP(VUID-StandaloneSpirv-Location-04918);
+    case 4919:
+      return VUID_WRAP(VUID-StandaloneSpirv-Location-04919);
     default:
       return "";  // unknown id
   }

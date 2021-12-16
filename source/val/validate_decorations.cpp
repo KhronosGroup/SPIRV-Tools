@@ -704,7 +704,7 @@ spv_result_t CheckBuiltInVariable(uint32_t var_id, ValidationState_t& vstate) {
       if (d.dec_type() == SpvDecorationLocation ||
           d.dec_type() == SpvDecorationComponent) {
         return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
-               << "A BuiltIn variable (id " << var_id
+               << vstate.VkErrorID(4915) << "A BuiltIn variable (id " << var_id
                << ") cannot have any Location or Component decorations";
       }
     }
