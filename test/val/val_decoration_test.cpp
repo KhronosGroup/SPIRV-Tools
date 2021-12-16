@@ -226,6 +226,7 @@ TEST_F(ValidateDecorations, StructAllMembersHaveBuiltInDecorationsGood) {
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
+               OpDecorate %_struct_1 Block
                OpMemberDecorate %_struct_1 0 BuiltIn Position
                OpMemberDecorate %_struct_1 1 BuiltIn Position
                OpMemberDecorate %_struct_1 2 BuiltIn Position
@@ -243,6 +244,7 @@ TEST_F(ValidateDecorations, MixedBuiltInDecorationsBad) {
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
+               OpDecorate %_struct_1 Block
                OpMemberDecorate %_struct_1 0 BuiltIn Position
                OpMemberDecorate %_struct_1 1 BuiltIn Position
       %float = OpTypeFloat 32
@@ -265,6 +267,7 @@ TEST_F(ValidateDecorations, StructContainsBuiltInStructBad) {
                OpCapability Shader
                OpCapability Linkage
                OpMemoryModel Logical GLSL450
+               OpDecorate %_struct_1 Block
                OpMemberDecorate %_struct_1 0 BuiltIn Position
                OpMemberDecorate %_struct_1 1 BuiltIn Position
                OpMemberDecorate %_struct_1 2 BuiltIn Position
@@ -305,6 +308,8 @@ TEST_F(ValidateDecorations, MultipleBuiltInObjectsConsumedByOpEntryPointBad) {
                OpEntryPoint Geometry %main "main" %in_1 %in_2
                OpExecutionMode %main InputPoints
                OpExecutionMode %main OutputPoints
+               OpDecorate %struct_1 Block
+               OpDecorate %struct_2 Block
                OpMemberDecorate %struct_1 0 BuiltIn InvocationId
                OpMemberDecorate %struct_2 0 BuiltIn Position
       %int = OpTypeInt 32 1
@@ -339,6 +344,8 @@ TEST_F(ValidateDecorations,
                OpEntryPoint Geometry %main "main" %in_1 %out_1
                OpExecutionMode %main InputPoints
                OpExecutionMode %main OutputPoints
+               OpDecorate %struct_1 Block
+               OpDecorate %struct_2 Block
                OpMemberDecorate %struct_1 0 BuiltIn InvocationId
                OpMemberDecorate %struct_2 0 BuiltIn Position
       %int = OpTypeInt 32 1
