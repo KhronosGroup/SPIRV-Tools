@@ -835,6 +835,17 @@ Optimizer::PassToken CreateFixStorageClassPass();
 //   inclusive.
 Optimizer::PassToken CreateGraphicsRobustAccessPass();
 
+// Create a pass to spread Volatile semantics to variables with SMIDNV,
+// WarpIDNV, SubgroupSize, SubgroupLocalInvocationId, SubgroupEqMask,
+// SubgroupGeMask, SubgroupGtMask, SubgroupLeMask, or SubgroupLtMask BuiltIn
+// decorations or OpLoad for them when the shader model is the ray generation,
+// closest hit, miss, intersection, or callable. This pass can be used for
+// VUID-StandaloneSpirv-VulkanMemoryModel-04678 and
+// VUID-StandaloneSpirv-VulkanMemoryModel-04679 (See "Standalone SPIR-V
+// Validation" section of Vulkan spec "Appendix A: Vulkan Environment for
+// SPIR-V").
+Optimizer::PassToken CreateSpreadVolatileSemanticsPass();
+
 // Create a pass to replace a descriptor access using variable index.
 // This pass replaces every access using a variable index to array variable
 // |desc| that has a DescriptorSet and Binding decorations with a constant
