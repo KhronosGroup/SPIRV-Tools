@@ -248,6 +248,11 @@ class IRContext {
     return def_use_mgr_.get();
   }
 
+  // Returns the execution model that is used by every entry point in the
+  // module. If more than one execution model is used in the module, then the
+  // return value is SpvExecutionModelMax.
+  SpvExecutionModel GetExecutionModel();
+
   // Returns a pointer to a value number table.  If the liveness analysis is
   // invalid, it is rebuilt first.
   ValueNumberTable* GetValueNumberTable() {

@@ -27,7 +27,7 @@ Pass::Status ReplaceInvalidOpcodePass::Process() {
     return Status::SuccessWithoutChange;
   }
 
-  SpvExecutionModel execution_model = GetExecutionModel();
+  SpvExecutionModel execution_model = context()->GetExecutionModel();
   if (execution_model == SpvExecutionModelKernel) {
     // We do not handle kernels.
     return Status::SuccessWithoutChange;
@@ -42,26 +42,6 @@ Pass::Status ReplaceInvalidOpcodePass::Process() {
     modified |= RewriteFunction(&func, execution_model);
   }
   return (modified ? Status::SuccessWithChange : Status::SuccessWithoutChange);
-}
-
-SpvExecutionModel ReplaceInvalidOpcodePass::GetExecutionModel() {
-  SpvExecutionModel result = SpvExecutionModelMax;
-  bool first = true;
-  for (Instruction& entry_point : get_module()->entry_points()) {
-    if (first) {
-      result =
-          static_cast<SpvExecutionModel>(entry_point.GetSingleWordInOperand(0));
-      first = false;
-    } else {
-      SpvExecutionModel current_model =
-          static_cast<SpvExecutionModel>(entry_point.GetSingleWordInOperand(0));
-      if (current_model != result) {
-        result = SpvExecutionModelMax;
-        break;
-      }
-    }
-  }
-  return result;
 }
 
 bool ReplaceInvalidOpcodePass::RewriteFunction(Function* function,

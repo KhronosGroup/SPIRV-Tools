@@ -32,11 +32,6 @@ class ReplaceInvalidOpcodePass : public Pass {
   Status Process() override;
 
  private:
-  // Returns the execution model that is used by every entry point in the
-  // module. If more than one execution model is used in the module, then the
-  // return value is SpvExecutionModelMax.
-  SpvExecutionModel GetExecutionModel();
-
   // Replaces all instructions in |function| that are invalid with execution
   // model |mode|, but valid for another shader model, with a special constant
   // value.  See |GetSpecialConstant|.
