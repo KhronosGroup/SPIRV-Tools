@@ -66,8 +66,8 @@ OpDecorate %images NonWritable
 ; CHECK: OpDecorate [[var:%\w+]] BuiltIn )") +
                            built_in + std::string(R"(
 ; CHECK: OpDecorate [[var]] Volatile
-OpDecorate %var BuiltIn )") +
-                           built_in + std::string(R"(
+OpDecorate %var BuiltIn )") + built_in +
+                           std::string(R"(
 %void = OpTypeVoid
 %3 = OpTypeFunction %void
 %uint = OpTypeInt 32 0
@@ -158,8 +158,8 @@ OpDecorate %images NonWritable
 ; CHECK: OpDecorate [[var:%\w+]] BuiltIn )") +
                            built_in + std::string(R"(
 ; CHECK: OpLoad {{%\w+}} [[var]] Volatile
-OpDecorate %var BuiltIn )") +
-                           built_in + std::string(R"(
+OpDecorate %var BuiltIn )") + built_in +
+                           std::string(R"(
 %void = OpTypeVoid
 %3 = OpTypeFunction %void
 %uint = OpTypeInt 32 0
