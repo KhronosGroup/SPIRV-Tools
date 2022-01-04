@@ -27,7 +27,7 @@ namespace fuzzers {
 // Helper function capturing the common logic for the various optimizer fuzzers.
 int OptFuzzerTestOneInput(
     const uint8_t* data, size_t size,
-    std::function<void(spvtools::Optimizer&)> register_passes);
+    const std::function<void(spvtools::Optimizer&)>& register_passes);
 
 }  // namespace fuzzers
 }  // namespace spvtools

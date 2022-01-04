@@ -22,7 +22,7 @@ namespace fuzzers {
 
 int OptFuzzerTestOneInput(
     const uint8_t* data, size_t size,
-    std::function<void(spvtools::Optimizer&)> register_passes) {
+    const std::function<void(spvtools::Optimizer&)>& register_passes) {
   if (size < 1) {
     return 0;
   }
@@ -60,17 +60,9 @@ int OptFuzzerTestOneInput(
     // It was not possible to build a valid module; that's OK - skip this input.
     return 0;
   }
-  bool found_excessively_large_id = false;
-  ir_context->module()->ForEachInst(
-      [&found_excessively_large_id](spvtools::opt::Instruction* inst) -> void {
-        if (inst->result_id() && inst->result_id() > kInitialIdLimit) {
-          found_excessively_large_id = true;
-        }
-      },
-      true);
-  if (found_excessively_large_id) {
-    // The input contains a very large id. The input is thus abandoned, to avoid
-    // the possibility of ending up hitting the id bound limit.
+  if (ir_context->module()->id_bound() >= kInitialIdLimit) {
+    // The input already has a very large id bound. The input is thus abandoned,
+    // to avoid the possibility of ending up hitting the id bound limit.
     return 0;
   }
 
