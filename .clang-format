@@ -1,6 +1,1 @@
----
-Language: Cpp
-BasedOnStyle: Google
-DerivePointerAlignment: false
-SortIncludes: true
-...
+/usr/local/google/home/stevenperron/spirv/SPIRV-Tools/.clang-format
