@@ -35,7 +35,7 @@ Pass::Status PassManager::Run(IRContext* context) {
     if (print_all_stream_) {
       std::vector<uint32_t> binary;
       context->module()->ToBinary(&binary, false);
-      SpirvTools t(SPV_ENV_UNIVERSAL_1_2);
+      SpirvTools t(target_env_);
       t.SetMessageConsumer(consumer());
       std::string disassembly;
       std::string pass_name = (pass ? pass->name() : "");
