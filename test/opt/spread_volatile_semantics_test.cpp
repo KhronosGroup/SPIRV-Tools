@@ -215,6 +215,37 @@ INSTANTIATE_TEST_SUITE_P(
         {"RayGenerationKHR", "SubgroupLeMask"},
     }));
 
+using VolatileForHelperInvocationTest = PassTest<::testing::Test>;
+
+TEST_F(VolatileForHelperInvocationTest, SpreadVolatileForHelperInvocation) {
+  const std::string text =
+      R"(
+OpCapability Shader
+OpCapability DemoteToHelperInvocation
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %var
+OpExecutionMode %main OriginUpperLeft
+
+; CHECK: OpDecorate [[var:%\w+]] BuiltIn HelperInvocation
+; CHECK: OpDecorate [[var]] Volatile
+OpDecorate %var BuiltIn HelperInvocation
+
+%bool = OpTypeBool
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%_ptr_Input_bool = OpTypePointer Input %bool
+%var = OpVariable %_ptr_Input_bool Input
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpDemoteToHelperInvocation
+OpReturn
+OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_6);
+  SinglePassRunAndMatch<SpreadVolatileSemantics>(text, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
