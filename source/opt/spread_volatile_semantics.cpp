@@ -16,6 +16,7 @@
 
 #include "source/opt/decoration_manager.h"
 #include "source/opt/ir_builder.h"
+#include "source/spirv_constant.h"
 
 namespace spvtools {
 namespace opt {
@@ -24,7 +25,17 @@ namespace {
 const uint32_t kOpDecorateInOperandBuiltinDecoration = 2u;
 const uint32_t kOpLoadInOperandMemoryOperands = 1u;
 
-bool IsBuiltInForVolatileSemantics(uint32_t built_in) {
+bool HasBuiltinDecoration(analysis::DecorationManager* decoration_manager,
+                          Instruction* var, uint32_t built_in) {
+  return decoration_manager->FindDecoration(
+      var->result_id(), SpvDecorationBuiltIn,
+      [built_in](const Instruction& inst) {
+        return built_in == inst.GetSingleWordInOperand(
+                               kOpDecorateInOperandBuiltinDecoration);
+      });
+}
+
+bool IsBuiltInForRayTracingVolatileSemantics(uint32_t built_in) {
   switch (built_in) {
     case SpvBuiltInSMIDNV:
     case SpvBuiltInWarpIDNV:
@@ -39,6 +50,16 @@ bool IsBuiltInForVolatileSemantics(uint32_t built_in) {
     default:
       return false;
   }
+}
+
+bool HasBuiltinForRayTracingVolatileSemantics(
+    analysis::DecorationManager* decoration_manager, Instruction* var) {
+  return decoration_manager->FindDecoration(
+      var->result_id(), SpvDecorationBuiltIn, [](const Instruction& inst) {
+        uint32_t built_in =
+            inst.GetSingleWordInOperand(kOpDecorateInOperandBuiltinDecoration);
+        return IsBuiltInForRayTracingVolatileSemantics(built_in);
+      });
 }
 
 bool HasVolatileDecoration(analysis::DecorationManager* decoration_manager,
@@ -81,16 +102,15 @@ void SpreadVolatileSemantics::DecorateVarWithVolatile(Instruction* var) {
 }
 
 void SpreadVolatileSemantics::SetVolatileForLoads(Instruction* var) {
-  std::vector<Instruction*> updated_insts;
   auto* def_use_mgr = context()->get_def_use_mgr();
-  def_use_mgr->ForEachUser(var, [&updated_insts](Instruction* user) {
+  def_use_mgr->ForEachUser(var, [](Instruction* user) {
     if (user->opcode() != SpvOpLoad) {
       return;
     }
 
-    updated_insts.push_back(user);
     if (user->NumInOperands() <= kOpLoadInOperandMemoryOperands) {
-      user->AddOperand({SPV_OPERAND_TYPE_ID, {SpvMemoryAccessVolatileMask}});
+      user->AddOperand(
+          {SPV_OPERAND_TYPE_MEMORY_ACCESS, {SpvMemoryAccessVolatileMask}});
       return;
     }
 
@@ -99,25 +119,21 @@ void SpreadVolatileSemantics::SetVolatileForLoads(Instruction* var) {
     memory_operands |= SpvMemoryAccessVolatileMask;
     user->SetInOperand(kOpLoadInOperandMemoryOperands, {memory_operands});
   });
-
-  for (auto* inst : updated_insts) {
-    def_use_mgr->AnalyzeInstUse(inst);
-  }
 }
 
 bool SpreadVolatileSemantics::IsTargetForVolatileSemantics(Instruction* var) {
   analysis::DecorationManager* decoration_manager =
       context()->get_decoration_mgr();
   auto execution_model = context()->GetExecutionModel();
+  if (execution_model == SpvExecutionModelFragment) {
+    return get_module()->version() >= SPV_SPIRV_VERSION_WORD(1, 6) &&
+           HasBuiltinDecoration(decoration_manager, var,
+                                SpvBuiltInHelperInvocation);
+  }
+
   if (execution_model == SpvExecutionModelIntersectionKHR ||
       execution_model == SpvExecutionModelIntersectionNV) {
-    if (decoration_manager->FindDecoration(
-            var->result_id(), SpvDecorationBuiltIn,
-            [](const Instruction& inst) {
-              uint32_t built_in = inst.GetSingleWordInOperand(
-                  kOpDecorateInOperandBuiltinDecoration);
-              return built_in == SpvBuiltInRayTmaxKHR;
-            })) {
+    if (HasBuiltinDecoration(decoration_manager, var, SpvBuiltInRayTmaxKHR)) {
       return true;
     }
   }
@@ -128,12 +144,7 @@ bool SpreadVolatileSemantics::IsTargetForVolatileSemantics(Instruction* var) {
     case SpvExecutionModelMissKHR:
     case SpvExecutionModelCallableKHR:
     case SpvExecutionModelIntersectionKHR:
-      return decoration_manager->FindDecoration(
-          var->result_id(), SpvDecorationBuiltIn, [](const Instruction& inst) {
-            uint32_t built_in = inst.GetSingleWordInOperand(
-                kOpDecorateInOperandBuiltinDecoration);
-            return IsBuiltInForVolatileSemantics(built_in);
-          });
+      return HasBuiltinForRayTracingVolatileSemantics(decoration_manager, var);
     default:
       return false;
   }
