@@ -843,7 +843,9 @@ Optimizer::PassToken CreateGraphicsRobustAccessPass();
 // VUID-StandaloneSpirv-VulkanMemoryModel-04678 and
 // VUID-StandaloneSpirv-VulkanMemoryModel-04679 (See "Standalone SPIR-V
 // Validation" section of Vulkan spec "Appendix A: Vulkan Environment for
-// SPIR-V").
+// SPIR-V"). When the SPIR-V version is 1.6 or above, the pass also spreads
+// the Volatile semantics to a variable with HelperInvocation BuiltIn decoration
+// in the fragement shader.
 Optimizer::PassToken CreateSpreadVolatileSemanticsPass();
 
 // Create a pass to replace a descriptor access using variable index.
