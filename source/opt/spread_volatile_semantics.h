@@ -34,11 +34,14 @@ class SpreadVolatileSemantics : public Pass {
   }
 
  private:
-  // Returns whether |var| is a target builtin variable for the volatile
-  // semantics based on the Vulkan spec
+  // Returns whether |var_id| is the result id of a target builtin variable for
+  // the volatile semantics based on the Vulkan spec
   // VUID-StandaloneSpirv-VulkanMemoryModel-04678 or
   // VUID-StandaloneSpirv-VulkanMemoryModel-04679.
-  bool IsTargetForVolatileSemantics(Instruction* var);
+  bool IsTargetForVolatileSemantics(uint32_t var_id);
+
+  // Collects interface variables that needs the volatile semantics.
+  void CollectTargetsForVolatileSemantics();
 
   // Sets Memory Operands of OpLoad instructions that load |var| as
   // Volatile.
@@ -46,6 +49,22 @@ class SpreadVolatileSemantics : public Pass {
 
   // Adds OpDecorate Volatile for |var| if it does not exist.
   void DecorateVarWithVolatile(Instruction* var);
+
+  // Returns whether we have to spread the volatile semantics for the
+  // variable with the result id |var_id| or not.
+  bool ShouldSpreadVolatileSemantics(uint32_t var_id) {
+    return var_ids_for_volatile_semantics_.find(var_id) !=
+           var_ids_for_volatile_semantics_.end();
+  }
+
+  // Specifies that we have to spread the volatile semantics for the
+  // variable with the result id |var_id|.
+  void MarkVolatileSemanticsForVariable(uint32_t var_id) {
+    var_ids_for_volatile_semantics_.insert(var_id);
+  }
+
+  // Result ids of variables to spread the volatile semantics.
+  std::unordered_set<uint32_t> var_ids_for_volatile_semantics_;
 };
 
 }  // namespace opt

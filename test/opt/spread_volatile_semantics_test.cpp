@@ -44,7 +44,7 @@ OpExtension "SPV_KHR_shader_ballot"
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
 OpEntryPoint )") + execution_model +
-                           std::string(R"( %main "main"
+                           std::string(R"( %main "main" %var
 OpSource GLSL 460
 OpSourceExtension "GL_EXT_nonuniform_qualifier"
 OpSourceExtension "GL_KHR_ray_tracing"
