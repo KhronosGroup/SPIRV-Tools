@@ -35,13 +35,17 @@ class SpreadVolatileSemantics : public Pass {
 
  private:
   // Returns whether |var_id| is the result id of a target builtin variable for
-  // the volatile semantics based on the Vulkan spec
+  // the volatile semantics for |execution_model| based on the Vulkan spec
   // VUID-StandaloneSpirv-VulkanMemoryModel-04678 or
   // VUID-StandaloneSpirv-VulkanMemoryModel-04679.
-  bool IsTargetForVolatileSemantics(uint32_t var_id);
+  bool IsTargetForVolatileSemantics(uint32_t var_id,
+                                    SpvExecutionModel execution_model);
 
-  // Collects interface variables that needs the volatile semantics.
-  void CollectTargetsForVolatileSemantics();
+  // Collects interface variables that needs the volatile semantics. If an
+  // interface variable is used by two entry points and it is a target for
+  // one entry point but not for another one, reports an error and returns
+  // false. Otherwise, returns true.
+  bool CollectTargetsForVolatileSemantics();
 
   // Sets Memory Operands of OpLoad instructions that load |var| as
   // Volatile.
@@ -52,7 +56,7 @@ class SpreadVolatileSemantics : public Pass {
 
   // Returns whether we have to spread the volatile semantics for the
   // variable with the result id |var_id| or not.
-  bool ShouldSpreadVolatileSemantics(uint32_t var_id) {
+  bool ShouldSpreadVolatileSemanticsForVariable(uint32_t var_id) {
     return var_ids_for_volatile_semantics_.find(var_id) !=
            var_ids_for_volatile_semantics_.end();
   }

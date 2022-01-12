@@ -70,14 +70,14 @@ bool HasVolatileDecoration(analysis::DecorationManager* decoration_manager,
 }  // namespace
 
 Pass::Status SpreadVolatileSemantics::Process() {
-  CollectTargetsForVolatileSemantics();
+  if (!CollectTargetsForVolatileSemantics()) return Status::Failure;
 
   Status status = Status::SuccessWithoutChange;
   const bool is_vk_memory_model_enabled =
       context()->get_feature_mgr()->HasCapability(
           SpvCapabilityVulkanMemoryModel);
   for (Instruction& var : context()->types_values()) {
-    if (!ShouldSpreadVolatileSemantics(var.result_id())) {
+    if (!ShouldSpreadVolatileSemanticsForVariable(var.result_id())) {
       continue;
     }
 
@@ -91,17 +91,30 @@ Pass::Status SpreadVolatileSemantics::Process() {
   return status;
 }
 
-void SpreadVolatileSemantics::CollectTargetsForVolatileSemantics() {
-  for (auto& e : get_module()->entry_points()) {
+bool SpreadVolatileSemantics::CollectTargetsForVolatileSemantics() {
+  for (Instruction& entry_point : get_module()->entry_points()) {
+    SpvExecutionModel execution_model =
+        static_cast<SpvExecutionModel>(entry_point.GetSingleWordInOperand(0));
     for (uint32_t operand_index = kOpEntryPointInOperandInterface;
-         operand_index < e.NumInOperands(); ++operand_index) {
-      uint32_t var_id = e.GetSingleWordInOperand(operand_index);
-      if (ShouldSpreadVolatileSemantics(var_id)) continue;
-      if (IsTargetForVolatileSemantics(var_id)) {
+         operand_index < entry_point.NumInOperands(); ++operand_index) {
+      uint32_t var_id = entry_point.GetSingleWordInOperand(operand_index);
+      bool isTargetForVolatileSemantics =
+          IsTargetForVolatileSemantics(var_id, execution_model);
+      if (isTargetForVolatileSemantics) {
         MarkVolatileSemanticsForVariable(var_id);
+        continue;
+      }
+      if (ShouldSpreadVolatileSemanticsForVariable(var_id)) {
+        Instruction* inst = context()->get_def_use_mgr()->GetDef(var_id);
+        context()->EmitErrorMessage(
+            "Variable is a target for Volatile semantics for an entry point, "
+            "but it is not for another entry point",
+            inst);
+        return false;
       }
     }
   }
+  return true;
 }
 
 void SpreadVolatileSemantics::DecorateVarWithVolatile(Instruction* var) {
@@ -137,10 +150,10 @@ void SpreadVolatileSemantics::SetVolatileForLoads(Instruction* var) {
   });
 }
 
-bool SpreadVolatileSemantics::IsTargetForVolatileSemantics(uint32_t var_id) {
+bool SpreadVolatileSemantics::IsTargetForVolatileSemantics(
+    uint32_t var_id, SpvExecutionModel execution_model) {
   analysis::DecorationManager* decoration_manager =
       context()->get_decoration_mgr();
-  auto execution_model = context()->GetExecutionModel();
   if (execution_model == SpvExecutionModelFragment) {
     return get_module()->version() >= SPV_SPIRV_VERSION_WORD(1, 6) &&
            HasBuiltinDecoration(decoration_manager, var_id,
