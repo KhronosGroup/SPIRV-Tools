@@ -25,6 +25,7 @@ namespace {
 struct ExecutionModelAndBuiltIn {
   const char* execution_model;
   const char* built_in;
+  const bool use_v4uint;
 };
 
 using AddVolatileDecorationTest =
@@ -34,6 +35,8 @@ TEST_P(AddVolatileDecorationTest, InMain) {
   const auto& tc = GetParam();
   const std::string execution_model(tc.execution_model);
   const std::string built_in(tc.built_in);
+  const std::string var_type =
+      tc.use_v4uint ? "%_ptr_Input_v4uint" : "%_ptr_Input_uint";
 
   const std::string text = std::string(R"(OpCapability RuntimeDescriptorArray
 OpCapability RayTracingKHR
@@ -82,7 +85,10 @@ OpDecorate %var BuiltIn )") + built_in +
 %_ptr_UniformConstant__runtimearr_13 = OpTypePointer UniformConstant %_runtimearr_13
 %images = OpVariable %_ptr_UniformConstant__runtimearr_13 UniformConstant
 %_ptr_Input_uint = OpTypePointer Input %uint
-%var = OpVariable %_ptr_Input_uint Input
+%v4uint = OpTypeVector %uint 4
+%_ptr_Input_v4uint = OpTypePointer Input %v4uint
+%var = OpVariable )") + var_type +
+                           std::string(R"( Input
 %int_0 = OpConstant %int 0
 %_ptr_Uniform_uint = OpTypePointer Uniform %uint
 %_ptr_UniformConstant_13 = OpTypePointer UniformConstant %13
@@ -111,14 +117,14 @@ OpFunctionEnd
 INSTANTIATE_TEST_SUITE_P(
     AddVolatileDecoration, AddVolatileDecorationTest,
     ::testing::ValuesIn(std::vector<ExecutionModelAndBuiltIn>{
-        {"RayGenerationKHR", "SubgroupSize"},
-        {"RayGenerationKHR", "SubgroupLocalInvocationId"},
-        {"RayGenerationKHR", "SubgroupEqMask"},
-        {"ClosestHitKHR", "SubgroupLocalInvocationId"},
-        {"IntersectionKHR", "SubgroupEqMask"},
-        {"MissKHR", "SubgroupGeMask"},
-        {"CallableKHR", "SubgroupGtMask"},
-        {"RayGenerationKHR", "SubgroupLeMask"},
+        {"RayGenerationKHR", "SubgroupSize", false},
+        {"RayGenerationKHR", "SubgroupLocalInvocationId", false},
+        {"RayGenerationKHR", "SubgroupEqMask", true},
+        {"ClosestHitKHR", "SubgroupLocalInvocationId", true},
+        {"IntersectionKHR", "SubgroupEqMask", true},
+        {"MissKHR", "SubgroupGeMask", true},
+        {"CallableKHR", "SubgroupGtMask", true},
+        {"RayGenerationKHR", "SubgroupLeMask", true},
     }));
 
 using SetLoadVolatileTest =
@@ -128,6 +134,17 @@ TEST_P(SetLoadVolatileTest, InMain) {
   const auto& tc = GetParam();
   const std::string execution_model(tc.execution_model);
   const std::string built_in(tc.built_in);
+
+  const std::string var_type =
+      tc.use_v4uint ? "%_ptr_Input_v4uint" : "%_ptr_Input_uint";
+  const std::string var_value = tc.use_v4uint ? std::string(R"(
+; CHECK: [[ptr:%\w+]] = OpAccessChain %_ptr_Input_uint [[var]] %int_0
+; CHECK: OpLoad {{%\w+}} [[ptr]] Volatile
+%ptr = OpAccessChain %_ptr_Input_uint %var %int_0
+%var_value = OpLoad %uint %ptr)")
+                                              : std::string(R"(
+; CHECK: OpLoad {{%\w+}} [[var]] Volatile
+%var_value = OpLoad %uint %var)");
 
   const std::string text = std::string(R"(OpCapability RuntimeDescriptorArray
 OpCapability RayTracingKHR
@@ -157,7 +174,6 @@ OpDecorate %images NonWritable
 )") + std::string(R"(
 ; CHECK: OpDecorate [[var:%\w+]] BuiltIn )") +
                            built_in + std::string(R"(
-; CHECK: OpLoad {{%\w+}} [[var]] Volatile
 OpDecorate %var BuiltIn )") + built_in +
                            std::string(R"(
 %void = OpTypeVoid
@@ -174,7 +190,10 @@ OpDecorate %var BuiltIn )") + built_in +
 %_ptr_UniformConstant__runtimearr_13 = OpTypePointer UniformConstant %_runtimearr_13
 %images = OpVariable %_ptr_UniformConstant__runtimearr_13 UniformConstant
 %_ptr_Input_uint = OpTypePointer Input %uint
-%var = OpVariable %_ptr_Input_uint Input
+%v4uint = OpTypeVector %uint 4
+%_ptr_Input_v4uint = OpTypePointer Input %v4uint
+%var = OpVariable )") + var_type +
+                           std::string(R"( Input
 %int_0 = OpConstant %int 0
 %_ptr_Uniform_uint = OpTypePointer Uniform %uint
 %_ptr_UniformConstant_13 = OpTypePointer UniformConstant %13
@@ -187,7 +206,7 @@ OpDecorate %var BuiltIn )") + built_in +
 %5 = OpLabel
 %19 = OpAccessChain %_ptr_Uniform_uint %sbo %int_0
 %20 = OpLoad %uint %19
-%var_value = OpLoad %uint %var
+)") + var_value + std::string(R"(
 %test = OpIAdd %uint %var_value %20
 %22 = OpAccessChain %_ptr_UniformConstant_13 %images %test
 %23 = OpLoad %13 %22
@@ -205,14 +224,14 @@ OpFunctionEnd
 INSTANTIATE_TEST_SUITE_P(
     SetLoadVolatile, SetLoadVolatileTest,
     ::testing::ValuesIn(std::vector<ExecutionModelAndBuiltIn>{
-        {"RayGenerationKHR", "SubgroupSize"},
-        {"RayGenerationKHR", "SubgroupLocalInvocationId"},
-        {"RayGenerationKHR", "SubgroupEqMask"},
-        {"ClosestHitKHR", "SubgroupLocalInvocationId"},
-        {"IntersectionKHR", "SubgroupEqMask"},
-        {"MissKHR", "SubgroupGeMask"},
-        {"CallableKHR", "SubgroupGtMask"},
-        {"RayGenerationKHR", "SubgroupLeMask"},
+        {"RayGenerationKHR", "SubgroupSize", false},
+        {"RayGenerationKHR", "SubgroupLocalInvocationId", false},
+        {"RayGenerationKHR", "SubgroupEqMask", true},
+        {"ClosestHitKHR", "SubgroupLocalInvocationId", true},
+        {"IntersectionKHR", "SubgroupEqMask", true},
+        {"MissKHR", "SubgroupGeMask", true},
+        {"CallableKHR", "SubgroupGtMask", true},
+        {"RayGenerationKHR", "SubgroupLeMask", true},
     }));
 
 using VolatileSpreadTest = PassTest<::testing::Test>;
@@ -572,6 +591,114 @@ OpFunctionEnd
       "point, but it is not for another entry point";
   EXPECT_STREQ(GetErrorMessage().substr(0, sizeof(expected_error) - 1).c_str(),
                expected_error);
+}
+
+TEST_F(VolatileSpreadTest, RecursivelySpreadVolatile) {
+  const std::string text =
+      R"(
+OpCapability RuntimeDescriptorArray
+OpCapability RayTracingKHR
+OpCapability SubgroupBallotKHR
+OpCapability VulkanMemoryModel
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpExtension "SPV_EXT_descriptor_indexing"
+OpExtension "SPV_KHR_ray_tracing"
+OpExtension "SPV_KHR_shader_ballot"
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical Vulkan
+OpEntryPoint RayGenerationKHR %RayGeneration "RayGeneration" %var0 %var1
+OpSource GLSL 460
+OpSourceExtension "GL_EXT_nonuniform_qualifier"
+OpSourceExtension "GL_KHR_ray_tracing"
+OpName %RayGeneration "RayGeneration"
+OpName %StorageBuffer "StorageBuffer"
+OpMemberName %StorageBuffer 0 "index"
+OpMemberName %StorageBuffer 1 "red"
+OpName %sbo "sbo"
+OpName %images "images"
+OpMemberDecorate %StorageBuffer 0 Offset 0
+OpMemberDecorate %StorageBuffer 1 Offset 4
+OpDecorate %StorageBuffer BufferBlock
+OpDecorate %sbo DescriptorSet 0
+OpDecorate %sbo Binding 0
+OpDecorate %images DescriptorSet 0
+OpDecorate %images Binding 1
+OpDecorate %images NonWritable
+
+; CHECK: OpDecorate [[var0:%\w+]] BuiltIn SubgroupEqMask
+; CHECK: OpDecorate [[var1:%\w+]] BuiltIn SubgroupGeMask
+OpDecorate %var0 BuiltIn SubgroupEqMask
+OpDecorate %var1 BuiltIn SubgroupGeMask
+
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%StorageBuffer = OpTypeStruct %uint %float
+%_ptr_Uniform_StorageBuffer = OpTypePointer Uniform %StorageBuffer
+%sbo = OpVariable %_ptr_Uniform_StorageBuffer Uniform
+%int = OpTypeInt 32 1
+%int_1 = OpConstant %int 1
+%13 = OpTypeImage %float 2D 0 0 0 2 Rgba32f
+%_runtimearr_13 = OpTypeRuntimeArray %13
+%_ptr_UniformConstant__runtimearr_13 = OpTypePointer UniformConstant %_runtimearr_13
+%images = OpVariable %_ptr_UniformConstant__runtimearr_13 UniformConstant
+%v4uint = OpTypeVector %uint 4
+%_ptr_Input_v4uint = OpTypePointer Input %v4uint
+%_ptr_Input_uint = OpTypePointer Input %uint
+%var0 = OpVariable %_ptr_Input_v4uint Input
+%var1 = OpVariable %_ptr_Input_v4uint Input
+%int_0 = OpConstant %int 0
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+%_ptr_UniformConstant_13 = OpTypePointer UniformConstant %13
+%v2int = OpTypeVector %int 2
+%25 = OpConstantComposite %v2int %int_0 %int_0
+%v4float = OpTypeVector %float 4
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+
+%RayGeneration = OpFunction %void None %3
+%5 = OpLabel
+
+; CHECK: [[ptr0:%\w+]] = OpAccessChain %_ptr_Input_uint [[var0]] %int_0
+; CHECK: OpLoad {{%\w+}} [[ptr0]] Volatile
+%19 = OpAccessChain %_ptr_Input_uint %var0 %int_0
+%20 = OpLoad %uint %19
+
+%22 = OpAccessChain %_ptr_UniformConstant_13 %images %20
+%23 = OpLoad %13 %22
+%27 = OpImageRead %v4float %23 %25
+%29 = OpCompositeExtract %float %27 0
+%31 = OpAccessChain %_ptr_Uniform_float %sbo %uint_1
+
+; CHECK: OpLoad {{%\w+}} [[ptr0]] Volatile
+%24 = OpLoad %uint %19
+
+; CHECK: [[var2:%\w+]] = OpCopyObject %_ptr_Input_v4uint [[var0]]
+; CHECK: [[ptr2:%\w+]] = OpAccessChain %_ptr_Input_uint [[var2]] %int_1
+; CHECK: OpLoad {{%\w+}} [[ptr2]] Volatile
+%18 = OpCopyObject %_ptr_Input_v4uint %var0
+%21 = OpAccessChain %_ptr_Input_uint %18 %int_1
+%26 = OpLoad %uint %21
+
+%28 = OpIAdd %uint %24 %26
+%30 = OpConvertUToF %float %28
+
+; CHECK: [[ptr1:%\w+]] = OpAccessChain %_ptr_Input_uint [[var1]] %int_1
+; CHECK: OpLoad {{%\w+}} [[ptr1]] Volatile
+%32 = OpAccessChain %_ptr_Input_uint %var1 %int_1
+%33 = OpLoad %uint %32
+
+%34 = OpConvertUToF %float %33
+%35 = OpFAdd %float %34 %30
+%36 = OpFAdd %float %35 %29
+OpStore %31 %36
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<SpreadVolatileSemantics>(text, true);
 }
 
 }  // namespace

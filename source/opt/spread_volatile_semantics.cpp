@@ -131,23 +131,38 @@ void SpreadVolatileSemantics::DecorateVarWithVolatile(Instruction* var) {
 }
 
 void SpreadVolatileSemantics::SetVolatileForLoads(Instruction* var) {
+  std::vector<uint32_t> worklist({var->result_id()});
   auto* def_use_mgr = context()->get_def_use_mgr();
-  def_use_mgr->ForEachUser(var, [](Instruction* user) {
-    if (user->opcode() != SpvOpLoad) {
-      return;
-    }
+  while (!worklist.empty()) {
+    uint32_t ptr_id = worklist.back();
+    worklist.pop_back();
+    def_use_mgr->ForEachUser(ptr_id, [&worklist, &ptr_id](Instruction* user) {
+      if (user->opcode() == SpvOpAccessChain ||
+          user->opcode() == SpvOpInBoundsAccessChain ||
+          user->opcode() == SpvOpPtrAccessChain ||
+          user->opcode() == SpvOpInBoundsPtrAccessChain ||
+          user->opcode() == SpvOpCopyObject) {
+        if (ptr_id == user->GetSingleWordInOperand(0))
+          worklist.push_back(user->result_id());
+        return;
+      }
 
-    if (user->NumInOperands() <= kOpLoadInOperandMemoryOperands) {
-      user->AddOperand(
-          {SPV_OPERAND_TYPE_MEMORY_ACCESS, {SpvMemoryAccessVolatileMask}});
-      return;
-    }
+      if (user->opcode() != SpvOpLoad) {
+        return;
+      }
 
-    uint32_t memory_operands =
-        user->GetSingleWordInOperand(kOpLoadInOperandMemoryOperands);
-    memory_operands |= SpvMemoryAccessVolatileMask;
-    user->SetInOperand(kOpLoadInOperandMemoryOperands, {memory_operands});
-  });
+      if (user->NumInOperands() <= kOpLoadInOperandMemoryOperands) {
+        user->AddOperand(
+            {SPV_OPERAND_TYPE_MEMORY_ACCESS, {SpvMemoryAccessVolatileMask}});
+        return;
+      }
+
+      uint32_t memory_operands =
+          user->GetSingleWordInOperand(kOpLoadInOperandMemoryOperands);
+      memory_operands |= SpvMemoryAccessVolatileMask;
+      user->SetInOperand(kOpLoadInOperandMemoryOperands, {memory_operands});
+    });
+  }
 }
 
 bool SpreadVolatileSemantics::IsTargetForVolatileSemantics(
