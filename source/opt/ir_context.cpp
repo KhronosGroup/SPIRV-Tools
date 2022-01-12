@@ -1043,25 +1043,5 @@ bool IRContext::IsReachable(const opt::BasicBlock& bb) {
   return GetDominatorAnalysis(enclosing_function)
       ->Dominates(enclosing_function->entry().get(), &bb);
 }
-
-SpvExecutionModel IRContext::GetExecutionModel() {
-  SpvExecutionModel result = SpvExecutionModelMax;
-  bool first = true;
-  for (Instruction& entry_point : module()->entry_points()) {
-    if (first) {
-      result =
-          static_cast<SpvExecutionModel>(entry_point.GetSingleWordInOperand(0));
-      first = false;
-    } else {
-      SpvExecutionModel current_model =
-          static_cast<SpvExecutionModel>(entry_point.GetSingleWordInOperand(0));
-      if (current_model != result) {
-        result = SpvExecutionModelMax;
-        break;
-      }
-    }
-  }
-  return result;
-}
 }  // namespace opt
 }  // namespace spvtools
