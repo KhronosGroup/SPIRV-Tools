@@ -197,7 +197,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                  SpvBuiltInSubgroupLtMask})},
             })));
 
-// The old builtin names (with KHR suffix) still work in the assmebler, and
+// The old builtin names (with KHR suffix) still work in the assembler, and
 // map to the enums without the KHR.
 INSTANTIATE_TEST_SUITE_P(
     SPV_KHR_shader_ballot_vulkan_1_1_alias_check, ExtensionAssemblyTest,

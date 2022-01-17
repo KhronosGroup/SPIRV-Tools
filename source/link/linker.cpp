@@ -128,7 +128,7 @@ spv_result_t CheckImportExportCompatibility(const MessageConsumer& consumer,
 
 // Remove linkage specific instructions, such as prototypes of imported
 // functions, declarations of imported variables, import (and export if
-// necessary) linkage attribtes.
+// necessary) linkage attributes.
 //
 // |linked_context| and |decoration_manager| should not be null, and the
 // 'RemoveDuplicatePass' should be run first.
