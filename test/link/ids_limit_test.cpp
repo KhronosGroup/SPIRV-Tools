@@ -92,14 +92,14 @@ spvtest::Binary CreateBinary(uint32_t id_bound) {
   };
 }
 
-TEST_F(IdsLimit, UnderLimit) {
+TEST_F(IdsLimit, DISABLED_UnderLimit) {
   spvtest::Binary linked_binary;
   ASSERT_EQ(SPV_SUCCESS, Link(binaries, &linked_binary)) << GetErrorMessage();
   EXPECT_THAT(GetErrorMessage(), std::string());
   EXPECT_EQ(0x3FFFFFu, linked_binary[3]);
 }
 
-TEST_F(IdsLimit, OverLimit) {
+TEST_F(IdsLimit, DISABLED_OverLimit) {
   spvtest::Binary& binary = binaries.back();
 
   const uint32_t id_bound = binary[3];
@@ -118,7 +118,7 @@ TEST_F(IdsLimit, OverLimit) {
   EXPECT_EQ(0x400000u, linked_binary[3]);
 }
 
-TEST_F(IdsLimit, Overflow) {
+TEST_F(IdsLimit, DISABLED_Overflow) {
   spvtest::Binaries binaries = {CreateBinary(0xFFFFFFFFu),
                                 CreateBinary(0x00000002u)};
 
