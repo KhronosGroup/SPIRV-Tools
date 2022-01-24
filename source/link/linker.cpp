@@ -19,6 +19,7 @@
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -169,19 +170,11 @@ spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
     return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_DATA)
            << "|max_id_bound| of ShiftIdsInModules should not be null.";
 
-  size_t id_bound = modules->front()->IdBound() - 1u;
-  for (auto module_iter = modules->begin() + 1; module_iter != modules->end();
-       ++module_iter) {
-    Module* module = *module_iter;
-    module->ForEachInst([&id_bound](Instruction* insn) {
-      insn->ForEachId([&id_bound](uint32_t* id) { *id += id_bound; });
-    });
-    id_bound += module->IdBound() - 1u;
-
-    // Invalidate the DefUseManager
-    module->context()->InvalidateAnalyses(opt::IRContext::kAnalysisDefUse);
-  }
-  ++id_bound;
+  const size_t id_bound =
+      std::accumulate(modules->begin(), modules->end(), static_cast<size_t>(1),
+                      [](const size_t& accumulation, opt::Module* module) {
+                        return accumulation + module->IdBound() - 1u;
+                      });
   if (id_bound > std::numeric_limits<uint32_t>::max())
     return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_DATA)
            << "Too many IDs (" << id_bound
@@ -189,6 +182,19 @@ spv_result_t ShiftIdsInModules(const MessageConsumer& consumer,
               "SPIR-V header.";
 
   *max_id_bound = static_cast<uint32_t>(id_bound);
+
+  uint32_t id_offset = modules->front()->IdBound() - 1u;
+  for (auto module_iter = modules->begin() + 1; module_iter != modules->end();
+       ++module_iter) {
+    Module* module = *module_iter;
+    module->ForEachInst([&id_offset](Instruction* insn) {
+      insn->ForEachId([&id_offset](uint32_t* id) { *id += id_offset; });
+    });
+    id_offset += module->IdBound() - 1u;
+
+    // Invalidate the DefUseManager
+    module->context()->InvalidateAnalyses(opt::IRContext::kAnalysisDefUse);
+  }
 
   return SPV_SUCCESS;
 }
