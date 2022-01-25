@@ -99,13 +99,27 @@ Pass::Status SpreadVolatileSemantics::Process() {
   const bool is_vk_memory_model_enabled =
       context()->get_feature_mgr()->HasCapability(
           SpvCapabilityVulkanMemoryModel);
-  if (!CollectTargetsForVolatileSemantics(is_vk_memory_model_enabled))
-    return Status::Failure;
+  CollectTargetsForVolatileSemantics(is_vk_memory_model_enabled);
 
+  // If VulkanMemoryModel capability is not enabled, we have to set Volatile
+  // decoration for interface variables instead of setting Volatile for load
+  // instructions. If an interface (or pointers to it) is used by two load
+  // instructions in two entry points and one must be volatile while another
+  // is not, we have to report an error for the conflict.
+  if (!is_vk_memory_model_enabled &&
+      !HasInterfaceInConflictOfVolatileSemantics()) {
+    return Status::Failure;
+  }
+
+  return SpreadVolatileSemanticsToVariables(is_vk_memory_model_enabled);
+}
+
+Pass::Status SpreadVolatileSemantics::SpreadVolatileSemanticsToVariables(
+    const bool is_vk_memory_model_enabled) {
   Status status = Status::SuccessWithoutChange;
   for (Instruction& var : context()->types_values()) {
-    auto entry_function_ids = std::move(
-        EntryFunctionsToSpreadVolatileSemanticsForVar(var.result_id()));
+    auto entry_function_ids =
+        EntryFunctionsToSpreadVolatileSemanticsForVar(var.result_id());
     if (entry_function_ids.empty()) {
       continue;
     }
@@ -173,7 +187,7 @@ void SpreadVolatileSemantics::MarkVolatileSemanticsForVariable(
   itr->second.insert(entry_function_id);
 }
 
-bool SpreadVolatileSemantics::CollectTargetsForVolatileSemantics(
+void SpreadVolatileSemantics::CollectTargetsForVolatileSemantics(
     const bool is_vk_memory_model_enabled) {
   for (Instruction& entry_point : get_module()->entry_points()) {
     SpvExecutionModel execution_model =
@@ -190,13 +204,6 @@ bool SpreadVolatileSemantics::CollectTargetsForVolatileSemantics(
       }
     }
   }
-  if (is_vk_memory_model_enabled) return true;
-  // If VulkanMemoryModel capability is not enabled, we have to set Volatile
-  // decoration for interface variables instead of setting Volatile for load
-  // instructions. If an interface (or pointers to it) is used by two load
-  // instructions in two entry points and one must be volatile while another
-  // is not, we have to report an error for the conflict.
-  return !HasInterfaceInConflictOfVolatileSemantics();
 }
 
 void SpreadVolatileSemantics::DecorateVarWithVolatile(Instruction* var) {

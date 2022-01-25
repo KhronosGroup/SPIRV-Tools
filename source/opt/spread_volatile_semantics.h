@@ -35,6 +35,11 @@ class SpreadVolatileSemantics : public Pass {
   }
 
  private:
+  // Iterates interface variables and spreads the Volatile semantics if it has
+  // load instructions for the Volatile semantics.
+  Pass::Status SpreadVolatileSemanticsToVariables(
+      const bool is_vk_memory_model_enabled);
+
   // Returns whether |var_id| is the result id of a target builtin variable for
   // the volatile semantics for |execution_model| based on the Vulkan spec
   // VUID-StandaloneSpirv-VulkanMemoryModel-04678 or
@@ -42,13 +47,10 @@ class SpreadVolatileSemantics : public Pass {
   bool IsTargetForVolatileSemantics(uint32_t var_id,
                                     SpvExecutionModel execution_model);
 
-  // Collects interface variables that need the volatile semantics. When
-  // |is_vk_memory_model_enabled| is false, it means we will have to add
-  // Volatile decoration for the interface variables. Reports an error if an
-  // interface variable is used by two entry points and it needs the Volatile
-  // decoration for one but not for another. Returns false if the error must
-  // be reported.
-  bool CollectTargetsForVolatileSemantics(
+  // Collects interface variables that need the volatile semantics.
+  // |is_vk_memory_model_enabled| is true if VulkanMemoryModel capability is
+  // enabled.
+  void CollectTargetsForVolatileSemantics(
       const bool is_vk_memory_model_enabled);
 
   // Reports an error if an interface variable is used by two entry points and
