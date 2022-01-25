@@ -175,9 +175,12 @@ class SmallVector {
     return true;
   }
 
+// Avoid infinite recursion from rewritten operators in C++20
+#if __cplusplus <= 201703L
   friend bool operator==(const std::vector<T>& lhs, const SmallVector& rhs) {
     return rhs == lhs;
   }
+#endif
 
   friend bool operator!=(const SmallVector& lhs, const std::vector<T>& rhs) {
     return !(lhs == rhs);
