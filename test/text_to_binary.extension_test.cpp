@@ -959,7 +959,7 @@ INSTANTIATE_TEST_SUITE_P(
     Combine(
         Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_5,
                SPV_ENV_UNIVERSAL_1_6, SPV_ENV_VULKAN_1_0, SPV_ENV_VULKAN_1_1,
-               SPV_ENV_VULKAN_1_2),
+               SPV_ENV_VULKAN_1_2, SPV_ENV_VULKAN_1_3),
         ValuesIn(std::vector<AssemblyCase>{
             {"OpExtension \"SPV_KHR_integer_dot_product\"\n",
              MakeInstruction(SpvOpExtension,

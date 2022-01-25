@@ -175,7 +175,7 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
     }
   }
 
-  // LocalSizeId is only disallowed without maintainence4.
+  // LocalSizeId is only disallowed prior to Vulkan 1.3 without maintenance4.
   switch (env) {
     case SPV_ENV_VULKAN_1_0:
     case SPV_ENV_VULKAN_1_1:
