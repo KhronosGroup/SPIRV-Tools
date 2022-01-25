@@ -30,7 +30,8 @@ class SpreadVolatileSemantics : public Pass {
   Status Process() override;
 
   IRContext::Analysis GetPreservedAnalyses() override {
-    return IRContext::kAnalysisDefUse | IRContext::kAnalysisDecorations;
+    return IRContext::kAnalysisDefUse | IRContext::kAnalysisDecorations |
+           IRContext::kAnalysisInstrToBlockMapping;
   }
 
  private:
@@ -41,34 +42,64 @@ class SpreadVolatileSemantics : public Pass {
   bool IsTargetForVolatileSemantics(uint32_t var_id,
                                     SpvExecutionModel execution_model);
 
-  // Collects interface variables that needs the volatile semantics. If an
-  // interface variable is used by two entry points and it is a target for
-  // one entry point but not for another one, reports an error and returns
-  // false. Otherwise, returns true.
-  bool CollectTargetsForVolatileSemantics();
+  // Collects interface variables that need the volatile semantics. When
+  // |is_vk_memory_model_enabled| is false, it means we will have to add
+  // Volatile decoration for the interface variables. Reports an error if an
+  // interface variable is used by two entry points and it needs the Volatile
+  // decoration for one but not for another. Returns false if the error must
+  // be reported.
+  bool CollectTargetsForVolatileSemantics(
+      const bool is_vk_memory_model_enabled);
 
-  // Sets Memory Operands of OpLoad instructions that load |var| as
-  // Volatile.
-  void SetVolatileForLoads(Instruction* var);
+  // Reports an error if an interface variable is used by two entry points and
+  // it needs the Volatile decoration for one but not for another. Returns true
+  // if the error must be reported.
+  bool HasInterfaceInConflictOfVolatileSemantics();
+
+  // Returns whether the variable whose result is |var_id| is used by a
+  // non-volatile load or a pointer to it is used by a non-volatile load in
+  // |entry_point| or not.
+  bool IsTargetUsedByNonVolatileLoadInEntryPoint(uint32_t var_id,
+                                                 Instruction* entry_point);
+
+  // Visits load instructions of pointers to variable whose result id is
+  // |var_id| if the load instructions are in entry points whose
+  // function id is one of |entry_function_ids|. |handle_load| is a function to
+  // do some actions for the load instructions. Finishes the traversal and
+  // returns false if |handle_load| returns false for a load instruction.
+  // Otherwise, returns true after running |handle_load| for all the load
+  // instructions.
+  bool VisitLoadsOfPointersToVariableInEntries(
+      uint32_t var_id, const std::function<bool(Instruction*)>& handle_load,
+      const std::unordered_set<uint32_t>& entry_function_ids);
+
+  // Sets Memory Operands of OpLoad instructions that load |var| or pointers
+  // of |var| as Volatile if the function id of the OpLoad instruction is
+  // included in |entry_function_ids|.
+  void SetVolatileForLoadsInEntries(
+      Instruction* var, const std::unordered_set<uint32_t>& entry_function_ids);
 
   // Adds OpDecorate Volatile for |var| if it does not exist.
   void DecorateVarWithVolatile(Instruction* var);
 
-  // Returns whether we have to spread the volatile semantics for the
-  // variable with the result id |var_id| or not.
-  bool ShouldSpreadVolatileSemanticsForVariable(uint32_t var_id) {
-    return var_ids_for_volatile_semantics_.find(var_id) !=
-           var_ids_for_volatile_semantics_.end();
+  // Returns a set of entry function ids to spread the volatile semantics for
+  // the variable with the result id |var_id|.
+  std::unordered_set<uint32_t> EntryFunctionsToSpreadVolatileSemanticsForVar(
+      uint32_t var_id) {
+    auto itr = var_ids_to_entry_fn_for_volatile_semantics_.find(var_id);
+    if (itr == var_ids_to_entry_fn_for_volatile_semantics_.end()) return {};
+    return itr->second;
   }
 
   // Specifies that we have to spread the volatile semantics for the
-  // variable with the result id |var_id|.
-  void MarkVolatileSemanticsForVariable(uint32_t var_id) {
-    var_ids_for_volatile_semantics_.insert(var_id);
-  }
+  // variable with the result id |var_id| for the entry point |entry_point|.
+  void MarkVolatileSemanticsForVariable(uint32_t var_id,
+                                        Instruction* entry_point);
 
-  // Result ids of variables to spread the volatile semantics.
-  std::unordered_set<uint32_t> var_ids_for_volatile_semantics_;
+  // Result ids of variables to entry function ids for the volatile semantics
+  // spread.
+  std::unordered_map<uint32_t, std::unordered_set<uint32_t>>
+      var_ids_to_entry_fn_for_volatile_semantics_;
 };
 
 }  // namespace opt
