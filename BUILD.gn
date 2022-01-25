@@ -732,6 +732,8 @@ static_library("spvtools_opt") {
     "source/opt/set_spec_constant_default_value_pass.h",
     "source/opt/simplification_pass.cpp",
     "source/opt/simplification_pass.h",
+    "source/opt/spread_volatile_semantics.cpp",
+    "source/opt/spread_volatile_semantics.h",
     "source/opt/ssa_rewrite_pass.cpp",
     "source/opt/ssa_rewrite_pass.h",
     "source/opt/strength_reduction_pass.cpp",

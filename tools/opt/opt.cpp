@@ -168,6 +168,16 @@ Options (in lexicographical order):)",
                with a switch that has a case for every possible value of the
                index.)");
   printf(R"(
+  --spread-volatile-semantics
+               Spread Volatile semantics to variables with SMIDNV, WarpIDNV,
+               SubgroupSize, SubgroupLocalInvocationId, SubgroupEqMask,
+               SubgroupGeMask, SubgroupGtMask, SubgroupLeMask, or SubgroupLtMask
+               BuiltIn decorations or OpLoad for them when the shader model is
+               ray generation, closest hit, miss, intersection, or callable.
+               For the SPIR-V version is 1.6 or above, it also spreads Volatile
+               semantics to a variable with HelperInvocation BuiltIn decoration
+               in the fragement shader.)");
+  printf(R"(
   --descriptor-scalar-replacement
                Replaces every array variable |desc| that has a DescriptorSet
                and Binding decorations with a new variable for each element of

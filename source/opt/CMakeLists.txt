@@ -108,6 +108,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   scalar_replacement_pass.h
   set_spec_constant_default_value_pass.h
   simplification_pass.h
+  spread_volatile_semantics.h
   ssa_rewrite_pass.h
   strength_reduction_pass.h
   strip_debug_info_pass.h
@@ -215,6 +216,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   scalar_replacement_pass.cpp
   set_spec_constant_default_value_pass.cpp
   simplification_pass.cpp
+  spread_volatile_semantics.cpp
   ssa_rewrite_pass.cpp
   strength_reduction_pass.cpp
   strip_debug_info_pass.cpp
