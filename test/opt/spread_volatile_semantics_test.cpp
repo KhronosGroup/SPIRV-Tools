@@ -176,8 +176,8 @@ OpDecorate %images NonWritable
 )") + std::string(R"(
 ; CHECK: OpDecorate [[var:%\w+]] BuiltIn )") +
                            built_in + std::string(R"(
-OpDecorate %var BuiltIn )") +
-                           built_in + std::string(R"(
+OpDecorate %var BuiltIn )") + built_in +
+                           std::string(R"(
 %void = OpTypeVoid
 %3 = OpTypeFunction %void
 %uint = OpTypeInt 32 0

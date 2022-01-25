@@ -107,7 +107,7 @@ Pass::Status SpreadVolatileSemantics::Process() {
   // instructions in two entry points and one must be volatile while another
   // is not, we have to report an error for the conflict.
   if (!is_vk_memory_model_enabled &&
-      !HasInterfaceInConflictOfVolatileSemantics()) {
+      HasInterfaceInConflictOfVolatileSemantics()) {
     return Status::Failure;
   }
 
