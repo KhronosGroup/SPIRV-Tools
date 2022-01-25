@@ -135,8 +135,8 @@ bool DescriptorScalarReplacement::ReplaceAccessChain(Instruction* var,
   // Use the replacement variable as the base address.
   new_operands.push_back({SPV_OPERAND_TYPE_ID, {replacement_var}});
 
-  // Drop the first index because it is consumed by the replacement, and copy the
-  // rest.
+  // Drop the first index because it is consumed by the replacement, and copy
+  // the rest.
   for (uint32_t i = 4; i < use->NumOperands(); i++) {
     new_operands.emplace_back(use->GetOperand(i));
   }

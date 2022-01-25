@@ -296,11 +296,11 @@ Optimizer::PassToken CreateFreezeSpecConstantValuePass();
 // and can be changed in future. A spec constant is foldable if all of its
 // value(s) can be determined from the module. E.g., an integer spec constant
 // defined with OpSpecConstantOp instruction can be folded if its value won't
-// change later. This pass will replace the original OpSpecConstantOp instruction
-// with an OpConstant instruction. When folding composite spec constants,
-// new instructions may be inserted to define the components of the composite
-// constant first, then the original spec constants will be replaced by
-// OpConstantComposite instructions.
+// change later. This pass will replace the original OpSpecConstantOp
+// instruction with an OpConstant instruction. When folding composite spec
+// constants, new instructions may be inserted to define the components of the
+// composite constant first, then the original spec constants will be replaced
+// by OpConstantComposite instructions.
 //
 // There are some operations not supported yet:
 //   OpSConvert, OpFConvert, OpQuantizeToF16 and
