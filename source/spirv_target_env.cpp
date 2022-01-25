@@ -376,7 +376,7 @@ std::string spvLogStringForEnv(spv_target_env env) {
     case SPV_ENV_VULKAN_1_1_SPIRV_1_4:
     case SPV_ENV_VULKAN_1_2:
     case SPV_ENV_VULKAN_1_3: {
-        return "Vulkan";
+      return "Vulkan";
     }
     case SPV_ENV_UNIVERSAL_1_0:
     case SPV_ENV_UNIVERSAL_1_1:
