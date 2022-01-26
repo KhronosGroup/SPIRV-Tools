@@ -227,7 +227,7 @@ Optimizer::PassToken CreateNullPass();
 
 // Creates a strip-debug-info pass.
 // A strip-debug-info pass removes all debug instructions (as documented in
-// Section 3.32.2 of the SPIR-V spec) of the SPIR-V module to be optimized.
+// Section 3.42.2 of the SPIR-V spec) of the SPIR-V module to be optimized.
 Optimizer::PassToken CreateStripDebugInfoPass();
 
 // [Deprecated] This will create a strip-nonsemantic-info pass.  See below.
