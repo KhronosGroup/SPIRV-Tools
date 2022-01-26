@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2022.1-dev 2022-01-26
+v2022.1 2022-01-26
   - General
     - Add SPIR-V 1.6 support to wasm build (#4674)
     - Improvements to disassembly within PassManager (#4677)
