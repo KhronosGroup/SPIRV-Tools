@@ -604,7 +604,7 @@ INSTANTIATE_TEST_SUITE_P(
                       MakeInstruction(SpvOpNop, {42})}),
          "Invalid instruction OpNop starting at word 5: expected "
          "no more operands after 1 words, but stated word count is 2."},
-        // Supply several more unexpectd words.
+        // Supply several more unexpected words.
         {Concatenate({ExpectedHeaderForBound(1),
                       MakeInstruction(SpvOpNop, {42, 43, 44, 45, 46, 47})}),
          "Invalid instruction OpNop starting at word 5: expected "

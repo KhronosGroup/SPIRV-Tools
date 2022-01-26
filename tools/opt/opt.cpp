@@ -44,7 +44,7 @@ struct OptStatus {
 // initialization and setup. Note that |source| and |position| are irrelevant
 // here because we are still not processing a SPIR-V input file.
 void opt_diagnostic(spv_message_level_t level, const char* /*source*/,
-                    const spv_position_t& /*positon*/, const char* message) {
+                    const spv_position_t& /*position*/, const char* message) {
   if (level == SPV_MSG_ERROR) {
     fprintf(stderr, "error: ");
   }

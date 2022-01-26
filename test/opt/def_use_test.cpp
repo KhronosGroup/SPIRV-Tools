@@ -1656,7 +1656,7 @@ INSTANTIATE_TEST_SUITE_P(
           "OpGroupDecorate %1 %2 %3",
         },
       },
-      // memeber decorate
+      // member decorate
       {
         // code
         "OpMemberDecorate %1 0 RelaxedPrecision "

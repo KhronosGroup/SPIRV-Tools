@@ -560,7 +560,7 @@ SPIRV_TOOLS_EXPORT bool spvParseVulkanEnv(uint32_t vulkan_ver,
 // Creates a context object for most of the SPIRV-Tools API.
 // Returns null if env is invalid.
 //
-// See specific API calls for how the target environment is interpeted
+// See specific API calls for how the target environment is interpreted
 // (particularly assembly and validation).
 SPIRV_TOOLS_EXPORT spv_context spvContextCreate(spv_target_env env);
 
@@ -612,7 +612,7 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetRelaxLogicalPointer(
 //    set that option.
 // 2) Pointers that are pass as parameters to function calls do not have to
 //    match the storage class of the formal parameter.
-// 3) Pointers that are actaul parameters on function calls do not have to point
+// 3) Pointers that are actual parameters on function calls do not have to point
 //    to the same type pointed as the formal parameter.  The types just need to
 //    logically match.
 // 4) GLSLstd450 Interpolate* instructions can have a load of an interpolant
@@ -638,7 +638,7 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetUniformBufferStandardLayout(
 // Records whether the validator should use "scalar" block layout rules.
 // Scalar layout rules are more permissive than relaxed block layout.
 //
-// See Vulkan extnesion VK_EXT_scalar_block_layout.  The scalar alignment is
+// See Vulkan extension VK_EXT_scalar_block_layout.  The scalar alignment is
 // defined as follows:
 // - scalar alignment of a scalar is the scalar size
 // - scalar alignment of a vector is the scalar alignment of its component

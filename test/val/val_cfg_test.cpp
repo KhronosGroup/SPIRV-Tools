@@ -65,7 +65,7 @@ class Block {
   /// Creates a Block with a given label
   ///
   /// @param[in]: label the label id of the block
-  /// @param[in]: type the branch instruciton that ends the block
+  /// @param[in]: type the branch instruction that ends the block
   explicit Block(std::string label, SpvOp type = SpvOpBranch)
       : label_(label), body_(), type_(type), successors_() {}
 
@@ -3523,7 +3523,7 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpSwitch must be preceeded by an OpSelectionMerge instruction"));
+          "OpSwitch must be preceded by an OpSelectionMerge instruction"));
 }
 
 TEST_F(ValidateCFG, MissingMergeSwitchBad2) {
@@ -3550,7 +3550,7 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpSwitch must be preceeded by an OpSelectionMerge instruction"));
+          "OpSwitch must be preceded by an OpSelectionMerge instruction"));
 }
 
 TEST_F(ValidateCFG, MissingMergeOneBranchToMergeGood) {
@@ -3622,7 +3622,7 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpSwitch must be preceeded by an OpSelectionMerge instruction"));
+          "OpSwitch must be preceded by an OpSelectionMerge instruction"));
 }
 
 TEST_F(ValidateCFG, MissingMergeOneUnseenTargetSwitchBad) {
@@ -3654,7 +3654,7 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpSwitch must be preceeded by an OpSelectionMerge instruction"));
+          "OpSwitch must be preceded by an OpSelectionMerge instruction"));
 }
 
 TEST_F(ValidateCFG, MissingMergeLoopBreakGood) {

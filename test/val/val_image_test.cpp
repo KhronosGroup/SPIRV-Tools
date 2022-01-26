@@ -3134,7 +3134,7 @@ TEST_F(ValidateImage, GatherConstOffsetsArrayNotVector) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image Operand ConstOffsets array componenets "
+              HasSubstr("Expected Image Operand ConstOffsets array components "
                         "to be int vectors of size 2"));
 }
 
@@ -3149,7 +3149,7 @@ TEST_F(ValidateImage, GatherConstOffsetsArrayVectorWrongSize) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image Operand ConstOffsets array componenets "
+              HasSubstr("Expected Image Operand ConstOffsets array components "
                         "to be int vectors of size 2"));
 }
 
