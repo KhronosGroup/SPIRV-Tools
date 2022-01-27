@@ -23,14 +23,14 @@
 #include <vector>
 
 #include "source/opt/function.h"
-#include "source/opt/pass.h"
+#include "source/opt/mem_pass.h"
 #include "source/opt/type_manager.h"
 
 namespace spvtools {
 namespace opt {
 
 // Documented in optimizer.hpp
-class ScalarReplacementPass : public Pass {
+class ScalarReplacementPass : public MemPass {
  private:
   static const uint32_t kDefaultLimit = 100;
 
@@ -233,6 +233,11 @@ class ScalarReplacementPass : public Pass {
   // is possibly used.
   std::unique_ptr<std::unordered_set<int64_t>> GetUsedComponents(
       Instruction* inst);
+
+  // Returns an instruction defining a null constant with type |type_id| if that
+  // instruction is legal.  If not, it returns an undefined value with type
+  // |type_id|.
+  Instruction* getNullOrUndef(uint32_t type_id);
 
   // Returns an instruction defining a null constant with type |type_id|.  If
   // one already exists, it is returned.  Otherwise a new one is created.
