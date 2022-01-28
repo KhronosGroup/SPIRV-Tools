@@ -260,7 +260,8 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
         mask & ~uint32_t(SpvImageOperandsNonPrivateTexelKHRMask |
                          SpvImageOperandsVolatileTexelKHRMask |
                          SpvImageOperandsSignExtendMask |
-                         SpvImageOperandsZeroExtendMask);
+                         SpvImageOperandsZeroExtendMask |
+                         SpvImageOperandsNontemporalMask);
     size_t expected_num_image_operand_words =
         spvtools::utils::CountSetBits(mask_bits_having_operands);
     if (mask & SpvImageOperandsGradMask) {
