@@ -174,12 +174,12 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
 
 TEST(TypeManager, GenerateAllTypesGeneratesAllTypes) {
   std::set<Type::Kind> generated_types;
-  for(auto& type : GenerateAllTypes()) {
+  for (auto& type : GenerateAllTypes()) {
     generated_types.insert(type->kind());
   }
 
   std::vector<Type::Kind> all_types;
-  for(uint32_t kind = 0; kind != Type::Kind::kLast; ++kind) {
+  for (uint32_t kind = 0; kind != Type::Kind::kLast; ++kind) {
     all_types.push_back(static_cast<Type::Kind>(kind));
   }
 
