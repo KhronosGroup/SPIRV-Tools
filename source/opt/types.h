@@ -155,21 +155,8 @@ class Type {
   // Returns the hash value of this type.
   size_t HashValue() const;
 
-  // Adds the necessary words to compute a hash value of this type to |words|.
-  void GetHashWords(std::vector<uint32_t>* words) const {
-    std::unordered_set<const Type*> seen;
-    GetHashWords(words, &seen);
-  }
-
-  // Adds the necessary words to compute a hash value of this type to |words|.
-  void GetHashWords(std::vector<uint32_t>* words,
-                    std::unordered_set<const Type*>* seen) const;
-
-  // Adds necessary extra words for a subtype to calculate a hash value into
-  // |words|.
-  virtual void GetExtraHashWords(
-      std::vector<uint32_t>* words,
-      std::unordered_set<const Type*>* pSet) const = 0;
+  size_t ComputeHashValue(size_t hash,
+                          std::vector<const Type*>* seen) const;
 
 // A bunch of methods for casting this type to a given type. Returns this if the
 // cast can be done, nullptr otherwise.
@@ -205,6 +192,35 @@ class Type {
   DeclareCastMethod(RayQueryKHR)
 #undef DeclareCastMethod
 
+protected:
+  // Add any type-specific state to |hash| and returns new hash.
+  virtual size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* seen) const = 0;
+
+  // helpers for incrementally computing hash value
+  // http://open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3876.pdf
+  template <typename T>
+  static size_t hash_combine(std::size_t seed, const T& val) {
+    return seed ^ std::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+  }
+
+  static size_t hash_combine(std::size_t hash) {
+      return hash;
+  }
+
+  template <typename T, typename... Types>
+  static size_t hash_combine(std::size_t hash, const T& val, const Types&... args) {
+    return hash_combine(hash_combine(hash, val), args...);
+  }
+
+  template <typename T>
+  static size_t hash_combine(std::size_t hash, const std::vector<T>& vals) {
+    for (const T& val : vals) {
+      hash = hash_combine(hash, val);
+    }
+    return hash;
+  }
+
  protected:
   // Decorations attached to this type. Each decoration is encoded as a vector
   // of uint32_t numbers. The first uint32_t number is the decoration value,
@@ -233,8 +249,8 @@ class Integer : public Type {
   uint32_t width() const { return width_; }
   bool IsSigned() const { return signed_; }
 
-  void GetExtraHashWords(std::vector<uint32_t>* words,
-                         std::unordered_set<const Type*>* pSet) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
  private:
   bool IsSameImpl(const Type* that, IsSameCache*) const override;
@@ -254,8 +270,8 @@ class Float : public Type {
   const Float* AsFloat() const override { return this; }
   uint32_t width() const { return width_; }
 
-  void GetExtraHashWords(std::vector<uint32_t>* words,
-                         std::unordered_set<const Type*>* pSet) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
  private:
   bool IsSameImpl(const Type* that, IsSameCache*) const override;
@@ -275,8 +291,8 @@ class Vector : public Type {
   Vector* AsVector() override { return this; }
   const Vector* AsVector() const override { return this; }
 
-  void GetExtraHashWords(std::vector<uint32_t>* words,
-                         std::unordered_set<const Type*>* pSet) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
  private:
   bool IsSameImpl(const Type* that, IsSameCache*) const override;
@@ -297,8 +313,8 @@ class Matrix : public Type {
   Matrix* AsMatrix() override { return this; }
   const Matrix* AsMatrix() const override { return this; }
 
-  void GetExtraHashWords(std::vector<uint32_t>* words,
-                         std::unordered_set<const Type*>* pSet) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
  private:
   bool IsSameImpl(const Type* that, IsSameCache*) const override;
@@ -328,8 +344,8 @@ class Image : public Type {
   SpvImageFormat format() const { return format_; }
   SpvAccessQualifier access_qualifier() const { return access_qualifier_; }
 
-  void GetExtraHashWords(std::vector<uint32_t>* words,
-                         std::unordered_set<const Type*>* pSet) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
  private:
   bool IsSameImpl(const Type* that, IsSameCache*) const override;
@@ -356,8 +372,8 @@ class SampledImage : public Type {
 
   const Type* image_type() const { return image_type_; }
 
-  void GetExtraHashWords(std::vector<uint32_t>* words,
-                         std::unordered_set<const Type*>* pSet) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
  private:
   bool IsSameImpl(const Type* that, IsSameCache*) const override;
@@ -400,8 +416,8 @@ class Array : public Type {
   Array* AsArray() override { return this; }
   const Array* AsArray() const override { return this; }
 
-  void GetExtraHashWords(std::vector<uint32_t>* words,
-                         std::unordered_set<const Type*>* pSet) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
   void ReplaceElementType(const Type* element_type);
 
@@ -423,8 +439,8 @@ class RuntimeArray : public Type {
   RuntimeArray* AsRuntimeArray() override { return this; }
   const RuntimeArray* AsRuntimeArray() const override { return this; }
 
-  void GetExtraHashWords(std::vector<uint32_t>* words,
-                         std::unordered_set<const Type*>* pSet) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
   void ReplaceElementType(const Type* element_type);
 
@@ -460,8 +476,8 @@ class Struct : public Type {
   Struct* AsStruct() override { return this; }
   const Struct* AsStruct() const override { return this; }
 
-  void GetExtraHashWords(std::vector<uint32_t>* words,
-                         std::unordered_set<const Type*>* pSet) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
  private:
   bool IsSameImpl(const Type* that, IsSameCache*) const override;
@@ -492,8 +508,8 @@ class Opaque : public Type {
 
   const std::string& name() const { return name_; }
 
-  void GetExtraHashWords(std::vector<uint32_t>* words,
-                         std::unordered_set<const Type*>* pSet) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
  private:
   bool IsSameImpl(const Type* that, IsSameCache*) const override;
@@ -513,8 +529,8 @@ class Pointer : public Type {
   Pointer* AsPointer() override { return this; }
   const Pointer* AsPointer() const override { return this; }
 
-  void GetExtraHashWords(std::vector<uint32_t>* words,
-                         std::unordered_set<const Type*>* pSet) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
   void SetPointeeType(const Type* type);
 
@@ -540,8 +556,8 @@ class Function : public Type {
   const std::vector<const Type*>& param_types() const { return param_types_; }
   std::vector<const Type*>& param_types() { return param_types_; }
 
-  void GetExtraHashWords(std::vector<uint32_t>* words,
-                         std::unordered_set<const Type*>*) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
   void SetReturnType(const Type* type);
 
@@ -565,8 +581,8 @@ class Pipe : public Type {
 
   SpvAccessQualifier access_qualifier() const { return access_qualifier_; }
 
-  void GetExtraHashWords(std::vector<uint32_t>* words,
-                         std::unordered_set<const Type*>* pSet) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
  private:
   bool IsSameImpl(const Type* that, IsSameCache*) const override;
@@ -593,8 +609,8 @@ class ForwardPointer : public Type {
   ForwardPointer* AsForwardPointer() override { return this; }
   const ForwardPointer* AsForwardPointer() const override { return this; }
 
-  void GetExtraHashWords(std::vector<uint32_t>* words,
-                         std::unordered_set<const Type*>* pSet) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
  private:
   bool IsSameImpl(const Type* that, IsSameCache*) const override;
@@ -617,8 +633,8 @@ class CooperativeMatrixNV : public Type {
     return this;
   }
 
-  void GetExtraHashWords(std::vector<uint32_t>*,
-                         std::unordered_set<const Type*>*) const override;
+  size_t ComputeExtraStateHash(
+      size_t hash, std::vector<const Type*>* pSeen) const override;
 
   const Type* component_type() const { return component_type_; }
   uint32_t scope_id() const { return scope_id_; }
@@ -645,8 +661,10 @@ class CooperativeMatrixNV : public Type {
     type* As##type() override { return this; }                                 \
     const type* As##type() const override { return this; }                     \
                                                                                \
-    void GetExtraHashWords(std::vector<uint32_t>*,                             \
-                           std::unordered_set<const Type*>*) const override {} \
+    size_t ComputeExtraStateHash(                                              \
+        size_t hash, std::vector<const Type*>* pSeen) const override {         \
+      return hash;                                                             \
+    }                                                                          \
                                                                                \
    private:                                                                    \
     bool IsSameImpl(const Type* that, IsSameCache*) const override {           \
