@@ -454,6 +454,7 @@ static_library("spvtools") {
     "source/util/make_unique.h",
     "source/util/parse_number.cpp",
     "source/util/parse_number.h",
+    "source/util/pooled_linked_list.h",
     "source/util/small_vector.h",
     "source/util/string_utils.cpp",
     "source/util/string_utils.h",
