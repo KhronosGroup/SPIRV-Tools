@@ -217,6 +217,7 @@ add_subdirectory(reduce)
 add_subdirectory(fuzz)
 add_subdirectory(link)
 add_subdirectory(lint)
+add_subdirectory(diff)
 
 set(SPIRV_SOURCES
   ${spirv-tools_SOURCE_DIR}/include/spirv-tools/libspirv.h
