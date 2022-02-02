@@ -1,10 +1,11 @@
 Revision history for SPIRV-Tools
 
-v2022.2-dev 2022-01-26
+v2022.2-dev 2022-02-02
   - Start v2022.2-dev
 
-v2022.1 2022-01-26
+v2022.1 2022-02-02
   - General
+    - Complete handling of RayQueryKHR type (#4690)
     - Add SPIR-V 1.6 support to wasm build (#4674)
     - Improvements to disassembly within PassManager (#4677)
     - Basic support for SPIR-V 1.6 (#4663)
@@ -20,6 +21,7 @@ v2022.1 2022-01-26
       * test/linker: Code factorisation and small tweaks
       * linker: Do not fail when going over limits
   - Validator
+    - Fix handling of Nontemporal image operand (#4692)
     - val: interface struct with builtins must be Block (#4665)
   - Fuzzer
     - Avoid id bound errors during opt fuzzing (#4658)
