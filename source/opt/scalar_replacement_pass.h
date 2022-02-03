@@ -234,15 +234,8 @@ class ScalarReplacementPass : public MemPass {
   std::unique_ptr<std::unordered_set<int64_t>> GetUsedComponents(
       Instruction* inst);
 
-  // Returns an instruction defining a null constant with type |type_id| if that
-  // instruction is legal.  If not, it returns an undefined value with type
-  // |type_id|.
-  Instruction* getNullOrUndef(uint32_t type_id);
-
-  // Returns an instruction defining a null constant with type |type_id|.  If
-  // one already exists, it is returned.  Otherwise a new one is created.
-  // Returns |nullptr| if the new constant could not be created.
-  Instruction* CreateNullConstant(uint32_t type_id);
+  // Returns an instruction defining an undefined value type |type_id|.
+  Instruction* GetUndef(uint32_t type_id);
 
   // Maps storage type to a pointer type enclosing that type.
   std::unordered_map<uint32_t, uint32_t> pointee_to_pointer_;
