@@ -14,10 +14,10 @@
 
 # include(diff_files/diff_test_files_autogen.cmake)
 #
-# add_spvtools_unittest(TARGET lcs
-#   SRCS lcs_test.cpp
-#   LIBS SPIRV-Tools-diff
-# )
+add_spvtools_unittest(TARGET lcs
+  SRCS lcs_test.cpp
+  LIBS SPIRV-Tools-diff
+)
 #
 # add_spvtools_unittest(TARGET diff
 #   SRCS diff_test.cpp diff_test_utils.h diff_test_utils.cpp
