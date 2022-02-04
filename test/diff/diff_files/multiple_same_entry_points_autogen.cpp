@@ -151,18 +151,18 @@ TEST(DiffTest, MultipleSameEntryPoints) {
  %13 = OpVariable %7 Output
  %14 = OpVariable %9 Input
  %15 = OpVariable %9 Input
+ %4 = OpFunction %2 None %3
+ %5 = OpLabel
+ %11 = OpLoad %6 %10
+ OpStore %8 %11
+ OpReturn
+ OpFunctionEnd
  %12 = OpFunction %2 None %3
  %16 = OpLabel
  %17 = OpLoad %6 %14
  %18 = OpLoad %6 %15
  %19 = OpFAdd %6 %17 %18
  OpStore %13 %19
- OpReturn
- OpFunctionEnd
- %4 = OpFunction %2 None %3
- %5 = OpLabel
- %11 = OpLoad %6 %10
- OpStore %8 %11
  OpReturn
  OpFunctionEnd
 )";
@@ -276,18 +276,18 @@ TEST(DiffTest, MultipleSameEntryPointsNoDebug) {
  %13 = OpVariable %7 Output
  %14 = OpVariable %9 Input
  %15 = OpVariable %9 Input
+ %4 = OpFunction %2 None %3
+ %5 = OpLabel
+ %11 = OpLoad %6 %10
+ OpStore %8 %11
+ OpReturn
+ OpFunctionEnd
  %12 = OpFunction %2 None %3
  %16 = OpLabel
  %17 = OpLoad %6 %14
  %18 = OpLoad %6 %15
  %19 = OpFAdd %6 %17 %18
  OpStore %13 %19
- OpReturn
- OpFunctionEnd
- %4 = OpFunction %2 None %3
- %5 = OpLabel
- %11 = OpLoad %6 %10
- OpStore %8 %11
  OpReturn
  OpFunctionEnd
 )";
@@ -330,18 +330,18 @@ TEST(DiffTest, MultipleSameEntryPointsDumpIds) {
  %13 = OpVariable %7 Output
  %14 = OpVariable %9 Input
  %15 = OpVariable %9 Input
+ %4 = OpFunction %2 None %3
+ %5 = OpLabel
+ %11 = OpLoad %6 %10
+ OpStore %8 %11
+ OpReturn
+ OpFunctionEnd
  %12 = OpFunction %2 None %3
  %16 = OpLabel
  %17 = OpLoad %6 %14
  %18 = OpLoad %6 %15
  %19 = OpFAdd %6 %17 %18
  OpStore %13 %19
- OpReturn
- OpFunctionEnd
- %4 = OpFunction %2 None %3
- %5 = OpLabel
- %11 = OpLoad %6 %10
- OpStore %8 %11
  OpReturn
  OpFunctionEnd
  Src ->  Dst

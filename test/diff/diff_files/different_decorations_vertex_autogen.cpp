@@ -475,6 +475,20 @@ TEST(DiffTest, DifferentDecorationsVertex) {
  %25 = OpVariable %24 Output
 +%61 = OpConstant %13 0
 +%62 = OpConstant %1 0.5
+ %28 = OpFunction %2 None %27
+ %29 = OpFunctionParameter %26
+ %30 = OpLabel
+ %31 = OpLoad %2 %29
+ OpReturnValue %31
+ OpFunctionEnd
+ %32 = OpFunction %2 None %27
+ %33 = OpFunctionParameter %26
+ %34 = OpLabel
+ %35 = OpLoad %2 %33
+ %36 = OpLoad %2 %33
+ %37 = OpFAdd %2 %35 %36
+ OpReturnValue %37
+ OpFunctionEnd
  %40 = OpFunction %38 None %39
  %41 = OpLabel
  %42 = OpVariable %26 Function
@@ -508,20 +522,6 @@ TEST(DiffTest, DifferentDecorationsVertex) {
 +%69 = OpCompositeConstruct %2 %66 %70 %72 %68
 +OpStore %63 %69
  OpReturn
- OpFunctionEnd
- %32 = OpFunction %2 None %27
- %33 = OpFunctionParameter %26
- %34 = OpLabel
- %35 = OpLoad %2 %33
- %36 = OpLoad %2 %33
- %37 = OpFAdd %2 %35 %36
- OpReturnValue %37
- OpFunctionEnd
- %28 = OpFunction %2 None %27
- %29 = OpFunctionParameter %26
- %30 = OpLabel
- %31 = OpLoad %2 %29
- OpReturnValue %31
  OpFunctionEnd
 )";
   Options options;
@@ -869,6 +869,25 @@ OpFunctionEnd
  %25 = OpVariable %24 Output
 +%67 = OpConstant %13 0
 +%68 = OpConstant %1 0.5
+ %28 = OpFunction %2 None %27
+-%29 = OpFunctionParameter %26
++%59 = OpFunctionParameter %26
+ %30 = OpLabel
+-%31 = OpLoad %2 %29
++%31 = OpLoad %2 %59
+ OpReturnValue %31
+ OpFunctionEnd
+ %32 = OpFunction %2 None %27
+-%33 = OpFunctionParameter %26
++%60 = OpFunctionParameter %26
+ %34 = OpLabel
+-%35 = OpLoad %2 %33
++%35 = OpLoad %2 %60
+-%36 = OpLoad %2 %33
++%36 = OpLoad %2 %60
+ %37 = OpFAdd %2 %35 %36
+ OpReturnValue %37
+ OpFunctionEnd
  %40 = OpFunction %38 None %39
  %41 = OpLabel
  %42 = OpVariable %26 Function
@@ -911,25 +930,6 @@ OpFunctionEnd
 +%75 = OpCompositeConstruct %2 %72 %76 %78 %74
 +OpStore %69 %75
  OpReturn
- OpFunctionEnd
- %32 = OpFunction %2 None %27
--%33 = OpFunctionParameter %26
-+%60 = OpFunctionParameter %26
- %34 = OpLabel
--%35 = OpLoad %2 %33
-+%35 = OpLoad %2 %60
--%36 = OpLoad %2 %33
-+%36 = OpLoad %2 %60
- %37 = OpFAdd %2 %35 %36
- OpReturnValue %37
- OpFunctionEnd
- %28 = OpFunction %2 None %27
--%29 = OpFunctionParameter %26
-+%59 = OpFunctionParameter %26
- %30 = OpLabel
--%31 = OpLoad %2 %29
-+%31 = OpLoad %2 %59
- OpReturnValue %31
  OpFunctionEnd
 )";
   Options options;
@@ -1072,6 +1072,20 @@ TEST(DiffTest, DifferentDecorationsVertexIgnoreSetBinding) {
  %25 = OpVariable %24 Output
 +%61 = OpConstant %13 0
 +%62 = OpConstant %1 0.5
+ %28 = OpFunction %2 None %27
+ %29 = OpFunctionParameter %26
+ %30 = OpLabel
+ %31 = OpLoad %2 %29
+ OpReturnValue %31
+ OpFunctionEnd
+ %32 = OpFunction %2 None %27
+ %33 = OpFunctionParameter %26
+ %34 = OpLabel
+ %35 = OpLoad %2 %33
+ %36 = OpLoad %2 %33
+ %37 = OpFAdd %2 %35 %36
+ OpReturnValue %37
+ OpFunctionEnd
  %40 = OpFunction %38 None %39
  %41 = OpLabel
  %42 = OpVariable %26 Function
@@ -1105,20 +1119,6 @@ TEST(DiffTest, DifferentDecorationsVertexIgnoreSetBinding) {
 +%69 = OpCompositeConstruct %2 %66 %70 %72 %68
 +OpStore %63 %69
  OpReturn
- OpFunctionEnd
- %32 = OpFunction %2 None %27
- %33 = OpFunctionParameter %26
- %34 = OpLabel
- %35 = OpLoad %2 %33
- %36 = OpLoad %2 %33
- %37 = OpFAdd %2 %35 %36
- OpReturnValue %37
- OpFunctionEnd
- %28 = OpFunction %2 None %27
- %29 = OpFunctionParameter %26
- %30 = OpLabel
- %31 = OpLoad %2 %29
- OpReturnValue %31
  OpFunctionEnd
 )";
   Options options;
@@ -1262,6 +1262,20 @@ TEST(DiffTest, DifferentDecorationsVertexIgnoreSetBindingLocation) {
  %25 = OpVariable %24 Output
 +%61 = OpConstant %13 0
 +%62 = OpConstant %1 0.5
+ %28 = OpFunction %2 None %27
+ %29 = OpFunctionParameter %26
+ %30 = OpLabel
+ %31 = OpLoad %2 %29
+ OpReturnValue %31
+ OpFunctionEnd
+ %32 = OpFunction %2 None %27
+ %33 = OpFunctionParameter %26
+ %34 = OpLabel
+ %35 = OpLoad %2 %33
+ %36 = OpLoad %2 %33
+ %37 = OpFAdd %2 %35 %36
+ OpReturnValue %37
+ OpFunctionEnd
  %40 = OpFunction %38 None %39
  %41 = OpLabel
  %42 = OpVariable %26 Function
@@ -1295,20 +1309,6 @@ TEST(DiffTest, DifferentDecorationsVertexIgnoreSetBindingLocation) {
 +%69 = OpCompositeConstruct %2 %66 %70 %72 %68
 +OpStore %63 %69
  OpReturn
- OpFunctionEnd
- %32 = OpFunction %2 None %27
- %33 = OpFunctionParameter %26
- %34 = OpLabel
- %35 = OpLoad %2 %33
- %36 = OpLoad %2 %33
- %37 = OpFAdd %2 %35 %36
- OpReturnValue %37
- OpFunctionEnd
- %28 = OpFunction %2 None %27
- %29 = OpFunctionParameter %26
- %30 = OpLabel
- %31 = OpLoad %2 %29
- OpReturnValue %31
  OpFunctionEnd
 )";
   Options options;
