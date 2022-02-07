@@ -36,7 +36,7 @@ using InstructionToInstructionMap =
 // A flat list of instructions in a function for easier iteration.
 using InstructionList = std::vector<const opt::Instruction*>;
 // A map from a function to its list of instructions.
-using FunctionInstMap = std::unordered_map<uint32_t, InstructionList>;
+using FunctionInstMap = std::map<uint32_t, InstructionList>;
 // A list of ids with some similar property, for example functions with the same
 // name.
 using IdGroup = std::vector<uint32_t>;
@@ -1486,7 +1486,7 @@ float Differ::MatchFunctionBodies(const InstructionList& src_body,
   LongestCommonSubsequence<std::vector<const opt::Instruction*>> lcs(src_body,
                                                                      dst_body);
 
-  size_t best_match_length = lcs.Get<const opt::Instruction*>(
+  uint32_t best_match_length = lcs.Get<const opt::Instruction*>(
       [this](const opt::Instruction* src_inst,
              const opt::Instruction* dst_inst) {
         return DoInstructionsMatchFuzzy(src_inst, dst_inst);

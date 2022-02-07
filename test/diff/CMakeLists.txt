@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# include(diff_files/diff_test_files_autogen.cmake)
-#
-# add_spvtools_unittest(TARGET lcs
-#   SRCS lcs_test.cpp
-#   LIBS SPIRV-Tools-diff
-# )
-#
-# add_spvtools_unittest(TARGET diff
-#   SRCS diff_test.cpp diff_test_utils.h diff_test_utils.cpp
-#        ${DIFF_TEST_FILES} ${spirv-tools_SOURCE_DIR}/tools/util/cli_consumer.cpp
-#   LIBS SPIRV-Tools-diff
-# )
+include(diff_files/diff_test_files_autogen.cmake)
+
+add_spvtools_unittest(TARGET lcs
+  SRCS lcs_test.cpp
+  LIBS SPIRV-Tools-diff
+)
+
+add_spvtools_unittest(TARGET diff
+  SRCS diff_test.cpp diff_test_utils.h diff_test_utils.cpp
+       ${DIFF_TEST_FILES} ${spirv-tools_SOURCE_DIR}/tools/util/cli_consumer.cpp
+  LIBS SPIRV-Tools-diff
+)

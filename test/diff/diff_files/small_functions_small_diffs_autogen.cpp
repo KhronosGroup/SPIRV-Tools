@@ -257,15 +257,41 @@ TEST(DiffTest, SmallFunctionsSmallDiffs) {
  %25 = OpTypePointer Uniform %16
  %31 = OpConstant %20 1
  %36 = OpConstant %16 2
- %14 = OpFunction %2 None %3
- %15 = OpLabel
- %41 = OpAccessChain %25 %19 %21
- %42 = OpLoad %16 %41
--%43 = OpUDiv %16 %42 %36
-+%53 = OpIAdd %16 %42 %36
- %44 = OpAccessChain %25 %19 %21
--OpStore %44 %43
-+OpStore %44 %53
+ %4 = OpFunction %2 None %3
+ %5 = OpLabel
+ %45 = OpFunctionCall %2 %6
+ %46 = OpFunctionCall %2 %8
+ %47 = OpFunctionCall %2 %10
+ %48 = OpFunctionCall %2 %12
+ %49 = OpFunctionCall %2 %14
+ OpReturn
+ OpFunctionEnd
+ %6 = OpFunction %2 None %3
+ %7 = OpLabel
+ %26 = OpAccessChain %25 %24 %21
+ %27 = OpLoad %16 %26
+ %28 = OpAccessChain %25 %19 %21
+ OpStore %28 %27
+ OpReturn
+ OpFunctionEnd
+ %8 = OpFunction %2 None %3
+ %9 = OpLabel
+ %29 = OpAccessChain %25 %19 %21
+ %30 = OpLoad %16 %29
+-%32 = OpIAdd %16 %30 %31
++%50 = OpISub %16 %30 %31
+-OpStore %29 %32
++OpStore %29 %50
+ OpReturn
+ OpFunctionEnd
+ %10 = OpFunction %2 None %3
+ %11 = OpLabel
+ %33 = OpAccessChain %25 %19 %21
+ %34 = OpLoad %16 %33
+-%35 = OpISub %16 %34 %31
++%51 = OpIAdd %16 %34 %31
+-OpStore %33 %35
++OpStore %33 %51
  OpReturn
  OpFunctionEnd
  %12 = OpFunction %2 None %3
@@ -279,41 +305,15 @@ TEST(DiffTest, SmallFunctionsSmallDiffs) {
 +OpStore %40 %52
  OpReturn
  OpFunctionEnd
- %10 = OpFunction %2 None %3
- %11 = OpLabel
- %33 = OpAccessChain %25 %19 %21
- %34 = OpLoad %16 %33
--%35 = OpISub %16 %34 %31
-+%51 = OpIAdd %16 %34 %31
--OpStore %33 %35
-+OpStore %33 %51
- OpReturn
- OpFunctionEnd
- %8 = OpFunction %2 None %3
- %9 = OpLabel
- %29 = OpAccessChain %25 %19 %21
- %30 = OpLoad %16 %29
--%32 = OpIAdd %16 %30 %31
-+%50 = OpISub %16 %30 %31
--OpStore %29 %32
-+OpStore %29 %50
- OpReturn
- OpFunctionEnd
- %6 = OpFunction %2 None %3
- %7 = OpLabel
- %26 = OpAccessChain %25 %24 %21
- %27 = OpLoad %16 %26
- %28 = OpAccessChain %25 %19 %21
- OpStore %28 %27
- OpReturn
- OpFunctionEnd
- %4 = OpFunction %2 None %3
- %5 = OpLabel
- %45 = OpFunctionCall %2 %6
- %46 = OpFunctionCall %2 %8
- %47 = OpFunctionCall %2 %10
- %48 = OpFunctionCall %2 %12
- %49 = OpFunctionCall %2 %14
+ %14 = OpFunction %2 None %3
+ %15 = OpLabel
+ %41 = OpAccessChain %25 %19 %21
+ %42 = OpLoad %16 %41
+-%43 = OpUDiv %16 %42 %36
++%53 = OpIAdd %16 %42 %36
+ %44 = OpAccessChain %25 %19 %21
+-OpStore %44 %43
++OpStore %44 %53
  OpReturn
  OpFunctionEnd
 )";
@@ -518,15 +518,39 @@ TEST(DiffTest, SmallFunctionsSmallDiffsNoDebug) {
  %25 = OpTypePointer Uniform %16
  %31 = OpConstant %20 1
  %36 = OpConstant %16 2
- %14 = OpFunction %2 None %3
- %15 = OpLabel
- %41 = OpAccessChain %25 %19 %21
- %42 = OpLoad %16 %41
--%43 = OpUDiv %16 %42 %36
-+%51 = OpIAdd %16 %42 %36
- %44 = OpAccessChain %25 %19 %21
--OpStore %44 %43
-+OpStore %44 %51
+ %4 = OpFunction %2 None %3
+ %5 = OpLabel
+ %45 = OpFunctionCall %2 %6
+-%46 = OpFunctionCall %2 %8
++%46 = OpFunctionCall %2 %10
+-%47 = OpFunctionCall %2 %10
++%47 = OpFunctionCall %2 %8
+ %48 = OpFunctionCall %2 %12
+ %49 = OpFunctionCall %2 %14
+ OpReturn
+ OpFunctionEnd
+ %6 = OpFunction %2 None %3
+ %7 = OpLabel
+ %26 = OpAccessChain %25 %24 %21
+ %27 = OpLoad %16 %26
+ %28 = OpAccessChain %25 %19 %21
+ OpStore %28 %27
+ OpReturn
+ OpFunctionEnd
+ %8 = OpFunction %2 None %3
+ %9 = OpLabel
+ %29 = OpAccessChain %25 %19 %21
+ %30 = OpLoad %16 %29
+ %32 = OpIAdd %16 %30 %31
+ OpStore %29 %32
+ OpReturn
+ OpFunctionEnd
+ %10 = OpFunction %2 None %3
+ %11 = OpLabel
+ %33 = OpAccessChain %25 %19 %21
+ %34 = OpLoad %16 %33
+ %35 = OpISub %16 %34 %31
+ OpStore %33 %35
  OpReturn
  OpFunctionEnd
  %12 = OpFunction %2 None %3
@@ -540,39 +564,15 @@ TEST(DiffTest, SmallFunctionsSmallDiffsNoDebug) {
 +OpStore %40 %50
  OpReturn
  OpFunctionEnd
- %10 = OpFunction %2 None %3
- %11 = OpLabel
- %33 = OpAccessChain %25 %19 %21
- %34 = OpLoad %16 %33
- %35 = OpISub %16 %34 %31
- OpStore %33 %35
- OpReturn
- OpFunctionEnd
- %8 = OpFunction %2 None %3
- %9 = OpLabel
- %29 = OpAccessChain %25 %19 %21
- %30 = OpLoad %16 %29
- %32 = OpIAdd %16 %30 %31
- OpStore %29 %32
- OpReturn
- OpFunctionEnd
- %6 = OpFunction %2 None %3
- %7 = OpLabel
- %26 = OpAccessChain %25 %24 %21
- %27 = OpLoad %16 %26
- %28 = OpAccessChain %25 %19 %21
- OpStore %28 %27
- OpReturn
- OpFunctionEnd
- %4 = OpFunction %2 None %3
- %5 = OpLabel
- %45 = OpFunctionCall %2 %6
--%46 = OpFunctionCall %2 %8
-+%46 = OpFunctionCall %2 %10
--%47 = OpFunctionCall %2 %10
-+%47 = OpFunctionCall %2 %8
- %48 = OpFunctionCall %2 %12
- %49 = OpFunctionCall %2 %14
+ %14 = OpFunction %2 None %3
+ %15 = OpLabel
+ %41 = OpAccessChain %25 %19 %21
+ %42 = OpLoad %16 %41
+-%43 = OpUDiv %16 %42 %36
++%51 = OpIAdd %16 %42 %36
+ %44 = OpAccessChain %25 %19 %21
+-OpStore %44 %43
++OpStore %44 %51
  OpReturn
  OpFunctionEnd
 )";
@@ -627,15 +627,41 @@ TEST(DiffTest, SmallFunctionsSmallDiffsDumpIds) {
  %25 = OpTypePointer Uniform %16
  %31 = OpConstant %20 1
  %36 = OpConstant %16 2
- %14 = OpFunction %2 None %3
- %15 = OpLabel
- %41 = OpAccessChain %25 %19 %21
- %42 = OpLoad %16 %41
--%43 = OpUDiv %16 %42 %36
-+%53 = OpIAdd %16 %42 %36
- %44 = OpAccessChain %25 %19 %21
--OpStore %44 %43
-+OpStore %44 %53
+ %4 = OpFunction %2 None %3
+ %5 = OpLabel
+ %45 = OpFunctionCall %2 %6
+ %46 = OpFunctionCall %2 %8
+ %47 = OpFunctionCall %2 %10
+ %48 = OpFunctionCall %2 %12
+ %49 = OpFunctionCall %2 %14
+ OpReturn
+ OpFunctionEnd
+ %6 = OpFunction %2 None %3
+ %7 = OpLabel
+ %26 = OpAccessChain %25 %24 %21
+ %27 = OpLoad %16 %26
+ %28 = OpAccessChain %25 %19 %21
+ OpStore %28 %27
+ OpReturn
+ OpFunctionEnd
+ %8 = OpFunction %2 None %3
+ %9 = OpLabel
+ %29 = OpAccessChain %25 %19 %21
+ %30 = OpLoad %16 %29
+-%32 = OpIAdd %16 %30 %31
++%50 = OpISub %16 %30 %31
+-OpStore %29 %32
++OpStore %29 %50
+ OpReturn
+ OpFunctionEnd
+ %10 = OpFunction %2 None %3
+ %11 = OpLabel
+ %33 = OpAccessChain %25 %19 %21
+ %34 = OpLoad %16 %33
+-%35 = OpISub %16 %34 %31
++%51 = OpIAdd %16 %34 %31
+-OpStore %33 %35
++OpStore %33 %51
  OpReturn
  OpFunctionEnd
  %12 = OpFunction %2 None %3
@@ -649,41 +675,15 @@ TEST(DiffTest, SmallFunctionsSmallDiffsDumpIds) {
 +OpStore %40 %52
  OpReturn
  OpFunctionEnd
- %10 = OpFunction %2 None %3
- %11 = OpLabel
- %33 = OpAccessChain %25 %19 %21
- %34 = OpLoad %16 %33
--%35 = OpISub %16 %34 %31
-+%51 = OpIAdd %16 %34 %31
--OpStore %33 %35
-+OpStore %33 %51
- OpReturn
- OpFunctionEnd
- %8 = OpFunction %2 None %3
- %9 = OpLabel
- %29 = OpAccessChain %25 %19 %21
- %30 = OpLoad %16 %29
--%32 = OpIAdd %16 %30 %31
-+%50 = OpISub %16 %30 %31
--OpStore %29 %32
-+OpStore %29 %50
- OpReturn
- OpFunctionEnd
- %6 = OpFunction %2 None %3
- %7 = OpLabel
- %26 = OpAccessChain %25 %24 %21
- %27 = OpLoad %16 %26
- %28 = OpAccessChain %25 %19 %21
- OpStore %28 %27
- OpReturn
- OpFunctionEnd
- %4 = OpFunction %2 None %3
- %5 = OpLabel
- %45 = OpFunctionCall %2 %6
- %46 = OpFunctionCall %2 %8
- %47 = OpFunctionCall %2 %10
- %48 = OpFunctionCall %2 %12
- %49 = OpFunctionCall %2 %14
+ %14 = OpFunction %2 None %3
+ %15 = OpLabel
+ %41 = OpAccessChain %25 %19 %21
+ %42 = OpLoad %16 %41
+-%43 = OpUDiv %16 %42 %36
++%53 = OpIAdd %16 %42 %36
+ %44 = OpAccessChain %25 %19 %21
+-OpStore %44 %43
++OpStore %44 %53
  OpReturn
  OpFunctionEnd
  Src ->  Dst

@@ -586,6 +586,36 @@ TEST(DiffTest, DifferentDecorationsFragment) {
  %29 = OpVariable %28 Uniform
 +%84 = OpConstant %23 0
 +%85 = OpConstant %1 0.5
+ %32 = OpFunction %2 None %31
+ %33 = OpFunctionParameter %30
+ %34 = OpLabel
+ %36 = OpLoad %6 %8
+ %37 = OpLoad %2 %33
+ %38 = OpVectorShuffle %35 %37 %37 0 1
+ %39 = OpImageSampleImplicitLod %2 %36 %38
+ %41 = OpLoad %2 %33
+ %42 = OpVectorShuffle %35 %41 %41 2 3
+ %43 = OpConvertFToS %40 %42
+ %44 = OpLoad %9 %11
+ %45 = OpImageRead %2 %44 %43
+ %46 = OpFAdd %2 %39 %45
+ OpReturnValue %46
+ OpFunctionEnd
+ %48 = OpFunction %2 None %47
+ %49 = OpFunctionParameter %30
+ %50 = OpFunctionParameter %30
+ %51 = OpLabel
+ %52 = OpLoad %2 %49
+ %53 = OpVectorShuffle %35 %52 %52 0 1
+ %54 = OpLoad %2 %50
+ %55 = OpVectorShuffle %35 %54 %54 2 3
+ %56 = OpCompositeExtract %1 %53 0
+ %57 = OpCompositeExtract %1 %53 1
+ %58 = OpCompositeExtract %1 %55 0
+ %59 = OpCompositeExtract %1 %55 1
+ %60 = OpCompositeConstruct %2 %56 %57 %58 %59
+ OpReturnValue %60
+ OpFunctionEnd
  %63 = OpFunction %61 None %62
  %64 = OpLabel
  %65 = OpVariable %30 Function
@@ -607,36 +637,6 @@ TEST(DiffTest, DifferentDecorationsFragment) {
  %81 = OpFAdd %2 %77 %80
  OpStore %22 %81
  OpReturn
- OpFunctionEnd
- %48 = OpFunction %2 None %47
- %49 = OpFunctionParameter %30
- %50 = OpFunctionParameter %30
- %51 = OpLabel
- %52 = OpLoad %2 %49
- %53 = OpVectorShuffle %35 %52 %52 0 1
- %54 = OpLoad %2 %50
- %55 = OpVectorShuffle %35 %54 %54 2 3
- %56 = OpCompositeExtract %1 %53 0
- %57 = OpCompositeExtract %1 %53 1
- %58 = OpCompositeExtract %1 %55 0
- %59 = OpCompositeExtract %1 %55 1
- %60 = OpCompositeConstruct %2 %56 %57 %58 %59
- OpReturnValue %60
- OpFunctionEnd
- %32 = OpFunction %2 None %31
- %33 = OpFunctionParameter %30
- %34 = OpLabel
- %36 = OpLoad %6 %8
- %37 = OpLoad %2 %33
- %38 = OpVectorShuffle %35 %37 %37 0 1
- %39 = OpImageSampleImplicitLod %2 %36 %38
- %41 = OpLoad %2 %33
- %42 = OpVectorShuffle %35 %41 %41 2 3
- %43 = OpConvertFToS %40 %42
- %44 = OpLoad %9 %11
- %45 = OpImageRead %2 %44 %43
- %46 = OpFAdd %2 %39 %45
- OpReturnValue %46
  OpFunctionEnd
 )";
   Options options;
@@ -1108,6 +1108,43 @@ OpFunctionEnd
 +%83 = OpVariable %28 Uniform
 +%90 = OpConstant %23 0
 +%91 = OpConstant %1 0.5
+ %32 = OpFunction %2 None %31
+-%33 = OpFunctionParameter %30
++%84 = OpFunctionParameter %30
+ %34 = OpLabel
+ %36 = OpLoad %6 %8
+-%37 = OpLoad %2 %33
++%37 = OpLoad %2 %84
+ %38 = OpVectorShuffle %35 %37 %37 0 1
+ %39 = OpImageSampleImplicitLod %2 %36 %38
+-%41 = OpLoad %2 %33
++%41 = OpLoad %2 %84
+ %42 = OpVectorShuffle %35 %41 %41 2 3
+ %43 = OpConvertFToS %40 %42
+ %44 = OpLoad %9 %11
+ %45 = OpImageRead %2 %44 %43
+ %46 = OpFAdd %2 %39 %45
+ OpReturnValue %46
+ OpFunctionEnd
+ %48 = OpFunction %2 None %47
+-%49 = OpFunctionParameter %30
+-%50 = OpFunctionParameter %30
++%85 = OpFunctionParameter %30
++%86 = OpFunctionParameter %30
+ %51 = OpLabel
+-%52 = OpLoad %2 %49
++%52 = OpLoad %2 %85
+ %53 = OpVectorShuffle %35 %52 %52 0 1
+-%54 = OpLoad %2 %50
++%54 = OpLoad %2 %86
+ %55 = OpVectorShuffle %35 %54 %54 2 3
+ %56 = OpCompositeExtract %1 %53 0
+ %57 = OpCompositeExtract %1 %53 1
+ %58 = OpCompositeExtract %1 %55 0
+ %59 = OpCompositeExtract %1 %55 1
+ %60 = OpCompositeConstruct %2 %56 %57 %58 %59
+ OpReturnValue %60
+ OpFunctionEnd
  %63 = OpFunction %61 None %62
  %64 = OpLabel
  %65 = OpVariable %30 Function
@@ -1133,43 +1170,6 @@ OpFunctionEnd
  %81 = OpFAdd %2 %77 %80
  OpStore %22 %81
  OpReturn
- OpFunctionEnd
- %48 = OpFunction %2 None %47
--%49 = OpFunctionParameter %30
--%50 = OpFunctionParameter %30
-+%85 = OpFunctionParameter %30
-+%86 = OpFunctionParameter %30
- %51 = OpLabel
--%52 = OpLoad %2 %49
-+%52 = OpLoad %2 %85
- %53 = OpVectorShuffle %35 %52 %52 0 1
--%54 = OpLoad %2 %50
-+%54 = OpLoad %2 %86
- %55 = OpVectorShuffle %35 %54 %54 2 3
- %56 = OpCompositeExtract %1 %53 0
- %57 = OpCompositeExtract %1 %53 1
- %58 = OpCompositeExtract %1 %55 0
- %59 = OpCompositeExtract %1 %55 1
- %60 = OpCompositeConstruct %2 %56 %57 %58 %59
- OpReturnValue %60
- OpFunctionEnd
- %32 = OpFunction %2 None %31
--%33 = OpFunctionParameter %30
-+%84 = OpFunctionParameter %30
- %34 = OpLabel
- %36 = OpLoad %6 %8
--%37 = OpLoad %2 %33
-+%37 = OpLoad %2 %84
- %38 = OpVectorShuffle %35 %37 %37 0 1
- %39 = OpImageSampleImplicitLod %2 %36 %38
--%41 = OpLoad %2 %33
-+%41 = OpLoad %2 %84
- %42 = OpVectorShuffle %35 %41 %41 2 3
- %43 = OpConvertFToS %40 %42
- %44 = OpLoad %9 %11
- %45 = OpImageRead %2 %44 %43
- %46 = OpFAdd %2 %39 %45
- OpReturnValue %46
  OpFunctionEnd
 )";
   Options options;
@@ -1340,6 +1340,36 @@ TEST(DiffTest, DifferentDecorationsFragmentIgnoreLocation) {
  %29 = OpVariable %28 Uniform
 +%84 = OpConstant %23 0
 +%85 = OpConstant %1 0.5
+ %32 = OpFunction %2 None %31
+ %33 = OpFunctionParameter %30
+ %34 = OpLabel
+ %36 = OpLoad %6 %8
+ %37 = OpLoad %2 %33
+ %38 = OpVectorShuffle %35 %37 %37 0 1
+ %39 = OpImageSampleImplicitLod %2 %36 %38
+ %41 = OpLoad %2 %33
+ %42 = OpVectorShuffle %35 %41 %41 2 3
+ %43 = OpConvertFToS %40 %42
+ %44 = OpLoad %9 %11
+ %45 = OpImageRead %2 %44 %43
+ %46 = OpFAdd %2 %39 %45
+ OpReturnValue %46
+ OpFunctionEnd
+ %48 = OpFunction %2 None %47
+ %49 = OpFunctionParameter %30
+ %50 = OpFunctionParameter %30
+ %51 = OpLabel
+ %52 = OpLoad %2 %49
+ %53 = OpVectorShuffle %35 %52 %52 0 1
+ %54 = OpLoad %2 %50
+ %55 = OpVectorShuffle %35 %54 %54 2 3
+ %56 = OpCompositeExtract %1 %53 0
+ %57 = OpCompositeExtract %1 %53 1
+ %58 = OpCompositeExtract %1 %55 0
+ %59 = OpCompositeExtract %1 %55 1
+ %60 = OpCompositeConstruct %2 %56 %57 %58 %59
+ OpReturnValue %60
+ OpFunctionEnd
  %63 = OpFunction %61 None %62
  %64 = OpLabel
  %65 = OpVariable %30 Function
@@ -1361,36 +1391,6 @@ TEST(DiffTest, DifferentDecorationsFragmentIgnoreLocation) {
  %81 = OpFAdd %2 %77 %80
  OpStore %22 %81
  OpReturn
- OpFunctionEnd
- %48 = OpFunction %2 None %47
- %49 = OpFunctionParameter %30
- %50 = OpFunctionParameter %30
- %51 = OpLabel
- %52 = OpLoad %2 %49
- %53 = OpVectorShuffle %35 %52 %52 0 1
- %54 = OpLoad %2 %50
- %55 = OpVectorShuffle %35 %54 %54 2 3
- %56 = OpCompositeExtract %1 %53 0
- %57 = OpCompositeExtract %1 %53 1
- %58 = OpCompositeExtract %1 %55 0
- %59 = OpCompositeExtract %1 %55 1
- %60 = OpCompositeConstruct %2 %56 %57 %58 %59
- OpReturnValue %60
- OpFunctionEnd
- %32 = OpFunction %2 None %31
- %33 = OpFunctionParameter %30
- %34 = OpLabel
- %36 = OpLoad %6 %8
- %37 = OpLoad %2 %33
- %38 = OpVectorShuffle %35 %37 %37 0 1
- %39 = OpImageSampleImplicitLod %2 %36 %38
- %41 = OpLoad %2 %33
- %42 = OpVectorShuffle %35 %41 %41 2 3
- %43 = OpConvertFToS %40 %42
- %44 = OpLoad %9 %11
- %45 = OpImageRead %2 %44 %43
- %46 = OpFAdd %2 %39 %45
- OpReturnValue %46
  OpFunctionEnd
 )";
   Options options;
@@ -1562,6 +1562,36 @@ TEST(DiffTest, DifferentDecorationsFragmentIgnoreSetBindingLocation) {
  %29 = OpVariable %28 Uniform
 +%84 = OpConstant %23 0
 +%85 = OpConstant %1 0.5
+ %32 = OpFunction %2 None %31
+ %33 = OpFunctionParameter %30
+ %34 = OpLabel
+ %36 = OpLoad %6 %8
+ %37 = OpLoad %2 %33
+ %38 = OpVectorShuffle %35 %37 %37 0 1
+ %39 = OpImageSampleImplicitLod %2 %36 %38
+ %41 = OpLoad %2 %33
+ %42 = OpVectorShuffle %35 %41 %41 2 3
+ %43 = OpConvertFToS %40 %42
+ %44 = OpLoad %9 %11
+ %45 = OpImageRead %2 %44 %43
+ %46 = OpFAdd %2 %39 %45
+ OpReturnValue %46
+ OpFunctionEnd
+ %48 = OpFunction %2 None %47
+ %49 = OpFunctionParameter %30
+ %50 = OpFunctionParameter %30
+ %51 = OpLabel
+ %52 = OpLoad %2 %49
+ %53 = OpVectorShuffle %35 %52 %52 0 1
+ %54 = OpLoad %2 %50
+ %55 = OpVectorShuffle %35 %54 %54 2 3
+ %56 = OpCompositeExtract %1 %53 0
+ %57 = OpCompositeExtract %1 %53 1
+ %58 = OpCompositeExtract %1 %55 0
+ %59 = OpCompositeExtract %1 %55 1
+ %60 = OpCompositeConstruct %2 %56 %57 %58 %59
+ OpReturnValue %60
+ OpFunctionEnd
  %63 = OpFunction %61 None %62
  %64 = OpLabel
  %65 = OpVariable %30 Function
@@ -1583,36 +1613,6 @@ TEST(DiffTest, DifferentDecorationsFragmentIgnoreSetBindingLocation) {
  %81 = OpFAdd %2 %77 %80
  OpStore %22 %81
  OpReturn
- OpFunctionEnd
- %48 = OpFunction %2 None %47
- %49 = OpFunctionParameter %30
- %50 = OpFunctionParameter %30
- %51 = OpLabel
- %52 = OpLoad %2 %49
- %53 = OpVectorShuffle %35 %52 %52 0 1
- %54 = OpLoad %2 %50
- %55 = OpVectorShuffle %35 %54 %54 2 3
- %56 = OpCompositeExtract %1 %53 0
- %57 = OpCompositeExtract %1 %53 1
- %58 = OpCompositeExtract %1 %55 0
- %59 = OpCompositeExtract %1 %55 1
- %60 = OpCompositeConstruct %2 %56 %57 %58 %59
- OpReturnValue %60
- OpFunctionEnd
- %32 = OpFunction %2 None %31
- %33 = OpFunctionParameter %30
- %34 = OpLabel
- %36 = OpLoad %6 %8
- %37 = OpLoad %2 %33
- %38 = OpVectorShuffle %35 %37 %37 0 1
- %39 = OpImageSampleImplicitLod %2 %36 %38
- %41 = OpLoad %2 %33
- %42 = OpVectorShuffle %35 %41 %41 2 3
- %43 = OpConvertFToS %40 %42
- %44 = OpLoad %9 %11
- %45 = OpImageRead %2 %44 %43
- %46 = OpFAdd %2 %39 %45
- OpReturnValue %46
  OpFunctionEnd
 )";
   Options options;

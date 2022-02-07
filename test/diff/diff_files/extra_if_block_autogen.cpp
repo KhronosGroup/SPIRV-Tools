@@ -390,34 +390,13 @@ TEST(DiffTest, ExtraIfBlock) {
  %63 = OpVariable %62 Output
  %67 = OpTypePointer Input %6
  %68 = OpVariable %67 Input
- %10 = OpFunction %6 None %7
- %11 = OpLabel
- %45 = OpVariable %12 Function
- %46 = OpAccessChain %21 %18 %20
- %47 = OpLoad %15 %46
- %48 = OpConvertUToF %6 %47
- %50 = OpFDiv %6 %48 %49
- OpStore %45 %50
- %51 = OpLoad %6 %45
- %54 = OpExtInst %6 %1 FClamp %51 %52 %53
- %55 = OpLoad %6 %45
- %56 = OpFMul %6 %55 %54
- OpStore %45 %56
-+%71 = OpAccessChain %21 %18 %32
-+%72 = OpLoad %15 %71
-+%73 = OpINotEqual %25 %72 %24
-+OpSelectionMerge %75 None
-+OpBranchConditional %73 %74 %75
-+%74 = OpLabel
- %57 = OpLoad %6 %45
-+%77 = OpFSub %6 %57 %76
-+OpStore %45 %77
-+OpBranch %75
-+%75 = OpLabel
-+%78 = OpLoad %6 %45
--%58 = OpExtInst %6 %1 Exp %57
-+%58 = OpExtInst %6 %1 Exp %78
- OpReturnValue %58
+ %4 = OpFunction %2 None %3
+ %5 = OpLabel
+ %64 = OpFunctionCall %6 %8
+ %65 = OpFunctionCall %6 %10
+ %66 = OpCompositeConstruct %61 %64 %65 %14 %29
+ OpStore %63 %66
+ OpReturn
  OpFunctionEnd
  %8 = OpFunction %6 None %7
  %9 = OpLabel
@@ -447,13 +426,34 @@ TEST(DiffTest, ExtraIfBlock) {
  %42 = OpFSub %6 %39 %41
  OpReturnValue %42
  OpFunctionEnd
- %4 = OpFunction %2 None %3
- %5 = OpLabel
- %64 = OpFunctionCall %6 %8
- %65 = OpFunctionCall %6 %10
- %66 = OpCompositeConstruct %61 %64 %65 %14 %29
- OpStore %63 %66
- OpReturn
+ %10 = OpFunction %6 None %7
+ %11 = OpLabel
+ %45 = OpVariable %12 Function
+ %46 = OpAccessChain %21 %18 %20
+ %47 = OpLoad %15 %46
+ %48 = OpConvertUToF %6 %47
+ %50 = OpFDiv %6 %48 %49
+ OpStore %45 %50
+ %51 = OpLoad %6 %45
+ %54 = OpExtInst %6 %1 FClamp %51 %52 %53
+ %55 = OpLoad %6 %45
+ %56 = OpFMul %6 %55 %54
+ OpStore %45 %56
++%71 = OpAccessChain %21 %18 %32
++%72 = OpLoad %15 %71
++%73 = OpINotEqual %25 %72 %24
++OpSelectionMerge %75 None
++OpBranchConditional %73 %74 %75
++%74 = OpLabel
+ %57 = OpLoad %6 %45
++%77 = OpFSub %6 %57 %76
++OpStore %45 %77
++OpBranch %75
++%75 = OpLabel
++%78 = OpLoad %6 %45
+-%58 = OpExtInst %6 %1 Exp %57
++%58 = OpExtInst %6 %1 Exp %78
+ OpReturnValue %58
  OpFunctionEnd
 )";
   Options options;
@@ -792,34 +792,13 @@ TEST(DiffTest, ExtraIfBlockNoDebug) {
  %63 = OpVariable %62 Output
  %67 = OpTypePointer Input %6
  %68 = OpVariable %67 Input
- %10 = OpFunction %6 None %7
- %11 = OpLabel
- %45 = OpVariable %12 Function
- %46 = OpAccessChain %21 %18 %20
- %47 = OpLoad %15 %46
- %48 = OpConvertUToF %6 %47
- %50 = OpFDiv %6 %48 %49
- OpStore %45 %50
- %51 = OpLoad %6 %45
- %54 = OpExtInst %6 %1 FClamp %51 %52 %53
- %55 = OpLoad %6 %45
- %56 = OpFMul %6 %55 %54
- OpStore %45 %56
-+%71 = OpAccessChain %21 %18 %32
-+%72 = OpLoad %15 %71
-+%73 = OpINotEqual %25 %72 %24
-+OpSelectionMerge %75 None
-+OpBranchConditional %73 %74 %75
-+%74 = OpLabel
- %57 = OpLoad %6 %45
-+%77 = OpFSub %6 %57 %76
-+OpStore %45 %77
-+OpBranch %75
-+%75 = OpLabel
-+%78 = OpLoad %6 %45
--%58 = OpExtInst %6 %1 Exp %57
-+%58 = OpExtInst %6 %1 Exp %78
- OpReturnValue %58
+ %4 = OpFunction %2 None %3
+ %5 = OpLabel
+ %64 = OpFunctionCall %6 %8
+ %65 = OpFunctionCall %6 %10
+ %66 = OpCompositeConstruct %61 %64 %65 %14 %29
+ OpStore %63 %66
+ OpReturn
  OpFunctionEnd
  %8 = OpFunction %6 None %7
  %9 = OpLabel
@@ -849,13 +828,34 @@ TEST(DiffTest, ExtraIfBlockNoDebug) {
  %42 = OpFSub %6 %39 %41
  OpReturnValue %42
  OpFunctionEnd
- %4 = OpFunction %2 None %3
- %5 = OpLabel
- %64 = OpFunctionCall %6 %8
- %65 = OpFunctionCall %6 %10
- %66 = OpCompositeConstruct %61 %64 %65 %14 %29
- OpStore %63 %66
- OpReturn
+ %10 = OpFunction %6 None %7
+ %11 = OpLabel
+ %45 = OpVariable %12 Function
+ %46 = OpAccessChain %21 %18 %20
+ %47 = OpLoad %15 %46
+ %48 = OpConvertUToF %6 %47
+ %50 = OpFDiv %6 %48 %49
+ OpStore %45 %50
+ %51 = OpLoad %6 %45
+ %54 = OpExtInst %6 %1 FClamp %51 %52 %53
+ %55 = OpLoad %6 %45
+ %56 = OpFMul %6 %55 %54
+ OpStore %45 %56
++%71 = OpAccessChain %21 %18 %32
++%72 = OpLoad %15 %71
++%73 = OpINotEqual %25 %72 %24
++OpSelectionMerge %75 None
++OpBranchConditional %73 %74 %75
++%74 = OpLabel
+ %57 = OpLoad %6 %45
++%77 = OpFSub %6 %57 %76
++OpStore %45 %77
++OpBranch %75
++%75 = OpLabel
++%78 = OpLoad %6 %45
+-%58 = OpExtInst %6 %1 Exp %57
++%58 = OpExtInst %6 %1 Exp %78
+ OpReturnValue %58
  OpFunctionEnd
 )";
   Options options;

@@ -578,61 +578,10 @@ TEST(DiffTest, LargeFunctionsSmallDiffs) {
  %113 = OpTypePointer Uniform %78
 +%138 = OpVariable %26 UniformConstant
  %129 = OpConstantComposite %32 %45 %45
- %8 = OpFunction %2 None %3
- %9 = OpLabel
- %101 = OpVariable %43 Function
- %92 = OpAccessChain %91 %90 %73
- %93 = OpLoad %87 %92
- %95 = OpAccessChain %94 %82 %45
- %96 = OpLoad %77 %95
- %97 = OpConvertUToF %86 %96
- %98 = OpMatrixTimesVector %86 %93 %97
- %99 = OpConvertFToU %77 %98
- %100 = OpAccessChain %94 %82 %45
- OpStore %100 %99
- OpStore %101 %45
- OpBranch %102
- %102 = OpLabel
- OpLoopMerge %104 %105 None
- OpBranch %106
- %106 = OpLabel
- %107 = OpLoad %24 %101
- %109 = OpSLessThan %54 %107 %108
- OpBranchConditional %109 %103 %104
- %103 = OpLabel
- %111 = OpAccessChain %110 %82 %73
- %112 = OpLoad %79 %111
- %114 = OpAccessChain %113 %90 %53
- %115 = OpLoad %78 %114
- %116 = OpVectorTimesScalar %79 %112 %115
- %117 = OpConvertFToU %13 %116
- %118 = OpCompositeExtract %10 %117 0
- %119 = OpCompositeExtract %10 %117 1
- %120 = OpCompositeExtract %10 %117 2
- %121 = OpCompositeConstruct %77 %118 %119 %120 %16
- %122 = OpAccessChain %94 %82 %45
- %123 = OpLoad %77 %122
- %124 = OpIAdd %77 %123 %121
- %125 = OpAccessChain %94 %82 %45
- OpStore %125 %124
- OpBranch %105
- %105 = OpLabel
- %126 = OpLoad %24 %101
- %127 = OpIAdd %24 %126 %73
- OpStore %101 %127
- OpBranch %102
- %104 = OpLabel
- OpMemoryBarrier %40 %41
- OpControlBarrier %40 %40 %42
--%128 = OpLoad %25 %27
-+%139 = OpLoad %25 %138
--%130 = OpImageRead %38 %128 %129
-+%130 = OpImageRead %38 %139 %129
- %131 = OpCompositeExtract %24 %130 0
- %132 = OpConvertSToF %78 %131
- %133 = OpCompositeConstruct %79 %132 %132 %132
- %134 = OpAccessChain %110 %82 %73
- OpStore %134 %133
+ %4 = OpFunction %2 None %3
+ %5 = OpLabel
+ %135 = OpFunctionCall %2 %6
+ %136 = OpFunctionCall %2 %8
  OpReturn
  OpFunctionEnd
  %6 = OpFunction %2 None %3
@@ -713,10 +662,61 @@ TEST(DiffTest, LargeFunctionsSmallDiffs) {
  OpStore %85 %83
  OpReturn
  OpFunctionEnd
- %4 = OpFunction %2 None %3
- %5 = OpLabel
- %135 = OpFunctionCall %2 %6
- %136 = OpFunctionCall %2 %8
+ %8 = OpFunction %2 None %3
+ %9 = OpLabel
+ %101 = OpVariable %43 Function
+ %92 = OpAccessChain %91 %90 %73
+ %93 = OpLoad %87 %92
+ %95 = OpAccessChain %94 %82 %45
+ %96 = OpLoad %77 %95
+ %97 = OpConvertUToF %86 %96
+ %98 = OpMatrixTimesVector %86 %93 %97
+ %99 = OpConvertFToU %77 %98
+ %100 = OpAccessChain %94 %82 %45
+ OpStore %100 %99
+ OpStore %101 %45
+ OpBranch %102
+ %102 = OpLabel
+ OpLoopMerge %104 %105 None
+ OpBranch %106
+ %106 = OpLabel
+ %107 = OpLoad %24 %101
+ %109 = OpSLessThan %54 %107 %108
+ OpBranchConditional %109 %103 %104
+ %103 = OpLabel
+ %111 = OpAccessChain %110 %82 %73
+ %112 = OpLoad %79 %111
+ %114 = OpAccessChain %113 %90 %53
+ %115 = OpLoad %78 %114
+ %116 = OpVectorTimesScalar %79 %112 %115
+ %117 = OpConvertFToU %13 %116
+ %118 = OpCompositeExtract %10 %117 0
+ %119 = OpCompositeExtract %10 %117 1
+ %120 = OpCompositeExtract %10 %117 2
+ %121 = OpCompositeConstruct %77 %118 %119 %120 %16
+ %122 = OpAccessChain %94 %82 %45
+ %123 = OpLoad %77 %122
+ %124 = OpIAdd %77 %123 %121
+ %125 = OpAccessChain %94 %82 %45
+ OpStore %125 %124
+ OpBranch %105
+ %105 = OpLabel
+ %126 = OpLoad %24 %101
+ %127 = OpIAdd %24 %126 %73
+ OpStore %101 %127
+ OpBranch %102
+ %104 = OpLabel
+ OpMemoryBarrier %40 %41
+ OpControlBarrier %40 %40 %42
+-%128 = OpLoad %25 %27
++%139 = OpLoad %25 %138
+-%130 = OpImageRead %38 %128 %129
++%130 = OpImageRead %38 %139 %129
+ %131 = OpCompositeExtract %24 %130 0
+ %132 = OpConvertSToF %78 %131
+ %133 = OpCompositeConstruct %79 %132 %132 %132
+ %134 = OpAccessChain %110 %82 %73
+ OpStore %134 %133
  OpReturn
  OpFunctionEnd
 )";
@@ -1213,61 +1213,10 @@ TEST(DiffTest, LargeFunctionsSmallDiffsNoDebug) {
  %113 = OpTypePointer Uniform %78
 +%138 = OpVariable %26 UniformConstant
  %129 = OpConstantComposite %32 %45 %45
- %8 = OpFunction %2 None %3
- %9 = OpLabel
- %101 = OpVariable %43 Function
- %92 = OpAccessChain %91 %90 %73
- %93 = OpLoad %87 %92
- %95 = OpAccessChain %94 %82 %45
- %96 = OpLoad %77 %95
- %97 = OpConvertUToF %86 %96
- %98 = OpMatrixTimesVector %86 %93 %97
- %99 = OpConvertFToU %77 %98
- %100 = OpAccessChain %94 %82 %45
- OpStore %100 %99
- OpStore %101 %45
- OpBranch %102
- %102 = OpLabel
- OpLoopMerge %104 %105 None
- OpBranch %106
- %106 = OpLabel
- %107 = OpLoad %24 %101
- %109 = OpSLessThan %54 %107 %108
- OpBranchConditional %109 %103 %104
- %103 = OpLabel
- %111 = OpAccessChain %110 %82 %73
- %112 = OpLoad %79 %111
- %114 = OpAccessChain %113 %90 %53
- %115 = OpLoad %78 %114
- %116 = OpVectorTimesScalar %79 %112 %115
- %117 = OpConvertFToU %13 %116
- %118 = OpCompositeExtract %10 %117 0
- %119 = OpCompositeExtract %10 %117 1
- %120 = OpCompositeExtract %10 %117 2
- %121 = OpCompositeConstruct %77 %118 %119 %120 %16
- %122 = OpAccessChain %94 %82 %45
- %123 = OpLoad %77 %122
- %124 = OpIAdd %77 %123 %121
- %125 = OpAccessChain %94 %82 %45
- OpStore %125 %124
- OpBranch %105
- %105 = OpLabel
- %126 = OpLoad %24 %101
- %127 = OpIAdd %24 %126 %73
- OpStore %101 %127
- OpBranch %102
- %104 = OpLabel
- OpMemoryBarrier %40 %41
- OpControlBarrier %40 %40 %42
--%128 = OpLoad %25 %27
-+%139 = OpLoad %25 %138
--%130 = OpImageRead %38 %128 %129
-+%130 = OpImageRead %38 %139 %129
- %131 = OpCompositeExtract %24 %130 0
- %132 = OpConvertSToF %78 %131
- %133 = OpCompositeConstruct %79 %132 %132 %132
- %134 = OpAccessChain %110 %82 %73
- OpStore %134 %133
+ %4 = OpFunction %2 None %3
+ %5 = OpLabel
+ %135 = OpFunctionCall %2 %6
+ %136 = OpFunctionCall %2 %8
  OpReturn
  OpFunctionEnd
  %6 = OpFunction %2 None %3
@@ -1348,10 +1297,61 @@ TEST(DiffTest, LargeFunctionsSmallDiffsNoDebug) {
  OpStore %85 %83
  OpReturn
  OpFunctionEnd
- %4 = OpFunction %2 None %3
- %5 = OpLabel
- %135 = OpFunctionCall %2 %6
- %136 = OpFunctionCall %2 %8
+ %8 = OpFunction %2 None %3
+ %9 = OpLabel
+ %101 = OpVariable %43 Function
+ %92 = OpAccessChain %91 %90 %73
+ %93 = OpLoad %87 %92
+ %95 = OpAccessChain %94 %82 %45
+ %96 = OpLoad %77 %95
+ %97 = OpConvertUToF %86 %96
+ %98 = OpMatrixTimesVector %86 %93 %97
+ %99 = OpConvertFToU %77 %98
+ %100 = OpAccessChain %94 %82 %45
+ OpStore %100 %99
+ OpStore %101 %45
+ OpBranch %102
+ %102 = OpLabel
+ OpLoopMerge %104 %105 None
+ OpBranch %106
+ %106 = OpLabel
+ %107 = OpLoad %24 %101
+ %109 = OpSLessThan %54 %107 %108
+ OpBranchConditional %109 %103 %104
+ %103 = OpLabel
+ %111 = OpAccessChain %110 %82 %73
+ %112 = OpLoad %79 %111
+ %114 = OpAccessChain %113 %90 %53
+ %115 = OpLoad %78 %114
+ %116 = OpVectorTimesScalar %79 %112 %115
+ %117 = OpConvertFToU %13 %116
+ %118 = OpCompositeExtract %10 %117 0
+ %119 = OpCompositeExtract %10 %117 1
+ %120 = OpCompositeExtract %10 %117 2
+ %121 = OpCompositeConstruct %77 %118 %119 %120 %16
+ %122 = OpAccessChain %94 %82 %45
+ %123 = OpLoad %77 %122
+ %124 = OpIAdd %77 %123 %121
+ %125 = OpAccessChain %94 %82 %45
+ OpStore %125 %124
+ OpBranch %105
+ %105 = OpLabel
+ %126 = OpLoad %24 %101
+ %127 = OpIAdd %24 %126 %73
+ OpStore %101 %127
+ OpBranch %102
+ %104 = OpLabel
+ OpMemoryBarrier %40 %41
+ OpControlBarrier %40 %40 %42
+-%128 = OpLoad %25 %27
++%139 = OpLoad %25 %138
+-%130 = OpImageRead %38 %128 %129
++%130 = OpImageRead %38 %139 %129
+ %131 = OpCompositeExtract %24 %130 0
+ %132 = OpConvertSToF %78 %131
+ %133 = OpCompositeConstruct %79 %132 %132 %132
+ %134 = OpAccessChain %110 %82 %73
+ OpStore %134 %133
  OpReturn
  OpFunctionEnd
 )";

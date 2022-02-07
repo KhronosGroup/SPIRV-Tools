@@ -167,17 +167,17 @@ TEST(DiffTest, MultipleDifferentEntryPoints) {
  %10 = OpVariable %17 Input
  %19 = OpTypePointer Output %16
  %9 = OpVariable %19 Output
+ %2 = OpFunction %14 None %3
+ %5 = OpLabel
+ %11 = OpLoad %15 %7
+ OpStore %4 %11
+ OpReturn
+ OpFunctionEnd
  %8 = OpFunction %14 None %3
  %6 = OpLabel
  %12 = OpLoad %15 %10
  %13 = OpCompositeConstruct %16 %12 %12 %12 %12
  OpStore %9 %13
- OpReturn
- OpFunctionEnd
- %2 = OpFunction %14 None %3
- %5 = OpLabel
- %11 = OpLoad %15 %7
- OpStore %4 %11
  OpReturn
  OpFunctionEnd
 )";
@@ -307,17 +307,17 @@ TEST(DiffTest, MultipleDifferentEntryPointsNoDebug) {
  %10 = OpVariable %17 Input
  %19 = OpTypePointer Output %16
  %9 = OpVariable %19 Output
+ %2 = OpFunction %14 None %3
+ %5 = OpLabel
+ %11 = OpLoad %15 %7
+ OpStore %4 %11
+ OpReturn
+ OpFunctionEnd
  %8 = OpFunction %14 None %3
  %6 = OpLabel
  %12 = OpLoad %15 %10
  %13 = OpCompositeConstruct %16 %12 %12 %12 %12
  OpStore %9 %13
- OpReturn
- OpFunctionEnd
- %2 = OpFunction %14 None %3
- %5 = OpLabel
- %11 = OpLoad %15 %7
- OpStore %4 %11
  OpReturn
  OpFunctionEnd
 )";
