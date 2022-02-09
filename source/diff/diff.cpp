@@ -307,6 +307,7 @@ class Differ {
                              const opt::Operand& dst_operand);
   bool DoInstructionsMatchFuzzy(const opt::Instruction* src_inst,
                                 const opt::Instruction* dst_inst);
+  bool AreIdenticalUintConstants(uint32_t src_id, uint32_t dst_id);
   bool DoDebugAndAnnotationInstructionsMatch(const opt::Instruction* src_inst,
                                              const opt::Instruction* dst_inst);
   bool AreVariablesMatchable(uint32_t src_id, uint32_t dst_id,
@@ -840,10 +841,8 @@ bool Differ::DoIdsMatchFuzzy(uint32_t src_id, uint32_t dst_id) {
   }
 
   // Int and Uint constants are interchangeable, match them in that case.
-  if (IsConstantUint(src_id_to_, src_id) &&
-      IsConstantUint(dst_id_to_, dst_id)) {
-    return GetConstantUint(src_id_to_, src_id) ==
-           GetConstantUint(dst_id_to_, dst_id);
+  if (AreIdenticalUintConstants(src_id, dst_id)) {
+    return true;
   }
 
   return false;
@@ -909,6 +908,13 @@ bool Differ::DoInstructionsMatchFuzzy(const opt::Instruction* src_inst,
   }
 
   return match;
+}
+
+bool Differ::AreIdenticalUintConstants(uint32_t src_id, uint32_t dst_id) {
+  return IsConstantUint(src_id_to_, src_id) &&
+         IsConstantUint(dst_id_to_, dst_id) &&
+         GetConstantUint(src_id_to_, src_id) ==
+             GetConstantUint(dst_id_to_, dst_id);
 }
 
 bool Differ::DoDebugAndAnnotationInstructionsMatch(
@@ -2001,9 +2007,14 @@ void Differ::MatchTypeIds() {
             return false;
           }
 
-          return GetConstantUint(src_id_to_,
-                                 src_inst->GetInOperand(1).AsId()) ==
-                 GetConstantUint(dst_id_to_, dst_inst->GetInOperand(1).AsId());
+          if (AreIdenticalUintConstants(src_inst->GetInOperand(1).AsId(),
+                                        dst_inst->GetInOperand(1).AsId())) {
+            return true;
+          }
+
+          // If size is not OpConstant, expect the ids to match exactly (for
+          // example if a spec contant is used).
+          return DoOperandsMatch(src_inst, dst_inst, 1, 1);
 
         case SpvOpTypeStruct:
           return MatchOpTypeStruct(src_inst, dst_inst, flexibility);

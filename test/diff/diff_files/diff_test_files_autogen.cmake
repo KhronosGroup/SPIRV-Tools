@@ -19,6 +19,7 @@ list(APPEND DIFF_TEST_FILES
 "diff_files/OpExtInst_in_dst_only_autogen.cpp"
 "diff_files/OpExtInst_in_src_only_autogen.cpp"
 "diff_files/basic_autogen.cpp"
+"diff_files/constant_array_size_autogen.cpp"
 "diff_files/different_decorations_fragment_autogen.cpp"
 "diff_files/different_decorations_vertex_autogen.cpp"
 "diff_files/extra_if_block_autogen.cpp"
@@ -31,5 +32,6 @@ list(APPEND DIFF_TEST_FILES
 "diff_files/reordered_if_blocks_autogen.cpp"
 "diff_files/reordered_switch_blocks_autogen.cpp"
 "diff_files/small_functions_small_diffs_autogen.cpp"
+"diff_files/spec_constant_array_size_autogen.cpp"
 "diff_files/unrelated_shaders_autogen.cpp"
 )
