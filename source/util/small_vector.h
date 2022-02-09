@@ -328,6 +328,14 @@ class SmallVector {
     ++size_;
   }
 
+  void pop_back() {
+    if (large_data_) {
+      large_data_->pop_back();
+    } else {
+      --size_;
+    }
+  }
+
   template <class InputIt>
   iterator insert(iterator pos, InputIt first, InputIt last) {
     size_t element_idx = (pos - begin());

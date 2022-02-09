@@ -593,6 +593,18 @@ TEST(SmallVectorTest, Resize6) {
   EXPECT_EQ(vec, result);
 }
 
+TEST(SmallVectorTest, Pop_back) {
+  SmallVector<uint32_t, 8> vec = {0, 1, 2, 10, 10, 10};
+  SmallVector<uint32_t, 8> result = {0, 1, 2};
+
+  EXPECT_EQ(vec.size(), 6);
+  vec.pop_back();
+  vec.pop_back();
+  vec.pop_back();
+  EXPECT_EQ(vec.size(), 3);
+  EXPECT_EQ(vec, result);
+}
+
 }  // namespace
 }  // namespace utils
 }  // namespace spvtools

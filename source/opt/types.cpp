@@ -182,8 +182,7 @@ bool Type::operator==(const Type& other) const {
   }
 }
 
-size_t Type::ComputeHashValue(size_t hash,
-                              std::vector<const Type*>* seen) const {
+size_t Type::ComputeHashValue(size_t hash, SeenTypes *seen) const {
   // Linear search through a dense, cache coherent vector is faster than O(log n)
   // search in a complex data structure (eg std::set) for the generally small 
   // number of nodes.  It also skips the overhead of an new/delete per Type 
@@ -241,7 +240,7 @@ size_t Type::ComputeHashValue(size_t hash,
 }
 
 size_t Type::HashValue() const {
-  std::vector<const Type*> seen;
+  SeenTypes seen;
   return ComputeHashValue(0, &seen);
 }
 
@@ -257,8 +256,7 @@ std::string Integer::str() const {
   return oss.str();
 }
 
-size_t Integer::ComputeExtraStateHash(size_t hash,
-                                      std::vector<const Type*>*) const {
+size_t Integer::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
   return hash_combine(hash, width_, signed_);
 }
 
@@ -273,8 +271,7 @@ std::string Float::str() const {
   return oss.str();
 }
 
-size_t Float::ComputeExtraStateHash(size_t hash,
-                                    std::vector<const Type*>*) const {
+size_t Float::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
   return hash_combine(hash, width_);
 }
 
@@ -297,7 +294,7 @@ std::string Vector::str() const {
   return oss.str();
 }
 
-size_t Vector::ComputeExtraStateHash(size_t hash, std::vector<const Type*>* seen) const {
+size_t Vector::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
   // prefer form that doesn't require push/pop from stack: add state and
   // make tail call.
   hash = hash_combine(hash, count_);
@@ -323,7 +320,7 @@ std::string Matrix::str() const {
   return oss.str();
 }
 
-size_t Matrix::ComputeExtraStateHash(size_t hash, std::vector<const Type*>* seen) const {
+size_t Matrix::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
   hash = hash_combine(hash, count_);
   return element_type_->ComputeHashValue(hash, seen);
 }
@@ -360,7 +357,7 @@ std::string Image::str() const {
   return oss.str();
 }
 
-size_t Image::ComputeExtraStateHash(size_t hash, std::vector<const Type*>* seen) const {
+size_t Image::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
   hash = hash_combine(hash, dim_, depth_, arrayed_, ms_, sampled_, format_,
                       access_qualifier_);
   return sampled_type_->ComputeHashValue(hash, seen);
@@ -379,7 +376,7 @@ std::string SampledImage::str() const {
   return oss.str();
 }
 
-size_t SampledImage::ComputeExtraStateHash(size_t hash, std::vector<const Type*>* seen) const {
+size_t SampledImage::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
   return image_type_->ComputeHashValue(hash, seen);
 }
 
@@ -413,7 +410,7 @@ std::string Array::str() const {
   return oss.str();
 }
 
-size_t Array::ComputeExtraStateHash(size_t hash, std::vector<const Type*>* seen) const {
+size_t Array::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
   hash = hash_combine(hash, length_info_.words);
   return element_type_->ComputeHashValue(hash, seen);
 }
@@ -438,7 +435,7 @@ std::string RuntimeArray::str() const {
   return oss.str();
 }
 
-size_t RuntimeArray::ComputeExtraStateHash(size_t hash, std::vector<const Type*>* seen) const {
+size_t RuntimeArray::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
   return element_type_->ComputeHashValue(hash, seen);
 }
 
@@ -496,7 +493,7 @@ std::string Struct::str() const {
   return oss.str();
 }
 
-size_t Struct::ComputeExtraStateHash(size_t hash, std::vector<const Type*>* seen) const {
+size_t Struct::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
   for (auto* t : element_types_) {
     hash = t->ComputeHashValue(hash, seen);
   }
@@ -518,7 +515,7 @@ std::string Opaque::str() const {
   return oss.str();
 }
 
-size_t Opaque::ComputeExtraStateHash(size_t hash, std::vector<const Type*>*) const {
+size_t Opaque::ComputeExtraStateHash(size_t hash, SeenTypes*) const {
   return hash_combine(hash, name_);
 }
 
@@ -548,7 +545,7 @@ std::string Pointer::str() const {
   return os.str();
 }
 
-size_t Pointer::ComputeExtraStateHash(size_t hash, std::vector<const Type*>* seen) const {
+size_t Pointer::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
   hash = hash_combine(hash, storage_class_);
   return pointee_type_->ComputeHashValue(hash, seen);
 }
@@ -584,7 +581,7 @@ std::string Function::str() const {
   return oss.str();
 }
 
-size_t Function::ComputeExtraStateHash(size_t hash, std::vector<const Type*>* seen) const {
+size_t Function::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
   for (const auto* t : param_types_) {
     hash = t->ComputeHashValue(hash, seen);
   }
@@ -605,8 +602,7 @@ std::string Pipe::str() const {
   return oss.str();
 }
 
-size_t Pipe::ComputeExtraStateHash(size_t hash,
-                                   std::vector<const Type*>*) const {
+size_t Pipe::ComputeExtraStateHash(size_t hash, SeenTypes*) const {
   return hash_combine(hash, access_qualifier_);
 }
 
@@ -630,7 +626,7 @@ std::string ForwardPointer::str() const {
   return oss.str();
 }
 
-size_t ForwardPointer::ComputeExtraStateHash(size_t hash, std::vector<const Type*>* seen) const {
+size_t ForwardPointer::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
   hash = hash_combine(hash, target_id_, storage_class_);
   if (pointer_) hash = pointer_->ComputeHashValue(hash, seen);
   return hash;
@@ -657,8 +653,8 @@ std::string CooperativeMatrixNV::str() const {
   return oss.str();
 }
 
-size_t CooperativeMatrixNV::ComputeExtraStateHash(
-    size_t hash, std::vector<const Type*>* seen) const {
+size_t CooperativeMatrixNV::ComputeExtraStateHash(size_t hash,
+                                                  SeenTypes* seen) const {
   hash = hash_combine(hash, scope_id_, rows_id_, columns_id_);
   return component_type_->ComputeHashValue(hash, seen);
 }
