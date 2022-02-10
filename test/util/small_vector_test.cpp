@@ -56,6 +56,18 @@ TEST(SmallVectorTest, Initialize_list2) {
   }
 }
 
+TEST(SmallVectorTest, Initialize_list3) {
+  std::vector<uint32_t> result = {0, 1, 2, 3};
+  SmallVector<uint32_t, 6> vec(result.begin(), result.end());
+
+  EXPECT_FALSE(vec.empty());
+  EXPECT_EQ(vec.size(), 4);
+
+  for (uint32_t i = 0; i < vec.size(); ++i) {
+    EXPECT_EQ(vec[i], result[i]);
+  }
+}
+
 TEST(SmallVectorTest, Initialize_copy1) {
   SmallVector<uint32_t, 6> vec1 = {0, 1, 2, 3};
   SmallVector<uint32_t, 6> vec2(vec1);
