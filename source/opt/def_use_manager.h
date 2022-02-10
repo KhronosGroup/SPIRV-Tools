@@ -182,9 +182,10 @@ class DefUseManager {
   using InstToUsersMap = std::unordered_map<const Instruction*, UseListHead>;
 
   // Represents a range inside |used_ids_|
-  // |first| is the start index of the range
-  // |second| is the length
-  using UsedIdRange = std::pair<uint32_t, uint32_t>;
+  struct UsedIdRange {
+    uint32_t start;
+    uint32_t size;
+  };
   
   // Stores mapping from instruction to their UsedIdRange
   using InstToUsedIdRangeMap = std::unordered_map<const Instruction*, UsedIdRange>;
@@ -200,7 +201,6 @@ class DefUseManager {
   IdToDefMap id_to_def_;      // Mapping from ids to their definitions
   InstToUsersMap inst_to_users_;
   UseList use_pool_;
-  //std::vector<UseRecord> use_records_;		// Shared storage for UseRecords lists.
 
   InstToUsedIdRangeMap inst_to_used_info_;  // Mapping from instruction to range of used_ids_.
   uint32_t free_id_count_ = 0;              // How many entries in used_ids_ have been freed.

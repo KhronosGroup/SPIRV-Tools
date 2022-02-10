@@ -41,7 +41,7 @@ void DefUseManager::AnalyzeInstUse(Instruction* inst) {
   // not have any in-operands. In such cases, we still need a entry for those
   // instructions so this manager knows it has seen the instruction later.
   UsedIdRange* instInfo = &inst_to_used_info_[inst];
-  instInfo->first = uint32_t(used_ids_.size());
+  instInfo->start = uint32_t(used_ids_.size());
 
   for (uint32_t i = 0; i < inst->NumOperands(); ++i) {
     switch (inst->GetOperand(i).type) {
@@ -69,7 +69,7 @@ void DefUseManager::AnalyzeInstUse(Instruction* inst) {
         break;
     }
   }
-  instInfo->second = uint32_t(used_ids_.size() - instInfo->first);
+  instInfo->size = uint32_t(used_ids_.size() - instInfo->start);
 }
 
 void DefUseManager::AnalyzeInstDefUse(Instruction* inst) {
@@ -246,14 +246,14 @@ void DefUseManager::EraseUseRecordsOfOperandIds(const Instruction* inst) {
   auto iter = inst_to_used_info_.find(inst);
   if (iter != inst_to_used_info_.end()) {
     const UsedIdRange& range = iter->second;
-    for (uint32_t idx = range.first, i = 0; i < range.second; ++i, ++idx) {
+    for (uint32_t idx = range.start, i = 0; i < range.size; ++i, ++idx) {
       auto def_iter = inst_to_users_.find(GetDef(used_ids_[idx]));
       if (def_iter != inst_to_users_.end()) {
         use_pool_.remove_first(def_iter->second,
                                const_cast<Instruction*>(inst));
       }
     }
-    free_id_count_ += range.second;
+    free_id_count_ += range.size;
     inst_to_used_info_.erase(inst);
 
     // Determine if we should compact use_records_ and used_ids_ based on how
@@ -288,9 +288,9 @@ void DefUseManager::CompactUsedIds() {
   new_ids.reserve(used_ids_.size() - free_id_count_);
   for (auto& iter : inst_to_used_info_) {
     UsedIdRange& use_range = iter.second;
-    new_ids.insert(new_ids.end(), &used_ids_[use_range.first],
-                   &used_ids_[use_range.first] + use_range.second);
-    use_range.first = int32_t(new_ids.size()) - use_range.second;
+    new_ids.insert(new_ids.end(), &used_ids_[use_range.start],
+                   &used_ids_[use_range.start] + use_range.size);
+    use_range.start = int32_t(new_ids.size()) - use_range.size;
   }
   used_ids_ = std::move(new_ids);
   free_id_count_ = 0;
@@ -315,7 +315,7 @@ bool CompareAndPrintDifferences(const DefUseManager& lhs,
   }
 
   if (lhs.inst_to_used_info_.size() != rhs.inst_to_used_info_.size()) {
-    printf("Diff in id_to_users: missing value in rhs\n");
+    printf("Diff in inst_to_used_info_: mismatching number of instructions\n");
     same = false;
   } else {
     for (auto p : lhs.inst_to_used_info_) {
@@ -327,16 +327,19 @@ bool CompareAndPrintDifferences(const DefUseManager& lhs,
       }
       const auto range_l = p.second;
       const auto range_r = it_r->second;
-      if (range_l.second != range_r.second) {
-        printf("Diff in id_to_used_info_: different number of used in rhs\n");
-        continue;
+      std::set<uint32_t> ul(
+          lhs.used_ids_.begin() + range_l.start,
+          lhs.used_ids_.begin() + range_l.start + range_l.size);
+      std::set<uint32_t> ur(
+          rhs.used_ids_.begin() + range_r.start,
+          rhs.used_ids_.begin() + range_r.start + range_r.size);
+      if (ul.size() != ur.size()) {
+        printf( "Diff in id_to_used_info_: different number of used ids");
+        same = false;
       }
-      for (uint32_t i = 0; i < range_l.second; ++i) {
-        if (lhs.used_ids_[range_l.first + i] !=
-            rhs.used_ids_[range_r.first + i]) {
-          printf("Diff in id_to_used_info_: different used in rhs\n");
-          same = false;
-        }
+      else if (ul != ur) {
+        printf("Diff in id_to_used_info_: different used ids\n");
+        same = false;
       }
     }
   }
@@ -345,7 +348,10 @@ bool CompareAndPrintDifferences(const DefUseManager& lhs,
     std::set<Instruction*> ul, ur;
     lhs.ForEachUser(l.first, [&ul](Instruction* use) { ul.insert(use); });
     rhs.ForEachUser(l.first, [&ur](Instruction* use) { ur.insert(use); });
-    if (ul != ur) {
+    if (ul.size() != ur.size()) {
+      printf("Diff in inst_to_users_: different number of users");
+      same = false;
+    } else if (ul != ur) {
       printf("Diff in inst_to_users_: different users\n");
       same = false;
     }
