@@ -612,25 +612,25 @@ class CooperativeMatrixNV : public Type {
   const uint32_t columns_id_;
 };
 
-#define DefineParameterlessType(type, name)                                    \
-  class type : public Type {                                                   \
-   public:                                                                     \
-    type() : Type(k##type) {}                                                  \
-    type(const type&) = default;                                               \
-                                                                               \
-    std::string str() const override { return #name; }                         \
-                                                                               \
-    type* As##type() override { return this; }                                 \
-    const type* As##type() const override { return this; }                     \
-                                                                               \
-    size_t ComputeExtraStateHash(size_t hash, SeenTypes*) const override {     \
-      return hash;                                                             \
-    }                                                                          \
-                                                                               \
-   private:                                                                    \
-    bool IsSameImpl(const Type* that, IsSameCache*) const override {           \
-      return that->As##type() && HasSameDecorations(that);                     \
-    }                                                                          \
+#define DefineParameterlessType(type, name)                                \
+  class type : public Type {                                               \
+   public:                                                                 \
+    type() : Type(k##type) {}                                              \
+    type(const type&) = default;                                           \
+                                                                           \
+    std::string str() const override { return #name; }                     \
+                                                                           \
+    type* As##type() override { return this; }                             \
+    const type* As##type() const override { return this; }                 \
+                                                                           \
+    size_t ComputeExtraStateHash(size_t hash, SeenTypes*) const override { \
+      return hash;                                                         \
+    }                                                                      \
+                                                                           \
+   private:                                                                \
+    bool IsSameImpl(const Type* that, IsSameCache*) const override {       \
+      return that->As##type() && HasSameDecorations(that);                 \
+    }                                                                      \
   }
 DefineParameterlessType(Void, void);
 DefineParameterlessType(Bool, bool);

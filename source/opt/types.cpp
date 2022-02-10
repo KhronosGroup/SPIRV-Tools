@@ -21,8 +21,8 @@
 #include <string>
 #include <unordered_set>
 
-#include "source/util/make_unique.h"
 #include "source/util/hash_combine.h"
+#include "source/util/make_unique.h"
 #include "spirv/unified1/spirv.h"
 
 namespace spvtools {
@@ -185,16 +185,16 @@ bool Type::operator==(const Type& other) const {
 }
 
 size_t Type::ComputeHashValue(size_t hash, SeenTypes *seen) const {
-  // Linear search through a dense, cache coherent vector is faster than O(log n)
-  // search in a complex data structure (eg std::set) for the generally small 
-  // number of nodes.  It also skips the overhead of an new/delete per Type 
+  // Linear search through a dense, cache coherent vector is faster than O(log
+  // n) search in a complex data structure (eg std::set) for the generally small
+  // number of nodes.  It also skips the overhead of an new/delete per Type
   // (when inserting/removing from a set).
   if (std::find(seen->begin(), seen->end(), this) != seen->end()) {
     return hash;
   }
 
   seen->push_back(this);
-  
+
   hash = hash_combine(hash, kind_);
   for (const auto& d : decorations_) {
     hash = hash_combine(hash, d);
@@ -628,7 +628,8 @@ std::string ForwardPointer::str() const {
   return oss.str();
 }
 
-size_t ForwardPointer::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
+size_t ForwardPointer::ComputeExtraStateHash(size_t hash,
+                                             SeenTypes* seen) const {
   hash = hash_combine(hash, target_id_, storage_class_);
   if (pointer_) hash = pointer_->ComputeHashValue(hash, seen);
   return hash;

@@ -22,7 +22,8 @@ namespace spvtools {
 namespace utils {
 
 // Helpers for incrementally computing hashes.
-// For reference, see http://open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3876.pdf
+// For reference, see
+// http://open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3876.pdf
 
 template <typename T>
 inline size_t hash_combine(std::size_t seed, const T& val) {

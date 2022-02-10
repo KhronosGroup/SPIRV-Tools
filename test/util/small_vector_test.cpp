@@ -638,19 +638,19 @@ TEST(SmallVectorTest, Pop_back_TestDestructor) {
 
   EXPECT_EQ(num_ctors, capacity);
   while (!vec.empty()) {
-      vec.pop_back();
+    vec.pop_back();
   }
 
   EXPECT_EQ(num_ctors, capacity);
   EXPECT_EQ(num_dtors, num_ctors);
 
   // And when larger than builtin capacity
-  for (int i = 0; i < capacity*2; ++i) {
+  for (int i = 0; i < capacity * 2; ++i) {
     vec.emplace_back(num_ctors, num_dtors);
   }
 
   while (!vec.empty()) {
-      vec.pop_back();
+    vec.pop_back();
   }
   EXPECT_EQ(num_dtors, num_ctors);
 }

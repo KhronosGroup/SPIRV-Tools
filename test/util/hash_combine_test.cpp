@@ -38,7 +38,6 @@ TEST(HashCombineTest, Vector) {
             hash_combine(0, 1, 2, 3));
 }
 
-
 }  // namespace
 }  // namespace utils
 }  // namespace spvtools
