@@ -30,20 +30,20 @@ inline size_t hash_combine(std::size_t seed, const T& val) {
   return seed ^ (std::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
 }
 
-inline size_t hash_combine(std::size_t hash) { return hash; }
-
-template <typename T, typename... Types>
-inline size_t hash_combine(std::size_t hash, const T& val,
-                           const Types&... args) {
-  return hash_combine(hash_combine(hash, val), args...);
-}
-
 template <typename T>
 inline size_t hash_combine(std::size_t hash, const std::vector<T>& vals) {
   for (const T& val : vals) {
     hash = hash_combine(hash, val);
   }
   return hash;
+}
+
+inline size_t hash_combine(std::size_t hash) { return hash; }
+
+template <typename T, typename... Types>
+inline size_t hash_combine(std::size_t hash, const T& val,
+                           const Types&... args) {
+  return hash_combine(hash_combine(hash, val), args...);
 }
 
 }  // namespace utils
