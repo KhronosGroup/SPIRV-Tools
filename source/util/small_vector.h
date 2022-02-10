@@ -333,6 +333,7 @@ class SmallVector {
       large_data_->pop_back();
     } else {
       --size_;
+      small_data_[size_].~T();
     }
   }
 
