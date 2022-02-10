@@ -22,12 +22,14 @@
 #include <unordered_set>
 
 #include "source/util/make_unique.h"
+#include "source/util/hash_combine.h"
 #include "spirv/unified1/spirv.h"
 
 namespace spvtools {
 namespace opt {
 namespace analysis {
 
+using spvtools::utils::hash_combine;
 using U32VecVec = std::vector<std::vector<uint32_t>>;
 
 namespace {
@@ -256,7 +258,7 @@ std::string Integer::str() const {
   return oss.str();
 }
 
-size_t Integer::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
+size_t Integer::ComputeExtraStateHash(size_t hash, SeenTypes*) const {
   return hash_combine(hash, width_, signed_);
 }
 
@@ -271,7 +273,7 @@ std::string Float::str() const {
   return oss.str();
 }
 
-size_t Float::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
+size_t Float::ComputeExtraStateHash(size_t hash, SeenTypes*) const {
   return hash_combine(hash, width_);
 }
 

@@ -198,30 +198,6 @@ protected:
   // Add any type-specific state to |hash| and returns new hash.
   virtual size_t ComputeExtraStateHash(size_t hash, SeenTypes* seen) const = 0;
 
-  // helpers for incrementally computing hash value
-  // http://open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3876.pdf
-  template <typename T>
-  static size_t hash_combine(std::size_t seed, const T& val) {
-    return seed ^ std::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-  }
-
-  static size_t hash_combine(std::size_t hash) {
-      return hash;
-  }
-
-  template <typename T, typename... Types>
-  static size_t hash_combine(std::size_t hash, const T& val, const Types&... args) {
-    return hash_combine(hash_combine(hash, val), args...);
-  }
-
-  template <typename T>
-  static size_t hash_combine(std::size_t hash, const std::vector<T>& vals) {
-    for (const T& val : vals) {
-      hash = hash_combine(hash, val);
-    }
-    return hash;
-  }
-
  protected:
   // Decorations attached to this type. Each decoration is encoded as a vector
   // of uint32_t numbers. The first uint32_t number is the decoration value,
