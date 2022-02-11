@@ -15,70 +15,125 @@
 #ifndef SOURCE_UTIL_POOLED_LINKED_LIST_H_
 #define SOURCE_UTIL_POOLED_LINKED_LIST_H_
 
+#include <cstdint>
+#include <vector>
+
 namespace spvtools {
 namespace utils {
 
-// Implements a linked-list where list nodes come from a shared pool that is
-// allocated in bulk.  This is meant to be used in scenarios where you have
-// many short lists and want to avoid making a great many small allocations.
-// 
+// Implements a linked-list where list nodes come from a shared pool. This is
+// meant to be used in scenarios where it is desirable to avoid many small
+// allocations.
+//
 // Instead of pointers, the list uses indices to allow the underlying storage 
 // to be modified without needing to modify the list. When removing elements 
 // from the list, nodes are not deleted or recycled: to reclaim unused space,
-// perform a sequence of |move_to| operations into a new pool on all the 
-// lists stored in the old pool.
+// perform a sequence of |move_nodes| operations into a temporary pool, which
+// then is moved into the old pool.
 //
 // This does *not* attempt to implement a full stl-compatible interface.
 template <typename T>
 class PooledLinkedList {
  public:
-  struct Head {
-    int32_t head = -1;
-    int32_t tail = -1;
-  };
-
   struct Node {
     T element = {};
     int32_t next = -1;
   };
 
-  PooledLinkedList() = default;
-  ~PooledLinkedList() = default;
+  using NodePool = std::vector<Node>;
 
-  PooledLinkedList(PooledLinkedList&& that) { *this = std::move(that); }
+  PooledLinkedList() = delete;
+  PooledLinkedList(NodePool& nodes) : nodes_(nodes) {}
 
-  PooledLinkedList(const PooledLinkedList&) = delete;
-  PooledLinkedList& operator=(const PooledLinkedList&) = delete;
+  // Shared iterator implementation (for iterator and const_iterator).
+  template <typename ElementT, typename PoolT>
+  class iterator_base {
+   public:
+    iterator_base(const iterator_base& i) : nodes_(i.nodes_), index_(i.index_) {}
 
-  Node& operator[](int32_t index) { return nodes_[index]; }
-  const Node& operator[](int32_t index) const { return nodes_[index]; }
+    iterator_base& operator++() {
+      index_ = nodes_->at(index_).next;
+      return *this;
+    }
 
-  bool empty(const Head& head) const { return head.head == -1; }
+    iterator_base& operator=(const iterator_base& i) {
+      nodes_ = i.nodes_;
+      index_ = i.index_;
+      return *this;
+    }
 
-  // Inserts |element| at the back of the list, updating |list_head|
-  void push_back(Head& list_head, T element) {
+    ElementT& operator*() const { return nodes_->at(index_).element; }
+    ElementT* operator->() const { return &nodes_->at(index_).element; }
+
+    friend inline bool operator==(const iterator_base& lhs,
+                                  const iterator_base& rhs) {
+      return lhs.nodes_ == rhs.nodes_ && lhs.index_ == rhs.index_;
+    }
+    friend inline bool operator!=(const iterator_base& lhs,
+                                  const iterator_base& rhs) {
+      return lhs.nodes_ != rhs.nodes_ || lhs.index_ != rhs.index_;
+    }
+
+    // Define standard iterator types needs so this class can be
+    // used with <algorithms>.
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = ElementT;
+    using pointer = ElementT*;
+    using const_pointer = const ElementT*;
+    using reference = ElementT&;
+    using const_reference = const ElementT&;
+    using size_type = size_t;
+
+   private:
+    friend PooledLinkedList;
+
+    iterator_base(PoolT* pool, int32_t index)
+        : nodes_(pool), index_(index) {}
+
+    PoolT* nodes_;
+    int32_t index_ = -1;
+  };
+
+  using iterator = iterator_base<T, NodePool>;
+  using const_iterator = iterator_base<const T, const NodePool>;
+
+  bool empty() const { return head_ == -1; }
+
+  T& front() { return nodes_[head_].element; }
+  T& back() { return nodes_[tail_].element; }
+  const T& front() const { return nodes_[head_].element; }
+  const T& back() const { return nodes_[tail_].element; }
+
+  iterator begin() { return iterator(&nodes_, head_); }
+  iterator end() { return iterator(&nodes_, -1); }
+  const_iterator begin() const { return const_iterator(&nodes_, head_); }
+  const_iterator end() const { return const_iterator(&nodes_, -1); }
+
+  // Inserts |element| at the back of the list.
+  void push_back(T element) {
     int32_t new_tail = int32_t(nodes_.size());
-    nodes_.push_back({element, -1});
-    if (list_head.head == -1) {
-      list_head.head = new_tail;
-      list_head.tail = new_tail;
+    nodes_.push_back(Node{element, -1});
+    if (head_ == -1) {
+      head_ = new_tail;
+      tail_ = new_tail;
     } else {
-      nodes_[list_head.tail].next = new_tail;
-      list_head.tail = new_tail;
+      nodes_[tail_].next = new_tail;
+      tail_ = new_tail;
     }
   }
 
-  // Removes the first occurrence of |element| from the list, updating |list_head|.
+  // Removes the first occurrence of |element| from the list.
   // Returns if |element| was removed.
-  bool remove_first(Head& list_head, T element) {
-    int32_t* prev_next = &list_head.head;
-    for (int32_t prev_index = -1, index = list_head.head; index != -1; /**/) {
+  bool remove_first(T element) {
+    int32_t* prev_next = &head_;
+    for (int32_t prev_index = -1, index = head_; index != -1; /**/) {
       auto& node = nodes_[index];
       if (node.element == element) {
         // Snip from of the list, optionally fixing up tail pointer.
-        if (list_head.tail == index) {
+        if (tail_ == index) {
           assert(node.next == -1);
-          list_head.tail = prev_index;
+          tail_ = prev_index;
         }
         *prev_next = node.next;
         return true;
@@ -91,38 +146,44 @@ class PooledLinkedList {
     return false;
   }
 
-  // Moves the elements in the provided list into this pool.
-  // Provides a way to compact the pool, reclaiming unused storage.
-  void move_to(Head& list_head, PooledLinkedList& that) {
+  // Moves the nodes in this list into |new_pool|, providing a way to compact
+  // storage and reclaim unused space.
+  //
+  // Upon completing a sequence of |move_nodes| calls, you must swap storage
+  // from |new_pool| into the pool used by your PooledLinkedLists.
+  // Example usage:
+  //
+  //    NodePool old_pool;  // Existing lists use this pool
+  //    NodePool new_pool;  // Temporary storage
+  //    for (PooledLinkedList& list : lists) {
+  //        list.move_to(new_pool);
+  //    }
+  //    old_pool = std::move(new_pool);
+  void move_nodes(NodePool& new_pool) {
     // Be sure to construct the list in the same order, instead of simply
     // doing a sequence of push_backs.
     int32_t prev_entry = -1;
-    for (int32_t index = list_head.head; index != -1;
-         index = nodes_[index].next) {
-      int32_t this_entry = int32_t(that.nodes_.size());
-      that.nodes_.push_back({std::move(nodes_[index].element), -1});
+    for (int32_t index = head_; index != -1; index = nodes_[index].next) {
+      int32_t this_entry = int32_t(new_pool.size());
+      new_pool.push_back(Node{std::move(nodes_[index].element), -1});
       if (prev_entry == -1) {
-        list_head.head = this_entry;
+        head_ = this_entry;
       } else {
-        that.nodes_[prev_entry].next = this_entry;
+        new_pool[prev_entry].next = this_entry;
       }
       prev_entry = this_entry;
     }
-    list_head.tail = prev_entry;
+    tail_ = prev_entry;
   }
-
-  PooledLinkedList& operator=(PooledLinkedList&& that) {
-    nodes_ = std::move(that.nodes_);
-    return *this;
-  }
-
-  const std::vector<Node>& nodes() const { return nodes_; }
 
  private:
-  std::vector<Node> nodes_;
+  NodePool& nodes_;
+  int32_t head_ = -1;
+  int32_t tail_ = -1;
 };
 
-
+template <typename T>
+using PooledLinkedListNodes = typename PooledLinkedList<T>::NodePool;
 
 }  // namespace utils
 }  // namespace spvtools

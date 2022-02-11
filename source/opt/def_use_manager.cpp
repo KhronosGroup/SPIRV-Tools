@@ -59,10 +59,10 @@ void DefUseManager::AnalyzeInstUse(Instruction* inst) {
 
         // Add to the users, taking care to avoid adding duplicates.  We know
         // the duplicate for this instruction will always be at the tail.
-        UseListHead& list_head = inst_to_users_.insert({def, UseListHead()}).first->second;
-        if (use_pool_.empty(list_head) ||
-            use_pool_[list_head.tail].element != inst) {
-          use_pool_.push_back(list_head, inst);
+        UseList& list =
+            inst_to_users_.insert({def, UseList(use_pool_)}).first->second;
+        if (list.empty() || list.back() != inst) {
+          list.push_back(inst);
         }
       } break;
       default:
@@ -112,10 +112,8 @@ bool DefUseManager::WhileEachUser(
 
   auto iter = inst_to_users_.find(def);
   if (iter != inst_to_users_.end()) {
-    for (int32_t index = iter->second.head; index != -1; /**/) {
-      const auto& node = use_pool_[index];
-      index = node.next;
-      if (!f(node.element)) return false;
+    for (Instruction* user : iter->second) {
+      if (!f(user)) return false;
     }
   }
   return true;
@@ -149,11 +147,7 @@ bool DefUseManager::WhileEachUse(
 
   auto iter = inst_to_users_.find(def);
   if (iter != inst_to_users_.end()) {
-    for (int32_t list_idx = iter->second.head; list_idx != -1; /**/) {
-      const auto& node = use_pool_[list_idx];
-      Instruction* const user = node.element;
-      list_idx = node.next;
-
+    for (Instruction* user : iter->second) {
       for (uint32_t idx = 0; idx != user->NumOperands(); ++idx) {
         const Operand& op = user->GetOperand(idx);
         if (op.type != SPV_OPERAND_TYPE_RESULT_ID && spvIsIdType(op.type)) {
@@ -249,8 +243,7 @@ void DefUseManager::EraseUseRecordsOfOperandIds(const Instruction* inst) {
     for (uint32_t idx = range.start, i = 0; i < range.size; ++i, ++idx) {
       auto def_iter = inst_to_users_.find(GetDef(used_ids_[idx]));
       if (def_iter != inst_to_users_.end()) {
-        use_pool_.remove_first(def_iter->second,
-                               const_cast<Instruction*>(inst));
+        def_iter->second.remove_first(const_cast<Instruction*>(inst));
       }
     }
     free_id_count_ += range.size;
@@ -276,9 +269,9 @@ void DefUseManager::CompactStorage() {
 }
 
 void DefUseManager::CompactUseRecords() {
-  UseList new_pool;
+  UseListPool new_pool;
   for (auto& iter : inst_to_users_) {
-    use_pool_.move_to(iter.second, new_pool);
+    iter.second.move_nodes(new_pool);
   }
   use_pool_ = std::move(new_pool);
 }
@@ -358,8 +351,8 @@ bool CompareAndPrintDifferences(const DefUseManager& lhs,
   }
   for (auto r : rhs.inst_to_users_) {
     auto iter_l = lhs.inst_to_users_.find(r.first);
-    if (r.second.head == -1 &&
-        !(iter_l == lhs.inst_to_users_.end() || iter_l->second.head == -1)) {
+    if (r.second.empty() &&
+        !(iter_l == lhs.inst_to_users_.end() || iter_l->second.empty())) {
       printf("Diff in inst_to_users_: unexpected instr in rhs\n");
       same = false;
     }

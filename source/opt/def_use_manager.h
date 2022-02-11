@@ -176,10 +176,10 @@ class DefUseManager {
 
  private:
   using UseList = spvtools::utils::PooledLinkedList<Instruction*>;
-  using UseListHead = typename UseList::Head;
+  using UseListPool = spvtools::utils::PooledLinkedListNodes<Instruction*>;
 
-  // Stores heads of linked lists of UseRecords in |use_records_|
-  using InstToUsersMap = std::unordered_map<const Instruction*, UseListHead>;
+  // Stores linked lists of Instructions using a def.
+  using InstToUsersMap = std::unordered_map<const Instruction*, UseList>;
 
   // Represents a range inside |used_ids_|
   struct UsedIdRange {
@@ -187,7 +187,7 @@ class DefUseManager {
     uint32_t size;
   };
   
-  // Stores mapping from instruction to their UsedIdRange
+  // Stores mapping from instruction to their UsedIdRange.
   using InstToUsedIdRangeMap = std::unordered_map<const Instruction*, UsedIdRange>;
 
   // Analyzes the defs and uses in the given |module| and populates data
@@ -200,7 +200,7 @@ class DefUseManager {
 
   IdToDefMap id_to_def_;      // Mapping from ids to their definitions
   InstToUsersMap inst_to_users_;
-  UseList use_pool_;
+  UseListPool use_pool_;
 
   InstToUsedIdRangeMap inst_to_used_info_;  // Mapping from instruction to range of used_ids_.
   uint32_t free_id_count_ = 0;              // How many entries in used_ids_ have been freed.
