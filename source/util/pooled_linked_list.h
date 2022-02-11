@@ -99,6 +99,7 @@ class PooledLinkedList {
   using const_iterator = iterator_base<const T, const NodePool>;
 
   bool empty() const { return head_ == -1; }
+  size_t size() const { return size_; }
 
   T& front() { return nodes_[head_].element; }
   T& back() { return nodes_[tail_].element; }
@@ -121,6 +122,7 @@ class PooledLinkedList {
       nodes_[tail_].next = new_tail;
       tail_ = new_tail;
     }
+    ++size_;
   }
 
   // Removes the first occurrence of |element| from the list.
@@ -136,6 +138,7 @@ class PooledLinkedList {
           tail_ = prev_index;
         }
         *prev_next = node.next;
+        --size_;
         return true;
       } else {
         prev_next = &node.next;
@@ -180,6 +183,7 @@ class PooledLinkedList {
   NodePool& nodes_;
   int32_t head_ = -1;
   int32_t tail_ = -1;
+  uint32_t size_ = 0;
 };
 
 template <typename T>

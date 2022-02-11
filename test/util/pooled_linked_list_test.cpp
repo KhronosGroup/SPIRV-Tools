@@ -36,11 +36,13 @@ static std::vector<T> ToVector(const PooledLinkedList<T>& list) {
 }
 
 template <typename T>
-static void AppendVector(PooledLinkedList<T>& pool,
+static void AppendVector(PooledLinkedList<T>& list,
                          const std::vector<T>& vec){
+  size_t prev_size = list.size();
   for (const T& t : vec) {
-    pool.push_back(t);
+    list.push_back(t);
   }
+  EXPECT_EQ(list.size(), prev_size + vec.size());
 }
 
 TEST(PooledLinkedListTest, Empty) {
@@ -120,6 +122,7 @@ TEST(PooledLinkedListTest, RemoveFirst) {
     EXPECT_TRUE(ll.remove_first(elt));
     EXPECT_FALSE(ll.remove_first(elt));
     EXPECT_EQ(tmp, ToVector(ll));
+    EXPECT_EQ(tmp.size(), ll.size());
   }
   EXPECT_TRUE(ll.empty());
 }

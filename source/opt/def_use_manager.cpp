@@ -46,8 +46,8 @@ void DefUseManager::AnalyzeInstUse(Instruction* inst) {
   // Create entry for the given instruction. Note that the instruction may
   // not have any in-operands. In such cases, we still need a entry for those
   // instructions so this manager knows it has seen the instruction later.
-  UsedIdRange* instInfo = &inst_to_used_info_[inst];
-  instInfo->start = uint32_t(used_ids_.size());
+  UsedIdList& used_ids =
+      inst_to_used_id_.insert({inst, UsedIdList(used_id_pool_)}).first->second;
 
   for (uint32_t i = 0; i < inst->NumOperands(); ++i) {
     switch (inst->GetOperand(i).type) {
@@ -61,7 +61,7 @@ void DefUseManager::AnalyzeInstUse(Instruction* inst) {
         assert(def && "Definition is not registered.");
 
         // Add to inst's use records
-        used_ids_.push_back(use_id);
+        used_ids.push_back(use_id);
 
         // Add to the users, taking care to avoid adding duplicates.  We know
         // the duplicate for this instruction will always be at the tail.
@@ -75,7 +75,6 @@ void DefUseManager::AnalyzeInstUse(Instruction* inst) {
         break;
     }
   }
-  instInfo->size = uint32_t(used_ids_.size() - instInfo->start);
 }
 
 void DefUseManager::AnalyzeInstDefUse(Instruction* inst) {
@@ -231,10 +230,19 @@ void DefUseManager::AnalyzeDefUse(Module* module) {
 }
 
 void DefUseManager::ClearInst(Instruction* inst) {
-  if (inst_to_used_info_.find(inst) != inst_to_used_info_.end()) {
+  if (inst_to_used_id_.find(inst) != inst_to_used_id_.end()) {
     EraseUseRecordsOfOperandIds(inst);
-    if (inst->result_id() != 0) {
-      inst_to_users_.erase(inst);
+    uint32_t const result_id = inst->result_id();
+    if (result_id != 0) {
+      // For each using instruction, remove result_id from their used ids.
+      auto iter = inst_to_users_.find(inst);
+      if (iter != inst_to_users_.end()) {
+        for (Instruction* use : iter->second) {
+          inst_to_used_id_.at(use).remove_first(result_id);
+        }
+        free_id_count_ += iter->second.size();
+        inst_to_users_.erase(iter);
+      }
       id_to_def_.erase(inst->result_id());
     }
   }
@@ -243,23 +251,23 @@ void DefUseManager::ClearInst(Instruction* inst) {
 void DefUseManager::EraseUseRecordsOfOperandIds(const Instruction* inst) {
   // Go through all ids used by this instruction, remove this instruction's
   // uses of them.
-  auto iter = inst_to_used_info_.find(inst);
-  if (iter != inst_to_used_info_.end()) {
-    const UsedIdRange& range = iter->second;
-    for (uint32_t idx = range.start, i = 0; i < range.size; ++i, ++idx) {
-      auto def_iter = inst_to_users_.find(GetDef(used_ids_[idx]));
+  auto iter = inst_to_used_id_.find(inst);
+  if (iter != inst_to_used_id_.end()) {
+    const UsedIdList& used_ids = iter->second;
+    for (uint32_t def_id : used_ids) {
+      auto def_iter = inst_to_users_.find(GetDef(def_id));
       if (def_iter != inst_to_users_.end()) {
         def_iter->second.remove_first(const_cast<Instruction*>(inst));
       }
     }
-    free_id_count_ += range.size;
-    inst_to_used_info_.erase(inst);
+    free_id_count_ += used_ids.size();
+    inst_to_used_id_.erase(inst);
 
     // If we're using only a fraction of the space in used_ids_, compact storage
     // to prevent memory usage from being unbounded.
-    size_t in_use = used_ids_.size() - free_id_count_;
+    size_t in_use = used_id_pool_.size() - free_id_count_;
     if (in_use > kCompactThresholdMinInUseIds &&
-        in_use < used_ids_.size() / kCompactThresholdFractionFreeIds) {
+        in_use < used_id_pool_.size() / kCompactThresholdFractionFreeIds) {
       CompactStorage();
     }
   }
@@ -279,15 +287,11 @@ void DefUseManager::CompactUseRecords() {
 }
 
 void DefUseManager::CompactUsedIds() {
-  std::vector<uint32_t> new_ids;
-  new_ids.reserve(used_ids_.size() - free_id_count_);
-  for (auto& iter : inst_to_used_info_) {
-    UsedIdRange& use_range = iter.second;
-    new_ids.insert(new_ids.end(), used_ids_.begin() + use_range.start,
-                   used_ids_.begin() + use_range.start + use_range.size);
-    use_range.start = int32_t(new_ids.size()) - use_range.size;
+  UsedIdListPool new_pool;
+  for (auto& iter : inst_to_used_id_) {
+    iter.second.move_nodes(new_pool);
   }
-  used_ids_ = std::move(new_ids);
+  used_id_pool_ = std::move(new_pool);
   free_id_count_ = 0;
 }
 
@@ -309,49 +313,43 @@ bool CompareAndPrintDifferences(const DefUseManager& lhs,
     same = false;
   }
 
-  if (lhs.inst_to_used_info_.size() != rhs.inst_to_used_info_.size()) {
-    printf("Diff in inst_to_used_info_: mismatching number of instructions\n");
-    same = false;
-  } else {
-    for (auto p : lhs.inst_to_used_info_) {
-      auto it_r = rhs.inst_to_used_info_.find(p.first);
-      if (it_r == rhs.inst_to_used_info_.end()) {
-        printf("Diff in id_to_used_info_: missing value in rhs\n");
-        same = false;
-        continue;
-      }
-      const auto range_l = p.second;
-      const auto range_r = it_r->second;
-      std::set<uint32_t> ul(
-          lhs.used_ids_.begin() + range_l.start,
-          lhs.used_ids_.begin() + range_l.start + range_l.size);
-      std::set<uint32_t> ur(
-          rhs.used_ids_.begin() + range_r.start,
-          rhs.used_ids_.begin() + range_r.start + range_r.size);
-      if (ul.size() != ur.size()) {
-        printf( "Diff in id_to_used_info_: different number of used ids");
-        same = false;
-      }
-      else if (ul != ur) {
-        printf("Diff in id_to_used_info_: different used ids\n");
-        same = false;
-      }
+  for (const auto& l : lhs.inst_to_used_id_) {
+    std::set<uint32_t> ul, ur;
+    lhs.ForEachUse(l.first, [&ul](Instruction* use, uint32_t id) { ul.insert(id); });
+    rhs.ForEachUse(l.first, [&ur](Instruction* use, uint32_t id) { ur.insert(id); });
+    if (ul.size() != ur.size()) {
+      printf(
+          "Diff in inst_to_used_id_: different number of used ids (%zu != %zu)",
+          ul.size(), ur.size());
+      same = false;
+    } else if (ul != ur) {
+      printf("Diff in inst_to_used_id_: different used ids\n");
+      same = false;
+    }
+  }
+  for (const auto& r : rhs.inst_to_used_id_) {
+    auto iter_l = lhs.inst_to_used_id_.find(r.first);
+    if (r.second.empty() &&
+        !(iter_l == lhs.inst_to_used_id_.end() || iter_l->second.empty())) {
+      printf("Diff in inst_to_used_id_: unexpected instr in rhs\n");
+      same = false;
     }
   }
 
-  for (auto l : lhs.inst_to_users_) {
+  for (const auto& l : lhs.inst_to_users_) {
     std::set<Instruction*> ul, ur;
     lhs.ForEachUser(l.first, [&ul](Instruction* use) { ul.insert(use); });
     rhs.ForEachUser(l.first, [&ur](Instruction* use) { ur.insert(use); });
     if (ul.size() != ur.size()) {
-      printf("Diff in inst_to_users_: different number of users");
+      printf("Diff in inst_to_users_: different number of users (%zu != %zu)",
+          ul.size(), ur.size());
       same = false;
     } else if (ul != ur) {
       printf("Diff in inst_to_users_: different users\n");
       same = false;
     }
   }
-  for (auto r : rhs.inst_to_users_) {
+  for (const auto& r : rhs.inst_to_users_) {
     auto iter_l = lhs.inst_to_users_.find(r.first);
     if (r.second.empty() &&
         !(iter_l == lhs.inst_to_users_.end() || iter_l->second.empty())) {
