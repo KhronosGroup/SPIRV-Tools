@@ -15,7 +15,8 @@
 #ifndef SOURCE_UTIL_HASH_COMBINE_H_
 #define SOURCE_UTIL_HASH_COMBINE_H_
 
-#include <cstdint>
+#include <cstddef>
+#include <functional>
 #include <vector>
 
 namespace spvtools {
