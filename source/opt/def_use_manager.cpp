@@ -18,6 +18,12 @@ namespace spvtools {
 namespace opt {
 namespace analysis {
 
+// Don't compact before we have a reasonable number of ids allocated (~32kb).
+static const size_t kCompactThresholdMinInUseIds = (8 * 1024);
+// Compact when fewer than this fraction of the storage is used (should be 2^n
+// for performance).
+static const size_t kCompactThresholdFractionFreeIds = 8;
+
 void DefUseManager::AnalyzeInstDef(Instruction* inst) {
   const uint32_t def_id = inst->result_id();
   if (def_id != 0) {
@@ -249,15 +255,11 @@ void DefUseManager::EraseUseRecordsOfOperandIds(const Instruction* inst) {
     free_id_count_ += range.size;
     inst_to_used_info_.erase(inst);
 
-    // Determine if we should compact use_records_ and used_ids_ based on how
-    // much space has been freed so far compared to the amount actually in-use.
-    // Don't bother doing any compaction until we're using a reasonable amount
-    // of memory (64kb), regardless of how much is being wasted.
-    // These thresholds are fungible: they exist to stop unbounded memory use.
+    // If we're using only a fraction of the space in used_ids_, compact storage
+    // to prevent memory usage from being unbounded.
     size_t in_use = used_ids_.size() - free_id_count_;
-    size_t compact_min_used = (32 * 1024) / sizeof(used_ids_[0]);
-    size_t compact_min_free = in_use * 16;
-    if (in_use > compact_min_used && free_id_count_ > compact_min_free) {
+    if (in_use > kCompactThresholdMinInUseIds &&
+        in_use < used_ids_.size() / kCompactThresholdFractionFreeIds) {
       CompactStorage();
     }
   }
@@ -281,8 +283,8 @@ void DefUseManager::CompactUsedIds() {
   new_ids.reserve(used_ids_.size() - free_id_count_);
   for (auto& iter : inst_to_used_info_) {
     UsedIdRange& use_range = iter.second;
-    new_ids.insert(new_ids.end(), &used_ids_[use_range.start],
-                   &used_ids_[use_range.start] + use_range.size);
+    new_ids.insert(new_ids.end(), used_ids_.begin() + use_range.start,
+                   used_ids_.begin() + use_range.start + use_range.size);
     use_range.start = int32_t(new_ids.size()) - use_range.size;
   }
   used_ids_ = std::move(new_ids);
