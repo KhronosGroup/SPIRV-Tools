@@ -184,7 +184,7 @@ bool Type::operator==(const Type& other) const {
   }
 }
 
-size_t Type::ComputeHashValue(size_t hash, SeenTypes *seen) const {
+size_t Type::ComputeHashValue(size_t hash, SeenTypes* seen) const {
   // Linear search through a dense, cache coherent vector is faster than O(log
   // n) search in a complex data structure (eg std::set) for the generally small
   // number of nodes.  It also skips the overhead of an new/delete per Type
