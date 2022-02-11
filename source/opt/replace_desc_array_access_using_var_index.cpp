@@ -254,8 +254,8 @@ void ReplaceDescArrayAccessUsingVarIndex::ReplaceNonUniformAccessWithSwitchCase(
     uint32_t number_of_elements,
     const std::deque<Instruction*>& insts_to_be_cloned) const {
   auto* block = context()->get_instr_block(access_chain_final_user);
-  // If instruction does not belong to a block (i.e. in the case of OpDecorate),
-  // no replacement needed
+  // If the instruction does not belong to a block (i.e. in the case of OpDecorate),
+  // no replacement is needed.
   if (!block) return;
 
   // Create merge block and add terminator
