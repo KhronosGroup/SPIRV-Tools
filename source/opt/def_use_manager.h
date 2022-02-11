@@ -199,7 +199,6 @@ class DefUseManager {
 
   UsedIdListPool used_id_pool_;
   InstToUsedIdMap inst_to_used_id_;  // Map from instruction to used ids.
-  size_t free_id_count_ = 0;       // How many free entries in used_id_pool_.
 };
 
 }  // namespace analysis

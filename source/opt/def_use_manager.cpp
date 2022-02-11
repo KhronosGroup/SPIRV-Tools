@@ -19,7 +19,7 @@ namespace opt {
 namespace analysis {
 
 // Don't compact before we have a reasonable number of ids allocated (~32kb).
-static const size_t kCompactThresholdMinInUseIds = (8 * 1024);
+static const size_t kCompactThresholdMinTotalIds = (8 * 1024);
 // Compact when fewer than this fraction of the storage is used (should be 2^n
 // for performance).
 static const size_t kCompactThresholdFractionFreeIds = 8;
@@ -240,7 +240,6 @@ void DefUseManager::ClearInst(Instruction* inst) {
         for (Instruction* use : iter->second) {
           inst_to_used_id_.at(use).remove_first(result_id);
         }
-        free_id_count_ += iter->second.size();
         inst_to_users_.erase(iter);
       }
       id_to_def_.erase(inst->result_id());
@@ -260,14 +259,13 @@ void DefUseManager::EraseUseRecordsOfOperandIds(const Instruction* inst) {
         def_iter->second.remove_first(const_cast<Instruction*>(inst));
       }
     }
-    free_id_count_ += used_ids.size();
     inst_to_used_id_.erase(inst);
 
     // If we're using only a fraction of the space in used_ids_, compact storage
     // to prevent memory usage from being unbounded.
-    size_t in_use = used_id_pool_.size() - free_id_count_;
-    if (in_use > kCompactThresholdMinInUseIds &&
-        in_use < used_id_pool_.size() / kCompactThresholdFractionFreeIds) {
+    if (used_id_pool_.total_nodes() > kCompactThresholdMinTotalIds &&
+        used_id_pool_.used_nodes() <
+            used_id_pool_.total_nodes() / kCompactThresholdFractionFreeIds) {
       CompactStorage();
     }
   }
@@ -292,7 +290,6 @@ void DefUseManager::CompactUsedIds() {
     iter.second.move_nodes(new_pool);
   }
   used_id_pool_ = std::move(new_pool);
-  free_id_count_ = 0;
 }
 
 bool CompareAndPrintDifferences(const DefUseManager& lhs,

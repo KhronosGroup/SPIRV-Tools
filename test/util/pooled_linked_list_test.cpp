@@ -38,11 +38,9 @@ static std::vector<T> ToVector(const PooledLinkedList<T>& list) {
 template <typename T>
 static void AppendVector(PooledLinkedList<T>& list,
                          const std::vector<T>& vec){
-  size_t prev_size = list.size();
   for (const T& t : vec) {
     list.push_back(t);
   }
-  EXPECT_EQ(list.size(), prev_size + vec.size());
 }
 
 TEST(PooledLinkedListTest, Empty) {
@@ -122,7 +120,6 @@ TEST(PooledLinkedListTest, RemoveFirst) {
     EXPECT_TRUE(ll.remove_first(elt));
     EXPECT_FALSE(ll.remove_first(elt));
     EXPECT_EQ(tmp, ToVector(ll));
-    EXPECT_EQ(tmp.size(), ll.size());
   }
   EXPECT_TRUE(ll.empty());
 }
@@ -157,12 +154,16 @@ TEST(PooledLinkedList, MoveTo) {
   AppendVector(ll1, vec);
   AppendVector(ll2, vec);
   AppendVector(ll3, vec);
-  EXPECT_EQ(pool.size(), vec.size() * 3);
+  EXPECT_EQ(pool.total_nodes(), vec.size() * 3);
+  EXPECT_EQ(pool.total_nodes(), vec.size() * 3);
+  EXPECT_EQ(pool.free_nodes(), 0);
 
   // Remove elements
   while (!ll3.empty()) {
     ll3.remove_first(ll3.front());
   }
+
+  EXPECT_EQ(pool.free_nodes(), vec.size());
 
   // Move two lists to the new pool
   PooledLinkedListNodes<uint32_t> pool_new;
@@ -170,8 +171,10 @@ TEST(PooledLinkedList, MoveTo) {
   ll2.move_nodes(pool_new);
   pool = std::move(pool_new);
 
-  // Pool should be smaller
-  EXPECT_EQ(pool.size(), vec.size()*2);
+  // Pool should be smaller & have no free nodes.
+  EXPECT_EQ(pool.total_nodes(), vec.size()*2);
+  EXPECT_EQ(pool.used_nodes(), vec.size()*2);
+  EXPECT_EQ(pool.free_nodes(), 0);
 
   // Moved lists should be preserved
   EXPECT_EQ(ToVector(ll1), vec);

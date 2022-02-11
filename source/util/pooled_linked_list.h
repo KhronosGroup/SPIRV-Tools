@@ -21,6 +21,46 @@
 namespace spvtools {
 namespace utils {
 
+ // Shared storage of nodes for PooledLinkedList.
+template <typename T>
+class PooledLinkedListNodes {
+ public:
+  struct Node {
+    T element = {};
+    int32_t next = -1;
+  };
+
+  PooledLinkedListNodes() = default;
+  PooledLinkedListNodes(const PooledLinkedListNodes&) = delete;
+  PooledLinkedListNodes& operator=(const PooledLinkedListNodes&) = delete;
+
+  PooledLinkedListNodes(PooledLinkedListNodes&& that) {
+    *this = std::move(that);
+  }
+
+  PooledLinkedListNodes& operator=(PooledLinkedListNodes&& that) {
+    vec_ = std::move(that.vec_);
+    free_nodes_ = that.free_nodes_;
+    return *this;
+  }
+
+  size_t total_nodes() { return vec_.size(); }
+  size_t free_nodes() { return free_nodes_; }
+  size_t used_nodes() { return total_nodes() - free_nodes(); }
+
+ private:
+  template<typename T> friend class PooledLinkedList;
+
+  int32_t insert(T element) {
+    int32_t index = int32_t(vec_.size());
+    vec_.push_back(Node{element, -1});
+    return index;
+  }
+
+  std::vector<Node> vec_;
+  size_t free_nodes_ = 0;
+};
+
 // Implements a linked-list where list nodes come from a shared pool. This is
 // meant to be used in scenarios where it is desirable to avoid many small
 // allocations.
@@ -35,12 +75,9 @@ namespace utils {
 template <typename T>
 class PooledLinkedList {
  public:
-  struct Node {
-    T element = {};
-    int32_t next = -1;
-  };
 
-  using NodePool = std::vector<Node>;
+  using NodePool = PooledLinkedListNodes<T>;
+  using Node = typename NodePool::Node;
 
   PooledLinkedList() = delete;
   PooledLinkedList(NodePool& nodes) : nodes_(nodes) {}
@@ -95,34 +132,31 @@ class PooledLinkedList {
     int32_t index_ = -1;
   };
 
-  using iterator = iterator_base<T, NodePool>;
-  using const_iterator = iterator_base<const T, const NodePool>;
+  using iterator = iterator_base<T, std::vector<Node>>;
+  using const_iterator = iterator_base<const T, const std::vector<Node>>;
 
   bool empty() const { return head_ == -1; }
-  size_t size() const { return size_; }
 
-  T& front() { return nodes_[head_].element; }
-  T& back() { return nodes_[tail_].element; }
+  T& front() { return nodes_.vec_[head_].element; }
+  T& back() { return nodes_.vec_[tail_].element; }
   const T& front() const { return nodes_[head_].element; }
   const T& back() const { return nodes_[tail_].element; }
 
-  iterator begin() { return iterator(&nodes_, head_); }
-  iterator end() { return iterator(&nodes_, -1); }
-  const_iterator begin() const { return const_iterator(&nodes_, head_); }
-  const_iterator end() const { return const_iterator(&nodes_, -1); }
+  iterator begin() { return iterator(&nodes_.vec_, head_); }
+  iterator end() { return iterator(&nodes_.vec_, -1); }
+  const_iterator begin() const { return const_iterator(&nodes_.vec_, head_); }
+  const_iterator end() const { return const_iterator(&nodes_.vec_, -1); }
 
   // Inserts |element| at the back of the list.
   void push_back(T element) {
-    int32_t new_tail = int32_t(nodes_.size());
-    nodes_.push_back(Node{element, -1});
+    int32_t new_tail = nodes_.insert(element);
     if (head_ == -1) {
       head_ = new_tail;
       tail_ = new_tail;
     } else {
-      nodes_[tail_].next = new_tail;
+      nodes_.vec_[tail_].next = new_tail;
       tail_ = new_tail;
     }
-    ++size_;
   }
 
   // Removes the first occurrence of |element| from the list.
@@ -130,7 +164,7 @@ class PooledLinkedList {
   bool remove_first(T element) {
     int32_t* prev_next = &head_;
     for (int32_t prev_index = -1, index = head_; index != -1; /**/) {
-      auto& node = nodes_[index];
+      auto& node = nodes_.vec_[index];
       if (node.element == element) {
         // Snip from of the list, optionally fixing up tail pointer.
         if (tail_ == index) {
@@ -138,7 +172,7 @@ class PooledLinkedList {
           tail_ = prev_index;
         }
         *prev_next = node.next;
-        --size_;
+        nodes_.free_nodes_++;
         return true;
       } else {
         prev_next = &node.next;
@@ -148,6 +182,9 @@ class PooledLinkedList {
     }
     return false;
   }
+
+  // Returns the PooledLinkedListNodes that owns this list's nodes.
+  NodePool& pool() { return nodes_; }
 
   // Moves the nodes in this list into |new_pool|, providing a way to compact
   // storage and reclaim unused space.
@@ -166,13 +203,12 @@ class PooledLinkedList {
     // Be sure to construct the list in the same order, instead of simply
     // doing a sequence of push_backs.
     int32_t prev_entry = -1;
-    for (int32_t index = head_; index != -1; index = nodes_[index].next) {
-      int32_t this_entry = int32_t(new_pool.size());
-      new_pool.push_back(Node{std::move(nodes_[index].element), -1});
+    for (int32_t index = head_; index != -1; index = nodes_.vec_[index].next) {
+      int32_t this_entry = new_pool.insert(nodes_.vec_[index].element);
       if (prev_entry == -1) {
         head_ = this_entry;
       } else {
-        new_pool[prev_entry].next = this_entry;
+        new_pool.vec_[prev_entry].next = this_entry;
       }
       prev_entry = this_entry;
     }
@@ -183,11 +219,8 @@ class PooledLinkedList {
   NodePool& nodes_;
   int32_t head_ = -1;
   int32_t tail_ = -1;
-  uint32_t size_ = 0;
 };
 
-template <typename T>
-using PooledLinkedListNodes = typename PooledLinkedList<T>::NodePool;
 
 }  // namespace utils
 }  // namespace spvtools
