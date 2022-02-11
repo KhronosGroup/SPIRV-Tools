@@ -621,8 +621,8 @@ TEST(SmallVectorTest, Pop_back_TestDestructor) {
         : TracksDtor(that.num_ctors_, that.num_dtors_) {}
     ~TracksDtor() { num_dtors_++; }
 
-    int& num_dtors_;
     int& num_ctors_;
+    int& num_dtors_;
   };
 
   constexpr int capacity = 4;
