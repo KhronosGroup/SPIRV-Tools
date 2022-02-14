@@ -195,7 +195,7 @@ size_t Type::ComputeHashValue(size_t hash, SeenTypes* seen) const {
 
   seen->push_back(this);
 
-  hash = hash_combine(hash, kind_);
+  hash = hash_combine(hash, uint32_t(kind_));
   for (const auto& d : decorations_) {
     hash = hash_combine(hash, d);
   }
@@ -360,8 +360,8 @@ std::string Image::str() const {
 }
 
 size_t Image::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
-  hash = hash_combine(hash, dim_, depth_, arrayed_, ms_, sampled_, format_,
-                      access_qualifier_);
+  hash = hash_combine(hash, uint32_t(dim_), depth_, arrayed_, ms_, sampled_,
+                      uint32_t(format_), uint32_t(access_qualifier_));
   return sampled_type_->ComputeHashValue(hash, seen);
 }
 
@@ -548,7 +548,7 @@ std::string Pointer::str() const {
 }
 
 size_t Pointer::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
-  hash = hash_combine(hash, storage_class_);
+  hash = hash_combine(hash, uint32_t(storage_class_));
   return pointee_type_->ComputeHashValue(hash, seen);
 }
 
@@ -605,7 +605,7 @@ std::string Pipe::str() const {
 }
 
 size_t Pipe::ComputeExtraStateHash(size_t hash, SeenTypes*) const {
-  return hash_combine(hash, access_qualifier_);
+  return hash_combine(hash, uint32_t(access_qualifier_));
 }
 
 bool ForwardPointer::IsSameImpl(const Type* that, IsSameCache*) const {
@@ -630,7 +630,7 @@ std::string ForwardPointer::str() const {
 
 size_t ForwardPointer::ComputeExtraStateHash(size_t hash,
                                              SeenTypes* seen) const {
-  hash = hash_combine(hash, target_id_, storage_class_);
+  hash = hash_combine(hash, target_id_, uint32_t(storage_class_));
   if (pointer_) hash = pointer_->ComputeHashValue(hash, seen);
   return hash;
 }
