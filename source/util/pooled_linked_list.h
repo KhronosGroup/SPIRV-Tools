@@ -225,7 +225,7 @@ class PooledLinkedList {
   }
 
  private:
-  NodePool *nodes_;
+  NodePool* nodes_;
   int32_t head_ = -1;
   int32_t tail_ = -1;
 };

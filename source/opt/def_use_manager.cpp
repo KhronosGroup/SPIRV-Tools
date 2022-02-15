@@ -320,9 +320,9 @@ bool CompareAndPrintDifferences(const DefUseManager& lhs,
   for (const auto& l : lhs.inst_to_used_id_) {
     std::set<uint32_t> ul, ur;
     lhs.ForEachUse(l.first,
-                   [&ul](Instruction* use, uint32_t id) { ul.insert(id); });
+                   [&ul](Instruction*, uint32_t id) { ul.insert(id); });
     rhs.ForEachUse(l.first,
-                   [&ur](Instruction* use, uint32_t id) { ur.insert(id); });
+                   [&ur](Instruction*, uint32_t id) { ur.insert(id); });
     if (ul.size() != ur.size()) {
       printf(
           "Diff in inst_to_used_id_: different number of used ids (%zu != %zu)",
