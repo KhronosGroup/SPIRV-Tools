@@ -26,6 +26,8 @@ template <typename T>
 class PooledLinkedListNodes {
  public:
   struct Node {
+    Node(T e, int32_t n = -1) : element(e), next(n) {}
+
     T element = {};
     int32_t next = -1;
   };
@@ -57,7 +59,7 @@ class PooledLinkedListNodes {
 
   int32_t insert(T element) {
     int32_t index = int32_t(vec_.size());
-    vec_.push_back(Node{element, -1});
+    vec_.emplace_back(element);
     return index;
   }
 
