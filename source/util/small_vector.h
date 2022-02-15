@@ -64,6 +64,11 @@ class SmallVector {
     }
   }
 
+  template <class InputIt>
+  SmallVector(InputIt first, InputIt last) : SmallVector() {
+    insert(end(), first, last);
+  }
+
   SmallVector(std::vector<T>&& vec) : SmallVector() {
     if (vec.size() > small_size) {
       large_data_ = MakeUnique<std::vector<T>>(std::move(vec));
@@ -326,6 +331,15 @@ class SmallVector {
 
     new (small_data_ + size_) T(std::move(value));
     ++size_;
+  }
+
+  void pop_back() {
+    if (large_data_) {
+      large_data_->pop_back();
+    } else {
+      --size_;
+      small_data_[size_].~T();
+    }
   }
 
   template <class InputIt>

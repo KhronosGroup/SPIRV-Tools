@@ -448,6 +448,7 @@ static_library("spvtools") {
     "source/util/bit_vector.cpp",
     "source/util/bit_vector.h",
     "source/util/bitutils.h",
+    "source/util/hash_combine.h",
     "source/util/hex_float.h",
     "source/util/ilist.h",
     "source/util/ilist_node.h",

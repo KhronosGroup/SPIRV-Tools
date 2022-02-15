@@ -2064,6 +2064,7 @@ void Differ::MatchConstants() {
         case SpvOpConstant:
           return MatchOpConstant(src_inst, dst_inst, flexibility);
         case SpvOpConstantComposite:
+        case SpvOpSpecConstantComposite:
           // Composite constants must match in type and value.
           //
           // TODO: match OpConstantNull with OpConstantComposite with all zeros
@@ -2092,7 +2093,6 @@ void Differ::MatchConstants() {
         case SpvOpSpecConstantTrue:
         case SpvOpSpecConstantFalse:
         case SpvOpSpecConstant:
-        case SpvOpSpecConstantComposite:
         case SpvOpSpecConstantOp:
           // Match spec constants by name if available, then by the SpecId
           // decoration.
