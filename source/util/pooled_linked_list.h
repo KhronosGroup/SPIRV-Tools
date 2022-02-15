@@ -21,7 +21,7 @@
 namespace spvtools {
 namespace utils {
 
- // Shared storage of nodes for PooledLinkedList.
+// Shared storage of nodes for PooledLinkedList.
 template <typename T>
 class PooledLinkedListNodes {
  public:
@@ -49,7 +49,8 @@ class PooledLinkedListNodes {
   size_t used_nodes() { return total_nodes() - free_nodes(); }
 
  private:
-  template<typename T> friend class PooledLinkedList;
+  template <typename T>
+  friend class PooledLinkedList;
 
   Node& at(int32_t index) { return vec_[index]; }
   const Node& at(int32_t index) const { return vec_[index]; }
@@ -68,8 +69,8 @@ class PooledLinkedListNodes {
 // meant to be used in scenarios where it is desirable to avoid many small
 // allocations.
 //
-// Instead of pointers, the list uses indices to allow the underlying storage 
-// to be modified without needing to modify the list. When removing elements 
+// Instead of pointers, the list uses indices to allow the underlying storage
+// to be modified without needing to modify the list. When removing elements
 // from the list, nodes are not deleted or recycled: to reclaim unused space,
 // perform a sequence of |move_nodes| operations into a temporary pool, which
 // then is moved into the old pool.
@@ -78,7 +79,6 @@ class PooledLinkedListNodes {
 template <typename T>
 class PooledLinkedList {
  public:
-
   using NodePool = PooledLinkedListNodes<T>;
   using Node = typename NodePool::Node;
 
@@ -89,7 +89,8 @@ class PooledLinkedList {
   template <typename ElementT, typename PoolT>
   class iterator_base {
    public:
-    iterator_base(const iterator_base& i) : nodes_(i.nodes_), index_(i.index_) {}
+    iterator_base(const iterator_base& i)
+        : nodes_(i.nodes_), index_(i.index_) {}
 
     iterator_base& operator++() {
       index_ = nodes_->at(index_).next;
@@ -128,8 +129,7 @@ class PooledLinkedList {
    private:
     friend PooledLinkedList;
 
-    iterator_base(PoolT* pool, int32_t index)
-        : nodes_(pool), index_(index) {}
+    iterator_base(PoolT* pool, int32_t index) : nodes_(pool), index_(index) {}
 
     PoolT* nodes_;
     int32_t index_ = -1;
@@ -227,7 +227,6 @@ class PooledLinkedList {
   int32_t head_ = -1;
   int32_t tail_ = -1;
 };
-
 
 }  // namespace utils
 }  // namespace spvtools
