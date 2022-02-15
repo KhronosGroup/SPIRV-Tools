@@ -51,7 +51,7 @@ class PooledLinkedListNodes {
   size_t used_nodes() { return total_nodes() - free_nodes(); }
 
  private:
-  template <typename T>
+  template <typename ListT>
   friend class PooledLinkedList;
 
   Node& at(int32_t index) { return vec_[index]; }
