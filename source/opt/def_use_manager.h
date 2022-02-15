@@ -59,7 +59,7 @@ class DefUseManager {
   // will be communicated to the outside via the given message |consumer|. This
   // instance only keeps a reference to the |consumer|, so the |consumer| should
   // outlive this instance.
-  DefUseManager(Module* module) { AnalyzeDefUse(module); }
+  DefUseManager(Module* module) : DefUseManager() { AnalyzeDefUse(module); }
 
   DefUseManager(const DefUseManager&) = delete;
   DefUseManager(DefUseManager&&) = delete;
@@ -185,6 +185,8 @@ class DefUseManager {
   // Stores mapping from instruction to their UsedIdRange.
   using InstToUsedIdMap = std::unordered_map<const Instruction*, UsedIdList>;
 
+  DefUseManager();
+
   // Analyzes the defs and uses in the given |module| and populates data
   // structures in this class. Does nothing if |module| is nullptr.
   void AnalyzeDefUse(Module* module);
@@ -195,9 +197,9 @@ class DefUseManager {
 
   IdToDefMap id_to_def_;          // Mapping from ids to their definitions
   InstToUsersMap inst_to_users_;  // Map from def to uses.
-  UseListPool use_pool_;
+  std::unique_ptr<UseListPool> use_pool_;
 
-  UsedIdListPool used_id_pool_;
+  std::unique_ptr<UsedIdListPool> used_id_pool_;
   InstToUsedIdMap inst_to_used_id_;  // Map from instruction to used ids.
 };
 

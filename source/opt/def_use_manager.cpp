@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "source/opt/def_use_manager.h"
+#include "source/util/make_unique.h"
 
 namespace spvtools {
 namespace opt {
@@ -23,6 +24,11 @@ static const size_t kCompactThresholdMinTotalIds = (8 * 1024);
 // Compact when fewer than this fraction of the storage is used (should be 2^n
 // for performance).
 static const size_t kCompactThresholdFractionFreeIds = 8;
+
+DefUseManager::DefUseManager() {
+  use_pool_ = MakeUnique<UseListPool>();
+  used_id_pool_ = MakeUnique<UsedIdListPool>();
+}
 
 void DefUseManager::AnalyzeInstDef(Instruction* inst) {
   const uint32_t def_id = inst->result_id();
@@ -47,7 +53,8 @@ void DefUseManager::AnalyzeInstUse(Instruction* inst) {
   // not have any in-operands. In such cases, we still need a entry for those
   // instructions so this manager knows it has seen the instruction later.
   UsedIdList& used_ids =
-      inst_to_used_id_.insert({inst, UsedIdList(used_id_pool_)}).first->second;
+      inst_to_used_id_.insert({inst, UsedIdList(used_id_pool_.get())})
+          .first->second;
 
   for (uint32_t i = 0; i < inst->NumOperands(); ++i) {
     switch (inst->GetOperand(i).type) {
@@ -65,8 +72,8 @@ void DefUseManager::AnalyzeInstUse(Instruction* inst) {
 
         // Add to the users, taking care to avoid adding duplicates.  We know
         // the duplicate for this instruction will always be at the tail.
-        UseList& list =
-            inst_to_users_.insert({def, UseList(use_pool_)}).first->second;
+        UseList& list = inst_to_users_.insert({def, UseList(use_pool_.get())})
+                            .first->second;
         if (list.empty() || list.back() != inst) {
           list.push_back(inst);
         }
@@ -263,9 +270,9 @@ void DefUseManager::EraseUseRecordsOfOperandIds(const Instruction* inst) {
 
     // If we're using only a fraction of the space in used_ids_, compact storage
     // to prevent memory usage from being unbounded.
-    if (used_id_pool_.total_nodes() > kCompactThresholdMinTotalIds &&
-        used_id_pool_.used_nodes() <
-            used_id_pool_.total_nodes() / kCompactThresholdFractionFreeIds) {
+    if (used_id_pool_->total_nodes() > kCompactThresholdMinTotalIds &&
+        used_id_pool_->used_nodes() <
+            used_id_pool_->total_nodes() / kCompactThresholdFractionFreeIds) {
       CompactStorage();
     }
   }
@@ -277,17 +284,17 @@ void DefUseManager::CompactStorage() {
 }
 
 void DefUseManager::CompactUseRecords() {
-  UseListPool new_pool;
+  std::unique_ptr<UseListPool> new_pool = MakeUnique<UseListPool>();
   for (auto& iter : inst_to_users_) {
-    iter.second.move_nodes(new_pool);
+    iter.second.move_nodes(new_pool.get());
   }
   use_pool_ = std::move(new_pool);
 }
 
 void DefUseManager::CompactUsedIds() {
-  UsedIdListPool new_pool;
+  std::unique_ptr<UsedIdListPool> new_pool = MakeUnique<UsedIdListPool>();
   for (auto& iter : inst_to_used_id_) {
-    iter.second.move_nodes(new_pool);
+    iter.second.move_nodes(new_pool.get());
   }
   used_id_pool_ = std::move(new_pool);
 }

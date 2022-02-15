@@ -51,6 +51,9 @@ class PooledLinkedListNodes {
  private:
   template<typename T> friend class PooledLinkedList;
 
+  Node& at(int32_t index) { return vec_[index]; }
+  const Node& at(int32_t index) const { return vec_[index]; }
+
   int32_t insert(T element) {
     int32_t index = int32_t(vec_.size());
     vec_.push_back(Node{element, -1});
@@ -80,7 +83,7 @@ class PooledLinkedList {
   using Node = typename NodePool::Node;
 
   PooledLinkedList() = delete;
-  PooledLinkedList(NodePool& nodes) : nodes_(nodes) {}
+  PooledLinkedList(NodePool* nodes) : nodes_(nodes) {}
 
   // Shared iterator implementation (for iterator and const_iterator).
   template <typename ElementT, typename PoolT>
@@ -137,24 +140,24 @@ class PooledLinkedList {
 
   bool empty() const { return head_ == -1; }
 
-  T& front() { return nodes_.vec_[head_].element; }
-  T& back() { return nodes_.vec_[tail_].element; }
-  const T& front() const { return nodes_[head_].element; }
-  const T& back() const { return nodes_[tail_].element; }
+  T& front() { return nodes_->at(head_).element; }
+  T& back() { return nodes_->at(tail_).element; }
+  const T& front() const { return nodes_->at(head_).element; }
+  const T& back() const { return nodes_->at(tail_).element; }
 
-  iterator begin() { return iterator(&nodes_.vec_, head_); }
-  iterator end() { return iterator(&nodes_.vec_, -1); }
-  const_iterator begin() const { return const_iterator(&nodes_.vec_, head_); }
-  const_iterator end() const { return const_iterator(&nodes_.vec_, -1); }
+  iterator begin() { return iterator(&nodes_->vec_, head_); }
+  iterator end() { return iterator(&nodes_->vec_, -1); }
+  const_iterator begin() const { return const_iterator(&nodes_->vec_, head_); }
+  const_iterator end() const { return const_iterator(&nodes_->vec_, -1); }
 
   // Inserts |element| at the back of the list.
   void push_back(T element) {
-    int32_t new_tail = nodes_.insert(element);
+    int32_t new_tail = nodes_->insert(element);
     if (head_ == -1) {
       head_ = new_tail;
       tail_ = new_tail;
     } else {
-      nodes_.vec_[tail_].next = new_tail;
+      nodes_->at(tail_).next = new_tail;
       tail_ = new_tail;
     }
   }
@@ -164,7 +167,7 @@ class PooledLinkedList {
   bool remove_first(T element) {
     int32_t* prev_next = &head_;
     for (int32_t prev_index = -1, index = head_; index != -1; /**/) {
-      auto& node = nodes_.vec_[index];
+      auto& node = nodes_->at(index);
       if (node.element == element) {
         // Snip from of the list, optionally fixing up tail pointer.
         if (tail_ == index) {
@@ -172,7 +175,7 @@ class PooledLinkedList {
           tail_ = prev_index;
         }
         *prev_next = node.next;
-        nodes_.free_nodes_++;
+        nodes_->free_nodes_++;
         return true;
       } else {
         prev_next = &node.next;
@@ -184,39 +187,43 @@ class PooledLinkedList {
   }
 
   // Returns the PooledLinkedListNodes that owns this list's nodes.
-  NodePool& pool() { return nodes_; }
+  NodePool* pool() { return nodes_; }
 
   // Moves the nodes in this list into |new_pool|, providing a way to compact
   // storage and reclaim unused space.
   //
-  // Upon completing a sequence of |move_nodes| calls, you must swap storage
-  // from |new_pool| into the pool used by your PooledLinkedLists.
-  // Example usage:
+  // Upon completing a sequence of |move_nodes| calls, you must ensure you
+  // retain ownership of the new storage your lists point to. Example usage:
   //
-  //    NodePool old_pool;  // Existing lists use this pool
-  //    NodePool new_pool;  // Temporary storage
+  //    unique_ptr<NodePool> new_pool = ...;
   //    for (PooledLinkedList& list : lists) {
   //        list.move_to(new_pool);
   //    }
-  //    old_pool = std::move(new_pool);
-  void move_nodes(NodePool& new_pool) {
+  //    my_pool_ = std::move(new_pool);
+  void move_nodes(NodePool* new_pool) {
     // Be sure to construct the list in the same order, instead of simply
     // doing a sequence of push_backs.
     int32_t prev_entry = -1;
-    for (int32_t index = head_; index != -1; index = nodes_.vec_[index].next) {
-      int32_t this_entry = new_pool.insert(nodes_.vec_[index].element);
+    int32_t nodes_freed = 0;
+    for (int32_t index = head_; index != -1; nodes_freed++) {
+      const auto& node = nodes_->at(index);
+      int32_t this_entry = new_pool->insert(node.element);
+      index = node.next;
       if (prev_entry == -1) {
         head_ = this_entry;
       } else {
-        new_pool.vec_[prev_entry].next = this_entry;
+        new_pool->at(prev_entry).next = this_entry;
       }
       prev_entry = this_entry;
     }
     tail_ = prev_entry;
+    // Update our old pool's free count, now we're a member of the new pool.
+    nodes_->free_nodes_ += nodes_freed;
+    nodes_ = new_pool;
   }
 
  private:
-  NodePool& nodes_;
+  NodePool *nodes_;
   int32_t head_ = -1;
   int32_t tail_ = -1;
 };
