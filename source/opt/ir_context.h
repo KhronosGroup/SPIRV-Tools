@@ -88,11 +88,8 @@ class IRContext {
 
   friend inline Analysis operator|(Analysis lhs, Analysis rhs);
   friend inline Analysis& operator|=(Analysis& lhs, Analysis rhs);
-  friend inline Analysis operator&(Analysis lhs, Analysis rhs);
-  friend inline Analysis& operator&=(Analysis& lhs, Analysis rhs);
   friend inline Analysis operator<<(Analysis a, int shift);
   friend inline Analysis& operator<<=(Analysis& a, int shift);
-  friend inline Analysis operator~(Analysis a);
 
   // Creates an |IRContext| that contains an owned |Module|
   IRContext(spv_target_env env, MessageConsumer c)
@@ -874,18 +871,6 @@ inline IRContext::Analysis& operator|=(IRContext::Analysis& lhs,
   return lhs;
 }
 
-inline IRContext::Analysis operator&(IRContext::Analysis lhs,
-                                     IRContext::Analysis rhs) {
-  return static_cast<IRContext::Analysis>(static_cast<int>(lhs) &
-                                          static_cast<int>(rhs));
-}
-
-inline IRContext::Analysis& operator&=(IRContext::Analysis& lhs,
-                                       IRContext::Analysis rhs) {
-  lhs = lhs & rhs;
-  return lhs;
-}
-
 inline IRContext::Analysis operator<<(IRContext::Analysis a, int shift) {
   return static_cast<IRContext::Analysis>(static_cast<int>(a) << shift);
 }
@@ -893,10 +878,6 @@ inline IRContext::Analysis operator<<(IRContext::Analysis a, int shift) {
 inline IRContext::Analysis& operator<<=(IRContext::Analysis& a, int shift) {
   a = static_cast<IRContext::Analysis>(static_cast<int>(a) << shift);
   return a;
-}
-
-inline IRContext::Analysis operator~(IRContext::Analysis a) {
-  return static_cast<IRContext::Analysis>(~static_cast<int>(a));
 }
 
 std::vector<Instruction*> IRContext::GetConstants() {
