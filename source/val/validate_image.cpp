@@ -179,6 +179,96 @@ bool IsValidGatherLodBiasAMD(const ValidationState_t& _, SpvOp opcode) {
   return false;
 }
 
+bool IsImageFormatInt32Width(SpvImageFormat format) {
+  switch (format) {
+    case SpvImageFormatRgba32i:
+    case SpvImageFormatRgba16i:
+    case SpvImageFormatRgba8i:
+    case SpvImageFormatR32i:
+    case SpvImageFormatRg32i:
+    case SpvImageFormatRg16i:
+    case SpvImageFormatRg8i:
+    case SpvImageFormatR16i:
+    case SpvImageFormatR8i:
+    case SpvImageFormatRgba32ui:
+    case SpvImageFormatRgba16ui:
+    case SpvImageFormatRgba8ui:
+    case SpvImageFormatR32ui:
+    case SpvImageFormatRgb10a2ui:
+    case SpvImageFormatRg32ui:
+    case SpvImageFormatRg16ui:
+    case SpvImageFormatRg8ui:
+    case SpvImageFormatR16ui:
+    case SpvImageFormatR8ui:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
+bool IsImageFormatInt64Width(SpvImageFormat format) {
+  switch (format) {
+    case SpvImageFormatR64ui:
+    case SpvImageFormatR64i:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
+bool IsImageFormatIntSigned(SpvImageFormat format) {
+  switch (format) {
+    case SpvImageFormatRgba32i:
+    case SpvImageFormatRgba16i:
+    case SpvImageFormatRgba8i:
+    case SpvImageFormatR32i:
+    case SpvImageFormatRg32i:
+    case SpvImageFormatRg16i:
+    case SpvImageFormatRg8i:
+    case SpvImageFormatR16i:
+    case SpvImageFormatR8i:
+    case SpvImageFormatR64i:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
+bool IsImageFormatFloat(SpvImageFormat format) {
+  switch (format) {
+    case SpvImageFormatRgba32f:
+    case SpvImageFormatRgba16f:
+    case SpvImageFormatR32f:
+    case SpvImageFormatRgba8:
+    case SpvImageFormatRgba8Snorm:
+    case SpvImageFormatRg32f:
+    case SpvImageFormatRg16f:
+    case SpvImageFormatR11fG11fB10f:
+    case SpvImageFormatR16f:
+    case SpvImageFormatRgba16:
+    case SpvImageFormatRgb10A2:
+    case SpvImageFormatRg16:
+    case SpvImageFormatRg8:
+    case SpvImageFormatR16:
+    case SpvImageFormatR8:
+    case SpvImageFormatRgba16Snorm:
+    case SpvImageFormatRg16Snorm:
+    case SpvImageFormatRg8Snorm:
+    case SpvImageFormatR16Snorm:
+    case SpvImageFormatR8Snorm:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
+bool IsImageFormatInt(SpvImageFormat format) {
+  return IsImageFormatInt32Width(format) || IsImageFormatInt64Width(format);
+}
 // Returns true if the opcode is a Image instruction which applies
 // homogenous projection to the coordinates.
 bool IsProj(SpvOp opcode) {
@@ -254,6 +344,8 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
   const bool have_explicit_mask = (word_index - 1 < num_words);
   const uint32_t mask = have_explicit_mask ? inst->word(word_index - 1) : 0u;
 
+  const auto target_env = _.context()->target_env;
+
   if (have_explicit_mask) {
     // NonPrivate, Volatile, SignExtend, ZeroExtend take no operand words.
     const uint32_t mask_bits_having_operands =
@@ -283,6 +375,31 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Image Operand Sample is required for operation on "
               "multi-sampled image";
+  }
+
+  // The following OpTypeImage checks are done here as they depend of if the
+  // SignExtend and ZeroExtend are used to override the signedness
+  const bool is_sign_extend = mask & SpvImageOperandsSignExtendMask;
+  const bool is_zero_extend = mask & SpvImageOperandsZeroExtendMask;
+  if (spvIsVulkanEnv(target_env)) {
+    if (info.format != SpvImageFormatUnknown &&
+        _.IsIntScalarType(info.sampled_type)) {
+      const bool is_format_signed = IsImageFormatIntSigned(info.format);
+      // vkspec.html#spirvenv-image-signedness has order signedness is set by
+      bool is_sampled_type_signed =
+          is_sign_extend
+              ? true
+              : (is_zero_extend
+                     ? false
+                     : (_.IsSignedIntScalarType(info.sampled_type) ? true
+                                                                   : false));
+      if (is_format_signed != is_sampled_type_signed) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << _.VkErrorID(4965)
+               << "Image Format signedness does not match Sample Type operand "
+                  "including possible SignExtend or ZeroExtend operand";
+      }
+    }
   }
 
   // After this point, only set bits in the image operands mask can cause
@@ -451,8 +568,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << " components, but given " << offset_size;
     }
 
-    if (!_.options()->before_hlsl_legalization &&
-        spvIsVulkanEnv(_.context()->target_env)) {
+    if (!_.options()->before_hlsl_legalization && spvIsVulkanEnv(target_env)) {
       if (opcode != SpvOpImageGather && opcode != SpvOpImageDrefGather &&
           opcode != SpvOpImageSparseGather &&
           opcode != SpvOpImageSparseDrefGather) {
@@ -603,7 +719,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     if (auto error = ValidateMemoryScope(_, inst, visible_scope)) return error;
   }
 
-  if (mask & SpvImageOperandsSignExtendMask) {
+  if (is_sign_extend) {
     // Checked elsewhere: SPIR-V 1.4 version or later.
 
     // "The texel value is converted to the target value via sign extension.
@@ -616,7 +732,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     // setup.
   }
 
-  if (mask & SpvImageOperandsZeroExtendMask) {
+  if (is_zero_extend) {
     // Checked elsewhere: SPIR-V 1.4 version or later.
 
     // "The texel value is converted to the target value via zero extension.
@@ -889,6 +1005,32 @@ spv_result_t ValidateTypeImage(ValidationState_t& _, const Instruction* inst) {
     if (info.dim == SpvDimSubpassData && info.arrayed != 0) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << _.VkErrorID(6214) << "Dim SubpassData requires Arrayed to be 0";
+    }
+
+    // Can't check signedness here due to image operands able to override
+    // sampled type
+    if (info.format != SpvImageFormatUnknown) {
+      // validated above so can assume this is a 32-bit float, 32-bit int, or
+      // 64-bit int
+      const bool is_int = _.IsIntScalarType(info.sampled_type);
+      const bool is_float = !is_int;
+      if ((is_float && !IsImageFormatFloat(info.format)) ||
+          (is_int && !IsImageFormatInt(info.format))) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << _.VkErrorID(4965)
+               << "Image Format type (float or int) does not match Sample Type "
+                  "operand";
+      }
+      if (is_int) {
+        const uint32_t bit_width = _.GetBitWidth(info.sampled_type);
+        if ((bit_width == 32 && !IsImageFormatInt32Width(info.format)) ||
+            (bit_width == 64 && !IsImageFormatInt64Width(info.format))) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << _.VkErrorID(4965)
+                 << "Image Format width (32 or 64) does not match Sample Type "
+                    "operand";
+        }
+      }
     }
   }
 

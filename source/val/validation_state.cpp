@@ -1900,6 +1900,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Location-04918);
     case 4919:
       return VUID_WRAP(VUID-StandaloneSpirv-Location-04919);
+    case 4965:
+      return VUID_WRAP(VUID-StandaloneSpirv-Image-04965);
     case 6214:
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeImage-06214);
     case 6491:
