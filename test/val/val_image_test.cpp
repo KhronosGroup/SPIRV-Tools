@@ -246,6 +246,11 @@ OpDecorate %input_flat_u32 Location 0
 %uniform_image_u32_2d_0001 = OpVariable %ptr_image_u32_2d_0001 UniformConstant
 %type_sampled_image_u32_2d_0001 = OpTypeSampledImage %type_image_u32_2d_0001
 
+%type_image_u32_3d_0001 = OpTypeImage %u32 3D 0 0 0 1 Unknown
+%ptr_image_u32_3d_0001 = OpTypePointer UniformConstant %type_image_u32_3d_0001
+%uniform_image_u32_3d_0001 = OpVariable %ptr_image_u32_3d_0001 UniformConstant
+%type_sampled_image_u32_3d_0001 = OpTypeSampledImage %type_image_u32_3d_0001
+
 %type_image_u32_2d_0002 = OpTypeImage %u32 2D 0 0 0 2 Unknown
 %ptr_image_u32_2d_0002 = OpTypePointer UniformConstant %type_image_u32_2d_0002
 %uniform_image_u32_2d_0002 = OpVariable %ptr_image_u32_2d_0002 UniformConstant
@@ -271,6 +276,11 @@ OpDecorate %input_flat_u32 Location 0
 %ptr_image_f32_3d_0111 = OpTypePointer UniformConstant %type_image_f32_3d_0111
 %uniform_image_f32_3d_0111 = OpVariable %ptr_image_f32_3d_0111 UniformConstant
 %type_sampled_image_f32_3d_0111 = OpTypeSampledImage %type_image_f32_3d_0111
+
+%type_image_f32_3d_0001 = OpTypeImage %f32 3D 0 0 0 1 Unknown
+%ptr_image_f32_3d_0001 = OpTypePointer UniformConstant %type_image_f32_3d_0001
+%uniform_image_f32_3d_0001 = OpVariable %ptr_image_f32_3d_0001 UniformConstant
+%type_sampled_image_f32_3d_0001 = OpTypeSampledImage %type_image_f32_3d_0001
 
 %type_image_f32_cube_0101 = OpTypeImage %f32 Cube 0 1 0 1 Unknown
 %ptr_image_f32_cube_0101 = OpTypePointer UniformConstant %type_image_f32_cube_0101
@@ -1090,7 +1100,7 @@ TEST_F(ValidateImage, ImageTexelPointerImageNotResultTypePointer) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 137[%137] cannot be a "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 145[%145] cannot be a "
                                                "type"));
 }
 
@@ -2321,6 +2331,24 @@ TEST_F(ValidateImage, SampleDrefImplicitLodWrongDrefType) {
               HasSubstr("Expected Dref to be of 32-bit float type"));
 }
 
+TEST_F(ValidateImage, SampleDrefImplicitLodWrongDimVulkan) {
+  const std::string body = R"(
+%img = OpLoad %type_image_u32_3d_0001 %uniform_image_u32_3d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_u32_3d_0001 %img %sampler
+%res1 = OpImageSampleDrefImplicitLod %u32 %simg %f32vec3_hhh %f32_1
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, "", "Fragment", "", SPV_ENV_VULKAN_1_0).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpImage-04777"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("In Vulkan, OpImage*Dref* instructions must not use "
+                        "images with a 3D Dim"));
+}
+
 TEST_F(ValidateImage, SampleDrefExplicitLodSuccess) {
   const std::string body = R"(
 %img = OpLoad %type_image_s32_3d_0001 %uniform_image_s32_3d_0001
@@ -3275,6 +3303,23 @@ TEST_F(ValidateImage, DrefGatherWrongDrefType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Dref to be of 32-bit float type"));
+}
+
+TEST_F(ValidateImage, DrefGatherWrongDimVulkan) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_3d_0001 %uniform_image_f32_3d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_3d_0001 %img %sampler
+%res1 = OpImageDrefGather %f32vec4 %simg %f32vec4_0000 %f32_0_5
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, "", "Fragment", "", SPV_ENV_VULKAN_1_0).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpImage-04777"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image 'Dim' to be 2D, Cube, or Rect"));
 }
 
 TEST_F(ValidateImage, ReadSuccess1) {

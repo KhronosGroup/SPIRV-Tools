@@ -1276,6 +1276,27 @@ spv_result_t ValidateImageLod(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+// Validates anything OpImage*Dref* instruction
+spv_result_t ValidateImageDref(ValidationState_t& _, const Instruction* inst,
+                               const ImageTypeInfo& info) {
+  const uint32_t dref_type = _.GetOperandTypeId(inst, 4);
+  if (!_.IsFloatScalarType(dref_type) || _.GetBitWidth(dref_type) != 32) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Dref to be of 32-bit float type";
+  }
+
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (info.dim == SpvDim3D) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << _.VkErrorID(4777)
+             << "In Vulkan, OpImage*Dref* instructions must not use images "
+                "with a 3D Dim";
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateImageDrefLod(ValidationState_t& _,
                                   const Instruction* inst) {
   const SpvOp opcode = inst->opcode();
@@ -1333,11 +1354,7 @@ spv_result_t ValidateImageDrefLod(ValidationState_t& _,
            << " components, but given only " << actual_coord_size;
   }
 
-  const uint32_t dref_type = _.GetOperandTypeId(inst, 4);
-  if (!_.IsFloatScalarType(dref_type) || _.GetBitWidth(dref_type) != 32) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected Dref to be of 32-bit float type";
-  }
+  if (spv_result_t result = ValidateImageDref(_, inst, info)) return result;
 
   if (spv_result_t result =
           ValidateImageOperands(_, inst, info, /* word_index = */ 7))
@@ -1472,7 +1489,8 @@ spv_result_t ValidateImageGather(ValidationState_t& _,
   if (info.dim != SpvDim2D && info.dim != SpvDimCube &&
       info.dim != SpvDimRect) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected Image 'Dim' cannot be Cube";
+           << _.VkErrorID(4777)
+           << "Expected Image 'Dim' to be 2D, Cube, or Rect";
   }
 
   const uint32_t coord_type = _.GetOperandTypeId(inst, 3);
@@ -1508,11 +1526,7 @@ spv_result_t ValidateImageGather(ValidationState_t& _,
   } else {
     assert(opcode == SpvOpImageDrefGather ||
            opcode == SpvOpImageSparseDrefGather);
-    const uint32_t dref_type = _.GetOperandTypeId(inst, 4);
-    if (!_.IsFloatScalarType(dref_type) || _.GetBitWidth(dref_type) != 32) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Expected Dref to be of 32-bit float type";
-    }
+    if (spv_result_t result = ValidateImageDref(_, inst, info)) return result;
   }
 
   if (spv_result_t result =
