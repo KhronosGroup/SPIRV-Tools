@@ -869,12 +869,20 @@ spv_result_t ValidateTypeImage(ValidationState_t& _, const Instruction* inst) {
   if (info.dim == SpvDimSubpassData) {
     if (info.sampled != 2) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Dim SubpassData requires Sampled to be 2";
+             << _.VkErrorID(6214) << "Dim SubpassData requires Sampled to be 2";
     }
 
     if (info.format != SpvImageFormatUnknown) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Dim SubpassData requires format Unknown";
+    }
+
+    if (spvIsVulkanEnv(target_env)) {
+      if (info.arrayed != 0) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << _.VkErrorID(6214)
+               << "Dim SubpassData requires Arrayed to be 0";
+      }
     }
   }
 

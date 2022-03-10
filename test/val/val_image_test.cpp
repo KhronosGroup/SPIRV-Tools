@@ -738,6 +738,34 @@ TEST_F(ValidateImage, TypeImageWrongSampledForSubpassData) {
               HasSubstr("Dim SubpassData requires Sampled to be 2"));
 }
 
+TEST_F(ValidateImage, TypeImageWrongSampledForSubpassDataVulkan) {
+  const std::string code = GetShaderHeader("OpCapability InputAttachment\n") +
+                           R"(
+%img_type = OpTypeImage %f32 SubpassData 0 0 0 1 Unknown
+)" + TrivialMain();
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpTypeImage-06214"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Dim SubpassData requires Sampled to be 2"));
+}
+
+TEST_F(ValidateImage, TypeImageWrongArrayForSubpassDataVulkan) {
+  const std::string code = GetShaderHeader("OpCapability InputAttachment\n") +
+                           R"(
+%img_type = OpTypeImage %f32 SubpassData 0 1 0 2 Unknown
+)" + TrivialMain();
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpTypeImage-06214"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Dim SubpassData requires Arrayed to be 0"));
+}
+
 TEST_F(ValidateImage, TypeImage_OpenCL_Sampled0_OK) {
   const std::string code = GetKernelHeader() + R"(
 %img_type = OpTypeImage %void 2D 0 0 0 0 Unknown ReadOnly
