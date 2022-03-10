@@ -833,11 +833,45 @@ TEST_F(ValidateMemory, VulkanPushConstantNotStructBad) {
 )";
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("PushConstant OpVariable <id> '6[%6]' has illegal "
-                        "type.\nFrom Vulkan spec, section 14.5.1:\n"
-                        "Such variables must be typed as OpTypeStruct, "
-                        "or an array of this type"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("PushConstant OpVariable <id> '6[%6]' has illegal "
+                "type.\nFrom Vulkan spec, Push Constant Interface section:\n"
+                "Such variables must be typed as OpTypeStruct"));
+}
+
+TEST_F(ValidateMemory, VulkanPushConstantArrayOfStructBad) {
+  std::string spirv = R"(
+            OpCapability Shader
+            OpMemoryModel Logical GLSL450
+            OpEntryPoint Fragment %1 "main"
+            OpExecutionMode %1 OriginUpperLeft
+
+            OpDecorate %struct Block
+            OpMemberDecorate %struct 0 Offset 0
+
+    %void = OpTypeVoid
+  %voidfn = OpTypeFunction %void
+   %float = OpTypeFloat 32
+     %int = OpTypeInt 32 0
+   %int_1 = OpConstant %int 1
+  %struct = OpTypeStruct %float
+   %array = OpTypeArray %struct %int_1
+     %ptr = OpTypePointer PushConstant %array
+      %pc = OpVariable %ptr PushConstant
+
+       %1 = OpFunction %void None %voidfn
+   %label = OpLabel
+            OpReturn
+            OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("PushConstant OpVariable <id> '10[%10]' has illegal "
+                "type.\nFrom Vulkan spec, Push Constant Interface section:\n"
+                "Such variables must be typed as OpTypeStruct"));
 }
 
 TEST_F(ValidateMemory, VulkanPushConstant) {
