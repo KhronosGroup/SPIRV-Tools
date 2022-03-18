@@ -110,6 +110,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/eliminate_dead_members_pass.cpp \
 		source/opt/feature_manager.cpp \
 		source/opt/fix_storage_class.cpp \
+		source/opt/flatten_array_matrix_stage_var.cpp \
 		source/opt/flatten_decoration_pass.cpp \
 		source/opt/fold.cpp \
 		source/opt/folding_rules.cpp \

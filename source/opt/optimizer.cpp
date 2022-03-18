@@ -1018,6 +1018,14 @@ Optimizer::PassToken CreateConvertToSampledImagePass(
       MakeUnique<opt::ConvertToSampledImagePass>(descriptor_set_binding_pairs));
 }
 
+Optimizer::PassToken CreateFlattenArrayMatrixStageVariablePass(
+    const std::vector<opt::StageVariableLocationInfo>&
+        stage_variable_locations) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::FlattenArrayMatrixStageVariable>(
+          stage_variable_locations));
+}
+
 Optimizer::PassToken CreateRemoveDontInlinePass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::RemoveDontInline>());

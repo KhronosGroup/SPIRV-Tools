@@ -631,6 +631,8 @@ static_library("spvtools_opt") {
     "source/opt/feature_manager.h",
     "source/opt/fix_storage_class.cpp",
     "source/opt/fix_storage_class.h",
+    "source/opt/flatten_array_matrix_stage_var.cpp",
+    "source/opt/flatten_array_matrix_stage_var.h",
     "source/opt/flatten_decoration_pass.cpp",
     "source/opt/flatten_decoration_pass.h",
     "source/opt/fold.cpp",

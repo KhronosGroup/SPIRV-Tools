@@ -38,6 +38,7 @@
 #include "source/opt/eliminate_dead_members_pass.h"
 #include "source/opt/empty_pass.h"
 #include "source/opt/fix_storage_class.h"
+#include "source/opt/flatten_array_matrix_stage_var.h"
 #include "source/opt/flatten_decoration_pass.h"
 #include "source/opt/fold_spec_constant_op_and_composite_pass.h"
 #include "source/opt/freeze_spec_constant_value_pass.h"
