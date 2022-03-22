@@ -5540,7 +5540,8 @@ TEST_F(ValidateImage, SignExtendV13Bad) {
 )";
 
   EXPECT_THAT(CompileFailure(GenerateShaderCode(body, "", "Fragment", "",
-                                                SPV_ENV_UNIVERSAL_1_3)),
+                                                SPV_ENV_UNIVERSAL_1_3),
+                             SPV_ENV_UNIVERSAL_1_3, SPV_ERROR_WRONG_VERSION),
               HasSubstr("Invalid image operand 'SignExtend'"));
 }
 
@@ -5551,7 +5552,8 @@ TEST_F(ValidateImage, ZeroExtendV13Bad) {
 )";
 
   EXPECT_THAT(CompileFailure(GenerateShaderCode(body, "", "Fragment", "",
-                                                SPV_ENV_UNIVERSAL_1_3)),
+                                                SPV_ENV_UNIVERSAL_1_3),
+                             SPV_ENV_UNIVERSAL_1_3, SPV_ERROR_WRONG_VERSION),
               HasSubstr("Invalid image operand 'ZeroExtend'"));
 }
 
