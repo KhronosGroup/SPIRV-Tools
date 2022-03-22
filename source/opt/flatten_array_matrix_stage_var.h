@@ -30,9 +30,11 @@ struct StageVariableLocationInfo {
   uint32_t location;
   uint32_t component;
   uint32_t extra_arrayness;
+  bool is_input_var;
 
   bool operator==(const StageVariableLocationInfo& another) const {
-    return another.location == location && another.component == component;
+    return another.location == location && another.component == component &&
+           another.is_input_var == is_input_var;
   }
 };
 
@@ -52,7 +54,8 @@ class FlattenArrayMatrixStageVariable : public Pass {
   struct StageVariableLocationInfoHash {
     size_t operator()(const StageVariableLocationInfo& info) const {
       return std::hash<uint32_t>()(info.location) ^
-             std::hash<uint32_t>()(info.component);
+             std::hash<uint32_t>()(info.component) ^
+             std::hash<uint32_t>()(static_cast<uint32_t>(info.is_input_var));
     }
   };
 
@@ -90,7 +93,7 @@ class FlattenArrayMatrixStageVariable : public Pass {
   // returns false. If the variable is a target, returns the stage variable
   // location information using |stage_var_location_info|.
   bool IsTargetStageVariable(
-      uint32_t var_id, uint32_t location,
+      uint32_t var_id, uint32_t location, bool is_input_var,
       StageVariableLocationInfo* stage_var_location_info);
 
   // Returns the stage variable instruction whose result id is |stage_var_id|.
@@ -279,13 +282,11 @@ class FlattenArrayMatrixStageVariable : public Pass {
   // operand is |type_id| and Storage Class operand is |storage_class|.
   uint32_t GetPointerType(uint32_t type_id, SpvStorageClass storage_class);
 
+  void KillInstructions(const std::vector<Instruction*>& insts);
+
   // A set of StageVariableLocationInfo that includes all locations and
   // components of stage variables to be flattened in this pass.
   SetOfStageVariableLocationInfo stage_var_location_info_;
-
-  // A set of instructions to be killed after flattening stage variables
-  // including users of stage variables.
-  std::unordered_set<Instruction*> to_be_killed_;
 
   // A set of stage variable ids that were already removed from operands of the
   // entry point.
