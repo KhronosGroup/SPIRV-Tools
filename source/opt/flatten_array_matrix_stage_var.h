@@ -75,7 +75,6 @@ class FlattenArrayMatrixStageVariable : public Pass {
 
   IRContext::Analysis GetPreservedAnalyses() override {
     return IRContext::kAnalysisDecorations | IRContext::kAnalysisDefUse |
-           IRContext::kAnalysisInstrToBlockMapping |
            IRContext::kAnalysisConstants | IRContext::kAnalysisTypes;
   }
 
@@ -156,19 +155,24 @@ class FlattenArrayMatrixStageVariable : public Pass {
   bool ReplaceStageVars(
       Instruction* stage_var, std::vector<Instruction*> stage_var_users,
       const FlattenedVariables& flattened_stage_vars,
-      std::vector<uint32_t>& indices,
-      std::unordered_map<Instruction*, Instruction*>* loads_to_composites);
+      std::vector<uint32_t>& indices, bool has_extra_arrayness,
+      uint32_t extra_array_index,
+      std::unordered_map<Instruction*, Instruction*>* loads_to_composites,
+      std::unordered_map<Instruction*, Instruction*>*
+          loads_for_access_chain_to_composites);
 
   // Replaces |stage_var| in the operands of instruction |stage_var_user|
   // with an instruction based on |flattened_var|. |indices| is recursive
   // indices for which recursive component of |stage_var| is replaced.
   // If |stage_var_user| is a load, returns the component value via
   // |loads_to_component_values|.
-  bool ReplaceStageVar(Instruction* stage_var, Instruction* stage_var_user,
-                       Instruction* flattened_var,
-                       const std::vector<uint32_t>& indices,
-                       std::unordered_map<Instruction*, Instruction*>*
-                           loads_to_component_values);
+  bool ReplaceStageVar(
+      Instruction* stage_var, Instruction* stage_var_user,
+      Instruction* flattened_var, const std::vector<uint32_t>& indices,
+      bool has_extra_arrayness, uint32_t extra_array_index,
+      std::unordered_map<Instruction*, Instruction*>* loads_to_component_values,
+      std::unordered_map<Instruction*, Instruction*>*
+          loads_for_access_chain_to_component_values);
 
   // Clones an annotation instruction |annotation_inst| and sets the target
   // operand of the new annotation instruction as |var_id|.
@@ -203,7 +207,17 @@ class FlattenArrayMatrixStageVariable : public Pass {
   void ReplaceStoreWithFlattenedVar(Instruction* access_chain,
                                     Instruction* store,
                                     const std::vector<uint32_t>& indices,
-                                    Instruction* flattened_var);
+                                    Instruction* flattened_var,
+                                    bool has_extra_arrayness,
+                                    uint32_t extra_array_index);
+
+  // Creates an access chain instruction whose Base operand is |var| and Indexes
+  // operand is |index|. |component_type_id| is the id of the type instruction
+  // that is the type of component. Inserts the new access chain before
+  // |insert_before|.
+  Instruction* CreateAccessChainWithIndex(uint32_t component_type_id,
+                                          Instruction* var, uint32_t index,
+                                          Instruction* insert_before);
 
   // Returns the pointee type of the type of variable |var|.
   uint32_t GetPointeeTypeIdOfVar(Instruction* var);
@@ -248,22 +262,28 @@ class FlattenArrayMatrixStageVariable : public Pass {
   //  %value = OpCompositeConstruct %type %flattened_value ..
   void ReplaceLoadWithFlattenedVar(
       Instruction* access_chain, Instruction* load, Instruction* flattened_var,
-      std::unordered_map<Instruction*, Instruction*>*
-          loads_to_component_values);
+      std::unordered_map<Instruction*, Instruction*>* loads_to_component_values,
+      bool has_extra_arrayness, uint32_t extra_array_index);
 
   // Creates composite construct instructions for load instructions that are the
   // keys of |loads_to_component_values| if no such composite construct
   // instructions exist. Adds a component of the composite as an operand of the
   // created composite construct instruction. Each value of
   // |loads_to_component_values| is the component. Returns the created composite
-  // construct instructions using |loads_to_composites|. |depth_of_indices| is
+  // construct instructions using |loads_to_composites|. |depth_to_component| is
   // the number of recursive access steps to get the component from the
   // composite.
   void AddComponentsToCompositesForLoads(
       const std::unordered_map<Instruction*, Instruction*>&
           loads_to_component_values,
       std::unordered_map<Instruction*, Instruction*>* loads_to_composites,
-      uint32_t depth_of_indices);
+      uint32_t depth_to_component);
+
+  // Creates a composite construct instruction for a component of the value of
+  // instruction |load| in |depth_to_component| th recursive depth and inserts
+  // it after |load|.
+  Instruction* CreateCompositeConstructForComponentOfLoad(
+      Instruction* load, uint32_t depth_to_component);
 
   // Creates a new access chain instruction that points to instruction |var|
   // whose type is the instruction with result id |var_type_id|. The new access
@@ -291,6 +311,11 @@ class FlattenArrayMatrixStageVariable : public Pass {
   // A set of stage variable ids that were already removed from operands of the
   // entry point.
   std::unordered_set<uint32_t> stage_vars_removed_from_entry_point_operands_;
+
+  // A mapping from ids of new composite construct instructions that load
+  // instructions are replaced with to the recursive depth of the component of
+  // load that the new component construct instruction is used for.
+  std::unordered_map<uint32_t, uint32_t> composite_ids_to_component_depths;
 };
 
 }  // namespace opt
