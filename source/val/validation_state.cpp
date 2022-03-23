@@ -460,7 +460,7 @@ void ValidationState_t::set_addressing_model(SpvAddressingModel am) {
     default:
     // fall through
     case SpvAddressingModelPhysical64:
-    case SpvAddressingModelPhysicalStorageBuffer64EXT:
+    case SpvAddressingModelPhysicalStorageBuffer64:
       pointer_size_and_alignment_ = 8;
       break;
   }
@@ -1872,6 +1872,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpGroupNonUniformBallotBitCount-04685);
     case 4686:
       return VUID_WRAP(VUID-StandaloneSpirv-None-04686);
+    case 4708:
+      return VUID_WRAP(VUID-StandaloneSpirv-PhysicalStorageBuffer64-04708);
     case 4710:
       return VUID_WRAP(VUID-StandaloneSpirv-PhysicalStorageBuffer64-04710);
     case 4711:
