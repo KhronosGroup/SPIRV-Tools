@@ -541,7 +541,7 @@ void ValidationState_t::RegisterInstruction(Instruction* inst) {
   if (inst->id()) all_definitions_.insert(std::make_pair(inst->id(), inst));
 
   // Some validation checks are easier by getting all the consumers
-  for (uint16_t i = 0; i < inst->operands().size(); ++i) {
+  for (size_t i = 0; i < inst->operands().size(); ++i) {
     const spv_parsed_operand_t& operand = inst->operand(i);
     if ((SPV_OPERAND_TYPE_ID == operand.type) ||
         (SPV_OPERAND_TYPE_TYPE_ID == operand.type)) {
