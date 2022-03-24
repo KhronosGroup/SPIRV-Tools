@@ -392,11 +392,8 @@ void ValidationState_t::RegisterCapability(SpvCapability cap) {
       features_.free_fp_rounding_mode = true;
       break;
     case SpvCapabilityVariablePointers:
-      features_.variable_pointers = true;
-      features_.variable_pointers_storage_buffer = true;
-      break;
     case SpvCapabilityVariablePointersStorageBuffer:
-      features_.variable_pointers_storage_buffer = true;
+      features_.variable_pointers = true;
       break;
     default:
       // TODO(dneto): For now don't validate SPV_NV_ray_tracing, which uses
