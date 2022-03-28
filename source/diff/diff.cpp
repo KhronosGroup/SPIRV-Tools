@@ -708,9 +708,9 @@ int Differ::ComparePreambleInstructions(const opt::Instruction* a,
   // the sorted list of instructions between src and dst modules.
   if (a->opcode() == SpvOpExecutionMode) {
     const SpvExecutionModel src_model =
-        GetExecutionModel(src_inst_module, a->GetOperand(0).AsId());
+        GetExecutionModel(src_inst_module, a->GetSingleWordOperand(0));
     const SpvExecutionModel dst_model =
-        GetExecutionModel(dst_inst_module, b->GetOperand(0).AsId());
+        GetExecutionModel(dst_inst_module, b->GetSingleWordOperand(0));
 
     if (src_model < dst_model) {
       return -1;
@@ -1349,9 +1349,9 @@ bool Differ::MatchPerVertexType(uint32_t src_type_id, uint32_t dst_type_id) {
 bool Differ::MatchPerVertexVariable(const opt::Instruction* src_inst,
                                     const opt::Instruction* dst_inst) {
   SpvStorageClass src_storage_class =
-      SpvStorageClass(src_inst->GetInOperand(0).words[0]);
+      SpvStorageClass(src_inst->GetSingleWordInOperand(0));
   SpvStorageClass dst_storage_class =
-      SpvStorageClass(dst_inst->GetInOperand(0).words[0]);
+      SpvStorageClass(dst_inst->GetSingleWordInOperand(0));
 
   return src_storage_class == dst_storage_class;
 }
@@ -1603,8 +1603,8 @@ void Differ::MatchVariablesUsedByMatchedInstructions(
     case SpvOpInBoundsPtrAccessChain:
     case SpvOpLoad:
     case SpvOpStore:
-      const uint32_t src_pointer_id = src_inst->GetInOperand(0).AsId();
-      const uint32_t dst_pointer_id = dst_inst->GetInOperand(0).AsId();
+      const uint32_t src_pointer_id = src_inst->GetSingleWordInOperand(0);
+      const uint32_t dst_pointer_id = dst_inst->GetSingleWordInOperand(0);
       if (IsVariable(src_id_to_, src_pointer_id) &&
           IsVariable(dst_id_to_, dst_pointer_id) &&
           !id_map_.IsSrcMapped(src_pointer_id) &&
@@ -1633,15 +1633,15 @@ uint32_t Differ::GetConstantUint(const IdInstructions& id_to,
   assert(constant_inst->opcode() == SpvOpConstant);
   assert(GetInst(id_to, constant_inst->type_id())->opcode() == SpvOpTypeInt);
 
-  return constant_inst->GetInOperand(0).words[0];
+  return constant_inst->GetSingleWordInOperand(0);
 }
 
 SpvExecutionModel Differ::GetExecutionModel(const opt::Module* module,
                                             uint32_t entry_point_id) {
   for (const opt::Instruction& inst : module->entry_points()) {
     assert(inst.opcode() == SpvOpEntryPoint);
-    if (inst.GetOperand(1).AsId() == entry_point_id) {
-      return SpvExecutionModel(inst.GetOperand(0).words[0]);
+    if (inst.GetSingleWordOperand(1) == entry_point_id) {
+      return SpvExecutionModel(inst.GetSingleWordOperand(0));
     }
   }
 
@@ -1682,14 +1682,14 @@ uint32_t Differ::GetVarTypeId(const IdInstructions& id_to, uint32_t var_id,
   const opt::Instruction* var_inst = GetInst(id_to, var_id);
   assert(var_inst->opcode() == SpvOpVariable);
 
-  *storage_class = SpvStorageClass(var_inst->GetInOperand(0).words[0]);
+  *storage_class = SpvStorageClass(var_inst->GetSingleWordInOperand(0));
 
   // Get the type pointer from the variable.
   const uint32_t type_pointer_id = var_inst->type_id();
   const opt::Instruction* type_pointer_inst = GetInst(id_to, type_pointer_id);
 
   // Get the type from the type pointer.
-  return type_pointer_inst->GetInOperand(1).AsId();
+  return type_pointer_inst->GetSingleWordInOperand(1);
 }
 
 bool Differ::GetDecorationValue(const IdInstructions& id_to, uint32_t id,
@@ -1699,9 +1699,10 @@ bool Differ::GetDecorationValue(const IdInstructions& id_to, uint32_t id,
   assert(id < id_to.decoration_map_.size());
 
   for (const opt::Instruction* inst : id_to.decoration_map_[id]) {
-    if (inst->opcode() == SpvOpDecorate && inst->GetOperand(0).AsId() == id &&
-        inst->GetOperand(1).words[0] == decoration) {
-      *decoration_value = inst->GetOperand(2).words[0];
+    if (inst->opcode() == SpvOpDecorate &&
+        inst->GetSingleWordOperand(0) == id &&
+        inst->GetSingleWordOperand(1) == decoration) {
+      *decoration_value = inst->GetSingleWordOperand(2);
       return true;
     }
   }
@@ -1741,9 +1742,9 @@ bool Differ::IsPerVertexType(const IdInstructions& id_to, uint32_t type_id) {
 
   for (const opt::Instruction* inst : id_to.decoration_map_[type_id]) {
     if (inst->opcode() == SpvOpMemberDecorate &&
-        inst->GetOperand(0).AsId() == type_id &&
-        inst->GetOperand(2).words[0] == SpvDecorationBuiltIn) {
-      SpvBuiltIn built_in = SpvBuiltIn(inst->GetOperand(3).words[0]);
+        inst->GetSingleWordOperand(0) == type_id &&
+        inst->GetSingleWordOperand(2) == SpvDecorationBuiltIn) {
+      SpvBuiltIn built_in = SpvBuiltIn(inst->GetSingleWordOperand(3));
 
       // Only gl_PerVertex can have, and it can only have, the following
       // built-in decorations.
@@ -1765,7 +1766,7 @@ bool Differ::IsPerVertexVariable(const IdInstructions& id_to, uint32_t var_id) {
 
   // If array, get the element type.
   if (type_inst->opcode() == SpvOpTypeArray) {
-    type_id = type_inst->GetInOperand(0).AsId();
+    type_id = type_inst->GetSingleWordInOperand(0);
   }
 
   // Now check if the type is gl_PerVertex.
@@ -1779,14 +1780,14 @@ SpvStorageClass Differ::GetPerVertexStorageClass(const opt::Module* module,
       case SpvOpTypeArray:
         // The gl_PerVertex instance could be an array, look for a variable of
         // the array type instead.
-        if (inst.GetInOperand(0).AsId() == type_id) {
+        if (inst.GetSingleWordInOperand(0) == type_id) {
           type_id = inst.result_id();
         }
         break;
       case SpvOpTypePointer:
         // Find the storage class of the pointer to this type.
-        if (inst.GetInOperand(1).AsId() == type_id) {
-          return SpvStorageClass(inst.GetInOperand(0).words[0]);
+        if (inst.GetSingleWordInOperand(1) == type_id) {
+          return SpvStorageClass(inst.GetSingleWordInOperand(0));
         }
         break;
       default:
@@ -1828,7 +1829,7 @@ spv_number_kind_t Differ::GetNumberKind(const IdInstructions& id_to,
         case SpvOpSpecConstant:
           // Same kind of number as the selector (OpSwitch) or the type
           // (Op*Constant).
-          return GetTypeNumberKind(id_to, inst.GetOperand(0).AsId(),
+          return GetTypeNumberKind(id_to, inst.GetSingleWordOperand(0),
                                    number_bit_width);
         default:
           assert(false && "Unreachable");
@@ -1852,12 +1853,12 @@ spv_number_kind_t Differ::GetTypeNumberKind(const IdInstructions& id_to,
 
   switch (type_inst->opcode()) {
     case SpvOpTypeInt:
-      *number_bit_width = type_inst->GetOperand(1).words[0];
-      return type_inst->GetOperand(2).words[0] == 0 ? SPV_NUMBER_UNSIGNED_INT
-                                                    : SPV_NUMBER_SIGNED_INT;
+      *number_bit_width = type_inst->GetSingleWordOperand(1);
+      return type_inst->GetSingleWordOperand(2) == 0 ? SPV_NUMBER_UNSIGNED_INT
+                                                     : SPV_NUMBER_SIGNED_INT;
       break;
     case SpvOpTypeFloat:
-      *number_bit_width = type_inst->GetOperand(1).words[0];
+      *number_bit_width = type_inst->GetSingleWordOperand(1);
       return SPV_NUMBER_FLOATING;
     default:
       assert(false && "Unreachable");
@@ -1915,12 +1916,12 @@ void Differ::MatchEntryPointIds() {
   std::set<uint32_t> all_execution_models;
 
   for (const opt::Instruction& src_inst : src_->entry_points()) {
-    uint32_t execution_model = src_inst.GetOperand(0).words[0];
+    uint32_t execution_model = src_inst.GetSingleWordOperand(0);
     src_entry_points_map[execution_model].push_back(&src_inst);
     all_execution_models.insert(execution_model);
   }
   for (const opt::Instruction& dst_inst : dst_->entry_points()) {
-    uint32_t execution_model = dst_inst.GetOperand(0).words[0];
+    uint32_t execution_model = dst_inst.GetSingleWordOperand(0);
     dst_entry_points_map[execution_model].push_back(&dst_inst);
     all_execution_models.insert(execution_model);
   }
@@ -1933,8 +1934,8 @@ void Differ::MatchEntryPointIds() {
     // If there is only one entry point in src and dst with that model, match
     // them unconditionally.
     if (src_insts.size() == 1 && dst_insts.size() == 1) {
-      uint32_t src_id = src_insts[0]->GetOperand(1).AsId();
-      uint32_t dst_id = dst_insts[0]->GetOperand(1).AsId();
+      uint32_t src_id = src_insts[0]->GetSingleWordOperand(1);
+      uint32_t dst_id = dst_insts[0]->GetSingleWordOperand(1);
       id_map_.MapIds(src_id, dst_id);
       id_map_.MapInsts(src_insts[0], dst_insts[0]);
       continue;
@@ -1948,8 +1949,8 @@ void Differ::MatchEntryPointIds() {
         const opt::Operand& dst_name = dst_inst->GetOperand(2);
 
         if (src_name.AsString() == dst_name.AsString()) {
-          uint32_t src_id = src_inst->GetOperand(1).AsId();
-          uint32_t dst_id = dst_inst->GetOperand(1).AsId();
+          uint32_t src_id = src_inst->GetSingleWordOperand(1);
+          uint32_t dst_id = dst_inst->GetSingleWordOperand(1);
           id_map_.MapIds(src_id, dst_id);
           id_map_.MapInsts(src_inst, dst_inst);
           matched = true;
@@ -2035,8 +2036,8 @@ void Differ::MatchTypeIds() {
             return false;
           }
 
-          if (AreIdenticalUintConstants(src_inst->GetInOperand(1).AsId(),
-                                        dst_inst->GetInOperand(1).AsId())) {
+          if (AreIdenticalUintConstants(src_inst->GetSingleWordInOperand(1),
+                                        dst_inst->GetSingleWordInOperand(1))) {
             return true;
           }
 
@@ -2404,9 +2405,10 @@ void Differ::ToParsedInstruction(
   parsed_inst->opcode = static_cast<uint16_t>(inst.opcode());
   parsed_inst->ext_inst_type =
       inst.opcode() == SpvOpExtInst
-          ? GetExtInstType(id_to, original_inst.GetInOperand(0).AsId())
+          ? GetExtInstType(id_to, original_inst.GetSingleWordInOperand(0))
           : SPV_EXT_INST_TYPE_NONE;
-  parsed_inst->type_id = inst.HasResultType() ? inst.GetOperand(0).AsId() : 0;
+  parsed_inst->type_id =
+      inst.HasResultType() ? inst.GetSingleWordOperand(0) : 0;
   parsed_inst->result_id = inst.HasResultId() ? inst.result_id() : 0;
   parsed_inst->operands = parsed_operands.data();
   parsed_inst->num_operands = static_cast<uint16_t>(parsed_operands.size());
