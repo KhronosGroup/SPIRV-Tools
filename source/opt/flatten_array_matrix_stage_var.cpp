@@ -93,9 +93,9 @@ uint32_t FindComponentTypeOfArrayMatrix(analysis::DefUseManager* def_use_mgr,
 
 // Creates an OpDecorate instruction whose Target is |var_id| and Decoration is
 // |decoration|. Adds |literal| as an extra operand of the instruction.
-void CreateLocationDecoration(analysis::DecorationManager* decoration_mgr,
-                              uint32_t var_id, SpvDecoration decoration,
-                              uint32_t literal) {
+void CreateDecoration(analysis::DecorationManager* decoration_mgr,
+                      uint32_t var_id, SpvDecoration decoration,
+                      uint32_t literal) {
   std::vector<Operand> operands({
       {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {var_id}},
       {spv_operand_type_t::SPV_OPERAND_TYPE_DECORATION, {decoration}},
@@ -104,6 +104,9 @@ void CreateLocationDecoration(analysis::DecorationManager* decoration_mgr,
   decoration_mgr->AddDecoration(SpvOpDecorate, std::move(operands));
 }
 
+// Replaces load instructions with composite construct instructions in all the
+// users of the loads. |loads_to_composites| is the mapping from each load to
+// its corresponding OpCompositeConstruct.
 void ReplaceLoadWithCompositeConstruct(
     IRContext* context,
     const std::unordered_map<Instruction*, Instruction*>& loads_to_composites) {
@@ -123,42 +126,59 @@ void ReplaceLoadWithCompositeConstruct(
   }
 }
 
+// Returns the storage class of the instruction |var|.
+SpvStorageClass GetStorageClass(Instruction* var) {
+  return static_cast<SpvStorageClass>(
+      var->GetSingleWordInOperand(kOpVariableStorageClassInOperandIndex));
+}
+
 }  // namespace
 
 bool FlattenArrayMatrixStageVariable::IsTargetStageVariable(
     uint32_t var_id, uint32_t location, bool is_input_var,
-    StageVariableLocationInfo* stage_var_location_info) {
-  // It has both Location and Component decorations.
-  bool has_component = false;
+    StageVariableInfo* stage_var_info) {
+  bool has_component_decoration = false;
+
+  // Returns true if |stage_variable_info_| contains the one with |location|,
+  // the Component of |decoration_inst|, and |is_input_var|. Keeps the one in
+  // |stage_var_info|.
+  auto is_component_for_stage_var =
+      [this, &location, &is_input_var, &has_component_decoration,
+       stage_var_info](const Instruction& decoration_inst) {
+        has_component_decoration = true;
+        uint32_t component = decoration_inst.GetSingleWordInOperand(
+            kOpDecorateLiteralInOperandIndex);
+        auto stage_var_info_itr =
+            stage_variable_info_.find({location, component, 0, is_input_var});
+        if (stage_var_info_itr == stage_variable_info_.end()) return true;
+        *stage_var_info = *stage_var_info_itr;
+        return false;
+      };
   if (!context()->get_decoration_mgr()->WhileEachDecoration(
           var_id, SpvDecorationComponent,
-          [this, &location, &is_input_var, &has_component,
-           stage_var_location_info](const Instruction& decoration_inst) {
-            has_component = true;
-            uint32_t component = decoration_inst.GetSingleWordInOperand(
-                kOpDecorateLiteralInOperandIndex);
-            auto stage_var_location_itr = stage_var_location_info_.find(
-                {location, component, 0, is_input_var});
-            if (stage_var_location_itr == stage_var_location_info_.end())
-              return true;
-            *stage_var_location_info = *stage_var_location_itr;
-            return false;
+          [is_component_for_stage_var](const Instruction& inst) {
+            return !is_component_for_stage_var(inst);
           })) {
     return true;
   }
-  if (has_component) return false;
 
-  // It has only Location decoration.
-  auto stage_var_location_itr =
-      stage_var_location_info_.find({location, 0, 0, is_input_var});
-  if (stage_var_location_itr == stage_var_location_info_.end()) return false;
-  *stage_var_location_info = *stage_var_location_itr;
+  // If the variable with id |var_id| has a component, but it fails to find the
+  // one with |location|, the component, and |is_input_var| in
+  // |stage_variable_info_|, it means the variable has a pair of location and
+  // component that is different from the ones in |stage_variable_info_|.
+  if (has_component_decoration) return false;
+
+  // If it does not have a component, its component can be 0.
+  auto stage_var_info_itr =
+      stage_variable_info_.find({location, 0, 0, is_input_var});
+  if (stage_var_info_itr == stage_variable_info_.end()) return false;
+  *stage_var_info = *stage_var_info_itr;
   return true;
 }
 
 void FlattenArrayMatrixStageVariable::CollectStageVariablesToFlatten(
-    std::unordered_map<uint32_t, StageVariableLocationInfo>*
-        stage_var_ids_to_stage_var_location_info) {
+    std::unordered_map<uint32_t, StageVariableInfo>*
+        stage_var_ids_to_stage_var_info) {
   for (auto& annotation : get_module()->annotations()) {
     if (annotation.opcode() != SpvOpDecorate) continue;
     if (annotation.GetSingleWordInOperand(
@@ -171,89 +191,103 @@ void FlattenArrayMatrixStageVariable::CollectStageVariablesToFlatten(
         annotation.GetSingleWordInOperand(kOpDecorateLiteralInOperandIndex);
 
     Instruction* var = context()->get_def_use_mgr()->GetDef(var_id);
-    SpvStorageClass storage_class = static_cast<SpvStorageClass>(
-        var->GetSingleWordInOperand(kOpVariableStorageClassInOperandIndex));
+    SpvStorageClass storage_class = GetStorageClass(var);
     assert(storage_class == SpvStorageClassInput ||
            storage_class == SpvStorageClassOutput);
 
-    StageVariableLocationInfo stage_var_location_info;
+    StageVariableInfo stage_var_info;
     if (!IsTargetStageVariable(var_id, location,
                                storage_class == SpvStorageClassInput,
-                               &stage_var_location_info)) {
+                               &stage_var_info)) {
       continue;
     }
 
-    stage_var_ids_to_stage_var_location_info->insert(
-        {var_id, stage_var_location_info});
+    stage_var_ids_to_stage_var_info->insert({var_id, stage_var_info});
   }
 }
 
-void FlattenArrayMatrixStageVariable::KillInstructions(
+void FlattenArrayMatrixStageVariable::KillInstructionAndUsers(
+    Instruction* inst) {
+  if (inst->opcode() == SpvOpEntryPoint) {
+    return;
+  }
+  if (inst->opcode() != SpvOpAccessChain) {
+    context()->KillInst(inst);
+    return;
+  }
+  context()->get_def_use_mgr()->ForEachUser(
+      inst, [this](Instruction* user) { KillInstructionAndUsers(user); });
+  context()->KillInst(inst);
+}
+
+void FlattenArrayMatrixStageVariable::KillInstructionsAndUsers(
     const std::vector<Instruction*>& insts) {
   for (Instruction* inst : insts) {
-    if (inst->opcode() == SpvOpEntryPoint) {
-      continue;
-    }
-    if (inst->opcode() != SpvOpAccessChain) {
-      context()->KillInst(inst);
-      continue;
-    }
-    std::vector<Instruction*> users =
-        GetUsersIf(inst, [](Instruction*) { return true; });
-    KillInstructions(users);
-    context()->KillInst(inst);
+    KillInstructionAndUsers(inst);
   }
+}
+
+void FlattenArrayMatrixStageVariable::KillLocationAndComponentDecorations(
+    uint32_t var_id) {
+  context()->get_decoration_mgr()->RemoveDecorationsFrom(
+      var_id, [](const Instruction& inst) {
+        uint32_t decoration =
+            inst.GetSingleWordInOperand(kOpDecorateDecorationInOperandIndex);
+        return decoration == SpvDecorationLocation ||
+               decoration == SpvDecorationComponent;
+      });
 }
 
 bool FlattenArrayMatrixStageVariable::FlattenStageVariable(
     Instruction* stage_var, Instruction* stage_var_type,
-    const StageVariableLocationInfo& stage_var_location_info) {
-  std::vector<Instruction*> location_component_decorations;
-  std::vector<Instruction*> stage_var_users = GetUsersIf(
-      stage_var, [&location_component_decorations](Instruction* user) {
-        if (user->opcode() != SpvOpDecorate) return true;
-        uint32_t decoration =
-            user->GetSingleWordInOperand(kOpDecorateDecorationInOperandIndex);
-        if (decoration == SpvDecorationLocation ||
-            decoration == SpvDecorationComponent) {
-          location_component_decorations.push_back(user);
-          return false;
-        }
-        return true;
-      });
+    const StageVariableInfo& stage_var_info) {
+  NestedCompositeComponents flattened_stage_vars =
+      CreateFlattenedStageVarsForReplacement(stage_var_type,
+                                             GetStorageClass(stage_var),
+                                             stage_var_info.extra_arrayness);
 
-  SpvStorageClass storage_class = static_cast<SpvStorageClass>(
-      stage_var->GetSingleWordInOperand(kOpVariableStorageClassInOperandIndex));
-
-  FlattenedVariables flattened_stage_vars =
-      CreateFlattenedStageVarsForReplacement(
-          stage_var_type, storage_class,
-          stage_var_location_info.extra_arrayness);
-
-  uint32_t location = stage_var_location_info.location;
-  uint32_t component = stage_var_location_info.component;
+  uint32_t location = stage_var_info.location;
+  uint32_t component = stage_var_info.component;
   AddLocationAndComponentDecorations(flattened_stage_vars, &location,
                                      component);
+  KillLocationAndComponentDecorations(stage_var->result_id());
 
-  std::vector<uint32_t> indices;
+  if (!ReplaceStageVarWithFlattenedVars(
+          stage_var, stage_var_info.extra_arrayness, flattened_stage_vars)) {
+    return false;
+  }
+
+  context()->KillInst(stage_var);
+  return true;
+}
+
+bool FlattenArrayMatrixStageVariable::ReplaceStageVarWithFlattenedVars(
+    Instruction* stage_var, uint32_t extra_arrayness,
+    const NestedCompositeComponents& flattened_stage_vars) {
+  std::vector<Instruction*> users;
+  context()->get_def_use_mgr()->ForEachUser(
+      stage_var, [&users](Instruction* user) { users.push_back(user); });
+
+  std::vector<uint32_t> stage_var_component_indices;
   std::unordered_map<Instruction*, Instruction*> loads_to_composites;
   std::unordered_map<Instruction*, Instruction*>
       loads_for_access_chain_to_composites;
-  if (stage_var_location_info.extra_arrayness != 0) {
-    for (uint32_t index = 0; index < stage_var_location_info.extra_arrayness;
-         ++index) {
+  if (extra_arrayness != 0) {
+    for (uint32_t index = 0; index < extra_arrayness; ++index) {
       std::unordered_map<Instruction*, Instruction*> loads_to_component_values;
-      if (!ReplaceStageVars(stage_var, stage_var_users, flattened_stage_vars,
-                            indices, true, index, &loads_to_component_values,
-                            &loads_for_access_chain_to_composites)) {
+      if (!ReplaceStageVarComponentsWithFlattenedVars(
+              stage_var, users, flattened_stage_vars,
+              stage_var_component_indices, &index, &loads_to_component_values,
+              &loads_for_access_chain_to_composites)) {
         return false;
       }
       AddComponentsToCompositesForLoads(loads_to_component_values,
                                         &loads_to_composites, 0);
     }
-  } else if (!ReplaceStageVars(stage_var, stage_var_users, flattened_stage_vars,
-                               indices, false, 0, &loads_to_composites,
-                               &loads_for_access_chain_to_composites)) {
+  } else if (!ReplaceStageVarComponentsWithFlattenedVars(
+                 stage_var, users, flattened_stage_vars,
+                 stage_var_component_indices, nullptr, &loads_to_composites,
+                 &loads_for_access_chain_to_composites)) {
     return false;
   }
 
@@ -261,99 +295,110 @@ bool FlattenArrayMatrixStageVariable::FlattenStageVariable(
   ReplaceLoadWithCompositeConstruct(context(),
                                     loads_for_access_chain_to_composites);
 
-  KillInstructions(location_component_decorations);
-  KillInstructions(stage_var_users);
-  context()->KillInst(stage_var);
+  KillInstructionsAndUsers(users);
   return true;
 }
 
 void FlattenArrayMatrixStageVariable::AddLocationAndComponentDecorations(
-    const FlattenedVariables& flattened_vars, uint32_t* location,
+    const NestedCompositeComponents& flattened_vars, uint32_t* location,
     uint32_t component) {
-  if (flattened_vars.variable != nullptr) {
-    CreateLocationDecoration(context()->get_decoration_mgr(),
-                             flattened_vars.variable->result_id(),
-                             SpvDecorationLocation, *location);
-    CreateLocationDecoration(context()->get_decoration_mgr(),
-                             flattened_vars.variable->result_id(),
-                             SpvDecorationComponent, component);
+  if (!flattened_vars.HasMultipleComponents()) {
+    uint32_t var_id = flattened_vars.GetComponentVariable()->result_id();
+    CreateDecoration(context()->get_decoration_mgr(), var_id,
+                     SpvDecorationLocation, *location);
+    CreateDecoration(context()->get_decoration_mgr(), var_id,
+                     SpvDecorationComponent, component);
     ++(*location);
     return;
   }
-  for (const auto& flattened_var : flattened_vars.flattened_variables) {
+  for (const auto& flattened_var : flattened_vars.GetComponents()) {
     AddLocationAndComponentDecorations(flattened_var, location, component);
   }
 }
 
-bool FlattenArrayMatrixStageVariable::ReplaceStageVars(
-    Instruction* stage_var, std::vector<Instruction*> stage_var_users,
-    const FlattenedVariables& flattened_stage_vars,
-    std::vector<uint32_t>& indices, bool has_extra_arrayness,
-    uint32_t extra_array_index,
-    std::unordered_map<Instruction*, Instruction*>* loads_to_composites,
-    std::unordered_map<Instruction*, Instruction*>*
-        loads_for_access_chain_to_composites) {
-  if (flattened_stage_vars.variable != nullptr) {
+bool FlattenArrayMatrixStageVariable::
+    ReplaceStageVarComponentsWithFlattenedVars(
+        Instruction* stage_var,
+        const std::vector<Instruction*>& stage_var_users,
+        const NestedCompositeComponents& flattened_stage_vars,
+        std::vector<uint32_t>& stage_var_component_indices,
+        const uint32_t* extra_array_index,
+        std::unordered_map<Instruction*, Instruction*>* loads_to_composites,
+        std::unordered_map<Instruction*, Instruction*>*
+            loads_for_access_chain_to_composites) {
+  if (!flattened_stage_vars.HasMultipleComponents()) {
     for (Instruction* stage_var_user : stage_var_users) {
-      if (!ReplaceStageVar(
-              stage_var, stage_var_user, flattened_stage_vars.variable, indices,
-              has_extra_arrayness, extra_array_index, loads_to_composites,
-              loads_for_access_chain_to_composites)) {
+      if (!ReplaceStageVarComponentWithFlattenedVar(
+              stage_var, stage_var_user,
+              flattened_stage_vars.GetComponentVariable(),
+              stage_var_component_indices, extra_array_index,
+              loads_to_composites, loads_for_access_chain_to_composites)) {
         return false;
       }
     }
     return true;
   }
-  for (uint32_t i = 0; i < flattened_stage_vars.flattened_variables.size();
-       ++i) {
-    indices.push_back(i);
+  return ReplaceMultipleComponentsOfStageVarWithFlattenedVars(
+      stage_var, stage_var_users, flattened_stage_vars.GetComponents(),
+      stage_var_component_indices, extra_array_index, loads_to_composites,
+      loads_for_access_chain_to_composites);
+}
+
+bool FlattenArrayMatrixStageVariable::
+    ReplaceMultipleComponentsOfStageVarWithFlattenedVars(
+        Instruction* stage_var,
+        const std::vector<Instruction*>& stage_var_users,
+        const std::vector<NestedCompositeComponents>& components,
+        std::vector<uint32_t>& stage_var_component_indices,
+        const uint32_t* extra_array_index,
+        std::unordered_map<Instruction*, Instruction*>* loads_to_composites,
+        std::unordered_map<Instruction*, Instruction*>*
+            loads_for_access_chain_to_composites) {
+  for (uint32_t i = 0; i < components.size(); ++i) {
+    stage_var_component_indices.push_back(i);
     std::unordered_map<Instruction*, Instruction*> loads_to_component_values;
     std::unordered_map<Instruction*, Instruction*>
         loads_for_access_chain_to_component_values;
-    if (!ReplaceStageVars(stage_var, stage_var_users,
-                          flattened_stage_vars.flattened_variables[i], indices,
-                          has_extra_arrayness, extra_array_index,
-                          &loads_to_component_values,
-                          &loads_for_access_chain_to_component_values)) {
+    if (!ReplaceStageVarComponentsWithFlattenedVars(
+            stage_var, stage_var_users, components[i],
+            stage_var_component_indices, extra_array_index,
+            &loads_to_component_values,
+            &loads_for_access_chain_to_component_values)) {
       return false;
     }
-    indices.pop_back();
+    stage_var_component_indices.pop_back();
 
-    uint32_t depth_to_component = static_cast<uint32_t>(indices.size());
+    uint32_t depth_to_component =
+        static_cast<uint32_t>(stage_var_component_indices.size());
     AddComponentsToCompositesForLoads(
         loads_for_access_chain_to_component_values,
         loads_for_access_chain_to_composites, depth_to_component);
-    if (has_extra_arrayness) ++depth_to_component;
+    if (extra_array_index) ++depth_to_component;
     AddComponentsToCompositesForLoads(loads_to_component_values,
                                       loads_to_composites, depth_to_component);
   }
   return true;
 }
 
-bool FlattenArrayMatrixStageVariable::ReplaceStageVar(
+bool FlattenArrayMatrixStageVariable::ReplaceStageVarComponentWithFlattenedVar(
     Instruction* stage_var, Instruction* stage_var_user,
-    Instruction* flattened_var, const std::vector<uint32_t>& indices,
-    bool has_extra_arrayness, uint32_t extra_array_index,
+    Instruction* flattened_var,
+    const std::vector<uint32_t>& stage_var_component_indices,
+    const uint32_t* extra_array_index,
     std::unordered_map<Instruction*, Instruction*>* loads_to_component_values,
     std::unordered_map<Instruction*, Instruction*>*
         loads_for_access_chain_to_component_values) {
   SpvOp opcode = stage_var_user->opcode();
-  if (opcode == SpvOpStore) {
-    ReplaceStoreWithFlattenedVar(nullptr, stage_var_user, indices,
-                                 flattened_var, has_extra_arrayness,
-                                 extra_array_index);
+  if (opcode == SpvOpStore || opcode == SpvOpLoad) {
+    CreateLoadOrStoreToFlattenedStageVar(
+        stage_var_user, stage_var_component_indices, flattened_var,
+        extra_array_index, loads_to_component_values);
     return true;
   }
 
-  if (opcode == SpvOpLoad) {
-    ReplaceLoadWithFlattenedVar(nullptr, stage_var_user, flattened_var,
-                                loads_to_component_values, has_extra_arrayness,
-                                extra_array_index);
-    return true;
-  }
-
-  // Copy OpName and annotation instructions only once.
-  if (extra_array_index != 0) return true;
+  // Copy OpName and annotation instructions only once. Therefore, we create
+  // them only for the first element of the extra array.
+  if (extra_array_index && *extra_array_index != 0) return true;
 
   if (opcode == SpvOpDecorateId || opcode == SpvOpDecorateString ||
       opcode == SpvOpDecorate) {
@@ -375,7 +420,7 @@ bool FlattenArrayMatrixStageVariable::ReplaceStageVar(
 
   if (opcode == SpvOpAccessChain) {
     ReplaceAccessChainWithFlattenedVar(
-        stage_var_user, indices, flattened_var,
+        stage_var_user, stage_var_component_indices, flattened_var,
         loads_for_access_chain_to_component_values);
     return true;
   }
@@ -383,7 +428,7 @@ bool FlattenArrayMatrixStageVariable::ReplaceStageVar(
   std::string message("Unhandled instruction");
   message += "\n  " + stage_var_user->PrettyPrint(
                           SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-  message += "\nfor stage variable flattening\n  " +
+  message += "\nfor flattening stage variable\n  " +
              stage_var->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
   context()->consumer()(SPV_MSG_ERROR, "", {0, 0, 0}, message.c_str());
   return false;
@@ -412,10 +457,8 @@ Instruction* FlattenArrayMatrixStageVariable::CreateAccessChainToVar(
   *component_type_id = FindComponentTypeOfArrayMatrix(
       def_use_mgr, var_type_id, access_chain->NumInOperands() - 1);
 
-  uint32_t ptr_type_id = GetPointerType(
-      *component_type_id,
-      static_cast<SpvStorageClass>(
-          var->GetSingleWordInOperand(kOpVariableStorageClassInOperandIndex)));
+  uint32_t ptr_type_id =
+      GetPointerType(*component_type_id, GetStorageClass(var));
 
   std::unique_ptr<Instruction> new_access_chain(
       new Instruction(context(), SpvOpAccessChain, ptr_type_id, TakeNextId(),
@@ -435,10 +478,8 @@ Instruction* FlattenArrayMatrixStageVariable::CreateAccessChainToVar(
 Instruction* FlattenArrayMatrixStageVariable::CreateAccessChainWithIndex(
     uint32_t component_type_id, Instruction* var, uint32_t index,
     Instruction* insert_before) {
-  uint32_t ptr_type_id = GetPointerType(
-      component_type_id,
-      static_cast<SpvStorageClass>(
-          var->GetSingleWordInOperand(kOpVariableStorageClassInOperandIndex)));
+  uint32_t ptr_type_id =
+      GetPointerType(component_type_id, GetStorageClass(var));
   uint32_t index_id = context()->get_constant_mgr()->GetUIntConst(index);
   std::unique_ptr<Instruction> new_access_chain(
       new Instruction(context(), SpvOpAccessChain, ptr_type_id, TakeNextId(),
@@ -453,32 +494,33 @@ Instruction* FlattenArrayMatrixStageVariable::CreateAccessChainWithIndex(
 }
 
 void FlattenArrayMatrixStageVariable::ReplaceAccessChainWithFlattenedVar(
-    Instruction* access_chain, const std::vector<uint32_t>& indices,
+    Instruction* access_chain,
+    const std::vector<uint32_t>& stage_var_component_indices,
     Instruction* flattened_var,
     std::unordered_map<Instruction*, Instruction*>* loads_to_component_values) {
   // Note that we have a strong assumption that |access_chain| has only a single
   // index that is for the extra arrayness.
-  std::vector<Instruction*> users =
-      GetUsersIf(access_chain, [](Instruction*) { return true; });
-  for (Instruction* user : users) {
-    switch (user->opcode()) {
-      case SpvOpAccessChain:
-        UseBaseAccessChainForAccessChain(user, access_chain);
-        ReplaceAccessChainWithFlattenedVar(user, indices, flattened_var,
-                                           loads_to_component_values);
-        break;
-      case SpvOpStore:
-        ReplaceStoreWithFlattenedVar(access_chain, user, indices, flattened_var,
-                                     false, 0);
-        break;
-      case SpvOpLoad:
-        ReplaceLoadWithFlattenedVar(access_chain, user, flattened_var,
-                                    loads_to_component_values, false, 0);
-        break;
-      default:
-        break;
-    }
-  }
+  context()->get_def_use_mgr()->ForEachUser(
+      access_chain,
+      [this, access_chain, &stage_var_component_indices, flattened_var,
+       loads_to_component_values](Instruction* user) {
+        switch (user->opcode()) {
+          case SpvOpAccessChain:
+            UseBaseAccessChainForAccessChain(user, access_chain);
+            ReplaceAccessChainWithFlattenedVar(
+                user, stage_var_component_indices, flattened_var,
+                loads_to_component_values);
+            return;
+          case SpvOpLoad:
+          case SpvOpStore:
+            CreateLoadOrStoreToFlattenedStageVarAccessChain(
+                access_chain, user, stage_var_component_indices, flattened_var,
+                loads_to_component_values);
+            return;
+          default:
+            break;
+        }
+      });
 }
 
 void FlattenArrayMatrixStageVariable::CloneAnnotationForVariable(
@@ -539,74 +581,109 @@ uint32_t FlattenArrayMatrixStageVariable::GetPointeeTypeIdOfVar(
   return ptr_type_inst->GetSingleWordInOperand(kOpTypePtrTypeInOperandIndex);
 }
 
-void FlattenArrayMatrixStageVariable::ReplaceLoadWithFlattenedVar(
-    Instruction* access_chain, Instruction* load, Instruction* flattened_var,
-    std::unordered_map<Instruction*, Instruction*>* loads_to_component_values,
-    bool has_extra_arrayness, uint32_t extra_array_index) {
+void FlattenArrayMatrixStageVariable::CreateLoadOrStoreToFlattenedStageVar(
+    Instruction* load_or_store,
+    const std::vector<uint32_t>& stage_var_component_indices,
+    Instruction* flattened_var, const uint32_t* extra_array_index,
+    std::unordered_map<Instruction*, Instruction*>* loads_to_component_values) {
   uint32_t component_type_id = GetPointeeTypeIdOfVar(flattened_var);
   Instruction* ptr = flattened_var;
-  if (access_chain != nullptr) {
-    ptr = CreateAccessChainToVar(component_type_id, flattened_var, access_chain,
-                                 &component_type_id);
-  } else if (has_extra_arrayness) {
+  if (extra_array_index) {
     auto* ty_mgr = context()->get_type_mgr();
     analysis::Array* array_type = ty_mgr->GetType(component_type_id)->AsArray();
     assert(array_type != nullptr);
     component_type_id = ty_mgr->GetTypeInstruction(array_type->element_type());
     ptr = CreateAccessChainWithIndex(component_type_id, flattened_var,
-                                     extra_array_index, load);
+                                     *extra_array_index, load_or_store);
   }
-  std::unique_ptr<Instruction> component_value(
-      new Instruction(context(), SpvOpLoad, component_type_id, TakeNextId(),
-                      std::initializer_list<Operand>{
-                          {SPV_OPERAND_TYPE_ID, {ptr->result_id()}}}));
-  loads_to_component_values->insert({load, component_value.get()});
-  context()->get_def_use_mgr()->AnalyzeInstDefUse(component_value.get());
-  load->InsertBefore(std::move(component_value));
+
+  if (load_or_store->opcode() == SpvOpStore) {
+    CreateStoreToFlattenedStageVar(component_type_id, load_or_store,
+                                   stage_var_component_indices, ptr,
+                                   extra_array_index);
+    return;
+  }
+
+  assert(load_or_store->opcode() == SpvOpLoad);
+  Instruction* component_value =
+      CreateLoad(component_type_id, ptr, load_or_store);
+  loads_to_component_values->insert({load_or_store, component_value});
 }
 
-void FlattenArrayMatrixStageVariable::ReplaceStoreWithFlattenedVar(
-    Instruction* access_chain, Instruction* store,
-    const std::vector<uint32_t>& indices, Instruction* flattened_var,
-    bool has_extra_arrayness, uint32_t extra_array_index) {
-  uint32_t component_type_id = GetPointeeTypeIdOfVar(flattened_var);
-  Instruction* ptr = flattened_var;
-  if (access_chain != nullptr) {
-    ptr = CreateAccessChainToVar(component_type_id, flattened_var, access_chain,
-                                 &component_type_id);
-  } else if (has_extra_arrayness) {
-    // If it has an extra arrayness
-    auto* ty_mgr = context()->get_type_mgr();
-    analysis::Array* array_type = ty_mgr->GetType(component_type_id)->AsArray();
-    assert(array_type != nullptr);
-    component_type_id = ty_mgr->GetTypeInstruction(array_type->element_type());
-    ptr = CreateAccessChainWithIndex(component_type_id, flattened_var,
-                                     extra_array_index, store);
-  }
+Instruction* FlattenArrayMatrixStageVariable::CreateLoad(
+    uint32_t type_id, Instruction* ptr, Instruction* insert_before) {
+  std::unique_ptr<Instruction> load_in_unique_ptr(
+      new Instruction(context(), SpvOpLoad, type_id, TakeNextId(),
+                      std::initializer_list<Operand>{
+                          {SPV_OPERAND_TYPE_ID, {ptr->result_id()}}}));
+  Instruction* load = load_in_unique_ptr.get();
+  context()->get_def_use_mgr()->AnalyzeInstDefUse(load);
+  insert_before->InsertBefore(std::move(load_in_unique_ptr));
+  return load;
+}
 
-  uint32_t value_id = store->GetSingleWordInOperand(1);
-  uint32_t component_id = TakeNextId();
-  std::unique_ptr<Instruction> composite_extract(new Instruction(
-      context(), SpvOpCompositeExtract, component_type_id, component_id,
-      std::initializer_list<Operand>{{SPV_OPERAND_TYPE_ID, {value_id}}}));
-  if (has_extra_arrayness) {
-    composite_extract->AddOperand(
-        {SPV_OPERAND_TYPE_LITERAL_INTEGER, {extra_array_index}});
-  }
-  for (uint32_t index : indices) {
-    composite_extract->AddOperand({SPV_OPERAND_TYPE_LITERAL_INTEGER, {index}});
-  }
+void FlattenArrayMatrixStageVariable::CreateStoreToFlattenedStageVar(
+    uint32_t component_type_id, Instruction* store_to_stage_var,
+    const std::vector<uint32_t>& stage_var_component_indices,
+    Instruction* ptr_to_flattened_var, const uint32_t* extra_array_index) {
+  uint32_t value_id = store_to_stage_var->GetSingleWordInOperand(1);
+  std::unique_ptr<Instruction> composite_extract(
+      CreateCompositeExtract(component_type_id, value_id,
+                             stage_var_component_indices, extra_array_index));
 
-  std::unique_ptr<Instruction> new_store(store->Clone(context()));
-  new_store->SetInOperand(0, {ptr->result_id()});
-  new_store->SetInOperand(1, {component_id});
+  std::unique_ptr<Instruction> new_store(store_to_stage_var->Clone(context()));
+  new_store->SetInOperand(0, {ptr_to_flattened_var->result_id()});
+  new_store->SetInOperand(1, {composite_extract->result_id()});
 
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   def_use_mgr->AnalyzeInstDefUse(composite_extract.get());
   def_use_mgr->AnalyzeInstDefUse(new_store.get());
 
-  store->InsertBefore(std::move(composite_extract));
-  store->InsertBefore(std::move(new_store));
+  store_to_stage_var->InsertBefore(std::move(composite_extract));
+  store_to_stage_var->InsertBefore(std::move(new_store));
+}
+
+Instruction* FlattenArrayMatrixStageVariable::CreateCompositeExtract(
+    uint32_t type_id, uint32_t composite_id,
+    const std::vector<uint32_t>& indexes, const uint32_t* extra_first_index) {
+  uint32_t component_id = TakeNextId();
+  Instruction* composite_extract = new Instruction(
+      context(), SpvOpCompositeExtract, type_id, component_id,
+      std::initializer_list<Operand>{{SPV_OPERAND_TYPE_ID, {composite_id}}});
+  if (extra_first_index) {
+    composite_extract->AddOperand(
+        {SPV_OPERAND_TYPE_LITERAL_INTEGER, {*extra_first_index}});
+  }
+  for (uint32_t index : indexes) {
+    composite_extract->AddOperand({SPV_OPERAND_TYPE_LITERAL_INTEGER, {index}});
+  }
+  return composite_extract;
+}
+
+void FlattenArrayMatrixStageVariable::
+    CreateLoadOrStoreToFlattenedStageVarAccessChain(
+        Instruction* access_chain, Instruction* load_or_store,
+        const std::vector<uint32_t>& stage_var_component_indices,
+        Instruction* flattened_var,
+        std::unordered_map<Instruction*, Instruction*>*
+            loads_to_component_values) {
+  uint32_t component_type_id = GetPointeeTypeIdOfVar(flattened_var);
+  Instruction* ptr = flattened_var;
+  if (access_chain != nullptr) {
+    ptr = CreateAccessChainToVar(component_type_id, flattened_var, access_chain,
+                                 &component_type_id);
+  }
+
+  if (load_or_store->opcode() == SpvOpStore) {
+    CreateStoreToFlattenedStageVar(component_type_id, load_or_store,
+                                   stage_var_component_indices, ptr, nullptr);
+    return;
+  }
+
+  assert(load_or_store->opcode() == SpvOpLoad);
+  Instruction* component_value =
+      CreateLoad(component_type_id, ptr, load_or_store);
+  loads_to_component_values->insert({load_or_store, component_value});
 }
 
 Instruction*
@@ -665,16 +742,6 @@ void FlattenArrayMatrixStageVariable::AddComponentsToCompositesForLoads(
   }
 }
 
-std::vector<Instruction*> FlattenArrayMatrixStageVariable::GetUsersIf(
-    Instruction* ptr, const std::function<bool(Instruction*)>& condition) {
-  std::vector<Instruction*> users;
-  analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
-  def_use_mgr->ForEachUser(ptr, [&users, &condition](Instruction* user) {
-    if (condition(user)) users.push_back(user);
-  });
-  return users;
-}
-
 uint32_t FlattenArrayMatrixStageVariable::GetArrayType(uint32_t elem_type_id,
                                                        uint32_t array_length) {
   analysis::Type* elem_type = context()->get_type_mgr()->GetType(elem_type_id);
@@ -693,7 +760,7 @@ uint32_t FlattenArrayMatrixStageVariable::GetPointerType(
   return context()->get_type_mgr()->GetTypeInstruction(&ptr_type);
 }
 
-FlattenedVariables
+FlattenArrayMatrixStageVariable::NestedCompositeComponents
 FlattenArrayMatrixStageVariable::CreateFlattenedStageVarsForArray(
     Instruction* stage_var_type, SpvStorageClass storage_class,
     uint32_t extra_array_length) {
@@ -703,18 +770,18 @@ FlattenArrayMatrixStageVariable::CreateFlattenedStageVarsForArray(
   uint32_t array_length = GetArrayLength(def_use_mgr, stage_var_type);
   Instruction* elem_type = GetArrayElementType(def_use_mgr, stage_var_type);
 
-  FlattenedVariables flattened_vars;
+  NestedCompositeComponents flattened_vars;
   while (array_length > 0) {
-    FlattenedVariables flattened_vars_for_element =
+    NestedCompositeComponents flattened_vars_for_element =
         CreateFlattenedStageVarsForReplacement(elem_type, storage_class,
                                                extra_array_length);
-    flattened_vars.flattened_variables.push_back(flattened_vars_for_element);
+    flattened_vars.AddComponent(flattened_vars_for_element);
     --array_length;
   }
   return flattened_vars;
 }
 
-FlattenedVariables
+FlattenArrayMatrixStageVariable::NestedCompositeComponents
 FlattenArrayMatrixStageVariable::CreateFlattenedStageVarsForMatrix(
     Instruction* stage_var_type, SpvStorageClass storage_class,
     uint32_t extra_array_length) {
@@ -725,18 +792,18 @@ FlattenArrayMatrixStageVariable::CreateFlattenedStageVarsForMatrix(
       kOpTypeMatrixColCountInOperandIndex);
   Instruction* column_type = GetMatrixColumnType(def_use_mgr, stage_var_type);
 
-  FlattenedVariables flattened_vars;
+  NestedCompositeComponents flattened_vars;
   while (column_count > 0) {
-    FlattenedVariables flattened_vars_for_column =
+    NestedCompositeComponents flattened_vars_for_column =
         CreateFlattenedStageVarsForReplacement(column_type, storage_class,
                                                extra_array_length);
-    flattened_vars.flattened_variables.push_back(flattened_vars_for_column);
+    flattened_vars.AddComponent(flattened_vars_for_column);
     --column_count;
   }
   return flattened_vars;
 }
 
-FlattenedVariables
+FlattenArrayMatrixStageVariable::NestedCompositeComponents
 FlattenArrayMatrixStageVariable::CreateFlattenedStageVarsForReplacement(
     Instruction* stage_var_type, SpvStorageClass storage_class,
     uint32_t extra_array_length) {
@@ -753,7 +820,7 @@ FlattenArrayMatrixStageVariable::CreateFlattenedStageVarsForReplacement(
   }
 
   // Handle scalar or vector case.
-  FlattenedVariables flattened_var;
+  NestedCompositeComponents flattened_var;
   uint32_t type_id = stage_var_type->result_id();
   if (extra_array_length != 0) {
     type_id = GetArrayType(type_id, extra_array_length);
@@ -766,12 +833,12 @@ FlattenArrayMatrixStageVariable::CreateFlattenedStageVarsForReplacement(
                       std::initializer_list<Operand>{
                           {SPV_OPERAND_TYPE_STORAGE_CLASS,
                            {static_cast<uint32_t>(storage_class)}}}));
-  flattened_var.variable = variable.get();
+  flattened_var.SetSingleComponentVariable(variable.get());
   context()->AddGlobalValue(std::move(variable));
   return flattened_var;
 }
 
-Instruction* FlattenArrayMatrixStageVariable::GetTypeOfArrayOrMatrixStageVar(
+Instruction* FlattenArrayMatrixStageVariable::GetTypeOfStageVariable(
     Instruction* stage_var, bool has_extra_arrayness) {
   uint32_t pointee_type_id = GetPointeeTypeIdOfVar(stage_var);
 
@@ -786,10 +853,6 @@ Instruction* FlattenArrayMatrixStageVariable::GetTypeOfArrayOrMatrixStageVar(
     type_inst = def_use_mgr->GetDef(elem_type_id);
   }
 
-  if (type_inst->opcode() != SpvOpTypeArray &&
-      type_inst->opcode() != SpvOpTypeMatrix) {
-    return nullptr;
-  }
   return type_inst;
 }
 
@@ -813,18 +876,21 @@ Instruction* FlattenArrayMatrixStageVariable::GetStageVariable(
 }
 
 Pass::Status FlattenArrayMatrixStageVariable::Process() {
-  std::unordered_map<uint32_t, StageVariableLocationInfo>
-      stage_var_ids_to_stage_var_location_info;
-  CollectStageVariablesToFlatten(&stage_var_ids_to_stage_var_location_info);
+  std::unordered_map<uint32_t, StageVariableInfo>
+      stage_var_ids_to_stage_var_info;
+  CollectStageVariablesToFlatten(&stage_var_ids_to_stage_var_info);
 
   Pass::Status status = Status::SuccessWithoutChange;
-  for (auto itr : stage_var_ids_to_stage_var_location_info) {
+  for (auto itr : stage_var_ids_to_stage_var_info) {
     Instruction* stage_var = GetStageVariable(itr.first);
     if (stage_var == nullptr) return Pass::Status::Failure;
 
-    Instruction* stage_var_type = GetTypeOfArrayOrMatrixStageVar(
-        stage_var, itr.second.extra_arrayness != 0);
-    if (stage_var_type == nullptr) continue;
+    Instruction* stage_var_type =
+        GetTypeOfStageVariable(stage_var, itr.second.extra_arrayness != 0);
+    if (stage_var_type->opcode() != SpvOpTypeArray &&
+        stage_var_type->opcode() != SpvOpTypeMatrix) {
+      continue;
+    }
 
     if (!FlattenStageVariable(stage_var, stage_var_type, itr.second)) {
       return Pass::Status::Failure;
