@@ -75,6 +75,7 @@ bool HasOnlyEntryPointsAsFunctions(IRContext* context, Module* module) {
         entry_point.GetSingleWordInOperand(kOpEntryPointInOperandEntryPoint));
   }
   for (auto& function : *module) {
+    if (function.control_mask() & SpvFunctionControlDontInlineMask) continue;
     if (entry_function_ids.find(function.result_id()) ==
         entry_function_ids.end()) {
       std::string message(
