@@ -907,6 +907,8 @@ Optimizer::PassToken CreateConvertToSampledImagePass(
 // from every function in the module.  This is useful if you want the inliner to
 // inline these functions some reason.
 Optimizer::PassToken CreateRemoveDontInlinePass();
+
+Optimizer::PassToken CreateVarForFuncCallPass();
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_

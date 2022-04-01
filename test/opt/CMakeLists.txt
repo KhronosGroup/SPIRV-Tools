@@ -104,6 +104,7 @@ add_spvtools_unittest(TARGET opt
        upgrade_memory_model_test.cpp
        utils_test.cpp pass_utils.cpp
        value_table_test.cpp
+       var_for_func_call_test.cpp
        vector_dce_test.cpp
        workaround1209_test.cpp
        wrap_opkill_test.cpp

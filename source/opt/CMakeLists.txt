@@ -122,6 +122,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   unify_const_pass.h
   upgrade_memory_model.h
   value_number_table.h
+  var_for_func_call_pass.h
   vector_dce.h
   workaround1209.h
   wrap_opkill.h
@@ -231,6 +232,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   unify_const_pass.cpp
   upgrade_memory_model.cpp
   value_number_table.cpp
+  var_for_func_call_pass.cpp
   vector_dce.cpp
   workaround1209.cpp
   wrap_opkill.cpp
