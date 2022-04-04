@@ -64,7 +64,7 @@ TEST_F(FlattenArrayMatrixStageVarTest, FlattenArrayMatrixStageVar) {
   //      data.d = input[CtrlPtID].d;
   //      return data;
   //    }
-  const std::string text = R"(
+  const std::string header = R"(
                OpCapability Tessellation
                OpCapability Float64
                OpMemoryModel Logical GLSL450
@@ -297,6 +297,11 @@ TEST_F(FlattenArrayMatrixStageVarTest, FlattenArrayMatrixStageVar) {
 
 %gl_TessLevelOuter = OpVariable %_ptr_Output__arr_float_uint_4 Output
 %gl_TessLevelInner = OpVariable %_ptr_Output__arr_float_uint_2 Output
+  )";
+
+  // Splitting string literal to avoid a compile error "C2026: string too big,
+  // trailing characters truncated" in Windows.
+  const std::string function = R"(
        %main = OpFunction %void None %55
          %56 = OpLabel
 %param_var_input = OpVariable %_ptr_Function__arr_HSCtrlPt_uint_4 Function
@@ -565,7 +570,8 @@ TEST_F(FlattenArrayMatrixStageVarTest, FlattenArrayMatrixStageVar) {
       {3, 1, 4, true},
       {3, 1, 4, false},
   });
-  SinglePassRunAndMatch<FlattenArrayMatrixStageVariable>(text, true, info);
+  SinglePassRunAndMatch<FlattenArrayMatrixStageVariable>(header + function,
+                                                         true, info);
 }
 
 }  // namespace
