@@ -24,7 +24,28 @@ namespace opt {
 
 // A struct for the information of a stage variable's location, component,
 // extra arrayness, and whether it is an input or output stage variable. Note
-// that stage variables of the tessellation shaders have the extra arrayness.
+// that stage variables of the tessellation shaders have the extra arrayness as
+// the first dimension of the array.
+//
+// For example, when we generate the following HLSL code to SPIR-V
+//
+//  struct HS_OUTPUT {
+//    float3 pos[5] : POSITION;
+//    ...
+//  };
+//  ...
+//  [patchconstantfunc("main_hs_patch")]
+//  [outputcontrolpoints(3)]
+//  HS_OUTPUT main_hs(...) { ... }
+//  ...
+//
+//  HS_PATCH_OUTPUT main_hs_patch(const OutputPatch<HS_OUTPUT, 3> patch) {
+//  ...
+//  }
+//
+// because of `OutputPatch<HS_OUTPUT, 3> patch`, we add the extra arrayness 3
+// for `float3 pos[5]`. In SPIR-V, its will be
+// `%_ptr_Output__arr__arr_v3float_uint_5_uint_3`.
 struct StageVariableInfo {
   uint32_t location;
   uint32_t component;

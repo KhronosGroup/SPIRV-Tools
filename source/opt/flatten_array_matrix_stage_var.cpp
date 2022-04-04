@@ -150,9 +150,9 @@ bool FlattenArrayMatrixStageVariable::IsTargetStageVariable(
             kOpDecorateLiteralInOperandIndex);
         auto stage_var_info_itr =
             stage_variable_info_.find({location, component, 0, is_input_var});
-        if (stage_var_info_itr == stage_variable_info_.end()) return true;
+        if (stage_var_info_itr == stage_variable_info_.end()) return false;
         *stage_var_info = *stage_var_info_itr;
-        return false;
+        return true;
       };
   if (!context()->get_decoration_mgr()->WhileEachDecoration(
           var_id, SpvDecorationComponent,
@@ -273,6 +273,8 @@ bool FlattenArrayMatrixStageVariable::ReplaceStageVarWithFlattenedVars(
   std::unordered_map<Instruction*, Instruction*>
       loads_for_access_chain_to_composites;
   if (extra_arrayness != 0) {
+    // Note that the extra arrayness is the first dimenion of the array stage
+    // variable.
     for (uint32_t index = 0; index < extra_arrayness; ++index) {
       std::unordered_map<Instruction*, Instruction*> loads_to_component_values;
       if (!ReplaceStageVarComponentsWithFlattenedVars(
