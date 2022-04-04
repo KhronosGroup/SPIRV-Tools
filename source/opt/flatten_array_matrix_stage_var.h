@@ -44,7 +44,7 @@ namespace opt {
 //  }
 //
 // because of `OutputPatch<HS_OUTPUT, 3> patch`, we add the extra arrayness 3
-// for `float3 pos[5]`. In SPIR-V, its will be
+// for `float3 pos[5]`. In SPIR-V, its type will be
 // `%_ptr_Output__arr__arr_v3float_uint_5_uint_3`.
 struct StageVariableInfo {
   uint32_t location;
@@ -58,6 +58,11 @@ struct StageVariableInfo {
   }
 };
 
+// See optimizer.hpp for documentation.
+//
+// Note that the current implementation of this pass covers only store, load,
+// access chain instructions for the stage variables. Supporting other types of
+// instructions is a future work.
 class FlattenArrayMatrixStageVariable : public Pass {
  public:
   // Hashing functor for StageVariableInfo.
