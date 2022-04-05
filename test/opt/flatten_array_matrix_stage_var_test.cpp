@@ -69,9 +69,6 @@ TEST_F(FlattenArrayMatrixStageVarTest, FlattenArrayMatrixStageVar) {
                OpCapability Float64
                OpMemoryModel Logical GLSL450
                OpEntryPoint TessellationControl %main "main" %in_var_A %in_var_B %in_var_C %in_var_D %in_var_E %gl_InvocationID %out_var_A %out_var_B %out_var_C %out_var_D %out_var_E %gl_TessLevelOuter %gl_TessLevelInner
-
-; CHECK: OpEntryPoint TessellationControl %main "main" %in_var_A %in_var_B %in_var_C %in_var_D %in_var_E %gl_InvocationID %out_var_A %out_var_B %out_var_C %out_var_D %out_var_E %gl_TessLevelOuter %gl_TessLevelInner %out_var_E_0 %out_var_D_0 %out_var_C_0 %out_var_A_0 %out_var_A_1 %in_var_E_0 %in_var_D_0 %in_var_C_0 %in_var_A_0 %in_var_A_1
-
                OpExecutionMode %main Triangles
                OpExecutionMode %main SpacingFractionalOdd
                OpExecutionMode %main VertexOrderCw
