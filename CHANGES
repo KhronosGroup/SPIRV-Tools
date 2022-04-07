@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2022.2-dev 2022-04-07
+v2022.2 2022-04-07
   - General
     - Add OpModuleProcessed to debug opcode (#4694)
   - Optimizer
