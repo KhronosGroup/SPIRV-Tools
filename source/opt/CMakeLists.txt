@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 set(SPIRV_TOOLS_OPT_SOURCES
+  add_var_for_funccall_param.h
   aggressive_dead_code_elim_pass.h
   amd_ext_to_khr.h
   basic_block.h
@@ -122,11 +123,11 @@ set(SPIRV_TOOLS_OPT_SOURCES
   unify_const_pass.h
   upgrade_memory_model.h
   value_number_table.h
-  var_for_func_call_pass.h
   vector_dce.h
   workaround1209.h
   wrap_opkill.h
 
+  add_var_for_funccall_param.cpp
   aggressive_dead_code_elim_pass.cpp
   amd_ext_to_khr.cpp
   basic_block.cpp
@@ -232,7 +233,6 @@ set(SPIRV_TOOLS_OPT_SOURCES
   unify_const_pass.cpp
   upgrade_memory_model.cpp
   value_number_table.cpp
-  var_for_func_call_pass.cpp
   vector_dce.cpp
   workaround1209.cpp
   wrap_opkill.cpp

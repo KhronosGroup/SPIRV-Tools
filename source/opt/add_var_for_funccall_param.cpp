@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/opt/var_for_func_call_pass.h"
+#include "source/opt/add_var_for_funccall_param.h"
 
 #include "ir_builder.h"
 
 using namespace spvtools;
 using namespace opt;
 
-Pass::Status VarsForFunctionCallPass::Process() {
+Pass::Status AddVarsForFuncCallParamPass::Process() {
   auto result = Status::SuccessWithoutChange;
   auto funcsNum = get_module()->end() - get_module()->begin();
   if (funcsNum == 1) return result;

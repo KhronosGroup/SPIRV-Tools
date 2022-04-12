@@ -83,6 +83,6 @@
 #include "source/opt/vector_dce.h"
 #include "source/opt/workaround1209.h"
 #include "source/opt/wrap_opkill.h"
-#include "source/opt/var_for_func_call_pass.h"
+#include "source/opt/add_var_for_funccall_param.h"
 
 #endif  // SOURCE_OPT_PASSES_H_

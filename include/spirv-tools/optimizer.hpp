@@ -908,7 +908,7 @@ Optimizer::PassToken CreateConvertToSampledImagePass(
 // inline these functions some reason.
 Optimizer::PassToken CreateRemoveDontInlinePass();
 
-Optimizer::PassToken CreateVarForFuncCallPass();
+Optimizer::PassToken CreateAddVarForFuncCallParamPass();
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_

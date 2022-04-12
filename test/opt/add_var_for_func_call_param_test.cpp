@@ -20,8 +20,8 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-using VarFuncCallTest = PassTest<::testing::Test>;
-TEST_F(VarFuncCallTest, Simple) {
+using AddVarFuncCallParamTest = PassTest<::testing::Test>;
+TEST_F(AddVarFuncCallParamTest, Simple) {
   const std::string predef = R"(OpCapability SampledBuffer
 OpCapability ImageBuffer
 OpCapability Shader
@@ -115,7 +115,7 @@ OpFunctionEnd
 OpReturn
 OpFunctionEnd
 )";
-  SinglePassRunAndCheck<VarsForFunctionCallPass>(predef+before, predef+after, true, true);
+  SinglePassRunAndCheck<AddVarsForFuncCallParamPass>(predef+before, predef+after, true, true);
 }
 
 }  // namespace

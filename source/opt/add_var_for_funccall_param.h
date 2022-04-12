@@ -19,10 +19,10 @@
 
 namespace spvtools {
 namespace opt {
-class VarsForFunctionCallPass : public Pass {
+class AddVarsForFuncCallParamPass : public Pass {
  public:
-  VarsForFunctionCallPass() {}
-  const char* name() const override { return "var-for-functioncalls"; }
+  AddVarsForFuncCallParamPass() {}
+  const char* name() const override { return "add-var-for-funcall-param"; }
   Status Process() override;
   IRContext::Analysis GetPreservedAnalyses() override {
     return IRContext::kAnalysisDefUse | IRContext::kAnalysisDecorations |

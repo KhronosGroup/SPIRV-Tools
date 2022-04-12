@@ -16,7 +16,8 @@ add_subdirectory(dominator_tree)
 add_subdirectory(loop_optimizations)
 
 add_spvtools_unittest(TARGET opt
-  SRCS aggressive_dead_code_elim_test.cpp
+  SRCS add_var_for_func_call_param_test.cpp
+       aggressive_dead_code_elim_test.cpp
        amd_ext_to_khr.cpp
        assembly_builder_test.cpp
        block_merge_test.cpp
@@ -84,7 +85,7 @@ add_spvtools_unittest(TARGET opt
        reduce_load_size_test.cpp
        redundancy_elimination_test.cpp
        remove_dontinline_test.cpp
-	   remove_unused_interface_variables_test.cpp
+	     remove_unused_interface_variables_test.cpp
        register_liveness.cpp
        relax_float_ops_test.cpp
        replace_desc_array_access_using_var_index_test.cpp
@@ -104,7 +105,6 @@ add_spvtools_unittest(TARGET opt
        upgrade_memory_model_test.cpp
        utils_test.cpp pass_utils.cpp
        value_table_test.cpp
-       var_for_func_call_test.cpp
        vector_dce_test.cpp
        workaround1209_test.cpp
        wrap_opkill_test.cpp
