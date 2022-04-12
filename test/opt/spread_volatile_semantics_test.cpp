@@ -54,6 +54,7 @@ OpSource GLSL 460
 OpSourceExtension "GL_EXT_nonuniform_qualifier"
 OpSourceExtension "GL_KHR_ray_tracing"
 OpName %main "main"
+OpName %fn "fn"
 OpName %StorageBuffer "StorageBuffer"
 OpMemberName %StorageBuffer 0 "index"
 OpMemberName %StorageBuffer 1 "red"
@@ -109,6 +110,11 @@ OpDecorate %var BuiltIn )") + built_in + std::string(R"(
 %29 = OpCompositeExtract %float %27 0
 %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 OpStore %31 %29
+%32 = OpFunctionCall %void %fn
+OpReturn
+OpFunctionEnd
+%fn = OpFunction %void DontInline %3
+%33 = OpLabel
 OpReturn
 OpFunctionEnd
 )");
