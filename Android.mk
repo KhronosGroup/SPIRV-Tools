@@ -78,6 +78,7 @@ SPVTOOLS_SRC_FILES := \
 SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/aggressive_dead_code_elim_pass.cpp \
 		source/opt/amd_ext_to_khr.cpp \
+		source/opt/analyze_live_input_pass.cpp \
 		source/opt/basic_block.cpp \
 		source/opt/block_merge_pass.cpp \
 		source/opt/block_merge_util.cpp \
@@ -111,6 +112,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/eliminate_dead_functions_util.cpp \
 		source/opt/eliminate_dead_input_components_pass.cpp \
 		source/opt/eliminate_dead_members_pass.cpp \
+		source/opt/eliminate_dead_output_stores_pass.cpp \
 		source/opt/feature_manager.cpp \
 		source/opt/fix_func_call_arguments.cpp \
 		source/opt/fix_storage_class.cpp \
@@ -136,6 +138,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/ir_context.cpp \
 		source/opt/ir_loader.cpp \
 		source/opt/licm_pass.cpp \
+		source/opt/liveness.cpp \
 		source/opt/local_access_chain_convert_pass.cpp \
 		source/opt/local_redundancy_elimination.cpp \
 		source/opt/local_single_block_elim_pass.cpp \

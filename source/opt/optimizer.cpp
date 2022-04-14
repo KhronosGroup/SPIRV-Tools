@@ -60,6 +60,7 @@ struct Optimizer::Impl {
 
   spv_target_env target_env;      // Target environment.
   opt::PassManager pass_manager;  // Internal implementation pass manager.
+  std::unordered_set<uint32_t> live_locs;  // Arg to debug dead output passes
 };
 
 Optimizer::Optimizer(spv_target_env env) : impl_(new Impl(env)) {
@@ -1017,6 +1018,20 @@ Optimizer::PassToken CreateInterpolateFixupPass() {
 Optimizer::PassToken CreateEliminateDeadInputComponentsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::EliminateDeadInputComponentsPass>());
+}
+
+Optimizer::PassToken CreateAnalyzeLiveInputPass(
+    std::unordered_set<uint32_t>* live_locs,
+    std::unordered_set<uint32_t>* live_builtins) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::AnalyzeLiveInputPass>(live_locs, live_builtins));
+}
+
+Optimizer::PassToken CreateEliminateDeadOutputStoresPass(
+    std::unordered_set<uint32_t>* live_locs,
+    std::unordered_set<uint32_t>* live_builtins) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::EliminateDeadOutputStoresPass>(live_locs, live_builtins));
 }
 
 Optimizer::PassToken CreateConvertToSampledImagePass(
