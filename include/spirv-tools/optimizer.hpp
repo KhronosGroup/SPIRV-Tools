@@ -19,6 +19,7 @@
 #include <ostream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -892,6 +893,11 @@ Optimizer::PassToken CreateInterpolateFixupPass();
 // code elimination pass would be beneficial in removing newly unused component
 // types.
 Optimizer::PassToken CreateEliminateDeadInputComponentsPass();
+
+Optimizer::PassToken CreateAnalyzeDeadOutputStoresPass(
+    std::unordered_set<uint32_t>* live_locs);
+Optimizer::PassToken CreateEliminateDeadOutputStoresPass(
+    std::unordered_set<uint32_t>* live_locs);
 
 // Creates a convert-to-sampled-image pass to convert images and/or
 // samplers with given pairs of descriptor set and binding to sampled image.

@@ -25,6 +25,7 @@ namespace opt {
 namespace {
 
 const uint32_t kTypePointerTypeIdInIdx = 1;
+const uint32_t kEntryPointExecutionModelInIdx = 0;
 
 }  // namespace
 
@@ -46,6 +47,25 @@ Pass::Status Pass::Run(IRContext* ctx) {
   if (!(status == Status::Failure || ctx->IsConsistent()))
     assert(false && "An analysis in the context is out of date.");
   return status;
+}
+
+uint32_t Pass::get_stage() const {
+  uint32_t ecnt = 0;
+  uint32_t stage = SpvExecutionModelMax;
+  for (auto& e : get_module()->entry_points()) {
+    if (ecnt == 0)
+      stage = e.GetSingleWordInOperand(kEntryPointExecutionModelInIdx);
+    else if (e.GetSingleWordInOperand(kEntryPointExecutionModelInIdx) !=
+             stage) {
+      if (consumer()) {
+        std::string message = "Mixed stage shader module not supported";
+        consumer()(SPV_MSG_ERROR, 0, {0, 0, 0}, message.c_str());
+      }
+      return false;
+    }
+    ++ecnt;
+  }
+  return stage;
 }
 
 uint32_t Pass::GetPointeeTypeId(const Instruction* ptrInst) const {

@@ -60,6 +60,7 @@ struct Optimizer::Impl {
 
   spv_target_env target_env;      // Target environment.
   opt::PassManager pass_manager;  // Internal implementation pass manager.
+  std::unordered_set<uint32_t> live_locs;  // Arg to debug dead output passes
 };
 
 Optimizer::Optimizer(spv_target_env env) : impl_(new Impl(env)) {
@@ -523,6 +524,12 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateInterpolateFixupPass());
   } else if (pass_name == "remove-dont-inline") {
     RegisterPass(CreateRemoveDontInlinePass());
+  } else if (pass_name == "analyze-dead-output-stores") {
+    // Debug only - not visible to users
+    RegisterPass(CreateAnalyzeDeadOutputStoresPass(&impl_->live_locs));
+  } else if (pass_name == "eliminate-dead-output-stores") {
+    // Debug only - not visible to users
+    RegisterPass(CreateEliminateDeadOutputStoresPass(&impl_->live_locs));
   } else if (pass_name == "eliminate-dead-input-components") {
     RegisterPass(CreateEliminateDeadInputComponentsPass());
   } else if (pass_name == "fix-func-call-param") {
@@ -1017,6 +1024,18 @@ Optimizer::PassToken CreateInterpolateFixupPass() {
 Optimizer::PassToken CreateEliminateDeadInputComponentsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::EliminateDeadInputComponentsPass>());
+}
+
+Optimizer::PassToken CreateAnalyzeDeadOutputStoresPass(
+    std::unordered_set<uint32_t>* live_locs) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::EliminateDeadOutputStoresPass>(live_locs, true));
+}
+
+Optimizer::PassToken CreateEliminateDeadOutputStoresPass(
+    std::unordered_set<uint32_t>* live_locs) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::EliminateDeadOutputStoresPass>(live_locs, false));
 }
 
 Optimizer::PassToken CreateConvertToSampledImagePass(

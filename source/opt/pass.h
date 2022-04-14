@@ -108,6 +108,10 @@ class Pass {
   // If this happens the return value will be |Failure|.
   Status Run(IRContext* ctx);
 
+  // Return the stage of the module. Will generate error if entry points don't
+  // all have the same stage.
+  uint32_t get_stage() const;
+
   // Returns the set of analyses that the pass is guaranteed to preserve.
   virtual IRContext::Analysis GetPreservedAnalyses() {
     return IRContext::kAnalysisNone;

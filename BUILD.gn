@@ -627,6 +627,8 @@ static_library("spvtools_opt") {
     "source/opt/eliminate_dead_input_components_pass.h",
     "source/opt/eliminate_dead_members_pass.cpp",
     "source/opt/eliminate_dead_members_pass.h",
+    "source/opt/eliminate_dead_output_stores_pass.cpp",
+    "source/opt/eliminate_dead_output_stores_pass.h",
     "source/opt/empty_pass.h",
     "source/opt/feature_manager.cpp",
     "source/opt/feature_manager.h",
