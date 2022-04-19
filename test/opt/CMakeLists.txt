@@ -46,7 +46,6 @@ add_spvtools_unittest(TARGET opt
        eliminate_dead_member_test.cpp
        feature_manager_test.cpp
        fix_storage_class_test.cpp
-       flatten_array_matrix_stage_var_test.cpp
        flatten_decoration_test.cpp
        fold_spec_const_op_composite_test.cpp
        fold_test.cpp
@@ -62,6 +61,7 @@ add_spvtools_unittest(TARGET opt
        inst_debug_printf_test.cpp
        instruction_list_test.cpp
        instruction_test.cpp
+       interface_var_sroa_test.cpp
        interp_fixup_test.cpp
        ir_builder.cpp
        ir_context_test.cpp

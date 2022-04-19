@@ -23,9 +23,10 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-using FlattenArrayMatrixStageVarTest = PassTest<::testing::Test>;
+using InterfaceVariableScalarReplacementTest = PassTest<::testing::Test>;
 
-TEST_F(FlattenArrayMatrixStageVarTest, FlattenArrayMatrixStageVar) {
+TEST_F(InterfaceVariableScalarReplacementTest,
+       InterfaceVariableScalarReplacement) {
   // HLSL code:
   //
   //    struct HSPatchConstData {
@@ -556,7 +557,7 @@ TEST_F(FlattenArrayMatrixStageVarTest, FlattenArrayMatrixStageVar) {
                OpFunctionEnd
   )";
 
-  std::vector<StageVariableInfo> info({
+  std::vector<InterfaceVariableInfo> info({
       // location, component, extra_arrayness, is_input_var
       {0, 0, 4, true},
       {0, 0, 4, false},
@@ -567,8 +568,8 @@ TEST_F(FlattenArrayMatrixStageVarTest, FlattenArrayMatrixStageVar) {
       {3, 1, 4, true},
       {3, 1, 4, false},
   });
-  SinglePassRunAndMatch<FlattenArrayMatrixStageVariable>(header + function,
-                                                         true, info);
+  SinglePassRunAndMatch<InterfaceVariableScalarReplacement>(header + function,
+                                                            true, info);
 }
 
 }  // namespace

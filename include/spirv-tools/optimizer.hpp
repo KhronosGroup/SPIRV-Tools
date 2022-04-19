@@ -29,7 +29,7 @@ namespace spvtools {
 namespace opt {
 class Pass;
 struct DescriptorSetAndBinding;
-struct StageVariableInfo;
+struct InterfaceVariableInfo;
 }  // namespace opt
 
 // C++ interface for SPIR-V optimization functionalities. It wraps the context
@@ -904,11 +904,11 @@ Optimizer::PassToken CreateConvertToSampledImagePass(
     const std::vector<opt::DescriptorSetAndBinding>&
         descriptor_set_binding_pairs);
 
-// Create a flatten-array-matrix-stage-variable pass to replace array or matrix
-// stage variables with flattened scalar or vector stage variables. For example,
-// it replaces `float2x3 foo[2]` with `float3 foo0, foo1, foo2, foo3`.
-Optimizer::PassToken CreateFlattenArrayMatrixStageVariablePass(
-    const std::vector<opt::StageVariableInfo>& stage_variable_info);
+// Create a interface-variable-scalar-replacement pass that replaces array or
+// matrix interface variables with a series of scalar or vector interface
+// variables. For example, it replaces `float3 foo[2]` with `float3 foo0, foo1`.
+Optimizer::PassToken CreateInterfaceVariableScalarReplacementPass(
+    const std::vector<opt::InterfaceVariableInfo>& interface_variable_info);
 
 // Creates a remove-dont-inline pass to remove the |DontInline| function control
 // from every function in the module.  This is useful if you want the inliner to

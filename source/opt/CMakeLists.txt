@@ -50,7 +50,6 @@ set(SPIRV_TOOLS_OPT_SOURCES
   empty_pass.h
   feature_manager.h
   fix_storage_class.h
-  flatten_array_matrix_stage_var.h
   flatten_decoration_pass.h
   fold.h
   folding_rules.h
@@ -68,6 +67,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   instruction.h
   instruction_list.h
   instrument_pass.h
+  interface_var_sroa.h
   interp_fixup_pass.h
   ir_builder.h
   ir_context.h
@@ -164,7 +164,6 @@ set(SPIRV_TOOLS_OPT_SOURCES
   eliminate_dead_members_pass.cpp
   feature_manager.cpp
   fix_storage_class.cpp
-  flatten_array_matrix_stage_var.cpp
   flatten_decoration_pass.cpp
   fold.cpp
   folding_rules.cpp
@@ -182,6 +181,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   instruction.cpp
   instruction_list.cpp
   instrument_pass.cpp
+  interface_var_sroa.cpp
   interp_fixup_pass.cpp
   ir_context.cpp
   ir_loader.cpp
