@@ -525,8 +525,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
     RegisterPass(CreateRemoveDontInlinePass());
   } else if (pass_name == "eliminate-dead-input-components") {
     RegisterPass(CreateEliminateDeadInputComponentsPass());
-  } else if (pass_name == "add-var-func-call-param") {
-    RegisterPass(CreateAddVarForFuncCallParamPass());
+  } else if (pass_name == "fix-func-call-param") {
+    RegisterPass(CreateFixFuncCallArgumentsPass());
   } else if (pass_name == "convert-to-sampled-image") {
     if (pass_args.size() > 0) {
       auto descriptor_set_binding_pairs =
@@ -1025,8 +1025,8 @@ Optimizer::PassToken CreateRemoveDontInlinePass() {
       MakeUnique<opt::RemoveDontInline>());
 }
 
-Optimizer::PassToken CreateAddVarForFuncCallParamPass() {
+Optimizer::PassToken CreateFixFuncCallArgumentsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::AddVarsForFuncCallParamPass>());
+      MakeUnique<opt::FixFuncCallArgumentsPass>());
 }
 }  // namespace spvtools

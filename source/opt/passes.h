@@ -37,6 +37,7 @@
 #include "source/opt/eliminate_dead_input_components_pass.h"
 #include "source/opt/eliminate_dead_members_pass.h"
 #include "source/opt/empty_pass.h"
+#include "source/opt/fix_func_call_arguments.h"
 #include "source/opt/fix_storage_class.h"
 #include "source/opt/flatten_decoration_pass.h"
 #include "source/opt/fold_spec_constant_op_and_composite_pass.h"
@@ -83,6 +84,5 @@
 #include "source/opt/vector_dce.h"
 #include "source/opt/workaround1209.h"
 #include "source/opt/wrap_opkill.h"
-#include "source/opt/add_var_for_funccall_param.h"
 
 #endif  // SOURCE_OPT_PASSES_H_
