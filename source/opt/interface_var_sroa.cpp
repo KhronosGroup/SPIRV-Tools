@@ -23,7 +23,6 @@
 #include "source/opt/type_manager.h"
 #include "source/util/make_unique.h"
 
-const static uint32_t kOpDecorateTargetInOperandIndex = 0;
 const static uint32_t kOpDecorateDecorationInOperandIndex = 1;
 const static uint32_t kOpDecorateLiteralInOperandIndex = 2;
 const static uint32_t kOpVariableStorageClassInOperandIndex = 0;
