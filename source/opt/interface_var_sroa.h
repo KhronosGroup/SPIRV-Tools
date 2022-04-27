@@ -133,28 +133,28 @@ class InterfaceVariableScalarReplacement : public Pass {
       std::unordered_map<uint32_t, InterfaceVariableInfo>*
           interface_var_ids_to_interface_var_info);
 
-  // Returns true if variable whose id is |var_id| that has Location decoration
-  // with |location| is decorated by a Component decoration and the tuple of
-  // |location|, the component, and |is_input_var| is one of
-  // |interface_variable_info_|. Also returns true if the variable with id
-  // |var_id| has Location decoration |location| but does not have a Component
-  // decoration and the tuple of |location|, component 0, and |is_input_var| is
-  // one of |interface_variable_info_| (no Component decoration means its
-  // component is 0). Otherwise, returns false. If the variable is a target,
-  // returns the interface variable information using |interface_var_info|.
-  bool IsTargetInterfaceVariable(uint32_t var_id, uint32_t location,
-                                 bool is_input_var,
-                                 InterfaceVariableInfo* interface_var_info);
+  // Returns true if InterfaceVariableInfo of the variable whose id |var_id|
+  // exists in |interface_variable_info_|. Returns the InterfaceVariableInfo
+  // via |interface_var_info|. If |is_input_var| is true, the variable is an
+  // input variable.
+  bool FindTargetInterfaceVariableInfo(
+      uint32_t var_id, bool is_input_var,
+      InterfaceVariableInfo* interface_var_info);
+
+  // Finds a Location BuiltIn decoration of |var_id| and returns it via
+  // |location|. Returns true whether the location exists or not.
+  bool GetVariableLocation(uint32_t var_id, uint32_t* location);
+
+  // Finds a Component BuiltIn decoration of |var_id| and returns it via
+  // |component|. Returns true whether the component exists or not.
+  bool GetVariableComponent(uint32_t var_id, uint32_t* component);
 
   // Returns the interface variable instruction whose result id is
   // |interface_var_id|.
   Instruction* GetInterfaceVariable(uint32_t interface_var_id);
 
-  // Returns the type of |interface_var| as an instruction. If
-  // |has_extra_arrayness| is true, it means the interface variable has the
-  // extra arrayness and it has to ignore the first dimension of the array type.
-  Instruction* GetTypeOfInterfaceVariable(Instruction* interface_var,
-                                          bool has_extra_arrayness);
+  // Returns the type of |var| as an instruction.
+  Instruction* GetTypeOfVariable(Instruction* var);
 
   // Flattens an interface variable |interface_var| whose type is
   // |interface_var_type| and returns whether it succeeds or not.

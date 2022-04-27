@@ -68,27 +68,27 @@ Instruction* GetMatrixColumnType(analysis::DefUseManager* def_use_mgr,
   return def_use_mgr->GetDef(column_type_id);
 }
 
-// Returns the result id of the component type instruction of OpTypeMatrix or
-// OpTypeArray in |depth_to_component| th recursive depth whose result id is
-// |type_id|.
-uint32_t FindComponentTypeOfArrayMatrix(analysis::DefUseManager* def_use_mgr,
-                                        uint32_t type_id,
-                                        uint32_t depth_to_component) {
+// Traverses the component type of OpTypeArray or OpTypeMatrix. Repeats it
+// |depth_to_component| times recursively and returns the component type.
+// |type_id| is the result id of the OpTypeArray or OpTypeMatrix instruction.
+uint32_t GetComponentTypeOfArrayMatrix(analysis::DefUseManager* def_use_mgr,
+                                       uint32_t type_id,
+                                       uint32_t depth_to_component) {
   if (depth_to_component == 0) return type_id;
 
   Instruction* type_inst = def_use_mgr->GetDef(type_id);
   if (type_inst->opcode() == SpvOpTypeArray) {
     uint32_t elem_type_id =
         type_inst->GetSingleWordInOperand(kOpTypeArrayElemTypeInOperandIndex);
-    return FindComponentTypeOfArrayMatrix(def_use_mgr, elem_type_id,
-                                          depth_to_component - 1);
+    return GetComponentTypeOfArrayMatrix(def_use_mgr, elem_type_id,
+                                         depth_to_component - 1);
   }
 
   assert(type_inst->opcode() == SpvOpTypeMatrix);
   uint32_t column_type_id =
       type_inst->GetSingleWordInOperand(kOpTypeMatrixColTypeInOperandIndex);
-  return FindComponentTypeOfArrayMatrix(def_use_mgr, column_type_id,
-                                        depth_to_component - 1);
+  return GetComponentTypeOfArrayMatrix(def_use_mgr, column_type_id,
+                                       depth_to_component - 1);
 }
 
 // Creates an OpDecorate instruction whose Target is |var_id| and Decoration is
@@ -135,45 +135,35 @@ SpvStorageClass GetStorageClass(Instruction* var) {
 
 }  // namespace
 
-bool InterfaceVariableScalarReplacement::IsTargetInterfaceVariable(
-    uint32_t var_id, uint32_t location, bool is_input_var,
+bool InterfaceVariableScalarReplacement::GetVariableLocation(
+    uint32_t var_id, uint32_t* location) {
+  return !context()->get_decoration_mgr()->WhileEachDecoration(
+      var_id, SpvDecorationLocation, [location](const Instruction& inst) {
+        *location =
+            inst.GetSingleWordInOperand(kOpDecorateLiteralInOperandIndex);
+        return false;
+      });
+}
+
+bool InterfaceVariableScalarReplacement::GetVariableComponent(
+    uint32_t var_id, uint32_t* component) {
+  return !context()->get_decoration_mgr()->WhileEachDecoration(
+      var_id, SpvDecorationComponent, [component](const Instruction& inst) {
+        *component =
+            inst.GetSingleWordInOperand(kOpDecorateLiteralInOperandIndex);
+        return false;
+      });
+}
+
+bool InterfaceVariableScalarReplacement::FindTargetInterfaceVariableInfo(
+    uint32_t var_id, bool is_input_var,
     InterfaceVariableInfo* interface_var_info) {
-  bool has_component_decoration = false;
+  uint32_t location, component;
+  if (!GetVariableLocation(var_id, &location)) return false;
+  if (!GetVariableComponent(var_id, &component)) component = 0;
 
-  // Returns true if |interface_variable_info_| contains the one with
-  // |location|, the Component of |decoration_inst|, and |is_input_var|. Keeps
-  // the one in |interface_var_info|.
-  auto is_component_for_interface_var =
-      [this, &location, &is_input_var, &has_component_decoration,
-       interface_var_info](const Instruction& decoration_inst) {
-        has_component_decoration = true;
-        uint32_t component = decoration_inst.GetSingleWordInOperand(
-            kOpDecorateLiteralInOperandIndex);
-        auto interface_var_info_itr = interface_variable_info_.find(
-            {location, component, 0, is_input_var});
-        if (interface_var_info_itr == interface_variable_info_.end())
-          return false;
-        *interface_var_info = *interface_var_info_itr;
-        return true;
-      };
-  if (!context()->get_decoration_mgr()->WhileEachDecoration(
-          var_id, SpvDecorationComponent,
-          [is_component_for_interface_var](const Instruction& inst) {
-            return !is_component_for_interface_var(inst);
-          })) {
-    return true;
-  }
-
-  // If the variable with id |var_id| has a component, but it fails to find the
-  // one with |location|, the component, and |is_input_var| in
-  // |interface_variable_info_|, it means the variable has a pair of location
-  // and component that is different from the ones in
-  // |interface_variable_info_|.
-  if (has_component_decoration) return false;
-
-  // If it does not have a component, its component can be 0.
   auto interface_var_info_itr =
-      interface_variable_info_.find({location, 0, 0, is_input_var});
+      interface_variable_info_.find({location, component, 0, is_input_var});
   if (interface_var_info_itr == interface_variable_info_.end()) return false;
   *interface_var_info = *interface_var_info_itr;
   return true;
@@ -182,31 +172,24 @@ bool InterfaceVariableScalarReplacement::IsTargetInterfaceVariable(
 void InterfaceVariableScalarReplacement::CollectInterfaceVariablesToFlatten(
     std::unordered_map<uint32_t, InterfaceVariableInfo>*
         interface_var_ids_to_interface_var_info) {
-  for (auto& annotation : get_module()->annotations()) {
-    if (annotation.opcode() != SpvOpDecorate) continue;
-    if (annotation.GetSingleWordInOperand(
-            kOpDecorateDecorationInOperandIndex) != SpvDecorationLocation) {
+  for (Instruction& inst : get_module()->types_values()) {
+    if (inst.opcode() != SpvOpVariable) continue;
+
+    SpvStorageClass storage_class = GetStorageClass(&inst);
+    if (storage_class != SpvStorageClassInput &&
+        storage_class != SpvStorageClassOutput) {
       continue;
     }
-    uint32_t var_id =
-        annotation.GetSingleWordInOperand(kOpDecorateTargetInOperandIndex);
-    uint32_t location =
-        annotation.GetSingleWordInOperand(kOpDecorateLiteralInOperandIndex);
-
-    Instruction* var = context()->get_def_use_mgr()->GetDef(var_id);
-    SpvStorageClass storage_class = GetStorageClass(var);
-    assert(storage_class == SpvStorageClassInput ||
-           storage_class == SpvStorageClassOutput);
 
     InterfaceVariableInfo interface_var_info;
-    if (!IsTargetInterfaceVariable(var_id, location,
-                                   storage_class == SpvStorageClassInput,
-                                   &interface_var_info)) {
+    if (!FindTargetInterfaceVariableInfo(inst.result_id(),
+                                         storage_class == SpvStorageClassInput,
+                                         &interface_var_info)) {
       continue;
     }
 
     interface_var_ids_to_interface_var_info->insert(
-        {var_id, interface_var_info});
+        {inst.result_id(), interface_var_info});
   }
 }
 
@@ -466,7 +449,7 @@ Instruction* InterfaceVariableScalarReplacement::CreateAccessChainToVar(
     uint32_t var_type_id, Instruction* var, Instruction* access_chain,
     uint32_t* component_type_id) {
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
-  *component_type_id = FindComponentTypeOfArrayMatrix(
+  *component_type_id = GetComponentTypeOfArrayMatrix(
       def_use_mgr, var_type_id, access_chain->NumInOperands() - 1);
 
   uint32_t ptr_type_id =
@@ -710,8 +693,8 @@ InterfaceVariableScalarReplacement::CreateCompositeConstructForComponentOfLoad(
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   uint32_t type_id = load->type_id();
   if (depth_to_component != 0) {
-    type_id = FindComponentTypeOfArrayMatrix(def_use_mgr, load->type_id(),
-                                             depth_to_component);
+    type_id = GetComponentTypeOfArrayMatrix(def_use_mgr, load->type_id(),
+                                            depth_to_component);
   }
   uint32_t new_id = context()->TakeNextId();
   std::unique_ptr<Instruction> new_composite_construct(
@@ -857,40 +840,20 @@ InterfaceVariableScalarReplacement::CreateFlattenedInterfaceVarsForReplacement(
   return flattened_var;
 }
 
-Instruction* InterfaceVariableScalarReplacement::GetTypeOfInterfaceVariable(
-    Instruction* interface_var, bool has_extra_arrayness) {
-  uint32_t pointee_type_id = GetPointeeTypeIdOfVar(interface_var);
-
+Instruction* InterfaceVariableScalarReplacement::GetTypeOfVariable(
+    Instruction* var) {
+  uint32_t pointee_type_id = GetPointeeTypeIdOfVar(var);
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
-  Instruction* type_inst = def_use_mgr->GetDef(pointee_type_id);
-  if (has_extra_arrayness) {
-    assert(type_inst->opcode() == SpvOpTypeArray &&
-           "interface variable with an extra arrayness must be an array");
-    // Get the type without extra arrayness.
-    uint32_t elem_type_id =
-        type_inst->GetSingleWordInOperand(kOpTypeArrayElemTypeInOperandIndex);
-    type_inst = def_use_mgr->GetDef(elem_type_id);
-  }
-
-  return type_inst;
+  return def_use_mgr->GetDef(pointee_type_id);
 }
 
 Instruction* InterfaceVariableScalarReplacement::GetInterfaceVariable(
     uint32_t interface_var_id) {
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   Instruction* interface_var = def_use_mgr->GetDef(interface_var_id);
-  if (interface_var == nullptr) {
-    std::string message("interface variable does not exist");
-    context()->consumer()(SPV_MSG_ERROR, "", {0, 0, 0}, message.c_str());
-    return nullptr;
-  }
-  if (interface_var->opcode() != SpvOpVariable) {
-    std::string message("interface variable must be OpVariable instruction");
-    message += "\n  " + interface_var->PrettyPrint(
-                            SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
-    context()->consumer()(SPV_MSG_ERROR, "", {0, 0, 0}, message.c_str());
-    return nullptr;
-  }
+  assert(interface_var != nullptr && "interface variable does not exist");
+  assert(interface_var->opcode() == SpvOpVariable &&
+         "interface variable must be OpVariable instruction");
   return interface_var;
 }
 
@@ -902,10 +865,13 @@ Pass::Status InterfaceVariableScalarReplacement::Process() {
   Pass::Status status = Status::SuccessWithoutChange;
   for (auto itr : interface_var_ids_to_interface_var_info) {
     Instruction* interface_var = GetInterfaceVariable(itr.first);
-    if (interface_var == nullptr) return Pass::Status::Failure;
+    assert(interface_var != nullptr);
 
-    Instruction* interface_var_type = GetTypeOfInterfaceVariable(
-        interface_var, itr.second.extra_arrayness != 0);
+    Instruction* interface_var_type = GetTypeOfVariable(interface_var);
+    if (itr.second.extra_arrayness != 0) {
+      interface_var_type =
+          GetArrayElementType(context()->get_def_use_mgr(), interface_var_type);
+    }
     if (interface_var_type->opcode() != SpvOpTypeArray &&
         interface_var_type->opcode() != SpvOpTypeMatrix) {
       continue;
