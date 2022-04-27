@@ -113,7 +113,7 @@ OpStore %31 %29
 %32 = OpFunctionCall %void %fn
 OpReturn
 OpFunctionEnd
-%fn = OpFunction %void DontInline %3
+%fn = OpFunction %void None %3
 %33 = OpLabel
 OpReturn
 OpFunctionEnd
@@ -788,12 +788,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  EXPECT_EQ(RunPass(text), Pass::Status::Failure);
-  const char expected_error[] =
-      "ERROR: 0: Functions of SPIR-V for spread-volatile-semantics pass "
-      "input must be inlined except entry points";
-  EXPECT_STREQ(GetErrorMessage().substr(0, sizeof(expected_error) - 1).c_str(),
-               expected_error);
+  EXPECT_EQ(RunPass(text), Pass::Status::SuccessWithoutChange);
 }
 
 TEST_F(VolatileSpreadErrorTest, VarNotUsedInEntryPointForVolatile) {
@@ -1137,6 +1132,160 @@ OpFunctionEnd
       SinglePassRunToBinary<SpreadVolatileSemantics>(text,
                                                      /* skip_nop = */ false);
   EXPECT_EQ(status, Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(VolatileSpreadTest, NoInlinedfuncCalls) {
+  const std::string text = R"(
+OpCapability RayTracingNV
+OpCapability VulkanMemoryModel
+OpCapability GroupNonUniform
+OpCapability RayQueryKHR
+OpExtension "SPV_NV_ray_tracing"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpExtension "SPV_KHR_ray_query"
+OpMemoryModel Logical Vulkan
+OpEntryPoint RayGenerationNV %main "main" %2 %3 %SubgroupSize
+OpSource HLSL 630
+OpName %accelerationStructureNV "accelerationStructureNV"
+OpName %rs "rs"
+OpName %CallData "CallData"
+OpMemberName %CallData 0 "data"
+OpName %myCallData "myCallData"
+OpName %Payload "Payload"
+OpMemberName %Payload 0 "color"
+OpName %myPayload "myPayload"
+OpName %main "main"
+OpName %src_main "src.main"
+OpName %bb_entry "bb.entry"
+OpName %a "a"
+OpName %b "b"
+OpName %myCallData_0 "myCallData"
+OpName %func0 "func0"
+OpName %bb_entry_0 "bb.entry"
+OpName %func2 "func2"
+OpName %bb_entry_1 "bb.entry"
+OpName %myPayload_0 "myPayload"
+OpName %RayDesc "RayDesc"
+OpMemberName %RayDesc 0 "Origin"
+OpMemberName %RayDesc 1 "TMin"
+OpMemberName %RayDesc 2 "Direction"
+OpMemberName %RayDesc 3 "TMax"
+OpName %rayDesc "rayDesc"
+OpName %func1 "func1"
+OpName %bb_entry_2 "bb.entry"
+OpDecorate %2 BuiltIn LaunchIdNV
+OpDecorate %3 BuiltIn LaunchSizeNV
+OpDecorate %myCallData Location 0
+OpDecorate %myPayload Location 0
+OpDecorate %SubgroupSize BuiltIn SubgroupSize
+OpDecorate %rs DescriptorSet 0
+OpDecorate %rs Binding 0
+%float = OpTypeFloat 32
+%float_0 = OpConstant %float 0
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%v3float = OpTypeVector %float 3
+%13 = OpConstantComposite %v3float %float_0 %float_0 %float_0
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%float_n1 = OpConstant %float -1
+%17 = OpConstantComposite %v3float %float_0 %float_0 %float_n1
+%int_2 = OpConstant %int 2
+%int_1 = OpConstant %int 1
+%float_1000 = OpConstant %float 1000
+%int_3 = OpConstant %int 3
+%uint_1 = OpConstant %uint 1
+%accelerationStructureNV = OpTypeAccelerationStructureKHR
+%_ptr_UniformConstant_accelerationStructureNV = OpTypePointer UniformConstant %accelerationStructureNV
+%v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%v4float = OpTypeVector %float 4
+%CallData = OpTypeStruct %v4float
+%_ptr_CallableDataNV_CallData = OpTypePointer CallableDataNV %CallData
+%Payload = OpTypeStruct %v4float
+%_ptr_RayPayloadNV_Payload = OpTypePointer RayPayloadNV %Payload
+%_ptr_Input_uint = OpTypePointer Input %uint
+%void = OpTypeVoid
+%34 = OpTypeFunction %void
+%_ptr_Function_v3uint = OpTypePointer Function %v3uint
+%_ptr_Function_CallData = OpTypePointer Function %CallData
+%_ptr_Function_Payload = OpTypePointer Function %Payload
+%RayDesc = OpTypeStruct %v3float %float %v3float %float
+%_ptr_Function_RayDesc = OpTypePointer Function %RayDesc
+%_ptr_Function_v3float = OpTypePointer Function %v3float
+%_ptr_Function_float = OpTypePointer Function %float
+%rs = OpVariable %_ptr_UniformConstant_accelerationStructureNV UniformConstant
+%2 = OpVariable %_ptr_Input_v3uint Input
+%3 = OpVariable %_ptr_Input_v3uint Input
+%myCallData = OpVariable %_ptr_CallableDataNV_CallData CallableDataNV
+%myPayload = OpVariable %_ptr_RayPayloadNV_Payload RayPayloadNV
+%SubgroupSize = OpVariable %_ptr_Input_uint Input
+%main = OpFunction %void None %34
+%35 = OpLabel
+%36 = OpFunctionCall %void %src_main
+OpReturn
+OpFunctionEnd
+%src_main = OpFunction %void None %34
+%bb_entry = OpLabel
+%a = OpVariable %_ptr_Function_v3uint Function
+%b = OpVariable %_ptr_Function_v3uint Function
+%myCallData_0 = OpVariable %_ptr_Function_CallData Function
+%44 = OpLoad %v3uint %2
+OpStore %a %44
+%45 = OpLoad %v3uint %3
+OpStore %b %45
+%46 = OpFunctionCall %void %func0
+%48 = OpCompositeConstruct %v4float %float_0 %float_0 %float_0 %float_0
+%49 = OpCompositeConstruct %CallData %48
+OpStore %myCallData_0 %49
+%50 = OpLoad %CallData %myCallData_0
+OpStore %myCallData %50
+OpExecuteCallableNV %uint_0 %uint_0
+%52 = OpLoad %CallData %myCallData
+OpStore %myCallData_0 %52
+OpReturn
+OpFunctionEnd
+%func0 = OpFunction %void DontInline %34
+%bb_entry_0 = OpLabel
+%54 = OpFunctionCall %void %func2
+%56 = OpFunctionCall %void %func1
+OpReturn
+OpFunctionEnd
+%func2 = OpFunction %void DontInline %34
+%bb_entry_1 = OpLabel
+%myPayload_0 = OpVariable %_ptr_Function_Payload Function
+%rayDesc = OpVariable %_ptr_Function_RayDesc Function
+%64 = OpCompositeConstruct %v4float %float_0 %float_0 %float_0 %float_0
+%65 = OpCompositeConstruct %Payload %64
+OpStore %myPayload_0 %65
+%67 = OpAccessChain %_ptr_Function_v3float %rayDesc %int_0
+%68 = OpAccessChain %_ptr_Function_v3float %rayDesc %int_2
+OpStore %68 %17
+%70 = OpAccessChain %_ptr_Function_float %rayDesc %int_1
+OpStore %70 %float_0
+%71 = OpAccessChain %_ptr_Function_float %rayDesc %int_3
+OpStore %71 %float_1000
+%72 = OpLoad %RayDesc %rayDesc
+%73 = OpCompositeExtract %v3float %72 0
+%74 = OpCompositeExtract %float %72 1
+%75 = OpCompositeExtract %v3float %72 2
+%76 = OpCompositeExtract %float %72 3
+%77 = OpLoad %Payload %myPayload_0
+OpStore %myPayload %77
+%78 = OpLoad %accelerationStructureNV %rs
+; CHECK: {{%\w+}} = OpLoad %uint %SubgroupSize Volatile
+%79 = OpLoad %uint %SubgroupSize
+OpTraceNV %78 %uint_0 %79 %uint_0 %uint_1 %uint_0 %73 %74 %75 %76 %uint_0
+%81 = OpLoad %Payload %myPayload
+OpStore %myPayload_0 %81
+OpReturn
+OpFunctionEnd
+%func1 = OpFunction %void DontInline %34
+%bb_entry_2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  SinglePassRunAndMatch<SpreadVolatileSemantics>(text, true);
 }
 
 }  // namespace
