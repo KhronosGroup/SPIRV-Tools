@@ -134,10 +134,15 @@ SpvStorageClass GetStorageClass(Instruction* var) {
 
 }  // namespace
 
+bool InterfaceVariableScalarReplacement::HasExtraArrayness(Instruction* var) {
+  return !context()->get_decoration_mgr()->HasDecoration(var->result_id(),
+                                                         SpvDecorationPatch);
+}
+
 bool InterfaceVariableScalarReplacement::GetVariableLocation(
-    uint32_t var_id, uint32_t* location) {
+    Instruction* var, uint32_t* location) {
   return !context()->get_decoration_mgr()->WhileEachDecoration(
-      var_id, SpvDecorationLocation, [location](const Instruction& inst) {
+      var->result_id(), SpvDecorationLocation, [location](const Instruction& inst) {
         *location =
             inst.GetSingleWordInOperand(kOpDecorateLiteralInOperandIndex);
         return false;
@@ -145,32 +150,18 @@ bool InterfaceVariableScalarReplacement::GetVariableLocation(
 }
 
 bool InterfaceVariableScalarReplacement::GetVariableComponent(
-    uint32_t var_id, uint32_t* component) {
+    Instruction* var, uint32_t* component) {
   return !context()->get_decoration_mgr()->WhileEachDecoration(
-      var_id, SpvDecorationComponent, [component](const Instruction& inst) {
+      var->result_id(), SpvDecorationComponent, [component](const Instruction& inst) {
         *component =
             inst.GetSingleWordInOperand(kOpDecorateLiteralInOperandIndex);
         return false;
       });
 }
 
-bool InterfaceVariableScalarReplacement::FindTargetInterfaceVariableInfo(
-    uint32_t var_id, bool is_input_var,
-    InterfaceVariableInfo* interface_var_info) {
-  uint32_t location, component;
-  if (!GetVariableLocation(var_id, &location)) return false;
-  if (!GetVariableComponent(var_id, &component)) component = 0;
-
-  auto interface_var_info_itr =
-      interface_variable_info_.find({location, component, 0, is_input_var});
-  if (interface_var_info_itr == interface_variable_info_.end()) return false;
-  *interface_var_info = *interface_var_info_itr;
-  return true;
-}
-
-void InterfaceVariableScalarReplacement::CollectInterfaceVariablesToFlatten(
-    std::unordered_map<uint32_t, InterfaceVariableInfo>*
-        interface_var_ids_to_interface_var_info) {
+std::vector<Instruction*>
+InterfaceVariableScalarReplacement::CollectInterfaceVariables() {
+  std::vector<Instruction*> interface_vars;
   for (Instruction& inst : get_module()->types_values()) {
     if (inst.opcode() != SpvOpVariable) continue;
 
@@ -180,16 +171,9 @@ void InterfaceVariableScalarReplacement::CollectInterfaceVariablesToFlatten(
       continue;
     }
 
-    InterfaceVariableInfo interface_var_info;
-    if (!FindTargetInterfaceVariableInfo(inst.result_id(),
-                                         storage_class == SpvStorageClassInput,
-                                         &interface_var_info)) {
-      continue;
-    }
-
-    interface_var_ids_to_interface_var_info->insert(
-        {inst.result_id(), interface_var_info});
+    interface_vars.push_back(&inst);
   }
+  return interface_vars;
 }
 
 void InterfaceVariableScalarReplacement::KillInstructionAndUsers(
@@ -226,20 +210,18 @@ void InterfaceVariableScalarReplacement::KillLocationAndComponentDecorations(
 
 bool InterfaceVariableScalarReplacement::FlattenInterfaceVariable(
     Instruction* interface_var, Instruction* interface_var_type,
-    const InterfaceVariableInfo& interface_var_info) {
+    uint32_t location, uint32_t component, uint32_t extra_array_length) {
   NestedCompositeComponents flattened_interface_vars =
       CreateFlattenedInterfaceVarsForReplacement(
           interface_var_type, GetStorageClass(interface_var),
-          interface_var_info.extra_arrayness);
+          extra_array_length);
 
-  uint32_t location = interface_var_info.location;
-  uint32_t component = interface_var_info.component;
   AddLocationAndComponentDecorations(flattened_interface_vars, &location,
                                      component);
   KillLocationAndComponentDecorations(interface_var->result_id());
 
   if (!ReplaceInterfaceVarWithFlattenedVars(interface_var,
-                                            interface_var_info.extra_arrayness,
+                                            extra_array_length,
                                             flattened_interface_vars)) {
     return false;
   }
@@ -846,28 +828,19 @@ Instruction* InterfaceVariableScalarReplacement::GetTypeOfVariable(
   return def_use_mgr->GetDef(pointee_type_id);
 }
 
-Instruction* InterfaceVariableScalarReplacement::GetInterfaceVariable(
-    uint32_t interface_var_id) {
-  analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
-  Instruction* interface_var = def_use_mgr->GetDef(interface_var_id);
-  assert(interface_var != nullptr && "interface variable does not exist");
-  assert(interface_var->opcode() == SpvOpVariable &&
-         "interface variable must be OpVariable instruction");
-  return interface_var;
-}
-
 Pass::Status InterfaceVariableScalarReplacement::Process() {
-  std::unordered_map<uint32_t, InterfaceVariableInfo>
-      interface_var_ids_to_interface_var_info;
-  CollectInterfaceVariablesToFlatten(&interface_var_ids_to_interface_var_info);
+  std::vector<Instruction*> interface_vars = CollectInterfaceVariables();
 
   Pass::Status status = Status::SuccessWithoutChange;
-  for (auto itr : interface_var_ids_to_interface_var_info) {
-    Instruction* interface_var = GetInterfaceVariable(itr.first);
-    assert(interface_var != nullptr);
+  for (Instruction* interface_var : interface_vars) {
+    uint32_t location, component;
+    if (!GetVariableLocation(interface_var, &location)) continue;
+    if (!GetVariableComponent(interface_var, &component)) component = 0;
 
     Instruction* interface_var_type = GetTypeOfVariable(interface_var);
-    if (itr.second.extra_arrayness != 0) {
+    uint32_t extra_array_length = 0;
+    if (HasExtraArrayness(interface_var)) {
+      extra_array_length = GetArrayLength(context()->get_def_use_mgr(), interface_var_type);
       interface_var_type =
           GetArrayElementType(context()->get_def_use_mgr(), interface_var_type);
     }
@@ -877,7 +850,7 @@ Pass::Status InterfaceVariableScalarReplacement::Process() {
     }
 
     if (!FlattenInterfaceVariable(interface_var, interface_var_type,
-                                  itr.second)) {
+                                  location, component, extra_array_length)) {
       return Pass::Status::Failure;
     }
     status = Pass::Status::SuccessWithChange;

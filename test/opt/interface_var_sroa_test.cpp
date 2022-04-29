@@ -557,19 +557,8 @@ TEST_F(InterfaceVariableScalarReplacementTest,
                OpFunctionEnd
   )";
 
-  std::vector<InterfaceVariableInfo> info({
-      // location, component, extra_arrayness, is_input_var
-      {0, 0, 4, true},
-      {0, 0, 4, false},
-      {1, 2, 4, true},
-      {1, 2, 4, false},
-      {3, 0, 4, true},
-      {3, 0, 4, false},
-      {3, 1, 4, true},
-      {3, 1, 4, false},
-  });
   SinglePassRunAndMatch<InterfaceVariableScalarReplacement>(header + function,
-                                                            true, info);
+                                                            true);
 }
 
 }  // namespace

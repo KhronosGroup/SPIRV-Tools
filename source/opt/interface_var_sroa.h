@@ -22,42 +22,6 @@
 namespace spvtools {
 namespace opt {
 
-// A struct for the information of an interface variable's location, component,
-// extra arrayness, and whether it is an input or output interface variable.
-// Note that interface variables of the tessellation shaders have the extra
-// arrayness as the first dimension of the array.
-//
-// For example, when we generate the following HLSL code to SPIR-V
-//
-//  struct HS_OUTPUT {
-//    float3 pos[5] : POSITION;
-//    ...
-//  };
-//  ...
-//  [patchconstantfunc("main_hs_patch")]
-//  [outputcontrolpoints(3)]
-//  HS_OUTPUT main_hs(...) { ... }
-//  ...
-//
-//  HS_PATCH_OUTPUT main_hs_patch(const OutputPatch<HS_OUTPUT, 3> patch) {
-//  ...
-//  }
-//
-// because of `OutputPatch<HS_OUTPUT, 3> patch`, we add the extra arrayness 3
-// for `float3 pos[5]`. In SPIR-V, its type will be
-// `%_ptr_Output__arr__arr_v3float_uint_5_uint_3`.
-struct InterfaceVariableInfo {
-  uint32_t location;
-  uint32_t component;
-  uint32_t extra_arrayness;
-  bool is_input_var;
-
-  bool operator==(const InterfaceVariableInfo& another) const {
-    return another.location == location && another.component == component &&
-           another.is_input_var == is_input_var;
-  }
-};
-
 // See optimizer.hpp for documentation.
 //
 // Note that the current implementation of this pass covers only store, load,
@@ -65,22 +29,7 @@ struct InterfaceVariableInfo {
 // of instructions is a future work.
 class InterfaceVariableScalarReplacement : public Pass {
  public:
-  // Hashing functor for InterfaceVariableInfo.
-  struct InterfaceVariableInfoHash {
-    size_t operator()(const InterfaceVariableInfo& info) const {
-      return std::hash<uint32_t>()(info.location) ^
-             std::hash<uint32_t>()(info.component) ^
-             std::hash<uint32_t>()(static_cast<uint32_t>(info.is_input_var));
-    }
-  };
-
-  using SetOfInterfaceVariableLocationInfo =
-      std::unordered_set<InterfaceVariableInfo, InterfaceVariableInfoHash>;
-
-  explicit InterfaceVariableScalarReplacement(
-      const std::vector<InterfaceVariableInfo>& interface_variable_info)
-      : interface_variable_info_(interface_variable_info.begin(),
-                                 interface_variable_info.end()) {}
+  InterfaceVariableScalarReplacement() {}
 
   const char* name() const override {
     return "interface-variable-scalar-replacement";
@@ -126,28 +75,19 @@ class InterfaceVariableScalarReplacement : public Pass {
     Instruction* component_variable;
   };
 
-  // Checks all interface variables that have Location and Component decorations
-  // that are a part of |interface_variable_info_| and collects the mapping from
-  // interface variable ids to all InterfaceVariableInfo.
-  void CollectInterfaceVariablesToFlatten(
-      std::unordered_map<uint32_t, InterfaceVariableInfo>*
-          interface_var_ids_to_interface_var_info);
+  // Collects all interface variables.
+  std::vector<Instruction*> CollectInterfaceVariables();
 
-  // Returns true if InterfaceVariableInfo of the variable whose id |var_id|
-  // exists in |interface_variable_info_|. Returns the InterfaceVariableInfo
-  // via |interface_var_info|. If |is_input_var| is true, the variable is an
-  // input variable.
-  bool FindTargetInterfaceVariableInfo(
-      uint32_t var_id, bool is_input_var,
-      InterfaceVariableInfo* interface_var_info);
+  // Returns whether |var| has the extra arrayness or not.
+  bool HasExtraArrayness(Instruction* var);
 
-  // Finds a Location BuiltIn decoration of |var_id| and returns it via
+  // Finds a Location BuiltIn decoration of |var| and returns it via
   // |location|. Returns true whether the location exists or not.
-  bool GetVariableLocation(uint32_t var_id, uint32_t* location);
+  bool GetVariableLocation(Instruction* var, uint32_t* location);
 
-  // Finds a Component BuiltIn decoration of |var_id| and returns it via
+  // Finds a Component BuiltIn decoration of |var| and returns it via
   // |component|. Returns true whether the component exists or not.
-  bool GetVariableComponent(uint32_t var_id, uint32_t* component);
+  bool GetVariableComponent(Instruction* var, uint32_t* component);
 
   // Returns the interface variable instruction whose result id is
   // |interface_var_id|.
@@ -162,7 +102,7 @@ class InterfaceVariableScalarReplacement : public Pass {
   // arrayness, and whether it is an input or output interface variable.
   bool FlattenInterfaceVariable(
       Instruction* interface_var, Instruction* interface_var_type,
-      const InterfaceVariableInfo& interface_var_info);
+      uint32_t location, uint32_t component, uint32_t extra_array_length);
 
   // Creates flattened variables with the storage classe |storage_class| for the
   // interface variable whose type is |interface_var_type|. If
@@ -417,10 +357,6 @@ class InterfaceVariableScalarReplacement : public Pass {
   // Kills all OpDecorate instructions for Location and Component of the
   // variable whose id is |var_id|.
   void KillLocationAndComponentDecorations(uint32_t var_id);
-
-  // A set of InterfaceVariableInfo that includes all locations and
-  // components of interface variables to be flattened in this pass.
-  SetOfInterfaceVariableLocationInfo interface_variable_info_;
 
   // A set of interface variable ids that were already removed from operands of
   // the entry point.
