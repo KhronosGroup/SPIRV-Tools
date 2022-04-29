@@ -208,21 +208,20 @@ void InterfaceVariableScalarReplacement::KillLocationAndComponentDecorations(
       });
 }
 
-bool InterfaceVariableScalarReplacement::FlattenInterfaceVariable(
+bool InterfaceVariableScalarReplacement::ReplaceInterfaceVariableWithScalars(
     Instruction* interface_var, Instruction* interface_var_type,
     uint32_t location, uint32_t component, uint32_t extra_array_length) {
-  NestedCompositeComponents flattened_interface_vars =
-      CreateFlattenedInterfaceVarsForReplacement(
-          interface_var_type, GetStorageClass(interface_var),
-          extra_array_length);
+  NestedCompositeComponents scalar_interface_vars =
+      CreateScalarInterfaceVarsForReplacement(interface_var_type,
+                                              GetStorageClass(interface_var),
+                                              extra_array_length);
 
-  AddLocationAndComponentDecorations(flattened_interface_vars, &location,
+  AddLocationAndComponentDecorations(scalar_interface_vars, &location,
                                      component);
   KillLocationAndComponentDecorations(interface_var->result_id());
 
-  if (!ReplaceInterfaceVarWithFlattenedVars(interface_var,
-                                            extra_array_length,
-                                            flattened_interface_vars)) {
+  if (!ReplaceInterfaceVarWith(interface_var, extra_array_length,
+                               scalar_interface_vars)) {
     return false;
   }
 
@@ -230,9 +229,9 @@ bool InterfaceVariableScalarReplacement::FlattenInterfaceVariable(
   return true;
 }
 
-bool InterfaceVariableScalarReplacement::ReplaceInterfaceVarWithFlattenedVars(
+bool InterfaceVariableScalarReplacement::ReplaceInterfaceVarWith(
     Instruction* interface_var, uint32_t extra_arrayness,
-    const NestedCompositeComponents& flattened_interface_vars) {
+    const NestedCompositeComponents& scalar_interface_vars) {
   std::vector<Instruction*> users;
   context()->get_def_use_mgr()->ForEachUser(
       interface_var, [&users](Instruction* user) { users.push_back(user); });
@@ -246,8 +245,8 @@ bool InterfaceVariableScalarReplacement::ReplaceInterfaceVarWithFlattenedVars(
     // interface variable.
     for (uint32_t index = 0; index < extra_arrayness; ++index) {
       std::unordered_map<Instruction*, Instruction*> loads_to_component_values;
-      if (!ReplaceInterfaceVarComponentsWithFlattenedVars(
-              interface_var, users, flattened_interface_vars,
+      if (!ReplaceComponentsOfInterfaceVarWith(
+              interface_var, users, scalar_interface_vars,
               interface_var_component_indices, &index,
               &loads_to_component_values,
               &loads_for_access_chain_to_composites)) {
@@ -256,8 +255,8 @@ bool InterfaceVariableScalarReplacement::ReplaceInterfaceVarWithFlattenedVars(
       AddComponentsToCompositesForLoads(loads_to_component_values,
                                         &loads_to_composites, 0);
     }
-  } else if (!ReplaceInterfaceVarComponentsWithFlattenedVars(
-                 interface_var, users, flattened_interface_vars,
+  } else if (!ReplaceComponentsOfInterfaceVarWith(
+                 interface_var, users, scalar_interface_vars,
                  interface_var_component_indices, nullptr, &loads_to_composites,
                  &loads_for_access_chain_to_composites)) {
     return false;
@@ -272,10 +271,10 @@ bool InterfaceVariableScalarReplacement::ReplaceInterfaceVarWithFlattenedVars(
 }
 
 void InterfaceVariableScalarReplacement::AddLocationAndComponentDecorations(
-    const NestedCompositeComponents& flattened_vars, uint32_t* location,
+    const NestedCompositeComponents& vars, uint32_t* location,
     uint32_t component) {
-  if (!flattened_vars.HasMultipleComponents()) {
-    uint32_t var_id = flattened_vars.GetComponentVariable()->result_id();
+  if (!vars.HasMultipleComponents()) {
+    uint32_t var_id = vars.GetComponentVariable()->result_id();
     CreateDecoration(context()->get_decoration_mgr(), var_id,
                      SpvDecorationLocation, *location);
     CreateDecoration(context()->get_decoration_mgr(), var_id,
@@ -283,26 +282,25 @@ void InterfaceVariableScalarReplacement::AddLocationAndComponentDecorations(
     ++(*location);
     return;
   }
-  for (const auto& flattened_var : flattened_vars.GetComponents()) {
-    AddLocationAndComponentDecorations(flattened_var, location, component);
+  for (const auto& var : vars.GetComponents()) {
+    AddLocationAndComponentDecorations(var, location, component);
   }
 }
 
-bool InterfaceVariableScalarReplacement::
-    ReplaceInterfaceVarComponentsWithFlattenedVars(
-        Instruction* interface_var,
-        const std::vector<Instruction*>& interface_var_users,
-        const NestedCompositeComponents& flattened_interface_vars,
-        std::vector<uint32_t>& interface_var_component_indices,
-        const uint32_t* extra_array_index,
-        std::unordered_map<Instruction*, Instruction*>* loads_to_composites,
-        std::unordered_map<Instruction*, Instruction*>*
-            loads_for_access_chain_to_composites) {
-  if (!flattened_interface_vars.HasMultipleComponents()) {
+bool InterfaceVariableScalarReplacement::ReplaceComponentsOfInterfaceVarWith(
+    Instruction* interface_var,
+    const std::vector<Instruction*>& interface_var_users,
+    const NestedCompositeComponents& scalar_interface_vars,
+    std::vector<uint32_t>& interface_var_component_indices,
+    const uint32_t* extra_array_index,
+    std::unordered_map<Instruction*, Instruction*>* loads_to_composites,
+    std::unordered_map<Instruction*, Instruction*>*
+        loads_for_access_chain_to_composites) {
+  if (!scalar_interface_vars.HasMultipleComponents()) {
     for (Instruction* interface_var_user : interface_var_users) {
-      if (!ReplaceInterfaceVarComponentWithFlattenedVar(
+      if (!ReplaceComponentOfInterfaceVarWith(
               interface_var, interface_var_user,
-              flattened_interface_vars.GetComponentVariable(),
+              scalar_interface_vars.GetComponentVariable(),
               interface_var_component_indices, extra_array_index,
               loads_to_composites, loads_for_access_chain_to_composites)) {
         return false;
@@ -310,15 +308,14 @@ bool InterfaceVariableScalarReplacement::
     }
     return true;
   }
-  return ReplaceMultipleComponentsOfInterfaceVarWithFlattenedVars(
-      interface_var, interface_var_users,
-      flattened_interface_vars.GetComponents(), interface_var_component_indices,
-      extra_array_index, loads_to_composites,
+  return ReplaceMultipleComponentsOfInterfaceVarWith(
+      interface_var, interface_var_users, scalar_interface_vars.GetComponents(),
+      interface_var_component_indices, extra_array_index, loads_to_composites,
       loads_for_access_chain_to_composites);
 }
 
 bool InterfaceVariableScalarReplacement::
-    ReplaceMultipleComponentsOfInterfaceVarWithFlattenedVars(
+    ReplaceMultipleComponentsOfInterfaceVarWith(
         Instruction* interface_var,
         const std::vector<Instruction*>& interface_var_users,
         const std::vector<NestedCompositeComponents>& components,
@@ -332,7 +329,7 @@ bool InterfaceVariableScalarReplacement::
     std::unordered_map<Instruction*, Instruction*> loads_to_component_values;
     std::unordered_map<Instruction*, Instruction*>
         loads_for_access_chain_to_component_values;
-    if (!ReplaceInterfaceVarComponentsWithFlattenedVars(
+    if (!ReplaceComponentsOfInterfaceVarWith(
             interface_var, interface_var_users, components[i],
             interface_var_component_indices, extra_array_index,
             &loads_to_component_values,
@@ -353,21 +350,26 @@ bool InterfaceVariableScalarReplacement::
   return true;
 }
 
-bool InterfaceVariableScalarReplacement::
-    ReplaceInterfaceVarComponentWithFlattenedVar(
-        Instruction* interface_var, Instruction* interface_var_user,
-        Instruction* flattened_var,
-        const std::vector<uint32_t>& interface_var_component_indices,
-        const uint32_t* extra_array_index,
-        std::unordered_map<Instruction*, Instruction*>*
-            loads_to_component_values,
-        std::unordered_map<Instruction*, Instruction*>*
-            loads_for_access_chain_to_component_values) {
+bool InterfaceVariableScalarReplacement::ReplaceComponentOfInterfaceVarWith(
+    Instruction* interface_var, Instruction* interface_var_user,
+    Instruction* scalar_var,
+    const std::vector<uint32_t>& interface_var_component_indices,
+    const uint32_t* extra_array_index,
+    std::unordered_map<Instruction*, Instruction*>* loads_to_component_values,
+    std::unordered_map<Instruction*, Instruction*>*
+        loads_for_access_chain_to_component_values) {
   SpvOp opcode = interface_var_user->opcode();
-  if (opcode == SpvOpStore || opcode == SpvOpLoad) {
-    CreateLoadOrStoreToFlattenedInterfaceVar(
-        interface_var_user, interface_var_component_indices, flattened_var,
-        extra_array_index, loads_to_component_values);
+  if (opcode == SpvOpStore) {
+    uint32_t value_id = interface_var_user->GetSingleWordInOperand(1);
+    StoreComponentOfValueToScalarVar(value_id, interface_var_component_indices,
+                                     scalar_var, extra_array_index,
+                                     interface_var_user);
+    return true;
+  }
+  if (opcode == SpvOpLoad) {
+    Instruction* scalar_load =
+        LoadScalarVar(scalar_var, extra_array_index, interface_var_user);
+    loads_to_component_values->insert({interface_var_user, scalar_load});
     return true;
   }
 
@@ -377,25 +379,25 @@ bool InterfaceVariableScalarReplacement::
 
   if (opcode == SpvOpDecorateId || opcode == SpvOpDecorateString ||
       opcode == SpvOpDecorate) {
-    CloneAnnotationForVariable(interface_var_user, flattened_var->result_id());
+    CloneAnnotationForVariable(interface_var_user, scalar_var->result_id());
     return true;
   }
 
   if (opcode == SpvOpName) {
     std::unique_ptr<Instruction> new_inst(interface_var_user->Clone(context()));
-    new_inst->SetInOperand(0, {flattened_var->result_id()});
+    new_inst->SetInOperand(0, {scalar_var->result_id()});
     context()->AddDebug2Inst(std::move(new_inst));
     return true;
   }
 
   if (opcode == SpvOpEntryPoint) {
     return ReplaceInterfaceVarInEntryPoint(interface_var, interface_var_user,
-                                           flattened_var->result_id());
+                                           scalar_var->result_id());
   }
 
   if (opcode == SpvOpAccessChain) {
     ReplaceAccessChainWithFlattenedVar(
-        interface_var_user, interface_var_component_indices, flattened_var,
+        interface_var_user, interface_var_component_indices, scalar_var,
         loads_for_access_chain_to_component_values);
     return true;
   }
@@ -427,11 +429,12 @@ void InterfaceVariableScalarReplacement::UseBaseAccessChainForAccessChain(
 }
 
 Instruction* InterfaceVariableScalarReplacement::CreateAccessChainToVar(
-    uint32_t var_type_id, Instruction* var, Instruction* access_chain,
+    uint32_t var_type_id, Instruction* var,
+    const std::vector<uint32_t>& index_ids, Instruction* insert_before,
     uint32_t* component_type_id) {
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
-  *component_type_id = GetComponentTypeOfArrayMatrix(
-      def_use_mgr, var_type_id, access_chain->NumInOperands() - 1);
+  *component_type_id =
+      GetComponentTypeOfArrayMatrix(def_use_mgr, var_type_id, index_ids.size());
 
   uint32_t ptr_type_id =
       GetPointerType(*component_type_id, GetStorageClass(var));
@@ -440,14 +443,13 @@ Instruction* InterfaceVariableScalarReplacement::CreateAccessChainToVar(
       new Instruction(context(), SpvOpAccessChain, ptr_type_id, TakeNextId(),
                       std::initializer_list<Operand>{
                           {SPV_OPERAND_TYPE_ID, {var->result_id()}}}));
-  for (uint32_t i = 1; i < access_chain->NumInOperands(); ++i) {
-    auto operand = access_chain->GetInOperand(i);
-    new_access_chain->AddOperand(std::move(operand));
+  for (uint32_t index_id : index_ids) {
+    new_access_chain->AddOperand({SPV_OPERAND_TYPE_ID, {index_id}});
   }
 
   Instruction* inst = new_access_chain.get();
   def_use_mgr->AnalyzeInstDefUse(inst);
-  access_chain->InsertBefore(std::move(new_access_chain));
+  insert_before->InsertBefore(std::move(new_access_chain));
   return inst;
 }
 
@@ -472,27 +474,42 @@ Instruction* InterfaceVariableScalarReplacement::CreateAccessChainWithIndex(
 void InterfaceVariableScalarReplacement::ReplaceAccessChainWithFlattenedVar(
     Instruction* access_chain,
     const std::vector<uint32_t>& interface_var_component_indices,
-    Instruction* flattened_var,
+    Instruction* scalar_var,
     std::unordered_map<Instruction*, Instruction*>* loads_to_component_values) {
   // Note that we have a strong assumption that |access_chain| has only a single
   // index that is for the extra arrayness.
   context()->get_def_use_mgr()->ForEachUser(
-      access_chain,
-      [this, access_chain, &interface_var_component_indices, flattened_var,
-       loads_to_component_values](Instruction* user) {
+      access_chain, [this, access_chain, &interface_var_component_indices,
+                     scalar_var, loads_to_component_values](Instruction* user) {
         switch (user->opcode()) {
-          case SpvOpAccessChain:
+          case SpvOpAccessChain: {
             UseBaseAccessChainForAccessChain(user, access_chain);
             ReplaceAccessChainWithFlattenedVar(
-                user, interface_var_component_indices, flattened_var,
+                user, interface_var_component_indices, scalar_var,
                 loads_to_component_values);
             return;
-          case SpvOpLoad:
-          case SpvOpStore:
-            CreateLoadOrStoreToFlattenedInterfaceVarAccessChain(
-                access_chain, user, interface_var_component_indices,
-                flattened_var, loads_to_component_values);
+          }
+          case SpvOpStore: {
+            uint32_t value_id = user->GetSingleWordInOperand(1);
+            std::vector<uint32_t> indexes;
+            for (uint32_t i = 1; i < access_chain.NumInOperands(); ++i) {
+              indexes.push_back(access_chain.GetSingleWordInOperand(i));
+            }
+            StoreComponentOfValueToAccessChainToScalarVar(
+                value_id, interface_var_component_indices, scalar_var, indexes,
+                access_chain, user);
             return;
+          }
+          case SpvOpLoad: {
+            std::vector<uint32_t> indexes;
+            for (uint32_t i = 1; i < access_chain.NumInOperands(); ++i) {
+              indexes.push_back(access_chain.GetSingleWordInOperand(i));
+            }
+            Instruction* value =
+                LoadAccessChainToVar(scalar_var, indexes, user);
+            loads_to_component_values->insert({user, value});
+            return;
+          }
           default:
             break;
         }
@@ -559,69 +576,73 @@ uint32_t InterfaceVariableScalarReplacement::GetPointeeTypeIdOfVar(
   return ptr_type_inst->GetSingleWordInOperand(kOpTypePtrTypeInOperandIndex);
 }
 
-void InterfaceVariableScalarReplacement::
-    CreateLoadOrStoreToFlattenedInterfaceVar(
-        Instruction* load_or_store,
-        const std::vector<uint32_t>& interface_var_component_indices,
-        Instruction* flattened_var, const uint32_t* extra_array_index,
-        std::unordered_map<Instruction*, Instruction*>*
-            loads_to_component_values) {
-  uint32_t component_type_id = GetPointeeTypeIdOfVar(flattened_var);
-  Instruction* ptr = flattened_var;
+void InterfaceVariableScalarReplacement::StoreComponentOfValueToScalarVar(
+    uint32_t value_id, const std::vector<uint32_t>& component_indices,
+    Instruction* scalar_var, const uint32_t* extra_array_index,
+    Instruction* insert_before) {
+  uint32_t component_type_id = GetPointeeTypeIdOfVar(scalar_var);
+  Instruction* ptr = scalar_var;
   if (extra_array_index) {
     auto* ty_mgr = context()->get_type_mgr();
     analysis::Array* array_type = ty_mgr->GetType(component_type_id)->AsArray();
     assert(array_type != nullptr);
     component_type_id = ty_mgr->GetTypeInstruction(array_type->element_type());
-    ptr = CreateAccessChainWithIndex(component_type_id, flattened_var,
-                                     *extra_array_index, load_or_store);
+    ptr = CreateAccessChainWithIndex(component_type_id, scalar_var,
+                                     *extra_array_index, insert_before);
   }
 
-  if (load_or_store->opcode() == SpvOpStore) {
-    CreateStoreToFlattenedInterfaceVar(component_type_id, load_or_store,
-                                       interface_var_component_indices, ptr,
-                                       extra_array_index);
-    return;
+  StoreComponentOfValueTo(component_type_id, value_id, component_indices, ptr,
+                          extra_array_index, insert_before);
+}
+
+Instruction* InterfaceVariableScalarReplacement::LoadScalarVar(
+    Instruction* scalar_var, const uint32_t* extra_array_index,
+    Instruction* insert_before) {
+  uint32_t component_type_id = GetPointeeTypeIdOfVar(scalar_var);
+  Instruction* ptr = scalar_var;
+  if (extra_array_index) {
+    auto* ty_mgr = context()->get_type_mgr();
+    analysis::Array* array_type = ty_mgr->GetType(component_type_id)->AsArray();
+    assert(array_type != nullptr);
+    component_type_id = ty_mgr->GetTypeInstruction(array_type->element_type());
+    ptr = CreateAccessChainWithIndex(component_type_id, scalar_var,
+                                     *extra_array_index, insert_before);
   }
 
-  assert(load_or_store->opcode() == SpvOpLoad);
-  Instruction* component_value =
-      CreateLoad(component_type_id, ptr, load_or_store);
-  loads_to_component_values->insert({load_or_store, component_value});
+  return CreateLoad(component_type_id, ptr, insert_before);
 }
 
 Instruction* InterfaceVariableScalarReplacement::CreateLoad(
     uint32_t type_id, Instruction* ptr, Instruction* insert_before) {
-  std::unique_ptr<Instruction> load_in_unique_ptr(
+  std::unique_ptr<Instruction> load(
       new Instruction(context(), SpvOpLoad, type_id, TakeNextId(),
                       std::initializer_list<Operand>{
                           {SPV_OPERAND_TYPE_ID, {ptr->result_id()}}}));
-  Instruction* load = load_in_unique_ptr.get();
-  context()->get_def_use_mgr()->AnalyzeInstDefUse(load);
-  insert_before->InsertBefore(std::move(load_in_unique_ptr));
-  return load;
+  Instruction* load_inst = load.get();
+  context()->get_def_use_mgr()->AnalyzeInstDefUse(load_inst);
+  insert_before->InsertBefore(std::move(load));
+  return load_inst;
 }
 
-void InterfaceVariableScalarReplacement::CreateStoreToFlattenedInterfaceVar(
-    uint32_t component_type_id, Instruction* store_to_interface_var,
-    const std::vector<uint32_t>& interface_var_component_indices,
-    Instruction* ptr_to_flattened_var, const uint32_t* extra_array_index) {
-  uint32_t value_id = store_to_interface_var->GetSingleWordInOperand(1);
+void InterfaceVariableScalarReplacement::StoreComponentOfValueTo(
+    uint32_t component_type_id, uint32_t value_id,
+    const std::vector<uint32_t>& component_indices, Instruction* ptr,
+    const uint32_t* extra_array_index, Instruction* insert_before) {
   std::unique_ptr<Instruction> composite_extract(CreateCompositeExtract(
-      component_type_id, value_id, interface_var_component_indices,
-      extra_array_index));
+      component_type_id, value_id, component_indices, extra_array_index));
 
   std::unique_ptr<Instruction> new_store(
-      store_to_interface_var->Clone(context()));
-  new_store->SetInOperand(0, {ptr_to_flattened_var->result_id()});
-  new_store->SetInOperand(1, {composite_extract->result_id()});
+      new Instruction(context(), SpvOpStore));
+  new_store->AddOperand({SPV_OPERAND_TYPE_ID, {ptr->result_id()}});
+  new_store->AddOperand(
+      {SPV_OPERAND_TYPE_ID, {composite_extract->result_id()}});
 
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   def_use_mgr->AnalyzeInstDefUse(composite_extract.get());
   def_use_mgr->AnalyzeInstDefUse(new_store.get());
 
-  store_to_interface_var->InsertBefore(std::move(composite_extract));
-  store_to_interface_var->InsertBefore(std::move(new_store));
+  insert_before->InsertBefore(std::move(composite_extract));
+  insert_before->InsertBefore(std::move(new_store));
 }
 
 Instruction* InterfaceVariableScalarReplacement::CreateCompositeExtract(
@@ -642,30 +663,35 @@ Instruction* InterfaceVariableScalarReplacement::CreateCompositeExtract(
 }
 
 void InterfaceVariableScalarReplacement::
-    CreateLoadOrStoreToFlattenedInterfaceVarAccessChain(
-        Instruction* access_chain, Instruction* load_or_store,
-        const std::vector<uint32_t>& interface_var_component_indices,
-        Instruction* flattened_var,
-        std::unordered_map<Instruction*, Instruction*>*
-            loads_to_component_values) {
-  uint32_t component_type_id = GetPointeeTypeIdOfVar(flattened_var);
-  Instruction* ptr = flattened_var;
-  if (access_chain != nullptr) {
-    ptr = CreateAccessChainToVar(component_type_id, flattened_var, access_chain,
+    StoreComponentOfValueToAccessChainToScalarVar(
+        uint32_t value_id, const std::vector<uint32_t>& component_indices,
+        Instruction* scalar_var,
+        const std::vector<uint32_t>& access_chain_indices,
+        Instruction* insert_before) {
+  uint32_t component_type_id = GetPointeeTypeIdOfVar(scalar_var);
+  Instruction* ptr = scalar_var;
+  if (!access_chain_indices.empty()) {
+    ptr = CreateAccessChainToVar(component_type_id, scalar_var,
+                                 access_chain_indices, insert_before,
                                  &component_type_id);
   }
 
-  if (load_or_store->opcode() == SpvOpStore) {
-    CreateStoreToFlattenedInterfaceVar(component_type_id, load_or_store,
-                                       interface_var_component_indices, ptr,
-                                       nullptr);
-    return;
+  StoreComponentOfValueTo(component_type_id, value_id,
+                          interface_var_component_indices, ptr, nullptr,
+                          insert_before);
+}
+
+Instruction* InterfaceVariableScalarReplacement::LoadAccessChainToVar(
+    Instruction* var, const std::vector<uint32_t>& indexes,
+    Instruction* insert_before) {
+  uint32_t component_type_id = GetPointeeTypeIdOfVar(var);
+  Instruction* ptr = var;
+  if (!indexes.empty()) {
+    ptr = CreateAccessChainToVar(component_type_id, var, indexes, insert_before,
+                                 &component_type_id);
   }
 
-  assert(load_or_store->opcode() == SpvOpLoad);
-  Instruction* component_value =
-      CreateLoad(component_type_id, ptr, load_or_store);
-  loads_to_component_values->insert({load_or_store, component_value});
+  return CreateLoad(component_type_id, ptr, insert_before);
 }
 
 Instruction*
@@ -743,7 +769,7 @@ uint32_t InterfaceVariableScalarReplacement::GetPointerType(
 }
 
 InterfaceVariableScalarReplacement::NestedCompositeComponents
-InterfaceVariableScalarReplacement::CreateFlattenedInterfaceVarsForArray(
+InterfaceVariableScalarReplacement::CreateScalarInterfaceVarsForArray(
     Instruction* interface_var_type, SpvStorageClass storage_class,
     uint32_t extra_array_length) {
   assert(interface_var_type->opcode() == SpvOpTypeArray);
@@ -752,19 +778,19 @@ InterfaceVariableScalarReplacement::CreateFlattenedInterfaceVarsForArray(
   uint32_t array_length = GetArrayLength(def_use_mgr, interface_var_type);
   Instruction* elem_type = GetArrayElementType(def_use_mgr, interface_var_type);
 
-  NestedCompositeComponents flattened_vars;
+  NestedCompositeComponents scalar_vars;
   while (array_length > 0) {
     NestedCompositeComponents flattened_vars_for_element =
-        CreateFlattenedInterfaceVarsForReplacement(elem_type, storage_class,
-                                                   extra_array_length);
-    flattened_vars.AddComponent(flattened_vars_for_element);
+        CreateScalarInterfaceVarsForReplacement(elem_type, storage_class,
+                                                extra_array_length);
+    scalar_vars.AddComponent(flattened_vars_for_element);
     --array_length;
   }
-  return flattened_vars;
+  return scalar_vars;
 }
 
 InterfaceVariableScalarReplacement::NestedCompositeComponents
-InterfaceVariableScalarReplacement::CreateFlattenedInterfaceVarsForMatrix(
+InterfaceVariableScalarReplacement::CreateScalarInterfaceVarsForMatrix(
     Instruction* interface_var_type, SpvStorageClass storage_class,
     uint32_t extra_array_length) {
   assert(interface_var_type->opcode() == SpvOpTypeMatrix);
@@ -775,35 +801,35 @@ InterfaceVariableScalarReplacement::CreateFlattenedInterfaceVarsForMatrix(
   Instruction* column_type =
       GetMatrixColumnType(def_use_mgr, interface_var_type);
 
-  NestedCompositeComponents flattened_vars;
+  NestedCompositeComponents scalar_vars;
   while (column_count > 0) {
     NestedCompositeComponents flattened_vars_for_column =
-        CreateFlattenedInterfaceVarsForReplacement(column_type, storage_class,
-                                                   extra_array_length);
-    flattened_vars.AddComponent(flattened_vars_for_column);
+        CreateScalarInterfaceVarsForReplacement(column_type, storage_class,
+                                                extra_array_length);
+    scalar_vars.AddComponent(flattened_vars_for_column);
     --column_count;
   }
-  return flattened_vars;
+  return scalar_vars;
 }
 
 InterfaceVariableScalarReplacement::NestedCompositeComponents
-InterfaceVariableScalarReplacement::CreateFlattenedInterfaceVarsForReplacement(
+InterfaceVariableScalarReplacement::CreateScalarInterfaceVarsForReplacement(
     Instruction* interface_var_type, SpvStorageClass storage_class,
     uint32_t extra_array_length) {
   // Handle array case.
   if (interface_var_type->opcode() == SpvOpTypeArray) {
-    return CreateFlattenedInterfaceVarsForArray(
-        interface_var_type, storage_class, extra_array_length);
+    return CreateScalarInterfaceVarsForArray(interface_var_type, storage_class,
+                                             extra_array_length);
   }
 
   // Handle matrix case.
   if (interface_var_type->opcode() == SpvOpTypeMatrix) {
-    return CreateFlattenedInterfaceVarsForMatrix(
-        interface_var_type, storage_class, extra_array_length);
+    return CreateScalarInterfaceVarsForMatrix(interface_var_type, storage_class,
+                                              extra_array_length);
   }
 
   // Handle scalar or vector case.
-  NestedCompositeComponents flattened_var;
+  NestedCompositeComponents scalar_var;
   uint32_t type_id = interface_var_type->result_id();
   if (extra_array_length != 0) {
     type_id = GetArrayType(type_id, extra_array_length);
@@ -816,9 +842,9 @@ InterfaceVariableScalarReplacement::CreateFlattenedInterfaceVarsForReplacement(
                       std::initializer_list<Operand>{
                           {SPV_OPERAND_TYPE_STORAGE_CLASS,
                            {static_cast<uint32_t>(storage_class)}}}));
-  flattened_var.SetSingleComponentVariable(variable.get());
+  scalar_var.SetSingleComponentVariable(variable.get());
   context()->AddGlobalValue(std::move(variable));
-  return flattened_var;
+  return scalar_var;
 }
 
 Instruction* InterfaceVariableScalarReplacement::GetTypeOfVariable(
@@ -849,8 +875,9 @@ Pass::Status InterfaceVariableScalarReplacement::Process() {
       continue;
     }
 
-    if (!FlattenInterfaceVariable(interface_var, interface_var_type,
-                                  location, component, extra_array_length)) {
+    if (!ReplaceInterfaceVariableWithScalars(interface_var, interface_var_type,
+                                             location, component,
+                                             extra_array_length)) {
       return Pass::Status::Failure;
     }
     status = Pass::Status::SuccessWithChange;

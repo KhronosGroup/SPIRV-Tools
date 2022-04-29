@@ -96,19 +96,24 @@ class InterfaceVariableScalarReplacement : public Pass {
   // Returns the type of |var| as an instruction.
   Instruction* GetTypeOfVariable(Instruction* var);
 
-  // Flattens an interface variable |interface_var| whose type is
-  // |interface_var_type| and returns whether it succeeds or not.
-  // |interface_var_info| keeps the information of location, component, extra
-  // arrayness, and whether it is an input or output interface variable.
-  bool FlattenInterfaceVariable(
-      Instruction* interface_var, Instruction* interface_var_type,
-      uint32_t location, uint32_t component, uint32_t extra_array_length);
+  // Replaces an interface variable |interface_var| whose type is
+  // |interface_var_type| with scalars and returns whether it succeeds or not.
+  // |location| is the value of Location Decoration for |interface_var|.
+  // |component| is the value of Component Decoration for |interface_var|.
+  // If |extra_array_length| is 0, it means |interface_var| has a Patch
+  // decoration. Otherwise, |extra_array_length| denotes the length of the extra
+  // array of |interface_var|.
+  bool ReplaceInterfaceVariableWithScalars(Instruction* interface_var,
+                                           Instruction* interface_var_type,
+                                           uint32_t location,
+                                           uint32_t component,
+                                           uint32_t extra_array_length);
 
-  // Creates flattened variables with the storage classe |storage_class| for the
-  // interface variable whose type is |interface_var_type|. If
-  // |extra_array_length| is not zero, adds the extra arrayness to all the
-  // flattened variables.
-  NestedCompositeComponents CreateFlattenedInterfaceVarsForReplacement(
+  // Creates scalar variables with the storage classe |storage_class| to replace
+  // an interface variable whose type is |interface_var_type|. If
+  // |extra_array_length| is not zero, adds the extra arrayness to the created
+  // scalar variables.
+  NestedCompositeComponents CreateScalarInterfaceVarsForReplacement(
       Instruction* interface_var_type, SpvStorageClass storage_class,
       uint32_t extra_array_length);
 
@@ -116,7 +121,7 @@ class InterfaceVariableScalarReplacement : public Pass {
   // interface variable whose type is OpTypeArray |interface_var_type|. If
   // |extra_array_length| is not zero, adds the extra arrayness to all the
   // flattened variables.
-  NestedCompositeComponents CreateFlattenedInterfaceVarsForArray(
+  NestedCompositeComponents CreateScalarInterfaceVarsForArray(
       Instruction* interface_var_type, SpvStorageClass storage_class,
       uint32_t extra_array_length);
 
@@ -124,29 +129,28 @@ class InterfaceVariableScalarReplacement : public Pass {
   // interface variable whose type is OpTypeMatrix |interface_var_type|. If
   // |extra_array_length| is not zero, adds the extra arrayness to all the
   // flattened variables.
-  NestedCompositeComponents CreateFlattenedInterfaceVarsForMatrix(
+  NestedCompositeComponents CreateScalarInterfaceVarsForMatrix(
       Instruction* interface_var_type, SpvStorageClass storage_class,
       uint32_t extra_array_length);
 
   // Recursively adds Location and Component decorations to variables in
-  // |flattened_vars| with |location| and |component|. Increases |location| by
-  // one after it actually adds Location and Component decorations for a
-  // variable.
-  void AddLocationAndComponentDecorations(
-      const NestedCompositeComponents& flattened_vars, uint32_t* location,
-      uint32_t component);
+  // |vars| with |location| and |component|. Increases |location| by one after
+  // it actually adds Location and Component decorations for a variable.
+  void AddLocationAndComponentDecorations(const NestedCompositeComponents& vars,
+                                          uint32_t* location,
+                                          uint32_t component);
 
   // Replaces the interface variable |interface_var| with
-  // |flattened_interface_vars| and returns whether it succeeds or not.
+  // |scalar_interface_vars| and returns whether it succeeds or not.
   // |extra_arrayness| is the extra arrayness of the interface variable.
-  // |flattened_interface_vars| contains the nested flattened variables to
-  // replace the interface variable with.
-  bool ReplaceInterfaceVarWithFlattenedVars(
+  // |scalar_interface_vars| contains the nested variables to replace the
+  // interface variable with.
+  bool ReplaceInterfaceVarWith(
       Instruction* interface_var, uint32_t extra_arrayness,
-      const NestedCompositeComponents& flattened_interface_vars);
+      const NestedCompositeComponents& scalar_interface_vars);
 
   // Replaces |interface_var| in the operands of instructions
-  // |interface_var_users| with |flattened_interface_vars|. This is a recursive
+  // |interface_var_users| with |scalar_interface_vars|. This is a recursive
   // method and |interface_var_component_indices| is used to specify which
   // recursive component of |interface_var| is replaced. Returns composite
   // construct instructions to be replaced with load instructions of
@@ -154,10 +158,10 @@ class InterfaceVariableScalarReplacement : public Pass {
   // construct instructions to be replaced with load instructions of access
   // chain instructions in |interface_var_users| via
   // |loads_for_access_chain_to_composites|.
-  bool ReplaceInterfaceVarComponentsWithFlattenedVars(
+  bool ReplaceComponentsOfInterfaceVarWith(
       Instruction* interface_var,
       const std::vector<Instruction*>& interface_var_users,
-      const NestedCompositeComponents& flattened_interface_vars,
+      const NestedCompositeComponents& scalar_interface_vars,
       std::vector<uint32_t>& interface_var_component_indices,
       const uint32_t* extra_array_index,
       std::unordered_map<Instruction*, Instruction*>* loads_to_composites,
@@ -173,7 +177,7 @@ class InterfaceVariableScalarReplacement : public Pass {
   // via |loads_to_composites|. Returns composite construct instructions to be
   // replaced with load instructions of access chain instructions in
   // |interface_var_users| via |loads_for_access_chain_to_composites|.
-  bool ReplaceMultipleComponentsOfInterfaceVarWithFlattenedVars(
+  bool ReplaceMultipleComponentsOfInterfaceVarWith(
       Instruction* interface_var,
       const std::vector<Instruction*>& interface_var_users,
       const std::vector<NestedCompositeComponents>& components,
@@ -184,75 +188,68 @@ class InterfaceVariableScalarReplacement : public Pass {
           loads_for_access_chain_to_composites);
 
   // Replaces a component of |interface_var| that is used as an operand of
-  // instruction |interface_var_user| with |flattened_var|.
+  // instruction |interface_var_user| with |scalar_var|.
   // |interface_var_component_indices| is a vector of recursive indices for
   // which recursive component of |interface_var| is replaced. If
   // |interface_var_user| is a load, returns the component value via
   // |loads_to_component_values|. If |interface_var_user| is an access chain,
   // returns the component value for loads of |interface_var_user| via
   // |loads_for_access_chain_to_component_values|.
-  bool ReplaceInterfaceVarComponentWithFlattenedVar(
+  bool ReplaceComponentOfInterfaceVarWith(
       Instruction* interface_var, Instruction* interface_var_user,
-      Instruction* flattened_var,
+      Instruction* scalar_var,
       const std::vector<uint32_t>& interface_var_component_indices,
       const uint32_t* extra_array_index,
       std::unordered_map<Instruction*, Instruction*>* loads_to_component_values,
       std::unordered_map<Instruction*, Instruction*>*
           loads_for_access_chain_to_component_values);
 
-  // When |load_or_store| is a load or store instruction for an interface
-  // variable, creates a load or store for one of its components. Since
-  // |flattened_var| is a component of the interface variable, the new load or
-  // store has |flattened_var| or the access chain to |extra_array_index| th
-  // component of |flattened_var| (when |extra_array_index| is not nullptr) as
-  // Pointer operand.
-  void CreateLoadOrStoreToFlattenedInterfaceVar(
-      Instruction* load_or_store,
-      const std::vector<uint32_t>& interface_var_component_indices,
-      Instruction* flattened_var, const uint32_t* extra_array_index,
-      std::unordered_map<Instruction*, Instruction*>*
-          loads_to_component_values);
+  // Creates instructions to load |scalar_var| and inserts them before
+  // |insert_before|. If |extra_array_index| is not null, they load
+  // |extra_array_index| th component of |scalar_var| instead of |scalar_var|
+  // itself.
+  Instruction* LoadScalarVar(Instruction* scalar_var,
+                             const uint32_t* extra_array_index,
+                             Instruction* insert_before);
 
-  // When |access_chain| is an access chain to an interface variable and
-  // |load_or_store| is a load or store instruction for |access_chain|, creates
-  // a load or store for one of its components. Since |flattened_var| is
-  // a component of the interface variable, the new load or store has the access
-  // chain to a component of |flattened_var| as Pointer operand. For example,
-  //
-  // Before:
-  //  %ptr = OpAccessChain %ptr_type %var %idx
-  //  %value = OpLoad %type %ptr
-  //
-  // After:
-  //  %flattened_ptr = OpAccessChain %flattened_ptr_type %flattened_var %idx
-  //  %flattened_value = OpLoad %flattened_type %flattened_ptr
-  //  ..
-  //  %value = OpCompositeConstruct %type %flattened_value ..
-  void CreateLoadOrStoreToFlattenedInterfaceVarAccessChain(
-      Instruction* access_chain, Instruction* load_or_store,
-      const std::vector<uint32_t>& interface_var_component_indices,
-      Instruction* flattened_var,
-      std::unordered_map<Instruction*, Instruction*>*
-          loads_to_component_values);
+  // Creates instructions to load an access chain to |var| and inserts them
+  // before |insert_before|. |Indexes| will be Indexes operand of the access
+  // chain.
+  Instruction* LoadAccessChainToVar(Instruction* var,
+                                    const std::vector<uint32_t>& indexes,
+                                    Instruction* insert_before);
 
-  // When |store_to_interface_var| stores a value to an interface variable,
-  // creates instructions to store one of the value's components to
-  // |ptr_to_flattened_var|. |interface_var_component_indices| contains
-  // recursive indices to the component of the value. When |extra_array_index|
-  // is not nullptr, the first index of the component must be
-  // |extra_array_index|.
-  //
-  // Store to interface var:
-  //   OpStore %interface_var %value
-  //
-  // Store to flattened var:
-  //   %composite_extract = OpCompositeExtract %type %value
-  //                                           <interface_var_component_indices>
-  //   OpStore %ptr_to_flattened_var %composite_extract
-  void CreateStoreToFlattenedInterfaceVar(
-      uint32_t component_type_id, Instruction* store_to_interface_var,
-      const std::vector<uint32_t>& interface_var_component_indices,
-      Instruction* ptr_to_flattened_var, const uint32_t* extra_array_index);
+  // Creates instructions to store a component of an aggregate whose id is
+  // |value_id| to an access chain to |scalar_var| and inserts the created
+  // instructions before |insert_before|. To get the component, recursively
+  // traverses the aggregate with |component_indices| as indexes.
+  // Numbers in |access_chain_indices| are the Indexes operand of the access
+  // chain to |scalar_var|
+  void StoreComponentOfValueToAccessChainToScalarVar(
+      uint32_t value_id, const std::vector<uint32_t>& component_indices,
+      Instruction* scalar_var,
+      const std::vector<uint32_t>& access_chain_indices,
+      Instruction* insert_before);
+
+  // Creates instructions to store a component of an aggregate whose id is
+  // |value_id| to |scalar_var| and inserts the created instructions before
+  // |insert_before|. To get the component, recursively traverses the aggregate
+  // using |extra_array_index| and |component_indices| as indexes.
+  void StoreComponentOfValueToScalarVar(
+      uint32_t value_id, const std::vector<uint32_t>& component_indices,
+      Instruction* scalar_var, const uint32_t* extra_array_index,
+      Instruction* insert_before);
+
+  // Creates instructions to store a component of an aggregate whose id is
+  // |value_id| to |ptr| and inserts the created instructions before
+  // |insert_before|. To get the component, recursively traverses the aggregate
+  // using |extra_array_index| and |component_indices| as indexes.
+  // |component_type_id| is the id of the type instruction of the component.
+  void StoreComponentOfValueTo(uint32_t component_type_id, uint32_t value_id,
+                               const std::vector<uint32_t>& component_indices,
+                               Instruction* ptr,
+                               const uint32_t* extra_array_index,
+                               Instruction* insert_before);
 
   // Creates new OpCompositeExtract with |type_id| for Result Type,
   // |composite_id| for Composite operand, and |indexes| for Indexes operands.
@@ -292,7 +289,7 @@ class InterfaceVariableScalarReplacement : public Pass {
   uint32_t GetPointeeTypeIdOfVar(Instruction* var);
 
   // Replaces the access chain |access_chain| and its users with a new access
-  // chain that points |flattened_var| as the Base operand having
+  // chain that points |scalar_var| as the Base operand having
   // |interface_var_component_indices| as Indexes operands and users of the new
   // access chain. When some of the users are load instructions, returns the
   // original load instruction to the new instruction that loads a component of
@@ -300,7 +297,7 @@ class InterfaceVariableScalarReplacement : public Pass {
   void ReplaceAccessChainWithFlattenedVar(
       Instruction* access_chain,
       const std::vector<uint32_t>& interface_var_component_indices,
-      Instruction* flattened_var,
+      Instruction* scalar_var,
       std::unordered_map<Instruction*, Instruction*>*
           loads_to_component_values);
 
@@ -331,13 +328,14 @@ class InterfaceVariableScalarReplacement : public Pass {
   Instruction* CreateCompositeConstructForComponentOfLoad(
       Instruction* load, uint32_t depth_to_component);
 
-  // Creates a new access chain instruction that points to instruction |var|
-  // whose type is the instruction with result id |var_type_id|. The new access
-  // chain will have the same Indexes operands as |access_chain|. Returns the
-  // type id of the component that is pointed by the new access chain via
-  // |component_type_id|.
+  // Creates a new access chain instruction that points to variable |var| whose
+  // type is the instruction with |var_type_id| and inserts it before
+  // |insert_before|. The new access chain will have |index_ids| for Indexes
+  // operands. Returns the type id of the component that is pointed by the new
+  // access chain via |component_type_id|.
   Instruction* CreateAccessChainToVar(uint32_t var_type_id, Instruction* var,
-                                      Instruction* access_chain,
+                                      const std::vector<uint32_t>& index_ids,
+                                      Instruction* insert_before,
                                       uint32_t* component_type_id);
 
   // Returns the result id of OpTypeArray instrunction whose Element Type
