@@ -201,7 +201,7 @@ void SpreadVolatileSemantics::DecorateVarWithVolatile(Instruction* var) {
 
 bool SpreadVolatileSemantics::VisitLoadsOfPointersToVariableInEntries(
     uint32_t var_id, const std::function<bool(Instruction*)>& handle_load,
-    const std::unordered_set<uint32_t>& entry_function_ids) {
+    const std::unordered_set<uint32_t>& function_ids) {
   std::vector<uint32_t> worklist({var_id});
   auto* def_use_mgr = context()->get_def_use_mgr();
   while (!worklist.empty()) {
@@ -209,11 +209,11 @@ bool SpreadVolatileSemantics::VisitLoadsOfPointersToVariableInEntries(
     worklist.pop_back();
     bool finish_traversal = !def_use_mgr->WhileEachUser(
         ptr_id, [this, &worklist, &ptr_id, handle_load,
-                 &entry_function_ids](Instruction* user) {
+                 &function_ids](Instruction* user) {
           BasicBlock* block = context()->get_instr_block(user);
           if (block == nullptr ||
-              entry_function_ids.find(block->GetParent()->result_id()) ==
-                  entry_function_ids.end()) {
+              function_ids.find(block->GetParent()->result_id()) ==
+                  function_ids.end()) {
             return true;
           }
 
