@@ -368,12 +368,12 @@ TEST_F(InterfaceVariableScalarReplacementTest,
 ; CHECK: [[ret:%\w+]] = OpFunctionCall %HSCtrlPt %src_main %param_var_input %param_var_CtrlPtID
 ; CHECK: [[a:%\w+]] = OpCompositeExtract %_arr_v2float_uint_3 [[ret]] 0
 ; CHECK: [[ptr_A:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A [[invoc_id]]
-; CHECK: [[ptr_A_0:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A_0 [[invoc_id]]
-; CHECK: [[ptr_A_1:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A_1 [[invoc_id]]
 ; CHECK: [[a0:%\w+]] = OpCompositeExtract %v2float [[a]] 0
 ; CHECK: OpStore [[ptr_A]] [[a0]]
+; CHECK: [[ptr_A_0:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A_0 [[invoc_id]]
 ; CHECK: [[a1:%\w+]] = OpCompositeExtract %v2float [[a]] 1
 ; CHECK: OpStore [[ptr_A_0]] [[a1]]
+; CHECK: [[ptr_A_1:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A_1 [[invoc_id]]
 ; CHECK: [[a2:%\w+]] = OpCompositeExtract %v2float [[a]] 2
 ; CHECK: OpStore [[ptr_A_1]] [[a2]]
 
@@ -399,10 +399,10 @@ TEST_F(InterfaceVariableScalarReplacementTest,
 ; CHECK: [[ptr_outpatch:%\w+]] = OpAccessChain %_ptr_Function_HSCtrlPt %temp_var_hullMainRetVal %uint_0
 ; CHECK: [[ptr_outpatch_a:%\w+]] = OpAccessChain %_ptr_Function__arr_v2float_uint_3 [[ptr_outpatch]] %uint_0
 ; CHECK: [[ptr_A_0:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A %uint_0
-; CHECK: [[ptr_A_0_0:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A_0 %uint_0
-; CHECK: [[ptr_A_1_0:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A_1 %uint_0
 ; CHECK: [[A_0:%\w+]] = OpLoad %v2float [[ptr_A_0]]
+; CHECK: [[ptr_A_0_0:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A_0 %uint_0
 ; CHECK: [[A_0_0:%\w+]] = OpLoad %v2float [[ptr_A_0_0]]
+; CHECK: [[ptr_A_1_0:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A_1 %uint_0
 ; CHECK: [[A_1_0:%\w+]] = OpLoad %v2float [[ptr_A_1_0]]
 ; CHECK: [[A0:%\w+]] = OpCompositeConstruct %_arr_v2float_uint_3 [[A_0]] [[A_0_0]] [[A_1_0]]
 ; CHECK: OpStore [[ptr_outpatch_a]] [[A0]]
@@ -432,10 +432,10 @@ TEST_F(InterfaceVariableScalarReplacementTest,
 ; CHECK: [[ptr_outpatch:%\w+]] = OpAccessChain %_ptr_Function_HSCtrlPt %temp_var_hullMainRetVal %uint_1
 ; CHECK: [[ptr_outpatch_a:%\w+]] = OpAccessChain %_ptr_Function__arr_v2float_uint_3 [[ptr_outpatch]] %uint_0
 ; CHECK: [[ptr_A_1:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A %uint_1
-; CHECK: [[ptr_A_0_1:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A_0 %uint_1
-; CHECK: [[ptr_A_1_1:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A_1 %uint_1
 ; CHECK: [[A_1:%\w+]] = OpLoad %v2float [[ptr_A_1]]
+; CHECK: [[ptr_A_0_1:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A_0 %uint_1
 ; CHECK: [[A_0_1:%\w+]] = OpLoad %v2float [[ptr_A_0_1]]
+; CHECK: [[ptr_A_1_1:%\w+]] = OpAccessChain %_ptr_Output_v2float %out_var_A_1 %uint_1
 ; CHECK: [[A_1_1:%\w+]] = OpLoad %v2float [[ptr_A_1_1]]
 ; CHECK: [[A1:%\w+]] = OpCompositeConstruct %_arr_v2float_uint_3 [[A_1]] [[A_0_1]] [[A_1_1]]
 ; CHECK: OpStore [[ptr_outpatch_a]] [[A1]]
