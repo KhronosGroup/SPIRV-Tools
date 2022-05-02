@@ -25,6 +25,7 @@
 
 const static uint32_t kOpDecorateDecorationInOperandIndex = 1;
 const static uint32_t kOpDecorateLiteralInOperandIndex = 2;
+const static uint32_t kOpEntryPointInOperandInterface = 3;
 const static uint32_t kOpVariableStorageClassInOperandIndex = 0;
 const static uint32_t kOpTypeArrayElemTypeInOperandIndex = 0;
 const static uint32_t kOpTypeArrayLengthInOperandIndex = 1;
@@ -134,9 +135,34 @@ SpvStorageClass GetStorageClass(Instruction* var) {
 
 }  // namespace
 
-bool InterfaceVariableScalarReplacement::HasExtraArrayness(Instruction* var) {
-  return !context()->get_decoration_mgr()->HasDecoration(var->result_id(),
-                                                         SpvDecorationPatch);
+bool InterfaceVariableScalarReplacement::HasExtraArrayness(
+    Instruction& entry_point, Instruction* var) {
+  SpvExecutionModel execution_model =
+      static_cast<SpvExecutionModel>(entry_point.GetSingleWordInOperand(0));
+  if (execution_model != SpvExecutionModelTessellationEvaluation &&
+      execution_model != SpvExecutionModelTessellationControl) {
+    return false;
+  }
+  if (!context()->get_decoration_mgr()->HasDecoration(var->result_id(),
+                                                      SpvDecorationPatch)) {
+    if (execution_model == SpvExecutionModelTessellationControl) return true;
+    return GetStorageClass(var) != SpvStorageClassOutput;
+  }
+  return false;
+}
+
+bool InterfaceVariableScalarReplacement::
+    CheckExtraArraynessConflictBetweenEntries(Instruction* interface_var,
+                                              bool has_extra_arrayness) {
+  if (has_extra_arrayness) {
+    if (ReportErrorIfHasNoExtraArraynessForOtherEntry(interface_var))
+      return false;
+    vars_with_extra_arrayness.insert(interface_var);
+    return true;
+  }
+  if (ReportErrorIfHasExtraArraynessForOtherEntry(interface_var)) return false;
+  vars_without_extra_arrayness.insert(interface_var);
+  return true;
 }
 
 bool InterfaceVariableScalarReplacement::GetVariableLocation(
@@ -160,18 +186,22 @@ bool InterfaceVariableScalarReplacement::GetVariableComponent(
 }
 
 std::vector<Instruction*>
-InterfaceVariableScalarReplacement::CollectInterfaceVariables() {
+InterfaceVariableScalarReplacement::CollectInterfaceVariables(
+    Instruction& entry_point) {
   std::vector<Instruction*> interface_vars;
-  for (Instruction& inst : get_module()->types_values()) {
-    if (inst.opcode() != SpvOpVariable) continue;
+  for (uint32_t i = kOpEntryPointInOperandInterface;
+       i < entry_point.NumInOperands(); ++i) {
+    Instruction* interface_var = context()->get_def_use_mgr()->GetDef(
+        entry_point.GetSingleWordInOperand(i));
+    assert(interface_var->opcode() == SpvOpVariable);
 
-    SpvStorageClass storage_class = GetStorageClass(&inst);
+    SpvStorageClass storage_class = GetStorageClass(interface_var);
     if (storage_class != SpvStorageClassInput &&
         storage_class != SpvStorageClassOutput) {
       continue;
     }
 
-    interface_vars.push_back(&inst);
+    interface_vars.push_back(interface_var);
   }
   return interface_vars;
 }
@@ -851,7 +881,48 @@ Instruction* InterfaceVariableScalarReplacement::GetTypeOfVariable(
 }
 
 Pass::Status InterfaceVariableScalarReplacement::Process() {
-  std::vector<Instruction*> interface_vars = CollectInterfaceVariables();
+  Pass::Status status = Status::SuccessWithoutChange;
+  for (Instruction& entry_point : get_module()->entry_points()) {
+    status =
+        CombineStatus(status, ReplaceInterfaceVarsWithScalars(entry_point));
+  }
+  return status;
+}
+
+bool InterfaceVariableScalarReplacement::
+    ReportErrorIfHasExtraArraynessForOtherEntry(Instruction* var) {
+  if (vars_with_extra_arrayness.find(var) == vars_with_extra_arrayness.end())
+    return false;
+
+  std::string message(
+      "A variable is arrayed for an entry point but it is not "
+      "arrayed for another entry point");
+  message +=
+      "\n  " + var->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
+  context()->consumer()(SPV_MSG_ERROR, "", {0, 0, 0}, message.c_str());
+  return true;
+}
+
+bool InterfaceVariableScalarReplacement::
+    ReportErrorIfHasNoExtraArraynessForOtherEntry(Instruction* var) {
+  if (vars_without_extra_arrayness.find(var) ==
+      vars_without_extra_arrayness.end())
+    return false;
+
+  std::string message(
+      "A variable is not arrayed for an entry point but it is "
+      "arrayed for another entry point");
+  message +=
+      "\n  " + var->PrettyPrint(SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
+  context()->consumer()(SPV_MSG_ERROR, "", {0, 0, 0}, message.c_str());
+  return true;
+}
+
+Pass::Status
+InterfaceVariableScalarReplacement::ReplaceInterfaceVarsWithScalars(
+    Instruction& entry_point) {
+  std::vector<Instruction*> interface_vars =
+      CollectInterfaceVariables(entry_point);
 
   Pass::Status status = Status::SuccessWithoutChange;
   for (Instruction* interface_var : interface_vars) {
@@ -861,11 +932,17 @@ Pass::Status InterfaceVariableScalarReplacement::Process() {
 
     Instruction* interface_var_type = GetTypeOfVariable(interface_var);
     uint32_t extra_array_length = 0;
-    if (HasExtraArrayness(interface_var)) {
+    if (HasExtraArrayness(entry_point, interface_var)) {
       extra_array_length = GetArrayLength(context()->get_def_use_mgr(), interface_var_type);
       interface_var_type =
           GetArrayElementType(context()->get_def_use_mgr(), interface_var_type);
     }
+
+    if (!CheckExtraArraynessConflictBetweenEntries(interface_var,
+                                                   extra_array_length != 0)) {
+      return Pass::Status::Failure;
+    }
+
     if (interface_var_type->opcode() != SpvOpTypeArray &&
         interface_var_type->opcode() != SpvOpTypeMatrix) {
       continue;

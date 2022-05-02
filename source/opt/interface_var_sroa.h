@@ -75,11 +75,12 @@ class InterfaceVariableScalarReplacement : public Pass {
     Instruction* component_variable;
   };
 
-  // Collects all interface variables.
-  std::vector<Instruction*> CollectInterfaceVariables();
+  // Collects all interface variables used by the |entry_point|.
+  std::vector<Instruction*> CollectInterfaceVariables(Instruction& entry_point);
 
-  // Returns whether |var| has the extra arrayness or not.
-  bool HasExtraArrayness(Instruction* var);
+  // Returns whether |var| has the extra arrayness for the entry point
+  // |entry_point| or not.
+  bool HasExtraArrayness(Instruction& entry_point, Instruction* var);
 
   // Finds a Location BuiltIn decoration of |var| and returns it via
   // |location|. Returns true whether the location exists or not.
@@ -356,6 +357,25 @@ class InterfaceVariableScalarReplacement : public Pass {
   // variable whose id is |var_id|.
   void KillLocationAndComponentDecorations(uint32_t var_id);
 
+  // If |var| has the extra arrayness for an entry point, reports an error and
+  // returns true. Otherwise, returns false.
+  bool ReportErrorIfHasExtraArraynessForOtherEntry(Instruction* var);
+
+  // If |var| does not have the extra arrayness for an entry point, reports an
+  // error and returns true. Otherwise, returns false.
+  bool ReportErrorIfHasNoExtraArraynessForOtherEntry(Instruction* var);
+
+  // If |interface_var| has the extra arrayness for an entry point but it does
+  // not have one for another entry point, reports an error and returns false.
+  // Otherwise, returns true. |has_extra_arrayness| denotes whether it has an
+  // extra arrayness for an entry point or not.
+  bool CheckExtraArraynessConflictBetweenEntries(Instruction* interface_var,
+                                                 bool has_extra_arrayness);
+
+  // Conducts the scalar replacement for the interface variables used by the
+  // |entry_point|.
+  Pass::Status ReplaceInterfaceVarsWithScalars(Instruction& entry_point);
+
   // A set of interface variable ids that were already removed from operands of
   // the entry point.
   std::unordered_set<uint32_t>
@@ -365,6 +385,14 @@ class InterfaceVariableScalarReplacement : public Pass {
   // instructions are replaced with to the recursive depth of the component of
   // load that the new component construct instruction is used for.
   std::unordered_map<uint32_t, uint32_t> composite_ids_to_component_depths;
+
+  // A set of interface variables with the extra arrayness for any of the entry
+  // points.
+  std::unordered_set<Instruction*> vars_with_extra_arrayness;
+
+  // A set of interface variables without the extra arrayness for any of the
+  // entry points.
+  std::unordered_set<Instruction*> vars_without_extra_arrayness;
 };
 
 }  // namespace opt

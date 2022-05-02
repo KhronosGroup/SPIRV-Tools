@@ -561,6 +561,214 @@ TEST_F(InterfaceVariableScalarReplacementTest,
                                                             true);
 }
 
+TEST_F(InterfaceVariableScalarReplacementTest,
+       CheckPatchDecorationPreservation) {
+  // Make sure scalars for the variables with the extra arrayness have the extra
+  // arrayness after running the pass while others do not have it.
+  // Only "y" does not have the extra arrayness in the following SPIR-V.
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Tessellation
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TessellationEvaluation %func "shader" %x %y %z %w
+               OpDecorate %z Patch
+               OpDecorate %w Patch
+               OpDecorate %z Location 0
+               OpDecorate %x Location 2
+               OpDecorate %y Location 0
+               OpDecorate %w Location 1
+               OpName %x "x"
+               OpName %y "y"
+               OpName %z "z"
+               OpName %w "w"
+
+  ; CHECK:     OpName [[y:%\w+]] "y"
+  ; CHECK-NOT: OpName {{%\w+}} "y"
+  ; CHECK-DAG: OpName [[z0:%\w+]] "z"
+  ; CHECK-DAG: OpName [[z1:%\w+]] "z"
+  ; CHECK-DAG: OpName [[w0:%\w+]] "w"
+  ; CHECK-DAG: OpName [[w1:%\w+]] "w"
+  ; CHECK-DAG: OpName [[x0:%\w+]] "x"
+  ; CHECK-DAG: OpName [[x1:%\w+]] "x"
+
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+%_arr_uint_uint_2 = OpTypeArray %uint %uint_2
+%_ptr_Output__arr_uint_uint_2 = OpTypePointer Output %_arr_uint_uint_2
+%_ptr_Input__arr_uint_uint_2 = OpTypePointer Input %_arr_uint_uint_2
+          %z = OpVariable %_ptr_Output__arr_uint_uint_2 Output
+          %x = OpVariable %_ptr_Output__arr_uint_uint_2 Output
+          %y = OpVariable %_ptr_Input__arr_uint_uint_2 Input
+          %w = OpVariable %_ptr_Input__arr_uint_uint_2 Input
+
+  ; CHECK-DAG: [[y]] = OpVariable %_ptr_Input__arr_uint_uint_2 Input
+  ; CHECK-DAG: [[z0]] = OpVariable %_ptr_Output_uint Output
+  ; CHECK-DAG: [[z1]] = OpVariable %_ptr_Output_uint Output
+  ; CHECK-DAG: [[w0]] = OpVariable %_ptr_Input_uint Input
+  ; CHECK-DAG: [[w1]] = OpVariable %_ptr_Input_uint Input
+  ; CHECK-DAG: [[x0]] = OpVariable %_ptr_Output_uint Output
+  ; CHECK-DAG: [[x1]] = OpVariable %_ptr_Output_uint Output
+
+     %void   = OpTypeVoid
+     %void_f = OpTypeFunction %void
+     %func   = OpFunction %void None %void_f
+     %label  = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<InterfaceVariableScalarReplacement>(spirv, true);
+}
+
+TEST_F(InterfaceVariableScalarReplacementTest,
+       CheckEntryPointInterfaceOperands) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Tessellation
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TessellationEvaluation %tess "tess" %x %y
+               OpEntryPoint Vertex %vert "vert" %w
+               OpDecorate %z Location 0
+               OpDecorate %x Location 2
+               OpDecorate %y Location 0
+               OpDecorate %w Location 1
+               OpName %x "x"
+               OpName %y "y"
+               OpName %z "z"
+               OpName %w "w"
+
+  ; CHECK:     OpName [[y:%\w+]] "y"
+  ; CHECK-NOT: OpName {{%\w+}} "y"
+  ; CHECK-DAG: OpName [[x0:%\w+]] "x"
+  ; CHECK-DAG: OpName [[x1:%\w+]] "x"
+  ; CHECK-DAG: OpName [[w0:%\w+]] "w"
+  ; CHECK-DAG: OpName [[w1:%\w+]] "w"
+  ; CHECK-DAG: OpName [[z:%\w+]] "z"
+  ; CHECK-NOT: OpName {{%\w+}} "z"
+
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+%_arr_uint_uint_2 = OpTypeArray %uint %uint_2
+%_ptr_Output__arr_uint_uint_2 = OpTypePointer Output %_arr_uint_uint_2
+%_ptr_Input__arr_uint_uint_2 = OpTypePointer Input %_arr_uint_uint_2
+          %z = OpVariable %_ptr_Output__arr_uint_uint_2 Output
+          %x = OpVariable %_ptr_Output__arr_uint_uint_2 Output
+          %y = OpVariable %_ptr_Input__arr_uint_uint_2 Input
+          %w = OpVariable %_ptr_Input__arr_uint_uint_2 Input
+
+  ; CHECK-DAG: [[y]] = OpVariable %_ptr_Input__arr_uint_uint_2 Input
+  ; CHECK-DAG: [[z]] = OpVariable %_ptr_Output__arr_uint_uint_2 Output
+  ; CHECK-DAG: [[w0]] = OpVariable %_ptr_Input_uint Input
+  ; CHECK-DAG: [[w1]] = OpVariable %_ptr_Input_uint Input
+  ; CHECK-DAG: [[x0]] = OpVariable %_ptr_Output_uint Output
+  ; CHECK-DAG: [[x1]] = OpVariable %_ptr_Output_uint Output
+
+     %void   = OpTypeVoid
+     %void_f = OpTypeFunction %void
+     %tess   = OpFunction %void None %void_f
+     %bb0    = OpLabel
+               OpReturn
+               OpFunctionEnd
+     %vert   = OpFunction %void None %void_f
+     %bb1    = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<InterfaceVariableScalarReplacement>(spirv, true);
+}
+
+class InterfaceVarSROAErrorTest : public PassTest<::testing::Test> {
+ public:
+  InterfaceVarSROAErrorTest()
+      : consumer_([this](spv_message_level_t level, const char*,
+                         const spv_position_t& position, const char* message) {
+          if (!error_message_.empty()) error_message_ += "\n";
+          switch (level) {
+            case SPV_MSG_FATAL:
+            case SPV_MSG_INTERNAL_ERROR:
+            case SPV_MSG_ERROR:
+              error_message_ += "ERROR";
+              break;
+            case SPV_MSG_WARNING:
+              error_message_ += "WARNING";
+              break;
+            case SPV_MSG_INFO:
+              error_message_ += "INFO";
+              break;
+            case SPV_MSG_DEBUG:
+              error_message_ += "DEBUG";
+              break;
+          }
+          error_message_ +=
+              ": " + std::to_string(position.index) + ": " + message;
+        }) {}
+
+  Pass::Status RunPass(const std::string& text) {
+    std::unique_ptr<IRContext> context_ =
+        spvtools::BuildModule(SPV_ENV_UNIVERSAL_1_2, consumer_, text);
+    if (!context_.get()) return Pass::Status::Failure;
+
+    PassManager manager;
+    manager.SetMessageConsumer(consumer_);
+    manager.AddPass<InterfaceVariableScalarReplacement>();
+
+    return manager.Run(context_.get());
+  }
+
+  std::string GetErrorMessage() const { return error_message_; }
+
+  void TearDown() override { error_message_.clear(); }
+
+ private:
+  spvtools::MessageConsumer consumer_;
+  std::string error_message_;
+};
+
+TEST_F(InterfaceVarSROAErrorTest, CheckConflictOfExtraArraynessBetweenEntries) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Tessellation
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TessellationControl %tess "tess" %x %y %z
+               OpEntryPoint Vertex %vert "vert" %z %w
+               OpDecorate %z Location 0
+               OpDecorate %x Location 2
+               OpDecorate %y Location 0
+               OpDecorate %w Location 1
+               OpName %x "x"
+               OpName %y "y"
+               OpName %z "z"
+               OpName %w "w"
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+%_arr_uint_uint_2 = OpTypeArray %uint %uint_2
+%_ptr_Output__arr_uint_uint_2 = OpTypePointer Output %_arr_uint_uint_2
+%_ptr_Input__arr_uint_uint_2 = OpTypePointer Input %_arr_uint_uint_2
+          %z = OpVariable %_ptr_Output__arr_uint_uint_2 Output
+          %x = OpVariable %_ptr_Output__arr_uint_uint_2 Output
+          %y = OpVariable %_ptr_Input__arr_uint_uint_2 Input
+          %w = OpVariable %_ptr_Input__arr_uint_uint_2 Input
+     %void   = OpTypeVoid
+     %void_f = OpTypeFunction %void
+     %tess   = OpFunction %void None %void_f
+     %bb0    = OpLabel
+               OpReturn
+               OpFunctionEnd
+     %vert   = OpFunction %void None %void_f
+     %bb1    = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  EXPECT_EQ(RunPass(spirv), Pass::Status::Failure);
+  const char expected_error[] =
+      "ERROR: 0: A variable is arrayed for an entry point but it is not "
+      "arrayed for another entry point\n"
+      "  %z = OpVariable %_ptr_Output__arr_uint_uint_2 Output";
+  EXPECT_STREQ(GetErrorMessage().c_str(), expected_error);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
