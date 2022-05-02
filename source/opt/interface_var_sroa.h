@@ -117,18 +117,18 @@ class InterfaceVariableScalarReplacement : public Pass {
       Instruction* interface_var_type, SpvStorageClass storage_class,
       uint32_t extra_array_length);
 
-  // Creates flattened variables with the storage classe |storage_class| for the
-  // interface variable whose type is OpTypeArray |interface_var_type|. If
-  // |extra_array_length| is not zero, adds the extra arrayness to all the
-  // flattened variables.
+  // Creates scalar variables with the storage classe |storage_class| to replace
+  // the interface variable whose type is OpTypeArray |interface_var_type| with.
+  // If |extra_array_length| is not zero, adds the extra arrayness to all the
+  // scalar variables.
   NestedCompositeComponents CreateScalarInterfaceVarsForArray(
       Instruction* interface_var_type, SpvStorageClass storage_class,
       uint32_t extra_array_length);
 
-  // Creates flattened variables with the storage classe |storage_class| for the
-  // interface variable whose type is OpTypeMatrix |interface_var_type|. If
-  // |extra_array_length| is not zero, adds the extra arrayness to all the
-  // flattened variables.
+  // Creates scalar variables with the storage classe |storage_class| to replace
+  // the interface variable whose type is OpTypeMatrix |interface_var_type|
+  // with. If |extra_array_length| is not zero, adds the extra arrayness to all
+  // the scalar variables.
   NestedCompositeComponents CreateScalarInterfaceVarsForMatrix(
       Instruction* interface_var_type, SpvStorageClass storage_class,
       uint32_t extra_array_length);
@@ -270,12 +270,12 @@ class InterfaceVariableScalarReplacement : public Pass {
                                   uint32_t var_id);
 
   // Replaces the interface variable |interface_var| in the operands of the
-  // entry point |entry_point| with |flattened_var_id|. If it cannot find
+  // entry point |entry_point| with |scalar_var_id|. If it cannot find
   // |interface_var| from the operands of the entry point |entry_point|, adds
-  // |flattened_var_id| as an operand of the entry point |entry_point|.
+  // |scalar_var_id| as an operand of the entry point |entry_point|.
   bool ReplaceInterfaceVarInEntryPoint(Instruction* interface_var,
                                        Instruction* entry_point,
-                                       uint32_t flattened_var_id);
+                                       uint32_t scalar_var_id);
 
   // Creates an access chain instruction whose Base operand is |var| and Indexes
   // operand is |index|. |component_type_id| is the id of the type instruction
@@ -294,7 +294,7 @@ class InterfaceVariableScalarReplacement : public Pass {
   // access chain. When some of the users are load instructions, returns the
   // original load instruction to the new instruction that loads a component of
   // the original load value via |loads_to_component_values|.
-  void ReplaceAccessChainWithFlattenedVar(
+  void ReplaceAccessChainWith(
       Instruction* access_chain,
       const std::vector<uint32_t>& interface_var_component_indices,
       Instruction* scalar_var,
