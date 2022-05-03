@@ -168,7 +168,8 @@ bool InterfaceVariableScalarReplacement::
 bool InterfaceVariableScalarReplacement::GetVariableLocation(
     Instruction* var, uint32_t* location) {
   return !context()->get_decoration_mgr()->WhileEachDecoration(
-      var->result_id(), SpvDecorationLocation, [location](const Instruction& inst) {
+      var->result_id(), SpvDecorationLocation,
+      [location](const Instruction& inst) {
         *location =
             inst.GetSingleWordInOperand(kOpDecorateLiteralInOperandIndex);
         return false;
@@ -178,7 +179,8 @@ bool InterfaceVariableScalarReplacement::GetVariableLocation(
 bool InterfaceVariableScalarReplacement::GetVariableComponent(
     Instruction* var, uint32_t* component) {
   return !context()->get_decoration_mgr()->WhileEachDecoration(
-      var->result_id(), SpvDecorationComponent, [component](const Instruction& inst) {
+      var->result_id(), SpvDecorationComponent,
+      [component](const Instruction& inst) {
         *component =
             inst.GetSingleWordInOperand(kOpDecorateLiteralInOperandIndex);
         return false;
@@ -933,7 +935,8 @@ InterfaceVariableScalarReplacement::ReplaceInterfaceVarsWithScalars(
     Instruction* interface_var_type = GetTypeOfVariable(interface_var);
     uint32_t extra_array_length = 0;
     if (HasExtraArrayness(entry_point, interface_var)) {
-      extra_array_length = GetArrayLength(context()->get_def_use_mgr(), interface_var_type);
+      extra_array_length =
+          GetArrayLength(context()->get_def_use_mgr(), interface_var_type);
       interface_var_type =
           GetArrayElementType(context()->get_def_use_mgr(), interface_var_type);
     }
