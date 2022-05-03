@@ -481,9 +481,6 @@ Options (in lexicographical order):)",
   --strength-reduction
                Replaces instructions with equivalent and less expensive ones.)");
   printf(R"(
-  --strip-atomic-counter-memory
-               Removes AtomicCountMemory bit from memory semantics values.)");
-  printf(R"(
   --strip-debug
                Remove all debug instructions.)");
   printf(R"(
