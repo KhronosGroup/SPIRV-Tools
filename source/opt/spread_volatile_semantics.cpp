@@ -243,23 +243,23 @@ void SpreadVolatileSemantics::SetVolatileForLoadsInEntries(
   // Set Volatile memory operand for all load instructions if they do not have
   // it.
   for (auto entry_id : entry_function_ids) {
-  std::unordered_set<uint32_t> funcs;
-  context()->CollectCallTreeFromRoots(entry_id, &funcs);
-  VisitLoadsOfPointersToVariableInEntries(
-      var->result_id(),
-      [](Instruction* load) {
-        if (load->NumInOperands() <= kOpLoadInOperandMemoryOperands) {
-          load->AddOperand(
-              {SPV_OPERAND_TYPE_MEMORY_ACCESS, {SpvMemoryAccessVolatileMask}});
+    std::unordered_set<uint32_t> funcs;
+    context()->CollectCallTreeFromRoots(entry_id, &funcs);
+    VisitLoadsOfPointersToVariableInEntries(
+        var->result_id(),
+        [](Instruction* load) {
+          if (load->NumInOperands() <= kOpLoadInOperandMemoryOperands) {
+            load->AddOperand({SPV_OPERAND_TYPE_MEMORY_ACCESS,
+                              {SpvMemoryAccessVolatileMask}});
+            return true;
+          }
+          uint32_t memory_operands =
+              load->GetSingleWordInOperand(kOpLoadInOperandMemoryOperands);
+          memory_operands |= SpvMemoryAccessVolatileMask;
+          load->SetInOperand(kOpLoadInOperandMemoryOperands, {memory_operands});
           return true;
-        }
-        uint32_t memory_operands =
-            load->GetSingleWordInOperand(kOpLoadInOperandMemoryOperands);
-        memory_operands |= SpvMemoryAccessVolatileMask;
-        load->SetInOperand(kOpLoadInOperandMemoryOperands, {memory_operands});
-        return true;
-      },
-      funcs);
+        },
+        funcs);
   }
 }
 
