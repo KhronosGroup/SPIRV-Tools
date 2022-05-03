@@ -1216,10 +1216,8 @@ OpEntryPoint GLCompute %main2 "main2" %gl_LocalInvocationIndex %SubgroupSize
 OpSource HLSL 630
 OpName %main "main"
 OpName %bb_entry "bb.entry"
-OpName %param_var_count "param.var.count"
 OpName %main2 "main2"
 OpName %bb_entry_0 "bb.entry"
-OpName %param_var_count_0 "param.var.count"
 OpName %func "func"
 OpName %count "count"
 OpName %bb_entry_1 "bb.entry"
@@ -1240,23 +1238,19 @@ OpDecorate %SubgroupSize BuiltIn SubgroupSize
 %gl_LocalInvocationIndex = OpVariable %_ptr_Input_uint Input
 %main = OpFunction %void None %12
 %bb_entry = OpLabel
-%param_var_count = OpVariable %_ptr_Function_uint Function
-%19 = OpLoad %uint %SubgroupSize
-OpStore %param_var_count %19
-%20 = OpFunctionCall %void %func %param_var_count
+%20 = OpFunctionCall %void %func
 OpReturn
 OpFunctionEnd
 %main2 = OpFunction %void None %12
 %bb_entry_0 = OpLabel
-%param_var_count_0 = OpVariable %_ptr_Function_uint Function
-%s2 = OpLoad %uint %SubgroupSize
-OpStore %param_var_count_0 %s2
-%33 = OpFunctionCall %void %func %param_var_count_0
+%33 = OpFunctionCall %void %func
 OpReturn
 OpFunctionEnd
-%func = OpFunction %void DontInline %34
-%count = OpFunctionParameter %_ptr_Function_uint
+%func = OpFunction %void DontInline %12
 %bb_entry_1 = OpLabel
+%count = OpVariable %_ptr_Function_uint Function
+%35 = OpLoad %uint %SubgroupSize
+OpStore %count %35
 OpReturn
 OpFunctionEnd
 )";
