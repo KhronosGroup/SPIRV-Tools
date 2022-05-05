@@ -39,7 +39,7 @@ class FixFuncCallArgumentsPass : public Pass {
 
   IRContext::Analysis GetPreservedAnalyses() override {
     return IRContext::kAnalysisTypes;
-  };
+  }
 };
 }  // namespace opt
 }  // namespace spvtools
