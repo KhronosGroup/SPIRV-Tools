@@ -30,14 +30,14 @@ TEST_F(FixFuncCallArgumentsTest, Simple) {
 ; CHECK: [[ac0:%\w+]] = OpAccessChain %_ptr_Function_float %t %int_0
 ; CHECK: [[ac1:%\w+]] = OpAccessChain %_ptr_Uniform_float %r1 %int_0 %uint_0
 ; CHECK: [[ld0:%\w+]] = OpLoad %float [[ac0]]
-; CHECK:                OpStore [[v0]] [[ld0]]
+; CHECK:                OpStore [[v1]] [[ld0]]
 ; CHECK: [[ld1:%\w+]] = OpLoad %float [[ac1]]
-; CHECK:                OpStore [[v1]] [[ld1]]
-; CHECK: [[func:%\w+]] = OpFunctionCall %void %fn [[v0]] [[v1]]
+; CHECK:                OpStore [[v0]] [[ld1]]
+; CHECK: [[func:%\w+]] = OpFunctionCall %void %fn [[v1]] [[v0]]
 ; CHECK: [[ld2:%\w+]] = OpLoad %float [[v0]]
-; CHECK: OpStore [[ac0]] [[ld2]]
+; CHECK: OpStore [[ac1]] [[ld2]]
 ; CHECK: [[ld3:%\w+]] = OpLoad %float [[v1]]
-; CHECK: OpStore [[ac1]] [[ld3]]
+; CHECK: OpStore [[ac0]] [[ld3]]
 ;
 OpCapability Shader
 OpCapability Linkage

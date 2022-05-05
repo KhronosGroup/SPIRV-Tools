@@ -24,20 +24,18 @@ class FixFuncCallArgumentsPass : public Pass {
   FixFuncCallArgumentsPass() {}
   const char* name() const override { return "fix-for-funcall-param"; }
   Status Process() override;
-  // Whether module has only one function
+  // Returns true if the module has one one function.
   bool ModuleHasASingleFunction();
   // Copies from the memory pointed to by |operand_inst| to a new function scope
-  // variable created at [var_insertPt] before |func_call_inst|, and copies the
-  // value of the new variable back to the memory pointed to by |operand| after
-  // |funct_call_inst| at |next_inst|. Returns the id of the new variable.
+  // variable created before |func_call_inst|, and
+  // copies the value of the new variable back to the memory pointed to by
+  // |operand_inst| after |funct_call_inst|  Returns the id of
+  // the new variable.
   uint32_t ReplaceAccessChainFuncCallArguments(Instruction* func_call_inst,
-                                               Instruction* operand_inst,
-                                               Instruction* next_inst,
-                                               Instruction* var_insertPt);
+                                               Instruction* operand_inst);
 
-  // Fix non memory object function call
-  bool FixFuncCallArguments(Instruction* func_call_inst,
-                            Instruction* var_insertPt);
+  // Fix function call |func_call_inst| non memory object arguments
+  bool FixFuncCallArguments(Instruction* func_call_inst);
 
   IRContext::Analysis GetPreservedAnalyses() override {
     return IRContext::kAnalysisTypes;
