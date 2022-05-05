@@ -40,7 +40,6 @@ Pass::Status FixFuncCallArgumentsPass::Process() {
 bool FixFuncCallArgumentsPass::FixFuncCallArguments(
     Instruction* func_call_inst) {
   bool modified = false;
-  Instruction* nextInst = func_call_inst->NextNode();
   for (uint32_t i = 0; i < func_call_inst->NumInOperands(); ++i) {
     Operand& op = func_call_inst->GetInOperand(i);
     if (op.type != SPV_OPERAND_TYPE_ID) continue;
