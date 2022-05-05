@@ -19,14 +19,14 @@
 using namespace spvtools;
 using namespace opt;
 
-bool FixFuncCallArgumentsPass::HasNoFunctionToCall() {
+bool FixFuncCallArgumentsPass::ModuleHasASingleFunction() {
   auto funcsNum = get_module()->end() - get_module()->begin();
   return funcsNum == 1;
 }
 
 Pass::Status FixFuncCallArgumentsPass::Process() {
   bool modified = false;
-  if (HasNoFunctionToCall()) return Status::SuccessWithoutChange;
+  if (ModuleHasASingleFunction()) return Status::SuccessWithoutChange;
   for (auto& func : *get_module()) {
     // Get Variable insertion point
     Instruction* varInsertPt = &*(func.begin()->begin());
@@ -48,8 +48,9 @@ bool FixFuncCallArgumentsPass::FixFuncCallArguments(Instruction* func_call_inst,
     if (op.type != SPV_OPERAND_TYPE_ID) continue;
     Instruction* operand_inst = get_def_use_mgr()->GetDef(op.AsId());
     if (operand_inst->opcode() == SpvOpAccessChain) {
-      ReplaceAccessChainFuncCallArguments(func_call_inst, &op, operand_inst,
-                                          nextInst, var_insertPt, i);
+      uint32_t var_id = ReplaceAccessChainFuncCallArguments(
+          func_call_inst, operand_inst, nextInst, var_insertPt);
+      func_call_inst->SetInOperand(i, {var_id});
       modified = true;
     }
   }
@@ -59,10 +60,9 @@ bool FixFuncCallArgumentsPass::FixFuncCallArguments(Instruction* func_call_inst,
   return modified;
 }
 
-void FixFuncCallArgumentsPass::ReplaceAccessChainFuncCallArguments(
-    Instruction* func_call_inst, Operand* operand, Instruction* operand_inst,
-    Instruction* next_insertPt, Instruction* var_insertPt,
-    unsigned operand_index) {
+uint32_t FixFuncCallArgumentsPass::ReplaceAccessChainFuncCallArguments(
+    Instruction* func_call_inst, Instruction* operand_inst,
+    Instruction* next_insertPt, Instruction* var_insertPt) {
   InstructionBuilder builder(
       context(), func_call_inst,
       IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
@@ -77,13 +77,14 @@ void FixFuncCallArgumentsPass::ReplaceAccessChainFuncCallArguments(
   Instruction* var = builder.AddVariable(varType, SpvStorageClassFunction);
   // Load access chain to the new variable before function call
   builder.SetInsertPoint(func_call_inst);
-  Instruction* load = builder.AddLoad(op_type->result_id(), operand->AsId());
+
+  uint32_t operand_id = operand_inst->result_id();
+  Instruction* load = builder.AddLoad(op_type->result_id(), operand_id);
   builder.AddStore(var->result_id(), load->result_id());
   // Load return value to the acesschain after function call
   builder.SetInsertPoint(next_insertPt);
   load = builder.AddLoad(op_type->result_id(), var->result_id());
-  builder.AddStore(operand->AsId(), load->result_id());
+  builder.AddStore(operand_id, load->result_id());
 
-  // Replace AccessChain with new create variable
-  func_call_inst->SetInOperand(operand_index, {var->result_id()});
+  return var->result_id();
 }
