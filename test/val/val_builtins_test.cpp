@@ -2372,6 +2372,67 @@ INSTANTIATE_TEST_SUITE_P(
                               "needs to be a 32-bit int scalar",
                               "is not an int scalar"))));
 
+// CullMaskKHR is valid
+// in IS, AH, CH, MS shaders as an input i32 scalar
+INSTANTIATE_TEST_SUITE_P(
+    CullMaskSuccess,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("CullMaskKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR", "MissKHR"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability RayTracingKHR\nOpCapability RayCullMaskKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\nOpExtension "
+                   "\"SPV_KHR_ray_cull_mask\"\n"),
+            Values(nullptr), Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    CullMaskNotExecutionMode,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("CullMaskKHR"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "Fragment",
+                   "GLCompute", "RayGenerationKHR", "CallableKHR"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability RayTracingKHR\nOpCapability RayCullMaskKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\nOpExtension "
+                   "\"SPV_KHR_ray_cull_mask\"\n"),
+            Values("VUID-CullMaskKHR-CullMaskKHR-06735 "
+                   "VUID-RayTmaxKHR-RayTmaxKHR-04348 "
+                   "VUID-RayTminKHR-RayTminKHR-04351 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "Vulkan spec does not allow BuiltIn",
+                              "to be used with the execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    ICullMaskNotInput,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("CullMaskKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR", "MissKHR"),
+            Values("Output"), Values("%u32"),
+            Values("OpCapability RayTracingKHR\nOpCapability RayCullMaskKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\nOpExtension "
+                   "\"SPV_KHR_ray_cull_mask\"\n"),
+            Values("VUID-CullMaskKHR-CullMaskKHR-06736 "
+                   "VUID-RayTmaxKHR-RayTmaxKHR-04349 "
+                   "VUID-RayTminKHR-RayTminKHR-04352 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows",
+                              "used for variables with Input storage class"))));
+INSTANTIATE_TEST_SUITE_P(
+    CullMaskNotIntScalar,
+    ValidateGenericCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values(SPV_ENV_VULKAN_1_2), Values("CullMaskKHR"),
+            Values("AnyHitKHR", "ClosestHitKHR", "IntersectionKHR", "MissKHR"),
+            Values("Input"), Values("%f32", "%u32vec3"),
+            Values("OpCapability RayTracingKHR\nOpCapability RayCullMaskKHR\n"),
+            Values("OpExtension \"SPV_KHR_ray_tracing\"\nOpExtension "
+                   "\"SPV_KHR_ray_cull_mask\"\n"),
+            Values("VUID-CullMaskKHR-CullMaskKHR-06737 "
+                   "VUID-RayTmaxKHR-RayTmaxKHR-04350 "
+                   "VUID-RayTminKHR-RayTminKHR-04353 "),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "is not an int scalar"))));
+
 // RayTmaxKHR, RayTminKHR are all valid
 // in IS, AH, CH, MS shaders as input f32 scalars
 INSTANTIATE_TEST_SUITE_P(
