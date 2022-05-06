@@ -629,6 +629,8 @@ static_library("spvtools_opt") {
     "source/opt/empty_pass.h",
     "source/opt/feature_manager.cpp",
     "source/opt/feature_manager.h",
+    "source/opt/fix_func_call_arguments.cpp",
+    "source/opt/fix_func_call_arguments.h",
     "source/opt/fix_storage_class.cpp",
     "source/opt/fix_storage_class.h",
     "source/opt/flatten_decoration_pass.cpp",

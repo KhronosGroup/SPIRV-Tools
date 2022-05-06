@@ -237,6 +237,10 @@ Options (in lexicographical order):)",
                loads and stores. Performed only on entry point call tree
                functions.)");
   printf(R"(
+  --fix-func-call-param
+               fix non memory argument for the function call, replace 
+               accesschain pointer argument with a variable.)");
+  printf(R"(
   --flatten-decorations
                Replace decoration groups with repeated OpDecorate and
                OpMemberDecorate instructions.)");
