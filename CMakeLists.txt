@@ -220,15 +220,6 @@ function(spvtools_default_compile_options TARGET)
       target_compile_options(${TARGET} PRIVATE /EHs)
     endif()
   endif()
-
-  # For MinGW cross compile, statically link to the C++ runtime.
-  # But it still depends on MSVCRT.dll.
-  if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
-      set_target_properties(${TARGET} PROPERTIES
-        LINK_FLAGS -static -static-libgcc -static-libstdc++)
-    endif()
-  endif()
 endfunction()
 
 if(NOT COMMAND find_host_package)
