@@ -68,6 +68,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   instruction.h
   instruction_list.h
   instrument_pass.h
+  interface_var_sroa.h
   interp_fixup_pass.h
   ir_builder.h
   ir_context.h
@@ -182,6 +183,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   instruction.cpp
   instruction_list.cpp
   instrument_pass.cpp
+  interface_var_sroa.cpp
   interp_fixup_pass.cpp
   ir_context.cpp
   ir_loader.cpp

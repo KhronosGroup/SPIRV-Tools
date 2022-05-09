@@ -128,6 +128,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/instruction.cpp \
 		source/opt/instruction_list.cpp \
 		source/opt/instrument_pass.cpp \
+		source/opt/interface_var_sroa.cpp \
 		source/opt/interp_fixup_pass.cpp \
 		source/opt/ir_context.cpp \
 		source/opt/ir_loader.cpp \
