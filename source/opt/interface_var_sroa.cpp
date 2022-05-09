@@ -155,14 +155,9 @@ bool InterfaceVariableScalarReplacement::
     CheckExtraArraynessConflictBetweenEntries(Instruction* interface_var,
                                               bool has_extra_arrayness) {
   if (has_extra_arrayness) {
-    if (ReportErrorIfHasNoExtraArraynessForOtherEntry(interface_var))
-      return false;
-    vars_with_extra_arrayness.insert(interface_var);
-    return true;
+    return !ReportErrorIfHasNoExtraArraynessForOtherEntry(interface_var);
   }
-  if (ReportErrorIfHasExtraArraynessForOtherEntry(interface_var)) return false;
-  vars_without_extra_arrayness.insert(interface_var);
-  return true;
+  return !ReportErrorIfHasExtraArraynessForOtherEntry(interface_var);
 }
 
 bool InterfaceVariableScalarReplacement::GetVariableLocation(
@@ -262,7 +257,7 @@ bool InterfaceVariableScalarReplacement::ReplaceInterfaceVariableWithScalars(
 }
 
 bool InterfaceVariableScalarReplacement::ReplaceInterfaceVarWith(
-    Instruction* interface_var, uint32_t extra_arrayness,
+    Instruction* interface_var, uint32_t extra_array_length,
     const NestedCompositeComponents& scalar_interface_vars) {
   std::vector<Instruction*> users;
   context()->get_def_use_mgr()->ForEachUser(
@@ -272,10 +267,10 @@ bool InterfaceVariableScalarReplacement::ReplaceInterfaceVarWith(
   std::unordered_map<Instruction*, Instruction*> loads_to_composites;
   std::unordered_map<Instruction*, Instruction*>
       loads_for_access_chain_to_composites;
-  if (extra_arrayness != 0) {
-    // Note that the extra arrayness is the first dimenion of the array
+  if (extra_array_length != 0) {
+    // Note that the extra arrayness is the first dimension of the array
     // interface variable.
-    for (uint32_t index = 0; index < extra_arrayness; ++index) {
+    for (uint32_t index = 0; index < extra_array_length; ++index) {
       std::unordered_map<Instruction*, Instruction*> loads_to_component_values;
       if (!ReplaceComponentsOfInterfaceVarWith(
               interface_var, users, scalar_interface_vars,
@@ -939,6 +934,9 @@ InterfaceVariableScalarReplacement::ReplaceInterfaceVarsWithScalars(
           GetArrayLength(context()->get_def_use_mgr(), interface_var_type);
       interface_var_type =
           GetArrayElementType(context()->get_def_use_mgr(), interface_var_type);
+      vars_with_extra_arrayness.insert(interface_var);
+    } else {
+      vars_without_extra_arrayness.insert(interface_var);
     }
 
     if (!CheckExtraArraynessConflictBetweenEntries(interface_var,
