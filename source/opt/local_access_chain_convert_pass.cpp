@@ -28,8 +28,6 @@ namespace {
 
 const uint32_t kStoreValIdInIdx = 1;
 const uint32_t kAccessChainPtrIdInIdx = 0;
-const uint32_t kConstantValueInIdx = 0;
-const uint32_t kTypeIntWidthInIdx = 0;
 
 }  // anonymous namespace
 
