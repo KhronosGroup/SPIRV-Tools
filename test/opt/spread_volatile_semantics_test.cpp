@@ -39,8 +39,7 @@ TEST_P(AddVolatileDecorationTest, InMain) {
       tc.use_v4uint ? "%_ptr_Input_v4uint" : "%_ptr_Input_uint";
   const std::string var_load_type = tc.use_v4uint ? "%v4uint" : "%uint";
 
-  const std::string text =
-      std::string(R"(OpCapability RuntimeDescriptorArray
+  const std::string text = std::string(R"(OpCapability RuntimeDescriptorArray
 OpCapability RayTracingKHR
 OpCapability SubgroupBallotKHR
 OpExtension "SPV_EXT_descriptor_indexing"
@@ -48,8 +47,8 @@ OpExtension "SPV_KHR_ray_tracing"
 OpExtension "SPV_KHR_shader_ballot"
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
-OpEntryPoint )") +
-      execution_model + std::string(R"( %main "main" %var
+OpEntryPoint )") + execution_model +
+                           std::string(R"( %main "main" %var
 OpSource GLSL 460
 OpSourceExtension "GL_EXT_nonuniform_qualifier"
 OpSourceExtension "GL_KHR_ray_tracing"
@@ -69,9 +68,10 @@ OpDecorate %images Binding 1
 OpDecorate %images NonWritable
 )") + std::string(R"(
 ; CHECK: OpDecorate [[var:%\w+]] BuiltIn )") +
-      built_in + std::string(R"(
+                           built_in + std::string(R"(
 ; CHECK: OpDecorate [[var]] Volatile
-OpDecorate %var BuiltIn )") + built_in + std::string(R"(
+OpDecorate %var BuiltIn )") +
+                           built_in + std::string(R"(
 %void = OpTypeVoid
 %3 = OpTypeFunction %void
 %uint = OpTypeInt 32 0
@@ -88,8 +88,8 @@ OpDecorate %var BuiltIn )") + built_in + std::string(R"(
 %_ptr_Input_uint = OpTypePointer Input %uint
 %v4uint = OpTypeVector %uint 4
 %_ptr_Input_v4uint = OpTypePointer Input %v4uint
-%var = OpVariable )") +
-      var_type + std::string(R"( Input
+%var = OpVariable )") + var_type +
+                           std::string(R"( Input
 %int_0 = OpConstant %int 0
 %_ptr_Uniform_uint = OpTypePointer Uniform %uint
 %_ptr_UniformConstant_13 = OpTypePointer UniformConstant %13
@@ -102,7 +102,8 @@ OpDecorate %var BuiltIn )") + built_in + std::string(R"(
 %5 = OpLabel
 %19 = OpAccessChain %_ptr_Uniform_uint %sbo %int_0
 %20 = OpLoad %uint %19
-%load = OpLoad )") + var_load_type + std::string(R"( %var
+%load = OpLoad )") + var_load_type +
+                           std::string(R"( %var
 %22 = OpAccessChain %_ptr_UniformConstant_13 %images %20
 %23 = OpLoad %13 %22
 %27 = OpImageRead %v4float %23 %25
