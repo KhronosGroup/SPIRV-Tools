@@ -2041,12 +2041,12 @@ const analysis::Type* GetContainerType(Instruction* inst) {
 // Returns an OpCompositeConstruct instruction that build an object with
 // |type_id| out of the values in |values_inserted|.  Each value will be
 // placed at the index corresponding to the value.  The new instruction will
-// be placed before |inster_before|.
+// be placed before |insert_before|.
 Instruction* BuildCompositeConstruct(
     uint32_t type_id, const std::map<uint32_t, uint32_t>& values_inserted,
-    Instruction* inster_before) {
+    Instruction* insert_before) {
   InstructionBuilder ir_builder(
-      inster_before->context(), inster_before,
+      insert_before->context(), insert_before,
       IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
 
   std::vector<uint32_t> ids_in_order;
