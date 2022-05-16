@@ -1631,9 +1631,9 @@ bool CompositeConstructFeedingExtract(
   return true;
 }
 
-// Returns the type of the element of |type_id| by the element in the range
-// (start,end).  The iterators |start| and |end| should be the index operands in
-// the form expected by OpCompositeInsert and OpCompositeExtract.
+// Walks the indexes chain from |start| to |end| of an OpCompositeInsert or
+// OpCompositeExtract instruction, and returns the type of the final element
+// being accessed.
 const analysis::Type* GetElementType(uint32_t type_id,
                                      Instruction::iterator start,
                                      Instruction::iterator end,
@@ -1664,7 +1664,7 @@ bool HaveSameIndexesExceptForLast(Instruction* inst_1, Instruction* inst_2) {
          "Expecting the opcodes to be the same.");
   assert((inst_1->opcode() == SpvOpCompositeInsert ||
           inst_1->opcode() == SpvOpCompositeExtract) &&
-         "Instructions must be OpCompositeInsert or OpCompositeExtract");
+         "Instructions must be OpCompositeInsert or OpCompositeExtract.");
 
   if (inst_1->NumInOperands() != inst_2->NumInOperands()) {
     return false;
@@ -2041,12 +2041,12 @@ const analysis::Type* GetContainerType(Instruction* inst) {
 // Returns an OpCompositeConstruct instruction that build an object with
 // |type_id| out of the values in |values_inserted|.  Each value will be
 // placed at the index corresponding to the value.  The new instruction will
-// be placed before |pos|.
+// be placed before |inster_before|.
 Instruction* BuildCompositeConstruct(
     uint32_t type_id, const std::map<uint32_t, uint32_t>& values_inserted,
-    Instruction* pos) {
+    Instruction* inster_before) {
   InstructionBuilder ir_builder(
-      pos->context(), pos,
+      inster_before->context(), inster_before,
       IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
 
   std::vector<uint32_t> ids_in_order;
@@ -2059,7 +2059,7 @@ Instruction* BuildCompositeConstruct(
 }
 
 // Replaces the OpCompositeInsert |inst| that inserts |construct| into the same
-// object as |inst| with with final index removed.  If the resulting
+// object as |inst| with final index removed.  If the resulting
 // OpCompositeInsert instruction would have no remaining indexes, the
 // instruction is replaced with an OpCopyObject instead.
 void InsertConstructedObject(Instruction* inst, const Instruction* construct) {
