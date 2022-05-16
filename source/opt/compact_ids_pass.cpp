@@ -44,6 +44,8 @@ Pass::Status CompactIdsPass::Process() {
   bool modified = false;
   std::unordered_map<uint32_t, uint32_t> result_id_mapping;
 
+  context()->DisableAnalyses(IRContext::kAnalysisDebugInfo);
+
   context()->module()->ForEachInst(
       [&result_id_mapping, &modified](Instruction* inst) {
         auto operand = inst->begin();
@@ -93,6 +95,8 @@ Pass::Status CompactIdsPass::Process() {
     // There are ids in the feature manager that could now be invalid
     context()->ResetFeatureManager();
   }
+
+  context()->EnableAnalyses(IRContext::kAnalysisDebugInfo);
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }

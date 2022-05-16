@@ -99,6 +99,16 @@ void IRContext::InvalidateAnalysesExceptFor(
   InvalidateAnalyses(static_cast<IRContext::Analysis>(analyses_to_invalidate));
 }
 
+void IRContext::DisableAnalyses(IRContext::Analysis analyses_to_disable) {
+  InvalidateAnalyses(analyses_to_disable);
+  disabled_analyses_ |= analyses_to_disable;
+}
+
+void IRContext::EnableAnalyses(IRContext::Analysis analyses_to_enable) {
+  InvalidateAnalyses(analyses_to_enable);
+  disabled_analyses_ &= (~analyses_to_enable);
+}
+
 void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
   // The ConstantManager and DebugInfoManager contain Type pointers. If the
   // TypeManager goes away, the ConstantManager and DebugInfoManager have to

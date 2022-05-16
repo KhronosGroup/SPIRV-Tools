@@ -101,6 +101,7 @@ class IRContext {
         def_use_mgr_(nullptr),
         feature_mgr_(nullptr),
         valid_analyses_(kAnalysisNone),
+        disabled_analyses_(kAnalysisNone),
         constant_mgr_(nullptr),
         type_mgr_(nullptr),
         id_to_name_(nullptr),
@@ -120,6 +121,7 @@ class IRContext {
         def_use_mgr_(nullptr),
         feature_mgr_(nullptr),
         valid_analyses_(kAnalysisNone),
+        disabled_analyses_(kAnalysisNone),
         type_mgr_(nullptr),
         id_to_name_(nullptr),
         max_id_bound_(kDefaultMaxIdBound),
@@ -336,6 +338,8 @@ class IRContext {
   // NOTE: Once created, the debug information manager remains active
   // it is never re-built.
   analysis::DebugInfoManager* get_debug_info_mgr() {
+    assert(!AreAnalysesDisabled(kAnalysisDebugInfo) &&
+           "debug_info_mgr used when disabled");
     if (!AreAnalysesValid(kAnalysisDebugInfo)) {
       BuildDebugInfoManager();
     }
@@ -383,6 +387,13 @@ class IRContext {
   // Invalidates the analyses marked in |analyses_to_invalidate|.
   void InvalidateAnalyses(Analysis analyses_to_invalidate);
 
+  // Invalidates the analyses marked in |analyses_to_disable| and prevents
+  // them from being built or updated.
+  void DisableAnalyses(Analysis analyses_to_disable);
+
+  // Enables |analyses_to_enable| to be built or updated.
+  void EnableAnalyses(Analysis analyses_to_enable);
+
   // Deletes the instruction defining the given |id|. Returns true on
   // success, false if the given |id| is not defined at all. This method also
   // erases the name, decorations, and definition of |id|.
@@ -417,6 +428,11 @@ class IRContext {
 
   // Returns true if all of the given analyses are valid.
   bool AreAnalysesValid(Analysis set) { return (set & valid_analyses_) == set; }
+
+  // Returns true if all of the given analyses are disabled.
+  bool AreAnalysesDisabled(Analysis set) {
+    return (set & disabled_analyses_) == set;
+  }
 
   // Replaces all uses of |before| id with |after| id. Returns true if any
   // replacement happens. This method does not kill the definition of the
@@ -809,6 +825,9 @@ class IRContext {
   // A bitset indicating which analyzes are currently valid.
   Analysis valid_analyses_;
 
+  // A bitset indicating which analyzes are disabled.
+  Analysis disabled_analyses_;
+
   // Opcodes of shader capability core executable instructions
   // without side-effect.
   std::unordered_map<uint32_t, std::unordered_set<uint32_t>> combinator_ops_;
@@ -865,8 +884,8 @@ class IRContext {
 
 inline IRContext::Analysis operator|(IRContext::Analysis lhs,
                                      IRContext::Analysis rhs) {
-  return static_cast<IRContext::Analysis>(static_cast<int>(lhs) |
-                                          static_cast<int>(rhs));
+  return static_cast<IRContext::Analysis>(static_cast<unsigned>(lhs) |
+                                          static_cast<unsigned>(rhs));
 }
 
 inline IRContext::Analysis& operator|=(IRContext::Analysis& lhs,
@@ -875,12 +894,30 @@ inline IRContext::Analysis& operator|=(IRContext::Analysis& lhs,
   return lhs;
 }
 
+inline IRContext::Analysis operator&(IRContext::Analysis lhs,
+                                     IRContext::Analysis rhs) {
+  return static_cast<IRContext::Analysis>(static_cast<unsigned>(lhs) &
+                                          static_cast<unsigned>(rhs));
+}
+
+inline IRContext::Analysis& operator&=(IRContext::Analysis& lhs,
+                                       IRContext::Analysis rhs) {
+  lhs = lhs & rhs;
+  return lhs;
+}
+
+inline IRContext::Analysis operator~(IRContext::Analysis rhs) {
+  return static_cast<IRContext::Analysis>(
+      ~static_cast<unsigned>(rhs) &
+      (static_cast<unsigned>(IRContext::Analysis::kAnalysisEnd) - 1u));
+}
+
 inline IRContext::Analysis operator<<(IRContext::Analysis a, int shift) {
-  return static_cast<IRContext::Analysis>(static_cast<int>(a) << shift);
+  return static_cast<IRContext::Analysis>(static_cast<unsigned>(a) << shift);
 }
 
 inline IRContext::Analysis& operator<<=(IRContext::Analysis& a, int shift) {
-  a = static_cast<IRContext::Analysis>(static_cast<int>(a) << shift);
+  a = static_cast<IRContext::Analysis>(static_cast<unsigned>(a) << shift);
   return a;
 }
 

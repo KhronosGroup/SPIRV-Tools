@@ -530,7 +530,8 @@ void Instruction::UpdateLexicalScope(uint32_t scope) {
     i.dbg_scope_.SetLexicalScope(scope);
   }
   if (!IsLineInst() &&
-      context()->AreAnalysesValid(IRContext::kAnalysisDebugInfo)) {
+      context()->AreAnalysesValid(IRContext::kAnalysisDebugInfo) &&
+      !context()->AreAnalysesDisabled(IRContext::kAnalysisDebugInfo)) {
     context()->get_debug_info_mgr()->AnalyzeDebugInst(this);
   }
 }
@@ -541,7 +542,8 @@ void Instruction::UpdateDebugInlinedAt(uint32_t new_inlined_at) {
     i.dbg_scope_.SetInlinedAt(new_inlined_at);
   }
   if (!IsLineInst() &&
-      context()->AreAnalysesValid(IRContext::kAnalysisDebugInfo)) {
+      context()->AreAnalysesValid(IRContext::kAnalysisDebugInfo) &&
+      !context()->AreAnalysesDisabled(IRContext::kAnalysisDebugInfo)) {
     context()->get_debug_info_mgr()->AnalyzeDebugInst(this);
   }
 }
@@ -561,7 +563,8 @@ void Instruction::UpdateDebugInfoFrom(const Instruction* from) {
     AddDebugLine(&from->dbg_line_insts().back());
   SetDebugScope(from->GetDebugScope());
   if (!IsLineInst() &&
-      context()->AreAnalysesValid(IRContext::kAnalysisDebugInfo)) {
+      context()->AreAnalysesValid(IRContext::kAnalysisDebugInfo) &&
+      !context()->AreAnalysesDisabled(IRContext::kAnalysisDebugInfo)) {
     context()->get_debug_info_mgr()->AnalyzeDebugInst(this);
   }
 }
