@@ -300,6 +300,10 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_COOPERATIVE_MATRIX_LAYOUT,
   SPV_OPERAND_TYPE_COOPERATIVE_MATRIX_USE,
 
+  // SPV_ARM_tensors
+  SPV_OPERAND_TYPE_TENSOR_OPERANDS,
+  SPV_OPERAND_TYPE_OPTIONAL_TENSOR_OPERANDS,
+
   // Enum type from SPV_INTEL_global_variable_fpga_decorations
   SPV_OPERAND_TYPE_INITIALIZATION_MODE_QUALIFIER,
   // Enum type from SPV_INTEL_global_variable_host_access

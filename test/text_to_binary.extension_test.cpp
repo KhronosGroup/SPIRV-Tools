@@ -1382,5 +1382,86 @@ INSTANTIATE_TEST_SUITE_P(
                              {1, 2, 3, 4, 5, 6, 7})},
         })));
 
+// SPV_ARM_tensors
+INSTANTIATE_TEST_SUITE_P(
+    SPV_ARM_tensors, ExtensionRoundTripTest,
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_6, SPV_ENV_VULKAN_1_0,
+               SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_2, SPV_ENV_VULKAN_1_3,
+               SPV_ENV_OPENCL_2_1),
+        ValuesIn(std::vector<AssemblyCase>{
+            {"OpExtension \"SPV_ARM_tensors\"\n",
+             MakeInstruction(spv::Op::OpExtension,
+                             MakeVector("SPV_ARM_tensors"))},
+            {"OpCapability TensorsARM\n",
+             MakeInstruction(spv::Op::OpCapability,
+                             {(uint32_t)spv::Capability::TensorsARM})},
+            {"OpCapability StorageTensorArrayDynamicIndexingARM\n",
+             MakeInstruction(
+                 spv::Op::OpCapability,
+                 {(uint32_t)
+                      spv::Capability::StorageTensorArrayDynamicIndexingARM})},
+            {"OpCapability StorageTensorArrayNonUniformIndexingARM\n",
+             MakeInstruction(spv::Op::OpCapability,
+                             {(uint32_t)spv::Capability::
+                                  StorageTensorArrayNonUniformIndexingARM})},
+            {"%1 = OpTypeTensorARM %2\n",
+             MakeInstruction(spv::Op::OpTypeTensorARM, {1, 2})},
+            {"%1 = OpTypeTensorARM %2 %3\n",
+             MakeInstruction(spv::Op::OpTypeTensorARM, {1, 2, 3})},
+            {"%1 = OpTypeTensorARM %2 %3 %4\n",
+             MakeInstruction(spv::Op::OpTypeTensorARM, {1, 2, 3, 4})},
+            {"%2 = OpTensorReadARM %1 %3 %4\n",
+             MakeInstruction(spv::Op::OpTensorReadARM, {1, 2, 3, 4})},
+            {"%2 = OpTensorReadARM %1 %3 %4 NoneARM\n",
+             MakeInstruction(spv::Op::OpTensorReadARM,
+                             {1, 2, 3, 4,
+                              (uint32_t)spv::TensorOperandsMask::MaskNone})},
+            {"%2 = OpTensorReadARM %1 %3 %4 NontemporalARM\n",
+             MakeInstruction(
+                 spv::Op::OpTensorReadARM,
+                 {1, 2, 3, 4,
+                  (uint32_t)spv::TensorOperandsMask::NontemporalARM})},
+            {"%2 = OpTensorReadARM %1 %3 %4 OutOfBoundsValueARM %5\n",
+             MakeInstruction(
+                 spv::Op::OpTensorReadARM,
+                 {1, 2, 3, 4,
+                  (uint32_t)spv::TensorOperandsMask::OutOfBoundsValueARM, 5})},
+            {"%2 = OpTensorReadARM %1 %3 %4 MakeElementVisibleARM %5\n",
+             MakeInstruction(
+                 spv::Op::OpTensorReadARM,
+                 {1, 2, 3, 4,
+                  (uint32_t)spv::TensorOperandsMask::MakeElementVisibleARM,
+                  5})},
+            {"%2 = OpTensorReadARM %1 %3 %4 NonPrivateElementARM\n",
+             MakeInstruction(
+                 spv::Op::OpTensorReadARM,
+                 {1, 2, 3, 4,
+                  (uint32_t)spv::TensorOperandsMask::NonPrivateElementARM})},
+            {"OpTensorWriteARM %1 %2 %3\n",
+             MakeInstruction(spv::Op::OpTensorWriteARM, {1, 2, 3})},
+            {"OpTensorWriteARM %1 %2 %3 NoneARM\n",
+             MakeInstruction(spv::Op::OpTensorWriteARM,
+                             {1, 2, 3,
+                              (uint32_t)spv::TensorOperandsMask::MaskNone})},
+            {"OpTensorWriteARM %1 %2 %3 NontemporalARM\n",
+             MakeInstruction(
+                 spv::Op::OpTensorWriteARM,
+                 {1, 2, 3, (uint32_t)spv::TensorOperandsMask::NontemporalARM})},
+            {"OpTensorWriteARM %1 %2 %3 MakeElementAvailableARM %4\n",
+             MakeInstruction(
+                 spv::Op::OpTensorWriteARM,
+                 {1, 2, 3,
+                  (uint32_t)spv::TensorOperandsMask::MakeElementAvailableARM,
+                  4})},
+            {"OpTensorWriteARM %1 %2 %3 NonPrivateElementARM\n",
+             MakeInstruction(
+                 spv::Op::OpTensorWriteARM,
+                 {1, 2, 3,
+                  (uint32_t)spv::TensorOperandsMask::NonPrivateElementARM})},
+            {"%2 = OpTensorQuerySizeARM %1 %3 %4\n",
+             MakeInstruction(spv::Op::OpTensorQuerySizeARM, {1, 2, 3, 4})},
+        })));
+
 }  // namespace
 }  // namespace spvtools

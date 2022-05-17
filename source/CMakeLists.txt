@@ -278,6 +278,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_scopes.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_small_type_uses.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_tensor_layout.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_tensor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_type.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_invalid_type.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/decoration.h
