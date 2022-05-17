@@ -28,7 +28,6 @@ namespace {
 const uint32_t kAccessChainBaseInIdx = 0;
 const uint32_t kAccessChainIndex0InIdx = 1;
 const uint32_t kConstantValueInIdx = 0;
-const uint32_t kVariableStorageClassInIdx = 0;
 
 }  // namespace
 
@@ -42,7 +41,7 @@ Pass::Status EliminateDeadInputComponentsPass::Process() {
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
   bool modified = false;
-  std::vector<std::pair<Instruction*, unsigned>> arrays_to_change;
+  std::vector<Instruction*> vars_to_move;
   for (auto& var : context()->types_values()) {
     if (var.opcode() != spv::Op::OpVariable) {
       continue;
@@ -52,8 +51,14 @@ Pass::Status EliminateDeadInputComponentsPass::Process() {
     if (ptr_type == nullptr) {
       continue;
     }
-    if (ptr_type->storage_class() != spv::StorageClass::Input) {
-      continue;
+    if (output_instead_) {
+      if (ptr_type->storage_class() != spv::StorageClass::Output) {
+        continue;
+      }
+    } else {
+      if (ptr_type->storage_class() != spv::StorageClass::Input) {
+        continue;
+      }
     }
     const analysis::Array* arr_type = ptr_type->pointee_type()->AsArray();
     if (arr_type != nullptr) {
@@ -69,6 +74,7 @@ Pass::Status EliminateDeadInputComponentsPass::Process() {
       unsigned max_idx = FindMaxIndex(var, original_max);
       if (max_idx != original_max) {
         ChangeArrayLength(var, max_idx + 1);
+        vars_to_move.push_back(&var);
         modified = true;
       }
       continue;
@@ -80,8 +86,18 @@ Pass::Status EliminateDeadInputComponentsPass::Process() {
     unsigned max_idx = FindMaxIndex(var, original_max);
     if (max_idx != original_max) {
       ChangeStructLength(var, max_idx + 1);
+      vars_to_move.push_back(&var);
       modified = true;
     }
+  }
+
+  // Move changed vars after their new type instruction to preserve backward
+  // referencing
+  for (auto var : vars_to_move) {
+    auto type_id = var->type_id();
+    auto type_inst = def_use_mgr->GetDef(type_id);
+    var->RemoveFromList();
+    var->InsertAfter(type_inst);
   }
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
@@ -95,7 +111,7 @@ unsigned EliminateDeadInputComponentsPass::FindMaxIndex(Instruction& var,
   context()->get_def_use_mgr()->WhileEachUser(
       var.result_id(), [&max, &seen_non_const_ac, var, this](Instruction* use) {
         auto use_opcode = use->opcode();
-        if (use_opcode == spv::Op::OpLoad ||
+        if (use_opcode == spv::Op::OpLoad || use_opcode == spv::Op::OpStore ||
             use_opcode == spv::Op::OpCopyMemory ||
             use_opcode == spv::Op::OpCopyMemorySized ||
             use_opcode == spv::Op::OpCopyObject) {
@@ -139,18 +155,11 @@ void EliminateDeadInputComponentsPass::ChangeArrayLength(Instruction& arr_var,
   analysis::Array new_arr_ty(arr_ty->element_type(),
                              arr_ty->GetConstantLengthInfo(length_id, length));
   analysis::Type* reg_new_arr_ty = type_mgr->GetRegisteredType(&new_arr_ty);
-  analysis::Pointer new_ptr_ty(reg_new_arr_ty, spv::StorageClass::Input);
+  analysis::Pointer new_ptr_ty(reg_new_arr_ty, ptr_type->storage_class());
   analysis::Type* reg_new_ptr_ty = type_mgr->GetRegisteredType(&new_ptr_ty);
   uint32_t new_ptr_ty_id = type_mgr->GetTypeInstruction(reg_new_ptr_ty);
   arr_var.SetResultType(new_ptr_ty_id);
   def_use_mgr->AnalyzeInstUse(&arr_var);
-  // Move arr_var after its new type to preserve order
-  USE_ASSERT(spv::StorageClass(arr_var.GetSingleWordInOperand(
-                 kVariableStorageClassInIdx)) != spv::StorageClass::Function &&
-             "cannot move Function variable");
-  Instruction* new_ptr_ty_inst = def_use_mgr->GetDef(new_ptr_ty_id);
-  arr_var.RemoveFromList();
-  arr_var.InsertAfter(new_ptr_ty_inst);
 }
 
 void EliminateDeadInputComponentsPass::ChangeStructLength(
@@ -165,25 +174,25 @@ void EliminateDeadInputComponentsPass::ChangeStructLength(
   for (unsigned u = 0; u < length; ++u)
     new_elt_types.push_back(orig_elt_types[u]);
   analysis::Struct new_struct_ty(new_elt_types);
+  uint32_t old_struct_ty_id = type_mgr->GetTypeInstruction(struct_ty);
+  std::vector<Instruction*> decorations =
+      context()->get_decoration_mgr()->GetDecorationsFor(old_struct_ty_id,
+                                                         true);
+  for (auto dec : decorations) {
+    if (dec->opcode() == spv::Op::OpMemberDecorate) {
+      uint32_t midx = dec->GetSingleWordInOperand(1);
+      if (midx >= length) continue;
+    }
+    type_mgr->AttachDecoration(*dec, &new_struct_ty);
+  }
   analysis::Type* reg_new_struct_ty =
       type_mgr->GetRegisteredType(&new_struct_ty);
-  uint32_t new_struct_ty_id = type_mgr->GetTypeInstruction(reg_new_struct_ty);
-  uint32_t old_struct_ty_id = type_mgr->GetTypeInstruction(struct_ty);
-  analysis::DecorationManager* deco_mgr = context()->get_decoration_mgr();
-  deco_mgr->CloneDecorations(old_struct_ty_id, new_struct_ty_id);
-  analysis::Pointer new_ptr_ty(reg_new_struct_ty, spv::StorageClass::Input);
+  analysis::Pointer new_ptr_ty(reg_new_struct_ty, ptr_type->storage_class());
   analysis::Type* reg_new_ptr_ty = type_mgr->GetRegisteredType(&new_ptr_ty);
   uint32_t new_ptr_ty_id = type_mgr->GetTypeInstruction(reg_new_ptr_ty);
   struct_var.SetResultType(new_ptr_ty_id);
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   def_use_mgr->AnalyzeInstUse(&struct_var);
-  // Move struct_var after its new type to preserve order
-  USE_ASSERT(spv::StorageClass(struct_var.GetSingleWordInOperand(
-                 kVariableStorageClassInIdx)) != spv::StorageClass::Function &&
-             "cannot move Function variable");
-  Instruction* new_ptr_ty_inst = def_use_mgr->GetDef(new_ptr_ty_id);
-  struct_var.RemoveFromList();
-  struct_var.InsertAfter(new_ptr_ty_inst);
 }
 
 }  // namespace opt

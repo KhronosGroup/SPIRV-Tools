@@ -888,11 +888,30 @@ Optimizer::PassToken CreateAmdExtToKhrPass();
 Optimizer::PassToken CreateInterpolateFixupPass();
 
 // Removes unused components from composite input variables. Current
-// implementation just removes trailing unused components from input arrays.
-// The pass performs best after maximizing dead code removal. A subsequent dead
-// code elimination pass would be beneficial in removing newly unused component
-// types.
+// implementation just removes trailing unused components from input arrays
+// and structs. The pass performs best after maximizing dead code removal.
+// A subsequent dead code elimination pass would be beneficial in removing
+// newly unused component types.
+//
+// WARNING: This pass can only be safely applied standalone to vertex shaders
+// as it can otherwise cause interface incompatibilities with the preceding
+// shader in the pipeline. If applied to non-vertex shaders, the user should
+// follow by applying EliminateDeadOutputStores and
+// EliminateDeadOutputComponents to the preceding shader.
 Optimizer::PassToken CreateEliminateDeadInputComponentsPass();
+
+// Removes unused components from composite output variables. Current
+// implementation just removes trailing unused components from output arrays
+// and structs. The pass performs best after eliminating dead output stores.
+// A subsequent dead code elimination pass would be beneficial in removing
+// newly unused component types. Currently only supports vertex and fragment
+// shaders.
+//
+// WARNING: This pass cannot be safely applied standalone as it can cause
+// interface incompatibility with the following shader in the pipeline. The
+// user should first apply EliminateDeadInputComponents to the following
+// shader, then apply EliminateDeadOutputStores to this shader.
+Optimizer::PassToken CreateEliminateDeadOutputComponentsPass();
 
 // Analyzes shader and populates |live_locs| and |live_builtins|. Best results
 // will be obtained if shader has all dead code eliminated first. |live_locs|

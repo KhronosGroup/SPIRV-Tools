@@ -1034,6 +1034,12 @@ Optimizer::PassToken CreateEliminateDeadOutputStoresPass(
       MakeUnique<opt::EliminateDeadOutputStoresPass>(live_locs, live_builtins));
 }
 
+Optimizer::PassToken CreateEliminateDeadOutputComponentsPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::EliminateDeadInputComponentsPass>(
+          /* output_instead */ true));
+}
+
 Optimizer::PassToken CreateConvertToSampledImagePass(
     const std::vector<opt::DescriptorSetAndBinding>&
         descriptor_set_binding_pairs) {

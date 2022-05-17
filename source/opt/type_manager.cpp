@@ -476,7 +476,7 @@ void TypeManager::AttachDecorations(uint32_t id, const Type* type) {
     for (auto pair : structTy->element_decorations()) {
       uint32_t element = pair.first;
       for (auto vec : pair.second) {
-        CreateDecoration(id, vec, element);
+        CreateDecoration(id, vec, /* is_member */ true, element);
       }
     }
   }
@@ -484,10 +484,10 @@ void TypeManager::AttachDecorations(uint32_t id, const Type* type) {
 
 void TypeManager::CreateDecoration(uint32_t target,
                                    const std::vector<uint32_t>& decoration,
-                                   uint32_t element) {
+                                   bool is_member, uint32_t element) {
   std::vector<Operand> ops;
   ops.push_back(Operand(SPV_OPERAND_TYPE_ID, {target}));
-  if (element != 0) {
+  if (is_member) {
     ops.push_back(Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {element}));
   }
   ops.push_back(Operand(SPV_OPERAND_TYPE_DECORATION, {decoration[0]}));
@@ -495,9 +495,8 @@ void TypeManager::CreateDecoration(uint32_t target,
     ops.push_back(Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {decoration[i]}));
   }
   context()->AddAnnotationInst(MakeUnique<Instruction>(
-      context(),
-      (element == 0 ? spv::Op::OpDecorate : spv::Op::OpMemberDecorate), 0, 0,
-      ops));
+      context(), (is_member ? spv::Op::OpMemberDecorate : spv::Op::OpDecorate),
+      0, 0, ops));
   Instruction* inst = &*--context()->annotation_end();
   context()->get_def_use_mgr()->AnalyzeInstUse(inst);
 }

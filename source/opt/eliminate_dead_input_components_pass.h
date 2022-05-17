@@ -28,7 +28,8 @@ namespace opt {
 // See optimizer.hpp for documentation.
 class EliminateDeadInputComponentsPass : public Pass {
  public:
-  explicit EliminateDeadInputComponentsPass() {}
+  explicit EliminateDeadInputComponentsPass(bool output_instead = false)
+      : output_instead_(output_instead) {}
 
   const char* name() const override {
     return "eliminate-dead-input-components";
@@ -57,6 +58,9 @@ class EliminateDeadInputComponentsPass : public Pass {
 
   // Change the length of the struct |struct_var| to |length|
   void ChangeStructLength(Instruction& struct_var, unsigned length);
+
+  // Process output variables instead
+  bool output_instead_;
 };
 
 }  // namespace opt
