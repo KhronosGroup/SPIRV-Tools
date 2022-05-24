@@ -136,8 +136,8 @@ std::string LogStringForDecoration(uint32_t decoration) {
       return "PerViewNV";
     case SpvDecorationPerTaskNV:
       return "PerTaskNV";
-    case SpvDecorationPerVertexNV:
-      return "PerVertexNV";
+    case SpvDecorationPerVertexKHR:
+      return "PerVertexKHR";
     case SpvDecorationNonUniform:
       return "NonUniform";
     case SpvDecorationRestrictPointer:
