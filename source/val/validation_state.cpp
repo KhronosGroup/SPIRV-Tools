@@ -1411,6 +1411,18 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
   // Clang format adds spaces between hyphens
   // clang-format off
   switch (id) {
+    case 4154:
+      return VUID_WRAP(VUID-BaryCoordKHR-BaryCoordKHR-04154);
+    case 4155:
+      return VUID_WRAP(VUID-BaryCoordKHR-BaryCoordKHR-04155);
+    case 4156:
+      return VUID_WRAP(VUID-BaryCoordKHR-BaryCoordKHR-04156);
+    case 4160:
+      return VUID_WRAP(VUID-BaryCoordNoPerspKHR-BaryCoordNoPerspKHR-04160);
+    case 4161:
+      return VUID_WRAP(VUID-BaryCoordNoPerspKHR-BaryCoordNoPerspKHR-04161);
+    case 4162:
+      return VUID_WRAP(VUID-BaryCoordNoPerspKHR-BaryCoordNoPerspKHR-04162);
     case 4181:
       return VUID_WRAP(VUID-BaseInstance-BaseInstance-04181);
     case 4182:
