@@ -4126,6 +4126,71 @@ INSTANTIATE_TEST_SUITE_P(
                 "According to the Vulkan spec BuiltIn FullyCoveredEXT variable "
                 "needs to be a bool scalar."))));
 
+INSTANTIATE_TEST_SUITE_P(
+    BaryCoordNotFragment,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("BaryCoordKHR", "BaryCoordNoPerspKHR"), Values("Vertex"),
+        Values("Input"), Values("%f32vec3"),
+        Values("OpCapability FragmentBarycentricKHR\n"),
+        Values("OpExtension \"SPV_KHR_fragment_shader_barycentric\"\n"),
+        Values("VUID-BaryCoordKHR-BaryCoordKHR-04154 "
+               "VUID-BaryCoordNoPerspKHR-BaryCoordNoPerspKHR-04160 "),
+        Values(TestResult(SPV_ERROR_INVALID_DATA, "Vulkan spec allows BuiltIn",
+                          "to be used only with Fragment execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    BaryCoordNotInput,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("BaryCoordKHR", "BaryCoordNoPerspKHR"), Values("Fragment"),
+            Values("Output"), Values("%f32vec3"),
+            Values("OpCapability FragmentBarycentricKHR\n"),
+            Values("OpExtension \"SPV_KHR_fragment_shader_barycentric\"\n"),
+            Values("VUID-BaryCoordKHR-BaryCoordKHR-04155 "
+                   "VUID-BaryCoordNoPerspKHR-BaryCoordNoPerspKHR-04161 "),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA, "Vulkan spec allows BuiltIn",
+                "to be only used for variables with Input storage class"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    BaryCoordNotFloatVector,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("BaryCoordKHR", "BaryCoordNoPerspKHR"), Values("Fragment"),
+        Values("Output"), Values("%f32arr3", "%u32vec4"),
+        Values("OpCapability FragmentBarycentricKHR\n"),
+        Values("OpExtension \"SPV_KHR_fragment_shader_barycentric\"\n"),
+        Values("VUID-BaryCoordKHR-BaryCoordKHR-04156 "
+               "VUID-BaryCoordNoPerspKHR-BaryCoordNoPerspKHR-04162 "),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "needs to be a 3-component 32-bit float vector"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    BaryCoordNotFloatVec3,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("BaryCoordKHR", "BaryCoordNoPerspKHR"), Values("Fragment"),
+        Values("Output"), Values("%f32vec2"),
+        Values("OpCapability FragmentBarycentricKHR\n"),
+        Values("OpExtension \"SPV_KHR_fragment_shader_barycentric\"\n"),
+        Values("VUID-BaryCoordKHR-BaryCoordKHR-04156 "
+               "VUID-BaryCoordNoPerspKHR-BaryCoordNoPerspKHR-04162 "),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "needs to be a 3-component 32-bit float vector"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    BaryCoordNotF32Vec3,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(
+        Values("BaryCoordKHR", "BaryCoordNoPerspKHR"), Values("Fragment"),
+        Values("Output"), Values("%f64vec3"),
+        Values("OpCapability FragmentBarycentricKHR\n"),
+        Values("OpExtension \"SPV_KHR_fragment_shader_barycentric\"\n"),
+        Values("VUID-BaryCoordKHR-BaryCoordKHR-04156 "
+               "VUID-BaryCoordNoPerspKHR-BaryCoordNoPerspKHR-04162 "),
+        Values(TestResult(SPV_ERROR_INVALID_DATA,
+                          "needs to be a 3-component 32-bit float vector"))));
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
