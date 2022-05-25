@@ -39,6 +39,7 @@
 #include "source/opt/empty_pass.h"
 #include "source/opt/fix_func_call_arguments.h"
 #include "source/opt/fix_storage_class.h"
+#include "source/opt/fix_uniform_struct_opaque_pass.h"
 #include "source/opt/flatten_decoration_pass.h"
 #include "source/opt/fold_spec_constant_op_and_composite_pass.h"
 #include "source/opt/freeze_spec_constant_value_pass.h"

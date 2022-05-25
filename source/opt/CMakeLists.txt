@@ -51,6 +51,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   empty_pass.h
   feature_manager.h
   fix_storage_class.h
+  fix_uniform_struct_opaque_pass.h
   flatten_decoration_pass.h
   fold.h
   folding_rules.h
@@ -166,6 +167,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   eliminate_dead_members_pass.cpp
   feature_manager.cpp
   fix_storage_class.cpp
+  fix_uniform_struct_opaque_pass.cpp
   flatten_decoration_pass.cpp
   fold.cpp
   folding_rules.cpp

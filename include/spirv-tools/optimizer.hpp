@@ -917,6 +917,19 @@ Optimizer::PassToken CreateRemoveDontInlinePass();
 // object, currently the pass would remove accesschain pointer argument passed
 // to the function
 Optimizer::PassToken CreateFixFuncCallArgumentsPass();
+// Fix the structures used as uniform that contains opaque sampler types.
+//
+// Glslang, GLSL front-end, with Vulkan relaxed rules enabled,
+// gathers uniforms declared in the global scope into a GL default uniform block.
+// If these uniform have struct type with opaque members (samplers), glslang produces
+// invalid SPIR-V.
+// 
+// This pass fixes these samplers access by extracting them into proper variables and
+// fix storage classes of uniform access.
+// Set descriptor set 'samplers_descriptor_set' and automatically affect a binding
+// on the created variables.
+Optimizer::PassToken CreateFixUniformStructOpaquePass(uint32_t samplers_descriptor_set = 0);
+
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_

@@ -547,6 +547,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
              pass_args.c_str());
       return false;
     }
+  } else if (pass_name == "uniform-struct-opaque-fixup") {
+    RegisterPass(CreateFixUniformStructOpaquePass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
@@ -1040,4 +1042,10 @@ Optimizer::PassToken CreateFixFuncCallArgumentsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::FixFuncCallArgumentsPass>());
 }
+
+Optimizer::PassToken CreateFixUniformStructOpaquePass(uint32_t samplers_descriptor_set) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::FixUniformStructOpaquePass>(samplers_descriptor_set));
+}
+
 }  // namespace spvtools
