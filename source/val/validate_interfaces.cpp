@@ -273,6 +273,18 @@ spv_result_t GetLocationsForVariable(
     } else if (dec.dec_type() == SpvDecorationPerTaskNV) {
       has_per_task_nv = true;
     } else if (dec.dec_type() == SpvDecorationPerVertexKHR) {
+      if (!is_fragment) {
+        return _.diag(SPV_ERROR_INVALID_DATA, variable)
+               << _.VkErrorID(6777)
+               << "PerVertexKHR can only be applied to Fragment Execution "
+                  "Models";
+      }
+      if (type->opcode() != SpvOpTypeArray &&
+          type->opcode() != SpvOpTypeRuntimeArray) {
+        return _.diag(SPV_ERROR_INVALID_DATA, variable)
+               << _.VkErrorID(6778)
+               << "PerVertexKHR must be declared as arrays";
+      }
       has_per_vertex_khr = true;
     }
   }

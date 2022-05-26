@@ -366,6 +366,11 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
           return fail(4670) << "storage class must be Input or Output";
         }
         break;
+      case SpvDecorationPerVertexKHR:
+        if (sc != SpvStorageClassInput) {
+          return fail(6777) << "storage class must be Input";
+        }
+        break;
       default:
         break;
     }
