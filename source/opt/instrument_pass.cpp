@@ -26,7 +26,6 @@ static const int kInstCommonParamInstIdx = 0;
 static const int kInstCommonParamCnt = 1;
 
 // Indices of operands in SPIR-V instructions
-static const int kEntryPointExecutionModelInIdx = 0;
 static const int kEntryPointFunctionIdInIdx = 1;
 
 }  // anonymous namespace
@@ -1056,22 +1055,7 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
   // one model per module. In such cases we will need
   // to clone any functions which are in the call trees of entrypoints
   // with differing execution models.
-  uint32_t ecnt = 0;
-  auto stage = spv::ExecutionModel::Max;
-  for (auto& e : get_module()->entry_points()) {
-    if (ecnt == 0)
-      stage = spv::ExecutionModel(
-          e.GetSingleWordInOperand(kEntryPointExecutionModelInIdx));
-    else if (spv::ExecutionModel(e.GetSingleWordInOperand(
-                 kEntryPointExecutionModelInIdx)) != stage) {
-      if (consumer()) {
-        std::string message = "Mixed stage shader module not supported";
-        consumer()(SPV_MSG_ERROR, 0, {0, 0, 0}, message.c_str());
-      }
-      return false;
-    }
-    ++ecnt;
-  }
+  spv::ExecutionModel stage = context()->GetStage();
   // Check for supported stages
   if (stage != spv::ExecutionModel::Vertex &&
       stage != spv::ExecutionModel::Fragment &&
