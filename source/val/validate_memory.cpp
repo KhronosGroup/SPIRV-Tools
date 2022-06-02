@@ -35,8 +35,8 @@ bool HaveLayoutCompatibleMembers(ValidationState_t&, const Instruction*,
                                  const Instruction*);
 bool HaveSameLayoutDecorations(ValidationState_t&, const Instruction*,
                                const Instruction*);
-bool HasConflictingMemberOffsets(const std::vector<Decoration>&,
-                                 const std::vector<Decoration>&);
+bool HasConflictingMemberOffsets(const std::set<Decoration>&,
+                                 const std::set<Decoration>&);
 
 bool IsAllowedTypeOrArrayOfSame(ValidationState_t& _, const Instruction* type,
                                 std::initializer_list<uint32_t> allowed) {
@@ -105,10 +105,8 @@ bool HaveSameLayoutDecorations(ValidationState_t& _, const Instruction* type1,
          "type1 must be an OpTypeStruct instruction.");
   assert(type2->opcode() == SpvOpTypeStruct &&
          "type2 must be an OpTypeStruct instruction.");
-  const std::vector<Decoration>& type1_decorations =
-      _.id_decorations(type1->id());
-  const std::vector<Decoration>& type2_decorations =
-      _.id_decorations(type2->id());
+  const std::set<Decoration>& type1_decorations = _.id_decorations(type1->id());
+  const std::set<Decoration>& type2_decorations = _.id_decorations(type2->id());
 
   // TODO: Will have to add other check for arrays an matricies if we want to
   // handle them.
@@ -120,8 +118,8 @@ bool HaveSameLayoutDecorations(ValidationState_t& _, const Instruction* type1,
 }
 
 bool HasConflictingMemberOffsets(
-    const std::vector<Decoration>& type1_decorations,
-    const std::vector<Decoration>& type2_decorations) {
+    const std::set<Decoration>& type1_decorations,
+    const std::set<Decoration>& type2_decorations) {
   {
     // We are interested in conflicting decoration.  If a decoration is in one
     // list but not the other, then we will assume the code is correct.  We are

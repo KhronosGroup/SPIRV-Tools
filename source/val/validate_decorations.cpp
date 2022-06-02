@@ -346,10 +346,13 @@ uint32_t getSize(uint32_t member_id, const LayoutConstraints& inherited,
       const auto& lastMember = members.back();
       uint32_t offset = 0xffffffff;
       // Find the offset of the last element and add the size.
-      for (auto& decoration : vstate.id_decorations(member_id)) {
-        if (SpvDecorationOffset == decoration.dec_type() &&
-            decoration.struct_member_index() == (int)lastIdx) {
-          offset = decoration.params()[0];
+      auto member_decorations =
+          vstate.id_member_decorations(member_id, lastIdx);
+      for (auto decoration = member_decorations.begin;
+           decoration != member_decorations.end; ++decoration) {
+        assert(decoration->struct_member_index() == (int)lastIdx);
+        if (SpvDecorationOffset == decoration->dec_type()) {
+          offset = decoration->params()[0];
         }
       }
       // This check depends on the fact that all members have offsets.  This
@@ -445,15 +448,17 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
   for (uint32_t memberIdx = 0, numMembers = uint32_t(members.size());
        memberIdx < numMembers; memberIdx++) {
     uint32_t offset = 0xffffffff;
-    for (auto& decoration : vstate.id_decorations(struct_id)) {
-      if (decoration.struct_member_index() == (int)memberIdx) {
-        switch (decoration.dec_type()) {
-          case SpvDecorationOffset:
-            offset = decoration.params()[0];
-            break;
-          default:
-            break;
-        }
+    auto member_decorations =
+        vstate.id_member_decorations(struct_id, memberIdx);
+    for (auto decoration = member_decorations.begin;
+         decoration != member_decorations.end; ++decoration) {
+      assert(decoration->struct_member_index() == (int)memberIdx);
+      switch (decoration->dec_type()) {
+        case SpvDecorationOffset:
+          offset = decoration->params()[0];
+          break;
+        default:
+          break;
       }
     }
     member_offsets.push_back(
@@ -878,21 +883,23 @@ void ComputeMemberConstraintsForStruct(MemberConstraints* constraints,
     LayoutConstraints& constraint =
         (*constraints)[std::make_pair(struct_id, memberIdx)];
     constraint = inherited;
-    for (auto& decoration : vstate.id_decorations(struct_id)) {
-      if (decoration.struct_member_index() == (int)memberIdx) {
-        switch (decoration.dec_type()) {
-          case SpvDecorationRowMajor:
-            constraint.majorness = kRowMajor;
-            break;
-          case SpvDecorationColMajor:
-            constraint.majorness = kColumnMajor;
-            break;
-          case SpvDecorationMatrixStride:
-            constraint.matrix_stride = decoration.params()[0];
-            break;
-          default:
-            break;
-        }
+    auto member_decorations =
+        vstate.id_member_decorations(struct_id, memberIdx);
+    for (auto decoration = member_decorations.begin;
+         decoration != member_decorations.end; ++decoration) {
+      assert(decoration->struct_member_index() == (int)memberIdx);
+      switch (decoration->dec_type()) {
+        case SpvDecorationRowMajor:
+          constraint.majorness = kRowMajor;
+          break;
+        case SpvDecorationColMajor:
+          constraint.majorness = kColumnMajor;
+          break;
+        case SpvDecorationMatrixStride:
+          constraint.matrix_stride = decoration->params()[0];
+          break;
+        default:
+          break;
       }
     }
 
