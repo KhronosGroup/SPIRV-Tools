@@ -39,7 +39,9 @@ class ScalarReplacementPass : public MemPass {
       : max_num_elements_(limit) {
     name_[0] = '\0';
     strcat(name_, "scalar-replacement=");
-    sprintf(&name_[strlen(name_)], "%d", max_num_elements_);
+    const size_t name_len = strlen(name_);
+    snprintf(&name_[name_len], sizeof(name_) - name_len, "%d",
+             max_num_elements_);
   }
 
   const char* name() const override { return name_; }
