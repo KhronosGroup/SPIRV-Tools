@@ -15,6 +15,7 @@
 #ifndef SOURCE_OPT_SCALAR_REPLACEMENT_PASS_H_
 #define SOURCE_OPT_SCALAR_REPLACEMENT_PASS_H_
 
+#include <cassert>
 #include <cstdio>
 #include <memory>
 #include <queue>
@@ -37,11 +38,10 @@ class ScalarReplacementPass : public MemPass {
  public:
   ScalarReplacementPass(uint32_t limit = kDefaultLimit)
       : max_num_elements_(limit) {
-    name_[0] = '\0';
-    strcat(name_, "scalar-replacement=");
-    const size_t name_len = strlen(name_);
-    snprintf(&name_[name_len], sizeof(name_) - name_len, "%d",
-             max_num_elements_);
+    const auto num_to_write = snprintf(
+        name_, sizeof(name_), "scalar-replacement=%u", max_num_elements_);
+    assert(size_t(num_to_write) < sizeof(name_));
+    (void)num_to_write;  // Mark as unused
   }
 
   const char* name() const override { return name_; }
@@ -255,7 +255,10 @@ class ScalarReplacementPass : public MemPass {
   // Limit on the number of members in an object that will be replaced.
   // 0 means there is no limit.
   uint32_t max_num_elements_;
-  char name_[55];
+  // This has to be big enough to fit "scalar-replacement=" followed by a
+  // uint32_t number written in decimal (so 10 digits), and then a
+  // terminating nul.
+  char name_[30];
 };
 
 }  // namespace opt
