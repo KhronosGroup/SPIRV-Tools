@@ -40,7 +40,7 @@ class ScalarReplacementPass : public MemPass {
       : max_num_elements_(limit) {
     const auto num_to_write = snprintf(
         name_, sizeof(name_), "scalar-replacement=%u", max_num_elements_);
-    assert(size_t(num_to_write) <= sizeof(name_));
+    assert(size_t(num_to_write) < sizeof(name_));
     (void)num_to_write;  // Mark as unused
   }
 
