@@ -524,8 +524,8 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     if (storage_class == SpvStorageClassPushConstant) {
       if (pointee->opcode() != SpvOpTypeStruct) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << "PushConstant OpVariable <id> '" << _.getIdName(inst->id())
-               << "' has illegal type.\n"
+               << _.VkErrorID(6808) << "PushConstant OpVariable <id> '"
+               << _.getIdName(inst->id()) << "' has illegal type.\n"
                << "From Vulkan spec, Push Constant Interface section:\n"
                << "Such variables must be typed as OpTypeStruct";
       }
@@ -552,9 +552,9 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     if (storage_class == SpvStorageClassUniform) {
       if (!IsAllowedTypeOrArrayOfSame(_, pointee, {SpvOpTypeStruct})) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << "Uniform OpVariable <id> '" << _.getIdName(inst->id())
-               << "' has illegal type.\n"
-               << "From Vulkan spec, section 14.5.2:\n"
+               << _.VkErrorID(6807) << "Uniform OpVariable <id> '"
+               << _.getIdName(inst->id()) << "' has illegal type.\n"
+               << "From Vulkan spec:\n"
                << "Variables identified with the Uniform storage class are "
                << "used to access transparent buffer backed resources. Such "
                << "variables must be typed as OpTypeStruct, or an array of "
@@ -565,9 +565,9 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     if (storage_class == SpvStorageClassStorageBuffer) {
       if (!IsAllowedTypeOrArrayOfSame(_, pointee, {SpvOpTypeStruct})) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << "StorageBuffer OpVariable <id> '" << _.getIdName(inst->id())
-               << "' has illegal type.\n"
-               << "From Vulkan spec, section 14.5.2:\n"
+               << _.VkErrorID(6807) << "StorageBuffer OpVariable <id> '"
+               << _.getIdName(inst->id()) << "' has illegal type.\n"
+               << "From Vulkan spec:\n"
                << "Variables identified with the StorageBuffer storage class "
                   "are used to access transparent buffer backed resources. "
                   "Such variables must be typed as OpTypeStruct, or an array "
