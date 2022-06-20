@@ -286,7 +286,9 @@ protected:
 
 	AccessChainKey generate_access_chain_key(IRContext* cxt, const Instruction& inst) {
 		if (inst.opcode()==SpvOpVariable) {
-			return AccessChainKey{inst.result_id(),{}};
+			AccessChainKey k;
+			k.root_variable_id = inst.result_id();
+			return k;
 		}
 		else if (inst.opcode()==SpvOpAccessChain) {
 			const Instruction*const parent_inst = cxt->get_def_use_mgr()->GetDef(
