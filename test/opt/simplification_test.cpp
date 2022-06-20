@@ -385,6 +385,35 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<SimplificationPass>(text, text, false);
 }
+
+TEST_F(SimplificationTest, EquivalantFloatTypes) {
+  const std::string text = R"(
+; CHECK: %float_0_540302277 = OpConstant %float 0.540302277
+; CHECK: OpStore {{%\w+}} %float_0_540302277
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %4
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %float RelaxedPrecision
+               OpDecorate %4 Location 0
+       %void = OpTypeVoid
+         %67 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %float_1 = OpConstant %float 1
+%_ptr_Output_float = OpTypePointer Output %float
+          %4 = OpVariable %_ptr_Output_float Output
+          %2 = OpFunction %void None %67
+        %117 = OpLabel
+        %126 = OpFNegate %float %float_1
+        %128 = OpExtInst %float %1 Cos %126
+               OpStore %4 %128
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<SimplificationPass>(text, false);
+}
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

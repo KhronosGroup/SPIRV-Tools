@@ -1361,9 +1361,10 @@ UnaryScalarFoldingRule FoldFTranscendentalUnary(double (*fp)(double)) {
       [fp](const analysis::Type* result_type, const analysis::Constant* a,
            analysis::ConstantManager* const_mgr) -> const analysis::Constant* {
         assert(result_type != nullptr && a != nullptr);
+        assert(result_type->AsFloat() != nullptr);
         const analysis::Float* float_type = a->type()->AsFloat();
         assert(float_type != nullptr);
-        assert(float_type == result_type->AsFloat());
+        assert(float_type->width() == result_type->AsFloat()->width());
         if (float_type->width() == 32) {
           float fa = a->GetFloat();
           float res = static_cast<float>(fp(fa));
