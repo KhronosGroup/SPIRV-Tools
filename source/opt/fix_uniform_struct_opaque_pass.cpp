@@ -87,7 +87,7 @@ uint32_t GetAccessChainIndex(IRContext* cxt,const Instruction& inst_accesschain,
 }
 
 // inst_accesschain: SpvOpAccessChain
-uint32_t GetAccessChainCount(IRContext* cxt,const Instruction& inst_accesschain) {
+uint32_t GetAccessChainCount(const Instruction& inst_accesschain) {
 	assert(inst_accesschain.opcode()==SpvOpAccessChain);
 	return inst_accesschain.NumInOperands()-1u;
 }
@@ -158,7 +158,7 @@ uint32_t GetNextBindingIndex(
 					}
 				});
 			assert((cur_descriptor_set!=~0u)==(cur_binding!=~0u));
-			if (cur_descriptor_set!=~0u && cur_binding!=~0u) {
+			if (cur_descriptor_set==samplers_descriptor_set && cur_binding!=~0u) {
 				// Use same descriptor set, retrieve maximum binding
 				res_binding = std::max(res_binding,cur_binding+1u);
 			}
@@ -286,7 +286,7 @@ protected:
 
 	AccessChainKey generate_access_chain_key(IRContext* cxt, const Instruction& inst) {
 		if (inst.opcode()==SpvOpVariable) {
-			return {inst.result_id(),{}};
+			return AccessChainKey{inst.result_id(),{}};
 		}
 		else if (inst.opcode()==SpvOpAccessChain) {
 			const Instruction*const parent_inst = cxt->get_def_use_mgr()->GetDef(
@@ -300,7 +300,7 @@ protected:
 
 			uint32_t struct_id = GetPtrTypeId(cxt, parent_inst->type_id());
 
-			const uint32_t access_chain_count = GetAccessChainCount(cxt, inst);
+			const uint32_t access_chain_count = GetAccessChainCount(inst);
 			for (uint32_t access_index = 0u; access_index<access_chain_count; ++access_index) {
 				assert(struct_id!=0u);
 				if (struct_id==0u) return {};                                       // Sanity check
@@ -344,7 +344,7 @@ protected:
 			// Must be done before adding any instruction to avoid definition manager related issue
 			samplers_next_binding_ = GetNextBindingIndex(cxt, samplers_descriptor_set_);
 		}
-		assert(samplers_next_binding_!=~0);
+		assert(samplers_next_binding_!=~0u);
 		return samplers_next_binding_++;
 	}
 };
