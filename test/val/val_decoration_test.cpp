@@ -50,20 +50,20 @@ TEST_F(ValidateDecorations, ValidateOpDecorateRegistration) {
     OpCapability Shader
     OpCapability Linkage
     OpMemoryModel Logical GLSL450
-    OpDecorate %1 ArrayStride 4
-    OpDecorate %1 RelaxedPrecision
+    OpDecorate %1 Location 4
+    OpDecorate %1 Centroid
     %2 = OpTypeFloat 32
-    %1 = OpTypeRuntimeArray %2
+    %3 = OpTypePointer Output %2
+    %1 = OpVariable %3 Output
     ; Since %1 is used first in Decoration, it gets id 1.
 )";
   const uint32_t id = 1;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
   // Must have 2 decorations.
-  EXPECT_THAT(
-      vstate_->id_decorations(id),
-      Eq(std::set<Decoration>{Decoration(SpvDecorationArrayStride, {4}),
-                              Decoration(SpvDecorationRelaxedPrecision)}));
+  EXPECT_THAT(vstate_->id_decorations(id),
+              Eq(std::set<Decoration>{Decoration(SpvDecorationLocation, {4}),
+                                      Decoration(SpvDecorationCentroid)}));
 }
 
 TEST_F(ValidateDecorations, ValidateOpMemberDecorateRegistration) {
