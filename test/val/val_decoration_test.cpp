@@ -8363,6 +8363,52 @@ TEST_F(ValidateDecorations, PerVertexVulkanNonArray) {
               HasSubstr("PerVertexKHR must be declared as arrays"));
 }
 
+TEST_F(ValidateDecorations, RelaxedPrecisionDecorationOnNumericTypeBad) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %float RelaxedPrecision
+       %void = OpTypeVoid
+      %voidfn = OpTypeFunction %void
+      %float = OpTypeFloat 32
+       %main = OpFunction %void None %voidfn
+      %label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("RelaxPrecision decoration cannot be applied to a type"));
+}
+
+TEST_F(ValidateDecorations, RelaxedPrecisionDecorationOnStructMember) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpMemberDecorate %struct 0 RelaxedPrecision
+       %void = OpTypeVoid
+     %voidfn = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %struct = OpTypeStruct %float
+       %main = OpFunction %void None %voidfn
+      %label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(env));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

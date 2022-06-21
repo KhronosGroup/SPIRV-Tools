@@ -1661,6 +1661,24 @@ spv_result_t CheckLocationDecoration(ValidationState_t& vstate,
             "of a structure type";
 }
 
+spv_result_t CheckRelaxPrecisionDecoration(ValidationState_t& vstate,
+                                           const Instruction& inst,
+                                           const Decoration& decoration) {
+  // This is not the most precise check, but the rules for RelaxPrecision are
+  // very general, and it will be difficult to implement precisely.  For now,
+  // I will only check for the cases that cause problems for the optimizer.
+  if (!spvOpcodeGeneratesType(inst.opcode())) {
+    return SPV_SUCCESS;
+  }
+
+  if (decoration.struct_member_index() != Decoration::kInvalidMember &&
+      inst.opcode() == SpvOpTypeStruct) {
+    return SPV_SUCCESS;
+  }
+  return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+         << "RelaxPrecision decoration cannot be applied to a type";
+}
+
 #define PASS_OR_BAIL_AT_LINE(X, LINE)           \
   {                                             \
     spv_result_t e##LINE = (X);                 \
@@ -1714,6 +1732,10 @@ spv_result_t CheckDecorationsFromDecoration(ValidationState_t& vstate) {
           break;
         case SpvDecorationLocation:
           PASS_OR_BAIL(CheckLocationDecoration(vstate, *inst, decoration));
+          break;
+        case SpvDecorationRelaxedPrecision:
+          PASS_OR_BAIL(
+              CheckRelaxPrecisionDecoration(vstate, *inst, decoration));
           break;
         default:
           break;
