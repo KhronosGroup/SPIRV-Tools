@@ -25,6 +25,7 @@
 #include "source/util/string_utils.h"
 #include "type_manager.h"
 #include "def_use_manager.h"
+#include "constants.h"
 
 namespace spvtools {
 namespace opt {
@@ -114,28 +115,118 @@ bool SetPointerStorageClassUniform(IRContext* cxt, uint32_t inst_ptr_id) {
 }
 
 // Set Uniform storage class on whole branch of access chains
-void RecursiveFixAccessChainStorageClass(IRContext* cxt, Instruction* inst)
+// Also fix loading of boolean (type mismatch on structure that contains opaque)
+class FixVariableAccessChain
 {
-	cxt->get_def_use_mgr()->ForEachUser(
-		inst,
-		[cxt](Instruction* inst_user) {
-			if (inst_user->opcode()==SpvOpAccessChain) {
-				// Fix pointer storage class
-				SetPointerStorageClassUniform(cxt, inst_user->type_id());
-				RecursiveFixAccessChainStorageClass(cxt, inst_user);
-			}
-		});
-}
+public:
+	// Set Uniform storage class of variable and whole branch of access chains
+	// Also fix loading of boolean in downstream access chain 
+	// inst_variable: SpvOpVariable
+	void process(IRContext* cxt,Instruction* inst_variable)
+	{
+		assert(inst_variable->opcode()==SpvOpVariable);
+		inst_variable->SetInOperand(0u,{(uint32_t)SpvStorageClassUniform});  // Fix the storage class of the variable
+		SetPointerStorageClassUniform(cxt,inst_variable->type_id());         // And also the pointer
+		process_recursive_accesschain(cxt,inst_variable);                    // Recursive fix on access chain that use this variable
+	}
 
-// Set Uniform storage class of variable and whole branch of access chains
-// inst_variable: SpvOpVariable
-void FixVariableStorageClass(IRContext* cxt,Instruction* inst_variable)
-{
-	assert(inst_variable->opcode()==SpvOpVariable);
-	inst_variable->SetInOperand(0u,{(uint32_t)SpvStorageClassUniform});  // Fix the storage class of the variable
-	SetPointerStorageClassUniform(cxt,inst_variable->type_id());         // And also the pointer
-	RecursiveFixAccessChainStorageClass(cxt,inst_variable);              // Recursive fix on access chain that use this variable
-}
+protected:
+	uint32_t bool_type_id_ = 0u;
+	uint32_t u32_type_id_ = 0u;
+	uint32_t ptr_uniform_u32_type_id_ = 0u;
+	uint32_t cst_0u_id_ = 0u;
+
+
+	void process_recursive_accesschain(IRContext* cxt,Instruction* inst)
+	{
+		cxt->get_def_use_mgr()->ForEachUser(
+			inst,
+			[this,cxt](Instruction* inst_user) {
+				if (inst_user->opcode()==SpvOpAccessChain) {
+					// Fix pointer storage class
+					SetPointerStorageClassUniform(cxt,inst_user->type_id());
+
+					// Fix loading of boolean/int mismatch
+					uint32_t ptr_type_id = GetPtrTypeId(cxt,inst_user->type_id());
+					assert(ptr_type_id!=0u);
+					if (ptr_type_id==0u) return;                                // Sanity check
+					Instruction*const ptr_type_inst = cxt->get_def_use_mgr()->GetDef(ptr_type_id);
+					assert(ptr_type_inst!=nullptr);
+					if (ptr_type_inst==nullptr) return;                         // Sanity check
+
+					if (ptr_type_inst->opcode()==SpvOpTypeBool) {
+						bool_type_id_ = ptr_type_id;
+						fix_accesschain_bool(cxt,inst_user);
+					}
+					else if (ptr_type_inst->opcode()==SpvOpTypeStruct) {
+						process_recursive_accesschain(cxt,inst_user);
+					}
+				}
+			});
+	}
+
+	// %a = OpAccessChain %_ptr_Uniform_bool <base> <index>
+	// %b = OpLoad %bool %a
+	//   -->
+	// %a = OpAccessChain %_ptr_Uniform_uint <base> <index>
+	// %b = OpLoad %uint %a
+	// %c = OpINotEqual %bool %b %uint_0
+	void fix_accesschain_bool(IRContext* cxt,Instruction* accesschain_inst)
+	{
+		assert(accesschain_inst!=nullptr);
+		assert(bool_type_id_!=0u);
+
+		// Retrieve required types & constants if first call
+		if (u32_type_id_==0u) {
+			// First use, retrieve/create the vec4 type
+			auto* const type_mgr = cxt->get_type_mgr();
+			u32_type_id_ = type_mgr->GetUIntTypeId();
+			ptr_uniform_u32_type_id_ = type_mgr->FindPointerToType(u32_type_id_,SpvStorageClassUniform);
+			auto* const cst_mgr = cxt->get_constant_mgr();
+			const auto*const cst_0u = cst_mgr->GetConstant(type_mgr->GetType(u32_type_id_), {0u});
+			const Instruction*const cst_0u_inst = cst_mgr->GetDefiningInstruction(cst_0u);
+			assert(cst_0u_inst!=nullptr);
+			cst_0u_id_ = cst_0u_inst!=nullptr ?                                 // Sanity check
+				cst_0u_inst->result_id() :
+				0u;
+		}
+		assert(u32_type_id_!=0u);
+		assert(ptr_uniform_u32_type_id_!=0u);
+		assert(cst_0u_id_!=0u);
+
+		// Replace OpAccessChain ptr bool result type by ptr u32
+		accesschain_inst->SetResultType(ptr_uniform_u32_type_id_);
+
+		cxt->get_def_use_mgr()->ForEachUser(
+			accesschain_inst,
+			[this,cxt](Instruction* load_inst) {
+				assert(load_inst->opcode()==SpvOpLoad);
+				if (load_inst->opcode()!=SpvOpLoad) return;                     // Sanity check
+
+				// Replace SpvOpLoad bool result type by u32
+				load_inst->SetResultType(u32_type_id_);
+				
+				// Create OpINotEqual instruction
+				const uint32_t inotequal_id = cxt->TakeNextId();
+				Instruction*const inotequal_inst = new Instruction(
+					cxt,
+					SpvOpINotEqual,
+					bool_type_id_,
+					inotequal_id,
+					std::initializer_list<Operand>{
+						{SPV_OPERAND_TYPE_ID, {load_inst->result_id()}},
+						{SPV_OPERAND_TYPE_ID, {cst_0u_id_}}});
+				inotequal_inst->InsertAfter(load_inst);
+
+				cxt->get_def_use_mgr()->ForEachUse(
+					load_inst,
+					[inotequal_id](Instruction* load_user_inst, uint32_t logical_operand_index) {
+						// Load users now use OpINotEqual
+						load_user_inst->SetOperand(logical_operand_index,{inotequal_id});
+					});
+			});
+	}
+};
 
 // Get the net valid binding index for a specific descriptor set
 uint32_t GetNextBindingIndex(
@@ -206,16 +297,16 @@ public:
 				SpvOpName,
 				0u,              // no type id
 				0u,              // no result id
-				std::initializer_list<Operand>{{
-					SPV_OPERAND_TYPE_ID, {inst_variable_id}},
+				std::initializer_list<Operand>{
+					{SPV_OPERAND_TYPE_ID, {inst_variable_id}},
 					{SPV_OPERAND_TYPE_LITERAL_STRING, utils::MakeVector(chain_key.flatten_name)}})));
 			cxt->module()->AddAnnotationInst(std::unique_ptr<Instruction>(new Instruction(
 				cxt,
 				SpvOpDecorate,
 				0u,              // no type id
 				0u,              // no result id
-				std::initializer_list<Operand>{{
-					SPV_OPERAND_TYPE_ID, {inst_variable_id}},
+				std::initializer_list<Operand>{
+					{SPV_OPERAND_TYPE_ID, {inst_variable_id}},
 					{SPV_OPERAND_TYPE_DECORATION, {SpvDecorationDescriptorSet}},
 					{SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER, {samplers_descriptor_set_}}})));
 			cxt->module()->AddAnnotationInst(std::unique_ptr<Instruction>(new Instruction(
@@ -223,8 +314,8 @@ public:
 				SpvOpDecorate,
 				0u,               // no type id
 				0u,              // no result id
-				std::initializer_list<Operand>{{
-					SPV_OPERAND_TYPE_ID, {inst_variable_id}},
+				std::initializer_list<Operand>{
+					{SPV_OPERAND_TYPE_ID, {inst_variable_id}},
 					{SPV_OPERAND_TYPE_DECORATION, {SpvDecorationBinding}},
 					{SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER, {binding_index}}})));
 
@@ -247,11 +338,12 @@ public:
 			root_variable_ids.end());
 
 		// Note: should have only one variable: GL default uniform block
+		FixVariableAccessChain fix_var_accesschain;
 		for (uint32_t root_variable_id : root_variable_ids) {
 			Instruction*const inst_root_variable = cxt->get_def_use_mgr()->GetDef(root_variable_id);
 			assert(inst_root_variable!=nullptr);
 			if (inst_root_variable==nullptr) continue;                      // Sanity check
-			FixVariableStorageClass(cxt, inst_root_variable);
+			fix_var_accesschain.process(cxt, inst_root_variable);
 		}
 	}
 
@@ -442,6 +534,8 @@ Pass::Status FixUniformStructOpaquePass::Process() {
 
 		context()->InvalidateAnalyses((IRContext::Analysis)(
 			IRContext::kAnalysisTypes|
+			IRContext::kAnalysisConstants|
+			IRContext::kAnalysisCFG|
 			IRContext::kAnalysisDecorations|
 			IRContext::kAnalysisDefUse|
 			IRContext::kAnalysisInstrToBlockMapping));
