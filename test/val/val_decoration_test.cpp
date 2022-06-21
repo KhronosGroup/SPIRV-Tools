@@ -50,20 +50,20 @@ TEST_F(ValidateDecorations, ValidateOpDecorateRegistration) {
     OpCapability Shader
     OpCapability Linkage
     OpMemoryModel Logical GLSL450
-    OpDecorate %1 ArrayStride 4
-    OpDecorate %1 RelaxedPrecision
+    OpDecorate %1 Location 4
+    OpDecorate %1 Centroid
     %2 = OpTypeFloat 32
-    %1 = OpTypeRuntimeArray %2
+    %3 = OpTypePointer Output %2
+    %1 = OpVariable %3 Output
     ; Since %1 is used first in Decoration, it gets id 1.
 )";
   const uint32_t id = 1;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
   // Must have 2 decorations.
-  EXPECT_THAT(
-      vstate_->id_decorations(id),
-      Eq(std::set<Decoration>{Decoration(SpvDecorationArrayStride, {4}),
-                              Decoration(SpvDecorationRelaxedPrecision)}));
+  EXPECT_THAT(vstate_->id_decorations(id),
+              Eq(std::set<Decoration>{Decoration(SpvDecorationLocation, {4}),
+                                      Decoration(SpvDecorationCentroid)}));
 }
 
 TEST_F(ValidateDecorations, ValidateOpMemberDecorateRegistration) {
@@ -8361,6 +8361,52 @@ TEST_F(ValidateDecorations, PerVertexVulkanNonArray) {
               AnyVUID("VUID-StandaloneSpirv-Input-06778"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("PerVertexKHR must be declared as arrays"));
+}
+
+TEST_F(ValidateDecorations, RelaxedPrecisionDecorationOnNumericTypeBad) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %float RelaxedPrecision
+       %void = OpTypeVoid
+      %voidfn = OpTypeFunction %void
+      %float = OpTypeFloat 32
+       %main = OpFunction %void None %voidfn
+      %label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("RelaxPrecision decoration cannot be applied to a type"));
+}
+
+TEST_F(ValidateDecorations, RelaxedPrecisionDecorationOnStructMember) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpMemberDecorate %struct 0 RelaxedPrecision
+       %void = OpTypeVoid
+     %voidfn = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %struct = OpTypeStruct %float
+       %main = OpFunction %void None %voidfn
+      %label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(env));
 }
 
 }  // namespace
