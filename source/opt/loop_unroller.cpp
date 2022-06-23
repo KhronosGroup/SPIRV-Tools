@@ -384,6 +384,7 @@ void LoopUnrollerUtilsImpl::PartiallyUnrollResidualFactor(Loop* loop,
   std::unique_ptr<Instruction> new_label{new Instruction(
       context_, SpvOp::SpvOpLabel, 0, context_->TakeNextId(), {})};
   std::unique_ptr<BasicBlock> new_exit_bb{new BasicBlock(std::move(new_label))};
+  new_exit_bb->SetParent(&function_);
 
   // Save the id of the block before we move it.
   uint32_t new_merge_id = new_exit_bb->id();
