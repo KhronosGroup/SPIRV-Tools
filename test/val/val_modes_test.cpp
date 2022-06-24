@@ -89,6 +89,68 @@ OpDecorate %int3_1 BuiltIn WorkgroupSize
   EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(env));
 }
 
+TEST_F(ValidateMode, GLComputeZeroWorkgroupSize) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpDecorate %int3_1 BuiltIn WorkgroupSize
+%int = OpTypeInt 32 0
+%int3 = OpTypeVector %int 3
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int3_1 = OpConstantComposite %int3 %int_1 %int_0 %int_0
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("WorkgroupSize decorations must not have a product of zero."));
+}
+
+TEST_F(ValidateMode, GLComputeZeroSpecWorkgroupSize) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpDecorate %int3_1 BuiltIn WorkgroupSize
+%int = OpTypeInt 32 0
+%int3 = OpTypeVector %int 3
+%int_0 = OpSpecConstant %int 0
+%int_1 = OpConstant %int 1
+%int3_1 = OpConstantComposite %int3 %int_1 %int_0 %int_0
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("WorkgroupSize decorations must not have a product of zero."));
+}
+
+TEST_F(ValidateMode, KernelZeroWorkgroupSize) {
+  const std::string spirv = R"(
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Kernel
+OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %main "main"
+OpDecorate %int3_1 BuiltIn WorkgroupSize
+%int = OpTypeInt 32 0
+%int3 = OpTypeVector %int 3
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int3_1 = OpConstantComposite %int3 %int_1 %int_0 %int_0
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("WorkgroupSize decorations must not have a product of zero."));
+}
+
 TEST_F(ValidateMode, GLComputeVulkanLocalSize) {
   const std::string spirv = R"(
 OpCapability Shader
@@ -100,6 +162,38 @@ OpExecutionMode %main LocalSize 1 1 1
   spv_target_env env = SPV_ENV_VULKAN_1_0;
   CompileSuccessfully(spirv, env);
   EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+TEST_F(ValidateMode, GLComputeZeroLocalSize) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 0
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Local Size execution mode must not have a product of zero."));
+}
+
+TEST_F(ValidateMode, KernelZeroLocalSize) {
+  const std::string spirv = R"(
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Kernel
+OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %main "main"
+OpExecutionMode %main LocalSize 1 1 0
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Local Size execution mode must not have a product of zero."));
 }
 
 TEST_F(ValidateMode, GLComputeVulkanLocalSizeIdBad) {
@@ -134,6 +228,68 @@ OpExecutionModeId %main LocalSizeId %int_1 %int_1 %int_1
   CompileSuccessfully(spirv, env);
   spvValidatorOptionsSetAllowLocalSizeId(getValidatorOptions(), true);
   EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+TEST_F(ValidateMode, GLComputeZeroLocalSizeId) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionModeId %main LocalSizeId %int_1 %int_0 %int_1
+%int = OpTypeInt 32 0
+%int_1 = OpConstant %int 1
+%int_0 = OpConstant %int 0
+)" + kVoidFunction;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Local Size Id execution mode must not have a product of zero."));
+}
+
+TEST_F(ValidateMode, GLComputeZeroSpecLocalSizeId) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionModeId %main LocalSizeId %int_1 %int_0 %int_1
+%int = OpTypeInt 32 0
+%int_1 = OpConstant %int 1
+%int_0 = OpSpecConstant %int 0
+)" + kVoidFunction;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Local Size Id execution mode must not have a product of zero."));
+}
+
+TEST_F(ValidateMode, KernelZeroLocalSizeId) {
+  const std::string spirv = R"(
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Kernel
+OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %main "main"
+OpExecutionModeId %main LocalSizeId %int_1 %int_0 %int_1
+%int = OpTypeInt 32 0
+%int_1 = OpConstant %int 1
+%int_0 = OpConstant %int 0
+)" + kVoidFunction;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Local Size Id execution mode must not have a product of zero."));
 }
 
 TEST_F(ValidateMode, FragmentOriginLowerLeftVulkan) {

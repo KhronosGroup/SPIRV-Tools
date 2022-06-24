@@ -266,10 +266,21 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
                << "BuiltIns can only target variables, structure members or "
                   "constants";
       }
-      if (_.HasCapability(SpvCapabilityShader) &&
-          inst->GetOperandAs<SpvBuiltIn>(2) == SpvBuiltInWorkgroupSize) {
-        if (!spvOpcodeIsConstant(target->opcode())) {
+      if (inst->GetOperandAs<SpvBuiltIn>(2) == SpvBuiltInWorkgroupSize) {
+        if (_.HasCapability(SpvCapabilityShader) &&
+            !spvOpcodeIsConstant(target->opcode())) {
           return fail(0) << "must be a constant for WorkgroupSize";
+        }
+
+        uint64_t x_size, y_size, z_size;
+        bool static_x = _.GetConstantValUint64(target->word(3), &x_size);
+        bool static_y = _.GetConstantValUint64(target->word(4), &y_size);
+        bool static_z = _.GetConstantValUint64(target->word(5), &z_size);
+        if (static_x && static_y && static_z &&
+            ((x_size * y_size * z_size) == 0)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "WorkgroupSize decorations must not have a product of "
+                    "zero.";
         }
       } else if (target->opcode() != SpvOpVariable) {
         return fail(0) << "must be a variable";

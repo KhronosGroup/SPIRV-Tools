@@ -286,6 +286,34 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  const Instruction* local_size_inst =
+      _.GetLocalSizeInstruction(entry_point_id);
+  if (local_size_inst) {
+    const uint32_t x = local_size_inst->word(3);
+    const uint32_t y = local_size_inst->word(4);
+    const uint32_t z = local_size_inst->word(5);
+    if ((x * y * z) == 0) {
+      return _.diag(SPV_ERROR_INVALID_DATA, local_size_inst)
+             << "Local Size execution mode must not have a product of zero.";
+    }
+  }
+
+  const Instruction* local_size_id_inst =
+      _.GetLocalSizeIdInstruction(entry_point_id);
+  if (local_size_id_inst) {
+    uint64_t x_size, y_size, z_size;
+    bool static_x =
+        _.GetConstantValUint64(local_size_id_inst->word(3), &x_size);
+    bool static_y =
+        _.GetConstantValUint64(local_size_id_inst->word(4), &y_size);
+    bool static_z =
+        _.GetConstantValUint64(local_size_id_inst->word(5), &z_size);
+    if (static_x && static_y && static_z && ((x_size * y_size * z_size) == 0)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, local_size_inst)
+             << "Local Size Id execution mode must not have a product of zero.";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 

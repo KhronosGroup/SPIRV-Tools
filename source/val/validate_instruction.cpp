@@ -474,10 +474,8 @@ spv_result_t InstructionPass(ValidationState_t& _, const Instruction* inst) {
     }
     _.set_addressing_model(inst->GetOperandAs<SpvAddressingModel>(0));
     _.set_memory_model(inst->GetOperandAs<SpvMemoryModel>(1));
-  } else if (opcode == SpvOpExecutionMode) {
-    const uint32_t entry_point = inst->word(1);
-    _.RegisterExecutionModeForEntryPoint(entry_point,
-                                         SpvExecutionMode(inst->word(2)));
+  } else if (opcode == SpvOpExecutionMode || opcode == SpvOpExecutionModeId) {
+    _.RegisterExecutionModeForEntryPoint(inst);
   } else if (opcode == SpvOpVariable) {
     const auto storage_class = inst->GetOperandAs<SpvStorageClass>(2);
     if (auto error = LimitCheckNumVars(_, inst->id(), storage_class)) {
