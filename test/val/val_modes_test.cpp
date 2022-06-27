@@ -106,7 +106,8 @@ OpDecorate %int3_1 BuiltIn WorkgroupSize
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("WorkgroupSize decorations must not have a product of zero."));
+      HasSubstr(
+          "WorkgroupSize decorations must not have a static product of zero."));
 }
 
 TEST_F(ValidateMode, GLComputeZeroSpecWorkgroupSize) {
@@ -126,10 +127,11 @@ OpDecorate %int3_1 BuiltIn WorkgroupSize
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("WorkgroupSize decorations must not have a product of zero."));
+      HasSubstr(
+          "WorkgroupSize decorations must not have a static product of zero."));
 }
 
-TEST_F(ValidateMode, KernelZeroWorkgroupSize) {
+TEST_F(ValidateMode, KernelZeroWorkgroupSizeConstant) {
   const std::string spirv = R"(
 OpCapability Addresses
 OpCapability Linkage
@@ -148,7 +150,26 @@ OpDecorate %int3_1 BuiltIn WorkgroupSize
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("WorkgroupSize decorations must not have a product of zero."));
+      HasSubstr(
+          "WorkgroupSize decorations must not have a static product of zero."));
+}
+
+TEST_F(ValidateMode, KernelZeroWorkgroupSizeVariable) {
+  const std::string spirv = R"(
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Kernel
+OpMemoryModel Physical32 OpenCL
+OpEntryPoint Kernel %main "main"
+OpDecorate %var BuiltIn WorkgroupSize
+%int = OpTypeInt 32 0
+%int3 = OpTypeVector %int 3
+%ptr = OpTypePointer Input %int3
+%var = OpVariable %ptr Input
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateMode, GLComputeVulkanLocalSize) {
