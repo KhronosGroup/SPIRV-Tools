@@ -861,12 +861,13 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     std::vector<std::pair<uint32_t, uint32_t>> back_edges;
     auto ignore_block = [](const BasicBlock*) {};
     auto ignore_edge = [](const BasicBlock*, const BasicBlock*) {};
+    auto no_terminal_blocks = [](const BasicBlock*) { return false; };
     if (!function.ordered_blocks().empty()) {
       /// calculate dominators
       CFA<BasicBlock>::DepthFirstTraversal(
           function.first_block(), function.AugmentedCFGSuccessorsFunction(),
           ignore_block, [&](const BasicBlock* b) { postorder.push_back(b); },
-          ignore_edge);
+          ignore_edge, no_terminal_blocks);
       auto edges = CFA<BasicBlock>::CalculateDominators(
           postorder, function.AugmentedCFGPredecessorsFunction());
       for (auto edge : edges) {
@@ -879,7 +880,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
           function.pseudo_exit_block(),
           function.AugmentedCFGPredecessorsFunction(), ignore_block,
           [&](const BasicBlock* b) { postdom_postorder.push_back(b); },
-          ignore_edge);
+          ignore_edge, no_terminal_blocks);
       auto postdom_edges = CFA<BasicBlock>::CalculateDominators(
           postdom_postorder, function.AugmentedCFGSuccessorsFunction());
       for (auto edge : postdom_edges) {
@@ -893,7 +894,8 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
           ignore_block, ignore_block,
           [&](const BasicBlock* from, const BasicBlock* to) {
             back_edges.emplace_back(from->id(), to->id());
-          });
+          },
+          no_terminal_blocks);
     }
     UpdateContinueConstructExitBlocks(function, back_edges);
 
