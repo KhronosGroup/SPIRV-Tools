@@ -64,10 +64,25 @@ class BasicBlock {
   /// Returns the successors of the BasicBlock
   std::vector<BasicBlock*>* successors() { return &successors_; }
 
-  std::vector<BasicBlock*>* structural_predecessors() { return &structural_predecessors_; }
-  const std::vector<BasicBlock*>* structural_predecessors() const { return &structural_predecessors_; }
-  std::vector<BasicBlock*>* structural_successors() { return &structural_successors_; }
-  const std::vector<BasicBlock*>* structural_successors() const { return &structural_successors_; }
+  /// Returns the structural successors of the BasicBlock
+  std::vector<BasicBlock*>* structural_predecessors() {
+    return &structural_predecessors_;
+  }
+
+  /// Returns the structural predecessors of the BasicBlock
+  const std::vector<BasicBlock*>* structural_predecessors() const {
+    return &structural_predecessors_;
+  }
+
+  /// Returns the structural successors of the BasicBlock
+  std::vector<BasicBlock*>* structural_successors() {
+    return &structural_successors_;
+  }
+
+  /// Returns the structural predecessors of the BasicBlock
+  const std::vector<BasicBlock*>* structural_successors() const {
+    return &structural_successors_;
+  }
 
   /// Returns true if the block is structurally reachable in the CFG.
   bool reachable() const { return reachable_; }

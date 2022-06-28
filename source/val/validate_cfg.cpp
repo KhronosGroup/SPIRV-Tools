@@ -736,7 +736,8 @@ spv_result_t StructuredControlFlowChecks(
                     exit_name + ". This may be a bug in the validator.";
     }
 
-    // If the header is reachable, the merge is guaranteed to be structurally reachable.
+    // If the header is reachable, the merge is guaranteed to be structurally
+    // reachable.
     if (!header->structurally_dominates(*merge)) {
       return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(merge->id()))
              << ConstructErrorString(construct, _.getIdName(header->id()),
@@ -822,7 +823,8 @@ spv_result_t StructuredControlFlowChecks(
       // OpLabel instructions aren't stored as part of the basic block for
       // legacy reaasons. Grab the next instruction and use it's block pointer
       // instead.
-      const auto next_index = (continue_inst - &_.ordered_instructions()[0]) + 1;
+      const auto next_index =
+          (continue_inst - &_.ordered_instructions()[0]) + 1;
       const auto& next_inst = _.ordered_instructions()[next_index];
       const auto* continue_target = next_inst.block();
       if (header->id() != continue_id) {

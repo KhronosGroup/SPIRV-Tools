@@ -58,7 +58,9 @@ const BasicBlock* BasicBlock::immediate_structural_post_dominator() const {
 }
 
 BasicBlock* BasicBlock::immediate_dominator() { return immediate_dominator_; }
-BasicBlock* BasicBlock::immediate_structural_dominator() { return immediate_structural_dominator_; }
+BasicBlock* BasicBlock::immediate_structural_dominator() {
+  return immediate_structural_dominator_;
+}
 BasicBlock* BasicBlock::immediate_structural_post_dominator() {
   return immediate_structural_post_dominator_;
 }

@@ -262,27 +262,35 @@ Function::GetBlocksFunction Function::AugmentedCFGPredecessorsFunction() const {
   };
 }
 
-Function::GetBlocksFunction Function::AugmentedStructuralCFGSuccessorsFunction() const {
+Function::GetBlocksFunction Function::AugmentedStructuralCFGSuccessorsFunction()
+    const {
   return [this](const BasicBlock* block) {
     auto where = augmented_successors_map_.find(block);
-    return where == augmented_successors_map_.end() ? block->structural_successors()
-                                                    : &(*where).second;
+    return where == augmented_successors_map_.end()
+               ? block->structural_successors()
+               : &(*where).second;
   };
 }
 
-Function::GetBlocksFunction Function::AugmentedStructuralCFGPredecessorsFunction() const {
+Function::GetBlocksFunction
+Function::AugmentedStructuralCFGPredecessorsFunction() const {
   return [this](const BasicBlock* block) {
     auto where = augmented_predecessors_map_.find(block);
-    return where == augmented_predecessors_map_.end() ? block->structural_predecessors()
-                                                      : &(*where).second;
+    return where == augmented_predecessors_map_.end()
+               ? block->structural_predecessors()
+               : &(*where).second;
   };
 }
 
 void Function::ComputeAugmentedCFG() {
   // Compute the successors of the pseudo-entry block, and
   // the predecessors of the pseudo exit block.
-  auto succ_func = [](const BasicBlock* b) { return b->structural_successors(); };
-  auto pred_func = [](const BasicBlock* b) { return b->structural_predecessors(); };
+  auto succ_func = [](const BasicBlock* b) {
+    return b->structural_successors();
+  };
+  auto pred_func = [](const BasicBlock* b) {
+    return b->structural_predecessors();
+  };
   CFA<BasicBlock>::ComputeAugmentedCFG(
       ordered_blocks_, &pseudo_entry_block_, &pseudo_exit_block_,
       &augmented_successors_map_, &augmented_predecessors_map_, succ_func,

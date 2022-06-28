@@ -134,9 +134,6 @@ void ValidateBase<T>::CompileSuccessfully(std::string code,
   ScopedContext context(env);
   auto status = spvTextToBinary(context.context, code.c_str(), code.size(),
                                 &binary_, &diagnostic);
-  //auto status = spvTextToBinaryWithOptions(context.context, code.c_str(), code.size(),
-  //                              SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS,
-  //                              &binary_, &diagnostic);
   EXPECT_EQ(SPV_SUCCESS, status)
       << "ERROR: " << diagnostic->error
       << "\nSPIR-V could not be compiled into binary:\n"
