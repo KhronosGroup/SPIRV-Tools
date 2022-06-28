@@ -101,7 +101,7 @@ bool SpirvTools::Disassemble(const uint32_t* binary, const size_t binary_size,
                                         options, &spvtext, nullptr);
   if (status == SPV_SUCCESS) {
     if (options & SPV_BINARY_TO_TEXT_OPTION_PRINT) {
-      assert(spvtext);// make sure spvtext is created even in printing mode
+      assert(spvtext);  // make sure spvtext is created even in printing mode
     }
     text->assign(spvtext->str, spvtext->str + spvtext->length);
   }
