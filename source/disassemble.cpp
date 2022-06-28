@@ -114,20 +114,18 @@ spv_result_t Disassembler::HandleInstruction(
 }
 
 spv_result_t Disassembler::SaveTextResult(spv_text* text_result) const {
-  if (!print_) {
-    size_t length = text_.str().size();
-    char* str = new char[length + 1];
-    if (!str) return SPV_ERROR_OUT_OF_MEMORY;
-    strncpy(str, text_.str().c_str(), length + 1);
-    spv_text text = new spv_text_t();
-    if (!text) {
-      delete[] str;
-      return SPV_ERROR_OUT_OF_MEMORY;
-    }
-    text->str = str;
-    text->length = length;
-    *text_result = text;
+  size_t length = text_.str().size();
+  char* str = new char[length + 1];
+  if (!str) return SPV_ERROR_OUT_OF_MEMORY;
+  strncpy(str, text_.str().c_str(), length + 1);
+  spv_text text = new spv_text_t();
+  if (!text) {
+    delete[] str;
+    return SPV_ERROR_OUT_OF_MEMORY;
   }
+  text->str = str;
+  text->length = length;
+  *text_result = text;
   return SPV_SUCCESS;
 }
 
