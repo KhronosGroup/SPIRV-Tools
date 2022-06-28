@@ -1878,7 +1878,7 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
     case 4677:
       return VUID_WRAP(VUID-StandaloneSpirv-Invariant-04677);
     case 4680:
-      return VUID_WRAP( VUID-StandaloneSpirv-OpTypeRuntimeArray-04680);
+      return VUID_WRAP(VUID-StandaloneSpirv-OpTypeRuntimeArray-04680);
     case 4682:
       return VUID_WRAP(VUID-StandaloneSpirv-OpControlBarrier-04682);
     case 6426:
@@ -1903,6 +1903,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpMemoryBarrier-04733);
     case 4734:
       return VUID_WRAP(VUID-StandaloneSpirv-OpVariable-04734);
+    case 4744:
+      return VUID_WRAP(VUID-StandaloneSpirv-Flat-04744);
     case 4777:
       return VUID_WRAP(VUID-StandaloneSpirv-OpImage-04777);
     case 4780:
@@ -1919,6 +1921,10 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Location-04918);
     case 4919:
       return VUID_WRAP(VUID-StandaloneSpirv-Location-04919);
+    case 6201:
+      return VUID_WRAP(VUID-StandaloneSpirv-Flat-06201);
+    case 6202:
+      return VUID_WRAP(VUID-StandaloneSpirv-Flat-06202);
     case 6214:
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeImage-06214);
     case 6491:
