@@ -527,11 +527,9 @@ void InlinePass::UpdateSingleBlockLoopContinueTarget(
   auto& old_backedge = new_blocks->back();
   auto old_branch = old_backedge->tail();
 
-  // Clone the old back edge and move it into the new block.
-  std::unique_ptr<Instruction> clone(old_branch->Clone(context()));
-  old_branch->RemoveFromList();
-  delete &*old_branch;
-  new_block->AddInstruction(std::move(clone));
+  // Move the old back edge into the new block.
+  std::unique_ptr<Instruction> br(&*old_branch);
+  new_block->AddInstruction(std::move(br));
 
   // Add a branch to the new block from the old back-edge block.
   AddBranch(new_id, &old_backedge);
