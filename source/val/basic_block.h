@@ -265,10 +265,10 @@ class BasicBlock {
   /// Pointer to the immediate dominator of the BasicBlock
   BasicBlock* immediate_dominator_;
 
-  /// Pointer to the immediate dominator of the BasicBlock
+  /// Pointer to the immediate structural dominator of the BasicBlock
   BasicBlock* immediate_structural_dominator_;
 
-  /// Pointer to the immediate dominator of the BasicBlock
+  /// Pointer to the immediate structural post dominator of the BasicBlock
   BasicBlock* immediate_structural_post_dominator_;
 
   /// The set of predecessors of the BasicBlock

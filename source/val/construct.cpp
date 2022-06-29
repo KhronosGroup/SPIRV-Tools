@@ -102,7 +102,9 @@ Construct::ConstructBlockSet Construct::blocks(Function* /*function*/) const {
         include = true;
         if (is_loop && continue_header->structurally_dominates(*block)) {
           // Loop constructs have an additional constraint that they do not
-          // include blocks dominated by the continue target.
+          // include blocks dominated by the continue construct. Since all
+          // blocks in the continue construct are dominated by the continue
+          // target, we just test for dominance by continue target.
           include = false;
         }
       }
