@@ -271,6 +271,54 @@ OpFunctionEnd
   EXPECT_EQ(optimized_asm, expected_result);
 }
 
+TEST_F(CFGTest, ComputeStructedOrderForLoop) {
+  const std::string test = R"(
+OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpName %main "main"
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%5 = OpConstant %uint 5
+%main = OpFunction %void None %4
+%8 = OpLabel
+OpBranch %9
+%9 = OpLabel
+OpLoopMerge %11 %10 None
+OpBranchConditional %true %11 %10
+%10 = OpLabel
+OpBranch %9
+%11 = OpLabel
+OpBranch %12
+%12 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, test,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(nullptr, context);
+
+  CFG* cfg = context->cfg();
+  Module* module = context->module();
+  Function* function = &*module->begin();
+  std::list<BasicBlock*> order;
+  cfg->ComputeStructuredOrder(function, context->get_instr_block(9),
+                              context->get_instr_block(11), &order);
+
+  // Order should contain the loop header, the continue target, and the merge
+  // node.
+  std::list<BasicBlock*> expected_result = {context->get_instr_block(9),
+                                            context->get_instr_block(10),
+                                            context->get_instr_block(11)};
+  EXPECT_THAT(order, ContainerEq(expected_result));
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

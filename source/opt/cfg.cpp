@@ -74,6 +74,12 @@ void CFG::RemoveNonExistingEdges(uint32_t blk_id) {
 
 void CFG::ComputeStructuredOrder(Function* func, BasicBlock* root,
                                  std::list<BasicBlock*>* order) {
+  ComputeStructuredOrder(func, root, nullptr, order);
+}
+
+void CFG::ComputeStructuredOrder(Function* func, BasicBlock* root,
+                                 BasicBlock* end,
+                                 std::list<BasicBlock*>* order) {
   assert(module_->context()->get_feature_mgr()->HasCapability(
              SpvCapabilityShader) &&
          "This only works on structured control flow");
@@ -82,6 +88,8 @@ void CFG::ComputeStructuredOrder(Function* func, BasicBlock* root,
   ComputeStructuredSuccessors(func);
   auto ignore_block = [](cbb_ptr) {};
   auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
+  auto terminal = [end](cbb_ptr bb) { return bb == end; };
+
   auto get_structured_successors = [this](const BasicBlock* b) {
     return &(block2structured_succs_[b]);
   };
@@ -92,7 +100,8 @@ void CFG::ComputeStructuredOrder(Function* func, BasicBlock* root,
     order->push_front(const_cast<BasicBlock*>(b));
   };
   CFA<BasicBlock>::DepthFirstTraversal(root, get_structured_successors,
-                                       ignore_block, post_order, ignore_edge);
+                                       ignore_block, post_order, ignore_edge,
+                                       terminal);
 }
 
 void CFG::ForEachBlockInPostOrder(BasicBlock* bb,
