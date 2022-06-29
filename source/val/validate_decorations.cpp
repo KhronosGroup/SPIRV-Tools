@@ -826,18 +826,19 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
                 decoration == SpvDecorationCentroid) {
               // VUID 04670 already validates these decorations are input/output
               if (storage_class == SpvStorageClassInput &&
-                  (models->size() > 1 || !has_frag)) {
+                  (models->size() > 1 || has_vert)) {
                 return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
                        << vstate.VkErrorID(6202)
-                       << "OpEntryPoint interfaces variable must be fragment "
+                       << "OpEntryPoint interfaces variable must not be vertex "
                           "execution model with an input storage class for "
                           "Entry Point id "
                        << entry_point << ".";
               } else if (storage_class == SpvStorageClassOutput &&
-                         (models->size() > 1 || !has_vert)) {
+                         (models->size() > 1 || has_frag)) {
                 return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
                        << vstate.VkErrorID(6201)
-                       << "OpEntryPoint interfaces variable must be vertex "
+                       << "OpEntryPoint interfaces variable must not be "
+                          "fragment "
                           "execution model with an output storage class for "
                           "Entry Point id "
                        << entry_point << ".";
