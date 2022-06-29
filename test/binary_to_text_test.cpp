@@ -108,7 +108,7 @@ TEST_F(BinaryToText, Print) {
       SPV_SUCCESS,
       spvBinaryToText(context, binary->code, binary->wordCount,
                       SPV_BINARY_TO_TEXT_OPTION_PRINT, &text, &diagnostic));
-  ASSERT_NE(text, nullptr);
+  ASSERT_EQ(text, nullptr);
   spvTextDestroy(text);
 }
 
