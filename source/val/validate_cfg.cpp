@@ -951,7 +951,8 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
         CFA<BasicBlock>::DepthFirstTraversal(
             function.first_block(),
             function.AugmentedStructuralCFGSuccessorsFunction(), ignore_block,
-            [&](const BasicBlock* b) { postorder.push_back(b); }, ignore_edge);
+            [&](const BasicBlock* b) { postorder.push_back(b); }, ignore_edge,
+            no_terminal_blocks);
         auto edges = CFA<BasicBlock>::CalculateDominators(
             postorder, function.AugmentedStructuralCFGPredecessorsFunction());
         for (auto edge : edges) {
@@ -964,7 +965,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
             function.pseudo_exit_block(),
             function.AugmentedStructuralCFGPredecessorsFunction(), ignore_block,
             [&](const BasicBlock* b) { postdom_postorder.push_back(b); },
-            ignore_edge);
+            ignore_edge, no_terminal_blocks);
         auto postdom_edges = CFA<BasicBlock>::CalculateDominators(
             postdom_postorder,
             function.AugmentedStructuralCFGSuccessorsFunction());
@@ -975,13 +976,15 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
         CFA<BasicBlock>::DepthFirstTraversal(
             function.pseudo_entry_block(),
             function.AugmentedStructuralCFGSuccessorsFunction(), ignore_block,
-            ignore_block, [&](const BasicBlock* from, const BasicBlock* to) {
+            ignore_block,
+            [&](const BasicBlock* from, const BasicBlock* to) {
               // A back edge must be a real edge. Since the augmented successors
               // contain structural edges, filter those from consideration.
               for (const auto* succ : *(from->successors())) {
                 if (succ == to) back_edges.emplace_back(from->id(), to->id());
               }
-            });
+            },
+            no_terminal_blocks);
       }
       UpdateContinueConstructExitBlocks(function, back_edges);
 
