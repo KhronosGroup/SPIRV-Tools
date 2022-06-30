@@ -3541,9 +3541,11 @@ OpLoopMerge %14 %15 None
 OpBranch %16
 %16 = OpLabel
 OpSelectionMerge %18 None
-OpSwitch %13 %18 0 %17 1 %15
+OpSwitch %13 %18 0 %17 1 %19
 %17 = OpLabel
 OpStore %3 %uint_1
+OpBranch %19
+%19 = OpLabel
 OpBranch %15
 %15 = OpLabel
 OpBranch %12

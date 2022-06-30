@@ -477,7 +477,7 @@ spv_result_t FindCaseFallThrough(
     if (!visited.insert(block).second) continue;
 
     if (target_reachable && block->reachable() &&
-        target_block->dominates(*block)) {
+        target_block->structurally_dominates(*block)) {
       // Still in the case construct.
       for (auto successor : *block->successors()) {
         stack.push_back(successor);
@@ -550,7 +550,7 @@ spv_result_t StructuredSwitchChecks(ValidationState_t& _, Function* function,
       const auto target_block = function->GetBlock(target).first;
       // OpSwitch must dominate all its case constructs.
       if (header->reachable() && target_block->reachable() &&
-          !header->dominates(*target_block)) {
+          !header->structurally_dominates(*target_block)) {
         return _.diag(SPV_ERROR_INVALID_CFG, header->label())
                << "Selection header " << _.getIdName(header->id())
                << " does not dominate its case construct "
@@ -723,9 +723,10 @@ spv_result_t StructuredControlFlowChecks(
   // Check construct rules
   for (const Construct& construct : function->constructs()) {
     auto header = construct.entry_block();
+    if (!header->reachable()) continue;
     auto merge = construct.exit_block();
 
-    if (header->reachable() && !merge) {
+    if (!merge) {
       std::string construct_name, header_name, exit_name;
       std::tie(construct_name, header_name, exit_name) =
           ConstructNames(construct.type());
@@ -735,28 +736,27 @@ spv_result_t StructuredControlFlowChecks(
                     exit_name + ". This may be a bug in the validator.";
     }
 
-    // If the exit block is reachable then it's dominated by the
-    // header.
-    if (merge && merge->reachable()) {
-      if (!header->dominates(*merge)) {
-        return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(merge->id()))
-               << ConstructErrorString(construct, _.getIdName(header->id()),
-                                       _.getIdName(merge->id()),
-                                       "does not dominate");
-      }
-      // If it's really a merge block for a selection or loop, then it must be
-      // *strictly* dominated by the header.
-      if (construct.ExitBlockIsMergeBlock() && (header == merge)) {
-        return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(merge->id()))
-               << ConstructErrorString(construct, _.getIdName(header->id()),
-                                       _.getIdName(merge->id()),
-                                       "does not strictly dominate");
-      }
+    // If the header is reachable, the merge is guaranteed to be structurally
+    // reachable.
+    if (!header->structurally_dominates(*merge)) {
+      return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(merge->id()))
+             << ConstructErrorString(construct, _.getIdName(header->id()),
+                                     _.getIdName(merge->id()),
+                                     "does not dominate");
     }
+    // If it's really a merge block for a selection or loop, then it must be
+    // *strictly* dominated by the header.
+    if (construct.ExitBlockIsMergeBlock() && (header == merge)) {
+      return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(merge->id()))
+             << ConstructErrorString(construct, _.getIdName(header->id()),
+                                     _.getIdName(merge->id()),
+                                     "does not strictly dominate");
+    }
+
     // Check post-dominance for continue constructs.  But dominance and
     // post-dominance only make sense when the construct is reachable.
-    if (header->reachable() && construct.type() == ConstructType::kContinue) {
-      if (!merge->postdominates(*header)) {
+    if (construct.type() == ConstructType::kContinue) {
+      if (!merge->structurally_postdominates(*header)) {
         return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(merge->id()))
                << ConstructErrorString(construct, _.getIdName(header->id()),
                                        _.getIdName(merge->id()),
@@ -771,7 +771,7 @@ spv_result_t StructuredControlFlowChecks(
     for (auto block : construct_blocks) {
       // Check that all exits from the construct are via structured exits.
       for (auto succ : *block->successors()) {
-        if (block->reachable() && !construct_blocks.count(succ) &&
+        if (!construct_blocks.count(succ) &&
             !construct.IsStructuredExit(_, succ)) {
           return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
                  << "block <ID> " << _.getIdName(block->id()) << " exits the "
@@ -808,6 +808,43 @@ spv_result_t StructuredControlFlowChecks(
                    << " construct headed by " << _.getIdName(header->id())
                    << ", but its merge block " << _.getIdName(merge_id)
                    << " is not";
+          }
+        }
+      }
+    }
+
+    if (construct.type() == ConstructType::kLoop) {
+      // If the continue target differs from the loop header, then check that
+      // all edges into the continue construct come from within the loop.
+      const auto index = header->terminator() - &_.ordered_instructions()[0];
+      const auto& merge_inst = _.ordered_instructions()[index - 1];
+      const auto continue_id = merge_inst.GetOperandAs<uint32_t>(1);
+      const auto* continue_inst = _.FindDef(continue_id);
+      // OpLabel instructions aren't stored as part of the basic block for
+      // legacy reaasons. Grab the next instruction and use it's block pointer
+      // instead.
+      const auto next_index =
+          (continue_inst - &_.ordered_instructions()[0]) + 1;
+      const auto& next_inst = _.ordered_instructions()[next_index];
+      const auto* continue_target = next_inst.block();
+      if (header->id() != continue_id) {
+        for (auto pred : *continue_target->predecessors()) {
+          // Ignore back-edges from within the continue construct.
+          bool is_back_edge = false;
+          for (auto back_edge : back_edges) {
+            uint32_t back_edge_block;
+            uint32_t header_block;
+            std::tie(back_edge_block, header_block) = back_edge;
+            if (header_block == continue_id && back_edge_block == pred->id())
+              is_back_edge = true;
+          }
+          if (!construct_blocks.count(pred) && !is_back_edge) {
+            return _.diag(SPV_ERROR_INVALID_CFG, pred->terminator())
+                   << "Block " << _.getIdName(pred->id())
+                   << " branches to the loop continue target "
+                   << _.getIdName(continue_id)
+                   << ", but is not contained in the associated loop construct "
+                   << _.getIdName(header->id());
           }
         }
       }
@@ -850,15 +887,12 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
              << _.getIdName(function.id());
     }
 
-    // Set each block's immediate dominator and immediate postdominator,
-    // and find all back-edges.
+    // Set each block's immediate dominator.
     //
     // We want to analyze all the blocks in the function, even in degenerate
     // control flow cases including unreachable blocks.  So use the augmented
     // CFG to ensure we cover all the blocks.
     std::vector<const BasicBlock*> postorder;
-    std::vector<const BasicBlock*> postdom_postorder;
-    std::vector<std::pair<uint32_t, uint32_t>> back_edges;
     auto ignore_block = [](const BasicBlock*) {};
     auto ignore_edge = [](const BasicBlock*, const BasicBlock*) {};
     auto no_terminal_blocks = [](const BasicBlock*) { return false; };
@@ -874,30 +908,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
         if (edge.first != edge.second)
           edge.first->SetImmediateDominator(edge.second);
       }
-
-      /// calculate post dominators
-      CFA<BasicBlock>::DepthFirstTraversal(
-          function.pseudo_exit_block(),
-          function.AugmentedCFGPredecessorsFunction(), ignore_block,
-          [&](const BasicBlock* b) { postdom_postorder.push_back(b); },
-          ignore_edge, no_terminal_blocks);
-      auto postdom_edges = CFA<BasicBlock>::CalculateDominators(
-          postdom_postorder, function.AugmentedCFGSuccessorsFunction());
-      for (auto edge : postdom_edges) {
-        edge.first->SetImmediatePostDominator(edge.second);
-      }
-      /// calculate back edges.
-      CFA<BasicBlock>::DepthFirstTraversal(
-          function.pseudo_entry_block(),
-          function
-              .AugmentedCFGSuccessorsFunctionIncludingHeaderToContinueEdge(),
-          ignore_block, ignore_block,
-          [&](const BasicBlock* from, const BasicBlock* to) {
-            back_edges.emplace_back(from->id(), to->id());
-          },
-          no_terminal_blocks);
     }
-    UpdateContinueConstructExitBlocks(function, back_edges);
 
     auto& blocks = function.ordered_blocks();
     if (!blocks.empty()) {
@@ -931,6 +942,52 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
 
     /// Structured control flow checks are only required for shader capabilities
     if (_.HasCapability(SpvCapabilityShader)) {
+      // Calculate structural dominance.
+      postorder.clear();
+      std::vector<const BasicBlock*> postdom_postorder;
+      std::vector<std::pair<uint32_t, uint32_t>> back_edges;
+      if (!function.ordered_blocks().empty()) {
+        /// calculate dominators
+        CFA<BasicBlock>::DepthFirstTraversal(
+            function.first_block(),
+            function.AugmentedStructuralCFGSuccessorsFunction(), ignore_block,
+            [&](const BasicBlock* b) { postorder.push_back(b); }, ignore_edge,
+            no_terminal_blocks);
+        auto edges = CFA<BasicBlock>::CalculateDominators(
+            postorder, function.AugmentedStructuralCFGPredecessorsFunction());
+        for (auto edge : edges) {
+          if (edge.first != edge.second)
+            edge.first->SetImmediateStructuralDominator(edge.second);
+        }
+
+        /// calculate post dominators
+        CFA<BasicBlock>::DepthFirstTraversal(
+            function.pseudo_exit_block(),
+            function.AugmentedStructuralCFGPredecessorsFunction(), ignore_block,
+            [&](const BasicBlock* b) { postdom_postorder.push_back(b); },
+            ignore_edge, no_terminal_blocks);
+        auto postdom_edges = CFA<BasicBlock>::CalculateDominators(
+            postdom_postorder,
+            function.AugmentedStructuralCFGSuccessorsFunction());
+        for (auto edge : postdom_edges) {
+          edge.first->SetImmediateStructuralPostDominator(edge.second);
+        }
+        /// calculate back edges.
+        CFA<BasicBlock>::DepthFirstTraversal(
+            function.pseudo_entry_block(),
+            function.AugmentedStructuralCFGSuccessorsFunction(), ignore_block,
+            ignore_block,
+            [&](const BasicBlock* from, const BasicBlock* to) {
+              // A back edge must be a real edge. Since the augmented successors
+              // contain structural edges, filter those from consideration.
+              for (const auto* succ : *(from->successors())) {
+                if (succ == to) back_edges.emplace_back(from->id(), to->id());
+              }
+            },
+            no_terminal_blocks);
+      }
+      UpdateContinueConstructExitBlocks(function, back_edges);
+
       if (auto error =
               StructuredControlFlowChecks(_, &function, back_edges, postorder))
         return error;
