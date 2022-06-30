@@ -260,30 +260,15 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
       }
       break;
     case SpvDecorationBuiltIn:
-      if (target->opcode() != SpvOpVariable &&
-          !spvOpcodeIsConstant(target->opcode())) {
-        return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "BuiltIns can only target variables, structure members or "
-                  "constants";
-      }
-      if (inst->GetOperandAs<SpvBuiltIn>(2) == SpvBuiltInWorkgroupSize) {
-        if (spvOpcodeIsConstant(target->opcode())) {
-          // can only validate product if static
-          uint64_t x_size, y_size, z_size;
-          bool static_x = _.GetConstantValUint64(target->word(3), &x_size);
-          bool static_y = _.GetConstantValUint64(target->word(4), &y_size);
-          bool static_z = _.GetConstantValUint64(target->word(5), &z_size);
-          if (static_x && static_y && static_z &&
-              ((x_size * y_size * z_size) == 0)) {
-            return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << "WorkgroupSize decorations must not have a static "
-                      "product of zero.";
-          }
-        } else if (_.HasCapability(SpvCapabilityShader)) {
-          return fail(0) << "must be a constant for WorkgroupSize";
+      if (target->opcode() != SpvOpVariable) {
+        if (!spvOpcodeIsConstant(target->opcode())) {
+          return fail(0)
+                 << "BuiltIns can only target variables, structure members or "
+                    "constants";
+        } else if (inst->GetOperandAs<SpvBuiltIn>(2) !=
+                   SpvBuiltInWorkgroupSize) {
+          return fail(0) << "must be a variable";
         }
-      } else if (target->opcode() != SpvOpVariable) {
-        return fail(0) << "must be a variable";
       }
       break;
     case SpvDecorationNoPerspective:

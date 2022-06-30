@@ -2923,7 +2923,7 @@ OpDecorate %copy BuiltIn WorkgroupSize
   generator.entry_points_.push_back(std::move(entry_point));
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_0);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("BuiltIns can only target variables, structure "
                         "members or constants"));
@@ -3825,7 +3825,7 @@ OpDecorate %void BuiltIn Position
 )";
 
   CompileSuccessfully(text);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("BuiltIns can only target variables, structure members "
                         "or constants"));

@@ -402,14 +402,9 @@ OpDecorate %var BuiltIn )" +
 %var = OpVariable %ptr Input
 )";
 
+  // Workgroup are valid unless used with Vulkan env (VUID 04427)
   CompileSuccessfully(text);
-  if (deco != "WorkgroupSize") {
-    EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
-  } else {
-    EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-    EXPECT_THAT(getDiagnosticString(),
-                HasSubstr("must be a constant for WorkgroupSize"));
-  }
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_P(BuiltInDecorations, IntegerType) {
@@ -424,7 +419,7 @@ OpDecorate %int BuiltIn )" +
 )";
 
   CompileSuccessfully(text);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("BuiltIns can only target variables, structure members "
                         "or constants"));
@@ -448,7 +443,7 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(text);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("BuiltIns can only target variables, structure members "
                         "or constants"));

@@ -3123,16 +3123,6 @@ spv_result_t BuiltInsValidator::ValidateI32Vec4InputAtDefinition(
 
 spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
-  if (spvIsVulkanEnv(_.context()->target_env)) {
-    if (spvIsVulkanEnv(_.context()->target_env) &&
-        !spvOpcodeIsConstant(inst.opcode())) {
-      return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-             << _.VkErrorID(4426)
-             << "Vulkan spec requires BuiltIn WorkgroupSize to be a "
-                "constant. "
-             << GetIdDesc(inst) << " is not a constant.";
-    }
-
     if (spv_result_t error = ValidateI32Vec(
             decoration, inst, 3,
             [this, &inst](const std::string& message) -> spv_result_t {
@@ -3145,7 +3135,29 @@ spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtDefinition(
             })) {
       return error;
     }
-  }
+
+    if (!spvOpcodeIsConstant(inst.opcode())) {
+      if (spvIsVulkanEnv(_.context()->target_env)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+             << _.VkErrorID(4426)
+             << "Vulkan spec requires BuiltIn WorkgroupSize to be a "
+                "constant. "
+             << GetIdDesc(inst) << " is not a constant.";
+      }
+    } else {
+        // can only validate product if static
+        uint64_t x_size, y_size, z_size;
+        // ValidateI32Vec above confirms there will be 3 words to read
+        bool static_x = _.GetConstantValUint64(inst.word(3), &x_size);
+        bool static_y = _.GetConstantValUint64(inst.word(4), &y_size);
+        bool static_z = _.GetConstantValUint64(inst.word(5), &z_size);
+        if (static_x && static_y && static_z &&
+            ((x_size * y_size * z_size) == 0)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                << "WorkgroupSize decorations must not have a static "
+                    "product of zero.";
+        }
+    }
 
   // Seed at reference checks with this built-in.
   return ValidateWorkgroupSizeAtReference(decoration, inst, inst, inst);
@@ -4081,6 +4093,11 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
   const SpvBuiltIn label = SpvBuiltIn(decoration.params()[0]);
 
+  // TODO - universal check needed before early return
+  if (label == SpvBuiltInWorkgroupSize) {
+      return ValidateWorkgroupSizeAtDefinition(decoration, inst);
+  }
+
   if (!spvIsVulkanEnv(_.context()->target_env)) {
     // Early return. All currently implemented rules are based on Vulkan spec.
     //
@@ -4183,9 +4200,6 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     case SpvBuiltInVertexIndex: {
       return ValidateVertexIndexAtDefinition(decoration, inst);
     }
-    case SpvBuiltInWorkgroupSize: {
-      return ValidateWorkgroupSizeAtDefinition(decoration, inst);
-    }
     case SpvBuiltInVertexId: {
       return ValidateVertexIdAtDefinition(decoration, inst);
     }
@@ -4247,6 +4261,7 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     case SpvBuiltInCullMaskKHR: {
       return ValidateRayTracingBuiltinsAtDefinition(decoration, inst);
     }
+    case SpvBuiltInWorkgroupSize:  // validated above
     case SpvBuiltInWorkDim:
     case SpvBuiltInGlobalSize:
     case SpvBuiltInEnqueuedWorkgroupSize:
