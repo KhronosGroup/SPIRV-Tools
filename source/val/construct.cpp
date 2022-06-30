@@ -78,10 +78,7 @@ Construct::ConstructBlockSet Construct::blocks(Function* /*function*/) const {
   const BasicBlock* continue_header = nullptr;
   if (is_loop) {
     // The only corresponding construct for a loop is the continue.
-    for (auto& other : corresponding_constructs()) {
-      continue_header = other->entry_block();
-      break;
-    }
+    continue_header = (*corresponding_constructs().begin())->entry_block();
   }
   std::vector<BasicBlock*> stack;
   stack.push_back(const_cast<BasicBlock*>(header));
