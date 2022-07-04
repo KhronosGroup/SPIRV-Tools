@@ -659,9 +659,9 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
 
   InitializeModuleScopeLiveInstructions();
 
-  // Process all entry point functions.
-  ProcessFunction pfn = [this](Function* fp) { return AggressiveDCE(fp); };
-  modified |= context()->ProcessReachableCallTree(pfn);
+  for (Function& fp : *context()->module()) {
+    modified |= AggressiveDCE(&fp);
+  }
 
   // If the decoration manager is kept live then the context will try to keep it
   // up to date.  ADCE deals with group decorations by changing the operands in
@@ -687,8 +687,9 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   }
 
   // Cleanup all CFG including all unreachable blocks.
-  ProcessFunction cleanup = [this](Function* f) { return CFGCleanup(f); };
-  modified |= context()->ProcessReachableCallTree(cleanup);
+  for (Function& fp : *context()->module()) {
+    modified |= CFGCleanup(&fp);
+  }
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
