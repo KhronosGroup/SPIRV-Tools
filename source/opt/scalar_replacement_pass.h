@@ -42,6 +42,16 @@ class ScalarReplacementPass : public MemPass {
         name_, sizeof(name_), "scalar-replacement=%u", max_num_elements_);
     assert(size_t(num_to_write) < sizeof(name_));
     (void)num_to_write;  // Mark as unused
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // ClusterFuzz/OSS-Fuzz is likely to yield examples with very large arrays.
+    // This can cause timeouts and memouts during fuzzing that
+    // are not classed as bugs. To avoid this noise, we set the
+    // max_num_elements_ to a smaller value for fuzzing.
+    max_num_elements_ =
+        (max_num_elements_ > 0 && max_num_elements_ < 100 ? max_num_elements_
+                                                          : 100);
+#endif
   }
 
   const char* name() const override { return name_; }
