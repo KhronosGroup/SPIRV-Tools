@@ -659,6 +659,11 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
 
   InitializeModuleScopeLiveInstructions();
 
+  // Run |AggressiveDCE| on the remaining functions.  The order does not matter,
+  // since |AggressiveDCE| is intra-procedural.  This can mean that function
+  // will become dead if all function call to them are removed.  These dead
+  // function will still be in the module after this pass.  We expect this to be
+  // rare.
   for (Function& fp : *context()->module()) {
     modified |= AggressiveDCE(&fp);
   }
