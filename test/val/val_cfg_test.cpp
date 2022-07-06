@@ -4579,9 +4579,10 @@ OpFunctionEnd
 
   CompileSuccessfully(text);
   EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The continue construct with the continue target 7[%7] "
-                        "does not dominate the back-edge block 8[%8]"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The continue construct with the continue target 7[%7] "
+                "does not structurally dominate the back-edge block 8[%8]"));
 }
 
 }  // namespace
