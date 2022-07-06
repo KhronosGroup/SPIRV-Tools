@@ -553,7 +553,7 @@ spv_result_t StructuredSwitchChecks(ValidationState_t& _, Function* function,
           !header->structurally_dominates(*target_block)) {
         return _.diag(SPV_ERROR_INVALID_CFG, header->label())
                << "Selection header " << _.getIdName(header->id())
-               << " does not dominate its case construct "
+               << " does not structurally dominate its case construct "
                << _.getIdName(target);
       }
 
@@ -742,15 +742,15 @@ spv_result_t StructuredControlFlowChecks(
       return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(merge->id()))
              << ConstructErrorString(construct, _.getIdName(header->id()),
                                      _.getIdName(merge->id()),
-                                     "does not dominate");
+                                     "does not structurally dominate");
     }
     // If it's really a merge block for a selection or loop, then it must be
-    // *strictly* dominated by the header.
+    // *strictly* structrually dominated by the header.
     if (construct.ExitBlockIsMergeBlock() && (header == merge)) {
       return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(merge->id()))
              << ConstructErrorString(construct, _.getIdName(header->id()),
                                      _.getIdName(merge->id()),
-                                     "does not strictly dominate");
+                                     "does not strictly structurally dominate");
     }
 
     // Check post-dominance for continue constructs.  But dominance and
@@ -760,7 +760,7 @@ spv_result_t StructuredControlFlowChecks(
         return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(merge->id()))
                << ConstructErrorString(construct, _.getIdName(header->id()),
                                        _.getIdName(merge->id()),
-                                       "is not post dominated by");
+                                       "is not structurally post dominated by");
       }
     }
 
