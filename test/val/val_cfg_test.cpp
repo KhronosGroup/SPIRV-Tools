@@ -4555,6 +4555,36 @@ OpFunctionEnd
                         "must be different labels"));
 }
 
+TEST_F(ValidateCFG, BadBackEdgeUnreachableContinue) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4 = OpLabel
+OpBranch %5
+%5 = OpLabel
+OpLoopMerge %6 %7 None
+OpBranch %8
+%8 = OpLabel
+OpBranch %5
+%7 = OpLabel
+OpUnreachable
+%6 = OpLabel
+OpUnreachable
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The continue construct with the continue target 7[%7] "
+                "does not structurally dominate the back-edge block 8[%8]"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

@@ -84,8 +84,11 @@ class BasicBlock {
     return &structural_successors_;
   }
 
-  /// Returns true if the block is structurally reachable in the CFG.
+  /// Returns true if the block is reachable in the CFG.
   bool reachable() const { return reachable_; }
+
+  /// Returns true if the block is structurally reachable in the CFG.
+  bool structurally_reachable() const { return structurally_reachable_; }
 
   /// Returns true if BasicBlock is of the given type
   bool is_type(BlockType type) const {
@@ -95,6 +98,11 @@ class BasicBlock {
 
   /// Sets the reachability of the basic block in the CFG
   void set_reachable(bool reachability) { reachable_ = reachability; }
+
+  /// Sets the structural reachability of the basic block in the CFG
+  void set_structurally_reachable(bool reachability) {
+    structurally_reachable_ = reachability;
+  }
 
   /// Sets the type of the BasicBlock
   void set_type(BlockType type) {
@@ -282,6 +290,9 @@ class BasicBlock {
 
   /// True if the block is reachable in the CFG
   bool reachable_;
+
+  /// True if the block is structurally reachable in the CFG
+  bool structurally_reachable_;
 
   /// label of this block, if any.
   const Instruction* label_;

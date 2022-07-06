@@ -466,7 +466,7 @@ spv_result_t FindCaseFallThrough(
   std::vector<BasicBlock*> stack;
   stack.push_back(target_block);
   std::unordered_set<const BasicBlock*> visited;
-  bool target_reachable = target_block->reachable();
+  bool target_reachable = target_block->structurally_reachable();
   int target_depth = function->GetBlockDepth(target_block);
   while (!stack.empty()) {
     auto block = stack.back();
@@ -476,7 +476,7 @@ spv_result_t FindCaseFallThrough(
 
     if (!visited.insert(block).second) continue;
 
-    if (target_reachable && block->reachable() &&
+    if (target_reachable && block->structurally_reachable() &&
         target_block->structurally_dominates(*block)) {
       // Still in the case construct.
       for (auto successor : *block->successors()) {
@@ -549,7 +549,8 @@ spv_result_t StructuredSwitchChecks(ValidationState_t& _, Function* function,
     if (seen_iter == seen_to_fall_through.end()) {
       const auto target_block = function->GetBlock(target).first;
       // OpSwitch must dominate all its case constructs.
-      if (header->reachable() && target_block->reachable() &&
+      if (header->structurally_reachable() &&
+          target_block->structurally_reachable() &&
           !header->structurally_dominates(*target_block)) {
         return _.diag(SPV_ERROR_INVALID_CFG, header->label())
                << "Selection header " << _.getIdName(header->id())
@@ -653,7 +654,7 @@ spv_result_t ValidateStructuredSelections(
     }
 
     // Skip unreachable blocks.
-    if (!block->reachable()) continue;
+    if (!block->structurally_reachable()) continue;
 
     if (terminator->opcode() == SpvOpBranchConditional) {
       const auto true_label = terminator->GetOperandAs<uint32_t>(1);
@@ -708,7 +709,7 @@ spv_result_t StructuredControlFlowChecks(
 
   // Check the loop headers have exactly one back-edge branching to it
   for (BasicBlock* loop_header : function->ordered_blocks()) {
-    if (!loop_header->reachable()) continue;
+    if (!loop_header->structurally_reachable()) continue;
     if (!loop_header->is_type(kBlockTypeLoop)) continue;
     auto loop_header_id = loop_header->id();
     auto num_latch_blocks = loop_latch_blocks[loop_header_id].size();
@@ -723,7 +724,7 @@ spv_result_t StructuredControlFlowChecks(
   // Check construct rules
   for (const Construct& construct : function->constructs()) {
     auto header = construct.entry_block();
-    if (!header->reachable()) continue;
+    if (!header->structurally_reachable()) continue;
     auto merge = construct.exit_block();
 
     if (!merge) {
@@ -784,7 +785,7 @@ spv_result_t StructuredControlFlowChecks(
       // Check that for all non-header blocks, all predecessors are within this
       // construct.
       for (auto pred : *block->predecessors()) {
-        if (pred->reachable() && !construct_blocks.count(pred)) {
+        if (pred->structurally_reachable() && !construct_blocks.count(pred)) {
           return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(pred->id()))
                  << "block <ID> " << pred->id() << " branches to the "
                  << construct_name << " construct, but not to the "
@@ -800,7 +801,7 @@ spv_result_t StructuredControlFlowChecks(
             merge_inst.opcode() == SpvOpLoopMerge) {
           uint32_t merge_id = merge_inst.GetOperandAs<uint32_t>(0);
           auto merge_block = function->GetBlock(merge_id).first;
-          if (merge_block->reachable() &&
+          if (merge_block->structurally_reachable() &&
               !construct_blocks.count(merge_block)) {
             return _.diag(SPV_ERROR_INVALID_CFG, _.FindDef(block->id()))
                    << "Header block " << _.getIdName(block->id())
@@ -1109,6 +1110,26 @@ void ReachabilityPass(ValidationState_t& _) {
 
       block->set_reachable(true);
       for (auto succ : *block->successors()) {
+        stack.push_back(succ);
+      }
+    }
+  }
+
+  // Repeat for structural reachability.
+  for (auto& f : _.functions()) {
+    std::vector<BasicBlock*> stack;
+    auto entry = f.first_block();
+    // Skip function declarations.
+    if (entry) stack.push_back(entry);
+
+    while (!stack.empty()) {
+      auto block = stack.back();
+      stack.pop_back();
+
+      if (block->structurally_reachable()) continue;
+
+      block->set_structurally_reachable(true);
+      for (auto succ : *block->structural_successors()) {
         stack.push_back(succ);
       }
     }
