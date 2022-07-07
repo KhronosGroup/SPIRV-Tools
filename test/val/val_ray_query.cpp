@@ -375,6 +375,32 @@ OpRayQueryInitializeKHR %ray_query %as %_u32 %_u32 %_f32vec3 %_f32 %_f32vec3 %_f
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateRayQuery, InitializeFunctionSuccess) {
+  const std::string declaration = R"(
+%rq_ptr = OpTypePointer Private %type_rq
+%rq_func_type = OpTypeFunction %void %rq_ptr
+%rq_var_1 = OpVariable %rq_ptr Private
+%rq_var_2 = OpVariable %rq_ptr Private
+)";
+
+  const std::string body = R"(
+%fcall_1 = OpFunctionCall %void %rq_func %rq_var_1
+%as_1 = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %rq_var_1 %as_1 %u32_0 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+%fcall_2 = OpFunctionCall %void %rq_func %rq_var_2
+OpReturn
+OpFunctionEnd
+%rq_func = OpFunction %void None %rq_func_type
+%rq_param = OpFunctionParameter %rq_ptr
+%label = OpLabel
+%as_2 = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %rq_param %as_2 %u32_0 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", declaration).c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateRayQuery, InitializeBadRayQuery) {
   const std::string body = R"(
 %load = OpLoad %type_as %top_level_as
