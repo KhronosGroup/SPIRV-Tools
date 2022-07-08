@@ -135,7 +135,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
 
     case SpvOpRayQueryGetIntersectionFrontFaceKHR: {
       if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
-      // fall through
+      __attribute__((fallthrough));
     }
     case SpvOpRayQueryProceedKHR:
     case SpvOpRayQueryGetIntersectionCandidateAABBOpaqueKHR: {
@@ -150,7 +150,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
 
     case SpvOpRayQueryGetIntersectionTKHR: {
       if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
-      // fall through
+      __attribute__((fallthrough));
     }
     case SpvOpRayQueryGetRayTMinKHR: {
       if (auto error = ValidateRayQueryPointer(_, inst, 2)) return error;
@@ -171,7 +171,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
     case SpvOpRayQueryGetIntersectionGeometryIndexKHR:
     case SpvOpRayQueryGetIntersectionPrimitiveIndexKHR: {
       if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
-      // fall through
+      __attribute__((fallthrough));
     }
     case SpvOpRayQueryGetRayFlagsKHR: {
       if (auto error = ValidateRayQueryPointer(_, inst, 2)) return error;
@@ -187,7 +187,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
     case SpvOpRayQueryGetIntersectionObjectRayDirectionKHR:
     case SpvOpRayQueryGetIntersectionObjectRayOriginKHR: {
       if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
-      // fall through
+      __attribute__((fallthrough));
     }
     case SpvOpRayQueryGetWorldRayDirectionKHR:
     case SpvOpRayQueryGetWorldRayOriginKHR: {
