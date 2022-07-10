@@ -3500,6 +3500,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Uniform-06925"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("In the Vulkan environment, cannot store to Uniform Blocks"));
@@ -3541,6 +3543,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Uniform-06925"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("In the Vulkan environment, cannot store to Uniform Blocks"));
@@ -3613,6 +3617,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Uniform-06925"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("In the Vulkan environment, cannot store to Uniform Blocks"));
@@ -3657,6 +3663,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Uniform-06925"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("In the Vulkan environment, cannot store to Uniform Blocks"));
@@ -3697,6 +3705,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Uniform-06925"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("In the Vulkan environment, cannot store to Uniform Blocks"));
