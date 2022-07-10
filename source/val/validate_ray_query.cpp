@@ -133,10 +133,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
       break;
     }
 
-    case SpvOpRayQueryGetIntersectionFrontFaceKHR: {
-      if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
-      __attribute__((fallthrough));
-    }
+    case SpvOpRayQueryGetIntersectionFrontFaceKHR:
     case SpvOpRayQueryProceedKHR:
     case SpvOpRayQueryGetIntersectionCandidateAABBOpaqueKHR: {
       if (auto error = ValidateRayQueryPointer(_, inst, 2)) return error;
@@ -145,13 +142,15 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << ": expected Result Type to be bool scalar type";
       }
+
+      if (opcode == SpvOpRayQueryGetIntersectionFrontFaceKHR) {
+        if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
+      }
+
       break;
     }
 
-    case SpvOpRayQueryGetIntersectionTKHR: {
-      if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
-      __attribute__((fallthrough));
-    }
+    case SpvOpRayQueryGetIntersectionTKHR:
     case SpvOpRayQueryGetRayTMinKHR: {
       if (auto error = ValidateRayQueryPointer(_, inst, 2)) return error;
 
@@ -159,6 +158,10 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
           _.GetBitWidth(result_type) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << ": expected Result Type to be 32-bit float scalar type";
+      }
+
+      if (opcode == SpvOpRayQueryGetIntersectionTKHR) {
+        if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
       }
 
       break;
@@ -169,10 +172,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
     case SpvOpRayQueryGetIntersectionInstanceIdKHR:
     case SpvOpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR:
     case SpvOpRayQueryGetIntersectionGeometryIndexKHR:
-    case SpvOpRayQueryGetIntersectionPrimitiveIndexKHR: {
-      if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
-      __attribute__((fallthrough));
-    }
+    case SpvOpRayQueryGetIntersectionPrimitiveIndexKHR:
     case SpvOpRayQueryGetRayFlagsKHR: {
       if (auto error = ValidateRayQueryPointer(_, inst, 2)) return error;
 
@@ -181,14 +181,15 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
                << ": expected Result Type to be 32-bit int scalar type";
       }
 
+      if (opcode != SpvOpRayQueryGetRayFlagsKHR) {
+        if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
+      }
+
       break;
     }
 
     case SpvOpRayQueryGetIntersectionObjectRayDirectionKHR:
-    case SpvOpRayQueryGetIntersectionObjectRayOriginKHR: {
-      if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
-      __attribute__((fallthrough));
-    }
+    case SpvOpRayQueryGetIntersectionObjectRayOriginKHR:
     case SpvOpRayQueryGetWorldRayDirectionKHR:
     case SpvOpRayQueryGetWorldRayOriginKHR: {
       if (auto error = ValidateRayQueryPointer(_, inst, 2)) return error;
@@ -199,6 +200,11 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << ": expected Result Type to be 32-bit float 3-component "
                   "vector type";
+      }
+
+      if (opcode == SpvOpRayQueryGetIntersectionObjectRayDirectionKHR ||
+          opcode == SpvOpRayQueryGetIntersectionObjectRayOriginKHR) {
+        if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
       }
 
       break;
