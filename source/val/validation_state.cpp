@@ -1951,6 +1951,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Uniform-06807);
     case 6808:
       return VUID_WRAP(VUID-StandaloneSpirv-PushConstant-06808);
+    case 6925:
+      return VUID_WRAP(VUID-StandaloneSpirv-Uniform-06925);
     default:
       return "";  // unknown id
   }
