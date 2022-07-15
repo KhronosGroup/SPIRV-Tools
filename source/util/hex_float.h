@@ -1059,9 +1059,13 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
     } else if (::isdigit(next_char)) {
       seen_written_exponent_digits = true;
       // Hex-floats express their exponent as decimal.
-      written_exponent = static_cast<int_type>(written_exponent * 10);
-      written_exponent =
-          static_cast<int_type>(written_exponent + (next_char - '0'));
+      int_type digit = (static_cast<int_type>(next_char) - '0');
+      if (written_exponent > (HF::max_exponent - digit) / 10) {
+        // The exponent is too large to represent.
+        is.setstate(std::ios::failbit);
+        return is;
+      }
+      written_exponent = static_cast<int_type>(written_exponent * 10) + digit;
     } else {
       break;
     }
