@@ -965,6 +965,11 @@ bool ValidationState_t::GetPointerTypeInfo(uint32_t id, uint32_t* data_type,
   return true;
 }
 
+bool ValidationState_t::IsAccelerationStructureType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  return inst && inst->opcode() == SpvOpTypeAccelerationStructureKHR;
+}
+
 bool ValidationState_t::IsCooperativeMatrixType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
   return inst && inst->opcode() == SpvOpTypeCooperativeMatrixNV;
@@ -983,6 +988,13 @@ bool ValidationState_t::IsIntCooperativeMatrixType(uint32_t id) const {
 bool ValidationState_t::IsUnsignedIntCooperativeMatrixType(uint32_t id) const {
   if (!IsCooperativeMatrixType(id)) return false;
   return IsUnsignedIntScalarType(FindDef(id)->word(2));
+}
+
+// Either a 32 bit 2-component uint vector or a 64 bit uint scalar
+bool ValidationState_t::IsUnsigned64BitHandle(uint32_t id) const {
+  return ((IsUnsignedIntScalarType(id) && GetBitWidth(id) == 64) ||
+          (IsUnsignedIntVectorType(id) && GetDimension(id) == 2 &&
+           GetBitWidth(id) == 32));
 }
 
 spv_result_t ValidationState_t::CooperativeMatrixShapesMatch(
