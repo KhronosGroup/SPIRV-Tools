@@ -8695,6 +8695,47 @@ INSTANTIATE_TEST_SUITE_P(FragmentInputInterface, ValidateDecorationString,
                          ::testing::Values("Flat", "NoPerspective", "Sample",
                                            "Centroid"));
 
+TEST_F(ValidateDecorations, NVBindlessSamplerArrayInBlock) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability BindlessTextureNV
+               OpExtension "SPV_NV_bindless_texture"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpSamplerImageAddressingModeNV 64
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+               OpName %main "main"
+               OpName %UBO "UBO"
+               OpMemberName %UBO 0 "uboSampler"
+               OpName %_ ""
+               OpDecorate %array ArrayStride 16
+               OpMemberDecorate %UBO 0 Offset 0
+               OpDecorate %UBO Block
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 2
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+          %7 = OpTypeImage %float 2D 0 0 0 1 Unknown
+          %8 = OpTypeSampledImage %7
+       %uint = OpTypeInt 32 0
+     %uint_3 = OpConstant %uint 3
+      %array = OpTypeArray %8 %uint_3
+        %UBO = OpTypeStruct %array
+    %pointer = OpTypePointer Uniform %UBO
+          %_ = OpVariable %pointer Uniform
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

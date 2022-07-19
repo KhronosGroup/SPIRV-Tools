@@ -44,19 +44,20 @@ namespace val {
 /// of the SPIRV spec for additional details of the order. The enumerant values
 /// are in the same order as the vector returned by GetModuleOrder
 enum ModuleLayoutSection {
-  kLayoutCapabilities,          /// < Section 2.4 #1
-  kLayoutExtensions,            /// < Section 2.4 #2
-  kLayoutExtInstImport,         /// < Section 2.4 #3
-  kLayoutMemoryModel,           /// < Section 2.4 #4
-  kLayoutEntryPoint,            /// < Section 2.4 #5
-  kLayoutExecutionMode,         /// < Section 2.4 #6
-  kLayoutDebug1,                /// < Section 2.4 #7 > 1
-  kLayoutDebug2,                /// < Section 2.4 #7 > 2
-  kLayoutDebug3,                /// < Section 2.4 #7 > 3
-  kLayoutAnnotations,           /// < Section 2.4 #8
-  kLayoutTypes,                 /// < Section 2.4 #9
-  kLayoutFunctionDeclarations,  /// < Section 2.4 #10
-  kLayoutFunctionDefinitions    /// < Section 2.4 #11
+  kLayoutCapabilities,             /// < Section 2.4 #1
+  kLayoutExtensions,               /// < Section 2.4 #2
+  kLayoutExtInstImport,            /// < Section 2.4 #3
+  kLayoutMemoryModel,              /// < Section 2.4 #4
+  kLayoutSamplerImageAddressMode,  /// < Section 2.4 #5
+  kLayoutEntryPoint,               /// < Section 2.4 #6
+  kLayoutExecutionMode,            /// < Section 2.4 #7
+  kLayoutDebug1,                   /// < Section 2.4 #8 > 1
+  kLayoutDebug2,                   /// < Section 2.4 #8 > 2
+  kLayoutDebug3,                   /// < Section 2.4 #8 > 3
+  kLayoutAnnotations,              /// < Section 2.4 #9
+  kLayoutTypes,                    /// < Section 2.4 #10
+  kLayoutFunctionDeclarations,     /// < Section 2.4 #11
+  kLayoutFunctionDefinitions       /// < Section 2.4 #12
 };
 
 /// This class manages the state of the SPIR-V validation as it is being parsed.
@@ -359,6 +360,20 @@ class ValidationState_t {
 
   /// Returns the memory model of this module, or Simple if uninitialized.
   SpvMemoryModel memory_model() const;
+
+  /// Sets the bit width for sampler/image type variables. If not set, they are
+  /// considered opaque
+  void set_samplerimage_variable_address_mode(uint32_t bit_width);
+
+  /// Get the addressing mode currently set. If 0, it means addressing mode is
+  /// invalid Sampler/Image type variables must be considered opaque This mode
+  /// is only valid after the instruction has been read
+  uint32_t samplerimage_variable_address_mode() const;
+
+  /// Returns true if the OpSamplerImageAddressingModeNV was found.
+  bool has_samplerimage_variable_address_mode_specified() const {
+    return sampler_image_addressing_mode_ != 0;
+  }
 
   const AssemblyGrammar& grammar() const { return grammar_; }
 
@@ -864,7 +879,10 @@ class ValidationState_t {
   // have the same pointer size (for physical pointer types).
   uint32_t pointer_size_and_alignment_;
 
-  /// NOTE: See corresponding getter functions
+  /// bit width of sampler/image type variables. Valid values are 32 and 64
+  uint32_t sampler_image_addressing_mode_;
+
+  /// NOTE: See correspoding getter functions
   bool in_function_;
 
   /// The state of optional features.  These are determined by capabilities

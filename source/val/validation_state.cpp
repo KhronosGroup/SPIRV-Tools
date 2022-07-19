@@ -90,6 +90,8 @@ ModuleLayoutSection InstructionLayoutSection(
       if (current_section == kLayoutFunctionDeclarations)
         return kLayoutFunctionDeclarations;
       return kLayoutFunctionDefinitions;
+    case SpvOpSamplerImageAddressingModeNV:
+      return kLayoutSamplerImageAddressMode;
     default:
       break;
   }
@@ -161,6 +163,7 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       addressing_model_(SpvAddressingModelMax),
       memory_model_(SpvMemoryModelMax),
       pointer_size_and_alignment_(0),
+      sampler_image_addressing_mode_(0),
       in_function_(false),
       num_of_warnings_(0),
       max_num_of_warnings_(max_warnings) {
@@ -472,6 +475,15 @@ void ValidationState_t::set_memory_model(SpvMemoryModel mm) {
 }
 
 SpvMemoryModel ValidationState_t::memory_model() const { return memory_model_; }
+
+void ValidationState_t::set_samplerimage_variable_address_mode(
+    uint32_t bit_width) {
+  sampler_image_addressing_mode_ = bit_width;
+}
+
+uint32_t ValidationState_t::samplerimage_variable_address_mode() const {
+  return sampler_image_addressing_mode_;
+}
 
 spv_result_t ValidationState_t::RegisterFunction(
     uint32_t id, uint32_t ret_type_id, SpvFunctionControlMask function_control,

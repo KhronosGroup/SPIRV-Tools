@@ -293,6 +293,11 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     return vstate->diag(SPV_ERROR_INVALID_LAYOUT, nullptr)
            << "Missing OpFunctionEnd at end of module.";
 
+  if (vstate->HasCapability(SpvCapabilityBindlessTextureNV) &&
+      !vstate->has_samplerimage_variable_address_mode_specified())
+    return vstate->diag(SPV_ERROR_INVALID_LAYOUT, nullptr)
+           << "Missing required OpSamplerImageAddressingModeNV instruction.";
+
   // Catch undefined forward references before performing further checks.
   if (auto error = ValidateForwardDecls(*vstate)) return error;
 
