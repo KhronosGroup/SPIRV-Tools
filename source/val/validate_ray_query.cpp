@@ -31,17 +31,17 @@ spv_result_t ValidateRayQueryPointer(ValidationState_t& _,
   if (!variable || (variable->opcode() != SpvOpVariable &&
                     variable->opcode() != SpvOpFunctionParameter)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << ": Ray Query must be a pointer to OpTypeRayQueryKHR";
+           << "Ray Query must be a memory object declaration";
   }
   auto pointer = _.FindDef(variable->GetOperandAs<uint32_t>(0));
   if (!pointer || pointer->opcode() != SpvOpTypePointer) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << ": Ray Query must be a pointer to OpTypeRayQueryKHR";
+           << "Ray Query must be a pointer";
   }
   auto type = _.FindDef(pointer->GetOperandAs<uint32_t>(2));
   if (!type || type->opcode() != SpvOpTypeRayQueryKHR) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << ": Ray Query must be a pointer to OpTypeRayQueryKHR";
+           << "Ray Query must be a pointer to OpTypeRayQueryKHR";
   }
   return SPV_SUCCESS;
 }
@@ -57,7 +57,7 @@ spv_result_t ValidateIntersectionId(ValidationState_t& _,
       _.GetBitWidth(intersection_type) != 32 ||
       !spvOpcodeIsConstant(intersection_opcode)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << ": expected Intersection ID to be a constant 32-bit int scalar";
+           << "expected Intersection ID to be a constant 32-bit int scalar";
   }
 
   return SPV_SUCCESS;
@@ -73,44 +73,50 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
     case SpvOpRayQueryInitializeKHR: {
       if (auto error = ValidateRayQueryPointer(_, inst, 0)) return error;
 
-      const uint32_t ray_flags = _.GetTypeId(inst->GetOperandAs<uint32_t>(2));
+      if (_.GetIdOpcode(_.GetOperandTypeId(inst, 1)) !=
+          SpvOpTypeAccelerationStructureKHR) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Expected Acceleration Structure to be of type "
+                  "OpTypeAccelerationStructureKHR";
+      }
+
+      const uint32_t ray_flags = _.GetOperandTypeId(inst, 2);
       if (!_.IsIntScalarType(ray_flags) || _.GetBitWidth(ray_flags) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": Ray Flags must be a 32-bit int scalar";
+               << "Ray Flags must be a 32-bit int scalar";
       }
 
-      const uint32_t cull_mask = _.GetTypeId(inst->GetOperandAs<uint32_t>(3));
+      const uint32_t cull_mask = _.GetOperandTypeId(inst, 3);
       if (!_.IsIntScalarType(cull_mask) || _.GetBitWidth(cull_mask) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": Cull Mask must be a 32-bit int scalar";
+               << "Cull Mask must be a 32-bit int scalar";
       }
 
-      const uint32_t ray_origin = _.GetTypeId(inst->GetOperandAs<uint32_t>(4));
+      const uint32_t ray_origin = _.GetOperandTypeId(inst, 4);
       if (!_.IsFloatVectorType(ray_origin) || _.GetDimension(ray_origin) != 3 ||
           _.GetBitWidth(ray_origin) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": Ray Origin must be a 32-bit float 3-component vector";
+               << "Ray Origin must be a 32-bit float 3-component vector";
       }
 
-      const uint32_t ray_tmin = _.GetTypeId(inst->GetOperandAs<uint32_t>(5));
+      const uint32_t ray_tmin = _.GetOperandTypeId(inst, 5);
       if (!_.IsFloatScalarType(ray_tmin) || _.GetBitWidth(ray_tmin) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": Ray TMin must be a 32-bit float scalar";
+               << "Ray TMin must be a 32-bit float scalar";
       }
 
-      const uint32_t ray_direction =
-          _.GetTypeId(inst->GetOperandAs<uint32_t>(6));
+      const uint32_t ray_direction = _.GetOperandTypeId(inst, 6);
       if (!_.IsFloatVectorType(ray_direction) ||
           _.GetDimension(ray_direction) != 3 ||
           _.GetBitWidth(ray_direction) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": Ray Direction must be a 32-bit float 3-component vector";
+               << "Ray Direction must be a 32-bit float 3-component vector";
       }
 
-      const uint32_t ray_tmax = _.GetTypeId(inst->GetOperandAs<uint32_t>(7));
+      const uint32_t ray_tmax = _.GetOperandTypeId(inst, 7);
       if (!_.IsFloatScalarType(ray_tmax) || _.GetBitWidth(ray_tmax) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": Ray TMax must be a 32-bit float scalar";
+               << "Ray TMax must be a 32-bit float scalar";
       }
       break;
     }
@@ -124,10 +130,10 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
     case SpvOpRayQueryGenerateIntersectionKHR: {
       if (auto error = ValidateRayQueryPointer(_, inst, 0)) return error;
 
-      const uint32_t hit_t_id = _.GetTypeId(inst->GetOperandAs<uint32_t>(1));
+      const uint32_t hit_t_id = _.GetOperandTypeId(inst, 1);
       if (!_.IsFloatScalarType(hit_t_id) || _.GetBitWidth(hit_t_id) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": Hit T must be a 32-bit float scalar";
+               << "Hit T must be a 32-bit float scalar";
       }
 
       break;
@@ -140,7 +146,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
 
       if (!_.IsBoolScalarType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": expected Result Type to be bool scalar type";
+               << "expected Result Type to be bool scalar type";
       }
 
       if (opcode == SpvOpRayQueryGetIntersectionFrontFaceKHR) {
@@ -157,7 +163,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
       if (!_.IsFloatScalarType(result_type) ||
           _.GetBitWidth(result_type) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": expected Result Type to be 32-bit float scalar type";
+               << "expected Result Type to be 32-bit float scalar type";
       }
 
       if (opcode == SpvOpRayQueryGetIntersectionTKHR) {
@@ -178,7 +184,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
 
       if (!_.IsIntScalarType(result_type) || _.GetBitWidth(result_type) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": expected Result Type to be 32-bit int scalar type";
+               << "expected Result Type to be 32-bit int scalar type";
       }
 
       if (opcode != SpvOpRayQueryGetRayFlagsKHR) {
@@ -198,7 +204,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
           _.GetDimension(result_type) != 3 ||
           _.GetBitWidth(result_type) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": expected Result Type to be 32-bit float 3-component "
+               << "expected Result Type to be 32-bit float 3-component "
                   "vector type";
       }
 
@@ -218,7 +224,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
           _.GetDimension(result_type) != 2 ||
           _.GetBitWidth(result_type) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": expected Result Type to be 32-bit float 2-component "
+               << "expected Result Type to be 32-bit float 2-component "
                   "vector type";
       }
 
@@ -237,18 +243,18 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
       if (!_.GetMatrixTypeInfo(result_type, &num_rows, &num_cols, &col_type,
                                &component_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": expected matrix type as Result Type";
+               << "expected matrix type as Result Type";
       }
 
       if (num_cols != 4) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": expected Result Type matrix to have a Column Count of 4";
+               << "expected Result Type matrix to have a Column Count of 4";
       }
 
       if (!_.IsFloatScalarType(component_type) ||
           _.GetBitWidth(result_type) != 32 || num_rows != 3) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << ": expected Result Type matrix to have a Column Type of "
+               << "expected Result Type matrix to have a Column Type of "
                   "3-component 32-bit float vectors";
       }
       break;

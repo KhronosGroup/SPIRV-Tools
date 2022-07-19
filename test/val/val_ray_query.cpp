@@ -413,6 +413,18 @@ OpRayQueryInitializeKHR %top_level_as %load %u32_0 %u32_0 %f32vec3_0 %f32_0 %f32
               HasSubstr("Ray Query must be a pointer to OpTypeRayQueryKHR"));
 }
 
+TEST_F(ValidateRayQuery, InitializeBadAS) {
+  const std::string body = R"(
+OpRayQueryInitializeKHR %ray_query %ray_query %u32_0 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Acceleration Structure to be of type "
+                        "OpTypeAccelerationStructureKHR"));
+}
+
 TEST_F(ValidateRayQuery, InitializeBadRayFlags64) {
   const std::string body = R"(
 %load = OpLoad %type_as %top_level_as
