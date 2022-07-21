@@ -650,6 +650,109 @@ void ValidationState_t::RegisterStorageClassConsumer(
           });
     }
   }
+
+  if (storage_class == SpvStorageClassCallableDataKHR) {
+    function(consumer->function()->id())
+        ->RegisterExecutionModelLimitation(
+            [](SpvExecutionModel model, std::string* message) {
+              if (model != SpvExecutionModelRayGenerationKHR &&
+                  model != SpvExecutionModelClosestHitKHR &&
+                  model != SpvExecutionModelCallableKHR &&
+                  model != SpvExecutionModelMissKHR) {
+                if (message) {
+                  *message =
+                      "CallableDataKHR Storage Class is limited to "
+                      "RayGenerationKHR, ClosestHitKHR, CallableKHR, and "
+                      "MissKHR execution model";
+                }
+                return false;
+              }
+              return true;
+            });
+  } else if (storage_class == SpvStorageClassIncomingCallableDataKHR) {
+    function(consumer->function()->id())
+        ->RegisterExecutionModelLimitation(
+            [](SpvExecutionModel model, std::string* message) {
+              if (model != SpvExecutionModelCallableKHR) {
+                if (message) {
+                  *message =
+                      "IncomingCallableDataKHR Storage Class is limited to "
+                      "CallableKHR execution model";
+                }
+                return false;
+              }
+              return true;
+            });
+  } else if (storage_class == SpvStorageClassRayPayloadKHR) {
+    function(consumer->function()->id())
+        ->RegisterExecutionModelLimitation([](SpvExecutionModel model,
+                                              std::string* message) {
+          if (model != SpvExecutionModelRayGenerationKHR &&
+              model != SpvExecutionModelClosestHitKHR &&
+              model != SpvExecutionModelMissKHR) {
+            if (message) {
+              *message =
+                  "RayPayloadKHR Storage Class is limited to RayGenerationKHR, "
+                  "ClosestHitKHR, and MissKHR execution model";
+            }
+            return false;
+          }
+          return true;
+        });
+  } else if (storage_class == SpvStorageClassHitAttributeKHR) {
+    function(consumer->function()->id())
+        ->RegisterExecutionModelLimitation(
+            [](SpvExecutionModel model, std::string* message) {
+              if (model != SpvExecutionModelIntersectionKHR &&
+                  model != SpvExecutionModelAnyHitKHR &&
+                  model != SpvExecutionModelClosestHitKHR) {
+                if (message) {
+                  *message =
+                      "HitAttributeKHR Storage Class is limited to "
+                      "IntersectionKHR, AnyHitKHR, sand ClosestHitKHR "
+                      "execution model";
+                }
+                return false;
+              }
+              return true;
+            });
+  } else if (storage_class == SpvStorageClassIncomingRayPayloadKHR) {
+    function(consumer->function()->id())
+        ->RegisterExecutionModelLimitation(
+            [](SpvExecutionModel model, std::string* message) {
+              if (model != SpvExecutionModelAnyHitKHR &&
+                  model != SpvExecutionModelClosestHitKHR &&
+                  model != SpvExecutionModelMissKHR) {
+                if (message) {
+                  *message =
+                      "IncomingRayPayloadKHR Storage Class is limited to "
+                      "AnyHitKHR, ClosestHitKHR, and MissKHR execution model";
+                }
+                return false;
+              }
+              return true;
+            });
+  } else if (storage_class == SpvStorageClassShaderRecordBufferKHR) {
+    function(consumer->function()->id())
+        ->RegisterExecutionModelLimitation(
+            [](SpvExecutionModel model, std::string* message) {
+              if (model != SpvExecutionModelRayGenerationKHR &&
+                  model != SpvExecutionModelIntersectionKHR &&
+                  model != SpvExecutionModelAnyHitKHR &&
+                  model != SpvExecutionModelClosestHitKHR &&
+                  model != SpvExecutionModelCallableKHR &&
+                  model != SpvExecutionModelMissKHR) {
+                if (message) {
+                  *message =
+                      "ShaderRecordBufferKHR Storage Class is limited to "
+                      "RayGenerationKHR, IntersectionKHR, AnyHitKHR, "
+                      "ClosestHitKHR, CallableKHR, and MissKHR execution model";
+                }
+                return false;
+              }
+              return true;
+            });
+  }
 }
 
 uint32_t ValidationState_t::getIdBound() const { return id_bound_; }
