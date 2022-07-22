@@ -316,7 +316,8 @@ void SSARewriter::ProcessStore(Instruction* inst, BasicBlock* bb) {
   if (pass_->IsTargetVar(var_id)) {
     WriteVariable(var_id, bb, val_id);
     pass_->context()->get_debug_info_mgr()->AddDebugValueIfVarDeclIsVisible(
-        inst, var_id, val_id, inst, &decls_invisible_to_value_assignment_);
+        inst, var_id, val_id, inst, &decls_invisible_to_value_assignment_,
+        true);
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 1
     std::cerr << "\tFound store '%" << var_id << " = %" << val_id << "': "
@@ -497,7 +498,7 @@ uint32_t SSARewriter::GetPhiArgument(const PhiCandidate* phi_candidate,
   return 0;
 }
 
-bool SSARewriter::ApplyReplacements() {
+bool SSARewriter::ApplyReplacements(Function* fp) {
   bool modified = false;
 
 #if SSA_REWRITE_DEBUGGING_LEVEL > 2
@@ -507,9 +508,20 @@ bool SSARewriter::ApplyReplacements() {
   std::cerr << "\n\n";
 #endif
 
+  // Sort phi candiates by reverse postorder. Operand of a Phi may be
+  // a phi itself so make sure all operand phis are generated first.
+  std::vector<const PhiCandidate*> ordered_phis_to_generate;
+  pass_->context()->cfg()->ForEachBlockInReversePostOrder(
+      &*fp->begin(), [&ordered_phis_to_generate, this](BasicBlock* bb) {
+        for (const PhiCandidate* phi_candidate : phis_to_generate_) {
+          if (phi_candidate->bb() == bb)
+            ordered_phis_to_generate.push_back(phi_candidate);
+        }
+      });
+
   // Add Phi instructions from completed Phi candidates.
   std::vector<Instruction*> generated_phis;
-  for (const PhiCandidate* phi_candidate : phis_to_generate_) {
+  for (const PhiCandidate* phi_candidate : ordered_phis_to_generate) {
 #if SSA_REWRITE_DEBUGGING_LEVEL > 2
     std::cerr << "Phi candidate: " << phi_candidate->PrettyPrint(pass_->cfg())
               << "\n";
@@ -557,11 +569,11 @@ bool SSARewriter::ApplyReplacements() {
         phi_candidate->var_id(), phi_candidate->result_id(),
         {SpvDecorationRelaxedPrecision});
 
-    // Add DebugValue for the new OpPhi instruction.
+    // Add DebugValue for the new OpPhi instruction. Assume OpPhi is visible.
     insert_it->SetDebugScope(local_var->GetDebugScope());
     pass_->context()->get_debug_info_mgr()->AddDebugValueIfVarDeclIsVisible(
         &*insert_it, phi_candidate->var_id(), phi_candidate->result_id(),
-        &*insert_it, &decls_invisible_to_value_assignment_);
+        &*insert_it, &decls_invisible_to_value_assignment_, true);
 
     modified = true;
   }
@@ -733,7 +745,7 @@ Pass::Status SSARewriter::RewriteFunctionIntoSSA(Function* fp) {
   FinalizePhiCandidates();
 
   // Finally, apply all the replacements in the IR.
-  bool modified = ApplyReplacements();
+  bool modified = ApplyReplacements(fp);
 
   auto status = AddDebugValuesForInvisibleDebugDecls(fp);
   if (status == Pass::Status::SuccessWithChange ||

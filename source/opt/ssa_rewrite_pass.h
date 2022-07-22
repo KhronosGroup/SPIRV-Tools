@@ -181,7 +181,7 @@ class SSARewriter {
   // Applies all the SSA replacement decisions.  This replaces loads/stores to
   // SSA target variables with their corresponding SSA IDs, and inserts Phi
   // instructions for them.
-  bool ApplyReplacements();
+  bool ApplyReplacements(Function* fp);
 
   // Registers a definition for variable |var_id| in basic block |bb| with
   // value |val_id|.
