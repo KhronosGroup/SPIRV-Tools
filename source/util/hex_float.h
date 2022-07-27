@@ -1081,13 +1081,15 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
     } else if (::isdigit(next_char)) {
       seen_written_exponent_digits = true;
       // Hex-floats express their exponent as decimal.
-      int_type digit = (static_cast<int_type>(next_char) - '0');
+      int_type digit =
+          static_cast<int_type>(static_cast<int_type>(next_char) - '0');
       if (written_exponent >= (written_exponent_overflow - digit) / 10) {
         // The exponent is very big. Saturate rather than overflow the exponent.
         // signed integer, which would be undefined behaviour.
         written_exponent = written_exponent_overflow;
       } else {
-        written_exponent = static_cast<int_type>(written_exponent * 10) + digit;
+        written_exponent = static_cast<int_type>(
+            static_cast<int_type>(written_exponent * 10) + digit);
       }
     } else {
       break;
@@ -1107,20 +1109,20 @@ std::istream& operator>>(std::istream& is, HexFloat<T, Traits>& value) {
   if (written_exponent >= 0 && exponent >= 0) {
     // Saturate up to written_exponent_overflow.
     if (written_exponent_overflow - exponent > written_exponent) {
-      exponent = written_exponent + exponent;
+      exponent = static_cast<int_type>(written_exponent + exponent);
     } else {
       exponent = written_exponent_overflow;
     }
   } else if (written_exponent < 0 && exponent < 0) {
     // Saturate down to -written_exponent_overflow.
     if (written_exponent_overflow + exponent > -written_exponent) {
-      exponent = written_exponent + exponent;
+      exponent = static_cast<int_type>(written_exponent + exponent);
     } else {
-      exponent = -written_exponent_overflow;
+      exponent = static_cast<int_type>(-written_exponent_overflow);
     }
   } else {
     // They're of opposing sign, so it's safe to add.
-    exponent = written_exponent + exponent;
+    exponent = static_cast<int_type>(written_exponent + exponent);
   }
 
   bool is_zero = (!has_integer_part) && (fraction == 0);
