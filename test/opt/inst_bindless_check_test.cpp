@@ -29,7 +29,7 @@ namespace {
 using InstBindlessTest = PassTest<::testing::Test>;
 
 static const std::string kOutputDecorations = R"(
-; CHECK: OpDecorate [[output_buffer_type:%_struct_\w+]] Block
+; CHECK: OpDecorate [[output_buffer_type:%inst_bindless_OutputBuffer]] Block
 ; CHECK: OpMemberDecorate [[output_buffer_type]] 0 Offset 0
 ; CHECK: OpMemberDecorate [[output_buffer_type]] 1 Offset 4
 ; CHECK: OpDecorate [[output_buffer_var:%\w+]] DescriptorSet 7
@@ -43,7 +43,7 @@ static const std::string kOutputGlobals = R"(
 )";
 
 static const std::string kStreamWrite4Begin = R"(
-; CHECK: {{%\w+}} = OpFunction %void None {{%\w+}}
+; CHECK: %inst_bindless_stream_write_4 = OpFunction %void None {{%\w+}}
 ; CHECK: [[param_1:%\w+]] = OpFunctionParameter %uint
 ; CHECK: [[param_2:%\w+]] = OpFunctionParameter %uint
 ; CHECK: [[param_3:%\w+]] = OpFunctionParameter %uint
@@ -175,7 +175,7 @@ static const std::string kStreamWrite4Ray = kStreamWrite4Begin + R"(
 // clang-format on
 
 static const std::string kStreamWrite5Begin = R"(
-; CHECK: {{%\w+}} = OpFunction %void None {{%\w+}}
+; CHECK: %inst_bindless_stream_write_5 = OpFunction %void None {{%\w+}}
 ; CHECK: [[param_1:%\w+]] = OpFunctionParameter %uint
 ; CHECK: [[param_2:%\w+]] = OpFunctionParameter %uint
 ; CHECK: [[param_3:%\w+]] = OpFunctionParameter %uint
@@ -253,7 +253,7 @@ static const std::string kStreamWrite5Vert = kStreamWrite5Begin + R"(
 // clang-format on
 
 static const std::string kInputDecorations = R"(
-; CHECK: OpDecorate [[input_buffer_type:%_struct_\w+]] Block
+; CHECK: OpDecorate [[input_buffer_type:%inst_bindless_InputBuffer]] Block
 ; CHECK: OpMemberDecorate [[input_buffer_type]] 0 Offset 0
 ; CHECK: OpDecorate [[input_buffer_var:%\w+]] DescriptorSet 7
 ; CHECK: OpDecorate [[input_buffer_var]] Binding 1
@@ -266,7 +266,7 @@ static const std::string kInputGlobals = R"(
 )";
 
 static const std::string kDirectRead2 = R"(
-; CHECK: {{%\w+}} = OpFunction %uint None {{%\w+}}
+; CHECK: %inst_bindless_direct_read_2 = OpFunction %uint None {{%\w+}}
 ; CHECK: [[param_1:%\w+]] = OpFunctionParameter %uint
 ; CHECK: [[param_2:%\w+]] = OpFunctionParameter %uint
 ; CHECK: {{%\w+}} = OpLabel
@@ -280,7 +280,7 @@ static const std::string kDirectRead2 = R"(
 )";
 
 static const std::string kDirectRead3 = R"(
- ;CHECK: {{%\w+}} = OpFunction %uint None {{%\w+}}
+ ;CHECK: %inst_bindless_direct_read_3 = OpFunction %uint None {{%\w+}}
 ; CHECK: [[param_1:%\w+]] = OpFunctionParameter %uint
 ; CHECK: [[param_2:%\w+]] = OpFunctionParameter %uint
 ; CHECK: [[param_3:%\w+]] = OpFunctionParameter %uint
@@ -298,7 +298,7 @@ static const std::string kDirectRead3 = R"(
 )";
 
 static const std::string kDirectRead4 = R"(
-; CHECK: {{%\w+}} = OpFunction %uint None {{%\w+}}
+; CHECK: %inst_bindless_direct_read_4 = OpFunction %uint None {{%\w+}}
 ; CHECK: [[param_1:%\w+]] = OpFunctionParameter %uint
 ; CHECK: [[param_2:%\w+]] = OpFunctionParameter %uint
 ; CHECK: [[param_3:%\w+]] = OpFunctionParameter %uint
@@ -613,7 +613,7 @@ OpStore %_entryPointOutput_vColor %37
 ; CHECK: %46 = OpImageSampleImplicitLod %v4float %45 %30
 ; CHECK: OpBranch %41
 ; CHECK: %43 = OpLabel
-; CHECK: %102 = OpFunctionCall %void {{%\w+}} %uint_56 %uint_0 %32 %uint_128
+; CHECK: %102 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_56 %uint_0 %32 %uint_128
 ; CHECK: OpBranch %41
 ; CHECK: %41 = OpLabel
 ; CHECK: %104 = OpPhi %v4float %46 %42 %103 %43
@@ -763,7 +763,7 @@ OpDecorate %_entryPointOutput_vColor Location 0
 ; CHECK: %54 = OpImageSampleImplicitLod %v4float %53 %31
 ; CHECK: OpBranch %49
 ; CHECK: %51 = OpLabel
-; CHECK: %110 = OpFunctionCall %void %55 %uint_58 %uint_0 %33 %uint_128
+; CHECK: %110 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_58 %uint_0 %33 %uint_128
 ; CHECK: OpBranch %49
 ; CHECK: %49 = OpLabel
 ; CHECK: %112 = OpPhi %v4float %54 %50 %111 %51
@@ -785,7 +785,7 @@ OpDecorate %_entryPointOutput_vColor Location 0
 ; CHECK: %119 = OpImageSampleImplicitLod %v4float %118 %31
 ; CHECK: OpBranch %114
 ; CHECK: %116 = OpLabel
-; CHECK: %121 = OpFunctionCall %void %55 %uint_64 %uint_0 %40 %uint_128
+; CHECK: %121 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_64 %uint_0 %40 %uint_128
 ; CHECK: OpBranch %114
 ; CHECK: %114 = OpLabel
 ; CHECK: %122 = OpPhi %v4float %119 %115 %111 %116
@@ -904,7 +904,7 @@ OpStore %_entryPointOutput_vColor %71
 ; CHECK: %84 = OpImageRead %v4float %83 %53
 ; CHECK: OpBranch %79
 ; CHECK: %81 = OpLabel
-; CHECK: %140 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_0 %64 %uint_128
+; CHECK: %140 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_51 %uint_0 %64 %uint_128
 ; CHECK: OpBranch %79
 ; CHECK: %79 = OpLabel
 ; CHECK: %142 = OpPhi %v4float %84 %80 %141 %81
@@ -1018,7 +1018,7 @@ OpStore %_entryPointOutput_vColor %71
 ; CHECK: %79 = OpImageSampleImplicitLod %v4float %78 %53
 ; CHECK: OpBranch %75
 ; CHECK: %77 = OpLabel
-; CHECK: %135 = OpFunctionCall %void {{%\w+}} %uint_49 %uint_0 %64 %uint_128
+; CHECK: %135 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_49 %uint_0 %64 %uint_128
 ; CHECK: OpBranch %75
 ; CHECK: %75 = OpLabel
 ; CHECK: %137 = OpPhi %v4float %79 %76 %136 %77
@@ -1134,7 +1134,7 @@ OpStore %_entryPointOutput_vColor %80
 ; CHECK: OpImageWrite %39 %28 %19
 ; CHECK: OpBranch %36
 ; CHECK: %38 = OpLabel
-; CHECK: %95 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_0 %30 %uint_128
+; CHECK: %95 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_51 %uint_0 %30 %uint_128
 ; CHECK: OpBranch %36
 ; CHECK: %36 = OpLabel
 ; CHECK: OpStore %_entryPointOutput_vColor %19
@@ -1275,7 +1275,7 @@ OpStore %40 %38
 ; CHECK: OpBranch %47
 ; CHECK: %49 = OpLabel
 ; CHECK: %52 = OpBitcast %uint %37
-; CHECK: %105 = OpFunctionCall %void {{%\w+}} %uint_74 %uint_0 %52 %uint_128
+; CHECK: %105 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_74 %uint_0 %52 %uint_128
 ; CHECK: OpBranch %47
 ; CHECK: %47 = OpLabel
 ; CHECK: %107 = OpPhi %v4float %51 %48 %106 %49
@@ -1419,7 +1419,7 @@ OpDecorate %uniform_index_buffer Binding 0
 ; CHECK: %38 = OpLoad %v4float %29
 ; CHECK: OpBranch %35
 ; CHECK: %37 = OpLabel
-; CHECK: %100 = OpFunctionCall %void {{%\w+}} %uint_63 %uint_0 %28 %uint_11
+; CHECK: %100 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_63 %uint_0 %28 %uint_11
 ; CHECK: OpBranch %35
 ; CHECK: %35 = OpLabel
 ; CHECK: %102 = OpPhi %v4float %38 %36 %101 %37
@@ -1585,7 +1585,7 @@ OpLine %1 24 0
 ; CHECK: OpNoLine
 ; CHECK: OpBranch %63
 ; CHECK: %65 = OpLabel
-; CHECK: %124 = OpFunctionCall %void {{%\w+}} %uint_109 %uint_0 %50 %uint_128
+; CHECK: %124 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_109 %uint_0 %50 %uint_128
 ; CHECK: OpBranch %63
 ; CHECK: %63 = OpLabel
 ; CHECK: %126 = OpPhi %v4float %68 %64 %125 %65
@@ -1708,14 +1708,14 @@ OpDecorate %_entryPointOutput_vColor Location 0
 OpStore %_entryPointOutput_vColor %71
 ; CHECK-NOT: %71 = OpImageSampleImplicitLod %v4float %68 %53
 ; CHECK-NOT: OpStore %_entryPointOutput_vColor %71
-; CHECK: %55 = OpFunctionCall %uint {{%\w+}} %uint_2 %uint_2
+; CHECK: %55 = OpFunctionCall %uint %inst_bindless_direct_read_2 %uint_2 %uint_2
 ; CHECK: %57 = OpULessThan %bool %32 %55
 ; CHECK: OpSelectionMerge %58 None
 ; CHECK: OpBranchConditional %57 %59 %60
 ; CHECK: %59 = OpLabel
 ; CHECK: %61 = OpLoad %16 %33
 ; CHECK: %62 = OpSampledImage %26 %61 %35
-; CHECK: %136 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_1 %uint_2 %32
+; CHECK: %136 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_1 %uint_2 %32
 ; CHECK: %137 = OpULessThan %bool %uint_0 %136
 ; CHECK: OpSelectionMerge %138 None
 ; CHECK: OpBranchConditional %137 %139 %140
@@ -1725,13 +1725,13 @@ OpStore %_entryPointOutput_vColor %71
 ; CHECK: %143 = OpImageSampleImplicitLod %v4float %142 %30
 ; CHECK: OpBranch %138
 ; CHECK: %140 = OpLabel
-; CHECK: %144 = OpFunctionCall %void {{%\w+}} %uint_59 %uint_1 %32 %uint_0
+; CHECK: %144 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_59 %uint_1 %32 %uint_0
 ; CHECK: OpBranch %138
 ; CHECK: %138 = OpLabel
 ; CHECK: %145 = OpPhi %v4float %143 %139 %116 %140
 ; CHECK: OpBranch %58
 ; CHECK: %60 = OpLabel
-; CHECK: %115 = OpFunctionCall %void {{%\w+}} %uint_59 %uint_0 %32 %55
+; CHECK: %115 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_59 %uint_0 %32 %55
 ; CHECK: OpBranch %58
 ; CHECK: %58 = OpLabel
 ; CHECK: %117 = OpPhi %v4float %145 %138 %116 %60
@@ -1834,7 +1834,7 @@ OpDecorate %_entryPointOutput_vColor Location 0
 OpStore %_entryPointOutput_vColor %24
 ; CHECK-NOT: %24 = OpImageSampleImplicitLod %v4float %23 %20
 ; CHECK-NOT: OpStore %_entryPointOutput_vColor %24
-; CHECK: %50 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %50 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %52 = OpULessThan %bool %uint_0 %50
 ; CHECK: OpSelectionMerge %54 None
 ; CHECK: OpBranchConditional %52 %55 %56
@@ -1844,7 +1844,7 @@ OpStore %_entryPointOutput_vColor %24
 ; CHECK: %59 = OpImageSampleImplicitLod %v4float %58 %20
 ; CHECK: OpBranch %54
 ; CHECK: %56 = OpLabel
-; CHECK: %112 = OpFunctionCall %void {{%\w+}} %uint_39 %uint_1 %uint_0 %uint_0
+; CHECK: %112 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_39 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %54
 ; CHECK: %54 = OpLabel
 ; CHECK: %114 = OpPhi %v4float %59 %55 %113 %56
@@ -2080,13 +2080,13 @@ OpDecorate %20 NonUniform
 OpStore %b %20
 ; CHECK-NOT: %20 = OpLoad %float %19
 ; CHECK-NOT: OpStore %b %20
-; CHECK: %40 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_3
+; CHECK: %40 = OpFunctionCall %uint %inst_bindless_direct_read_2 %uint_1 %uint_3
 ; CHECK: %42 = OpULessThan %bool %7 %40
 ; CHECK: OpSelectionMerge %43 None
 ; CHECK: OpBranchConditional %42 %44 %45
 ; CHECK: %44 = OpLabel
 ; CHECK: %103 = OpBitcast %uint %7
-; CHECK: %122 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_3 %103
+; CHECK: %122 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_3 %103
 ; CHECK: %123 = OpULessThan %bool %uint_0 %122
 ; CHECK: OpSelectionMerge %124 None
 ; CHECK: OpBranchConditional %123 %125 %126
@@ -2095,14 +2095,14 @@ OpStore %b %20
 ; CHECK: OpBranch %124
 ; CHECK: %126 = OpLabel
 ; CHECK: %128 = OpBitcast %uint %7
-; CHECK: %129 = OpFunctionCall %void {{%\w+}} %uint_45 %uint_1 %128 %uint_0
+; CHECK: %129 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_45 %uint_1 %128 %uint_0
 ; CHECK: OpBranch %124
 ; CHECK: %124 = OpLabel
 ; CHECK: %130 = OpPhi %float %127 %125 %101 %126
 ; CHECK: OpBranch %43
 ; CHECK: %45 = OpLabel
 ; CHECK: %47 = OpBitcast %uint %7
-; CHECK: %100 = OpFunctionCall %void {{%\w+}} %uint_45 %uint_0 %47 %40
+; CHECK: %100 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_45 %uint_0 %47 %40
 ; CHECK: OpBranch %43
 ; CHECK: %43 = OpLabel
 ; CHECK: %102 = OpPhi %float %130 %124 %101 %45
@@ -2222,13 +2222,13 @@ OpDecorate %20 NonUniform
 OpStore %b %20
 ; CHECK-NOT: %20 = OpLoad %float %19
 ; CHECK-NOT: OpStore %b %20
-; CHECK: %40 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_3
+; CHECK: %40 = OpFunctionCall %uint %inst_bindless_direct_read_2 %uint_1 %uint_3
 ; CHECK: %42 = OpULessThan %bool %7 %40
 ; CHECK: OpSelectionMerge %43 None
 ; CHECK: OpBranchConditional %42 %44 %45
 ; CHECK: %44 = OpLabel
 ; CHECK: %103 = OpBitcast %uint %7
-; CHECK: %122 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_3 %103
+; CHECK: %122 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_3 %103
 ; CHECK: %123 = OpULessThan %bool %uint_0 %122
 ; CHECK: OpSelectionMerge %124 None
 ; CHECK: OpBranchConditional %123 %125 %126
@@ -2237,14 +2237,14 @@ OpStore %b %20
 ; CHECK: OpBranch %124
 ; CHECK: %126 = OpLabel
 ; CHECK: %128 = OpBitcast %uint %7
-; CHECK: %129 = OpFunctionCall %void {{%\w+}} %uint_45 %uint_1 %128 %uint_0
+; CHECK: %129 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_45 %uint_1 %128 %uint_0
 ; CHECK: OpBranch %124
 ; CHECK: %124 = OpLabel
 ; CHECK: %130 = OpPhi %float %127 %125 %101 %126
 ; CHECK: OpBranch %43
 ; CHECK: %45 = OpLabel
 ; CHECK: %47 = OpBitcast %uint %7
-; CHECK: %100 = OpFunctionCall %void {{%\w+}} %uint_45 %uint_0 %47 %40
+; CHECK: %100 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_45 %uint_0 %47 %40
 ; CHECK: OpBranch %43
 ; CHECK: %43 = OpLabel
 ; CHECK: %102 = OpPhi %float %130 %124 %101 %45
@@ -2353,13 +2353,13 @@ OpDecorate %20 NonUniform
 OpStore %b %20
 ; CHECK-NOT: %20 = OpLoad %float %19
 ; CHECK-NOT: OpStore %b %20
-; CHECK: %40 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_3
+; CHECK: %40 = OpFunctionCall %uint %inst_bindless_direct_read_2 %uint_1 %uint_3
 ; CHECK: %42 = OpULessThan %bool %7 %40
 ; CHECK: OpSelectionMerge %43 None
 ; CHECK: OpBranchConditional %42 %44 %45
 ; CHECK: %44 = OpLabel
 ; CHECK: %103 = OpBitcast %uint %7
-; CHECK: %122 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_3 %103
+; CHECK: %122 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_3 %103
 ; CHECK: %123 = OpULessThan %bool %uint_0 %122
 ; CHECK: OpSelectionMerge %124 None
 ; CHECK: OpBranchConditional %123 %125 %126
@@ -2368,14 +2368,14 @@ OpStore %b %20
 ; CHECK: OpBranch %124
 ; CHECK: %126 = OpLabel
 ; CHECK: %128 = OpBitcast %uint %7
-; CHECK: %129 = OpFunctionCall %void {{%\w+}} %uint_45 %uint_1 %128 %uint_0
+; CHECK: %129 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_45 %uint_1 %128 %uint_0
 ; CHECK: OpBranch %124
 ; CHECK: %124 = OpLabel
 ; CHECK: %130 = OpPhi %float %127 %125 %101 %126
 ; CHECK: OpBranch %43
 ; CHECK: %45 = OpLabel
 ; CHECK: %47 = OpBitcast %uint %7
-; CHECK: %100 = OpFunctionCall %void {{%\w+}} %uint_45 %uint_0 %47 %40
+; CHECK: %100 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_45 %uint_0 %47 %40
 ; CHECK: OpBranch %43
 ; CHECK: %43 = OpLabel
 ; CHECK: %102 = OpPhi %float %130 %124 %101 %45
@@ -2479,7 +2479,7 @@ OpDecorate %uniformBuffer Binding 3
 OpStore %b %16
 ; CHECK-NOT: %16 = OpLoad %float %15
 ; CHECK-NOT: OpStore %b %16
-; CHECK: %43 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_3 %uint_0
+; CHECK: %43 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_3 %uint_0
 ; CHECK: %45 = OpULessThan %bool %uint_0 %43
 ; CHECK: OpSelectionMerge %47 None
 ; CHECK: OpBranchConditional %45 %48 %49
@@ -2487,7 +2487,7 @@ OpStore %b %16
 ; CHECK: %50 = OpLoad %float %15
 ; CHECK: OpBranch %47
 ; CHECK: %49 = OpLabel
-; CHECK: %103 = OpFunctionCall %void {{%\w+}} %uint_32 %uint_1 %uint_0 %uint_0
+; CHECK: %103 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_32 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %47
 ; CHECK: %47 = OpLabel
 ; CHECK: %105 = OpPhi %float %50 %48 %104 %49
@@ -2600,13 +2600,13 @@ OpDecorate %b Location 1
 %20 = OpAccessChain %_ptr_Uniform_float %storageBuffer %14 %int_0
 OpStore %20 %18
 ; CHECK-NOT: OpStore %20 %18
-; CHECK: %40 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_4
+; CHECK: %40 = OpFunctionCall %uint %inst_bindless_direct_read_2 %uint_1 %uint_4
 ; CHECK: %42 = OpULessThan %bool %7 %40
 ; CHECK: OpSelectionMerge %43 None
 ; CHECK: OpBranchConditional %42 %44 %45
 ; CHECK: %44 = OpLabel
 ; CHECK: %100 = OpBitcast %uint %7
-; CHECK: %119 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_4 %100
+; CHECK: %119 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_4 %100
 ; CHECK: %120 = OpULessThan %bool %uint_0 %119
 ; CHECK: OpSelectionMerge %121 None
 ; CHECK: OpBranchConditional %120 %122 %123
@@ -2615,13 +2615,13 @@ OpStore %20 %18
 ; CHECK: OpBranch %121
 ; CHECK: %123 = OpLabel
 ; CHECK: %124 = OpBitcast %uint %7
-; CHECK: %125 = OpFunctionCall %void {{%\w+}} %uint_45 %uint_1 %124 %uint_0
+; CHECK: %125 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_45 %uint_1 %124 %uint_0
 ; CHECK: OpBranch %121
 ; CHECK: %121 = OpLabel
 ; CHECK: OpBranch %43
 ; CHECK: %45 = OpLabel
 ; CHECK: %46 = OpBitcast %uint %7
-; CHECK: %99 = OpFunctionCall %void {{%\w+}} %uint_45 %uint_0 %46 %40
+; CHECK: %99 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_45 %uint_0 %46 %40
 ; CHECK: OpBranch %43
 ; CHECK: %43 = OpLabel
 OpReturn
@@ -2741,7 +2741,7 @@ OpStore %b %22
 ; CHECK: OpBranchConditional %25 %27 %28
 ; CHECK: %27 = OpLabel
 ; CHECK: %90 = OpBitcast %uint %7
-; CHECK: %112 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_3 %90
+; CHECK: %112 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_3 %90
 ; CHECK: %113 = OpULessThan %bool %uint_0 %112
 ; CHECK: OpSelectionMerge %114 None
 ; CHECK: OpBranchConditional %113 %115 %116
@@ -2750,14 +2750,14 @@ OpStore %b %22
 ; CHECK: OpBranch %114
 ; CHECK: %116 = OpLabel
 ; CHECK: %118 = OpBitcast %uint %7
-; CHECK: %119 = OpFunctionCall %void {{%\w+}} %uint_46 %uint_1 %118 %uint_0
+; CHECK: %119 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_46 %uint_1 %118 %uint_0
 ; CHECK: OpBranch %114
 ; CHECK: %114 = OpLabel
 ; CHECK: %120 = OpPhi %float %117 %115 %88 %116
 ; CHECK: OpBranch %26
 ; CHECK: %28 = OpLabel
 ; CHECK: %30 = OpBitcast %uint %7
-; CHECK: %87 = OpFunctionCall %void {{%\w+}} %uint_46 %uint_0 %30 %uint_128
+; CHECK: %87 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_46 %uint_0 %30 %uint_128
 ; CHECK: OpBranch %26
 ; CHECK: %26 = OpLabel
 ; CHECK: %89 = OpPhi %float %120 %114 %88 %28
@@ -2886,7 +2886,7 @@ OpDecorate %images NonWritable
 %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 OpStore %31 %29
 ; CHECK-NOT: OpStore %31 %29
-; CHECK: %132 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %132 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %133 = OpULessThan %bool %uint_0 %132
 ; CHECK: OpSelectionMerge %134 None
 ; CHECK: OpBranchConditional %133 %135 %136
@@ -2894,19 +2894,19 @@ OpStore %31 %29
 ; CHECK: %137 = OpLoad %uint %25
 ; CHECK: OpBranch %134
 ; CHECK: %136 = OpLabel
-; CHECK: %139 = OpFunctionCall %void {{%\w+}} %uint_47 %uint_1 %uint_0 %uint_0
+; CHECK: %139 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_47 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %134
 ; CHECK: %134 = OpLabel
 ; CHECK: %141 = OpPhi %uint %137 %135 %140 %136
 ; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images %141
 ; CHECK: %28 = OpLoad %13 %27
-; CHECK: %48 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_1
+; CHECK: %48 = OpFunctionCall %uint %inst_bindless_direct_read_2 %uint_1 %uint_1
 ; CHECK: %50 = OpULessThan %bool %141 %48
 ; CHECK: OpSelectionMerge %51 None
 ; CHECK: OpBranchConditional %50 %52 %53
 ; CHECK: %52 = OpLabel
 ; CHECK: %54 = OpLoad %13 %27
-; CHECK: %142 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_1 %141
+; CHECK: %142 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_1 %141
 ; CHECK: %143 = OpULessThan %bool %uint_0 %142
 ; CHECK: OpSelectionMerge %144 None
 ; CHECK: OpBranchConditional %143 %145 %146
@@ -2915,19 +2915,19 @@ OpStore %31 %29
 ; CHECK: %148 = OpImageRead %v4float %147 %20
 ; CHECK: OpBranch %144
 ; CHECK: %146 = OpLabel
-; CHECK: %149 = OpFunctionCall %void {{%\w+}} %uint_50 %uint_1 %141 %uint_0
+; CHECK: %149 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_50 %uint_1 %141 %uint_0
 ; CHECK: OpBranch %144
 ; CHECK: %144 = OpLabel
 ; CHECK: %150 = OpPhi %v4float %148 %145 %112 %146
 ; CHECK: OpBranch %51
 ; CHECK: %53 = OpLabel
-; CHECK: %111 = OpFunctionCall %void {{%\w+}} %uint_50 %uint_0 %141 %48
+; CHECK: %111 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_50 %uint_0 %141 %48
 ; CHECK: OpBranch %51
 ; CHECK: %51 = OpLabel
 ; CHECK: %113 = OpPhi %v4float %150 %144 %112 %53
 ; CHECK: %30 = OpCompositeExtract %float %113 0
 ; CHECK: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-; CHECK: %151 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %151 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %152 = OpULessThan %bool %uint_0 %151
 ; CHECK: OpSelectionMerge %153 None
 ; CHECK: OpBranchConditional %152 %154 %155
@@ -2935,7 +2935,7 @@ OpStore %31 %29
 ; CHECK: OpStore %31 %30
 ; CHECK: OpBranch %153
 ; CHECK: %155 = OpLabel
-; CHECK: %157 = OpFunctionCall %void {{%\w+}} %uint_53 %uint_1 %uint_0 %uint_0
+; CHECK: %157 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_53 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %153
 ; CHECK: %153 = OpLabel
 OpReturn
@@ -3064,7 +3064,7 @@ OpDecorate %images NonWritable
 %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 OpStore %31 %29
 ; CHECK-NOT: OpStore %31 %29
-; CHECK: %133 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %133 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %134 = OpULessThan %bool %uint_0 %133
 ; CHECK: OpSelectionMerge %135 None
 ; CHECK: OpBranchConditional %134 %136 %137
@@ -3072,19 +3072,19 @@ OpStore %31 %29
 ; CHECK: %138 = OpLoad %uint %25
 ; CHECK: OpBranch %135
 ; CHECK: %137 = OpLabel
-; CHECK: %140 = OpFunctionCall %void {{%\w+}} %uint_48 %uint_1 %uint_0 %uint_0
+; CHECK: %140 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_48 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %135
 ; CHECK: %135 = OpLabel
 ; CHECK: %142 = OpPhi %uint %138 %136 %141 %137
 ; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images %142
 ; CHECK: %28 = OpLoad %13 %27
-; CHECK: %48 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_1
+; CHECK: %48 = OpFunctionCall %uint %inst_bindless_direct_read_2 %uint_1 %uint_1
 ; CHECK: %50 = OpULessThan %bool %142 %48
 ; CHECK: OpSelectionMerge %51 None
 ; CHECK: OpBranchConditional %50 %52 %53
 ; CHECK: %52 = OpLabel
 ; CHECK: %54 = OpLoad %13 %27
-; CHECK: %143 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_1 %142
+; CHECK: %143 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_1 %142
 ; CHECK: %144 = OpULessThan %bool %uint_0 %143
 ; CHECK: OpSelectionMerge %145 None
 ; CHECK: OpBranchConditional %144 %146 %147
@@ -3093,19 +3093,19 @@ OpStore %31 %29
 ; CHECK: %149 = OpImageRead %v4float %148 %20
 ; CHECK: OpBranch %145
 ; CHECK: %147 = OpLabel
-; CHECK: %150 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_1 %142 %uint_0
+; CHECK: %150 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_51 %uint_1 %142 %uint_0
 ; CHECK: OpBranch %145
 ; CHECK: %145 = OpLabel
 ; CHECK: %151 = OpPhi %v4float %149 %146 %113 %147
 ; CHECK: OpBranch %51
 ; CHECK: %53 = OpLabel
-; CHECK: %112 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_0 %142 %48
+; CHECK: %112 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_51 %uint_0 %142 %48
 ; CHECK: OpBranch %51
 ; CHECK: %51 = OpLabel
 ; CHECK: %114 = OpPhi %v4float %151 %145 %113 %53
 ; CHECK: %30 = OpCompositeExtract %float %114 0
 ; CHECK: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-; CHECK: %152 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %152 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %153 = OpULessThan %bool %uint_0 %152
 ; CHECK: OpSelectionMerge %154 None
 ; CHECK: OpBranchConditional %153 %155 %156
@@ -3113,7 +3113,7 @@ OpStore %31 %29
 ; CHECK: OpStore %31 %30
 ; CHECK: OpBranch %154
 ; CHECK: %156 = OpLabel
-; CHECK: %158 = OpFunctionCall %void {{%\w+}} %uint_54 %uint_1 %uint_0 %uint_0
+; CHECK: %158 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_54 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %154
 ; CHECK: %154 = OpLabel
 OpReturn
@@ -3240,7 +3240,7 @@ OpDecorate %images NonWritable
 %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 OpStore %31 %29
 ; CHECK-NOT: OpStore %31 %29
-; CHECK: %133 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %133 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %134 = OpULessThan %bool %uint_0 %133
 ; CHECK: OpSelectionMerge %135 None
 ; CHECK: OpBranchConditional %134 %136 %137
@@ -3248,19 +3248,19 @@ OpStore %31 %29
 ; CHECK: %138 = OpLoad %uint %25
 ; CHECK: OpBranch %135
 ; CHECK: %137 = OpLabel
-; CHECK: %140 = OpFunctionCall %void {{%\w+}} %uint_48 %uint_1 %uint_0 %uint_0
+; CHECK: %140 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_48 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %135
 ; CHECK: %135 = OpLabel
 ; CHECK: %142 = OpPhi %uint %138 %136 %141 %137
 ; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images %142
 ; CHECK: %28 = OpLoad %13 %27
-; CHECK: %48 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_1
+; CHECK: %48 = OpFunctionCall %uint %inst_bindless_direct_read_2 %uint_1 %uint_1
 ; CHECK: %50 = OpULessThan %bool %142 %48
 ; CHECK: OpSelectionMerge %51 None
 ; CHECK: OpBranchConditional %50 %52 %53
 ; CHECK: %52 = OpLabel
 ; CHECK: %54 = OpLoad %13 %27
-; CHECK: %143 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_1 %142
+; CHECK: %143 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_1 %142
 ; CHECK: %144 = OpULessThan %bool %uint_0 %143
 ; CHECK: OpSelectionMerge %145 None
 ; CHECK: OpBranchConditional %144 %146 %147
@@ -3269,19 +3269,19 @@ OpStore %31 %29
 ; CHECK: %149 = OpImageRead %v4float %148 %20
 ; CHECK: OpBranch %145
 ; CHECK: %147 = OpLabel
-; CHECK: %150 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_1 %142 %uint_0
+; CHECK: %150 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_51 %uint_1 %142 %uint_0
 ; CHECK: OpBranch %145
 ; CHECK: %145 = OpLabel
 ; CHECK: %151 = OpPhi %v4float %149 %146 %113 %147
 ; CHECK: OpBranch %51
 ; CHECK: %53 = OpLabel
-; CHECK: %112 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_0 %142 %48
+; CHECK: %112 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_51 %uint_0 %142 %48
 ; CHECK: OpBranch %51
 ; CHECK: %51 = OpLabel
 ; CHECK: %114 = OpPhi %v4float %151 %145 %113 %53
 ; CHECK: %30 = OpCompositeExtract %float %114 0
 ; CHECK: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-; CHECK: %152 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %152 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %153 = OpULessThan %bool %uint_0 %152
 ; CHECK: OpSelectionMerge %154 None
 ; CHECK: OpBranchConditional %153 %155 %156
@@ -3289,7 +3289,7 @@ OpStore %31 %29
 ; CHECK: OpStore %31 %30
 ; CHECK: OpBranch %154
 ; CHECK: %156 = OpLabel
-; CHECK: %158 = OpFunctionCall %void {{%\w+}} %uint_54 %uint_1 %uint_0 %uint_0
+; CHECK: %158 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_54 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %154
 ; CHECK: %154 = OpLabel
 OpReturn
@@ -3417,7 +3417,7 @@ OpDecorate %images NonWritable
 %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 OpStore %31 %29
 ; CHECK-NOT: OpStore %31 %29
-; CHECK: %133 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %133 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %134 = OpULessThan %bool %uint_0 %133
 ; CHECK: OpSelectionMerge %135 None
 ; CHECK: OpBranchConditional %134 %136 %137
@@ -3425,19 +3425,19 @@ OpStore %31 %29
 ; CHECK: %138 = OpLoad %uint %25
 ; CHECK: OpBranch %135
 ; CHECK: %137 = OpLabel
-; CHECK: %140 = OpFunctionCall %void {{%\w+}} %uint_48 %uint_1 %uint_0 %uint_0
+; CHECK: %140 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_48 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %135
 ; CHECK: %135 = OpLabel
 ; CHECK: %142 = OpPhi %uint %138 %136 %141 %137
 ; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images %142
 ; CHECK: %28 = OpLoad %13 %27
-; CHECK: %48 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_1
+; CHECK: %48 = OpFunctionCall %uint %inst_bindless_direct_read_2 %uint_1 %uint_1
 ; CHECK: %50 = OpULessThan %bool %142 %48
 ; CHECK: OpSelectionMerge %51 None
 ; CHECK: OpBranchConditional %50 %52 %53
 ; CHECK: %52 = OpLabel
 ; CHECK: %54 = OpLoad %13 %27
-; CHECK: %143 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_1 %142
+; CHECK: %143 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_1 %142
 ; CHECK: %144 = OpULessThan %bool %uint_0 %143
 ; CHECK: OpSelectionMerge %145 None
 ; CHECK: OpBranchConditional %144 %146 %147
@@ -3446,19 +3446,19 @@ OpStore %31 %29
 ; CHECK: %149 = OpImageRead %v4float %148 %20
 ; CHECK: OpBranch %145
 ; CHECK: %147 = OpLabel
-; CHECK: %150 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_1 %142 %uint_0
+; CHECK: %150 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_51 %uint_1 %142 %uint_0
 ; CHECK: OpBranch %145
 ; CHECK: %145 = OpLabel
 ; CHECK: %151 = OpPhi %v4float %149 %146 %113 %147
 ; CHECK: OpBranch %51
 ; CHECK: %53 = OpLabel
-; CHECK: %112 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_0 %142 %48
+; CHECK: %112 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_51 %uint_0 %142 %48
 ; CHECK: OpBranch %51
 ; CHECK: %51 = OpLabel
 ; CHECK: %114 = OpPhi %v4float %151 %145 %113 %53
 ; CHECK: %30 = OpCompositeExtract %float %114 0
 ; CHECK: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-; CHECK: %152 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %152 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %153 = OpULessThan %bool %uint_0 %152
 ; CHECK: OpSelectionMerge %154 None
 ; CHECK: OpBranchConditional %153 %155 %156
@@ -3466,7 +3466,7 @@ OpStore %31 %29
 ; CHECK: OpStore %31 %30
 ; CHECK: OpBranch %154
 ; CHECK: %156 = OpLabel
-; CHECK: %158 = OpFunctionCall %void {{%\w+}} %uint_54 %uint_1 %uint_0 %uint_0
+; CHECK: %158 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_54 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %154
 ; CHECK: %154 = OpLabel
 OpReturn
@@ -3594,7 +3594,7 @@ OpDecorate %images NonWritable
 %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 OpStore %31 %29
 ; CHECK-NOT: OpStore %31 %29
-; CHECK: %133 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %133 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %134 = OpULessThan %bool %uint_0 %133
 ; CHECK: OpSelectionMerge %135 None
 ; CHECK: OpBranchConditional %134 %136 %137
@@ -3602,19 +3602,19 @@ OpStore %31 %29
 ; CHECK: %138 = OpLoad %uint %25
 ; CHECK: OpBranch %135
 ; CHECK: %137 = OpLabel
-; CHECK: %140 = OpFunctionCall %void {{%\w+}} %uint_48 %uint_1 %uint_0 %uint_0
+; CHECK: %140 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_48 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %135
 ; CHECK: %135 = OpLabel
 ; CHECK: %142 = OpPhi %uint %138 %136 %141 %137
 ; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images %142
 ; CHECK: %28 = OpLoad %13 %27
-; CHECK: %48 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_1
+; CHECK: %48 = OpFunctionCall %uint %inst_bindless_direct_read_2 %uint_1 %uint_1
 ; CHECK: %50 = OpULessThan %bool %142 %48
 ; CHECK: OpSelectionMerge %51 None
 ; CHECK: OpBranchConditional %50 %52 %53
 ; CHECK: %52 = OpLabel
 ; CHECK: %54 = OpLoad %13 %27
-; CHECK: %143 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_1 %142
+; CHECK: %143 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_1 %142
 ; CHECK: %144 = OpULessThan %bool %uint_0 %143
 ; CHECK: OpSelectionMerge %145 None
 ; CHECK: OpBranchConditional %144 %146 %147
@@ -3623,19 +3623,19 @@ OpStore %31 %29
 ; CHECK: %149 = OpImageRead %v4float %148 %20
 ; CHECK: OpBranch %145
 ; CHECK: %147 = OpLabel
-; CHECK: %150 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_1 %142 %uint_0
+; CHECK: %150 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_51 %uint_1 %142 %uint_0
 ; CHECK: OpBranch %145
 ; CHECK: %145 = OpLabel
 ; CHECK: %151 = OpPhi %v4float %149 %146 %113 %147
 ; CHECK: OpBranch %51
 ; CHECK: %53 = OpLabel
-; CHECK: %112 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_0 %142 %48
+; CHECK: %112 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_51 %uint_0 %142 %48
 ; CHECK: OpBranch %51
 ; CHECK: %51 = OpLabel
 ; CHECK: %114 = OpPhi %v4float %151 %145 %113 %53
 ; CHECK: %30 = OpCompositeExtract %float %114 0
 ; CHECK: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-; CHECK: %152 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %152 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %153 = OpULessThan %bool %uint_0 %152
 ; CHECK: OpSelectionMerge %154 None
 ; CHECK: OpBranchConditional %153 %155 %156
@@ -3643,7 +3643,7 @@ OpStore %31 %29
 ; CHECK: OpStore %31 %30
 ; CHECK: OpBranch %154
 ; CHECK: %156 = OpLabel
-; CHECK: %158 = OpFunctionCall %void {{%\w+}} %uint_54 %uint_1 %uint_0 %uint_0
+; CHECK: %158 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_54 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %154
 ; CHECK: %154 = OpLabel
 OpReturn
@@ -3771,7 +3771,7 @@ OpDecorate %images NonWritable
 %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 OpStore %31 %29
 ; CHECK-NOT OpStore %31 %29
-; CHECK: %133 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %133 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %134 = OpULessThan %bool %uint_0 %133
 ; CHECK: OpSelectionMerge %135 None
 ; CHECK: OpBranchConditional %134 %136 %137
@@ -3779,19 +3779,19 @@ OpStore %31 %29
 ; CHECK: %138 = OpLoad %uint %25
 ; CHECK: OpBranch %135
 ; CHECK: %137 = OpLabel
-; CHECK: %140 = OpFunctionCall %void {{%\w+}} %uint_48 %uint_1 %uint_0 %uint_0
+; CHECK: %140 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_48 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %135
 ; CHECK: %135 = OpLabel
 ; CHECK: %142 = OpPhi %uint %138 %136 %141 %137
 ; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images %142
 ; CHECK: %28 = OpLoad %13 %27
-; CHECK: %48 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_1
+; CHECK: %48 = OpFunctionCall %uint %inst_bindless_direct_read_2 %uint_1 %uint_1
 ; CHECK: %50 = OpULessThan %bool %142 %48
 ; CHECK: OpSelectionMerge %51 None
 ; CHECK: OpBranchConditional %50 %52 %53
 ; CHECK: %52 = OpLabel
 ; CHECK: %54 = OpLoad %13 %27
-; CHECK: %143 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_1 %142
+; CHECK: %143 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_1 %142
 ; CHECK: %144 = OpULessThan %bool %uint_0 %143
 ; CHECK: OpSelectionMerge %145 None
 ; CHECK: OpBranchConditional %144 %146 %147
@@ -3800,19 +3800,19 @@ OpStore %31 %29
 ; CHECK: %149 = OpImageRead %v4float %148 %20
 ; CHECK: OpBranch %145
 ; CHECK: %147 = OpLabel
-; CHECK: %150 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_1 %142 %uint_0
+; CHECK: %150 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_51 %uint_1 %142 %uint_0
 ; CHECK: OpBranch %145
 ; CHECK: %145 = OpLabel
 ; CHECK: %151 = OpPhi %v4float %149 %146 %113 %147
 ; CHECK: OpBranch %51
 ; CHECK: %53 = OpLabel
-; CHECK: %112 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_0 %142 %48
+; CHECK: %112 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_51 %uint_0 %142 %48
 ; CHECK: OpBranch %51
 ; CHECK: %51 = OpLabel
 ; CHECK: %114 = OpPhi %v4float %151 %145 %113 %53
 ; CHECK: %30 = OpCompositeExtract %float %114 0
 ; CHECK: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-; CHECK: %152 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %152 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %153 = OpULessThan %bool %uint_0 %152
 ; CHECK: OpSelectionMerge %154 None
 ; CHECK: OpBranchConditional %153 %155 %156
@@ -3820,7 +3820,7 @@ OpStore %31 %29
 ; CHECK: OpStore %31 %30
 ; CHECK: OpBranch %154
 ; CHECK: %156 = OpLabel
-; CHECK: %158 = OpFunctionCall %void {{%\w+}} %uint_54 %uint_1 %uint_0 %uint_0
+; CHECK: %158 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_54 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %154
 ; CHECK: %154 = OpLabel
 OpReturn
@@ -3948,7 +3948,7 @@ OpDecorate %images NonWritable
 %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 OpStore %31 %29
 ; CHECK-NOT: OpStore %31 %29
-; CHECK: %133 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %133 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %134 = OpULessThan %bool %uint_0 %133
 ; CHECK: OpSelectionMerge %135 None
 ; CHECK: OpBranchConditional %134 %136 %137
@@ -3956,19 +3956,19 @@ OpStore %31 %29
 ; CHECK: %138 = OpLoad %uint %25
 ; CHECK: OpBranch %135
 ; CHECK: %137 = OpLabel
-; CHECK: %140 = OpFunctionCall %void {{%\w+}} %uint_48 %uint_1 %uint_0 %uint_0
+; CHECK: %140 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_48 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %135
 ; CHECK: %135 = OpLabel
 ; CHECK: %142 = OpPhi %uint %138 %136 %141 %137
 ; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images %142
 ; CHECK: %28 = OpLoad %13 %27
-; CHECK: %48 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_1
+; CHECK: %48 = OpFunctionCall %uint %inst_bindless_direct_read_2 %uint_1 %uint_1
 ; CHECK: %50 = OpULessThan %bool %142 %48
 ; CHECK: OpSelectionMerge %51 None
 ; CHECK: OpBranchConditional %50 %52 %53
 ; CHECK: %52 = OpLabel
 ; CHECK: %54 = OpLoad %13 %27
-; CHECK: %143 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_1 %142
+; CHECK: %143 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_1 %142
 ; CHECK: %144 = OpULessThan %bool %uint_0 %143
 ; CHECK: OpSelectionMerge %145 None
 ; CHECK: OpBranchConditional %144 %146 %147
@@ -3977,19 +3977,19 @@ OpStore %31 %29
 ; CHECK: %149 = OpImageRead %v4float %148 %20
 ; CHECK: OpBranch %145
 ; CHECK: %147 = OpLabel
-; CHECK: %150 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_1 %142 %uint_0
+; CHECK: %150 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_51 %uint_1 %142 %uint_0
 ; CHECK: OpBranch %145
 ; CHECK: %145 = OpLabel
 ; CHECK: %151 = OpPhi %v4float %149 %146 %113 %147
 ; CHECK: OpBranch %51
 ; CHECK: %53 = OpLabel
-; CHECK: %112 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_0 %142 %48
+; CHECK: %112 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_51 %uint_0 %142 %48
 ; CHECK: OpBranch %51
 ; CHECK: %51 = OpLabel
 ; CHECK: %114 = OpPhi %v4float %151 %145 %113 %53
 ; CHECK: %30 = OpCompositeExtract %float %114 0
 ; CHECK: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-; CHECK: %152 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %152 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %153 = OpULessThan %bool %uint_0 %152
 ; CHECK: OpSelectionMerge %154 None
 ; CHECK: OpBranchConditional %153 %155 %156
@@ -3997,7 +3997,7 @@ OpStore %31 %29
 ; CHECK: OpStore %31 %30
 ; CHECK: OpBranch %154
 ; CHECK: %156 = OpLabel
-; CHECK: %158 = OpFunctionCall %void {{%\w+}} %uint_54 %uint_1 %uint_0 %uint_0
+; CHECK: %158 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_54 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %154
 ; CHECK: %154 = OpLabel
 OpReturn
@@ -4169,7 +4169,7 @@ OpStore %x %36
 %50 = OpImageSampleImplicitLod %v4float %41 %49
 %51 = OpCompositeExtract %float %50 0
 ; CHECK-NOT: %51 = OpCompositeExtract %float %50 0
-; CHECK: %157 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+; CHECK: %157 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ; CHECK: %158 = OpULessThan %bool %uint_0 %157
 ; CHECK: OpSelectionMerge %159 None
 ; CHECK: OpBranchConditional %158 %160 %161
@@ -4177,13 +4177,13 @@ OpStore %x %36
 ; CHECK: %162 = OpLoad %v2float %47
 ; CHECK: OpBranch %159
 ; CHECK: %161 = OpLabel
-; CHECK: %164 = OpFunctionCall %void {{%\w+}} %uint_87 %uint_1 %uint_0 %uint_0
+; CHECK: %164 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_87 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %159
 ; CHECK: %159 = OpLabel
 ; CHECK: %166 = OpPhi %v2float %162 %160 %165 %161
 ; CHECK: %49 = OpFMul %v2float %42 %166
 ; CHECK: %167 = OpSampledImage %27 %39 %40
-; CHECK: %168 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_2 %uint_0
+; CHECK: %168 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_2 %uint_0
 ; CHECK: %169 = OpULessThan %bool %uint_0 %168
 ; CHECK: OpSelectionMerge %170 None
 ; CHECK: OpBranchConditional %169 %171 %172
@@ -4193,7 +4193,7 @@ OpStore %x %36
 ; CHECK: %175 = OpImageSampleImplicitLod %v4float %174 %49
 ; CHECK: OpBranch %170
 ; CHECK: %172 = OpLabel
-; CHECK: %177 = OpFunctionCall %void {{%\w+}} %uint_89 %uint_1 %uint_0 %uint_0
+; CHECK: %177 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_89 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch %170
 ; CHECK: %170 = OpLabel
 ; CHECK: %178 = OpPhi %v4float %175 %171 %122 %172
@@ -4259,7 +4259,7 @@ TEST_F(InstBindlessTest, MultipleUniformNonAggregateRefsNoDescInit) {
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %MainPs "MainPs" %_ %__0 %g_tColor %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor
-;CHECK:        OpEntryPoint Fragment %MainPs "MainPs" %_ %__0 %g_tColor %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor {{%\w+}} {{%\w+}} %gl_FragCoord
+;CHECK:        OpEntryPoint Fragment %MainPs "MainPs" %_ %__0 %g_tColor %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor %inst_bindless_input_buffer %inst_bindless_output_buffer %gl_FragCoord
                OpExecutionMode %MainPs OriginUpperLeft
                OpSource HLSL 500
                OpName %MainPs "MainPs"
@@ -4345,7 +4345,7 @@ TEST_F(InstBindlessTest, MultipleUniformNonAggregateRefsNoDescInit) {
  ;CHECK:    %uint_75 = OpConstant %uint 75
      %MainPs = OpFunction %void None %3
           %5 = OpLabel
- ;CHECK: %140 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_1 %uint_0
+ ;CHECK: %140 = OpFunctionCall %uint %inst_bindless_direct_read_3 %uint_1 %uint_1 %uint_0
  ;CHECK:        OpBranch %117
  ;CHECK: %117 = OpLabel
  ;CHECK:        OpBranch %116
@@ -4368,7 +4368,7 @@ TEST_F(InstBindlessTest, MultipleUniformNonAggregateRefsNoDescInit) {
  ;CHECK:        %146 = OpLoad %v2float %86
  ;CHECK:               OpBranch %143
  ;CHECK:        %145 = OpLabel
- ;CHECK:        %201 = OpFunctionCall %void {{%\w+}} %uint_71 %uint_4 %uint_0 %119 %140
+ ;CHECK:        %201 = OpFunctionCall %void %inst_bindless_stream_write_5 %uint_71 %uint_4 %uint_0 %119 %140
  ;CHECK:               OpBranch %143
  ;CHECK:        %143 = OpLabel
  ;CHECK:        %203 = OpPhi %v2float %146 %144 %202 %145
@@ -4385,7 +4385,7 @@ TEST_F(InstBindlessTest, MultipleUniformNonAggregateRefsNoDescInit) {
  ;CHECK:        %209 = OpLoad %v2float %89
  ;CHECK:               OpBranch %206
  ;CHECK:        %208 = OpLabel
- ;CHECK:        %211 = OpFunctionCall %void {{%\w+}} %uint_75 %uint_4 %uint_0 %204 %140
+ ;CHECK:        %211 = OpFunctionCall %void %inst_bindless_stream_write_5 %uint_75 %uint_4 %uint_0 %204 %140
  ;CHECK:               OpBranch %206
  ;CHECK:        %206 = OpLabel
  ;CHECK:        %212 = OpPhi %v2float %209 %207 %202 %208
@@ -4553,7 +4553,7 @@ TEST_F(InstBindlessTest, UniformArrayRefNoDescInit) {
 ;CHECK:        %185 = OpConstantNull %v2float
      %MainPs = OpFunction %void None %3
           %5 = OpLabel
-;CHECK:        %123 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_2 %uint_0
+;CHECK:        %123 = OpFunctionCall %uint %inst_bindless_direct_read_3 %uint_1 %uint_2 %uint_0
 ;CHECK:               OpBranch %93
 ;CHECK:         %93 = OpLabel
 ;CHECK:               OpBranch %92
@@ -4575,7 +4575,7 @@ TEST_F(InstBindlessTest, UniformArrayRefNoDescInit) {
 ;CHECK:        %130 = OpLoad %v2float %81
 ;CHECK:               OpBranch %127
 ;CHECK:        %129 = OpLabel
-;CHECK:        %184 = OpFunctionCall %void {{%\w+}} %uint_78 %uint_4 %uint_0 %101 %123
+;CHECK:        %184 = OpFunctionCall %void %inst_bindless_stream_write_5 %uint_78 %uint_4 %uint_0 %101 %123
 ;CHECK:               OpBranch %127
 ;CHECK:        %127 = OpLabel
 ;CHECK:        %186 = OpPhi %v2float %130 %128 %185 %129
@@ -4611,7 +4611,7 @@ TEST_F(InstBindlessTest, UniformArrayRefWithDescInit) {
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %MainPs "MainPs" %_ %__0 %g_tColor %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor
-;CHECK:        OpEntryPoint Fragment %MainPs "MainPs" %_ %__0 %g_tColor %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor {{%\w+}} {{%\w+}} %gl_FragCoord
+;CHECK:        OpEntryPoint Fragment %MainPs "MainPs" %_ %__0 %g_tColor %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor %inst_bindless_input_buffer %inst_bindless_output_buffer %gl_FragCoord
                OpExecutionMode %MainPs OriginUpperLeft
                OpSource HLSL 500
                OpName %MainPs "MainPs"
@@ -4713,8 +4713,8 @@ TEST_F(InstBindlessTest, UniformArrayRefWithDescInit) {
 ;CHECK:        %201 = OpConstantNull %v4float
      %MainPs = OpFunction %void None %3
           %5 = OpLabel
-;CHECK:        %126 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_2 %uint_0
-;CHECK:        %191 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+;CHECK:        %126 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_2 %uint_0
+;CHECK:        %191 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %uint_0
 ;CHECK:               OpBranch %93
 ;CHECK:         %93 = OpLabel
 ;CHECK:               OpBranch %92
@@ -4738,7 +4738,7 @@ TEST_F(InstBindlessTest, UniformArrayRefWithDescInit) {
 ;CHECK:        %133 = OpLoad %v2float %81
 ;CHECK:               OpBranch %130
 ;CHECK:        %132 = OpLabel
-;CHECK:        %188 = OpFunctionCall %void {{%\w+}} %uint_78 %uint_4 %uint_0 %101 %126
+;CHECK:        %188 = OpFunctionCall %void %inst_bindless_stream_write_5 %uint_78 %uint_4 %uint_0 %101 %126
 ;CHECK:               OpBranch %130
 ;CHECK:        %130 = OpLabel
 ;CHECK:        %190 = OpPhi %v2float %133 %131 %189 %132
@@ -4759,7 +4759,7 @@ TEST_F(InstBindlessTest, UniformArrayRefWithDescInit) {
 ;CHECK:        %198 = OpImageSampleImplicitLod %v4float %197 %86
 ;CHECK:               OpBranch %193
 ;CHECK:        %195 = OpLabel
-;CHECK:        %200 = OpFunctionCall %void {{%\w+}} %uint_83 %uint_1 %uint_0 %uint_0 %uint_0
+;CHECK:        %200 = OpFunctionCall %void %inst_bindless_stream_write_5 %uint_83 %uint_1 %uint_0 %uint_0 %uint_0
 ;CHECK:               OpBranch %193
 ;CHECK:        %193 = OpLabel
 ;CHECK:        %202 = OpPhi %v4float %198 %194 %201 %195
@@ -4790,7 +4790,7 @@ TEST_F(InstBindlessTest, Descriptor16BitIdxRef) {
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %MainPs "MainPs" %g_tColor %_ %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor
-;CHECK:        OpEntryPoint Fragment %MainPs "MainPs" %g_tColor %_ %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor {{%\w+}} %gl_FragCoord {{%\w+}}
+;CHECK:        OpEntryPoint Fragment %MainPs "MainPs" %g_tColor %_ %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor %inst_bindless_output_buffer %gl_FragCoord %inst_bindless_input_buffer
                OpExecutionMode %MainPs OriginUpperLeft
                OpSource HLSL 500
                OpName %MainPs "MainPs"
@@ -4888,7 +4888,7 @@ TEST_F(InstBindlessTest, Descriptor16BitIdxRef) {
 ;CHECK:         %47 = OpLoad %16 %34
 ;CHECK:         %48 = OpSampledImage %27 %47 %36
 ;CHECK:        %109 = OpUConvert %uint %33
-;CHECK:        %131 = OpFunctionCall %uint {{%\w+}} %uint_0 %uint_0 %uint_0 %109
+;CHECK:        %131 = OpFunctionCall %uint %inst_bindless_direct_read_4 %uint_0 %uint_0 %uint_0 %109
 ;CHECK:        %132 = OpULessThan %bool %uint_0 %131
 ;CHECK:               OpSelectionMerge %133 None
 ;CHECK:               OpBranchConditional %132 %134 %135
@@ -4899,13 +4899,13 @@ TEST_F(InstBindlessTest, Descriptor16BitIdxRef) {
 ;CHECK:               OpBranch %133
 ;CHECK:        %135 = OpLabel
 ;CHECK:        %139 = OpUConvert %uint %33
-;CHECK:        %140 = OpFunctionCall %void {{%\w+}} %uint_60 %uint_1 %139 %uint_0
+;CHECK:        %140 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_60 %uint_1 %139 %uint_0
 ;CHECK:               OpBranch %133
 ;CHECK:        %133 = OpLabel
 ;CHECK:        %141 = OpPhi %v4float %138 %134 %106 %135
 ;CHECK:               OpBranch %44
 ;CHECK:         %46 = OpLabel
-;CHECK:        %105 = OpFunctionCall %void {{%\w+}} %uint_60 %uint_0 %41 %uint_128
+;CHECK:        %105 = OpFunctionCall %void %inst_bindless_stream_write_4 %uint_60 %uint_0 %41 %uint_128
 ;CHECK:               OpBranch %44
 ;CHECK:         %44 = OpLabel
 ;CHECK:        %107 = OpPhi %v4float %141 %133 %106 %46
@@ -4966,7 +4966,7 @@ TEST_F(InstBindlessTest, UniformArray16bitIdxRef) {
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %MainPs "MainPs" %_ %__0 %g_tColor %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor
-;CHECK:        OpEntryPoint Fragment %MainPs "MainPs" %_ %__0 %g_tColor %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor {{%\w+}} {{%\w+}} %gl_FragCoord
+;CHECK:        OpEntryPoint Fragment %MainPs "MainPs" %_ %__0 %g_tColor %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor %inst_bindless_input_buffer %inst_bindless_output_buffer %gl_FragCoord
                OpExecutionMode %MainPs OriginUpperLeft
                OpSource HLSL 500
                OpName %MainPs "MainPs"
@@ -5067,7 +5067,7 @@ TEST_F(InstBindlessTest, UniformArray16bitIdxRef) {
 ;CHECK:        %142 = OpConstantNull %v2float
      %MainPs = OpFunction %void None %14
          %37 = OpLabel
-;CHECK:         %79 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_0 %uint_0
+;CHECK:         %79 = OpFunctionCall %uint %inst_bindless_direct_read_3 %uint_1 %uint_0 %uint_0
 ;CHECK:               OpBranch %49
 ;CHECK:         %49 = OpLabel
 ;CHECK:               OpBranch %48
@@ -5092,7 +5092,7 @@ TEST_F(InstBindlessTest, UniformArray16bitIdxRef) {
 ;CHECK:         %86 = OpLoad %v2float %41
 ;CHECK:               OpBranch %83
 ;CHECK:         %85 = OpLabel
-;CHECK:        %141 = OpFunctionCall %void {{%\w+}} %uint_81 %uint_4 %uint_0 %58 %79
+;CHECK:        %141 = OpFunctionCall %void %inst_bindless_stream_write_5 %uint_81 %uint_4 %uint_0 %58 %79
 ;CHECK:               OpBranch %83
 ;CHECK:         %83 = OpLabel
 ;CHECK:        %143 = OpPhi %v2float %86 %84 %142 %85
@@ -5139,7 +5139,7 @@ TEST_F(InstBindlessTest, UniformMatrixRefRowMajor) {
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main" %v_vtxResult %_ %a_position
-;CHECK:        OpEntryPoint Vertex %main "main" %v_vtxResult %_ %a_position {{%\w+}} {{%\w+}} %gl_VertexIndex %gl_InstanceIndex
+;CHECK:        OpEntryPoint Vertex %main "main" %v_vtxResult %_ %a_position %inst_bindless_input_buffer %inst_bindless_output_buffer %gl_VertexIndex %gl_InstanceIndex
                OpSource GLSL 450
                OpSourceExtension "GL_EXT_scalar_block_layout"
                OpName %main "main"
@@ -5212,7 +5212,7 @@ TEST_F(InstBindlessTest, UniformMatrixRefRowMajor) {
 ;CHECK;        %115 = OpConstantNull %float
        %main = OpFunction %void None %3
           %5 = OpLabel
-;CHECK:         %55 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_0 %uint_0
+;CHECK:         %55 = OpFunctionCall %uint %inst_bindless_direct_read_3 %uint_1 %uint_0 %uint_0
 ;CHECK:               OpBranch %26
 ;CHECK:         %26 = OpLabel
 ;CHECK:               OpBranch %25
@@ -5232,7 +5232,7 @@ TEST_F(InstBindlessTest, UniformMatrixRefRowMajor) {
 ;CHECK:         %61 = OpLoad %float %20
 ;CHECK:               OpBranch %58
 ;CHECK:         %60 = OpLabel
-;CHECK:        %114 = OpFunctionCall %void {{%\w+}} %uint_45 %uint_4 %uint_0 %35 %55
+;CHECK:        %114 = OpFunctionCall %void %inst_bindless_stream_write_5 %uint_45 %uint_4 %uint_0 %35 %55
 ;CHECK:               OpBranch %58
 ;CHECK:         %58 = OpLabel
 ;CHECK:        %116 = OpPhi %float %61 %59 %115 %60
@@ -5276,7 +5276,7 @@ TEST_F(InstBindlessTest, UniformMatrixRefColumnMajor) {
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main" %v_vtxResult %_ %a_position
-;CHECK:        OpEntryPoint Vertex %main "main" %v_vtxResult %_ %a_position {{%\w+}} {{%\w+}} %gl_VertexIndex %gl_InstanceIndex
+;CHECK:        OpEntryPoint Vertex %main "main" %v_vtxResult %_ %a_position %inst_bindless_input_buffer %inst_bindless_output_buffer %gl_VertexIndex %gl_InstanceIndex
                OpSource GLSL 450
                OpSourceExtension "GL_EXT_scalar_block_layout"
                OpName %main "main"
@@ -5348,7 +5348,7 @@ TEST_F(InstBindlessTest, UniformMatrixRefColumnMajor) {
 ;CHECK:        %114 = OpConstantNull %float
 %main = OpFunction %void None %3
           %5 = OpLabel
-;CHECK:         %55 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_0 %uint_0
+;CHECK:         %55 = OpFunctionCall %uint %inst_bindless_direct_read_3 %uint_1 %uint_0 %uint_0
 ;CHECK:               OpBranch %26
 ;CHECK:         %26 = OpLabel
 ;CHECK:               OpBranch %25
@@ -5368,7 +5368,7 @@ TEST_F(InstBindlessTest, UniformMatrixRefColumnMajor) {
 ;CHECK:         %61 = OpLoad %float %20
 ;CHECK:               OpBranch %58
 ;CHECK:         %60 = OpLabel
-;CHECK:        %113 = OpFunctionCall %void {{%\w+}} %uint_45 %uint_4 %uint_0 %35 %55
+;CHECK:        %113 = OpFunctionCall %void %inst_bindless_stream_write_5 %uint_45 %uint_4 %uint_0 %35 %55
 ;CHECK:               OpBranch %58
 ;CHECK:         %58 = OpLabel
 ;CHECK:        %115 = OpPhi %float %61 %59 %114 %60
@@ -5413,7 +5413,7 @@ TEST_F(InstBindlessTest, UniformMatrixVecRefRowMajor) {
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Vertex %main "main" %v_vtxResult %_ %a_position
-;CHECK:        OpEntryPoint Vertex %main "main" %v_vtxResult %_ %a_position {{%\w+}} {{%\w+}} %gl_VertexIndex %gl_InstanceIndex
+;CHECK:        OpEntryPoint Vertex %main "main" %v_vtxResult %_ %a_position %inst_bindless_input_buffer %inst_bindless_output_buffer %gl_VertexIndex %gl_InstanceIndex
                OpSource GLSL 450
                OpSourceExtension "GL_EXT_scalar_block_layout"
                OpName %main "main"
@@ -5494,7 +5494,7 @@ TEST_F(InstBindlessTest, UniformMatrixVecRefRowMajor) {
 ;CHECK:        %124 = OpConstantNull %v2float
        %main = OpFunction %void None %3
           %5 = OpLabel
-;CHECK:         %64 = OpFunctionCall %uint {{%\w+}} %uint_1 %uint_0 %uint_0
+;CHECK:         %64 = OpFunctionCall %uint %inst_bindless_direct_read_3 %uint_1 %uint_0 %uint_0
 ;CHECK:               OpBranch %31
 ;CHECK:         %31 = OpLabel
 ;CHECK:               OpBranch %30
@@ -5518,7 +5518,7 @@ TEST_F(InstBindlessTest, UniformMatrixVecRefRowMajor) {
 ;CHECK:         %70 = OpLoad %v2float %25
 ;CHECK:               OpBranch %67
 ;CHECK:         %69 = OpLabel
-;CHECK:        %123 = OpFunctionCall %void {{%\w+}} %uint_51 %uint_4 %uint_0 %43 %64
+;CHECK:        %123 = OpFunctionCall %void %inst_bindless_stream_write_5 %uint_51 %uint_4 %uint_0 %43 %64
 ;CHECK:               OpBranch %67
 ;CHECK:         %67 = OpLabel
 ;CHECK:        %125 = OpPhi %v2float %70 %68 %124 %69
@@ -5629,7 +5629,7 @@ TEST_F(InstBindlessTest, ImageBufferOOBRead) {
 ;CHECK:             %33 = OpImageRead %v4float %32 %17
 ;CHECK:                   OpBranch %29
 ;CHECK:             %31 = OpLabel
-;CHECK:             %92 = OpFunctionCall %void {{%\w+}} %uint_33 %uint_7 %uint_0 %23 %25
+;CHECK:             %92 = OpFunctionCall %void %inst_bindless_stream_write_5 %uint_33 %uint_7 %uint_0 %23 %25
 ;CHECK:                   OpBranch %29
 ;CHECK:             %29 = OpLabel
 ;CHECK:             %94 = OpPhi %v4float %33 %30 %93 %31
@@ -5666,7 +5666,7 @@ TEST_F(InstBindlessTest, ImageBufferOOBWrite) {
                      %1 = OpExtInstImport "GLSL.std.450"
                           OpMemoryModel Logical GLSL450
                           OpEntryPoint Fragment %main "main" %s %ii %x
-;CHECK:                   OpEntryPoint Fragment %main "main" %s %ii %x {{%\w+}} %gl_FragCoord
+;CHECK:                   OpEntryPoint Fragment %main "main" %s %ii %x %inst_bindless_output_buffer %gl_FragCoord
                           OpExecutionMode %main OriginUpperLeft
                           OpSource GLSL 450
                           OpName %main "main"
@@ -5739,7 +5739,7 @@ TEST_F(InstBindlessTest, ImageBufferOOBWrite) {
 ;CHECK:                   OpImageWrite %32 %14 %18
 ;CHECK:                   OpBranch %29
 ;CHECK:             %31 = OpLabel
-;CHECK:             %91 = OpFunctionCall %void {{%\w+}} %uint_34 %uint_7 %uint_0 %23 %25
+;CHECK:             %91 = OpFunctionCall %void %inst_bindless_stream_write_5 %uint_34 %uint_7 %uint_0 %23 %25
 ;CHECK:                   OpBranch %29
 ;CHECK:             %29 = OpLabel
                           OpReturn
@@ -5774,7 +5774,7 @@ TEST_F(InstBindlessTest, TextureBufferOOBFetch) {
                      %1 = OpExtInstImport "GLSL.std.450"
                           OpMemoryModel Logical GLSL450
                           OpEntryPoint Fragment %main "main" %x %s %ii
-;CHECK:                   OpEntryPoint Fragment %main "main" %x %s %ii {{%\w+}} %gl_FragCoord
+;CHECK:                   OpEntryPoint Fragment %main "main" %x %s %ii %inst_bindless_output_buffer %gl_FragCoord
                           OpExecutionMode %main OriginUpperLeft
                           OpSource GLSL 450
                           OpName %main "main"
@@ -5849,7 +5849,7 @@ TEST_F(InstBindlessTest, TextureBufferOOBFetch) {
 ;CHECK:             %33 = OpImageFetch %v4float %32 %17
 ;CHECK:                   OpBranch %29
 ;CHECK:             %31 = OpLabel
-;CHECK:             %93 = OpFunctionCall %void {{%\w+}} %uint_32 %uint_6 %uint_0 %23 %25
+;CHECK:             %93 = OpFunctionCall %void %inst_bindless_stream_write_5 %uint_32 %uint_6 %uint_0 %23 %25
 ;CHECK:                   OpBranch %29
 ;CHECK:             %29 = OpLabel
 ;CHECK:             %95 = OpPhi %v4float %33 %30 %94 %31
@@ -5886,7 +5886,7 @@ TEST_F(InstBindlessTest, SamplerBufferOOBFetch) {
                      %1 = OpExtInstImport "GLSL.std.450"
                           OpMemoryModel Logical GLSL450
                           OpEntryPoint Fragment %main "main" %x %s %ii
-;CHECK:                   OpEntryPoint Fragment %main "main" %x %s %ii {{%\w+}} %gl_FragCoord
+;CHECK:                   OpEntryPoint Fragment %main "main" %x %s %ii %inst_bindless_output_buffer %gl_FragCoord
                           OpExecutionMode %main OriginUpperLeft
                           OpSource GLSL 450
                           OpName %main "main"
@@ -5964,7 +5964,7 @@ TEST_F(InstBindlessTest, SamplerBufferOOBFetch) {
 ;CHECK:             %36 = OpImageFetch %v4float %35 %18
 ;CHECK:                   OpBranch %31
 ;CHECK:             %33 = OpLabel
-;CHECK:             %96 = OpFunctionCall %void {{%\w+}} %uint_34 %uint_6 %uint_0 %25 %27
+;CHECK:             %96 = OpFunctionCall %void %inst_bindless_stream_write_5 %uint_34 %uint_6 %uint_0 %25 %27
 ;CHECK:                   OpBranch %31
 ;CHECK:             %31 = OpLabel
 ;CHECK:             %98 = OpPhi %v4float %36 %32 %97 %33
@@ -6002,7 +6002,7 @@ TEST_F(InstBindlessTest, SamplerBufferConstructorOOBFetch) {
                      %1 = OpExtInstImport "GLSL.std.450"
                           OpMemoryModel Logical GLSL450
                           OpEntryPoint Fragment %main "main" %x %tBuf %s %ii
-;CHECK:                   OpEntryPoint Fragment %main "main" %x %tBuf %s %ii {{%\w+}} %gl_FragCoord
+;CHECK:                   OpEntryPoint Fragment %main "main" %x %tBuf %s %ii %inst_bindless_output_buffer %gl_FragCoord
                           OpExecutionMode %main OriginUpperLeft
                           OpSource GLSL 450
                           OpName %main "main"
@@ -6089,7 +6089,7 @@ TEST_F(InstBindlessTest, SamplerBufferConstructorOOBFetch) {
 ;CHECK:             %42 = OpImageFetch %v4float %41 %23
 ;CHECK:                   OpBranch %36
 ;CHECK:             %38 = OpLabel
-;CHECK:            %102 = OpFunctionCall %void {{%\w+}} %uint_42 %uint_6 %uint_0 %30 %32
+;CHECK:            %102 = OpFunctionCall %void %inst_bindless_stream_write_5 %uint_42 %uint_6 %uint_0 %30 %32
 ;CHECK:                   OpBranch %36
 ;CHECK:             %36 = OpLabel
 ;CHECK:            %104 = OpPhi %v4float %42 %37 %103 %38
