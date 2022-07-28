@@ -8866,10 +8866,9 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "member 0 is a matrix with stride 12 not satisfying alignment to 16"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("member 0 is a matrix with stride 12 not satisfying "
+                        "alignment to 16"));
 }
 
 }  // namespace
