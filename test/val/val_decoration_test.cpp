@@ -8023,6 +8023,7 @@ OpExecutionMode %main LocalSize 1 1 1
 OpDecorate %block Block
 OpMemberDecorate %block 0 Offset 0
 OpMemberDecorate %block 0 MatrixStride 3
+OpMemberDecorate %block 0 ColMajor
 OpDecorate %var DescriptorSet 0
 OpDecorate %var Binding 0
 %void = OpTypeVoid
@@ -8059,6 +8060,7 @@ OpExecutionMode %main LocalSize 1 1 1
 OpDecorate %block Block
 OpMemberDecorate %block 0 Offset 0
 OpMemberDecorate %block 0 MatrixStride 3
+OpMemberDecorate %block 0 ColMajor
 OpDecorate %var DescriptorSet 0
 OpDecorate %var Binding 0
 %void = OpTypeVoid
@@ -8094,6 +8096,7 @@ OpExecutionMode %main LocalSize 1 1 1
 OpDecorate %block Block
 OpMemberDecorate %block 0 Offset 0
 OpMemberDecorate %block 0 MatrixStride 3
+OpMemberDecorate %block 0 ColMajor
 OpDecorate %var DescriptorSet 0
 OpDecorate %var Binding 0
 %void = OpTypeVoid
@@ -8130,6 +8133,7 @@ OpExecutionMode %main LocalSize 1 1 1
 OpDecorate %block Block
 OpMemberDecorate %block 0 Offset 0
 OpMemberDecorate %block 0 MatrixStride 3
+OpMemberDecorate %block 0 RowMajor
 OpDecorate %var DescriptorSet 0
 OpDecorate %var Binding 0
 %void = OpTypeVoid
@@ -8869,6 +8873,135 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("member 0 is a matrix with stride 12 not satisfying "
                         "alignment to 16"));
+}
+
+TEST_F(ValidateDecorations, MatrixMissingMajornessUniform) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+OpMemberDecorate %block 0 MatrixStride 16
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%float2 = OpTypeVector %float 2
+%matrix = OpTypeMatrix %float2 2
+%block = OpTypeStruct %matrix
+%ptr_block = OpTypePointer Uniform %block
+%var = OpVariable %ptr_block Uniform
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "must be explicitly laid out with RowMajor or ColMajor decorations"));
+}
+
+TEST_F(ValidateDecorations, MatrixMissingMajornessStorageBuffer) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+OpMemberDecorate %block 0 MatrixStride 16
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%float2 = OpTypeVector %float 2
+%matrix = OpTypeMatrix %float2 2
+%block = OpTypeStruct %matrix
+%ptr_block = OpTypePointer StorageBuffer %block
+%var = OpVariable %ptr_block StorageBuffer
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "must be explicitly laid out with RowMajor or ColMajor decorations"));
+}
+
+TEST_F(ValidateDecorations, MatrixMissingMajornessPushConstant) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+OpMemberDecorate %block 0 MatrixStride 16
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%float2 = OpTypeVector %float 2
+%matrix = OpTypeMatrix %float2 2
+%block = OpTypeStruct %matrix
+%ptr_block = OpTypePointer PushConstant %block
+%var = OpVariable %ptr_block PushConstant
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "must be explicitly laid out with RowMajor or ColMajor decorations"));
+}
+
+TEST_F(ValidateDecorations, StructWithRowAndColMajor) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+OpMemberDecorate %block 0 MatrixStride 16
+OpMemberDecorate %block 0 ColMajor
+OpMemberDecorate %block 1 Offset 32
+OpMemberDecorate %block 1 MatrixStride 16
+OpMemberDecorate %block 1 RowMajor
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%float2 = OpTypeVector %float 2
+%matrix = OpTypeMatrix %float2 2
+%block = OpTypeStruct %matrix %matrix
+%ptr_block = OpTypePointer PushConstant %block
+%var = OpVariable %ptr_block PushConstant
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
 }  // namespace
