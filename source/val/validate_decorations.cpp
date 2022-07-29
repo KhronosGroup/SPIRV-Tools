@@ -1236,17 +1236,25 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                      << "Structure id " << id << " decorated as " << deco_str
                      << " must be explicitly laid out with MatrixStride "
                         "decorations.";
+            } else if (!checkForRequiredDecoration(id, SpvDecorationRowMajor,
+                                                   SpvOpTypeMatrix, vstate) &&
+                       !checkForRequiredDecoration(id, SpvDecorationColMajor,
+                                                   SpvOpTypeMatrix, vstate)) {
+              return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
+                     << "Structure id " << id << " decorated as " << deco_str
+                     << " must be explicitly laid out with RowMajor or "
+                        "ColMajor decorations.";
             } else if (blockRules &&
-                       (SPV_SUCCESS != (recursive_status = checkLayout(
-                                            id, sc_str, deco_str, true,
-                                            scalar_block_layout, 0,
-                                            constraints, vstate)))) {
+                       (SPV_SUCCESS !=
+                        (recursive_status = checkLayout(
+                             id, sc_str, deco_str, true, scalar_block_layout, 0,
+                             constraints, vstate)))) {
               return recursive_status;
             } else if (bufferRules &&
-                       (SPV_SUCCESS != (recursive_status = checkLayout(
-                                            id, sc_str, deco_str, false,
-                                            scalar_block_layout, 0,
-                                            constraints, vstate)))) {
+                       (SPV_SUCCESS !=
+                        (recursive_status = checkLayout(
+                             id, sc_str, deco_str, false, scalar_block_layout,
+                             0, constraints, vstate)))) {
               return recursive_status;
             }
           }
