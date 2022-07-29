@@ -226,6 +226,7 @@ uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
         baseAlignment =
             componentAlignment * (num_columns == 3 ? 4 : num_columns);
       }
+      if (roundUp) baseAlignment = align(baseAlignment, 16u);
     } break;
     case SpvOpTypeArray:
     case SpvOpTypeRuntimeArray:
