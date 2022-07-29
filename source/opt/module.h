@@ -174,7 +174,7 @@ class Module {
   inline const Instruction* GetSampledImageAddressMode() const {
     return sampled_image_address_mode_.get();
   }
-  
+
   // There are several kinds of debug instructions, according to where they can
   // appear in the logical layout of a module:
   //  - Section 7a:  OpString, OpSourceExtension, OpSource, OpSourceContinued
