@@ -672,7 +672,8 @@ bool checkForRequiredDecoration(uint32_t struct_id,
       if (checker(dec.dec_type())) found = true;
     }
     for (auto& dec : vstate.id_decorations(struct_id)) {
-      if (checker(dec.dec_type()) && (int)memberIdx == dec.struct_member_index()) {
+      if (checker(dec.dec_type()) &&
+          (int)memberIdx == dec.struct_member_index()) {
         found = true;
       }
     }
