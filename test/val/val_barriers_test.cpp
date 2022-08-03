@@ -359,6 +359,8 @@ OpControlBarrier %subgroup %subgroup %none
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-SubgroupVoteKHR-06997"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -765,6 +767,8 @@ OpMemoryBarrier %subgroup %acquire_release_uniform_workgroup
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-SubgroupVoteKHR-06997"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
