@@ -1978,7 +1978,7 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
     case 6925:
       return VUID_WRAP(VUID-StandaloneSpirv-Uniform-06925);
     case 6997:
-      return VUID_WRAP(VUID-StandaloneSpirv-None-06997);
+      return VUID_WRAP(VUID-StandaloneSpirv-SubgroupVoteKHR-06997);
     default:
       return "";  // unknown id
   }
