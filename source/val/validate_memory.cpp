@@ -901,12 +901,14 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
   }
 
   if (storage_class == SpvStorageClassHitAttributeKHR) {
+    std::string errorVUID = _.VkErrorID(4703);
     _.function(inst->function()->id())
         ->RegisterExecutionModelLimitation(
-            [](SpvExecutionModel model, std::string* message) {
+            [errorVUID](SpvExecutionModel model, std::string* message) {
               if (model == SpvExecutionModelIntersectionKHR) {
                 if (message) {
                   *message =
+                      errorVUID +
                       "HitAttributeKHR Storage Class variables are write only "
                       "with IntersectionKHR";
                 }
