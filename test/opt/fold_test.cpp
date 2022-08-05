@@ -7963,6 +7963,27 @@ INSTANTIATE_TEST_SUITE_P(VectorShuffleMatchingTest, MatchingInstructionWithNoRes
             "%9 = OpVectorShuffle %v4double %7 %8 2 0 1 4294967295\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
+        9, true),
+    // Test case 14: Shuffle with undef literal and change size of first input vector.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[double:%\\w+]] = OpTypeFloat 64\n" +
+            "; CHECK: [[v4double:%\\w+]] = OpTypeVector [[double]] 2\n" +
+            "; CHECK: OpVectorShuffle\n" +
+            "; CHECK: OpVectorShuffle {{%\\w+}} %5 %7 0 1 4 4294967295\n" +
+            "; CHECK: OpReturn\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpVariable %_ptr_v4double Function\n" +
+            "%3 = OpVariable %_ptr_v4double Function\n" +
+            "%4 = OpVariable %_ptr_v4double Function\n" +
+            "%5 = OpLoad %v4double %2\n" +
+            "%6 = OpLoad %v4double %3\n" +
+            "%7 = OpLoad %v4double %4\n" +
+            "%8 = OpVectorShuffle %v2double %5 %5 0 1\n" +
+            "%9 = OpVectorShuffle %v4double %8 %7 0 1 2 4294967295\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
         9, true)
 ));
 
