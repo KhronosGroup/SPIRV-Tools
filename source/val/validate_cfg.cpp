@@ -1081,12 +1081,12 @@ spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst) {
       if (opcode == SpvOpIgnoreIntersectionKHR) {
         _.current_function().RegisterExecutionModelLimitation(
             SpvExecutionModelAnyHitKHR,
-            "OpIgnoreIntersectionKHR requires AnyHit execution model");
+            "OpIgnoreIntersectionKHR requires AnyHitKHR execution model");
       }
       if (opcode == SpvOpTerminateRayKHR) {
         _.current_function().RegisterExecutionModelLimitation(
             SpvExecutionModelAnyHitKHR,
-            "OpTerminateRayKHR requires AnyHit execution model");
+            "OpTerminateRayKHR requires AnyHitKHR execution model");
       }
 
       break;

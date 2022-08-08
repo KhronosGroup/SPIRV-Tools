@@ -351,6 +351,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
 
     if (auto error = LiteralsPass(*vstate, &instruction)) return error;
     if (auto error = RayQueryPass(*vstate, &instruction)) return error;
+    if (auto error = RayTracingPass(*vstate, &instruction)) return error;
   }
 
   // Validate the preconditions involving adjacent instructions. e.g. SpvOpPhi
