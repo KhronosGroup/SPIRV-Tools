@@ -168,6 +168,8 @@ bool CopyPropagateArrays::HasNoStores(Instruction* ptr_inst) {
       return false;
     } else if (use->opcode() == SpvOpImageTexelPointer) {
       return true;
+    } else if (use->opcode() == SpvOpEntryPoint) {
+      return true;
     }
     // Some other instruction.  Be conservative.
     return false;

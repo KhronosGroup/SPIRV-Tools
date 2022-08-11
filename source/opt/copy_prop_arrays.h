@@ -195,7 +195,7 @@ class CopyPropagateArrays : public MemPass {
   // Return true if |type_id| is a pointer type whose pointee type is an array.
   bool IsPointerToArrayType(uint32_t type_id);
 
-  // Returns true of there are not stores using |ptr_inst| or something derived
+  // Returns true if there are not stores using |ptr_inst| or something derived
   // from it.
   bool HasNoStores(Instruction* ptr_inst);
 
