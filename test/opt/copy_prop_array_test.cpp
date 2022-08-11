@@ -1839,6 +1839,51 @@ OpFunctionEnd
 
   SinglePassRunAndCheck<CopyPropagateArrays>(text, text, false);
 }
+
+// Since Spir-V 1.4, resources that are used by a shader must be on the
+// OpEntryPoint instruction with the inputs and outputs. This test ensures that
+// this does not stop the pass from working.
+TEST_F(CopyPropArrayPassTest, EntryPointUser) {
+  const std::string before = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %g_rwTexture3d
+OpExecutionMode %main LocalSize 256 1 1
+OpSource HLSL 660
+OpName %type_3d_image "type.3d.image"
+OpName %g_rwTexture3d "g_rwTexture3d"
+OpName %main "main"
+OpDecorate %g_rwTexture3d DescriptorSet 0
+OpDecorate %g_rwTexture3d Binding 0
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%uint_2 = OpConstant %uint 2
+%uint_3 = OpConstant %uint 3
+%v3uint = OpTypeVector %uint 3
+%10 = OpConstantComposite %v3uint %uint_1 %uint_2 %uint_3
+%type_3d_image = OpTypeImage %uint 3D 2 0 0 2 R32ui
+%_ptr_UniformConstant_type_3d_image = OpTypePointer UniformConstant %type_3d_image
+%void = OpTypeVoid
+%13 = OpTypeFunction %void
+%_ptr_Function_type_3d_image = OpTypePointer Function %type_3d_image
+%_ptr_Image_uint = OpTypePointer Image %uint
+%g_rwTexture3d = OpVariable %_ptr_UniformConstant_type_3d_image UniformConstant
+%main = OpFunction %void None %13
+%16 = OpLabel
+%17 = OpVariable %_ptr_Function_type_3d_image Function
+%18 = OpLoad %type_3d_image %g_rwTexture3d
+OpStore %17 %18
+; CHECK: %19 = OpImageTexelPointer %_ptr_Image_uint %g_rwTexture3d %10 %uint_0
+%19 = OpImageTexelPointer %_ptr_Image_uint %17 %10 %uint_0
+%20 = OpAtomicIAdd %uint %19 %uint_1 %uint_0 %uint_1
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_4);
+  SinglePassRunAndMatch<CopyPropagateArrays>(before, false);
+}
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
