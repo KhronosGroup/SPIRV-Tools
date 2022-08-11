@@ -523,6 +523,12 @@ bool CopyPropagateArrays::CanUpdateUses(Instruction* original_ptr_inst,
             // Variable index means the type is a type where every element
             // is the same type.  Use element 0 to get the type.
             access_chain.push_back(0);
+
+            // We are trying to access a struct with variable indices.
+            // This cannot happen.
+            if (pointee_type->kind() == analysis::Type::kStruct) {
+              return false;
+            }
           }
         }
 
