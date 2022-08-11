@@ -296,6 +296,65 @@ OpFunctionEnd
   EXPECT_EQ(1, non_semantic_ids.count(8));
 }
 
+TEST(FunctionTest, ReorderBlocksinStructuredOrder) {
+  // The spir-v has the basic block in a random order.  We want to reorder them
+  // in structured order.
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %100 "PSMain"
+               OpExecutionMode %PSMain OriginUpperLeft
+               OpSource HLSL 600
+        %int = OpTypeInt 32 1
+       %void = OpTypeVoid
+         %19 = OpTypeFunction %void
+       %bool = OpTypeBool
+%undef_bool = OpUndef %bool
+%undef_int = OpUndef %int
+        %100 = OpFunction %void None %19
+          %11 = OpLabel
+               OpSelectionMerge %10 None
+               OpSwitch %undef_int %3 0 %2 10 %1
+          %2 = OpLabel
+               OpReturn
+          %7 = OpLabel
+               OpBranch %8
+          %3 = OpLabel
+               OpBranch %4
+         %10 = OpLabel
+               OpReturn
+          %9 = OpLabel
+               OpBranch %10
+          %8 = OpLabel
+               OpBranch %4
+          %4 = OpLabel
+               OpLoopMerge %9 %8 None
+               OpBranchConditional %undef_bool %5 %9
+          %1 = OpLabel
+               OpReturn
+          %6 = OpLabel
+               OpBranch %7
+          %5 = OpLabel
+               OpSelectionMerge %7 None
+               OpBranchConditional %undef_bool %6 %7
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> ctx =
+      spvtools::BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                            SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_TRUE(ctx);
+  auto* func = spvtest::GetFunction(ctx->module(), 100);
+  ASSERT_TRUE(func);
+  func->ReorderBasicBlocksInStructuredOrder();
+
+  auto first_block = func->begin();
+  auto bb = first_block;
+  for (++bb; bb != func->end(); ++bb) {
+    EXPECT_EQ(bb->id(), (bb - first_block));
+  }
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
