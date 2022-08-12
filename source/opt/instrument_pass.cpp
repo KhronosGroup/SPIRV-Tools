@@ -973,9 +973,7 @@ bool InstrumentPass::InstProcessCallTreeFromRoots(
   return modified;
 }
 
-bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
-  return false;
-  
+bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {  
   // First, check to see if all stages are supported
   uint32_t stage = SpvExecutionModelMax;
   for (auto& e : get_module()->entry_points()) {
