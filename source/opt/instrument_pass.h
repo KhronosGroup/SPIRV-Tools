@@ -308,10 +308,11 @@ class InstrumentPass : public Pass {
                           InstProcessFunction& pfn);
 
   // Call |pfn| on all functions in the call tree of the function
-  // ids in |roots|.
+  // ids in |roots|. 
+  // (natevm) Note, this function requires that no functions are shared between entry points 
+  // of differing stage types 
   bool InstProcessCallTreeFromRoots(InstProcessFunction& pfn,
-                                    std::queue<uint32_t>* roots,
-                                    uint32_t stage_idx);
+                                    std::map<uint32_t, std::queue<uint32_t>>* stage_to_roots);
 
   // Gen code into |builder| to write |field_value_id| into debug output
   // buffer at |base_offset_id| + |field_offset|.
