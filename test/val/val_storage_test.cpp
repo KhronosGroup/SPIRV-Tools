@@ -257,8 +257,6 @@ std::string GenerateExecutionModelCode(const std::string& execution_model,
   const std::string mode = (execution_model.compare("GLCompute") == 0)
                                ? "OpExecutionMode %func LocalSize 1 1 1"
                                : "";
-  const std::string interface =
-      (storage_class.compare("Output") == 0) ? "%var" : "";
   const std::string operation =
       (store) ? "OpStore %var %int0" : "%load = OpLoad %intt %var";
   std::ostringstream ss;
@@ -268,7 +266,7 @@ std::string GenerateExecutionModelCode(const std::string& execution_model,
               OpExtension "SPV_KHR_ray_tracing"
               OpMemoryModel Logical GLSL450
               OpEntryPoint )"
-     << execution_model << R"( %func "func" )" << interface << R"(
+     << execution_model << R"( %func "func" %var
               )"
      << mode << R"(
               OpDecorate %var Location 0
@@ -530,8 +528,9 @@ TEST_P(ValidateStorageExecutionModel, ShaderRecordBufferStore) {
   std::string execution_model = GetParam();
   CompileSuccessfully(
       GenerateExecutionModelCode(execution_model, "ShaderRecordBufferKHR", true)
-          .c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+          .c_str(),
+      SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("ShaderRecordBufferKHR Storage Class variables are read only"));
@@ -541,16 +540,17 @@ TEST_P(ValidateStorageExecutionModel, ShaderRecordBufferLoad) {
   std::string execution_model = GetParam();
   CompileSuccessfully(GenerateExecutionModelCode(execution_model,
                                                  "ShaderRecordBufferKHR", false)
-                          .c_str());
+                          .c_str(),
+                      SPV_ENV_VULKAN_1_2);
   if (execution_model.compare("RayGenerationKHR") == 0 ||
       execution_model.compare("IntersectionKHR") == 0 ||
       execution_model.compare("AnyHitKHR") == 0 ||
       execution_model.compare("ClosestHitKHR") == 0 ||
       execution_model.compare("CallableKHR") == 0 ||
       execution_model.compare("MissKHR") == 0) {
-    ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+    ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
   } else {
-    ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+    ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
     EXPECT_THAT(
         getDiagnosticString(),
         HasSubstr("ShaderRecordBufferKHR Storage Class is limited to "
