@@ -849,7 +849,7 @@ void DebugInfoManager::ClearDebugInfo(Instruction* instr) {
     fn_id_to_dbg_fn_.erase(fn_id);
   }
   if (instr->GetShader100DebugOpcode() ==
-      NonSemanticShaderDebugInfo100DebugFunction) {
+      NonSemanticShaderDebugInfo100DebugFunctionDefinition) {
     auto fn_id = instr->GetSingleWordOperand(
         kDebugFunctionDefinitionOperandOpFunctionIndex);
     fn_id_to_dbg_fn_.erase(fn_id);
