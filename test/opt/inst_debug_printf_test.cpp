@@ -1,5 +1,5 @@
-// Copyright (c) 2020 Valve Corporation
-// Copyright (c) 2020 LunarG Inc.
+// Copyright (c) 2020-2022 Valve Corporation
+// Copyright (c) 2020-2022 LunarG Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,20 @@
 namespace spvtools {
 namespace opt {
 namespace {
+
+static const std::string kOutputDecorations = R"(
+; CHECK: OpDecorate [[output_buffer_type:%_struct_\w+]] Block
+; CHECK: OpMemberDecorate [[output_buffer_type]] 0 Offset 0
+; CHECK: OpMemberDecorate [[output_buffer_type]] 1 Offset 4
+; CHECK: OpDecorate [[output_buffer_var:%\w+]] DescriptorSet 7
+; CHECK: OpDecorate [[output_buffer_var]] Binding 3
+)";
+
+static const std::string kOutputGlobals = R"(
+; CHECK: [[output_buffer_type]] = OpTypeStruct %uint %_runtimearr_uint
+; CHECK: [[output_ptr_type:%\w+]] = OpTypePointer StorageBuffer [[output_buffer_type]]
+; CHECK: [[output_buffer_var]] = OpVariable [[output_ptr_type]] StorageBuffer
+)";
 
 using InstDebugPrintfTest = PassTest<::testing::Test>;
 
@@ -65,6 +79,7 @@ OpExecutionMode %2 OriginUpperLeft
 %5 = OpString "Color is %vn"
 )";
 
+  // clang-format off
   const std::string decorates =
       R"(OpDecorate %6 DescriptorSet 0
 OpDecorate %6 Binding 1
@@ -73,11 +88,7 @@ OpDecorate %7 Binding 0
 OpDecorate %3 Location 0
 OpDecorate %4 Location 0
 ; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-; CHECK: OpDecorate %_struct_47 Block
-; CHECK: OpMemberDecorate %_struct_47 0 Offset 0
-; CHECK: OpMemberDecorate %_struct_47 1 Offset 4
-; CHECK: OpDecorate %49 DescriptorSet 7
-; CHECK: OpDecorate %49 Binding 3
+)" + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_FragCoord BuiltIn FragCoord
 )";
 
@@ -101,15 +112,14 @@ OpDecorate %4 Location 0
 ; CHECK: %uint = OpTypeInt 32 0
 ; CHECK: %38 = OpTypeFunction %void %uint %uint %uint %uint %uint %uint
 ; CHECK: %_runtimearr_uint = OpTypeRuntimeArray %uint
-; CHECK: %_struct_47 = OpTypeStruct %uint %_runtimearr_uint
-; CHECK: %_ptr_StorageBuffer__struct_47 = OpTypePointer StorageBuffer %_struct_47
-; CHECK: %49 = OpVariable %_ptr_StorageBuffer__struct_47 StorageBuffer
+)" + kOutputGlobals + R"(
 ; CHECK: %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 ; CHECK: %bool = OpTypeBool
 ; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
 ; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
 ; CHECK: %v4uint = OpTypeVector %uint 4
 )";
+  // clang-format on
 
   const std::string main =
       R"(%2 = OpFunction %void None %9
