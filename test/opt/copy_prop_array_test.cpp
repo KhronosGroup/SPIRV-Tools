@@ -1884,6 +1884,65 @@ OpFunctionEnd
   SetTargetEnv(SPV_ENV_UNIVERSAL_1_4);
   SinglePassRunAndMatch<CopyPropagateArrays>(before, false);
 }
+
+// As per SPIRV spec, struct cannot be indexed with non-constant indices
+// through OpAccessChain, only arrays.
+// The copy-propagate-array pass tries to remove superfluous copies when the
+// original array could be indexed instead of the copy.
+//
+// This test verifies we handle this case:
+//  struct SRC { int field1; ...; int fieldN }
+//  int tmp_arr[N] = { SRC.field1, ..., SRC.fieldN }
+//  return tmp_arr[index];
+//
+// In such case, we cannot optimize the access: this array was added to allow
+// dynamic indexing in the struct.
+TEST_F(CopyPropArrayPassTest, StructIndexCannotBecomeDynamic) {
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %1 "main"
+OpDecorate %2 DescriptorSet 0
+OpDecorate %2 Binding 0
+OpMemberDecorate %_struct_3 0 Offset 0
+OpDecorate %_struct_3 Block
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_struct_3 = OpTypeStruct %v4float
+%_ptr_Uniform__struct_3 = OpTypePointer Uniform %_struct_3
+%uint = OpTypeInt 32 0
+%void = OpTypeVoid
+%11 = OpTypeFunction %void
+%_ptr_Function_uint = OpTypePointer Function %uint
+%13 = OpTypeFunction %v4float %_ptr_Function_uint
+%uint_1 = OpConstant %uint 1
+%_arr_v4float_uint_1 = OpTypeArray %v4float %uint_1
+%_ptr_Function__arr_v4float_uint_1 = OpTypePointer Function %_arr_v4float_uint_1
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%_ptr_Uniform_v4float = OpTypePointer Uniform %v4float
+%2 = OpVariable %_ptr_Uniform__struct_3 Uniform
+%19 = OpUndef %v4float
+%1 = OpFunction %void None %11
+%20 = OpLabel
+OpReturn
+OpFunctionEnd
+%21 = OpFunction %v4float None %13
+%22 = OpFunctionParameter %_ptr_Function_uint
+%23 = OpLabel
+%24 = OpVariable %_ptr_Function__arr_v4float_uint_1 Function
+%25 = OpAccessChain %_ptr_Uniform_v4float %2 %int_0
+%26 = OpLoad %v4float %25
+%27 = OpCompositeConstruct %_arr_v4float_uint_1 %26
+OpStore %24 %27
+%28 = OpLoad %uint %22
+%29 = OpAccessChain %_ptr_Function_v4float %24 %28
+OpReturnValue %19
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<CopyPropagateArrays>(text, text, false);
+}
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
