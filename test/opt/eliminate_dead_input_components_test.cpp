@@ -399,6 +399,70 @@ TEST_F(ElimDeadInputComponentsTest, NoElimNonIndexedAccessChain) {
   SinglePassRunAndMatch<EliminateDeadInputComponentsPass>(text, true);
 }
 
+TEST_F(ElimDeadInputComponentsTest, ElimStructMember) {
+  // Should eliminate uv
+  //
+  // #version 450
+  //
+  // in Vertex {
+  //   vec4 Cd;
+  //   vec2 uv;
+  // } iVert;
+  //
+  // out vec4 fragColor;
+  //
+  // void main()
+  // {
+  //   vec4 color = vec4(iVert.Cd);
+  //   fragColor = color;
+  // }
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %iVert %fragColor
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+               OpName %main "main"
+               OpName %Vertex "Vertex"
+               OpMemberName %Vertex 0 "Cd"
+               OpMemberName %Vertex 1 "uv"
+               OpName %iVert "iVert"
+               OpName %fragColor "fragColor"
+               OpDecorate %Vertex Block
+               OpDecorate %iVert Location 0
+               OpDecorate %fragColor Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+    %v2float = OpTypeVector %float 2
+     %Vertex = OpTypeStruct %v4float %v2float
+; CHECK: %Vertex = OpTypeStruct %v4float %v2float
+; CHECK: [[sty:%\w+]] = OpTypeStruct %v4float
+%_ptr_Input_Vertex = OpTypePointer Input %Vertex
+; CHECK: [[pty:%\w+]] = OpTypePointer Input [[sty]]
+      %iVert = OpVariable %_ptr_Input_Vertex Input
+; CHECK: %iVert = OpVariable [[pty]] Input
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+  %fragColor = OpVariable %_ptr_Output_v4float Output
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %17 = OpAccessChain %_ptr_Input_v4float %iVert %int_0
+         %18 = OpLoad %v4float %17
+               OpStore %fragColor %18
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_3);
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<EliminateDeadInputComponentsPass>(text, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
