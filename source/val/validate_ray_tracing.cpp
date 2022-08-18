@@ -174,6 +174,13 @@ spv_result_t RayTracingPass(ValidationState_t& _, const Instruction* inst) {
             return true;
           });
 
+      const uint32_t sbt_index = _.GetOperandTypeId(inst, 0);
+      if (!_.IsUnsignedIntScalarType(sbt_index) ||
+          _.GetBitWidth(sbt_index) != 32) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "SBT Index must be a 32-bit unsigned int scalar";
+      }
+
       const auto callable_data = _.FindDef(inst->GetOperandAs<uint32_t>(1));
       if (callable_data->opcode() != SpvOpVariable) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
