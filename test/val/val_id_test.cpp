@@ -2187,11 +2187,33 @@ OpFunctionEnd
 )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("If OpTypeBool is stored in conjunction with OpVariable"
-                        ", it can only be used with non-externally visible "
-                        "shader Storage Classes: Workgroup, CrossWorkgroup, "
-                        "Private, and Function"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "If OpTypeBool is stored in conjunction with OpVariable, it can only "
+          "be used with non-externally visible shader Storage Classes: "
+          "Workgroup, CrossWorkgroup, Private, Function, Input, Output, "
+          "RayPayloadKHR, IncomingRayPayloadKHR, HitAttributeKHR, "
+          "CallableDataKHR, or IncomingCallableDataKHR"));
+}
+
+TEST_F(ValidateIdWithMessage, OpVariableContainsBoolPrivateGood) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%bool = OpTypeBool
+%int = OpTypeInt 32 0
+%block = OpTypeStruct %bool %int
+%_ptr_Private_block = OpTypePointer Private %block
+%var = OpVariable %_ptr_Private_block Private
+%void = OpTypeVoid
+%fnty = OpTypeFunction %void
+%main = OpFunction %void None %fnty
+%entry = OpLabel
+%load = OpLoad %block %var
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateIdWithMessage, OpVariableContainsBoolPointerGood) {
@@ -2231,6 +2253,29 @@ OpFunctionEnd
 )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateIdWithMessage, OpVariableContainsNoBuiltinBoolBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+%bool = OpTypeBool
+%input = OpTypeStruct %bool
+%_ptr_input = OpTypePointer Input %input
+%var = OpVariable %_ptr_input Input
+%void = OpTypeVoid
+%fnty = OpTypeFunction %void
+%main = OpFunction %void None %fnty
+%entry = OpLabel
+%load = OpLoad %input %var
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "If OpTypeBool is stored in conjunction with OpVariable using Input "
+          "or Output Storage Classes it requires a BuiltIn decoration"));
 }
 
 TEST_F(ValidateIdWithMessage, OpVariableContainsRayPayloadBoolGood) {
