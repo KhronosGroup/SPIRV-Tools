@@ -1284,8 +1284,7 @@ bool Differ::MatchOpSpecConstant(const opt::Instruction* src_inst,
     return src_spec_id == dst_spec_id;
   }
 
-  // There is no spec id, this is not valid.
-  assert(false && "Unreachable");
+  // There is no SpecId decoration, while not practical, still valid
   return false;
 }
 
