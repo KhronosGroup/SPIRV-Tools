@@ -1284,7 +1284,19 @@ bool Differ::MatchOpSpecConstant(const opt::Instruction* src_inst,
     return src_spec_id == dst_spec_id;
   }
 
-  // There is no SpecId decoration, while not practical, still valid
+  // There is no SpecId decoration, while not practical, still valid.
+  // SpecConstantOp don't have SpecId and can be matched by operands
+  if (src_inst->opcode() == SpvOpSpecConstantOp) {
+    // First check if 'Opcode' operand is same, then try matching the rest
+    // if the Opcode is different, the instruction length is different
+    const opt::Operand& src_op_operand = src_inst->GetInOperand(0);
+    const opt::Operand& dst_op_operand = dst_inst->GetInOperand(0);
+    if (DoesOperandMatch(src_op_operand, dst_op_operand)) {
+      return DoOperandsMatch(src_inst, dst_inst, 1,
+                             src_inst->NumInOperandWords() - 1);
+    }
+  }
+
   return false;
 }
 

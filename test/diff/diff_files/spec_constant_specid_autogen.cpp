@@ -50,7 +50,8 @@ constexpr char kDst[] = R"(               OpCapability Shader
        %main = OpFunction %void None %3
           %5 = OpLabel
                OpReturn
-               OpFunctionEnd)";
+               OpFunctionEnd
+)";
 
 TEST(DiffTest, SpecConstantSpecid) {
   constexpr char kDiff[] = R"( ; SPIR-V
@@ -93,7 +94,8 @@ TEST(DiffTest, SpecConstantSpecidNoDebug) {
        %main = OpFunction %void None %3
           %5 = OpLabel
                OpReturn
-               OpFunctionEnd)";
+               OpFunctionEnd
+)";
   constexpr char kDstNoDebug[] = R"(               OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %main "main"
@@ -106,7 +108,8 @@ TEST(DiffTest, SpecConstantSpecidNoDebug) {
        %main = OpFunction %void None %3
           %5 = OpLabel
                OpReturn
-               OpFunctionEnd)";
+               OpFunctionEnd
+)";
   constexpr char kDiff[] = R"( ; SPIR-V
  ; Version: 1.6
  ; Generator: Khronos SPIR-V Tools Assembler; 0
