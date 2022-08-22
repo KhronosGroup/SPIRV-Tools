@@ -267,8 +267,7 @@ std::string GenerateExecutionModelCode(const std::string& execution_model,
               OpMemoryModel Logical GLSL450
               OpEntryPoint )"
      << execution_model << R"( %func "func" %var
-              )"
-     << mode << R"(
+              )" << mode << R"(
               OpDecorate %var Location 0
 %intt       = OpTypeInt 32 0
 %int0       = OpConstant %intt 0
@@ -276,12 +275,10 @@ std::string GenerateExecutionModelCode(const std::string& execution_model,
 %vfunct     = OpTypeFunction %voidt
 %ptr        = OpTypePointer )"
      << storage_class << R"( %intt
-%var        = OpVariable %ptr )"
-     << storage_class << R"(
+%var        = OpVariable %ptr )" << storage_class << R"(
 %func       = OpFunction %voidt None %vfunct
 %funcl      = OpLabel
-              )"
-     << operation << R"(
+              )" << operation << R"(
               OpReturn
               OpFunctionEnd
 )";
@@ -440,6 +437,8 @@ TEST_P(ValidateStorageExecutionModel, HitAttributeStore) {
              execution_model.compare("ClosestHitKHR") == 0) {
     ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
     EXPECT_THAT(getDiagnosticString(),
+                AnyVUID("VUID-StandaloneSpirv-HitAttributeKHR-04703"));
+    EXPECT_THAT(getDiagnosticString(),
                 HasSubstr("HitAttributeKHR Storage Class variables are read "
                           "only with AnyHitKHR and ClosestHitKHR"));
   } else {
@@ -460,15 +459,9 @@ TEST_P(ValidateStorageExecutionModel, HitAttributeLoad) {
       GenerateExecutionModelCode(execution_model, "HitAttributeKHR", false)
           .c_str(),
       SPV_ENV_VULKAN_1_2);
-  if (execution_model.compare("IntersectionKHR") == 0) {
-    ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
-    EXPECT_THAT(getDiagnosticString(),
-                AnyVUID("VUID-StandaloneSpirv-HitAttributeKHR-04703"));
-    EXPECT_THAT(getDiagnosticString(),
-                HasSubstr("HitAttributeKHR Storage Class variables are write "
-                          "only with IntersectionKHR"));
-  } else if (execution_model.compare("AnyHitKHR") == 0 ||
-             execution_model.compare("ClosestHitKHR") == 0) {
+  if (execution_model.compare("IntersectionKHR") == 0 ||
+      execution_model.compare("AnyHitKHR") == 0 ||
+      execution_model.compare("ClosestHitKHR") == 0) {
     ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
   } else {
     ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));

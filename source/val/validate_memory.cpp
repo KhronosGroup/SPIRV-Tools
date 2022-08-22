@@ -900,24 +900,6 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
            << "'s type.";
   }
 
-  if (storage_class == SpvStorageClassHitAttributeKHR) {
-    std::string errorVUID = _.VkErrorID(4703);
-    _.function(inst->function()->id())
-        ->RegisterExecutionModelLimitation(
-            [errorVUID](SpvExecutionModel model, std::string* message) {
-              if (model == SpvExecutionModelIntersectionKHR) {
-                if (message) {
-                  *message =
-                      errorVUID +
-                      "HitAttributeKHR Storage Class variables are write only "
-                      "with IntersectionKHR";
-                }
-                return false;
-              }
-              return true;
-            });
-  }
-
   if (!_.options()->before_hlsl_legalization &&
       _.ContainsRuntimeArray(inst->type_id())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
@@ -989,13 +971,15 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "ShaderRecordBufferKHR Storage Class variables are read only";
     } else if (storage_class == SpvStorageClassHitAttributeKHR) {
+      std::string errorVUID = _.VkErrorID(4703);
       _.function(inst->function()->id())
           ->RegisterExecutionModelLimitation(
-              [](SpvExecutionModel model, std::string* message) {
+              [errorVUID](SpvExecutionModel model, std::string* message) {
                 if (model == SpvExecutionModelAnyHitKHR ||
                     model == SpvExecutionModelClosestHitKHR) {
                   if (message) {
                     *message =
+                        errorVUID +
                         "HitAttributeKHR Storage Class variables are read only "
                         "with AnyHitKHR and ClosestHitKHR";
                   }
