@@ -417,7 +417,137 @@ spv_result_t ValidateSpecConstantOp(ValidationState_t& _,
       break;
   }
 
-  // TODO(dneto): Validate result type and arguments to the various operations.
+  // Create a temp copy of the instruction but replacing 'OpSpecConstantOp' with
+  // the |opcode| operand and then running it through the correct pass to
+  // validate the various operations result type and arguments
+  //
+  // Example:
+  //   %1 = OpSpecConstantOp %2 IMul %3 %4
+  // becomes
+  //   %1 = OpIMul %2 %3 %4
+  spv_parsed_instruction_t inst_info = inst->c_inst();
+  inst_info.num_words--;
+  inst_info.num_operands--;
+  uint16_t new_opcode = static_cast<uint16_t>(op);
+  inst_info.opcode = new_opcode;
+
+  std::vector<uint32_t> new_words;
+  for (size_t i = 0; i < inst->words().size(); i++) {
+    // word 3 is |opcode| operand
+    if (i != 3) {
+      new_words.push_back(inst->word(i));
+    }
+  }
+  new_words[0] &= 0xFFFF0000;  // clear opcode bits
+  new_words[0] |= new_opcode;  // set new opcode
+  inst_info.words = new_words.data();
+
+  std::vector<spv_parsed_operand_t> new_operands(inst_info.num_operands);
+  for (size_t i = 1; i < inst->operands().size(); i++) {
+    spv_parsed_operand_t& new_operand = new_operands[i - 1];
+    new_operand = inst->operand(i);
+    new_operand.offset--;
+  }
+  inst_info.operands = new_operands.data();
+  Instruction new_inst(&inst_info);
+
+  // TODO - Find a way to combine both errors messages together
+  using namespace spvtools::val;
+  switch (op) {
+    case SpvOpSConvert:
+    case SpvOpFConvert:
+    case SpvOpConvertFToS:
+    case SpvOpConvertSToF:
+    case SpvOpConvertFToU:
+    case SpvOpConvertUToF:
+    case SpvOpUConvert:
+    case SpvOpConvertPtrToU:
+    case SpvOpConvertUToPtr:
+    case SpvOpGenericCastToPtr:
+    case SpvOpPtrCastToGeneric:
+    case SpvOpBitcast:
+    case SpvOpQuantizeToF16:
+      if (auto error = ConversionPass(_, &new_inst)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "OpSpecConstantOp opcode " << spvOpcodeString(op)
+               << " has invalid types or operands.";
+      }
+    case SpvOpNot:
+    case SpvOpShiftRightLogical:
+    case SpvOpShiftRightArithmetic:
+    case SpvOpShiftLeftLogical:
+    case SpvOpBitwiseOr:
+    case SpvOpBitwiseAnd:
+    case SpvOpBitwiseXor:
+      if (auto error = BitwisePass(_, &new_inst)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "OpSpecConstantOp opcode " << spvOpcodeString(op)
+               << " has invalid types or operands.";
+      }
+    case SpvOpSNegate:
+    case SpvOpIAdd:
+    case SpvOpISub:
+    case SpvOpIMul:
+    case SpvOpUDiv:
+    case SpvOpSDiv:
+    case SpvOpUMod:
+    case SpvOpSRem:
+    case SpvOpSMod:
+    case SpvOpFNegate:
+    case SpvOpFAdd:
+    case SpvOpFSub:
+    case SpvOpFMul:
+    case SpvOpFDiv:
+    case SpvOpFRem:
+    case SpvOpFMod:
+      if (auto error = ArithmeticsPass(_, &new_inst)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "OpSpecConstantOp opcode " << spvOpcodeString(op)
+               << " has invalid types or operands.";
+      }
+    case SpvOpVectorShuffle:
+    case SpvOpCompositeExtract:
+    case SpvOpCompositeInsert:
+      if (auto error = CompositesPass(_, &new_inst)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "OpSpecConstantOp opcode " << spvOpcodeString(op)
+               << " has invalid types or operands.";
+      }
+    case SpvOpLogicalOr:
+    case SpvOpLogicalAnd:
+    case SpvOpLogicalNot:
+    case SpvOpLogicalEqual:
+    case SpvOpLogicalNotEqual:
+    case SpvOpSelect:
+    case SpvOpIEqual:
+    case SpvOpINotEqual:
+    case SpvOpULessThan:
+    case SpvOpSLessThan:
+    case SpvOpUGreaterThan:
+    case SpvOpSGreaterThan:
+    case SpvOpULessThanEqual:
+    case SpvOpSLessThanEqual:
+    case SpvOpUGreaterThanEqual:
+    case SpvOpSGreaterThanEqual:
+      if (auto error = LogicalsPass(_, &new_inst)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "OpSpecConstantOp opcode " << spvOpcodeString(op)
+               << " has invalid types or operands.";
+      }
+    case SpvOpAccessChain:
+    case SpvOpInBoundsAccessChain:
+    case SpvOpPtrAccessChain:
+    case SpvOpInBoundsPtrAccessChain:
+    case SpvOpCooperativeMatrixLengthNV:
+      if (auto error = MemoryPass(_, &new_inst)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "OpSpecConstantOp opcode " << spvOpcodeString(op)
+               << " has invalid types or operands.";
+      }
+    default:
+      break;
+  }
+
   return SPV_SUCCESS;
 }
 
