@@ -467,11 +467,12 @@ spv_result_t ValidateSpecConstantOp(ValidationState_t& _,
     case SpvOpPtrCastToGeneric:
     case SpvOpBitcast:
     case SpvOpQuantizeToF16:
-      if (auto error = ConversionPass(_, &new_inst)) {
+      if (SPV_SUCCESS != ConversionPass(_, &new_inst)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "OpSpecConstantOp opcode " << spvOpcodeString(op)
                << " has invalid types or operands.";
       }
+      break;
     case SpvOpNot:
     case SpvOpShiftRightLogical:
     case SpvOpShiftRightArithmetic:
@@ -479,11 +480,12 @@ spv_result_t ValidateSpecConstantOp(ValidationState_t& _,
     case SpvOpBitwiseOr:
     case SpvOpBitwiseAnd:
     case SpvOpBitwiseXor:
-      if (auto error = BitwisePass(_, &new_inst)) {
+      if (SPV_SUCCESS != BitwisePass(_, &new_inst)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "OpSpecConstantOp opcode " << spvOpcodeString(op)
                << " has invalid types or operands.";
       }
+      break;
     case SpvOpSNegate:
     case SpvOpIAdd:
     case SpvOpISub:
@@ -500,19 +502,21 @@ spv_result_t ValidateSpecConstantOp(ValidationState_t& _,
     case SpvOpFDiv:
     case SpvOpFRem:
     case SpvOpFMod:
-      if (auto error = ArithmeticsPass(_, &new_inst)) {
+      if (SPV_SUCCESS != ArithmeticsPass(_, &new_inst)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "OpSpecConstantOp opcode " << spvOpcodeString(op)
                << " has invalid types or operands.";
       }
+      break;
     case SpvOpVectorShuffle:
     case SpvOpCompositeExtract:
     case SpvOpCompositeInsert:
-      if (auto error = CompositesPass(_, &new_inst)) {
+      if (SPV_SUCCESS != CompositesPass(_, &new_inst)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "OpSpecConstantOp opcode " << spvOpcodeString(op)
                << " has invalid types or operands.";
       }
+      break;
     case SpvOpLogicalOr:
     case SpvOpLogicalAnd:
     case SpvOpLogicalNot:
@@ -529,21 +533,23 @@ spv_result_t ValidateSpecConstantOp(ValidationState_t& _,
     case SpvOpSLessThanEqual:
     case SpvOpUGreaterThanEqual:
     case SpvOpSGreaterThanEqual:
-      if (auto error = LogicalsPass(_, &new_inst)) {
+      if (SPV_SUCCESS != LogicalsPass(_, &new_inst)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "OpSpecConstantOp opcode " << spvOpcodeString(op)
                << " has invalid types or operands.";
       }
+      break;
     case SpvOpAccessChain:
     case SpvOpInBoundsAccessChain:
     case SpvOpPtrAccessChain:
     case SpvOpInBoundsPtrAccessChain:
     case SpvOpCooperativeMatrixLengthNV:
-      if (auto error = MemoryPass(_, &new_inst)) {
+      if (SPV_SUCCESS != MemoryPass(_, &new_inst)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "OpSpecConstantOp opcode " << spvOpcodeString(op)
                << " has invalid types or operands.";
       }
+      break;
     default:
       break;
   }
