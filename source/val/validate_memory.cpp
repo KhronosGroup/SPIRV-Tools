@@ -454,12 +454,23 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
         }
       }
     }
-    if (!(storage_input_or_output && builtin) &&
+    if (!builtin &&
         ContainsInvalidBool(_, value_type, storage_input_or_output)) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "If OpTypeBool is stored in conjunction with OpVariable, it "
-             << "can only be used with non-externally visible shader Storage "
-             << "Classes: Workgroup, CrossWorkgroup, Private, and Function";
+      if (storage_input_or_output) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "If OpTypeBool is stored in conjunction with OpVariable "
+                  "using Input or Output Storage Classes it requires a BuiltIn "
+                  "decoration";
+
+      } else {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "If OpTypeBool is stored in conjunction with OpVariable, it "
+                  "can only be used with non-externally visible shader Storage "
+                  "Classes: Workgroup, CrossWorkgroup, Private, Function, "
+                  "Input, Output, RayPayloadKHR, IncomingRayPayloadKHR, "
+                  "HitAttributeKHR, CallableDataKHR, or "
+                  "IncomingCallableDataKHR";
+      }
     }
   }
 
