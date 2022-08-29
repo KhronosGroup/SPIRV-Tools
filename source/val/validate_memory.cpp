@@ -438,11 +438,11 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       storage_class != SpvStorageClassCrossWorkgroup &&
       storage_class != SpvStorageClassPrivate &&
       storage_class != SpvStorageClassFunction &&
-      storage_class != SpvStorageClassRayPayloadNV &&
-      storage_class != SpvStorageClassIncomingRayPayloadNV &&
-      storage_class != SpvStorageClassHitAttributeNV &&
-      storage_class != SpvStorageClassCallableDataNV &&
-      storage_class != SpvStorageClassIncomingCallableDataNV) {
+      storage_class != SpvStorageClassRayPayloadKHR &&
+      storage_class != SpvStorageClassIncomingRayPayloadKHR &&
+      storage_class != SpvStorageClassHitAttributeKHR &&
+      storage_class != SpvStorageClassCallableDataKHR &&
+      storage_class != SpvStorageClassIncomingCallableDataKHR) {
     bool storage_input_or_output = storage_class == SpvStorageClassInput ||
                                    storage_class == SpvStorageClassOutput;
     bool builtin = false;
@@ -889,8 +889,11 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
            << "' is not a pointer type.";
   }
 
-  const auto pointee_type = _.FindDef(pointer_type->GetOperandAs<uint32_t>(2));
-  if (!pointee_type || result_type->id() != pointee_type->id()) {
+  uint32_t pointee_data_type;
+  uint32_t storage_class;
+  if (!_.GetPointerTypeInfo(pointer_type->id(), &pointee_data_type,
+                            &storage_class) ||
+      result_type->id() != pointee_data_type) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpLoad Result Type <id> '" << _.getIdName(inst->type_id())
            << "' does not match Pointer <id> '" << _.getIdName(pointer->id())
@@ -964,6 +967,26 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "OpStore Pointer <id> '" << _.getIdName(pointer_id)
              << "' storage class is read-only";
+    } else if (storage_class == SpvStorageClassShaderRecordBufferKHR) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "ShaderRecordBufferKHR Storage Class variables are read only";
+    } else if (storage_class == SpvStorageClassHitAttributeKHR) {
+      std::string errorVUID = _.VkErrorID(4703);
+      _.function(inst->function()->id())
+          ->RegisterExecutionModelLimitation(
+              [errorVUID](SpvExecutionModel model, std::string* message) {
+                if (model == SpvExecutionModelAnyHitKHR ||
+                    model == SpvExecutionModelClosestHitKHR) {
+                  if (message) {
+                    *message =
+                        errorVUID +
+                        "HitAttributeKHR Storage Class variables are read only "
+                        "with AnyHitKHR and ClosestHitKHR";
+                  }
+                  return false;
+                }
+                return true;
+              });
     }
 
     if (spvIsVulkanEnv(_.context()->target_env) &&
