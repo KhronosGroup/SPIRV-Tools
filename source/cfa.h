@@ -66,6 +66,32 @@ class CFA {
   ///                       CFG following preorder traversal semantics
   /// @param[in] postorder  A function that will be called for every block in a
   ///                       CFG following postorder traversal semantics
+  /// @param[in] terminal   A function that will be called to determine if the
+  ///                       search should stop at the given node.
+  /// NOTE: The @p successor_func and predecessor_func each return a pointer to
+  /// a
+  /// collection such that iterators to that collection remain valid for the
+  /// lifetime of the algorithm.
+  static void DepthFirstTraversal(const BB* entry,
+                                  get_blocks_func successor_func,
+                                  std::function<void(cbb_ptr)> preorder,
+                                  std::function<void(cbb_ptr)> postorder,
+                                  std::function<bool(cbb_ptr)> terminal);
+
+  /// @brief Depth first traversal starting from the \p entry BasicBlock
+  ///
+  /// This function performs a depth first traversal from the \p entry
+  /// BasicBlock and calls the pre/postorder functions when it needs to process
+  /// the node in pre order, post order. It also calls the backedge function
+  /// when a back edge is encountered.
+  ///
+  /// @param[in] entry      The root BasicBlock of a CFG
+  /// @param[in] successor_func  A function which will return a pointer to the
+  ///                            successor nodes
+  /// @param[in] preorder   A function that will be called for every block in a
+  ///                       CFG following preorder traversal semantics
+  /// @param[in] postorder  A function that will be called for every block in a
+  ///                       CFG following postorder traversal semantics
   /// @param[in] backedge   A function that will be called when a backedge is
   ///                       encountered during a traversal
   /// @param[in] terminal   A function that will be called to determine if the
@@ -125,6 +151,37 @@ class CFA {
       std::unordered_map<const BB*, std::vector<BB*>>*
           augmented_predecessors_map,
       get_blocks_func succ_func, get_blocks_func pred_func);
+
+ private:
+  /// @brief Depth first traversal starting from the \p entry BasicBlock
+  ///
+  /// This function performs a depth first traversal from the \p entry
+  /// BasicBlock and calls the pre/postorder functions when it needs to process
+  /// the node in pre order, post order. It also calls the backedge function
+  /// when a back edge is encountered.
+  ///
+  /// @param[in] entry      The root BasicBlock of a CFG
+  /// @param[in] successor_func  A function which will return a pointer to the
+  ///                            successor nodes
+  /// @param[in] preorder   A function that will be called for every block in a
+  ///                       CFG following preorder traversal semantics
+  /// @param[in] postorder  A function that will be called for every block in a
+  ///                       CFG following postorder traversal semantics
+  /// @param[in] backedge   A function that will be called when a backedge is
+  ///                       encountered during a traversal
+  /// @param[in] terminal   A function that will be called to determine if the
+  ///                       search should stop at the given node.
+  /// @param[in] check_backedges  A boolean that says if the backedges is a nop.
+  /// NOTE: The @p successor_func and predecessor_func each return a pointer to
+  /// a
+  /// collection such that iterators to that collection remain valid for the
+  /// lifetime of the algorithm.
+  static void DepthFirstTraversal(
+      const BB* entry, get_blocks_func successor_func,
+      std::function<void(cbb_ptr)> preorder,
+      std::function<void(cbb_ptr)> postorder,
+      std::function<void(cbb_ptr, cbb_ptr)> backedge,
+      std::function<bool(cbb_ptr)> terminal, bool backeges_is_nop);
 };
 
 template <class BB>
@@ -137,12 +194,34 @@ bool CFA<BB>::FindInWorkList(const std::vector<block_info>& work_list,
 }
 
 template <class BB>
+void CFA<BB>::DepthFirstTraversal(const BB* entry,
+                                  get_blocks_func successor_func,
+                                  std::function<void(cbb_ptr)> preorder,
+                                  std::function<void(cbb_ptr)> postorder,
+                                  std::function<bool(cbb_ptr)> terminal) {
+  auto ignore_edge = [](cbb_ptr, cbb_ptr) {};
+  DepthFirstTraversal(entry, successor_func, preorder, postorder, ignore_edge,
+                      terminal, true);
+}
+
+template <class BB>
 void CFA<BB>::DepthFirstTraversal(
     const BB* entry, get_blocks_func successor_func,
     std::function<void(cbb_ptr)> preorder,
     std::function<void(cbb_ptr)> postorder,
     std::function<void(cbb_ptr, cbb_ptr)> backedge,
     std::function<bool(cbb_ptr)> terminal) {
+  DepthFirstTraversal(entry, successor_func, preorder, postorder, backedge,
+                      terminal, false);
+}
+
+template <class BB>
+void CFA<BB>::DepthFirstTraversal(
+    const BB* entry, get_blocks_func successor_func,
+    std::function<void(cbb_ptr)> preorder,
+    std::function<void(cbb_ptr)> postorder,
+    std::function<void(cbb_ptr, cbb_ptr)> backedge,
+    std::function<bool(cbb_ptr)> terminal, bool backeges_is_nop) {
   std::unordered_set<uint32_t> processed;
 
   /// NOTE: work_list is the sequence of nodes from the root node to the node
@@ -162,7 +241,7 @@ void CFA<BB>::DepthFirstTraversal(
     } else {
       BB* child = *top.iter;
       top.iter++;
-      if (FindInWorkList(work_list, child->id())) {
+      if (!backeges_is_nop && FindInWorkList(work_list, child->id())) {
         backedge(top.block, child);
       }
       if (processed.count(child->id()) == 0) {
@@ -276,7 +355,7 @@ std::vector<BB*> CFA<BB>::TraversalRoots(const std::vector<BB*>& blocks,
                              &ignore_blocks,
                              &no_terminal_blocks](const BB* entry) {
     DepthFirstTraversal(entry, succ_func, mark_visited, ignore_block,
-                        ignore_blocks, no_terminal_blocks);
+                        no_terminal_blocks);
   };
 
   std::vector<BB*> result;
