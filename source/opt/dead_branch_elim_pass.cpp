@@ -459,7 +459,7 @@ void DeadBranchElimPass::FixBlockOrder() {
   };
 
   // Reorders blocks according to structured order.
-  ProcessFunction reorder_structured = [this](Function* function) {
+  ProcessFunction reorder_structured = [](Function* function) {
     function->ReorderBasicBlocksInStructuredOrder();
     return true;
   };

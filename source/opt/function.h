@@ -19,6 +19,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -291,15 +292,13 @@ void Function::ReorderBasicBlocks(It begin, It end) {
 
 template <class It>
 bool Function::ContainsAllBlocksInTheFunction(It begin, It end) {
-  std::vector<BasicBlock*> range(begin, end);
-
+  std::unordered_multiset<BasicBlock*> range(begin, end);
   if (range.size() != blocks_.size()) {
     return false;
   }
 
-  std::sort(range.begin(), range.end());
   for (auto& bb : blocks_) {
-    if (!std::binary_search(range.begin(), range.end(), bb.get())) return false;
+    if (range.count(bb.get()) == 0) return false;
   }
   return true;
 }
