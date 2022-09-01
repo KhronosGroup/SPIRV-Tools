@@ -28,7 +28,7 @@ namespace opt {
 namespace {
 
 static const std::string kOutputDecorations = R"(
-; CHECK: OpDecorate [[output_buffer_type:%_struct_\w+]] Block
+; CHECK: OpDecorate [[output_buffer_type:%inst_buff_addr_OutputBuffer]] Block
 ; CHECK: OpMemberDecorate [[output_buffer_type]] 0 Offset 0
 ; CHECK: OpMemberDecorate [[output_buffer_type]] 1 Offset 4
 ; CHECK: OpDecorate [[output_buffer_var:%\w+]] DescriptorSet 7
@@ -121,7 +121,7 @@ static const std::string kStreamWrite4Compute = kStreamWrite4Begin + R"(
 // clang-format on
 
 static const std::string kInputDecorations = R"(
-; CHECK: OpDecorate [[input_buffer_type:%_struct_\w+]] Block
+; CHECK: OpDecorate [[input_buffer_type:%inst_buff_addr_InputBuffer]] Block
 ; CHECK: OpMemberDecorate [[input_buffer_type]] 0 Offset 0
 ; CHECK: OpDecorate [[input_buffer_var:%\w+]] DescriptorSet 7
 ; CHECK: OpDecorate [[input_buffer_var]] Binding 2
@@ -292,7 +292,7 @@ OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_bufStruct PhysicalStorageBuffer
 ; CHECK: %21 = OpLoad %_ptr_PhysicalStorageBuffer_bufStruct %20
 ; CHECK: %22 = OpAccessChain %_ptr_PhysicalStorageBuffer_int %21 %int_1
 ; CHECK: %24 = OpConvertPtrToU %ulong %22
-; CHECK: %61 = OpFunctionCall %bool %26 %24 %uint_4
+; CHECK: %61 = OpFunctionCall %bool %inst_buff_addr_search_and_test %24 %uint_4
 ; CHECK: OpSelectionMerge %62 None
 ; CHECK: OpBranchConditional %61 %63 %64
 ; CHECK: %63 = OpLabel
@@ -303,7 +303,7 @@ OpStore %22 %int_3239 Aligned 16
 ; CHECK: %65 = OpUConvert %uint %24
 ; CHECK: %67 = OpShiftRightLogical %ulong %24 %uint_32
 ; CHECK: %68 = OpUConvert %uint %67
-; CHECK: %124 = OpFunctionCall %void %69 %uint_48 %uint_2 %65 %68
+; CHECK: %124 = OpFunctionCall %void %inst_buff_addr_stream_write_4 %uint_48 %uint_2 %65 %68
 ; CHECK: OpBranch %62
 ; CHECK: %62 = OpLabel
 OpReturn
@@ -410,7 +410,7 @@ OpStore %26 %int_531 Aligned 16
 ; CHECK-NOT: %22 = OpLoad %_ptr_PhysicalStorageBuffer_blockType %21 Aligned 8
 ; CHECK-NOT: %26 = OpAccessChain %_ptr_PhysicalStorageBuffer_int %22 %int_0
 ; CHECK: %30 = OpConvertPtrToU %ulong %21
-; CHECK: %67 = OpFunctionCall %bool %32 %30 %uint_8
+; CHECK: %67 = OpFunctionCall %bool %inst_buff_addr_search_and_test %30 %uint_8
 ; CHECK: OpSelectionMerge %68 None
 ; CHECK: OpBranchConditional %67 %69 %70
 ; CHECK: %69 = OpLabel
@@ -420,14 +420,14 @@ OpStore %26 %int_531 Aligned 16
 ; CHECK: %72 = OpUConvert %uint %30
 ; CHECK: %74 = OpShiftRightLogical %ulong %30 %uint_32
 ; CHECK: %75 = OpUConvert %uint %74
-; CHECK: %131 = OpFunctionCall %void %76 %uint_44 %uint_2 %72 %75
+; CHECK: %131 = OpFunctionCall %void %inst_buff_addr_stream_write_4 %uint_44 %uint_2 %72 %75
 ; CHECK: %133 = OpConvertUToPtr %_ptr_PhysicalStorageBuffer_blockType %132
 ; CHECK: OpBranch %68
 ; CHECK: %68 = OpLabel
 ; CHECK: %134 = OpPhi %_ptr_PhysicalStorageBuffer_blockType %71 %69 %133 %70
 ; CHECK: %26 = OpAccessChain %_ptr_PhysicalStorageBuffer_int %134 %int_0
 ; CHECK: %135 = OpConvertPtrToU %ulong %26
-; CHECK: %136 = OpFunctionCall %bool %32 %135 %uint_4
+; CHECK: %136 = OpFunctionCall %bool %inst_buff_addr_search_and_test %135 %uint_4
 ; CHECK: OpSelectionMerge %137 None
 ; CHECK: OpBranchConditional %136 %138 %139
 ; CHECK: %138 = OpLabel
@@ -437,7 +437,7 @@ OpStore %26 %int_531 Aligned 16
 ; CHECK: %140 = OpUConvert %uint %135
 ; CHECK: %141 = OpShiftRightLogical %ulong %135 %uint_32
 ; CHECK: %142 = OpUConvert %uint %141
-; CHECK: %144 = OpFunctionCall %void %76 %uint_46 %uint_2 %140 %142
+; CHECK: %144 = OpFunctionCall %void %inst_buff_addr_stream_write_4 %uint_46 %uint_2 %140 %142
 ; CHECK: OpBranch %137
 ; CHECK: %137 = OpLabel
 OpReturn
@@ -479,7 +479,7 @@ OpCapability PhysicalStorageBufferAddresses
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel PhysicalStorageBuffer64 GLSL450
 OpEntryPoint Fragment %main "main"
-; CHECK: OpEntryPoint Fragment %main "main" %60 %99 %gl_FragCoord
+; CHECK: OpEntryPoint Fragment %main "main" %inst_buff_addr_input_buffer %inst_buff_addr_output_buffer %gl_FragCoord
 OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 450
 OpSourceExtension "GL_ARB_gpu_shader_int64"
@@ -536,7 +536,7 @@ OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_TestBuffer PhysicalStorageBuffe
 %39 = OpLoad %Test_0 %38 Aligned 16
 ; CHECK-NOT: %39 = OpLoad %Test_0 %38 Aligned 16
 ; CHECK: %43 = OpConvertPtrToU %ulong %38
-; CHECK: %80 = OpFunctionCall %bool %45 %43 %uint_4
+; CHECK: %80 = OpFunctionCall %bool %inst_buff_addr_search_and_test %43 %uint_4
 ; CHECK: OpSelectionMerge %81 None
 ; CHECK: OpBranchConditional %80 %82 %83
 ; CHECK: %82 = OpLabel
@@ -546,7 +546,7 @@ OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_TestBuffer PhysicalStorageBuffe
 ; CHECK: %85 = OpUConvert %uint %43
 ; CHECK: %87 = OpShiftRightLogical %ulong %43 %uint_32
 ; CHECK: %88 = OpUConvert %uint %87
-; CHECK: %142 = OpFunctionCall %void %89 %uint_37 %uint_2 %85 %88
+; CHECK: %142 = OpFunctionCall %void %inst_buff_addr_stream_write_4 %uint_37 %uint_2 %85 %88
 ; CHECK: OpBranch %81
 ; CHECK: %81 = OpLabel
 ; CHECK: %144 = OpPhi %Test_0 %84 %82 %143 %83
