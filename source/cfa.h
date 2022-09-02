@@ -308,11 +308,9 @@ std::vector<BB*> CFA<BB>::TraversalRoots(const std::vector<BB*>& blocks,
 
   auto mark_visited = [&visited](const BB* b) { visited.insert(b); };
   auto ignore_block = [](const BB*) {};
-  auto ignore_blocks = [](const BB*, const BB*) {};
   auto no_terminal_blocks = [](const BB*) { return false; };
 
   auto traverse_from_root = [&mark_visited, &succ_func, &ignore_block,
-                             &ignore_blocks,
                              &no_terminal_blocks](const BB* entry) {
     DepthFirstTraversal(entry, succ_func, mark_visited, ignore_block,
                         no_terminal_blocks);
