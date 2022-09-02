@@ -57,7 +57,6 @@ template <typename BBType, typename SuccessorLambda, typename PreLambda,
           typename PostLambda>
 static void DepthFirstSearch(const BBType* bb, SuccessorLambda successors,
                              PreLambda pre, PostLambda post) {
-  // Ignore backedge operation.
   auto no_terminal_blocks = [](const BBType*) { return false; };
   CFA<BBType>::DepthFirstTraversal(bb, successors, pre, post,
                                    no_terminal_blocks);
@@ -161,7 +160,6 @@ template <typename BBType>
 void BasicBlockSuccessorHelper<BBType>::CreateSuccessorMap(
     Function& f, const BasicBlock* placeholder_start_node) {
   IRContext* context = f.DefInst().context();
-  std::unordered_map<uint32_t, BasicBlock*> id_to_BB_map;
 
   if (invert_graph_) {
     // For the post dominator tree, we see the inverted graph.
