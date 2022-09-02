@@ -166,7 +166,8 @@ void CFA<BB>::DepthFirstTraversal(const BB* entry,
                                   std::function<void(cbb_ptr)> preorder,
                                   std::function<void(cbb_ptr)> postorder,
                                   std::function<bool(cbb_ptr)> terminal) {
-  DepthFirstTraversal(entry, successor_func, preorder, postorder, {}, terminal);
+  DepthFirstTraversal(entry, successor_func, preorder, postorder,
+                      /* backedge = */ {}, terminal);
 }
 
 template <class BB>
