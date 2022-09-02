@@ -254,8 +254,9 @@ OpControlBarrier %device %device %none
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_2));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpControlBarrier requires one of the following Execution "
-                "Models: TessellationControl, GLCompute or Kernel"));
+      HasSubstr("OpControlBarrier requires one of the following "
+                "Execution Models: TessellationControl, GLCompute, Kernel, "
+                "MeshNV or TaskNV"));
 }
 
 TEST_F(ValidateBarriers, OpControlBarrierExecutionModelFragmentSpirv13) {
@@ -417,8 +418,9 @@ OpControlBarrier %subgroup %workgroup %acquire
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-StandaloneSpirv-None-04639"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Workgroup Memory Scope is limited to MeshNV, TaskNV, "
-                        "and GLCompute execution model"));
+              HasSubstr("Workgroup Memory Scope is limited to MeshNV, "
+                        "TaskNV, MeshEXT, TaskEXT and GLCompute "
+                        "execution model"));
 }
 
 TEST_F(ValidateBarriers,
@@ -433,8 +435,8 @@ OpControlBarrier %workgroup %subgroup %acquire
               AnyVUID("VUID-StandaloneSpirv-None-04637"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("in Vulkan environment, Workgroup execution scope is "
-                        "only for TaskNV, MeshNV, TessellationControl, and "
-                        "GLCompute execution models"));
+                        "only for TaskNV, MeshNV, TaskEXT, MeshEXT, "
+                        "TessellationControl, and GLCompute execution models"));
 }
 
 TEST_F(ValidateBarriers, OpControlBarrierVulkan1p1WorkgroupComputeSuccess) {
@@ -544,10 +546,11 @@ OpControlBarrier %subgroup %workgroup %acquire_release
   CompileSuccessfully(GenerateShaderCode(body, "", "Fragment"),
                       SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpControlBarrier requires one of the following Execution "
-                "Models: TessellationControl, GLCompute or Kernel"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpControlBarrier requires one of the following "
+                        "Execution "
+                        "Models: TessellationControl, GLCompute, Kernel, "
+                        "MeshNV or TaskNV"));
 }
 
 TEST_F(ValidateBarriers, OpControlBarrierSubgroupExecutionVertex1p1) {
@@ -588,8 +591,9 @@ OpControlBarrier %subgroup %workgroup %acquire_release
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpControlBarrier requires one of the following Execution "
-                "Models: TessellationControl, GLCompute or Kernel"));
+      HasSubstr("OpControlBarrier requires one of the following "
+                "Execution Models: TessellationControl, GLCompute, Kernel, "
+                "MeshNV or TaskNV"));
 }
 
 TEST_F(ValidateBarriers, OpControlBarrierSubgroupExecutionGeometry1p1) {
@@ -631,10 +635,11 @@ OpControlBarrier %subgroup %workgroup %acquire_release
       GenerateShaderCode(body, "OpCapability Geometry\n", "Geometry"),
       SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpControlBarrier requires one of the following Execution "
-                "Models: TessellationControl, GLCompute or Kernel"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpControlBarrier requires one of the following "
+                        "Execution "
+                        "Models: TessellationControl, GLCompute, Kernel, "
+                        "MeshNV or TaskNV"));
 }
 
 TEST_F(ValidateBarriers,
@@ -679,10 +684,11 @@ OpControlBarrier %subgroup %workgroup %acquire_release
                                          "TessellationEvaluation"),
                       SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("OpControlBarrier requires one of the following Execution "
-                "Models: TessellationControl, GLCompute or Kernel"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpControlBarrier requires one of the following "
+                        "Execution "
+                        "Models: TessellationControl, GLCompute, Kernel, "
+                        "MeshNV or TaskNV"));
 }
 
 TEST_F(ValidateBarriers, OpMemoryBarrierSuccess) {

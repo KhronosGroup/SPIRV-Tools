@@ -97,6 +97,14 @@ TEST_P(EnumCapabilityTest, Sample) {
     }                                                                \
   }
 
+#define CASE6(TYPE, VALUE, CAP1, CAP2, CAP3, CAP4, CAP5, CAP6)          \
+  {                                                                     \
+    SPV_OPERAND_TYPE_##TYPE, uint32_t(Spv##VALUE), CapabilitySet {      \
+      SpvCapability##CAP1, SpvCapability##CAP2, SpvCapability##CAP3,    \
+          SpvCapability##CAP4, SpvCapability##CAP5, SpvCapability##CAP6 \
+    }                                                                   \
+  }
+
 // See SPIR-V Section 3.3 Execution Model
 INSTANTIATE_TEST_SUITE_P(
     ExecutionModel, EnumCapabilityTest,
@@ -168,10 +176,10 @@ INSTANTIATE_TEST_SUITE_P(
                   Geometry),
             CASE1(EXECUTION_MODE, ExecutionModeQuads, Tessellation),
             CASE1(EXECUTION_MODE, ExecutionModeIsolines, Tessellation),
-            CASE3(EXECUTION_MODE, ExecutionModeOutputVertices, Geometry,
-                  Tessellation, MeshShadingNV),
-            CASE2(EXECUTION_MODE, ExecutionModeOutputPoints, Geometry,
-                  MeshShadingNV),
+            CASE4(EXECUTION_MODE, ExecutionModeOutputVertices, Geometry,
+                  Tessellation, MeshShadingNV, MeshShadingEXT),
+            CASE3(EXECUTION_MODE, ExecutionModeOutputPoints, Geometry,
+                  MeshShadingNV, MeshShadingEXT),
             CASE1(EXECUTION_MODE, ExecutionModeOutputLineStrip, Geometry),
             CASE1(EXECUTION_MODE, ExecutionModeOutputTriangleStrip, Geometry),
             CASE1(EXECUTION_MODE, ExecutionModeVecTypeHint, Kernel),
@@ -486,11 +494,11 @@ INSTANTIATE_TEST_SUITE_P(
             CASE1(BUILT_IN, BuiltInCullDistance, CullDistance),  // Bug 1407, 15234
             CASE1(BUILT_IN, BuiltInVertexId, Shader),
             CASE1(BUILT_IN, BuiltInInstanceId, Shader),
-            CASE5(BUILT_IN, BuiltInPrimitiveId, Geometry, Tessellation,
-                  RayTracingNV, RayTracingKHR, MeshShadingNV),
+            CASE6(BUILT_IN, BuiltInPrimitiveId, Geometry, Tessellation,
+                  RayTracingNV, RayTracingKHR, MeshShadingNV, MeshShadingEXT),
             CASE2(BUILT_IN, BuiltInInvocationId, Geometry, Tessellation),
-            CASE3(BUILT_IN, BuiltInLayer, Geometry, ShaderViewportIndexLayerEXT, MeshShadingNV),
-            CASE3(BUILT_IN, BuiltInViewportIndex, MultiViewport, ShaderViewportIndexLayerEXT, MeshShadingNV),  // Bug 15234
+            CASE4(BUILT_IN, BuiltInLayer, Geometry, ShaderViewportIndexLayerEXT, MeshShadingNV, MeshShadingEXT),
+            CASE4(BUILT_IN, BuiltInViewportIndex, MultiViewport, ShaderViewportIndexLayerEXT, MeshShadingNV, MeshShadingEXT),  // Bug 15234
             CASE1(BUILT_IN, BuiltInTessLevelOuter, Tessellation),
             CASE1(BUILT_IN, BuiltInTessLevelInner, Tessellation),
             CASE1(BUILT_IN, BuiltInTessCoord, Tessellation),
@@ -533,11 +541,11 @@ INSTANTIATE_TEST_SUITE_P(
         Values(SPV_ENV_UNIVERSAL_1_5),
         ValuesIn(std::vector<EnumCapabilityCase>{
             // SPIR-V 1.5 adds new capabilities to enable these two builtins.
-            CASE4(BUILT_IN, BuiltInLayer, Geometry, ShaderLayer,
-                  ShaderViewportIndexLayerEXT, MeshShadingNV),
-            CASE4(BUILT_IN, BuiltInViewportIndex, MultiViewport,
+            CASE5(BUILT_IN, BuiltInLayer, Geometry, ShaderLayer,
+                  ShaderViewportIndexLayerEXT, MeshShadingNV, MeshShadingEXT),
+            CASE5(BUILT_IN, BuiltInViewportIndex, MultiViewport,
                   ShaderViewportIndex, ShaderViewportIndexLayerEXT,
-                  MeshShadingNV),
+                  MeshShadingNV, MeshShadingEXT),
         })));
 
 // See SPIR-V Section 3.22 Selection Control

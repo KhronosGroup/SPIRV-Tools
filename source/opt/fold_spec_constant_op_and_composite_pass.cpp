@@ -144,15 +144,6 @@ bool FoldSpecConstantOpAndCompositePass::ProcessOpSpecConstantOp(
   return true;
 }
 
-uint32_t FoldSpecConstantOpAndCompositePass::GetTypeComponent(
-    uint32_t typeId, uint32_t element) const {
-  Instruction* type = context()->get_def_use_mgr()->GetDef(typeId);
-  uint32_t subtype = type->GetTypeComponent(element);
-  assert(subtype != 0);
-
-  return subtype;
-}
-
 Instruction* FoldSpecConstantOpAndCompositePass::FoldWithInstructionFolder(
     Module::inst_iterator* inst_iter_ptr) {
   // If one of operands to the instruction is not a
@@ -212,86 +203,6 @@ Instruction* FoldSpecConstantOpAndCompositePass::FoldWithInstructionFolder(
     get_def_use_mgr()->AnalyzeInstDefUse(new_const_inst);
   }
   return new_const_inst;
-}
-
-Instruction* FoldSpecConstantOpAndCompositePass::DoVectorShuffle(
-    Module::inst_iterator* pos) {
-  Instruction* inst = &**pos;
-  analysis::Vector* result_vec_type =
-      context()->get_constant_mgr()->GetType(inst)->AsVector();
-  assert(inst->NumInOperands() - 1 > 2 &&
-         "OpSpecConstantOp DoVectorShuffle instruction requires more than 2 "
-         "operands (2 vector ids and at least one literal operand");
-  assert(result_vec_type &&
-         "The result of VectorShuffle must be of type vector");
-
-  // A temporary null constants that can be used as the components of the result
-  // vector. This is needed when any one of the vector operands are null
-  // constant.
-  const analysis::Constant* null_component_constants = nullptr;
-
-  // Get a concatenated vector of scalar constants. The vector should be built
-  // with the components from the first and the second operand of VectorShuffle.
-  std::vector<const analysis::Constant*> concatenated_components;
-  // Note that for OpSpecConstantOp, the second in-operand is the first id
-  // operand. The first in-operand is the spec opcode.
-  for (uint32_t i : {1, 2}) {
-    assert(inst->GetInOperand(i).type == SPV_OPERAND_TYPE_ID &&
-           "The vector operand must have a SPV_OPERAND_TYPE_ID type");
-    uint32_t operand_id = inst->GetSingleWordInOperand(i);
-    auto operand_const =
-        context()->get_constant_mgr()->FindDeclaredConstant(operand_id);
-    if (!operand_const) return nullptr;
-    const analysis::Type* operand_type = operand_const->type();
-    assert(operand_type->AsVector() &&
-           "The first two operand of VectorShuffle must be of vector type");
-    if (auto vec_const = operand_const->AsVectorConstant()) {
-      // case 1: current operand is a non-null vector constant.
-      concatenated_components.insert(concatenated_components.end(),
-                                     vec_const->GetComponents().begin(),
-                                     vec_const->GetComponents().end());
-    } else if (operand_const->AsNullConstant()) {
-      // case 2: current operand is a null vector constant. Create a temporary
-      // null scalar constant as the component.
-      if (!null_component_constants) {
-        const analysis::Type* component_type =
-            operand_type->AsVector()->element_type();
-        null_component_constants =
-            context()->get_constant_mgr()->GetConstant(component_type, {});
-      }
-      // Append the null scalar consts to the concatenated components
-      // vector.
-      concatenated_components.insert(concatenated_components.end(),
-                                     operand_type->AsVector()->element_count(),
-                                     null_component_constants);
-    } else {
-      // no other valid cases
-      return nullptr;
-    }
-  }
-  // Create null component constants if there are any. The component constants
-  // must be added to the module before the dependee composite constants to
-  // satisfy SSA def-use dominance.
-  if (null_component_constants) {
-    context()->get_constant_mgr()->BuildInstructionAndAddToModule(
-        null_component_constants, pos);
-  }
-  // Create the new vector constant with the selected components.
-  std::vector<const analysis::Constant*> selected_components;
-  for (uint32_t i = 3; i < inst->NumInOperands(); i++) {
-    assert(inst->GetInOperand(i).type == SPV_OPERAND_TYPE_LITERAL_INTEGER &&
-           "The literal operand must of type SPV_OPERAND_TYPE_LITERAL_INTEGER");
-    uint32_t literal = inst->GetSingleWordInOperand(i);
-    assert(literal < concatenated_components.size() &&
-           "Literal index out of bound of the concatenated vector");
-    selected_components.push_back(concatenated_components[literal]);
-  }
-  auto new_vec_const = MakeUnique<analysis::VectorConstant>(
-      result_vec_type, selected_components);
-  auto reg_vec_const =
-      context()->get_constant_mgr()->RegisterConstant(std::move(new_vec_const));
-  return context()->get_constant_mgr()->BuildInstructionAndAddToModule(
-      reg_vec_const, pos);
 }
 
 namespace {

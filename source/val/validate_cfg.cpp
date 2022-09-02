@@ -896,14 +896,13 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
     // CFG to ensure we cover all the blocks.
     std::vector<const BasicBlock*> postorder;
     auto ignore_block = [](const BasicBlock*) {};
-    auto ignore_edge = [](const BasicBlock*, const BasicBlock*) {};
     auto no_terminal_blocks = [](const BasicBlock*) { return false; };
     if (!function.ordered_blocks().empty()) {
       /// calculate dominators
       CFA<BasicBlock>::DepthFirstTraversal(
           function.first_block(), function.AugmentedCFGSuccessorsFunction(),
           ignore_block, [&](const BasicBlock* b) { postorder.push_back(b); },
-          ignore_edge, no_terminal_blocks);
+          no_terminal_blocks);
       auto edges = CFA<BasicBlock>::CalculateDominators(
           postorder, function.AugmentedCFGPredecessorsFunction());
       for (auto edge : edges) {
@@ -953,7 +952,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
         CFA<BasicBlock>::DepthFirstTraversal(
             function.first_block(),
             function.AugmentedStructuralCFGSuccessorsFunction(), ignore_block,
-            [&](const BasicBlock* b) { postorder.push_back(b); }, ignore_edge,
+            [&](const BasicBlock* b) { postorder.push_back(b); },
             no_terminal_blocks);
         auto edges = CFA<BasicBlock>::CalculateDominators(
             postorder, function.AugmentedStructuralCFGPredecessorsFunction());
@@ -967,7 +966,7 @@ spv_result_t PerformCfgChecks(ValidationState_t& _) {
             function.pseudo_exit_block(),
             function.AugmentedStructuralCFGPredecessorsFunction(), ignore_block,
             [&](const BasicBlock* b) { postdom_postorder.push_back(b); },
-            ignore_edge, no_terminal_blocks);
+            no_terminal_blocks);
         auto postdom_edges = CFA<BasicBlock>::CalculateDominators(
             postdom_postorder,
             function.AugmentedStructuralCFGSuccessorsFunction());

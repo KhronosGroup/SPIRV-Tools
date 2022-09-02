@@ -778,8 +778,8 @@ OpAtomicStore %f32_var_function %device %relaxed %f32_1
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("AtomicStore: Vulkan spec only allows storage classes for "
-                "atomic to be: Uniform, Workgroup, Image, StorageBuffer, or "
-                "PhysicalStorageBuffer."));
+                "atomic to be: Uniform, Workgroup, Image, StorageBuffer, "
+                "PhysicalStorageBuffer or TaskPayloadWorkgroupEXT."));
 }
 
 TEST_F(ValidateAtomics, AtomicStoreFunctionPointerStorageType) {
