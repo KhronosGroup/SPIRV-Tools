@@ -81,7 +81,7 @@ class CFA {
   /// This function performs a depth first traversal from the \p entry
   /// BasicBlock and calls the pre/postorder functions when it needs to process
   /// the node in pre order, post order. It also calls the backedge function
-  /// when a back edge is encountered. The backedge function can empty.  The
+  /// when a back edge is encountered. The backedge function can be empty.  The
   /// runtime of the algorithm is improved if backedge is empty.
   ///
   /// @param[in] entry      The root BasicBlock of a CFG
