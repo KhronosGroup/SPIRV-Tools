@@ -177,10 +177,10 @@ void CFA<BB>::DepthFirstTraversal(
     std::function<void(cbb_ptr)> postorder,
     std::function<void(cbb_ptr, cbb_ptr)> backedge,
     std::function<bool(cbb_ptr)> terminal) {
-  assert(!successor_func && "The successor function cannot be empty.");
-  assert(!preorder && "The preorder function cannot be empty.");
-  assert(!postorder && "The postorder function cannot be empty.");
-  assert(!terminal && "The terminal function cannot be empty.");
+  assert(successor_func && "The successor function cannot be empty.");
+  assert(preorder && "The preorder function cannot be empty.");
+  assert(postorder && "The postorder function cannot be empty.");
+  assert(terminal && "The terminal function cannot be empty.");
 
   std::unordered_set<uint32_t> processed;
 
