@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "source/val/validate.h"
-
 #include <algorithm>
 
 #include "source/opcode.h"
 #include "source/spirv_target_env.h"
 #include "source/val/instruction.h"
+#include "source/val/validate.h"
 #include "source/val/validation_state.h"
 
 namespace spvtools {
@@ -359,14 +358,18 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
                              return true;
                            case SpvExecutionModelMeshNV:
                              return _.HasCapability(SpvCapabilityMeshShadingNV);
+                           case SpvExecutionModelMeshEXT:
+                             return _.HasCapability(
+                                 SpvCapabilityMeshShadingEXT);
                            default:
                              return false;
                          }
                        })) {
-        if (_.HasCapability(SpvCapabilityMeshShadingNV)) {
+        if (_.HasCapability(SpvCapabilityMeshShadingNV) ||
+            _.HasCapability(SpvCapabilityMeshShadingEXT)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << "Execution mode can only be used with the Geometry or "
-                    "MeshNV execution model.";
+                 << "Execution mode can only be used with the Geometry "
+                    "MeshNV or MeshEXT execution model.";
         } else {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Execution mode can only be used with the Geometry "
@@ -421,14 +424,18 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
                              return true;
                            case SpvExecutionModelMeshNV:
                              return _.HasCapability(SpvCapabilityMeshShadingNV);
+                           case SpvExecutionModelMeshEXT:
+                             return _.HasCapability(
+                                 SpvCapabilityMeshShadingEXT);
                            default:
                              return false;
                          }
                        })) {
-        if (_.HasCapability(SpvCapabilityMeshShadingNV)) {
+        if (_.HasCapability(SpvCapabilityMeshShadingNV) ||
+            _.HasCapability(SpvCapabilityMeshShadingEXT)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Execution mode can only be used with a Geometry, "
-                    "tessellation or MeshNV execution model.";
+                    "tessellation, MeshNV or MeshEXT execution model.";
         } else {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Execution mode can only be used with a Geometry or "
@@ -494,14 +501,19 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
                            case SpvExecutionModelTaskNV:
                            case SpvExecutionModelMeshNV:
                              return _.HasCapability(SpvCapabilityMeshShadingNV);
+                           case SpvExecutionModelTaskEXT:
+                           case SpvExecutionModelMeshEXT:
+                             return _.HasCapability(
+                                 SpvCapabilityMeshShadingEXT);
                            default:
                              return false;
                          }
                        })) {
-        if (_.HasCapability(SpvCapabilityMeshShadingNV)) {
+        if (_.HasCapability(SpvCapabilityMeshShadingNV) ||
+            _.HasCapability(SpvCapabilityMeshShadingEXT)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Execution mode can only be used with a Kernel, GLCompute, "
-                    "MeshNV, or TaskNV execution model.";
+                    "MeshNV, MeshEXT, TaskNV or TaskEXT execution model.";
         } else {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Execution mode can only be used with a Kernel or "

@@ -639,7 +639,9 @@ void ValidationState_t::RegisterStorageClassConsumer(
                                                  std::string* message) {
             if (model != SpvExecutionModelGLCompute &&
                 model != SpvExecutionModelTaskNV &&
-                model != SpvExecutionModelMeshNV) {
+                model != SpvExecutionModelMeshNV &&
+                model != SpvExecutionModelTaskEXT &&
+                model != SpvExecutionModelMeshEXT) {
               if (message) {
                 *message =
                     errorVUID +
@@ -1522,6 +1524,7 @@ bool ValidationState_t::IsValidStorageClass(
       case SpvStorageClassCallableDataKHR:
       case SpvStorageClassIncomingCallableDataKHR:
       case SpvStorageClassShaderRecordBufferKHR:
+      case SpvStorageClassTaskPayloadWorkgroupEXT:
         return true;
       default:
         return false;
