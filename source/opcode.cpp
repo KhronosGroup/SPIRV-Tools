@@ -468,8 +468,16 @@ bool spvOpcodeIsBlockTerminator(SpvOp opcode) {
 }
 
 bool spvOpcodeTerminatesExecution(SpvOp opcode) {
-  return opcode == SpvOpKill || opcode == SpvOpTerminateInvocation ||
-         opcode == SpvOpTerminateRayKHR || opcode == SpvOpIgnoreIntersectionKHR;
+  switch (opcode) {
+    case SpvOpKill:
+    case SpvOpTerminateInvocation:
+    case SpvOpTerminateRayKHR:
+    case SpvOpIgnoreIntersectionKHR:
+    case SpvOpEmitMeshTasksEXT:
+      return true;
+    default:
+      return false;
+  }
 }
 
 bool spvOpcodeIsBaseOpaqueType(SpvOp opcode) {
