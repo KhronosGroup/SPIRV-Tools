@@ -640,6 +640,19 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  if (inst->operands().size() > 3) {
+    if (storage_class == SpvStorageClassTaskPayloadWorkgroupEXT) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpVariable, <id> '" << _.getIdName(inst->id())
+             << "', initializer are not allowed for TaskPayloadWorkgroupEXT";
+    }
+    if (storage_class == SpvStorageClassInput) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpVariable, <id> '" << _.getIdName(inst->id())
+             << "', initializer are not allowed for Input";
+    }
+  }
+
   if (storage_class == SpvStorageClassPhysicalStorageBuffer) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "PhysicalStorageBuffer must not be used with OpVariable.";
