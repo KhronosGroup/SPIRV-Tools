@@ -77,6 +77,7 @@ add_spvtools_unittest(TARGET val_fghijklmnop
        val_literals_test.cpp
        val_logicals_test.cpp
        val_memory_test.cpp
+       val_mesh_shading_test.cpp
        val_misc_test.cpp
        val_modes_test.cpp
        val_non_semantic_test.cpp

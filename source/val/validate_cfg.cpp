@@ -1066,6 +1066,7 @@ spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst) {
     case SpvOpTerminateInvocation:
     case SpvOpIgnoreIntersectionKHR:
     case SpvOpTerminateRayKHR:
+    case SpvOpEmitMeshTasksEXT:
       _.current_function().RegisterBlockEnd(std::vector<uint32_t>());
       if (opcode == SpvOpKill) {
         _.current_function().RegisterExecutionModelLimitation(
@@ -1086,6 +1087,11 @@ spv_result_t CfgPass(ValidationState_t& _, const Instruction* inst) {
         _.current_function().RegisterExecutionModelLimitation(
             SpvExecutionModelAnyHitKHR,
             "OpTerminateRayKHR requires AnyHitKHR execution model");
+      }
+      if (opcode == SpvOpEmitMeshTasksEXT) {
+        _.current_function().RegisterExecutionModelLimitation(
+            SpvExecutionModelTaskEXT,
+            "OpEmitMeshTasksEXT requires TaskEXT execution model");
       }
 
       break;
