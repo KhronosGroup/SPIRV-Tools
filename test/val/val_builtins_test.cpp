@@ -60,8 +60,9 @@ using ValidateVulkanSubgroupBuiltIns =
 using ValidateVulkanCombineBuiltInExecutionModelDataTypeResult =
     spvtest::ValidateBase<std::tuple<const char*, const char*, const char*,
                                      const char*, const char*, TestResult>>;
-using ValidateVulkanCombineBuiltInArrayedVariable = spvtest::ValidateBase<
-    std::tuple<const char*, const char*, const char*, const char*, TestResult>>;
+using ValidateVulkanCombineBuiltInArrayedVariable =
+    spvtest::ValidateBase<std::tuple<const char*, const char*, const char*,
+                                     const char*, const char*, TestResult>>;
 using ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult =
     spvtest::ValidateBase<
         std::tuple<const char*, const char*, const char*, const char*,
@@ -2678,7 +2679,8 @@ TEST_P(ValidateVulkanCombineBuiltInArrayedVariable, Variable) {
   const char* const execution_model = std::get<1>(GetParam());
   const char* const storage_class = std::get<2>(GetParam());
   const char* const data_type = std::get<3>(GetParam());
-  const TestResult& test_result = std::get<4>(GetParam());
+  const char* const vuid = std::get<4>(GetParam());
+  const TestResult& test_result = std::get<5>(GetParam());
 
   CodeGenerator generator = GetArrayedVariableCodeGenerator(
       built_in, execution_model, storage_class, data_type);
@@ -2692,18 +2694,20 @@ TEST_P(ValidateVulkanCombineBuiltInArrayedVariable, Variable) {
   if (test_result.error_str2) {
     EXPECT_THAT(getDiagnosticString(), HasSubstr(test_result.error_str2));
   }
+  if (vuid) {
+    EXPECT_THAT(getDiagnosticString(), AnyVUID(vuid));
+  }
 }
 
-INSTANTIATE_TEST_SUITE_P(PointSizeArrayedF32TessControl,
-                         ValidateVulkanCombineBuiltInArrayedVariable,
-                         Combine(Values("PointSize"),
-                                 Values("TessellationControl"), Values("Input"),
-                                 Values("%f32"), Values(TestResult())));
+INSTANTIATE_TEST_SUITE_P(
+    PointSizeArrayedF32TessControl, ValidateVulkanCombineBuiltInArrayedVariable,
+    Combine(Values("PointSize"), Values("TessellationControl"), Values("Input"),
+            Values("%f32"), Values(nullptr), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
     PointSizeArrayedF64TessControl, ValidateVulkanCombineBuiltInArrayedVariable,
     Combine(Values("PointSize"), Values("TessellationControl"), Values("Input"),
-            Values("%f64"),
+            Values("%f64"), Values("VUID-PointSize-PointSize-04317"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float scalar",
                               "has bit width 64"))));
@@ -2711,7 +2715,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     PointSizeArrayedF32Vertex, ValidateVulkanCombineBuiltInArrayedVariable,
     Combine(Values("PointSize"), Values("Vertex"), Values("Output"),
-            Values("%f32"),
+            Values("%f32"), Values("VUID-PointSize-PointSize-04317"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float scalar",
                               "is not a float scalar"))));
@@ -2720,13 +2724,14 @@ INSTANTIATE_TEST_SUITE_P(PositionArrayedF32Vec4TessControl,
                          ValidateVulkanCombineBuiltInArrayedVariable,
                          Combine(Values("Position"),
                                  Values("TessellationControl"), Values("Input"),
-                                 Values("%f32vec4"), Values(TestResult())));
+                                 Values("%f32vec4"), Values(nullptr),
+                                 Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
     PositionArrayedF32Vec3TessControl,
     ValidateVulkanCombineBuiltInArrayedVariable,
     Combine(Values("Position"), Values("TessellationControl"), Values("Input"),
-            Values("%f32vec3"),
+            Values("%f32vec3"), Values("VUID-Position-Position-04321"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float vector",
                               "has 3 components"))));
@@ -2734,7 +2739,7 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     PositionArrayedF32Vec4Vertex, ValidateVulkanCombineBuiltInArrayedVariable,
     Combine(Values("Position"), Values("Vertex"), Values("Output"),
-            Values("%f32vec4"),
+            Values("%f32vec4"), Values("VUID-Position-Position-04321"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 4-component 32-bit float vector",
                               "is not a float vector"))));
@@ -2744,13 +2749,15 @@ INSTANTIATE_TEST_SUITE_P(
     ValidateVulkanCombineBuiltInArrayedVariable,
     Combine(Values("ClipDistance", "CullDistance"),
             Values("Geometry", "TessellationControl", "TessellationEvaluation"),
-            Values("Output"), Values("%f32arr2", "%f32arr4"),
+            Values("Output"), Values("%f32arr2", "%f32arr4"), Values(nullptr),
             Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
     ClipAndCullDistanceVertexInput, ValidateVulkanCombineBuiltInArrayedVariable,
     Combine(Values("ClipDistance", "CullDistance"), Values("Fragment"),
             Values("Input"), Values("%f32arr4"),
+            Values("VUID-ClipDistance-ClipDistance-04191 "
+                   "VUID-CullDistance-CullDistance-04200"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float array",
                               "components are not float scalar"))));
@@ -2760,6 +2767,8 @@ INSTANTIATE_TEST_SUITE_P(
     Combine(Values("ClipDistance", "CullDistance"),
             Values("Geometry", "TessellationControl", "TessellationEvaluation"),
             Values("Input"), Values("%f32vec2", "%f32vec4"),
+            Values("VUID-ClipDistance-ClipDistance-04191 "
+                   "VUID-CullDistance-CullDistance-04200"),
             Values(TestResult(SPV_ERROR_INVALID_DATA,
                               "needs to be a 32-bit float array",
                               "components are not float scalar"))));
