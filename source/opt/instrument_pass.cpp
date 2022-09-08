@@ -1017,10 +1017,11 @@ bool InstrumentPass::InstProcessCallTreeFromRoots(
   for (auto& ifn : param2input_func_id_) done.insert(ifn.second);
   for (auto& ofn : param2output_func_id_) done.insert(ofn.second);
 
-  // Assuming the call trees do not overlap, for each found stage type... 
-  for (std::map<uint32_t, std::queue<uint32_t>>::iterator it = stage_to_roots->begin(); 
-    it != stage_to_roots->end(); ++it) {
-    auto &roots = it->second;
+  // Assuming the call trees do not overlap, for each found stage type...
+  for (std::map<uint32_t, std::queue<uint32_t>>::iterator it =
+           stage_to_roots->begin();
+       it != stage_to_roots->end(); ++it) {
+    auto& roots = it->second;
     const uint32_t stage_idx = it->first;
 
     // Process all functions from roots of the given stage type
@@ -1038,17 +1039,19 @@ bool InstrumentPass::InstProcessCallTreeFromRoots(
   return modified;
 }
 
-bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {  
+bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
   // First, check to see if all stages are supported
   uint32_t stage = SpvExecutionModelMax;
   for (auto& e : get_module()->entry_points()) {
     stage = e.GetSingleWordInOperand(kEntryPointExecutionModelInIdx);
-    if (stage != SpvExecutionModelVertex && stage != SpvExecutionModelFragment &&
+    if (stage != SpvExecutionModelVertex && 
+        stage != SpvExecutionModelFragment &&
         stage != SpvExecutionModelGeometry &&
         stage != SpvExecutionModelGLCompute &&
         stage != SpvExecutionModelTessellationControl &&
         stage != SpvExecutionModelTessellationEvaluation &&
-        stage != SpvExecutionModelTaskNV && stage != SpvExecutionModelMeshNV &&
+        stage != SpvExecutionModelTaskNV && 
+        stage != SpvExecutionModelMeshNV &&
         stage != SpvExecutionModelRayGenerationNV &&
         stage != SpvExecutionModelIntersectionNV &&
         stage != SpvExecutionModelAnyHitNV &&
@@ -1067,8 +1070,10 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
   bool mixed_stages = false;
   std::map<uint32_t, std::queue<uint32_t>> stage_to_roots;
   for (auto& e : get_module()->entry_points()) {
-    uint32_t current_stage = e.GetSingleWordInOperand(kEntryPointExecutionModelInIdx);
-    uint32_t current_root = e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx);
+    uint32_t current_stage = 
+        e.GetSingleWordInOperand(kEntryPointExecutionModelInIdx);
+    uint32_t current_root = 
+        e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx);
     stage_to_roots[current_stage].push(current_root);
     if (current_stage != stage) mixed_stages = true;
   }
@@ -1076,13 +1081,14 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
   if (mixed_stages) {
     // For each stage type, collect a set of function calls
     std::map<uint32_t, std::unordered_set<uint32_t>> stage_to_functions;
-    for (auto &str_it : stage_to_roots) {
+    for (auto& str_it : stage_to_roots) {
       uint32_t current_stage = str_it.first;
       auto roots_to_process = str_it.second;
       while (!roots_to_process.empty()) {
         uint32_t root = roots_to_process.front();
         roots_to_process.pop();
-        context()->CollectCallTreeFromRoots(root, &stage_to_functions[current_stage]); 
+        context()->CollectCallTreeFromRoots(root, 
+                                            &stage_to_functions[current_stage]);
       }
     }
 
@@ -1090,22 +1096,25 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
     // TODO(greg-lunarg): Handle mixed stages. Technically, a shader module
     // can contain entry points with different execution models, although
     // such modules will likely be rare as GLSL and HLSL are geared toward
-    // one model per module. In such cases, we will need to clone any functions 
-    // which are in the call trees of entrypoints with differing execution models.
+    // one model per module. In such cases, we will need to clone any functions
+    // which are in the call trees of entrypoints with differing execution 
+    // models.
 
-    // EDIT(natevm): this scenario is actually common in ray tracing pipelines, 
+    // EDIT(natevm): this scenario is actually common in ray tracing pipelines,
     // as one module might contain a raygen, miss, and closesthit all in one.
     // As a temporary workaround, here we allow mixed shader stages so long
     // as entry points do not share common function calls.
-    for (auto &stf_it1 : stage_to_functions) {
-      for (auto &stf_it2 : stage_to_functions) {
+    for (auto& stf_it1 : stage_to_functions) {
+      for (auto& stf_it2 : stage_to_functions) {
         if (stf_it1.first == stf_it2.first) continue;
-        auto &current_functions = stf_it1.second;
-        auto &other_functions = stf_it2.second;
+        auto& current_functions = stf_it1.second;
+        auto& other_functions = stf_it2.second;
         for (auto &fn : current_functions) {
-          if (other_functions.find(fn) != other_functions.end()) {            
+          if (other_functions.find(fn) != other_functions.end()) {
             if (consumer()) {
-              std::string message = "Mixed stage shader module with common non-inlined function calls not supported";
+              std::string message =
+                  "Mixed stage shader module with common non-inlined function "
+                  "calls not supported";
               consumer()(SPV_MSG_ERROR, 0, {0, 0, 0}, message.c_str());
             }
             return false;
