@@ -378,7 +378,6 @@ TEST_F(ValidateMeshShading, OpEmitMeshTasksBadGroupCountSignedInt) {
        %main = OpFunction %void None %func
        %label = OpLabel
                OpEmitMeshTasksEXT %int_1 %uint_1 %uint_1
-               OpReturn
                OpFunctionEnd
 )";
 
@@ -410,7 +409,6 @@ TEST_F(ValidateMeshShading, OpEmitMeshTasksBadGroupCountVector) {
          %13 = OpAccessChain %_ptr_uint %x %uint_1
          %14 = OpLoad %uint %13
                OpEmitMeshTasksEXT %14 %composite %uint_1
-               OpReturn
                OpFunctionEnd
 )";
 
@@ -437,7 +435,6 @@ TEST_F(ValidateMeshShading, OpEmitMeshTasksBadPayload) {
        %main = OpFunction %void None %func
       %label = OpLabel
                OpEmitMeshTasksEXT %uint_1 %uint_1 %uint_1 %payload
-               OpReturn
                OpFunctionEnd
 )";
 
@@ -598,7 +595,6 @@ TEST_F(ValidateMeshShading, OpEmitMeshTasksZeroSuccess) {
        %main = OpFunction %void None %func
       %label = OpLabel
                OpEmitMeshTasksEXT %uint_0 %uint_0 %uint_0
-               OpReturn
                OpFunctionEnd
 )";
 

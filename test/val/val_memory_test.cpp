@@ -506,9 +506,9 @@ TEST_F(ValidateMemory, InitializerWithTaskPayloadWorkgroupEXT) {
        %void = OpTypeVoid
        %func = OpTypeFunction %void
        %uint = OpTypeInt 32 0
-%_ptr_TaskPayloadWorkgroupEXT = OpTypePointer TaskPayloadWorkgroupEXT %%uint
+%_ptr_TaskPayloadWorkgroupEXT = OpTypePointer TaskPayloadWorkgroupEXT %uint
      %uint_1 = OpConstant %uint 1
-    %payload = OpVariable %_ptr_TaskPayloadWorkgroupEXT Uniform %uint_1
+    %payload = OpVariable %_ptr_TaskPayloadWorkgroupEXT TaskPayloadWorkgroupEXT %uint_1
        %main = OpFunction %void None %func
       %label = OpLabel
                OpReturn
@@ -517,7 +517,7 @@ TEST_F(ValidateMemory, InitializerWithTaskPayloadWorkgroupEXT) {
   CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_5);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpVariable, <id> '5[%5]', initializer are not allowed "
+              HasSubstr("OpVariable, <id> '2[%2]', initializer are not allowed "
                         "for TaskPayloadWorkgroupEXT"));
 }
 

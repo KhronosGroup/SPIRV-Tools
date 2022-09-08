@@ -2091,9 +2091,9 @@ TEST_F(ValidateIdWithMessage, OpVariableGood) {
 TEST_F(ValidateIdWithMessage, OpVariableInitializerConstantGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %1 = OpTypeInt 32 0
-%2 = OpTypePointer Input %1
+%2 = OpTypePointer Output %1
 %3 = OpConstant %1 42
-%4 = OpVariable %2 Input %3)";
+%4 = OpVariable %2 Output %3)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
