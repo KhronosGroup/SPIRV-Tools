@@ -1,4 +1,5 @@
-// Copyright (c) 2020 Google LLC
+// Copyright (c) 2020-2022 Google LLC
+// Copyright (c) 2022 LunarG Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +25,8 @@
 static const uint32_t kOpLineOperandLineIndex = 1;
 static const uint32_t kLineOperandIndexDebugFunction = 7;
 static const uint32_t kLineOperandIndexDebugLexicalBlock = 5;
+static const uint32_t kLineOperandIndexDebugLine = 5;
+static const uint32_t kConstanstOperandIndexLiteral = 2;
 static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
 static const uint32_t kDebugFunctionDefinitionOperandDebugFunctionIndex = 4;
 static const uint32_t kDebugFunctionDefinitionOperandOpFunctionIndex = 5;
@@ -210,7 +213,20 @@ uint32_t DebugInfoManager::CreateDebugInlinedAt(const Instruction* line,
         break;
     }
   } else {
-    line_number = line->GetSingleWordOperand(kOpLineOperandLineIndex);
+    if (line->opcode() == SpvOpLine) {
+      line_number = line->GetSingleWordOperand(kOpLineOperandLineIndex);
+    } else if (line->GetShader100DebugOpcode() ==
+               NonSemanticShaderDebugInfo100DebugLine) {
+      auto const line_number_id =
+          line->GetSingleWordOperand(kLineOperandIndexDebugLine);
+      auto const line_number_inst =
+          context()->get_def_use_mgr()->GetDef(line_number_id);
+      line_number =
+          line_number_inst->GetSingleWordOperand(kConstanstOperandIndexLiteral);
+    } else {
+      assert(false &&
+             "Unreachable. A line instruction must be OpLine or DebugLine");
+    }
 
     // If we need the line number as an ID, generate that constant now.
     // If Constant or DefUse managers are invalid, generate constant
