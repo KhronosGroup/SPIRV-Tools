@@ -1077,12 +1077,12 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
     // For each stage type, collect a set of function calls
     std::map<uint32_t, std::unordered_set<uint32_t>> stage_to_functions;
     for (auto &str_it : stage_to_roots) {
-      uint32_t stage = str_it.first;
+      uint32_t current_stage = str_it.first;
       auto roots_to_process = str_it.second;
       while (!roots_to_process.empty()) {
         uint32_t root = roots_to_process.front();
         roots_to_process.pop();
-        context()->CollectCallTreeFromRoots(root, &stage_to_functions[stage]); 
+        context()->CollectCallTreeFromRoots(root, &stage_to_functions[current_stage]); 
       }
     }
 
