@@ -1044,14 +1044,13 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
   uint32_t stage = SpvExecutionModelMax;
   for (auto& e : get_module()->entry_points()) {
     stage = e.GetSingleWordInOperand(kEntryPointExecutionModelInIdx);
-    if (stage != SpvExecutionModelVertex && 
+    if (stage != SpvExecutionModelVertex &&
         stage != SpvExecutionModelFragment &&
         stage != SpvExecutionModelGeometry &&
         stage != SpvExecutionModelGLCompute &&
         stage != SpvExecutionModelTessellationControl &&
         stage != SpvExecutionModelTessellationEvaluation &&
-        stage != SpvExecutionModelTaskNV && 
-        stage != SpvExecutionModelMeshNV &&
+        stage != SpvExecutionModelTaskNV && stage != SpvExecutionModelMeshNV &&
         stage != SpvExecutionModelRayGenerationNV &&
         stage != SpvExecutionModelIntersectionNV &&
         stage != SpvExecutionModelAnyHitNV &&
@@ -1070,9 +1069,9 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
   bool mixed_stages = false;
   std::map<uint32_t, std::queue<uint32_t>> stage_to_roots;
   for (auto& e : get_module()->entry_points()) {
-    uint32_t current_stage = 
+    uint32_t current_stage =
         e.GetSingleWordInOperand(kEntryPointExecutionModelInIdx);
-    uint32_t current_root = 
+    uint32_t current_root =
         e.GetSingleWordInOperand(kEntryPointFunctionIdInIdx);
     stage_to_roots[current_stage].push(current_root);
     if (current_stage != stage) mixed_stages = true;
@@ -1087,7 +1086,7 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
       while (!roots_to_process.empty()) {
         uint32_t root = roots_to_process.front();
         roots_to_process.pop();
-        context()->CollectCallTreeFromRoots(root, 
+        context()->CollectCallTreeFromRoots(root,
                                             &stage_to_functions[current_stage]);
       }
     }
@@ -1097,7 +1096,7 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
     // can contain entry points with different execution models, although
     // such modules will likely be rare as GLSL and HLSL are geared toward
     // one model per module. In such cases, we will need to clone any functions
-    // which are in the call trees of entrypoints with differing execution 
+    // which are in the call trees of entrypoints with differing execution
     // models.
 
     // EDIT(natevm): this scenario is actually common in ray tracing pipelines,
@@ -1109,7 +1108,7 @@ bool InstrumentPass::InstProcessEntryPointCallTree(InstProcessFunction& pfn) {
         if (stf_it1.first == stf_it2.first) continue;
         auto& current_functions = stf_it1.second;
         auto& other_functions = stf_it2.second;
-        for (auto &fn : current_functions) {
+        for (auto& fn : current_functions) {
           if (other_functions.find(fn) != other_functions.end()) {
             if (consumer()) {
               std::string message =
