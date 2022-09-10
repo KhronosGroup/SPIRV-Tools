@@ -375,6 +375,11 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     if (auto error = ValidateSmallTypeUses(*vstate, &inst)) return error;
   }
 
+  // The following functions need to be end of the validation check because they
+  // will be creating a new instruciton out-of-stream that would interfere with
+  // other validation
+  if (auto error = ValidateSpecConstantOpValue(*vstate)) return error;
+
   return SPV_SUCCESS;
 }
 

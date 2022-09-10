@@ -506,6 +506,16 @@ class ValidationState_t {
   /// Inserts a new <id> to the set of Local Variables.
   void registerLocalVariable(const uint32_t id) { local_vars_.insert(id); }
 
+  /// Returns the list of OpSpecConstantOp instructions.
+  std::vector<const Instruction*>& spec_constant_ops() {
+    return spec_costant_ops_;
+  }
+
+  /// Inserts a new instruciton to the list of OpSpecConstantOp
+  void registerSpecConstantOp(const Instruction* inst) {
+    spec_costant_ops_.push_back(inst);
+  }
+
   // Returns true if using relaxed block layout, equivalent to
   // VK_KHR_relaxed_block_layout.
   bool IsRelaxedBlockLayout() const {
@@ -880,6 +890,9 @@ class ValidationState_t {
   /// Using ordered set to avoid the need for a vector hash function.
   /// The size of this container is expected not to exceed double-digits.
   std::set<std::vector<uint32_t>> unique_type_declarations_;
+
+  /// All the OpSpecConstantOp to be validated separately
+  std::vector<const Instruction*> spec_costant_ops_;
 
   AssemblyGrammar grammar_;
 

@@ -138,6 +138,7 @@ spv_result_t TypePass(ValidationState_t& _, const Instruction* inst);
 
 /// Validates constant instructions.
 spv_result_t ConstantPass(ValidationState_t& _, const Instruction* inst);
+spv_result_t ValidateSpecConstantOpValue(ValidationState_t& _);
 
 /// Validates correctness of arithmetic instructions.
 spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst);
