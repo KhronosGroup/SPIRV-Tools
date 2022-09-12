@@ -453,6 +453,7 @@ bool spvOpcodeIsAbort(SpvOp opcode) {
     case SpvOpTerminateInvocation:
     case SpvOpTerminateRayKHR:
     case SpvOpIgnoreIntersectionKHR:
+    case SpvOpEmitMeshTasksEXT:
       return true;
     default:
       return false;
