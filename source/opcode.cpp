@@ -468,19 +468,6 @@ bool spvOpcodeIsBlockTerminator(SpvOp opcode) {
   return spvOpcodeIsBranch(opcode) || spvOpcodeIsReturnOrAbort(opcode);
 }
 
-bool spvOpcodeTerminatesExecution(SpvOp opcode) {
-  switch (opcode) {
-    case SpvOpKill:
-    case SpvOpTerminateInvocation:
-    case SpvOpTerminateRayKHR:
-    case SpvOpIgnoreIntersectionKHR:
-    case SpvOpEmitMeshTasksEXT:
-      return true;
-    default:
-      return false;
-  }
-}
-
 bool spvOpcodeIsBaseOpaqueType(SpvOp opcode) {
   switch (opcode) {
     case SpvOpTypeImage:
