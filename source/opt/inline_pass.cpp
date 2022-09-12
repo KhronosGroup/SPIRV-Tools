@@ -798,7 +798,7 @@ bool InlinePass::IsInlinableFunction(Function* func) {
   // continue construct. If it is inlined into a continue construct the backedge
   // will no longer post-dominate the continue target, which is invalid.  An
   // `OpUnreachable` is acceptable because it will not change post-dominance if
-  // is actually unreachable.
+  // it is statically unreachable.
   bool func_is_called_from_continue =
       funcs_called_from_continue_.count(func->result_id()) != 0;
 
