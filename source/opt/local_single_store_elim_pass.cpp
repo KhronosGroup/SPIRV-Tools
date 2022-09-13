@@ -179,7 +179,7 @@ bool LocalSingleStoreElimPass::RewriteDebugDeclares(Instruction* store_inst,
   uint32_t value_id = store_inst->GetSingleWordInOperand(1);
   bool modified =
       context()->get_debug_info_mgr()->AddDebugValueIfVarDeclIsVisible(
-          store_inst, var_id, value_id, store_inst, &invisible_decls);
+          store_inst, var_id, value_id, store_inst, &invisible_decls, true);
 
   // For cases like the argument passing for an inlined function, the value
   // assignment is out of DebugDeclare's scope, but we have to preserve the
