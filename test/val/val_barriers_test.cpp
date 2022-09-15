@@ -416,11 +416,12 @@ OpControlBarrier %subgroup %workgroup %acquire
   CompileSuccessfully(GenerateVulkanVertexShaderCode(body), SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-None-04639"));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Workgroup Memory Scope is limited to MeshNV, "
-                        "TaskNV, MeshEXT, TaskEXT and GLCompute "
-                        "execution model"));
+              AnyVUID("VUID-StandaloneSpirv-None-07321"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Workgroup Memory Scope is limited to MeshNV, "
+                "TaskNV, MeshEXT, TaskEXT, TessellationControl, and GLCompute "
+                "execution model"));
 }
 
 TEST_F(ValidateBarriers,
