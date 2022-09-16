@@ -1970,8 +1970,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-None-04637);
     case 4638:
       return VUID_WRAP(VUID-StandaloneSpirv-None-04638);
-    case 4639:
-      return VUID_WRAP(VUID-StandaloneSpirv-None-04639);
+    case 7321:
+      return VUID_WRAP(VUID-StandaloneSpirv-None-07321);
     case 4640:
       return VUID_WRAP(VUID-StandaloneSpirv-None-04640);
     case 4641:
@@ -2110,6 +2110,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Uniform-06925);
     case 6997:
       return VUID_WRAP(VUID-StandaloneSpirv-SubgroupVoteKHR-06997);
+    case 7320:
+      return VUID_WRAP(VUID-StandaloneSpirv-ExecutionModel-07320);
     case 7290:
       return VUID_WRAP(VUID-StandaloneSpirv-Input-07290);
     default:
