@@ -36,16 +36,16 @@ add_spvtools_unittest(TARGET val_abcde
        val_data_test.cpp
        val_decoration_test.cpp
        val_derivatives_test.cpp
-       val_entry_point.cpp
+       val_entry_point_test.cpp
        val_explicit_reserved_test.cpp
        val_extensions_test.cpp
-       val_extension_spv_khr_expect_assume.cpp
-       val_extension_spv_khr_linkonce_odr.cpp
-       val_extension_spv_khr_subgroup_uniform_control_flow.cpp
-       val_extension_spv_khr_integer_dot_product.cpp
-       val_extension_spv_khr_bit_instructions.cpp
-       val_extension_spv_khr_terminate_invocation.cpp
-       val_extension_spv_khr_subgroup_rotate.cpp
+       val_extension_spv_khr_expect_assume_test.cpp
+       val_extension_spv_khr_linkonce_odr_test.cpp
+       val_extension_spv_khr_subgroup_uniform_control_flow_test.cpp
+       val_extension_spv_khr_integer_dot_product_test.cpp
+       val_extension_spv_khr_bit_instructions_test.cpp
+       val_extension_spv_khr_terminate_invocation_test.cpp
+       val_extension_spv_khr_subgroup_rotate_test.cpp
        val_ext_inst_test.cpp
        val_ext_inst_debug_test.cpp
        ${VAL_TEST_COMMON_SRCS}
@@ -91,8 +91,8 @@ add_spvtools_unittest(TARGET val_fghijklmnop
 
 add_spvtools_unittest(TARGET val_rstuvw
   SRCS
-       val_ray_query.cpp
-       val_ray_tracing.cpp
+       val_ray_query_test.cpp
+       val_ray_tracing_test.cpp
        val_small_type_uses_test.cpp
        val_ssa_test.cpp
        val_state_test.cpp

@@ -2278,6 +2278,35 @@ OpFunctionEnd
           "or Output Storage Classes it requires a BuiltIn decoration"));
 }
 
+TEST_F(ValidateIdWithMessage, OpVariableContainsNoBuiltinBoolBadVulkan) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %var
+OpExecutionMode %main OriginUpperLeft
+%bool = OpTypeBool
+%input = OpTypeStruct %bool
+%_ptr_input = OpTypePointer Input %input
+%var = OpVariable %_ptr_input Input
+%void = OpTypeVoid
+%fnty = OpTypeFunction %void
+%main = OpFunction %void None %fnty
+%entry = OpLabel
+%load = OpLoad %input %var
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Input-07290"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "If OpTypeBool is stored in conjunction with OpVariable using Input "
+          "or Output Storage Classes it requires a BuiltIn decoration"));
+}
+
 TEST_F(ValidateIdWithMessage, OpVariableContainsRayPayloadBoolGood) {
   std::string spirv = R"(
 OpCapability RayTracingNV

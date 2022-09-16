@@ -459,6 +459,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
         ContainsInvalidBool(_, value_type, storage_input_or_output)) {
       if (storage_input_or_output) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << _.VkErrorID(7290)
                << "If OpTypeBool is stored in conjunction with OpVariable "
                   "using Input or Output Storage Classes it requires a BuiltIn "
                   "decoration";
