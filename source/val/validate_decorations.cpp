@@ -179,8 +179,9 @@ uint32_t align(uint32_t x, uint32_t alignment) {
 }
 
 // Returns base alignment of struct member. If |roundUp| is true, also
-// ensure that structs and arrays are aligned at least to a multiple of 16
-// bytes.
+// ensure that structs, arrays, and matrices are aligned at least to a
+// multiple of 16 bytes.  (That is, when roundUp is true, this function
+// returns the *extended* alignment as it's called by the Vulkan spec.)
 uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
                           const LayoutConstraints& inherited,
                           MemberConstraints& constraints,
