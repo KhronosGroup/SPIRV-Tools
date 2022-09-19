@@ -25,6 +25,7 @@ namespace val {
 spv_result_t MeshShadingPass(ValidationState_t& _, const Instruction* inst) {
   const SpvOp opcode = inst->opcode();
   switch (opcode) {
+    // OpEmitMeshTasksEXT execution model limitation for TaskEXT is done in CfgPass
     case SpvOpEmitMeshTasksEXT: {
       const uint32_t group_count_x = _.GetOperandTypeId(inst, 0);
       if (!_.IsUnsignedIntScalarType(group_count_x) ||
