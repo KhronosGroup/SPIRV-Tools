@@ -53,7 +53,7 @@ spv_result_t MeshShadingPass(ValidationState_t& _, const Instruction* inst) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Payload must be the result of a OpVariable";
         }
-        if (SpvStorageClass(payload->word(3)) !=
+        if (SpvStorageClass(payload->GetOperandAs<uint32_t>(2)) !=
             SpvStorageClassTaskPayloadWorkgroupEXT) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Payload OpVariable must have a storage class of "
