@@ -774,7 +774,7 @@ void ValidationState_t::RegisterStorageClassConsumer(
                 if (message) {
                   *message =
                       "TaskPayloadWorkgroupEXT Storage Class is limited to "
-                      "TaskEXT and MissKHR execution model";
+                      "TaskEXT and MeshKHR execution model";
                 }
                 return false;
               }

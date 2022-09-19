@@ -468,7 +468,7 @@ TEST_F(ValidateMeshShading, TaskPayloadWorkgroupBadExecutionModel) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("TaskPayloadWorkgroupEXT Storage Class is limited to "
-                        "TaskEXT and MissKHR execution model"));
+                        "TaskEXT and MeshKHR execution model"));
 }
 
 TEST_F(ValidateMeshShading, OpSetMeshOutputsBadVertexCount) {
