@@ -25,8 +25,20 @@ namespace val {
 spv_result_t MeshShadingPass(ValidationState_t& _, const Instruction* inst) {
   const SpvOp opcode = inst->opcode();
   switch (opcode) {
-    // OpEmitMeshTasksEXT execution model limitation for TaskEXT is done in CfgPass
     case SpvOpEmitMeshTasksEXT: {
+      _.function(inst->function()->id())
+          ->RegisterExecutionModelLimitation(
+              [](SpvExecutionModel model, std::string* message) {
+                if (model != SpvExecutionModelTaskEXT) {
+                  if (message) {
+                    *message =
+                        "OpEmitMeshTasksEXT requires TaskEXT execution model";
+                  }
+                  return false;
+                }
+                return true;
+              });
+
       const uint32_t group_count_x = _.GetOperandTypeId(inst, 0);
       if (!_.IsUnsignedIntScalarType(group_count_x) ||
           _.GetBitWidth(group_count_x) != 32) {
@@ -71,7 +83,7 @@ spv_result_t MeshShadingPass(ValidationState_t& _, const Instruction* inst) {
                 if (model != SpvExecutionModelMeshEXT) {
                   if (message) {
                     *message =
-                        "OpSetMeshOutputsEXT requires MeshEXT execution models";
+                        "OpSetMeshOutputsEXT requires MeshEXT execution model";
                   }
                   return false;
                 }

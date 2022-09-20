@@ -555,7 +555,7 @@ TEST_F(ValidateMeshShading, OpSetMeshOutputsBadExecutionModel) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpSetMeshOutputsEXT requires MeshEXT execution models"));
+      HasSubstr("OpSetMeshOutputsEXT requires MeshEXT execution model"));
 }
 
 TEST_F(ValidateMeshShading, OpSetMeshOutputsZeroSuccess) {
