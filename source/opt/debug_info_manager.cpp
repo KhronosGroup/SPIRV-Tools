@@ -562,10 +562,10 @@ bool DebugInfoManager::IsDeclareVisibleToInstr(Instruction* dbg_declare,
   return false;
 }
 
-bool DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
-    Instruction* scope_and_line, uint32_t variable_id, uint32_t value_id,
-    Instruction* insert_pos, std::unordered_set<Instruction*>* invisible_decls,
-    bool force) {
+bool DebugInfoManager::AddDebugValueForVariable(Instruction* scope_and_line,
+                                                uint32_t variable_id,
+                                                uint32_t value_id,
+                                                Instruction* insert_pos) {
   assert(scope_and_line != nullptr);
 
   auto dbg_decl_itr = var_id_to_dbg_decl_.find(variable_id);
@@ -573,11 +573,6 @@ bool DebugInfoManager::AddDebugValueIfVarDeclIsVisible(
 
   bool modified = false;
   for (auto* dbg_decl_or_val : dbg_decl_itr->second) {
-    if (!IsDeclareVisibleToInstr(dbg_decl_or_val, scope_and_line) && !force) {
-      if (invisible_decls) invisible_decls->insert(dbg_decl_or_val);
-      continue;
-    }
-
     // Avoid inserting the new DebugValue between OpPhi or OpVariable
     // instructions.
     Instruction* insert_before = insert_pos->NextNode();

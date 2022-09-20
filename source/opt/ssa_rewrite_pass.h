@@ -181,7 +181,7 @@ class SSARewriter {
   // Applies all the SSA replacement decisions.  This replaces loads/stores to
   // SSA target variables with their corresponding SSA IDs, and inserts Phi
   // instructions for them.
-  bool ApplyReplacements(Function* fp);
+  bool ApplyReplacements();
 
   // Registers a definition for variable |var_id| in basic block |bb| with
   // value |val_id|.
@@ -253,11 +253,6 @@ class SSARewriter {
   // candidates.
   void FinalizePhiCandidates();
 
-  // Adds DebugValues for DebugDeclares in
-  // |decls_invisible_to_value_assignment_|. Returns whether the function was
-  // modified or not, and whether or not the conversion was successful.
-  Pass::Status AddDebugValuesForInvisibleDebugDecls(Function* fp);
-
   // Prints the table of Phi candidates to std::cerr.
   void PrintPhiCandidates() const;
 
@@ -295,10 +290,6 @@ class SSARewriter {
 
   // Memory pass requesting the SSA rewriter.
   MemPass* pass_;
-
-  // Set of DebugDeclare instructions that are not added as DebugValue because
-  // they are invisible to the store or phi instructions.
-  std::unordered_set<Instruction*> decls_invisible_to_value_assignment_;
 };
 
 class SSARewritePass : public MemPass {
