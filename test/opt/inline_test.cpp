@@ -4339,7 +4339,7 @@ OpFunctionEnd
 
 TEST_F(InlineTest, CreateDebugInlinedAtFromDebugLine) {
   const std::string text = R"(OpCapability Shader
-; CHECK: OpExtInst %void %1 DebugInlinedAt %uint_6_0
+; CHECK: OpExtInst %void %1 DebugInlinedAt %uint_6
 OpExtension "SPV_KHR_non_semantic_info"
 %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 OpMemoryModel Logical GLSL450
