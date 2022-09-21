@@ -4280,48 +4280,15 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     case SpvBuiltInCullMaskKHR: {
       return ValidateRayTracingBuiltinsAtDefinition(decoration, inst);
     }
-    case SpvBuiltInWorkDim:
-    case SpvBuiltInGlobalSize:
-    case SpvBuiltInEnqueuedWorkgroupSize:
-    case SpvBuiltInGlobalOffset:
-    case SpvBuiltInGlobalLinearId:
-    case SpvBuiltInSubgroupMaxSize:
-    case SpvBuiltInNumEnqueuedSubgroups:
-    case SpvBuiltInBaryCoordNoPerspAMD:
-    case SpvBuiltInBaryCoordNoPerspCentroidAMD:
-    case SpvBuiltInBaryCoordNoPerspSampleAMD:
-    case SpvBuiltInBaryCoordSmoothAMD:
-    case SpvBuiltInBaryCoordSmoothCentroidAMD:
-    case SpvBuiltInBaryCoordSmoothSampleAMD:
-    case SpvBuiltInBaryCoordPullModelAMD:
-    case SpvBuiltInViewportMaskNV:
-    case SpvBuiltInSecondaryPositionNV:
-    case SpvBuiltInSecondaryViewportMaskNV:
-    case SpvBuiltInPositionPerViewNV:
-    case SpvBuiltInViewportMaskPerViewNV:
-    case SpvBuiltInMax:
-    case SpvBuiltInTaskCountNV:
-    case SpvBuiltInPrimitiveCountNV:
-    case SpvBuiltInPrimitiveIndicesNV:
-    case SpvBuiltInClipDistancePerViewNV:
-    case SpvBuiltInCullDistancePerViewNV:
-    case SpvBuiltInLayerPerViewNV:
-    case SpvBuiltInMeshViewCountNV:
-    case SpvBuiltInMeshViewIndicesNV:
-    case SpvBuiltInCurrentRayTimeNV:
-    case SpvBuiltInPrimitivePointIndicesEXT:
-    case SpvBuiltInPrimitiveLineIndicesEXT:
-    case SpvBuiltInPrimitiveTriangleIndicesEXT:
-    case SpvBuiltInCullPrimitiveEXT:
-      // No validation rules (for the moment).
-      break;
-
     case SpvBuiltInPrimitiveShadingRateKHR: {
       return ValidatePrimitiveShadingRateAtDefinition(decoration, inst);
     }
     case SpvBuiltInShadingRateKHR: {
       return ValidateShadingRateAtDefinition(decoration, inst);
     }
+    default:
+      // No validation rules (for the moment).
+      break;
   }
   return SPV_SUCCESS;
 }
