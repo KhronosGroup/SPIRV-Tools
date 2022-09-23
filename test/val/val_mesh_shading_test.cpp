@@ -309,10 +309,9 @@ TEST_F(ValidateMeshShading, BadExecutionModelOutputLinesEXT) {
   CompileSuccessfully(body, SPV_ENV_UNIVERSAL_1_5);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Execution mode can only be used with the MeshEXT execution model."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Execution mode can only be used with the MeshEXT or "
+                        "MeshNV execution model."));
 }
 
 TEST_F(ValidateMeshShading, BadExecutionModelOutputTrianglesEXT) {
@@ -333,10 +332,9 @@ TEST_F(ValidateMeshShading, BadExecutionModelOutputTrianglesEXT) {
   CompileSuccessfully(body, SPV_ENV_UNIVERSAL_1_5);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Execution mode can only be used with the MeshEXT execution model."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Execution mode can only be used with the MeshEXT or "
+                        "MeshNV execution model."));
 }
 
 TEST_F(ValidateMeshShading, BadExecutionModelOutputPrimitivesEXT) {
@@ -357,10 +355,9 @@ TEST_F(ValidateMeshShading, BadExecutionModelOutputPrimitivesEXT) {
   CompileSuccessfully(body, SPV_ENV_UNIVERSAL_1_5);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Execution mode can only be used with the MeshEXT execution model."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Execution mode can only be used with the MeshEXT or "
+                        "MeshNV execution model."));
 }
 
 TEST_F(ValidateMeshShading, OpEmitMeshTasksBadGroupCountSignedInt) {

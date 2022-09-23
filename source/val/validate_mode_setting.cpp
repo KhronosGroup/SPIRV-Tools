@@ -481,10 +481,12 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
     case SpvExecutionModeOutputPrimitivesEXT:
       if (!std::all_of(models->begin(), models->end(),
                        [](const SpvExecutionModel& model) {
-                         return model == SpvExecutionModelMeshEXT;
+                         return (model == SpvExecutionModelMeshEXT ||
+                                 model == SpvExecutionModelMeshNV);
                        })) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "Execution mode can only be used with the MeshEXT execution "
+               << "Execution mode can only be used with the MeshEXT or MeshNV "
+                  "execution "
                   "model.";
       }
       break;
