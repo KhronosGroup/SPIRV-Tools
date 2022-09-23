@@ -765,6 +765,21 @@ void ValidationState_t::RegisterStorageClassConsumer(
               }
               return true;
             });
+  } else if (storage_class == SpvStorageClassTaskPayloadWorkgroupEXT) {
+    function(consumer->function()->id())
+        ->RegisterExecutionModelLimitation(
+            [](SpvExecutionModel model, std::string* message) {
+              if (model != SpvExecutionModelTaskEXT &&
+                  model != SpvExecutionModelMeshEXT) {
+                if (message) {
+                  *message =
+                      "TaskPayloadWorkgroupEXT Storage Class is limited to "
+                      "TaskEXT and MeshKHR execution model";
+                }
+                return false;
+              }
+              return true;
+            });
   }
 }
 
@@ -2110,6 +2125,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Uniform-06925);
     case 6997:
       return VUID_WRAP(VUID-StandaloneSpirv-SubgroupVoteKHR-06997);
+    case 7102:
+      return VUID_WRAP(VUID-StandaloneSpirv-MeshEXT-07102);
     case 7320:
       return VUID_WRAP(VUID-StandaloneSpirv-ExecutionModel-07320);
     case 7290:

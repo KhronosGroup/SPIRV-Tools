@@ -241,6 +241,39 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
                     "OutputTriangleStrip execution modes.";
         }
         break;
+      case SpvExecutionModelMeshEXT:
+        if (!execution_modes ||
+            1 != std::count_if(execution_modes->begin(), execution_modes->end(),
+                               [](const SpvExecutionMode& mode) {
+                                 switch (mode) {
+                                   case SpvExecutionModeOutputPoints:
+                                   case SpvExecutionModeOutputLinesEXT:
+                                   case SpvExecutionModeOutputTrianglesEXT:
+                                     return true;
+                                   default:
+                                     return false;
+                                 }
+                               })) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "MeshEXT execution model entry points must specify exactly "
+                    "one of OutputPoints, OutputLinesEXT, or "
+                    "OutputTrianglesEXT Execution Modes.";
+        } else if (2 != std::count_if(
+                            execution_modes->begin(), execution_modes->end(),
+                            [](const SpvExecutionMode& mode) {
+                              switch (mode) {
+                                case SpvExecutionModeOutputPrimitivesEXT:
+                                case SpvExecutionModeOutputVertices:
+                                  return true;
+                                default:
+                                  return false;
+                              }
+                            })) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "MeshEXT execution model entry points must specify both "
+                    "OutputPrimitivesEXT and OutputVertices Execution Modes.";
+        }
+        break;
       default:
         break;
     }
@@ -441,6 +474,20 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
                  << "Execution mode can only be used with a Geometry or "
                     "tessellation execution model.";
         }
+      }
+      break;
+    case SpvExecutionModeOutputLinesEXT:
+    case SpvExecutionModeOutputTrianglesEXT:
+    case SpvExecutionModeOutputPrimitivesEXT:
+      if (!std::all_of(models->begin(), models->end(),
+                       [](const SpvExecutionModel& model) {
+                         return (model == SpvExecutionModelMeshEXT ||
+                                 model == SpvExecutionModelMeshNV);
+                       })) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Execution mode can only be used with the MeshEXT or MeshNV "
+                  "execution "
+                  "model.";
       }
       break;
     case SpvExecutionModePixelCenterInteger:
