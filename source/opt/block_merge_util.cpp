@@ -1,7 +1,7 @@
-// Copyright (c) 2017 The Khronos Group Inc.
-// Copyright (c) 2017 Valve Corporation
-// Copyright (c) 2017 LunarG Inc.
-// Copyright (c) 2019 Google LLC
+// Copyright (c) 2017-2022 The Khronos Group Inc.
+// Copyright (c) 2017-2022 Valve Corporation
+// Copyright (c) 2017-2022 LunarG Inc.
+// Copyright (c) 2019-2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -179,9 +179,12 @@ void MergeWithSuccessor(IRContext* context, Function* func,
         for (auto& l_inst : new_vec)
           context->get_def_use_mgr()->AnalyzeInstDefUse(&l_inst);
       }
-      // Clear debug scope of terminator to avoid DebugScope
-      // emitted between terminator and merge.
-      terminator->SetDebugScope(DebugScope(kNoDebugScope, kNoInlinedAt));
+
+      // Merge instruction should always have the same scope as the following
+      // branch instruction. This avoids DebugScope emitted between terminator
+      // and merge instruction.
+      merge_inst->SetDebugScope(terminator->GetDebugScope());
+
       // Move the merge instruction to just before the terminator.
       merge_inst->InsertBefore(terminator);
     }
