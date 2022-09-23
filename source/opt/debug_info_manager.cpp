@@ -26,7 +26,6 @@ static const uint32_t kOpLineOperandLineIndex = 1;
 static const uint32_t kLineOperandIndexDebugFunction = 7;
 static const uint32_t kLineOperandIndexDebugLexicalBlock = 5;
 static const uint32_t kLineOperandIndexDebugLine = 5;
-static const uint32_t kConstanstOperandIndexLiteral = 2;
 static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
 static const uint32_t kDebugFunctionDefinitionOperandDebugFunctionIndex = 4;
 static const uint32_t kDebugFunctionDefinitionOperandOpFunctionIndex = 5;
@@ -217,12 +216,7 @@ uint32_t DebugInfoManager::CreateDebugInlinedAt(const Instruction* line,
       line_number = line->GetSingleWordOperand(kOpLineOperandLineIndex);
     } else if (line->GetShader100DebugOpcode() ==
                NonSemanticShaderDebugInfo100DebugLine) {
-      auto const line_number_id =
-          line->GetSingleWordOperand(kLineOperandIndexDebugLine);
-      auto const line_number_inst =
-          context()->get_def_use_mgr()->GetDef(line_number_id);
-      line_number =
-          line_number_inst->GetSingleWordOperand(kConstanstOperandIndexLiteral);
+      line_number = line->GetSingleWordOperand(kLineOperandIndexDebugLine);
     } else {
       assert(false &&
              "Unreachable. A line instruction must be OpLine or DebugLine");
@@ -235,7 +229,8 @@ uint32_t DebugInfoManager::CreateDebugInlinedAt(const Instruction* line,
     // DefUse manager which cannot be done during inlining. The extra
     // constants that may be generated here is likely not significant
     // and will likely be cleaned up in later passes.
-    if (line_number_type == spv_operand_type_t::SPV_OPERAND_TYPE_ID) {
+    if (line_number_type == spv_operand_type_t::SPV_OPERAND_TYPE_ID &&
+        line->opcode() == SpvOpLine) {
       if (!context()->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse) ||
           !context()->AreAnalysesValid(IRContext::Analysis::kAnalysisConstants))
         line_number = AddNewConstInGlobals(context(), line_number);
