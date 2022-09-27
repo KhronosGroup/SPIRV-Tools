@@ -120,6 +120,7 @@ const std::string& Header() {
   static const std::string header = R"(OpCapability Shader
 OpCapability Float16
 OpCapability Float64
+OpCapability Int8
 OpCapability Int16
 OpCapability Int64
 %1 = OpExtInstImport "GLSL.std.450"
@@ -140,6 +141,8 @@ OpName %main "main"
 %bool_null = OpConstantNull %bool
 %short = OpTypeInt 16 1
 %ushort = OpTypeInt 16 0
+%byte = OpTypeInt 8 1
+%ubyte = OpTypeInt 8 0
 %int = OpTypeInt 32 1
 %long = OpTypeInt 64 1
 %uint = OpTypeInt 32 0
@@ -175,6 +178,8 @@ OpName %main "main"
 %short_0 = OpConstant %short 0
 %short_2 = OpConstant %short 2
 %short_3 = OpConstant %short 3
+%ubyte_1 = OpConstant %ubyte 1
+%byte_n1 = OpConstant %byte -1
 %100 = OpConstant %int 0 ; Need a def with an numerical id to define id maps.
 %103 = OpConstant %int 7 ; Need a def with an numerical id to define id maps.
 %int_0 = OpConstant %int 0
@@ -856,7 +861,23 @@ INSTANTIATE_TEST_SUITE_P(TestCase, IntegerInstructionFoldingTest,
             "%2 = OpBitcast %half %half_1\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, 0x3C00)
+        2, 0x3C00),
+    // Test case 58: Bit-cast ubyte 1 to byte
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpBitcast %byte %ubyte_1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 1),
+    // Test case 59: Bit-cast byte -1 to ubyte
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpBitcast %ubyte %byte_n1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0xFFFFFFFF)
 ));
 // clang-format on
 
