@@ -554,7 +554,7 @@ uint32_t InstrumentPass::GetOutputBufferId() {
     analysis::Type* reg_uint_rarr_ty = GetUintRuntimeArrayType(32);
     analysis::Integer uint_ty(32, false);
     analysis::Type* reg_uint_ty = type_mgr->GetRegisteredType(&uint_ty);
-    analysis::Struct buf_ty({reg_uint_ty, reg_uint_rarr_ty});
+    analysis::Struct buf_ty({reg_uint_ty, reg_uint_ty, reg_uint_rarr_ty});
     analysis::Type* reg_buf_ty = type_mgr->GetRegisteredType(&buf_ty);
     uint32_t obufTyId = type_mgr->GetTypeInstruction(reg_buf_ty);
     // By the Vulkan spec, a pre-existing struct containing a RuntimeArray
@@ -566,10 +566,12 @@ uint32_t InstrumentPass::GetOutputBufferId() {
     assert(context()->get_def_use_mgr()->NumUses(obufTyId) == 0 &&
            "used struct type returned");
     deco_mgr->AddDecoration(obufTyId, uint32_t(spv::Decoration::Block));
-    deco_mgr->AddMemberDecoration(obufTyId, kDebugOutputSizeOffset,
+    deco_mgr->AddMemberDecoration(obufTyId, kDebugOutputFlagsOffset,
                                   uint32_t(spv::Decoration::Offset), 0);
-    deco_mgr->AddMemberDecoration(obufTyId, kDebugOutputDataOffset,
+    deco_mgr->AddMemberDecoration(obufTyId, kDebugOutputSizeOffset,
                                   uint32_t(spv::Decoration::Offset), 4);
+    deco_mgr->AddMemberDecoration(obufTyId, kDebugOutputDataOffset,
+                                  uint32_t(spv::Decoration::Offset), 8);
     uint32_t obufTyPtrId_ =
         type_mgr->FindPointerToType(obufTyId, spv::StorageClass::StorageBuffer);
     output_buffer_id_ = TakeNextId();
@@ -579,8 +581,9 @@ uint32_t InstrumentPass::GetOutputBufferId() {
           {uint32_t(spv::StorageClass::StorageBuffer)}}}));
     context()->AddGlobalValue(std::move(newVarOp));
     context()->AddDebug2Inst(NewGlobalName(obufTyId, "OutputBuffer"));
-    context()->AddDebug2Inst(NewMemberName(obufTyId, 0, "written_count"));
-    context()->AddDebug2Inst(NewMemberName(obufTyId, 1, "data"));
+    context()->AddDebug2Inst(NewMemberName(obufTyId, 0, "flags"));
+    context()->AddDebug2Inst(NewMemberName(obufTyId, 1, "written_count"));
+    context()->AddDebug2Inst(NewMemberName(obufTyId, 2, "data"));
     context()->AddDebug2Inst(NewGlobalName(output_buffer_id_, "output_buffer"));
     deco_mgr->AddDecorationVal(
         output_buffer_id_, uint32_t(spv::Decoration::DescriptorSet), desc_set_);
