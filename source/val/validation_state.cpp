@@ -208,9 +208,12 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
   }
   UpdateFeaturesBasedOnSpirvVersion(&features_, version_);
 
-  friendly_mapper_ = spvtools::MakeUnique<spvtools::FriendlyNameMapper>(
-      context_, words_, num_words_);
-  name_mapper_ = friendly_mapper_->GetNameMapper();
+  name_mapper_ = spvtools::GetTrivialNameMapper();
+  if (options_->use_friendly_names) {
+    friendly_mapper_ = spvtools::MakeUnique<spvtools::FriendlyNameMapper>(
+        context_, words_, num_words_);
+    name_mapper_ = friendly_mapper_->GetNameMapper();
+  }
 }
 
 void ValidationState_t::preallocateStorage() {
