@@ -447,7 +447,7 @@ OpRayQueryInitializeKHR %ray_query %load %u32vec2 %u32_0 %f32vec3_0 %f32_0 %f32v
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand 15[%v2uint] cannot be a type"));
+              HasSubstr("Operand '15[%v2uint]' cannot be a type"));
 }
 
 TEST_F(ValidateRayQuery, InitializeBadCullMask) {

@@ -971,7 +971,7 @@ OpMemoryBarrier %u32 %u32_0
 
   CompileSuccessfully(GenerateKernelCode(body), SPV_ENV_UNIVERSAL_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 5[%uint] cannot be a "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand '5[%uint]' cannot be a "
                                                "type"));
 }
 

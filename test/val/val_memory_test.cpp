@@ -693,7 +693,7 @@ TEST_F(ValidateMemory, ArrayLenInputNotStruct) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The Struture's type in OpArrayLength <id> '11[%11]' "
+              HasSubstr("The Structure's type in OpArrayLength <id> '11[%11]' "
                         "must be a pointer to an OpTypeStruct."));
 }
 
@@ -723,7 +723,7 @@ TEST_F(ValidateMemory, ArrayLenInputLastMemberNoRTA) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("The Struture's last member in OpArrayLength <id> '11[%11]' "
+      HasSubstr("The Structure's last member in OpArrayLength <id> '11[%11]' "
                 "must be an OpTypeRuntimeArray.\n  %11 = OpArrayLength %uint "
                 "%10 0\n"));
 }
@@ -754,7 +754,7 @@ TEST_F(ValidateMemory, ArrayLenInputLastMemberNoRTA2) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("The Struture's last member in OpArrayLength <id> '11[%11]' "
+      HasSubstr("The Structure's last member in OpArrayLength <id> '11[%11]' "
                 "must be an OpTypeRuntimeArray.\n  %11 = OpArrayLength %uint "
                 "%10 1\n"));
 }
@@ -818,7 +818,7 @@ TEST_F(ValidateMemory, ArrayLenIndexNotPointerToStruct) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "The Struture's type in OpArrayLength <id> '12[%12]' must be a "
+          "The Structure's type in OpArrayLength <id> '12[%12]' must be a "
           "pointer to an OpTypeStruct.\n  %12 = OpArrayLength %uint %11 0\n"));
 }
 
@@ -842,8 +842,9 @@ TEST_F(ValidateMemory, ArrayLenPointerIsAType) {
 
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 4[%float] cannot be a "
-                                               "type"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand '4[%float]' cannot be a "
+                        "type"));
 }
 
 TEST_F(ValidateMemory, PushConstantNotStructGood) {
@@ -1651,7 +1652,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand 1[%incorrect] requires a type"));
+              HasSubstr("Operand '1[%incorrect]' requires a type"));
 }
 
 TEST_F(ValidateMemory, PSBLoadAlignedSuccess) {
