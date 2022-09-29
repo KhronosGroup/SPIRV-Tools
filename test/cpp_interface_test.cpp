@@ -58,7 +58,7 @@ TEST(CppInterface, SuccessfulRoundTrip) {
     EXPECT_EQ(0u, position.line);
     EXPECT_EQ(0u, position.column);
     EXPECT_EQ(1u, position.index);
-    EXPECT_STREQ("ID 1[%1] has not been defined\n  %2 = OpSizeOf %1 %3\n",
+    EXPECT_STREQ("ID '1[%1]' has not been defined\n  %2 = OpSizeOf %1 %3\n",
                  message);
   });
   EXPECT_FALSE(t.Validate(binary));

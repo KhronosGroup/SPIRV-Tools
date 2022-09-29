@@ -286,7 +286,7 @@ TEST_F(ValidateIdWithMessage, OpMemberDecorateMemberBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Index 3 provided in OpMemberDecorate for struct <id> "
-                        "1[%_struct_1] is out of bounds. The structure has 2 "
+                        "'1[%_struct_1]' is out of bounds. The structure has 2 "
                         "members. Largest valid index is 1."));
 }
 
@@ -380,7 +380,7 @@ TEST_F(ValidateIdWithMessage, OpGroupMemberDecorateIndexOutOfBoundBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Index 3 provided in OpGroupMemberDecorate for struct "
-                        "<id> 2[%_struct_2] is out of bounds. The structure "
+                        "<id> '2[%_struct_2]' is out of bounds. The structure "
                         "has 3 members. Largest valid index is 2."));
 }
 
@@ -1352,7 +1352,7 @@ TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstConstituentTypeBad) {
 %4 = OpConstantComposite %3 %2 %2 %2 %1)";  // Uses a type as operand
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 1[%uint] cannot be a "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand '1[%uint]' cannot be a "
                                                "type"));
 }
 TEST_F(ValidateIdWithMessage, OpConstantCompositeArrayConstConstituentBad) {
@@ -2127,7 +2127,7 @@ TEST_F(ValidateIdWithMessage, OpVariableInitializerIsTypeBad) {
 %3 = OpVariable %2 Input %2)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 2[%_ptr_Input_uint] "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand '2[%_ptr_Input_uint]' "
                                                "cannot be a type"));
 }
 
@@ -2702,7 +2702,7 @@ TEST_F(ValidateIdWithMessage, OpLoadPointerBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   // Prove that SSA checks trigger for a bad Id value.
   // The next test case show the not-a-logical-pointer case.
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 8[%8] has not been "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID '8[%8]' has not been "
                                                "defined"));
 }
 
@@ -3153,7 +3153,7 @@ TEST_F(ValidateIdWithMessage, OpStoreLabel) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand 7[%7] requires a type"));
+              HasSubstr("Operand '7[%7]' requires a type"));
 }
 
 // TODO: enable when this bug is fixed:
@@ -3730,7 +3730,7 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 1[%void] cannot be a "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand '1[%void]' cannot be a "
                                                "type"));
 }
 
@@ -3749,7 +3749,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand 8[%_ptr_Private_float] cannot be a type"));
+              HasSubstr("Operand '8[%_ptr_Private_float]' cannot be a type"));
 }
 
 // Invalid: The storage class of Base and Result do not match.
@@ -4248,7 +4248,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Invalid use of function result id 3[%3]."));
+              HasSubstr("Invalid use of function result id '3[%3]'."));
 }
 
 TEST_F(ValidateIdWithMessage, OpFunctionParameterGood) {
@@ -4883,7 +4883,7 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 3[%true] is not a type "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID '3[%true]' is not a type "
                                                "id"));
 }
 
@@ -4996,9 +4996,9 @@ OpFunctionEnd
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpPhi's result type <id> 2[%bool] does not match "
-                        "incoming value <id> 6[%uint_0] type <id> "
-                        "5[%uint]."));
+              HasSubstr("OpPhi's result type <id> '2[%bool]' does not match "
+                        "incoming value <id> '6[%uint_0]' type <id> "
+                        "'5[%uint]'."));
 }
 
 TEST_F(ValidateIdWithMessage, OpPhiPredecessorNotABlock) {
@@ -5022,9 +5022,10 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpPhi's incoming basic block <id> 3[%true] is not an "
-                        "OpLabel."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpPhi's incoming basic block <id> '3[%true]' is not an "
+                "OpLabel."));
 }
 
 TEST_F(ValidateIdWithMessage, OpPhiNotAPredecessor) {
@@ -5049,8 +5050,8 @@ OpFunctionEnd
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpPhi's incoming basic block <id> 9[%9] is not a "
-                        "predecessor of <id> 8[%8]."));
+              HasSubstr("OpPhi's incoming basic block <id> '9[%9]' is not a "
+                        "predecessor of <id> '8[%8]'."));
 }
 
 TEST_F(ValidateIdWithMessage, OpBranchConditionalGood) {
@@ -5150,7 +5151,7 @@ OpBranchConditional %bool %target_t %target_f
 
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 3[%bool] cannot be a "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand '3[%bool]' cannot be a "
                                                "type"));
 }
 
@@ -5213,7 +5214,7 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsType) {
      OpFunctionEnd)";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand 1[%void] cannot be a "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand '1[%void]' cannot be a "
                                                "type"));
 }
 
@@ -5229,7 +5230,7 @@ TEST_F(ValidateIdWithMessage, OpReturnValueIsLabel) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand 5[%5] requires a type"));
+              HasSubstr("Operand '5[%5]' requires a type"));
 }
 
 TEST_F(ValidateIdWithMessage, OpReturnValueIsVoid) {
@@ -5339,7 +5340,7 @@ TEST_F(ValidateIdWithMessage, UndefinedTypeId) {
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand 2[%2] requires a previous definition"));
+              HasSubstr("Operand '2[%2]' requires a previous definition"));
 }
 
 TEST_F(ValidateIdWithMessage, UndefinedIdScope) {
@@ -5356,7 +5357,7 @@ TEST_F(ValidateIdWithMessage, UndefinedIdScope) {
 )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 7[%7] has not been "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID '7[%7]' has not been "
                                                "defined"));
 }
 
@@ -5374,7 +5375,7 @@ TEST_F(ValidateIdWithMessage, UndefinedIdMemSem) {
 )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 7[%7] has not been "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID '7[%7]' has not been "
                                                "defined"));
 }
 
@@ -5576,11 +5577,10 @@ OpFunctionEnd
   )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "ID 7[%7] defined in block 6[%6] does not dominate its use in block "
-          "9[%9]"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ID '7[%7]' defined in block '6[%6]' does not dominate "
+                        "its use in block "
+                        "'9[%9]'"));
 }
 
 TEST_F(ValidateIdWithMessage, SpecIdTargetNotSpecializationConstant) {
@@ -5717,7 +5717,7 @@ TEST_F(ValidateIdWithMessage, TypeFunctionBadUse) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Invalid use of function type result id 2[%2]."));
+              HasSubstr("Invalid use of function type result id '2[%2]'."));
 }
 
 TEST_F(ValidateIdWithMessage, BadTypeId) {
@@ -5735,7 +5735,7 @@ TEST_F(ValidateIdWithMessage, BadTypeId) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID 4[%float_0] is not a type "
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("ID '4[%float_0]' is not a type "
                                                "id"));
 }
 
@@ -6398,9 +6398,10 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ID 8[%8] defined in block 7[%7] does not dominate its "
-                        "use in block 10[%10]\n  %10 = OpLabel"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ID '8[%8]' defined in block '7[%7]' does not dominate its "
+                "use in block '10[%10]'\n  %10 = OpLabel"));
 }
 
 TEST_F(ValidateIdWithMessage, IdDefInUnreachableBlock2) {
@@ -6424,9 +6425,10 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ID 8[%8] defined in block 7[%7] does not dominate its "
-                        "use in block 10[%10]\n  %10 = OpLabel"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ID '8[%8]' defined in block '7[%7]' does not dominate its "
+                "use in block '10[%10]'\n  %10 = OpLabel"));
 }
 
 TEST_F(ValidateIdWithMessage, IdDefInUnreachableBlock3) {
@@ -6450,9 +6452,10 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ID 8[%8] defined in block 7[%7] does not dominate its "
-                        "use in block 10[%10]\n  %10 = OpLabel"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ID '8[%8]' defined in block '7[%7]' does not dominate its "
+                "use in block '10[%10]'\n  %10 = OpLabel"));
 }
 
 TEST_F(ValidateIdWithMessage, IdDefInUnreachableBlock4) {
@@ -6517,9 +6520,10 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ID 9[%9] defined in block 8[%8] does not dominate its "
-                        "use in block 7[%7]\n  %7 = OpLabel"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ID '9[%9]' defined in block '8[%8]' does not dominate its "
+                "use in block '7[%7]'\n  %7 = OpLabel"));
 }
 
 TEST_F(ValidateIdWithMessage, ReachableDefUnreachableUse) {
@@ -6570,9 +6574,10 @@ TEST_F(ValidateIdWithMessage, UnreachableDefUsedInPhi) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("In OpPhi instruction 14[%14], ID 13[%13] definition does not "
-                "dominate its parent 7[%7]\n  %14 = OpPhi %float %11 %10 %13 "
-                "%7"));
+      HasSubstr(
+          "In OpPhi instruction '14[%14]', ID '13[%13]' definition does not "
+          "dominate its parent '7[%7]'\n  %14 = OpPhi %float %11 %10 %13 "
+          "%7"));
 }
 
 TEST_F(ValidateIdWithMessage, OpTypeForwardPointerNotAPointerType) {
@@ -6638,10 +6643,9 @@ TEST_F(ValidateIdWithMessage, MissingForwardPointer) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Operand 3[%_ptr_Uniform__struct_2] requires a previous definition"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand '3[%_ptr_Uniform__struct_2]' requires a "
+                        "previous definition"));
 }
 
 TEST_F(ValidateIdWithMessage, NVBindlessSamplerInStruct) {

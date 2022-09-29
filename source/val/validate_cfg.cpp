@@ -239,23 +239,23 @@ spv_result_t ValidateReturnValue(ValidationState_t& _,
   const auto value = _.FindDef(value_id);
   if (!value || !value->type_id()) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpReturnValue Value <id> '" << _.getIdName(value_id)
-           << "' does not represent a value.";
+           << "OpReturnValue Value <id> " << _.getIdName(value_id)
+           << " does not represent a value.";
   }
   auto value_type = _.FindDef(value->type_id());
   if (!value_type || SpvOpTypeVoid == value_type->opcode()) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpReturnValue value's type <id> '"
-           << _.getIdName(value->type_id()) << "' is missing or void.";
+           << "OpReturnValue value's type <id> "
+           << _.getIdName(value->type_id()) << " is missing or void.";
   }
 
   if (_.addressing_model() == SpvAddressingModelLogical &&
       SpvOpTypePointer == value_type->opcode() &&
       !_.features().variable_pointers && !_.options()->relax_logical_pointer) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpReturnValue value's type <id> '"
+           << "OpReturnValue value's type <id> "
            << _.getIdName(value->type_id())
-           << "' is a pointer, which is invalid in the Logical addressing "
+           << " is a pointer, which is invalid in the Logical addressing "
               "model.";
   }
 
@@ -263,8 +263,8 @@ spv_result_t ValidateReturnValue(ValidationState_t& _,
   const auto return_type = _.FindDef(function->GetResultTypeId());
   if (!return_type || return_type->id() != value_type->id()) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpReturnValue Value <id> '" << _.getIdName(value_id)
-           << "'s type does not match OpFunction's return type.";
+           << "OpReturnValue Value <id> " << _.getIdName(value_id)
+           << "s type does not match OpFunction's return type.";
   }
 
   return SPV_SUCCESS;

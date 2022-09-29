@@ -1020,11 +1020,11 @@ spv_result_t ValidateSampledImage(ValidationState_t& _,
                << "All OpSampledImage instructions must be in the same block "
                   "in "
                   "which their Result <id> are consumed. OpSampledImage Result "
-                  "Type <id> '"
+                  "Type <id> "
                << _.getIdName(inst->id())
-               << "' has a consumer in a different basic "
-                  "block. The consumer instruction <id> is '"
-               << _.getIdName(consumer_instr->id()) << "'.";
+               << " has a consumer in a different basic "
+                  "block. The consumer instruction <id> is "
+               << _.getIdName(consumer_instr->id()) << ".";
       }
 
       if (consumer_opcode == SpvOpPhi || consumer_opcode == SpvOpSelect) {
@@ -1033,9 +1033,9 @@ spv_result_t ValidateSampledImage(ValidationState_t& _,
                   "as "
                   "operands of Op"
                << spvOpcodeString(static_cast<SpvOp>(consumer_opcode)) << "."
-               << " Found result <id> '" << _.getIdName(inst->id())
-               << "' as an operand of <id> '"
-               << _.getIdName(consumer_instr->id()) << "'.";
+               << " Found result <id> " << _.getIdName(inst->id())
+               << " as an operand of <id> " << _.getIdName(consumer_instr->id())
+               << ".";
       }
 
       if (!IsAllowedSampledImageOperand(consumer_opcode, _)) {
@@ -1045,9 +1045,9 @@ spv_result_t ValidateSampledImage(ValidationState_t& _,
                << spvOpcodeString(static_cast<SpvOp>(consumer_opcode))
                << ", since it is not specified as taking an "
                << "OpTypeSampledImage."
-               << " Found result <id> '" << _.getIdName(inst->id())
-               << "' as an operand of <id> '"
-               << _.getIdName(consumer_instr->id()) << "'.";
+               << " Found result <id> " << _.getIdName(inst->id())
+               << " as an operand of <id> " << _.getIdName(consumer_instr->id())
+               << ".";
       }
     }
   }

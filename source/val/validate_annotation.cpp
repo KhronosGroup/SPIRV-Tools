@@ -102,7 +102,7 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, SpvDecoration dec,
     DiagnosticStream ds = std::move(
         _.diag(SPV_ERROR_INVALID_ID, inst)
         << _.VkErrorID(vuid) << _.SpvDecorationString(dec)
-        << " decoration on target <id> '" << _.getIdName(target->id()) << "' ");
+        << " decoration on target <id> " << _.getIdName(target->id()) << " ");
     return ds;
   };
   switch (dec) {
@@ -308,8 +308,8 @@ spv_result_t ValidateMemberDecorate(ValidationState_t& _,
   const auto struct_type = _.FindDef(struct_type_id);
   if (!struct_type || SpvOpTypeStruct != struct_type->opcode()) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpMemberDecorate Structure type <id> '"
-           << _.getIdName(struct_type_id) << "' is not a struct type.";
+           << "OpMemberDecorate Structure type <id> "
+           << _.getIdName(struct_type_id) << " is not a struct type.";
   }
   const auto member = inst->GetOperandAs<uint32_t>(1);
   const auto member_count =
@@ -358,17 +358,16 @@ spv_result_t ValidateGroupDecorate(ValidationState_t& _,
   auto decoration_group = _.FindDef(decoration_group_id);
   if (!decoration_group || SpvOpDecorationGroup != decoration_group->opcode()) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpGroupDecorate Decoration group <id> '"
-           << _.getIdName(decoration_group_id)
-           << "' is not a decoration group.";
+           << "OpGroupDecorate Decoration group <id> "
+           << _.getIdName(decoration_group_id) << " is not a decoration group.";
   }
   for (unsigned i = 1; i < inst->operands().size(); ++i) {
     auto target_id = inst->GetOperandAs<uint32_t>(i);
     auto target = _.FindDef(target_id);
     if (!target || target->opcode() == SpvOpDecorationGroup) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "OpGroupDecorate may not target OpDecorationGroup <id> '"
-             << _.getIdName(target_id) << "'";
+             << "OpGroupDecorate may not target OpDecorationGroup <id> "
+             << _.getIdName(target_id);
     }
   }
   return SPV_SUCCESS;
@@ -380,9 +379,8 @@ spv_result_t ValidateGroupMemberDecorate(ValidationState_t& _,
   const auto decoration_group = _.FindDef(decoration_group_id);
   if (!decoration_group || SpvOpDecorationGroup != decoration_group->opcode()) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpGroupMemberDecorate Decoration group <id> '"
-           << _.getIdName(decoration_group_id)
-           << "' is not a decoration group.";
+           << "OpGroupMemberDecorate Decoration group <id> "
+           << _.getIdName(decoration_group_id) << " is not a decoration group.";
   }
   // Grammar checks ensures that the number of arguments to this instruction
   // is an odd number: 1 decoration group + (id,literal) pairs.
@@ -392,8 +390,8 @@ spv_result_t ValidateGroupMemberDecorate(ValidationState_t& _,
     auto struct_instr = _.FindDef(struct_id);
     if (!struct_instr || SpvOpTypeStruct != struct_instr->opcode()) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "OpGroupMemberDecorate Structure type <id> '"
-             << _.getIdName(struct_id) << "' is not a struct type.";
+             << "OpGroupMemberDecorate Structure type <id> "
+             << _.getIdName(struct_id) << " is not a struct type.";
     }
     const uint32_t num_struct_members =
         static_cast<uint32_t>(struct_instr->words().size() - 2);

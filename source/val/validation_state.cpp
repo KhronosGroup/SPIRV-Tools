@@ -245,7 +245,7 @@ std::string ValidationState_t::getIdName(uint32_t id) const {
   const std::string id_name = name_mapper_(id);
 
   std::stringstream out;
-  out << id << "[%" << id_name << "]";
+  out << "'" << id << "[%" << id_name << "]'";
   return out.str();
 }
 
