@@ -196,7 +196,7 @@ std::string ValidateIdWithMessage::make_message(const char* msg) {
   }
 
   std::string message(msg);
-  std::string result;
+  std::ostringstream result;
 
   size_t next = 0;
   while (next < message.size()) {
@@ -204,13 +204,13 @@ std::string ValidateIdWithMessage::make_message(const char* msg) {
     size_t open_quote = message.find('\'', next);
 
     // Copy up to the first quote
-    result.append(message, next, open_quote - next);
+    result.write(msg + next, open_quote - next);
     if (open_quote == std::string::npos) {
       break;
     }
     // Handle apostrophes
     if (!isdigit(message[open_quote + 1])) {
-      result.append("'");
+      result << '\'';
       next = open_quote + 1;
       continue;
     }
@@ -225,17 +225,16 @@ std::string ValidateIdWithMessage::make_message(const char* msg) {
     assert(close_quote < message.size() && message[close_quote] == '\'');
 
     // Change to 'num[%num]' because friendly names are not being used.
-    result.append(message, open_quote, open_bracket - open_quote + 1);  // 'num[
-    result.append("%");  //      %
-    result.append(message, open_quote + 1,
-                  open_bracket - open_quote - 1);  //       num
-    result.append("]'");                           //          ]'
+    result.write(msg + open_quote, open_bracket - open_quote + 1);
+    result << '%';
+    result.write(msg + open_quote + 1, open_bracket - open_quote - 1);
+    result << "]'";
 
     // Continue to the next id, or end of string.
     next = close_quote + 1;
   }
 
-  return result;
+  return result.str();
 }
 
 // TODO: OpUndef
