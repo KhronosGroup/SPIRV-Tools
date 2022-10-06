@@ -2851,6 +2851,61 @@ INSTANTIATE_TEST_SUITE_P(
                               "needs to be a 32-bit int scalar",
                               "has bit width 64"))));
 
+INSTANTIATE_TEST_SUITE_P(
+    ArmCoreBuiltinsInputSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("CoreIDARM", "CoreCountARM", "CoreMaxIDARM", "WarpIDARM",
+                   "WarpMaxIDARM"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "GLCompute"),
+            Values("Input"), Values("%u32"),
+            Values("OpCapability CoreBuiltinsARM\n"),
+            Values("OpExtension \"SPV_ARM_core_builtins\"\n"), Values(nullptr),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    ArmCoreBuiltinsNotInput,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("CoreIDARM", "CoreCountARM", "CoreMaxIDARM", "WarpIDARM",
+                   "WarpMaxIDARM"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "GLCompute"),
+            Values("Output"), Values("%u32"),
+            Values("OpCapability CoreBuiltinsARM\n"),
+            Values("OpExtension \"SPV_ARM_core_builtins\"\n"), Values(nullptr),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "to be only used for variables with Input storage class",
+                "uses storage class Output"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    ArmCoreBuiltinsNotIntScalar,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("CoreIDARM", "CoreCountARM", "CoreMaxIDARM", "WarpIDARM",
+                   "WarpMaxIDARM"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "GLCompute"),
+            Values("Input"), Values("%f32", "%u32vec3"),
+            Values("OpCapability CoreBuiltinsARM\n"),
+            Values("OpExtension \"SPV_ARM_core_builtins\"\n"), Values(nullptr),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "is not an int scalar"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    ArmCoreBuiltinsNotInt32,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeCapabilityExtensionResult,
+    Combine(Values("CoreIDARM", "CoreCountARM", "CoreMaxIDARM", "WarpIDARM",
+                   "WarpMaxIDARM"),
+            Values("Vertex", "Fragment", "TessellationControl",
+                   "TessellationEvaluation", "Geometry", "GLCompute"),
+            Values("Input"), Values("%u64"),
+            Values("OpCapability CoreBuiltinsARM\n"),
+            Values("OpExtension \"SPV_ARM_core_builtins\"\n"), Values(nullptr),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar",
+                              "has bit width 64"))));
+
 CodeGenerator GetWorkgroupSizeSuccessGenerator() {
   CodeGenerator generator = CodeGenerator::GetDefaultShaderCodeGenerator();
 
