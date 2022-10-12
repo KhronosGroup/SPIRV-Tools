@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2022.4-dev 2022-10-12
+v2022.4 2022-10-12
   - General
     - Support Narrow Types in BitCast Folding Rule (#4941)
     - spirv-diff: Allow no SpecId (#4904)
