@@ -1422,6 +1422,7 @@ spv_result_t ValidatePtrAccessChain(ValidationState_t& _,
   if (_.HasCapability(SpvCapabilityShader) &&
       (base_type_storage_class == SpvStorageClassUniform ||
        base_type_storage_class == SpvStorageClassStorageBuffer ||
+       base_type_storage_class == SpvStorageClassPhysicalStorageBuffer ||
        base_type_storage_class == SpvStorageClassPushConstant) &&
       !_.HasDecoration(base_type->id(), SpvDecorationArrayStride)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
