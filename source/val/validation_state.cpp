@@ -2058,6 +2058,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-CallableDataKHR-04704);
     case 4705:
       return VUID_WRAP(VUID-StandaloneSpirv-IncomingCallableDataKHR-04705);
+    case 4707:
+      return VUID_WRAP(VUID-StandaloneSpirv-Base-04707);
     case 7119:
       return VUID_WRAP(VUID-StandaloneSpirv-ShaderRecordBufferKHR-07119);
     case 4708:
