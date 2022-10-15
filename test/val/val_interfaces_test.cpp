@@ -1456,7 +1456,7 @@ OpDecorate %struct Block
 OpMemberDecorate %struct 0 Location 0
 OpMemberDecorate %struct 0 Component 0
 OpMemberDecorate %struct 1 Location 0
-OpMemberDecorate %struct 1 Component 1
+OpMemberDecorate %struct 1 Component 2
 %void = OpTypeVoid
 %void_fn = OpTypeFunction %void
 %float = OpTypeFloat 32

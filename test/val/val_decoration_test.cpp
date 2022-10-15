@@ -6885,6 +6885,8 @@ OpFunctionEnd
   CompileSuccessfully(spirv, env);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Component-04924"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Component decoration specified for type"));
   EXPECT_THAT(getDiagnosticString(), HasSubstr("is not a scalar or vector"));
 }
@@ -6893,6 +6895,7 @@ std::string ShaderWithComponentDecoration(const std::string& type,
                                           const std::string& decoration) {
   return R"(
 OpCapability Shader
+OpCapability Int64
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main" %entryPointOutput
 OpExecutionMode %main OriginUpperLeft
@@ -6905,6 +6908,9 @@ OpDecorate %entryPointOutput )" +
 %v3float = OpTypeVector %float 3
 %v4float = OpTypeVector %float 4
 %uint = OpTypeInt 32 0
+%uint64 = OpTypeInt 64 0
+%v2uint64 = OpTypeVector %uint64 2
+%v3uint64 = OpTypeVector %uint64 3
 %uint_2 = OpConstant %uint 2
 %arr_v3float_uint_2 = OpTypeArray %v3float %uint_2
 %float_0 = OpConstant %float 0
@@ -6960,8 +6966,10 @@ TEST_F(ValidateDecorations, ComponentDecorationIntBad4Vulkan) {
   CompileSuccessfully(spirv, env);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Sequence of components starting with 4 "
-                        "and ending with 4 gets larger than 3"));
+              AnyVUID("VUID-StandaloneSpirv-Component-04920"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Component decoration value must not be greater than 3"));
 }
 
 TEST_F(ValidateDecorations, ComponentDecorationVector3GoodVulkan) {
@@ -6989,6 +6997,8 @@ TEST_F(ValidateDecorations, ComponentDecorationVector4Bad1Vulkan) {
   CompileSuccessfully(spirv, env);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Component-04921"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Sequence of components starting with 1 "
                         "and ending with 4 gets larger than 3"));
 }
@@ -6999,6 +7009,8 @@ TEST_F(ValidateDecorations, ComponentDecorationVector4Bad3Vulkan) {
 
   CompileSuccessfully(spirv, env);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Component-04921"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Sequence of components starting with 3 "
                         "and ending with 6 gets larger than 3"));
@@ -7022,8 +7034,97 @@ TEST_F(ValidateDecorations, ComponentDecorationArrayBadVulkan) {
   CompileSuccessfully(spirv, env);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Component-04921"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Sequence of components starting with 2 "
                         "and ending with 4 gets larger than 3"));
+}
+
+TEST_F(ValidateDecorations, ComponentDecoration64ScalarGoodVulkan) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = ShaderWithComponentDecoration("uint64", "Component 0");
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(env));
+}
+
+TEST_F(ValidateDecorations, ComponentDecoration64Scalar1BadVulkan) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = ShaderWithComponentDecoration("uint64", "Component 1");
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Component-04923"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Component decoration value must not be 1 or 3 for "
+                        "64-bit data types"));
+}
+
+TEST_F(ValidateDecorations, ComponentDecoration64Scalar2GoodVulkan) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = ShaderWithComponentDecoration("uint64", "Component 2");
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(env));
+}
+
+TEST_F(ValidateDecorations, ComponentDecoration64Scalar3BadVulkan) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = ShaderWithComponentDecoration("uint64", "Component 3");
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Component-04923"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Component decoration value must not be 1 or 3 for "
+                        "64-bit data types"));
+}
+
+TEST_F(ValidateDecorations, ComponentDecoration64Vec0GoodVulkan) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = ShaderWithComponentDecoration("v2uint64", "Component 0");
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(env));
+}
+
+TEST_F(ValidateDecorations, ComponentDecoration64Vec1BadVulkan) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = ShaderWithComponentDecoration("v2uint64", "Component 1");
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Component-04923"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Component decoration value must not be 1 or 3 for "
+                        "64-bit data types"));
+}
+
+TEST_F(ValidateDecorations, ComponentDecoration64Vec2BadVulkan) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = ShaderWithComponentDecoration("v2uint64", "Component 2");
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Component-04922"));
+  HasSubstr(
+      "Sequence of components starting with 2 "
+      "and ending with 6 gets larger than 3");
+}
+
+TEST_F(ValidateDecorations, ComponentDecoration64VecWideBadVulkan) {
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  std::string spirv = ShaderWithComponentDecoration("v3uint64", "Component 0");
+
+  CompileSuccessfully(spirv, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Component decoration only allowed on 64-bit scalar "
+                        "and 2-component vector"));
 }
 
 TEST_F(ValidateDecorations, ComponentDecorationBlockGood) {
@@ -7096,6 +7197,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, env);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Component-04921"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Sequence of components starting with 2 "
                         "and ending with 4 gets larger than 3"));

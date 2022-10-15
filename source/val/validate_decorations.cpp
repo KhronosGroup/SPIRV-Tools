@@ -1625,6 +1625,8 @@ spv_result_t CheckComponentDecoration(ValidationState_t& vstate,
                                       const Instruction& inst,
                                       const Decoration& decoration) {
   assert(inst.id() && "Parser ensures the target of the decoration has an ID");
+  assert(decoration.params().size() == 1 &&
+         "Grammar ensures Component has one parameter");
 
   uint32_t type_id;
   if (decoration.struct_member_index() == Decoration::kInvalidMember) {
@@ -1673,23 +1675,48 @@ spv_result_t CheckComponentDecoration(ValidationState_t& vstate,
     if (!vstate.IsIntScalarOrVectorType(type_id) &&
         !vstate.IsFloatScalarOrVectorType(type_id)) {
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+             << vstate.VkErrorID(4924)
              << "Component decoration specified for type "
              << vstate.getIdName(type_id) << " that is not a scalar or vector";
     }
 
-    // For 16-, and 32-bit types, it is invalid if this sequence of components
-    // gets larger than 3.
+    const auto component = decoration.params()[0];
+    if (component > 3) {
+      return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+             << vstate.VkErrorID(4920)
+             << "Component decoration value must not be greater than 3";
+    }
+
+    const auto dimension = vstate.GetDimension(type_id);
     const auto bit_width = vstate.GetBitWidth(type_id);
     if (bit_width == 16 || bit_width == 32) {
-      assert(decoration.params().size() == 1 &&
-             "Grammar ensures Component has one parameter");
-
-      const auto component = decoration.params()[0];
-      const auto last_component = component + vstate.GetDimension(type_id) - 1;
-      if (last_component > 3) {
+      const auto sum_component = component + dimension;
+      if (sum_component > 4) {
         return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+               << vstate.VkErrorID(4921)
                << "Sequence of components starting with " << component
-               << " and ending with " << last_component
+               << " and ending with " << (sum_component - 1)
+               << " gets larger than 3";
+      }
+    } else if (bit_width == 64) {
+      if (dimension > 2) {
+        return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+               << "Component decoration only allowed on 64-bit scalar and "
+                  "2-component vector";
+      }
+      if (component == 1 || component == 3) {
+        return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+               << vstate.VkErrorID(4923)
+               << "Component decoration value must not be 1 or 3 for 64-bit "
+                  "data types";
+      }
+      // 64-bit is double per component dimension
+      const auto sum_component = component + (2 * dimension);
+      if (sum_component > 4) {
+        return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+               << vstate.VkErrorID(4922)
+               << "Sequence of components starting with " << component
+               << " and ending with " << (sum_component - 1)
                << " gets larger than 3";
       }
     }
