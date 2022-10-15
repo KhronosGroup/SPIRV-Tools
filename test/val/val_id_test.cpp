@@ -4254,8 +4254,8 @@ TEST_P(AccessChainInstructionTest, AccessChainIndexIntoRuntimeArrayGood) {
       " OpDecorate %_ptr_Uniform_blockName ArrayStride 8 ";
   std::string spirv = kGLSL450MemoryModel + arrayStride +
                       kDeeplyNestedStructureSetup + R"(
-%runtime_arr_entry = )" +
-                      instr + R"( %_ptr_Uniform_float %blockName_var )" + elem +
+%runtime_arr_entry = )" + instr +
+                      R"( %_ptr_Uniform_float %blockName_var )" + elem +
                       R"(%int_2 %int_0
 OpReturn
 OpFunctionEnd
