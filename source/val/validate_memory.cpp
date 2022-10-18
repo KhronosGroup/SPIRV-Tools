@@ -1423,7 +1423,9 @@ spv_result_t ValidatePtrAccessChain(ValidationState_t& _,
       (base_type_storage_class == SpvStorageClassUniform ||
        base_type_storage_class == SpvStorageClassStorageBuffer ||
        base_type_storage_class == SpvStorageClassPhysicalStorageBuffer ||
-       base_type_storage_class == SpvStorageClassPushConstant) &&
+       base_type_storage_class == SpvStorageClassPushConstant ||
+       (_.HasCapability(SpvCapabilityWorkgroupMemoryExplicitLayoutKHR) &&
+        base_type_storage_class == SpvStorageClassWorkgroup)) &&
       !_.HasDecoration(base_type->id(), SpvDecorationArrayStride)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "OpPtrAccessChain must have a Base whose type is decorated "
