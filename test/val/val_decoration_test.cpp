@@ -8756,9 +8756,8 @@ TEST_P(ValidateDecorationString, VulkanOutputInvalidInterface) {
               AnyVUID("VUID-StandaloneSpirv-Flat-06201"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "OpEntryPoint interfaces variable must not be fragment execution "
-          "model with an output storage class for Entry Point id 2."));
+      HasSubstr("decorated variable must not be used in fragment execution "
+                "model as an Output storage class for Entry Point id 2."));
 }
 
 TEST_P(ValidateDecorationString, VulkanVertexInputInvalidInterface) {
@@ -8796,8 +8795,8 @@ TEST_P(ValidateDecorationString, VulkanVertexInputInvalidInterface) {
               AnyVUID("VUID-StandaloneSpirv-Flat-06202"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpEntryPoint interfaces variable must not be vertex execution "
-                "model with an input storage class for Entry Point id 2."));
+      HasSubstr("decorated variable must not be used in vertex execution model "
+                "as an Input storage class for Entry Point id 2."));
 }
 
 INSTANTIATE_TEST_SUITE_P(FragmentInputInterface, ValidateDecorationString,

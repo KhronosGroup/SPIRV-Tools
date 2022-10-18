@@ -853,17 +853,18 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
                   (models->size() > 1 || has_vert)) {
                 return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
                        << vstate.VkErrorID(6202)
-                       << "OpEntryPoint interfaces variable must not be vertex "
-                          "execution model with an input storage class for "
-                          "Entry Point id "
+                       << vstate.SpvDecorationString(decoration.dec_type())
+                       << " decorated variable must not be used in vertex "
+                          "execution model as an Input storage class for Entry "
+                          "Point id "
                        << entry_point << ".";
               } else if (storage_class == SpvStorageClassOutput &&
                          (models->size() > 1 || has_frag)) {
                 return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
                        << vstate.VkErrorID(6201)
-                       << "OpEntryPoint interfaces variable must not be "
-                          "fragment "
-                          "execution model with an output storage class for "
+                       << vstate.SpvDecorationString(decoration.dec_type())
+                       << " decorated variable must not be used in fragment "
+                          "execution model as an Output storage class for "
                           "Entry Point id "
                        << entry_point << ".";
               }
