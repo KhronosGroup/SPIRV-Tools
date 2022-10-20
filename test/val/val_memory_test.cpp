@@ -4857,8 +4857,6 @@ TEST_F(ValidateMemory, VulkanPtrAccessChainStorageBufferCapability) {
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-Base-04707"));
-  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpPtrAccessChain Base operand pointing to "
                         "StorageBuffer storage class must use VariablePointers "
                         "or VariablePointersStorageBuffer capability"));
@@ -4894,8 +4892,6 @@ TEST_F(ValidateMemory, VulkanPtrAccessChainWorkgroupCapability) {
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-Base-04707"));
-  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpPtrAccessChain Base operand pointing to Workgroup "
                         "storage class must use VariablePointers capability"));
 }
@@ -4928,46 +4924,6 @@ TEST_F(ValidateMemory, VulkanPtrAccessChainWorkgroupNoArrayStrideSuccess) {
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
-}
-
-TEST_F(ValidateMemory, VulkanPtrAccessChainPhysicalStorageBuffer) {
-  const std::string spirv = R"(
-               OpCapability Shader
-               OpCapability VariablePointers
-               OpCapability PhysicalStorageBufferAddresses
-               OpExtension "SPV_KHR_storage_buffer_storage_class"
-               OpExtension "SPV_KHR_variable_pointers"
-               OpExtension "SPV_EXT_physical_storage_buffer"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint GLCompute %main "foo"
-               OpExecutionMode %main LocalSize 1 1 1
-               OpDecorate %ptr ArrayStride 4
-               OpDecorate %val1 AliasedPointer
-       %uint = OpTypeInt 32 0
-     %uint_0 = OpConstant %uint 0
-     %uint_1 = OpConstant %uint 1
-        %ptr = OpTypePointer PhysicalStorageBuffer %uint
-     %pptr_f = OpTypePointer Function %ptr
-       %void = OpTypeVoid
-       %func = OpTypeFunction %void
-       %main = OpFunction %void None %func
-      %label = OpLabel
-       %val1 = OpVariable %pptr_f Function
-       %val2 = OpLoad %ptr %val1
- %ptr_access = OpPtrAccessChain %ptr %val2 %uint_1
-               OpReturn
-               OpFunctionEnd
-)";
-
-  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
-  EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-Base-04707"));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "OpPtrAccessChain Base operand pointing to PhysicalStorageBuffer "
-          "storage class must use PhysicalStorageBuffer64 addressing model"));
 }
 
 }  // namespace
