@@ -4601,6 +4601,33 @@ OpFunctionEnd
                 "does not structurally dominate the back-edge block '8[%8]'"));
 }
 
+TEST_F(ValidateCFG, BadLoop) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint Fragment %2 "           "
+OpExecutionMode %2 OriginUpperLeft
+OpName %49 "loop"
+%void = OpTypeVoid
+%12 = OpTypeFunction %void
+%2 = OpFunction %void None %12
+%33 = OpLabel
+OpBranch %49
+%50 = OpLabel
+OpBranch %49
+%49 = OpLabel
+OpLoopMerge %33 %50 Unroll
+OpBranch %49
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_ERROR_INVALID_CFG, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Loop header '2[%loop]' is targeted by 2 back-edge "
+                        "blocks but the standard requires exactly one"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
