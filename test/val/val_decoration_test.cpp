@@ -1218,9 +1218,14 @@ TEST_F(ValidateDecorations, BlockGLSLSharedBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "'GLSLShared' is not valid for the Vulkan execution environment"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must not use GLSLShared decoration"));
+              HasSubstr("[VUID-StandaloneSpirv-GLSLShared-04669]"));
 }
 
 TEST_F(ValidateDecorations, BufferBlockGLSLSharedBad) {
@@ -1247,9 +1252,14 @@ TEST_F(ValidateDecorations, BufferBlockGLSLSharedBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "'GLSLShared' is not valid for the Vulkan execution environment"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must not use GLSLShared decoration"));
+              HasSubstr("[VUID-StandaloneSpirv-GLSLShared-04669]"));
 }
 
 TEST_F(ValidateDecorations, BlockNestedStructGLSLSharedBad) {
@@ -1282,9 +1292,14 @@ TEST_F(ValidateDecorations, BlockNestedStructGLSLSharedBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "'GLSLShared' is not valid for the Vulkan execution environment"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must not use GLSLShared decoration"));
+              HasSubstr("[VUID-StandaloneSpirv-GLSLShared-04669]"));
 }
 
 TEST_F(ValidateDecorations, BufferBlockNestedStructGLSLSharedBad) {
@@ -1317,9 +1332,14 @@ TEST_F(ValidateDecorations, BufferBlockNestedStructGLSLSharedBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "'GLSLShared' is not valid for the Vulkan execution environment"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must not use GLSLShared decoration"));
+              HasSubstr("[VUID-StandaloneSpirv-GLSLShared-04669]"));
 }
 
 TEST_F(ValidateDecorations, BlockGLSLPackedBad) {
@@ -1346,9 +1366,14 @@ TEST_F(ValidateDecorations, BlockGLSLPackedBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "'GLSLPacked' is not valid for the Vulkan execution environment"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must not use GLSLPacked decoration"));
+              HasSubstr("[VUID-StandaloneSpirv-GLSLShared-04669]"));
 }
 
 TEST_F(ValidateDecorations, BufferBlockGLSLPackedBad) {
@@ -1375,9 +1400,14 @@ TEST_F(ValidateDecorations, BufferBlockGLSLPackedBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "'GLSLPacked' is not valid for the Vulkan execution environment"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must not use GLSLPacked decoration"));
+              HasSubstr("[VUID-StandaloneSpirv-GLSLShared-04669]"));
 }
 
 TEST_F(ValidateDecorations, BlockNestedStructGLSLPackedBad) {
@@ -1410,9 +1440,14 @@ TEST_F(ValidateDecorations, BlockNestedStructGLSLPackedBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "'GLSLPacked' is not valid for the Vulkan execution environment"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must not use GLSLPacked decoration"));
+              HasSubstr("[VUID-StandaloneSpirv-GLSLShared-04669]"));
 }
 
 TEST_F(ValidateDecorations, BufferBlockNestedStructGLSLPackedBad) {
@@ -1445,9 +1480,14 @@ TEST_F(ValidateDecorations, BufferBlockNestedStructGLSLPackedBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "'GLSLPacked' is not valid for the Vulkan execution environment"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must not use GLSLPacked decoration"));
+              HasSubstr("[VUID-StandaloneSpirv-GLSLShared-04669]"));
 }
 
 TEST_F(ValidateDecorations, BlockMissingArrayStrideBad) {
@@ -1848,7 +1888,8 @@ TEST_F(ValidateDecorations, BlockStandardUniformBufferLayout) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
 }
 
 TEST_F(ValidateDecorations, BlockLayoutPermitsTightVec3ScalarPackingGood) {
@@ -1877,7 +1918,7 @@ TEST_F(ValidateDecorations, BlockLayoutPermitsTightVec3ScalarPackingGood) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0))
       << getDiagnosticString();
 }
 
@@ -2059,7 +2100,8 @@ TEST_F(ValidateDecorations, BlockLayoutForbidsTightScalarVec3PackingBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Structure id 2 decorated as Block for variable in Uniform "
@@ -2467,7 +2509,8 @@ TEST_F(ValidateDecorations, BufferBlock16bitStandardStorageBufferLayout) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
 }
 
 TEST_F(ValidateDecorations, BlockArrayExtendedAlignmentGood) {
@@ -2531,7 +2574,8 @@ TEST_F(ValidateDecorations, BlockArrayBaseAlignmentBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -2728,7 +2772,7 @@ TEST_F(ValidateDecorations, PushConstantArrayBaseAlignmentGood) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0))
       << getDiagnosticString();
 }
 
@@ -2760,7 +2804,8 @@ TEST_F(ValidateDecorations, PushConstantArrayBadAlignmentBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -2794,7 +2839,7 @@ TEST_F(ValidateDecorations,
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0))
       << getDiagnosticString();
 }
 
@@ -2823,7 +2868,8 @@ TEST_F(ValidateDecorations,
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -3675,7 +3721,7 @@ TEST_F(ValidateDecorations, StorageBufferStorageClassArrayBaseAlignmentGood) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0))
       << getDiagnosticString();
 }
 
@@ -3710,7 +3756,8 @@ TEST_F(ValidateDecorations, StorageBufferStorageClassArrayBadAlignmentBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -3777,7 +3824,8 @@ TEST_F(ValidateDecorations, BufferBlockStandardStorageBufferLayout) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
 }
 
 TEST_F(ValidateDecorations,
@@ -3808,7 +3856,7 @@ TEST_F(ValidateDecorations,
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0))
       << getDiagnosticString();
 }
 
@@ -3840,7 +3888,8 @@ TEST_F(ValidateDecorations,
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -3908,7 +3957,8 @@ TEST_F(ValidateDecorations,
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Structure id 6 decorated as Block for variable in Uniform "
@@ -3975,7 +4025,8 @@ TEST_F(ValidateDecorations,
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Structure id 8 decorated as Block for variable in Uniform "
@@ -4041,7 +4092,8 @@ TEST_F(ValidateDecorations, BlockUniformBufferLayoutIncorrectArrayStrideBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -4077,7 +4129,8 @@ TEST_F(ValidateDecorations,
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Structure id 3 decorated as BufferBlock for variable in "
@@ -4116,7 +4169,8 @@ TEST_F(ValidateDecorations,
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -4132,6 +4186,7 @@ TEST_F(ValidateDecorations,
                OpCapability Shader
                OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %1 LocalSize 1 1 1
                OpMemberDecorate %_struct_6 0 Offset 0
                OpMemberDecorate %_struct_2 0 Offset 0
                OpMemberDecorate %_struct_2 1 Offset 4
@@ -4150,7 +4205,8 @@ TEST_F(ValidateDecorations,
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -4275,7 +4331,8 @@ TEST_F(ValidateDecorations, BlockLayoutOffsetOverlapBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -4405,7 +4462,7 @@ TEST_F(ValidateDecorations, ArrayArrayRowMajorMatrixTightPackingGood) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState())
+  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0))
       << getDiagnosticString();
 }
 
@@ -4449,7 +4506,8 @@ TEST_F(ValidateDecorations, ArrayArrayRowMajorMatrixNextMemberOverlapsBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -4496,7 +4554,8 @@ TEST_F(ValidateDecorations, StorageBufferArraySizeCalculationPackGood) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
 }
 
 TEST_F(ValidateDecorations, StorageBufferArraySizeCalculationPackBad) {
@@ -4530,7 +4589,8 @@ TEST_F(ValidateDecorations, StorageBufferArraySizeCalculationPackBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Structure id 4 decorated as BufferBlock for variable "
                         "in Uniform storage class must follow standard storage "
@@ -4570,7 +4630,8 @@ TEST_F(ValidateDecorations, UniformBufferArraySizeCalculationPackGood) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
 }
 
 TEST_F(ValidateDecorations, UniformBufferArraySizeCalculationPackBad) {
@@ -4604,7 +4665,8 @@ TEST_F(ValidateDecorations, UniformBufferArraySizeCalculationPackBad) {
   )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -5142,8 +5204,10 @@ OpGroupDecorate %1 %2 %1
 TEST_F(ValidateDecorations, RecurseThroughRuntimeArray) {
   const std::string spirv = R"(
 OpCapability Shader
-OpCapability Linkage
+OpExtension "SPV_KHR_storage_buffer_storage_class"
 OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
 OpDecorate %outer Block
 OpMemberDecorate %inner 0 Offset 0
 OpMemberDecorate %inner 1 Offset 1
@@ -5153,17 +5217,24 @@ OpMemberDecorate %outer 0 Offset 0
 %inner = OpTypeStruct %int %int
 %runtime = OpTypeRuntimeArray %inner
 %outer = OpTypeStruct %runtime
-%outer_ptr = OpTypePointer Uniform %outer
-%var = OpVariable %outer_ptr Uniform
+%outer_ptr = OpTypePointer StorageBuffer %outer
+%var = OpVariable %outer_ptr StorageBuffer
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
 )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Structure id 2 decorated as Block for variable in Uniform "
-                "storage class must follow standard uniform buffer layout "
-                "rules: member 1 at offset 1 is not aligned to 4"));
+      HasSubstr(
+          "Structure id 3 decorated as Block for variable in StorageBuffer "
+          "storage class must follow standard storage buffer layout "
+          "rules: member 1 at offset 1 is not aligned to 4"));
 }
 
 TEST_F(ValidateDecorations, EmptyStructAtNonZeroOffsetGood) {
@@ -8075,7 +8146,7 @@ TEST_F(ValidateDecorations, WorkgroupSingleBlockVariableMissingLayout) {
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_ID,
-            ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1_SPIRV_1_4));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Block must be explicitly laid out with Offset decorations"));
@@ -8110,12 +8181,12 @@ TEST_F(ValidateDecorations, WorkgroupSingleBlockVariableBadLayout) {
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_ID,
-            ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_4));
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1_SPIRV_1_4));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
           "Block for variable in Workgroup storage class must follow "
-          "standard storage buffer layout rules: "
+          "relaxed storage buffer layout rules: "
           "member 0 at offset 1 is not aligned to 4"));
 }
 
@@ -8146,7 +8217,7 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -8183,7 +8254,7 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -8202,8 +8273,6 @@ OpDecorate %block Block
 OpMemberDecorate %block 0 Offset 0
 OpMemberDecorate %block 0 MatrixStride 3
 OpMemberDecorate %block 0 ColMajor
-OpDecorate %var DescriptorSet 0
-OpDecorate %var Binding 0
 %void = OpTypeVoid
 %float = OpTypeFloat 32
 %float4 = OpTypeVector %float 4
@@ -8219,7 +8288,7 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -8257,7 +8326,7 @@ OpFunctionEnd
 
   options_->scalar_block_layout = true;
   CompileSuccessfully(spirv);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(

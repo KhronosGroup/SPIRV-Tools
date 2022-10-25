@@ -1218,14 +1218,6 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                      << "Structure id " << id << " decorated as " << deco_str
                      << " must be explicitly laid out with Offset "
                         "decorations.";
-            } else if (hasDecoration(id, SpvDecorationGLSLShared, vstate)) {
-              return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
-                     << "Structure id " << id << " decorated as " << deco_str
-                     << " must not use GLSLShared decoration.";
-            } else if (hasDecoration(id, SpvDecorationGLSLPacked, vstate)) {
-              return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
-                     << "Structure id " << id << " decorated as " << deco_str
-                     << " must not use GLSLPacked decoration.";
             } else if (!checkForRequiredDecoration(
                            id,
                            [](SpvDecoration d) {
@@ -1257,18 +1249,20 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                      << "Structure id " << id << " decorated as " << deco_str
                      << " must be explicitly laid out with RowMajor or "
                         "ColMajor decorations.";
-            } else if (blockRules &&
-                       (SPV_SUCCESS !=
-                        (recursive_status = checkLayout(
-                             id, sc_str, deco_str, true, scalar_block_layout, 0,
-                             constraints, vstate)))) {
-              return recursive_status;
-            } else if (bufferRules &&
-                       (SPV_SUCCESS !=
-                        (recursive_status = checkLayout(
-                             id, sc_str, deco_str, false, scalar_block_layout,
-                             0, constraints, vstate)))) {
-              return recursive_status;
+            } else if (spvIsVulkanEnv(vstate.context()->target_env)) {
+              if (blockRules &&
+                         (SPV_SUCCESS !=
+                          (recursive_status = checkLayout(
+                               id, sc_str, deco_str, true, scalar_block_layout,
+                               0, constraints, vstate)))) {
+                return recursive_status;
+              } else if (bufferRules &&
+                         (SPV_SUCCESS !=
+                          (recursive_status = checkLayout(
+                               id, sc_str, deco_str, false, scalar_block_layout,
+                               0, constraints, vstate)))) {
+                return recursive_status;
+              }
             }
           }
         }
