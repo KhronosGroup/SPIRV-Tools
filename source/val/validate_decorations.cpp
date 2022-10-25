@@ -1250,11 +1250,10 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                      << " must be explicitly laid out with RowMajor or "
                         "ColMajor decorations.";
             } else if (spvIsVulkanEnv(vstate.context()->target_env)) {
-              if (blockRules &&
-                         (SPV_SUCCESS !=
-                          (recursive_status = checkLayout(
-                               id, sc_str, deco_str, true, scalar_block_layout,
-                               0, constraints, vstate)))) {
+              if (blockRules && (SPV_SUCCESS != (recursive_status = checkLayout(
+                                                     id, sc_str, deco_str, true,
+                                                     scalar_block_layout, 0,
+                                                     constraints, vstate)))) {
                 return recursive_status;
               } else if (bufferRules &&
                          (SPV_SUCCESS !=

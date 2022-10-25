@@ -8184,10 +8184,9 @@ TEST_F(ValidateDecorations, WorkgroupSingleBlockVariableBadLayout) {
             ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1_SPIRV_1_4));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Block for variable in Workgroup storage class must follow "
-          "relaxed storage buffer layout rules: "
-          "member 0 at offset 1 is not aligned to 4"));
+      HasSubstr("Block for variable in Workgroup storage class must follow "
+                "relaxed storage buffer layout rules: "
+                "member 0 at offset 1 is not aligned to 4"));
 }
 
 TEST_F(ValidateDecorations, BadMatrixStrideUniform) {
