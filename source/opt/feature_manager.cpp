@@ -52,7 +52,9 @@ void FeatureManager::RemoveExtension(Extension ext) {
 }
 
 void FeatureManager::AddCapability(SpvCapability cap) {
-  if (capabilities_.Contains(cap)) return;
+  if (capabilities_.Contains(cao))
+    // toto
+    return;
 
   capabilities_.Add(cap);
 

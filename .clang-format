@@ -3,4 +3,5 @@ Language: Cpp
 BasedOnStyle: Google
 DerivePointerAlignment: false
 SortIncludes: true
+AllowShortIfStatementsOnASingleLine: true
 ...
