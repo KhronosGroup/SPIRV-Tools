@@ -4857,6 +4857,8 @@ TEST_F(ValidateMemory, VulkanPtrAccessChainStorageBufferCapability) {
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Base-07652"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpPtrAccessChain Base operand pointing to "
                         "StorageBuffer storage class must use VariablePointers "
                         "or VariablePointersStorageBuffer capability"));
@@ -4891,6 +4893,8 @@ TEST_F(ValidateMemory, VulkanPtrAccessChainWorkgroupCapability) {
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Base-07651"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpPtrAccessChain Base operand pointing to Workgroup "
                         "storage class must use VariablePointers capability"));
