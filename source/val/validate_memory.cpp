@@ -1436,12 +1436,14 @@ spv_result_t ValidatePtrAccessChain(ValidationState_t& _,
     if (base_type_storage_class == SpvStorageClassWorkgroup) {
       if (!_.HasCapability(SpvCapabilityVariablePointers)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << _.VkErrorID(7651)
                << "OpPtrAccessChain Base operand pointing to Workgroup "
                   "storage class must use VariablePointers capability";
       }
     } else if (base_type_storage_class == SpvStorageClassStorageBuffer) {
       if (!_.features().variable_pointers) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << _.VkErrorID(7652)
                << "OpPtrAccessChain Base operand pointing to StorageBuffer "
                   "storage class must use VariablePointers or "
                   "VariablePointersStorageBuffer capability";
@@ -1449,6 +1451,7 @@ spv_result_t ValidatePtrAccessChain(ValidationState_t& _,
     } else if (base_type_storage_class !=
                SpvStorageClassPhysicalStorageBuffer) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << _.VkErrorID(7650)
              << "OpPtrAccessChain Base operand must point to Workgroup, "
                 "StorageBuffer, or PhysicalStorageBuffer storage class";
     }
