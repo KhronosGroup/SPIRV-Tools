@@ -1222,7 +1222,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
 
             if (!checkForRequiredDecoration(id,
                                             [](SpvDecoration d) {
-                                              return d == SpvDecorationArrayStride;
+                                              return d ==
+                                                     SpvDecorationArrayStride;
                                             },
                                             SpvOpTypeArray, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
