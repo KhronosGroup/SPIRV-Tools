@@ -1218,38 +1218,46 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                      << "Structure id " << id << " decorated as " << deco_str
                      << " must be explicitly laid out with Offset "
                         "decorations.";
-            } else if (!checkForRequiredDecoration(
-                           id,
-                           [](SpvDecoration d) {
-                             return d == SpvDecorationArrayStride;
-                           },
-                           SpvOpTypeArray, vstate)) {
+            }
+
+            if (!checkForRequiredDecoration(
+                    id,
+                    [](SpvDecoration d) {
+                      return d == SpvDecorationArrayStride;
+                    },
+                    SpvOpTypeArray, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                      << "Structure id " << id << " decorated as " << deco_str
                      << " must be explicitly laid out with ArrayStride "
                         "decorations.";
-            } else if (!checkForRequiredDecoration(
-                           id,
-                           [](SpvDecoration d) {
-                             return d == SpvDecorationMatrixStride;
-                           },
-                           SpvOpTypeMatrix, vstate)) {
+            }
+
+            if (!checkForRequiredDecoration(
+                    id,
+                    [](SpvDecoration d) {
+                      return d == SpvDecorationMatrixStride;
+                    },
+                    SpvOpTypeMatrix, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                      << "Structure id " << id << " decorated as " << deco_str
                      << " must be explicitly laid out with MatrixStride "
                         "decorations.";
-            } else if (!checkForRequiredDecoration(
-                           id,
-                           [](SpvDecoration d) {
-                             return d == SpvDecorationRowMajor ||
-                                    d == SpvDecorationColMajor;
-                           },
-                           SpvOpTypeMatrix, vstate)) {
+            }
+
+            if (!checkForRequiredDecoration(
+                    id,
+                    [](SpvDecoration d) {
+                      return d == SpvDecorationRowMajor ||
+                             d == SpvDecorationColMajor;
+                    },
+                    SpvOpTypeMatrix, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                      << "Structure id " << id << " decorated as " << deco_str
                      << " must be explicitly laid out with RowMajor or "
                         "ColMajor decorations.";
-            } else if (spvIsVulkanEnv(vstate.context()->target_env)) {
+            }
+
+            if (spvIsVulkanEnv(vstate.context()->target_env)) {
               if (blockRules && (SPV_SUCCESS != (recursive_status = checkLayout(
                                                      id, sc_str, deco_str, true,
                                                      scalar_block_layout, 0,
