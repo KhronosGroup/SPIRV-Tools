@@ -523,7 +523,7 @@ TEST(ValidationDuringReductionTest, CheckValidationOptions) {
                OpFunctionEnd
   )";
 
-  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  spv_target_env env = SPV_ENV_VULKAN_1_0;
   std::vector<uint32_t> binary_in;
   SpirvTools t(env);
 
