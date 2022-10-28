@@ -127,15 +127,12 @@ elif [ $TOOL = "cmake-smoketest" ]; then
   clean_dir "$SHADERC_DIR"
   cd $SHADERC_DIR
   git clone https://github.com/google/shaderc.git .
-  cd $SHADERC_DIR/third_party
 
   # Get shaderc dependencies. Link the appropriate SPIRV-Tools.
-  git clone https://github.com/google/googletest.git
-  git clone https://github.com/KhronosGroup/glslang.git
+  ./utils/git-sync-deps
+  cd $SHADERC_DIR/third_party
+  rm -rf spirv-tools
   ln -s $ROOT_DIR spirv-tools
-  git clone https://github.com/KhronosGroup/SPIRV-Headers.git spirv-headers
-  git clone https://github.com/google/re2
-  git clone https://github.com/google/effcee
 
   cd $SHADERC_DIR
   mkdir build
