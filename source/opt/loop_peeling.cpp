@@ -186,7 +186,7 @@ void LoopPeeling::GetIteratorUpdateOperations(
   operations->insert(iterator);
   iterator->ForEachInId([def_use_mgr, loop, operations, this](uint32_t* id) {
     Instruction* insn = def_use_mgr->GetDef(*id);
-    if (insn->opcode() == SpvOpLabel) {
+    if (insn->opcode() == spv::Op::OpLabel) {
       return;
     }
     if (operations->count(insn)) {
@@ -231,9 +231,9 @@ bool LoopPeeling::IsConditionCheckSideEffectFree() const {
       if (!bb->WhileEachInst([this](Instruction* insn) {
             if (insn->IsBranch()) return true;
             switch (insn->opcode()) {
-              case SpvOpLabel:
-              case SpvOpSelectionMerge:
-              case SpvOpLoopMerge:
+              case spv::Op::OpLabel:
+              case spv::Op::OpSelectionMerge:
+              case spv::Op::OpLoopMerge:
                 return true;
               default:
                 break;
@@ -322,7 +322,7 @@ void LoopPeeling::FixExitCondition(
 
   BasicBlock* condition_block = cfg.block(condition_block_id);
   Instruction* exit_condition = condition_block->terminator();
-  assert(exit_condition->opcode() == SpvOpBranchConditional);
+  assert(exit_condition->opcode() == spv::Op::OpBranchConditional);
   BasicBlock::iterator insert_point = condition_block->tail();
   if (condition_block->GetMergeInst()) {
     --insert_point;
@@ -350,7 +350,7 @@ BasicBlock* LoopPeeling::CreateBlockBefore(BasicBlock* bb) {
   // TODO(1841): Handle id overflow.
   std::unique_ptr<BasicBlock> new_bb =
       MakeUnique<BasicBlock>(std::unique_ptr<Instruction>(new Instruction(
-          context_, SpvOpLabel, 0, context_->TakeNextId(), {})));
+          context_, spv::Op::OpLabel, 0, context_->TakeNextId(), {})));
   // Update the loop descriptor.
   Loop* in_loop = (*loop_utils_.GetLoopDescriptor())[bb];
   if (in_loop) {
@@ -791,18 +791,18 @@ uint32_t LoopPeelingPass::LoopPeelingInfo::GetFirstNonLoopInvariantOperand(
   return 0;
 }
 
-static bool IsHandledCondition(SpvOp opcode) {
+static bool IsHandledCondition(spv::Op opcode) {
   switch (opcode) {
-    case SpvOpIEqual:
-    case SpvOpINotEqual:
-    case SpvOpUGreaterThan:
-    case SpvOpSGreaterThan:
-    case SpvOpUGreaterThanEqual:
-    case SpvOpSGreaterThanEqual:
-    case SpvOpULessThan:
-    case SpvOpSLessThan:
-    case SpvOpULessThanEqual:
-    case SpvOpSLessThanEqual:
+    case spv::Op::OpIEqual:
+    case spv::Op::OpINotEqual:
+    case spv::Op::OpUGreaterThan:
+    case spv::Op::OpSGreaterThan:
+    case spv::Op::OpUGreaterThanEqual:
+    case spv::Op::OpSGreaterThanEqual:
+    case spv::Op::OpULessThan:
+    case spv::Op::OpSLessThan:
+    case spv::Op::OpULessThanEqual:
+    case spv::Op::OpSLessThanEqual:
       return true;
     default:
       return false;
@@ -811,7 +811,7 @@ static bool IsHandledCondition(SpvOp opcode) {
 
 LoopPeelingPass::LoopPeelingInfo::Direction
 LoopPeelingPass::LoopPeelingInfo::GetPeelingInfo(BasicBlock* bb) const {
-  if (bb->terminator()->opcode() != SpvOpBranchConditional) {
+  if (bb->terminator()->opcode() != spv::Op::OpBranchConditional) {
     return GetNoneDirection();
   }
 
@@ -886,27 +886,27 @@ LoopPeelingPass::LoopPeelingInfo::GetPeelingInfo(BasicBlock* bb) const {
   switch (condition->opcode()) {
     default:
       return GetNoneDirection();
-    case SpvOpIEqual:
-    case SpvOpINotEqual:
+    case spv::Op::OpIEqual:
+    case spv::Op::OpINotEqual:
       return HandleEquality(lhs, rhs);
-    case SpvOpUGreaterThan:
-    case SpvOpSGreaterThan: {
+    case spv::Op::OpUGreaterThan:
+    case spv::Op::OpSGreaterThan: {
       cmp_operator = CmpOperator::kGT;
       break;
     }
-    case SpvOpULessThan:
-    case SpvOpSLessThan: {
+    case spv::Op::OpULessThan:
+    case spv::Op::OpSLessThan: {
       cmp_operator = CmpOperator::kLT;
       break;
     }
     // We add one to transform >= into > and <= into <.
-    case SpvOpUGreaterThanEqual:
-    case SpvOpSGreaterThanEqual: {
+    case spv::Op::OpUGreaterThanEqual:
+    case spv::Op::OpSGreaterThanEqual: {
       cmp_operator = CmpOperator::kGE;
       break;
     }
-    case SpvOpULessThanEqual:
-    case SpvOpSLessThanEqual: {
+    case spv::Op::OpULessThanEqual:
+    case spv::Op::OpSLessThanEqual: {
       cmp_operator = CmpOperator::kLE;
       break;
     }

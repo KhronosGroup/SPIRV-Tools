@@ -62,9 +62,10 @@ TEST_F(ValidateDecorations, ValidateOpDecorateRegistration) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
   // Must have 2 decorations.
-  EXPECT_THAT(vstate_->id_decorations(id),
-              Eq(std::set<Decoration>{Decoration(SpvDecorationLocation, {4}),
-                                      Decoration(SpvDecorationCentroid)}));
+  EXPECT_THAT(
+      vstate_->id_decorations(id),
+      Eq(std::set<Decoration>{Decoration(spv::Decoration::Location, {4}),
+                              Decoration(spv::Decoration::Centroid)}));
 }
 
 TEST_F(ValidateDecorations, ValidateOpMemberDecorateRegistration) {
@@ -89,15 +90,15 @@ TEST_F(ValidateDecorations, ValidateOpMemberDecorateRegistration) {
   const uint32_t arr_id = 1;
   EXPECT_THAT(
       vstate_->id_decorations(arr_id),
-      Eq(std::set<Decoration>{Decoration(SpvDecorationArrayStride, {4})}));
+      Eq(std::set<Decoration>{Decoration(spv::Decoration::ArrayStride, {4})}));
 
   // The struct must have 3 decorations.
   const uint32_t struct_id = 2;
   EXPECT_THAT(
       vstate_->id_decorations(struct_id),
-      Eq(std::set<Decoration>{Decoration(SpvDecorationNonReadable, {}, 2),
-                              Decoration(SpvDecorationOffset, {2}, 2),
-                              Decoration(SpvDecorationBufferBlock)}));
+      Eq(std::set<Decoration>{Decoration(spv::Decoration::NonReadable, {}, 2),
+                              Decoration(spv::Decoration::Offset, {2}, 2),
+                              Decoration(spv::Decoration::BufferBlock)}));
 }
 
 TEST_F(ValidateDecorations, ValidateOpMemberDecorateOutOfBound) {
@@ -152,9 +153,9 @@ TEST_F(ValidateDecorations, ValidateGroupDecorateRegistration) {
 
   // Decoration group has 3 decorations.
   auto expected_decorations =
-      std::set<Decoration>{Decoration(SpvDecorationDescriptorSet, {0}),
-                           Decoration(SpvDecorationRelaxedPrecision),
-                           Decoration(SpvDecorationRestrict)};
+      std::set<Decoration>{Decoration(spv::Decoration::DescriptorSet, {0}),
+                           Decoration(spv::Decoration::RelaxedPrecision),
+                           Decoration(spv::Decoration::Restrict)};
 
   // Decoration group is applied to id 1, 2, 3, and 4. Note that id 1 (which is
   // the decoration group id) also has all the decorations.
@@ -182,7 +183,7 @@ TEST_F(ValidateDecorations, ValidateGroupMemberDecorateRegistration) {
   EXPECT_EQ(SPV_SUCCESS, ValidateAndRetrieveValidationState());
   // Decoration group has 1 decoration.
   auto expected_decorations =
-      std::set<Decoration>{Decoration(SpvDecorationOffset, {3}, 3)};
+      std::set<Decoration>{Decoration(spv::Decoration::Offset, {3}, 3)};
 
   // Decoration group is applied to id 2, 3, and 4.
   EXPECT_THAT(vstate_->id_decorations(2), Eq(expected_decorations));

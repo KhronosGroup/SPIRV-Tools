@@ -37,14 +37,14 @@ namespace opt {
 
 Pass::Status EliminateDeadInputComponentsPass::Process() {
   // Current functionality assumes shader capability
-  if (!context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
+  if (!context()->get_feature_mgr()->HasCapability(spv::Capability::Shader))
     return Status::SuccessWithoutChange;
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
   bool modified = false;
   std::vector<std::pair<Instruction*, unsigned>> arrays_to_change;
   for (auto& var : context()->types_values()) {
-    if (var.opcode() != SpvOpVariable) {
+    if (var.opcode() != spv::Op::OpVariable) {
       continue;
     }
     analysis::Type* var_type = type_mgr->GetType(var.type_id());
@@ -52,14 +52,14 @@ Pass::Status EliminateDeadInputComponentsPass::Process() {
     if (ptr_type == nullptr) {
       continue;
     }
-    if (ptr_type->storage_class() != SpvStorageClassInput) {
+    if (ptr_type->storage_class() != spv::StorageClass::Input) {
       continue;
     }
     const analysis::Array* arr_type = ptr_type->pointee_type()->AsArray();
     if (arr_type != nullptr) {
       unsigned arr_len_id = arr_type->LengthId();
       Instruction* arr_len_inst = def_use_mgr->GetDef(arr_len_id);
-      if (arr_len_inst->opcode() != SpvOpConstant) {
+      if (arr_len_inst->opcode() != spv::Op::OpConstant) {
         continue;
       }
       // SPIR-V requires array size is >= 1, so this works for signed or
@@ -91,18 +91,19 @@ unsigned EliminateDeadInputComponentsPass::FindMaxIndex(Instruction& var,
                                                         unsigned original_max) {
   unsigned max = 0;
   bool seen_non_const_ac = false;
-  assert(var.opcode() == SpvOpVariable && "must be variable");
+  assert(var.opcode() == spv::Op::OpVariable && "must be variable");
   context()->get_def_use_mgr()->WhileEachUser(
       var.result_id(), [&max, &seen_non_const_ac, var, this](Instruction* use) {
         auto use_opcode = use->opcode();
-        if (use_opcode == SpvOpLoad || use_opcode == SpvOpCopyMemory ||
-            use_opcode == SpvOpCopyMemorySized ||
-            use_opcode == SpvOpCopyObject) {
+        if (use_opcode == spv::Op::OpLoad ||
+            use_opcode == spv::Op::OpCopyMemory ||
+            use_opcode == spv::Op::OpCopyMemorySized ||
+            use_opcode == spv::Op::OpCopyObject) {
           seen_non_const_ac = true;
           return false;
         }
-        if (use->opcode() != SpvOpAccessChain &&
-            use->opcode() != SpvOpInBoundsAccessChain) {
+        if (use->opcode() != spv::Op::OpAccessChain &&
+            use->opcode() != spv::Op::OpInBoundsAccessChain) {
           return true;
         }
         // OpAccessChain with no indices currently not optimized
@@ -114,7 +115,7 @@ unsigned EliminateDeadInputComponentsPass::FindMaxIndex(Instruction& var,
         USE_ASSERT(base_id == var.result_id() && "unexpected base");
         unsigned idx_id = use->GetSingleWordInOperand(kAccessChainIndex0InIdx);
         Instruction* idx_inst = context()->get_def_use_mgr()->GetDef(idx_id);
-        if (idx_inst->opcode() != SpvOpConstant) {
+        if (idx_inst->opcode() != spv::Op::OpConstant) {
           seen_non_const_ac = true;
           return false;
         }
@@ -138,14 +139,14 @@ void EliminateDeadInputComponentsPass::ChangeArrayLength(Instruction& arr_var,
   analysis::Array new_arr_ty(arr_ty->element_type(),
                              arr_ty->GetConstantLengthInfo(length_id, length));
   analysis::Type* reg_new_arr_ty = type_mgr->GetRegisteredType(&new_arr_ty);
-  analysis::Pointer new_ptr_ty(reg_new_arr_ty, SpvStorageClassInput);
+  analysis::Pointer new_ptr_ty(reg_new_arr_ty, spv::StorageClass::Input);
   analysis::Type* reg_new_ptr_ty = type_mgr->GetRegisteredType(&new_ptr_ty);
   uint32_t new_ptr_ty_id = type_mgr->GetTypeInstruction(reg_new_ptr_ty);
   arr_var.SetResultType(new_ptr_ty_id);
   def_use_mgr->AnalyzeInstUse(&arr_var);
   // Move arr_var after its new type to preserve order
-  USE_ASSERT(arr_var.GetSingleWordInOperand(kVariableStorageClassInIdx) !=
-                 SpvStorageClassFunction &&
+  USE_ASSERT(spv::StorageClass(arr_var.GetSingleWordInOperand(
+                 kVariableStorageClassInIdx)) != spv::StorageClass::Function &&
              "cannot move Function variable");
   Instruction* new_ptr_ty_inst = def_use_mgr->GetDef(new_ptr_ty_id);
   arr_var.RemoveFromList();
@@ -170,15 +171,15 @@ void EliminateDeadInputComponentsPass::ChangeStructLength(
   uint32_t old_struct_ty_id = type_mgr->GetTypeInstruction(struct_ty);
   analysis::DecorationManager* deco_mgr = context()->get_decoration_mgr();
   deco_mgr->CloneDecorations(old_struct_ty_id, new_struct_ty_id);
-  analysis::Pointer new_ptr_ty(reg_new_struct_ty, SpvStorageClassInput);
+  analysis::Pointer new_ptr_ty(reg_new_struct_ty, spv::StorageClass::Input);
   analysis::Type* reg_new_ptr_ty = type_mgr->GetRegisteredType(&new_ptr_ty);
   uint32_t new_ptr_ty_id = type_mgr->GetTypeInstruction(reg_new_ptr_ty);
   struct_var.SetResultType(new_ptr_ty_id);
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   def_use_mgr->AnalyzeInstUse(&struct_var);
   // Move struct_var after its new type to preserve order
-  USE_ASSERT(struct_var.GetSingleWordInOperand(kVariableStorageClassInIdx) !=
-                 SpvStorageClassFunction &&
+  USE_ASSERT(spv::StorageClass(struct_var.GetSingleWordInOperand(
+                 kVariableStorageClassInIdx)) != spv::StorageClass::Function &&
              "cannot move Function variable");
   Instruction* new_ptr_ty_inst = def_use_mgr->GetDef(new_ptr_ty_id);
   struct_var.RemoveFromList();

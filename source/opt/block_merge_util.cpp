@@ -34,14 +34,15 @@ bool IsHeader(IRContext* context, uint32_t id) {
 
 // Returns true if |id| is the merge target of a merge instruction.
 bool IsMerge(IRContext* context, uint32_t id) {
-  return !context->get_def_use_mgr()->WhileEachUse(id, [](Instruction* user,
-                                                          uint32_t index) {
-    SpvOp op = user->opcode();
-    if ((op == SpvOpLoopMerge || op == SpvOpSelectionMerge) && index == 0u) {
-      return false;
-    }
-    return true;
-  });
+  return !context->get_def_use_mgr()->WhileEachUse(
+      id, [](Instruction* user, uint32_t index) {
+        spv::Op op = user->opcode();
+        if ((op == spv::Op::OpLoopMerge || op == spv::Op::OpSelectionMerge) &&
+            index == 0u) {
+          return false;
+        }
+        return true;
+      });
 }
 
 // Returns true if |block| is the merge target of a merge instruction.
@@ -53,8 +54,8 @@ bool IsMerge(IRContext* context, BasicBlock* block) {
 bool IsContinue(IRContext* context, uint32_t id) {
   return !context->get_def_use_mgr()->WhileEachUse(
       id, [](Instruction* user, uint32_t index) {
-        SpvOp op = user->opcode();
-        if (op == SpvOpLoopMerge && index == 1u) {
+        spv::Op op = user->opcode();
+        if (op == spv::Op::OpLoopMerge && index == 1u) {
           return false;
         }
         return true;
@@ -82,7 +83,7 @@ bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block) {
   auto ii = block->end();
   --ii;
   Instruction* br = &*ii;
-  if (br->opcode() != SpvOpBranch) {
+  if (br->opcode() != spv::Op::OpBranch) {
     return false;
   }
 
@@ -119,9 +120,10 @@ bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block) {
     // The merge must be a loop merge because a selection merge cannot be
     // followed by an unconditional branch.
     BasicBlock* succ_block = context->get_instr_block(lab_id);
-    SpvOp succ_term_op = succ_block->terminator()->opcode();
-    assert(merge_inst->opcode() == SpvOpLoopMerge);
-    if (succ_term_op != SpvOpBranch && succ_term_op != SpvOpBranchConditional) {
+    spv::Op succ_term_op = succ_block->terminator()->opcode();
+    assert(merge_inst->opcode() == spv::Op::OpLoopMerge);
+    if (succ_term_op != spv::Op::OpBranch &&
+        succ_term_op != spv::Op::OpBranchConditional) {
       return false;
     }
   }

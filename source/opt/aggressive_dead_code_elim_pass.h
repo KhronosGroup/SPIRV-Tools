@@ -65,7 +65,7 @@ class AggressiveDCEPass : public MemPass {
 
   // Return true if |varId| is a variable of |storageClass|. |varId| must either
   // be 0 or the result of an instruction.
-  bool IsVarOfStorage(uint32_t varId, uint32_t storageClass);
+  bool IsVarOfStorage(uint32_t varId, spv::StorageClass storageClass);
 
   // Return true if the instance of the variable |varId| can only be access in
   // |func|.  For example, a function scope variable, or a private variable

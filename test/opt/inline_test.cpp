@@ -4437,7 +4437,7 @@ OpFunctionEnd
 //    Callee function returns a value generated outside the callee,
 //      e.g. a constant value. This might exercise some logic not yet
 //      exercised by the current tests: the false branch in the "if"
-//      inside the SpvOpReturnValue case in InlinePass::GenInlineCode?
+//      inside the spv::Op::OpReturnValue case in InlinePass::GenInlineCode?
 //    SampledImage before function call, but callee is only single block.
 //      Then the SampledImage instruction is not cloned. Documents existing
 //      behaviour.

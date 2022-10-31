@@ -19,7 +19,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "spirv-tools/optimizer.hpp"
-#include "spirv/1.1/spirv.h"
+#include "spirv/unified1/spirv.hpp11"
 
 namespace spvtools {
 namespace {
@@ -47,7 +47,7 @@ TEST(CppInterface, SuccessfulRoundTrip) {
   std::vector<uint32_t> binary;
   EXPECT_TRUE(t.Assemble(input_text, &binary));
   EXPECT_TRUE(binary.size() > 5u);
-  EXPECT_EQ(SpvMagicNumber, binary[0]);
+  EXPECT_EQ(spv::MagicNumber, binary[0]);
   EXPECT_EQ(kExpectedSpvVersion, binary[1]);
 
   // This cannot pass validation since %1 is not defined.
@@ -74,7 +74,7 @@ TEST(CppInterface, AssembleEmptyModule) {
   EXPECT_TRUE(t.Assemble("", &binary));
   // We only have the header.
   EXPECT_EQ(5u, binary.size());
-  EXPECT_EQ(SpvMagicNumber, binary[0]);
+  EXPECT_EQ(spv::MagicNumber, binary[0]);
   EXPECT_EQ(kExpectedSpvVersion, binary[1]);
 }
 
@@ -85,21 +85,21 @@ TEST(CppInterface, AssembleOverloads) {
     std::vector<uint32_t> binary;
     EXPECT_TRUE(t.Assemble(input_text, &binary));
     EXPECT_TRUE(binary.size() > 5u);
-    EXPECT_EQ(SpvMagicNumber, binary[0]);
+    EXPECT_EQ(spv::MagicNumber, binary[0]);
     EXPECT_EQ(kExpectedSpvVersion, binary[1]);
   }
   {
     std::vector<uint32_t> binary;
     EXPECT_TRUE(t.Assemble(input_text.data(), input_text.size(), &binary));
     EXPECT_TRUE(binary.size() > 5u);
-    EXPECT_EQ(SpvMagicNumber, binary[0]);
+    EXPECT_EQ(spv::MagicNumber, binary[0]);
     EXPECT_EQ(kExpectedSpvVersion, binary[1]);
   }
   {  // Ignore the last newline.
     std::vector<uint32_t> binary;
     EXPECT_TRUE(t.Assemble(input_text.data(), input_text.size() - 1, &binary));
     EXPECT_TRUE(binary.size() > 5u);
-    EXPECT_EQ(SpvMagicNumber, binary[0]);
+    EXPECT_EQ(spv::MagicNumber, binary[0]);
     EXPECT_EQ(kExpectedSpvVersion, binary[1]);
   }
 }

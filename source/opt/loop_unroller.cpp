@@ -382,7 +382,7 @@ void LoopUnrollerUtilsImpl::PartiallyUnrollResidualFactor(Loop* loop,
                                                           size_t factor) {
   // TODO(1841): Handle id overflow.
   std::unique_ptr<Instruction> new_label{new Instruction(
-      context_, SpvOp::SpvOpLabel, 0, context_->TakeNextId(), {})};
+      context_, spv::Op::OpLabel, 0, context_->TakeNextId(), {})};
   std::unique_ptr<BasicBlock> new_exit_bb{new BasicBlock(std::move(new_label))};
   new_exit_bb->SetParent(&function_);
 
@@ -991,7 +991,7 @@ bool LoopUtils::CanPerformUnroll() {
 
   // Check that we can find and process the induction variable.
   const Instruction* induction = loop_->FindConditionVariable(condition);
-  if (!induction || induction->opcode() != SpvOpPhi) return false;
+  if (!induction || induction->opcode() != spv::Op::OpPhi) return false;
 
   // Check that we can find the number of loop iterations.
   if (!loop_->FindNumberOfIterations(induction, &*condition->ctail(), nullptr))
@@ -1015,7 +1015,7 @@ bool LoopUtils::CanPerformUnroll() {
   // block.
   const Instruction& branch = *loop_->GetLatchBlock()->ctail();
   bool branching_assumption =
-      branch.opcode() == SpvOpBranch &&
+      branch.opcode() == spv::Op::OpBranch &&
       branch.GetSingleWordInOperand(0) == loop_->GetHeaderBlock()->id();
   if (!branching_assumption) {
     return false;
@@ -1043,10 +1043,10 @@ bool LoopUtils::CanPerformUnroll() {
   // exit the loop.
   for (uint32_t label_id : loop_->GetBlocks()) {
     const BasicBlock* block = context_->cfg()->block(label_id);
-    if (block->ctail()->opcode() == SpvOp::SpvOpKill ||
-        block->ctail()->opcode() == SpvOp::SpvOpReturn ||
-        block->ctail()->opcode() == SpvOp::SpvOpReturnValue ||
-        block->ctail()->opcode() == SpvOp::SpvOpTerminateInvocation) {
+    if (block->ctail()->opcode() == spv::Op::OpKill ||
+        block->ctail()->opcode() == spv::Op::OpReturn ||
+        block->ctail()->opcode() == spv::Op::OpReturnValue ||
+        block->ctail()->opcode() == spv::Op::OpTerminateInvocation) {
       return false;
     }
   }
