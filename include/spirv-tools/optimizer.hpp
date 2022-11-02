@@ -19,6 +19,7 @@
 #include <ostream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -892,6 +893,26 @@ Optimizer::PassToken CreateInterpolateFixupPass();
 // code elimination pass would be beneficial in removing newly unused component
 // types.
 Optimizer::PassToken CreateEliminateDeadInputComponentsPass();
+
+// Analyzes shader and populates |live_locs| and |live_builtins|. Best results
+// will be obtained if shader has all dead code eliminated first. |live_locs|
+// and |live_builtins| are subsequently used when calling
+// CreateEliminateDeadOutputStoresPass on the preceding shader. Currently only
+// supports tesc, tese, geom, and frag shaders.
+Optimizer::PassToken CreateAnalyzeLiveInputPass(
+    std::unordered_set<uint32_t>* live_locs,
+    std::unordered_set<uint32_t>* live_builtins);
+
+// Removes stores to output locations not listed in |live_locs| or
+// |live_builtins|. Best results are obtained if constant propagation is
+// performed first. A subsequent call to ADCE will eliminate any dead code
+// created by the removal of the stores. A subsequent call to
+// CreateEliminateDeadOutputComponentsPass will eliminate any dead output
+// components created by the elimination of the stores. Currently only supports
+// vert, tesc, tese, and geom shaders.
+Optimizer::PassToken CreateEliminateDeadOutputStoresPass(
+    std::unordered_set<uint32_t>* live_locs,
+    std::unordered_set<uint32_t>* live_builtins);
 
 // Creates a convert-to-sampled-image pass to convert images and/or
 // samplers with given pairs of descriptor set and binding to sampled image.

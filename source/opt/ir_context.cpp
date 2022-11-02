@@ -29,6 +29,7 @@ static const int kSpvDecorateDecorationInIdx = 1;
 static const int kSpvDecorateBuiltinInIdx = 2;
 static const int kEntryPointInterfaceInIdx = 3;
 static const int kEntryPointFunctionIdInIdx = 1;
+static const int kEntryPointExecutionModelInIdx = 0;
 
 // Constants for OpenCL.DebugInfo.100 / NonSemantic.Shader.DebugInfo.100
 // extension instructions.
@@ -151,6 +152,9 @@ void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
   }
   if (analyses_to_invalidate & kAnalysisConstants) {
     constant_mgr_.reset(nullptr);
+  }
+  if (analyses_to_invalidate & kAnalysisLiveness) {
+    liveness_mgr_.reset(nullptr);
   }
   if (analyses_to_invalidate & kAnalysisTypes) {
     type_mgr_.reset(nullptr);
@@ -1058,5 +1062,26 @@ bool IRContext::IsReachable(const opt::BasicBlock& bb) {
   return GetDominatorAnalysis(enclosing_function)
       ->Dominates(enclosing_function->entry().get(), &bb);
 }
+
+SpvExecutionModel IRContext::GetStage() {
+  const auto& entry_points = module()->entry_points();
+  if (entry_points.empty()) {
+    return SpvExecutionModelMax;
+  }
+
+  uint32_t stage = entry_points.begin()->GetSingleWordInOperand(
+      kEntryPointExecutionModelInIdx);
+  auto it = std::find_if(
+      entry_points.begin(), entry_points.end(), [stage](const Instruction& x) {
+        return x.GetSingleWordInOperand(kEntryPointExecutionModelInIdx) !=
+               stage;
+      });
+  if (it != entry_points.end()) {
+    EmitErrorMessage("Mixed stage shader module not supported", &(*it));
+  }
+
+  return static_cast<SpvExecutionModel>(stage);
+}
+
 }  // namespace opt
 }  // namespace spvtools

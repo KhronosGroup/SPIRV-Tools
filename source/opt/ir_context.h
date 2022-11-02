@@ -35,6 +35,7 @@
 #include "source/opt/dominator_analysis.h"
 #include "source/opt/feature_manager.h"
 #include "source/opt/fold.h"
+#include "source/opt/liveness.h"
 #include "source/opt/loop_descriptor.h"
 #include "source/opt/module.h"
 #include "source/opt/register_pressure.h"
@@ -81,6 +82,7 @@ class IRContext {
     kAnalysisConstants = 1 << 14,
     kAnalysisTypes = 1 << 15,
     kAnalysisDebugInfo = 1 << 16,
+    kAnalysisLiveness = 1 << 17,
     kAnalysisEnd = 1 << 17
   };
 
@@ -246,6 +248,15 @@ class IRContext {
       BuildDefUseManager();
     }
     return def_use_mgr_.get();
+  }
+
+  // Returns a pointer to a liveness manager.  If the liveness manager is
+  // invalid, it is rebuilt first.
+  analysis::LivenessManager* get_liveness_mgr() {
+    if (!AreAnalysesValid(kAnalysisLiveness)) {
+      BuildLivenessManager();
+    }
+    return liveness_mgr_.get();
   }
 
   // Returns a pointer to a value number table.  If the liveness analysis is
@@ -625,11 +636,21 @@ class IRContext {
   // the function that contains |bb|.
   bool IsReachable(const opt::BasicBlock& bb);
 
+  // Return the stage of the module. Will generate error if entry points don't
+  // all have the same stage.
+  SpvExecutionModel GetStage();
+
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
   void BuildDefUseManager() {
     def_use_mgr_ = MakeUnique<analysis::DefUseManager>(module());
     valid_analyses_ = valid_analyses_ | kAnalysisDefUse;
+  }
+
+  // Builds the liveness manager from scratch, even if it was already valid.
+  void BuildLivenessManager() {
+    liveness_mgr_ = MakeUnique<analysis::LivenessManager>(this);
+    valid_analyses_ = valid_analyses_ | kAnalysisLiveness;
   }
 
   // Builds the instruction-block map for the whole module.
@@ -851,6 +872,9 @@ class IRContext {
   std::unique_ptr<InstructionFolder> inst_folder_;
 
   std::unique_ptr<StructuredCFGAnalysis> struct_cfg_analysis_;
+
+  // The liveness manager for |module_|.
+  std::unique_ptr<analysis::LivenessManager> liveness_mgr_;
 
   // The maximum legal value for the id bound.
   uint32_t max_id_bound_;

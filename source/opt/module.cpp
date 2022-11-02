@@ -159,7 +159,6 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
     if (between_merge_and_branch && i->IsLineInst()) {
       return;
     }
-    between_merge_and_branch = false;
     if (last_line_inst != nullptr) {
       // If the current instruction is OpLine or DebugLine and it is the same
       // as the last line instruction that is still effective (can be applied
@@ -202,7 +201,7 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
 
     if (!(skip_nop && i->IsNop())) {
       const auto& scope = i->GetDebugScope();
-      if (scope != last_scope) {
+      if (scope != last_scope && !between_merge_and_branch) {
         // Can only emit nonsemantic instructions after all phi instructions
         // in a block so don't emit scope instructions before phi instructions
         // for NonSemantic.Shader.DebugInfo.100.
@@ -221,6 +220,7 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
       i->ToBinaryWithoutAttachedDebugInsts(binary);
     }
     // Update the last line instruction.
+    between_merge_and_branch = false;
     if (spvOpcodeIsBlockTerminator(opcode) || i->IsNoLine()) {
       last_line_inst = nullptr;
     } else if (opcode == SpvOpLoopMerge || opcode == SpvOpSelectionMerge) {
