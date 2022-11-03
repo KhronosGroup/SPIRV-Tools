@@ -7194,6 +7194,8 @@ TEST_F(ValidateDecorations, ComponentDecoration64VecWideBadVulkan) {
   CompileSuccessfully(spirv, env);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Component-07703"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Component decoration only allowed on 64-bit scalar "
                         "and 2-component vector"));
 }
