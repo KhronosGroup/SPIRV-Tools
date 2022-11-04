@@ -638,7 +638,7 @@ class IRContext {
 
   // Return the stage of the module. Will generate error if entry points don't
   // all have the same stage.
-  SpvExecutionModel GetStage();
+  spv::ExecutionModel GetStage();
 
  private:
   // Builds the def-use manager from scratch, even if it was already valid.

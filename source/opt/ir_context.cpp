@@ -1070,10 +1070,10 @@ bool IRContext::IsReachable(const opt::BasicBlock& bb) {
       ->Dominates(enclosing_function->entry().get(), &bb);
 }
 
-SpvExecutionModel IRContext::GetStage() {
+spv::ExecutionModel IRContext::GetStage() {
   const auto& entry_points = module()->entry_points();
   if (entry_points.empty()) {
-    return SpvExecutionModelMax;
+    return spv::ExecutionModel::Max;
   }
 
   uint32_t stage = entry_points.begin()->GetSingleWordInOperand(
@@ -1087,7 +1087,7 @@ SpvExecutionModel IRContext::GetStage() {
     EmitErrorMessage("Mixed stage shader module not supported", &(*it));
   }
 
-  return static_cast<SpvExecutionModel>(stage);
+  return static_cast<spv::ExecutionModel>(stage);
 }
 
 }  // namespace opt

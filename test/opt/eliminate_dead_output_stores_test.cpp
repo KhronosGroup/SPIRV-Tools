@@ -652,9 +652,9 @@ TEST_F(ElimDeadOutputStoresTest, ScalarBuiltins) {
 
   std::unordered_set<uint32_t> live_inputs;
   std::unordered_set<uint32_t> live_builtins;
-  // Omit SpvBuiltInPointSize
-  live_builtins.insert(SpvBuiltInClipDistance);
-  live_builtins.insert(SpvBuiltInCullDistance);
+  // Omit spv::BuiltIn::PointSize
+  live_builtins.insert((uint32_t)spv::BuiltIn::ClipDistance);
+  live_builtins.insert((uint32_t)spv::BuiltIn::CullDistance);
   SinglePassRunAndMatch<EliminateDeadOutputStoresPass>(text, true, &live_inputs,
                                                        &live_builtins);
 }
@@ -783,9 +783,9 @@ TEST_F(ElimDeadOutputStoresTest, ArrayedBuiltins) {
 
   std::unordered_set<uint32_t> live_inputs;
   std::unordered_set<uint32_t> live_builtins;
-  // Omit SpvBuiltInPointSize
-  live_builtins.insert(SpvBuiltInClipDistance);
-  live_builtins.insert(SpvBuiltInCullDistance);
+  // Omit spv::BuiltIn::PointSize
+  live_builtins.insert((uint32_t)spv::BuiltIn::ClipDistance);
+  live_builtins.insert((uint32_t)spv::BuiltIn::CullDistance);
   SinglePassRunAndMatch<EliminateDeadOutputStoresPass>(text, true, &live_inputs,
                                                        &live_builtins);
 }

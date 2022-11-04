@@ -39,10 +39,10 @@ void LivenessManager::InitializeAnalysis() {
   live_locs_.clear();
   live_builtins_.clear();
   // Mark all builtins live for frag shader.
-  if (context()->GetStage() == SpvExecutionModelFragment) {
-    live_builtins_.insert(SpvBuiltInPointSize);
-    live_builtins_.insert(SpvBuiltInClipDistance);
-    live_builtins_.insert(SpvBuiltInCullDistance);
+  if (context()->GetStage() == spv::ExecutionModel::Fragment) {
+    live_builtins_.insert(uint32_t(spv::BuiltIn::PointSize));
+    live_builtins_.insert(uint32_t(spv::BuiltIn::ClipDistance));
+    live_builtins_.insert(uint32_t(spv::BuiltIn::CullDistance));
   }
 }
 
@@ -50,8 +50,10 @@ bool LivenessManager::IsAnalyzedBuiltin(uint32_t bi) {
   // There are only three builtins that can be analyzed and removed between
   // two stages: PointSize, ClipDistance and CullDistance. All others are
   // always consumed implicitly by the downstream stage.
-  return bi == SpvBuiltInPointSize || bi == SpvBuiltInClipDistance ||
-         bi == SpvBuiltInCullDistance;
+  const auto builtin = spv::BuiltIn(bi);
+  return builtin == spv::BuiltIn::PointSize ||
+         builtin == spv::BuiltIn::ClipDistance ||
+         builtin == spv::BuiltIn::CullDistance;
 }
 
 bool LivenessManager::AnalyzeBuiltIn(uint32_t id) {
@@ -59,16 +61,16 @@ bool LivenessManager::AnalyzeBuiltIn(uint32_t id) {
   bool saw_builtin = false;
   // Analyze all builtin decorations of |id|.
   (void)deco_mgr->ForEachDecoration(
-      id, SpvDecorationBuiltIn,
+      id, uint32_t(spv::Decoration::BuiltIn),
       [this, &saw_builtin](const Instruction& deco_inst) {
         saw_builtin = true;
         // No need to process builtins in frag shader. All assumed used.
-        if (context()->GetStage() == SpvExecutionModelFragment) return;
-        uint32_t builtin = SpvBuiltInMax;
-        if (deco_inst.opcode() == SpvOpDecorate)
+        if (context()->GetStage() == spv::ExecutionModel::Fragment) return;
+        uint32_t builtin = uint32_t(spv::BuiltIn::Max);
+        if (deco_inst.opcode() == spv::Op::OpDecorate)
           builtin =
               deco_inst.GetSingleWordInOperand(kOpDecorateBuiltInLiteralInIdx);
-        else if (deco_inst.opcode() == SpvOpMemberDecorate)
+        else if (deco_inst.opcode() == spv::Op::OpMemberDecorate)
           builtin = deco_inst.GetSingleWordInOperand(
               kOpDecorateMemberBuiltInLiteralInIdx);
         else
@@ -173,10 +175,10 @@ void LivenessManager::AnalyzeAccessChainLoc(const Instruction* ac,
   // first array index does not contribute to offset.
   auto stage = context()->GetStage();
   bool skip_first_index = false;
-  if ((input && (stage == SpvExecutionModelTessellationControl ||
-                 stage == SpvExecutionModelTessellationEvaluation ||
-                 stage == SpvExecutionModelGeometry)) ||
-      (!input && stage == SpvExecutionModelTessellationControl))
+  if ((input && (stage == spv::ExecutionModel::TessellationControl ||
+                 stage == spv::ExecutionModel::TessellationEvaluation ||
+                 stage == spv::ExecutionModel::Geometry)) ||
+      (!input && stage == spv::ExecutionModel::TessellationControl))
     skip_first_index = !is_patch;
   uint32_t ocnt = 0;
   ac->WhileEachInOperand([this, &ocnt, def_use_mgr, type_mgr, deco_mgr,
@@ -193,7 +195,7 @@ void LivenessManager::AnalyzeAccessChainLoc(const Instruction* ac,
       }
       // If any non-constant index, mark the entire current object and return.
       auto idx_inst = def_use_mgr->GetDef(*opnd);
-      if (idx_inst->opcode() != SpvOpConstant) return false;
+      if (idx_inst->opcode() != spv::Op::OpConstant) return false;
       // If current type is struct, look for location decoration on member and
       // reset offset if found.
       auto index = idx_inst->GetSingleWordInOperand(0);
@@ -202,9 +204,9 @@ void LivenessManager::AnalyzeAccessChainLoc(const Instruction* ac,
         uint32_t loc = 0;
         auto str_type_id = type_mgr->GetId(str_type);
         bool no_mem_loc = deco_mgr->WhileEachDecoration(
-            str_type_id, SpvDecorationLocation,
+            str_type_id, uint32_t(spv::Decoration::Location),
             [&loc, index, no_loc](const Instruction& deco) {
-              assert(deco.opcode() == SpvOpMemberDecorate &&
+              assert(deco.opcode() == spv::Op::OpMemberDecorate &&
                      "unexpected decoration");
               if (deco.GetSingleWordInOperand(kOpDecorateMemberMemberInIdx) ==
                   index) {
@@ -239,15 +241,16 @@ void LivenessManager::MarkRefLive(const Instruction* ref, Instruction* var) {
   uint32_t loc = 0;
   auto var_id = var->result_id();
   bool no_loc = deco_mgr->WhileEachDecoration(
-      var_id, SpvDecorationLocation, [&loc](const Instruction& deco) {
-        assert(deco.opcode() == SpvOpDecorate && "unexpected decoration");
+      var_id, uint32_t(spv::Decoration::Location),
+      [&loc](const Instruction& deco) {
+        assert(deco.opcode() == spv::Op::OpDecorate && "unexpected decoration");
         loc = deco.GetSingleWordInOperand(kDecorationLocationInIdx);
         return false;
       });
   // Find patch decoration if present
   bool is_patch = !deco_mgr->WhileEachDecoration(
-      var_id, SpvDecorationPatch, [](const Instruction& deco) {
-        if (deco.opcode() != SpvOpDecorate)
+      var_id, uint32_t(spv::Decoration::Patch), [](const Instruction& deco) {
+        if (deco.opcode() != spv::Op::OpDecorate)
           assert(false && "unexpected decoration");
         return false;
       });
@@ -255,14 +258,14 @@ void LivenessManager::MarkRefLive(const Instruction* ref, Instruction* var) {
   auto ptr_type = type_mgr->GetType(var->type_id())->AsPointer();
   assert(ptr_type && "unexpected var type");
   auto var_type = ptr_type->pointee_type();
-  if (ref->opcode() == SpvOpLoad) {
+  if (ref->opcode() == spv::Op::OpLoad) {
     assert(!no_loc && "missing input variable location");
     MarkLocsLive(loc, GetLocSize(var_type));
     return;
   }
   // Mark just those locations indicated by access chain
-  assert((ref->opcode() == SpvOpAccessChain ||
-          ref->opcode() == SpvOpInBoundsAccessChain) &&
+  assert((ref->opcode() == spv::Op::OpAccessChain ||
+          ref->opcode() == spv::Op::OpInBoundsAccessChain) &&
          "unexpected use of input variable");
   // Traverse access chain, compute location offset and type of reference
   // through constant indices and mark those locs live. Assert if no location
@@ -280,12 +283,12 @@ void LivenessManager::ComputeLiveness() {
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
   // Process all input variables
   for (auto& var : context()->types_values()) {
-    if (var.opcode() != SpvOpVariable) {
+    if (var.opcode() != spv::Op::OpVariable) {
       continue;
     }
     analysis::Type* var_type = type_mgr->GetType(var.type_id());
     analysis::Pointer* ptr_type = var_type->AsPointer();
-    if (ptr_type->storage_class() != SpvStorageClassInput) {
+    if (ptr_type->storage_class() != spv::StorageClass::Input) {
       continue;
     }
     // If var is builtin, mark live if analyzed and continue to next variable
@@ -308,8 +311,10 @@ void LivenessManager::ComputeLiveness() {
     // Mark all used locations of var live
     def_use_mgr->ForEachUser(var_id, [this, &var](Instruction* user) {
       auto op = user->opcode();
-      if (op == SpvOpEntryPoint || op == SpvOpName || op == SpvOpDecorate)
+      if (op == spv::Op::OpEntryPoint || op == spv::Op::OpName ||
+          op == spv::Op::OpDecorate) {
         return;
+      }
       MarkRefLive(user, &var);
     });
   }

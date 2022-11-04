@@ -22,7 +22,7 @@ namespace opt {
 
 Pass::Status AnalyzeLiveInputPass::Process() {
   // Current functionality assumes shader capability
-  if (!context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
+  if (!context()->get_feature_mgr()->HasCapability(spv::Capability::Shader))
     return Status::SuccessWithoutChange;
   Pass::Status status = DoLiveInputAnalysis();
   return status;
@@ -32,10 +32,10 @@ Pass::Status AnalyzeLiveInputPass::DoLiveInputAnalysis() {
   // Current functionality only supports frag, tesc, tese or geom shaders.
   // Report failure for any other stage.
   auto stage = context()->GetStage();
-  if (stage != SpvExecutionModelFragment &&
-      stage != SpvExecutionModelTessellationControl &&
-      stage != SpvExecutionModelTessellationEvaluation &&
-      stage != SpvExecutionModelGeometry)
+  if (stage != spv::ExecutionModel::Fragment &&
+      stage != spv::ExecutionModel::TessellationControl &&
+      stage != spv::ExecutionModel::TessellationEvaluation &&
+      stage != spv::ExecutionModel::Geometry)
     return Status::Failure;
   context()->get_liveness_mgr()->GetLiveness(live_locs_, live_builtins_);
   return Status::SuccessWithoutChange;
