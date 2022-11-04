@@ -34,7 +34,7 @@ namespace opt {
 
 Pass::Status EliminateDeadOutputStoresPass::Process() {
   // Current functionality assumes shader capability
-  if (!context()->get_feature_mgr()->HasCapability(SpvCapabilityShader))
+  if (!context()->get_feature_mgr()->HasCapability(spv::Capability::Shader))
     return Status::SuccessWithoutChange;
   Pass::Status status = DoDeadOutputStoreElimination();
   return status;
@@ -59,15 +59,15 @@ bool EliminateDeadOutputStoresPass::AnyLocsAreLive(uint32_t start,
 
 void EliminateDeadOutputStoresPass::KillAllStoresOfRef(Instruction* ref) {
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
-  if (ref->opcode() == SpvOpStore) {
+  if (ref->opcode() == spv::Op::OpStore) {
     kill_list_.push_back(ref);
     return;
   }
-  assert((ref->opcode() == SpvOpAccessChain ||
-          ref->opcode() == SpvOpInBoundsAccessChain) &&
+  assert((ref->opcode() == spv::Op::OpAccessChain ||
+          ref->opcode() == spv::Op::OpInBoundsAccessChain) &&
          "unexpected use of output variable");
   def_use_mgr->ForEachUser(ref, [this](Instruction* user) {
-    if (user->opcode() == SpvOpStore) kill_list_.push_back(user);
+    if (user->opcode() == spv::Op::OpStore) kill_list_.push_back(user);
   });
 }
 
@@ -80,15 +80,16 @@ void EliminateDeadOutputStoresPass::KillAllDeadStoresOfLocRef(
   uint32_t start_loc = 0;
   auto var_id = var->result_id();
   bool no_loc = deco_mgr->WhileEachDecoration(
-      var_id, SpvDecorationLocation, [&start_loc](const Instruction& deco) {
-        assert(deco.opcode() == SpvOpDecorate && "unexpected decoration");
+      var_id, uint32_t(spv::Decoration::Location),
+      [&start_loc](const Instruction& deco) {
+        assert(deco.opcode() == spv::Op::OpDecorate && "unexpected decoration");
         start_loc = deco.GetSingleWordInOperand(kDecorationLocationInIdx);
         return false;
       });
   // Find patch decoration if present
   bool is_patch = !deco_mgr->WhileEachDecoration(
-      var_id, SpvDecorationPatch, [](const Instruction& deco) {
-        if (deco.opcode() != SpvOpDecorate)
+      var_id, uint32_t(spv::Decoration::Patch), [](const Instruction& deco) {
+        if (deco.opcode() != spv::Op::OpDecorate)
           assert(false && "unexpected decoration");
         return false;
       });
@@ -99,10 +100,11 @@ void EliminateDeadOutputStoresPass::KillAllDeadStoresOfLocRef(
   auto var_type = ptr_type->pointee_type();
   uint32_t ref_loc = start_loc;
   auto curr_type = var_type;
-  if (ref->opcode() == SpvOpAccessChain ||
-      ref->opcode() == SpvOpInBoundsAccessChain)
+  if (ref->opcode() == spv::Op::OpAccessChain ||
+      ref->opcode() == spv::Op::OpInBoundsAccessChain) {
     live_mgr->AnalyzeAccessChainLoc(ref, &curr_type, &ref_loc, &no_loc,
                                     is_patch, /* input */ false);
+  }
   if (no_loc || AnyLocsAreLive(ref_loc, live_mgr->GetLocSize(curr_type)))
     return;
   // Kill all stores based on this reference
@@ -116,23 +118,27 @@ void EliminateDeadOutputStoresPass::KillAllDeadStoresOfBuiltinRef(
   auto type_mgr = context()->get_type_mgr();
   auto live_mgr = context()->get_liveness_mgr();
   // Search for builtin decoration of base variable
-  uint32_t builtin = SpvBuiltInMax;
+  uint32_t builtin = uint32_t(spv::BuiltIn::Max);
   auto var_id = var->result_id();
   (void)deco_mgr->WhileEachDecoration(
-      var_id, SpvDecorationBuiltIn, [&builtin](const Instruction& deco) {
-        assert(deco.opcode() == SpvOpDecorate && "unexpected decoration");
+      var_id, uint32_t(spv::Decoration::BuiltIn),
+      [&builtin](const Instruction& deco) {
+        assert(deco.opcode() == spv::Op::OpDecorate && "unexpected decoration");
         builtin = deco.GetSingleWordInOperand(kOpDecorateBuiltInLiteralInIdx);
         return false;
       });
   // If analyzed builtin and not live, kill stores.
-  if (builtin != SpvBuiltInMax) {
+  if (builtin != uint32_t(spv::BuiltIn::Max)) {
     if (live_mgr->IsAnalyzedBuiltin(builtin) && !IsLiveBuiltin(builtin))
       KillAllStoresOfRef(ref);
     return;
   }
   // Search for builtin decoration on indexed member
   auto ref_op = ref->opcode();
-  if (ref_op != SpvOpAccessChain && ref_op != SpvOpInBoundsAccessChain) return;
+  if (ref_op != spv::Op::OpAccessChain &&
+      ref_op != spv::Op::OpInBoundsAccessChain) {
+    return;
+  }
   uint32_t in_idx = kOpAccessChainIdx0InIdx;
   analysis::Type* var_type = type_mgr->GetType(var->type_id());
   analysis::Pointer* ptr_type = var_type->AsPointer();
@@ -146,13 +152,14 @@ void EliminateDeadOutputStoresPass::KillAllDeadStoresOfBuiltinRef(
   auto str_type_id = type_mgr->GetId(str_type);
   auto member_idx_id = ref->GetSingleWordInOperand(in_idx);
   auto member_idx_inst = def_use_mgr->GetDef(member_idx_id);
-  assert(member_idx_inst->opcode() == SpvOpConstant &&
+  assert(member_idx_inst->opcode() == spv::Op::OpConstant &&
          "unexpected non-constant index");
   auto ac_idx = member_idx_inst->GetSingleWordInOperand(kOpConstantValueInIdx);
   (void)deco_mgr->WhileEachDecoration(
-      str_type_id, SpvDecorationBuiltIn,
+      str_type_id, uint32_t(spv::Decoration::BuiltIn),
       [ac_idx, &builtin](const Instruction& deco) {
-        assert(deco.opcode() == SpvOpMemberDecorate && "unexpected decoration");
+        assert(deco.opcode() == spv::Op::OpMemberDecorate &&
+               "unexpected decoration");
         auto deco_idx =
             deco.GetSingleWordInOperand(kOpDecorateMemberMemberInIdx);
         if (deco_idx == ac_idx) {
@@ -162,7 +169,7 @@ void EliminateDeadOutputStoresPass::KillAllDeadStoresOfBuiltinRef(
         }
         return true;
       });
-  assert(builtin != SpvBuiltInMax && "builtin not found");
+  assert(builtin != uint32_t(spv::BuiltIn::Max) && "builtin not found");
   // If analyzed builtin and not live, kill stores.
   if (live_mgr->IsAnalyzedBuiltin(builtin) && !IsLiveBuiltin(builtin))
     KillAllStoresOfRef(ref);
@@ -171,10 +178,10 @@ void EliminateDeadOutputStoresPass::KillAllDeadStoresOfBuiltinRef(
 Pass::Status EliminateDeadOutputStoresPass::DoDeadOutputStoreElimination() {
   // Current implementation only supports vert, tesc, tese, geom shaders
   auto stage = context()->GetStage();
-  if (stage != SpvExecutionModelVertex &&
-      stage != SpvExecutionModelTessellationControl &&
-      stage != SpvExecutionModelTessellationEvaluation &&
-      stage != SpvExecutionModelGeometry)
+  if (stage != spv::ExecutionModel::Vertex &&
+      stage != spv::ExecutionModel::TessellationControl &&
+      stage != spv::ExecutionModel::TessellationEvaluation &&
+      stage != spv::ExecutionModel::Geometry)
     return Status::Failure;
   InitializeElimination();
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
@@ -182,18 +189,18 @@ Pass::Status EliminateDeadOutputStoresPass::DoDeadOutputStoreElimination() {
   analysis::DecorationManager* deco_mgr = context()->get_decoration_mgr();
   // Process all output variables
   for (auto& var : context()->types_values()) {
-    if (var.opcode() != SpvOpVariable) {
+    if (var.opcode() != spv::Op::OpVariable) {
       continue;
     }
     analysis::Type* var_type = type_mgr->GetType(var.type_id());
     analysis::Pointer* ptr_type = var_type->AsPointer();
-    if (ptr_type->storage_class() != SpvStorageClassOutput) {
+    if (ptr_type->storage_class() != spv::StorageClass::Output) {
       continue;
     }
     // If builtin decoration on variable, process as builtin.
     auto var_id = var.result_id();
     bool is_builtin = false;
-    if (deco_mgr->HasDecoration(var_id, SpvDecorationBuiltIn)) {
+    if (deco_mgr->HasDecoration(var_id, uint32_t(spv::Decoration::BuiltIn))) {
       is_builtin = true;
     } else {
       // If interface block with builtin members, process as builtin.
@@ -204,7 +211,8 @@ Pass::Status EliminateDeadOutputStoresPass::DoDeadOutputStoreElimination() {
       auto str_type = curr_type->AsStruct();
       if (str_type) {
         auto str_type_id = type_mgr->GetId(str_type);
-        if (deco_mgr->HasDecoration(str_type_id, SpvDecorationBuiltIn))
+        if (deco_mgr->HasDecoration(str_type_id,
+                                    uint32_t(spv::Decoration::BuiltIn)))
           is_builtin = true;
       }
     }
@@ -213,7 +221,8 @@ Pass::Status EliminateDeadOutputStoresPass::DoDeadOutputStoreElimination() {
     def_use_mgr->ForEachUser(
         var_id, [this, &var, is_builtin](Instruction* user) {
           auto op = user->opcode();
-          if (op == SpvOpEntryPoint || op == SpvOpName || op == SpvOpDecorate)
+          if (op == spv::Op::OpEntryPoint || op == spv::Op::OpName ||
+              op == spv::Op::OpDecorate)
             return;
           if (is_builtin)
             KillAllDeadStoresOfBuiltinRef(user, &var);

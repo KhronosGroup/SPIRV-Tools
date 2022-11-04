@@ -37,6 +37,7 @@ macro(spvtools_core_tables CONFIG_VERSION)
       --extinst-cldebuginfo100-grammar=${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
       --core-insts-output=${GRAMMAR_INSTS_INC_FILE}
       --operand-kinds-output=${GRAMMAR_KINDS_INC_FILE}
+      --output-language=c++
     DEPENDS ${GRAMMAR_PROCESSING_SCRIPT}
             ${GRAMMAR_JSON_FILE}
             ${DEBUGINFO_GRAMMAR_JSON_FILE}
@@ -58,6 +59,7 @@ macro(spvtools_enum_string_mapping CONFIG_VERSION)
       --extinst-cldebuginfo100-grammar=${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
       --extension-enum-output=${GRAMMAR_EXTENSION_ENUM_INC_FILE}
       --enum-string-mapping-output=${GRAMMAR_ENUM_STRING_MAPPING_INC_FILE}
+      --output-language=c++
     DEPENDS ${GRAMMAR_PROCESSING_SCRIPT}
             ${GRAMMAR_JSON_FILE}
             ${DEBUGINFO_GRAMMAR_JSON_FILE}
@@ -92,6 +94,7 @@ macro(spvtools_glsl_tables CONFIG_VERSION)
     COMMAND ${PYTHON_EXECUTABLE} ${GRAMMAR_PROCESSING_SCRIPT}
       --extinst-glsl-grammar=${GLSL_GRAMMAR_JSON_FILE}
       --glsl-insts-output=${GRAMMAR_INC_FILE}
+      --output-language=c++
     DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${CORE_GRAMMAR_JSON_FILE} ${GLSL_GRAMMAR_JSON_FILE}
     COMMENT "Generate info tables for GLSL extended instructions and operands v${CONFIG_VERSION}.")
   list(APPEND EXTINST_CPP_DEPENDS ${GRAMMAR_INC_FILE})

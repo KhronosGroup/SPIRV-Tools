@@ -124,7 +124,7 @@ ConstantFoldingRule FoldVectorShuffleWithConstants() {
   return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
-    assert(inst->opcode() == SpvOpVectorShuffle);
+    assert(inst->opcode() == spv::Op::OpVectorShuffle);
     const analysis::Constant* c1 = constants[0];
     const analysis::Constant* c2 = constants[1];
     if (c1 == nullptr || c2 == nullptr) {
@@ -180,7 +180,7 @@ ConstantFoldingRule FoldVectorTimesScalar() {
   return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
-    assert(inst->opcode() == SpvOpVectorTimesScalar);
+    assert(inst->opcode() == spv::Op::OpVectorTimesScalar);
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
 
@@ -255,7 +255,7 @@ ConstantFoldingRule FoldVectorTimesMatrix() {
   return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
-    assert(inst->opcode() == SpvOpVectorTimesMatrix);
+    assert(inst->opcode() == spv::Op::OpVectorTimesMatrix);
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
 
@@ -348,7 +348,7 @@ ConstantFoldingRule FoldMatrixTimesVector() {
   return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
-    assert(inst->opcode() == SpvOpMatrixTimesVector);
+    assert(inst->opcode() == spv::Op::OpMatrixTimesVector);
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
 
@@ -458,9 +458,9 @@ ConstantFoldingRule FoldCompositeWithConstants() {
       }
 
       uint32_t component_type_id = 0;
-      if (type_inst->opcode() == SpvOpTypeStruct) {
+      if (type_inst->opcode() == spv::Op::OpTypeStruct) {
         component_type_id = type_inst->GetSingleWordInOperand(i);
-      } else if (type_inst->opcode() == SpvOpTypeArray) {
+      } else if (type_inst->opcode() == spv::Op::OpTypeArray) {
         component_type_id = type_inst->GetSingleWordInOperand(0);
       }
 
@@ -509,7 +509,7 @@ ConstantFoldingRule FoldFPUnaryOp(UnaryScalarFoldingRule scalar_rule) {
     }
 
     const analysis::Constant* arg =
-        (inst->opcode() == SpvOpExtInst) ? constants[1] : constants[0];
+        (inst->opcode() == spv::Op::OpExtInst) ? constants[1] : constants[0];
 
     if (arg == nullptr) {
       return nullptr;
@@ -599,7 +599,7 @@ ConstantFoldingRule FoldFPBinaryOp(BinaryScalarFoldingRule scalar_rule) {
     if (!inst->IsFloatingPointFoldingAllowed()) {
       return nullptr;
     }
-    if (inst->opcode() == SpvOpExtInst) {
+    if (inst->opcode() == spv::Op::OpExtInst) {
       return FoldFPBinaryOp(scalar_rule, inst->type_id(),
                             {constants[1], constants[2]}, context);
     }
@@ -957,7 +957,7 @@ UnaryScalarFoldingRule FoldFNegateOp() {
 
 ConstantFoldingRule FoldFNegate() { return FoldFPUnaryOp(FoldFNegateOp()); }
 
-ConstantFoldingRule FoldFClampFeedingCompare(uint32_t cmp_opcode) {
+ConstantFoldingRule FoldFClampFeedingCompare(spv::Op cmp_opcode) {
   return [cmp_opcode](IRContext* context, Instruction* inst,
                       const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
@@ -985,7 +985,7 @@ ConstantFoldingRule FoldFClampFeedingCompare(uint32_t cmp_opcode) {
       return nullptr;
     }
 
-    if (operand_inst->opcode() != SpvOpExtInst) {
+    if (operand_inst->opcode() != spv::Op::OpExtInst) {
       return nullptr;
     }
 
@@ -1009,25 +1009,25 @@ ConstantFoldingRule FoldFClampFeedingCompare(uint32_t cmp_opcode) {
     bool result = false;
 
     switch (cmp_opcode) {
-      case SpvOpFOrdLessThan:
-      case SpvOpFUnordLessThan:
-      case SpvOpFOrdGreaterThanEqual:
-      case SpvOpFUnordGreaterThanEqual:
+      case spv::Op::OpFOrdLessThan:
+      case spv::Op::OpFUnordLessThan:
+      case spv::Op::OpFOrdGreaterThanEqual:
+      case spv::Op::OpFUnordGreaterThanEqual:
         if (constants[0]) {
           if (min_const) {
             if (constants[0]->GetValueAsDouble() <
                 min_const->GetValueAsDouble()) {
               found_result = true;
-              result = (cmp_opcode == SpvOpFOrdLessThan ||
-                        cmp_opcode == SpvOpFUnordLessThan);
+              result = (cmp_opcode == spv::Op::OpFOrdLessThan ||
+                        cmp_opcode == spv::Op::OpFUnordLessThan);
             }
           }
           if (max_const) {
             if (constants[0]->GetValueAsDouble() >=
                 max_const->GetValueAsDouble()) {
               found_result = true;
-              result = !(cmp_opcode == SpvOpFOrdLessThan ||
-                         cmp_opcode == SpvOpFUnordLessThan);
+              result = !(cmp_opcode == spv::Op::OpFOrdLessThan ||
+                         cmp_opcode == spv::Op::OpFUnordLessThan);
             }
           }
         }
@@ -1037,8 +1037,8 @@ ConstantFoldingRule FoldFClampFeedingCompare(uint32_t cmp_opcode) {
             if (max_const->GetValueAsDouble() <
                 constants[1]->GetValueAsDouble()) {
               found_result = true;
-              result = (cmp_opcode == SpvOpFOrdLessThan ||
-                        cmp_opcode == SpvOpFUnordLessThan);
+              result = (cmp_opcode == spv::Op::OpFOrdLessThan ||
+                        cmp_opcode == spv::Op::OpFUnordLessThan);
             }
           }
 
@@ -1046,31 +1046,31 @@ ConstantFoldingRule FoldFClampFeedingCompare(uint32_t cmp_opcode) {
             if (min_const->GetValueAsDouble() >=
                 constants[1]->GetValueAsDouble()) {
               found_result = true;
-              result = !(cmp_opcode == SpvOpFOrdLessThan ||
-                         cmp_opcode == SpvOpFUnordLessThan);
+              result = !(cmp_opcode == spv::Op::OpFOrdLessThan ||
+                         cmp_opcode == spv::Op::OpFUnordLessThan);
             }
           }
         }
         break;
-      case SpvOpFOrdGreaterThan:
-      case SpvOpFUnordGreaterThan:
-      case SpvOpFOrdLessThanEqual:
-      case SpvOpFUnordLessThanEqual:
+      case spv::Op::OpFOrdGreaterThan:
+      case spv::Op::OpFUnordGreaterThan:
+      case spv::Op::OpFOrdLessThanEqual:
+      case spv::Op::OpFUnordLessThanEqual:
         if (constants[0]) {
           if (min_const) {
             if (constants[0]->GetValueAsDouble() <=
                 min_const->GetValueAsDouble()) {
               found_result = true;
-              result = (cmp_opcode == SpvOpFOrdLessThanEqual ||
-                        cmp_opcode == SpvOpFUnordLessThanEqual);
+              result = (cmp_opcode == spv::Op::OpFOrdLessThanEqual ||
+                        cmp_opcode == spv::Op::OpFUnordLessThanEqual);
             }
           }
           if (max_const) {
             if (constants[0]->GetValueAsDouble() >
                 max_const->GetValueAsDouble()) {
               found_result = true;
-              result = !(cmp_opcode == SpvOpFOrdLessThanEqual ||
-                         cmp_opcode == SpvOpFUnordLessThanEqual);
+              result = !(cmp_opcode == spv::Op::OpFOrdLessThanEqual ||
+                         cmp_opcode == spv::Op::OpFUnordLessThanEqual);
             }
           }
         }
@@ -1080,8 +1080,8 @@ ConstantFoldingRule FoldFClampFeedingCompare(uint32_t cmp_opcode) {
             if (max_const->GetValueAsDouble() <=
                 constants[1]->GetValueAsDouble()) {
               found_result = true;
-              result = (cmp_opcode == SpvOpFOrdLessThanEqual ||
-                        cmp_opcode == SpvOpFUnordLessThanEqual);
+              result = (cmp_opcode == spv::Op::OpFOrdLessThanEqual ||
+                        cmp_opcode == spv::Op::OpFUnordLessThanEqual);
             }
           }
 
@@ -1089,8 +1089,8 @@ ConstantFoldingRule FoldFClampFeedingCompare(uint32_t cmp_opcode) {
             if (min_const->GetValueAsDouble() >
                 constants[1]->GetValueAsDouble()) {
               found_result = true;
-              result = !(cmp_opcode == SpvOpFOrdLessThanEqual ||
-                         cmp_opcode == SpvOpFUnordLessThanEqual);
+              result = !(cmp_opcode == spv::Op::OpFOrdLessThanEqual ||
+                         cmp_opcode == spv::Op::OpFUnordLessThanEqual);
             }
           }
         }
@@ -1117,7 +1117,7 @@ ConstantFoldingRule FoldFMix() {
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
-    assert(inst->opcode() == SpvOpExtInst &&
+    assert(inst->opcode() == spv::Op::OpExtInst &&
            "Expecting an extended instruction.");
     assert(inst->GetSingleWordInOperand(0) ==
                context->get_feature_mgr()->GetExtInstImportId_GLSLstd450() &&
@@ -1267,7 +1267,7 @@ const analysis::Constant* FoldMax(const analysis::Type* result_type,
 const analysis::Constant* FoldClamp1(
     IRContext* context, Instruction* inst,
     const std::vector<const analysis::Constant*>& constants) {
-  assert(inst->opcode() == SpvOpExtInst &&
+  assert(inst->opcode() == spv::Op::OpExtInst &&
          "Expecting an extended instruction.");
   assert(inst->GetSingleWordInOperand(0) ==
              context->get_feature_mgr()->GetExtInstImportId_GLSLstd450() &&
@@ -1293,7 +1293,7 @@ const analysis::Constant* FoldClamp1(
 const analysis::Constant* FoldClamp2(
     IRContext* context, Instruction* inst,
     const std::vector<const analysis::Constant*>& constants) {
-  assert(inst->opcode() == SpvOpExtInst &&
+  assert(inst->opcode() == spv::Op::OpExtInst &&
          "Expecting an extended instruction.");
   assert(inst->GetSingleWordInOperand(0) ==
              context->get_feature_mgr()->GetExtInstImportId_GLSLstd450() &&
@@ -1321,7 +1321,7 @@ const analysis::Constant* FoldClamp2(
 const analysis::Constant* FoldClamp3(
     IRContext* context, Instruction* inst,
     const std::vector<const analysis::Constant*>& constants) {
-  assert(inst->opcode() == SpvOpExtInst &&
+  assert(inst->opcode() == spv::Op::OpExtInst &&
          "Expecting an extended instruction.");
   assert(inst->GetSingleWordInOperand(0) ==
              context->get_feature_mgr()->GetExtInstImportId_GLSLstd450() &&
@@ -1407,68 +1407,69 @@ void ConstantFoldingRules::AddFoldingRules() {
   // applies to the instruction, the rest of the rules will not be attempted.
   // Take that into consideration.
 
-  rules_[SpvOpCompositeConstruct].push_back(FoldCompositeWithConstants());
+  rules_[spv::Op::OpCompositeConstruct].push_back(FoldCompositeWithConstants());
 
-  rules_[SpvOpCompositeExtract].push_back(FoldExtractWithConstants());
+  rules_[spv::Op::OpCompositeExtract].push_back(FoldExtractWithConstants());
 
-  rules_[SpvOpConvertFToS].push_back(FoldFToI());
-  rules_[SpvOpConvertFToU].push_back(FoldFToI());
-  rules_[SpvOpConvertSToF].push_back(FoldIToF());
-  rules_[SpvOpConvertUToF].push_back(FoldIToF());
+  rules_[spv::Op::OpConvertFToS].push_back(FoldFToI());
+  rules_[spv::Op::OpConvertFToU].push_back(FoldFToI());
+  rules_[spv::Op::OpConvertSToF].push_back(FoldIToF());
+  rules_[spv::Op::OpConvertUToF].push_back(FoldIToF());
 
-  rules_[SpvOpDot].push_back(FoldOpDotWithConstants());
-  rules_[SpvOpFAdd].push_back(FoldFAdd());
-  rules_[SpvOpFDiv].push_back(FoldFDiv());
-  rules_[SpvOpFMul].push_back(FoldFMul());
-  rules_[SpvOpFSub].push_back(FoldFSub());
+  rules_[spv::Op::OpDot].push_back(FoldOpDotWithConstants());
+  rules_[spv::Op::OpFAdd].push_back(FoldFAdd());
+  rules_[spv::Op::OpFDiv].push_back(FoldFDiv());
+  rules_[spv::Op::OpFMul].push_back(FoldFMul());
+  rules_[spv::Op::OpFSub].push_back(FoldFSub());
 
-  rules_[SpvOpFOrdEqual].push_back(FoldFOrdEqual());
+  rules_[spv::Op::OpFOrdEqual].push_back(FoldFOrdEqual());
 
-  rules_[SpvOpFUnordEqual].push_back(FoldFUnordEqual());
+  rules_[spv::Op::OpFUnordEqual].push_back(FoldFUnordEqual());
 
-  rules_[SpvOpFOrdNotEqual].push_back(FoldFOrdNotEqual());
+  rules_[spv::Op::OpFOrdNotEqual].push_back(FoldFOrdNotEqual());
 
-  rules_[SpvOpFUnordNotEqual].push_back(FoldFUnordNotEqual());
+  rules_[spv::Op::OpFUnordNotEqual].push_back(FoldFUnordNotEqual());
 
-  rules_[SpvOpFOrdLessThan].push_back(FoldFOrdLessThan());
-  rules_[SpvOpFOrdLessThan].push_back(
-      FoldFClampFeedingCompare(SpvOpFOrdLessThan));
+  rules_[spv::Op::OpFOrdLessThan].push_back(FoldFOrdLessThan());
+  rules_[spv::Op::OpFOrdLessThan].push_back(
+      FoldFClampFeedingCompare(spv::Op::OpFOrdLessThan));
 
-  rules_[SpvOpFUnordLessThan].push_back(FoldFUnordLessThan());
-  rules_[SpvOpFUnordLessThan].push_back(
-      FoldFClampFeedingCompare(SpvOpFUnordLessThan));
+  rules_[spv::Op::OpFUnordLessThan].push_back(FoldFUnordLessThan());
+  rules_[spv::Op::OpFUnordLessThan].push_back(
+      FoldFClampFeedingCompare(spv::Op::OpFUnordLessThan));
 
-  rules_[SpvOpFOrdGreaterThan].push_back(FoldFOrdGreaterThan());
-  rules_[SpvOpFOrdGreaterThan].push_back(
-      FoldFClampFeedingCompare(SpvOpFOrdGreaterThan));
+  rules_[spv::Op::OpFOrdGreaterThan].push_back(FoldFOrdGreaterThan());
+  rules_[spv::Op::OpFOrdGreaterThan].push_back(
+      FoldFClampFeedingCompare(spv::Op::OpFOrdGreaterThan));
 
-  rules_[SpvOpFUnordGreaterThan].push_back(FoldFUnordGreaterThan());
-  rules_[SpvOpFUnordGreaterThan].push_back(
-      FoldFClampFeedingCompare(SpvOpFUnordGreaterThan));
+  rules_[spv::Op::OpFUnordGreaterThan].push_back(FoldFUnordGreaterThan());
+  rules_[spv::Op::OpFUnordGreaterThan].push_back(
+      FoldFClampFeedingCompare(spv::Op::OpFUnordGreaterThan));
 
-  rules_[SpvOpFOrdLessThanEqual].push_back(FoldFOrdLessThanEqual());
-  rules_[SpvOpFOrdLessThanEqual].push_back(
-      FoldFClampFeedingCompare(SpvOpFOrdLessThanEqual));
+  rules_[spv::Op::OpFOrdLessThanEqual].push_back(FoldFOrdLessThanEqual());
+  rules_[spv::Op::OpFOrdLessThanEqual].push_back(
+      FoldFClampFeedingCompare(spv::Op::OpFOrdLessThanEqual));
 
-  rules_[SpvOpFUnordLessThanEqual].push_back(FoldFUnordLessThanEqual());
-  rules_[SpvOpFUnordLessThanEqual].push_back(
-      FoldFClampFeedingCompare(SpvOpFUnordLessThanEqual));
+  rules_[spv::Op::OpFUnordLessThanEqual].push_back(FoldFUnordLessThanEqual());
+  rules_[spv::Op::OpFUnordLessThanEqual].push_back(
+      FoldFClampFeedingCompare(spv::Op::OpFUnordLessThanEqual));
 
-  rules_[SpvOpFOrdGreaterThanEqual].push_back(FoldFOrdGreaterThanEqual());
-  rules_[SpvOpFOrdGreaterThanEqual].push_back(
-      FoldFClampFeedingCompare(SpvOpFOrdGreaterThanEqual));
+  rules_[spv::Op::OpFOrdGreaterThanEqual].push_back(FoldFOrdGreaterThanEqual());
+  rules_[spv::Op::OpFOrdGreaterThanEqual].push_back(
+      FoldFClampFeedingCompare(spv::Op::OpFOrdGreaterThanEqual));
 
-  rules_[SpvOpFUnordGreaterThanEqual].push_back(FoldFUnordGreaterThanEqual());
-  rules_[SpvOpFUnordGreaterThanEqual].push_back(
-      FoldFClampFeedingCompare(SpvOpFUnordGreaterThanEqual));
+  rules_[spv::Op::OpFUnordGreaterThanEqual].push_back(
+      FoldFUnordGreaterThanEqual());
+  rules_[spv::Op::OpFUnordGreaterThanEqual].push_back(
+      FoldFClampFeedingCompare(spv::Op::OpFUnordGreaterThanEqual));
 
-  rules_[SpvOpVectorShuffle].push_back(FoldVectorShuffleWithConstants());
-  rules_[SpvOpVectorTimesScalar].push_back(FoldVectorTimesScalar());
-  rules_[SpvOpVectorTimesMatrix].push_back(FoldVectorTimesMatrix());
-  rules_[SpvOpMatrixTimesVector].push_back(FoldMatrixTimesVector());
+  rules_[spv::Op::OpVectorShuffle].push_back(FoldVectorShuffleWithConstants());
+  rules_[spv::Op::OpVectorTimesScalar].push_back(FoldVectorTimesScalar());
+  rules_[spv::Op::OpVectorTimesMatrix].push_back(FoldVectorTimesMatrix());
+  rules_[spv::Op::OpMatrixTimesVector].push_back(FoldMatrixTimesVector());
 
-  rules_[SpvOpFNegate].push_back(FoldFNegate());
-  rules_[SpvOpQuantizeToF16].push_back(FoldQuantizeToF16());
+  rules_[spv::Op::OpFNegate].push_back(FoldFNegate());
+  rules_[spv::Op::OpQuantizeToF16].push_back(FoldQuantizeToF16());
 
   // Add rules for GLSLstd450
   FeatureManager* feature_manager = context_->get_feature_mgr();

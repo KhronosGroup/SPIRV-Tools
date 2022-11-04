@@ -27,7 +27,7 @@ namespace opt {
 StructuredCFGAnalysis::StructuredCFGAnalysis(IRContext* ctx) : context_(ctx) {
   // If this is not a shader, there are no merge instructions, and not
   // structured CFG to analyze.
-  if (!context_->get_feature_mgr()->HasCapability(SpvCapabilityShader)) {
+  if (!context_->get_feature_mgr()->HasCapability(spv::Capability::Shader)) {
     return;
   }
 
@@ -82,7 +82,7 @@ void StructuredCFGAnalysis::AddBlocksInFunction(Function* func) {
           merge_inst->GetSingleWordInOperand(kMergeNodeIndex);
       new_state.cinfo.containing_construct = block->id();
 
-      if (merge_inst->opcode() == SpvOpLoopMerge) {
+      if (merge_inst->opcode() == spv::Op::OpLoopMerge) {
         new_state.cinfo.containing_loop = block->id();
         new_state.cinfo.containing_switch = 0;
         new_state.continue_node =
@@ -98,7 +98,7 @@ void StructuredCFGAnalysis::AddBlocksInFunction(Function* func) {
         new_state.cinfo.in_continue = state.back().cinfo.in_continue;
         new_state.continue_node = state.back().continue_node;
 
-        if (merge_inst->NextNode()->opcode() == SpvOpSwitch) {
+        if (merge_inst->NextNode()->opcode() == spv::Op::OpSwitch) {
           new_state.cinfo.containing_switch = block->id();
         } else {
           new_state.cinfo.containing_switch =
@@ -226,7 +226,7 @@ StructuredCFGAnalysis::FindFuncsCalledFromContinue() {
     for (auto& bb : func) {
       if (IsInContainingLoopsContinueConstruct(bb.id())) {
         for (const Instruction& inst : bb) {
-          if (inst.opcode() == SpvOpFunctionCall) {
+          if (inst.opcode() == spv::Op::OpFunctionCall) {
             funcs_to_process.push(inst.GetSingleWordInOperand(0));
           }
         }

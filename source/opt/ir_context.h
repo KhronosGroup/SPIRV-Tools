@@ -203,7 +203,7 @@ class IRContext {
   inline IteratorRange<Module::const_inst_iterator> ext_inst_debuginfo() const;
 
   // Add |capability| to the module, if it is not already enabled.
-  inline void AddCapability(SpvCapability capability);
+  inline void AddCapability(spv::Capability capability);
 
   // Appends a capability instruction to this module.
   inline void AddCapability(std::unique_ptr<Instruction>&& c);
@@ -489,11 +489,11 @@ class IRContext {
     const uint32_t kExtInstSetIdInIndx = 0;
     const uint32_t kExtInstInstructionInIndx = 1;
 
-    if (inst->opcode() != SpvOpExtInst) {
-      return combinator_ops_[0].count(inst->opcode()) != 0;
+    if (inst->opcode() != spv::Op::OpExtInst) {
+      return combinator_ops_[0].count(uint32_t(inst->opcode())) != 0;
     } else {
       uint32_t set = inst->GetSingleWordInOperand(kExtInstSetIdInIndx);
-      uint32_t op = inst->GetSingleWordInOperand(kExtInstInstructionInIndx);
+      auto op = inst->GetSingleWordInOperand(kExtInstInstructionInIndx);
       return combinator_ops_[set].count(op) != 0;
     }
   }
@@ -602,7 +602,7 @@ class IRContext {
   }
 
   Function* GetFunction(Instruction* inst) {
-    if (inst->opcode() != SpvOpFunction) {
+    if (inst->opcode() != spv::Op::OpFunction) {
       return nullptr;
     }
     return GetFunction(inst->result_id());
@@ -638,7 +638,7 @@ class IRContext {
 
   // Return the stage of the module. Will generate error if entry points don't
   // all have the same stage.
-  SpvExecutionModel GetStage();
+  spv::ExecutionModel GetStage();
 
  private:
   // Builds the def-use manager from scratch, even if it was already valid.
@@ -1038,10 +1038,10 @@ IteratorRange<Module::const_inst_iterator> IRContext::ext_inst_debuginfo()
   return ((const Module*)module_.get())->ext_inst_debuginfo();
 }
 
-void IRContext::AddCapability(SpvCapability capability) {
+void IRContext::AddCapability(spv::Capability capability) {
   if (!get_feature_mgr()->HasCapability(capability)) {
     std::unique_ptr<Instruction> capability_inst(new Instruction(
-        this, SpvOpCapability, 0, 0,
+        this, spv::Op::OpCapability, 0, 0,
         {{SPV_OPERAND_TYPE_CAPABILITY, {static_cast<uint32_t>(capability)}}}));
     AddCapability(std::move(capability_inst));
   }
@@ -1051,7 +1051,7 @@ void IRContext::AddCapability(std::unique_ptr<Instruction>&& c) {
   AddCombinatorsForCapability(c->GetSingleWordInOperand(0));
   if (feature_mgr_ != nullptr) {
     feature_mgr_->AddCapability(
-        static_cast<SpvCapability>(c->GetSingleWordInOperand(0)));
+        static_cast<spv::Capability>(c->GetSingleWordInOperand(0)));
   }
   if (AreAnalysesValid(kAnalysisDefUse)) {
     get_def_use_mgr()->AnalyzeInstDefUse(c.get());
@@ -1062,7 +1062,7 @@ void IRContext::AddCapability(std::unique_ptr<Instruction>&& c) {
 void IRContext::AddExtension(const std::string& ext_name) {
   std::vector<uint32_t> ext_words = spvtools::utils::MakeVector(ext_name);
   AddExtension(std::unique_ptr<Instruction>(
-      new Instruction(this, SpvOpExtension, 0u, 0u,
+      new Instruction(this, spv::Op::OpExtension, 0u, 0u,
                       {{SPV_OPERAND_TYPE_LITERAL_STRING, ext_words}})));
 }
 
@@ -1079,7 +1079,7 @@ void IRContext::AddExtension(std::unique_ptr<Instruction>&& e) {
 void IRContext::AddExtInstImport(const std::string& name) {
   std::vector<uint32_t> ext_words = spvtools::utils::MakeVector(name);
   AddExtInstImport(std::unique_ptr<Instruction>(
-      new Instruction(this, SpvOpExtInstImport, 0u, TakeNextId(),
+      new Instruction(this, spv::Op::OpExtInstImport, 0u, TakeNextId(),
                       {{SPV_OPERAND_TYPE_LITERAL_STRING, ext_words}})));
 }
 
@@ -1112,7 +1112,8 @@ void IRContext::AddDebug1Inst(std::unique_ptr<Instruction>&& d) {
 
 void IRContext::AddDebug2Inst(std::unique_ptr<Instruction>&& d) {
   if (AreAnalysesValid(kAnalysisNameMap)) {
-    if (d->opcode() == SpvOpName || d->opcode() == SpvOpMemberName) {
+    if (d->opcode() == spv::Op::OpName ||
+        d->opcode() == spv::Op::OpMemberName) {
       // OpName and OpMemberName do not have result-ids. The target of the
       // instruction is at InOperand index 0.
       id_to_name_->insert({d->GetSingleWordInOperand(0), d.get()});
@@ -1175,8 +1176,8 @@ void IRContext::UpdateDefUse(Instruction* inst) {
 void IRContext::BuildIdToNameMap() {
   id_to_name_ = MakeUnique<std::multimap<uint32_t, Instruction*>>();
   for (Instruction& debug_inst : debugs2()) {
-    if (debug_inst.opcode() == SpvOpMemberName ||
-        debug_inst.opcode() == SpvOpName) {
+    if (debug_inst.opcode() == spv::Op::OpMemberName ||
+        debug_inst.opcode() == spv::Op::OpName) {
       id_to_name_->insert({debug_inst.GetSingleWordInOperand(0), &debug_inst});
     }
   }
@@ -1199,7 +1200,7 @@ Instruction* IRContext::GetMemberName(uint32_t struct_type_id, uint32_t index) {
   auto result = id_to_name_->equal_range(struct_type_id);
   for (auto i = result.first; i != result.second; ++i) {
     auto* name_instr = i->second;
-    if (name_instr->opcode() == SpvOpMemberName &&
+    if (name_instr->opcode() == spv::Op::OpMemberName &&
         name_instr->GetSingleWordInOperand(1) == index) {
       return name_instr;
     }

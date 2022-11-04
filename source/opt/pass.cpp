@@ -56,11 +56,11 @@ uint32_t Pass::GetPointeeTypeId(const Instruction* ptrInst) const {
 
 Instruction* Pass::GetBaseType(uint32_t ty_id) {
   Instruction* ty_inst = get_def_use_mgr()->GetDef(ty_id);
-  if (ty_inst->opcode() == SpvOpTypeMatrix) {
+  if (ty_inst->opcode() == spv::Op::OpTypeMatrix) {
     uint32_t vty_id = ty_inst->GetSingleWordInOperand(0);
     ty_inst = get_def_use_mgr()->GetDef(vty_id);
   }
-  if (ty_inst->opcode() == SpvOpTypeVector) {
+  if (ty_inst->opcode() == spv::Op::OpTypeVector) {
     uint32_t cty_id = ty_inst->GetSingleWordInOperand(0);
     ty_inst = get_def_use_mgr()->GetDef(cty_id);
   }
@@ -69,12 +69,12 @@ Instruction* Pass::GetBaseType(uint32_t ty_id) {
 
 bool Pass::IsFloat(uint32_t ty_id, uint32_t width) {
   Instruction* ty_inst = GetBaseType(ty_id);
-  if (ty_inst->opcode() != SpvOpTypeFloat) return false;
+  if (ty_inst->opcode() != spv::Op::OpTypeFloat) return false;
   return ty_inst->GetSingleWordInOperand(0) == width;
 }
 
 uint32_t Pass::GetNullId(uint32_t type_id) {
-  if (IsFloat(type_id, 16)) context()->AddCapability(SpvCapabilityFloat16);
+  if (IsFloat(type_id, 16)) context()->AddCapability(spv::Capability::Float16);
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
   analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
   const analysis::Type* type = type_mgr->GetType(type_id);

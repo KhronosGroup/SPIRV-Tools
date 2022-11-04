@@ -139,9 +139,9 @@ std::vector<uint32_t> ParseDefaultValueBitPattern(
 // decoration.
 bool CanHaveSpecIdDecoration(const Instruction& inst) {
   switch (inst.opcode()) {
-    case SpvOp::SpvOpSpecConstant:
-    case SpvOp::SpvOpSpecConstantFalse:
-    case SpvOp::SpvOpSpecConstantTrue:
+    case spv::Op::OpSpecConstant:
+    case spv::Op::OpSpecConstantFalse:
+    case spv::Op::OpSpecConstantTrue:
       return true;
     default:
       return false;
@@ -165,7 +165,7 @@ Instruction* GetSpecIdTargetFromDecorationGroup(
   if (def_use_mgr->WhileEachUser(&decoration_group_defining_inst,
                                  [&group_decorate_inst](Instruction* user) {
                                    if (user->opcode() ==
-                                       SpvOp::SpvOpGroupDecorate) {
+                                       spv::Op::OpGroupDecorate) {
                                      group_decorate_inst = user;
                                      return false;
                                    }
@@ -240,10 +240,10 @@ Pass::Status SetSpecConstantDefaultValuePass::Process() {
   // default value of the target spec constant.
   for (Instruction& inst : context()->annotations()) {
     // Only process 'OpDecorate SpecId' instructions
-    if (inst.opcode() != SpvOp::SpvOpDecorate) continue;
+    if (inst.opcode() != spv::Op::OpDecorate) continue;
     if (inst.NumOperands() != kOpDecorateSpecIdNumOperands) continue;
     if (inst.GetSingleWordInOperand(kDecorationOperandIndex) !=
-        uint32_t(SpvDecoration::SpvDecorationSpecId)) {
+        uint32_t(spv::Decoration::SpecId)) {
       continue;
     }
 
@@ -255,7 +255,7 @@ Pass::Status SetSpecConstantDefaultValuePass::Process() {
     // target_id might be a decoration group id.
     Instruction* spec_inst = nullptr;
     if (Instruction* target_inst = get_def_use_mgr()->GetDef(target_id)) {
-      if (target_inst->opcode() == SpvOp::SpvOpDecorationGroup) {
+      if (target_inst->opcode() == spv::Op::OpDecorationGroup) {
         spec_inst =
             GetSpecIdTargetFromDecorationGroup(*target_inst, get_def_use_mgr());
       } else {
@@ -301,7 +301,7 @@ Pass::Status SetSpecConstantDefaultValuePass::Process() {
     // Update the operand bit patterns of the spec constant defining
     // instruction.
     switch (spec_inst->opcode()) {
-      case SpvOp::SpvOpSpecConstant:
+      case spv::Op::OpSpecConstant:
         // If the new value is the same with the original value, no
         // need to do anything. Otherwise update the operand words.
         if (spec_inst->GetInOperand(kOpSpecConstantLiteralInOperandIndex)
@@ -311,19 +311,19 @@ Pass::Status SetSpecConstantDefaultValuePass::Process() {
           modified = true;
         }
         break;
-      case SpvOp::SpvOpSpecConstantTrue:
+      case spv::Op::OpSpecConstantTrue:
         // If the new value is also 'true', no need to change anything.
         // Otherwise, set the opcode to OpSpecConstantFalse;
         if (!static_cast<bool>(bit_pattern.front())) {
-          spec_inst->SetOpcode(SpvOp::SpvOpSpecConstantFalse);
+          spec_inst->SetOpcode(spv::Op::OpSpecConstantFalse);
           modified = true;
         }
         break;
-      case SpvOp::SpvOpSpecConstantFalse:
+      case spv::Op::OpSpecConstantFalse:
         // If the new value is also 'false', no need to change anything.
         // Otherwise, set the opcode to OpSpecConstantTrue;
         if (static_cast<bool>(bit_pattern.front())) {
-          spec_inst->SetOpcode(SpvOp::SpvOpSpecConstantTrue);
+          spec_inst->SetOpcode(spv::Op::OpSpecConstantTrue);
           modified = true;
         }
         break;

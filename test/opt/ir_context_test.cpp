@@ -229,12 +229,12 @@ TEST_F(IRContextTest, KillMemberName) {
 
   // Make sure all of the name are removed.
   for (auto& inst : context->debugs2()) {
-    EXPECT_EQ(inst.opcode(), SpvOpNop);
+    EXPECT_EQ(inst.opcode(), spv::Op::OpNop);
   }
 
   // Make sure all of the decorations are removed.
   for (auto& inst : context->annotations()) {
-    EXPECT_EQ(inst.opcode(), SpvOpNop);
+    EXPECT_EQ(inst.opcode(), spv::Op::OpNop);
   }
 }
 
@@ -276,17 +276,17 @@ TEST_F(IRContextTest, KillGroupDecoration) {
 
   // Check the OpDecorate instruction
   auto inst = context->annotation_begin();
-  EXPECT_EQ(inst->opcode(), SpvOpDecorate);
+  EXPECT_EQ(inst->opcode(), spv::Op::OpDecorate);
   EXPECT_EQ(inst->GetSingleWordInOperand(0), 3);
 
   // Check the OpDecorationGroup Instruction
   ++inst;
-  EXPECT_EQ(inst->opcode(), SpvOpDecorationGroup);
+  EXPECT_EQ(inst->opcode(), spv::Op::OpDecorationGroup);
   EXPECT_EQ(inst->result_id(), 3);
 
   // Check that %5 is no longer part of the group.
   ++inst;
-  EXPECT_EQ(inst->opcode(), SpvOpGroupDecorate);
+  EXPECT_EQ(inst->opcode(), spv::Op::OpGroupDecorate);
   EXPECT_EQ(inst->NumInOperands(), 2);
   EXPECT_EQ(inst->GetSingleWordInOperand(0), 3);
   EXPECT_EQ(inst->GetSingleWordInOperand(1), 4);
@@ -340,12 +340,12 @@ TEST_F(IRContextTest, KillGroupDecorationWitNoDecorations) {
 
   // Check the OpDecorationGroup Instruction
   auto inst = context->annotation_begin();
-  EXPECT_EQ(inst->opcode(), SpvOpDecorationGroup);
+  EXPECT_EQ(inst->opcode(), spv::Op::OpDecorationGroup);
   EXPECT_EQ(inst->result_id(), 3);
 
   // Check that %5 is no longer part of the group.
   ++inst;
-  EXPECT_EQ(inst->opcode(), SpvOpGroupDecorate);
+  EXPECT_EQ(inst->opcode(), spv::Op::OpGroupDecorate);
   EXPECT_EQ(inst->NumInOperands(), 2);
   EXPECT_EQ(inst->GetSingleWordInOperand(0), 3);
   EXPECT_EQ(inst->GetSingleWordInOperand(1), 4);

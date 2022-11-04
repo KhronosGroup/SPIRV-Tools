@@ -99,7 +99,7 @@ class TypeManager {
   //
   // |id| must be a registered type.
   std::pair<Type*, std::unique_ptr<Pointer>> GetTypeAndPointerType(
-      uint32_t id, SpvStorageClass sc) const;
+      uint32_t id, spv::StorageClass sc) const;
 
   // Returns an id for a declaration representing |type|.  Returns 0 if the type
   // does not exists, and could not be generated.
@@ -112,7 +112,7 @@ class TypeManager {
   // Find pointer to type and storage in module, return its resultId.  If it is
   // not found, a new type is created, and its id is returned.  Returns 0 if the
   // type could not be created.
-  uint32_t FindPointerToType(uint32_t type_id, SpvStorageClass storage_class);
+  uint32_t FindPointerToType(uint32_t type_id, spv::StorageClass storage_class);
 
   // Registers |id| to |type|.
   //

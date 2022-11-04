@@ -696,11 +696,11 @@ TEST_F(AnalyzeLiveInputTest, Builtins) {
   auto result = SinglePassRunToBinary<AnalyzeLiveInputPass>(
       text, true, &live_inputs, &live_builtins);
 
-  auto itr0 = live_builtins.find(SpvBuiltInPointSize);
-  auto itr1 = live_builtins.find(SpvBuiltInClipDistance);
-  auto itr2 = live_builtins.find(SpvBuiltInCullDistance);
+  auto itr0 = live_builtins.find((uint32_t)spv::BuiltIn::PointSize);
+  auto itr1 = live_builtins.find((uint32_t)spv::BuiltIn::ClipDistance);
+  auto itr2 = live_builtins.find((uint32_t)spv::BuiltIn::CullDistance);
 
-  // Expect live_builtins == { SpvBuiltInPointSize }
+  // Expect live_builtins == { spv::BuiltIn::PointSize }
   EXPECT_TRUE(itr0 != live_builtins.end());
   EXPECT_TRUE(itr1 == live_builtins.end());
   EXPECT_TRUE(itr2 == live_builtins.end());

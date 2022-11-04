@@ -300,12 +300,12 @@ void SSARewriter::SealBlock(BasicBlock* bb) {
 
 void SSARewriter::ProcessStore(Instruction* inst, BasicBlock* bb) {
   auto opcode = inst->opcode();
-  assert((opcode == SpvOpStore || opcode == SpvOpVariable) &&
+  assert((opcode == spv::Op::OpStore || opcode == spv::Op::OpVariable) &&
          "Expecting a store or a variable definition instruction.");
 
   uint32_t var_id = 0;
   uint32_t val_id = 0;
-  if (opcode == SpvOpStore) {
+  if (opcode == spv::Op::OpStore) {
     (void)pass_->GetPtr(inst, &var_id);
     val_id = inst->GetSingleWordInOperand(kStoreValIdInIdx);
   } else if (inst->NumInOperands() >= 2) {
@@ -443,9 +443,9 @@ bool SSARewriter::GenerateSSAReplacements(BasicBlock* bb) {
 
   for (auto& inst : *bb) {
     auto opcode = inst.opcode();
-    if (opcode == SpvOpStore || opcode == SpvOpVariable) {
+    if (opcode == spv::Op::OpStore || opcode == spv::Op::OpVariable) {
       ProcessStore(&inst, bb);
-    } else if (inst.opcode() == SpvOpLoad) {
+    } else if (inst.opcode() == spv::Op::OpLoad) {
       if (!ProcessLoad(&inst, bb)) {
         return false;
       }
@@ -545,7 +545,7 @@ bool SSARewriter::ApplyReplacements() {
     // Generate a new OpPhi instruction and insert it in its basic
     // block.
     std::unique_ptr<Instruction> phi_inst(
-        new Instruction(pass_->context(), SpvOpPhi, type_id,
+        new Instruction(pass_->context(), spv::Op::OpPhi, type_id,
                         phi_candidate->result_id(), phi_operands));
     generated_phis.push_back(phi_inst.get());
     pass_->get_def_use_mgr()->AnalyzeInstDef(&*phi_inst);
@@ -554,7 +554,7 @@ bool SSARewriter::ApplyReplacements() {
     insert_it = insert_it.InsertBefore(std::move(phi_inst));
     pass_->context()->get_decoration_mgr()->CloneDecorations(
         phi_candidate->var_id(), phi_candidate->result_id(),
-        {SpvDecorationRelaxedPrecision});
+        {spv::Decoration::RelaxedPrecision});
 
     // Add DebugValue for the new OpPhi instruction.
     insert_it->SetDebugScope(local_var->GetDebugScope());
