@@ -1718,6 +1718,7 @@ spv_result_t CheckComponentDecoration(ValidationState_t& vstate,
     } else if (bit_width == 64) {
       if (dimension > 2) {
         return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+               << vstate.VkErrorID(7703)
                << "Component decoration only allowed on 64-bit scalar and "
                   "2-component vector";
       }
