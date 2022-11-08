@@ -136,7 +136,7 @@ ConstantFoldingRule FoldInsertWithConstants() {
     // index will need to be recreated to use the inserted object.
     std::vector<const analysis::Constant*> chain;
     std::vector<const analysis::Constant*> components;
-    const analysis::Type* type;
+    const analysis::Type* type = nullptr;
 
     // Work down hierarchy and add all the indexes, not including the final
     // index.
@@ -167,16 +167,14 @@ ConstantFoldingRule FoldInsertWithConstants() {
       // Need to insert any previous instruction into the module first.
       // Can't just insert in types_values_begin() because it will move above
       // where the types are declared
-      Module::inst_iterator* pos = nullptr;
       for (Module::inst_iterator inst_iter = context->types_values_begin();
            inst_iter != context->types_values_end(); ++inst_iter) {
         Instruction* x = &*inst_iter;
         if (inst->result_id() == x->result_id()) {
-          pos = &inst_iter;
+          const_mgr->BuildInstructionAndAddToModule(new_constant, &inst_iter);
           break;
         }
       }
-      const_mgr->BuildInstructionAndAddToModule(new_constant, pos);
 
       composite = chain[i - 1];
       components = composite->AsCompositeConstant()->GetComponents();
