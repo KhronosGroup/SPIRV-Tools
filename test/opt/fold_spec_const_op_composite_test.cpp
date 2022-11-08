@@ -308,6 +308,72 @@ TEST_F(FoldSpecConstantOpAndCompositePassBasicTest, CompositeExtractMaxtrix) {
       builder.GetCode(), JoinAllInsts(expected), /* skip_nop = */ true);
 }
 
+TEST_F(FoldSpecConstantOpAndCompositePassBasicTest, CompositeInsertVector) {
+  const std::string test =
+      R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %1 LocalSize 1 1 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+          %8 = OpConstantNull %uint
+          %9 = OpSpecConstantComposite %v3uint %uint_2 %uint_2 %uint_2
+ ; CHECK: %15 = OpConstantComposite %v3uint %uint_3 %uint_2 %uint_2
+ ; CHECK: %uint_3_0 = OpConstant %uint 3
+ ; CHECK: %17 = OpConstantComposite %v3uint %8 %uint_2 %uint_2
+ ; CHECK: %18 = OpConstantNull %uint
+         %10 = OpSpecConstantOp %v3uint CompositeInsert %uint_3 %9 0
+         %11 = OpSpecConstantOp %uint CompositeExtract %10 0
+         %12 = OpSpecConstantOp %v3uint CompositeInsert %8 %9 0
+         %13 = OpSpecConstantOp %uint CompositeExtract %12 0
+          %1 = OpFunction %void None %3
+         %14 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<FoldSpecConstantOpAndCompositePass>(test, false);
+}
+
+TEST_F(FoldSpecConstantOpAndCompositePassBasicTest, CompositeInsertMatrix) {
+  const std::string test =
+      R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %1 LocalSize 1 1 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+%mat3v3float = OpTypeMatrix %v3float 3
+    %float_1 = OpConstant %float 1
+    %float_2 = OpConstant %float 2
+          %9 = OpSpecConstantComposite %v3float %float_1 %float_1 %float_1
+         %10 = OpSpecConstantComposite %v3float %float_1 %float_1 %float_1
+         %11 = OpSpecConstantComposite %v3float %float_1 %float_2 %float_1
+         %12 = OpSpecConstantComposite %mat3v3float %9 %10 %11
+ ; CHECK: %float_2_0 = OpConstant %float 2
+ ; CHECK: %18 = OpConstantComposite %v3float %float_1 %float_1 %float_2
+ ; CHECK: %19 = OpConstantComposite %mat3v3float %9 %18 %11
+ ; CHECK: %float_2_1 = OpConstant %float 2
+         %13 = OpSpecConstantOp %float CompositeExtract %12 2 1
+         %14 = OpSpecConstantOp %mat3v3float CompositeInsert %13 %12 1 2
+         %15 = OpSpecConstantOp %float CompositeExtract %14 1 2
+          %1 = OpFunction %void None %3
+         %16 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<FoldSpecConstantOpAndCompositePass>(test, false);
+}
+
 // All types and some common constants that are potentially required in
 // FoldSpecConstantOpAndCompositeTest.
 std::vector<std::string> CommonTypesAndConstants() {

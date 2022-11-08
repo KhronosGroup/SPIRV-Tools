@@ -120,6 +120,83 @@ ConstantFoldingRule FoldExtractWithConstants() {
   };
 }
 
+// Folds an OpcompositeInsert where input is a composite constant.
+ConstantFoldingRule FoldInsertWithConstants() {
+  return [](IRContext* context, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants)
+             -> const analysis::Constant* {
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    const analysis::Constant* object = constants[0];
+    const analysis::Constant* composite = constants[1];
+    if (object == nullptr || composite == nullptr) {
+      return nullptr;
+    }
+
+    // If there is more than 1 index, then each additional constant used by the
+    // index will need to be recreated to use the inserted object.
+    std::vector<const analysis::Constant*> chain;
+    std::vector<const analysis::Constant*> components;
+    const analysis::Type* type = nullptr;
+
+    // Work down hierarchy and add all the indexes, not including the final
+    // index.
+    for (uint32_t i = 2; i < inst->NumInOperands(); ++i) {
+      if (i != inst->NumInOperands() - 1) {
+        chain.push_back(composite);
+      }
+      const uint32_t index = inst->GetSingleWordInOperand(i);
+      components = composite->AsCompositeConstant()->GetComponents();
+      type = composite->AsCompositeConstant()->type();
+      composite = components[index];
+    }
+
+    // Final index in hierarchy is inserted with new object.
+    const uint32_t final_index =
+        inst->GetSingleWordInOperand(inst->NumInOperands() - 1);
+    std::vector<uint32_t> ids;
+    for (size_t i = 0; i < components.size(); i++) {
+      const analysis::Constant* constant =
+          (i == final_index) ? object : components[i];
+      Instruction* member_inst = const_mgr->GetDefiningInstruction(constant);
+      ids.push_back(member_inst->result_id());
+    }
+    const analysis::Constant* new_constant = const_mgr->GetConstant(type, ids);
+
+    // Work backwards up the chain and replace each index with new constant.
+    for (size_t i = chain.size(); i > 0; i--) {
+      // Need to insert any previous instruction into the module first.
+      // Can't just insert in types_values_begin() because it will move above
+      // where the types are declared
+      for (Module::inst_iterator inst_iter = context->types_values_begin();
+           inst_iter != context->types_values_end(); ++inst_iter) {
+        Instruction* x = &*inst_iter;
+        if (inst->result_id() == x->result_id()) {
+          const_mgr->BuildInstructionAndAddToModule(new_constant, &inst_iter);
+          break;
+        }
+      }
+
+      composite = chain[i - 1];
+      components = composite->AsCompositeConstant()->GetComponents();
+      type = composite->AsCompositeConstant()->type();
+      ids.clear();
+      for (size_t k = 0; k < components.size(); k++) {
+        const uint32_t index =
+            inst->GetSingleWordInOperand(1 + static_cast<uint32_t>(i));
+        const analysis::Constant* constant =
+            (k == index) ? new_constant : components[k];
+        const uint32_t constant_id =
+            const_mgr->FindDeclaredConstant(constant, 0);
+        ids.push_back(constant_id);
+      }
+      new_constant = const_mgr->GetConstant(type, ids);
+    }
+
+    // If multiple constants were created, only need to return the top index.
+    return new_constant;
+  };
+}
+
 ConstantFoldingRule FoldVectorShuffleWithConstants() {
   return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
@@ -1410,6 +1487,7 @@ void ConstantFoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpCompositeConstruct].push_back(FoldCompositeWithConstants());
 
   rules_[spv::Op::OpCompositeExtract].push_back(FoldExtractWithConstants());
+  rules_[spv::Op::OpCompositeInsert].push_back(FoldInsertWithConstants());
 
   rules_[spv::Op::OpConvertFToS].push_back(FoldFToI());
   rules_[spv::Op::OpConvertFToU].push_back(FoldFToI());
