@@ -546,9 +546,9 @@ spv_result_t ValidateStorageClass(ValidationState_t& _,
   for (uint32_t i = 3; i < entry_point->operands().size(); ++i) {
     auto interface_id = entry_point->GetOperandAs<uint32_t>(i);
     auto interface_var = _.FindDef(interface_id);
-    auto storage_class = interface_var->GetOperandAs<SpvStorageClass>(2);
+    auto storage_class = interface_var->GetOperandAs<spv::StorageClass>(2);
     switch (storage_class) {
-      case SpvStorageClassPushConstant: {
+      case spv::StorageClass::PushConstant: {
         if (has_push_constant) {
           return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
                  << _.VkErrorID(6673)
@@ -558,7 +558,7 @@ spv_result_t ValidateStorageClass(ValidationState_t& _,
         has_push_constant = true;
         break;
       }
-      case SpvStorageClassIncomingRayPayloadKHR: {
+      case spv::StorageClass::IncomingRayPayloadKHR: {
         if (has_ray_payload) {
           return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
                  << _.VkErrorID(4700)
@@ -568,7 +568,7 @@ spv_result_t ValidateStorageClass(ValidationState_t& _,
         has_ray_payload = true;
         break;
       }
-      case SpvStorageClassHitAttributeKHR: {
+      case spv::StorageClass::HitAttributeKHR: {
         if (has_hit_attribute) {
           return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
                  << _.VkErrorID(4702)
@@ -578,7 +578,7 @@ spv_result_t ValidateStorageClass(ValidationState_t& _,
         has_hit_attribute = true;
         break;
       }
-      case SpvStorageClassIncomingCallableDataKHR: {
+      case spv::StorageClass::IncomingCallableDataKHR: {
         if (has_callable_data) {
           return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
                  << _.VkErrorID(4706)
