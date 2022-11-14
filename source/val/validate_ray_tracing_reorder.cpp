@@ -44,7 +44,7 @@ spv_result_t ValidateHitObjectPointer(ValidationState_t& _,
   auto type = _.FindDef(pointer->GetOperandAs<uint32_t>(2));
   if (!type || type->opcode() != spv::Op::OpTypeHitObjectNV) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Ray Query must be a pointer to OpTypeHitObjectNV";
+           << "Type must be OpTypeHitObjectNV";
   }
   return SPV_SUCCESS;
 }
