@@ -913,6 +913,14 @@ Optimizer::PassToken CreateEliminateDeadInputComponentsPass();
 // shader, then apply EliminateDeadOutputStores to this shader.
 Optimizer::PassToken CreateEliminateDeadOutputComponentsPass();
 
+// Removes unused components from composite input variables. This safe
+// version will not cause interface incompatibilities since it only changes
+// vertex shaders. The current implementation just removes trailing unused
+// components from input structs and input arrays. The pass performs best
+// after maximizing dead code removal. A subsequent dead code elimination
+// pass would be beneficial in removing newly unused component types.
+Optimizer::PassToken CreateEliminateDeadInputComponentsSafePass();
+
 // Analyzes shader and populates |live_locs| and |live_builtins|. Best results
 // will be obtained if shader has all dead code eliminated first. |live_locs|
 // and |live_builtins| are subsequently used when calling

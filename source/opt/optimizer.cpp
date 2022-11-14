@@ -525,7 +525,7 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
   } else if (pass_name == "remove-dont-inline") {
     RegisterPass(CreateRemoveDontInlinePass());
   } else if (pass_name == "eliminate-dead-input-components") {
-    RegisterPass(CreateEliminateDeadInputComponentsPass());
+    RegisterPass(CreateEliminateDeadInputComponentsSafePass());
   } else if (pass_name == "fix-func-call-param") {
     RegisterPass(CreateFixFuncCallArgumentsPass());
   } else if (pass_name == "convert-to-sampled-image") {
@@ -1017,6 +1017,18 @@ Optimizer::PassToken CreateInterpolateFixupPass() {
 
 Optimizer::PassToken CreateEliminateDeadInputComponentsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::EliminateDeadInputComponentsPass>(
+          /* output_instead */ false, /* vertex_shader_only */ false));
+}
+
+Optimizer::PassToken CreateEliminateDeadOutputComponentsPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::EliminateDeadInputComponentsPass>(
+          /* output_instead */ true, /* vertex_shader_only */ false));
+}
+
+Optimizer::PassToken CreateEliminateDeadInputComponentsSafePass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::EliminateDeadInputComponentsPass>());
 }
 
@@ -1032,12 +1044,6 @@ Optimizer::PassToken CreateEliminateDeadOutputStoresPass(
     std::unordered_set<uint32_t>* live_builtins) {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::EliminateDeadOutputStoresPass>(live_locs, live_builtins));
-}
-
-Optimizer::PassToken CreateEliminateDeadOutputComponentsPass() {
-  return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::EliminateDeadInputComponentsPass>(
-          /* output_instead */ true));
 }
 
 Optimizer::PassToken CreateConvertToSampledImagePass(

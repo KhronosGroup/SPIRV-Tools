@@ -35,7 +35,11 @@ namespace spvtools {
 namespace opt {
 
 Pass::Status EliminateDeadInputComponentsPass::Process() {
-  // Current functionality assumes shader capability
+  // Process non-vertex only if explicitly allowed.
+  auto stage = context()->GetStage();
+  if (stage != spv::ExecutionModel::Vertex && vertex_shader_only_)
+    return Status::SuccessWithoutChange;
+  // Current functionality assumes shader capability.
   if (!context()->get_feature_mgr()->HasCapability(spv::Capability::Shader))
     return Status::SuccessWithoutChange;
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
@@ -62,13 +66,21 @@ Pass::Status EliminateDeadInputComponentsPass::Process() {
     }
     const analysis::Array* arr_type = ptr_type->pointee_type()->AsArray();
     if (arr_type != nullptr) {
+      // Only process array if input of vertex shader, or output of
+      // fragment shader. Otherwise, if one shader has a runtime index and the
+      // other does not, interface incompatibility can occur.
+      if (!((ptr_type->storage_class() == spv::StorageClass::Input &&
+             stage == spv::ExecutionModel::Vertex) ||
+            (ptr_type->storage_class() == spv::StorageClass::Output &&
+             stage == spv::ExecutionModel::Fragment)))
+        continue;
       unsigned arr_len_id = arr_type->LengthId();
       Instruction* arr_len_inst = def_use_mgr->GetDef(arr_len_id);
       if (arr_len_inst->opcode() != spv::Op::OpConstant) {
         continue;
       }
       // SPIR-V requires array size is >= 1, so this works for signed or
-      // unsigned size
+      // unsigned size.
       unsigned original_max =
           arr_len_inst->GetSingleWordInOperand(kConstantValueInIdx) - 1;
       unsigned max_idx = FindMaxIndex(var, original_max);
@@ -92,7 +104,7 @@ Pass::Status EliminateDeadInputComponentsPass::Process() {
   }
 
   // Move changed vars after their new type instruction to preserve backward
-  // referencing
+  // referencing.
   for (auto var : vars_to_move) {
     auto type_id = var->type_id();
     auto type_inst = def_use_mgr->GetDef(type_id);
