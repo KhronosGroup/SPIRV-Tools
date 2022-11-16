@@ -388,7 +388,7 @@ void Loop::GetMergingBlocks(
 
 namespace {
 
-static inline bool IsBasicBlockSafeToClone(IRContext* context, BasicBlock* bb) {
+inline bool IsBasicBlockSafeToClone(IRContext* context, BasicBlock* bb) {
   for (Instruction& inst : *bb) {
     if (!inst.IsBranch() && !context->IsCombinatorInstruction(&inst))
       return false;

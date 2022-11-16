@@ -28,13 +28,10 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
-
-const uint32_t kCopyObjectOperandInIdx = 0;
-const uint32_t kTypePointerStorageClassInIdx = 0;
-const uint32_t kTypePointerTypeIdInIdx = 1;
-
+constexpr uint32_t kCopyObjectOperandInIdx = 0;
+constexpr uint32_t kTypePointerStorageClassInIdx = 0;
+constexpr uint32_t kTypePointerTypeIdInIdx = 1;
 }  // namespace
 
 bool MemPass::IsBaseTargetType(const Instruction* typeInst) const {

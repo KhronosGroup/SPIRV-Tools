@@ -29,7 +29,7 @@ namespace {
 using cbb_ptr = const opt::BasicBlock*;
 
 // Universal Limit of ResultID + 1
-const int kMaxResultId = 0x400000;
+constexpr int kMaxResultId = 0x400000;
 
 }  // namespace
 

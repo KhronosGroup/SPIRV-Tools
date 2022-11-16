@@ -63,10 +63,9 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
-const uint32_t kStoreValIdInIdx = 1;
-const uint32_t kVariableInitIdInIdx = 1;
+constexpr uint32_t kStoreValIdInIdx = 1;
+constexpr uint32_t kVariableInitIdInIdx = 1;
 }  // namespace
 
 std::string SSARewriter::PhiCandidate::PrettyPrint(const CFG* cfg) const {

@@ -68,10 +68,10 @@ namespace opt {
 namespace {
 
 // Loop control constant value for DontUnroll flag.
-static const uint32_t kLoopControlDontUnrollIndex = 2;
+constexpr uint32_t kLoopControlDontUnrollIndex = 2;
 
 // Operand index of the loop control parameter of the OpLoopMerge.
-static const uint32_t kLoopControlIndex = 2;
+constexpr uint32_t kLoopControlIndex = 2;
 
 // This utility class encapsulates some of the state we need to maintain between
 // loop unrolls. Specifically it maintains key blocks and the induction variable
@@ -336,8 +336,7 @@ class LoopUnrollerUtilsImpl {
 
 // Retrieve the index of the OpPhi instruction |phi| which corresponds to the
 // incoming |block| id.
-static uint32_t GetPhiIndexFromLabel(const BasicBlock* block,
-                                     const Instruction* phi) {
+uint32_t GetPhiIndexFromLabel(const BasicBlock* block, const Instruction* phi) {
   for (uint32_t i = 1; i < phi->NumInOperands(); i += 2) {
     if (block->id() == phi->GetSingleWordInOperand(i)) {
       return i;
@@ -1002,7 +1001,7 @@ bool LoopUtils::CanPerformUnroll() {
   // iteration counts. This can cause timeouts and memouts during fuzzing that
   // are not classed as bugs. To avoid this noise, loop unrolling is not applied
   // to loops with large iteration counts when fuzzing.
-  const size_t kFuzzerIterationLimit = 100;
+  constexpr size_t kFuzzerIterationLimit = 100;
   size_t num_iterations;
   loop_->FindNumberOfIterations(induction, &*condition->ctail(),
                                 &num_iterations);

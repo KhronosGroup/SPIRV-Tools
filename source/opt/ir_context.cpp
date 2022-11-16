@@ -22,24 +22,21 @@
 #include "source/opt/mem_pass.h"
 #include "source/opt/reflect.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
-
-static const int kSpvDecorateTargetIdInIdx = 0;
-static const int kSpvDecorateDecorationInIdx = 1;
-static const int kSpvDecorateBuiltinInIdx = 2;
-static const int kEntryPointInterfaceInIdx = 3;
-static const int kEntryPointFunctionIdInIdx = 1;
-static const int kEntryPointExecutionModelInIdx = 0;
+constexpr int kSpvDecorateTargetIdInIdx = 0;
+constexpr int kSpvDecorateDecorationInIdx = 1;
+constexpr int kSpvDecorateBuiltinInIdx = 2;
+constexpr int kEntryPointInterfaceInIdx = 3;
+constexpr int kEntryPointFunctionIdInIdx = 1;
+constexpr int kEntryPointExecutionModelInIdx = 0;
 
 // Constants for OpenCL.DebugInfo.100 / NonSemantic.Shader.DebugInfo.100
 // extension instructions.
-static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
-static const uint32_t kDebugGlobalVariableOperandVariableIndex = 11;
-
-}  // anonymous namespace
-
-namespace spvtools {
-namespace opt {
+constexpr uint32_t kDebugFunctionOperandFunctionIndex = 13;
+constexpr uint32_t kDebugGlobalVariableOperandVariableIndex = 11;
+}  // namespace
 
 void IRContext::BuildInvalidAnalyses(IRContext::Analysis set) {
   set = Analysis(set & ~valid_analyses_);

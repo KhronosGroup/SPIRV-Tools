@@ -25,7 +25,6 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
 
 // The trie that stores a bunch of result ids and, for a given instruction,
@@ -103,7 +102,7 @@ class ResultIdTrie {
 
   std::unique_ptr<Node> root_;  // The root node of the trie.
 };
-}  // anonymous namespace
+}  // namespace
 
 Pass::Status UnifyConstantPass::Process() {
   bool modified = false;

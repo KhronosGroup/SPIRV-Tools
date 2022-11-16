@@ -24,7 +24,6 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
 
 enum AmdShaderBallotExtOpcodes {

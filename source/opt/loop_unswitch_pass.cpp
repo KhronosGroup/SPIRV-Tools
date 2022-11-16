@@ -37,12 +37,7 @@
 namespace spvtools {
 namespace opt {
 namespace {
-
-static const uint32_t kTypePointerStorageClassInIdx = 0;
-
-}  // anonymous namespace
-
-namespace {
+constexpr uint32_t kTypePointerStorageClassInIdx = 0;
 
 // This class handle the unswitch procedure for a given loop.
 // The unswitch will not happen if:

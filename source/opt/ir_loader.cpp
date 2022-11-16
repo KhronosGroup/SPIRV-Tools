@@ -24,12 +24,13 @@
 #include "source/opt/reflect.h"
 #include "source/util/make_unique.h"
 
-static const uint32_t kExtInstSetIndex = 4;
-static const uint32_t kLexicalScopeIndex = 5;
-static const uint32_t kInlinedAtIndex = 6;
-
 namespace spvtools {
 namespace opt {
+namespace {
+constexpr uint32_t kExtInstSetIndex = 4;
+constexpr uint32_t kLexicalScopeIndex = 5;
+constexpr uint32_t kInlinedAtIndex = 6;
+}  // namespace
 
 IrLoader::IrLoader(const MessageConsumer& consumer, Module* m)
     : consumer_(consumer),

@@ -24,10 +24,8 @@
 namespace spvtools {
 namespace opt {
 namespace {
-
-const uint32_t kStoreValIdInIdx = 1;
-
-}  // anonymous namespace
+constexpr uint32_t kStoreValIdInIdx = 1;
+}  // namespace
 
 bool LocalSingleBlockLoadStoreElimPass::HasOnlySupportedRefs(uint32_t ptrId) {
   if (supported_ref_ptrs_.find(ptrId) != supported_ref_ptrs_.end()) return true;

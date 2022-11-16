@@ -19,8 +19,7 @@
 namespace spvtools {
 namespace opt {
 namespace {
-
-const uint32_t kExtractCompositeIdInIdx = 0;
+constexpr uint32_t kExtractCompositeIdInIdx = 0;
 
 // Returns a constants with the value NaN of the given type.  Only works for
 // 32-bit and 64-bit float point types.  Returns |nullptr| if an error occurs.

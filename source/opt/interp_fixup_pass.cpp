@@ -25,11 +25,10 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
 
 // Input Operand Indices
-static const int kSpvVariableStorageClassInIdx = 0;
+constexpr int kSpvVariableStorageClassInIdx = 0;
 
 // Folding rule function which attempts to replace |op(OpLoad(a),...)|
 // by |op(a,...)|, where |op| is one of the GLSLstd450 InterpolateAt*

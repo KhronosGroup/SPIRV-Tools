@@ -27,15 +27,15 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-const uint32_t kExtractCompositeIdInIdx = 0;
-const uint32_t kInsertObjectIdInIdx = 0;
-const uint32_t kInsertCompositeIdInIdx = 1;
-const uint32_t kExtInstSetIdInIdx = 0;
-const uint32_t kExtInstInstructionInIdx = 1;
-const uint32_t kFMixXIdInIdx = 2;
-const uint32_t kFMixYIdInIdx = 3;
-const uint32_t kFMixAIdInIdx = 4;
-const uint32_t kStoreObjectInIdx = 1;
+constexpr uint32_t kExtractCompositeIdInIdx = 0;
+constexpr uint32_t kInsertObjectIdInIdx = 0;
+constexpr uint32_t kInsertCompositeIdInIdx = 1;
+constexpr uint32_t kExtInstSetIdInIdx = 0;
+constexpr uint32_t kExtInstInstructionInIdx = 1;
+constexpr uint32_t kFMixXIdInIdx = 2;
+constexpr uint32_t kFMixYIdInIdx = 3;
+constexpr uint32_t kFMixAIdInIdx = 4;
+constexpr uint32_t kStoreObjectInIdx = 1;
 
 // Some image instructions may contain an "image operands" argument.
 // Returns the operand index for the "image operands".
@@ -2603,7 +2603,7 @@ FoldingRule DotProductDoingExtract() {
       std::vector<const analysis::Constant*> components;
       components = constants[i]->GetVectorComponents(const_mgr);
 
-      const uint32_t kNotFound = std::numeric_limits<uint32_t>::max();
+      constexpr uint32_t kNotFound = std::numeric_limits<uint32_t>::max();
 
       uint32_t component_with_one = kNotFound;
       bool all_others_zero = true;

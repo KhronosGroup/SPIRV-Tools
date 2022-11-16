@@ -23,16 +23,13 @@
 #include "source/opt/ir_context.h"
 #include "source/util/bit_vector.h"
 
-namespace {
-
-const uint32_t kAccessChainBaseInIdx = 0;
-const uint32_t kAccessChainIndex0InIdx = 1;
-const uint32_t kConstantValueInIdx = 0;
-
-}  // namespace
-
 namespace spvtools {
 namespace opt {
+namespace {
+constexpr uint32_t kAccessChainBaseInIdx = 0;
+constexpr uint32_t kAccessChainIndex0InIdx = 1;
+constexpr uint32_t kConstantValueInIdx = 0;
+}  // namespace
 
 Pass::Status EliminateDeadInputComponentsPass::Process() {
   // Process non-vertex only if explicitly allowed.

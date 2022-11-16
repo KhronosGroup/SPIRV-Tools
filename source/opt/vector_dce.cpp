@@ -19,11 +19,9 @@
 namespace spvtools {
 namespace opt {
 namespace {
-
-const uint32_t kExtractCompositeIdInIdx = 0;
-const uint32_t kInsertObjectIdInIdx = 0;
-const uint32_t kInsertCompositeIdInIdx = 1;
-
+constexpr uint32_t kExtractCompositeIdInIdx = 0;
+constexpr uint32_t kInsertObjectIdInIdx = 0;
+constexpr uint32_t kInsertCompositeIdInIdx = 1;
 }  // namespace
 
 Pass::Status VectorDCE::Process() {

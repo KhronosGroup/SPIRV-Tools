@@ -23,20 +23,19 @@
 #include "source/opt/type_manager.h"
 #include "source/util/make_unique.h"
 
-const static uint32_t kOpDecorateDecorationInOperandIndex = 1;
-const static uint32_t kOpDecorateLiteralInOperandIndex = 2;
-const static uint32_t kOpEntryPointInOperandInterface = 3;
-const static uint32_t kOpVariableStorageClassInOperandIndex = 0;
-const static uint32_t kOpTypeArrayElemTypeInOperandIndex = 0;
-const static uint32_t kOpTypeArrayLengthInOperandIndex = 1;
-const static uint32_t kOpTypeMatrixColCountInOperandIndex = 1;
-const static uint32_t kOpTypeMatrixColTypeInOperandIndex = 0;
-const static uint32_t kOpTypePtrTypeInOperandIndex = 1;
-const static uint32_t kOpConstantValueInOperandIndex = 0;
-
 namespace spvtools {
 namespace opt {
 namespace {
+constexpr uint32_t kOpDecorateDecorationInOperandIndex = 1;
+constexpr uint32_t kOpDecorateLiteralInOperandIndex = 2;
+constexpr uint32_t kOpEntryPointInOperandInterface = 3;
+constexpr uint32_t kOpVariableStorageClassInOperandIndex = 0;
+constexpr uint32_t kOpTypeArrayElemTypeInOperandIndex = 0;
+constexpr uint32_t kOpTypeArrayLengthInOperandIndex = 1;
+constexpr uint32_t kOpTypeMatrixColCountInOperandIndex = 1;
+constexpr uint32_t kOpTypeMatrixColTypeInOperandIndex = 0;
+constexpr uint32_t kOpTypePtrTypeInOperandIndex = 1;
+constexpr uint32_t kOpConstantValueInOperandIndex = 0;
 
 // Get the length of the OpTypeArray |array_type|.
 uint32_t GetArrayLength(analysis::DefUseManager* def_use_mgr,

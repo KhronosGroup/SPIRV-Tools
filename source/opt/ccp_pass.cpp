@@ -29,14 +29,11 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
-
 // This SSA id is never defined nor referenced in the IR.  It is a special ID
 // which represents varying values.  When an ID is found to have a varying
 // value, its entry in the |values_| table maps to kVaryingSSAId.
-const uint32_t kVaryingSSAId = std::numeric_limits<uint32_t>::max();
-
+constexpr uint32_t kVaryingSSAId = std::numeric_limits<uint32_t>::max();
 }  // namespace
 
 bool CCPPass::IsVaryingValue(uint32_t id) const { return id == kVaryingSSAId; }

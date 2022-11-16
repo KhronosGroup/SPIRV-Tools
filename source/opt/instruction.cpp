@@ -24,26 +24,25 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
 // Indices used to get particular operands out of instructions using InOperand.
-const uint32_t kTypeImageDimIndex = 1;
-const uint32_t kLoadBaseIndex = 0;
-const uint32_t kPointerTypeStorageClassIndex = 0;
-const uint32_t kVariableStorageClassIndex = 0;
-const uint32_t kTypeImageSampledIndex = 5;
+constexpr uint32_t kTypeImageDimIndex = 1;
+constexpr uint32_t kLoadBaseIndex = 0;
+constexpr uint32_t kPointerTypeStorageClassIndex = 0;
+constexpr uint32_t kVariableStorageClassIndex = 0;
+constexpr uint32_t kTypeImageSampledIndex = 5;
 
 // Constants for OpenCL.DebugInfo.100 / NonSemantic.Shader.DebugInfo.100
 // extension instructions.
-const uint32_t kExtInstSetIdInIdx = 0;
-const uint32_t kExtInstInstructionInIdx = 1;
-const uint32_t kDebugScopeNumWords = 7;
-const uint32_t kDebugScopeNumWordsWithoutInlinedAt = 6;
-const uint32_t kDebugNoScopeNumWords = 5;
+constexpr uint32_t kExtInstSetIdInIdx = 0;
+constexpr uint32_t kExtInstInstructionInIdx = 1;
+constexpr uint32_t kDebugScopeNumWords = 7;
+constexpr uint32_t kDebugScopeNumWordsWithoutInlinedAt = 6;
+constexpr uint32_t kDebugNoScopeNumWords = 5;
 
 // Number of operands of an OpBranchConditional instruction
 // with weights.
-const uint32_t kOpBranchConditionalWithWeightsNumOperands = 5;
+constexpr uint32_t kOpBranchConditionalWithWeightsNumOperands = 5;
 }  // namespace
 
 Instruction::Instruction(IRContext* c)

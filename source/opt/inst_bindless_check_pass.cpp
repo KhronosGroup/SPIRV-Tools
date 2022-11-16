@@ -16,31 +16,29 @@
 
 #include "inst_bindless_check_pass.h"
 
-namespace {
-
-// Input Operand Indices
-static const int kSpvImageSampleImageIdInIdx = 0;
-static const int kSpvSampledImageImageIdInIdx = 0;
-static const int kSpvSampledImageSamplerIdInIdx = 1;
-static const int kSpvImageSampledImageIdInIdx = 0;
-static const int kSpvCopyObjectOperandIdInIdx = 0;
-static const int kSpvLoadPtrIdInIdx = 0;
-static const int kSpvAccessChainBaseIdInIdx = 0;
-static const int kSpvAccessChainIndex0IdInIdx = 1;
-static const int kSpvTypeArrayTypeIdInIdx = 0;
-static const int kSpvTypeArrayLengthIdInIdx = 1;
-static const int kSpvConstantValueInIdx = 0;
-static const int kSpvVariableStorageClassInIdx = 0;
-static const int kSpvTypePtrTypeIdInIdx = 1;
-static const int kSpvTypeImageDim = 1;
-static const int kSpvTypeImageDepth = 2;
-static const int kSpvTypeImageArrayed = 3;
-static const int kSpvTypeImageMS = 4;
-static const int kSpvTypeImageSampled = 5;
-}  // anonymous namespace
-
 namespace spvtools {
 namespace opt {
+namespace {
+// Input Operand Indices
+constexpr int kSpvImageSampleImageIdInIdx = 0;
+constexpr int kSpvSampledImageImageIdInIdx = 0;
+constexpr int kSpvSampledImageSamplerIdInIdx = 1;
+constexpr int kSpvImageSampledImageIdInIdx = 0;
+constexpr int kSpvCopyObjectOperandIdInIdx = 0;
+constexpr int kSpvLoadPtrIdInIdx = 0;
+constexpr int kSpvAccessChainBaseIdInIdx = 0;
+constexpr int kSpvAccessChainIndex0IdInIdx = 1;
+constexpr int kSpvTypeArrayTypeIdInIdx = 0;
+constexpr int kSpvTypeArrayLengthIdInIdx = 1;
+constexpr int kSpvConstantValueInIdx = 0;
+constexpr int kSpvVariableStorageClassInIdx = 0;
+constexpr int kSpvTypePtrTypeIdInIdx = 1;
+constexpr int kSpvTypeImageDim = 1;
+constexpr int kSpvTypeImageDepth = 2;
+constexpr int kSpvTypeImageArrayed = 3;
+constexpr int kSpvTypeImageMS = 4;
+constexpr int kSpvTypeImageSampled = 5;
+}  // namespace
 
 uint32_t InstBindlessCheckPass::GenDebugReadLength(
     uint32_t var_id, InstructionBuilder* builder) {

@@ -29,13 +29,10 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
-
-const uint32_t kBranchCondTrueLabIdInIdx = 1;
-const uint32_t kBranchCondFalseLabIdInIdx = 2;
-
-}  // anonymous namespace
+constexpr uint32_t kBranchCondTrueLabIdInIdx = 1;
+constexpr uint32_t kBranchCondFalseLabIdInIdx = 2;
+}  // namespace
 
 bool DeadBranchElimPass::GetConstCondition(uint32_t condId, bool* condVal) {
   bool condIsConst;

@@ -28,6 +28,8 @@
 #include "source/opt/log.h"
 #include "source/opt/reflect.h"
 
+namespace spvtools {
+namespace opt {
 namespace {
 // Count the number of trailing zeros in the binary representation of
 // |constVal|.
@@ -52,9 +54,6 @@ bool IsPowerOf2(uint32_t val) {
 }
 
 }  // namespace
-
-namespace spvtools {
-namespace opt {
 
 Pass::Status StrengthReductionPass::Process() {
   // Initialize the member variables on a per module basis.

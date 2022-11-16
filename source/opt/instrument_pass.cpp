@@ -19,19 +19,15 @@
 #include "source/cfa.h"
 #include "source/spirv_constant.h"
 
-namespace {
-
-// Common Parameter Positions
-static const int kInstCommonParamInstIdx = 0;
-static const int kInstCommonParamCnt = 1;
-
-// Indices of operands in SPIR-V instructions
-static const int kEntryPointFunctionIdInIdx = 1;
-
-}  // anonymous namespace
-
 namespace spvtools {
 namespace opt {
+namespace {
+// Common Parameter Positions
+constexpr int kInstCommonParamInstIdx = 0;
+constexpr int kInstCommonParamCnt = 1;
+// Indices of operands in SPIR-V instructions
+constexpr int kEntryPointFunctionIdInIdx = 1;
+}  // namespace
 
 void InstrumentPass::MovePreludeCode(
     BasicBlock::iterator ref_inst_itr,

@@ -21,11 +21,10 @@
 namespace spvtools {
 namespace opt {
 namespace {
-
-const uint32_t kOpDecorateInOperandBuiltinDecoration = 2u;
-const uint32_t kOpLoadInOperandMemoryOperands = 1u;
-const uint32_t kOpEntryPointInOperandEntryPoint = 1u;
-const uint32_t kOpEntryPointInOperandInterface = 3u;
+constexpr uint32_t kOpDecorateInOperandBuiltinDecoration = 2u;
+constexpr uint32_t kOpLoadInOperandMemoryOperands = 1u;
+constexpr uint32_t kOpEntryPointInOperandEntryPoint = 1u;
+constexpr uint32_t kOpEntryPointInOperandInterface = 3u;
 
 bool HasBuiltinDecoration(analysis::DecorationManager* decoration_manager,
                           uint32_t var_id, uint32_t built_in) {

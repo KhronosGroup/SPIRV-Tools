@@ -31,18 +31,17 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
 
-const uint32_t kTypePointerStorageClassInIdx = 0;
-const uint32_t kEntryPointFunctionIdInIdx = 1;
-const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
-const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
-const uint32_t kCopyMemoryTargetAddrInIdx = 0;
-const uint32_t kCopyMemorySourceAddrInIdx = 1;
-const uint32_t kLoadSourceAddrInIdx = 0;
-const uint32_t kDebugDeclareOperandVariableIndex = 5;
-const uint32_t kGlobalVariableVariableIndex = 12;
+constexpr uint32_t kTypePointerStorageClassInIdx = 0;
+constexpr uint32_t kEntryPointFunctionIdInIdx = 1;
+constexpr uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
+constexpr uint32_t kLoopMergeContinueBlockIdInIdx = 1;
+constexpr uint32_t kCopyMemoryTargetAddrInIdx = 0;
+constexpr uint32_t kCopyMemorySourceAddrInIdx = 1;
+constexpr uint32_t kLoadSourceAddrInIdx = 0;
+constexpr uint32_t kDebugDeclareOperandVariableIndex = 5;
+constexpr uint32_t kGlobalVariableVariableIndex = 12;
 
 // Sorting functor to present annotation instructions in an easy-to-process
 // order. The functor orders by opcode first and falls back on unique id

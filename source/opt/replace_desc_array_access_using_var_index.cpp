@@ -21,11 +21,10 @@
 namespace spvtools {
 namespace opt {
 namespace {
-
-const uint32_t kOpAccessChainInOperandIndexes = 1;
-const uint32_t kOpTypePointerInOperandType = 1;
-const uint32_t kOpTypeArrayInOperandType = 0;
-const uint32_t kOpTypeStructInOperandMember = 0;
+constexpr uint32_t kOpAccessChainInOperandIndexes = 1;
+constexpr uint32_t kOpTypePointerInOperandType = 1;
+constexpr uint32_t kOpTypeArrayInOperandType = 0;
+constexpr uint32_t kOpTypeStructInOperandMember = 0;
 IRContext::Analysis kAnalysisDefUseAndInstrToBlockMapping =
     IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping;
 

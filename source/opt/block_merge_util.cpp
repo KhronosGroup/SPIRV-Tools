@@ -20,7 +20,6 @@
 namespace spvtools {
 namespace opt {
 namespace blockmergeutil {
-
 namespace {
 
 // Returns true if |block| contains a merge instruction.

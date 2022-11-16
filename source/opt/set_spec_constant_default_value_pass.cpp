@@ -30,7 +30,6 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
 using utils::EncodeNumberStatus;
 using utils::NumberType;
@@ -217,16 +216,16 @@ Instruction* GetSpecIdTargetFromDecorationGroup(
 
 Pass::Status SetSpecConstantDefaultValuePass::Process() {
   // The operand index of decoration target in an OpDecorate instruction.
-  const uint32_t kTargetIdOperandIndex = 0;
+  constexpr uint32_t kTargetIdOperandIndex = 0;
   // The operand index of the decoration literal in an OpDecorate instruction.
-  const uint32_t kDecorationOperandIndex = 1;
+  constexpr uint32_t kDecorationOperandIndex = 1;
   // The operand index of Spec id literal value in an OpDecorate SpecId
   // instruction.
-  const uint32_t kSpecIdLiteralOperandIndex = 2;
+  constexpr uint32_t kSpecIdLiteralOperandIndex = 2;
   // The number of operands in an OpDecorate SpecId instruction.
-  const uint32_t kOpDecorateSpecIdNumOperands = 3;
+  constexpr uint32_t kOpDecorateSpecIdNumOperands = 3;
   // The in-operand index of the default value in a OpSpecConstant instruction.
-  const uint32_t kOpSpecConstantLiteralInOperandIndex = 0;
+  constexpr uint32_t kOpSpecConstantLiteralInOperandIndex = 0;
 
   bool modified = false;
   // Scan through all the annotation instructions to find 'OpDecorate SpecId'

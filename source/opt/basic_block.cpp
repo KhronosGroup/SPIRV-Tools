@@ -25,11 +25,9 @@
 namespace spvtools {
 namespace opt {
 namespace {
-
-const uint32_t kLoopMergeContinueBlockIdInIdx = 1;
-const uint32_t kLoopMergeMergeBlockIdInIdx = 0;
-const uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
-
+constexpr uint32_t kLoopMergeContinueBlockIdInIdx = 1;
+constexpr uint32_t kLoopMergeMergeBlockIdInIdx = 0;
+constexpr uint32_t kSelectionMergeMergeBlockIdInIdx = 0;
 }  // namespace
 
 BasicBlock* BasicBlock::Clone(IRContext* context) const {

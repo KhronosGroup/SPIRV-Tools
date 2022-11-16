@@ -18,15 +18,12 @@
 
 #include "source/opt/ir_builder.h"
 
-namespace {
-
-// Indices of operands in SPIR-V instructions
-static const int kImageSampleDrefIdInIdx = 2;
-
-}  // anonymous namespace
-
 namespace spvtools {
 namespace opt {
+namespace {
+// Indices of operands in SPIR-V instructions
+constexpr int kImageSampleDrefIdInIdx = 2;
+}  // namespace
 
 bool ConvertToHalfPass::IsArithmetic(Instruction* inst) {
   return target_ops_core_.count(inst->opcode()) != 0 ||

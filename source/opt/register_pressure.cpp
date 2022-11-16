@@ -26,7 +26,6 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
 // Predicate for the FilterIterator to only consider instructions that are not
 // phi instructions defined in the basic block |bb|.

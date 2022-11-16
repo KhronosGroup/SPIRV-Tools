@@ -23,13 +23,10 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
-
-const uint32_t kStoreValIdInIdx = 1;
-const uint32_t kAccessChainPtrIdInIdx = 0;
-
-}  // anonymous namespace
+constexpr uint32_t kStoreValIdInIdx = 1;
+constexpr uint32_t kAccessChainPtrIdInIdx = 0;
+}  // namespace
 
 void LocalAccessChainConvertPass::BuildAndAppendInst(
     spv::Op opcode, uint32_t typeId, uint32_t resultId,

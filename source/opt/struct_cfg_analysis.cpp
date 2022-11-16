@@ -16,13 +16,12 @@
 
 #include "source/opt/ir_context.h"
 
-namespace {
-const uint32_t kMergeNodeIndex = 0;
-const uint32_t kContinueNodeIndex = 1;
-}  // namespace
-
 namespace spvtools {
 namespace opt {
+namespace {
+constexpr uint32_t kMergeNodeIndex = 0;
+constexpr uint32_t kContinueNodeIndex = 1;
+}  // namespace
 
 StructuredCFGAnalysis::StructuredCFGAnalysis(IRContext* ctx) : context_(ctx) {
   // If this is not a shader, there are no merge instructions, and not

@@ -22,6 +22,9 @@
 
 #include "source/opt/ir_context.h"
 
+namespace spvtools {
+namespace opt {
+namespace analysis {
 namespace {
 using InstructionVector = std::vector<const spvtools::opt::Instruction*>;
 using DecorationSet = std::set<std::u32string>;
@@ -48,10 +51,6 @@ bool IsSubset(const DecorationSet& a, const DecorationSet& b) {
   return true;
 }
 }  // namespace
-
-namespace spvtools {
-namespace opt {
-namespace analysis {
 
 bool DecorationManager::RemoveDecorationsFrom(
     uint32_t id, std::function<bool(const Instruction&)> pred) {
