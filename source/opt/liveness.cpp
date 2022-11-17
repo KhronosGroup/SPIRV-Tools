@@ -17,19 +17,16 @@
 
 #include "source/opt/ir_context.h"
 
-namespace {
-
-const uint32_t kDecorationLocationInIdx = 2;
-const uint32_t kOpDecorateMemberMemberInIdx = 1;
-const uint32_t kOpDecorateMemberLocationInIdx = 3;
-const uint32_t kOpDecorateBuiltInLiteralInIdx = 2;
-const uint32_t kOpDecorateMemberBuiltInLiteralInIdx = 3;
-
-}  // namespace
-
 namespace spvtools {
 namespace opt {
 namespace analysis {
+namespace {
+constexpr uint32_t kDecorationLocationInIdx = 2;
+constexpr uint32_t kOpDecorateMemberMemberInIdx = 1;
+constexpr uint32_t kOpDecorateMemberLocationInIdx = 3;
+constexpr uint32_t kOpDecorateBuiltInLiteralInIdx = 2;
+constexpr uint32_t kOpDecorateMemberBuiltInLiteralInIdx = 3;
+}  // namespace
 
 LivenessManager::LivenessManager(IRContext* ctx) : ctx_(ctx), computed_(false) {
   // Liveness sets computed when queried

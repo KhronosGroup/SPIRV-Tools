@@ -17,14 +17,13 @@
 #include "ir_builder.h"
 #include "source/opt/ir_context.h"
 
-namespace {
-const uint32_t kRemovedMember = 0xFFFFFFFF;
-const uint32_t kSpecConstOpOpcodeIdx = 0;
-constexpr uint32_t kArrayElementTypeIdx = 0;
-}  // namespace
-
 namespace spvtools {
 namespace opt {
+namespace {
+constexpr uint32_t kRemovedMember = 0xFFFFFFFF;
+constexpr uint32_t kSpecConstOpOpcodeIdx = 0;
+constexpr uint32_t kArrayElementTypeIdx = 0;
+}  // namespace
 
 Pass::Status EliminateDeadMembersPass::Process() {
   if (!context()->get_feature_mgr()->HasCapability(spv::Capability::Shader))

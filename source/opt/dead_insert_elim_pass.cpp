@@ -23,18 +23,15 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
-
-const uint32_t kTypeVectorCountInIdx = 1;
-const uint32_t kTypeMatrixCountInIdx = 1;
-const uint32_t kTypeArrayLengthIdInIdx = 1;
-const uint32_t kTypeIntWidthInIdx = 0;
-const uint32_t kConstantValueInIdx = 0;
-const uint32_t kInsertObjectIdInIdx = 0;
-const uint32_t kInsertCompositeIdInIdx = 1;
-
-}  // anonymous namespace
+constexpr uint32_t kTypeVectorCountInIdx = 1;
+constexpr uint32_t kTypeMatrixCountInIdx = 1;
+constexpr uint32_t kTypeArrayLengthIdInIdx = 1;
+constexpr uint32_t kTypeIntWidthInIdx = 0;
+constexpr uint32_t kConstantValueInIdx = 0;
+constexpr uint32_t kInsertObjectIdInIdx = 0;
+constexpr uint32_t kInsertCompositeIdInIdx = 1;
+}  // namespace
 
 uint32_t DeadInsertElimPass::NumComponents(Instruction* typeInst) {
   switch (typeInst->opcode()) {

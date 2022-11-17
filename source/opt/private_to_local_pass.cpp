@@ -24,10 +24,8 @@
 namespace spvtools {
 namespace opt {
 namespace {
-
-const uint32_t kVariableStorageClassInIdx = 0;
-const uint32_t kSpvTypePointerTypeIdInIdx = 1;
-
+constexpr uint32_t kVariableStorageClassInIdx = 0;
+constexpr uint32_t kSpvTypePointerTypeIdInIdx = 1;
 }  // namespace
 
 Pass::Status PrivateToLocalPass::Process() {

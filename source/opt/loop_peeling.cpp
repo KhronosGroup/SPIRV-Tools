@@ -29,6 +29,21 @@
 
 namespace spvtools {
 namespace opt {
+namespace {
+// Gather the set of blocks for all the path from |entry| to |root|.
+void GetBlocksInPath(uint32_t block, uint32_t entry,
+                     std::unordered_set<uint32_t>* blocks_in_path,
+                     const CFG& cfg) {
+  for (uint32_t pid : cfg.preds(block)) {
+    if (blocks_in_path->insert(pid).second) {
+      if (pid != entry) {
+        GetBlocksInPath(pid, entry, blocks_in_path, cfg);
+      }
+    }
+  }
+}
+}  // namespace
+
 size_t LoopPeelingPass::code_grow_threshold_ = 1000;
 
 void LoopPeeling::DuplicateAndConnectLoop(
@@ -197,19 +212,6 @@ void LoopPeeling::GetIteratorUpdateOperations(
     }
     GetIteratorUpdateOperations(loop, insn, operations);
   });
-}
-
-// Gather the set of blocks for all the path from |entry| to |root|.
-static void GetBlocksInPath(uint32_t block, uint32_t entry,
-                            std::unordered_set<uint32_t>* blocks_in_path,
-                            const CFG& cfg) {
-  for (uint32_t pid : cfg.preds(block)) {
-    if (blocks_in_path->insert(pid).second) {
-      if (pid != entry) {
-        GetBlocksInPath(pid, entry, blocks_in_path, cfg);
-      }
-    }
-  }
 }
 
 bool LoopPeeling::IsConditionCheckSideEffectFree() const {

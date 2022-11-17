@@ -36,8 +36,8 @@
 #include "source/util/string_utils.h"
 #include "spirv-tools/libspirv.h"
 
-const uint32_t kNoDebugScope = 0;
-const uint32_t kNoInlinedAt = 0;
+constexpr uint32_t kNoDebugScope = 0;
+constexpr uint32_t kNoInlinedAt = 0;
 
 namespace spvtools {
 namespace opt {

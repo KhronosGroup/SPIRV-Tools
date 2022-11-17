@@ -30,7 +30,7 @@ namespace opt {
 
 // In SPIR-V, ids are encoded as uint16_t, this id is guaranteed to be always
 // invalid.
-const uint32_t kInvalidId = std::numeric_limits<uint32_t>::max();
+constexpr uint32_t kInvalidId = std::numeric_limits<uint32_t>::max();
 
 // Helper class to abstract instruction construction and insertion.
 // The instruction builder can preserve the following analyses (specified via

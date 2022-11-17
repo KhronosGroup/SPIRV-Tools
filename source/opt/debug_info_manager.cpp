@@ -22,32 +22,31 @@
 // Constants for OpenCL.DebugInfo.100 & NonSemantic.Shader.DebugInfo.100
 // extension instructions.
 
-static const uint32_t kOpLineOperandLineIndex = 1;
-static const uint32_t kLineOperandIndexDebugFunction = 7;
-static const uint32_t kLineOperandIndexDebugLexicalBlock = 5;
-static const uint32_t kLineOperandIndexDebugLine = 5;
-static const uint32_t kDebugFunctionOperandFunctionIndex = 13;
-static const uint32_t kDebugFunctionDefinitionOperandDebugFunctionIndex = 4;
-static const uint32_t kDebugFunctionDefinitionOperandOpFunctionIndex = 5;
-static const uint32_t kDebugFunctionOperandParentIndex = 9;
-static const uint32_t kDebugTypeCompositeOperandParentIndex = 9;
-static const uint32_t kDebugLexicalBlockOperandParentIndex = 7;
-static const uint32_t kDebugInlinedAtOperandInlinedIndex = 6;
-static const uint32_t kDebugExpressOperandOperationIndex = 4;
-static const uint32_t kDebugDeclareOperandLocalVariableIndex = 4;
-static const uint32_t kDebugDeclareOperandVariableIndex = 5;
-static const uint32_t kDebugValueOperandExpressionIndex = 6;
-static const uint32_t kDebugOperationOperandOperationIndex = 4;
-static const uint32_t kOpVariableOperandStorageClassIndex = 2;
-static const uint32_t kDebugLocalVariableOperandParentIndex = 9;
-static const uint32_t kExtInstInstructionInIdx = 1;
-static const uint32_t kDebugGlobalVariableOperandFlagsIndex = 12;
-static const uint32_t kDebugLocalVariableOperandFlagsIndex = 10;
-
 namespace spvtools {
 namespace opt {
 namespace analysis {
 namespace {
+constexpr uint32_t kOpLineOperandLineIndex = 1;
+constexpr uint32_t kLineOperandIndexDebugFunction = 7;
+constexpr uint32_t kLineOperandIndexDebugLexicalBlock = 5;
+constexpr uint32_t kLineOperandIndexDebugLine = 5;
+constexpr uint32_t kDebugFunctionOperandFunctionIndex = 13;
+constexpr uint32_t kDebugFunctionDefinitionOperandDebugFunctionIndex = 4;
+constexpr uint32_t kDebugFunctionDefinitionOperandOpFunctionIndex = 5;
+constexpr uint32_t kDebugFunctionOperandParentIndex = 9;
+constexpr uint32_t kDebugTypeCompositeOperandParentIndex = 9;
+constexpr uint32_t kDebugLexicalBlockOperandParentIndex = 7;
+constexpr uint32_t kDebugInlinedAtOperandInlinedIndex = 6;
+constexpr uint32_t kDebugExpressOperandOperationIndex = 4;
+constexpr uint32_t kDebugDeclareOperandLocalVariableIndex = 4;
+constexpr uint32_t kDebugDeclareOperandVariableIndex = 5;
+constexpr uint32_t kDebugValueOperandExpressionIndex = 6;
+constexpr uint32_t kDebugOperationOperandOperationIndex = 4;
+constexpr uint32_t kOpVariableOperandStorageClassIndex = 2;
+constexpr uint32_t kDebugLocalVariableOperandParentIndex = 9;
+constexpr uint32_t kExtInstInstructionInIdx = 1;
+constexpr uint32_t kDebugGlobalVariableOperandFlagsIndex = 12;
+constexpr uint32_t kDebugLocalVariableOperandFlagsIndex = 10;
 
 void SetInlinedOperand(Instruction* dbg_inlined_at, uint32_t inlined_operand) {
   assert(dbg_inlined_at);

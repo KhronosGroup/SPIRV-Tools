@@ -486,8 +486,8 @@ class IRContext {
     if (!AreAnalysesValid(kAnalysisCombinators)) {
       InitializeCombinators();
     }
-    const uint32_t kExtInstSetIdInIndx = 0;
-    const uint32_t kExtInstInstructionInIndx = 1;
+    constexpr uint32_t kExtInstSetIdInIndx = 0;
+    constexpr uint32_t kExtInstInstructionInIndx = 1;
 
     if (inst->opcode() != spv::Op::OpExtInst) {
       return combinator_ops_[0].count(uint32_t(inst->opcode())) != 0;

@@ -21,10 +21,8 @@
 namespace spvtools {
 namespace opt {
 namespace {
-
-const uint32_t kTypePointerTypeIdInIdx = 1;
-
-}  // anonymous namespace
+constexpr uint32_t kTypePointerTypeIdInIdx = 1;
+}  // namespace
 
 bool InlineOpaquePass::IsOpaqueType(uint32_t typeId) {
   const Instruction* typeInst = get_def_use_mgr()->GetDef(typeId);

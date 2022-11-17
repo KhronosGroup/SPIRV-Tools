@@ -22,16 +22,13 @@
 #include "source/opt/ir_context.h"
 #include "source/util/bit_vector.h"
 
-namespace {
-
-const uint32_t kExtractCompositeIdInIdx = 0;
-const uint32_t kVariableStorageClassInIdx = 0;
-const uint32_t kLoadPointerInIdx = 0;
-
-}  // namespace
-
 namespace spvtools {
 namespace opt {
+namespace {
+constexpr uint32_t kExtractCompositeIdInIdx = 0;
+constexpr uint32_t kVariableStorageClassInIdx = 0;
+constexpr uint32_t kLoadPointerInIdx = 0;
+}  // namespace
 
 Pass::Status ReduceLoadSize::Process() {
   bool modified = false;

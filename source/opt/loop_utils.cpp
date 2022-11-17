@@ -28,12 +28,11 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
 // Return true if |bb| is dominated by at least one block in |exits|
-static inline bool DominatesAnExit(BasicBlock* bb,
-                                   const std::unordered_set<BasicBlock*>& exits,
-                                   const DominatorTree& dom_tree) {
+inline bool DominatesAnExit(BasicBlock* bb,
+                            const std::unordered_set<BasicBlock*>& exits,
+                            const DominatorTree& dom_tree) {
   for (BasicBlock* e_bb : exits)
     if (dom_tree.Dominates(bb, e_bb)) return true;
   return false;

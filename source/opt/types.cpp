@@ -64,7 +64,7 @@ bool CompareTwoVectors(const U32VecVec a, const U32VecVec b) {
   return true;
 }
 
-}  // anonymous namespace
+}  // namespace
 
 std::string Type::GetDecorationStr() const {
   std::ostringstream oss;

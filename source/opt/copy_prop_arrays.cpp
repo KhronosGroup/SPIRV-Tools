@@ -22,12 +22,12 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-const uint32_t kLoadPointerInOperand = 0;
-const uint32_t kStorePointerInOperand = 0;
-const uint32_t kStoreObjectInOperand = 1;
-const uint32_t kCompositeExtractObjectInOperand = 0;
-const uint32_t kTypePointerStorageClassInIdx = 0;
-const uint32_t kTypePointerPointeeInIdx = 1;
+constexpr uint32_t kLoadPointerInOperand = 0;
+constexpr uint32_t kStorePointerInOperand = 0;
+constexpr uint32_t kStoreObjectInOperand = 1;
+constexpr uint32_t kCompositeExtractObjectInOperand = 0;
+constexpr uint32_t kTypePointerStorageClassInIdx = 0;
+constexpr uint32_t kTypePointerPointeeInIdx = 1;
 
 bool IsDebugDeclareOrValue(Instruction* di) {
   auto dbg_opcode = di->GetCommonDebugOpcode();

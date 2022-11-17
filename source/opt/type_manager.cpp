@@ -29,10 +29,8 @@ namespace spvtools {
 namespace opt {
 namespace analysis {
 namespace {
-
-const int kSpvTypePointerStorageClass = 1;
-const int kSpvTypePointerTypeIdInIdx = 2;
-
+constexpr int kSpvTypePointerStorageClass = 1;
+constexpr int kSpvTypePointerTypeIdInIdx = 2;
 }  // namespace
 
 TypeManager::TypeManager(const MessageConsumer& consumer, IRContext* c)

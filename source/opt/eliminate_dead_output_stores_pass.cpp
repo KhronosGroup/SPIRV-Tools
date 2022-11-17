@@ -18,19 +18,16 @@
 #include "source/opt/instruction.h"
 #include "source/opt/ir_context.h"
 
-namespace {
-
-const uint32_t kDecorationLocationInIdx = 2;
-const uint32_t kOpDecorateMemberMemberInIdx = 1;
-const uint32_t kOpDecorateBuiltInLiteralInIdx = 2;
-const uint32_t kOpDecorateMemberBuiltInLiteralInIdx = 3;
-const uint32_t kOpAccessChainIdx0InIdx = 1;
-const uint32_t kOpConstantValueInIdx = 0;
-
-}  // namespace
-
 namespace spvtools {
 namespace opt {
+namespace {
+constexpr uint32_t kDecorationLocationInIdx = 2;
+constexpr uint32_t kOpDecorateMemberMemberInIdx = 1;
+constexpr uint32_t kOpDecorateBuiltInLiteralInIdx = 2;
+constexpr uint32_t kOpDecorateMemberBuiltInLiteralInIdx = 3;
+constexpr uint32_t kOpAccessChainIdx0InIdx = 1;
+constexpr uint32_t kOpConstantValueInIdx = 0;
+}  // namespace
 
 Pass::Status EliminateDeadOutputStoresPass::Process() {
   // Current functionality assumes shader capability

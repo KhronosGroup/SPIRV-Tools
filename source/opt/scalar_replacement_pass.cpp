@@ -26,12 +26,13 @@
 #include "source/util/make_unique.h"
 #include "types.h"
 
-static const uint32_t kDebugValueOperandValueIndex = 5;
-static const uint32_t kDebugValueOperandExpressionIndex = 6;
-static const uint32_t kDebugDeclareOperandVariableIndex = 5;
-
 namespace spvtools {
 namespace opt {
+namespace {
+constexpr uint32_t kDebugValueOperandValueIndex = 5;
+constexpr uint32_t kDebugValueOperandExpressionIndex = 6;
+constexpr uint32_t kDebugDeclareOperandVariableIndex = 5;
+}  // namespace
 
 Pass::Status ScalarReplacementPass::Process() {
   Status status = Status::SuccessWithoutChange;

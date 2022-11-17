@@ -17,8 +17,7 @@
 namespace spvtools {
 namespace opt {
 namespace {
-
-const uint32_t kOpAccessChainInOperandIndexes = 1;
+constexpr uint32_t kOpAccessChainInOperandIndexes = 1;
 
 // Returns the length of array type |type|.
 uint32_t GetLengthOfArrayType(IRContext* context, Instruction* type) {

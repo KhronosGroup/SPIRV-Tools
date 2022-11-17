@@ -573,7 +573,7 @@ struct PushToStringImpl<T, 4> {
 };
 
 template <typename T>
-static void PushToString(T id, std::u32string* str) {
+void PushToString(T id, std::u32string* str) {
   PushToStringImpl<T, sizeof(T)>{}(id, str);
 }
 
@@ -928,8 +928,8 @@ namespace {
 
 // Remove |node| from the |mul| chain (of the form A * ... * |node| * ... * Z),
 // if |node| is not in the chain, returns the original chain.
-static SENode* RemoveOneNodeFromMultiplyChain(SEMultiplyNode* mul,
-                                              const SENode* node) {
+SENode* RemoveOneNodeFromMultiplyChain(SEMultiplyNode* mul,
+                                       const SENode* node) {
   SENode* lhs = mul->GetChildren()[0];
   SENode* rhs = mul->GetChildren()[1];
   if (lhs == node) {

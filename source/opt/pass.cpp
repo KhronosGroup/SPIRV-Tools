@@ -21,11 +21,8 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
-
-const uint32_t kTypePointerTypeIdInIdx = 1;
-
+constexpr uint32_t kTypePointerTypeIdInIdx = 1;
 }  // namespace
 
 Pass::Pass() : consumer_(nullptr), context_(nullptr), already_run_(false) {}

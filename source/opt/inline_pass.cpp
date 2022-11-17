@@ -23,14 +23,14 @@
 #include "source/opt/reflect.h"
 #include "source/util/make_unique.h"
 
-// Indices of operands in SPIR-V instructions
-
-static const int kSpvFunctionCallFunctionId = 2;
-static const int kSpvFunctionCallArgumentId = 3;
-static const int kSpvReturnValueId = 0;
-
 namespace spvtools {
 namespace opt {
+namespace {
+// Indices of operands in SPIR-V instructions
+constexpr int kSpvFunctionCallFunctionId = 2;
+constexpr int kSpvFunctionCallArgumentId = 3;
+constexpr int kSpvReturnValueId = 0;
+}  // namespace
 
 uint32_t InlinePass::AddPointerToType(uint32_t type_id,
                                       spv::StorageClass storage_class) {

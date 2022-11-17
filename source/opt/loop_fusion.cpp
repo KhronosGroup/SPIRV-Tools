@@ -23,7 +23,6 @@
 
 namespace spvtools {
 namespace opt {
-
 namespace {
 
 // Append all the loops nested in |loop| to |loops|.
