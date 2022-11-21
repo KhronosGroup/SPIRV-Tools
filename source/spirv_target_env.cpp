@@ -415,7 +415,7 @@ std::string spvTargetEnvList(const int pad, const int wrap) {
       max_line_len = wrap;
     }
     line += word;
-    sep = "|";
+    sep = std::string("|");
   }
 
   ret += line;
