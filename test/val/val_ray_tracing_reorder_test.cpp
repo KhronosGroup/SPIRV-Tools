@@ -30,8 +30,7 @@ using ::testing::Values;
 using ValidateRayTracingReorderNV = spvtest::ValidateBase<bool>;
 
 std::string GenerateReorderThreadCode(
-    const std::string& body = "", const std::string& declarations = "",
-    const std::string execution_model = "RayGenerationKHR") {
+    const std::string& body = "", const std::string& declarations = "") {
   std::ostringstream ss;
   ss << R"(
             OpCapability RayTracingKHR

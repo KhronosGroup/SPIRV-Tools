@@ -30,9 +30,9 @@ spv_result_t ValidateHitObjectPointer(ValidationState_t& _,
   const uint32_t hit_object_id = inst->GetOperandAs<uint32_t>(hit_object_index);
   auto variable = _.FindDef(hit_object_id);
   const auto var_opcode = variable->opcode();
-  if (!variable ||
-      (var_opcode != spv::Op::OpVariable && var_opcode != spv::Op::OpFunctionParameter &&
-       var_opcode != spv::Op::OpAccessChain)) {
+  if (!variable || (var_opcode != spv::Op::OpVariable &&
+                    var_opcode != spv::Op::OpFunctionParameter &&
+                    var_opcode != spv::Op::OpAccessChain)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Hit Object must be a memory object declaration";
   }
@@ -245,15 +245,14 @@ spv_result_t ValidateHitObjectInstructionCommonParameters(
   return SPV_SUCCESS;
 }
 
-spv_result_t RayReorderNVPass(ValidationState_t& _,
-                                          const Instruction* inst) {
+spv_result_t RayReorderNVPass(ValidationState_t& _, const Instruction* inst) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
 
-  auto RegisterOpcodeForValidModel = [](ValidationState_t& _,
-                                        const Instruction* inst) {
-    std::string opcode_name = spvOpcodeString(inst->opcode());
-    _.function(inst->function()->id())
+  auto RegisterOpcodeForValidModel = [](ValidationState_t& vs,
+                                        const Instruction* rtinst) {
+    std::string opcode_name = spvOpcodeString(rtinst->opcode());
+    vs.function(rtinst->function()->id())
         ->RegisterExecutionModelLimitation(
             [opcode_name](spv::ExecutionModel model, std::string* message) {
               if (model != spv::ExecutionModel::RayGenerationKHR &&
@@ -614,6 +613,9 @@ spv_result_t RayReorderNVPass(ValidationState_t& _,
                << "bits must be a 32-bit int scalar";
       }
     }
+
+    default:
+      break;
   }
   return SPV_SUCCESS;
 }
