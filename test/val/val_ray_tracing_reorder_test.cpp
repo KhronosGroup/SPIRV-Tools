@@ -29,8 +29,8 @@ using ::testing::Values;
 
 using ValidateRayTracingReorderNV = spvtest::ValidateBase<bool>;
 
-std::string GenerateReorderThreadCode(
-    const std::string& body = "", const std::string& declarations = "") {
+std::string GenerateReorderThreadCode(const std::string& body = "",
+                                      const std::string& declarations = "") {
   std::ostringstream ss;
   ss << R"(
             OpCapability RayTracingKHR
@@ -575,7 +575,8 @@ TEST_F(ValidateRayTracingReorderNV, HitObjectGetShaderRecordBufferHandleNV) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 
-TEST_F(ValidateRayTracingReorderNV, HitObjectGetShaderBindingTableRecordIndexNV) {
+TEST_F(ValidateRayTracingReorderNV,
+       HitObjectGetShaderBindingTableRecordIndexNV) {
   const std::string declarations = R"(
     %uint = OpTypeInt 32 0
     %_ptr_Function_uint = OpTypePointer Function %uint
