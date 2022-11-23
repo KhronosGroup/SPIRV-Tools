@@ -176,7 +176,8 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
                    << "Operand " << _.getIdName(operand_word)
                    << " cannot be a type";
-          } else if (def->type_id() == 0 && !spvOpcodeGeneratesType(opcode) &&
+          } else if (def->type_id() == 0 &&
+                     !spvOpcodeGeneratesType(def->opcode()) &&
                      !spvOpcodeIsDebug(opcode) && !inst->IsDebugInfo() &&
                      !inst->IsNonSemantic() && !spvOpcodeIsDecoration(opcode) &&
                      !spvOpcodeIsBranch(opcode) && opcode != spv::Op::OpPhi &&

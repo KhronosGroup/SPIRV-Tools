@@ -342,13 +342,52 @@ spv_result_t FunctionScopedInstructions(ValidationState_t& _,
         break;
     }
   } else {
-    return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-           << spvOpcodeString(opcode)
-           << " cannot appear in a function declaration";
+    _.ProgressToNextLayoutSectionOrder();
+    // All function sections have been processed. Recursively call
+    // ModuleLayoutPass to process the next section of the module
+    return ModuleLayoutPass(_, inst);
   }
   return SPV_SUCCESS;
 }
 
+spv_result_t GraphScopedInstructions(ValidationState_t& _,
+                                     const Instruction* inst, spv::Op opcode) {
+  if (_.IsOpcodeInCurrentLayoutSection(opcode)) {
+    switch (opcode) {
+      case spv::Op::OpGraphARM: {
+        if (_.in_graph_body()) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                 << "Cannot define a graph in a graph body";
+        }
+        _.RegisterGraph(inst->id(), inst->type_id());
+      } break;
+      case spv::Op::OpGraphEndARM: {
+        if (!_.in_graph_body()) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                 << spvOpcodeString(opcode) << " must be used in a graph body";
+        }
+        _.RegisterGraphEnd();
+      } break;
+      case spv::Op::OpGraphEntryPointARM:
+        if (_.in_graph_body()) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                 << spvOpcodeString(opcode) << " cannot appear in a graph body";
+        }
+        break;
+      default:
+        if (!_.in_graph_body()) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                 << spvOpcodeString(opcode) << " must appear in a graph body";
+        }
+        break;
+    }
+  } else {
+    return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+           << spvOpcodeString(opcode)
+           << " cannot appear in the graph definitions section";
+  }
+  return SPV_SUCCESS;
+}
 }  // namespace
 
 // TODO(umar): Check linkage capabilities for function declarations
@@ -376,6 +415,11 @@ spv_result_t ModuleLayoutPass(ValidationState_t& _, const Instruction* inst) {
     case kLayoutFunctionDeclarations:
     case kLayoutFunctionDefinitions:
       if (auto error = FunctionScopedInstructions(_, inst, opcode)) {
+        return error;
+      }
+      break;
+    case kLayoutGraphDefinitions:
+      if (auto error = GraphScopedInstructions(_, inst, opcode)) {
         return error;
       }
       break;
