@@ -50,6 +50,7 @@ enum ModuleLayoutSection {
   kLayoutExtInstImport,            /// < Section 2.4 #3
   kLayoutMemoryModel,              /// < Section 2.4 #4
   kLayoutSamplerImageAddressMode,  /// < Section 2.4 #5
+                                   /// (SPV_NV_bindless_texture)
   kLayoutEntryPoint,               /// < Section 2.4 #6
   kLayoutExecutionMode,            /// < Section 2.4 #7
   kLayoutDebug1,                   /// < Section 2.4 #8 > 1
@@ -58,7 +59,8 @@ enum ModuleLayoutSection {
   kLayoutAnnotations,              /// < Section 2.4 #9
   kLayoutTypes,                    /// < Section 2.4 #10
   kLayoutFunctionDeclarations,     /// < Section 2.4 #11
-  kLayoutFunctionDefinitions       /// < Section 2.4 #12
+  kLayoutFunctionDefinitions,      /// < Section 2.4 #12
+  kLayoutGraphDefinitions          /// < Section 2.4 #13 (SPV_ARM_graph)
 };
 
 /// This class manages the state of the SPIR-V validation as it is being parsed.
@@ -213,6 +215,10 @@ class ValidationState_t {
   /// instruction
   bool in_block() const;
 
+  /// Returns true if the called after a graph instruction but before the
+  /// graph end instruction
+  bool in_graph_body() const;
+
   struct EntryPointDescription {
     std::string name;
     std::vector<uint32_t> interfaces;
@@ -313,6 +319,16 @@ class ValidationState_t {
   /// ComputeFunctionToEntryPointMapping.
   void ComputeRecursiveEntryPoints();
 
+  /// Registers |id| as a graph entry point.
+  void RegisterGraphEntryPoint(const uint32_t id) {
+    graph_entry_points_.push_back(id);
+  }
+
+  /// Returns a list of graph entry point graph ids
+  const std::vector<uint32_t>& graph_entry_points() const {
+    return graph_entry_points_;
+  }
+
   /// Returns all the entry points that can call |func|.
   const std::vector<uint32_t>& FunctionEntryPoints(uint32_t func) const;
 
@@ -349,6 +365,13 @@ class ValidationState_t {
 
   /// Register a function end instruction
   spv_result_t RegisterFunctionEnd();
+
+  /// Registers the graph in the module. Subsequent instructions will be
+  /// called against this graph
+  void RegisterGraph(uint32_t id, uint32_t type_id);
+
+  /// Register a graph end instruction
+  void RegisterGraphEnd();
 
   /// Returns true if the capability is enabled in the module.
   bool HasCapability(spv::Capability cap) const {
@@ -636,6 +659,7 @@ class ValidationState_t {
   // Only works for types not for objects.
   bool IsVoidType(uint32_t id) const;
   bool IsScalarType(uint32_t id) const;
+  bool IsArrayType(uint32_t id, uint64_t length = 0) const;
   bool IsBfloat16ScalarType(uint32_t id) const;
   bool IsBfloat16VectorType(uint32_t id) const;
   bool IsFP8ScalarType(uint32_t id) const;
@@ -647,7 +671,8 @@ class ValidationState_t {
   bool IsFloat16Vector2Or4Type(uint32_t id) const;
   bool IsFloatScalarOrVectorType(uint32_t id) const;
   bool IsFloatMatrixType(uint32_t id) const;
-  bool IsIntScalarType(uint32_t id) const;
+  bool IsIntScalarType(uint32_t id, uint32_t width = 0) const;
+  bool IsIntScalarTypeWithSignedness(uint32_t id, uint32_t signedness) const;
   bool IsIntArrayType(uint32_t id, uint64_t length = 0) const;
   bool IsIntVectorType(uint32_t id) const;
   bool IsIntScalarOrVectorType(uint32_t id) const;
@@ -675,6 +700,7 @@ class ValidationState_t {
   bool IsFloatCooperativeVectorNVType(uint32_t id) const;
   bool IsIntCooperativeVectorNVType(uint32_t id) const;
   bool IsUnsignedIntCooperativeVectorNVType(uint32_t id) const;
+  bool IsTensorType(uint32_t id) const;
 
   // Returns true if |id| is a type id that contains |type| (or integer or
   // floating point type) of |width| bits.
@@ -955,6 +981,9 @@ class ValidationState_t {
   /// graph that recurses.
   std::set<uint32_t> recursive_entry_points_;
 
+  /// IDs that are graph entry points, ie, arguments to OpGraphEntryPointARM.
+  std::vector<uint32_t> graph_entry_points_;
+
   /// Functions IDs that are target of OpFunctionCall.
   std::unordered_set<uint32_t> function_call_targets_;
 
@@ -999,6 +1028,7 @@ class ValidationState_t {
 
   /// NOTE: See correspoding getter functions
   bool in_function_;
+  bool in_graph_;
 
   /// The state of optional features.  These are determined by capabilities
   /// declared by the module and the environment.

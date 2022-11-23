@@ -578,6 +578,9 @@ std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
       // approximate, due to variable operands
       out = [](unsigned index) { return index > 6; };
       break;
+    case spv::Op::OpGraphEntryPointARM:
+      out = [](unsigned index) { return index == 0; };
+      break;
     default:
       out = [](unsigned) { return false; };
       break;
