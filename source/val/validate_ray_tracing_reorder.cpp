@@ -19,6 +19,8 @@
 #include "source/val/validate.h"
 #include "source/val/validation_state.h"
 
+#include <limits>
+
 namespace spvtools {
 namespace val {
 
