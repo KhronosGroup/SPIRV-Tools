@@ -156,6 +156,7 @@ Additionally, certain sets of transformations have been packaged into
 higher-level recipes.  These include:
 
 * Optimization for size (`spirv-opt -Os`)
+* Optimization for performance (`spirv-opt -O`)
 
 For the latest list with detailed documentation, please refer to
 [`include/spirv-tools/optimizer.hpp`](include/spirv-tools/optimizer.hpp).
