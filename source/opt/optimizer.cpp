@@ -1043,7 +1043,8 @@ Optimizer::PassToken CreateFixFuncCallArgumentsPass() {
       MakeUnique<opt::FixFuncCallArgumentsPass>());
 }
 
-Optimizer::PassToken CreateFixUniformStructOpaquePass(uint32_t samplers_descriptor_set) {
+Optimizer::PassToken CreateFixUniformStructOpaquePass(
+    uint32_t samplers_descriptor_set) {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::FixUniformStructOpaquePass>(samplers_descriptor_set));
 }

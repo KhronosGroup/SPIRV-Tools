@@ -27,23 +27,23 @@ namespace opt {
 // Fix the structures used as uniform that contains opaque sampler types.
 //
 // Glslang, GLSL front-end, with Vulkan relaxed rules enabled,
-// gathers uniforms declared in the global scope into a GL default uniform block.
-// If these uniform have struct type with opaque members (samplers), glslang produces
-// invalid SPIR-V.
-// 
-// This pass fixes these samplers access by extracting them into proper variables and
-// fix storage classes of uniform access.
-// Set descriptor set and automatically affect a binding on this variables.
+// gathers uniforms declared in the global scope into a GL default uniform
+// block. If these uniform have struct type with opaque members (samplers),
+// glslang produces invalid SPIR-V.
+//
+// This pass fixes these samplers access by extracting them into proper
+// variables and fix storage classes of uniform access. Set descriptor set and
+// automatically affect a binding on this variables.
 class FixUniformStructOpaquePass : public Pass {
  public:
-
-  FixUniformStructOpaquePass(uint32_t samplers_descriptor_set) : samplers_descriptor_set_(samplers_descriptor_set) {}
+  FixUniformStructOpaquePass(uint32_t samplers_descriptor_set)
+      : samplers_descriptor_set_(samplers_descriptor_set) {}
 
   const char* name() const override { return "uniform_struct_opaque_fixup"; }
   Status Process() override;
 
   IRContext::Analysis GetPreservedAnalyses() override {
-    return IRContext::kAnalysisInstrToBlockMapping |                                    //////////// TODO, determine precisely
+    return IRContext::kAnalysisInstrToBlockMapping |
            IRContext::kAnalysisDecorations | IRContext::kAnalysisCombinators |
            IRContext::kAnalysisCFG | IRContext::kAnalysisDominatorAnalysis |
            IRContext::kAnalysisLoopAnalysis | IRContext::kAnalysisNameMap |

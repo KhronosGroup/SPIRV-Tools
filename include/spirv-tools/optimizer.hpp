@@ -917,6 +917,7 @@ Optimizer::PassToken CreateRemoveDontInlinePass();
 // object, currently the pass would remove accesschain pointer argument passed
 // to the function
 Optimizer::PassToken CreateFixFuncCallArgumentsPass();
+
 // Fix the structures used as uniform that contains opaque sampler types.
 //
 // Glslang, GLSL front-end, with Vulkan relaxed rules enabled,
