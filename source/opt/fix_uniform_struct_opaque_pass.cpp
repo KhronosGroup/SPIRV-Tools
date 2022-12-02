@@ -531,6 +531,9 @@ Pass::Status FixUniformStructOpaquePass::Process() {
   }
 
   uint32_t u32_type_id = 0u;  // Lazy creation
+  Instruction* first_u32_ref =
+      nullptr;  // Keep tabs on our uses of uint, remains nullptr if we don't
+                // create the type ourselves
 
   // Retrieve and process opaque type struct members
   for (Instruction& inst : get_module()->types_values()) {
@@ -557,8 +560,11 @@ Pass::Status FixUniformStructOpaquePass::Process() {
           // Replace by u32 (match default type set by glslang, deduced from
           // offsets)
           if (u32_type_id == 0u) {
-            // First use, retrieve/create the vec4 type
+            // First use, retrieve/create the uint type
             u32_type_id = context()->get_type_mgr()->GetUIntTypeId();
+            uint32_t use_count =
+                context()->get_def_use_mgr()->NumUses(u32_type_id);
+            if (use_count == 0) first_u32_ref = &inst;
           }
 
           assert(u32_type_id != 0u);
@@ -576,6 +582,13 @@ Pass::Status FixUniformStructOpaquePass::Process() {
         }
       }
     }
+  }
+
+  if (first_u32_ref) {
+    Instruction* u32_def =
+        context()->get_def_use_mgr()->id_to_defs().at(u32_type_id);
+    u32_def->RemoveFromList();
+    first_u32_ref->InsertBefore(std::unique_ptr<Instruction>(u32_def));
   }
 
   if (changed) {
