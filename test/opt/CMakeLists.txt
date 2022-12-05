@@ -47,6 +47,7 @@ add_spvtools_unittest(TARGET opt
        feature_manager_test.cpp
        fix_func_call_arguments_test.cpp
        fix_storage_class_test.cpp
+       fix_uniform_struct_opaque_pass.cpp
        flatten_decoration_test.cpp
        fold_spec_const_op_composite_test.cpp
        fold_test.cpp

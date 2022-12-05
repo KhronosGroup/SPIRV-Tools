@@ -36,6 +36,7 @@ namespace opt {
 // automatically affect a binding on this variables.
 class FixUniformStructOpaquePass : public Pass {
  public:
+  FixUniformStructOpaquePass() = default;
   FixUniformStructOpaquePass(uint32_t samplers_descriptor_set)
       : samplers_descriptor_set_(samplers_descriptor_set) {}
 
@@ -57,7 +58,7 @@ class FixUniformStructOpaquePass : public Pass {
   }
 
  private:
-  const uint32_t samplers_descriptor_set_;
+  const uint32_t samplers_descriptor_set_ = 0;
 };
 
 }  // namespace opt
