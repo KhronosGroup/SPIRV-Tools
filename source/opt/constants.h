@@ -525,7 +525,7 @@ class ConstantManager {
   // OpConstantNull %composite_type
   // to become a
   // OpConstantComposite %composite_type %null %null ... etc
-  // Assumes type is a Composite already
+  // Assumes type is a Composite already, otherwise returns null
   const Constant* GetNullCompositeConstant(const Type* type);
 
   // Gets or creates a unique Constant instance of Vector type |type| with
