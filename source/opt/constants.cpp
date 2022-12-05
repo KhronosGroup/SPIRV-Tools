@@ -445,13 +445,13 @@ const Constant* ConstantManager::GetDoubleConst(double val) {
   return c;
 }
 
-uint32_t ConstantManager::GetSIntConst(int32_t val) {
+uint32_t ConstantManager::GetSIntConstId(int32_t val) {
   Type* sint_type = context()->get_type_mgr()->GetSIntType();
   const Constant* c = GetConstant(sint_type, {static_cast<uint32_t>(val)});
   return GetDefiningInstruction(c)->result_id();
 }
 
-uint32_t ConstantManager::GetUIntConst(uint32_t val) {
+uint32_t ConstantManager::GetUIntConstId(uint32_t val) {
   Type* uint_type = context()->get_type_mgr()->GetUIntType();
   const Constant* c = GetConstant(uint_type, {val});
   return GetDefiningInstruction(c)->result_id();
