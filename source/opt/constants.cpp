@@ -391,6 +391,43 @@ const Constant* ConstantManager::GetConstant(
   return cst ? RegisterConstant(std::move(cst)) : nullptr;
 }
 
+const Constant* ConstantManager::GetNullCompositeConstant(const Type* type) {
+  std::vector<uint32_t> literal_words_or_id;
+
+  if (type->AsVector()) {
+    const Type* element_type = type->AsVector()->element_type();
+    const uint32_t null_id = GetNullConstId(element_type);
+    const uint32_t element_count = type->AsVector()->element_count();
+    for (uint32_t i = 0; i < element_count; i++) {
+      literal_words_or_id.push_back(null_id);
+    }
+  } else if (type->AsMatrix()) {
+    const Type* element_type = type->AsMatrix()->element_type();
+    const uint32_t null_id = GetNullConstId(element_type);
+    const uint32_t element_count = type->AsMatrix()->element_count();
+    for (uint32_t i = 0; i < element_count; i++) {
+      literal_words_or_id.push_back(null_id);
+    }
+  } else if (type->AsStruct()) {
+    // TODO (sfricke-lunarg) add proper struct support
+    return nullptr;
+  } else if (type->AsArray()) {
+    const Type* element_type = type->AsArray()->element_type();
+    const uint32_t null_id = GetNullConstId(element_type);
+    assert(type->AsArray()->length_info().words[0] ==
+               analysis::Array::LengthInfo::kConstant &&
+           "unexpected array length");
+    const uint32_t element_count = type->AsArray()->length_info().words[0];
+    for (uint32_t i = 0; i < element_count; i++) {
+      literal_words_or_id.push_back(null_id);
+    }
+  } else {
+    return nullptr;
+  }
+
+  return GetConstant(type, literal_words_or_id);
+}
+
 const Constant* ConstantManager::GetNumericVectorConstantWithWords(
     const Vector* type, const std::vector<uint32_t>& literal_words) {
   const auto* element_type = type->element_type();
@@ -454,6 +491,11 @@ uint32_t ConstantManager::GetSIntConstId(int32_t val) {
 uint32_t ConstantManager::GetUIntConstId(uint32_t val) {
   Type* uint_type = context()->get_type_mgr()->GetUIntType();
   const Constant* c = GetConstant(uint_type, {val});
+  return GetDefiningInstruction(c)->result_id();
+}
+
+uint32_t ConstantManager::GetNullConstId(const Type* type) {
+  const Constant* c = GetConstant(type, {});
   return GetDefiningInstruction(c)->result_id();
 }
 

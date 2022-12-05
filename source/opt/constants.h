@@ -520,6 +520,14 @@ class ConstantManager {
                                                    literal_words_or_ids.end()));
   }
 
+  // Takes a type and creates a OpConstantComposite
+  // This allows a
+  // OpConstantNull %composite_type
+  // to become a
+  // OpConstantComposite %composite_type %null %null ... etc
+  // Assumes type is a Composite already
+  const Constant* GetNullCompositeConstant(const Type* type);
+
   // Gets or creates a unique Constant instance of Vector type |type| with
   // numeric elements and a vector of constant defining words |literal_words|.
   // If a Constant instance existed already in the constant pool, it returns a
@@ -653,6 +661,9 @@ class ConstantManager {
 
   // Returns the id of a 32-bit unsigned integer constant with value |val|.
   uint32_t GetUIntConstId(uint32_t val);
+
+  // Returns the id of a OpConstantNull with type of |type|.
+  uint32_t GetNullConstId(const Type* type);
 
  private:
   // Creates a Constant instance with the given type and a vector of constant
