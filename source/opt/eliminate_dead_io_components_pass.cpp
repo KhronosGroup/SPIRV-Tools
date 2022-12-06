@@ -197,7 +197,7 @@ void EliminateDeadIOComponentsPass::ChangeArrayLength(Instruction& arr_var,
       type_mgr->GetType(arr_var.type_id())->AsPointer();
   const analysis::Array* arr_ty = ptr_type->pointee_type()->AsArray();
   assert(arr_ty && "expecting array type");
-  uint32_t length_id = const_mgr->GetUIntConst(length);
+  uint32_t length_id = const_mgr->GetUIntConstId(length);
   analysis::Array new_arr_ty(arr_ty->element_type(),
                              arr_ty->GetConstantLengthInfo(length_id, length));
   analysis::Type* reg_new_arr_ty = type_mgr->GetRegisteredType(&new_arr_ty);
