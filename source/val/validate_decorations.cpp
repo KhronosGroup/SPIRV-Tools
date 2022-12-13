@@ -547,6 +547,8 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
           hasImproperStraddle(id, offset, constraint, constraints, vstate))
         return fail(memberIdx)
                << "is an improperly straddling vector at offset " << offset;
+      if (ordered_member_idx > 0) {
+      }
     }
     // Check struct members recursively.
     spv_result_t recursive_status = SPV_SUCCESS;
@@ -633,10 +635,10 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       }
     }
     nextValidOffset = offset + size;
-    if (!scalar_block_layout && blockRules &&
+    if (!scalar_block_layout &&
         (spv::Op::OpTypeArray == opcode || spv::Op::OpTypeStruct == opcode)) {
-      // Uniform block rules don't permit anything in the padding of a struct
-      // or array.
+      // Non-scalar block layout rules don't permit anything in the padding of
+      // a struct or array.
       nextValidOffset = align(nextValidOffset, alignment);
     }
   }
