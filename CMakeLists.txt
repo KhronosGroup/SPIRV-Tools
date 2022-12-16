@@ -31,7 +31,15 @@ set(SPIRV_TOOLS "SPIRV-Tools")
 include(GNUInstallDirs)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_CXX_STANDARD 11)
+
+# Require at least C++11
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 11)
+endif()
+if(${CMAKE_CXX_STANDARD} LESS 11)
+  message(FATAL_ERROR "SPIRV-Tools requires C++11 or later, but is configured for C++${CMAKE_CXX_STANDARD})")
+endif()
+
 
 option(ENABLE_RTTI "Enables RTTI" OFF)
 option(SPIRV_ALLOW_TIMERS "Allow timers via clock_gettime on supported platforms" ON)
