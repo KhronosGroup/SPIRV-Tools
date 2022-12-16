@@ -96,7 +96,7 @@ and in-progress work.
 
 *Note*: The validator checks some Universal Limits, from section 2.17 of the SPIR-V spec.
 The validator will fail on a module that exceeds those minimum upper bound limits.
-The validator has been parameterized to allow larger values, for use when targetting 
+The validator has been parameterized to allow larger values, for use when targeting 
 a more-than-minimally-capable SPIR-V consumer.
 
 See [`tools/val/val.cpp`](tools/val/val.cpp) or run `spirv-val --help` for the command-line help.
