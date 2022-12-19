@@ -38,9 +38,6 @@ git clone --depth=1 --branch v3.13.0.1 https://github.com/protocolbuffers/protob
 if %VS_VERSION% == 2017 (
   call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
   echo "Using VS 2017..."
-) else if %VS_VERSION% == 2015 (
-  call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
-  echo "Using VS 2015..."
 )
 
 cd %SRC%
