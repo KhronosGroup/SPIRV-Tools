@@ -34,6 +34,7 @@ Args:
               when you only need a single commit, like on a build machine.
               Defers getting objects until checkout time.
               Otherwise clones without blobs.
+              Requires git 2.20 or later.
               https://github.blog/2020-12-21-get-up-to-speed-with-partial-clone-and-shallow-clone/
 
   An optional list of deps_os values.
@@ -65,12 +66,14 @@ import sys
 import threading
 from builtins import bytes
 
-
 def git_executable():
   """Find the git executable.
 
   Returns:
-      A string suitable for passing to subprocess functions, or None.
+      A triple:
+        A string suitable for passing to subprocess functions, or None.
+        The major version number
+        The minor version number
   """
   envgit = os.environ.get('GIT_EXECUTABLE')
   searchlist = ['git', 'git.exe', 'git.bat']
@@ -78,12 +81,21 @@ def git_executable():
     searchlist.insert(0, envgit)
   with open(os.devnull, 'w') as devnull:
     for git in searchlist:
+      major=None
+      minor=None
       try:
-        subprocess.call([git, '--version'], stdout=devnull)
+        version_info = subprocess.check_output([git, '--version']).decode('utf-8')
+        match = re.search("^git version (\d+)\.(\d+)",version_info)
+        print("Using {}".format(version_info))
+        if match:
+          major = int(match.group(1))
+          minor = int(match.group(2))
+        else:
+          continue
       except (OSError,):
         continue
-      return git
-  return None
+      return (git,major,minor)
+  return (None,0,0)
 
 
 DEFAULT_DEPS_PATH = os.path.normpath(
@@ -234,8 +246,13 @@ def git_sync_deps(deps_file_path, command_line_os_requests, verbose, treeless):
 
   Raises git Exceptions.
   """
-  git = git_executable()
+  (git,git_major,git_minor) = git_executable()
   assert git
+
+  # --filter=tree:0 is available in git 2.20 and later
+  if (git_major,git_minor) < (2,20):
+    print("disabling --treeless: git is older than v2.20")
+    treeless = False
 
   deps_file_directory = os.path.dirname(deps_file_path)
   deps_file = parse_file_to_dict(deps_file_path)
