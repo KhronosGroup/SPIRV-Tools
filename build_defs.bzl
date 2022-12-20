@@ -43,14 +43,20 @@ TEST_COPTS = COMMON_COPTS + [
 })
 
 def incompatible_with(incompatible_constraints):
-    return select({"//conditions:default": []} | {
+    return select(_merge_dicts([{"//conditions:default": []}, {
         constraint: ["@platforms//:incompatible"]
         for constraint in incompatible_constraints
-    })
+    }]))
 
 DEBUGINFO_GRAMMAR_JSON_FILE = "@spirv_headers//:spirv_ext_inst_debuginfo_grammar_unified1"
 CLDEBUGINFO100_GRAMMAR_JSON_FILE = "@spirv_headers//:spirv_ext_inst_opencl_debuginfo_100_grammar_unified1"
 SHDEBUGINFO100_GRAMMAR_JSON_FILE = "@spirv_headers//:spirv_ext_inst_nonsemantic_shader_debuginfo_100_grammar_unified1"
+
+def _merge_dicts(dicts):
+    merged = {}
+    for d in dicts:
+        merged.update(d)
+    return merged
 
 def generate_core_tables(version):
     if not version:
@@ -75,7 +81,7 @@ def generate_core_tables(version):
         " --core-insts-output=$(location {core_insts_output})" +
         " --operand-kinds-output=$(location {operand_kinds_output})" +
         " --output-language=c++"
-    ).format(**(grammars | outs))
+    ).format(**_merge_dicts([grammars, outs]))
 
     native.genrule(
         name = "gen_core_tables_" + version,
@@ -110,7 +116,7 @@ def generate_enum_string_mapping(version):
         " --extension-enum-output=$(location {extension_enum_ouput})" +
         " --enum-string-mapping-output=$(location {enum_string_mapping_output})" +
         " --output-language=c++"
-    ).format(**(grammars | outs))
+    ).format(**_merge_dicts([grammars, outs]))
 
     native.genrule(
         name = "gen_enum_string_mapping",
@@ -138,7 +144,7 @@ def generate_opencl_tables(version):
         "$(location :generate_grammar_tables)" +
         " --extinst-opencl-grammar=$(location {opencl_grammar})" +
         " --opencl-insts-output=$(location {opencl_insts_output})"
-    ).format(**(grammars | outs))
+    ).format(**_merge_dicts([grammars, outs]))
 
     native.genrule(
         name = "gen_opencl_tables_" + version,
@@ -166,7 +172,7 @@ def generate_glsl_tables(version):
         " --extinst-glsl-grammar=$(location {gsls_grammar})" +
         " --glsl-insts-output=$(location {gsls_insts_outs})" +
         " --output-language=c++"
-    ).format(**(grammars | outs))
+    ).format(**_merge_dicts([grammars, outs]))
 
     native.genrule(
         name = "gen_glsl_tables_" + version,
@@ -194,7 +200,7 @@ def generate_vendor_tables(extension, operand_kind_prefix = ""):
         " --extinst-vendor-grammar=$(location {vendor_grammar})" +
         " --vendor-insts-output=$(location {vendor_insts_output})" +
         " --vendor-operand-kind-prefix={operand_kind_prefix}"
-    ).format(operand_kind_prefix = operand_kind_prefix, **(grammars | outs))
+    ).format(operand_kind_prefix = operand_kind_prefix, **_merge_dicts([grammars, outs]))
 
     native.genrule(
         name = "gen_vendor_tables_" + extension_rule,
