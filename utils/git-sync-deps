@@ -28,17 +28,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """Parse a DEPS file and git checkout all of the dependencies.
+"""
 
-Args:
-  --treeless  Clone repos without trees. This is the fast option, useful
-              when you only need a single commit, like on a build machine.
-              Defers getting objects until checkout time.
-              Otherwise clones without blobs.
-              Requires git 2.20 or later.
-              https://github.blog/2020-12-21-get-up-to-speed-with-partial-clone-and-shallow-clone/
-
-  An optional list of deps_os values.
-
+EXTRA_HELP = """
 Environment Variables:
   GIT_EXECUTABLE: path to "git" binary; if unset, will look for one of
   ['git', 'git.exe', 'git.bat'] in your default path.
@@ -59,6 +51,7 @@ Git Config:
 """
 
 
+import argparse
 import os
 import re
 import subprocess
@@ -101,19 +94,13 @@ def git_executable():
 DEFAULT_DEPS_PATH = os.path.normpath(
   os.path.join(os.path.dirname(__file__), os.pardir, 'DEPS'))
 
-
-def usage(deps_file_path = None):
-  sys.stderr.write(
-    'Usage: run to grab dependencies, with optional platform support:\n')
-  sys.stderr.write('  %s %s' % (sys.executable, __file__))
-  if deps_file_path:
-    parsed_deps = parse_file_to_dict(deps_file_path)
-    if 'deps_os' in parsed_deps:
-      for deps_os in parsed_deps['deps_os']:
-        sys.stderr.write(' [%s]' % deps_os)
-  sys.stderr.write('\n\n')
-  sys.stderr.write(__doc__)
-
+def get_deps_os_str(deps_file):
+  parsed_deps = parse_file_to_dict(deps_file)
+  parts = []
+  if 'deps_os' in parsed_deps:
+    for deps_os in parsed_deps['deps_os']:
+      parts.append(' [{}]]'.format(deps_os))
+  return "\n".join(parts)
 
 def looks_like_raw_commit(commit):
   return re.match('^[a-f0-9]{40}$', commit) is not None
@@ -271,7 +258,6 @@ def git_sync_deps(deps_file_path, command_line_os_requests, verbose, treeless):
       if directory.startswith(other_dir + '/'):
         raise Exception('%r is parent of %r' % (other_dir, directory))
   list_of_arg_lists = []
-  print("deps {}".format(dependencies))
   for directory in sorted(dependencies):
     if '@' in dependencies[directory]:
       repo, checkoutable = dependencies[directory].split('@', 1)
@@ -304,16 +290,47 @@ def multithread(function, list_of_arg_lists):
 
 
 def main(argv):
-  deps_file_path = os.environ.get('GIT_SYNC_DEPS_PATH', DEFAULT_DEPS_PATH)
-  verbose = not bool(os.environ.get('GIT_SYNC_DEPS_QUIET', False))
-  treeless = bool("--treeless" in argv)
-  argv = [x for x in argv if x != "--treeless"]
+  argparser = argparse.ArgumentParser(
+          prog = "git-sync-deps",
+          description = "Checkout git-based dependencies as specified by the DEPS file",
+          add_help=False # Because we want to print deps_os with -h option
+          )
+  argparser.add_argument("--help", "-h",
+                         action='store_true',
+                         help="show this help message and exit")
+  argparser.add_argument("--deps",
+                         default = os.environ.get('GIT_SYNC_DEPS_PATH', DEFAULT_DEPS_PATH),
+                         help="location of the the DEPS file")
+  argparser.add_argument("--verbose",
+                         default=not bool(os.environ.get('GIT_SYNC_DEPS_QUIET', False)),
+                         action='store_true',
+                         help="be verbose: print status messages")
+  argparser.add_argument("--treeless",
+                         default=False,
+                         action='store_true',
+                         help="""
+    Clone repos without trees (--filter=tree:0).
+    This is the fastest option for a build machine,
+    when you only need a single commit.
+    Defers getting objects until checking out a commit.
 
-  if '--help' in argv or '-h' in argv:
-    usage(deps_file_path)
-    return 1
+    The default is to clone with trees but without blobs.
 
-  git_sync_deps(deps_file_path, argv, verbose, treeless)
+    Only takes effect if using git 2.20 or later.
+
+    See https://github.blog/2020-12-21-get-up-to-speed-with-partial-clone-and-shallow-clone/
+                              """)
+  argparser.add_argument("os_requests",nargs="*",
+                         help="OS requests, as keys in the deps_os dictionariy in the DEPS file")
+
+  args = argparser.parse_args()
+  if args.help:
+    print(argparser.format_help())
+    print(EXTRA_HELP)
+    print(get_deps_os_str(args.deps))
+    return 0
+
+  git_sync_deps(args.deps, args.os_requests, args.verbose, args.treeless)
   return 0
 
 
