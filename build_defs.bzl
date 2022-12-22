@@ -4,7 +4,9 @@ COMMON_COPTS = [
     "-DSPIRV_CHECK_CONTEXT",
     "-DSPIRV_COLOR_TERMINAL",
 ] + select({
-    "@bazel_tools//src/conditions:windows": [],
+    # On Windows, assume MSVC.
+    # C++14 is the default in VisualStudio 2017.
+    "@platforms//os:windows": [],
     "//conditions:default": [
         "-DSPIRV_LINUX",
         "-DSPIRV_TIMER_ENABLED",
@@ -27,7 +29,7 @@ COMMON_COPTS = [
 
 TEST_COPTS = COMMON_COPTS + [
 ] + select({
-    "@bazel_tools//src/conditions:windows": [
+    "@platforms//os:windows": [
         # Disable C4503 "decorated name length exceeded" warning,
         # triggered by some heavily templated types.
         # We don't care much about that in test code.
