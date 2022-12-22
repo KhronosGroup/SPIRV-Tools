@@ -5,8 +5,9 @@ vars = {
 
   'effcee_revision': '35912e1b7778ec2ddcff7e7188177761539e59e0',
 
-  # For now, pin an older googletest revision
-  'googletest_revision': '1fb1bb23bb8418dc73a5a9a82bbed31dc610fec7',
+  # Pin to the last version of googletest that supports C++11.
+  # Anything later requires C++14
+  'googletest_revision': 'v1.12.0',
 
   # Use protobufs before they gained the dependency on abseil
   'protobuf_revision': 'v3.13.0.1',
