@@ -15,6 +15,7 @@
 # limitations under the License.
 
 set -e
+set -x
 
 NUM_CORES=$(nproc)
 echo "Detected $NUM_CORES cores for building"
@@ -23,18 +24,45 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 VERSION=$(sed -n '0,/^v20/ s/^v\(20[0-9.]*\).*/\1/p' $DIR/../../CHANGES).${GITHUB_RUN_NUMBER:-0}
 echo "Version: $VERSION"
 
-build() { 
+make_package() {
+  type=$1
+  pkg=$2
+
+  mkdir -p out/$type/$pkg
+
+  # copy other js files
+  cp source/wasm/$pkg.d.ts out/$type/$pkg
+  sed -e 's/\("version"\s*:\s*\).*/\1"'$VERSION'",/' source/wasm/package-$pkg.json > out/$type/$pkg/package.json
+
+  cp source/wasm/README.md out/$type/$pkg
+  cp LICENSE out/$type/$pkg
+
+  cp build/$type/$pkg.js out/$type/$pkg
+
+  gzip -9 -k -f out/$type/$pkg/$pkg.js
+  if [ -e build/$type/$pkg.wasm ] ; then
+     cp build/$type/$pkg.wasm out/$type/$pkg
+     gzip -9 -k -f out/$type/$pkg/$pkg.wasm
+  fi
+  wc -c out/$type/$pkg/*
+}
+
+
+build() {
     type=$1
     shift
     args=$@
     mkdir -p build/$type
+
     pushd build/$type
     echo $args
     emcmake cmake \
         -DCMAKE_BUILD_TYPE=Release \
         $args \
         ../..
+
     emmake make -j $(( $NUM_CORES )) SPIRV-Tools-static
+    emmake make -j $(( $NUM_CORES )) SPIRV-Tools-opt
 
     echo Building js interface
     emcc \
@@ -47,21 +75,21 @@ build() {
         -s MODULARIZE \
         -Oz
 
+    emcc \
+        --bind \
+        -I../../include \
+        -std=c++11 \
+        ../../source/wasm/spirv-tools-opt.cpp \
+        source/libSPIRV-Tools.a \
+        source/opt/libSPIRV-Tools-opt.a \
+        -o spirv-tools-opt.js \
+        -s MODULARIZE \
+        -Oz
+
     popd
-    mkdir -p out/$type
 
-    # copy other js files
-    cp source/wasm/spirv-tools.d.ts out/$type/
-    sed -e 's/\("version"\s*:\s*\).*/\1"'$VERSION'",/' source/wasm/package.json > out/$type/package.json
-    cp source/wasm/README.md out/$type/
-    cp LICENSE out/$type/
-
-    cp build/$type/spirv-tools.js out/$type/
-    gzip -9 -k -f out/$type/spirv-tools.js
-    if [ -e build/$type/spirv-tools.wasm ] ; then
-       cp build/$type/spirv-tools.wasm out/$type/
-       gzip -9 -k -f out/$type/spirv-tools.wasm
-    fi
+    make_package $type spirv-tools
+    make_package $type spirv-tools-opt
 }
 
 if [ ! -d external/spirv-headers ] ; then
@@ -75,4 +103,3 @@ build web\
     -DSPIRV_SKIP_TESTS=ON\
     -DSPIRV_SKIP_EXECUTABLES=ON
 
-wc -c out/*/*
