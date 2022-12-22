@@ -48,7 +48,7 @@ const test = async () => {
     spv.SPV_ENV_UNIVERSAL_1_3,
     spv.SPV_TEXT_TO_BINARY_OPTION_NONE
   );
-  console.log(`as returned ${asResult.byteLength} bytes`);
+  console.log(`as returned ${asResult.length} bytes`);
 
   // re-disassemble
   const disResult = spv.dis(
