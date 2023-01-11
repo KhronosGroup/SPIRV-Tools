@@ -1,7 +1,7 @@
 Revision history for SPIRV-Tools
 
 v2022.5-dev 2022-10-12
-   - Start v2022.5-dev
+  - Renamed "master" to "main" (issue#5051)
 
 v2022.4 2022-10-12
   - General
