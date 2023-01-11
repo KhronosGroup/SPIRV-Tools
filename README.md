@@ -1,5 +1,7 @@
 # SPIR-V Tools
 
+NEWS 2023-01-11: Development occurs on the `main` branch.
+
 ## Overview
 
 The SPIR-V Tools project provides an API and commands for processing SPIR-V
@@ -271,7 +273,7 @@ Contributions via merge request are welcome. Changes should:
   `clang-format version 5.0.0` for SPIRV-Tools. Settings are defined by
   the included [.clang-format](.clang-format) file.
 
-We intend to maintain a linear history on the GitHub `master` branch.
+We intend to maintain a linear history on the GitHub `main` branch.
 
 ### Getting the source
 
