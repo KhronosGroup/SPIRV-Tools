@@ -27,7 +27,7 @@ googletest_trunk="origin/main"
 re2_dir="external/re2/"
 re2_trunk="origin/main"
 spirv_headers_dir="external/spirv-headers/"
-spirv_headers_trunk="origin/master"
+spirv_headers_trunk="origin/main"
 
 # This script assumes it's parent directory is the repo root.
 repo_path=$(dirname "$0")/..
