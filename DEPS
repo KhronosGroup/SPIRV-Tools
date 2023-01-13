@@ -3,7 +3,7 @@ use_relative_paths = True
 vars = {
   'github': 'https://github.com',
 
-  'effcee_revision': '35912e1b7778ec2ddcff7e7188177761539e59e0',
+  'effcee_revision': 'c7b4db79f340f7a9981e8a484f6d5785e24242d1',
 
   # Pin to the last version of googletest that supports C++11.
   # Anything later requires C++14
