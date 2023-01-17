@@ -34,7 +34,7 @@ wget -q https://github.com/bazelbuild/bazel/releases/download/5.0.0/bazel-5.0.0-
 unzip -q bazel-5.0.0-windows-x86_64.zip
 
 :: Set up MSVC
-call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
 set BAZEL_VC=C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC
 
 :: #########################################
