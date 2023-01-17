@@ -1,6 +1,9 @@
 Revision history for SPIRV-Tools
 
-v2023.1-dev 2023-01-13
+v2023.2-dev 2023-01-17
+   - Start v2023.2-dev
+
+v2023.1 2023-01-17
   - General
     - Renamed "master" to "main" (issue#5051)
     - Validate version 5 of clspv reflection (#5050)
