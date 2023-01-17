@@ -30,6 +30,9 @@ set PATH=C:\python36;"C:\Program Files\cmake-3.23.1-windows-x86_64\bin";%PATH%
 if %VS_VERSION% == 2017 (
   call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
   echo "Using VS 2017..."
+) else if %VS_VERSION% == 2019 (
+  call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
+  echo "Using VS 2019..."
 )
 
 cd %SRC%
