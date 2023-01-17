@@ -7,6 +7,8 @@ v2023.1-dev 2023-01-13
     - Remove testing support for VS2015 (#5027)
     - Fix undef behaviour in hex float parsing (#5025)
     - Require C++11 *or later* (#5020)
+  - Instrument
+    - Instrument: Fix bindless checking for BufferDeviceAddress (#5049)
   - Optimizer
     - Optimize allocation of spvtools::opt::Instruction::operands_ (#5024)
     - spirv-opt: Fix OpCompositeInsert with Null Constant (#5008)
