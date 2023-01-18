@@ -3546,6 +3546,36 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(), HasSubstr("Selection must be structured"));
 }
 
+TEST_F(ValidateCFG, LoopConditionalBranchWithoutExitGood) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%bool = OpTypeBool
+%undef = OpUndef %bool
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+OpBranch %loop
+%loop = OpLabel
+OpLoopMerge %exit %continue None
+OpBranchConditional %undef %then %else
+%then = OpLabel
+OpBranch %continue
+%else = OpLabel
+OpBranch %exit
+%continue = OpLabel
+OpBranch %loop
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateCFG, MissingMergeSwitchBad) {
   const std::string text = R"(
 OpCapability Shader
