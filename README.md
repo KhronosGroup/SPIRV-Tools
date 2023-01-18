@@ -434,7 +434,9 @@ On MacOS
 - AppleClang 11.0
 
 On Windows
+- Visual Studio 2017
 - Visual Studio 2019
+- Visual Studio 2022
 
 Other compilers or later versions may work, but they are not tested.
 
