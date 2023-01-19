@@ -438,7 +438,7 @@ On Windows
 - Visual Studio 2019
 - Visual Studio 2022
 
-Note: Visual Studio 2017 has an incomplete c++17 support. We might stop
+Note: Visual Studio 2017 has incomplete c++17 support. We might stop
 testing it soon. Other compilers or later versions may work, but they are not
 tested.
 
