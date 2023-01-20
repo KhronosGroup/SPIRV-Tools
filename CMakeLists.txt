@@ -25,13 +25,14 @@ include(GNUInstallDirs)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# Require at least C++11
+# Require at least C++17
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 11)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
-if(${CMAKE_CXX_STANDARD} LESS 11)
-  message(FATAL_ERROR "SPIRV-Tools requires C++11 or later, but is configured for C++${CMAKE_CXX_STANDARD})")
+if(${CMAKE_CXX_STANDARD} LESS 17)
+  message(FATAL_ERROR "SPIRV-Tools requires C++17 or later, but is configured for C++${CMAKE_CXX_STANDARD})")
 endif()
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 option(ENABLE_RTTI "Enables RTTI" OFF)
@@ -189,10 +190,9 @@ function(spvtools_default_compile_options TARGET)
   target_compile_options(${TARGET} PRIVATE ${SPIRV_WARNINGS})
 
   if (${COMPILER_IS_LIKE_GNU})
-    target_compile_options(${TARGET} PRIVATE -std=c++11 -fno-exceptions)
     target_compile_options(${TARGET} PRIVATE
       -Wall -Wextra -Wno-long-long -Wshadow -Wundef -Wconversion
-      -Wno-sign-conversion)
+      -Wno-sign-conversion -fno-exceptions)
 
     if(NOT ENABLE_RTTI)
         add_compile_options(-fno-rtti)
