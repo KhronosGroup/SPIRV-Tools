@@ -22,3 +22,4 @@ set -x
 
 SCRIPT_DIR=`dirname "$BASH_SOURCE"`
 source $SCRIPT_DIR/../scripts/macos/build.sh RelWithDebInfo
+
