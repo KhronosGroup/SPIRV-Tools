@@ -17,6 +17,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        fetch-depth: '0'
       - name: Download dependencies
         run: python3 utils/git-sync-deps
       - name: Mount Bazel cache
