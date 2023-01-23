@@ -1,6 +1,6 @@
 name: Build and Test with Bazel
 
-on: 
+on:
   push:
     branches:
       - 'main'
@@ -17,6 +17,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
       - name: Download dependencies
         run: python3 utils/git-sync-deps
       - name: Mount Bazel cache
