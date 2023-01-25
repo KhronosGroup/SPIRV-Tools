@@ -296,12 +296,35 @@ class Loop {
   // as a nested child loop.
   inline void SetParent(Loop* parent) { parent_ = parent; }
 
-  // Returns true is the instruction is invariant and safe to move wrt loop
-  bool ShouldHoistInstruction(IRContext* context, Instruction* inst);
+  // Returns true is the instruction is invariant and safe to move wrt loop.
+  bool ShouldHoistInstruction(const Instruction& inst) const;
 
   // Returns true if all operands of inst are in basic blocks not contained in
-  // loop
-  bool AreAllOperandsOutsideLoop(IRContext* context, Instruction* inst);
+  // loop.
+  bool AreAllOperandsOutsideLoop(const Instruction& inst) const;
+
+  // Checks if |inst| is safe to move. We can only move instructions which don't
+  // have any side effects and OpLoads and OpStores.
+  bool MovableInstruction(const Instruction& inst) const;
+
+  // Returns true if operand |id| is modified by instruction |inst|.
+  bool IsOperandModifiedByInstruction(uint32_t id,
+                                      const Instruction& inst) const;
+
+  // Returns true if the operand |id| is invariant within the loop. Logical
+  // pointers referencing |id| are considered.
+  bool IsOperandInvariantInLoop(uint32_t id) const;
+
+  // Returns true if the in ops (excluding OpStore pointer) of |inst| are
+  // invariant within the loop.
+  bool AreInOperandsInvariantInLoop(const Instruction& inst) const;
+
+  // Returns the number of times the operand |id| is modified. Does not count
+  // |id| as a result. Logical pointers referencing |id| are considered.
+  uint32_t NumOperandModifications(uint32_t id) const;
+
+  // Returns true if the |inst| result (or OpStore pointer) is modified once.
+  bool IsResultModifiedOnce(const Instruction& inst) const;
 
   // Extract the initial value from the |induction| variable and store it in
   // |value|. If the function couldn't find the initial value of |induction|

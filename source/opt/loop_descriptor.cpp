@@ -450,25 +450,112 @@ bool Loop::IsLCSSA() const {
   return true;
 }
 
-bool Loop::ShouldHoistInstruction(IRContext* context, Instruction* inst) {
-  return AreAllOperandsOutsideLoop(context, inst) &&
-         inst->IsOpcodeCodeMotionSafe();
+bool Loop::ShouldHoistInstruction(const Instruction& inst) const {
+  return (MovableInstruction(inst) && AreAllOperandsOutsideLoop(inst) &&
+          AreInOperandsInvariantInLoop(inst) && IsResultModifiedOnce(inst));
 }
 
-bool Loop::AreAllOperandsOutsideLoop(IRContext* context, Instruction* inst) {
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  bool all_outside_loop = true;
+bool Loop::AreAllOperandsOutsideLoop(const Instruction& inst) const {
+  analysis::DefUseManager* def_use_mgr = GetContext()->get_def_use_mgr();
 
-  const std::function<void(uint32_t*)> operand_outside_loop =
-      [this, &def_use_mgr, &all_outside_loop](uint32_t* id) {
-        if (this->IsInsideLoop(def_use_mgr->GetDef(*id))) {
-          all_outside_loop = false;
-          return;
-        }
+  const std::function<bool(const uint32_t*)> operand_outside_loop =
+      [this, &def_use_mgr](const uint32_t* id) {
+        return !this->IsInsideLoop(def_use_mgr->GetDef(*id));
       };
 
-  inst->ForEachInId(operand_outside_loop);
-  return all_outside_loop;
+  return inst.WhileEachInId(operand_outside_loop);
+}
+
+bool Loop::MovableInstruction(const Instruction& inst) const {
+  // TODO: This is from LoopFissionImpl. Make it a method of Instruction?
+  // TODO: Is IsOpcodeCodeMotionSafe() exhaustive?
+  return inst.opcode() == spv::Op::OpLoad ||
+         inst.opcode() == spv::Op::OpStore ||
+         inst.opcode() == spv::Op::OpSelectionMerge ||
+         inst.opcode() == spv::Op::OpPhi || inst.IsOpcodeCodeMotionSafe();
+}
+
+bool Loop::IsOperandModifiedByInstruction(uint32_t id,
+                                          const Instruction& inst) const {
+  // TODO: Check that this is exhaustive
+  if (inst.HasResultId()) {
+    return id == inst.result_id();
+  } else if (inst.opcode() == spv::Op::OpStore) {
+    return id == inst.GetSingleWordInOperand(0);
+  } else {
+    return false;
+  }
+}
+
+uint32_t Loop::NumOperandModifications(uint32_t id) const {
+  analysis::DefUseManager* def_use_mgr = this->GetContext()->get_def_use_mgr();
+
+  uint32_t num_modifications = 0;
+  def_use_mgr->ForEachUser(
+      id, [this, id, &num_modifications](Instruction* inst) {
+        if (spvOpcodeReturnsLogicalPointer(inst->opcode())) {
+          if (id != inst->result_id()) {
+            // Follow logical pointers referencing |id| (e.g. access chains)
+            num_modifications += NumOperandModifications(inst->result_id());
+          }
+        } else if (IsOperandModifiedByInstruction(id, *inst)) {
+          ++num_modifications;
+        }
+      });
+  return num_modifications;
+}
+
+bool Loop::IsOperandInvariantInLoop(uint32_t id) const {
+  analysis::DefUseManager* def_use_mgr = GetContext()->get_def_use_mgr();
+
+  // Constant operands are invariant
+  if (def_use_mgr->GetDef(id)->IsConstant()) {
+    return true;
+  }
+
+  // Check all users of |id| are invariant wrt |id|
+  return def_use_mgr->WhileEachUser(id, [this, id](Instruction* inst) -> bool {
+    return (
+        // |inst| is outside loop, or
+        !this->IsInsideLoop(inst) ||
+        // |inst| does not modify |id|, and
+        (!IsOperandModifiedByInstruction(id, *inst) &&
+         // |inst| does not have a logical pointer result or it is invariant
+         (!spvOpcodeReturnsLogicalPointer(inst->opcode()) ||
+          IsOperandInvariantInLoop(inst->result_id()))));
+  });
+}
+
+bool Loop::AreInOperandsInvariantInLoop(const Instruction& inst) const {
+  bool inOperandsInvariant = true;
+  switch (inst.opcode()) {
+    case spv::Op::OpStore:
+      inOperandsInvariant = IsOperandInvariantInLoop(inst.GetOperand(1).AsId());
+      break;
+    default:
+      inOperandsInvariant = inst.WhileEachInId(
+          [this](const uint32_t* id) { return IsOperandInvariantInLoop(*id); });
+      break;
+  }
+  return inOperandsInvariant;
+}
+
+bool Loop::IsResultModifiedOnce(const Instruction& inst) const {
+  uint32_t numModifications = 0;
+  switch (inst.opcode()) {
+    case spv::Op::OpStore:
+      numModifications = NumOperandModifications(inst.GetOperand(0).AsId());
+      break;
+    default:
+      if (inst.HasResultId()) {
+        // NumOperandModifications traverses all users of |id| but
+        // DefUseManager::ForEachUser() excludes results, so add 1 here.
+        numModifications = 1 + NumOperandModifications(inst.result_id());
+      }
+      break;
+  }
+  assert(numModifications > 0);
+  return numModifications == 1;
 }
 
 void Loop::ComputeLoopStructuredOrder(
