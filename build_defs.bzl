@@ -9,7 +9,6 @@ COMMON_COPTS = [
     "//conditions:default": [
         "-DSPIRV_LINUX",
         "-DSPIRV_TIMER_ENABLED",
-        "-std=c++17",
         "-fvisibility=hidden",
         "-fno-exceptions",
         "-fno-rtti",
