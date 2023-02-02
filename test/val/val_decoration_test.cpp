@@ -5312,7 +5312,6 @@ TEST_F(ValidateDecorations, VulkanStructWithoutDecorationWithRuntimeArray) {
                         "must be decorated with Block or BufferBlock."));
 }
 
-
 TEST_F(ValidateDecorations, EmptyStructAtNonZeroOffsetGood) {
   const std::string spirv = R"(
 OpCapability Shader
