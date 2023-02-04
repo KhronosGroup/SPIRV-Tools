@@ -5,7 +5,7 @@ vars = {
 
   'effcee_revision': 'c7b4db79f340f7a9981e8a484f6d5785e24242d1',
 
-  'googletest_revision': 'ebedaa18c7cafa15f06ab3d814440e510fad9559',
+  'googletest_revision': '2f2e72bae991138cedd0e3d06a115022736cd568',
 
   # Use protobufs before they gained the dependency on abseil
   'protobuf_revision': 'v3.13.0.1',
