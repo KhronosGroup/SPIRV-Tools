@@ -7372,7 +7372,16 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "%4 = OpCompositeInsert %struct_v2int_int_int %int_1 %struct_v2int_int_int_null 2\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        4, false)
+        4, false),
+    // Test case 17: Don't fold when index into composite is out of bounds.
+    InstructionFoldingCase<bool>(
+	Header() +
+            "%main = OpFunction %void None %void_func\n" +
+	    "%main_lab = OpLabel\n" +
+	    "%4 = OpCompositeExtract %int %struct_v2int_int_int 3\n" +
+	    "OpReturn\n" +
+	    "OpFunctionEnd",
+	4, false)
 ));
 
 INSTANTIATE_TEST_SUITE_P(DotProductMatchingTest, MatchingInstructionFoldingTest,
