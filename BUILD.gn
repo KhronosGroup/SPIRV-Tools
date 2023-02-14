@@ -1430,15 +1430,6 @@ if (spirv_tools_standalone) {
   }
 }
 
-source_set("spvtools_util_cli_consumer") {
-  sources = [
-    "tools/util/cli_consumer.cpp",
-    "tools/util/cli_consumer.h",
-  ]
-  deps = [ ":spvtools_headers" ]
-  configs += [ ":spvtools_internal_config" ]
-}
-
 source_set("spvtools_software_version") {
   sources = [ "source/software_version.cpp" ]
   deps = [
@@ -1448,12 +1439,23 @@ source_set("spvtools_software_version") {
   configs += [ ":spvtools_internal_config" ]
 }
 
+source_set("spvtools_tools_util") {
+  sources = [
+    "tools/util/flags.cpp"
+    "tools/util/cli_consumer.cpp",
+    "tools/util/cli_consumer.h",
+  ]
+  deps = [ ":spvtools_headers" ]
+  configs += [ ":spvtools_internal_config" ]
+}
+
 if (spvtools_build_executables) {
   executable("spirv-as") {
     sources = [ "tools/as/as.cpp" ]
     deps = [
       ":spvtools",
       ":spvtools_software_version",
+      ":spvtools_tools_util",
     ]
     configs += [ ":spvtools_internal_config" ]
   }
@@ -1463,6 +1465,7 @@ if (spvtools_build_executables) {
     deps = [
       ":spvtools",
       ":spvtools_software_version",
+      ":spvtools_tools_util",
     ]
     configs += [ ":spvtools_internal_config" ]
   }
@@ -1472,7 +1475,7 @@ if (spvtools_build_executables) {
     deps = [
       ":spvtools",
       ":spvtools_software_version",
-      ":spvtools_util_cli_consumer",
+      ":spvtools_tools_util",
       ":spvtools_val",
     ]
     configs += [ ":spvtools_internal_config" ]
@@ -1487,6 +1490,7 @@ if (spvtools_build_executables) {
     deps = [
       ":spvtools",
       ":spvtools_software_version",
+      ":spvtools_tools_util",
     ]
     configs += [ ":spvtools_internal_config" ]
   }
@@ -1497,7 +1501,7 @@ if (spvtools_build_executables) {
       ":spvtools",
       ":spvtools_opt",
       ":spvtools_software_version",
-      ":spvtools_util_cli_consumer",
+      ":spvtools_tools_util",
       ":spvtools_val",
     ]
     configs += [ ":spvtools_internal_config" ]
@@ -1510,6 +1514,7 @@ if (spvtools_build_executables) {
       ":spvtools_link",
       ":spvtools_opt",
       ":spvtools_software_version",
+      ":spvtools_tools_util",
       ":spvtools_val",
     ]
     configs += [ ":spvtools_internal_config" ]
@@ -1529,7 +1534,7 @@ if (!is_ios && !spirv_is_winuwp && build_with_chromium && spvtools_build_executa
       ":spvtools_opt",
       ":spvtools_reduce",
       ":spvtools_software_version",
-      ":spvtools_util_cli_consumer",
+      ":spvtools_tools_util",
       ":spvtools_val",
       "//third_party/protobuf:protobuf_full",
     ]
@@ -1548,7 +1553,7 @@ if (!is_ios && !spirv_is_winuwp && spvtools_build_executables) {
       ":spvtools_opt",
       ":spvtools_reduce",
       ":spvtools_software_version",
-      ":spvtools_util_cli_consumer",
+      ":spvtools_tools_util",
       ":spvtools_val",
     ]
     configs += [ ":spvtools_internal_config" ]
