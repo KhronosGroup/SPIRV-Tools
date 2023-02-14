@@ -343,7 +343,7 @@ class SpirvTools {
 
   // Parses a SPIR-V binary, specified as counted sequence of 32-bit words.
   // Parsing feedback is provided via two callbacks provided as std::function.
-  // pointers. In a valid parse the parsed-header callback is called once, and
+  // In a valid parse the parsed-header callback is called once, and
   // then the parsed-instruction callback is called once for each instruction
   // in the stream.
   // Returns true on successful parsing.
@@ -352,7 +352,7 @@ class SpirvTools {
   // will be used to emit any errors. If a callback returns anything other than
   // SPV_SUCCESS, then that status code is returned, no further callbacks are
   // issued, and no additional diagnostics are emitted.
-  // This is a wrapper above the C API spvBinaryParse.
+  // This is a wrapper around the C API spvBinaryParse.
   bool Parse(const std::vector<uint32_t>& binary,
              const HeaderParser& header_parser,
              const InstructionParser& instruction_parser,
