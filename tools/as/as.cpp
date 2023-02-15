@@ -23,12 +23,18 @@
 #include "tools/util/flags.h"
 
 static const auto kDefaultEnvironment = "spv1.6";
-static const std::string kTitle = "spirv-as - Create a SPIR-V binary module from SPIR-V assembly text";
-static const std::string kSummary = R"(The SPIR-V assembly text is read from <filename>.  If no file is specified,
+static const std::string kTitle =
+    "spirv-as - Create a SPIR-V binary module from SPIR-V assembly text";
+static const std::string kSummary =
+    R"(The SPIR-V assembly text is read from <filename>.  If no file is specified,
 or if the filename is "-", then the assembly text is read from standard input.
 The SPIR-V binary module is written to file \"out.spv\", unless the -o option
 is used.)";
-static const std::string kSupportedEnv = "vulkan1.1spv1.4|vulkan1.0|vulkan1.1|vulkan1.2|vulkan1.3|spv1.0|spv1.1|spv1.2|spv1.3|spv1.4|spv1.5|spv1.6|opencl1.2embedded|opencl1.2|opencl2.0embedded|opencl2.0|opencl2.1embedded|opencl2.1|opencl2.2embedded|opencl2.2|opengl4.0|opengl4.1|opengl4.2|opengl4.3|opengl4.5}";
+static const std::string kSupportedEnv =
+    "vulkan1.1spv1.4|vulkan1.0|vulkan1.1|vulkan1.2|vulkan1.3|spv1.0|spv1.1|"
+    "spv1.2|spv1.3|spv1.4|spv1.5|spv1.6|opencl1.2embedded|opencl1.2|opencl2."
+    "0embedded|opencl2.0|opencl2.1embedded|opencl2.1|opencl2.2embedded|opencl2."
+    "2|opengl4.0|opengl4.1|opengl4.2|opengl4.3|opengl4.5}";
 
 FLAG_SHORT_bool(h, /* default_value= */ false, "Print this help.", false);
 FLAG_LONG_bool(help, /* default_value= */ false, "Print this help.", false);
@@ -42,7 +48,8 @@ FLAG_LONG_bool(preserve_numeric_ids, /* default_value= */ false,
                "source. Non-numeric IDs are allocated by filling in the gaps, "
                "starting with 1 and going up.",
                /* required= */ false);
-FLAG_LONG_string(target_env, kDefaultEnvironment, "User specified environment. (" + kSupportedEnv + ").",
+FLAG_LONG_string(target_env, kDefaultEnvironment,
+                 "User specified environment. (" + kSupportedEnv + ").",
                  /* required= */ false);
 
 int main(int, const char** argv) {
@@ -51,7 +58,8 @@ int main(int, const char** argv) {
   }
 
   if (flags::h.value() || flags::help.value()) {
-    flags::PrintHelp(argv, "{binary} {required} [options] <filename>", kTitle, kSummary);
+    flags::PrintHelp(argv, "{binary} {required} [options] <filename>", kTitle,
+                     kSummary);
     return 0;
   }
 

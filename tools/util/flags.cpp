@@ -137,7 +137,9 @@ void FlagList::print_usage(const char* binary_name,
   std::cout << "USAGE: " << usage << std::endl << std::endl;
 }
 
-void FlagList::print_help(const char** argv, const std::string& usage_format, const std::string& title, const std::string& summary) {
+void FlagList::print_help(const char** argv, const std::string& usage_format,
+                          const std::string& title,
+                          const std::string& summary) {
   std::cout << title << std::endl << std::endl;
   print_usage(argv[0], usage_format);
   std::cout << summary << std::endl << std::endl;
@@ -236,7 +238,8 @@ bool FlagList::parse(const char** argv) {
 bool Parse(const char** argv) { return FlagList::parse(argv); }
 
 // Just the public wrapper around the print_help function.
-void PrintHelp(const char** argv, const std::string& usage_format, const std::string& title, const std::string& summary) {
+void PrintHelp(const char** argv, const std::string& usage_format,
+               const std::string& title, const std::string& summary) {
   FlagList::print_help(argv, usage_format, title, summary);
 }
 

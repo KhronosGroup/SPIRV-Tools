@@ -26,38 +26,45 @@
 #include "tools/io.h"
 #include "tools/util/flags.h"
 
-static const std::string kTitle = "spirv-dis - Disassemble a SPIR-V binary module";
-static const std::string kSummary = R"(The SPIR-V binary is read from <filename>. If no file is specified,
+static const std::string kTitle =
+    "spirv-dis - Disassemble a SPIR-V binary module";
+static const std::string kSummary =
+    R"(The SPIR-V binary is read from <filename>. If no file is specified,
 or if the filename is "-", then the binary is read from standard input.)";
 
 FLAG_SHORT_bool(h, /* default_value= */ false, "Print this help.", false);
 FLAG_LONG_bool(help, /* default_value= */ false, "Print this help.", false);
 FLAG_LONG_bool(version, /* default_value= */ false,
-               "Display disassembler version information.", /* required= */ false);
+               "Display disassembler version information.",
+               /* required= */ false);
 FLAG_SHORT_string(o, /* default_value= */ "-",
-                  "Set the output filename. Output goes to standard output if this option is not specified, or if the filename is \"-\".",
+                  "Set the output filename. Output goes to standard output if "
+                  "this option is not specified, or if the filename is \"-\".",
                   /* required= */ false);
 FLAG_LONG_bool(color, /* default_value= */ false,
-                  "Force color output.  The default when printing to a terminal. Overrides --no-color option if present.",
-                  /* required= */ false);
-FLAG_LONG_bool(no_color, /* default_value= */ false,
-                  "Don't print in color.  The default when output goes to something other than a terminal (e.g. a file, a pipe, or a shell redirection).",
-                  /* required= */ false);
+               "Force color output.  The default when printing to a terminal. "
+               "Overrides --no-color option if present.",
+               /* required= */ false);
+FLAG_LONG_bool(
+    no_color, /* default_value= */ false,
+    "Don't print in color.  The default when output goes to something other "
+    "than a terminal (e.g. a file, a pipe, or a shell redirection).",
+    /* required= */ false);
 FLAG_LONG_bool(no_indent, /* default_value= */ false,
-                  "Don't indent instructions.",
-                  /* required= */ false);
+               "Don't indent instructions.",
+               /* required= */ false);
 FLAG_LONG_bool(no_header, /* default_value= */ false,
-                  "Don't output the header as leading comments.",
-                  /* required= */ false);
+               "Don't output the header as leading comments.",
+               /* required= */ false);
 FLAG_LONG_bool(raw_id, /* default_value= */ false,
-                  "Show raw Id values instead of friendly names.",
-                  /* required= */ false);
+               "Show raw Id values instead of friendly names.",
+               /* required= */ false);
 FLAG_LONG_bool(offsets, /* default_value= */ false,
-                  "Show byte offsets for each instruction.",
-                  /* required= */ false);
+               "Show byte offsets for each instruction.",
+               /* required= */ false);
 FLAG_LONG_bool(comment, /* default_value= */ false,
-                  "Add comments to make reading easier.",
-                  /* required= */ false);
+               "Add comments to make reading easier.",
+               /* required= */ false);
 
 static const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_5;
 
@@ -67,14 +74,14 @@ int main(int, const char** argv) {
   }
 
   if (flags::h.value() || flags::help.value()) {
-    flags::PrintHelp(argv, "{binary} {required} [options] <filename>", kTitle, kSummary);
+    flags::PrintHelp(argv, "{binary} {required} [options] <filename>", kTitle,
+                     kSummary);
     return 0;
   }
 
   if (flags::version.value()) {
     printf("%s\n", spvSoftwareVersionDetailsString());
-    printf("Target: %s\n",
-           spvTargetEnvDescription(kDefaultEnvironment));
+    printf("Target: %s\n", spvTargetEnvDescription(kDefaultEnvironment));
     return 0;
   }
 
@@ -83,7 +90,9 @@ int main(int, const char** argv) {
     return 1;
   }
 
-  const std::string inFile = flags::positional_arguments.size() == 0 ? "-" : flags::positional_arguments[0];
+  const std::string inFile = flags::positional_arguments.size() == 0
+                                 ? "-"
+                                 : flags::positional_arguments[0];
   const std::string outFile = flags::o.value();
 
   bool color_is_possible =
@@ -97,11 +106,13 @@ int main(int, const char** argv) {
 
   if (!flags::no_indent.value()) options |= SPV_BINARY_TO_TEXT_OPTION_INDENT;
 
-  if (flags::offsets.value()) options |= SPV_BINARY_TO_TEXT_OPTION_SHOW_BYTE_OFFSET;
+  if (flags::offsets.value())
+    options |= SPV_BINARY_TO_TEXT_OPTION_SHOW_BYTE_OFFSET;
 
   if (flags::no_header.value()) options |= SPV_BINARY_TO_TEXT_OPTION_NO_HEADER;
 
-  if (!flags::raw_id.value()) options |= SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES;
+  if (!flags::raw_id.value())
+    options |= SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES;
 
   if (flags::comment.value()) options |= SPV_BINARY_TO_TEXT_OPTION_COMMENT;
 

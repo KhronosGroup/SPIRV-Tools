@@ -149,7 +149,8 @@ bool Parse(const char** argv);
 //      blabla");
 //
 //      -> USAGE: /tmp/mybin some-text --required-flag=<value> blabla
-void PrintHelp(const char** argv, const std::string& usage_format, const std::string& title, const std::string& summary);
+void PrintHelp(const char** argv, const std::string& usage_format,
+               const std::string& title, const std::string& summary);
 
 }  // namespace flags
 
@@ -235,7 +236,8 @@ class FlagList {
   }
 
   static bool parse(const char** argv);
-  static void print_help(const char** argv, const std::string& usage_format, const std::string& title, const std::string& summary);
+  static void print_help(const char** argv, const std::string& usage_format,
+                         const std::string& title, const std::string& summary);
 
 #ifdef TESTING
   // Flags are supposed to be constant for the whole app execution, hence the
