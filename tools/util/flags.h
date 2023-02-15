@@ -139,6 +139,8 @@ bool Parse(const char** argv);
 //                 - {binary} : replaced with `argv[0]`'s value
 //                 - {required} : replaced with the list of all the flags marked
 //                 as required.
+// *        title: The title to show on top of the help.
+// *      summary: A short paragraph shown in the middle.
 //
 //    Example:
 //      FLAG_LONG_bool(help, false, "Print the help.", /* required */ false);
@@ -147,7 +149,7 @@ bool Parse(const char** argv);
 //      blabla");
 //
 //      -> USAGE: /tmp/mybin some-text --required-flag=<value> blabla
-void PrintHelp(const char** argv, const std::string& usage_format);
+void PrintHelp(const char** argv, const std::string& usage_format, const std::string& title, const std::string& summary);
 
 }  // namespace flags
 
@@ -233,7 +235,7 @@ class FlagList {
   }
 
   static bool parse(const char** argv);
-  static void print_help(const char** argv, const std::string& usage_format);
+  static void print_help(const char** argv, const std::string& usage_format, const std::string& title, const std::string& summary);
 
 #ifdef TESTING
   // Flags are supposed to be constant for the whole app execution, hence the

@@ -23,6 +23,11 @@
 #include "tools/io.h"
 #include "tools/util/flags.h"
 
+static const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_6;
+static const std::string kTitle = "spirv-cfg - Show the control flow graph in GraphiViz \"dot\" form. EXPERIMENTAL";
+static const std::string kSummary = R"(The SPIR-V binary is read from <filename>. If no file is specified,
+or if the filename is "-", then the binary is read from standard input.)";
+
 FLAG_SHORT_bool(h, /* default_value= */ false, "Print this help.", false);
 FLAG_LONG_bool(help, /* default_value= */ false, "Print this help.", false);
 FLAG_LONG_bool(version, /* default_value= */ false,
@@ -31,15 +36,13 @@ FLAG_SHORT_string(o, /* default_value= */ "",
                   "Set the output filename. Output goes to standard output if this option is not specified, or if the filename is \"-\".",
                   /* required= */ false);
 
-static const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_6;
-
 int main(int, const char** argv) {
   if (!flags::Parse(argv)) {
     return 1;
   }
 
   if (flags::h.value() || flags::help.value()) {
-    flags::PrintHelp(argv, "{binary} {required} [options] <filename>");
+    flags::PrintHelp(argv, "{binary} {required} [options] <filename>", kTitle, kSummary);
     return 0;
   }
 
