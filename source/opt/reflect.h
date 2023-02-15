@@ -46,27 +46,14 @@ inline bool IsAnnotationInst(spv::Op opcode) {
          opcode == spv::Op::OpMemberDecorateStringGOOGLE;
 }
 inline bool IsTypeInst(spv::Op opcode) {
-  return (opcode >= spv::Op::OpTypeVoid &&
-          opcode <= spv::Op::OpTypeForwardPointer) ||
-         opcode == spv::Op::OpTypePipeStorage ||
-         opcode == spv::Op::OpTypeNamedBarrier ||
-         opcode == spv::Op::OpTypeAccelerationStructureNV ||
-         opcode == spv::Op::OpTypeAccelerationStructureKHR ||
-         opcode == spv::Op::OpTypeRayQueryKHR ||
-         opcode == spv::Op::OpTypeCooperativeMatrixNV ||
-         opcode == spv::Op::OpTypeHitObjectNV;
+  return spvOpcodeGeneratesType(opcode) ||
+         opcode == spv::Op::OpTypeForwardPointer;
 }
 inline bool IsConstantInst(spv::Op opcode) {
-  return (opcode >= spv::Op::OpConstantTrue &&
-          opcode <= spv::Op::OpSpecConstantOp) ||
-         opcode == spv::Op::OpConstantFunctionPointerINTEL;
-}
-inline bool IsCompileTimeConstantInst(spv::Op opcode) {
-  return opcode >= spv::Op::OpConstantTrue && opcode <= spv::Op::OpConstantNull;
+  return spvOpcodeIsConstant(opcode);
 }
 inline bool IsSpecConstantInst(spv::Op opcode) {
-  return opcode >= spv::Op::OpSpecConstantTrue &&
-         opcode <= spv::Op::OpSpecConstantOp;
+  return spvOpcodeIsSpecConstant(opcode);
 }
 
 }  // namespace opt
