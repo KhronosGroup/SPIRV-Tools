@@ -191,10 +191,10 @@ elif [ $TOOL = "bazel" ]; then
   using bazel-5.0.0
 
   echo $(date): Build everything...
-  bazel build :all
+  bazel build --cxxopt=-std=c++17 :all
   echo $(date): Build completed.
 
   echo $(date): Starting bazel test...
-  bazel test :all
+  bazel test --cxxopt=-std=c++17 :all
   echo $(date): Bazel test completed.
 fi
