@@ -164,8 +164,15 @@ bool FlagList::parse(const char** argv) {
       continue;
     }
 
+    // '--' alone is used to mark the end of the flags.
     if (std::strcmp(*it, "--") == 0) {
       ignore_flags = true;
+      continue;
+    }
+
+    // '-' alone is not a flag, but often used to say 'stdin'.
+    if (std::strcmp(*it, "-") == 0) {
+      flags::positional_arguments.emplace_back(*it);
       continue;
     }
 

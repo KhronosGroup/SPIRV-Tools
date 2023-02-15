@@ -48,14 +48,15 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   add_spvtools_tool(TARGET spirv-val  SRCS ${COMMON_TOOLS_SRCS} val/val.cpp util/cli_consumer.cpp LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
   add_spvtools_tool(TARGET spirv-opt  SRCS ${COMMON_TOOLS_SRCS} opt/opt.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-opt ${SPIRV_TOOLS_FULL_VISIBILITY})
   if(NOT (${CMAKE_SYSTEM_NAME} STREQUAL "iOS")) # iOS does not allow std::system calls which spirv-reduce requires
-    add_spvtools_tool(TARGET spirv-reduce SRCS reduce/reduce.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-reduce ${SPIRV_TOOLS_FULL_VISIBILITY})
+    add_spvtools_tool(TARGET spirv-reduce SRCS ${COMMON_TOOLS_SRCS} reduce/reduce.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-reduce ${SPIRV_TOOLS_FULL_VISIBILITY})
   endif()
-  add_spvtools_tool(TARGET spirv-link SRCS link/linker.cpp LIBS SPIRV-Tools-link ${SPIRV_TOOLS_FULL_VISIBILITY})
-  add_spvtools_tool(TARGET spirv-lint SRCS lint/lint.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-lint SPIRV-Tools-opt ${SPIRV_TOOLS_FULL_VISIBILITY})
+  add_spvtools_tool(TARGET spirv-link SRCS ${COMMON_TOOLS_SRCS} link/linker.cpp LIBS SPIRV-Tools-link ${SPIRV_TOOLS_FULL_VISIBILITY})
+  add_spvtools_tool(TARGET spirv-lint SRCS ${COMMON_TOOLS_SRCS} lint/lint.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-lint SPIRV-Tools-opt ${SPIRV_TOOLS_FULL_VISIBILITY})
   add_spvtools_tool(TARGET spirv-cfg
                     SRCS cfg/cfg.cpp
                          cfg/bin_to_dot.h
                          cfg/bin_to_dot.cpp
+                         ${COMMON_TOOLS_SRCS}
                     LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
   target_include_directories(spirv-cfg PRIVATE ${spirv-tools_SOURCE_DIR}
                                                ${SPIRV_HEADER_INCLUDE_DIR})

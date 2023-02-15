@@ -38,6 +38,15 @@ TEST_F(FlagTest, NoFlags) {
   EXPECT_EQ(flags::positional_arguments.size(), 0);
 }
 
+TEST_F(FlagTest, DashIsPositional) {
+  const char* argv[] = {"binary", "-", nullptr};
+
+  EXPECT_TRUE(flags::Parse(argv));
+
+  EXPECT_EQ(flags::positional_arguments.size(), 1);
+  EXPECT_EQ(flags::positional_arguments[0], "-");
+}
+
 TEST_F(FlagTest, Positional) {
   const char* argv[] = {"binary", "A", "BCD", nullptr};
 
