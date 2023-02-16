@@ -26,45 +26,52 @@
 #include "tools/io.h"
 #include "tools/util/flags.h"
 
-static const std::string kTitle =
-    "spirv-dis - Disassemble a SPIR-V binary module";
-static const std::string kSummary =
-    R"(The SPIR-V binary is read from <filename>. If no file is specified,
-or if the filename is "-", then the binary is read from standard input.)";
+static const std::string kHelpText = R"(%s - Disassemble a SPIR-V binary module
 
-FLAG_SHORT_bool(h, /* default_value= */ false, "Print this help.", false);
-FLAG_LONG_bool(help, /* default_value= */ false, "Print this help.", false);
-FLAG_LONG_bool(version, /* default_value= */ false,
-               "Display disassembler version information.",
-               /* required= */ false);
-FLAG_SHORT_string(o, /* default_value= */ "-",
-                  "Set the output filename. Output goes to standard output if "
-                  "this option is not specified, or if the filename is \"-\".",
-                  /* required= */ false);
-FLAG_LONG_bool(color, /* default_value= */ false,
-               "Force color output.  The default when printing to a terminal. "
-               "Overrides --no-color option if present.",
-               /* required= */ false);
-FLAG_LONG_bool(
-    no_color, /* default_value= */ false,
-    "Don't print in color.  The default when output goes to something other "
-    "than a terminal (e.g. a file, a pipe, or a shell redirection).",
-    /* required= */ false);
-FLAG_LONG_bool(no_indent, /* default_value= */ false,
-               "Don't indent instructions.",
-               /* required= */ false);
-FLAG_LONG_bool(no_header, /* default_value= */ false,
-               "Don't output the header as leading comments.",
-               /* required= */ false);
-FLAG_LONG_bool(raw_id, /* default_value= */ false,
-               "Show raw Id values instead of friendly names.",
-               /* required= */ false);
-FLAG_LONG_bool(offsets, /* default_value= */ false,
-               "Show byte offsets for each instruction.",
-               /* required= */ false);
-FLAG_LONG_bool(comment, /* default_value= */ false,
-               "Add comments to make reading easier.",
-               /* required= */ false);
+Usage: %s [options] [<filename>]
+
+The SPIR-V binary is read from <filename>. If no file is specified,
+or if the filename is "-", then the binary is read from standard input.
+
+Options:
+
+  -h, --help      Print this help.
+  --version       Display disassembler version information.
+
+  -o <filename>   Set the output filename.
+                  Output goes to standard output if this option is
+                  not specified, or if the filename is "-".
+
+  --color         Force color output.  The default when printing to a terminal.
+                  Overrides a previous --no-color option.
+  --no-color      Don't print in color.  Overrides a previous --color option.
+                  The default when output goes to something other than a
+                  terminal (e.g. a file, a pipe, or a shell redirection).
+
+  --no-indent     Don't indent instructions.
+
+  --no-header     Don't output the header as leading comments.
+
+  --raw-id        Show raw Id values instead of friendly names.
+
+  --offsets       Show byte offsets for each instruction.
+
+  --comment       Add comments to make reading easier
+)";
+
+// clang-format off
+FLAG_SHORT_bool  (h,         /* default_value= */ false, /* required= */ false);
+FLAG_LONG_bool   (help,      /* default_value= */ false, /* required= */false);
+FLAG_LONG_bool   (version,   /* default_value= */ false, /* required= */ false);
+FLAG_SHORT_string(o,         /* default_value= */ "-",   /* required= */ false);
+FLAG_LONG_bool   (color,     /* default_value= */ "",    /* required= */ false);
+FLAG_LONG_bool   (no_color,  /* default_value= */ "",    /* required= */ false);
+FLAG_LONG_bool   (no_indent, /* default_value= */ "",    /* required= */ false);
+FLAG_LONG_bool   (no_header, /* default_value= */ "",    /* required= */ false);
+FLAG_LONG_bool   (raw_id,    /* default_value= */ "",    /* required= */ false);
+FLAG_LONG_bool   (offsets,   /* default_value= */ "",    /* required= */ false);
+FLAG_LONG_bool   (comment,   /* default_value= */ "",    /* required= */ false);
+// clang-format on
 
 static const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_5;
 
@@ -74,8 +81,7 @@ int main(int, const char** argv) {
   }
 
   if (flags::h.value() || flags::help.value()) {
-    flags::PrintHelp(argv, "{binary} {required} [options] <filename>", kTitle,
-                     kSummary);
+    printf(kHelpText.c_str(), argv[0], argv[0]);
     return 0;
   }
 

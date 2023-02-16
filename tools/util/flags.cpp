@@ -24,7 +24,6 @@
 
 namespace flags {
 
-std::vector<FlagList::FlagInfo> FlagList::flags_;
 std::vector<std::string> positional_arguments;
 
 namespace {
@@ -115,48 +114,6 @@ bool FlagList::parse_flag_info(FlagInfo& info, const char*** iterator) {
   return success;
 }
 
-void FlagList::print_usage(const char* binary_name,
-                           const std::string& usage_format) {
-  std::string required = "";
-  for (const auto& flag : flags_) {
-    if (!flag.required) {
-      continue;
-    }
-
-    if (flag.is_short) {
-      required += flag.name + " ";
-    } else {
-      required += flag.name + "=<value> ";
-    }
-  }
-
-  const std::regex binary_re("\\{binary\\}");
-  const std::regex required_re("\\{required\\}");
-  std::string usage = std::regex_replace(usage_format, binary_re, binary_name);
-  usage = std::regex_replace(usage, required_re, required);
-  std::cout << "USAGE: " << usage << std::endl << std::endl;
-}
-
-void FlagList::print_help(const char** argv, const std::string& usage_format,
-                          const std::string& title,
-                          const std::string& summary) {
-  std::cout << title << std::endl << std::endl;
-  print_usage(argv[0], usage_format);
-  std::cout << summary << std::endl << std::endl;
-
-  size_t longuest_flag = 0;
-  for (const auto& flag : flags_) {
-    longuest_flag = std::max(longuest_flag, flag.name.size());
-  }
-
-  std::cout << "OPTIONS:" << std::endl;
-  for (const auto& flag : flags_) {
-    const size_t inline_alignment = longuest_flag - flag.name.size() + 1;
-    std::cout << "  " << flag.name << ":" << std::string(inline_alignment, ' ')
-              << flag.help << std::endl;
-  }
-}
-
 bool FlagList::parse(const char** argv) {
   flags::positional_arguments.clear();
   std::unordered_set<const FlagInfo*> parsed_flags;
@@ -198,10 +155,10 @@ bool FlagList::parse(const char** argv) {
     const bool is_short_flag = std::strncmp(*it, "--", 2) != 0;
     const std::string flag_name = get_flag_name(raw_flag, is_short_flag);
 
-    auto needle = find_if(
-        flags_.begin(), flags_.end(),
+    auto needle = std::find_if(
+        get_flags().begin(), get_flags().end(),
         [&flag_name](const auto& item) { return item.name == flag_name; });
-    if (needle == flags_.end()) {
+    if (needle == get_flags().end()) {
       std::cerr << "Unknown flag " << flag_name << std::endl;
       return false;
     }
@@ -220,7 +177,7 @@ bool FlagList::parse(const char** argv) {
   }
 
   // Check that we parsed all required flags.
-  for (const auto& flag : flags_) {
+  for (const auto& flag : get_flags()) {
     if (!flag.required) {
       continue;
     }
@@ -236,11 +193,5 @@ bool FlagList::parse(const char** argv) {
 
 // Just the public wrapper around the parse function.
 bool Parse(const char** argv) { return FlagList::parse(argv); }
-
-// Just the public wrapper around the print_help function.
-void PrintHelp(const char** argv, const std::string& usage_format,
-               const std::string& title, const std::string& summary) {
-  FlagList::print_help(argv, usage_format, title, summary);
-}
 
 }  // namespace flags

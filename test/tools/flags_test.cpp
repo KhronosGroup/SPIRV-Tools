@@ -18,10 +18,10 @@
 
 #ifdef UTIL_FLAGS_FLAG
 #undef UTIL_FLAGS_FLAG
-#define UTIL_FLAGS_FLAG(Type, Prefix, Name, Default, Help, Required, IsShort) \
-  flags::Flag<Type> Name(Default);                                            \
-  flags::FlagRegistration Name##_registration(Name, Prefix #Name, Help,       \
-                                              Required, IsShort)
+#define UTIL_FLAGS_FLAG(Type, Prefix, Name, Default, Required, IsShort)     \
+  flags::Flag<Type> Name(Default);                                          \
+  flags::FlagRegistration Name##_registration(Name, Prefix #Name, Required, \
+                                              IsShort)
 #else
 #error \
     "UTIL_FLAGS_FLAG is not defined. Either flags.h is not included of the flag name changed."
@@ -58,7 +58,7 @@ TEST_F(FlagTest, Positional) {
 }
 
 TEST_F(FlagTest, MissingRequired) {
-  FLAG_SHORT_bool(g, false, "help for g", true);
+  FLAG_SHORT_bool(g, false, true);
 
   const char* argv[] = {"binary", nullptr};
   EXPECT_FALSE(flags::Parse(argv));
@@ -66,7 +66,7 @@ TEST_F(FlagTest, MissingRequired) {
 }
 
 TEST_F(FlagTest, BooleanShortValue) {
-  FLAG_SHORT_bool(g, false, "help for g", false);
+  FLAG_SHORT_bool(g, false, false);
   const char* argv[] = {"binary", "-g", nullptr};
   EXPECT_FALSE(g.value());
 
@@ -77,7 +77,7 @@ TEST_F(FlagTest, BooleanShortValue) {
 }
 
 TEST_F(FlagTest, BooleanShortDefaultValue) {
-  FLAG_SHORT_bool(g, true, "help for g", false);
+  FLAG_SHORT_bool(g, true, false);
   const char* argv[] = {"binary", nullptr};
   EXPECT_TRUE(g.value());
 
@@ -87,7 +87,7 @@ TEST_F(FlagTest, BooleanShortDefaultValue) {
 }
 
 TEST_F(FlagTest, BooleanLongValueNotParsed) {
-  FLAG_SHORT_bool(g, false, "help for g", false);
+  FLAG_SHORT_bool(g, false, false);
   const char* argv[] = {"binary", "-g", "false", nullptr};
   EXPECT_FALSE(g.value());
 
@@ -99,7 +99,7 @@ TEST_F(FlagTest, BooleanLongValueNotParsed) {
 }
 
 TEST_F(FlagTest, BooleanLongSplitNotParsed) {
-  FLAG_LONG_bool(foo, false, "help for foo", false);
+  FLAG_LONG_bool(foo, false, false);
   const char* argv[] = {"binary", "--foo", "true", nullptr};
   EXPECT_FALSE(foo.value());
 
@@ -111,7 +111,7 @@ TEST_F(FlagTest, BooleanLongSplitNotParsed) {
 }
 
 TEST_F(FlagTest, BooleanLongExplicitTrue) {
-  FLAG_LONG_bool(foo, false, "help for foo", false);
+  FLAG_LONG_bool(foo, false, false);
   const char* argv[] = {"binary", "--foo=true", nullptr};
   EXPECT_FALSE(foo.value());
 
@@ -122,7 +122,7 @@ TEST_F(FlagTest, BooleanLongExplicitTrue) {
 }
 
 TEST_F(FlagTest, BooleanLongExplicitFalse) {
-  FLAG_LONG_bool(foo, false, "help for foo", false);
+  FLAG_LONG_bool(foo, false, false);
   const char* argv[] = {"binary", "--foo=false", nullptr};
   EXPECT_FALSE(foo.value());
 
@@ -133,7 +133,7 @@ TEST_F(FlagTest, BooleanLongExplicitFalse) {
 }
 
 TEST_F(FlagTest, BooleanLongDefaultValue) {
-  FLAG_LONG_bool(foo, true, "help for foo", false);
+  FLAG_LONG_bool(foo, true, false);
   const char* argv[] = {"binary", nullptr};
   EXPECT_TRUE(foo.value());
 
@@ -144,7 +144,7 @@ TEST_F(FlagTest, BooleanLongDefaultValue) {
 }
 
 TEST_F(FlagTest, BooleanLongDefaultValueCancelled) {
-  FLAG_LONG_bool(foo, true, "help for foo", false);
+  FLAG_LONG_bool(foo, true, false);
   const char* argv[] = {"binary", "--foo=false", nullptr};
   EXPECT_TRUE(foo.value());
 
@@ -155,7 +155,7 @@ TEST_F(FlagTest, BooleanLongDefaultValueCancelled) {
 }
 
 TEST_F(FlagTest, StringFlagDefaultValue) {
-  FLAG_SHORT_string(f, "default", "help for f", false);
+  FLAG_SHORT_string(f, "default", false);
   const char* argv[] = {"binary", nullptr};
   EXPECT_EQ(f.value(), "default");
 
@@ -165,7 +165,7 @@ TEST_F(FlagTest, StringFlagDefaultValue) {
 }
 
 TEST_F(FlagTest, StringFlagShortMissingString) {
-  FLAG_SHORT_string(f, "default", "help for f", false);
+  FLAG_SHORT_string(f, "default", false);
   const char* argv[] = {"binary", "-f", nullptr};
   EXPECT_EQ(f.value(), "default");
 
@@ -173,7 +173,7 @@ TEST_F(FlagTest, StringFlagShortMissingString) {
 }
 
 TEST_F(FlagTest, StringFlagDefault) {
-  FLAG_SHORT_string(f, "default", "help for f", false);
+  FLAG_SHORT_string(f, "default", false);
   const char* argv[] = {"binary", nullptr};
   EXPECT_EQ(f.value(), "default");
 
@@ -184,7 +184,7 @@ TEST_F(FlagTest, StringFlagDefault) {
 }
 
 TEST_F(FlagTest, StringFlagSet) {
-  FLAG_SHORT_string(f, "default", "help for f", false);
+  FLAG_SHORT_string(f, "default", false);
   const char* argv[] = {"binary", "-f", "toto", nullptr};
   EXPECT_EQ(f.value(), "default");
 
@@ -195,7 +195,7 @@ TEST_F(FlagTest, StringFlagSet) {
 }
 
 TEST_F(FlagTest, StringLongFlagSetSplit) {
-  FLAG_LONG_string(foo, "default", "help for foo", false);
+  FLAG_LONG_string(foo, "default", false);
   const char* argv[] = {"binary", "--foo", "toto", nullptr};
   EXPECT_EQ(foo.value(), "default");
 
@@ -206,7 +206,7 @@ TEST_F(FlagTest, StringLongFlagSetSplit) {
 }
 
 TEST_F(FlagTest, StringLongFlagSetUnified) {
-  FLAG_LONG_string(foo, "default", "help for foo", false);
+  FLAG_LONG_string(foo, "default", false);
   const char* argv[] = {"binary", "--foo=toto", nullptr};
   EXPECT_EQ(foo.value(), "default");
 
@@ -217,7 +217,7 @@ TEST_F(FlagTest, StringLongFlagSetUnified) {
 }
 
 TEST_F(FlagTest, StringLongFlagSetEmpty) {
-  FLAG_LONG_string(foo, "default", "help for foo", false);
+  FLAG_LONG_string(foo, "default", false);
   const char* argv[] = {"binary", "--foo=", nullptr};
   EXPECT_EQ(foo.value(), "default");
 
@@ -228,7 +228,7 @@ TEST_F(FlagTest, StringLongFlagSetEmpty) {
 }
 
 TEST_F(FlagTest, AllPositionalAfterDoubleDash) {
-  FLAG_LONG_string(foo, "default", "help for foo", false);
+  FLAG_LONG_string(foo, "default", false);
   const char* argv[] = {"binary", "--", "--foo=toto", nullptr};
   EXPECT_EQ(foo.value(), "default");
 
@@ -240,7 +240,7 @@ TEST_F(FlagTest, AllPositionalAfterDoubleDash) {
 }
 
 TEST_F(FlagTest, NothingAfterDoubleDash) {
-  FLAG_LONG_string(foo, "default", "help for foo", false);
+  FLAG_LONG_string(foo, "default", false);
   const char* argv[] = {"binary", "--", nullptr};
   EXPECT_EQ(foo.value(), "default");
 
@@ -251,7 +251,7 @@ TEST_F(FlagTest, NothingAfterDoubleDash) {
 }
 
 TEST_F(FlagTest, FlagDoubleSetNotAllowed) {
-  FLAG_LONG_string(foo, "default", "help for foo", false);
+  FLAG_LONG_string(foo, "default", false);
   const char* argv[] = {"binary", "--foo=abc", "--foo=def", nullptr};
   EXPECT_EQ(foo.value(), "default");
 
@@ -259,8 +259,8 @@ TEST_F(FlagTest, FlagDoubleSetNotAllowed) {
 }
 
 TEST_F(FlagTest, MultipleFlags) {
-  FLAG_LONG_string(foo, "default foo", "help for foo", false);
-  FLAG_LONG_string(bar, "default_bar", "help for bar", false);
+  FLAG_LONG_string(foo, "default foo", false);
+  FLAG_LONG_string(bar, "default_bar", false);
   const char* argv[] = {"binary", "--foo", "abc", "--bar=def", nullptr};
   EXPECT_EQ(foo.value(), "default foo");
   EXPECT_EQ(bar.value(), "default_bar");
@@ -271,9 +271,9 @@ TEST_F(FlagTest, MultipleFlags) {
 }
 
 TEST_F(FlagTest, MixedStringAndBool) {
-  FLAG_LONG_string(foo, "default foo", "help for foo", false);
-  FLAG_LONG_string(bar, "default_bar", "help for bar", false);
-  FLAG_SHORT_bool(g, false, "enable debug", false);
+  FLAG_LONG_string(foo, "default foo", false);
+  FLAG_LONG_string(bar, "default_bar", false);
+  FLAG_SHORT_bool(g, false, false);
   const char* argv[] = {"binary", "--foo", "abc", "-g", "--bar=def", nullptr};
   EXPECT_EQ(foo.value(), "default foo");
   EXPECT_EQ(bar.value(), "default_bar");

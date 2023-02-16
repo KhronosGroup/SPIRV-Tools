@@ -23,34 +23,38 @@
 #include "tools/util/flags.h"
 
 static const auto kDefaultEnvironment = "spv1.6";
-static const std::string kTitle =
-    "spirv-as - Create a SPIR-V binary module from SPIR-V assembly text";
-static const std::string kSummary =
-    R"(The SPIR-V assembly text is read from <filename>.  If no file is specified,
-or if the filename is "-", then the assembly text is read from standard input.
-The SPIR-V binary module is written to file \"out.spv\", unless the -o option
-is used.)";
-static const std::string kSupportedEnv =
-    "vulkan1.1spv1.4|vulkan1.0|vulkan1.1|vulkan1.2|vulkan1.3|spv1.0|spv1.1|"
-    "spv1.2|spv1.3|spv1.4|spv1.5|spv1.6|opencl1.2embedded|opencl1.2|opencl2."
-    "0embedded|opencl2.0|opencl2.1embedded|opencl2.1|opencl2.2embedded|opencl2."
-    "2|opengl4.0|opengl4.1|opengl4.2|opengl4.3|opengl4.5}";
+static const std::string kHelpText =
+    R"(%s - Create a SPIR-V binary module from SPIR-V assembly text
 
-FLAG_SHORT_bool(h, /* default_value= */ false, "Print this help.", false);
-FLAG_LONG_bool(help, /* default_value= */ false, "Print this help.", false);
-FLAG_SHORT_string(o, /* default_value= */ "",
-                  "Set the output filename. Use '-' to mean stdout.",
-                  /* required= */ false);
-FLAG_LONG_bool(version, /* default_value= */ false,
-               "Display assembler version information.", /* required= */ false);
-FLAG_LONG_bool(preserve_numeric_ids, /* default_value= */ false,
-               "Numeric IDs in the binary will have the same values as in the "
-               "source. Non-numeric IDs are allocated by filling in the gaps, "
-               "starting with 1 and going up.",
-               /* required= */ false);
-FLAG_LONG_string(target_env, kDefaultEnvironment,
-                 "User specified environment. (" + kSupportedEnv + ").",
-                 /* required= */ false);
+Usage: %s [options] [<filename>]
+
+The SPIR-V assembly text is read from <filename>.  If no file is specified,
+or if the filename is "-", then the assembly text is read from standard input.
+The SPIR-V binary module is written to file "out.spv", unless the -o option
+is used.
+
+Options:
+
+  -h, --help      Print this help.
+
+  -o <filename>   Set the output filename. Use '-' to mean stdout.
+  --version       Display assembler version information.
+  --preserve-numeric-ids
+                  Numeric IDs in the binary will have the same values as in the
+                  source. Non-numeric IDs are allocated by filling in the gaps,
+                  starting with 1 and going up.
+  --target-env    %s
+                  Use specified environment.
+)";
+
+// clang-format off
+FLAG_SHORT_bool(  h,                    /* default_value= */ false,               /* required= */ false);
+FLAG_LONG_bool(   help,                 /* default_value= */ false,               /* required= */false);
+FLAG_LONG_bool(   version,              /* default_value= */ false,               /* required= */ false);
+FLAG_LONG_bool(   preserve_numeric_ids, /* default_value= */ false,               /* required= */ false);
+FLAG_SHORT_string(o,                    /* default_value= */ "",                  /* required= */ false);
+FLAG_LONG_string( target_env,           /* default_value= */ kDefaultEnvironment, /* required= */ false);
+// clang-format on
 
 int main(int, const char** argv) {
   if (!flags::Parse(argv)) {
@@ -58,8 +62,8 @@ int main(int, const char** argv) {
   }
 
   if (flags::h.value() || flags::help.value()) {
-    flags::PrintHelp(argv, "{binary} {required} [options] <filename>", kTitle,
-                     kSummary);
+    const std::string target_env_list = spvTargetEnvList(19, 80);
+    printf(kHelpText.c_str(), argv[0], argv[0], target_env_list.c_str());
     return 0;
   }
 

@@ -24,21 +24,30 @@
 #include "tools/util/flags.h"
 
 static const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_6;
-static const std::string kTitle =
-    "spirv-cfg - Show the control flow graph in GraphiViz \"dot\" form. "
-    "EXPERIMENTAL";
-static const std::string kSummary =
-    R"(The SPIR-V binary is read from <filename>. If no file is specified,
-or if the filename is "-", then the binary is read from standard input.)";
+static const std::string kHelpText =
+    R"(%s - Show the control flow graph in GraphiViz "dot" form. EXPERIMENTAL
 
-FLAG_SHORT_bool(h, /* default_value= */ false, "Print this help.", false);
-FLAG_LONG_bool(help, /* default_value= */ false, "Print this help.", false);
-FLAG_LONG_bool(version, /* default_value= */ false,
-               "Display version information.", /* required= */ false);
-FLAG_SHORT_string(o, /* default_value= */ "",
-                  "Set the output filename. Output goes to standard output if "
-                  "this option is not specified, or if the filename is \"-\".",
-                  /* required= */ false);
+Usage: %s [options] [<filename>]
+
+The SPIR-V binary is read from <filename>. If no file is specified,
+or if the filename is "-", then the binary is read from standard input.
+
+Options:
+
+  -h, --help      Print this help.
+  --version       Display version information.
+
+  -o <filename>   Set the output filename.
+                  Output goes to standard output if this option is
+                  not specified, or if the filename is "-".
+)";
+
+// clang-format off
+FLAG_SHORT_bool(  h,       /* default_value= */ false, /* required= */ false);
+FLAG_LONG_bool(   help,    /* default_value= */ false, /* required= */false);
+FLAG_LONG_bool(   version, /* default_value= */ false, /* required= */ false);
+FLAG_SHORT_string(o,       /* default_value= */ "",    /* required= */ false);
+// clang-format on
 
 int main(int, const char** argv) {
   if (!flags::Parse(argv)) {
@@ -46,8 +55,7 @@ int main(int, const char** argv) {
   }
 
   if (flags::h.value() || flags::help.value()) {
-    flags::PrintHelp(argv, "{binary} {required} [options] <filename>", kTitle,
-                     kSummary);
+    printf(kHelpText.c_str(), argv[0], argv[0]);
     return 0;
   }
 

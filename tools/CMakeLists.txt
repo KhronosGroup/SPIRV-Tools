@@ -42,7 +42,6 @@ endfunction()
 set(COMMON_TOOLS_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/util/flags.cpp")
 
 if (NOT ${SPIRV_SKIP_EXECUTABLES})
-  add_spvtools_tool(TARGET spirv-as   SRCS ${COMMON_TOOLS_SRCS} as/as.cpp LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
   add_spvtools_tool(TARGET spirv-diff SRCS ${COMMON_TOOLS_SRCS} diff/diff.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-diff SPIRV-Tools-opt ${SPIRV_TOOLS_FULL_VISIBILITY})
   add_spvtools_tool(TARGET spirv-dis  SRCS ${COMMON_TOOLS_SRCS} dis/dis.cpp LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
   add_spvtools_tool(TARGET spirv-val  SRCS ${COMMON_TOOLS_SRCS} val/val.cpp util/cli_consumer.cpp LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
@@ -52,6 +51,12 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   endif()
   add_spvtools_tool(TARGET spirv-link SRCS ${COMMON_TOOLS_SRCS} link/linker.cpp LIBS SPIRV-Tools-link ${SPIRV_TOOLS_FULL_VISIBILITY})
   add_spvtools_tool(TARGET spirv-lint SRCS ${COMMON_TOOLS_SRCS} lint/lint.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-lint SPIRV-Tools-opt ${SPIRV_TOOLS_FULL_VISIBILITY})
+  add_spvtools_tool(TARGET spirv-as
+                    SRCS as/as.cpp
+                         ${COMMON_TOOLS_SRCS}
+                    LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
+  target_include_directories(spirv-as PRIVATE ${spirv-tools_SOURCE_DIR}
+                                              ${SPIRV_HEADER_INCLUDE_DIR})
   add_spvtools_tool(TARGET spirv-cfg
                     SRCS cfg/cfg.cpp
                          cfg/bin_to_dot.h

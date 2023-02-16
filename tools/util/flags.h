@@ -85,8 +85,7 @@
 //    }
 //
 //    if (flags::h.value()) {
-//      flags::PrintHelp(argc, argv,
-//        "{binary} [options] {required} [<filename>]");
+//      printf("usage: my-bin --my-flag=<value>\n");
 //      return 0;
 //    }
 //
@@ -107,15 +106,15 @@
 //    -  in the code: flags::my_flag
 //    - command line: --my-flag=true
 //
-#define FLAG_LONG_string(Name, Default, Help, Required) \
-  UTIL_FLAGS_FLAG_LONG(std::string, Name, Default, Help, Required)
-#define FLAG_LONG_bool(Name, Default, Help, Required) \
-  UTIL_FLAGS_FLAG_LONG(bool, Name, Default, Help, Required)
+#define FLAG_LONG_string(Name, Default, Required) \
+  UTIL_FLAGS_FLAG_LONG(std::string, Name, Default, Required)
+#define FLAG_LONG_bool(Name, Default, Required) \
+  UTIL_FLAGS_FLAG_LONG(bool, Name, Default, Required)
 
-#define FLAG_SHORT_string(Name, Default, Help, Required) \
-  UTIL_FLAGS_FLAG_SHORT(std::string, Name, Default, Help, Required)
-#define FLAG_SHORT_bool(Name, Default, Help, Required) \
-  UTIL_FLAGS_FLAG_SHORT(bool, Name, Default, Help, Required)
+#define FLAG_SHORT_string(Name, Default, Required) \
+  UTIL_FLAGS_FLAG_SHORT(std::string, Name, Default, Required)
+#define FLAG_SHORT_bool(Name, Default, Required) \
+  UTIL_FLAGS_FLAG_SHORT(bool, Name, Default, Required)
 
 namespace flags {
 
@@ -128,29 +127,6 @@ namespace flags {
 //
 // Returns `true` if the parsing succeeds, `false` otherwise.
 bool Parse(const char** argv);
-
-// Print the help for the registered flags.
-//
-// *         argv: the argv array received in the main function. This utility
-// expects the last pointer to
-//                 be NULL, as it should if coming from the main() function.
-// * usage_format: The format to use for the "USAGE" part of the help message.
-//                 Supported placeholders are:
-//                 - {binary} : replaced with `argv[0]`'s value
-//                 - {required} : replaced with the list of all the flags marked
-//                 as required.
-// *        title: The title to show on top of the help.
-// *      summary: A short paragraph shown in the middle.
-//
-//    Example:
-//      FLAG_LONG_bool(help, false, "Print the help.", /* required */ false);
-//      FLAG_LONG_bool(required_flag, false, "Sets something.", /* required */
-//      true); PrintHelp(["/tmp/mybin", nullptr], "{binary} some-text {required}
-//      blabla");
-//
-//      -> USAGE: /tmp/mybin some-text --required-flag=<value> blabla
-void PrintHelp(const char** argv, const std::string& usage_format,
-               const std::string& title, const std::string& summary);
 
 }  // namespace flags
 
@@ -167,24 +143,22 @@ void PrintHelp(const char** argv, const std::string& usage_format,
 //  - cannot disable clang-format for those macros on clang < 16.
 //    (https://github.com/llvm/llvm-project/issues/54522)
 //  - cannot allow trailing semi (-Wextra-semi).
-#define UTIL_FLAGS_FLAG(Type, Prefix, Name, Default, Help, Required, IsShort) \
-  namespace flags {                                                           \
-  Flag<Type> Name(Default);                                                   \
-  namespace {                                                                 \
-  static FlagRegistration Name##_registration(Name, Prefix #Name, Help,       \
-                                              Required, IsShort);             \
-  }                                                                           \
-  }                                                                           \
+#define UTIL_FLAGS_FLAG(Type, Prefix, Name, Default, Required, IsShort)     \
+  namespace flags {                                                         \
+  Flag<Type> Name(Default);                                                 \
+  namespace {                                                               \
+  static FlagRegistration Name##_registration(Name, Prefix #Name, Required, \
+                                              IsShort);                     \
+  }                                                                         \
+  }                                                                         \
   extern flags::Flag<Type> flags::Name
 
-#define UTIL_FLAGS_FLAG_LONG(Type, Name, Default, Help, Required) \
-  UTIL_FLAGS_FLAG(Type, "--", Name, Default, Help, Required, false)
-#define UTIL_FLAGS_FLAG_SHORT(Type, Name, Default, Help, Required) \
-  UTIL_FLAGS_FLAG(Type, "-", Name, Default, Help, Required, true)
+#define UTIL_FLAGS_FLAG_LONG(Type, Name, Default, Required) \
+  UTIL_FLAGS_FLAG(Type, "--", Name, Default, Required, false)
+#define UTIL_FLAGS_FLAG_SHORT(Type, Name, Default, Required) \
+  UTIL_FLAGS_FLAG(Type, "-", Name, Default, Required, true)
 
 namespace flags {
-
-extern std::vector<std::string> positional_arguments;
 
 // Just a wrapper around the flag value.
 template <typename T>
@@ -209,58 +183,58 @@ using FlagType = std::variant<std::reference_wrapper<Flag<std::string>>,
 template <class>
 inline constexpr bool always_false_v = false;
 
+extern std::vector<std::string> positional_arguments;
+
 // Static class keeping track of the flags/arguments values.
 class FlagList {
   struct FlagInfo {
-    FlagInfo(FlagType&& flag_, std::string&& name_, std::string&& help_,
-             bool required_, bool is_short_)
+    FlagInfo(FlagType&& flag_, std::string&& name_, bool required_,
+             bool is_short_)
         : flag(std::move(flag_)),
           name(std::move(name_)),
-          help(std::move(help_)),
           required(required_),
           is_short(is_short_) {}
 
     FlagType flag;
     std::string name;
-    std::string help;
     bool required;
     bool is_short;
   };
 
  public:
   template <typename T>
-  static void register_flag(Flag<T>& flag, std::string&& name,
-                            std::string&& help, bool required, bool is_short) {
-    flags_.emplace_back(flag, std::move(name), std::move(help), required,
-                        is_short);
+  static void register_flag(Flag<T>& flag, std::string&& name, bool required,
+                            bool is_short) {
+    get_flags().emplace_back(flag, std::move(name), required, is_short);
   }
 
   static bool parse(const char** argv);
-  static void print_help(const char** argv, const std::string& usage_format,
-                         const std::string& title, const std::string& summary);
 
 #ifdef TESTING
   // Flags are supposed to be constant for the whole app execution, hence the
   // static storage. Gtest doesn't fork before running a test, meaning we have
   // to manually clear the context at teardown.
   static void reset() {
-    flags_.clear();
+    get_flags().clear();
     positional_arguments.clear();
   }
 #endif
 
  private:
+  static std::vector<FlagInfo>& get_flags() {
+    static std::vector<FlagInfo> flags;
+    return flags;
+  }
+
   static bool parse_flag_info(FlagInfo& info, const char*** iterator);
   static void print_usage(const char* binary_name,
                           const std::string& usage_format);
-
-  static std::vector<FlagInfo> flags_;
 };
 
 template <typename T>
 struct FlagRegistration {
-  FlagRegistration(Flag<T>& flag, std::string&& name, std::string&& help,
-                   bool required, bool is_short) {
+  FlagRegistration(Flag<T>& flag, std::string&& name, bool required,
+                   bool is_short) {
     std::string fixed_name = name;
     for (auto& c : fixed_name) {
       if (c == '_') {
@@ -268,8 +242,7 @@ struct FlagRegistration {
       }
     }
 
-    FlagList::register_flag(flag, std::move(fixed_name), std::move(help),
-                            required, is_short);
+    FlagList::register_flag(flag, std::move(fixed_name), required, is_short);
   }
 };
 
