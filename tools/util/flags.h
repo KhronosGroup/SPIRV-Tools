@@ -110,11 +110,15 @@
   UTIL_FLAGS_FLAG_LONG(std::string, Name, Default, Required)
 #define FLAG_LONG_bool(Name, Default, Required) \
   UTIL_FLAGS_FLAG_LONG(bool, Name, Default, Required)
+#define FLAG_LONG_uint(Name, Default, Required) \
+  UTIL_FLAGS_FLAG_LONG(uint32_t, Name, Default, Required)
 
 #define FLAG_SHORT_string(Name, Default, Required) \
   UTIL_FLAGS_FLAG_SHORT(std::string, Name, Default, Required)
 #define FLAG_SHORT_bool(Name, Default, Required) \
   UTIL_FLAGS_FLAG_SHORT(bool, Name, Default, Required)
+#define FLAG_SHORT_uint(Name, Default, Required) \
+  UTIL_FLAGS_FLAG_SHORT(uint32_t, Name, Default, Required)
 
 namespace flags {
 
@@ -178,7 +182,8 @@ struct Flag {
 // To add support for new flag-types, this needs to be extended, and the visitor
 // below.
 using FlagType = std::variant<std::reference_wrapper<Flag<std::string>>,
-                              std::reference_wrapper<Flag<bool>>>;
+                              std::reference_wrapper<Flag<bool>>,
+                              std::reference_wrapper<Flag<uint32_t>>>;
 
 template <class>
 inline constexpr bool always_false_v = false;
