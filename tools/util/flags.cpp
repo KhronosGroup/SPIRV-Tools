@@ -27,6 +27,10 @@ namespace flags {
 std::vector<std::string> positional_arguments;
 
 namespace {
+
+using token_t = const char*;
+using token_iterator_t = token_t*;
+
 // Extracts the flag name from a potential token.
 // This function only looks for a '=', to split the flag name from the value for
 // long-form flags. Returns the name of the flag, prefixed with the hyphen(s).
@@ -74,8 +78,9 @@ bool parse_flag(Flag<bool>& flag, bool is_short_flag,
 
 // Parse a string flag. Moved the iterator to the last flag's token if it's a
 // multi-token flag. Returns `true` if the parsing succeeded.
+// The iterator is moved to the last parsed token.
 bool parse_flag(Flag<std::string>& flag, bool is_short_flag,
-                const char*** iterator) {
+                token_iterator_t* iterator) {
   const std::string raw_flag(**iterator);
   const size_t equal_index = raw_flag.find('=');
   if (is_short_flag || equal_index == std::string::npos) {
@@ -83,11 +88,13 @@ bool parse_flag(Flag<std::string>& flag, bool is_short_flag,
       return false;
     }
 
+    // This is a bi-token flag. Moving iterator to the last parsed token.
     flag.value() = (*iterator)[1];
     *iterator += 1;
     return true;
   }
 
+  // This is a mono-token flag, no need to move the iterator.
   const std::string value = raw_flag.substr(equal_index + 1);
   flag.value() = value;
   return true;
@@ -95,7 +102,7 @@ bool parse_flag(Flag<std::string>& flag, bool is_short_flag,
 }  // namespace
 
 // This is the function to expand if you want to support a new type.
-bool FlagList::parse_flag_info(FlagInfo& info, const char*** iterator) {
+bool FlagList::parse_flag_info(FlagInfo& info, token_iterator_t* iterator) {
   bool success = false;
 
   std::visit(
@@ -114,7 +121,7 @@ bool FlagList::parse_flag_info(FlagInfo& info, const char*** iterator) {
   return success;
 }
 
-bool FlagList::parse(const char** argv) {
+bool FlagList::parse(token_t* argv) {
   flags::positional_arguments.clear();
   std::unordered_set<const FlagInfo*> parsed_flags;
 

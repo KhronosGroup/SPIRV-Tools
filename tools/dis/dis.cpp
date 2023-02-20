@@ -61,16 +61,16 @@ Options:
 
 // clang-format off
 FLAG_SHORT_bool  (h,         /* default_value= */ false, /* required= */ false);
+FLAG_SHORT_string(o,         /* default_value= */ "-",   /* required= */ false);
 FLAG_LONG_bool   (help,      /* default_value= */ false, /* required= */false);
 FLAG_LONG_bool   (version,   /* default_value= */ false, /* required= */ false);
-FLAG_SHORT_string(o,         /* default_value= */ "-",   /* required= */ false);
-FLAG_LONG_bool   (color,     /* default_value= */ "",    /* required= */ false);
-FLAG_LONG_bool   (no_color,  /* default_value= */ "",    /* required= */ false);
-FLAG_LONG_bool   (no_indent, /* default_value= */ "",    /* required= */ false);
-FLAG_LONG_bool   (no_header, /* default_value= */ "",    /* required= */ false);
-FLAG_LONG_bool   (raw_id,    /* default_value= */ "",    /* required= */ false);
-FLAG_LONG_bool   (offsets,   /* default_value= */ "",    /* required= */ false);
-FLAG_LONG_bool   (comment,   /* default_value= */ "",    /* required= */ false);
+FLAG_LONG_bool   (color,     /* default_value= */ false, /* required= */ false);
+FLAG_LONG_bool   (no_color,  /* default_value= */ false, /* required= */ false);
+FLAG_LONG_bool   (no_indent, /* default_value= */ false, /* required= */ false);
+FLAG_LONG_bool   (no_header, /* default_value= */ false, /* required= */ false);
+FLAG_LONG_bool   (raw_id,    /* default_value= */ false, /* required= */ false);
+FLAG_LONG_bool   (offsets,   /* default_value= */ false, /* required= */ false);
+FLAG_LONG_bool   (comment,   /* default_value= */ false, /* required= */ false);
 // clang-format on
 
 static const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_5;
