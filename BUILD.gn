@@ -1441,7 +1441,7 @@ source_set("spvtools_software_version") {
 
 source_set("spvtools_tools_util") {
   sources = [
-    "tools/util/flags.cpp"
+    "tools/util/flags.cpp",
     "tools/util/cli_consumer.cpp",
     "tools/util/cli_consumer.h",
   ]
