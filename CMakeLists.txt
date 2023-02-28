@@ -270,7 +270,7 @@ else()
 endif()
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
-  if(WIN32)
+  if(WIN32 AND NOT MINGW)
     macro(spvtools_config_package_dir TARGET PATH)
       set(${PATH} ${TARGET}/cmake)
     endmacro()
