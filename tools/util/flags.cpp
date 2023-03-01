@@ -87,7 +87,7 @@ bool parse_flag_value(Flag<uint32_t>& flag, const std::string& value) {
 
   errno = 0;
   char* end_ptr = nullptr;
-  const size_t number = strtoull(value.c_str(), &end_ptr, 10);
+  const uint64_t number = strtoull(value.c_str(), &end_ptr, 10);
   if (end_ptr == nullptr || end_ptr != value.c_str() + value.size() ||
       errno == EINVAL) {
     std::cerr << "'" << value << "' is not a unsigned number." << std::endl;

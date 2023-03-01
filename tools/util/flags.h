@@ -15,6 +15,8 @@
 #ifndef INCLUDE_SPIRV_TOOLS_UTIL_FLAGS_HPP_
 #define INCLUDE_SPIRV_TOOLS_UTIL_FLAGS_HPP_
 
+#include <stdint.h>
+
 #include <functional>
 #include <string>
 #include <variant>
