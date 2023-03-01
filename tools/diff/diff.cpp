@@ -27,7 +27,6 @@
 namespace {
 
 constexpr auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_6;
-;
 
 constexpr bool kColorIsPossible =
 #if SPIRV_COLOR_TERMINAL
