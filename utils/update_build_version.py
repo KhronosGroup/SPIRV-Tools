@@ -35,6 +35,7 @@ import subprocess
 import logging
 import sys
 import time
+import json
 
 # Regex to match the SPIR-V version tag.
 # Example of matching tags:
@@ -135,6 +136,23 @@ def deduce_current_release(repo_path):
 
   return True, "v{}.{}-dev".format(*version_tuple)
 
+def get_version_from_file(repo_path):
+  data = {}
+  try:
+    with open(os.path.join(repo_path, "VERSION"), "r") as f:
+      data = json.load(f)
+  except FileNotFoundError:
+    logging.warning("No VERSION file found.")
+    return False, None, None
+  except json.decoder.JSONDecodeError:
+    logging.warning("VERSION file content is not valid JSON.")
+    return False, None, None
+
+  if 'version' not in data or 'hash' not in data:
+    logging.warning("Missing keys in VERSION file.")
+    return False, None, None
+  return True, data['version'], data['hash']
+
 def get_description_for_head(repo_path):
     """Returns a string describing the current Git HEAD version as descriptively
     as possible, in order of priority:
@@ -178,12 +196,18 @@ def main():
     repo_path = os.path.realpath(sys.argv[1])
     output_file_path = sys.argv[2]
 
+    description = get_description_for_head(repo_path)
     success, version = deduce_current_release(repo_path)
     if not success:
       logging.warning("Could not deduce latest release version from history.")
-      version = "unknown_version"
+      success, f_version, f_description = get_version_from_file(repo_path)
+      if not success:
+        logging.warning("Could not deduce version from VERSION file.")
+        version = "unknown_version"
+      else:
+        version = f_version
+        description = f_description
 
-    description = get_description_for_head(repo_path)
     content = OUTPUT_FORMAT.format(version_tag=version, description=description)
 
     # Escape file content.
