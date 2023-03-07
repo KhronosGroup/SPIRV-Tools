@@ -253,6 +253,10 @@ struct FlagRegistration {
   }
 };
 
+// Explicit deduction guide to avoid `-Wctad-maybe-unsupported`.
+template <typename T>
+FlagRegistration(Flag<T>&, std::string&&, bool, bool) -> FlagRegistration<T>;
+
 }  // namespace flags
 
 #endif  // INCLUDE_SPIRV_TOOLS_UTIL_FLAGS_HPP_
