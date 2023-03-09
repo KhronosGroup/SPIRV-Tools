@@ -11,25 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Setup git user information
-        run: |
-          git config user.name "GitHub Actions[bot]"
-          git config user.email "<>"
-          git checkout -b ${{ github.ref_name }}
-      - name: Create VERSION file.
-        run: 'echo "{ \"version\": \"${{ github.ref_name }}\", \"hash\": \"${{ github.sha }}\" }" > VERSION'
       - name: Prepare CHANGELOG for version
         run: |
           python utils/generate_changelog.py CHANGES ${{ github.ref_name }} VERSION_CHANGELOG
-      - name: Prepare release branch
-        run: |
-          git add VERSION
-          git commit -m "prepare release ${{ github.ref_name }}"
-          git push --force origin refs/heads/${{ github.ref_name }}
-          git tag -f ${{ github.ref_name }}
-          git push --force --tags origin
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - name: Create release
         run: |
           gh release create -F VERSION_CHANGELOG ${{ github.ref_name }}
