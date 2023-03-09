@@ -65,8 +65,18 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
                     LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
   target_include_directories(spirv-cfg PRIVATE ${spirv-tools_SOURCE_DIR}
                                                ${SPIRV_HEADER_INCLUDE_DIR})
+
+  add_spvtools_tool(TARGET spirv-dump
+                    SRCS dump/dump.cpp
+                         dump/extract_source.cpp
+                         util/cli_consumer.cpp
+                         ${COMMON_TOOLS_SRCS}
+                    LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
+  target_include_directories(spirv-dump PRIVATE ${spirv-tools_SOURCE_DIR}
+                                                ${SPIRV_HEADER_INCLUDE_DIR})
+
   set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val spirv-opt
-                            spirv-cfg spirv-link spirv-lint)
+                            spirv-cfg spirv-link spirv-lint spirv-dump)
   if(NOT (${CMAKE_SYSTEM_NAME} STREQUAL "iOS"))
     set(SPIRV_INSTALL_TARGETS ${SPIRV_INSTALL_TARGETS} spirv-reduce)
   endif()
