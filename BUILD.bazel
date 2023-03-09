@@ -304,6 +304,23 @@ cc_binary(
 )
 
 cc_binary(
+    name = "spirv-dump",
+    srcs = [
+        "tools/dump/dump.cpp",
+        "tools/dump/extract_source.cpp",
+        "tools/dump/extract_source.h",
+    ],
+    copts = COMMON_COPTS,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":tools_io",
+        ":tools_util",
+        ":spirv_tools_internal",
+        ":spirv_tools_opt_internal",
+    ],
+)
+
+cc_binary(
     name = "spirv-val",
     srcs = [
         "tools/val/val.cpp",
