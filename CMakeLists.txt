@@ -335,6 +335,7 @@ add_subdirectory(external)
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     add_compile_options("-Wextra-semi")
 endif()
+add_compile_options("-fdiagnostics-color=always")
 
 add_subdirectory(source)
 add_subdirectory(tools)

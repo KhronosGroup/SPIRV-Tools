@@ -75,7 +75,8 @@ int main(int, const char** argv) {
                     "expected exactly one input file.");
     return 1;
   }
-  if (flags::entrypoint.value() || flags::compiler_cmd.value()) {
+  if (flags::source.value() || flags::entrypoint.value() ||
+      flags::compiler_cmd.value()) {
     spvtools::Error(spvtools::utils::CLIMessageConsumer, nullptr, {},
                     "not implemented yet.");
     return 1;
