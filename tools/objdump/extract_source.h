@@ -31,7 +31,7 @@
 //
 // Returns `true` if the extraction succeeded, `false` otherwise.
 // `output` value is undefined if `false` is returned.
-bool extract_source_from_module(
+bool ExtractSourceFromModule(
     const std::vector<uint32_t>& binary,
     std::unordered_map<std::string, std::string>* output);
 

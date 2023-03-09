@@ -16,7 +16,6 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
  add_subdirectory(lesspipe)
 endif()
 add_subdirectory(emacs)
-#add_subdirectory(objdump)
 
 # Add a SPIR-V Tools command line tool. Signature:
 #   add_spvtools_tool(
