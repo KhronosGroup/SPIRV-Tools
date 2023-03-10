@@ -42,10 +42,7 @@ jobs:
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
         id: update_dependencies
-
       - name: Push changes and create PR
-        permissions:
-          contents: write
         if: steps.update_dependencies.outputs.changed == 'true'
         run: |
           git push --force --set-upstream origin roll_deps
