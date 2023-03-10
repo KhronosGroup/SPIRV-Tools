@@ -1,5 +1,6 @@
 name: Update dependencies
-permissions: read-all
+permissions:
+  contents: read
 
 on:
   schedule:
