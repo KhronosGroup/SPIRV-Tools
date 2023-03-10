@@ -1,4 +1,5 @@
 name: Build and Test with Bazel
+permissions: read-all
 
 on:
   push:
