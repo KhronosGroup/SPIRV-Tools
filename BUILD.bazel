@@ -304,11 +304,11 @@ cc_binary(
 )
 
 cc_binary(
-    name = "spirv-dump",
+    name = "spirv-objdump",
     srcs = [
-        "tools/dump/dump.cpp",
-        "tools/dump/extract_source.cpp",
-        "tools/dump/extract_source.h",
+        "tools/objdump/objdump.cpp",
+        "tools/objdump/extract_source.cpp",
+        "tools/objdump/extract_source.h",
     ],
     copts = COMMON_COPTS,
     visibility = ["//visibility:public"],
