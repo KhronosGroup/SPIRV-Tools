@@ -1,4 +1,4 @@
-# Copyright (c) 2018 Google LLC.
+# Copyright (c) 2023 Google LLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,18 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_test(NAME spirv-tools_expect_unittests
-         COMMAND ${PYTHON_EXECUTABLE} -m unittest expect_unittest.py
-         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-add_test(NAME spirv-tools_spirv_test_framework_unittests
-         COMMAND ${PYTHON_EXECUTABLE} -m unittest spirv_test_framework_unittest.py
-         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-
 add_spvtools_unittest(
-  TARGET spirv_unit_test_tools_util
-  SRCS flags_test.cpp ${spirv-tools_SOURCE_DIR}/tools/util/flags.cpp
-  LIBS ${SPIRV_TOOLS_FULL_VISIBILITY}
+  TARGET spirv_unit_test_tools_objdump
+  SRCS
+    extract_source_test.cpp
+    ${spirv-tools_SOURCE_DIR}/tools/util/flags.cpp
+    ${spirv-tools_SOURCE_DIR}/tools/util/cli_consumer.cpp
+    ${spirv-tools_SOURCE_DIR}/tools/objdump/extract_source.cpp
+    LIBS ${SPIRV_TOOLS_FULL_VISIBILITY} SPIRV-Tools-opt
   DEFINES TESTING=1)
-
-add_subdirectory(opt)
-add_subdirectory(objdump)
