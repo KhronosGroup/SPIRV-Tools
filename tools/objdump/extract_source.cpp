@@ -191,7 +191,7 @@ bool ExtractSourceFromModule(
 
   std::string defaultName = "unnamed-";
   size_t unnamedCount = 0;
-  for (auto& [id, code] : sources) {
+  for (auto & [ id, code ] : sources) {
     std::string filename;
     const auto it = stringMap.find(id);
     if (it == stringMap.cend() || it->second.empty()) {

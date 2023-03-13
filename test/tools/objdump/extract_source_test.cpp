@@ -57,7 +57,7 @@ TEST(ExtractSourceTest, no_debug) {
            OpFunctionEnd
   )";
 
-  auto [success, result] = ExtractSource(source);
+  auto[success, result] = ExtractSource(source);
   ASSERT_TRUE(success);
   ASSERT_TRUE(result.size() == 0);
 }
@@ -80,7 +80,7 @@ TEST(ExtractSourceTest, SimpleSource) {
       OpFunctionEnd
   )";
 
-  auto [success, result] = ExtractSource(source);
+  auto[success, result] = ExtractSource(source);
   ASSERT_TRUE(success);
   ASSERT_TRUE(result.size() == 1);
   ASSERT_TRUE(result["compute.hlsl"] ==
@@ -106,7 +106,7 @@ TEST(ExtractSourceTest, SourceContinued) {
       OpFunctionEnd
   )";
 
-  auto [success, result] = ExtractSource(source);
+  auto[success, result] = ExtractSource(source);
   ASSERT_TRUE(success);
   ASSERT_TRUE(result.size() == 1);
   ASSERT_TRUE(result["compute.hlsl"] ==
@@ -131,7 +131,7 @@ TEST(ExtractSourceTest, OnlyFilename) {
       OpFunctionEnd
   )";
 
-  auto [success, result] = ExtractSource(source);
+  auto[success, result] = ExtractSource(source);
   ASSERT_TRUE(success);
   ASSERT_TRUE(result.size() == 1);
   ASSERT_TRUE(result["compute.hlsl"] == "");
@@ -157,7 +157,7 @@ TEST(ExtractSourceTest, MultipleFiles) {
       OpFunctionEnd
   )";
 
-  auto [success, result] = ExtractSource(source);
+  auto[success, result] = ExtractSource(source);
   ASSERT_TRUE(success);
   ASSERT_TRUE(result.size() == 2);
   ASSERT_TRUE(result["compute1.hlsl"] == "some instruction");
@@ -185,7 +185,7 @@ void compute_1() {
                OpFunctionEnd
   )";
 
-  auto [success, result] = ExtractSource(source);
+  auto[success, result] = ExtractSource(source);
   ASSERT_TRUE(success);
   ASSERT_TRUE(result.size() == 1);
   ASSERT_TRUE(result["compute.hlsl"] ==
@@ -210,7 +210,7 @@ TEST(ExtractSourceTest, EmptyFilename) {
                OpFunctionEnd
   )";
 
-  auto [success, result] = ExtractSource(source);
+  auto[success, result] = ExtractSource(source);
   ASSERT_TRUE(success);
   ASSERT_TRUE(result.size() == 1);
   ASSERT_TRUE(result["unnamed-0.hlsl"] == "void compute(){}");
@@ -234,7 +234,7 @@ TEST(ExtractSourceTest, EscapeEscaped) {
                OpFunctionEnd
   )";
 
-  auto [success, result] = ExtractSource(source);
+  auto[success, result] = ExtractSource(source);
   ASSERT_TRUE(success);
   ASSERT_TRUE(result.size() == 1);
   ASSERT_TRUE(result["compute.hlsl"] == "// check \" escape removed");
@@ -258,7 +258,7 @@ TEST(ExtractSourceTest, OpSourceWithNoSource) {
                OpFunctionEnd
   )";
 
-  auto [success, result] = ExtractSource(source);
+  auto[success, result] = ExtractSource(source);
   ASSERT_TRUE(success);
   ASSERT_TRUE(result.size() == 1);
   ASSERT_TRUE(result["compute.hlsl"] == "");

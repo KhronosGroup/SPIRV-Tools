@@ -70,7 +70,7 @@ bool OutputSourceFiles(
     }
   }
 
-  for (const auto& [filepath, code] : sources) {
+  for (const auto & [ filepath, code ] : sources) {
     if (code.empty()) {
       std::cout << "Ignoring source for " << filepath
                 << ": no code source in debug infos." << std::endl;
@@ -144,7 +144,7 @@ int main(int, const char** argv) {
     }
 
     if (flags::list.value()) {
-      for (const auto& [filename, source] : sourceCode) {
+      for (const auto & [ filename, source ] : sourceCode) {
         printf("%s\n", filename.c_str());
       }
       return 0;
@@ -153,7 +153,7 @@ int main(int, const char** argv) {
     const bool outputToConsole = flags::outdir.value() == "-";
 
     if (outputToConsole) {
-      for (const auto& [filename, source] : sourceCode) {
+      for (const auto & [ filename, source ] : sourceCode) {
         std::cout << filename << ":" << std::endl
                   << source << std::endl
                   << std::endl;
