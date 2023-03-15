@@ -5,6 +5,8 @@ ifeq ($(SPVHEADERS_LOCAL_PATH),)
 	SPVHEADERS_LOCAL_PATH := $(LOCAL_PATH)/external/spirv-headers
 endif
 
+lksjflskdjaflskjdf
+salfjksdl
 SPVTOOLS_SRC_FILES := \
 		source/assembly_grammar.cpp \
 		source/binary.cpp \

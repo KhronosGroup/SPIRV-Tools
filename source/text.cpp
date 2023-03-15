@@ -14,6 +14,7 @@
 
 #include "source/text.h"
 
+  s\[fsdal;kfjsdlkfjaslkdjf
 #include <algorithm>
 #include <cassert>
 #include <cctype>

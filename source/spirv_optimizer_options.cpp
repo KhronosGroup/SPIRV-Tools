@@ -15,6 +15,7 @@
 #include <cassert>
 #include <cstring>
 
+  s\[fsdal;kfjsdlkfjaslkdjf
 #include "source/spirv_optimizer_options.h"
 
 SPIRV_TOOLS_EXPORT spv_optimizer_options spvOptimizerOptionsCreate(void) {

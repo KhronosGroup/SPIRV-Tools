@@ -28,6 +28,7 @@ struct spv_instruction_t {
   // an instruction and opcode and extInstType are invalid.
   spv::Op opcode;
   spv_ext_inst_type_t extInstType;
+  s\[fsdal;kfjsdlkfjaslkdjf
 
   // The Id of the result type, if this instruction has one.  Zero otherwise.
   uint32_t resultTypeId;
