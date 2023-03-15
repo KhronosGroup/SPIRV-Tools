@@ -19,9 +19,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include "spirv/1.0/spirv.hpp"
 #include "source/opt/log.h"
 #include "spirv-tools/libspirv.hpp"
+#include "spirv/1.0/spirv.hpp"
 #include "tools/util/cli_consumer.h"
 
 namespace {

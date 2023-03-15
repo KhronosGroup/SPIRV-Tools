@@ -88,7 +88,8 @@ bool OutputSourceFiles(
     }
 
     std::cout << "Exporting " << new_path << std::endl;
-    if (!WriteFile<char>(new_path.string().c_str(), "w", code.c_str(), code.size())) {
+    if (!WriteFile<char>(new_path.string().c_str(), "w", code.c_str(),
+                         code.size())) {
       return false;
     }
   }
@@ -162,7 +163,8 @@ int main(int, const char** argv) {
     }
 
     const std::filesystem::path outdirPath(flags::outdir.value());
-    if (!OutputSourceFiles(sourceCode, outdirPath.string(), flags::force.value())) {
+    if (!OutputSourceFiles(sourceCode, outdirPath.string(),
+                           flags::force.value())) {
       return 1;
     }
   }
