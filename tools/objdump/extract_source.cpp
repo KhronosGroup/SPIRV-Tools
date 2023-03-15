@@ -21,7 +21,7 @@
 
 #include "source/opt/log.h"
 #include "spirv-tools/libspirv.hpp"
-#include "spirv/1.0/spirv.hpp"
+#include "spirv/unified1/spirv.hpp11"
 #include "tools/util/cli_consumer.h"
 
 namespace {
