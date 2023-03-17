@@ -374,6 +374,12 @@ config("spvtools_internal_config") {
     # Make MSVC report the correct value for __cplusplus
     cflags += [ "/Zc:__cplusplus" ]
   }
+
+  if (!is_win) {
+    cflags += [ "-std=c++17" ]
+  } else {
+    cflags += [ "/std:c++17" ]
+  }
 }
 
 source_set("spvtools_headers") {
