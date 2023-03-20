@@ -11,6 +11,7 @@ jobs:
   update-dependencies:
     permissions:
       contents: write
+      pull-requests: write
     name: Update dependencies
     runs-on: ubuntu-latest
 
