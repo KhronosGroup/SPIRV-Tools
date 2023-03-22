@@ -15,6 +15,7 @@
 #ifndef INCLUDE_SPIRV_TOOLS_EXTRACT_SOURCE_HPP_
 #define INCLUDE_SPIRV_TOOLS_EXTRACT_SOURCE_HPP_
 
+#include <stdint.h>
 #include <string>
 #include <unordered_map>
 #include <vector>
