@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <filesystem>
+#include <iostream>
+
 #include "extract_source.h"
 #include "source/opt/log.h"
 #include "tools/io.h"
@@ -42,6 +45,57 @@ Source dump options:
                   File written to stdout if '-' is given. Default is `-`.
 )";
 
+// Removes trailing '/' from `input`.
+// A behavior difference has been observed between libc++ implementations.
+// Fixing path to prevent this edge case to be reached.
+// (https://github.com/llvm/llvm-project/issues/60634)
+std::string fixPathForLLVM(std::string input) {
+  while (!input.empty() && input.back() == '/') input.resize(input.size() - 1);
+  return input;
+}
+
+// Write each HLSL file described in `sources` in a file in `outdirPath`.
+// Doesn't ovewrite existing files, unless `overwrite` is set to true. The
+// created HLSL file's filename is the path's filename obtained from `sources`.
+// Returns true if all files could be written. False otherwise.
+bool OutputSourceFiles(
+    const std::unordered_map<std::string, std::string>& sources,
+    const std::string& outdirPath, bool overwrite) {
+  std::filesystem::path outdir(fixPathForLLVM(outdirPath));
+  if (!std::filesystem::is_directory(outdir)) {
+    if (!std::filesystem::create_directories(outdir)) {
+      std::cerr << "error: could not create output directory " << outdir
+                << std::endl;
+      return false;
+    }
+  }
+
+  for (const auto & [ filepath, code ] : sources) {
+    if (code.empty()) {
+      std::cout << "Ignoring source for " << filepath
+                << ": no code source in debug infos." << std::endl;
+      continue;
+    }
+
+    std::filesystem::path old_path(filepath);
+    std::filesystem::path new_path = outdir / old_path.filename();
+
+    if (!overwrite && std::filesystem::exists(new_path)) {
+      std::cerr << "file " << filepath
+                << " already exists, aborting (use --overwrite to allow it)."
+                << std::endl;
+      return false;
+    }
+
+    std::cout << "Exporting " << new_path << std::endl;
+    if (!WriteFile<char>(new_path.string().c_str(), "w", code.c_str(),
+                         code.size())) {
+      return false;
+    }
+  }
+  return true;
+}
+
 }  // namespace
 
 // clang-format off
@@ -71,14 +125,11 @@ int main(int, const char** argv) {
   }
 
   if (flags::positional_arguments.size() != 1) {
-    spvtools::Error(spvtools::utils::CLIMessageConsumer, nullptr, {},
-                    "expected exactly one input file.");
+    std::cerr << "Expected exactly one input file." << std::endl;
     return 1;
   }
-  if (flags::source.value() || flags::entrypoint.value() ||
-      flags::compiler_cmd.value()) {
-    spvtools::Error(spvtools::utils::CLIMessageConsumer, nullptr, {},
-                    "not implemented yet.");
+  if (flags::entrypoint.value() || flags::compiler_cmd.value()) {
+    std::cerr << "Unimplemented flags." << std::endl;
     return 1;
   }
 
@@ -88,8 +139,34 @@ int main(int, const char** argv) {
   }
 
   if (flags::source.value()) {
-    std::unordered_map<std::string, std::string> output;
-    return extract_source_from_module(binary, &output) ? 0 : 1;
+    std::unordered_map<std::string, std::string> sourceCode;
+    if (!ExtractSourceFromModule(binary, &sourceCode)) {
+      return 1;
+    }
+
+    if (flags::list.value()) {
+      for (const auto & [ filename, source ] : sourceCode) {
+        printf("%s\n", filename.c_str());
+      }
+      return 0;
+    }
+
+    const bool outputToConsole = flags::outdir.value() == "-";
+
+    if (outputToConsole) {
+      for (const auto & [ filename, source ] : sourceCode) {
+        std::cout << filename << ":" << std::endl
+                  << source << std::endl
+                  << std::endl;
+      }
+      return 0;
+    }
+
+    const std::filesystem::path outdirPath(flags::outdir.value());
+    if (!OutputSourceFiles(sourceCode, outdirPath.string(),
+                           flags::force.value())) {
+      return 1;
+    }
   }
 
   // FIXME: implement logic.

@@ -27,7 +27,7 @@ namespace {
 
 constexpr auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_6;
 
-std::pair<bool, std::unordered_map<std::string, std::string>> extractSource(
+std::pair<bool, std::unordered_map<std::string, std::string>> ExtractSource(
     const std::string& spv_source) {
   std::unique_ptr<spvtools::opt::IRContext> ctx = spvtools::BuildModule(
       kDefaultEnvironment, spvtools::utils::CLIMessageConsumer, spv_source,
@@ -36,7 +36,7 @@ std::pair<bool, std::unordered_map<std::string, std::string>> extractSource(
   std::vector<uint32_t> binary;
   ctx->module()->ToBinary(&binary, /* skip_nop = */ false);
   std::unordered_map<std::string, std::string> output;
-  bool result = extract_source_from_module(binary, &output);
+  bool result = ExtractSourceFromModule(binary, &output);
   return std::make_pair(result, std::move(output));
 }
 
@@ -57,7 +57,209 @@ TEST(ExtractSourceTest, no_debug) {
            OpFunctionEnd
   )";
 
-  auto[success, result] = extractSource(source);
+  auto[success, result] = ExtractSource(source);
   ASSERT_TRUE(success);
   ASSERT_TRUE(result.size() == 0);
+}
+
+TEST(ExtractSourceTest, SimpleSource) {
+  std::string source = R"(
+      OpCapability Shader
+      OpMemoryModel Logical GLSL450
+      OpEntryPoint GLCompute %1 "compute_1"
+      OpExecutionMode %1 LocalSize 1 1 1
+ %2 = OpString "compute.hlsl"
+      OpSource HLSL 660 %2 "[numthreads(1, 1, 1)] void compute_1(){ }"
+      OpName %1 "compute_1"
+ %3 = OpTypeVoid
+ %4 = OpTypeFunction %3
+ %1 = OpFunction %3 None %4
+ %5 = OpLabel
+      OpLine %2 1 41
+      OpReturn
+      OpFunctionEnd
+  )";
+
+  auto[success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_TRUE(result.size() == 1);
+  ASSERT_TRUE(result["compute.hlsl"] ==
+              "[numthreads(1, 1, 1)] void compute_1(){ }");
+}
+
+TEST(ExtractSourceTest, SourceContinued) {
+  std::string source = R"(
+      OpCapability Shader
+      OpMemoryModel Logical GLSL450
+      OpEntryPoint GLCompute %1 "compute_1"
+      OpExecutionMode %1 LocalSize 1 1 1
+ %2 = OpString "compute.hlsl"
+      OpSource HLSL 660 %2 "[numthreads(1, 1, 1)] "
+      OpSourceContinued "void compute_1(){ }"
+      OpName %1 "compute_1"
+ %3 = OpTypeVoid
+ %4 = OpTypeFunction %3
+ %1 = OpFunction %3 None %4
+ %5 = OpLabel
+      OpLine %2 1 41
+      OpReturn
+      OpFunctionEnd
+  )";
+
+  auto[success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_TRUE(result.size() == 1);
+  ASSERT_TRUE(result["compute.hlsl"] ==
+              "[numthreads(1, 1, 1)] void compute_1(){ }");
+}
+
+TEST(ExtractSourceTest, OnlyFilename) {
+  std::string source = R"(
+      OpCapability Shader
+      OpMemoryModel Logical GLSL450
+      OpEntryPoint GLCompute %1 "compute_1"
+      OpExecutionMode %1 LocalSize 1 1 1
+ %2 = OpString "compute.hlsl"
+      OpSource HLSL 660 %2
+      OpName %1 "compute_1"
+ %3 = OpTypeVoid
+ %4 = OpTypeFunction %3
+ %1 = OpFunction %3 None %4
+ %5 = OpLabel
+      OpLine %2 1 41
+      OpReturn
+      OpFunctionEnd
+  )";
+
+  auto[success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_TRUE(result.size() == 1);
+  ASSERT_TRUE(result["compute.hlsl"] == "");
+}
+
+TEST(ExtractSourceTest, MultipleFiles) {
+  std::string source = R"(
+      OpCapability Shader
+      OpMemoryModel Logical GLSL450
+      OpEntryPoint GLCompute %1 "compute_1"
+      OpExecutionMode %1 LocalSize 1 1 1
+ %2 = OpString "compute1.hlsl"
+ %3 = OpString "compute2.hlsl"
+      OpSource HLSL 660 %2 "some instruction"
+      OpSource HLSL 660 %3 "some other instruction"
+      OpName %1 "compute_1"
+ %4 = OpTypeVoid
+ %5 = OpTypeFunction %4
+ %1 = OpFunction %4 None %5
+ %6 = OpLabel
+      OpLine %2 1 41
+      OpReturn
+      OpFunctionEnd
+  )";
+
+  auto[success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_TRUE(result.size() == 2);
+  ASSERT_TRUE(result["compute1.hlsl"] == "some instruction");
+  ASSERT_TRUE(result["compute2.hlsl"] == "some other instruction");
+}
+
+TEST(ExtractSourceTest, MultilineCode) {
+  std::string source = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "compute_1"
+               OpExecutionMode %1 LocalSize 1 1 1
+          %2 = OpString "compute.hlsl"
+               OpSource HLSL 660 %2 "[numthreads(1, 1, 1)]
+void compute_1() {
+}
+"
+               OpName %1 "compute_1"
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %1 = OpFunction %3 None %4
+          %5 = OpLabel
+               OpLine %2 3 1
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  auto[success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_TRUE(result.size() == 1);
+  ASSERT_TRUE(result["compute.hlsl"] ==
+              "[numthreads(1, 1, 1)]\nvoid compute_1() {\n}\n");
+}
+
+TEST(ExtractSourceTest, EmptyFilename) {
+  std::string source = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "compute_1"
+               OpExecutionMode %1 LocalSize 1 1 1
+          %2 = OpString ""
+               OpSource HLSL 660 %2 "void compute(){}"
+               OpName %1 "compute_1"
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %1 = OpFunction %3 None %4
+          %5 = OpLabel
+               OpLine %2 3 1
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  auto[success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_TRUE(result.size() == 1);
+  ASSERT_TRUE(result["unnamed-0.hlsl"] == "void compute(){}");
+}
+
+TEST(ExtractSourceTest, EscapeEscaped) {
+  std::string source = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "compute"
+               OpExecutionMode %1 LocalSize 1 1 1
+          %2 = OpString "compute.hlsl"
+               OpSource HLSL 660 %2 "// check \" escape removed"
+               OpName %1 "compute"
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %1 = OpFunction %3 None %4
+          %5 = OpLabel
+               OpLine %2 6 1
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  auto[success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_TRUE(result.size() == 1);
+  ASSERT_TRUE(result["compute.hlsl"] == "// check \" escape removed");
+}
+
+TEST(ExtractSourceTest, OpSourceWithNoSource) {
+  std::string source = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "compute"
+               OpExecutionMode %1 LocalSize 1 1 1
+          %2 = OpString "compute.hlsl"
+               OpSource HLSL 660 %2
+               OpName %1 "compute"
+          %3 = OpTypeVoid
+          %4 = OpTypeFunction %3
+          %1 = OpFunction %3 None %4
+          %5 = OpLabel
+               OpLine %2 6 1
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  auto[success, result] = ExtractSource(source);
+  ASSERT_TRUE(success);
+  ASSERT_TRUE(result.size() == 1);
+  ASSERT_TRUE(result["compute.hlsl"] == "");
 }

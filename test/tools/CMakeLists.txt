@@ -26,4 +26,6 @@ add_spvtools_unittest(
   DEFINES TESTING=1)
 
 add_subdirectory(opt)
-add_subdirectory(objdump)
+if(NOT (${CMAKE_SYSTEM_NAME} STREQUAL "Android"))
+  add_subdirectory(objdump)
+endif ()

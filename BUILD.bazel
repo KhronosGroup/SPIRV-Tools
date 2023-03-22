@@ -318,6 +318,7 @@ cc_binary(
         ":tools_util",
         ":spirv_tools_internal",
         ":spirv_tools_opt_internal",
+        "@spirv_headers//:spirv_cpp_headers",
     ],
 )
 
