@@ -18,7 +18,6 @@
 
 #include <vector>
 
-#include "source/opt/iterator.h"
 #include "source/util/string_utils.h"
 
 namespace spvtools {

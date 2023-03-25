@@ -16,7 +16,6 @@
 
 #include "source/opt/local_access_chain_convert_pass.h"
 
-#include "ir_builder.h"
 #include "ir_context.h"
 #include "iterator.h"
 #include "source/util/string_utils.h"

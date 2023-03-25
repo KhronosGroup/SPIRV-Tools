@@ -16,7 +16,6 @@
 
 #include <algorithm>
 #include <memory>
-#include <string>
 #include <utility>
 
 #include "OpenCLDebugInfo100.h"
