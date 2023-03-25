@@ -16,14 +16,12 @@
 
 #include <array>
 #include <functional>
-#include <iterator>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "gmock/gmock.h"
-#include "source/diagnostic.h"
 #include "source/spirv_target_env.h"
 #include "source/val/validate.h"
 #include "test/test_fixture.h"
