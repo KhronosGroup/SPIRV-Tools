@@ -217,26 +217,37 @@ static const int kDebugInputBindingBuffAddr = 2;
 // This is the output buffer written by InstDebugPrintfPass.
 static const int kDebugOutputPrintfStream = 3;
 
+// clang-format off
 // Bindless Validation Input Buffer Format
 //
-// An input buffer for bindless validation consists of a single array of
-// unsigned integers we will call Data[]. This array is formatted as follows.
+// An input buffer for bindless validation has this structure:
+// GLSL:
+// layout(buffer_reference, std430, buffer_reference_align = 8) buffer DescriptorSetData {
+//     uint num_bindings;
+//     uint data[];
+// };
 //
-// At offset kDebugInputBindlessInitOffset in Data[] is a single uint which
-// gives an offset to the start of the bindless initialization data. More
-// specifically, if the following value is zero, we know that the descriptor at
-// (set = s, binding = b, index = i) is not initialized; if the value is
-// non-zero, and the descriptor points to a buffer, the value is the length of
-// the buffer in bytes and can be used to check for out-of-bounds buffer
-// references:
-// Data[ i + Data[ b + Data[ s + Data[ kDebugInputBindlessInitOffset ] ] ] ]
-static const int kDebugInputBindlessInitOffset = 0;
-
-// At offset kDebugInputBindlessOffsetLengths is some number of uints which
-// provide the bindless length data. More specifically, the number of
-// descriptors at (set=s, binding=b) is:
-// Data[ Data[ s + kDebugInputBindlessOffsetLengths ] + b ]
-static const int kDebugInputBindlessOffsetLengths = 1;
+// layout(set = 7, binding = 1, std430) buffer inst_bindless_InputBuffer
+// {
+//     DescriptorSetData desc_sets[32];
+// } inst_bindless_input_buffer;
+//
+//
+// To look up the length of a binding:
+//   uint length = inst_bindless_input_buffer[set].data[binding];
+// Scalar bindings have a length of 1.
+//
+// To look up the initialization state of a descriptor in a binding:
+//   uint num_bindings = inst_bindless_input_buffer[set].num_bindings;
+//   uint binding_state_start = inst_bindless_input_buffer[set].data[num_bindings + binding];
+//   uint init_state = inst_bindless_input_buffer[set].data[binding_state_start + index];
+//
+// For scalar bindings, use 0 for the index.
+// clang-format on
+//
+// The size of the inst_bindless_input_buffer array, regardless of how many
+// descriptor sets the device supports.
+static const int kDebugInputBindlessMaxDescSets = 32;
 
 // Buffer Device Address Input Buffer Format
 //
