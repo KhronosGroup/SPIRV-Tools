@@ -14,7 +14,6 @@
 
 #include "source/val/validate_scopes.h"
 
-#include "source/diagnostic.h"
 #include "source/spirv_target_env.h"
 #include "source/val/instruction.h"
 #include "source/val/validation_state.h"

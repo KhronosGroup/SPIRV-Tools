@@ -14,15 +14,12 @@
 // limitations under the License.
 
 #include <ostream>
-#include <sstream>
 #include <string>
 #include <vector>
 
 #include "gmock/gmock.h"
-#include "source/enum_string_mapping.h"
 #include "source/extensions.h"
 #include "source/spirv_target_env.h"
-#include "test/test_fixture.h"
 #include "test/unit_spirv.h"
 #include "test/val/val_fixtures.h"
 

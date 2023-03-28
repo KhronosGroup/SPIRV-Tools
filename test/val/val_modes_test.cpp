@@ -18,7 +18,6 @@
 
 #include "gmock/gmock.h"
 #include "source/spirv_target_env.h"
-#include "test/test_fixture.h"
 #include "test/unit_spirv.h"
 #include "test/val/val_fixtures.h"
 
