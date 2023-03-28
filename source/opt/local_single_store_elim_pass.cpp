@@ -17,8 +17,6 @@
 #include "source/opt/local_single_store_elim_pass.h"
 
 #include "source/cfa.h"
-#include "source/latest_version_glsl_std_450_header.h"
-#include "source/opt/iterator.h"
 #include "source/util/string_utils.h"
 
 namespace spvtools {

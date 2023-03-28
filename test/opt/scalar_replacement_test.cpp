@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/opt/scalar_replacement_pass.h"
-
 #include <string>
 
-#include "gmock/gmock.h"
+#include "source/opt/scalar_replacement_pass.h"
 #include "test/opt/assembly_builder.h"
 #include "test/opt/pass_fixture.h"
 #include "test/opt/pass_utils.h"

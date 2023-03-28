@@ -27,7 +27,6 @@
 #include "source/opt/ir_context.h"
 #include "source/opt/module.h"
 #include "spirv-tools/libspirv.hpp"
-#include "test/opt/pass_utils.h"
 
 namespace spvtools {
 namespace opt {
