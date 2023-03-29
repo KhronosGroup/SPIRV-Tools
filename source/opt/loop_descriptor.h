@@ -303,10 +303,6 @@ class Loop {
   // loop.
   bool AreAllOperandsOutsideLoop(const Instruction& inst) const;
 
-  // Checks if |inst| is safe to move. We can only move instructions which don't
-  // have any side effects and OpLoads and OpStores.
-  bool MovableInstruction(const Instruction& inst) const;
-
   // Returns true if operand |id| is modified by instruction |inst|.
   bool IsOperandModifiedByInstruction(uint32_t id,
                                       const Instruction& inst) const;
@@ -318,10 +314,6 @@ class Loop {
   // Returns true if the in ops (excluding OpStore pointer) of |inst| are
   // invariant within the loop.
   bool AreInOperandsInvariantInLoop(const Instruction& inst) const;
-
-  // Returns the number of times the operand |id| is modified. Does not count
-  // |id| as a result. Logical pointers referencing |id| are considered.
-  uint32_t NumOperandModifications(uint32_t id) const;
 
   // Returns true if the |inst| result (or OpStore pointer) is modified once.
   bool IsResultModifiedOnce(const Instruction& inst) const;

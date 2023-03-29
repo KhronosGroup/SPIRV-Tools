@@ -23,12 +23,10 @@ add_spvtools_unittest(TARGET opt_loops
        fusion_pass.cpp
        hoist_access_chains.cpp
        hoist_all_loop_types.cpp
-       hoist_use_dependent.cpp
        hoist_double_nested_loops.cpp
        hoist_from_independent_loops.cpp
        hoist_simple_case.cpp
        hoist_single_nested_loops.cpp
-       hoist_use_dependent.cpp
        hoist_without_preheader.cpp
        lcssa.cpp
        loop_descriptions.cpp
