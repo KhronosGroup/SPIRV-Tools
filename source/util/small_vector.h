@@ -46,7 +46,7 @@ class SmallVector {
 
   SmallVector()
       : size_(0),
-        small_data_(reinterpret_cast<T*>(buffer)),
+        small_data_(reinterpret_cast<T*>(buffer.data())),
         large_data_(nullptr) {}
 
   SmallVector(const SmallVector& that) : SmallVector() { *this = that; }
@@ -461,14 +461,13 @@ class SmallVector {
   // The number of elements in |small_data_| that have been constructed.
   size_t size_;
 
+  // The actual data used to store the array elements.  It must never be used
+  // directly, but must only be accessed through |small_data_|.
+  alignas(T) std::array<std::byte, sizeof(T) * small_size> buffer;
+
   // The pointed used to access the array of elements when the number of
   // elements is small.
   T* small_data_;
-
-  // The actual data used to store the array elements.  It must never be used
-  // directly, but must only be accessed through |small_data_|.
-  typename std::aligned_storage<sizeof(T), std::alignment_of<T>::value>::type
-      buffer[small_size];
 
   // A pointer to a vector that is used to store the elements of the vector when
   // this size exceeds |small_size|.  If |large_data_| is nullptr, then the data
