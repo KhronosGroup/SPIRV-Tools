@@ -15,6 +15,7 @@
 #ifndef SOURCE_UTIL_SMALL_VECTOR_H_
 #define SOURCE_UTIL_SMALL_VECTOR_H_
 
+#include <array>
 #include <cassert>
 #include <iostream>
 #include <memory>
