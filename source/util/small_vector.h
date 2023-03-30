@@ -462,9 +462,14 @@ class SmallVector {
   // The number of elements in |small_data_| that have been constructed.
   size_t size_;
 
+  // A type with the same alignment and size as T, but will is POD.
+  struct alignas(T) PodType {
+    std::array<std::byte, sizeof(T)> data;
+  };
+
   // The actual data used to store the array elements.  It must never be used
   // directly, but must only be accessed through |small_data_|.
-  alignas(T) std::array<std::byte, sizeof(T) * small_size> buffer;
+  std::array<PodType, small_size> buffer;
 
   // The pointed used to access the array of elements when the number of
   // elements is small.
