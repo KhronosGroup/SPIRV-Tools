@@ -452,7 +452,7 @@ bool Loop::IsLCSSA() const {
 
 bool Loop::ShouldHoistInstruction(const Instruction& inst) const {
   return inst.IsOpcodeCodeMotionSafe() && AreAllOperandsOutsideLoop(inst) &&
-         AreInOperandsInvariantInLoop(inst);
+         (!inst.IsLoad() || inst.IsReadOnlyLoad());
 }
 
 bool Loop::AreAllOperandsOutsideLoop(const Instruction& inst) const {
@@ -464,45 +464,6 @@ bool Loop::AreAllOperandsOutsideLoop(const Instruction& inst) const {
       };
 
   return inst.WhileEachInId(operand_outside_loop);
-}
-
-bool Loop::IsOperandModifiedByInstruction(uint32_t id,
-                                          const Instruction& inst) const {
-  // TODO: Check that this is exhaustive
-  if (inst.HasResultId()) {
-    return id == inst.result_id();
-  } else if (inst.opcode() == spv::Op::OpStore) {
-    return id == inst.GetSingleWordInOperand(0);
-  } else {
-    return false;
-  }
-}
-
-bool Loop::IsOperandInvariantInLoop(uint32_t id) const {
-  analysis::DefUseManager* def_use_mgr = GetContext()->get_def_use_mgr();
-
-  // Constant operands are invariant
-  if (def_use_mgr->GetDef(id)->IsConstant()) {
-    return true;
-  }
-
-  // Check all users of |id| are invariant wrt |id|
-  return def_use_mgr->WhileEachUser(id, [this, id](Instruction* inst) -> bool {
-    return (
-        // |inst| is outside loop, or
-        !this->IsInsideLoop(inst) ||
-        // |inst| does not modify |id|, and
-        (!IsOperandModifiedByInstruction(id, *inst) &&
-         // |inst| does not have a logical pointer result or it is invariant
-         (!spvOpcodeReturnsLogicalPointer(inst->opcode()) ||
-          IsOperandInvariantInLoop(inst->result_id()))));
-  });
-}
-
-bool Loop::AreInOperandsInvariantInLoop(const Instruction& inst) const {
-  bool inOperandsInvariant = inst.WhileEachInId(
-      [this](const uint32_t* id) { return IsOperandInvariantInLoop(*id); });
-  return inOperandsInvariant;
 }
 
 void Loop::ComputeLoopStructuredOrder(

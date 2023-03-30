@@ -303,21 +303,6 @@ class Loop {
   // loop.
   bool AreAllOperandsOutsideLoop(const Instruction& inst) const;
 
-  // Returns true if operand |id| is modified by instruction |inst|.
-  bool IsOperandModifiedByInstruction(uint32_t id,
-                                      const Instruction& inst) const;
-
-  // Returns true if the operand |id| is invariant within the loop. Logical
-  // pointers referencing |id| are considered.
-  bool IsOperandInvariantInLoop(uint32_t id) const;
-
-  // Returns true if the in ops (excluding OpStore pointer) of |inst| are
-  // invariant within the loop.
-  bool AreInOperandsInvariantInLoop(const Instruction& inst) const;
-
-  // Returns true if the |inst| result (or OpStore pointer) is modified once.
-  bool IsResultModifiedOnce(const Instruction& inst) const;
-
   // Extract the initial value from the |induction| variable and store it in
   // |value|. If the function couldn't find the initial value of |induction|
   // return false.
