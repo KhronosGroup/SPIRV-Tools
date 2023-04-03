@@ -465,7 +465,7 @@ class SmallVector {
 
   // A type with the same alignment and size as T, but will is POD.
   struct alignas(T) PodType {
-    std::array<std::byte, sizeof(T)> data;
+    std::array<int8_t, sizeof(T)> data;
   };
 
   // The actual data used to store the array elements.  It must never be used
