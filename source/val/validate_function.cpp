@@ -14,6 +14,7 @@
 
 #include <algorithm>
 
+#include "source/enum_string_mapping.h"
 #include "source/opcode.h"
 #include "source/val/instruction.h"
 #include "source/val/validate.h"
@@ -306,6 +307,16 @@ spv_result_t ValidateFunctionCall(ValidationState_t& _,
                      << "StorageBuffer pointer operand "
                      << _.getIdName(argument_id)
                      << " requires a variable pointers capability";
+            }
+            break;
+          case spv::StorageClass::TileImageEXT:
+            if (!_.HasCapability(
+                    spv::Capability::TileImageColorReadAccessEXT)) {
+              return _.diag(SPV_ERROR_INVALID_ID, inst)
+                  << "TileImageEXT pointer operand "
+                  << _.getIdName(argument_id) << " requires "
+                  << CapabilityToString(
+                            spv::Capability::TileImageColorReadAccessEXT);
             }
             break;
           default:
