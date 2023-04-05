@@ -734,8 +734,17 @@ bool InstBindlessCheckPass::AnalyzeDescriptorReference(Instruction* ref_inst,
             ptr_inst->GetSingleWordInOperand(kSpvAccessChainIndex0IdInIdx);
         break;
       default:
-        ref->desc_idx_id = 0;
         break;
+    }
+    auto decos =
+        context()->get_decoration_mgr()->GetDecorationsFor(ref->var_id, false);
+    for (const auto& deco : decos) {
+      spv::Decoration d = spv::Decoration(deco->GetSingleWordInOperand(1u));
+      if (d == spv::Decoration::DescriptorSet) {
+        ref->set = deco->GetSingleWordInOperand(2u);
+      } else if (d == spv::Decoration::Binding) {
+        ref->binding = deco->GetSingleWordInOperand(2u);
+      }
     }
     return true;
   }
@@ -785,6 +794,16 @@ bool InstBindlessCheckPass::AnalyzeDescriptorReference(Instruction* ref_inst,
   } else {
     // TODO(greg-lunarg): Handle additional possibilities?
     return false;
+  }
+  auto decos =
+      context()->get_decoration_mgr()->GetDecorationsFor(ref->var_id, false);
+  for (const auto& deco : decos) {
+    spv::Decoration d = spv::Decoration(deco->GetSingleWordInOperand(1u));
+    if (d == spv::Decoration::DescriptorSet) {
+      ref->set = deco->GetSingleWordInOperand(2u);
+    } else if (d == spv::Decoration::Binding) {
+      ref->binding = deco->GetSingleWordInOperand(2u);
+    }
   }
   return true;
 }
@@ -1028,27 +1047,29 @@ void InstBindlessCheckPass::GenCheckCode(
   // Gen invalid block
   new_blk_ptr.reset(new BasicBlock(std::move(invalid_label)));
   builder.SetInsertPoint(&*new_blk_ptr);
-  uint32_t u_index_id = GenUintCastCode(ref->desc_idx_id, &builder);
+  const uint32_t u_set_id = builder.GetUintConstantId(ref->set);
+  const uint32_t u_binding_id = builder.GetUintConstantId(ref->binding);
+  const uint32_t u_index_id = GenUintCastCode(ref->desc_idx_id, &builder);
+  const uint32_t u_length_id = GenUintCastCode(length_id, &builder);
   if (offset_id != 0) {
+    const uint32_t u_offset_id = GenUintCastCode(offset_id, &builder);
     // Buffer OOB
-    uint32_t u_offset_id = GenUintCastCode(offset_id, &builder);
-    uint32_t u_length_id = GenUintCastCode(length_id, &builder);
     GenDebugStreamWrite(uid2offset_[ref->ref_inst->unique_id()], stage_idx,
-                        {error_id, u_index_id, u_offset_id, u_length_id},
+                        {error_id, u_set_id, u_binding_id, u_index_id,
+                         u_offset_id, u_length_id},
                         &builder);
   } else if (buffer_bounds_enabled_ || texel_buffer_enabled_) {
     // Uninitialized Descriptor - Return additional unused zero so all error
     // modes will use same debug stream write function
-    uint32_t u_length_id = GenUintCastCode(length_id, &builder);
-    GenDebugStreamWrite(
-        uid2offset_[ref->ref_inst->unique_id()], stage_idx,
-        {error_id, u_index_id, u_length_id, builder.GetUintConstantId(0)},
-        &builder);
+    GenDebugStreamWrite(uid2offset_[ref->ref_inst->unique_id()], stage_idx,
+                        {error_id, u_set_id, u_binding_id, u_index_id,
+                         u_length_id, builder.GetUintConstantId(0)},
+                        &builder);
   } else {
     // Uninitialized Descriptor - Normal error return
-    uint32_t u_length_id = GenUintCastCode(length_id, &builder);
-    GenDebugStreamWrite(uid2offset_[ref->ref_inst->unique_id()], stage_idx,
-                        {error_id, u_index_id, u_length_id}, &builder);
+    GenDebugStreamWrite(
+        uid2offset_[ref->ref_inst->unique_id()], stage_idx,
+        {error_id, u_set_id, u_binding_id, u_index_id, u_length_id}, &builder);
   }
   // Generate a ConstantNull, converting to uint64 if the type cannot be a null.
   if (new_ref_id != 0) {

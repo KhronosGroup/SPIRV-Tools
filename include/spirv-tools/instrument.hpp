@@ -146,23 +146,29 @@ static const int kInstValidationOutError = kInstStageOutCnt;
 // about the validation error.
 //
 // A bindless bounds error will output the index and the bound.
-static const int kInstBindlessBoundsOutDescIndex = kInstStageOutCnt + 1;
-static const int kInstBindlessBoundsOutDescBound = kInstStageOutCnt + 2;
-static const int kInstBindlessBoundsOutUnused = kInstStageOutCnt + 3;
-static const int kInstBindlessBoundsOutCnt = kInstStageOutCnt + 4;
+static const int kInstBindlessBoundsOutDescSet = kInstStageOutCnt + 1;
+static const int kInstBindlessBoundsOutDescBinding = kInstStageOutCnt + 2;
+static const int kInstBindlessBoundsOutDescIndex = kInstStageOutCnt + 3;
+static const int kInstBindlessBoundsOutDescBound = kInstStageOutCnt + 4;
+static const int kInstBindlessBoundsOutUnused = kInstStageOutCnt + 5;
+static const int kInstBindlessBoundsOutCnt = kInstStageOutCnt + 6;
 
 // A descriptor uninitialized error will output the index.
-static const int kInstBindlessUninitOutDescIndex = kInstStageOutCnt + 1;
-static const int kInstBindlessUninitOutUnused = kInstStageOutCnt + 2;
-static const int kInstBindlessUninitOutUnused2 = kInstStageOutCnt + 3;
-static const int kInstBindlessUninitOutCnt = kInstStageOutCnt + 4;
+static const int kInstBindlessUninitOutDescSet = kInstStageOutCnt + 1;
+static const int kInstBindlessUninitOutBinding = kInstStageOutCnt + 2;
+static const int kInstBindlessUninitOutDescIndex = kInstStageOutCnt + 3;
+static const int kInstBindlessUninitOutUnused = kInstStageOutCnt + 4;
+static const int kInstBindlessUninitOutUnused2 = kInstStageOutCnt + 5;
+static const int kInstBindlessUninitOutCnt = kInstStageOutCnt + 6;
 
 // A buffer out-of-bounds error will output the descriptor
 // index, the buffer offset and the buffer size
-static const int kInstBindlessBuffOOBOutDescIndex = kInstStageOutCnt + 1;
-static const int kInstBindlessBuffOOBOutBuffOff = kInstStageOutCnt + 2;
-static const int kInstBindlessBuffOOBOutBuffSize = kInstStageOutCnt + 3;
-static const int kInstBindlessBuffOOBOutCnt = kInstStageOutCnt + 4;
+static const int kInstBindlessBuffOOBOutDescSet = kInstStageOutCnt + 1;
+static const int kInstBindlessBuffOOBOutDescBinding = kInstStageOutCnt + 2;
+static const int kInstBindlessBuffOOBOutDescIndex = kInstStageOutCnt + 3;
+static const int kInstBindlessBuffOOBOutBuffOff = kInstStageOutCnt + 4;
+static const int kInstBindlessBuffOOBOutBuffSize = kInstStageOutCnt + 5;
+static const int kInstBindlessBuffOOBOutCnt = kInstStageOutCnt + 6;
 
 // A buffer address unalloc error will output the 64-bit pointer in
 // two 32-bit pieces, lower bits first.
@@ -171,7 +177,7 @@ static const int kInstBuffAddrUnallocOutDescPtrHi = kInstStageOutCnt + 2;
 static const int kInstBuffAddrUnallocOutCnt = kInstStageOutCnt + 3;
 
 // Maximum Output Record Member Count
-static const int kInstMaxOutCnt = kInstStageOutCnt + 4;
+static const int kInstMaxOutCnt = kInstStageOutCnt + 6;
 
 // Validation Error Codes
 //
