@@ -48,7 +48,7 @@ class SmallVector {
 
   SmallVector()
       : size_(0),
-        small_data_(reinterpret_cast<T*>(buffer.data())),
+        small_data_(reinterpret_cast<T*>(buffer)),
         large_data_(nullptr) {}
 
   SmallVector(const SmallVector& that) : SmallVector() { *this = that; }
@@ -470,7 +470,7 @@ class SmallVector {
 
   // The actual data used to store the array elements.  It must never be used
   // directly, but must only be accessed through |small_data_|.
-  std::array<PodType, small_size> buffer;
+  PodType buffer[small_size];
 
   // The pointed used to access the array of elements when the number of
   // elements is small.
