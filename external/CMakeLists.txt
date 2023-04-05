@@ -154,7 +154,7 @@ if(SPIRV_BUILD_FUZZER)
 
   if(NOT TARGET protobuf::libprotobuf OR NOT TARGET protobuf::protoc)
 
-    set(SPIRV_TOOLS_PROTOBUF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/protobuf/cmake)
+    set(SPIRV_TOOLS_PROTOBUF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/protobuf)
     if (NOT IS_DIRECTORY ${SPIRV_TOOLS_PROTOBUF_DIR})
       message(
           FATAL_ERROR

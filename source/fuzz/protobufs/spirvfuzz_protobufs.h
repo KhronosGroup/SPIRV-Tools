@@ -21,6 +21,8 @@
 // of these header files without having to compromise on freedom from warnings
 // in the rest of the project.
 
+#define GOOGLE_PROTOBUF_INTERNAL_DONATE_STEAL_INLINE 1
+
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunknown-warning-option"  // Must come first
