@@ -30,6 +30,8 @@
 #pragma clang diagnostic ignored "-Wshadow"
 #pragma clang diagnostic ignored "-Wsuggest-destructor-override"
 #pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wc++98-compat-extra-semi"
+#pragma clang diagnostic ignored "-Wshorten-64-to-32"
 #elif defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
