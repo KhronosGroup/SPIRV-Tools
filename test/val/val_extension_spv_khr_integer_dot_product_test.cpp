@@ -128,7 +128,7 @@ std::string AssemblyForCase(const Case& c) {
          %char_0 = OpConstant %char 0
          %char_1 = OpConstant %char 1
 
-         %v4uchar_0 = OpConstantComposite %v4uchar %uchar_0 %uint_0 %uchar_0 %uchar_0
+         %v4uchar_0 = OpConstantComposite %v4uchar %uchar_0 %uchar_0 %uchar_0 %uchar_0
          %v4uchar_1 = OpConstantComposite %v4uchar %uchar_1 %uchar_1 %uchar_1 %uchar_1
          %v4char_0 = OpConstantComposite %v4char %char_0 %char_0 %char_0 %char_0
          %v4char_1 = OpConstantComposite %v4char %char_1 %char_1 %char_1 %char_1
