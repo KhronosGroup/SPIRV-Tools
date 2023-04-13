@@ -218,6 +218,7 @@ uint32_t GetPlaneCoordSize(const ImageTypeInfo& info) {
       plane_size = 3;
       break;
     case spv::Dim::Max:
+    default:
       assert(0);
       break;
   }
