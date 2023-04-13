@@ -309,16 +309,6 @@ spv_result_t ValidateFunctionCall(ValidationState_t& _,
                      << " requires a variable pointers capability";
             }
             break;
-          case spv::StorageClass::TileImageEXT:
-            if (!_.HasCapability(
-                    spv::Capability::TileImageColorReadAccessEXT)) {
-              return _.diag(SPV_ERROR_INVALID_ID, inst)
-                  << "TileImageEXT pointer operand "
-                  << _.getIdName(argument_id) << " requires "
-                  << CapabilityToString(
-                            spv::Capability::TileImageColorReadAccessEXT);
-            }
-            break;
           default:
             return _.diag(SPV_ERROR_INVALID_ID, inst)
                    << "Invalid storage class for pointer operand "
