@@ -876,8 +876,7 @@ spv_result_t ValidateTypeImage(ValidationState_t& _, const Instruction* inst) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Dim TileImageDataEXT requires Arrayed to be 0";
     }
-  }
-  else {
+  } else {
     if (info.multisampled && (info.sampled == 2) &&
         !_.HasCapability(spv::Capability::StorageImageMultisample)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -1145,7 +1144,8 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
 
   if (info.dim == spv::Dim::TileImageDataEXT) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Image Dim TileImageDataEXT cannot be used with OpImageTexelPointer";
+           << "Image Dim TileImageDataEXT cannot be used with "
+              "OpImageTexelPointer";
   }
 
   const uint32_t coord_type = _.GetOperandTypeId(inst, 3);
