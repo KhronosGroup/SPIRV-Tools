@@ -1659,13 +1659,6 @@ spv_result_t ValidateImageRead(ValidationState_t& _, const Instruction* inst) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Image Dim TileImageDataEXT cannot be used with "
            << spvOpcodeString(opcode);
-
-    _.function(inst->function()->id())
-        ->RegisterExecutionModelLimitation(
-            spv::ExecutionModel::Fragment,
-            std::string(
-                "Dim TileImageDataEXT requires Fragment execution model: ") +
-                spvOpcodeString(opcode));
   }
 
   if (_.GetIdOpcode(info.sampled_type) != spv::Op::OpTypeVoid) {
