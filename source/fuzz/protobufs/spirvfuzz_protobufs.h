@@ -21,7 +21,9 @@
 // of these header files without having to compromise on freedom from warnings
 // in the rest of the project.
 
+#ifndef GOOGLE_PROTOBUF_INTERNAL_DONATE_STEAL_INLINE
 #define GOOGLE_PROTOBUF_INTERNAL_DONATE_STEAL_INLINE 1
+#endif
 
 #if defined(__clang__)
 #pragma clang diagnostic push
