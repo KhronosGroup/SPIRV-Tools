@@ -110,10 +110,14 @@ class InstBindlessCheckPass : public InstrumentPass {
       UptrVectorIterator<BasicBlock> ref_block_itr, uint32_t stage_idx,
       std::vector<std::unique_ptr<BasicBlock>>* new_blocks);
 
+  void SetupInputBufferIds();
+  uint32_t GenDebugReadLengthFunctionId();
+
   // Generate instructions into |builder| to read length of runtime descriptor
   // array |var_id| from debug input buffer and return id of value.
   uint32_t GenDebugReadLength(uint32_t var_id, InstructionBuilder* builder);
 
+  uint32_t GenDebugReadInitFunctionId();
   // Generate instructions into |builder| to read initialization status of
   // descriptor array |image_id| at |index_id| from debug input buffer and
   // return id of value.
@@ -201,6 +205,13 @@ class InstBindlessCheckPass : public InstrumentPass {
 
   // Mapping from variable to binding
   std::unordered_map<uint32_t, uint32_t> var2binding_;
+
+  uint32_t read_length_func_id_{0};
+  uint32_t read_init_func_id_{0};
+  uint32_t desc_set_type_id_{0};
+  uint32_t desc_set_ptr_id_{0};
+  uint32_t input_buffer_struct_id_{0};
+  uint32_t input_buffer_ptr_id_{0};
 };
 
 }  // namespace opt
