@@ -262,9 +262,33 @@ class ScalarReplacementPass : public MemPass {
   // that we will be willing to split.
   bool IsLargerThanSizeLimit(uint64_t length) const;
 
+  // Copies all relevant decorations from `from` to `to`. This includes
+  // decorations applied to the variable, and to the members of the type.
+  // It is assumed that `to` is a variable that is indended to replace the
+  // `member_index`th member of `from`.
+  void CopyDecorationsToVariable(Instruction* from, Instruction* to,
+                                 uint32_t member_index);
+
+  // Copies all relevant variable decorations from `from` to `to`.
+  // It is assumed that `to` is a variable that is intended to replace a member
+  // of `from`.
+  void CopyVariableDecorationsToVariable(Instruction* from, Instruction* to);
+
+  // Copies all relevant member decorations from `from` to `to`.
+  // It is assumed that `to` is a variable that is intended to replace the
+  // `member_index`th member of `from`.
+  void CopyMemberDecorationsToVariable(Instruction* from, Instruction* to,
+                                       uint32_t member_index);
+
+  // Return true if `pointer_type` points to type `id`.  The result will be
+  // false even if `pointer_type` points to a type that is isomorphic to `id`
+  // but not `id`.
+  bool PointsToTypeId(analysis::Pointer* pointer_type, uint32_t id);
+
   // Limit on the number of members in an object that will be replaced.
   // 0 means there is no limit.
   uint32_t max_num_elements_;
+
   // This has to be big enough to fit "scalar-replacement=" followed by a
   // uint32_t number written in decimal (so 10 digits), and then a
   // terminating nul.

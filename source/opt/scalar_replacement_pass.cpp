@@ -30,6 +30,7 @@ namespace {
 constexpr uint32_t kDebugValueOperandValueIndex = 5;
 constexpr uint32_t kDebugValueOperandExpressionIndex = 6;
 constexpr uint32_t kDebugDeclareOperandVariableIndex = 5;
+constexpr uint32_t kPointerTypeIdInOperandIndex = 1;
 }  // namespace
 
 Pass::Status ScalarReplacementPass::Process() {
@@ -466,9 +467,9 @@ void ScalarReplacementPass::TransferAnnotations(
 }
 
 void ScalarReplacementPass::CreateVariable(
-    uint32_t typeId, Instruction* varInst, uint32_t index,
+    uint32_t type_id, Instruction* var_inst, uint32_t index,
     std::vector<Instruction*>* replacements) {
-  uint32_t ptrId = GetOrCreatePointerType(typeId);
+  uint32_t ptr_id = GetOrCreatePointerType(type_id);
   uint32_t id = TakeNextId();
 
   if (id == 0) {
@@ -476,51 +477,22 @@ void ScalarReplacementPass::CreateVariable(
   }
 
   std::unique_ptr<Instruction> variable(
-      new Instruction(context(), spv::Op::OpVariable, ptrId, id,
+      new Instruction(context(), spv::Op::OpVariable, ptr_id, id,
                       std::initializer_list<Operand>{
                           {SPV_OPERAND_TYPE_STORAGE_CLASS,
                            {uint32_t(spv::StorageClass::Function)}}}));
 
-  BasicBlock* block = context()->get_instr_block(varInst);
+  BasicBlock* block = context()->get_instr_block(var_inst);
   block->begin().InsertBefore(std::move(variable));
   Instruction* inst = &*block->begin();
 
   // If varInst was initialized, make sure to initialize its replacement.
-  GetOrCreateInitialValue(varInst, index, inst);
+  GetOrCreateInitialValue(var_inst, index, inst);
   get_def_use_mgr()->AnalyzeInstDefUse(inst);
   context()->set_instr_block(inst, block);
 
-  // Copy decorations from the member to the new variable.
-  Instruction* typeInst = GetStorageType(varInst);
-  for (auto dec_inst :
-       get_decoration_mgr()->GetDecorationsFor(typeInst->result_id(), false)) {
-    uint32_t decoration;
-    if (dec_inst->opcode() != spv::Op::OpMemberDecorate) {
-      continue;
-    }
-
-    if (dec_inst->GetSingleWordInOperand(1) != index) {
-      continue;
-    }
-
-    decoration = dec_inst->GetSingleWordInOperand(2u);
-    switch (spv::Decoration(decoration)) {
-      case spv::Decoration::RelaxedPrecision: {
-        std::unique_ptr<Instruction> new_dec_inst(
-            new Instruction(context(), spv::Op::OpDecorate, 0, 0, {}));
-        new_dec_inst->AddOperand(Operand(SPV_OPERAND_TYPE_ID, {id}));
-        for (uint32_t i = 2; i < dec_inst->NumInOperandWords(); ++i) {
-          new_dec_inst->AddOperand(Operand(dec_inst->GetInOperand(i)));
-        }
-        context()->AddAnnotationInst(std::move(new_dec_inst));
-      } break;
-      default:
-        break;
-    }
-  }
-
-  // Update the DebugInfo debug information.
-  inst->UpdateDebugInfoFrom(varInst);
+  CopyDecorationsToVariable(var_inst, inst, index);
+  inst->UpdateDebugInfoFrom(var_inst);
 
   replacements->push_back(inst);
 }
@@ -529,21 +501,26 @@ uint32_t ScalarReplacementPass::GetOrCreatePointerType(uint32_t id) {
   auto iter = pointee_to_pointer_.find(id);
   if (iter != pointee_to_pointer_.end()) return iter->second;
 
+  analysis::TypeManager* type_mgr = context()->get_type_mgr();
   analysis::Type* pointeeTy;
   std::unique_ptr<analysis::Pointer> pointerTy;
   std::tie(pointeeTy, pointerTy) =
-      context()->get_type_mgr()->GetTypeAndPointerType(
-          id, spv::StorageClass::Function);
-  uint32_t ptrId = 0;
-  if (pointeeTy->IsUniqueType()) {
-    // Non-ambiguous type, just ask the type manager for an id.
-    ptrId = context()->get_type_mgr()->GetTypeInstruction(pointerTy.get());
-    pointee_to_pointer_[id] = ptrId;
-    return ptrId;
+      type_mgr->GetTypeAndPointerType(id, spv::StorageClass::Function);
+
+  // If `pointeeTy` is ambiguous, then the type manager may have found the wrong
+  // type. This is why we check if we have the correct pointee type.
+  if (pointerTy && PointsToTypeId(pointerTy.get(), id)) {
+    // The type manager returned the correct type.
+    uint32_t ptr_type_id = type_mgr->GetTypeInstruction(pointerTy.get());
+    pointee_to_pointer_[id] = ptr_type_id;
+    return ptr_type_id;
   }
 
-  // Ambiguous type. We must perform a linear search to try and find the right
-  // type.
+  // If we did not get the right pointee type, we have to do a linear search for
+  // the correct pointer type. We do not want to do the linear search all of the
+  // time because the hash table look up above will work most of the time and is
+  // faster.
+  uint32_t ptr_type_id = 0;
   for (auto global : context()->types_values()) {
     if (global.opcode() == spv::Op::OpTypePointer &&
         spv::StorageClass(global.GetSingleWordInOperand(0u)) ==
@@ -551,30 +528,30 @@ uint32_t ScalarReplacementPass::GetOrCreatePointerType(uint32_t id) {
         global.GetSingleWordInOperand(1u) == id) {
       if (get_decoration_mgr()->GetDecorationsFor(id, false).empty()) {
         // Only reuse a decoration-less pointer of the correct type.
-        ptrId = global.result_id();
+        ptr_type_id = global.result_id();
         break;
       }
     }
   }
 
-  if (ptrId != 0) {
-    pointee_to_pointer_[id] = ptrId;
-    return ptrId;
+  if (ptr_type_id != 0) {
+    pointee_to_pointer_[id] = ptr_type_id;
+    return ptr_type_id;
   }
 
-  ptrId = TakeNextId();
+  ptr_type_id = TakeNextId();
   context()->AddType(MakeUnique<Instruction>(
-      context(), spv::Op::OpTypePointer, 0, ptrId,
+      context(), spv::Op::OpTypePointer, 0, ptr_type_id,
       std::initializer_list<Operand>{{SPV_OPERAND_TYPE_STORAGE_CLASS,
                                       {uint32_t(spv::StorageClass::Function)}},
                                      {SPV_OPERAND_TYPE_ID, {id}}}));
   Instruction* ptr = &*--context()->types_values_end();
   get_def_use_mgr()->AnalyzeInstDefUse(ptr);
-  pointee_to_pointer_[id] = ptrId;
+  pointee_to_pointer_[id] = ptr_type_id;
   // Register with the type manager if necessary.
-  context()->get_type_mgr()->RegisterType(ptrId, *pointerTy);
+  type_mgr->RegisterType(ptr_type_id, *pointerTy);
 
-  return ptrId;
+  return ptr_type_id;
 }
 
 void ScalarReplacementPass::GetOrCreateInitialValue(Instruction* source,
@@ -761,6 +738,8 @@ bool ScalarReplacementPass::CheckTypeAnnotations(
       case spv::Decoration::AlignmentId:
       case spv::Decoration::MaxByteOffset:
       case spv::Decoration::RelaxedPrecision:
+      case spv::Decoration::AliasedPointer:
+      case spv::Decoration::RestrictPointer:
         break;
       default:
         return false;
@@ -781,6 +760,8 @@ bool ScalarReplacementPass::CheckAnnotations(const Instruction* varInst) const {
       case spv::Decoration::Alignment:
       case spv::Decoration::AlignmentId:
       case spv::Decoration::MaxByteOffset:
+      case spv::Decoration::AliasedPointer:
+      case spv::Decoration::RestrictPointer:
         break;
       default:
         return false;
@@ -1009,6 +990,75 @@ uint64_t ScalarReplacementPass::GetMaxLegalIndex(
       return 0;
   }
   return 0;
+}
+
+void ScalarReplacementPass::CopyDecorationsToVariable(Instruction* from,
+                                                      Instruction* to,
+                                                      uint32_t member_index) {
+  CopyVariableDecorationsToVariable(from, to);
+  CopyMemberDecorationsToVariable(from, to, member_index);
+}
+
+void ScalarReplacementPass::CopyVariableDecorationsToVariable(Instruction* from,
+                                                              Instruction* to) {
+  // The RestrictPointer and AliasedPointer decorations are copied to all
+  // members even if the new variable does not contain a pointer. It is does
+  // not hurt to do so.
+  for (auto dec_inst :
+       get_decoration_mgr()->GetDecorationsFor(from->result_id(), false)) {
+    uint32_t decoration;
+    decoration = dec_inst->GetSingleWordInOperand(1u);
+    switch (spv::Decoration(decoration)) {
+      case spv::Decoration::AliasedPointer:
+      case spv::Decoration::RestrictPointer: {
+        std::unique_ptr<Instruction> new_dec_inst(dec_inst->Clone(context()));
+        new_dec_inst->SetInOperand(0, {to->result_id()});
+        context()->AddAnnotationInst(std::move(new_dec_inst));
+      } break;
+      default:
+        break;
+    }
+  }
+}
+
+void ScalarReplacementPass::CopyMemberDecorationsToVariable(
+    Instruction* from, Instruction* to, uint32_t member_index) {
+  Instruction* type_inst = GetStorageType(from);
+  for (auto dec_inst :
+       get_decoration_mgr()->GetDecorationsFor(type_inst->result_id(), false)) {
+    uint32_t decoration;
+    if (dec_inst->opcode() == spv::Op::OpMemberDecorate) {
+      if (dec_inst->GetSingleWordInOperand(1) != member_index) {
+        continue;
+      }
+
+      decoration = dec_inst->GetSingleWordInOperand(2u);
+      switch (spv::Decoration(decoration)) {
+        case spv::Decoration::RelaxedPrecision: {
+          std::unique_ptr<Instruction> new_dec_inst(
+              new Instruction(context(), spv::Op::OpDecorate, 0, 0, {}));
+          new_dec_inst->AddOperand(
+              Operand(SPV_OPERAND_TYPE_ID, {to->result_id()}));
+          for (uint32_t i = 2; i < dec_inst->NumInOperandWords(); ++i) {
+            new_dec_inst->AddOperand(Operand(dec_inst->GetInOperand(i)));
+          }
+          context()->AddAnnotationInst(std::move(new_dec_inst));
+        } break;
+        default:
+          break;
+      }
+    }
+  }
+}
+
+bool ScalarReplacementPass::PointsToTypeId(analysis::Pointer* pointer_type,
+                                           uint32_t id) {
+  analysis::TypeManager* type_mgr = context()->get_type_mgr();
+  uint32_t ptr_type_id = type_mgr->GetTypeInstruction(pointer_type);
+  Instruction* ptr_type_inst =
+      context()->get_def_use_mgr()->GetDef(ptr_type_id);
+  return ptr_type_inst->GetSingleWordInOperand(kPointerTypeIdInOperandIndex) ==
+         id;
 }
 
 }  // namespace opt
