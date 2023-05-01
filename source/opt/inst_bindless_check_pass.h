@@ -128,14 +128,16 @@ class InstBindlessCheckPass : public InstrumentPass {
   // AnalyzeDescriptorReference. It is necessary and sufficient for further
   // analysis and regeneration of the reference.
   typedef struct RefAnalysis {
-    uint32_t desc_load_id;
-    uint32_t image_id;
-    uint32_t load_id;
-    uint32_t ptr_id;
-    uint32_t var_id;
-    uint32_t desc_idx_id;
-    uint32_t strg_class;
-    Instruction* ref_inst;
+    uint32_t desc_load_id{0};
+    uint32_t image_id{0};
+    uint32_t load_id{0};
+    uint32_t ptr_id{0};
+    uint32_t var_id{0};
+    uint32_t set{0};
+    uint32_t binding{0};
+    uint32_t desc_idx_id{0};
+    uint32_t strg_class{0};
+    Instruction* ref_inst{nullptr};
   } RefAnalysis;
 
   // Return size of type |ty_id| in bytes. Use |matrix_stride| and |col_major|
