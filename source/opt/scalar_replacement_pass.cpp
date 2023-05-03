@@ -502,55 +502,9 @@ uint32_t ScalarReplacementPass::GetOrCreatePointerType(uint32_t id) {
   if (iter != pointee_to_pointer_.end()) return iter->second;
 
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
-  analysis::Type* pointeeTy;
-  std::unique_ptr<analysis::Pointer> pointerTy;
-  std::tie(pointeeTy, pointerTy) =
-      type_mgr->GetTypeAndPointerType(id, spv::StorageClass::Function);
-
-  // If `pointeeTy` is ambiguous, then the type manager may have found the wrong
-  // type. This is why we check if we have the correct pointee type.
-  if (pointerTy && PointsToTypeId(pointerTy.get(), id)) {
-    // The type manager returned the correct type.
-    uint32_t ptr_type_id = type_mgr->GetTypeInstruction(pointerTy.get());
-    pointee_to_pointer_[id] = ptr_type_id;
-    return ptr_type_id;
-  }
-
-  // If we did not get the right pointee type, we have to do a linear search for
-  // the correct pointer type. We do not want to do the linear search all of the
-  // time because the hash table look up above will work most of the time and is
-  // faster.
-  uint32_t ptr_type_id = 0;
-  for (auto global : context()->types_values()) {
-    if (global.opcode() == spv::Op::OpTypePointer &&
-        spv::StorageClass(global.GetSingleWordInOperand(0u)) ==
-            spv::StorageClass::Function &&
-        global.GetSingleWordInOperand(1u) == id) {
-      if (get_decoration_mgr()->GetDecorationsFor(id, false).empty()) {
-        // Only reuse a decoration-less pointer of the correct type.
-        ptr_type_id = global.result_id();
-        break;
-      }
-    }
-  }
-
-  if (ptr_type_id != 0) {
-    pointee_to_pointer_[id] = ptr_type_id;
-    return ptr_type_id;
-  }
-
-  ptr_type_id = TakeNextId();
-  context()->AddType(MakeUnique<Instruction>(
-      context(), spv::Op::OpTypePointer, 0, ptr_type_id,
-      std::initializer_list<Operand>{{SPV_OPERAND_TYPE_STORAGE_CLASS,
-                                      {uint32_t(spv::StorageClass::Function)}},
-                                     {SPV_OPERAND_TYPE_ID, {id}}}));
-  Instruction* ptr = &*--context()->types_values_end();
-  get_def_use_mgr()->AnalyzeInstDefUse(ptr);
+  uint32_t ptr_type_id =
+      type_mgr->FindPointerToType(id, spv::StorageClass::Function);
   pointee_to_pointer_[id] = ptr_type_id;
-  // Register with the type manager if necessary.
-  type_mgr->RegisterType(ptr_type_id, *pointerTy);
-
   return ptr_type_id;
 }
 
@@ -1002,7 +956,7 @@ void ScalarReplacementPass::CopyDecorationsToVariable(Instruction* from,
 void ScalarReplacementPass::CopyVariableDecorationsToVariable(Instruction* from,
                                                               Instruction* to) {
   // The RestrictPointer and AliasedPointer decorations are copied to all
-  // members even if the new variable does not contain a pointer. It is does
+  // members even if the new variable does not contain a pointer. It does
   // not hurt to do so.
   for (auto dec_inst :
        get_decoration_mgr()->GetDecorationsFor(from->result_id(), false)) {

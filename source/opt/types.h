@@ -148,12 +148,9 @@ class Type {
   // Returns a clone of |this| minus any decorations.
   std::unique_ptr<Type> RemoveDecorations() const;
 
-  // Returns true if this type must be unique.
-  //
-  // If variable pointers are allowed, then pointers are not required to be
-  // unique.
-  // TODO(alanbaker): Update this if variable pointers become a core feature.
-  bool IsUniqueType(bool allowVariablePointers = false) const;
+  // Returns true if this cannot hash to the same value as another type in the
+  // module.
+  bool IsUniqueType() const;
 
   bool operator==(const Type& other) const;
 
