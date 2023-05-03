@@ -954,7 +954,7 @@ void ScalarReplacementPass::CopyDecorationsToVariable(Instruction* from,
 }
 
 void ScalarReplacementPass::CopyPointerDecorationsToVariable(Instruction* from,
-                                                              Instruction* to) {
+                                                             Instruction* to) {
   // The RestrictPointer and AliasedPointer decorations are copied to all
   // members even if the new variable does not contain a pointer. It does
   // not hurt to do so.
