@@ -949,11 +949,11 @@ uint64_t ScalarReplacementPass::GetMaxLegalIndex(
 void ScalarReplacementPass::CopyDecorationsToVariable(Instruction* from,
                                                       Instruction* to,
                                                       uint32_t member_index) {
-  CopyVariableDecorationsToVariable(from, to);
-  CopyMemberDecorationsToVariable(from, to, member_index);
+  CopyPointerDecorationsToVariable(from, to);
+  CopyRelaxPrecisionDecorationToVariable(from, to, member_index);
 }
 
-void ScalarReplacementPass::CopyVariableDecorationsToVariable(Instruction* from,
+void ScalarReplacementPass::CopyPointerDecorationsToVariable(Instruction* from,
                                                               Instruction* to) {
   // The RestrictPointer and AliasedPointer decorations are copied to all
   // members even if the new variable does not contain a pointer. It does
@@ -975,7 +975,7 @@ void ScalarReplacementPass::CopyVariableDecorationsToVariable(Instruction* from,
   }
 }
 
-void ScalarReplacementPass::CopyMemberDecorationsToVariable(
+void ScalarReplacementPass::CopyRelaxPrecisionDecorationToVariable(
     Instruction* from, Instruction* to, uint32_t member_index) {
   Instruction* type_inst = GetStorageType(from);
   for (auto dec_inst :
