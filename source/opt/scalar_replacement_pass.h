@@ -272,16 +272,11 @@ class ScalarReplacementPass : public MemPass {
   // Copies pointer related decoration from `from` to `to` if they exist.
   void CopyPointerDecorationsToVariable(Instruction* from, Instruction* to);
 
-  // Copies the relax precision decoration from the `member_index` of `from` to
+  // Copies decorations that are needed from the `member_index` of `from` to
   // `to, if there was one.
-  void CopyRelaxPrecisionDecorationToVariable(Instruction* from,
-                                              Instruction* to,
-                                              uint32_t member_index);
-
-  // Return true if `pointer_type` points to type `id`.  The result will be
-  // false even if `pointer_type` points to a type that is isomorphic to `id`
-  // but not `id`.
-  bool PointsToTypeId(analysis::Pointer* pointer_type, uint32_t id);
+  void CopyNecessaryMemberDecorationsToVariable(Instruction* from,
+                                                Instruction* to,
+                                                uint32_t member_index);
 
   // Limit on the number of members in an object that will be replaced.
   // 0 means there is no limit.

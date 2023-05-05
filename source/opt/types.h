@@ -149,7 +149,14 @@ class Type {
   std::unique_ptr<Type> RemoveDecorations() const;
 
   // Returns true if this cannot hash to the same value as another type in the
-  // module.
+  // module. For example, structs are not unique types because the module could
+  // have two types
+  //
+  //  %1 = OpTypeStruct %int
+  //  %2 = OpTypeStruct %int
+  //
+  // The only way to distinguish these types is the result id. The type manager
+  // will hash them to the same value.
   bool IsUniqueType() const;
 
   bool operator==(const Type& other) const;

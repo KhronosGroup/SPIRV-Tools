@@ -950,7 +950,7 @@ void ScalarReplacementPass::CopyDecorationsToVariable(Instruction* from,
                                                       Instruction* to,
                                                       uint32_t member_index) {
   CopyPointerDecorationsToVariable(from, to);
-  CopyRelaxPrecisionDecorationToVariable(from, to, member_index);
+  CopyNecessaryMemberDecorationsToVariable(from, to, member_index);
 }
 
 void ScalarReplacementPass::CopyPointerDecorationsToVariable(Instruction* from,
@@ -975,7 +975,7 @@ void ScalarReplacementPass::CopyPointerDecorationsToVariable(Instruction* from,
   }
 }
 
-void ScalarReplacementPass::CopyRelaxPrecisionDecorationToVariable(
+void ScalarReplacementPass::CopyNecessaryMemberDecorationsToVariable(
     Instruction* from, Instruction* to, uint32_t member_index) {
   Instruction* type_inst = GetStorageType(from);
   for (auto dec_inst :
@@ -988,6 +988,11 @@ void ScalarReplacementPass::CopyRelaxPrecisionDecorationToVariable(
 
       decoration = dec_inst->GetSingleWordInOperand(2u);
       switch (spv::Decoration(decoration)) {
+        case spv::Decoration::ArrayStride:
+        case spv::Decoration::Alignment:
+        case spv::Decoration::AlignmentId:
+        case spv::Decoration::MaxByteOffset:
+        case spv::Decoration::MaxByteOffsetId:
         case spv::Decoration::RelaxedPrecision: {
           std::unique_ptr<Instruction> new_dec_inst(
               new Instruction(context(), spv::Op::OpDecorate, 0, 0, {}));
@@ -1003,16 +1008,6 @@ void ScalarReplacementPass::CopyRelaxPrecisionDecorationToVariable(
       }
     }
   }
-}
-
-bool ScalarReplacementPass::PointsToTypeId(analysis::Pointer* pointer_type,
-                                           uint32_t id) {
-  analysis::TypeManager* type_mgr = context()->get_type_mgr();
-  uint32_t ptr_type_id = type_mgr->GetTypeInstruction(pointer_type);
-  Instruction* ptr_type_inst =
-      context()->get_def_use_mgr()->GetDef(ptr_type_id);
-  return ptr_type_inst->GetSingleWordInOperand(kPointerTypeIdInOperandIndex) ==
-         id;
 }
 
 }  // namespace opt
