@@ -30,7 +30,6 @@ namespace {
 constexpr uint32_t kDebugValueOperandValueIndex = 5;
 constexpr uint32_t kDebugValueOperandExpressionIndex = 6;
 constexpr uint32_t kDebugDeclareOperandVariableIndex = 5;
-constexpr uint32_t kPointerTypeIdInOperandIndex = 1;
 }  // namespace
 
 Pass::Status ScalarReplacementPass::Process() {
