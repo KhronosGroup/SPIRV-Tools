@@ -39,8 +39,7 @@ bool ConvertToHalfPass::IsFloat(Instruction* inst, uint32_t width) {
   return Pass::IsFloat(ty_id, width);
 }
 
-bool ConvertToHalfPass::IsStruct(Instruction * inst)
-{
+bool ConvertToHalfPass::IsStruct(Instruction* inst) {
   uint32_t ty_id = inst->type_id();
   if (ty_id == 0) return false;
   Instruction* ty_inst = Pass::GetBaseType(ty_id);
