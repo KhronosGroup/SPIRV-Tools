@@ -376,13 +376,7 @@ ConstantFoldingRule FoldVectorTimesMatrix() {
     assert(c1->type()->AsVector()->element_type() == element_type &&
            c2->type()->AsMatrix()->element_type() == vector_type);
 
-    // Get a float vector that is the result of vector-times-matrix.
-    std::vector<const analysis::Constant*> c1_components =
-        c1->GetVectorComponents(const_mgr);
-    std::vector<const analysis::Constant*> c2_components =
-        c2->AsMatrixConstant()->GetComponents();
     uint32_t resultVectorSize = result_type->AsVector()->element_count();
-
     std::vector<uint32_t> ids;
 
     if ((c1 && c1->IsZero()) || (c2 && c2->IsZero())) {
@@ -394,6 +388,12 @@ ConstantFoldingRule FoldVectorTimesMatrix() {
       }
       return const_mgr->GetConstant(vector_type, ids);
     }
+
+    // Get a float vector that is the result of vector-times-matrix.
+    std::vector<const analysis::Constant*> c1_components =
+        c1->GetVectorComponents(const_mgr);
+    std::vector<const analysis::Constant*> c2_components =
+        c2->AsMatrixConstant()->GetComponents();
 
     if (float_type->width() == 32) {
       for (uint32_t i = 0; i < resultVectorSize; ++i) {
@@ -472,13 +472,7 @@ ConstantFoldingRule FoldMatrixTimesVector() {
     assert(c1->type()->AsMatrix()->element_type() == vector_type);
     assert(c2->type()->AsVector()->element_type() == element_type);
 
-    // Get a float vector that is the result of matrix-times-vector.
-    std::vector<const analysis::Constant*> c1_components =
-        c1->AsMatrixConstant()->GetComponents();
-    std::vector<const analysis::Constant*> c2_components =
-        c2->GetVectorComponents(const_mgr);
     uint32_t resultVectorSize = result_type->AsVector()->element_count();
-
     std::vector<uint32_t> ids;
 
     if ((c1 && c1->IsZero()) || (c2 && c2->IsZero())) {
@@ -490,6 +484,12 @@ ConstantFoldingRule FoldMatrixTimesVector() {
       }
       return const_mgr->GetConstant(vector_type, ids);
     }
+
+    // Get a float vector that is the result of matrix-times-vector.
+    std::vector<const analysis::Constant*> c1_components =
+        c1->AsMatrixConstant()->GetComponents();
+    std::vector<const analysis::Constant*> c2_components =
+        c2->GetVectorComponents(const_mgr);
 
     if (float_type->width() == 32) {
       for (uint32_t i = 0; i < resultVectorSize; ++i) {
