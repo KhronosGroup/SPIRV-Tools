@@ -1,5 +1,28 @@
 Revision history for SPIRV-Tools
 
+v2023.3 2023-15-15
+  - General
+    - Update spirv_headers to include SPV_KHR_ray_tracing_position_fetch (#5205)
+    - spirv-tools: Add support for QNX (#5211)
+    - build: set std=c++17 for BUILD.gn (#5162)
+  - Optimizer
+    - Run ADCE when the printf extension is used. (#5215)
+    - Don't convert struct members to half (#5201)
+    - Apply scalar replacement on vars with Pointer decorations (#5208)
+    - opt: Fix null deref in OpMatrixTimesVector and OpVectorTimesMatrix (#5199)
+    - instrument: Add set and binding to bindless error records (#5204)
+    - instrument: Change descriptor state storage format (#5178)
+    - Fix LICMPass (#5087)
+    - Add Vulkan memory model to allow lists (#5173)
+    - Do not remove control barrier after spv1.3 (#5174)
+  - Validator
+    - spirv-val: Label Interface Location/Component VUIDs (#5221)
+    - Add support for SPV_EXT_shader_tile_image (#5188)
+    - Fix vector OpConstantComposite type validation (#5191)
+    - spirv-val: Label new Vulkan VUID 07951 (#5154)
+  - Fuzz
+    - Do not define GOOGLE_PROTOBUF_INTERNAL_DONATE_STEAL_INLINE if it is already defined. (#5200)
+
 v2023.2 2023-03-10
   - General
     - build: move from c++11 to c++17 (#4983)
