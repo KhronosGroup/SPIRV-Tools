@@ -2374,8 +2374,6 @@ bool IsImageInstruction(const spv::Op opcode) {
     case spv::Op::OpImageQueryLevels:
     case spv::Op::OpImageQuerySamples:
 
-    case spv::Op::OpImageSparseTexelsResident:
-
     case spv::Op::OpImageSampleWeightedQCOM:
     case spv::Op::OpImageBoxFilterQCOM:
     case spv::Op::OpImageBlockMatchSSDQCOM:
