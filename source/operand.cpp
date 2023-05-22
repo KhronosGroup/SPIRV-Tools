@@ -22,6 +22,7 @@
 #include <algorithm>
 
 #include "DebugInfo.h"
+#include "NonSemanticShaderDebugInfo100.h"
 #include "OpenCLDebugInfo100.h"
 #include "source/macro.h"
 #include "source/opcode.h"
@@ -583,8 +584,13 @@ std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
 std::function<bool(unsigned)> spvDbgInfoExtOperandCanBeForwardDeclaredFunction(
     spv_ext_inst_type_t ext_type, uint32_t key) {
   // The Vulkan debug info extended instruction set is non-semantic so allows no
-  // forward references ever
+  // forward references, except if it's a DebugTypeComposite's member.
   if (ext_type == SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100) {
+    // For DebugTypeComposite, members can be a forward reference.
+    if (NonSemanticShaderDebugInfo100Instructions(key) ==
+        NonSemanticShaderDebugInfo100DebugTypeComposite) {
+      return [](unsigned index) { return index >= 13; };
+    }
     return [](unsigned) { return false; };
   }
 

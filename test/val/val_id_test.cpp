@@ -115,6 +115,14 @@ std::string kOpenCLMemoryModel64 = R"(
      OpMemoryModel Physical64 OpenCL
 )";
 
+const std::string kNonSemanticShaderDebugInfo100 = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+     OpMemoryModel Logical GLSL450
+)";
+
 std::string sampledImageSetup = R"(
                     %void = OpTypeVoid
             %typeFuncVoid = OpTypeFunction %void
@@ -6886,6 +6894,117 @@ TEST_P(ValidateIdWithMessage, NVBindlessSamplerInStruct) {
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_P(ValidateIdWithMessage, OpShaderDebugInfoNoForwardDefinition) {
+  std::string spirv = kNonSemanticShaderDebugInfo100 + R"(
+     %name = OpString "some-string"
+ %typename = OpString "typename"
+     %void = OpTypeVoid
+     %uint = OpTypeInt 32 0
+   %uint_0 = OpConstant %uint 0
+  %uint_32 = OpConstant %uint 32
+       %40 = OpExtInst %void %1 DebugSource %name %name
+       %41 = OpExtInst %void %1 DebugCompilationUnit %uint_0 %uint_0 %40 %uint_0
+       %42 = OpExtInst %void %1 DebugTypeBasic %typename %uint_32 %uint_0 %uint_0
+       %50 = OpExtInst %void %1 DebugTypeFunction %uint_0 %void
+       %51 = OpExtInst %void %1 DebugFunction %name %50 %40 %uint_0 %uint_0 %41 %name %uint_0 %uint_0
+       %52 = OpExtInst %void %1 DebugLexicalBlock %40 %uint_0 %uint_0 %51
+       %60 = OpExtInst %void %1 DebugLocalVariable %name %42 %40 %uint_0 %uint_0 %52 %uint_0
+    %ftype = OpTypeFunction %void
+     %func = OpFunction %void None %ftype
+    %label = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_P(ValidateIdWithMessage, OpShaderDebugInfoNoForwardDefinitionComposite) {
+  std::string spirv = kNonSemanticShaderDebugInfo100 + R"(
+     %name = OpString "some-string"
+ %typename = OpString "typename"
+     %void = OpTypeVoid
+     %uint = OpTypeInt 32 0
+   %uint_0 = OpConstant %uint 0
+   %uint_1 = OpConstant %uint 1
+  %uint_32 = OpConstant %uint 32
+       %40 = OpExtInst %void %1 DebugSource %name %name
+       %41 = OpExtInst %void %1 DebugCompilationUnit %uint_0 %uint_0 %40 %uint_0
+       %42 = OpExtInst %void %1 DebugTypeBasic %typename %uint_32 %uint_0 %uint_0
+       %50 = OpExtInst %void %1 DebugTypeFunction %uint_0 %void
+       %51 = OpExtInst %void %1 DebugFunction %name %50 %40 %uint_0 %uint_0 %41 %name %uint_0 %uint_0
+       %52 = OpExtInst %void %1 DebugLexicalBlock %40 %uint_0 %uint_0 %51
+       %53 = OpExtInst %void %1 DebugLocalVariable %name %42 %40 %uint_0 %uint_0 %52 %uint_0
+       %54 = OpExtInst %void %1 DebugTypeMember %name %42 %40 %uint_0 %uint_0 %uint_0 %uint_1 %uint_0
+       %55 = OpExtInst %void %1 DebugTypeComposite %name %uint_0 %40 %uint_0 %uint_0 %41 %name %uint_0 %uint_0 %54
+    %ftype = OpTypeFunction %void
+     %func = OpFunction %void None %ftype
+    %label = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_P(ValidateIdWithMessage, OpShaderDebugInfoForwardDefinitionType) {
+  std::string spirv = kNonSemanticShaderDebugInfo100 + R"(
+     %name = OpString "some-string"
+ %typename = OpString "typename"
+     %void = OpTypeVoid
+     %uint = OpTypeInt 32 0
+   %uint_0 = OpConstant %uint 0
+   %uint_1 = OpConstant %uint 1
+  %uint_32 = OpConstant %uint 32
+       %40 = OpExtInst %void %1 DebugSource %name %name
+       %41 = OpExtInst %void %1 DebugCompilationUnit %uint_0 %uint_0 %40 %uint_0
+       %50 = OpExtInst %void %1 DebugTypeFunction %uint_0 %void
+       %51 = OpExtInst %void %1 DebugFunction %name %50 %40 %uint_0 %uint_0 %41 %name %uint_0 %uint_0
+       %52 = OpExtInst %void %1 DebugLexicalBlock %40 %uint_0 %uint_0 %51
+       %53 = OpExtInst %void %1 DebugLocalVariable %name %42 %40 %uint_0 %uint_0 %52 %uint_0
+       %42 = OpExtInst %void %1 DebugTypeBasic %typename %uint_32 %uint_0 %uint_0
+       %54 = OpExtInst %void %1 DebugTypeMember %name %42 %40 %uint_0 %uint_0 %uint_0 %uint_1 %uint_0
+       %55 = OpExtInst %void %1 DebugTypeComposite %name %uint_0 %40 %uint_0 %uint_0 %41 %name %uint_0 %uint_0 %54
+    %ftype = OpTypeFunction %void
+     %func = OpFunction %void None %ftype
+    %label = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr(make_message("ID '15[%15]' has not been defined")));
+}
+
+TEST_P(ValidateIdWithMessage,
+       OpShaderDebugInfoForwardDefinitionCompositeFunction) {
+  std::string spirv = kNonSemanticShaderDebugInfo100 + R"(
+     %name = OpString "some-string"
+ %typename = OpString "typename"
+     %void = OpTypeVoid
+     %uint = OpTypeInt 32 0
+   %uint_0 = OpConstant %uint 0
+   %uint_1 = OpConstant %uint 1
+  %uint_32 = OpConstant %uint 32
+       %40 = OpExtInst %void %1 DebugSource %name %name
+       %41 = OpExtInst %void %1 DebugCompilationUnit %uint_0 %uint_0 %40 %uint_0
+       %55 = OpExtInst %void %1 DebugTypeComposite %name %uint_0 %40 %uint_0 %uint_0 %41 %name %uint_0 %uint_0 %51
+       %42 = OpExtInst %void %1 DebugTypeBasic %typename %uint_32 %uint_0 %uint_0
+       %50 = OpExtInst %void %1 DebugTypeFunction %uint_0 %void
+       %51 = OpExtInst %void %1 DebugFunction %name %50 %40 %uint_0 %uint_0 %41 %name %uint_0 %uint_0
+       %52 = OpExtInst %void %1 DebugLexicalBlock %40 %uint_0 %uint_0 %51
+       %53 = OpExtInst %void %1 DebugLocalVariable %name %42 %40 %uint_0 %uint_0 %52 %uint_0
+    %ftype = OpTypeFunction %void
+     %func = OpFunction %void None %ftype
+    %label = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 INSTANTIATE_TEST_SUITE_P(, ValidateIdWithMessage, ::testing::Bool());
