@@ -769,16 +769,8 @@ Optimizer::PassToken CreateCombineAccessChainsPass();
 // The instrumentation will read and write buffers in debug
 // descriptor set |desc_set|. It will write |shader_id| in each output record
 // to identify the shader module which generated the record.
-// |desc_length_enable| controls instrumentation of runtime descriptor array
-// references, |desc_init_enable| controls instrumentation of descriptor
-// initialization checking, and |buff_oob_enable| controls instrumentation
-// of storage and uniform buffer bounds checking, all of which require input
-// buffer support. |texbuff_oob_enable| controls instrumentation of texel
-// buffers, which does not require input buffer support.
-Optimizer::PassToken CreateInstBindlessCheckPass(
-    uint32_t desc_set, uint32_t shader_id, bool desc_length_enable = false,
-    bool desc_init_enable = false, bool buff_oob_enable = false,
-    bool texbuff_oob_enable = false);
+Optimizer::PassToken CreateInstBindlessCheckPass(uint32_t desc_set,
+                                                 uint32_t shader_id);
 
 // Create a pass to instrument physical buffer address checking
 // This pass instruments all physical buffer address references to check that

@@ -40,12 +40,14 @@ static const std::string kOutputGlobals = R"(
 ; CHECK: [[output_buffer_var]] = OpVariable [[output_ptr_type]] StorageBuffer
 )";
 
-static const std::string kStreamWrite4Begin = R"(
-; CHECK: {{%\w+}} = OpFunction %void None {{%\w+}}
-; CHECK: [[param_1:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[param_2:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[param_3:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[param_4:%\w+]] = OpFunctionParameter %uint
+static const std::string kStreamWrite3 = R"(
+; CHECK: %inst_buff_addr_stream_write_3 = OpFunction %void None {{%\w+}}
+; CHECK: [[sw_shader_id:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[sw_inst_idx:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[sw_stage_info:%\w+]] = OpFunctionParameter %v4uint
+; CHECK: [[sw_param_1:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[sw_param_2:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[sw_param_3:%\w+]] = OpFunctionParameter %uint
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_1
 ; CHECK: {{%\w+}} = OpAtomicIAdd %uint {{%\w+}} %uint_4 %uint_0 %uint_10
@@ -60,80 +62,40 @@ static const std::string kStreamWrite4Begin = R"(
 ; CHECK: OpStore {{%\w+}} %uint_10
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_1
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} %uint_23
+; CHECK: OpStore {{%\w+}} [[sw_shader_id]]
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_2
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_1]]
-)";
-
-static const std::string kStreamWrite4End = R"(
+; CHECK: OpStore {{%\w+}} [[sw_inst_idx]]
+; CHECK: {{%\w+}} = OpCompositeExtract %uint [[sw_stage_info]] 0
+; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
+; CHECK: OpStore {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint [[sw_stage_info]] 1
+; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_4
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
+; CHECK: OpStore {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint [[sw_stage_info]] 2
+; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_5
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
+; CHECK: OpStore {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint [[sw_stage_info]] 3
+; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_6
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
+; CHECK: OpStore {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_7
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_2]]
+; CHECK: OpStore {{%\w+}} [[sw_param_1]]
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_8
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_3]]
+; CHECK: OpStore {{%\w+}} [[sw_param_2]]
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_9
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_4]]
+; CHECK: OpStore {{%\w+}} [[sw_param_3]]
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: OpReturn
 ; CHECK: OpFunctionEnd
 )";
-
-// clang-format off
-static const std::string kStreamWrite4Frag = kStreamWrite4Begin + R"(
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} %uint_4
-; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
-; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_4
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_5
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-)" + kStreamWrite4End;
-
-static const std::string kStreamWrite4Compute = kStreamWrite4Begin + R"(
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} %uint_5
-; CHECK: {{%\w+}} = OpLoad %v3uint %gl_GlobalInvocationID
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_4
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_5
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_6
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-)" + kStreamWrite4End;
-// clang-format on
-
-// clang-format off
-static const std::string kStreamWrite4Vert = kStreamWrite4Begin + R"(
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} %uint_0
-; CHECK: {{%\w+}} = OpLoad %uint %gl_VertexIndex
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_4
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLoad %uint %gl_InstanceIndex
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_5
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-)" + kStreamWrite4End;
-// clang-format on
 
 static const std::string kInputDecorations = R"(
 ; CHECK: OpDecorate [[input_buffer_type:%inst_buff_addr_InputBuffer]] Block
@@ -242,9 +204,9 @@ OpDecorate %u_info DescriptorSet 0
 OpDecorate %u_info Binding 0
 ; CHECK: OpDecorate %_runtimearr_ulong ArrayStride 8
 )" + kInputDecorations + R"(
+; CHECK: OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
 ; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
 )" + kOutputDecorations + R"(
-; CHECK: OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
 )";
 
   const std::string globals = R"(
@@ -267,17 +229,15 @@ OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_bufStruct PhysicalStorageBuffer
 %_ptr_PhysicalStorageBuffer_int = OpTypePointer PhysicalStorageBuffer %int
 ; CHECK: %ulong = OpTypeInt 64 0
 ; CHECK: %bool = OpTypeBool
-; CHECK: %28 = OpTypeFunction %bool %ulong %uint
 ; CHECK: %_runtimearr_ulong = OpTypeRuntimeArray %ulong
 )" + kInputGlobals + R"(
 ; CHECK: %_ptr_StorageBuffer_ulong = OpTypePointer StorageBuffer %ulong
-; CHECK: {{%\w+}} = OpTypeFunction %void %uint %uint %uint %uint
-; CHECK: %_runtimearr_uint = OpTypeRuntimeArray %uint
-)" + kOutputGlobals + R"(
-; CHECK: %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 ; CHECK: %v3uint = OpTypeVector %uint 3
 ; CHECK: %_ptr_Input_v3uint = OpTypePointer Input %v3uint
 ; CHECK: %gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
+; CHECK: %_runtimearr_uint = OpTypeRuntimeArray %uint
+)" + kOutputGlobals + R"(
+; CHECK: %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 )";
 // clang-format off
 
@@ -293,26 +253,31 @@ OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_bufStruct PhysicalStorageBuffer
 ; CHECK: %20 = OpAccessChain %_ptr_Uniform__ptr_PhysicalStorageBuffer_bufStruct %u_info %int_0
 ; CHECK: %21 = OpLoad %_ptr_PhysicalStorageBuffer_bufStruct %20
 ; CHECK: %22 = OpAccessChain %_ptr_PhysicalStorageBuffer_int %21 %int_1
-; CHECK: %24 = OpConvertPtrToU %ulong %22
-; CHECK: %61 = OpFunctionCall %bool %inst_buff_addr_search_and_test %24 %uint_4
-; CHECK: OpSelectionMerge %62 None
-; CHECK: OpBranchConditional %61 %63 %64
-; CHECK: %63 = OpLabel
+; CHECK: {{%\w+}} = OpConvertPtrToU %ulong %22
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_buff_addr_search_and_test {{%\w+}} %uint_4
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
 OpStore %22 %int_3239 Aligned 16
 ; CHECK: OpStore %22 %int_3239 Aligned 16
-; CHECK: OpBranch %62
-; CHECK: %64 = OpLabel
-; CHECK: %65 = OpUConvert %uint %24
-; CHECK: %67 = OpShiftRightLogical %ulong %24 %uint_32
-; CHECK: %68 = OpUConvert %uint %67
-; CHECK: %124 = OpFunctionCall %void %inst_buff_addr_stream_write_4 %uint_48 %uint_2 %65 %68
-; CHECK: OpBranch %62
-; CHECK: %62 = OpLabel
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpUConvert %uint {{%\w+}}
+; CHECK: {{%\w+}} = OpShiftRightLogical %ulong {{%\w+}} %uint_32
+; CHECK: {{%\w+}} = OpUConvert %uint {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint %gl_GlobalInvocationID
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %void %inst_buff_addr_stream_write_3 %uint_23 %uint_48 {{%\w+}} %uint_3 {{%\w+}} {{%\w+}}
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string output_funcs = kSearchAndTest + kStreamWrite4Compute;
+  const std::string output_funcs = kSearchAndTest + kStreamWrite3;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBuffAddrCheckPass>(
@@ -376,10 +341,9 @@ OpDecorate %r DescriptorSet 0
 OpDecorate %r Binding 0
 ; CHECK: OpDecorate %_runtimearr_ulong ArrayStride 8
 )" + kInputDecorations + R"(
-; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
-)";
+; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
+)" + kOutputDecorations;
   // clang-format on
 
   const std::string globals = R"(
@@ -422,31 +386,41 @@ OpStore %26 %int_531 Aligned 16
 ; CHECK: %72 = OpUConvert %uint %30
 ; CHECK: %74 = OpShiftRightLogical %ulong %30 %uint_32
 ; CHECK: %75 = OpUConvert %uint %74
-; CHECK: %131 = OpFunctionCall %void %inst_buff_addr_stream_write_4 %uint_44 %uint_2 %72 %75
-; CHECK: %133 = OpConvertUToPtr %_ptr_PhysicalStorageBuffer_blockType %132
+; CHECK: {{%\w+}} = OpLoad %v3uint %gl_GlobalInvocationID
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %void %inst_buff_addr_stream_write_3 %uint_23 %uint_44 {{%\w+}} %uint_3 %72 %75
+; CHECK: {{%\w+}} = OpConvertUToPtr %_ptr_PhysicalStorageBuffer_blockType {{%\w+}}
 ; CHECK: OpBranch %68
 ; CHECK: %68 = OpLabel
-; CHECK: %134 = OpPhi %_ptr_PhysicalStorageBuffer_blockType %71 %69 %133 %70
-; CHECK: %26 = OpAccessChain %_ptr_PhysicalStorageBuffer_int %134 %int_0
-; CHECK: %135 = OpConvertPtrToU %ulong %26
-; CHECK: %136 = OpFunctionCall %bool %inst_buff_addr_search_and_test %135 %uint_4
-; CHECK: OpSelectionMerge %137 None
-; CHECK: OpBranchConditional %136 %138 %139
-; CHECK: %138 = OpLabel
+; CHECK: {{%\w+}} = OpPhi %_ptr_PhysicalStorageBuffer_blockType %71 %69 {{%\w+}} %70
+; CHECK: %26 = OpAccessChain %_ptr_PhysicalStorageBuffer_int {{%\w+}} %int_0
+; CHECK: {{%\w+}} = OpConvertPtrToU %ulong %26
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_buff_addr_search_and_test {{%\w+}} %uint_4
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
 ; CHECK: OpStore %26 %int_531 Aligned 16
-; CHECK: OpBranch %137
-; CHECK: %139 = OpLabel
-; CHECK: %140 = OpUConvert %uint %135
-; CHECK: %141 = OpShiftRightLogical %ulong %135 %uint_32
-; CHECK: %142 = OpUConvert %uint %141
-; CHECK: %144 = OpFunctionCall %void %inst_buff_addr_stream_write_4 %uint_46 %uint_2 %140 %142
-; CHECK: OpBranch %137
-; CHECK: %137 = OpLabel
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpUConvert %uint {{%\w+}}
+; CHECK: {{%\w+}} = OpShiftRightLogical %ulong {{%\w+}} %uint_32
+; CHECK: {{%\w+}} = OpUConvert %uint {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint %gl_GlobalInvocationID
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %void %inst_buff_addr_stream_write_3 %uint_23 %uint_46 {{%\w+}} %uint_3 {{%\w+}} {{%\w+}}
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string output_funcs = kSearchAndTest + kStreamWrite4Compute;
+  const std::string output_funcs = kSearchAndTest + kStreamWrite3;
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBuffAddrCheckPass>(
@@ -481,7 +455,7 @@ OpCapability PhysicalStorageBufferAddresses
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel PhysicalStorageBuffer64 GLSL450
 OpEntryPoint Fragment %main "main"
-; CHECK: OpEntryPoint Fragment %main "main" %inst_buff_addr_input_buffer %inst_buff_addr_output_buffer %gl_FragCoord
+; CHECK: OpEntryPoint Fragment %main "main" %inst_buff_addr_input_buffer %gl_FragCoord %inst_buff_addr_output_buffer
 OpExecutionMode %main OriginUpperLeft
 OpSource GLSL 450
 OpSourceExtension "GL_ARB_gpu_shader_int64"
@@ -502,10 +476,9 @@ OpMemberDecorate %TestBuffer 0 Offset 0
 OpDecorate %TestBuffer Block
 ; CHECK: OpDecorate %_runtimearr_ulong ArrayStride 8
 )" + kInputDecorations + R"(
-; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_FragCoord BuiltIn FragCoord
-)";
+; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
+)" + kOutputDecorations;
 
   const std::string globals = R"(
 %void = OpTypeVoid
@@ -522,9 +495,7 @@ OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_TestBuffer PhysicalStorageBuffe
 %_ptr_PhysicalStorageBuffer_Test_0 = OpTypePointer PhysicalStorageBuffer %Test_0
 %ulong_18446744073172680704 = OpConstant %ulong 18446744073172680704
 ; CHECK: %47 = OpTypeFunction %bool %ulong %uint
-)" + kInputGlobals + R"(
-; CHECK: {{%\w+}} = OpTypeFunction %void %uint %uint %uint %uint
-)" + kOutputGlobals + R"(
+)" + kInputGlobals + kOutputGlobals + R"(
 ; CHECK: {{%\w+}} = OpConstantNull %Test_0
 )";
   // clang-format on
@@ -537,29 +508,34 @@ OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_TestBuffer PhysicalStorageBuffe
 %38 = OpAccessChain %_ptr_PhysicalStorageBuffer_Test_0 %37 %int_0
 %39 = OpLoad %Test_0 %38 Aligned 16
 ; CHECK-NOT: %39 = OpLoad %Test_0 %38 Aligned 16
-; CHECK: %43 = OpConvertPtrToU %ulong %38
-; CHECK: %80 = OpFunctionCall %bool %inst_buff_addr_search_and_test %43 %uint_4
-; CHECK: OpSelectionMerge %81 None
-; CHECK: OpBranchConditional %80 %82 %83
-; CHECK: %82 = OpLabel
-; CHECK: %84 = OpLoad %Test_0 %38 Aligned 16
-; CHECK: OpBranch %81
-; CHECK: %83 = OpLabel
-; CHECK: %85 = OpUConvert %uint %43
-; CHECK: %87 = OpShiftRightLogical %ulong %43 %uint_32
-; CHECK: %88 = OpUConvert %uint %87
-; CHECK: %142 = OpFunctionCall %void %inst_buff_addr_stream_write_4 %uint_37 %uint_2 %85 %88
-; CHECK: OpBranch %81
-; CHECK: %81 = OpLabel
-; CHECK: %144 = OpPhi %Test_0 %84 %82 %143 %83
+; CHECK: {{%\w+}} = OpConvertPtrToU %ulong %38
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_buff_addr_search_and_test {{%\w+}} %uint_4
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %Test_0 %38 Aligned 16
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpUConvert %uint {{%\w+}}
+; CHECK: {{%\w+}} = OpShiftRightLogical %ulong {{%\w+}} %uint_32
+; CHECK: {{%\w+}} = OpUConvert %uint {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %void %inst_buff_addr_stream_write_3 %uint_23 %uint_37 {{%\w+}} %uint_3 {{%\w+}} {{%\w+}}
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: [[phi_result:%\w+]] = OpPhi %Test_0 {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
 %40 = OpCopyLogical %Test %39
 ; CHECK-NOT: %40 = OpCopyLogical %Test %39
-; CHECK: %40 = OpCopyLogical %Test %144
+; CHECK: %40 = OpCopyLogical %Test [[phi_result]]
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string output_funcs = kSearchAndTest + kStreamWrite4Frag;
+  const std::string output_funcs = kSearchAndTest + kStreamWrite3;
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -625,10 +601,10 @@ OpMemberDecorate %Test_0 2 Offset 24
 OpMemberDecorate %TestBuffer 0 Offset 0
 ; CHECK: OpDecorate %_runtimearr_ulong ArrayStride 8
 )" + kInputDecorations + R"(
-; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_VertexIndex BuiltIn VertexIndex
 ; CHECK: OpDecorate %gl_InstanceIndex BuiltIn InstanceIndex
+; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
+)" + kOutputDecorations + R"(
 )";
 
   const std::string globals = R"(
@@ -688,7 +664,10 @@ OpFunctionEnd
 ; CHECK: {{%\w+}} = OpUConvert %uint {{%\w+}}
 ; CHECK: {{%\w+}} = OpShiftRightLogical %ulong {{%\w+}} %uint_32
 ; CHECK: {{%\w+}} = OpUConvert %uint {{%\w+}}
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_buff_addr_stream_write_4 %uint_62 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %uint %gl_VertexIndex
+; CHECK: {{%\w+}} = OpLoad %uint %gl_InstanceIndex
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_0 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %void %inst_buff_addr_stream_write_3 %uint_23 %uint_62 {{%\w+}} %uint_3 {{%\w+}} {{%\w+}}
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: [[phi_result:%\w+]] = OpPhi %Test_0 {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
@@ -699,7 +678,7 @@ OpReturnValue %30
 OpFunctionEnd
 )";
 
-  const std::string output_funcs = kSearchAndTest + kStreamWrite4Vert;
+  const std::string output_funcs = kSearchAndTest + kStreamWrite3;
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -731,7 +710,7 @@ OpCapability PhysicalStorageBufferAddresses
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel PhysicalStorageBuffer64 GLSL450
 OpEntryPoint Vertex %main "main" %u_info
-;CHECK: OpEntryPoint Vertex %main "main" %u_info %inst_buff_addr_input_buffer %inst_buff_addr_output_buffer %gl_VertexIndex %gl_InstanceIndex
+;CHECK: OpEntryPoint Vertex %main "main" %u_info %inst_buff_addr_input_buffer %gl_VertexIndex %gl_InstanceIndex %inst_buff_addr_output_buffer
 OpSource GLSL 450
 OpSourceExtension "GL_EXT_buffer_reference"
 OpName %main "main"
@@ -798,13 +777,16 @@ OpBranchConditional %29 %11 %12
 ;CHECK: %78 = OpLabel
 OpStore %36 %int_n559035791 Aligned 16
 ;CHECK: OpBranch %77
-;CHECK: 79 = OpLabel
-;CHECK: 80 = OpUConvert %uint %41
-;CHECK: 82 = OpShiftRightLogical %ulong %41 %uint_32
-;CHECK: 83 = OpUConvert %uint %82
-;CHECK: 134 = OpFunctionCall %void %inst_buff_addr_stream_write_4 %uint_62 %uint_2 %80 %83
-;CHECK: OpBranch %77
-;CHECK: 77 = OpLabel
+;CHECK: %79 = OpLabel
+;CHECK: %80 = OpUConvert %uint %41
+;CHECK: %82 = OpShiftRightLogical %ulong %41 %uint_32
+;CHECK: %83 = OpUConvert %uint %82
+;CHECK: {{%\w+}} = OpLoad %uint %gl_VertexIndex
+;CHECK: {{%\w+}} = OpLoad %uint %gl_InstanceIndex
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_0 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: {{%\w+}} = OpFunctionCall %void %inst_buff_addr_stream_write_3 %uint_23 %uint_62 {{%\w+}} %uint_3 {{%\w+}} {{%\w+}}
+;CHECK: OpBranch {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
 OpBranch %13
 %13 = OpLabel
 %37 = OpLoad %int %i
@@ -813,7 +795,7 @@ OpStore %i %38
 OpBranch %10
 %12 = OpLabel
 OpReturn
-OpFunctionEnd)" + kSearchAndTest + kStreamWrite4Vert;
+OpFunctionEnd)" + kSearchAndTest + kStreamWrite3;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
@@ -924,7 +906,10 @@ OpStore %readvec %38
 ; CHECK: {{%\w+}} = OpUConvert %uint {{%\w+}}
 ; CHECK: {{%\w+}} = OpShiftRightLogical %ulong {{%\w+}} %uint_32
 ; CHECK: {{%\w+}} = OpUConvert %uint {{%\w+}}
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_buff_addr_stream_write_4 %uint_66 %uint_2 {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %uint %gl_VertexIndex
+; CHECK: {{%\w+}} = OpLoad %uint %gl_InstanceIndex
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_0 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %void %inst_buff_addr_stream_write_3 %uint_23 %uint_66 {{%\w+}} %uint_3 {{%\w+}} {{%\w+}}
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: [[phi_result:%\w+]] = OpPhi %v3uint {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
@@ -938,7 +923,7 @@ OpBranch %10
 %12 = OpLabel
 OpReturn
 OpFunctionEnd
-)" + kSearchAndTest + kStreamWrite4Vert;
+)" + kSearchAndTest + kStreamWrite3;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
