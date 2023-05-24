@@ -30,11 +30,7 @@ SRC=$PWD/github/SPIRV-Tools
 git config --global --add safe.directory $SRC
 
 cd $SRC
-git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
-git clone https://github.com/google/googletest          external/googletest
-cd external && cd googletest && git reset --hard 1fb1bb23bb8418dc73a5a9a82bbed31dc610fec7 && cd .. && cd ..
-git clone --depth=1 https://github.com/google/effcee              external/effcee
-git clone --depth=1 https://github.com/google/re2                 external/re2
+/usr/bin/python3 utils/git-sync-deps --treeless
 
 # Get bazel 5.0.0
 gsutil cp gs://bazel/5.0.0/release/bazel-5.0.0-darwin-x86_64 .
