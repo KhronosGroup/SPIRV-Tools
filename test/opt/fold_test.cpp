@@ -8448,6 +8448,7 @@ std::string ImageOperandsTestBody(const std::string& image_instruction) {
       %v3int = OpTypeVector %int 3
     %Texture = OpVariable %_ptr_UniformConstant_type_2d_image UniformConstant
    %gSampler = OpVariable %_ptr_UniformConstant_type_sampler UniformConstant
+        %110 = OpConstantComposite %v2int %5 %5
         %101 = OpConstantComposite %v2int %int_n1 %int_n1
          %20 = OpConstantComposite %v2float %float_0 %float_0
        %main = OpFunction %void None %22
@@ -8507,7 +8508,12 @@ INSTANTIATE_TEST_SUITE_P(ImageOperandsBitmaskFoldingTest, MatchingInstructionWit
     InstructionFoldingCase<bool>(ImageOperandsTestBody(
       "         OpImageWrite %88 %5 %101 Offset %101      \n"
       "; CHECK: OpImageWrite %88 %5 %101 ConstOffset %101 \n")
-      , 0 /* No result-id */, true)
+      , 0 /* No result-id */, true),
+    // Test case 8: OpImageFetch with zero constant Offset
+    InstructionFoldingCase<bool>(ImageOperandsTestBody(
+        "         %89 = OpImageFetch %10 %88 %101 Lod|Offset %5 %110      \n"
+        "; CHECK: %89 = OpImageFetch %10 %88 %101 Lod %5 \n")
+        , 89, true)
 ));
 
 }  // namespace
