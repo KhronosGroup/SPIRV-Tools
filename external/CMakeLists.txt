@@ -98,19 +98,13 @@ if (NOT ${SPIRV_SKIP_TESTS})
   # in this directory.
   if (NOT TARGET re2)
 
+    # RE2 depends on Abseil, so we need to add it.
     if(NOT TARGET absl::base)
       set(ABSL_INTERNAL_AT_LEAST_CXX17 ON)
       set(ABSL_PROPAGATE_CXX_STD ON)
       set(ABSL_ENABLE_INSTALL ON)
       add_subdirectory(abseil_cpp EXCLUDE_FROM_ALL)
     endif()
-
-    if(NOT TARGET absl_base)
-      message(STATUS "STEVEN: abseil is not a valid target")
-    else()
-      message(STATUS "STEVEN: abseil is a valid target")
-    endif()
-
 
     # If we are configuring RE2, then turn off its testing.  It takes a long time and
     # does not add much value for us.  If an enclosing project configured RE2, then it
