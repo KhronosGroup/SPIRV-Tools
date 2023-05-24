@@ -290,7 +290,7 @@ OpName %main "main"
 %v4float_1_1_1_1 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
 %v4float_1_2_3_4 = OpConstantComposite %v4float %float_1 %float_2 %float_3 %float_4
 %v4float_null = OpConstantNull %v4float
-%mat4v4float_null = OpConstantComposite %mat4v4float %v4float_null %v4float_null %v4float_null %v4float_null
+%mat4v4float_null = OpConstantNull %mat4v4float
 %mat4v4float_1_2_3_4 = OpConstantComposite %mat4v4float %v4float_1_2_3_4 %v4float_1_2_3_4 %v4float_1_2_3_4 %v4float_1_2_3_4
 %mat4v4float_1_2_3_4_null = OpConstantComposite %mat4v4float %v4float_1_2_3_4 %v4float_null %v4float_1_2_3_4 %v4float_null
 %107 = OpConstantComposite %v4double %double_0 %double_0 %double_0 %double_0
@@ -301,7 +301,7 @@ OpName %main "main"
 %v4double_1_2_3_4 = OpConstantComposite %v4double %double_1 %double_2 %double_3 %double_4
 %v4double_1_1_1_0p5 = OpConstantComposite %v4double %double_1 %double_1 %double_1 %double_0p5
 %v4double_null = OpConstantNull %v4double
-%mat4v4double_null = OpConstantComposite %mat4v4double %v4double_null %v4double_null %v4double_null %v4double_null
+%mat4v4double_null = OpConstantNull %mat4v4double
 %mat4v4double_1_2_3_4 = OpConstantComposite %mat4v4double %v4double_1_2_3_4 %v4double_1_2_3_4 %v4double_1_2_3_4 %v4double_1_2_3_4
 %mat4v4double_1_2_3_4_null = OpConstantComposite %mat4v4double %v4double_1_2_3_4 %v4double_null %v4double_1_2_3_4 %v4double_null
 %v4float_n1_2_1_3 = OpConstantComposite %v4float %float_n1 %float_2 %float_1 %float_3
