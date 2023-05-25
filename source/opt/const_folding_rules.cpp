@@ -341,6 +341,9 @@ ConstantFoldingRule FoldVectorTimesScalar() {
   };
 }
 
+// Returns to the constant that results from tranposing |matrix|. The result
+// will have type |result_type|, and |matrix| must exist in |context|. The
+// result constant will also exist in |context|.
 const analysis::Constant* TransposeMatrix(const analysis::Constant* matrix,
                                           analysis::Matrix* result_type,
                                           IRContext* context) {
@@ -353,6 +356,7 @@ const analysis::Constant* TransposeMatrix(const analysis::Constant* matrix,
   const auto& columns = matrix->AsMatrixConstant()->GetComponents();
   uint32_t number_of_rows = columns[0]->type()->AsVector()->element_count();
 
+  // Collect the ids of the elements in their new positions.
   std::vector<std::vector<uint32_t>> result_elements(number_of_rows);
   for (const analysis::Constant* column : columns) {
     if (column->AsNullConstant()) {
@@ -367,6 +371,7 @@ const analysis::Constant* TransposeMatrix(const analysis::Constant* matrix,
     }
   }
 
+  // Create the constant for each row in the result, and collect the ids.
   std::vector<uint32_t> result_columns(number_of_rows);
   for (uint32_t col = 0; col < number_of_rows; ++col) {
     auto* element = const_mgr->GetConstant(result_type->element_type(),
@@ -375,6 +380,7 @@ const analysis::Constant* TransposeMatrix(const analysis::Constant* matrix,
         const_mgr->GetDefiningInstruction(element)->result_id();
   }
 
+  // Create the matrix constant from the row ids, and return it.
   return const_mgr->GetConstant(result_type, result_columns);
 }
 
