@@ -29,12 +29,9 @@ function ExitIfIsInterestingError() {
 }
 
 
-# We are not rolling re2 for now. The latest version requires Abseil, and we
-# need time to determine the best way to do that. See 
-# https://github.com/KhronosGroup/SPIRV-Tools/issues/5233.
 dependencies=("external/effcee/"
               "external/googletest/"
-#              "external/re2/"
+              "external/re2/"
               "external/spirv-headers/")
 
 
