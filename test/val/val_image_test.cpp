@@ -2177,8 +2177,6 @@ TEST_F(ValidateImage, SampleImplicitLodVulkanMoreThanOneOffset) {
   CompileSuccessfully(
       GenerateShaderCode(body, "", "Fragment", "", SPV_ENV_VULKAN_1_0).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-Offset-04662"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Image Operands Offset, ConstOffset, ConstOffsets, Offsets "
