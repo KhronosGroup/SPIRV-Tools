@@ -131,6 +131,7 @@ elif [ $TOOL = "cmake-smoketest" ]; then
   git clone https://github.com/KhronosGroup/SPIRV-Headers.git spirv-headers
   git clone https://github.com/google/re2
   git clone https://github.com/google/effcee
+  git clone https://github.com/abseil/abseil-cpp abseil_cpp
 
   cd $SHADERC_DIR
   mkdir build
