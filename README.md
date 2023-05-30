@@ -796,6 +796,7 @@ limitations under the License.
 [googletest-issue-610]: https://github.com/google/googletest/issues/610
 [effcee]: https://github.com/google/effcee
 [re2]: https://github.com/google/re2
+[abseil-cpp]: https://github.com/abseil/abseil-cpp
 [CMake]: https://cmake.org/
 [cpp-style-guide]: https://google.github.io/styleguide/cppguide.html
 [clang-sanitizers]: http://clang.llvm.org/docs/UsersManual.html#controlling-code-generation
