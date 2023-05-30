@@ -218,7 +218,6 @@ uint32_t NumConsumedComponents(ValidationState_t& _, const Instruction* type) {
       return NumConsumedComponents(_,
                                    _.FindDef(type->GetOperandAs<uint32_t>(1)));
     case spv::Op::OpTypePointer:
-      std::cout << "Pointer: " << _.Disassemble(*type) << "\n";
       if (_.addressing_model() ==
               spv::AddressingModel::PhysicalStorageBuffer64 &&
           type->GetOperandAs<spv::StorageClass>(1) ==
