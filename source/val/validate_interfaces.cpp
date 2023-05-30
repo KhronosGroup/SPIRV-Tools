@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <iostream>
 
 #include "source/spirv_constant.h"
 #include "source/spirv_target_env.h"
@@ -173,6 +174,16 @@ spv_result_t NumConsumedLocations(ValidationState_t& _, const Instruction* type,
       }
       break;
     }
+    case spv::Op::OpTypePointer: {
+      if (_.addressing_model() ==
+              spv::AddressingModel::PhysicalStorageBuffer64 &&
+          type->GetOperandAs<spv::StorageClass>(1) ==
+              spv::StorageClass::PhysicalStorageBuffer) {
+        *num_locations = 1;
+        break;
+      }
+      // Fallthrough...
+    }
     default:
       return _.diag(SPV_ERROR_INVALID_DATA, type)
              << "Invalid type to assign a location";
@@ -207,6 +218,15 @@ uint32_t NumConsumedComponents(ValidationState_t& _, const Instruction* type) {
       // Skip the array.
       return NumConsumedComponents(_,
                                    _.FindDef(type->GetOperandAs<uint32_t>(1)));
+    case spv::Op::OpTypePointer:
+      std::cout << "Pointer: " << _.Disassemble(*type) << "\n";
+      if (_.addressing_model() ==
+              spv::AddressingModel::PhysicalStorageBuffer64 &&
+          type->GetOperandAs<spv::StorageClass>(1) ==
+              spv::StorageClass::PhysicalStorageBuffer) {
+        return 2;
+      }
+      break;
     default:
       // This is an error that is validated elsewhere.
       break;
