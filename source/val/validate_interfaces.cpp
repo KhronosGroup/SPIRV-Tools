@@ -181,7 +181,7 @@ spv_result_t NumConsumedLocations(ValidationState_t& _, const Instruction* type,
         *num_locations = 1;
         break;
       }
-      // Fallthrough...
+      [[fallthrough]];
     }
     default:
       return _.diag(SPV_ERROR_INVALID_DATA, type)
