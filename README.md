@@ -386,15 +386,8 @@ fuzzer tests.
 ### Build using Bazel
 You can also use [Bazel](https://bazel.build/) to build the project.
 
-On linux:
 ```sh
-cd <spirv-dir>
-bazel build --cxxopt=-std=c++17 :all
-```
-
-On windows:
-```sh
-bazel build --cxxopt=/std:c++17 :all
+bazel build :all
 ```
 
 ### Build a node.js package using Emscripten
