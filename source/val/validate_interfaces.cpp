@@ -14,7 +14,6 @@
 
 #include <algorithm>
 #include <vector>
-#include <iostream>
 
 #include "source/spirv_constant.h"
 #include "source/spirv_target_env.h"
