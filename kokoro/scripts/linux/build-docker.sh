@@ -164,7 +164,7 @@ elif [ $TOOL = "cmake-android-ndk" ]; then
 
   echo $(date): Starting build...
   cmake -DCMAKE_BUILD_TYPE=Release \
-        -DANDROID_NATIVE_API_LEVEL=android-16 \
+        -DANDROID_NATIVE_API_LEVEL=android-24 \
         -DANDROID_ABI="armeabi-v7a with NEON" \
         -DSPIRV_SKIP_TESTS=ON \
         -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
