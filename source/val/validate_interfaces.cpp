@@ -173,6 +173,16 @@ spv_result_t NumConsumedLocations(ValidationState_t& _, const Instruction* type,
       }
       break;
     }
+    case spv::Op::OpTypePointer: {
+      if (_.addressing_model() ==
+              spv::AddressingModel::PhysicalStorageBuffer64 &&
+          type->GetOperandAs<spv::StorageClass>(1) ==
+              spv::StorageClass::PhysicalStorageBuffer) {
+        *num_locations = 1;
+        break;
+      }
+      [[fallthrough]];
+    }
     default:
       return _.diag(SPV_ERROR_INVALID_DATA, type)
              << "Invalid type to assign a location";
@@ -207,6 +217,14 @@ uint32_t NumConsumedComponents(ValidationState_t& _, const Instruction* type) {
       // Skip the array.
       return NumConsumedComponents(_,
                                    _.FindDef(type->GetOperandAs<uint32_t>(1)));
+    case spv::Op::OpTypePointer:
+      if (_.addressing_model() ==
+              spv::AddressingModel::PhysicalStorageBuffer64 &&
+          type->GetOperandAs<spv::StorageClass>(1) ==
+              spv::StorageClass::PhysicalStorageBuffer) {
+        return 2;
+      }
+      break;
     default:
       // This is an error that is validated elsewhere.
       break;

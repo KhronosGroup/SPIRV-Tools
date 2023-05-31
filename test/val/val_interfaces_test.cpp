@@ -1599,6 +1599,29 @@ TEST_F(ValidateInterfacesTest, InvalidLocationTypePointer) {
               HasSubstr("Invalid type to assign a location"));
 }
 
+TEST_F(ValidateInterfacesTest, ValidLocationTypePhysicalStorageBufferPointer) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability PhysicalStorageBufferAddresses
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint Vertex %main "main" %var
+OpDecorate %var Location 0
+OpDecorate %var RestrictPointer
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%ptr = OpTypePointer PhysicalStorageBuffer %int
+%ptr2 = OpTypePointer Input %ptr
+%var = OpVariable %ptr2 Input
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
