@@ -1266,14 +1266,17 @@ TEST_P(FloatMatrixInstructionFoldingTest, Case) {
 
   if (inst->opcode() == spv::Op::OpCopyObject) {
     inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
-    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const analysis::Constant* result = const_mrg->GetConstantFromInst(inst);
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    const analysis::Constant* result = const_mgr->GetConstantFromInst(inst);
     EXPECT_NE(result, nullptr);
     if (result != nullptr) {
-      const std::vector<const analysis::Constant*>& matrix =
+      std::vector<const analysis::Constant*> matrix =
           result->AsMatrixConstant()->GetComponents();
       EXPECT_EQ(matrix.size(), tc.expected_result.size());
       for (size_t c = 0; c < matrix.size(); c++) {
+        if (matrix[c]->AsNullConstant() != nullptr) {
+            matrix[c] = const_mgr->GetNullCompositeConstant(matrix[c]->type());
+        }
         const analysis::VectorConstant* column_const =
             matrix[c]->AsVectorConstant();
         ASSERT_NE(column_const, nullptr);

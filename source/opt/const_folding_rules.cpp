@@ -348,9 +348,8 @@ const analysis::Constant* TransposeMatrix(const analysis::Constant* matrix,
                                           analysis::Matrix* result_type,
                                           IRContext* context) {
   analysis::ConstantManager* const_mgr = context->get_constant_mgr();
-  const analysis::NullConstant* matrix_as_null = matrix->AsNullConstant();
-  if (matrix_as_null != nullptr) {
-    matrix = const_mgr->GetNullCompositeConstant(matrix->type());
+  if (matrix->AsNullConstant() != nullptr) {
+    return const_mgr->GetNullCompositeConstant(result_type);
   }
 
   const auto& columns = matrix->AsMatrixConstant()->GetComponents();
