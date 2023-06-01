@@ -632,7 +632,7 @@ bool InlinePass::GenInlineCode(
     return true;
   });
 
-  // Inline DebugClare instructions in the callee's header.
+  // Inline DebugDeclare instructions in the callee's header.
   calleeFn->ForEachDebugInstructionsInHeader(
       [&new_blk_ptr, &callee2caller, &inlined_at_ctx, this](Instruction* inst) {
         InlineSingleInstruction(

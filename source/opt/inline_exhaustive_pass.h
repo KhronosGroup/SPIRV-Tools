@@ -38,10 +38,33 @@ class InlineExhaustivePass : public InlinePass {
 
   const char* name() const override { return "inline-entry-points-exhaustive"; }
 
+ protected:
+  // Substitute a variable for an access chain function argument. See FindAndReplaceAccessChains.
+  Pass::Status PassAccessChainByVariable(Function* func, BasicBlock::iterator call_inst_itr);
+
+  // Make a load instruction;
+  std::unique_ptr<Instruction> MakeLoad(uint32_t result_type_id, uint32_t result_id,
+    uint32_t pointer_id, Instruction const* debug_line_inst, DebugScope const& debug_scope,
+    BasicBlock* basic_block);
+
+  std::unique_ptr<Instruction> MakeStore(uint32_t pointer_id, uint32_t object_id,
+    Instruction const* debug_line_inst, DebugScope const& debug_scope, BasicBlock* basic_block);
+
  private:
   // Exhaustively inline all function calls in func as well as in
   // all code that is inlined into func. Returns the status.
   Status InlineExhaustive(Function* func);
+
+  // Substitute variables for access chain function arguments. For each function argument
+  // that is an access chain, create a new variable, copy the access chain pointee into the
+  // variable before the function call, substitute the variable in the function call,
+  // and copy the variable back into the access chain pointee after the function call.
+  //
+  // This is a workaround for NonSemantic.Shader.DebugInfo.100. DebugDeclare expects the
+  // operand variable to be a result id of an OpVariable or OpFunctionParameter. However,
+  // function arguments may contain OpAccessChains during legalization which causes problems
+  // for DebugDeclare.
+  Pass::Status FindAndReplaceAccessChains(Function* func);
 
   void Initialize();
   Pass::Status ProcessImpl();
