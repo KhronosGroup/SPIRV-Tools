@@ -341,6 +341,69 @@ ConstantFoldingRule FoldVectorTimesScalar() {
   };
 }
 
+// Returns to the constant that results from tranposing |matrix|. The result
+// will have type |result_type|, and |matrix| must exist in |context|. The
+// result constant will also exist in |context|.
+const analysis::Constant* TransposeMatrix(const analysis::Constant* matrix,
+                                          analysis::Matrix* result_type,
+                                          IRContext* context) {
+  analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+  if (matrix->AsNullConstant() != nullptr) {
+    return const_mgr->GetNullCompositeConstant(result_type);
+  }
+
+  const auto& columns = matrix->AsMatrixConstant()->GetComponents();
+  uint32_t number_of_rows = columns[0]->type()->AsVector()->element_count();
+
+  // Collect the ids of the elements in their new positions.
+  std::vector<std::vector<uint32_t>> result_elements(number_of_rows);
+  for (const analysis::Constant* column : columns) {
+    if (column->AsNullConstant()) {
+      column = const_mgr->GetNullCompositeConstant(column->type());
+    }
+    const auto& column_components = column->AsVectorConstant()->GetComponents();
+
+    for (uint32_t row = 0; row < number_of_rows; ++row) {
+      result_elements[row].push_back(
+          const_mgr->GetDefiningInstruction(column_components[row])
+              ->result_id());
+    }
+  }
+
+  // Create the constant for each row in the result, and collect the ids.
+  std::vector<uint32_t> result_columns(number_of_rows);
+  for (uint32_t col = 0; col < number_of_rows; ++col) {
+    auto* element = const_mgr->GetConstant(result_type->element_type(),
+                                           result_elements[col]);
+    result_columns[col] =
+        const_mgr->GetDefiningInstruction(element)->result_id();
+  }
+
+  // Create the matrix constant from the row ids, and return it.
+  return const_mgr->GetConstant(result_type, result_columns);
+}
+
+const analysis::Constant* FoldTranspose(
+    IRContext* context, Instruction* inst,
+    const std::vector<const analysis::Constant*>& constants) {
+  assert(inst->opcode() == spv::Op::OpTranspose);
+
+  analysis::TypeManager* type_mgr = context->get_type_mgr();
+  if (!inst->IsFloatingPointFoldingAllowed()) {
+    if (HasFloatingPoint(type_mgr->GetType(inst->type_id()))) {
+      return nullptr;
+    }
+  }
+
+  const analysis::Constant* matrix = constants[0];
+  if (matrix == nullptr) {
+    return nullptr;
+  }
+
+  auto* result_type = type_mgr->GetType(inst->type_id());
+  return TransposeMatrix(matrix, result_type->AsMatrix(), context);
+}
+
 ConstantFoldingRule FoldVectorTimesMatrix() {
   return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
@@ -1566,6 +1629,7 @@ void ConstantFoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpVectorTimesScalar].push_back(FoldVectorTimesScalar());
   rules_[spv::Op::OpVectorTimesMatrix].push_back(FoldVectorTimesMatrix());
   rules_[spv::Op::OpMatrixTimesVector].push_back(FoldMatrixTimesVector());
+  rules_[spv::Op::OpTranspose].push_back(FoldTranspose);
 
   rules_[spv::Op::OpFNegate].push_back(FoldFNegate());
   rules_[spv::Op::OpQuantizeToF16].push_back(FoldQuantizeToF16());

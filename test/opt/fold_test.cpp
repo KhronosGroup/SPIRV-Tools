@@ -156,6 +156,8 @@ OpName %main "main"
 %v2half = OpTypeVector %half 2
 %v2bool = OpTypeVector %bool 2
 %m2x2int = OpTypeMatrix %v2int 2
+%mat4v2float = OpTypeMatrix %v2float 4
+%mat2v4float = OpTypeMatrix %v4float 2
 %mat4v4float = OpTypeMatrix %v4float 4
 %mat4v4double = OpTypeMatrix %v4double 4
 %struct_v2int_int_int = OpTypeStruct %v2int %int %int
@@ -290,6 +292,7 @@ OpName %main "main"
 %v4float_1_1_1_1 = OpConstantComposite %v4float %float_1 %float_1 %float_1 %float_1
 %v4float_1_2_3_4 = OpConstantComposite %v4float %float_1 %float_2 %float_3 %float_4
 %v4float_null = OpConstantNull %v4float
+%mat2v4float_null = OpConstantNull %mat2v4float
 %mat4v4float_null = OpConstantNull %mat4v4float
 %mat4v4float_1_2_3_4 = OpConstantComposite %mat4v4float %v4float_1_2_3_4 %v4float_1_2_3_4 %v4float_1_2_3_4 %v4float_1_2_3_4
 %mat4v4float_1_2_3_4_null = OpConstantComposite %mat4v4float %v4float_1_2_3_4 %v4float_null %v4float_1_2_3_4 %v4float_null
@@ -1239,6 +1242,84 @@ INSTANTIATE_TEST_SUITE_P(TestCase, FloatVectorInstructionFoldingTest,
        2, {4.0,8.0,12.0,16.0})
 ));
 // clang-format on
+
+using FloatMatrixInstructionFoldingTest = ::testing::TestWithParam<
+    InstructionFoldingCase<std::vector<std::vector<float>>>>;
+
+TEST_P(FloatMatrixInstructionFoldingTest, Case) {
+  const auto& tc = GetParam();
+
+  // Build module.
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(nullptr, context);
+
+  // Fold the instruction to test.
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
+
+  // Make sure the instruction folded as expected.
+  EXPECT_TRUE(succeeded);
+  EXPECT_EQ(inst->opcode(), spv::Op::OpCopyObject);
+
+  if (inst->opcode() == spv::Op::OpCopyObject) {
+    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    const analysis::Constant* result = const_mgr->GetConstantFromInst(inst);
+    EXPECT_NE(result, nullptr);
+    if (result != nullptr) {
+      std::vector<const analysis::Constant*> matrix =
+          result->AsMatrixConstant()->GetComponents();
+      EXPECT_EQ(matrix.size(), tc.expected_result.size());
+      for (size_t c = 0; c < matrix.size(); c++) {
+        if (matrix[c]->AsNullConstant() != nullptr) {
+          matrix[c] = const_mgr->GetNullCompositeConstant(matrix[c]->type());
+        }
+        const analysis::VectorConstant* column_const =
+            matrix[c]->AsVectorConstant();
+        ASSERT_NE(column_const, nullptr);
+        const std::vector<const analysis::Constant*>& column =
+            column_const->GetComponents();
+        EXPECT_EQ(column.size(), tc.expected_result[c].size());
+        for (size_t r = 0; r < column.size(); r++) {
+          EXPECT_EQ(tc.expected_result[c][r], column[r]->GetFloat());
+        }
+      }
+    }
+  }
+}
+
+// clang-format off
+INSTANTIATE_TEST_SUITE_P(TestCase, FloatMatrixInstructionFoldingTest,
+::testing::Values(
+   // Test case 0: OpTranspose square null matrix
+   InstructionFoldingCase<std::vector<std::vector<float>>>(
+       Header() + "%main = OpFunction %void None %void_func\n" +
+           "%main_lab = OpLabel\n" +
+           "%2 = OpTranspose %mat4v4float %mat4v4float_null\n" +
+           "OpReturn\n" +
+           "OpFunctionEnd",
+       2, {{0.0f, 0.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f, 0.0f}}),
+   // Test case 1: OpTranspose rectangular null matrix
+   InstructionFoldingCase<std::vector<std::vector<float>>>(
+       Header() + "%main = OpFunction %void None %void_func\n" +
+           "%main_lab = OpLabel\n" +
+           "%2 = OpTranspose %mat4v2float %mat2v4float_null\n" +
+           "OpReturn\n" +
+           "OpFunctionEnd",
+       2, {{0.0f, 0.0f},{0.0f, 0.0f},{0.0f, 0.0f},{0.0f, 0.0f}}),
+   InstructionFoldingCase<std::vector<std::vector<float>>>(
+       Header() + "%main = OpFunction %void None %void_func\n" +
+           "%main_lab = OpLabel\n" +
+           "%2 = OpTranspose %mat4v4float %mat4v4float_1_2_3_4\n" +
+           "OpReturn\n" +
+           "OpFunctionEnd",
+       2, {{1.0f, 1.0f, 1.0f, 1.0f},{2.0f, 2.0f, 2.0f, 2.0f},{3.0f, 3.0f, 3.0f, 3.0f},{4.0f, 4.0f, 4.0f, 4.0f}})
+));
+// clang-format on
+
 using BooleanInstructionFoldingTest =
     ::testing::TestWithParam<InstructionFoldingCase<bool>>;
 
