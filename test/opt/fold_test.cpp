@@ -1275,7 +1275,7 @@ TEST_P(FloatMatrixInstructionFoldingTest, Case) {
       EXPECT_EQ(matrix.size(), tc.expected_result.size());
       for (size_t c = 0; c < matrix.size(); c++) {
         if (matrix[c]->AsNullConstant() != nullptr) {
-            matrix[c] = const_mgr->GetNullCompositeConstant(matrix[c]->type());
+          matrix[c] = const_mgr->GetNullCompositeConstant(matrix[c]->type());
         }
         const analysis::VectorConstant* column_const =
             matrix[c]->AsVectorConstant();
