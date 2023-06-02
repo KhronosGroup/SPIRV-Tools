@@ -525,7 +525,7 @@ OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_TestBuffer PhysicalStorageBuffe
 )" + kInputGlobals + R"(
 ; CHECK: {{%\w+}} = OpTypeFunction %void %uint %uint %uint %uint
 )" + kOutputGlobals + R"(
-; CHECK: %143 = OpConstantNull %Test_0
+; CHECK: {{%\w+}} = OpConstantNull %Test_0
 )";
   // clang-format on
 
@@ -560,6 +560,146 @@ OpFunctionEnd
 )";
 
   const std::string output_funcs = kSearchAndTest + kStreamWrite4Frag;
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_2);
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<InstBuffAddrCheckPass>(
+      defs + decorates + globals + main_func + output_funcs, true);
+}
+
+TEST_F(InstBuffAddrTest, PaddedStructLoad) {
+  // #version 450
+  // #extension GL_EXT_buffer_reference : enable
+  // #extension GL_ARB_gpu_shader_int64 : enable
+  // struct Test {
+  //   uvec3 pad_1;  // Offset 0 Size 12
+  //   double pad_2; // Offset 16 Size 8 (alignment requirement)
+  //   float a;      // Offset 24 Size 4
+  // }; // Total Size 28
+  //
+  // layout(buffer_reference, std430, buffer_reference_align = 16) buffer
+  // TestBuffer { Test test; };
+  //
+  // Test GetTest(uint64_t ptr) {
+  //   return TestBuffer(ptr).test;
+  // }
+  //
+  // void main() {
+  //   GetTest(0xe0000000);
+  // }
+
+  const std::string defs =
+      R"(
+OpCapability Shader
+OpCapability Float64
+OpCapability Int64
+OpCapability PhysicalStorageBufferAddresses
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint Vertex %main "main"
+OpSource GLSL 450
+OpSourceExtension "GL_ARB_gpu_shader_int64"
+OpSourceExtension "GL_EXT_buffer_reference"
+OpName %main "main"
+OpName %Test "Test"
+OpMemberName %Test 0 "pad_1"
+OpMemberName %Test 1 "pad_2"
+OpMemberName %Test 2 "a"
+OpName %GetTest_u641_ "GetTest(u641;"
+OpName %ptr "ptr"
+OpName %Test_0 "Test"
+OpMemberName %Test_0 0 "pad_1"
+OpMemberName %Test_0 1 "pad_2"
+OpMemberName %Test_0 2 "a"
+OpName %TestBuffer "TestBuffer"
+OpMemberName %TestBuffer 0 "test"
+OpName %param "param"
+)";
+
+  // clang-format off
+  const std::string decorates = R"(
+OpDecorate %TestBuffer Block
+OpMemberDecorate %Test_0 0 Offset 0
+OpMemberDecorate %Test_0 1 Offset 16
+OpMemberDecorate %Test_0 2 Offset 24
+OpMemberDecorate %TestBuffer 0 Offset 0
+; CHECK: OpDecorate %_runtimearr_ulong ArrayStride 8
+)" + kInputDecorations + R"(
+; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
+)" + kOutputDecorations + R"(
+; CHECK: OpDecorate %gl_VertexIndex BuiltIn VertexIndex
+; CHECK: OpDecorate %gl_InstanceIndex BuiltIn InstanceIndex
+)";
+
+  const std::string globals = R"(
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%ulong = OpTypeInt 64 0
+%_ptr_Function_ulong = OpTypePointer Function %ulong
+%uint = OpTypeInt 32 0
+%v3uint = OpTypeVector %uint 3
+%double = OpTypeFloat 64
+%float = OpTypeFloat 32
+%Test = OpTypeStruct %v3uint %double %float
+%13 = OpTypeFunction %Test %_ptr_Function_ulong
+OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_TestBuffer PhysicalStorageBuffer
+%Test_0 = OpTypeStruct %v3uint %double %float
+%TestBuffer = OpTypeStruct %Test_0
+%_ptr_PhysicalStorageBuffer_TestBuffer = OpTypePointer PhysicalStorageBuffer %TestBuffer
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%_ptr_PhysicalStorageBuffer_Test_0 = OpTypePointer PhysicalStorageBuffer %Test_0
+%_ptr_Function_Test = OpTypePointer Function %Test
+%ulong_18446744073172680704 = OpConstant %ulong 18446744073172680704
+)" + kInputGlobals + kOutputGlobals + R"(
+; CHECK: {{%\w+}} = OpConstantNull %Test_0
+)";
+  // clang-format on
+
+  const std::string main_func =
+      R"(
+%main = OpFunction %void None %3
+%5 = OpLabel
+%param = OpVariable %_ptr_Function_ulong Function
+OpStore %param %ulong_18446744073172680704
+%35 = OpFunctionCall %Test %GetTest_u641_ %param
+OpReturn
+OpFunctionEnd
+%GetTest_u641_ = OpFunction %Test None %13
+%ptr = OpFunctionParameter %_ptr_Function_ulong
+%16 = OpLabel
+%28 = OpVariable %_ptr_Function_Test Function
+%17 = OpLoad %ulong %ptr
+%21 = OpConvertUToPtr %_ptr_PhysicalStorageBuffer_TestBuffer %17
+%25 = OpAccessChain %_ptr_PhysicalStorageBuffer_Test_0 %21 %int_0
+%26 = OpLoad %Test_0 %25 Aligned 16
+%29 = OpCopyLogical %Test %26
+; CHECK-NOT: %30 = OpLoad %Test %28
+; CHECK-NOT: %26 = OpLoad %Test_0 %25 Aligned 16
+; CHECK-NOT: %29 = OpCopyLogical %Test %26
+; CHECK: {{%\w+}} = OpConvertPtrToU %ulong %25
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_buff_addr_search_and_test {{%\w+}} %uint_28
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %Test_0 %25 Aligned 16
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpUConvert %uint {{%\w+}}
+; CHECK: {{%\w+}} = OpShiftRightLogical %ulong {{%\w+}} %uint_32
+; CHECK: {{%\w+}} = OpUConvert %uint {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %void %inst_buff_addr_stream_write_4 %uint_62 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: [[phi_result:%\w+]] = OpPhi %Test_0 {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: %29 = OpCopyLogical %Test [[phi_result]]
+OpStore %28 %29
+%30 = OpLoad %Test %28
+OpReturnValue %30
+OpFunctionEnd
+)";
+
+  const std::string output_funcs = kSearchAndTest + kStreamWrite4Vert;
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
@@ -609,7 +749,8 @@ OpDecorate %_arr_int_uint_4 ArrayStride 16
 OpMemberDecorate %bufStruct 0 Offset 0
 OpDecorate %bufStruct Block
 OpDecorate %u_info DescriptorSet 0
-OpDecorate %u_info Binding 0)" + kInputDecorations + kOutputDecorations + R"(
+OpDecorate %u_info Binding 0
+)" + kInputDecorations + kOutputDecorations + R"(
 %void = OpTypeVoid
 %3 = OpTypeFunction %void
 %int = OpTypeInt 32 1
@@ -629,7 +770,8 @@ OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_bufStruct PhysicalStorageBuffer
 %bool = OpTypeBool
 %_ptr_Uniform__ptr_PhysicalStorageBuffer_bufStruct = OpTypePointer Uniform %_ptr_PhysicalStorageBuffer_bufStruct
 %int_n559035791 = OpConstant %int -559035791
-%_ptr_PhysicalStorageBuffer_int = OpTypePointer PhysicalStorageBuffer %int)" + kInputGlobals + kOutputGlobals + R"(
+%_ptr_PhysicalStorageBuffer_int = OpTypePointer PhysicalStorageBuffer %int
+)" + kInputGlobals + kOutputGlobals + R"(
 %main = OpFunction %void None %3
 %5 = OpLabel
 %i = OpVariable %_ptr_Function_int Function
@@ -672,6 +814,131 @@ OpBranch %10
 %12 = OpLabel
 OpReturn
 OpFunctionEnd)" + kSearchAndTest + kStreamWrite4Vert;
+  // clang-format on
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_2);
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<InstBuffAddrCheckPass>(text, true, 7, 23);
+}
+
+TEST_F(InstBuffAddrTest, UVec3ScalarAddressOOB) {
+  // clang-format off
+  // #version 450
+  //    #extension GL_EXT_buffer_reference : enable
+  //    #extension GL_EXT_scalar_block_layout : enable
+  //    layout(buffer_reference, std430, scalar) readonly buffer IndexBuffer
+  //    {
+  //        uvec3 indices[];
+  //    };
+  //    layout(set = 0, binding = 0) uniform ufoo {
+  //        IndexBuffer data;
+  //        int nReads;
+  //    } u_info;
+  //    void main() {
+  //        uvec3 readvec;
+  //        for (int i=0; i < u_info.nReads; ++i) {
+  //            readvec = u_info.data.indices[i];
+  //        }
+  //    }
+  const std::string text = R"(
+OpCapability Shader
+OpCapability PhysicalStorageBufferAddresses
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint Vertex %main "main" %u_info
+OpSource GLSL 450
+OpSourceExtension "GL_EXT_buffer_reference"
+OpSourceExtension "GL_EXT_scalar_block_layout"
+OpName %main "main"
+OpName %i "i"
+OpName %ufoo "ufoo"
+OpMemberName %ufoo 0 "data"
+OpMemberName %ufoo 1 "nReads"
+OpName %IndexBuffer "IndexBuffer"
+OpMemberName %IndexBuffer 0 "indices"
+OpName %u_info "u_info"
+OpName %readvec "readvec"
+OpMemberDecorate %ufoo 0 Offset 0
+OpMemberDecorate %ufoo 1 Offset 8
+OpDecorate %ufoo Block
+OpDecorate %_runtimearr_v3uint ArrayStride 12
+OpMemberDecorate %IndexBuffer 0 NonWritable
+OpMemberDecorate %IndexBuffer 0 Offset 0
+OpDecorate %IndexBuffer Block
+OpDecorate %u_info DescriptorSet 0
+OpDecorate %u_info Binding 0
+)" + kInputDecorations + kOutputDecorations + R"(
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+%int_0 = OpConstant %int 0
+OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_IndexBuffer PhysicalStorageBuffer
+%ufoo = OpTypeStruct %_ptr_PhysicalStorageBuffer_IndexBuffer %int
+%uint = OpTypeInt 32 0
+%v3uint = OpTypeVector %uint 3
+%_runtimearr_v3uint = OpTypeRuntimeArray %v3uint
+%IndexBuffer = OpTypeStruct %_runtimearr_v3uint
+%_ptr_PhysicalStorageBuffer_IndexBuffer = OpTypePointer PhysicalStorageBuffer %IndexBuffer
+%_ptr_Uniform_ufoo = OpTypePointer Uniform %ufoo
+%u_info = OpVariable %_ptr_Uniform_ufoo Uniform
+%int_1 = OpConstant %int 1
+%_ptr_Uniform_int = OpTypePointer Uniform %int
+%bool = OpTypeBool
+)" + kInputGlobals + kOutputGlobals + R"(
+%_ptr_Function_v3uint = OpTypePointer Function %v3uint
+%_ptr_Uniform__ptr_PhysicalStorageBuffer_IndexBuffer = OpTypePointer Uniform %_ptr_PhysicalStorageBuffer_IndexBuffer
+%_ptr_PhysicalStorageBuffer_v3uint = OpTypePointer PhysicalStorageBuffer %v3uint
+%main = OpFunction %void None %3
+%5 = OpLabel
+%i = OpVariable %_ptr_Function_int Function
+%readvec = OpVariable %_ptr_Function_v3uint Function
+OpStore %i %int_0
+OpBranch %10
+%10 = OpLabel
+OpLoopMerge %12 %13 None
+OpBranch %14
+%14 = OpLabel
+%15 = OpLoad %int %i
+%26 = OpAccessChain %_ptr_Uniform_int %u_info %int_1
+%27 = OpLoad %int %26
+%29 = OpSLessThan %bool %15 %27
+OpBranchConditional %29 %11 %12
+%11 = OpLabel
+%33 = OpAccessChain %_ptr_Uniform__ptr_PhysicalStorageBuffer_IndexBuffer %u_info %int_0
+%34 = OpLoad %_ptr_PhysicalStorageBuffer_IndexBuffer %33
+%35 = OpLoad %int %i
+%37 = OpAccessChain %_ptr_PhysicalStorageBuffer_v3uint %34 %int_0 %35
+%38 = OpLoad %v3uint %37 Aligned 4
+OpStore %readvec %38
+; CHECK-NOT: %38 = OpLoad %v3uint %37 Aligned 4
+; CHECK-NOT: OpStore %readvec %38
+; CHECK: {{%\w+}} = OpConvertPtrToU %ulong %37
+; CHECK: [[test_result:%\w+]] = OpFunctionCall %bool %inst_buff_addr_search_and_test {{%\w+}} %uint_12
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional [[test_result]] {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %v3uint %37 Aligned 4
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpUConvert %uint {{%\w+}}
+; CHECK: {{%\w+}} = OpShiftRightLogical %ulong {{%\w+}} %uint_32
+; CHECK: {{%\w+}} = OpUConvert %uint {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %void %inst_buff_addr_stream_write_4 %uint_66 %uint_2 {{%\w+}} {{%\w+}}
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: [[phi_result:%\w+]] = OpPhi %v3uint {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: OpStore %readvec [[phi_result]]
+OpBranch %13
+%13 = OpLabel
+%39 = OpLoad %int %i
+%40 = OpIAdd %int %39 %int_1
+OpStore %i %40
+OpBranch %10
+%12 = OpLabel
+OpReturn
+OpFunctionEnd
+)" + kSearchAndTest + kStreamWrite4Vert;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
