@@ -2288,7 +2288,9 @@ void Differ::MatchTypeIds() {
         case spv::Op::OpTypeVoid:
         case spv::Op::OpTypeBool:
         case spv::Op::OpTypeSampler:
-          // void, bool and sampler are unique, match them.
+        case spv::Op::OpTypeAccelerationStructureNV:
+        case spv::Op::OpTypeRayQueryKHR:
+          // the above types have no operands and are unique, match them.
           return true;
         case spv::Op::OpTypeInt:
         case spv::Op::OpTypeFloat:
