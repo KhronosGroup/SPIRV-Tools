@@ -108,10 +108,6 @@ class IdMap {
     return inst_map_.find(from_inst) != inst_map_.end();
   }
 
-  // Map any ids in src and dst that have not been mapped to new ids in dst and
-  // src respectively.
-  void MapUnmatchedIds(IdMap& other_way);
-
   // Some instructions don't have result ids.  Those are mapped by pointer.
   void MapInsts(const opt::Instruction* from_inst,
                 const opt::Instruction* to_inst) {
@@ -123,6 +119,12 @@ class IdMap {
   }
 
   uint32_t IdBound() const { return static_cast<uint32_t>(id_map_.size()); }
+
+  // Generate a fresh id in this mapping's domain.
+  uint32_t MakeFreshId() {
+    id_map_.push_back(0);
+    return static_cast<uint32_t>(id_map_.size()) - 1;
+  }
 
  private:
   // Given an id, returns the corresponding id in the other module, or 0 if not
@@ -162,8 +164,11 @@ class SrcDstIdMap {
   }
 
   // Map any ids in src and dst that have not been mapped to new ids in dst and
-  // src respectively.
-  void MapUnmatchedIds();
+  // src respectively. Use src_insn_defined and dst_insn_defined to ignore ids
+  // that are simply never defined. (Since we assume the inputs are valid
+  // SPIR-V, this implies they are also never used.)
+  void MapUnmatchedIds(std::function<bool(uint32_t)> src_insn_defined,
+                       std::function<bool(uint32_t)> dst_insn_defined);
 
   // Some instructions don't have result ids.  Those are mapped by pointer.
   void MapInsts(const opt::Instruction* src_inst,
@@ -212,6 +217,11 @@ struct IdInstructions {
   }
 
   void MapIdToInstruction(uint32_t id, const opt::Instruction* inst);
+
+  // Return true if id is mapped to any instruction, false otherwise.
+  bool IsDefined(uint32_t id) {
+    return id < inst_map_.size() && inst_map_[id] != nullptr;
+  }
 
   void MapIdsToInstruction(
       opt::IteratorRange<opt::Module::const_inst_iterator> section);
@@ -567,34 +577,25 @@ class Differ {
   FunctionMap dst_funcs_;
 };
 
-void IdMap::MapUnmatchedIds(IdMap& other_way) {
-  const uint32_t src_id_bound = static_cast<uint32_t>(id_map_.size());
-  const uint32_t dst_id_bound = static_cast<uint32_t>(other_way.id_map_.size());
-
-  uint32_t next_src_id = src_id_bound;
-  uint32_t next_dst_id = dst_id_bound;
+void SrcDstIdMap::MapUnmatchedIds(
+    std::function<bool(uint32_t)> src_insn_defined,
+    std::function<bool(uint32_t)> dst_insn_defined) {
+  const uint32_t src_id_bound = static_cast<uint32_t>(src_to_dst_.IdBound());
+  const uint32_t dst_id_bound = static_cast<uint32_t>(dst_to_src_.IdBound());
 
   for (uint32_t src_id = 1; src_id < src_id_bound; ++src_id) {
-    if (!IsMapped(src_id)) {
-      MapIds(src_id, next_dst_id);
-
-      other_way.id_map_.push_back(0);
-      other_way.MapIds(next_dst_id++, src_id);
+    if (!src_to_dst_.IsMapped(src_id) && src_insn_defined(src_id)) {
+      uint32_t fresh_dst_id = dst_to_src_.MakeFreshId();
+      MapIds(src_id, fresh_dst_id);
     }
   }
 
   for (uint32_t dst_id = 1; dst_id < dst_id_bound; ++dst_id) {
-    if (!other_way.IsMapped(dst_id)) {
-      id_map_.push_back(0);
-      MapIds(next_src_id, dst_id);
-
-      other_way.MapIds(dst_id, next_src_id++);
+    if (!dst_to_src_.IsMapped(dst_id) && dst_insn_defined(dst_id)) {
+      uint32_t fresh_src_id = src_to_dst_.MakeFreshId();
+      MapIds(fresh_src_id, dst_id);
     }
   }
-}
-
-void SrcDstIdMap::MapUnmatchedIds() {
-  src_to_dst_.MapUnmatchedIds(dst_to_src_);
 }
 
 void IdInstructions::MapIdToInstruction(uint32_t id,
@@ -2735,7 +2736,9 @@ opt::Instruction Differ::ToMappedSrcIds(const opt::Instruction& dst_inst) {
 }
 
 spv_result_t Differ::Output() {
-  id_map_.MapUnmatchedIds();
+  id_map_.MapUnmatchedIds(
+      [this](uint32_t src_id) { return src_id_to_.IsDefined(src_id); },
+      [this](uint32_t dst_id) { return dst_id_to_.IsDefined(dst_id); });
   src_id_to_.inst_map_.resize(id_map_.SrcToDstMap().IdBound(), nullptr);
   dst_id_to_.inst_map_.resize(id_map_.DstToSrcMap().IdBound(), nullptr);
 
