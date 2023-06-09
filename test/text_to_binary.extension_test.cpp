@@ -1247,5 +1247,22 @@ INSTANTIATE_TEST_SUITE_P(
              MakeInstruction(spv::Op::OpStencilAttachmentReadEXT, {1, 2, 3})},
         })));
 
+// SPV_KHR_maximal_reconvergence
+
+INSTANTIATE_TEST_SUITE_P(
+    SPV_KHR_maximal_reconvergence, ExtensionRoundTripTest,
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_5, SPV_ENV_VULKAN_1_0,
+               SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_2, SPV_ENV_VULKAN_1_3),
+        ValuesIn(std::vector<AssemblyCase>{
+            {"OpExtension \"SPV_KHR_maximal_reconvergence\"\n",
+             MakeInstruction(spv::Op::OpExtension,
+                             MakeVector("SPV_KHR_maximal_reconvergence"))},
+            {"OpExecutionMode %1 MaximallyReconvergesKHR\n",
+             MakeInstruction(
+                 spv::Op::OpExecutionMode,
+                 {1, (uint32_t)spv::ExecutionMode::MaximallyReconvergesKHR})},
+        })));
+
 }  // namespace
 }  // namespace spvtools
