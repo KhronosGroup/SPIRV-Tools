@@ -63,8 +63,7 @@ TEST(DiffTest, RayQueryTypes) {
   constexpr char kDiff[] = R"( ; SPIR-V
  ; Version: 1.6
  ; Generator: Khronos SPIR-V Tools Assembler; 0
--; Bound: 45
-+; Bound: 83
+ ; Bound: 45
  ; Schema: 0
  OpCapability RayQueryKHR
  OpCapability Shader
@@ -123,8 +122,7 @@ OpFunctionEnd
   constexpr char kDiff[] = R"( ; SPIR-V
  ; Version: 1.6
  ; Generator: Khronos SPIR-V Tools Assembler; 0
--; Bound: 45
-+; Bound: 83
+ ; Bound: 45
  ; Schema: 0
  OpCapability RayQueryKHR
  OpCapability Shader
