@@ -14,6 +14,7 @@
 
 // Test capability dependencies for enums.
 
+#include <iostream>
 #include <tuple>
 #include <vector>
 
@@ -21,6 +22,9 @@
 #include "source/assembly_grammar.h"
 #include "source/enum_set.h"
 #include "source/operand.h"
+#include "source/spirv_target_env.h"
+#include "source/table.h"
+#include "spirv-tools/libspirv.h"
 #include "test/unit_spirv.h"
 
 namespace spvtools {
@@ -33,23 +37,26 @@ using ::testing::TestWithParam;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
-// Emits a CapabilitySet to the given ostream, returning the ostream.
-inline std::ostream& operator<<(std::ostream& out, const CapabilitySet& cs) {
-  out << "CapabilitySet{";
-  auto ctx = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
-  spvtools::AssemblyGrammar grammar(ctx);
-  bool first = true;
-  for (auto c : cs) {
-    if (!first) {
-      out << " ";
-      first = false;
-    }
-    out << grammar.lookupOperandName(SPV_OPERAND_TYPE_CAPABILITY, uint32_t(c))
-        << "(" << uint32_t(c) << ")";
+// Emits a CapabilitySet to the given output stream.
+std::string show(const CapabilitySet& cs) {
+  std::ostringstream outs;
+  if (!cs.IsEmpty()) {
+    // The specific environment doesn't matter.
+    auto context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
+    auto grammar = spvtools::AssemblyGrammar(context);
+    spv_operand_desc desc;
+    outs << "{";
+    cs.ForEach([&](spv::Capability cap) {
+      const uint32_t cap_int = static_cast<uint32_t>(cap);
+      if (grammar.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
+                                static_cast<uint32_t>(cap), &desc)) {
+        outs << " " << desc->name;
+      }
+    });
+    spvContextDestroy(context);
+    outs << "}";
   }
-  spvContextDestroy(ctx);
-  out << "}";
-  return out;
+  return outs.str();
 }
 
 // A test case for mapping an enum to a capability mask.
@@ -58,12 +65,21 @@ struct EnumCapabilityCase {
   uint32_t value;
   CapabilitySet expected_capabilities;
 };
-// Emits an EnumCapabilityCase to the ostream, returning the ostream.
-inline std::ostream& operator<<(std::ostream& out,
-                                const EnumCapabilityCase& ecc) {
-  out << "EnumCapabilityCase{ " << spvOperandTypeStr(ecc.type) << "("
-      << unsigned(ecc.type) << "), " << ecc.value << ", "
-      << ecc.expected_capabilities << "}";
+
+// Emits an EnumCapabilityCase to the given output stream. This is used
+// to emit failure cases when they occur, which helps debug tests.
+inline std::ostream& operator<<(std::ostream& out, EnumCapabilityCase e) {
+  out << "{" << spvOperandTypeStr(e.type) << " " << e.value << " "
+      << show(e.expected_capabilities) << " }";
+  return out;
+}
+
+using EnvEnumCapabilityCase = std::tuple<spv_target_env, EnumCapabilityCase>;
+// Emits an EnvEnumCapabilityCase to the given output stream. This is used
+// to emit failure cases when they occur, which helps debug tests.
+inline std::ostream& operator<<(std::ostream& out, EnvEnumCapabilityCase e) {
+  out << "EnvEnumCapabilityTest{ " << spvLogStringForEnv(std::get<0>(e)) << " "
+      << std::get<1>(e) << " }";
   return out;
 }
 
@@ -85,7 +101,8 @@ TEST_P(EnumCapabilityTest, Sample) {
 
   EXPECT_THAT(ElementsIn(cap_set),
               Eq(ElementsIn(std::get<1>(GetParam()).expected_capabilities)))
-      << " enum value " << std::get<1>(GetParam()).value;
+      << " capability value " << std::get<1>(GetParam()).value << " "
+      << show(cap_set);
   spvContextDestroy(context);
 }
 
