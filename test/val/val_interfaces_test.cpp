@@ -1570,6 +1570,58 @@ OpFunctionEnd
           "Interface struct has no Block decoration but has BuiltIn members."));
 }
 
+TEST_F(ValidateInterfacesTest, InvalidLocationTypePointer) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical Simple
+               OpEntryPoint Vertex %1 "Aiqn0" %2 %3
+               OpDecorate %2 Location 0
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Private_void = OpTypePointer Private %void
+       %uint = OpTypeInt 32 0
+%uint_4278132784 = OpConstant %uint 4278132784
+%_arr__ptr_Private_void_uint_4278132784 = OpTypeArray %_ptr_Private_void %uint_4278132784
+%_ptr_Output__arr__ptr_Private_void_uint_4278132784 = OpTypePointer Output %_arr__ptr_Private_void_uint_4278132784
+          %2 = OpVariable %_ptr_Output__arr__ptr_Private_void_uint_4278132784 Output
+%_ptr_Output__ptr_Private_void = OpTypePointer Output %_ptr_Private_void
+          %3 = OpVariable %_ptr_Output__arr__ptr_Private_void_uint_4278132784 Output
+          %1 = OpFunction %void None %5
+         %15 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid type to assign a location"));
+}
+
+TEST_F(ValidateInterfacesTest, ValidLocationTypePhysicalStorageBufferPointer) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability PhysicalStorageBufferAddresses
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint Vertex %main "main" %var
+OpDecorate %var Location 0
+OpDecorate %var RestrictPointer
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%ptr = OpTypePointer PhysicalStorageBuffer %int
+%ptr2 = OpTypePointer Input %ptr
+%var = OpVariable %ptr2 Input
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

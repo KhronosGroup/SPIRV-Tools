@@ -4,6 +4,7 @@
 compile_commands.json
 /build*/
 /buildtools/
+/external/abseil_cpp/
 /external/googletest
 /external/SPIRV-Headers
 /external/spirv-headers

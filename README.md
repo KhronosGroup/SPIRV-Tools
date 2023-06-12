@@ -292,16 +292,18 @@ For some kinds of development, you may need the latest sources from the third-pa
     git clone https://github.com/google/googletest.git          spirv-tools/external/googletest
     git clone https://github.com/google/effcee.git              spirv-tools/external/effcee
     git clone https://github.com/google/re2.git                 spirv-tools/external/re2
+    git clone https://github.com/abseil/abseil-cpp.git          spirv-tools/external/abseil_cpp
 
 #### Dependency on Effcee
 
 Some tests depend on the [Effcee][effcee] library for stateful matching.
-Effcee itself depends on [RE2][re2].
+Effcee itself depends on [RE2][re2], and RE2 depends on [Abseil][abseil-cpp].
 
 * If SPIRV-Tools is configured as part of a larger project that already uses
   Effcee, then that project should include Effcee before SPIRV-Tools.
-* Otherwise, SPIRV-Tools expects Effcee sources to appear in `external/effcee`
-  and RE2 sources to appear in `external/re2`.
+* Otherwise, SPIRV-Tools expects Effcee sources to appear in `external/effcee`,
+  RE2 sources to appear in `external/re2`, and Abseil sources to appear in 
+  `external/abseil_cpp`.
 
 ### Source code organization
 
@@ -313,6 +315,9 @@ Effcee itself depends on [RE2][re2].
 * `external/re2`: Location of [RE2][re2] sources, if the `re2` library is not already
   configured by an enclosing project.
   (The Effcee project already requires RE2.)
+* `external/abseil_cpp`: Location of [Abseil][abseil-cpp] sources, if Abseil is
+   not already configured by an enclosing project.
+  (The RE2 project already requires Abseil.)
 * `include/`: API clients should add this directory to the include search path
 * `external/spirv-headers`: Intended location for
   [SPIR-V headers][spirv-headers], not provided
@@ -381,15 +386,8 @@ fuzzer tests.
 ### Build using Bazel
 You can also use [Bazel](https://bazel.build/) to build the project.
 
-On linux:
 ```sh
-cd <spirv-dir>
-bazel build --cxxopt=-std=c++17 :all
-```
-
-On windows:
-```sh
-bazel build --cxxopt=/std:c++17 :all
+bazel build :all
 ```
 
 ### Build a node.js package using Emscripten
@@ -798,6 +796,7 @@ limitations under the License.
 [googletest-issue-610]: https://github.com/google/googletest/issues/610
 [effcee]: https://github.com/google/effcee
 [re2]: https://github.com/google/re2
+[abseil-cpp]: https://github.com/abseil/abseil-cpp
 [CMake]: https://cmake.org/
 [cpp-style-guide]: https://google.github.io/styleguide/cppguide.html
 [clang-sanitizers]: http://clang.llvm.org/docs/UsersManual.html#controlling-code-generation

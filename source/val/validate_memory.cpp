@@ -442,6 +442,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       storage_class != spv::StorageClass::CrossWorkgroup &&
       storage_class != spv::StorageClass::Private &&
       storage_class != spv::StorageClass::Function &&
+      storage_class != spv::StorageClass::UniformConstant &&
       storage_class != spv::StorageClass::RayPayloadKHR &&
       storage_class != spv::StorageClass::IncomingRayPayloadKHR &&
       storage_class != spv::StorageClass::HitAttributeKHR &&
@@ -475,8 +476,8 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
                   "can only be used with non-externally visible shader Storage "
                   "Classes: Workgroup, CrossWorkgroup, Private, Function, "
                   "Input, Output, RayPayloadKHR, IncomingRayPayloadKHR, "
-                  "HitAttributeKHR, CallableDataKHR, or "
-                  "IncomingCallableDataKHR";
+                  "HitAttributeKHR, CallableDataKHR, "
+                  "IncomingCallableDataKHR, or UniformConstant";
       }
     }
   }
