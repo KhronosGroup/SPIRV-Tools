@@ -650,13 +650,13 @@ using BinaryScalarFoldingRule = std::function<const analysis::Constant*(
     const analysis::Type* result_type, const analysis::Constant* a,
     const analysis::Constant* b, analysis::ConstantManager*)>;
 
-// Returns a |ConstantFoldingRule| that folds unary floating point scalar ops
-// using |scalar_rule| and unary float point vectors ops by applying
+// Returns a |ConstantFoldingRule| that folds unary scalar ops
+// using |scalar_rule| and unary vectors ops by applying
 // |scalar_rule| to the elements of the vector.  The |ConstantFoldingRule|
 // that is returned assumes that |constants| contains 1 entry.  If they are
 // not |nullptr|, then their type is either |Float| or |Integer| or a |Vector|
 // whose element type is |Float| or |Integer|.
-ConstantFoldingRule FoldFPUnaryOp(UnaryScalarFoldingRule scalar_rule) {
+ConstantFoldingRule FoldUnaryOp(UnaryScalarFoldingRule scalar_rule) {
   return [scalar_rule](IRContext* context, Instruction* inst,
                        const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
@@ -664,10 +664,6 @@ ConstantFoldingRule FoldFPUnaryOp(UnaryScalarFoldingRule scalar_rule) {
     analysis::TypeManager* type_mgr = context->get_type_mgr();
     const analysis::Type* result_type = type_mgr->GetType(inst->type_id());
     const analysis::Vector* vector_type = result_type->AsVector();
-
-    if (!inst->IsFloatingPointFoldingAllowed()) {
-      return nullptr;
-    }
 
     const analysis::Constant* arg =
         (inst->opcode() == spv::Op::OpExtInst) ? constants[1] : constants[0];
@@ -700,6 +696,24 @@ ConstantFoldingRule FoldFPUnaryOp(UnaryScalarFoldingRule scalar_rule) {
     } else {
       return scalar_rule(result_type, arg, const_mgr);
     }
+  };
+}
+// Returns a |ConstantFoldingRule| that folds unary floating point scalar ops
+// using |scalar_rule| and unary float point vectors ops by applying
+// |scalar_rule| to the elements of the vector.  The |ConstantFoldingRule|
+// that is returned assumes that |constants| contains 1 entry.  If they are
+// not |nullptr|, then their type is either |Float| or |Integer| or a |Vector|
+// whose element type is |Float| or |Integer|.
+ConstantFoldingRule FoldFPUnaryOp(UnaryScalarFoldingRule scalar_rule) {
+  auto folding_rule = FoldUnaryOp(scalar_rule);
+  return [folding_rule](IRContext* context, Instruction* inst,
+                       const std::vector<const analysis::Constant*>& constants)
+             -> const analysis::Constant* {
+    if (!inst->IsFloatingPointFoldingAllowed()) {
+      return nullptr;
+    }
+
+    return folding_rule(context, inst, constants);
   };
 }
 
