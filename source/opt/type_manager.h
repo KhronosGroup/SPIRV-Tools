@@ -156,6 +156,11 @@ class TypeManager {
     return GetRegisteredType(&int_type);
   }
 
+  Type* GetSInt64Type() {
+    Integer int_type(64, true);
+    return GetRegisteredType(&int_type);
+  }
+
   uint32_t GetSIntTypeId() { return GetTypeInstruction(GetSIntType()); }
 
   Type* GetFloatType() {

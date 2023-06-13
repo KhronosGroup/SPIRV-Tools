@@ -88,6 +88,38 @@ const analysis::Constant* NegateFPConst(const analysis::Type* result_type,
   return nullptr;
 }
 
+// Returns a constants with the value |-val| of the given type.  Only works for
+// 32-bit and 64-bit signed integer types.  Returns |nullptr| if an error
+// occurs.
+const analysis::Constant* NegateIntConst(const analysis::Type* result_type,
+                                         const analysis::Constant* val,
+                                         analysis::ConstantManager* const_mgr) {
+  const analysis::Integer* int_type = result_type->AsInteger();
+  assert(int_type != nullptr);
+
+  if (!int_type->IsSigned()) {
+    return nullptr;
+  }
+
+  if (val->AsNullConstant()) {
+    return val;
+  }
+
+  switch (int_type->width()) {
+    case 32: {
+      int32_t v = val->AsIntConstant()->GetS32();
+      return const_mgr->GetSIntConst(-v);
+    }
+    case 64: {
+      int64_t v = val->AsIntConstant()->GetS64();
+      return const_mgr->GetSInt64Const(-v);
+    }
+    default:
+      return nullptr;
+  }
+  return nullptr;
+}
+
 // Folds an OpcompositeExtract where input is a composite constant.
 ConstantFoldingRule FoldExtractWithConstants() {
   return [](IRContext* context, Instruction* inst,
@@ -707,7 +739,7 @@ ConstantFoldingRule FoldUnaryOp(UnaryScalarFoldingRule scalar_rule) {
 ConstantFoldingRule FoldFPUnaryOp(UnaryScalarFoldingRule scalar_rule) {
   auto folding_rule = FoldUnaryOp(scalar_rule);
   return [folding_rule](IRContext* context, Instruction* inst,
-                       const std::vector<const analysis::Constant*>& constants)
+                        const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
     if (!inst->IsFloatingPointFoldingAllowed()) {
       return nullptr;
@@ -1119,18 +1151,8 @@ ConstantFoldingRule FoldOpDotWithConstants() {
   };
 }
 
-// This function defines a |UnaryScalarFoldingRule| that subtracts the constant
-// from zero.
-UnaryScalarFoldingRule FoldFNegateOp() {
-  return [](const analysis::Type* result_type, const analysis::Constant* a,
-            analysis::ConstantManager* const_mgr) -> const analysis::Constant* {
-    assert(result_type != nullptr && a != nullptr);
-    assert(result_type == a->type());
-    return NegateFPConst(result_type, a, const_mgr);
-  };
-}
-
-ConstantFoldingRule FoldFNegate() { return FoldFPUnaryOp(FoldFNegateOp()); }
+ConstantFoldingRule FoldFNegate() { return FoldFPUnaryOp(NegateFPConst); }
+ConstantFoldingRule FoldSNegate() { return FoldUnaryOp(NegateIntConst); }
 
 ConstantFoldingRule FoldFClampFeedingCompare(spv::Op cmp_opcode) {
   return [cmp_opcode](IRContext* context, Instruction* inst,
@@ -1646,6 +1668,7 @@ void ConstantFoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpTranspose].push_back(FoldTranspose);
 
   rules_[spv::Op::OpFNegate].push_back(FoldFNegate());
+  rules_[spv::Op::OpSNegate].push_back(FoldSNegate());
   rules_[spv::Op::OpQuantizeToF16].push_back(FoldQuantizeToF16());
 
   // Add rules for GLSLstd450

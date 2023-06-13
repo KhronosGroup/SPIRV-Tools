@@ -481,10 +481,20 @@ const Constant* ConstantManager::GetDoubleConst(double val) {
   return c;
 }
 
-uint32_t ConstantManager::GetSIntConstId(int32_t val) {
+const Constant* ConstantManager::GetSIntConst(int32_t val) {
   Type* sint_type = context()->get_type_mgr()->GetSIntType();
-  const Constant* c = GetConstant(sint_type, {static_cast<uint32_t>(val)});
+  return GetConstant(sint_type, {static_cast<uint32_t>(val)});
+}
+
+uint32_t ConstantManager::GetSIntConstId(int32_t val) {
+  const Constant* c = GetSIntConst(val);
   return GetDefiningInstruction(c)->result_id();
+}
+
+const Constant* ConstantManager::GetSInt64Const(int64_t val) {
+  Type* sint_type = context()->get_type_mgr()->GetSInt64Type();
+  return GetConstant(sint_type, {static_cast<uint32_t>(val >> 32),
+                                 static_cast<uint32_t>(val)});
 }
 
 uint32_t ConstantManager::GetUIntConstId(uint32_t val) {
