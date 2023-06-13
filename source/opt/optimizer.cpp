@@ -251,9 +251,7 @@ Optimizer& Optimizer::RegisterSizePasses(bool preserve_interface) {
       .RegisterPass(CreateCFGCleanupPass());
 }
 
-Optimizer& Optimizer::RegisterSizePasses() {
-  return RegisterSizePasses(false);
-}
+Optimizer& Optimizer::RegisterSizePasses() { return RegisterSizePasses(false); }
 
 bool Optimizer::RegisterPassesFromFlags(const std::vector<std::string>& flags) {
   for (const auto& flag : flags) {

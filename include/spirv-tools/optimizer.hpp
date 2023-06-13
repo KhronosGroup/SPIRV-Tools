@@ -100,7 +100,8 @@ class Optimizer {
   //
   // If |preserve_interface| is true, all non-io variables in the entry point
   // interface are considered live and are not eliminated.
-  // |preserve_interface| should be true if HLSL is generated from the SPIR-V bytecode.
+  // |preserve_interface| should be true if HLSL is generated
+  // from the SPIR-V bytecode.
   Optimizer& RegisterPerformancePasses();
   Optimizer& RegisterPerformancePasses(bool preserve_interface);
 
@@ -110,7 +111,8 @@ class Optimizer {
   //
   // If |preserve_interface| is true, all non-io variables in the entry point
   // interface are considered live and are not eliminated.
-  // |preserve_interface| should be true if HLSL is generated from the SPIR-V bytecode.
+  // |preserve_interface| should be true if HLSL is generated
+  // from the SPIR-V bytecode.
   Optimizer& RegisterSizePasses();
   Optimizer& RegisterSizePasses(bool preserve_interface);
 
@@ -125,7 +127,8 @@ class Optimizer {
   //
   // If |preserve_interface| is true, all non-io variables in the entry point
   // interface are considered live and are not eliminated.
-  // |preserve_interface| should be true if HLSL is generated from the SPIR-V bytecode.
+  // |preserve_interface| should be true if HLSL is generated
+  // from the SPIR-V bytecode.
   Optimizer& RegisterLegalizationPasses();
   Optimizer& RegisterLegalizationPasses(bool preserve_interface);
 
