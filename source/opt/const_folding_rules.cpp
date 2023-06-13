@@ -108,10 +108,12 @@ const analysis::Constant* NegateIntConst(const analysis::Type* result_type,
   switch (int_type->width()) {
     case 32: {
       int32_t v = val->AsIntConstant()->GetS32();
-      return const_mgr->GetSIntConst(-v);
+      v = (v == INT32_MIN ? v : -v);  // Avoid undefined behaviour.
+      return const_mgr->GetSIntConst(v);
     }
     case 64: {
       int64_t v = val->AsIntConstant()->GetS64();
+      v = (v == INT64_MIN ? v : -v);  // Avoid undefined behaviour.
       return const_mgr->GetSInt64Const(-v);
     }
     default:
@@ -692,6 +694,7 @@ ConstantFoldingRule FoldUnaryOp(UnaryScalarFoldingRule scalar_rule) {
   return [scalar_rule](IRContext* context, Instruction* inst,
                        const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
+
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
     const analysis::Type* result_type = type_mgr->GetType(inst->type_id());
@@ -730,6 +733,7 @@ ConstantFoldingRule FoldUnaryOp(UnaryScalarFoldingRule scalar_rule) {
     }
   };
 }
+
 // Returns a |ConstantFoldingRule| that folds unary floating point scalar ops
 // using |scalar_rule| and unary float point vectors ops by applying
 // |scalar_rule| to the elements of the vector.  The |ConstantFoldingRule|
