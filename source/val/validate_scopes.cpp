@@ -32,6 +32,7 @@ bool IsValidScope(uint32_t scope) {
     case spv::Scope::Invocation:
     case spv::Scope::QueueFamilyKHR:
     case spv::Scope::ShaderCallKHR:
+    case spv::Scope::Quad:
       return true;
     case spv::Scope::Max:
       break;
@@ -98,7 +99,7 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
     if (_.context()->target_env != SPV_ENV_VULKAN_1_0) {
       // Scope for Non Uniform Group Operations must be limited to Subgroup
       if (spvOpcodeIsNonUniformGroupOperation(opcode) &&
-          value != spv::Scope::Subgroup) {
+          ((value != spv::Scope::Subgroup) && (value != spv::Scope::Quad))) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << _.VkErrorID(4642) << spvOpcodeString(opcode)
                << ": in Vulkan environment Execution scope is limited to "
@@ -164,7 +165,7 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
 
     // Vulkan generic rules
     // Scope for execution must be limited to Workgroup or Subgroup
-    if (value != spv::Scope::Workgroup && value != spv::Scope::Subgroup) {
+    if (value != spv::Scope::Workgroup && value != spv::Scope::Subgroup && value != spv::Scope::Quad) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << _.VkErrorID(4636) << spvOpcodeString(opcode)
              << ": in Vulkan environment Execution Scope is limited to "
@@ -178,7 +179,7 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
   // Scope for execution must be limited to Workgroup or Subgroup for
   // non-uniform operations
   if (spvOpcodeIsNonUniformGroupOperation(opcode) &&
-      value != spv::Scope::Subgroup && value != spv::Scope::Workgroup) {
+      value != spv::Scope::Subgroup && value != spv::Scope::Workgroup && value != spv::Scope::Quad) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
            << ": Execution scope is limited to Subgroup or Workgroup";
@@ -228,7 +229,7 @@ spv_result_t ValidateMemoryScope(ValidationState_t& _, const Instruction* inst,
     if (value != spv::Scope::Device && value != spv::Scope::Workgroup &&
         value != spv::Scope::Subgroup && value != spv::Scope::Invocation &&
         value != spv::Scope::ShaderCallKHR &&
-        value != spv::Scope::QueueFamily) {
+        value != spv::Scope::QueueFamily && value != spv::Scope::Quad) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << _.VkErrorID(4638) << spvOpcodeString(opcode)
              << ": in Vulkan environment Memory Scope is limited to Device, "

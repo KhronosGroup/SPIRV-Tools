@@ -1306,6 +1306,56 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
+TEST_F(ValidateMode, FragmentShaderHelperGroupParticipation) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability QuadScope
+OpExtension "SPV_KHR_shader_quad_scope"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%u32 = OpTypeInt 32 0
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpDemoteToHelperInvocationEXT
+%1 = OpIsHelperInvocationEXT %u32
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+			  HasSubstr("Expected bool scalar type as Result Type"));
+}
+
+TEST_F(ValidateMode, FragmentShaderQuadDerivatives) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability QuadScope
+OpExtension "SPV_KHR_shader_quad_scope"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%u32 = OpTypeInt 32 0
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpDemoteToHelperInvocationEXT
+%1 = OpIsHelperInvocationEXT %u32
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+			  HasSubstr("Expected bool scalar type as Result Type"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
