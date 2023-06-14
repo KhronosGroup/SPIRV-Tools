@@ -97,12 +97,24 @@ class Optimizer {
   // Registers passes that attempt to improve performance of generated code.
   // This sequence of passes is subject to constant review and will change
   // from time to time.
+  //
+  // If |preserve_interface| is true, all non-io variables in the entry point
+  // interface are considered live and are not eliminated.
+  // |preserve_interface| should be true if HLSL is generated
+  // from the SPIR-V bytecode.
   Optimizer& RegisterPerformancePasses();
+  Optimizer& RegisterPerformancePasses(bool preserve_interface);
 
   // Registers passes that attempt to improve the size of generated code.
   // This sequence of passes is subject to constant review and will change
   // from time to time.
+  //
+  // If |preserve_interface| is true, all non-io variables in the entry point
+  // interface are considered live and are not eliminated.
+  // |preserve_interface| should be true if HLSL is generated
+  // from the SPIR-V bytecode.
   Optimizer& RegisterSizePasses();
+  Optimizer& RegisterSizePasses(bool preserve_interface);
 
   // Registers passes that attempt to legalize the generated code.
   //
@@ -112,7 +124,13 @@ class Optimizer {
   //
   // This sequence of passes is subject to constant review and will change
   // from time to time.
+  //
+  // If |preserve_interface| is true, all non-io variables in the entry point
+  // interface are considered live and are not eliminated.
+  // |preserve_interface| should be true if HLSL is generated
+  // from the SPIR-V bytecode.
   Optimizer& RegisterLegalizationPasses();
+  Optimizer& RegisterLegalizationPasses(bool preserve_interface);
 
   // Register passes specified in the list of |flags|.  Each flag must be a
   // string of a form accepted by Optimizer::FlagHasValidForm().
