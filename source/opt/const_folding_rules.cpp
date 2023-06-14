@@ -89,37 +89,20 @@ const analysis::Constant* NegateFPConst(const analysis::Type* result_type,
 }
 
 // Returns a constants with the value |-val| of the given type.  Only works for
-// 32-bit and 64-bit signed integer types.  Returns |nullptr| if an error
-// occurs.
+// 32-bit and 64-bit signed integer types.
 const analysis::Constant* NegateIntConst(const analysis::Type* result_type,
                                          const analysis::Constant* val,
                                          analysis::ConstantManager* const_mgr) {
   const analysis::Integer* int_type = result_type->AsInteger();
   assert(int_type != nullptr);
 
-  if (!int_type->IsSigned()) {
-    return nullptr;
-  }
-
   if (val->AsNullConstant()) {
     return val;
   }
 
-  switch (int_type->width()) {
-    case 32: {
-      int32_t v = val->AsIntConstant()->GetS32();
-      v = (v == INT32_MIN ? v : -v);  // Avoid undefined behaviour.
-      return const_mgr->GetSIntConst(v);
-    }
-    case 64: {
-      int64_t v = val->AsIntConstant()->GetS64();
-      v = (v == INT64_MIN ? v : -v);  // Avoid undefined behaviour.
-      return const_mgr->GetSInt64Const(-v);
-    }
-    default:
-      return nullptr;
-  }
-  return nullptr;
+  uint64_t new_value = -val->GetSignExtendedValue();
+  return const_mgr->GetIntConst(new_value, int_type->width(),
+                                int_type->IsSigned());
 }
 
 // Folds an OpcompositeExtract where input is a composite constant.

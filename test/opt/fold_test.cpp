@@ -225,6 +225,7 @@ OpName %main "main"
 %v2int_2_2 = OpConstantComposite %v2int %int_2 %int_2
 %v2int_2_3 = OpConstantComposite %v2int %int_2 %int_3
 %v2int_3_2 = OpConstantComposite %v2int %int_3 %int_2
+%v2int_n1_n24 = OpConstantComposite %v2int %int_n1 %int_n24
 %v2int_4_4 = OpConstantComposite %v2int %int_4 %int_4
 %v2int_min_max = OpConstantComposite %v2int %int_min %int_max
 %v2bool_null = OpConstantNull %v2bool
@@ -317,6 +318,8 @@ OpName %main "main"
 %int_0xC05FD666 = OpConstant %int 0xC05FD666
 %int_0x66666666 = OpConstant %int 0x66666666
 %v4int_0x3FF00000_0x00000000_0xC05FD666_0x66666666 = OpConstantComposite %v4int %int_0x00000000 %int_0x3FF00000 %int_0x66666666 %int_0xC05FD666
+%ushort_0x4400 = OpConstant %ushort 0x4400
+%short_0x4400 = OpConstant %short 0x4400
 %ushort_0xBC00 = OpConstant %ushort 0xBC00
 %short_0xBC00 = OpConstant %short 0xBC00
 )";
@@ -889,7 +892,39 @@ INSTANTIATE_TEST_SUITE_P(TestCase, IntegerInstructionFoldingTest,
             "%2 = OpSNegate %int %int_2\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, -2)
+        2, -2),
+    // Test case 63: Negate negative short.
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpSNegate %short %short_0xBC00\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x4400 /* expected to be sign extended. */),
+    // Test case 64: Negate positive short.
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpSNegate %short %short_0x4400\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0xFFFFBC00 /* expected to be sign extended. */),
+    // Test case 65: Negate a negative short.
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpSNegate %ushort %ushort_0xBC00\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x4400 /* expected to be zero extended. */),
+    // Test case 66: Negate positive short.
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpSNegate %ushort %ushort_0x4400\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0xBC00 /* expected to be zero extended. */)
 ));
 // clang-format on
 
@@ -981,7 +1016,17 @@ INSTANTIATE_TEST_SUITE_P(TestCase, UIntVectorInstructionFoldingTest,
           "%2 = OpBitcast %v2uint %v2int_min_max\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
-      2, {2147483648, 2147483647})
+      2, {2147483648, 2147483647}),
+    // Test case 5: fold SNegate vector of uint
+    InstructionFoldingCase<std::vector<uint32_t>>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%n = OpVariable %_ptr_int Function\n" +
+          "%load = OpLoad %int %n\n" +
+          "%2 = OpSNegate %v2uint %v2uint_0x3f800000_0xbf800000\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, {static_cast<uint32_t>(-0x3f800000), static_cast<uint32_t>(-0xbf800000)})
 ));
 // clang-format on
 
@@ -1033,7 +1078,23 @@ INSTANTIATE_TEST_SUITE_P(TestCase, IntVectorInstructionFoldingTest,
           "%2 = OpSNegate %v2int %v2int_2_3\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
-      2, {-2, -3})
+      2, {-2, -3}),
+    // Test case 1: fold negate of a vector containing negative values.
+    InstructionFoldingCase<std::vector<int32_t>>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpSNegate %v2int %v2int_n1_n24\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, {1, 24}),
+    // Test case 2: fold negate of a vector at the limits
+    InstructionFoldingCase<std::vector<int32_t>>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpSNegate %v2int %v2int_min_max\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, {INT_MIN, -INT_MAX})
 ));
 // clang-format on
 
