@@ -494,7 +494,7 @@ const Constant* ConstantManager::GetIntConst(uint64_t val, int32_t bitWidth,
   if (isSigned) {
     // Sign extend the value.
     int32_t num_of_bit_to_ignore = 64 - bitWidth;
-    val = (static_cast<int64_t>(val << num_of_bit_to_ignore)) >>
+    val = static_cast<int64_t>(val << num_of_bit_to_ignore) >>
           num_of_bit_to_ignore;
   } else {
     // Clear the upper bit that are not used.

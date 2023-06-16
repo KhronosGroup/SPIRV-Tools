@@ -661,8 +661,8 @@ class ConstantManager {
 
   // Returns an integer constant with `bitWidth` and value |val|. If `isSigned`
   // is true, the constant will be a signed integer. Otherwise it will be
-  // unsigned. If `bitWidth` is less than 32, then on the `bitWidth` lower order
-  // bits will be used. The rest will be ignored.
+  // unsigned. Only the `bitWidth` lower order bits of |val| will be used. The
+  // rest will be ignored.
   const Constant* GetIntConst(uint64_t val, int32_t bitWidth, bool isSigned);
 
   // Returns the id of a 32-bit unsigned integer constant with value |val|.

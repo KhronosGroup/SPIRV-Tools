@@ -88,8 +88,7 @@ const analysis::Constant* NegateFPConst(const analysis::Type* result_type,
   return nullptr;
 }
 
-// Returns a constants with the value |-val| of the given type.  Only works for
-// 32-bit and 64-bit signed integer types.
+// Returns a constants with the value |-val| of the given type.
 const analysis::Constant* NegateIntConst(const analysis::Type* result_type,
                                          const analysis::Constant* val,
                                          analysis::ConstantManager* const_mgr) {
@@ -100,7 +99,7 @@ const analysis::Constant* NegateIntConst(const analysis::Type* result_type,
     return val;
   }
 
-  uint64_t new_value = -val->GetSignExtendedValue();
+  uint64_t new_value = static_cast<uint64_t>(-val->GetSignExtendedValue());
   return const_mgr->GetIntConst(new_value, int_type->width(),
                                 int_type->IsSigned());
 }
