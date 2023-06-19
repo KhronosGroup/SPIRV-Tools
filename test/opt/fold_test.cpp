@@ -1026,7 +1026,15 @@ INSTANTIATE_TEST_SUITE_P(TestCase, UIntVectorInstructionFoldingTest,
           "%2 = OpSNegate %v2uint %v2uint_0x3f800000_0xbf800000\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
-      2, {static_cast<uint32_t>(-0x3f800000), static_cast<uint32_t>(-0xbf800000)})
+      2, {static_cast<uint32_t>(-0x3f800000), static_cast<uint32_t>(-0xbf800000)}),
+    // Test case 6: fold vector components of uint (incuding integer overflow)
+    InstructionFoldingCase<std::vector<uint32_t>>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpIAdd %v2uint %v2uint_0x3f800000_0xbf800000 %v2uint_0x3f800000_0xbf800000\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, {0x7f000000u, 0x7f000000u})
 ));
 // clang-format on
 
@@ -1094,7 +1102,15 @@ INSTANTIATE_TEST_SUITE_P(TestCase, IntVectorInstructionFoldingTest,
           "%2 = OpSNegate %v2int %v2int_min_max\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
-      2, {INT_MIN, -INT_MAX})
+      2, {INT_MIN, -INT_MAX}),
+    // Test case 3: fold vector components of int
+    InstructionFoldingCase<std::vector<int32_t>>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpIMul %v2int %v2int_2_3 %v2int_2_3\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, {4,9})
 ));
 // clang-format on
 
