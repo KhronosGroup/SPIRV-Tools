@@ -154,6 +154,12 @@ class IRContext {
   inline IteratorRange<Module::inst_iterator> capabilities();
   inline IteratorRange<Module::const_inst_iterator> capabilities() const;
 
+  // Iterators for extensions instructions contained in this module.
+  inline Module::inst_iterator extension_begin();
+  inline Module::inst_iterator extension_end();
+  inline IteratorRange<Module::inst_iterator> extensions();
+  inline IteratorRange<Module::const_inst_iterator> extensions() const;
+
   // Iterators for types, constants and global variables instructions.
   inline Module::inst_iterator types_values_begin();
   inline Module::inst_iterator types_values_end();
@@ -980,6 +986,22 @@ IteratorRange<Module::inst_iterator> IRContext::capabilities() {
 
 IteratorRange<Module::const_inst_iterator> IRContext::capabilities() const {
   return ((const Module*)module())->capabilities();
+}
+
+Module::inst_iterator IRContext::extension_begin() {
+  return module()->extension_begin();
+}
+
+Module::inst_iterator IRContext::extension_end() {
+  return module()->extension_end();
+}
+
+IteratorRange<Module::inst_iterator> IRContext::extensions() {
+  return module()->extensions();
+}
+
+IteratorRange<Module::const_inst_iterator> IRContext::extensions() const {
+  return ((const Module*)module())->extensions();
 }
 
 Module::inst_iterator IRContext::types_values_begin() {
