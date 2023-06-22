@@ -23,12 +23,14 @@
 #include "test/val/val_fixtures.h"
 
 // For pretty-printing tuples with spv_target_env.
-std::ostream& operator<<(std::ostream& stream, spv_target_env target)
-{
+std::ostream& operator<<(std::ostream& stream, spv_target_env target) {
   switch (target) {
-    case SPV_ENV_UNIVERSAL_1_3: return stream << "SPV_ENV_UNIVERSAL_1_3";
-    case SPV_ENV_UNIVERSAL_1_4: return stream << "SPV_ENV_UNIVERSAL_1_4";
-    default:                    return stream << (unsigned)target;
+    case SPV_ENV_UNIVERSAL_1_3:
+      return stream << "SPV_ENV_UNIVERSAL_1_3";
+    case SPV_ENV_UNIVERSAL_1_4:
+      return stream << "SPV_ENV_UNIVERSAL_1_4";
+    default:
+      return stream << (unsigned)target;
   }
 }
 
@@ -2164,7 +2166,8 @@ OpStore %111 %115
 %116 = OpLoad %71 %111
 %121 = OpLoad %6 %60
 %122 = OpAccessChain %82 %120 %79 %121
-OpCooperativeMatrixStoreNV %122 %116 %84 %86 )" + storeMemoryAccess + R"( %81
+OpCooperativeMatrixStoreNV %122 %116 %84 %86 )" +
+                  storeMemoryAccess + R"( %81
 OpReturn
 OpFunctionEnd
 )";
@@ -2349,7 +2352,7 @@ OpFunctionEnd)";
 TEST_F(ValidateMemory, CoopMatKHRLoadStoreSuccess) {
   std::string spirv =
       GenCoopMatLoadStoreShader("MakePointerAvailableKHR|NonPrivatePointerKHR",
-          "MakePointerVisibleKHR|NonPrivatePointerKHR");
+                                "MakePointerVisibleKHR|NonPrivatePointerKHR");
 
   CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
@@ -2358,23 +2361,23 @@ TEST_F(ValidateMemory, CoopMatKHRLoadStoreSuccess) {
 TEST_F(ValidateMemory, CoopMatKHRStoreMemoryAccessFail) {
   std::string spirv =
       GenCoopMatLoadStoreShader("MakePointerVisibleKHR|NonPrivatePointerKHR",
-          "MakePointerVisibleKHR|NonPrivatePointerKHR");
+                                "MakePointerVisibleKHR|NonPrivatePointerKHR");
 
   CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
-      HasSubstr("MakePointerVisibleKHR cannot be used with OpStore"));
+              HasSubstr("MakePointerVisibleKHR cannot be used with OpStore"));
 }
 
 TEST_F(ValidateMemory, CoopMatKHRLoadMemoryAccessFail) {
   std::string spirv =
       GenCoopMatLoadStoreShader("MakePointerAvailableKHR|NonPrivatePointerKHR",
-          "MakePointerAvailableKHR|NonPrivatePointerKHR");
+                                "MakePointerAvailableKHR|NonPrivatePointerKHR");
 
   CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
-      HasSubstr("MakePointerAvailableKHR cannot be used with OpLoad"));
+              HasSubstr("MakePointerAvailableKHR cannot be used with OpLoad"));
 }
 
 TEST_F(ValidateMemory, CoopMatKHRInvalidStorageClassFail) {
@@ -2450,8 +2453,8 @@ OpFunctionEnd)";
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("The Result Type of OpCooperativeMatrixLengthNV <id> "
-          "'11[%11]' must be OpTypeInt with width 32 and signedness 0"));
+      HasSubstr("The Result Type of OpCooperativeMatrixLengthKHR <id> "
+                "'11[%11]' must be OpTypeInt with width 32 and signedness 0"));
 }
 
 TEST_F(ValidateMemory, CoopMatMatrixKHRLengthOperandTypeBad) {
@@ -2489,7 +2492,7 @@ OpFunctionEnd)";
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("The type in OpCooperativeMatrixLengthKHR <id> '5[%uint]' "
-          "must be OpTypeCooperativeMatrixKHR"));
+                "must be OpTypeCooperativeMatrixKHR"));
 }
 
 TEST_F(ValidateMemory, CoopMatMatrixKHRLengthGood) {
@@ -3945,9 +3948,8 @@ OpFunctionEnd
       HasSubstr("In the Vulkan environment, cannot store to Uniform Blocks"));
 }
 
-using ValidateSizedVariable =
-    spvtest::ValidateBase<std::tuple<std::string, std::string,
-                                     std::string, spv_target_env>>;
+using ValidateSizedVariable = spvtest::ValidateBase<
+    std::tuple<std::string, std::string, std::string, spv_target_env>>;
 
 CodeGenerator GetSizedVariableCodeGenerator(bool is_8bit, bool buffer_block) {
   CodeGenerator generator;
@@ -3957,7 +3959,8 @@ CodeGenerator GetSizedVariableCodeGenerator(bool is_8bit, bool buffer_block) {
       "\"SPV_KHR_8bit_storage\"\n";
   generator.memory_model_ = "OpMemoryModel Logical GLSL450\n";
   if (is_8bit) {
-    generator.before_types_ = "OpMemberDecorate %char_buffer_block 0 Offset 0\n";
+    generator.before_types_ =
+        "OpMemberDecorate %char_buffer_block 0 Offset 0\n";
     if (buffer_block)
       generator.before_types_ += "OpDecorate %char_buffer_block BufferBlock\n";
 

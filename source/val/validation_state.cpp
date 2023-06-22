@@ -1165,7 +1165,7 @@ bool ValidationState_t::IsCooperativeMatrixAType(uint32_t id) const {
   uint64_t matrixUse = 0;
   if (GetConstantValUint64(inst->word(6), &matrixUse)) {
     return matrixUse ==
-          static_cast<uint64_t>(spv::CooperativeMatrixUse::MatrixAKHR);
+           static_cast<uint64_t>(spv::CooperativeMatrixUse::MatrixAKHR);
   }
   return false;
 }
@@ -1176,7 +1176,7 @@ bool ValidationState_t::IsCooperativeMatrixBType(uint32_t id) const {
   uint64_t matrixUse = 0;
   if (GetConstantValUint64(inst->word(6), &matrixUse)) {
     return matrixUse ==
-        static_cast<uint64_t>(spv::CooperativeMatrixUse::MatrixBKHR);
+           static_cast<uint64_t>(spv::CooperativeMatrixUse::MatrixBKHR);
   }
   return false;
 }
@@ -1185,27 +1185,27 @@ bool ValidationState_t::IsCooperativeMatrixAccType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
   uint64_t matrixUse = 0;
   if (GetConstantValUint64(inst->word(6), &matrixUse)) {
-    return matrixUse ==
-        static_cast<uint64_t>(spv::CooperativeMatrixUse::MatrixAccumulatorKHR);
+    return matrixUse == static_cast<uint64_t>(
+                            spv::CooperativeMatrixUse::MatrixAccumulatorKHR);
   }
   return false;
 }
 
 bool ValidationState_t::IsFloatCooperativeMatrixType(uint32_t id) const {
-  if (!IsCooperativeMatrixNVType(id) &&
-      !IsCooperativeMatrixKHRType(id)) return false;
+  if (!IsCooperativeMatrixNVType(id) && !IsCooperativeMatrixKHRType(id))
+    return false;
   return IsFloatScalarType(FindDef(id)->word(2));
 }
 
 bool ValidationState_t::IsIntCooperativeMatrixType(uint32_t id) const {
-  if (!IsCooperativeMatrixNVType(id) &&
-      !IsCooperativeMatrixKHRType(id)) return false;
+  if (!IsCooperativeMatrixNVType(id) && !IsCooperativeMatrixKHRType(id))
+    return false;
   return IsIntScalarType(FindDef(id)->word(2));
 }
 
 bool ValidationState_t::IsUnsignedIntCooperativeMatrixType(uint32_t id) const {
-  if (!IsCooperativeMatrixNVType(id) &&
-      !IsCooperativeMatrixKHRType(id)) return false;
+  if (!IsCooperativeMatrixNVType(id) && !IsCooperativeMatrixKHRType(id))
+    return false;
   return IsUnsignedIntScalarType(FindDef(id)->word(2));
 }
 

@@ -344,14 +344,14 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
 
       if (3 != num_operands) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-            << "Must be only one constituent";
+               << "Must be only one constituent";
       }
 
       const uint32_t operand_type_id = _.GetOperandTypeId(inst, 2);
 
       if (operand_type_id != component_type_id) {
-          return _.diag(SPV_ERROR_INVALID_DATA, inst)
-              << "Expected Constituent type to be equal to the component type";
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Expected Constituent type to be equal to the component type";
       }
       break;
     }

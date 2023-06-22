@@ -1312,8 +1312,7 @@ OpFunctionEnd)";
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Expected Use of Matrix type and Result Type to be identical"));
+      HasSubstr("Expected Use of Matrix type and Result Type to be identical"));
 }
 
 TEST_F(ValidateConversion, CoopMatKHRConversionScopeMismatchFail) {
@@ -1361,8 +1360,7 @@ OpFunctionEnd)";
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Expected scopes of Matrix and Result Type to be identical"));
+      HasSubstr("Expected scopes of Matrix and Result Type to be identical"));
 }
 
 TEST_F(ValidateConversion, BitcastSuccess) {

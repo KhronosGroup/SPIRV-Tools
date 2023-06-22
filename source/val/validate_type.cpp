@@ -605,7 +605,7 @@ spv_result_t ValidateTypeCooperativeMatrix(ValidationState_t& _,
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "OpTypeCooperativeMatrixKHR Use <id> " << _.getIdName(use_id)
              << " is not a constant instruction with scalar integer type.";
-      }
+    }
   }
 
   return SPV_SUCCESS;

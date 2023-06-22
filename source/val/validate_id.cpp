@@ -166,7 +166,7 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
               opcode != spv::Op::OpCooperativeMatrixLengthKHR &&
               !(opcode == spv::Op::OpSpecConstantOp &&
                 (spv::Op(inst->word(3)) ==
-                    spv::Op::OpCooperativeMatrixLengthNV ||
+                     spv::Op::OpCooperativeMatrixLengthNV ||
                  spv::Op(inst->word(3)) ==
                      spv::Op::OpCooperativeMatrixLengthKHR))) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
@@ -185,9 +185,9 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
                      opcode != spv::Op::OpCooperativeMatrixLengthKHR &&
                      !(opcode == spv::Op::OpSpecConstantOp &&
                        (spv::Op(inst->word(3)) ==
-                           spv::Op::OpCooperativeMatrixLengthNV ||
+                            spv::Op::OpCooperativeMatrixLengthNV ||
                         spv::Op(inst->word(3)) ==
-                           spv::Op::OpCooperativeMatrixLengthKHR))) {
+                            spv::Op::OpCooperativeMatrixLengthKHR))) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
                    << "Operand " << _.getIdName(operand_word)
                    << " requires a type";

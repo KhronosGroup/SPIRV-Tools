@@ -1470,7 +1470,7 @@ TEST_F(ValidateArithmetics, SMulExtendedResultTypeMembersNotIdentical) {
 }
 
 std::string GenerateCoopMatKHRCode(const std::string& extra_types,
-  const std::string& main_body) {
+                                   const std::string& main_body) {
   const std::string prefix = R"(
 OpCapability Shader
 OpCapability Float16
@@ -1571,7 +1571,7 @@ TEST_F(ValidateArithmetics, CoopMatMatrixKHRTimesScalarMismatchFail) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Expected scalar operand type to be equal to the component "
-          "type of the matrix operand: MatrixTimesScalar"));
+                "type of the matrix operand: MatrixTimesScalar"));
 }
 
 TEST_F(ValidateArithmetics, CoopMatKHRScopeFail) {
@@ -1589,8 +1589,7 @@ TEST_F(ValidateArithmetics, CoopMatKHRScopeFail) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Expected scopes of Matrix and Result Type to be identical"));
+      HasSubstr("Expected scopes of Matrix and Result Type to be identical"));
 }
 
 TEST_F(ValidateArithmetics, CoopMatKHRDimFail) {

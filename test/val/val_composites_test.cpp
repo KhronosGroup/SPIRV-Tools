@@ -1596,7 +1596,8 @@ OpFunctionEnd)";
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpConstantComposite Constituent <id> '12[%float_1]' type "
+      HasSubstr(
+          "OpConstantComposite Constituent <id> '12[%float_1]' type "
           "does not match the Result Type <id> '11[%11]'s component type."));
 }
 

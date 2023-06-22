@@ -1563,9 +1563,10 @@ spv_result_t ValidateCooperativeMatrixLengthNV(ValidationState_t& state,
   auto type_id = inst->GetOperandAs<uint32_t>(2);
   auto type = state.FindDef(type_id);
   if (isKhr && type->opcode() != spv::Op::OpTypeCooperativeMatrixKHR) {
-      return state.diag(SPV_ERROR_INVALID_ID, inst)
-          << "The type in " << instr_name << " <id> "
-          << state.getIdName(type_id) << " must be OpTypeCooperativeMatrixKHR.";
+    return state.diag(SPV_ERROR_INVALID_ID, inst)
+           << "The type in " << instr_name << " <id> "
+           << state.getIdName(type_id)
+           << " must be OpTypeCooperativeMatrixKHR.";
   } else if (!isKhr && type->opcode() != spv::Op::OpTypeCooperativeMatrixNV) {
     return state.diag(SPV_ERROR_INVALID_ID, inst)
            << "The type in " << instr_name << " <id> "
@@ -1696,8 +1697,8 @@ spv_result_t ValidateCooperativeMatrixLoadStoreKHR(ValidationState_t& _,
   if (matrix_type->opcode() != spv::Op::OpTypeCooperativeMatrixKHR) {
     if (inst->opcode() == spv::Op::OpCooperativeMatrixLoadKHR) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-            << "spv::Op::OpCooperativeMatrixLoadKHR Result Type <id> "
-            << _.getIdName(type_id) << " is not a cooperative matrix type.";
+             << "spv::Op::OpCooperativeMatrixLoadKHR Result Type <id> "
+             << _.getIdName(type_id) << " is not a cooperative matrix type.";
     } else {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "spv::Op::OpCooperativeMatrixStoreKHR Object type <id> "
@@ -1715,17 +1716,17 @@ spv_result_t ValidateCooperativeMatrixLoadStoreKHR(ValidationState_t& _,
          !spvOpcodeReturnsLogicalPointer(pointer->opcode())) ||
         (_.features().variable_pointers &&
          !spvOpcodeReturnsLogicalVariablePointer(pointer->opcode()))))) {
-     return _.diag(SPV_ERROR_INVALID_ID, inst)
-            << opname << " Pointer <id> " << _.getIdName(pointer_id)
-            << " is not a logical pointer.";
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << opname << " Pointer <id> " << _.getIdName(pointer_id)
+           << " is not a logical pointer.";
   }
 
   const auto pointer_type_id = pointer->type_id();
   const auto pointer_type = _.FindDef(pointer_type_id);
   if (!pointer_type || pointer_type->opcode() != spv::Op::OpTypePointer) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-          << opname << " type for pointer <id> " << _.getIdName(pointer_id)
-          << " is not a pointer type.";
+           << opname << " type for pointer <id> " << _.getIdName(pointer_id)
+           << " is not a pointer type.";
   }
 
   const auto storage_class_index = 1u;
@@ -1735,10 +1736,10 @@ spv_result_t ValidateCooperativeMatrixLoadStoreKHR(ValidationState_t& _,
   if (storage_class != spv::StorageClass::Workgroup &&
       storage_class != spv::StorageClass::StorageBuffer &&
       storage_class != spv::StorageClass::PhysicalStorageBuffer) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << opname << " storage class for pointer type <id> "
-             << _.getIdName(pointer_type_id)
-             << " is not Workgroup or StorageBuffer.";
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << opname << " storage class for pointer type <id> "
+           << _.getIdName(pointer_type_id)
+           << " is not Workgroup or StorageBuffer.";
   }
 
   const auto pointee_id = pointer_type->GetOperandAs<uint32_t>(2);
@@ -1879,9 +1880,9 @@ spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
       break;
     case spv::Op::OpCooperativeMatrixLoadKHR:
     case spv::Op::OpCooperativeMatrixStoreKHR:
-        if (auto error = ValidateCooperativeMatrixLoadStoreKHR(_, inst))
-            return error;
-        break;
+      if (auto error = ValidateCooperativeMatrixLoadStoreKHR(_, inst))
+        return error;
+      break;
     case spv::Op::OpPtrEqual:
     case spv::Op::OpPtrNotEqual:
     case spv::Op::OpPtrDiff:
