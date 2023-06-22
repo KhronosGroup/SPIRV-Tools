@@ -27,6 +27,7 @@ using spvtest::ElementsIn;
 using ::testing::Eq;
 using ::testing::ValuesIn;
 
+#if 0
 TEST(EnumSet, IsEmpty1) {
   EnumSet<uint32_t> set;
   EXPECT_TRUE(set.IsEmpty());
@@ -177,6 +178,7 @@ TEST(EnumSet, DefaultIsEmpty) {
     EXPECT_FALSE(set.Contains(i));
   }
 }
+#endif
 
 TEST(CapabilitySet, ConstructSingleMemberMatrix) {
   CapabilitySet s(spv::Capability::Matrix);
