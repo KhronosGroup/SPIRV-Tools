@@ -14,7 +14,6 @@
 
 #include "source/opt/type_manager.h"
 
-#include <iostream>
 #include <memory>
 #include <utility>
 #include <vector>

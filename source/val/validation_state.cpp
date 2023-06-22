@@ -1143,6 +1143,12 @@ bool ValidationState_t::IsAccelerationStructureType(uint32_t id) const {
   return inst && inst->opcode() == spv::Op::OpTypeAccelerationStructureKHR;
 }
 
+bool ValidationState_t::IsCooperativeMatrixType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  return inst && (inst->opcode() == spv::Op::OpTypeCooperativeMatrixNV ||
+                  inst->opcode() == spv::Op::OpTypeCooperativeMatrixKHR);
+}
+
 bool ValidationState_t::IsCooperativeMatrixNVType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
   return inst && inst->opcode() == spv::Op::OpTypeCooperativeMatrixNV;

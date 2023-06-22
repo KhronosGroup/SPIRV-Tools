@@ -52,7 +52,8 @@ spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
            ++operand_index) {
         if (supportsCoopMat && _.IsCooperativeMatrixKHRType(result_type)) {
           const uint32_t type_id = _.GetOperandTypeId(inst, operand_index);
-          if (!_.IsCooperativeMatrixKHRType(type_id)) {
+          if (!_.IsCooperativeMatrixKHRType(type_id) ||
+              !_.IsFloatCooperativeMatrixType(type_id)) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << "Expected arithmetic operands to be of Result Type: "
                    << spvOpcodeString(opcode) << " operand index "
@@ -85,7 +86,8 @@ spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
            ++operand_index) {
        if (supportsCoopMat && _.IsCooperativeMatrixKHRType(result_type)) {
           const uint32_t type_id = _.GetOperandTypeId(inst, operand_index);
-          if (!_.IsCooperativeMatrixKHRType(type_id)) {
+         if (!_.IsCooperativeMatrixKHRType(type_id) ||
+             !_.IsUnsignedIntCooperativeMatrixType(type_id)) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << "Expected arithmetic operands to be of Result Type: "
                    << spvOpcodeString(opcode) << " operand index "
@@ -129,7 +131,8 @@ spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
         const uint32_t type_id = _.GetOperandTypeId(inst, operand_index);
 
         if (supportsCoopMat && _.IsCooperativeMatrixKHRType(result_type)) {
-          if (!_.IsCooperativeMatrixKHRType(type_id)) {
+          if (!_.IsCooperativeMatrixKHRType(type_id) ||
+              !_.IsIntCooperativeMatrixType(type_id)) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << "Expected arithmetic operands to be of Result Type: "
                    << spvOpcodeString(opcode) << " operand index "
@@ -226,8 +229,7 @@ spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
 
     case spv::Op::OpMatrixTimesScalar: {
       if (!_.IsFloatMatrixType(result_type) &&
-          !(_.IsCooperativeMatrixNVType(result_type) ||
-            _.IsCooperativeMatrixKHRType(result_type)))
+          !(_.IsCooperativeMatrixType(result_type)))
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected float matrix type as Result Type: "
                << spvOpcodeString(opcode);

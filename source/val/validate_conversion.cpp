@@ -46,10 +46,8 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
                << "Expected input to be float scalar or vector: "
                << spvOpcodeString(opcode);
 
-      if (_.IsCooperativeMatrixNVType(result_type) ||
-          _.IsCooperativeMatrixNVType(input_type) ||
-          _.IsCooperativeMatrixKHRType(result_type) ||
-          _.IsCooperativeMatrixKHRType(input_type)) {
+      if (_.IsCooperativeMatrixType(result_type) ||
+          _.IsCooperativeMatrixType(input_type)) {
         spv_result_t ret =
             _.CooperativeMatrixShapesMatch(inst, result_type, input_type);
         if (ret != SPV_SUCCESS) return ret;
@@ -78,10 +76,8 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
                << "Expected input to be float scalar or vector: "
                << spvOpcodeString(opcode);
 
-      if (_.IsCooperativeMatrixNVType(result_type) ||
-          _.IsCooperativeMatrixNVType(input_type) ||
-          _.IsCooperativeMatrixKHRType(result_type) ||
-          _.IsCooperativeMatrixKHRType(input_type)) {
+      if (_.IsCooperativeMatrixType(result_type) ||
+          _.IsCooperativeMatrixType(input_type)) {
         spv_result_t ret =
             _.CooperativeMatrixShapesMatch(inst, result_type, input_type);
         if (ret != SPV_SUCCESS) return ret;
@@ -112,10 +108,8 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
                << "Expected input to be int scalar or vector: "
                << spvOpcodeString(opcode);
 
-      if (_.IsCooperativeMatrixNVType(result_type) ||
-          _.IsCooperativeMatrixNVType(input_type) ||
-          _.IsCooperativeMatrixKHRType(result_type) ||
-          _.IsCooperativeMatrixKHRType(input_type)) {
+      if (_.IsCooperativeMatrixType(result_type) ||
+          _.IsCooperativeMatrixType(input_type)) {
         spv_result_t ret =
             _.CooperativeMatrixShapesMatch(inst, result_type, input_type);
         if (ret != SPV_SUCCESS) return ret;
@@ -145,10 +139,8 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
                << "Expected input to be int scalar or vector: "
                << spvOpcodeString(opcode);
 
-      if (_.IsCooperativeMatrixNVType(result_type) ||
-          _.IsCooperativeMatrixNVType(input_type) ||
-          _.IsCooperativeMatrixKHRType(result_type) ||
-          _.IsCooperativeMatrixKHRType(input_type)) {
+      if (_.IsCooperativeMatrixType(result_type) ||
+          _.IsCooperativeMatrixType(input_type)) {
         spv_result_t ret =
             _.CooperativeMatrixShapesMatch(inst, result_type, input_type);
         if (ret != SPV_SUCCESS) return ret;
@@ -182,10 +174,8 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
                << "Expected input to be int scalar or vector: "
                << spvOpcodeString(opcode);
 
-      if (_.IsCooperativeMatrixNVType(result_type) ||
-          _.IsCooperativeMatrixNVType(input_type) ||
-          _.IsCooperativeMatrixKHRType(result_type) ||
-          _.IsCooperativeMatrixKHRType(input_type)) {
+      if (_.IsCooperativeMatrixType(result_type) ||
+          _.IsCooperativeMatrixType(input_type)) {
         spv_result_t ret =
             _.CooperativeMatrixShapesMatch(inst, result_type, input_type);
         if (ret != SPV_SUCCESS) return ret;
@@ -220,10 +210,8 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
                << "Expected input to be float scalar or vector: "
                << spvOpcodeString(opcode);
 
-      if (_.IsCooperativeMatrixNVType(result_type) ||
-          _.IsCooperativeMatrixNVType(input_type) ||
-          _.IsCooperativeMatrixKHRType(result_type) ||
-          _.IsCooperativeMatrixKHRType(input_type)) {
+      if (_.IsCooperativeMatrixType(result_type) ||
+          _.IsCooperativeMatrixType(input_type)) {
         spv_result_t ret =
             _.CooperativeMatrixShapesMatch(inst, result_type, input_type);
         if (ret != SPV_SUCCESS) return ret;
@@ -485,10 +473,8 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
       const bool input_is_pointer = _.IsPointerType(input_type);
       const bool input_is_int_scalar = _.IsIntScalarType(input_type);
 
-      const bool result_is_coopmat = _.IsCooperativeMatrixKHRType(result_type) ||
-                                     _.IsCooperativeMatrixNVType(result_type);
-      const bool input_is_coopmat = _.IsCooperativeMatrixKHRType(input_type) ||
-                                    _.IsCooperativeMatrixNVType(input_type);
+      const bool result_is_coopmat = _.IsCooperativeMatrixType(result_type);
+      const bool input_is_coopmat = _.IsCooperativeMatrixType(input_type);
 
       if (!result_is_pointer && !result_is_int_scalar && !result_is_coopmat &&
           !_.IsIntVectorType(result_type) &&
