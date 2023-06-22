@@ -736,7 +736,7 @@ std::string CooperativeMatrixKHR::str() const {
 }
 
 size_t CooperativeMatrixKHR::ComputeExtraStateHash(size_t hash,
-  SeenTypes* seen) const {
+                                                   SeenTypes* seen) const {
   hash = hash_combine(hash, scope_id_, rows_id_, columns_id_, use_id_);
   return component_type_->ComputeHashValue(hash, seen);
 }
