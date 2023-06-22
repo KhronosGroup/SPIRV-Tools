@@ -47,7 +47,6 @@ std::string show(const CapabilitySet& cs) {
     spv_operand_desc desc;
     outs << "{";
     cs.ForEach([&](spv::Capability cap) {
-      const uint32_t cap_int = static_cast<uint32_t>(cap);
       if (grammar.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
                                 static_cast<uint32_t>(cap), &desc)) {
         outs << " " << desc->name;
@@ -75,13 +74,6 @@ inline std::ostream& operator<<(std::ostream& out, EnumCapabilityCase e) {
 }
 
 using EnvEnumCapabilityCase = std::tuple<spv_target_env, EnumCapabilityCase>;
-// Emits an EnvEnumCapabilityCase to the given output stream. This is used
-// to emit failure cases when they occur, which helps debug tests.
-inline std::ostream& operator<<(std::ostream& out, EnvEnumCapabilityCase e) {
-  out << "EnvEnumCapabilityTest{ " << spvLogStringForEnv(std::get<0>(e)) << " "
-      << std::get<1>(e) << " }";
-  return out;
-}
 
 // Test fixture for testing EnumCapabilityCases.
 using EnumCapabilityTest =

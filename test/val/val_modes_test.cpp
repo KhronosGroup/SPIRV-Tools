@@ -1306,6 +1306,7 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
+<<<<<<< HEAD
 TEST_F(ValidateMode, MaximalReconvergenceRequiresExtension) {
   const std::string spirv = R"(
 OpCapability Shader
@@ -1326,6 +1327,547 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("(6023) requires one of these extensions: "
                         "SPV_KHR_maximal_reconvergence "));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultNotExecutionModeId) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionMode %main FPFastMathDefault %int_0 %int_0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpExecutionMode is only valid when the Mode operand "
+                        "is an execution mode that takes no Extra Operands, or "
+                        "takes Extra Operands that are not id operands"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultNotAType) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionModeId %main FPFastMathDefault %int_0 %int_0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Target Type operand must be a floating-point scalar type"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultNotAFloatType) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionModeId %main FPFastMathDefault %int %int_0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Target Type operand must be a floating-point scalar type"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultNotAFloatScalarType) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionModeId %main FPFastMathDefault %float2 %int_0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%float = OpTypeFloat 32
+%float2 = OpTypeVector %float 2
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Target Type operand must be a floating-point scalar type"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultSpecConstant) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionModeId %main FPFastMathDefault %float %int_0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpSpecConstant %int 0
+%float = OpTypeFloat 32
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Fast Math Default operand must be a "
+                        "non-specialization constant"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultInvalidMask) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionModeId %main FPFastMathDefault %float %constant
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%constant = OpConstant %int 524288
+%float = OpTypeFloat 32
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The Fast Math Default operand is an invalid bitmask value"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultContainsFast) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionModeId %main FPFastMathDefault %float %constant
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%constant = OpConstant %int 16
+%float = OpTypeFloat 32
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Fast Math Default operand must not include Fast"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultAllowTransformMissingAllowReassoc) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionModeId %main FPFastMathDefault %float %constant
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%constant = OpConstant %int 327680
+%float = OpTypeFloat 32
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The Fast Math Default operand must include AllowContract and "
+                "AllowReassoc when AllowTransform is specified"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultAllowTransformMissingAllowContract) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionModeId %main FPFastMathDefault %float %constant
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%constant = OpConstant %int 393216
+%float = OpTypeFloat 32
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The Fast Math Default operand must include AllowContract and "
+                "AllowReassoc when AllowTransform is specified"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultAllowTransformMissingContractAndReassoc) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionModeId %main FPFastMathDefault %float %constant
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%constant = OpConstant %int 262144
+%float = OpTypeFloat 32
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The Fast Math Default operand must include AllowContract and "
+                "AllowReassoc when AllowTransform is specified"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultSignedZeroInfNanPreserve) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpCapability SignedZeroInfNanPreserve
+OpExtension "SPV_KHR_float_controls2"
+OpExtension "SPV_KHR_float_controls"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionModeId %main FPFastMathDefault %float %constant
+OpExecutionMode %main SignedZeroInfNanPreserve 32
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%constant = OpConstant %int 0
+%float = OpTypeFloat 32
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("FPFastMathDefault and SignedZeroInfNanPreserve execution "
+                "modes cannot be applied to the same entry point"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultConractionOff) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability FloatControls2
+OpCapability SignedZeroInfNanPreserve
+OpExtension "SPV_KHR_float_controls2"
+OpExtension "SPV_KHR_float_controls"
+OpMemoryModel Physical64 OpenCL
+OpEntryPoint Kernel %main "main"
+OpExecutionModeId %main FPFastMathDefault %float %constant
+OpExecutionMode %main ContractionOff
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%constant = OpConstant %int 0
+%float = OpTypeFloat 32
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FPFastMathDefault and ContractionOff execution modes "
+                        "cannot be applied to the same entry point"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultNoContractionNotInCallTree) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionModeId %main FPFastMathDefault %float %constant
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %add NoContraction
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%constant = OpConstant %int 0
+%float = OpTypeFloat 32
+%zero = OpConstant %float 0
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%func = OpFunction %void None %void_fn
+%func_entry = OpLabel
+%add = OpFAdd %float %zero %zero
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultNoContractionInCallTree) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionModeId %main FPFastMathDefault %float %constant
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %add NoContraction
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%constant = OpConstant %int 0
+%float = OpTypeFloat 32
+%zero = OpConstant %float 0
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%call = OpFunctionCall %void %func
+OpReturn
+OpFunctionEnd
+%func = OpFunction %void None %void_fn
+%func_entry = OpLabel
+%add = OpFAdd %float %zero %zero
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NoContraction cannot be used by an entry point with "
+                        "the FPFastMathDefault execution mode"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultNoContractionInCallTree2) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Kernel
+OpCapability Addresses
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Physical64 OpenCL
+OpEntryPoint Kernel %main "main"
+OpExecutionModeId %main FPFastMathDefault %float %constant
+OpDecorate %const NoContraction
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%constant = OpConstant %int 0
+%float = OpTypeFloat 32
+%zero = OpConstant %float 0
+%const = OpSpecConstantOp %float FAdd %zero %zero
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%call = OpFunctionCall %void %func
+OpReturn
+OpFunctionEnd
+%func = OpFunction %void None %void_fn
+%func_entry = OpLabel
+%add = OpFAdd %float %const %zero
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NoContraction cannot be used by an entry point with "
+                        "the FPFastMathDefault execution mode"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultFastMathFastNotInCallTree) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionModeId %main FPFastMathDefault %float %constant
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %add FPFastMathMode Fast
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%constant = OpConstant %int 0
+%float = OpTypeFloat 32
+%zero = OpConstant %float 0
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%func = OpFunction %void None %void_fn
+%func_entry = OpLabel
+%add = OpFAdd %float %zero %zero
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultFastMathFastInCallTree) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionModeId %main FPFastMathDefault %float %constant
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %add FPFastMathMode Fast
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%constant = OpConstant %int 0
+%float = OpTypeFloat 32
+%zero = OpConstant %float 0
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%call = OpFunctionCall %void %func
+OpReturn
+OpFunctionEnd
+%func = OpFunction %void None %void_fn
+%func_entry = OpLabel
+%add = OpFAdd %float %zero %zero
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FPFastMathMode Fast cannot be used by an entry point "
+                        "with the FPFastMathDefault execution mode"));
+}
+
+TEST_F(ValidateMode, FPFastMathDefaultFastMathFastInCallTree2) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Physical64 OpenCL
+OpEntryPoint Kernel %main "main"
+OpExecutionModeId %main FPFastMathDefault %float %constant
+OpDecorate %const FPFastMathMode Fast
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%constant = OpConstant %int 0
+%float = OpTypeFloat 32
+%zero = OpConstant %float 0
+%const = OpSpecConstantOp %float FAdd %zero %zero
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%call = OpFunctionCall %void %func
+OpReturn
+OpFunctionEnd
+%func = OpFunction %void None %void_fn
+%func_entry = OpLabel
+%add = OpFAdd %float %const %zero
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FPFastMathMode Fast cannot be used by an entry point "
+                        "with the FPFastMathDefault execution mode"));
+>>>>>>> 6b56fb66 (SPV_KHR_float_controls2 validation)
 }
 
 }  // namespace
