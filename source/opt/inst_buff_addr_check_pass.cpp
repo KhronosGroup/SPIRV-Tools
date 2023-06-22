@@ -113,7 +113,9 @@ void InstBuffAddrCheckPass::GenCheckCode(
   Instruction* hi_uptr_inst = builder.AddUnaryOp(
       GetUintId(), spv::Op::OpUConvert, rshift_uptr_inst->result_id());
   GenDebugStreamWrite(
-      uid2offset_[ref_inst->unique_id()], stage_idx,
+      builder.GetUintConstantId(shader_id_),
+      builder.GetUintConstantId(uid2offset_[ref_inst->unique_id()]),
+      GenStageInfo(stage_idx, &builder),
       {error_id, lo_uptr_inst->result_id(), hi_uptr_inst->result_id()},
       &builder);
   // Gen zero for invalid load. If pointer type, need to convert uint64
