@@ -15,8 +15,8 @@
 #ifndef SOURCE_EXTENSIONS_H_
 #define SOURCE_EXTENSIONS_H_
 
-#include <string>
 #include <cstdint>
+#include <string>
 
 #include "source/enum_set.h"
 #include "spirv-tools/libspirv.h"
