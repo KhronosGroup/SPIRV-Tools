@@ -452,7 +452,9 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
     return ds;
   };
 
-  // If we are checking physical storage buffer pointers, we may not actually have a struct here. Instead, pretend we have a struct with a single member at offset 0.
+  // If we are checking physical storage buffer pointers, we may not actually
+  // have a struct here. Instead, pretend we have a struct with a single member
+  // at offset 0.
   const auto& struct_type = vstate.FindDef(struct_id);
   std::vector<uint32_t> members;
   if (struct_type->opcode() == spv::Op::OpTypeStruct) {
