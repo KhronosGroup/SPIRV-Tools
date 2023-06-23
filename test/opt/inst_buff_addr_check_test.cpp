@@ -928,6 +928,7 @@ OpFunctionEnd
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ValidatorOptions()->scalar_block_layout = true;
   SinglePassRunAndMatch<InstBuffAddrCheckPass>(text, true, 7, 23);
 }
 
