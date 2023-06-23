@@ -65,7 +65,7 @@ class EnumSet {
   }
 
   // Returns the bitmask used to represent the enum `value` in its bucket.
-  static constexpr inline uint64_t compute_mask_for_value(T value) {
+  static constexpr inline BucketType compute_mask_for_value(T value) {
     return 1ULL << compute_bucket_offset(value);
   }
 
