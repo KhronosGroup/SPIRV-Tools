@@ -1093,17 +1093,12 @@ spv_result_t ValidateSampledImage(ValidationState_t& _,
 
   const Instruction* ld_inst;
   {
-    const spv_parsed_operand_t& topnd = inst->operand(2);
-    int t_idx = (int)inst->word(topnd.offset);
+    int t_idx = inst->GetOperandAs<int>(2);
     ld_inst = _.FindDef(t_idx);
   }
 
   if (ld_inst->opcode() == spv::Op::OpLoad) {
-    int texture_id;
-    const spv_parsed_operand_t& popnd =
-        ld_inst->operand(2);  // variable to load
-    texture_id = (int)ld_inst->word(popnd.offset);
-
+    int texture_id = ld_inst->GetOperandAs<int>(2); // variable to load
     _.RegisterQCOMImageProcessingTextureConsumer(texture_id, ld_inst, inst);
   }
 
@@ -2156,15 +2151,13 @@ spv_result_t ValidateImageProcessingQCOMDecoration(ValidationState_t& _, int id,
   const Instruction* ld_inst = _.FindDef(id);
   if (ld_inst->opcode() == spv::Op::OpSampledImage) {
     si_inst = ld_inst;
-    const spv_parsed_operand_t& topnd = si_inst->operand(2);  // texture
-    int t_idx = (int)si_inst->word(topnd.offset);
+    int t_idx = si_inst->GetOperandAs<int>(2); // texture
     ld_inst = _.FindDef(t_idx);
   }
   assert(ld_inst->opcode() == spv::Op::OpLoad);
-  const spv_parsed_operand_t& popnd = ld_inst->operand(2);  // variable to load
-  int texture_id = (int)ld_inst->word(popnd.offset);
+  int texture_id = ld_inst->GetOperandAs<int>(2);  // variable to load
   if (!_.HasDecoration(texture_id, decor)) {
-    return _.diag(SPV_ERROR_INVALID_DATA, ld_inst) << "Missing decoration";
+    return _.diag(SPV_ERROR_INVALID_DATA, ld_inst) << "Missing decoration WeightTextureQCOM/BlockMatchTextureQCOM";
   }
 
   return SPV_SUCCESS;
@@ -2176,23 +2169,21 @@ spv_result_t ValidateImageProcessingQCOM(ValidationState_t& _,
   const spv::Op opcode = inst->opcode();
   switch (opcode) {
     case spv::Op::OpImageSampleWeightedQCOM: {
-      const spv_parsed_operand_t& wopnd = inst->operand(4);  // weight
-      int wi_idx = (int)inst->word(wopnd.offset);
+      int wi_idx = inst->GetOperandAs<int>(4); // weight
       res = ValidateImageProcessingQCOMDecoration(
           _, wi_idx, spv::Decoration::WeightTextureQCOM);
       break;
     }
     case spv::Op::OpImageBlockMatchSSDQCOM:
     case spv::Op::OpImageBlockMatchSADQCOM: {
-      const spv_parsed_operand_t& topnd = inst->operand(2);  // target
-      int tgt_idx = (int)inst->word(topnd.offset);
+      int tgt_idx = inst->GetOperandAs<int>(2); // target
       res = ValidateImageProcessingQCOMDecoration(
           _, tgt_idx, spv::Decoration::BlockMatchTextureQCOM);
-      const spv_parsed_operand_t& ropnd = inst->operand(4);  // reference
-      int ref_idx = (int)inst->word(ropnd.offset);
-      spv_result_t res1 = ValidateImageProcessingQCOMDecoration(
+      if (res != SPV_SUCCESS)
+        break;
+      int ref_idx = inst->GetOperandAs<int>(4); // reference
+      res = ValidateImageProcessingQCOMDecoration(
           _, ref_idx, spv::Decoration::BlockMatchTextureQCOM);
-      res = (res != SPV_SUCCESS ? res : res1);
       break;
     }
     default:
@@ -2397,8 +2388,7 @@ spv_result_t ValidateQCOMImageProcessingTextureUsages(ValidationState_t& _,
       break;
     default:
       for (size_t i = 0; i < inst->operands().size(); ++i) {
-        const spv_parsed_operand_t& operand = inst->operand(i);
-        int id = (int)inst->word(operand.offset);
+        int id = inst->GetOperandAs<int>(i);
         const Instruction* operand_inst = _.FindDef(id);
         if (operand_inst == nullptr)
           continue;

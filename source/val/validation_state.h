@@ -801,7 +801,7 @@ class ValidationState_t {
   // Check if instruction 'id' is a consumer of a texture decorated
   // with a QCOM image processing decoration
   bool IsQCOMImageProcessingTextureConsumer(uint32_t id) {
-    return tpip_texture_consumers_.find(id) != tpip_texture_consumers_.end();
+    return qcom_image_processing_consumers_.find(id) != qcom_image_processing_consumers_.end();
   }
 
  private:
@@ -838,9 +838,9 @@ class ValidationState_t {
   std::unordered_map<uint32_t, std::vector<Instruction*>>
       sampled_image_consumers_;
 
-  /// Stores load instructions that load texturesed used
+  /// Stores load instructions that load textures used
   //  in QCOM image processing functions
-  std::unordered_set<uint32_t> tpip_texture_consumers_;
+  std::unordered_set<uint32_t> qcom_image_processing_consumers_;
 
   /// A map of operand IDs and their names defined by the OpName instruction
   std::unordered_map<uint32_t, std::string> operand_names_;

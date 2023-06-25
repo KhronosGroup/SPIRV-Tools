@@ -613,9 +613,9 @@ void ValidationState_t::RegisterQCOMImageProcessingTextureConsumer(
     const Instruction* consumer1) {
   if (HasDecoration(texture_id, spv::Decoration::WeightTextureQCOM) ||
       HasDecoration(texture_id, spv::Decoration::BlockMatchTextureQCOM)) {
-    tpip_texture_consumers_.insert(consumer0->id());
+    qcom_image_processing_consumers_.insert(consumer0->id());
     if (consumer1) {
-      tpip_texture_consumers_.insert(consumer1->id());
+      qcom_image_processing_consumers_.insert(consumer1->id());
     }
   }
 }
