@@ -2154,7 +2154,9 @@ spv_result_t ValidateImageProcessingQCOMDecoration(ValidationState_t& _, int id,
     int t_idx = si_inst->GetOperandAs<int>(2); // texture
     ld_inst = _.FindDef(t_idx);
   }
-  assert(ld_inst->opcode() == spv::Op::OpLoad);
+  if (ld_inst->opcode() != spv::Op::OpLoad) {
+    return _.diag(SPV_ERROR_INVALID_DATA, ld_inst) << "Expect to see OpLoad";
+  }
   int texture_id = ld_inst->GetOperandAs<int>(2);  // variable to load
   if (!_.HasDecoration(texture_id, decor)) {
     return _.diag(SPV_ERROR_INVALID_DATA, ld_inst) << "Missing decoration WeightTextureQCOM/BlockMatchTextureQCOM";
