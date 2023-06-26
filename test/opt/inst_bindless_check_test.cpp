@@ -41,155 +41,17 @@ static const std::string kOutputGlobals = R"(
 ; CHECK: [[output_buffer_var]] = OpVariable [[output_ptr_type]] StorageBuffer
 )";
 
-static const std::string kStreamWrite6Begin = R"(
+static const std::string kStreamWrite6 = R"(
 ; CHECK: %inst_bindless_stream_write_6 = OpFunction %void None {{%\w+}}
-; CHECK: [[param_1:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[param_2:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[param_3:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[param_4:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[param_5:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[param_6:%\w+]] = OpFunctionParameter %uint
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_1
-; CHECK: {{%\w+}} = OpAtomicIAdd %uint {{%\w+}} %uint_4 %uint_0 %uint_12
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_12
-; CHECK: {{%\w+}} = OpArrayLength %uint [[output_buffer_var]] 2
-; CHECK: {{%\w+}} = OpULessThanEqual %bool {{%\w+}} {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_0
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} %uint_12
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_1
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} %uint_23
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_2
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_1]]
-)";
-
-static const std::string kStreamWrite6End = R"(
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_7
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_2]]
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_8
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_3]]
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_9
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_4]]
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_10
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_5]]
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_11
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_6]]
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: OpReturn
-; CHECK: OpFunctionEnd
-)";
-
-// clang-format off
-static const std::string kStreamWrite6Frag = kStreamWrite6Begin + R"(
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} %uint_4
-; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
-; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_4
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_5
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-)" + kStreamWrite6End;
-
-static const std::string kStreamWrite6Tese = kStreamWrite6Begin + R"(
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} %uint_2
-; CHECK: {{%\w+}} = OpLoad %uint %gl_PrimitiveID
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_4
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLoad %v3float %gl_TessCoord
-; CHECK: {{%\w+}} = OpBitcast %v3uint {{%\w+}}
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_5
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_6
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-)" + kStreamWrite6End;
-
-static const std::string kStreamWrite6Vert = kStreamWrite6Begin + R"(
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} %uint_0
-; CHECK: {{%\w+}} = OpLoad %uint %gl_VertexIndex
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_4
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLoad %uint %gl_InstanceIndex
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_5
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-)" + kStreamWrite6End;
-
-static const std::string kStreamWrite6Compute = kStreamWrite6Begin + R"(
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} %uint_5
-; CHECK: {{%\w+}} = OpLoad %v3uint %gl_GlobalInvocationID
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_4
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_5
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_6
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-)" + kStreamWrite6End;
-
-static const std::string kStreamWrite6Ray = kStreamWrite6Begin + R"(
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_4
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_5
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_6
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-)" + kStreamWrite6End;
-// clang-format on
-
-static const std::string kStreamWrite7Begin = R"(
-; CHECK: %inst_bindless_stream_write_7 = OpFunction %void None {{%\w+}}
-; CHECK: [[param_1:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[param_2:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[param_3:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[param_4:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[param_5:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[param_6:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[param_7:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[sw_shader_id:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[sw_inst_idx:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[sw_stage_info:%\w+]] = OpFunctionParameter %v4uint
+; CHECK: [[sw_param_1:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[sw_param_2:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[sw_param_3:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[sw_param_4:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[sw_param_5:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[sw_param_6:%\w+]] = OpFunctionParameter %uint
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_1
 ; CHECK: {{%\w+}} = OpAtomicIAdd %uint {{%\w+}} %uint_4 %uint_0 %uint_13
@@ -204,67 +66,49 @@ static const std::string kStreamWrite7Begin = R"(
 ; CHECK: OpStore {{%\w+}} %uint_13
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_1
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} %uint_23
+; CHECK: OpStore {{%\w+}} [[sw_shader_id]]
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_2
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_1]]
-)";
-
-static const std::string kStreamWrite7End = R"(
+; CHECK: OpStore {{%\w+}} [[sw_inst_idx]]
+; CHECK: {{%\w+}} = OpCompositeExtract %uint [[sw_stage_info]] 0
+; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
+; CHECK: OpStore {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint [[sw_stage_info]] 1
+; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_4
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
+; CHECK: OpStore {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint [[sw_stage_info]] 2
+; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_5
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
+; CHECK: OpStore {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint [[sw_stage_info]] 3
+; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_6
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
+; CHECK: OpStore {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_7
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_2]]
+; CHECK: OpStore {{%\w+}} [[sw_param_1]]
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_8
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_3]]
+; CHECK: OpStore {{%\w+}} [[sw_param_2]]
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_9
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_4]]
+; CHECK: OpStore {{%\w+}} [[sw_param_3]]
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_10
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_5]]
+; CHECK: OpStore {{%\w+}} [[sw_param_4]]
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_11
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_6]]
+; CHECK: OpStore {{%\w+}} [[sw_param_5]]
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_12
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[param_7]]
+; CHECK: OpStore {{%\w+}} [[sw_param_6]]
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: OpReturn
 ; CHECK: OpFunctionEnd
 )";
-
-// clang-format off
-static const std::string kStreamWrite7Frag = kStreamWrite7Begin + R"(
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} %uint_4
-; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
-; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_4
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_5
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-)" + kStreamWrite7End;
-
-static const std::string kStreamWrite7Vert = kStreamWrite7Begin + R"(
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} %uint_0
-; CHECK: {{%\w+}} = OpLoad %uint %gl_VertexIndex
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_4
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLoad %uint %gl_InstanceIndex
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_5
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-)" + kStreamWrite7End;
 // clang-format on
 
 static const std::string kInputDecorations = R"(
@@ -286,55 +130,21 @@ static const std::string kInputGlobals = R"(
 ; CHECK: [[input_buffer_var]] = OpVariable [[input_ptr_type]] StorageBuffer
 )";
 
-static const std::string kReadBindingLength = R"(
-; CHECK: %inst_bindless_read_binding_length = OpFunction %uint None {{%\w+}}
-; CHECK: [[bl_desc_set_idx:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[bl_binding_idx:%\w+]] = OpFunctionParameter %uint
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpUGreaterThanEqual %bool [[bl_desc_set_idx]] %uint_32
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: OpReturnValue %uint_0
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_inst_bindless_DescriptorSetData %inst_bindless_input_buffer %uint_0 [[bl_desc_set_idx]]
-; CHECK: {{%\w+}} = OpLoad %_ptr_PhysicalStorageBuffer_inst_bindless_DescriptorSetData {{%\w+}}
-; CHECK: {{%\w+}} = OpBitcast %v2uint {{%\w+}}
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
-; CHECK: {{%\w+}} = OpIEqual %bool {{%\w+}} %uint_0
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
-; CHECK: {{%\w+}} = OpIEqual %bool {{%\w+}} %uint_0
-; CHECK: {{%\w+}} = OpLogicalAnd %bool {{%\w+}} {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: OpReturnValue %uint_0
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_PhysicalStorageBuffer_uint {{%\w+}} %uint_0
-; CHECK: {{%\w+}} = OpLoad %uint {{%\w+}} Aligned 8
-; CHECK: {{%\w+}} = OpUGreaterThanEqual %bool [[bl_binding_idx]] {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: OpReturnValue %uint_0
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_PhysicalStorageBuffer_uint {{%\w+}} %uint_1 [[bl_binding_idx]]
-; CHECK: {{%\w+}} = OpLoad %uint {{%\w+}} Aligned 4
-; CHECK: OpReturnValue {{%\w+}}
-; CHECK: OpFunctionEnd
-)";
-
-static const std::string kReadDescInit = R"(
-; CHECK: %inst_bindless_read_desc_init = OpFunction %uint None {{%\w+}}
+static const std::string kCheckDesc = R"(
+; CHECK: %inst_bindless_desc_check = OpFunction %bool None {{%\w+}}
+; CHECK: [[di_shader_id:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[di_line:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[di_stage_info:%\w+]] = OpFunctionParameter %v4uint
 ; CHECK: [[di_desc_set_idx:%\w+]] = OpFunctionParameter %uint
 ; CHECK: [[di_binding_idx:%\w+]] = OpFunctionParameter %uint
 ; CHECK: [[di_desc_idx:%\w+]] = OpFunctionParameter %uint
+; CHECK: [[di_byte_offset:%\w+]] = OpFunctionParameter %uint
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpUGreaterThanEqual %bool [[di_desc_set_idx]] %uint_32
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: OpReturnValue %uint_0
+; CHECK: OpReturnValue %false
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_inst_bindless_DescriptorSetData %inst_bindless_input_buffer %uint_0 [[di_desc_set_idx]]
 ; CHECK: {{%\w+}} = OpLoad %_ptr_PhysicalStorageBuffer_inst_bindless_DescriptorSetData {{%\w+}}
@@ -347,7 +157,8 @@ static const std::string kReadDescInit = R"(
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: OpReturnValue %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 [[di_shader_id]] [[di_line]] [[di_stage_info]] %uint_1 [[di_desc_set_idx]] [[di_binding_idx]] [[di_desc_idx]] %uint_0 %uint_0
+; CHECK: OpReturnValue %false
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_PhysicalStorageBuffer_uint {{%\w+}} %uint_0
 ; CHECK: [[di_num_bindings:%\w+]] = OpLoad %uint {{%\w+}} Aligned 8
@@ -355,175 +166,40 @@ static const std::string kReadDescInit = R"(
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: OpReturnValue %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 [[di_shader_id]] [[di_line]] [[di_stage_info]] %uint_1 [[di_desc_set_idx]] [[di_binding_idx]] [[di_desc_idx]] %uint_0 %uint_0
+; CHECK: OpReturnValue %false
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_PhysicalStorageBuffer_uint {{%\w+}} %uint_1 [[di_binding_idx]]
+; CHECK: [[di_desc_array_len:%\w+]] = OpLoad %uint {{%\w+}} Aligned 4
+; CHECK: {{%\w+}} = OpUGreaterThanEqual %bool [[di_desc_idx]] [[di_desc_array_len]]
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 [[di_shader_id]] [[di_line]] [[di_stage_info]] %uint_1 [[di_desc_set_idx]] [[di_binding_idx]] [[di_desc_idx]] [[di_desc_array_len]] %uint_0
+; CHECK: OpReturnValue %false
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_PhysicalStorageBuffer_uint {{%\w+}} %uint_1 {{%\w+}}
 ; CHECK: {{%\w+}} = OpLoad %uint {{%\w+}} Aligned 4
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_PhysicalStorageBuffer_uint {{%\w+}} %uint_1 {{%\w+}}
-; CHECK: {{%\w+}} = OpLoad %uint {{%\w+}} Aligned 4
-; CHECK: OpReturnValue {{%\w+}}
+; CHECK: [[di_init_status:%\w+]] = OpLoad %uint {{%\w+}} Aligned 4
+; CHECK: {{%\w+}} = OpIEqual %bool [[di_init_status]] %uint_0
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 [[di_shader_id]] [[di_line]] [[di_stage_info]] %uint_2 [[di_desc_set_idx]] [[di_binding_idx]] [[di_desc_idx]] %uint_0 %uint_0
+; CHECK: OpReturnValue %false
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpUGreaterThanEqual %bool {{%\w+}} {{%\w+}}
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 [[di_shader_id]] [[di_line]] [[di_stage_info]] %uint_4 [[di_desc_set_idx]] [[di_binding_idx]] [[di_desc_idx]] [[di_byte_offset]] [[di_init_status]]
+; CHECK: OpReturnValue %false
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: OpReturnValue %true
 ; CHECK: OpFunctionEnd
 )";
-
-TEST_F(InstBindlessTest, NoInstrumentConstIndexInbounds) {
-  // Texture2D g_tColor[128];
-  //
-  // SamplerState g_sAniso;
-  //
-  // struct PS_INPUT
-  // {
-  //   float2 vTextureCoords : TEXCOORD2;
-  // };
-  //
-  // struct PS_OUTPUT
-  // {
-  //   float4 vColor : SV_Target0;
-  // };
-  //
-  // PS_OUTPUT MainPs(PS_INPUT i)
-  // {
-  //   PS_OUTPUT ps_output;
-  //
-  //   ps_output.vColor = g_tColor[ 37 ].Sample(g_sAniso, i.vTextureCoords.xy);
-  //   return ps_output;
-  // }
-
-  const std::string before =
-      R"(OpCapability Shader
-%1 = OpExtInstImport "GLSL.std.450"
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %MainPs "MainPs" %i_vTextureCoords %_entryPointOutput_vColor
-OpExecutionMode %MainPs OriginUpperLeft
-OpSource HLSL 500
-OpName %MainPs "MainPs"
-OpName %g_tColor "g_tColor"
-OpName %g_sAniso "g_sAniso"
-OpName %i_vTextureCoords "i.vTextureCoords"
-OpName %_entryPointOutput_vColor "@entryPointOutput.vColor"
-OpDecorate %g_tColor DescriptorSet 3
-OpDecorate %g_tColor Binding 5
-OpDecorate %g_sAniso DescriptorSet 3
-OpDecorate %i_vTextureCoords Location 0
-OpDecorate %_entryPointOutput_vColor Location 0
-%void = OpTypeVoid
-%8 = OpTypeFunction %void
-%float = OpTypeFloat 32
-%v2float = OpTypeVector %float 2
-%v4float = OpTypeVector %float 4
-%int = OpTypeInt 32 1
-%int_0 = OpConstant %int 0
-%int_37 = OpConstant %int 37
-%15 = OpTypeImage %float 2D 0 0 0 1 Unknown
-%uint = OpTypeInt 32 0
-%uint_128 = OpConstant %uint 128
-%_arr_15_uint_128 = OpTypeArray %15 %uint_128
-%_ptr_UniformConstant__arr_15_uint_128 = OpTypePointer UniformConstant %_arr_15_uint_128
-%g_tColor = OpVariable %_ptr_UniformConstant__arr_15_uint_128 UniformConstant
-%_ptr_UniformConstant_15 = OpTypePointer UniformConstant %15
-%21 = OpTypeSampler
-%_ptr_UniformConstant_21 = OpTypePointer UniformConstant %21
-%g_sAniso = OpVariable %_ptr_UniformConstant_21 UniformConstant
-%23 = OpTypeSampledImage %15
-%_ptr_Input_v2float = OpTypePointer Input %v2float
-%i_vTextureCoords = OpVariable %_ptr_Input_v2float Input
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-%_entryPointOutput_vColor = OpVariable %_ptr_Output_v4float Output
-%MainPs = OpFunction %void None %8
-%26 = OpLabel
-%27 = OpLoad %v2float %i_vTextureCoords
-%28 = OpAccessChain %_ptr_UniformConstant_15 %g_tColor %int_37
-%29 = OpLoad %15 %28
-%30 = OpLoad %21 %g_sAniso
-%31 = OpSampledImage %23 %29 %30
-%32 = OpImageSampleImplicitLod %v4float %31 %27
-OpStore %_entryPointOutput_vColor %32
-OpReturn
-OpFunctionEnd
-)";
-
-  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<InstBindlessCheckPass>(
-      before, before, true, true, 7u, 23u, false, false, false, false, false);
-}
-
-TEST_F(InstBindlessTest, NoInstrumentNonBindless) {
-  // This test verifies that the pass will correctly not instrument vanilla
-  // texture sample.
-  //
-  // Texture2D g_tColor;
-  //
-  // SamplerState g_sAniso;
-  //
-  // struct PS_INPUT
-  // {
-  //   float2 vTextureCoords : TEXCOORD2;
-  // };
-  //
-  // struct PS_OUTPUT
-  // {
-  //   float4 vColor : SV_Target0;
-  // };
-  //
-  // PS_OUTPUT MainPs(PS_INPUT i)
-  // {
-  //   PS_OUTPUT ps_output;
-  //   ps_output.vColor =
-  //       g_tColor.Sample(g_sAniso, i.vTextureCoords.xy);
-  //   return ps_output;
-  // }
-
-  const std::string whole_file =
-      R"(OpCapability Shader
-%1 = OpExtInstImport "GLSL.std.450"
-OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %MainPs "MainPs" %i_vTextureCoords %_entryPointOutput_vColor
-OpExecutionMode %MainPs OriginUpperLeft
-OpSource HLSL 500
-OpName %MainPs "MainPs"
-OpName %g_tColor "g_tColor"
-OpName %g_sAniso "g_sAniso"
-OpName %i_vTextureCoords "i.vTextureCoords"
-OpName %_entryPointOutput_vColor "@entryPointOutput.vColor"
-OpDecorate %g_tColor DescriptorSet 6
-OpDecorate %g_tColor Binding 4
-OpDecorate %g_sAniso DescriptorSet 6
-OpDecorate %g_sAniso Binding 4
-OpDecorate %i_vTextureCoords Location 0
-OpDecorate %_entryPointOutput_vColor Location 0
-%void = OpTypeVoid
-%8 = OpTypeFunction %void
-%float = OpTypeFloat 32
-%v2float = OpTypeVector %float 2
-%v4float = OpTypeVector %float 4
-%12 = OpTypeImage %float 2D 0 0 0 1 Unknown
-%_ptr_UniformConstant_12 = OpTypePointer UniformConstant %12
-%g_tColor = OpVariable %_ptr_UniformConstant_12 UniformConstant
-%14 = OpTypeSampler
-%_ptr_UniformConstant_14 = OpTypePointer UniformConstant %14
-%g_sAniso = OpVariable %_ptr_UniformConstant_14 UniformConstant
-%16 = OpTypeSampledImage %12
-%_ptr_Input_v2float = OpTypePointer Input %v2float
-%i_vTextureCoords = OpVariable %_ptr_Input_v2float Input
-%_ptr_Output_v4float = OpTypePointer Output %v4float
-%_entryPointOutput_vColor = OpVariable %_ptr_Output_v4float Output
-%MainPs = OpFunction %void None %8
-%19 = OpLabel
-%20 = OpLoad %v2float %i_vTextureCoords
-%21 = OpLoad %12 %g_tColor
-%22 = OpLoad %14 %g_sAniso
-%23 = OpSampledImage %16 %21 %22
-%24 = OpImageSampleImplicitLod %v4float %23 %20
-OpStore %_entryPointOutput_vColor %24
-OpReturn
-OpFunctionEnd
-)";
-
-  // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndCheck<InstBindlessCheckPass>(whole_file, whole_file, true,
-                                               true, 7u, 23u, false, false,
-                                               false, false, false);
-}
 
 TEST_F(InstBindlessTest, Simple) {
   // Texture2D g_tColor[128];
@@ -613,7 +289,6 @@ OpDecorate %_entryPointOutput_vColor Location 0
 %i_vTextureCoords = OpVariable %_ptr_Input_v2float Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %_entryPointOutput_vColor = OpVariable %_ptr_Output_v4float Output
-; CHECK: %bool = OpTypeBool
 ; CHECK: %_runtimearr_uint = OpTypeRuntimeArray %uint
 )" + kOutputGlobals + R"(
 ; CHECK: %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
@@ -637,7 +312,7 @@ OpDecorate %_entryPointOutput_vColor Location 0
 OpStore %_entryPointOutput_vColor %37
 ; CHECK-NOT: %37 = OpImageSampleImplicitLod %v4float %36 %30
 ; CHECK-NOT: OpStore %_entryPointOutput_vColor %37
-; CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} %uint_128
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_57 {{%\w+}} %uint_3 %uint_0 %32 %uint_0
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
@@ -646,7 +321,6 @@ OpStore %_entryPointOutput_vColor %37
 ; CHECK: {{%\w+}} = OpImageSampleImplicitLod %v4float {{%\w+}} %30
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_56 %uint_0 %uint_3 %uint_0 %32 %uint_128
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: [[phi_result:%\w+]] = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
@@ -655,12 +329,12 @@ OpReturn
 OpFunctionEnd
 )";
 
-  const std::string output_func = kStreamWrite6Frag;
+  const std::string output_func = kStreamWrite6 + kCheckDesc;
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass, uint32_t, uint32_t, bool, bool>(
+  SinglePassRunAndMatch<InstBindlessCheckPass, uint32_t, uint32_t>(
       entry + names_annots + consts_types_vars + main_func + output_func, true,
-      7u, 23u, false, false, false, false, false);
+      7u, 23u);
 }
 
 TEST_F(InstBindlessTest, InstrumentMultipleInstructions) {
@@ -721,7 +395,7 @@ OpDecorate %g_sAniso DescriptorSet 3
 OpDecorate %i_vTextureCoords Location 0
 OpDecorate %_entryPointOutput_vColor Location 0
 ; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_FragCoord BuiltIn FragCoord
 %void = OpTypeVoid
 %10 = OpTypeFunction %void
@@ -750,14 +424,12 @@ OpDecorate %_entryPointOutput_vColor Location 0
 %i_vTextureCoords = OpVariable %_ptr_Input_v2float Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %_entryPointOutput_vColor = OpVariable %_ptr_Output_v4float Output
-; CHECK: %bool = OpTypeBool
-; CHECK: {{%\w+}} = OpTypeFunction %void %uint %uint %uint %uint
 ; CHECK: %_runtimearr_uint = OpTypeRuntimeArray %uint
+; CHECK: %v4uint = OpTypeVector %uint 4
 )" + kOutputGlobals + R"(
 ; CHECK: %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 ; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
 ; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-; CHECK: %v4uint = OpTypeVector %uint 4
 ; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 )";
   // clang-format on
@@ -774,19 +446,23 @@ OpDecorate %_entryPointOutput_vColor Location 0
 %37 = OpSampledImage %27 %35 %36
 %38 = OpImageSampleImplicitLod %v4float %37 %31
 ; CHECK-NOT: %38 = OpImageSampleImplicitLod %v4float %37 %31
-; CHECK: %48 = OpULessThan %bool %33 %uint_128
-; CHECK: OpSelectionMerge %49 None
-; CHECK: OpBranchConditional %48 %50 %51
-; CHECK: %50 = OpLabel
-; CHECK: %52 = OpLoad %17 %34
-; CHECK: %53 = OpSampledImage %27 %52 %36
-; CHECK: %54 = OpImageSampleImplicitLod %v4float %53 %31
-; CHECK: OpBranch %49
-; CHECK: %51 = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_58 %uint_0 %uint_3 %uint_4 %33 %uint_128
-; CHECK: OpBranch %49
-; CHECK: %49 = OpLabel
-; CHECK: {{%\w+}} = OpPhi %v4float %54 %50 [[null_v4float]] %51
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_59 {{%\w+}} %uint_3 %uint_4 %33 %uint_0
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %17 %34
+; CHECK: {{%\w+}} = OpSampledImage %27 {{%\w+}} %36
+; CHECK: {{%\w+}} = OpImageSampleImplicitLod %v4float {{%\w+}} %31
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
 %39 = OpAccessChain %_ptr_PushConstant_uint %_ %int_1
 %40 = OpLoad %uint %39
 %41 = OpAccessChain %_ptr_UniformConstant_17 %g_tColor %40
@@ -796,7 +472,12 @@ OpDecorate %_entryPointOutput_vColor Location 0
 %45 = OpFAdd %v4float %38 %44
 ; CHECK-NOT: %44 = OpImageSampleImplicitLod %v4float %43 %31
 ; CHECK-NOT: %45 = OpFAdd %v4float %38 %44
-; CHECK: {{%\w+}} = OpULessThan %bool %40 %uint_128
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_65 {{%\w+}} %uint_3 %uint_4 %40 %uint_0
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
@@ -805,7 +486,6 @@ OpDecorate %_entryPointOutput_vColor Location 0
 ; CHECK: {{%\w+}} = OpImageSampleImplicitLod %v4float {{%\w+}} %31
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_64 %uint_0 %uint_3 %uint_4 %40 %uint_128
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
@@ -815,12 +495,11 @@ OpReturn
 OpFunctionEnd
 )";
 
-  const std::string output_func = kStreamWrite6Frag;
+  const std::string output_func = kStreamWrite6 + kCheckDesc;
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + output_func,
-                                               true, 7u, 23u, false, false,
-                                               false, false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, InstrumentOpImage) {
@@ -853,7 +532,7 @@ OpDecorate %PerViewConstantBuffer_t Block
 OpDecorate %i_vTextureCoords Location 0
 OpDecorate %_entryPointOutput_vColor Location 0
 ; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_FragCoord BuiltIn FragCoord
 %void = OpTypeVoid
 %3 = OpTypeFunction %void
@@ -878,14 +557,11 @@ OpDecorate %_entryPointOutput_vColor Location 0
 %i_vTextureCoords = OpVariable %_ptr_Input_v2int Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %_entryPointOutput_vColor = OpVariable %_ptr_Output_v4float Output
-; CHECK: uint_0 = OpConstant %uint 0
-; CHECK: bool = OpTypeBool
 ; CHECK: %_runtimearr_uint = OpTypeRuntimeArray %uint
-)" + kOutputGlobals + R"(
+)" + kInputGlobals + kOutputGlobals + R"(
 ; CHECK: %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 ; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
 ; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-; CHECK: %v4uint = OpTypeVector %uint 4
 ; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 )";
   // clang-format on
@@ -903,30 +579,33 @@ OpDecorate %_entryPointOutput_vColor Location 0
 OpStore %_entryPointOutput_vColor %71
 ; CHECK-NOT: %71 = OpImageRead %v4float %75 %53
 ; CHECK-NOT: OpStore %_entryPointOutput_vColor %71
-; CHECK: %78 = OpULessThan %bool %64 %uint_128
-; CHECK: OpSelectionMerge %79 None
-; CHECK: OpBranchConditional %78 %80 %81
-; CHECK: %80 = OpLabel
-; CHECK: %82 = OpLoad %39 %65
-; CHECK: %83 = OpImage %20 %82
-; CHECK: %84 = OpImageRead %v4float %83 %53
-; CHECK: OpBranch %79
-; CHECK: %81 = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_51 %uint_0 %uint_3 %uint_9 %64 %uint_128
-; CHECK: OpBranch %79
-; CHECK: %79 = OpLabel
-; CHECK: {{%\w+}} = OpPhi %v4float %84 %80 [[null_v4float]] %81
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_52 {{%\w+}} %uint_3 %uint_9 %64 %uint_0
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %39 %65
+; CHECK: {{%\w+}} = OpImage %20 {{%\w+}}
+; CHECK: {{%\w+}} = OpImageRead %v4float {{%\w+}} %53
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
 ; CHECK: OpStore %_entryPointOutput_vColor {{%\w+}}
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string output_func = kStreamWrite6Frag;
+  const std::string output_func = kStreamWrite6 + kCheckDesc;
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + output_func,
-                                               true, 7u, 23u, false, false,
-                                               false, false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, InstrumentSampledImage) {
@@ -957,7 +636,7 @@ OpMemberDecorate %PerViewConstantBuffer_t 0 Offset 0
 OpDecorate %PerViewConstantBuffer_t Block
 OpDecorate %i_vTextureCoords Location 0
 OpDecorate %_entryPointOutput_vColor Location 0
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_FragCoord BuiltIn FragCoord
 %void = OpTypeVoid
 %3 = OpTypeFunction %void
@@ -982,14 +661,11 @@ OpDecorate %_entryPointOutput_vColor Location 0
 %i_vTextureCoords = OpVariable %_ptr_Input_v2float Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %_entryPointOutput_vColor = OpVariable %_ptr_Output_v4float Output
-; CHECK: uint_0 = OpConstant %uint 0
-; CHECK: bool = OpTypeBool
 ; CHECK: %_runtimearr_uint = OpTypeRuntimeArray %uint
-)" + kOutputGlobals + R"(
+)" + kInputGlobals + kOutputGlobals + R"(
 ; CHECK: %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 ; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
 ; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-; CHECK: %v4uint = OpTypeVector %uint 4
 ; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 )";
   // clang-format on
@@ -1006,29 +682,32 @@ OpDecorate %_entryPointOutput_vColor Location 0
 OpStore %_entryPointOutput_vColor %71
 ; CHECK-NOT: %71 = OpImageSampleImplicitLod %v4float %66 %53
 ; CHECK-NOT: OpStore %_entryPointOutput_vColor %71
-; CHECK: %74 = OpULessThan %bool %64 %uint_128
-; CHECK: OpSelectionMerge %75 None
-; CHECK: OpBranchConditional %74 %76 %77
-; CHECK: %76 = OpLabel
-; CHECK: %78 = OpLoad %39 %65
-; CHECK: %79 = OpImageSampleImplicitLod %v4float %78 %53
-; CHECK: OpBranch %75
-; CHECK: %77 = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_49 %uint_0 %uint_4 %uint_11 %64 %uint_128
-; CHECK: OpBranch %75
-; CHECK: %75 = OpLabel
-; CHECK: {{%\w+}} = OpPhi %v4float %79 %76 [[null_v4float]] %77
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_50 {{%\w+}} %uint_4 %uint_11 %64 %uint_0
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %39 %65
+; CHECK: {{%\w+}} = OpImageSampleImplicitLod %v4float {{%\w+}} %53
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
 ; CHECK: OpStore %_entryPointOutput_vColor {{%\w+}}
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string output_func = kStreamWrite6Frag;
+  const std::string output_func = kStreamWrite6 + kCheckDesc;
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + output_func,
-                                               true, 7u, 23u, false, false,
-                                               false, false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, InstrumentImageWrite) {
@@ -1061,7 +740,7 @@ OpDecorate %PerViewConstantBuffer_t Block
 OpDecorate %i_vTextureCoords Location 0
 OpDecorate %_entryPointOutput_vColor Location 0
 ; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_FragCoord BuiltIn FragCoord
 %void = OpTypeVoid
 %3 = OpTypeFunction %void
@@ -1087,11 +766,12 @@ OpDecorate %_entryPointOutput_vColor Location 0
 %i_vTextureCoords = OpVariable %_ptr_Input_v2int Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %_entryPointOutput_vColor = OpVariable %_ptr_Output_v4float Output
+)" + kInputGlobals + R"(
+; CHECK: %v4uint = OpTypeVector %uint 4
 )" + kOutputGlobals + R"(
 ; CHECK: %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 ; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
 ; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-; CHECK: %v4uint = OpTypeVector %uint 4
 )";
   // clang-format on
 
@@ -1107,28 +787,32 @@ OpImageWrite %66 %53 %80
 OpStore %_entryPointOutput_vColor %80
 ; CHECK-NOT: OpImageWrite %66 %53 %80
 ; CHECK-NOT: OpStore %_entryPointOutput_vColor %80
-; CHECK: %35 = OpULessThan %bool %30 %uint_128
-; CHECK: OpSelectionMerge %36 None
-; CHECK: OpBranchConditional %35 %37 %38
-; CHECK: %37 = OpLabel
-; CHECK: %39 = OpLoad %16 %31
-; CHECK: OpImageWrite %39 %28 %19
-; CHECK: OpBranch %36
-; CHECK: %38 = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_51 %uint_0 %uint_30 %uint_2 %30 %uint_128
-; CHECK: OpBranch %36
-; CHECK: %36 = OpLabel
+; CHECK: %32 = OpLoad %16 %31
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_52 {{%\w+}} %uint_30 %uint_2 %30 %uint_0
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %16 %31
+; CHECK: OpImageWrite {{%\w+}} %28 %19
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
 ; CHECK: OpStore %_entryPointOutput_vColor %19
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string output_func = kStreamWrite6Frag;
+  const std::string output_func = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + output_func,
-                                               true, 7u, 23u, false, false,
-                                               false, false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, InstrumentVertexSimple) {
@@ -1160,7 +844,7 @@ OpMemberName %foo 0 "g_idx"
 OpName %__0 ""
 OpName %coords2D "coords2D"
 ; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_VertexIndex BuiltIn VertexIndex
 ; CHECK: OpDecorate %gl_InstanceIndex BuiltIn InstanceIndex
 OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
@@ -1205,9 +889,8 @@ OpDecorate %coords2D Location 0
 %v2float = OpTypeVector %float 2
 %_ptr_Input_v2float = OpTypePointer Input %v2float
 %coords2D = OpVariable %_ptr_Input_v2float Input
-; CHECK: %bool = OpTypeBool
 ; CHECK: %_runtimearr_uint = OpTypeRuntimeArray %uint
-)" + kOutputGlobals + R"(
+)" + kInputGlobals + kOutputGlobals + R"(
 ; CHECK: %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 ; CHECK: %_ptr_Input_uint = OpTypePointer Input %uint
 ; CHECK: %gl_VertexIndex = OpVariable %_ptr_Input_uint Input
@@ -1235,31 +918,49 @@ OpStore %40 %38
 ; CHECK-NOT: %38 = OpImageSampleExplicitLod %v4float %35 %36 Lod %37
 ; CHECK-NOT: %40 = OpAccessChain %_ptr_Output_v4float %_ %int_0
 ; CHECK-NOT: OpStore %40 %38
-; CHECK: %46 = OpULessThan %bool %37 %uint_128
-; CHECK: OpSelectionMerge %47 None
-; CHECK: OpBranchConditional %46 %48 %49
-; CHECK: %48 = OpLabel
-; CHECK: %50 = OpLoad %25 %38
-; CHECK: %51 = OpImageSampleExplicitLod %v4float %50 %40 Lod %41
-; CHECK: OpBranch %47
-; CHECK: %49 = OpLabel
-; CHECK: {{%\w+}} = OpBitcast %uint %37
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_74 %uint_0 %uint_2 %uint_13 {{%\w+}} %uint_128
-; CHECK: OpBranch %47
-; CHECK: %47 = OpLabel
-; CHECK: {{%\w+}} = OpPhi %v4float %51 %48 [[null_v4float]] %49
+; CHECK: {{%\w+}} = OpLoad %uint %gl_VertexIndex
+; CHECK: {{%\w+}} = OpLoad %uint %gl_InstanceIndex
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_0 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_70 {{%\w+}} %uint_7 %uint_5 %uint_0 {{%\w+}}
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %int {{%\w+}}
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpPhi %int {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_UniformConstant_25 %texSampler1D {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %float %coords1D
+; CHECK: {{%\w+}} = OpLoad %float %lod
+; CHECK: {{%\w+}} = OpLoad %uint %gl_VertexIndex
+; CHECK: {{%\w+}} = OpLoad %uint %gl_InstanceIndex
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_0 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpBitcast %uint {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_75 {{%\w+}} %uint_2 %uint_13 {{%\w+}} %uint_0
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %25 %38
+; CHECK: {{%\w+}} = OpImageSampleExplicitLod %v4float {{%\w+}} %40 Lod %41
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: %43 = OpAccessChain %_ptr_Output_v4float %_ %int_0
 ; CHECK: OpStore %43 {{%\w+}}
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string output_func = kStreamWrite6Vert;
+  const std::string output_func = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + output_func,
-                                               true, 7u, 23u, false, false,
-                                               false, false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, InstrumentTeseSimple) {
@@ -1320,7 +1021,7 @@ OpDecorate %ufoo Block
 OpDecorate %uniform_index_buffer DescriptorSet 9
 OpDecorate %uniform_index_buffer Binding 2
 ; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_PrimitiveID BuiltIn PrimitiveId
 ; CHECK: OpDecorate %gl_TessCoord BuiltIn TessCoord
 %void = OpTypeVoid
@@ -1346,9 +1047,8 @@ OpDecorate %uniform_index_buffer Binding 2
 %_ptr_Uniform_uint = OpTypePointer Uniform %uint
 %_ptr_StorageBuffer_v4float = OpTypePointer StorageBuffer %v4float
 %_ptr_Output_v4float = OpTypePointer Output %v4float
-; CHECK: %bool = OpTypeBool
 ; CHECK: %_runtimearr_uint = OpTypeRuntimeArray %uint
-)" + kOutputGlobals + R"(
+)" + kInputGlobals + kOutputGlobals + R"(
 ; CHECK: %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 ; CHECK: %_ptr_Input_uint = OpTypePointer Input %uint
 ; CHECK: %gl_PrimitiveID = OpVariable %_ptr_Input_uint Input
@@ -1368,31 +1068,52 @@ OpDecorate %uniform_index_buffer Binding 2
 %28 = OpAccessChain %_ptr_StorageBuffer_v4float %adds %26 %int_0
 %29 = OpLoad %v4float %28
 ; CHECK-NOT: %29 = OpLoad %v4float %28
-; CHECK: %34 = OpULessThan %bool %28 %uint_11
-; CHECK: OpSelectionMerge %35 None
-; CHECK: OpBranchConditional %34 %36 %37
-; CHECK: %36 = OpLabel
-; CHECK: %38 = OpLoad %v4float %29
-; CHECK: OpBranch %35
-; CHECK: %37 = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_63 %uint_0 %uint_9 %uint_1 %28 %uint_11
-; CHECK: OpBranch %35
-; CHECK: %35 = OpLabel
-; CHECK: {{%\w+}} = OpPhi %v4float %38 %36 [[null_v4float]] %37
+; CHECK: {{%\w+}} = OpLoad %uint %gl_PrimitiveID
+; CHECK: {{%\w+}} = OpLoad %v3float %gl_TessCoord
+; CHECK: {{%\w+}} = OpBitcast %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_2 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_62 {{%\w+}} %uint_9 %uint_2 %uint_0 {{%\w+}}
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %uint %27
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpPhi %uint {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
 %31 = OpAccessChain %_ptr_Output_v4float %_ %int_0
 OpStore %31 %29
 ; CHECK-NOT: OpStore %31 %29
-; CHECK: OpStore %31 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %uint %gl_PrimitiveID
+; CHECK: {{%\w+}} = OpLoad %v3float %gl_TessCoord
+; CHECK: {{%\w+}} = OpBitcast %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_2 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_64 {{%\w+}} %uint_9 %uint_1 {{%\w+}} {{%\w+}}
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %v4float %29
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: [[phi_result:%\w+]] = OpPhi {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: %31 = OpAccessChain %_ptr_Output_v4float %_ %int_0
+; CHECK: OpStore %31 [[phi_result]]
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string output_func = kStreamWrite6Tese;
+  const std::string output_func = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + output_func,
-                                               true, 7u, 23u, false, false,
-                                               false, false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, MultipleDebugFunctions) {
@@ -1436,7 +1157,7 @@ OpDecorate %g_sAniso Binding 3
 OpDecorate %i_vTextureCoords Location 0
 OpDecorate %_entryPointOutput_vColor Location 0
 ; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_FragCoord BuiltIn FragCoord
 %void = OpTypeVoid
 %4 = OpTypeFunction %void
@@ -1471,13 +1192,11 @@ OpDecorate %_entryPointOutput_vColor Location 0
 %i_vTextureCoords = OpVariable %_ptr_Input_v2float Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %_entryPointOutput_vColor = OpVariable %_ptr_Output_v4float Output
-; CHECK: %bool = OpTypeBool
 ; CHECK: %_runtimearr_uint = OpTypeRuntimeArray %uint
-)" + kOutputGlobals + R"(
+)" + kInputGlobals + kOutputGlobals + R"(
 ; CHECK: %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 ; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
 ; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-; CHECK: %v4uint = OpTypeVector %uint 4
 ; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 )";
   // clang-format on
@@ -1516,23 +1235,27 @@ OpLine %1 24 0
 %44 = OpLoad %v2float %43
 %45 = OpImageSampleImplicitLod %v4float %41 %44
 ; CHECK-NOT: %45 = OpImageSampleImplicitLod %v4float %41 %44
+; CHECK: {{%\w+}} = OpLoad %v2float {{%\w+}}
 ; CHECK: OpNoLine
-; CHECK: %62 = OpULessThan %bool %50 %uint_128
-; CHECK: OpSelectionMerge %63 None
-; CHECK: OpBranchConditional %62 %64 %65
-; CHECK: %64 = OpLabel
-; CHECK: %66 = OpLoad %27 %51
-; CHECK: %67 = OpSampledImage %37 %66 %53
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_128 {{%\w+}} %uint_1 %uint_2 {{%\w+}} %uint_0
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %27 {{%\w+}}
+; CHECK: {{%\w+}} = OpSampledImage %37 {{%\w+}} {{%\w+}}
 ; CHECK: OpLine %5 24 0
-; CHECK: %68 = OpImageSampleImplicitLod %v4float %67 %56
+; CHECK: {{%\w+}} = OpImageSampleImplicitLod %v4float {{%\w+}} {{%\w+}}
 ; CHECK: OpNoLine
-; CHECK: OpBranch %63
-; CHECK: %65 = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_109 %uint_0 %uint_1 %uint_2 %50 %uint_128
-; CHECK: OpBranch %63
-; CHECK: %63 = OpLabel
-; CHECK: [[phi_result:%\w+]] = OpPhi %v4float %68 %64 [[null_v4float]] %65
-; CHECK: OpLine %5 24 0
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: [[phi_result:%\w+]] = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
 %47 = OpAccessChain %_ptr_Function_v4float %ps_output %int_0
 OpStore %47 %45
 ; CHECK-NOT: OpStore %47 %45
@@ -1544,12 +1267,11 @@ OpReturnValue %48
 OpFunctionEnd
 )";
 
-  const std::string output_func = kStreamWrite6Frag;
+  const std::string output_func = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(
-      defs + func1 + func2 + output_func, true, 7u, 23u, false, false, false,
-      false, false);
+      defs + func1 + func2 + output_func, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, RuntimeArray) {
@@ -1617,7 +1339,6 @@ OpDecorate %_entryPointOutput_vColor Location 0
 )" + kInputGlobals + kOutputGlobals + R"(
 ; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
 ; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-; CHECK: %v4uint = OpTypeVector %uint 4
 ; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 )";
   // clang-format on
@@ -1636,15 +1357,12 @@ OpDecorate %_entryPointOutput_vColor Location 0
 OpStore %_entryPointOutput_vColor %71
 ; CHECK-NOT: %71 = OpImageSampleImplicitLod %v4float %68 %53
 ; CHECK-NOT: OpStore %_entryPointOutput_vColor %71
-; CHECK: [[length_result:%\w+]] = OpFunctionCall %uint %inst_bindless_read_binding_length %uint_1 %uint_2
-; CHECK: {{%\w+}} = OpULessThan %bool %32 [[length_result]]
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpLoad %16 %33
-; CHECK: {{%\w+}} = OpSampledImage %26 {{%\w+}} %35
-; CHECK: [[state_result:%\w+]] = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_2 %32
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 [[state_result]]
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: [[check_result:%\w+]] = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_60 {{%\w+}} %uint_1 %uint_2 %32 %uint_0
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
@@ -1653,28 +1371,19 @@ OpStore %_entryPointOutput_vColor %71
 ; CHECK: {{%\w+}} = OpImageSampleImplicitLod %v4float {{%\w+}} %30
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_59 %uint_1 %uint_1 %uint_2 %32 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: [[phi_result_1:%\w+]] = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_59 %uint_0 %uint_1 %uint_2 %32 {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[phi_result_2:%\w+]] = OpPhi %v4float [[phi_result_1]] {{%\w+}} [[null_v4float]] {{%\w+}}
-; CHECK: OpStore %_entryPointOutput_vColor [[phi_result_2]]
+; CHECK: OpStore %_entryPointOutput_vColor [[phi_result_1]]
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs =
-      kReadBindingLength + kStreamWrite6Frag + kReadDescInit;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, InstrumentInitCheckOnScalarDescriptor) {
@@ -1726,9 +1435,6 @@ OpDecorate %_entryPointOutput_vColor Location 0
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %_entryPointOutput_vColor = OpVariable %_ptr_Output_v4float Output
 )" + kInputGlobals + kOutputGlobals + R"(
-; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
-; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-; CHECK: %v4uint = OpTypeVector %uint 4
 ; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 )";
   // clang-format on
@@ -1744,17 +1450,15 @@ OpDecorate %_entryPointOutput_vColor Location 0
 OpStore %_entryPointOutput_vColor %24
 ; CHECK-NOT: %24 = OpImageSampleImplicitLod %v4float %23 %20
 ; CHECK-NOT: OpStore %_entryPointOutput_vColor %24
-; CHECK: [[state_result:%\w+]] = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_2 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 [[state_result]]
+; CHECK: [[check_result:%\w+]] = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_40 {{%\w+}} %uint_1 %uint_2 %uint_0 %uint_0
 ; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: OpBranchConditional [[check_result]] {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpLoad %12 %g_tColor
 ; CHECK: {{%\w+}} = OpSampledImage %16 {{%\w+}} %22
 ; CHECK: {{%\w+}} = OpImageSampleImplicitLod %v4float {{%\w+}} %20
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_39 %uint_1 %uint_1 %uint_2 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: [[phi_result:%\w+]] = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
@@ -1763,12 +1467,11 @@ OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs = kReadDescInit + kStreamWrite6Frag;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, SPV14AddToEntryPoint) {
@@ -1824,8 +1527,7 @@ OpFunctionEnd
 )";
 
   SetTargetEnv(SPV_ENV_VULKAN_1_1_SPIRV_1_4);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, true, true,
-                                               false, false, false);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, SPV14AddToEntryPoints) {
@@ -1883,8 +1585,7 @@ OpFunctionEnd
 )";
 
   SetTargetEnv(SPV_ENV_VULKAN_1_1_SPIRV_1_4);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, true, true,
-                                               false, false, false);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, InstBoundsAndInitLoadUnsizedUBOArray) {
@@ -1932,10 +1633,9 @@ OpDecorate %nu_ii Location 0
 OpDecorate %nu_ii NonUniform
 OpDecorate %16 NonUniform
 OpDecorate %20 NonUniform
-; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kInputDecorations + R"(
 ; CHECK: OpDecorate {{%\w+}} NonUniform
-)" + kOutputDecorations + R"(
+; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
+)" + kInputDecorations + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_FragCoord BuiltIn FragCoord
 ; CHECK: OpDecorate {{%\w+}} NonUniform
 %void = OpTypeVoid
@@ -1952,11 +1652,12 @@ OpDecorate %20 NonUniform
 %nu_ii = OpVariable %_ptr_Input_int Input
 %int_0 = OpConstant %int 0
 %_ptr_Uniform_float = OpTypePointer Uniform %float
-)" + kInputGlobals + kOutputGlobals + R"(
+)" + kInputGlobals + R"(
+; CHECK: %v4uint = OpTypeVector %uint 4
+)" + kOutputGlobals + R"(
 ; CHECK: %v4float = OpTypeVector %float 4
 ; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
 ; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-; CHECK: %v4uint = OpTypeVector %uint 4
 ; CHECK: [[null_float:%\w+]] = OpConstantNull %float
 )";
   // clang-format on
@@ -1970,44 +1671,32 @@ OpDecorate %20 NonUniform
 OpStore %b %20
 ; CHECK-NOT: %20 = OpLoad %float %19
 ; CHECK-NOT: OpStore %b %20
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_binding_length %uint_6 %uint_3
-; CHECK: {{%\w+}} = OpULessThan %bool %7 {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
 ; CHECK: {{%\w+}} = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_6 %uint_3 {{%\w+}}
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_46 {{%\w+}} %uint_6 %uint_3 {{%\w+}} {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpLoad %float %20
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_45 %uint_1 %uint_6 %uint_3 {{%\w+}} %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[phi_result_1:%\w+]] = OpPhi %float {{%\w+}} {{%\w+}} [[null_float]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[bitcast_result:%\w+]] = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_45 %uint_0 %uint_6 %uint_3 [[bitcast_result]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[phi_result_2:%\w+]] = OpPhi %float [[phi_result_1]] {{%\w+}} [[null_float]] {{%\w+}}
-; CHECK: OpStore %b [[phi_result_2]]
+; CHECK: [[phi_result:%\w+]] = OpPhi %float {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: OpStore %b [[phi_result]]
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs =
-      kReadBindingLength + kStreamWrite6Frag + kReadDescInit;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, InstBoundsAndInitLoadUnsizedSSBOArrayDeprecated) {
@@ -2074,11 +1763,12 @@ OpDecorate %20 NonUniform
 %_ptr_StorageBuffer_float = OpTypePointer StorageBuffer %float
 ; CHECK: %uint = OpTypeInt 32 0
 ; CHECK: %_runtimearr_uint = OpTypeRuntimeArray %uint
-)" + kInputGlobals + kOutputGlobals + R"(
+)" + kInputGlobals + R"(
+; CHECK: %v4uint = OpTypeVector %uint 4
+)" + kOutputGlobals + R"(
 ; CHECK: %v4float = OpTypeVector %float 4
 ; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
 ; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-; CHECK: %v4uint = OpTypeVector %uint 4
 ; CHECK: [[null_float:%\w+]] = OpConstantNull %float
 )";
   // clang-format on
@@ -2092,44 +1782,32 @@ OpDecorate %20 NonUniform
 OpStore %b %20
 ; CHECK-NOT: %20 = OpLoad %float %19
 ; CHECK-NOT: OpStore %b %20
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_binding_length %uint_7 %uint_3
-; CHECK: {{%\w+}} = OpULessThan %bool %7 {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[bitcast_result_1:%\w+]] = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_7 %uint_3 [[bitcast_result_1]]
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpBitcast %uint %7
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_46 {{%\w+}} %uint_7 %uint_3 {{%\w+}} {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpLoad %float %20
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_45 %uint_1 %uint_7 %uint_3 {{%\w+}} %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[phi_result_1:%\w+]] = OpPhi %float {{%\w+}} {{%\w+}} [[null_float]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[bitcast_result_2:%\w+]] = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_45 %uint_0 %uint_7 %uint_3 [[bitcast_result_2]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[phi_result_2:%\w+]] = OpPhi %float [[phi_result_1]] {{%\w+}} [[null_float]] {{%\w+}}
-; CHECK: OpStore %b [[phi_result_2]]
+; CHECK: [[phi_result:%\w+]] = OpPhi %float {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: OpStore %b [[phi_result]]
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs =
-      kReadBindingLength + kStreamWrite6Frag + kReadDescInit;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, InstBoundsAndInitLoadUnsizedSSBOArray) {
@@ -2166,10 +1844,9 @@ OpDecorate %nu_ii Location 0
 OpDecorate %nu_ii NonUniform
 OpDecorate %16 NonUniform
 OpDecorate %20 NonUniform
-; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kInputDecorations + R"(
 ; CHECK: OpDecorate {{%\w+}} NonUniform
-)" + kOutputDecorations + R"(
+; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
+)" + kInputDecorations + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_FragCoord BuiltIn FragCoord
 ; CHECK: OpDecorate {{%\w+}} NonUniform
 %void = OpTypeVoid
@@ -2186,11 +1863,12 @@ OpDecorate %20 NonUniform
 %nu_ii = OpVariable %_ptr_Input_int Input
 %int_0 = OpConstant %int 0
 %_ptr_StorageBuffer_float = OpTypePointer StorageBuffer %float
-)" + kInputGlobals + kOutputGlobals + R"(
+)" + kInputGlobals + R"(
+; CHECK: %v4uint = OpTypeVector %uint 4
+)" + kOutputGlobals + R"(
 ; CHECK: %v4float = OpTypeVector %float 4
 ; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
 ; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-; CHECK: %v4uint = OpTypeVector %uint 4
 ; CHECK: [[null_float:%\w+]] = OpConstantNull %float
 )";
   // clang-format on
@@ -2204,44 +1882,32 @@ OpDecorate %20 NonUniform
 OpStore %b %20
 ; CHECK-NOT: %20 = OpLoad %float %19
 ; CHECK-NOT: OpStore %b %20
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_binding_length %uint_0 %uint_3
-; CHECK: {{%\w+}} = OpULessThan %bool %7 {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
 ; CHECK: {{%\w+}} = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_0 %uint_3 {{%\w+}}
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_46 {{%\w+}} %uint_0 %uint_3 {{%\w+}} {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpLoad %float %20
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_45 %uint_1 %uint_0 %uint_3 {{%\w+}} %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[phi_result_1:%\w+]] = OpPhi %float {{%\w+}} {{%\w+}} [[null_float]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[bitcast_result:%\w+]] = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_45 %uint_0 %uint_0 %uint_3 [[bitcast_result]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[phi_result_2:%\w+]] = OpPhi %float [[phi_result_1]] {{%\w+}} [[null_float]] {{%\w+}}
-; CHECK: OpStore %b [[phi_result_2]]
+; CHECK: {{%\w+}} = OpPhi %float {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: OpStore %b {{%\w+}}
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs =
-      kReadBindingLength + kStreamWrite6Frag + kReadDescInit;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, InstInitLoadUBOScalar) {
@@ -2296,11 +1962,12 @@ OpDecorate %uniformBuffer Binding 3
 ; CHECK: %_ptr_Uniform_float = OpTypePointer Uniform %float
 ; CHECK: %uint = OpTypeInt 32 0
 ; CHECK: %_runtimearr_uint = OpTypeRuntimeArray %uint
-)" + kInputGlobals + kOutputGlobals + R"(
+)" + kInputGlobals + R"(
+; CHECK: %v4uint = OpTypeVector %uint 4
+)" + kOutputGlobals + R"(
 ; CHECK: %v4float = OpTypeVector %float 4
 ; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
 ; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-; CHECK: %v4uint = OpTypeVector %uint 4
 ; CHECK: [[null_float:%\w+]] = OpConstantNull %float
 )";
   // clang-format on
@@ -2313,29 +1980,31 @@ OpDecorate %uniformBuffer Binding 3
 OpStore %b %16
 ; CHECK-NOT: %16 = OpLoad %float %15
 ; CHECK-NOT: OpStore %b %16
-; CHECK: [[check_result:%\w+]] = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_7 %uint_3 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 [[check_result]]
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: [[check_result:%\w+]] = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_33 {{%\w+}} %uint_7 %uint_3 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: OpBranchConditional [[check_result]] {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpLoad %float %15
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_32 %uint_1 %uint_7 %uint_3 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[phi_result:%\w+]] = OpPhi %float {{%\w+}} {{%\w+}} [[null_float]] {{%\w+}}
+; CHECK: [[phi_result:%\w+]] = OpPhi %float {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: OpStore %b [[phi_result]]
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs = kReadDescInit + kStreamWrite6Frag;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, InstBoundsInitStoreUnsizedSSBOArray) {
@@ -2398,9 +2067,10 @@ OpDecorate %b Location 1
 %_ptr_Input_float = OpTypePointer Input %float
 %b = OpVariable %_ptr_Input_float Input
 %_ptr_Uniform_float = OpTypePointer Uniform %float
-)" + kInputGlobals + kOutputGlobals + R"(
-; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
+)" + kInputGlobals + R"(
 ; CHECK: %v4uint = OpTypeVector %uint 4
+)" + kOutputGlobals + R"(
+; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
 )";
   // clang-format on
 
@@ -2412,41 +2082,30 @@ OpDecorate %b Location 1
 %20 = OpAccessChain %_ptr_Uniform_float %storageBuffer %14 %int_0
 OpStore %20 %18
 ; CHECK-NOT: OpStore %20 %18
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_binding_length %uint_5 %uint_4
-; CHECK: {{%\w+}} = OpULessThan %bool %7 {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
 ; CHECK: {{%\w+}} = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_5 %uint_4 {{%\w+}}
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: [[check_result:%\w+]] = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_46 {{%\w+}} %uint_5 %uint_4 {{%\w+}} {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: OpBranchConditional [[check_result]] {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: OpStore %20 %19
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_45 %uint_1 %uint_5 %uint_4 {{%\w+}} %uint_0
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_45 %uint_0 %uint_5 %uint_4 {{%\w+}} {{%\w+}}
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs =
-      kReadBindingLength + kStreamWrite6Frag + kReadDescInit;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, InstBoundsInitLoadSizedUBOArray) {
@@ -2494,9 +2153,8 @@ OpDecorate %nu_ii NonUniform
 OpDecorate %18 NonUniform
 OpDecorate %22 NonUniform
 ; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_FragCoord BuiltIn FragCoord
-)" + kInputDecorations + R"(
 ; CHECK: OpDecorate [[load_result:%\w+]] NonUniform
 %void = OpTypeVoid
 %3 = OpTypeFunction %void
@@ -2514,13 +2172,11 @@ OpDecorate %22 NonUniform
 %nu_ii = OpVariable %_ptr_Input_int Input
 %int_0 = OpConstant %int 0
 %_ptr_Uniform_float = OpTypePointer Uniform %float
-)" + kOutputGlobals + R"(
-; CHECK: %v4float = OpTypeVector %float 4
+)" + kInputGlobals + kOutputGlobals + R"(
 ; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
 ; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-; CHECK: %v4uint = OpTypeVector %uint 4
 ; CHECK: [[null_float:%\w+]] = OpConstantNull %float
-)" + kInputGlobals;
+)";
   // clang-format on
 
   const std::string main_func = R"(
@@ -2532,42 +2188,32 @@ OpDecorate %22 NonUniform
 OpStore %b %22
 ; CHECK-NOT: %22 = OpLoad %float %21
 ; CHECK-NOT: OpStore %b %22
-; CHECK: {{%\w+}} = OpULessThan %bool %7 %uint_128
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpBitcast %uint %7
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_47 {{%\w+}} %uint_1 %uint_3 {{%\w+}} {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_3 {{%\w+}}
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[load_result]] = OpLoad %float %22
+; CHECK: {{%\w+}} = OpLoad %float %22
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_46 %uint_1 %uint_1 %uint_3 {{%\w+}} %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[phi_result_1:%\w+]] = OpPhi %float {{%\w+}} {{%\w+}} [[null_float]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpBitcast %uint %7
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_46 %uint_0 %uint_1 %uint_3 {{%\w+}} %uint_128
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[phi_result_2:%\w+]] = OpPhi %float [[phi_result_1]] {{%\w+}} [[null_float]] {{%\w+}}
-; CHECK: OpStore %b [[phi_result_2]]
+; CHECK: {{%\w+}} = OpPhi %float {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: OpStore %b {{%\w+}}
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs = kStreamWrite6Frag + kReadDescInit;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest,
@@ -2644,8 +2290,8 @@ OpDecorate %images NonWritable
 ; CHECK: %v3uint = OpTypeVector %uint 3
 ; CHECK: %_ptr_Input_v3uint = OpTypePointer Input %v3uint
 ; CHECK: %gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
-; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 ; CHECK: [[null_uint:%\w+]] = OpConstantNull %uint
+; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 )";
   // clang-format on
 
@@ -2661,69 +2307,64 @@ OpDecorate %images NonWritable
 %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 OpStore %31 %29
 ; CHECK-NOT: OpStore %31 %29
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_2 %uint_0 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint %gl_GlobalInvocationID
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_48 {{%\w+}} %uint_2 %uint_0 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpLoad %uint %25
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_47 %uint_1 %uint_2 %uint_0 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[phi_result_1:%\w+]] = OpPhi %uint {{%\w+}} {{%\w+}} [[null_uint]] {{%\w+}}
-; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images {{%\w+}}
-; CHECK: %28 = OpLoad %13 %27
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_binding_length %uint_2 %uint_1
-; CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpPhi %uint {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_UniformConstant_13 %images {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %13 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint %gl_GlobalInvocationID
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_51 {{%\w+}} %uint_2 %uint_1 {{%\w+}} %uint_0
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpLoad %13 %27
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_2 %uint_1 [[phi_result_1]]
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpLoad %13 %27
+; CHECK: {{%\w+}} = OpLoad %13 {{%\w+}}
 ; CHECK: {{%\w+}} = OpImageRead %v4float {{%\w+}} %20
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_50 %uint_1 %uint_2 %uint_1 {{%\w+}} %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: [[phi_result_2:%\w+]] = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_50 %uint_0 %uint_2 %uint_1 {{%\w+}} {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpPhi %v4float [[phi_result_2]] {{%\w+}} [[null_v4float]] {{%\w+}}
+; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpCompositeExtract %float {{%\w+}} 0
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-; CHECK: [[desc_state_result:%\w+]] = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_2 %uint_0 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 [[desc_state_result]]
+; CHECK: {{%\w+}} = OpLoad %v3uint %gl_GlobalInvocationID
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_54 {{%\w+}} %uint_2 %uint_0 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: OpStore {{%\w+}} {{%\w+}}
+; CHECK: OpStore %31 {{%\w+}}
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_53 %uint_1 %uint_2 %uint_0 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs =
-      kReadBindingLength + kStreamWrite6Compute + kReadDescInit;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest,
@@ -2797,8 +2438,8 @@ OpDecorate %images NonWritable
 %uint_0 = OpConstant %uint 0
 %_ptr_Uniform_float = OpTypePointer Uniform %float
 )" + kInputGlobals + kOutputGlobals + R"(
-; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 ; CHECK: [[null_uint:%\w+]] = OpConstantNull %uint
+; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 )";
   // clang-format on
 
@@ -2814,69 +2455,64 @@ OpDecorate %images NonWritable
 %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 OpStore %31 %29
 ; CHECK-NOT: OpStore %31 %29
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_3 %uint_1 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5313 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_49 {{%\w+}} %uint_3 %uint_1 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpLoad %uint %25
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_48 %uint_1 %uint_3 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpPhi %uint {{%\w+}} {{%\w+}} [[null_uint]] {{%\w+}}
-; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images {{%\w+}}
-; CHECK: %28 = OpLoad %13 %27
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_binding_length %uint_3 %uint_5
-; CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_UniformConstant_13 %images {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %13 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5313 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_52 {{%\w+}} %uint_3 %uint_5 {{%\w+}} %uint_0
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpLoad %13 %27
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_3 %uint_5 {{%\w+}}
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpLoad %13 %27
+; CHECK: {{%\w+}} = OpLoad %13 {{%\w+}}
 ; CHECK: {{%\w+}} = OpImageRead %v4float {{%\w+}} %20
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_51 %uint_1 %uint_3 %uint_5 {{%\w+}} %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_51 %uint_0 %uint_3 %uint_5 {{%\w+}} {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
-; CHECK: %30 = OpCompositeExtract %float {{%\w+}} 0
-; CHECK: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_3 %uint_1 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %float {{%\w+}} 0
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_Uniform_float %sbo %int_1
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5313 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_55 {{%\w+}} %uint_3 %uint_1 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: OpStore %31 %30
+; CHECK: OpStore {{%\w+}} {{%\w+}}
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_54 %uint_1 %uint_3 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs =
-      kReadBindingLength + kStreamWrite6Ray + kReadDescInit;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest,
@@ -2951,8 +2587,8 @@ OpDecorate %images NonWritable
 %_ptr_Uniform_float = OpTypePointer Uniform %float
 )" + kInputGlobals + kOutputGlobals + R"(
 ; CHECK: [[launch_id]] = OpVariable %_ptr_Input_v3uint Input
-; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 ; CHECK: [[null_uint:%\w+]] = OpConstantNull %uint
+; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 )";
   // clang-format on
 
@@ -2968,69 +2604,63 @@ OpDecorate %images NonWritable
 %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 OpStore %31 %29
 ; CHECK-NOT: OpStore %31 %29
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_5 %uint_1 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5314 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_49 {{%\w+}} %uint_5 %uint_1 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpLoad %uint %25
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_48 %uint_1 %uint_5 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpPhi %uint {{%\w+}} {{%\w+}} [[null_uint]] {{%\w+}}
-; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images {{%\w+}}
-; CHECK: %28 = OpLoad %13 %27
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_binding_length %uint_5 %uint_3
-; CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_UniformConstant_13 %images {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %13 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5314 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_52 {{%\w+}} %uint_5 %uint_3 {{%\w+}} %uint_0
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpLoad %13 %27
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_5 %uint_3 {{%\w+}}
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpLoad %13 %27
+; CHECK: {{%\w+}} = OpLoad %13 {{%\w+}}
 ; CHECK: {{%\w+}} = OpImageRead %v4float {{%\w+}} %20
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_51 %uint_1 %uint_5 %uint_3 {{%\w+}} %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_51 %uint_0 %uint_5 %uint_3 {{%\w+}} {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
-; CHECK: %30 = OpCompositeExtract %float {{%\w+}} 0
-; CHECK: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_5 %uint_1 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %float {{%\w+}} 0
+; CHECK: {{%\w+}} = OpAccessChain %_ptr_Uniform_float %sbo %int_1
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5314 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_55 {{%\w+}} %uint_5 %uint_1 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: OpStore %31 %30
+; CHECK: OpStore %31 {{%\w+}}
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_54 %uint_1 %uint_5 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs =
-      kReadBindingLength + kStreamWrite6Ray + kReadDescInit;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest,
@@ -3105,8 +2735,8 @@ OpDecorate %images NonWritable
 %_ptr_Uniform_float = OpTypePointer Uniform %float
 )" + kInputGlobals + kOutputGlobals + R"(
 ; CHECK: [[launch_id]] = OpVariable %_ptr_Input_v3uint Input
-; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 ; CHECK: [[null_uint:%\w+]] = OpConstantNull %uint
+; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 )";
   // clang-format on
 
@@ -3121,29 +2751,36 @@ OpDecorate %images NonWritable
 %29 = OpCompositeExtract %float %27 0
 %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 OpStore %31 %29
+; CHECK-NOT: %20 = OpLoad %uint %19
+; CHECK-NOT: %22 = OpAccessChain %_ptr_UniformConstant_13 %images %20
+; CHECK-NOT: %23 = OpLoad %13 %22
+; CHECK-NOT: %27 = OpImageRead %v4float %23 %25
+; CHECK-NOT: %29 = OpCompositeExtract %float %27 0
+; CHECK-NOT: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 ; CHECK-NOT: OpStore %31 %29
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_2 %uint_1 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5315 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_49 {{%\w+}} %uint_2 %uint_1 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpLoad %uint %25
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_48 %uint_1 %uint_2 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpPhi %uint {{%\w+}} {{%\w+}} [[null_uint]] {{%\w+}}
-; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images {{%\w+}}
+; CHECK: [[phi_result:%\w+]] = OpPhi %uint {{%\w+}} {{%\w+}} [[null_uint]] {{%\w+}}
+; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images [[phi_result]]
 ; CHECK: %28 = OpLoad %13 %27
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_binding_length %uint_2 %uint_3
-; CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpLoad %13 %27
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_2 %uint_3 {{%\w+}}
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5315 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_52 {{%\w+}} %uint_2 %uint_3 {{%\w+}} %uint_0
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
@@ -3151,40 +2788,34 @@ OpStore %31 %29
 ; CHECK: {{%\w+}} = OpImageRead %v4float {{%\w+}} %20
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_51 %uint_1 %uint_2 %uint_3 {{%\w+}} %uint_0
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_51 %uint_0 %uint_2 %uint_3 {{%\w+}} {{%\w+}}
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
 ; CHECK: %30 = OpCompositeExtract %float {{%\w+}} 0
 ; CHECK: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_2 %uint_1 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5315 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_55 {{%\w+}} %uint_2 %uint_1 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: OpStore %31 %30
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_54 %uint_1 %uint_2 %uint_1 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs =
-      kReadBindingLength + kStreamWrite6Ray + kReadDescInit;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest,
@@ -3259,8 +2890,8 @@ OpDecorate %images NonWritable
 %_ptr_Uniform_float = OpTypePointer Uniform %float
 )" + kInputGlobals + kOutputGlobals + R"(
 ; CHECK: [[launch_id]] = OpVariable %_ptr_Input_v3uint Input
-; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 ; CHECK: [[null_uint:%\w+]] = OpConstantNull %uint
+; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 )";
   // clang-format on
 
@@ -3275,29 +2906,36 @@ OpDecorate %images NonWritable
 %29 = OpCompositeExtract %float %27 0
 %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 OpStore %31 %29
+; CHECK-NOT: %20 = OpLoad %uint %19
+; CHECK-NOT: %22 = OpAccessChain %_ptr_UniformConstant_13 %images %20
+; CHECK-NOT: %23 = OpLoad %13 %22
+; CHECK-NOT: %27 = OpImageRead %v4float %23 %25
+; CHECK-NOT: %29 = OpCompositeExtract %float %27 0
+; CHECK-NOT: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 ; CHECK-NOT: OpStore %31 %29
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_2 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5316 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_49 {{%\w+}} %uint_1 %uint_2 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpLoad %uint %25
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_48 %uint_1 %uint_1 %uint_2 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: [[phi_result:%\w+]] = OpPhi %uint {{%\w+}} {{%\w+}} [[null_uint]] {{%\w+}}
 ; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images [[phi_result]]
 ; CHECK: %28 = OpLoad %13 %27
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_binding_length %uint_1 %uint_3
-; CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpLoad %13 %27
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_3 {{%\w+}}
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5316 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_52 {{%\w+}} %uint_1 %uint_3 {{%\w+}} %uint_0
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
@@ -3305,40 +2943,34 @@ OpStore %31 %29
 ; CHECK: {{%\w+}} = OpImageRead %v4float {{%\w+}} %20
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_51 %uint_1 %uint_1 %uint_3 {{%\w+}} %uint_0
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_51 %uint_0 %uint_1 %uint_3 {{%\w+}} {{%\w+}}
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
 ; CHECK: %30 = OpCompositeExtract %float {{%\w+}} 0
 ; CHECK: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_2 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5316 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_55 {{%\w+}} %uint_1 %uint_2 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: OpStore %31 %30
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_54 %uint_1 %uint_1 %uint_2
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs =
-      kReadBindingLength + kStreamWrite6Ray + kReadDescInit;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest,
@@ -3413,8 +3045,8 @@ OpDecorate %images NonWritable
 %_ptr_Uniform_float = OpTypePointer Uniform %float
 )" + kInputGlobals + kOutputGlobals + R"(
 ; CHECK: [[launch_id]] = OpVariable %_ptr_Input_v3uint Input
-; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 ; CHECK: [[null_uint:%\w+]] = OpConstantNull %uint
+; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 )";
   // clang-format on
 
@@ -3429,29 +3061,33 @@ OpDecorate %images NonWritable
 %29 = OpCompositeExtract %float %27 0
 %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
 OpStore %31 %29
+; CHECK-NOT: %20 = OpLoad %uint %19
+; CHECK-NOT: %22 = OpAccessChain %_ptr_UniformConstant_13 %images %20
+; CHECK-NOT: %27 = OpImageRead %v4float %23 %25
+; CHECK-NOT: %29 = OpCompositeExtract %float %27 0
 ; CHECK-NOT OpStore %31 %29
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_2 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5317 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_49 {{%\w+}} %uint_1 %uint_2 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpLoad %uint %25
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_48 %uint_1 %uint_1 %uint_2 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: [[phi_result:%\w+]] = OpPhi %uint {{%\w+}} {{%\w+}} [[null_uint]] {{%\w+}}
 ; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images [[phi_result]]
-; CHECK: %28 = OpLoad %13 %27
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_binding_length %uint_1 %uint_3
-; CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpLoad %13 %27
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_3 {{%\w+}}
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5317 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_52 {{%\w+}} %uint_1 %uint_3 {{%\w+}} %uint_0
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
@@ -3459,40 +3095,34 @@ OpStore %31 %29
 ; CHECK: {{%\w+}} = OpImageRead %v4float {{%\w+}} %20
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_51 %uint_1 %uint_1 %uint_3 {{%\w+}} %uint_0
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_51 %uint_0 %uint_1 %uint_3 {{%\w+}} {{%\w+}}
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
 ; CHECK: %30 = OpCompositeExtract %float {{%\w+}} 0
 ; CHECK: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_2 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5317 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_55 {{%\w+}} %uint_1 %uint_2 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: OpStore %31 %30
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_54 %uint_1 %uint_1 %uint_2 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs =
-      kReadBindingLength + kStreamWrite6Ray + kReadDescInit;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest,
@@ -3566,8 +3196,8 @@ OpDecorate %images NonWritable
 %uint_0 = OpConstant %uint 0
 %_ptr_Uniform_float = OpTypePointer Uniform %float
 )" + kInputGlobals + kOutputGlobals + R"(
-; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 ; CHECK: [[null_uint:%\w+]] = OpConstantNull %uint
+; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
 )";
   // clang-format on
 
@@ -3580,31 +3210,33 @@ OpDecorate %images NonWritable
 %23 = OpLoad %13 %22
 %27 = OpImageRead %v4float %23 %25
 %29 = OpCompositeExtract %float %27 0
-%31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-OpStore %31 %29
-; CHECK-NOT: OpStore %31 %29
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_2 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK-NOT: %20 = OpLoad %uint %19
+; CHECK-NOT: %22 = OpAccessChain %_ptr_UniformConstant_13 %images %20
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5318 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_49 {{%\w+}} %uint_1 %uint_2 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpLoad %uint %25
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_48 %uint_1 %uint_1 %uint_2 %uint_0 %uint_0 
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpPhi %uint {{%\w+}} {{%\w+}} [[null_uint]] {{%\w+}}
 ; CHECK: %27 = OpAccessChain %_ptr_UniformConstant_13 %images {{%\w+}}
-; CHECK: %28 = OpLoad %13 %27
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_binding_length %uint_1 %uint_3
-; CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} {{%\w+}}
-; CHECK: OpSelectionMerge {{%\w+}} None
-; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpLoad %13 %27
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_3 {{%\w+}}
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK-NOT: %23 = OpLoad %13 %22
+; CHECK-NOT: %27 = OpImageRead %v4float %23 %25
+; CHECK-NOT: %29 = OpCompositeExtract %float %27 0
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5318 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_52 {{%\w+}} %uint_1 %uint_3 {{%\w+}} %uint_0
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
@@ -3612,40 +3244,38 @@ OpStore %31 %29
 ; CHECK: {{%\w+}} = OpImageRead %v4float {{%\w+}} %20
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_51 %uint_1 %uint_1 %uint_3 {{%\w+}} %uint_0
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
-; CHECK: OpBranch {{%\w+}}
-; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_51 %uint_0 %uint_1 %uint_3 {{%\w+}} {{%\w+}}
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
 ; CHECK: %30 = OpCompositeExtract %float {{%\w+}} 0
 ; CHECK: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_2 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+%31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
+OpStore %31 %29
+; CHECK-NOT: %31 = OpAccessChain %_ptr_Uniform_float %sbo %int_1
+; CHECK-NOT: OpStore %31 %29
+; CHECK: {{%\w+}} = OpLoad %v3uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 2
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_5318 {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_55 {{%\w+}} %uint_1 %uint_2 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: OpStore %31 %30
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_54 %uint_1 %uint_1 %uint_2 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs =
-      kReadBindingLength + kStreamWrite6Ray + kReadDescInit;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   // SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, InstBoundsInitSameBlockOpReplication) {
@@ -3715,11 +3345,11 @@ OpDecorate %Uniforms Block
 OpDecorate %uniforms DescriptorSet 1
 OpDecorate %uniforms Binding 0
 OpDecorate %outColor Location 0
-; CHECK: OpDecorate %63 NonUniform
+; CHECK: OpDecorate {{%\w+}} NonUniform
+; CHECK: OpDecorate {{%\w+}} NonUniform
 ; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ; CHECK: OpDecorate %gl_FragCoord BuiltIn FragCoord
-)" + kInputDecorations + R"(
 ; CHECK: OpDecorate [[desc_state_result:%\w+]] NonUniform
 %void = OpTypeVoid
 %3 = OpTypeFunction %void
@@ -3752,9 +3382,8 @@ OpDecorate %outColor Location 0
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %outColor = OpVariable %_ptr_Output_v4float Output
 %float_0 = OpConstant %float 0
-)" + kOutputGlobals + R"(
+)" + kInputGlobals + kOutputGlobals + R"(
 ; CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
-)" + kInputGlobals + R"(
 ; CHECK: [[null_v2float:%\w+]] = OpConstantNull %v2float
 )";
   // clang-format on
@@ -3774,6 +3403,26 @@ OpStore %index %int_0
 %32 = OpLoad %v2float %inTexcoord
 %34 = OpImageSampleImplicitLod %v4float %28 %32
 %36 = OpCompositeExtract %float %34 0
+; CHECK-NOT: %34 = OpImageSampleImplicitLod %v4float %28 %32
+; CHECK-NOT: %36 = OpCompositeExtract %float %34 0
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpBitcast %uint %19
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_80 {{%\w+}} %uint_1 %uint_3 {{%\w+}} %uint_0
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %13 %21
+; CHECK: {{%\w+}} = OpSampledImage %27 {{%\w+}} %26
+; CHECK: {{%\w+}} = OpImageSampleImplicitLod %v4float {{%\w+}} %32
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
 OpStore %x %36
 %39 = OpLoad %13 %uniformTex
 %40 = OpLoad %23 %uniformSampler
@@ -3782,25 +3431,36 @@ OpStore %x %36
 %47 = OpAccessChain %_ptr_Uniform_v2float %uniforms %int_0
 %48 = OpLoad %v2float %47
 %49 = OpFMul %v2float %42 %48
-%50 = OpImageSampleImplicitLod %v4float %41 %49
-%51 = OpCompositeExtract %float %50 0
-; CHECK-NOT: %51 = OpCompositeExtract %float %50 0
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_0 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK-NOT: %48 = OpLoad %v2float %47
+; CHECK-NOT: %49 = OpFMul %v2float %42 %48
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_88 {{%\w+}} %uint_1 %uint_0 %uint_0 {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpLoad %v2float %47
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_87 %uint_1 %uint_1 %uint_0 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpPhi %v2float {{%\w+}} {{%\w+}} [[null_v2float]] {{%\w+}}
-; CHECK: %49 = OpFMul %v2float %42 {{%\w+}}
+; CHECK: [[phi_result:%\w+]] = OpPhi %v2float {{%\w+}} {{%\w+}} [[null_v2float]] {{%\w+}}
+; CHECK: %49 = OpFMul %v2float %42 [[phi_result]]
+%50 = OpImageSampleImplicitLod %v4float %41 %49
+%51 = OpCompositeExtract %float %50 0
+OpStore %y %51
+; CHECK-NOT: %50 = OpImageSampleImplicitLod %v4float %41 %49
+; CHECK-NOT: %51 = OpCompositeExtract %float %50 0
 ; CHECK: {{%\w+}} = OpSampledImage %27 %39 %40
-; CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_2 %uint_0
-; CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_90 {{%\w+}} %uint_1 %uint_2 %uint_0 %uint_0
 ; CHECK: OpSelectionMerge {{%\w+}} None
 ; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
@@ -3809,7 +3469,6 @@ OpStore %x %36
 ; CHECK: {{%\w+}} = OpImageSampleImplicitLod %v4float {{%\w+}} %49
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_89 %uint_1 %uint_1 %uint_2 %uint_0 %uint_0
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
@@ -3823,12 +3482,11 @@ OpReturn
 OpFunctionEnd
 )";
 
-  const std::string new_funcs = kStreamWrite6Frag + kReadDescInit;
+  const std::string new_funcs = kStreamWrite6 + kCheckDesc;
 
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   SinglePassRunAndMatch<InstBindlessCheckPass>(defs + main_func + new_funcs,
-                                               true, 7u, 23u, true, true, false,
-                                               false, false);
+                                               true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, MultipleUniformNonAggregateRefsNoDescInit) {
@@ -3936,18 +3594,14 @@ TEST_F(InstBindlessTest, MultipleUniformNonAggregateRefsNoDescInit) {
 %i_vTextureCoords = OpVariable %_ptr_Input_v2float Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %_entryPointOutput_vColor = OpVariable %_ptr_Output_v4float Output
- )" + kInputGlobals + kOutputGlobals + R"(
+ )" + kInputGlobals + R"(
+ ;CHECK:     %v4uint = OpTypeVector %uint 4
+ )" + kOutputGlobals + R"(
  ;CHECK:%_ptr_Input_v4float = OpTypePointer Input %v4float
  ;CHECK:%gl_FragCoord = OpVariable %_ptr_Input_v4float Input
- ;CHECK:     %v4uint = OpTypeVector %uint 4
  ;CHECK:        [[null_v2float:%\w+]] = OpConstantNull %v2float
      %MainPs = OpFunction %void None %3
           %5 = OpLabel
- ;CHECK: [[desc_state_result:%\w+]] = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_0 %uint_1 %uint_0
- ;CHECK:        OpBranch %117
- ;CHECK: %117 = OpLabel
- ;CHECK:        OpBranch %116
- ;CHECK: %116 = OpLabel
          %69 = OpLoad %v2float %i_vTextureCoords
          %82 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
          %83 = OpLoad %uint %82
@@ -3958,15 +3612,20 @@ TEST_F(InstBindlessTest, MultipleUniformNonAggregateRefsNoDescInit) {
          %86 = OpAccessChain %_ptr_Uniform_v2float %__0 %int_0
          %87 = OpLoad %v2float %86
  ;CHECK-NOT:     %87 = OpLoad %v2float %86
- ;CHECK: %119 = OpIAdd %uint %uint_0 %uint_7
- ;CHECK: {{%\w+}} = OpULessThan %bool %119 [[desc_state_result]]
+ ;CHECK: {{%\w+}} = OpLabel
+ ;CHECK: {{%\w+}} = OpIAdd %uint %uint_0 %uint_7
+ ;CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+ ;CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+ ;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+ ;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+ ;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+ ;CHECK: [[desc_state_result:%\w+]] = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_72 {{%\w+}} %uint_0 %uint_1 %uint_0 {{%\w+}}
  ;CHECK: OpSelectionMerge {{%\w+}} None
- ;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+ ;CHECK: OpBranchConditional [[desc_state_result]] {{%\w+}} {{%\w+}}
  ;CHECK: {{%\w+}} = OpLabel
  ;CHECK: {{%\w+}} = OpLoad %v2float %86
  ;CHECK: OpBranch {{%\w+}}
  ;CHECK: {{%\w+}} = OpLabel
- ;CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_71 %uint_4 %uint_0 %uint_1 %uint_0 %119 {{%\w+}}
  ;CHECK: OpBranch {{%\w+}}
  ;CHECK: {{%\w+}} = OpLabel
  ;CHECK: {{%\w+}} = OpPhi %v2float {{%\w+}} {{%\w+}} [[null_v2float]] {{%\w+}}
@@ -3976,14 +3635,18 @@ TEST_F(InstBindlessTest, MultipleUniformNonAggregateRefsNoDescInit) {
          %90 = OpLoad %v2float %89
  ;CHECK-NOT:     %90 = OpLoad %v2float %89
  ;CHECK: {{%\w+}} = OpIAdd %uint %uint_8 %uint_7
- ;CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} {{%\w+}}
+ ;CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+ ;CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+ ;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+ ;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+ ;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+ ;CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_76 {{%\w+}} %uint_0 %uint_1 %uint_0 {{%\w+}}
  ;CHECK: OpSelectionMerge {{%\w+}} None
  ;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
  ;CHECK: {{%\w+}} = OpLabel
  ;CHECK: {{%\w+}} = OpLoad %v2float %89
  ;CHECK: OpBranch {{%\w+}}
  ;CHECK: {{%\w+}} = OpLabel
- ;CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_75 %uint_4 %uint_0 %uint_1 %uint_0 {{%\w+}} {{%\w+}}
  ;CHECK: OpBranch {{%\w+}}
  ;CHECK: {{%\w+}} = OpLabel
  ;CHECK: {{%\w+}} = OpPhi %v2float {{%\w+}} {{%\w+}} [[null_v2float]] {{%\w+}}
@@ -4000,13 +3663,12 @@ TEST_F(InstBindlessTest, MultipleUniformNonAggregateRefsNoDescInit) {
                OpStore %_entryPointOutput_vColor %100
                OpReturn
                OpFunctionEnd
-)" + kReadDescInit + kStreamWrite7Frag;
+)" + kStreamWrite6 + kCheckDesc;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, false,
-                                               false, true, false, true);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, UniformArrayRefNoDescInit) {
@@ -4123,18 +3785,14 @@ TEST_F(InstBindlessTest, UniformArrayRefNoDescInit) {
 %i_vTextureCoords = OpVariable %_ptr_Input_v2float Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %_entryPointOutput_vColor = OpVariable %_ptr_Output_v4float Output
-)" + kInputGlobals + kOutputGlobals + R"(
+)" + kInputGlobals + R"(
+;CHECK:     %v4uint = OpTypeVector %uint 4
+)" + kOutputGlobals + R"(
 ;CHECK:%_ptr_Input_v4float = OpTypePointer Input %v4float
 ;CHECK:%gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-;CHECK:     %v4uint = OpTypeVector %uint 4
 ;CHECK:        [[null_v2float:%\w+]] = OpConstantNull %v2float
      %MainPs = OpFunction %void None %3
           %5 = OpLabel
-;CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_0 %uint_2 %uint_0
-;CHECK: OpBranch {{%\w+}}
-;CHECK: {{%\w+}} = OpLabel
-;CHECK: OpBranch {{%\w+}}
-;CHECK: {{%\w+}} = OpLabel
          %66 = OpLoad %v2float %i_vTextureCoords
          %79 = OpAccessChain %_ptr_PushConstant_uint %__0 %int_0
          %80 = OpLoad %uint %79
@@ -4145,14 +3803,18 @@ TEST_F(InstBindlessTest, UniformArrayRefNoDescInit) {
 ;CHECK: {{%\w+}} = OpIAdd %uint %uint_0 {{%\w+}}
 ;CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_64
 ;CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_7
-;CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} {{%\w+}}
+;CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+;CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_79 {{%\w+}} %uint_0 %uint_2 %uint_0 {{%\w+}}
 ;CHECK: OpSelectionMerge {{%\w+}} None
 ;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: {{%\w+}} = OpLoad %v2float %81
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
-;CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_78 %uint_4 %uint_0 %uint_2 %uint_0 {{%\w+}} {{%\w+}}
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: {{%\w+}} = OpPhi %v2float {{%\w+}} {{%\w+}} [[null_v2float]] {{%\w+}}
@@ -4166,13 +3828,12 @@ TEST_F(InstBindlessTest, UniformArrayRefNoDescInit) {
                OpStore %_entryPointOutput_vColor %91
                OpReturn
                OpFunctionEnd
-)" + kReadDescInit + kStreamWrite7Frag;
+)" + kStreamWrite6 + kCheckDesc;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, false,
-                                               false, true, false, true);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, UniformArrayRefWithDescInit) {
@@ -4260,20 +3921,15 @@ TEST_F(InstBindlessTest, UniformArrayRefWithDescInit) {
 %i_vTextureCoords = OpVariable %_ptr_Input_v2float Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %_entryPointOutput_vColor = OpVariable %_ptr_Output_v4float Output
-)" + kInputGlobals + kOutputGlobals + R"(
+)" + kInputGlobals + R"(
+;CHECK: %v4uint = OpTypeVector %uint 4
+)" + kOutputGlobals + R"(
 ;CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
 ;CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-;CHECK: %v4uint = OpTypeVector %uint 4
 ;CHECK: [[null_v2float:%\w+]] = OpConstantNull %v2float
 ;CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
      %MainPs = OpFunction %void None %3
           %5 = OpLabel
-;CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_0 %uint_2 %uint_0
-;CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_0 %uint_0 %uint_0
-;CHECK: OpBranch {{%\w+}}
-;CHECK: {{%\w+}} = OpLabel
-;CHECK: OpBranch {{%\w+}}
-;CHECK: {{%\w+}} = OpLabel
          %66 = OpLoad %v2float %i_vTextureCoords
          %79 = OpAccessChain %_ptr_PushConstant_uint %__0 %int_0
          %80 = OpLoad %uint %79
@@ -4286,14 +3942,18 @@ TEST_F(InstBindlessTest, UniformArrayRefWithDescInit) {
 ;CHECK: {{%\w+}} = OpIAdd %uint %uint_0 {{%\w+}}
 ;CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_64
 ;CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_7
-;CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} {{%\w+}}
+;CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+;CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_79 {{%\w+}} %uint_0 %uint_2 %uint_0 {{%\w+}}
 ;CHECK: OpSelectionMerge {{%\w+}} None
 ;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: {{%\w+}} = OpLoad %v2float %81
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
-;CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_78 %uint_4 %uint_0 %uint_2 %uint_0 {{%\w+}} {{%\w+}}
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: {{%\w+}} = OpPhi %v2float {{%\w+}} {{%\w+}} [[null_v2float]] {{%\w+}}
@@ -4305,7 +3965,12 @@ TEST_F(InstBindlessTest, UniformArrayRefWithDescInit) {
                OpStore %_entryPointOutput_vColor %91
 ;CHECK-NOT: %91 = OpImageSampleImplicitLod %v4float %89 %86
 ;CHECK-NOT:       OpStore %_entryPointOutput_vColor %91
-;CHECK: {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
+;CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+;CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_84 {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
 ;CHECK: OpSelectionMerge {{%\w+}} None
 ;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
@@ -4314,20 +3979,18 @@ TEST_F(InstBindlessTest, UniformArrayRefWithDescInit) {
 ;CHECK: {{%\w+}} = OpImageSampleImplicitLod %v4float {{%\w+}} %86
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
-;CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_83 %uint_1 %uint_0 %uint_0 %uint_0 %uint_0 %uint_0
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: {{%\w+}} = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
 ;CHECK: OpStore %_entryPointOutput_vColor {{%\w+}}
                OpReturn
                OpFunctionEnd
-)" + kReadDescInit + kStreamWrite7Frag;
+)" + kStreamWrite6 + kCheckDesc;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, true, true,
-                                               true, false, true);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, Descriptor16BitIdxRef) {
@@ -4341,11 +4004,11 @@ TEST_F(InstBindlessTest, Descriptor16BitIdxRef) {
                OpCapability Shader
                OpCapability Int16
                OpCapability StoragePushConstant16
-;CHECK:               OpExtension "SPV_KHR_storage_buffer_storage_class"
+;CHECK:        OpExtension "SPV_KHR_storage_buffer_storage_class"
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
                OpEntryPoint Fragment %MainPs "MainPs" %g_tColor %_ %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor
-;CHECK:        OpEntryPoint Fragment %MainPs "MainPs" %g_tColor %_ %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor %inst_bindless_output_buffer %gl_FragCoord %inst_bindless_input_buffer
+;CHECK:        OpEntryPoint Fragment %MainPs "MainPs" %g_tColor %_ %g_sAniso %i_vTextureCoords %_entryPointOutput_vColor %inst_bindless_input_buffer %inst_bindless_output_buffer %gl_FragCoord
                OpExecutionMode %MainPs OriginUpperLeft
                OpSource HLSL 500
                OpName %MainPs "MainPs"
@@ -4364,10 +4027,9 @@ TEST_F(InstBindlessTest, Descriptor16BitIdxRef) {
                OpDecorate %g_sAniso Binding 2
                OpDecorate %i_vTextureCoords Location 0
                OpDecorate %_entryPointOutput_vColor Location 0
-;CHECK:               OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
-;CHECK:               OpDecorate %gl_FragCoord BuiltIn FragCoord
-)" + kInputDecorations + R"(
+;CHECK:        OpDecorate %_runtimearr_uint ArrayStride 4
+)" + kInputDecorations + kOutputDecorations + R"(
+;CHECK:        OpDecorate %gl_FragCoord BuiltIn FragCoord
        %void = OpTypeVoid
          %10 = OpTypeFunction %void
       %float = OpTypeFloat 32
@@ -4395,17 +4057,14 @@ TEST_F(InstBindlessTest, Descriptor16BitIdxRef) {
 %i_vTextureCoords = OpVariable %_ptr_Input_v2float Input
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %_entryPointOutput_vColor = OpVariable %_ptr_Output_v4float Output
-)" + kOutputGlobals + R"(
+)" + kInputGlobals + kOutputGlobals + R"(
 ;CHECK:%_ptr_Input_v4float = OpTypePointer Input %v4float
 ;CHECK:%gl_FragCoord = OpVariable %_ptr_Input_v4float Input
 ;CHECK:        [[null_v4float:%\w+]] = OpConstantNull %v4float
-)" + kInputGlobals + R"(
      %MainPs = OpFunction %void None %10
          %30 = OpLabel
-;CHECK:               OpBranch {{%\w+}}
-;CHECK:        {{%\w+}} = OpLabel
-;CHECK:               OpBranch %39
-;CHECK:         %39 = OpLabel
+;CHECK:  OpBranch %39
+;CHECK:  %39 = OpLabel
          %31 = OpLoad %v2float %i_vTextureCoords
          %32 = OpAccessChain %_ptr_PushConstant_ushort %_ %int_0
          %33 = OpLoad %ushort %32
@@ -4417,45 +4076,33 @@ TEST_F(InstBindlessTest, Descriptor16BitIdxRef) {
                OpStore %_entryPointOutput_vColor %38
 ;CHECK-NOT:         %38 = OpImageSampleImplicitLod %v4float %37 %31
 ;CHECK-NOT:               OpStore %_entryPointOutput_vColor %38
-;CHECK:         %41 = OpUConvert %uint %33
-;CHECK:         {{%\w+}} = OpULessThan %bool %41 %uint_128
-;CHECK:               OpSelectionMerge {{%\w+}} None
-;CHECK:               OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-;CHECK:        {{%\w+}} = OpLabel
-;CHECK:        {{%\w+}} = OpLoad %16 %34
-;CHECK:        {{%\w+}} = OpSampledImage %27 {{%\w+}} %36
-;CHECK:        {{%\w+}} = OpUConvert %uint %33
-;CHECK:        {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_1 %uint_2 {{%\w+}}
-;CHECK:        {{%\w+}} = OpULessThan %bool %uint_0 {{%\w+}}
-;CHECK:               OpSelectionMerge {{%\w+}} None
-;CHECK:               OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
-;CHECK:        {{%\w+}} = OpLabel
-;CHECK:        {{%\w+}} = OpLoad %16 %34
-;CHECK:        {{%\w+}} = OpSampledImage %27 {{%\w+}} %36
-;CHECK:        {{%\w+}} = OpImageSampleImplicitLod %v4float {{%\w+}} %31
-;CHECK:               OpBranch {{%\w+}}
-;CHECK:        {{%\w+}} = OpLabel
-;CHECK:        {{%\w+}} = OpUConvert %uint %33
-;CHECK:        {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_60 %uint_1 %uint_1 %uint_2 {{%\w+}} %uint_0
-;CHECK:               OpBranch {{%\w+}}
-;CHECK:        {{%\w+}} = OpLabel
-;CHECK:        [[phi_result_1:%\w+]] = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
-;CHECK:               OpBranch %44
-;CHECK:         %46 = OpLabel
-;CHECK:        {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_6 %uint_60 %uint_0 %uint_1 %uint_2 %41 %uint_128
-;CHECK:               OpBranch %44
-;CHECK:         %44 = OpLabel
-;CHECK:        [[phi_result_2:%\w+]] = OpPhi %v4float [[phi_result_1]] {{%\w+}} [[null_v4float]] %46
-;CHECK:               OpStore %_entryPointOutput_vColor [[phi_result_2]]
+;CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+;CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: {{%\w+}} = OpUConvert %uint %33
+;CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_61 {{%\w+}} %uint_1 %uint_2 {{%\w+}} %uint_0
+;CHECK: OpSelectionMerge {{%\w+}} None
+;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: {{%\w+}} = OpLoad %16 %34
+;CHECK: {{%\w+}} = OpSampledImage %27 {{%\w+}} %36
+;CHECK: {{%\w+}} = OpImageSampleImplicitLod %v4float {{%\w+}} %31
+;CHECK: OpBranch {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: OpBranch {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: [[phi_result:%\w+]] = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
+;CHECK: OpStore %_entryPointOutput_vColor [[phi_result]]
                OpReturn
                OpFunctionEnd
-)" + kStreamWrite6Frag + kReadDescInit;
+)" + kStreamWrite6 + kCheckDesc;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, true, true,
-                                               false, false, true);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, UniformArray16bitIdxRef) {
@@ -4582,11 +4229,6 @@ TEST_F(InstBindlessTest, UniformArray16bitIdxRef) {
 ;CHECK:        [[null_v2float:%\w+]] = OpConstantNull %v2float
      %MainPs = OpFunction %void None %14
          %37 = OpLabel
-;CHECK: {{%\w+}} = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_0 %uint_0 %uint_0
-;CHECK: OpBranch {{%\w+}}
-;CHECK: {{%\w+}} = OpLabel
-;CHECK: OpBranch {{%\w+}}
-;CHECK: {{%\w+}} = OpLabel
          %38 = OpLoad %v2float %i_vTextureCoords
          %39 = OpAccessChain %_ptr_PushConstant_ushort %__0 %int_0
          %40 = OpLoad %ushort %39
@@ -4600,14 +4242,18 @@ TEST_F(InstBindlessTest, UniformArray16bitIdxRef) {
 ;CHECK: {{%\w+}} = OpIAdd %uint %uint_0 {{%\w+}}
 ;CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_64
 ;CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_7
-;CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} {{%\w+}}
+;CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+;CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_82 {{%\w+}} %uint_0 %uint_0 %uint_0 {{%\w+}}
 ;CHECK: OpSelectionMerge {{%\w+}} None
 ;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: {{%\w+}} = OpLoad %v2float %41
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
-;CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_81 %uint_4 %uint_0 %uint_0 %uint_0 {{%\w+}} {{%\w+}}
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: {{%\w+}} = OpPhi %v2float {{%\w+}} {{%\w+}} [[null_v2float]] {{%\w+}}
@@ -4619,13 +4265,12 @@ TEST_F(InstBindlessTest, UniformArray16bitIdxRef) {
                OpStore %_entryPointOutput_vColor %47
                OpReturn
                OpFunctionEnd
-               )" + kReadDescInit + kStreamWrite7Frag;
+               )" + kStreamWrite6 + kCheckDesc;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, false,
-                                               false, true, false, true);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, UniformMatrixRefRowMajor) {
@@ -4678,11 +4323,10 @@ TEST_F(InstBindlessTest, UniformMatrixRefRowMajor) {
 ;CHECK: OpDecorate [[phi_result:%\w+]] RelaxedPrecision
                OpDecorate %a_position Location 0
 ;CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kInputDecorations + R"(
-;CHECK: OpDecorate [[load_result:%\w+]] RelaxedPrecision
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ;CHECK: OpDecorate %gl_VertexIndex BuiltIn VertexIndex
 ;CHECK: OpDecorate %gl_InstanceIndex BuiltIn InstanceIndex
+;CHECK: OpDecorate [[load_result:%\w+]] RelaxedPrecision
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
       %float = OpTypeFloat 32
@@ -4709,9 +4353,6 @@ TEST_F(InstBindlessTest, UniformMatrixRefRowMajor) {
 ;CHECK: [[null_float:%\w+]] = OpConstantNull %float
        %main = OpFunction %void None %3
           %5 = OpLabel
-;CHECK: [[desc_state:%\w+]] = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_0 %uint_0 %uint_0
-;CHECK: OpBranch {{%\w+}}
-;CHECK: {{%\w+}} = OpLabel
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
          %20 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %int_2 %uint_1
@@ -4722,14 +4363,16 @@ TEST_F(InstBindlessTest, UniformMatrixRefRowMajor) {
 ;CHECK: {{%\w+}} = OpIMul %uint %uint_16 %uint_1
 ;CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} {{%\w+}}
 ;CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
-;CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} [[desc_state]]
+;CHECK: {{%\w+}} = OpLoad %uint %gl_VertexIndex
+;CHECK: {{%\w+}} = OpLoad %uint %gl_InstanceIndex
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_0 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: [[desc_state:%\w+]] = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_46 {{%\w+}} %uint_0 %uint_0 %uint_0 {{%\w+}}
 ;CHECK: OpSelectionMerge {{%\w+}} None
-;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+;CHECK: OpBranchConditional [[desc_state]] {{%\w+}} {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: [[load_result]] = OpLoad %float %20
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
-;CHECK: {{\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_45 %uint_4 %uint_0 %uint_0 %uint_0 {{%\w+}} {{%\w+}}
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: [[phi_result]] = OpPhi %float [[load_result]] {{%\w+}} [[null_float]] {{%\w+}}
@@ -4738,13 +4381,12 @@ TEST_F(InstBindlessTest, UniformMatrixRefRowMajor) {
 ;CHECK:  OpStore %v_vtxResult [[phi_result]]
                OpReturn
                OpFunctionEnd
-               )" + kReadDescInit + kStreamWrite7Vert;
+               )" + kStreamWrite6 + kCheckDesc;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, false,
-                                               false, true, false, true);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, UniformMatrixRefColumnMajor) {
@@ -4797,11 +4439,10 @@ TEST_F(InstBindlessTest, UniformMatrixRefColumnMajor) {
 ;CHECK: OpDecorate [[phi_result:%\w+]] RelaxedPrecision
                OpDecorate %a_position Location 0
 ;CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kInputDecorations + R"(
-;CHECK: OpDecorate [[load_result:%\w+]] RelaxedPrecision
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ;CHECK: OpDecorate %gl_VertexIndex BuiltIn VertexIndex
 ;CHECK: OpDecorate %gl_InstanceIndex BuiltIn InstanceIndex
+;CHECK: OpDecorate [[load_result:%\w+]] RelaxedPrecision
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
       %float = OpTypeFloat 32
@@ -4828,43 +4469,41 @@ TEST_F(InstBindlessTest, UniformMatrixRefColumnMajor) {
 ;CHECK: [[null_float:%\w+]] = OpConstantNull %float
 %main = OpFunction %void None %3
           %5 = OpLabel
-;CHECK: [[desc_state:%\w+]] = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_0 %uint_0 %uint_0
-;CHECK: OpBranch %26
-;CHECK: %26 = OpLabel
-;CHECK: OpBranch %25
-;CHECK: %25 = OpLabel
          %20 = OpAccessChain %_ptr_Uniform_float %_ %int_0 %int_2 %uint_1
          %21 = OpLoad %float %20
-;CHECK-NOT:     %21 = OpLoad %float %20
-;CHECK: %29 = OpIMul %uint %uint_8 %int_2
-;CHECK: %30 = OpIAdd %uint %uint_0 %29
-;CHECK: %32 = OpIMul %uint %uint_4 %uint_1
-;CHECK: %33 = OpIAdd %uint %30 %32
-;CHECK: %35 = OpIAdd %uint %33 %uint_3
-;CHECK: {{%\w+}} = OpULessThan %bool %35 [[desc_state]]
+;CHECK-NOT: %21 = OpLoad %float %20
+;CHECK: OpBranch {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: {{%\w+}} = OpIMul %uint %uint_8 %int_2
+;CHECK: {{%\w+}} = OpIAdd %uint %uint_0 {{%\w+}}
+;CHECK: {{%\w+}} = OpIMul %uint %uint_4 %uint_1
+;CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} {{%\w+}}
+;CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
+;CHECK: {{%\w+}} = OpLoad %uint %gl_VertexIndex
+;CHECK: {{%\w+}} = OpLoad %uint %gl_InstanceIndex
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_0 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: [[desc_state:%\w+]] = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_46 {{%\w+}} %uint_0 %uint_0 %uint_0 {{%\w+}}
 ;CHECK: OpSelectionMerge {{%\w+}} None
-;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+;CHECK: OpBranchConditional [[desc_state]] {{%\w+}} {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK:[[load_result]] = OpLoad %float %20
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
-;CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_45 %uint_4 %uint_0 %uint_0 %uint_0 %35 {{%\w+}}
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: [[phi_result]] = OpPhi %float [[load_result]] {{%\w+}} [[null_float]] {{%\w+}}
                OpStore %v_vtxResult %21
-;CHECK-NOT:           OpStore %v_vtxResult %21
+;CHECK-NOT:    OpStore %v_vtxResult %21
 ;CHECK: OpStore %v_vtxResult [[phi_result]]
                OpReturn
                OpFunctionEnd
-               )" + kReadDescInit + kStreamWrite7Vert;
+               )" + kStreamWrite6 + kCheckDesc;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   ValidatorOptions()->uniform_buffer_standard_layout = true;
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, false,
-                                               false, true, false, true);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, UniformMatrixVecRefRowMajor) {
@@ -4917,11 +4556,10 @@ TEST_F(InstBindlessTest, UniformMatrixVecRefRowMajor) {
 ;CHECK: OpDecorate [[phi_result:%\w+]] RelaxedPrecision
                OpDecorate %a_position Location 0
 ;CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kInputDecorations + R"(
-;CHECK: OpDecorate [[load_result:%\w+]] RelaxedPrecision
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ;CHECK: OpDecorate %gl_VertexIndex BuiltIn VertexIndex
 ;CHECK: OpDecorate %gl_InstanceIndex BuiltIn InstanceIndex
+;CHECK: OpDecorate [[load_result:%\w+]] RelaxedPrecision
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
       %float = OpTypeFloat 32
@@ -4953,44 +4591,40 @@ TEST_F(InstBindlessTest, UniformMatrixVecRefRowMajor) {
 ;CHECK: [[null_v2float:%\w+]] = OpConstantNull %v2float
        %main = OpFunction %void None %3
           %5 = OpLabel
-;CHECK: [[desc_state:%\w+]] = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_3 %uint_7 %uint_0
-;CHECK: OpBranch %31
-;CHECK: %31 = OpLabel
-;CHECK: OpBranch %30
-;CHECK: %30 = OpLabel
          %25 = OpAccessChain %_ptr_Uniform_v2float %_ %int_0 %int_2 %int_3 %int_1
+;CHECK: {{%\w+}} = OpIMul %uint %uint_128 %int_2
+;CHECK: {{%\w+}} = OpIAdd %uint %uint_0 {{%\w+}}
+;CHECK: {{%\w+}} = OpIMul %uint %uint_32 %int_3
+;CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} {{%\w+}}
+;CHECK: {{%\w+}} = OpIMul %uint %uint_4 %int_1
+;CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} {{%\w+}}
+;CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_19
+;CHECK: {{%\w+}} = OpLoad %uint %gl_VertexIndex
+;CHECK: {{%\w+}} = OpLoad %uint %gl_InstanceIndex
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_0 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: [[desc_state:%\w+]] = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_52 {{%\w+}} %uint_3 %uint_7 %uint_0 {{%\w+}}
          %26 = OpLoad %v2float %25
                OpStore %v_vtxResult %26
 ;CHECK-NOT: %26 = OpLoad %v2float %25
 ;CHECK-NOT:    OpStore %v_vtxResult %26
-;CHECK: %34 = OpIMul %uint %uint_128 %int_2
-;CHECK: %35 = OpIAdd %uint %uint_0 %34
-;CHECK: %37 = OpIMul %uint %uint_32 %int_3
-;CHECK: %38 = OpIAdd %uint %35 %37
-;CHECK: %40 = OpIMul %uint %uint_4 %int_1
-;CHECK: %41 = OpIAdd %uint %38 %40
-;CHECK: %43 = OpIAdd %uint %41 %uint_19
-;CHECK: {{%\w+}} = OpULessThan %bool %43 [[desc_state]]
 ;CHECK: OpSelectionMerge {{%\w+}} None
-;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+;CHECK: OpBranchConditional [[desc_state]] {{%\w+}} {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: [[load_result]] = OpLoad %v2float %25
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
-;CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_51 %uint_4 %uint_3 %uint_7 %uint_0 {{%\w+}} {{%\w+}}
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: [[phi_result]] = OpPhi %v2float [[load_result]] {{%\w+}} [[null_v2float]] {{%\w+}}
 ;CHECK: OpStore %v_vtxResult [[phi_result]]
                OpReturn
                OpFunctionEnd
-               )" + kReadDescInit + kStreamWrite7Vert;
+               )" + kStreamWrite6 + kCheckDesc;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, false,
-                                               false, true, false, true);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, ImageBufferOOBRead) {
@@ -5009,7 +4643,6 @@ TEST_F(InstBindlessTest, ImageBufferOOBRead) {
   const std::string text = R"(
                           OpCapability Shader
                           OpCapability ImageBuffer
-;CHECK:                   OpCapability ImageQuery
 ;CHECK:                   OpExtension "SPV_KHR_storage_buffer_storage_class"
                      %1 = OpExtInstImport "GLSL.std.450"
                           OpMemoryModel Logical GLSL450
@@ -5027,7 +4660,7 @@ TEST_F(InstBindlessTest, ImageBufferOOBRead) {
                           OpDecorate %ii Flat
                           OpDecorate %ii Location 13
 ;CHECK:                   OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ;CHECK:                   OpDecorate %gl_FragCoord BuiltIn FragCoord
                   %void = OpTypeVoid
                      %3 = OpTypeFunction %void
@@ -5041,20 +4674,14 @@ TEST_F(InstBindlessTest, ImageBufferOOBRead) {
                    %int = OpTypeInt 32 1
            %_ptr_Input_int = OpTypePointer Input %int
                     %ii = OpVariable %_ptr_Input_int Input
-;CHECK:           %uint = OpTypeInt 32 0
-;CHECK:           %bool = OpTypeBool
 ;CHECK:    %_runtimearr_uint = OpTypeRuntimeArray %uint
-)" + kOutputGlobals + R"(
+)" + kInputGlobals + kOutputGlobals + R"(
 ;CHECK:    %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 ;CHECK:    %_ptr_Input_v4float = OpTypePointer Input %v4float
 ;CHECK:    %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
 ;CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
                   %main = OpFunction %void None %3
                      %5 = OpLabel
-;CHECK:                   OpBranch %21
-;CHECK:             %21 = OpLabel
-;CHECK:                   OpBranch %20
-;CHECK:             %20 = OpLabel
 ;CHECK:                   OpBranch %19
 ;CHECK:             %19 = OpLabel
                     %13 = OpLoad %10 %s
@@ -5063,30 +4690,31 @@ TEST_F(InstBindlessTest, ImageBufferOOBRead) {
                           OpStore %x %18
 ;CHECK-NOT:         %18 = OpImageRead %v4float %13 %17
 ;CHECK-NOT:               OpStore %x %18
-;CHECK:             %23 = OpBitcast %uint %17
-;CHECK:             %25 = OpImageQuerySize %uint %13
-;CHECK:             %27 = OpULessThan %bool %23 %25
-;CHECK:                   OpSelectionMerge %29 None
-;CHECK:                   OpBranchConditional %27 %30 %31
-;CHECK:             %30 = OpLabel
-;CHECK:             %32 = OpLoad %10 %s
-;CHECK:             %33 = OpImageRead %v4float %32 %17
-;CHECK:                   OpBranch %29
-;CHECK:             %31 = OpLabel
-;CHECK:             {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_33 %uint_7 %uint_3 %uint_7 %uint_0 %23 %25
-;CHECK:                   OpBranch %29
-;CHECK:             %29 = OpLabel
-;CHECK:             [[phi_result:%\w+]] = OpPhi %v4float %33 %30 [[null_v4float]] %31
-;CHECK:                   OpStore %x [[phi_result]]
-                          OpReturn
-                          OpFunctionEnd
-                          )" + kStreamWrite7Frag;
+;CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+;CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_34 {{%\w+}} %uint_3 %uint_7 %uint_0 %22
+;CHECK: OpSelectionMerge {{%\w+}} None
+;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: {{%\w+}} = OpLoad %10 %s
+;CHECK: {{%\w+}} = OpImageRead %v4float {{%\w+}} %17
+;CHECK: OpBranch {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: OpBranch {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: [[phi_result:%\w+]] = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
+;CHECK: OpStore %x [[phi_result]]
+OpReturn
+OpFunctionEnd
+                          )" + kStreamWrite6 + kCheckDesc;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, false,
-                                               false, true, true, true);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, ImageBufferOOBWrite) {
@@ -5105,12 +4733,11 @@ TEST_F(InstBindlessTest, ImageBufferOOBWrite) {
   const std::string text = R"(
                           OpCapability Shader
                           OpCapability ImageBuffer
-;CHECK:                   OpCapability ImageQuery
 ;CHECK:                   OpExtension "SPV_KHR_storage_buffer_storage_class"
                      %1 = OpExtInstImport "GLSL.std.450"
                           OpMemoryModel Logical GLSL450
                           OpEntryPoint Fragment %main "main" %s %ii %x
-;CHECK:                   OpEntryPoint Fragment %main "main" %s %ii %x %inst_bindless_output_buffer %gl_FragCoord
+;CHECK:                   OpEntryPoint Fragment %main "main" %s %ii %x %inst_bindless_input_buffer %inst_bindless_output_buffer %gl_FragCoord
                           OpExecutionMode %main OriginUpperLeft
                           OpSource GLSL 450
                           OpName %main "main"
@@ -5124,7 +4751,7 @@ TEST_F(InstBindlessTest, ImageBufferOOBWrite) {
                           OpDecorate %ii Location 13
                           OpDecorate %x Location 11
 ;CHECK:                   OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ;CHECK:                   OpDecorate %gl_FragCoord BuiltIn FragCoord
                   %void = OpTypeVoid
                      %3 = OpTypeFunction %void
@@ -5138,50 +4765,44 @@ TEST_F(InstBindlessTest, ImageBufferOOBWrite) {
                %v4float = OpTypeVector %float 4
            %_ptr_Output_v4float = OpTypePointer Output %v4float
                      %x = OpVariable %_ptr_Output_v4float Output
-;CHECK:           %uint = OpTypeInt 32 0
-;CHECK:           %bool = OpTypeBool
-;CHECK:        {{%\w+}} = OpTypeFunction %void %uint %uint %uint %uint %uint
 ;CHECK:    %_runtimearr_uint = OpTypeRuntimeArray %uint
-)" + kOutputGlobals + R"(
+)" + kInputGlobals + kOutputGlobals + R"(
 ;CHECK:    %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 ;CHECK:    %_ptr_Input_v4float = OpTypePointer Input %v4float
 ;CHECK:    %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-;CHECK:         %v4uint = OpTypeVector %uint 4
                   %main = OpFunction %void None %3
                      %5 = OpLabel
-;CHECK:                   OpBranch %21
-;CHECK:             %21 = OpLabel
-;CHECK:                   OpBranch %20
-;CHECK:             %20 = OpLabel
-;CHECK:                   OpBranch %19
+;CHECK:              {{%\w+}} = OpLabel
+;CHECK:                   OpBranch {{%\w+}}
 ;CHECK:             %19 = OpLabel
                     %10 = OpLoad %7 %s
                     %14 = OpLoad %int %ii
                     %18 = OpLoad %v4float %x
                           OpImageWrite %10 %14 %18
 ;CHECK-NOT:               OpImageWrite %10 %14 %18
-;CHECK:             %23 = OpBitcast %uint %14
-;CHECK:             %25 = OpImageQuerySize %uint %10
-;CHECK:             %27 = OpULessThan %bool %23 %25
-;CHECK:                   OpSelectionMerge %29 None
-;CHECK:                   OpBranchConditional %27 %30 %31
-;CHECK:             %30 = OpLabel
-;CHECK:             %32 = OpLoad %7 %s
-;CHECK:                   OpImageWrite %32 %14 %18
-;CHECK:                   OpBranch %29
-;CHECK:             %31 = OpLabel
-;CHECK:             {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_34 %uint_7 %uint_3 %uint_7 %uint_0 %23 %25
-;CHECK:                   OpBranch %29
-;CHECK:             %29 = OpLabel
-                          OpReturn
-                          OpFunctionEnd
-                          )" + kStreamWrite7Frag;
+;CHECK:        {{%\w+}} = OpLoad %v4float %gl_FragCoord
+;CHECK:        {{%\w+}} = OpBitcast %v4uint {{%\w+}} 
+;CHECK:        {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+;CHECK:        {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+;CHECK:        {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+;CHECK:        {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_35 {{%\w+}} %uint_3 %uint_7 %uint_0 {{%\w+}}
+;CHECK:        OpSelectionMerge {{%\w+}} None
+;CHECK:        OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+;CHECK:        {{%\w+}} = OpLabel
+;CHECK:        {{%\w+}} = OpLoad %7 %s
+;CHECK:        OpImageWrite {{%\w+}} %14 %18
+;CHECK:        OpBranch {{%\w+}}
+;CHECK:        {{%\w+}} = OpLabel
+;CHECK:        OpBranch {{%\w+}}
+;CHECK:        {{%\w+}} = OpLabel
+OpReturn
+OpFunctionEnd
+)" + kStreamWrite6 + kCheckDesc;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, false,
-                                               false, true, true, true);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, TextureBufferOOBFetch) {
@@ -5200,12 +4821,11 @@ TEST_F(InstBindlessTest, TextureBufferOOBFetch) {
   const std::string text = R"(
                           OpCapability Shader
                           OpCapability SampledBuffer
-;CHECK:                   OpCapability ImageQuery
 ;CHECK:                   OpExtension "SPV_KHR_storage_buffer_storage_class"
                      %1 = OpExtInstImport "GLSL.std.450"
                           OpMemoryModel Logical GLSL450
                           OpEntryPoint Fragment %main "main" %x %s %ii
-;CHECK:                   OpEntryPoint Fragment %main "main" %x %s %ii %inst_bindless_output_buffer %gl_FragCoord
+;CHECK:                   OpEntryPoint Fragment %main "main" %x %s %ii %inst_bindless_input_buffer %inst_bindless_output_buffer %gl_FragCoord
                           OpExecutionMode %main OriginUpperLeft
                           OpSource GLSL 450
                           OpName %main "main"
@@ -5217,8 +4837,7 @@ TEST_F(InstBindlessTest, TextureBufferOOBFetch) {
                           OpDecorate %s Binding 7
                           OpDecorate %ii Flat
                           OpDecorate %ii Location 13
-;CHECK:                   OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ;CHECK:                   OpDecorate %gl_FragCoord BuiltIn FragCoord
                   %void = OpTypeVoid
                      %3 = OpTypeFunction %void
@@ -5232,20 +4851,14 @@ TEST_F(InstBindlessTest, TextureBufferOOBFetch) {
                    %int = OpTypeInt 32 1
            %_ptr_Input_int = OpTypePointer Input %int
                     %ii = OpVariable %_ptr_Input_int Input
-;CHECK:           %uint = OpTypeInt 32 0
-;CHECK:           %bool = OpTypeBool
 ;CHECK:    %_runtimearr_uint = OpTypeRuntimeArray %uint
-)" + kOutputGlobals + R"(
+)" + kInputGlobals + kOutputGlobals + R"(
 ;CHECK:    %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 ;CHECK:    %_ptr_Input_v4float = OpTypePointer Input %v4float
 ;CHECK:    %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
 ;CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
                   %main = OpFunction %void None %3
                      %5 = OpLabel
-;CHECK:                   OpBranch %21
-;CHECK:             %21 = OpLabel
-;CHECK:                   OpBranch %20
-;CHECK:             %20 = OpLabel
 ;CHECK:                   OpBranch %19
 ;CHECK:             %19 = OpLabel
                     %13 = OpLoad %10 %s
@@ -5254,30 +4867,31 @@ TEST_F(InstBindlessTest, TextureBufferOOBFetch) {
                           OpStore %x %18
 ;CHECK-NOT:         %18 = OpImageFetch %v4float %13 %17
 ;CHECK-NOT:               OpStore %x %18
-;CHECK:             %23 = OpBitcast %uint %17
-;CHECK:             %25 = OpImageQuerySize %uint %13
-;CHECK:             %27 = OpULessThan %bool %23 %25
-;CHECK:                   OpSelectionMerge %29 None
-;CHECK:                   OpBranchConditional %27 %30 %31
-;CHECK:             %30 = OpLabel
-;CHECK:             %32 = OpLoad %10 %s
-;CHECK:             %33 = OpImageFetch %v4float %32 %17
-;CHECK:                   OpBranch %29
-;CHECK:             %31 = OpLabel
-;CHECK:             {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_32 %uint_6 %uint_3 %uint_7 %uint_0 %23 %25
-;CHECK:                   OpBranch %29
-;CHECK:             %29 = OpLabel
-;CHECK:             [[phi_result:%\w+]] = OpPhi %v4float %33 %30 [[null_v4float]] %31
-;CHECK:                   OpStore %x [[phi_result]]
-                          OpReturn
-                          OpFunctionEnd
-                          )" + kStreamWrite7Frag;
+;CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+;CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_33 {{%\w+}} %uint_3 %uint_7 %uint_0 {{%\w+}}
+;CHECK: OpSelectionMerge {{%\w+}} None
+;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: {{%\w+}} = OpLoad %10 %s
+;CHECK: {{%\w+}} = OpImageFetch %v4float {{%\w+}} %17
+;CHECK: OpBranch {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: OpBranch {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: [[phi_result:%\w+]] = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
+;CHECK: OpStore %x [[phi_result]]
+OpReturn
+OpFunctionEnd
+                          )" + kStreamWrite6 + kCheckDesc;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, false,
-                                               false, true, true, true);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, SamplerBufferOOBFetch) {
@@ -5296,12 +4910,11 @@ TEST_F(InstBindlessTest, SamplerBufferOOBFetch) {
   const std::string text = R"(
                           OpCapability Shader
                           OpCapability SampledBuffer
-;CHECK:                   OpCapability ImageQuery
 ;CHECK:                   OpExtension "SPV_KHR_storage_buffer_storage_class"
                      %1 = OpExtInstImport "GLSL.std.450"
                           OpMemoryModel Logical GLSL450
                           OpEntryPoint Fragment %main "main" %x %s %ii
-;CHECK:                   OpEntryPoint Fragment %main "main" %x %s %ii %inst_bindless_output_buffer %gl_FragCoord
+;CHECK:                   OpEntryPoint Fragment %main "main" %x %s %ii %inst_bindless_input_buffer %inst_bindless_output_buffer %gl_FragCoord
                           OpExecutionMode %main OriginUpperLeft
                           OpSource GLSL 450
                           OpName %main "main"
@@ -5314,7 +4927,7 @@ TEST_F(InstBindlessTest, SamplerBufferOOBFetch) {
                           OpDecorate %ii Flat
                           OpDecorate %ii Location 13
 ;CHECK:                   OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ;CHECK:                   OpDecorate %gl_FragCoord BuiltIn FragCoord
                   %void = OpTypeVoid
                      %3 = OpTypeFunction %void
@@ -5329,20 +4942,13 @@ TEST_F(InstBindlessTest, SamplerBufferOOBFetch) {
                    %int = OpTypeInt 32 1
            %_ptr_Input_int = OpTypePointer Input %int
                     %ii = OpVariable %_ptr_Input_int Input
-;CHECK:           %uint = OpTypeInt 32 0
-;CHECK:           %bool = OpTypeBool
-;CHECK:    %_runtimearr_uint = OpTypeRuntimeArray %uint
-)" + kOutputGlobals + R"(
+)" + kInputGlobals + kOutputGlobals + R"(
 ;CHECK:    %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 ;CHECK:    %_ptr_Input_v4float = OpTypePointer Input %v4float
 ;CHECK:    %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
 ;CHECK: [[null_v4float:%\w+]] = OpConstantNull %v4float
                   %main = OpFunction %void None %3
                      %5 = OpLabel
-;CHECK:                   OpBranch %23
-;CHECK:             %23 = OpLabel
-;CHECK:                   OpBranch %22
-;CHECK:             %22 = OpLabel
 ;CHECK:                   OpBranch %21
 ;CHECK:             %21 = OpLabel
                     %14 = OpLoad %11 %s
@@ -5352,31 +4958,32 @@ TEST_F(InstBindlessTest, SamplerBufferOOBFetch) {
                           OpStore %x %20
 ;CHECK-NOT:         %20 = OpImageFetch %v4float %19 %18
 ;CHECK-NOT:               OpStore %x %20
-;CHECK:             %25 = OpBitcast %uint %18
-;CHECK:             %27 = OpImageQuerySize %uint %19
-;CHECK:             %29 = OpULessThan %bool %25 %27
-;CHECK:                   OpSelectionMerge %31 None
-;CHECK:                   OpBranchConditional %29 %32 %33
-;CHECK:             %32 = OpLabel
-;CHECK:             %34 = OpLoad %11 %s
-;CHECK:             %35 = OpImage %10 %34
-;CHECK:             %36 = OpImageFetch %v4float %35 %18
-;CHECK:                   OpBranch %31
-;CHECK:             %33 = OpLabel
-;CHECK:             {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_34 %uint_6 %uint_3 %uint_7 %uint_0 %25 %27
-;CHECK:                   OpBranch %31
-;CHECK:             %31 = OpLabel
-;CHECK:             [[phi_result:%\w+]] = OpPhi %v4float %36 %32 [[null_v4float]] %33
-;CHECK:                   OpStore %x [[phi_result]]
-                          OpReturn
-                          OpFunctionEnd
-                          )" + kStreamWrite7Frag;
+;CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+;CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_35 {{%\w+}} %uint_3 %uint_7 %uint_0 {{%\w+}}
+;CHECK: OpSelectionMerge {{%\w+}} None
+;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: {{%\w+}} = OpLoad %11 %s
+;CHECK: {{%\w+}} = OpImage %10 {{%\w+}}
+;CHECK: {{%\w+}} = OpImageFetch %v4float {{%\w+}} {{%\w+}}
+;CHECK: OpBranch {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: OpBranch {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: [[phi_result:%\w+]] = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
+;CHECK: OpStore %x [[phi_result]]
+OpReturn
+OpFunctionEnd
+)" + kStreamWrite6 + kCheckDesc;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, false,
-                                               false, true, true, true);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, SamplerBufferConstructorOOBFetch) {
@@ -5396,12 +5003,11 @@ TEST_F(InstBindlessTest, SamplerBufferConstructorOOBFetch) {
   const std::string text = R"(
                           OpCapability Shader
                           OpCapability SampledBuffer
-;CHECK:                   OpCapability ImageQuery
 ;CHECK:                   OpExtension "SPV_KHR_storage_buffer_storage_class"
                      %1 = OpExtInstImport "GLSL.std.450"
                           OpMemoryModel Logical GLSL450
                           OpEntryPoint Fragment %main "main" %x %tBuf %s %ii
-;CHECK:                   OpEntryPoint Fragment %main "main" %x %tBuf %s %ii %inst_bindless_output_buffer %gl_FragCoord
+;CHECK:                   OpEntryPoint Fragment %main "main" %x %tBuf %s %ii %inst_bindless_input_buffer %inst_bindless_output_buffer %gl_FragCoord
                           OpExecutionMode %main OriginUpperLeft
                           OpSource GLSL 450
                           OpName %main "main"
@@ -5416,8 +5022,7 @@ TEST_F(InstBindlessTest, SamplerBufferConstructorOOBFetch) {
                           OpDecorate %s Binding 8
                           OpDecorate %ii Flat
                           OpDecorate %ii Location 13
-;CHECK:                   OpDecorate %_runtimearr_uint ArrayStride 4
-)" + kOutputDecorations + R"(
+)" + kInputDecorations + kOutputDecorations + R"(
 ;CHECK:                   OpDecorate %gl_FragCoord BuiltIn FragCoord
                   %void = OpTypeVoid
                      %3 = OpTypeFunction %void
@@ -5435,22 +5040,14 @@ TEST_F(InstBindlessTest, SamplerBufferConstructorOOBFetch) {
                    %int = OpTypeInt 32 1
            %_ptr_Input_int = OpTypePointer Input %int
                     %ii = OpVariable %_ptr_Input_int Input
-;CHECK:           %uint = OpTypeInt 32 0
-;CHECK:           %bool = OpTypeBool
 ;CHECK:    %_runtimearr_uint = OpTypeRuntimeArray %uint
-)" + kOutputGlobals + R"(
+)" + kInputGlobals + kOutputGlobals + R"(
 ;CHECK:    %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
 ;CHECK:    %_ptr_Input_v4float = OpTypePointer Input %v4float
 ;CHECK:    %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
 ;CHECK:            [[null_v4float:%\w+]] = OpConstantNull %v4float
                   %main = OpFunction %void None %3
                      %5 = OpLabel
-;CHECK:                   OpBranch %28
-;CHECK:             %28 = OpLabel
-;CHECK:                   OpBranch %27
-;CHECK:             %27 = OpLabel
-;CHECK:                   OpBranch %26
-;CHECK:             %26 = OpLabel
                     %13 = OpLoad %10 %tBuf
                     %17 = OpLoad %14 %s
                     %19 = OpSampledImage %18 %13 %17
@@ -5460,32 +5057,33 @@ TEST_F(InstBindlessTest, SamplerBufferConstructorOOBFetch) {
                           OpStore %x %25
 ;CHECK-NOT:         %25 = OpImageFetch %v4float %24 %23
 ;CHECK-NOT:               OpStore %x %25
-;CHECK:             %30 = OpBitcast %uint %23
-;CHECK:             %32 = OpImageQuerySize %uint %24
-;CHECK:             %34 = OpULessThan %bool %30 %32
-;CHECK:                   OpSelectionMerge %36 None
-;CHECK:                   OpBranchConditional %34 %37 %38
-;CHECK:             %37 = OpLabel
-;CHECK:             %39 = OpLoad %10 %tBuf
-;CHECK:             %40 = OpSampledImage %18 %39 %17
-;CHECK:             %41 = OpImage %10 %40
-;CHECK:             %42 = OpImageFetch %v4float %41 %23
-;CHECK:                   OpBranch %36
-;CHECK:             %38 = OpLabel
-;CHECK:            {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_42 %uint_6 %uint_3 %uint_7 %uint_0 %30 %32
-;CHECK:                   OpBranch %36
-;CHECK:             %36 = OpLabel
-;CHECK:            [[phi_result:%\w+]] = OpPhi %v4float %42 %37 [[null_v4float]] %38
-;CHECK:                   OpStore %x [[phi_result]]
+;CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
+;CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
+;CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_43 {{%\w+}} %uint_3 %uint_7 %uint_0 {{%\w+}}
+;CHECK: OpSelectionMerge {{%\w+}} None
+;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: {{%\w+}} = OpLoad %10 %tBuf
+;CHECK: {{%\w+}} = OpSampledImage %18 {{%\w+}} %17
+;CHECK: {{%\w+}} = OpImage %10 {{%\w+}}
+;CHECK: {{%\w+}} = OpImageFetch %v4float {{%\w+}} %23
+;CHECK: OpBranch {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: OpBranch {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: [[phi_result:%\w+]] = OpPhi %v4float {{%\w+}} {{%\w+}} [[null_v4float]] {{%\w+}}
+;CHECK: OpStore %x [[phi_result]]
                           OpReturn
                           OpFunctionEnd
-                          )" + kStreamWrite7Frag;
+                          )" + kStreamWrite6 + kCheckDesc;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, false,
-                                               false, true, true, true);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 TEST_F(InstBindlessTest, DeviceBufferAddressOOB) {
@@ -5557,13 +5155,6 @@ OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_bufStruct PhysicalStorageBuffer
 R"(%main = OpFunction %void None %3
 %5 = OpLabel
 %i = OpVariable %_ptr_Function_int Function
-;CHECK: OpBranch {{%\w+}}
-;CHECK: {{%\w+}} = OpLabel
-;CHECK: [[desc_state:%\w+]] = OpFunctionCall %uint %inst_bindless_read_desc_init %uint_0 %uint_0 %uint_0
-;CHECK: OpBranch {{%\w+}}
-;CHECK: {{%\w+}} = OpLabel
-;CHECK: OpBranch {{%\w+}}
-;CHECK: {{%\w+}} = OpLabel
 OpStore %i %int_0
 OpBranch %10
 %10 = OpLabel
@@ -5572,37 +5163,41 @@ OpBranch %14
 %14 = OpLabel
 %15 = OpLoad %int %i
 %26 = OpAccessChain %_ptr_Uniform_int %u_info %int_1
-%27 = OpLoad %int %26
-%29 = OpSLessThan %bool %15 %27
-;CHECK-NOT: %27 = OpLoad %int %26
-;CHECK-NOT: %29 = OpSLessThan %bool %15 %27
 ;CHECK: {{%\w+}} = OpIAdd %uint %uint_8 %uint_3
-;CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} {{%\w+}}
+;CHECK: {{%\w+}} = OpLoad %uint %gl_VertexIndex
+;CHECK: {{%\w+}} = OpLoad %uint %gl_InstanceIndex
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_0 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_55 {{%\w+}} %uint_0 %uint_0 %uint_0 {{%\w+}}
 ;CHECK: OpSelectionMerge {{%\w+}} None
 ;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: [[load_result:%\w+]] = OpLoad %int %26
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
-;CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_54 %uint_4 %uint_0 %uint_0 %uint_0 {{%\w+}} {{%\w+}}
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: [[phi_result:%\w+]] = OpPhi %int [[load_result]] {{%\w+}} {{%\w+}} {{%\w+}}
-;CHECK: {{%\w+}} = OpSLessThan %bool %15 [[phi_result]]
+%27 = OpLoad %int %26
+%29 = OpSLessThan %bool %15 %27
+;CHECK-NOT: %27 = OpLoad %int %26
+;CHECK-NOT: %29 = OpSLessThan %bool %15 %27
+;CHECK: %29 = OpSLessThan %bool %15 [[phi_result]]
 OpBranchConditional %29 %11 %12
 %11 = OpLabel
 %31 = OpAccessChain %_ptr_Uniform__ptr_PhysicalStorageBuffer_bufStruct %u_info %int_0
 %32 = OpLoad %_ptr_PhysicalStorageBuffer_bufStruct %31
 ;CHECK-NOT: %32 = OpLoad %_ptr_PhysicalStorageBuffer_bufStruct %31
 ;CHECK: {{%\w+}} = OpIAdd %uint %uint_0 %uint_7
-;CHECK: {{%\w+}} = OpULessThan %bool {{%\w+}} {{%\w+}}
+;CHECK: {{%\w+}} = OpLoad %uint %gl_VertexIndex
+;CHECK: {{%\w+}} = OpLoad %uint %gl_InstanceIndex
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_0 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_60 {{%\w+}} %uint_0 %uint_0 %uint_0 {{%\w+}}
 ;CHECK: OpSelectionMerge {{%\w+}} None
 ;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
 ;CHECK: [[load_result_2:%\w+]] = OpLoad %_ptr_PhysicalStorageBuffer_bufStruct %31
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
-;CHECK: {{%\w+}} = OpFunctionCall %void %inst_bindless_stream_write_7 %uint_59 %uint_4 %uint_0 %uint_0 %uint_0 {{%\w+}} {{%\w+}}
 ;CHECK: {{%\w+}} = OpConvertUToPtr %_ptr_PhysicalStorageBuffer_bufStruct {{%\w+}}
 ;CHECK: OpBranch {{%\w+}}
 ;CHECK: {{%\w+}} = OpLabel
@@ -5621,13 +5216,12 @@ OpBranch %10
 %12 = OpLabel
 OpReturn
 OpFunctionEnd)"
-    + kReadDescInit + kStreamWrite7Vert;
+    + kStreamWrite6 + kCheckDesc;
   // clang-format on
 
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u, false, true,
-                                               true, true, true);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
 // TODO(greg-lunarg): Add tests to verify handling of these cases:

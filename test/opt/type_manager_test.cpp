@@ -171,6 +171,7 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
   types.emplace_back(new NamedBarrier());
   types.emplace_back(new AccelerationStructureNV());
   types.emplace_back(new CooperativeMatrixNV(f32, 24, 24, 24));
+  types.emplace_back(new CooperativeMatrixKHR(f32, 8, 8, 8, 1002));
   types.emplace_back(new RayQueryKHR());
   types.emplace_back(new HitObjectNV());
 
@@ -237,6 +238,8 @@ TEST(TypeManager, TypeStrings) {
     %arr_long_constant = OpTypeArray %s32 %long_constant
     %arr_spec_const_op = OpTypeArray %s32 %spec_const_op
     %cm   = OpTypeCooperativeMatrixNV %f64 %id4 %id4 %id4
+    %id2    = OpConstant %u32 2
+    %cmkhr  = OpTypeCooperativeMatrixKHR %f64 %id4 %id4 %id4 %id2
   )";
 
   std::vector<std::pair<uint32_t, std::string>> type_id_strs = {
@@ -275,6 +278,7 @@ TEST(TypeManager, TypeStrings) {
       {37, "[sint32, id(33), words(0,705032704,1)]"},
       {38, "[sint32, id(34), words(2,34)]"},
       {39, "<float64, 6, 6, 6>"},
+      {41, "<float64, 6, 6, 6, 40>"},
   };
 
   std::unique_ptr<IRContext> context =
@@ -940,12 +944,15 @@ OpMemoryModel Logical GLSL450
   std::vector<std::unique_ptr<Type>> types = GenerateAllTypes();
   uint32_t id = 1u;
   for (auto& t : types) {
+    std::cout << ". id " << id << std::endl;
     context->get_type_mgr()->RegisterType(id, *t);
     EXPECT_EQ(*t, *context->get_type_mgr()->GetType(id));
   }
+  std::cout << "clear" << id << std::endl;
   types.clear();
 
   for (; id > 0; --id) {
+    std::cout << ". remove id " << id << std::endl;
     context->get_type_mgr()->RemoveId(id);
     EXPECT_EQ(nullptr, context->get_type_mgr()->GetType(id));
   }
@@ -1030,6 +1037,8 @@ TEST(TypeManager, GetTypeInstructionAllTypes) {
 ; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
 ; CHECK: [[input_ptr:%\w+]] = OpTypePointer Input [[uint]]
 ; CHECK: [[uniform_ptr:%\w+]] = OpTypePointer Uniform [[uint]]
+; CHECK: [[uint2:%\w+]] = OpConstant [[uint]] 2
+; CHECK: [[uint8:%\w+]] = OpConstant [[uint]] 8
 ; CHECK: [[uint24:%\w+]] = OpConstant [[uint]] 24
 ; CHECK: [[uint42:%\w+]] = OpConstant [[uint]] 42
 ; CHECK: [[uint100:%\w+]] = OpConstant [[uint]] 100
@@ -1085,6 +1094,7 @@ TEST(TypeManager, GetTypeInstructionAllTypes) {
 ; CHECK: OpTypeNamedBarrier
 ; CHECK: OpTypeAccelerationStructureKHR
 ; CHECK: OpTypeCooperativeMatrixNV [[f32]] [[uint24]] [[uint24]] [[uint24]]
+; CHECK: OpTypeCooperativeMatrixKHR [[f32]] [[uint8]] [[uint8]] [[uint8]] [[uint2]]
 ; CHECK: OpTypeRayQueryKHR
 ; CHECK: OpTypeHitObjectNV
 OpCapability Shader
@@ -1094,6 +1104,8 @@ OpMemoryModel Logical GLSL450
 %uint = OpTypeInt 32 0
 %1 = OpTypePointer Input %uint
 %2 = OpTypePointer Uniform %uint
+%1002 = OpConstant %uint 2
+%8 = OpConstant %uint 8
 %24 = OpConstant %uint 24
 %42 = OpConstant %uint 42
 %100 = OpConstant %uint 100

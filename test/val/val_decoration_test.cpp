@@ -9252,6 +9252,124 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
+TEST_F(ValidateDecorations, PhysicalStorageBufferWithOffset) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Int64
+OpCapability PhysicalStorageBufferAddresses
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint GLCompute %main "main" %pc
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %pc_block Block
+OpMemberDecorate %pc_block 0 Offset 0
+OpMemberDecorate %pssbo_struct 0 Offset 0
+%void = OpTypeVoid
+%long = OpTypeInt 64 0
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%pc_block = OpTypeStruct %long
+%pc_block_ptr = OpTypePointer PushConstant %pc_block
+%pc_long_ptr = OpTypePointer PushConstant %long
+%pc = OpVariable %pc_block_ptr PushConstant
+%pssbo_struct = OpTypeStruct %float
+%pssbo_ptr = OpTypePointer PhysicalStorageBuffer %pssbo_struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%pc_gep = OpAccessChain %pc_long_ptr %pc %int_0
+%addr = OpLoad %long %pc_gep
+%ptr = OpConvertUToPtr %pssbo_ptr %addr
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateDecorations, PhysicalStorageBufferMissingOffset) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Int64
+OpCapability PhysicalStorageBufferAddresses
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint GLCompute %main "main" %pc
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %pc_block Block
+OpMemberDecorate %pc_block 0 Offset 0
+%void = OpTypeVoid
+%long = OpTypeInt 64 0
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%pc_block = OpTypeStruct %long
+%pc_block_ptr = OpTypePointer PushConstant %pc_block
+%pc_long_ptr = OpTypePointer PushConstant %long
+%pc = OpVariable %pc_block_ptr PushConstant
+%pssbo_struct = OpTypeStruct %float
+%pssbo_ptr = OpTypePointer PhysicalStorageBuffer %pssbo_struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%pc_gep = OpAccessChain %pc_long_ptr %pc %int_0
+%addr = OpLoad %long %pc_gep
+%ptr = OpConvertUToPtr %pssbo_ptr %addr
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("decorated as Block for variable in PhysicalStorageBuffer "
+                "storage class must follow relaxed storage buffer layout "
+                "rules: member 0 is missing an Offset decoration"));
+}
+
+TEST_F(ValidateDecorations, PhysicalStorageBufferMissingArrayStride) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Int64
+OpCapability PhysicalStorageBufferAddresses
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint GLCompute %main "main" %pc
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %pc_block Block
+OpMemberDecorate %pc_block 0 Offset 0
+%void = OpTypeVoid
+%long = OpTypeInt 64 0
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%pc_block = OpTypeStruct %long
+%pc_block_ptr = OpTypePointer PushConstant %pc_block
+%pc_long_ptr = OpTypePointer PushConstant %long
+%pc = OpVariable %pc_block_ptr PushConstant
+%pssbo_array = OpTypeArray %float %int_4
+%pssbo_ptr = OpTypePointer PhysicalStorageBuffer %pssbo_array
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%pc_gep = OpAccessChain %pc_long_ptr %pc %int_0
+%addr = OpLoad %long %pc_gep
+%ptr = OpConvertUToPtr %pssbo_ptr %addr
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "decorated as Block for variable in PhysicalStorageBuffer storage "
+          "class must follow relaxed storage buffer layout rules: member 0 "
+          "contains an array with stride 0, but with an element size of 4"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

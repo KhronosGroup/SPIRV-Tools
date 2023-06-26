@@ -41,8 +41,6 @@ if (IS_DIRECTORY ${SPIRV_HEADER_DIR})
   # Do this so enclosing projects can use SPIRV-Headers_SOURCE_DIR to find
   # headers to include.
   if (NOT DEFINED SPIRV-Headers_SOURCE_DIR)
-    set(SPIRV_HEADERS_SKIP_INSTALL ON)
-    set(SPIRV_HEADERS_SKIP_EXAMPLES ON)
     add_subdirectory(${SPIRV_HEADER_DIR})
   endif()
 else()
@@ -93,18 +91,21 @@ if (NOT ${SPIRV_SKIP_TESTS})
 
   # Find Effcee and RE2, for testing.
 
+  # RE2 depends on Abseil. We set absl_SOURCE_DIR if it is not already set, so
+  # that effcee can find abseil.
+  if(NOT TARGET absl::base)
+    if (NOT absl_SOURCE_DIR)
+      if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/abseil_cpp)
+        set(absl_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/abseil_cpp" CACHE STRING "Abseil source dir" )
+      endif()
+    endif()
+  endif()
+
   # First find RE2, since Effcee depends on it.
   # If already configured, then use that.  Otherwise, prefer to find it under 're2'
   # in this directory.
   if (NOT TARGET re2)
 
-    # RE2 depends on Abseil, so we need to add it.
-    if(NOT TARGET absl::base)
-      set(ABSL_INTERNAL_AT_LEAST_CXX17 ON)
-      set(ABSL_PROPAGATE_CXX_STD ON)
-      set(ABSL_ENABLE_INSTALL ON)
-      add_subdirectory(abseil_cpp EXCLUDE_FROM_ALL)
-    endif()
 
     # If we are configuring RE2, then turn off its testing.  It takes a long time and
     # does not add much value for us.  If an enclosing project configured RE2, then it
