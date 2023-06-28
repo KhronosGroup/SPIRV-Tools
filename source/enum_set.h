@@ -190,8 +190,7 @@ class EnumSet {
   // Returns the first storable enum value stored by the bucket that would
   // contain `value`.
   static constexpr inline T ComputeBucketStart(T value) {
-    return static_cast<T>(kBucketSize *
-                          ComputeTheoreticalBucketIndex(value));
+    return static_cast<T>(kBucketSize * ComputeTheoreticalBucketIndex(value));
   }
 
   // Returns the numerical difference between `value` for the first enum value
@@ -212,7 +211,7 @@ class EnumSet {
   // Returns the `enum` stored in `bucket` at `offset`.
   // `offset` is the bit-offset in the bucket storage.
   static constexpr inline T GetValueFromBucket(const Bucket& bucket,
-                                                  ElementType offset) {
+                                               ElementType offset) {
     return static_cast<T>(static_cast<ElementType>(bucket.start) + offset);
   }
 
@@ -237,8 +236,8 @@ class EnumSet {
 
     // Bucket contains smaller values. Linear scan right.
     if (bucket_start < needle) {
-      for (index += 1; index < buckets_.size() && buckets_[index].start < needle;
-           index++) {
+      for (index += 1;
+           index < buckets_.size() && buckets_[index].start < needle; index++) {
       }
       return index;
     }
