@@ -74,7 +74,7 @@ class EnumSet {
 
  public:
   // Creates an empty set.
-  EnumSet() : buckets(0) {}
+  EnumSet() : buckets_(0) {}
 
   // Creates a set and store `value` in it.
   EnumSet(T value) : EnumSet() { Add(value); }
@@ -94,70 +94,70 @@ class EnumSet {
   }
 
   // Copies the EnumSet `other` into a new EnumSet.
-  EnumSet(const EnumSet& other) : buckets(other.buckets) {}
+  EnumSet(const EnumSet& other) : buckets_(other.buckets_) {}
 
   // Moves the EnumSet `other` into a new EnumSet.
-  EnumSet(EnumSet&& other) : buckets(std::move(other.buckets)) {}
+  EnumSet(EnumSet&& other) : buckets_(std::move(other.buckets_)) {}
 
   // Deep-copies the EnumSet `other` into this EnumSet.
   EnumSet& operator=(const EnumSet& other) {
-    buckets = other.buckets;
+    buckets_ = other.buckets_;
     return *this;
   }
 
   // Add the enum value `value` into the set.
   // The set is unchanged if the value already exists.
   void Add(T value) {
-    const size_t index = find_bucket_for_value(value);
-    if (index >= buckets.size() ||
-        buckets[index].start != compute_bucket_start(value)) {
-      create_bucket_for(index, value);
+    const size_t index = FindBucketForValue(value);
+    if (index >= buckets_.size() ||
+        buckets_[index].start != ComputeBucketStart(value)) {
+      InsertBucketFor(index, value);
       return;
     }
-    auto& bucket = buckets[index];
+    auto& bucket = buckets_[index];
     bucket.data |= compute_mask_for_value(value);
   }
 
   // Removes the value `value` into the set.
   // The set is unchanged if the value is not in the set.
   void Remove(T value) {
-    const size_t index = find_bucket_for_value(value);
-    if (index >= buckets.size() ||
-        buckets[index].start != compute_bucket_start(value)) {
+    const size_t index = FindBucketForValue(value);
+    if (index >= buckets_.size() ||
+        buckets_[index].start != ComputeBucketStart(value)) {
       return;
     }
-    auto& bucket = buckets[index];
+    auto& bucket = buckets_[index];
     bucket.data &= ~compute_mask_for_value(value);
     if (bucket.data == 0) {
-      buckets.erase(buckets.cbegin() + index);
+      buckets_.erase(buckets_.cbegin() + index);
     }
   }
 
   // Returns true if `value` is present in the set.
   bool Contains(T value) const {
-    const size_t index = find_bucket_for_value(value);
-    if (index >= buckets.size() ||
-        buckets[index].start != compute_bucket_start(value)) {
+    const size_t index = FindBucketForValue(value);
+    if (index >= buckets_.size() ||
+        buckets_[index].start != ComputeBucketStart(value)) {
       return false;
     }
-    auto& bucket = buckets[index];
+    auto& bucket = buckets_[index];
     return bucket.data & compute_mask_for_value(value);
   }
 
   // Calls `unaryFunction` once for each value in the set.
   // Values are sorted in increasing order using their numerical values.
   void ForEach(std::function<void(T)> unaryFunction) const {
-    for (const auto& bucket : buckets) {
+    for (const auto& bucket : buckets_) {
       for (uint8_t i = 0; i < kBucketSize; i++) {
         if (bucket.data & (1ULL << i)) {
-          unaryFunction(get_value_from_bucket(bucket, i));
+          unaryFunction(GetValueFromBucket(bucket, i));
         }
       }
     }
   }
 
   // Returns true if the set is holds no values.
-  bool IsEmpty() const { return buckets.size() == 0; }
+  bool IsEmpty() const { return buckets_.size() == 0; }
 
   // Returns true if this set contains at least one value contained in `in_set`.
   // Note: If `in_set` is empty, this function returns true.
@@ -166,8 +166,8 @@ class EnumSet {
       return true;
     }
 
-    for (auto& lhs_bucket : buckets) {
-      for (auto& rhs_bucket : in_set.buckets) {
+    for (auto& lhs_bucket : buckets_) {
+      for (auto& rhs_bucket : in_set.buckets_) {
         if (lhs_bucket.start != rhs_bucket.start) {
           continue;
         }
@@ -183,15 +183,15 @@ class EnumSet {
  private:
   // Returns the index of the bucket in which `value` would be stored in the
   // best case.
-  static constexpr inline size_t compute_theoretical_bucket_index(T value) {
+  static constexpr inline size_t ComputeTheoreticalBucketIndex(T value) {
     return static_cast<size_t>(value) / kBucketSize;
   }
 
   // Returns the first storable enum value stored by the bucket that would
   // contain `value`.
-  static constexpr inline T compute_bucket_start(T value) {
+  static constexpr inline T ComputeBucketStart(T value) {
     return static_cast<T>(kBucketSize *
-                          compute_theoretical_bucket_index(value));
+                          ComputeTheoreticalBucketIndex(value));
   }
 
   // Returns the numerical difference between `value` for the first enum value
@@ -200,18 +200,18 @@ class EnumSet {
   //  - value = 12
   //  - value's bucket holds enum values in the range [10, 20[
   //  - offset of value in the bucket is 2 (10 + 2 = 12).
-  static constexpr inline size_t compute_bucket_offset(T value) {
+  static constexpr inline size_t ComputeBucketOffset(T value) {
     return static_cast<ElementType>(value) % kBucketSize;
   }
 
   // Returns the bitmask used to represent the enum `value` in its bucket.
   static constexpr inline BucketType compute_mask_for_value(T value) {
-    return 1ULL << compute_bucket_offset(value);
+    return 1ULL << ComputeBucketOffset(value);
   }
 
   // Returns the `enum` stored in `bucket` at `offset`.
   // `offset` is the bit-offset in the bucket storage.
-  static constexpr inline T get_value_from_bucket(const Bucket& bucket,
+  static constexpr inline T GetValueFromBucket(const Bucket& bucket,
                                                   ElementType offset) {
     return static_cast<T>(static_cast<ElementType>(bucket.start) + offset);
   }
@@ -219,17 +219,17 @@ class EnumSet {
   // For a given enum `value`, finds the bucket index that could contain this
   // value. If no such bucket is found, the index at which the new bucket should
   // be inserted is returned.
-  size_t find_bucket_for_value(T value) const {
+  size_t FindBucketForValue(T value) const {
     // Set is empty, insert at 0.
-    if (buckets.size() == 0) {
+    if (buckets_.size() == 0) {
       return 0;
     }
 
     size_t index =
-        std::min(buckets.size() - 1, compute_theoretical_bucket_index(value));
-    const T needle = compute_bucket_start(value);
+        std::min(buckets_.size() - 1, ComputeTheoreticalBucketIndex(value));
+    const T needle = ComputeBucketStart(value);
 
-    const T bucket_start = buckets[index].start;
+    const T bucket_start = buckets_[index].start;
     // Computed index is the correct one.
     if (bucket_start == needle) {
       return index;
@@ -237,7 +237,7 @@ class EnumSet {
 
     // Bucket contains smaller values. Linear scan right.
     if (bucket_start < needle) {
-      for (index += 1; index < buckets.size() && buckets[index].start < needle;
+      for (index += 1; index < buckets_.size() && buckets_[index].start < needle;
            index++) {
       }
       return index;
@@ -248,29 +248,29 @@ class EnumSet {
       return index;
     }
 
-    for (index -= 1; index > 0 && buckets[index].start > needle; index--) {
+    for (index -= 1; index > 0 && buckets_[index].start > needle; index--) {
     }
-    return buckets[index].start >= needle ? index : index + 1;
+    return buckets_[index].start >= needle ? index : index + 1;
   }
 
   // Creates a new bucket to store `value` and inserts it at `index`.
   // If the `index` is past the end, the bucket is inserted at the end of the
   // vector.
-  void create_bucket_for(size_t index, T value) {
-    Bucket bucket = {1ULL << compute_bucket_offset(value),
-                     compute_bucket_start(value)};
-    buckets.emplace(buckets.begin() + index, std::move(bucket));
+  void InsertBucketFor(size_t index, T value) {
+    Bucket bucket = {1ULL << ComputeBucketOffset(value),
+                     ComputeBucketStart(value)};
+    buckets_.emplace(buckets_.begin() + index, std::move(bucket));
   }
 
   // Returns true if `lhs` and `rhs` hold the exact same values.
   friend bool operator==(const EnumSet& lhs, const EnumSet& rhs) {
-    if (lhs.buckets.size() != rhs.buckets.size()) {
+    if (lhs.buckets_.size() != rhs.buckets_.size()) {
       return false;
     }
 
-    for (size_t i = 0; i < lhs.buckets.size(); i++) {
-      if (rhs.buckets[i].start != lhs.buckets[i].start ||
-          rhs.buckets[i].data != lhs.buckets[i].data) {
+    for (size_t i = 0; i < lhs.buckets_.size(); i++) {
+      if (rhs.buckets_[i].start != lhs.buckets_[i].start ||
+          rhs.buckets_[i].data != lhs.buckets_[i].data) {
         return false;
       }
     }
@@ -283,7 +283,7 @@ class EnumSet {
   }
 
   // Storage for the buckets.
-  std::vector<Bucket> buckets;
+  std::vector<Bucket> buckets_;
 };
 
 // A set of spv::Capability.
