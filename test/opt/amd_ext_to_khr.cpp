@@ -26,14 +26,16 @@ using AmdExtToKhrTest = PassTest<::testing::Test>;
 
 using ::testing::HasSubstr;
 
-std::string GetTest(std::string op_code, std::string new_op_code, bool is_float = false) {
+std::string GetTest(std::string op_code, std::string new_op_code,
+                    bool is_float = false) {
   const std::string text = R"(
 ; CHECK: OpCapability Shader
 ; CHECK-NOT: OpExtension "SPV_AMD_shader_ballot"
 ; CHECK: OpFunction
 ; CHECK-NEXT: OpLabel
 ; CHECK-NEXT: [[undef:%\w+]] = OpUndef %
-; CHECK-NEXT: )" + new_op_code + " %" + (is_float ? "float" : "uint") +
+; CHECK-NEXT: )" + new_op_code +
+                           " %" + (is_float ? "float" : "uint") +
                            R"( %uint_3 Reduce [[undef]]
                OpCapability Shader
                OpCapability Groups
@@ -48,8 +50,10 @@ std::string GetTest(std::string op_code, std::string new_op_code, bool is_float 
      %uint_3 = OpConstant %uint 3
           %1 = OpFunction %void None %3
           %6 = OpLabel
-          %7 = OpUndef %)" + (is_float ? "float" : "uint") + R"(
-          %8 = )" + op_code + " %" + (is_float ? "float" : "uint") +
+          %7 = OpUndef %)" +
+                           (is_float ? "float" : "uint") + R"(
+          %8 = )" + op_code +
+                           " %" + (is_float ? "float" : "uint") +
                            R"( %uint_3 Reduce %7
                OpReturn
                OpFunctionEnd

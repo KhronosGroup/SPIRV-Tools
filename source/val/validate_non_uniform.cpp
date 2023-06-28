@@ -130,7 +130,8 @@ spv_result_t ValidateGroupNonUniformBroadcastShuffle(ValidationState_t& _,
     if (!spvOpcodeIsConstant(id_op)) {
       std::string operand = GetOperandName(inst->opcode());
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Before SPIR-V 1.5, " << operand << " must be a constant instruction";
+             << "Before SPIR-V 1.5, " << operand
+             << " must be a constant instruction";
     }
   }
 
@@ -181,7 +182,8 @@ spv_result_t ValidateGroupNonUniformBallot(ValidationState_t& _,
 spv_result_t ValidateGroupNonUniformInverseBallot(ValidationState_t& _,
                                                   const Instruction* inst) {
   if (!_.IsBoolScalarType(inst->type_id())) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst) << "Result must be a boolean scalar";
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Result must be a boolean scalar";
   }
 
   const auto value_type_id = _.GetOperandTypeId(inst, 3);
@@ -201,7 +203,8 @@ spv_result_t ValidateGroupNonUniformInverseBallot(ValidationState_t& _,
 spv_result_t ValidateGroupNonUniformBallotBitExtract(ValidationState_t& _,
                                                      const Instruction* inst) {
   if (!_.IsBoolScalarType(inst->type_id())) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst) << "Result must be a boolean scalar";
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Result must be a boolean scalar";
   }
 
   const auto value_type_id = _.GetOperandTypeId(inst, 3);

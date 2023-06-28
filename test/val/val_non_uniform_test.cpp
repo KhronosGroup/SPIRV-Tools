@@ -485,7 +485,8 @@ INSTANTIATE_TEST_SUITE_P(
 
 INSTANTIATE_TEST_SUITE_P(GroupNonUniformBallotGood, GroupNonUniform,
                          Combine(Values("OpGroupNonUniformBallot"),
-                                 Values("%u32vec4"), Values(spv::Scope::Subgroup),
+                                 Values("%u32vec4"),
+                                 Values(spv::Scope::Subgroup),
                                  Values("%true", "%false"), Values("")));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -506,8 +507,7 @@ INSTANTIATE_TEST_SUITE_P(GroupNonUniformBallotBadOperand, GroupNonUniform,
                                         "%struct_null", "%v4int_null"),
                                  Values("Predicate must be a boolean scalar")));
 
-INSTANTIATE_TEST_SUITE_P(GroupNonUniformInverseBallotGood,
-                         GroupNonUniform,
+INSTANTIATE_TEST_SUITE_P(GroupNonUniformInverseBallotGood, GroupNonUniform,
                          Combine(Values("OpGroupNonUniformInverseBallot"),
                                  Values("%bool"), Values(spv::Scope::Subgroup),
                                  Values("%u32vec4_null"), Values("")));
@@ -529,8 +529,7 @@ INSTANTIATE_TEST_SUITE_P(
                    "%struct_null", "%v4int_null"),
             Values("Value must be a 4-component unsigned integer vector")));
 
-INSTANTIATE_TEST_SUITE_P(GroupNonUniformBallotBitExtractGood,
-                         GroupNonUniform,
+INSTANTIATE_TEST_SUITE_P(GroupNonUniformBallotBitExtractGood, GroupNonUniform,
                          Combine(Values("OpGroupNonUniformBallotBitExtract"),
                                  Values("%bool"), Values(spv::Scope::Subgroup),
                                  Values("%u32vec4_null %u32_0"), Values("")));
