@@ -27,8 +27,8 @@
 namespace spvtools {
 
 // This container is optimized to store and retrieve unsigned enum values.
-// The base model for this implementation is an open-addressing hashtable with linear probing.
-// For small enums (max index < 64), all operations are O(1).
+// The base model for this implementation is an open-addressing hashtable with
+// linear probing. For small enums (max index < 64), all operations are O(1).
 //
 // - Enums are stored in buckets (64 contiguous values max per bucket)
 // - Buckets ranges don't overlap, but don't have to be contiguous.
@@ -41,20 +41,24 @@ namespace spvtools {
 //      - bucket 1, storing values in the range [64; 128[
 //
 // - Buckets are stored in a sorted vector (sorted by bucket range).
-// - Retrieval is done by computing the theoretical bucket index using the enum value, and
+// - Retrieval is done by computing the theoretical bucket index using the enum
+// value, and
 //   doing a linear scan from this position.
 // - Insertion is done by retrieving the bucket and either:
-//   - inserting a new bucket in the sorted vector when no buckets has a compatible range.
+//   - inserting a new bucket in the sorted vector when no buckets has a
+//   compatible range.
 //   - setting the corresponding bit in the bucket.
-//   This means insertion in the middle/beginning can cause a memmove when no bucket is available.
-//   In our case, this happens at most 23 times for the largest enum we have (Opcodes).
+//   This means insertion in the middle/beginning can cause a memmove when no
+//   bucket is available. In our case, this happens at most 23 times for the
+//   largest enum we have (Opcodes).
 template <typename T>
 class EnumSet {
-private:
+ private:
   using BucketType = uint64_t;
   using ElementType = std::underlying_type_t<T>;
   static_assert(std::is_enum_v<T>, "EnumSets only works with enums.");
-  static_assert(std::is_signed_v<ElementType> == false, "EnumSet doesn't supports signed enums.");
+  static_assert(std::is_signed_v<ElementType> == false,
+                "EnumSet doesn't supports signed enums.");
 
   // Each bucket can hold up to `kBucketSize` distinct, contiguous enum values.
   // The first value a bucket can hold must be aligned on `kBucketSize`.
@@ -68,7 +72,7 @@ private:
   // How many distinct values can a bucket hold? 1 bit per value.
   static constexpr size_t kBucketSize = sizeof(BucketType) * 8ULL;
 
-public:
+ public:
   // Creates an empty set.
   EnumSet() : buckets(0) {}
 
@@ -176,8 +180,9 @@ public:
     return false;
   }
 
-private:
-  // Returns the index of the bucket in which `value` would be stored in the best case.
+ private:
+  // Returns the index of the bucket in which `value` would be stored in the
+  // best case.
   static constexpr inline size_t compute_theoretical_bucket_index(T value) {
     return static_cast<size_t>(value) / kBucketSize;
   }
@@ -185,11 +190,12 @@ private:
   // Returns the first storable enum value stored by the bucket that would
   // contain `value`.
   static constexpr inline T compute_bucket_start(T value) {
-    return static_cast<T>(kBucketSize * compute_theoretical_bucket_index(value));
+    return static_cast<T>(kBucketSize *
+                          compute_theoretical_bucket_index(value));
   }
 
-  // Returns the numerical difference between `value` for the first enum value its bucket can hold.
-  // Example:
+  // Returns the numerical difference between `value` for the first enum value
+  // its bucket can hold. Example:
   //  - kBucketSize = 10
   //  - value = 12
   //  - value's bucket holds enum values in the range [10, 20[
@@ -219,7 +225,8 @@ private:
       return 0;
     }
 
-    size_t index = std::min(buckets.size() - 1, compute_theoretical_bucket_index(value));
+    size_t index =
+        std::min(buckets.size() - 1, compute_theoretical_bucket_index(value));
     const T needle = compute_bucket_start(value);
 
     const T bucket_start = buckets[index].start;
@@ -274,7 +281,6 @@ private:
   friend bool operator!=(const EnumSet& lhs, const EnumSet& rhs) {
     return !(lhs == rhs);
   }
-
 
   // Storage for the buckets.
   std::vector<Bucket> buckets;
