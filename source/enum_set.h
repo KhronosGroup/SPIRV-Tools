@@ -26,15 +26,35 @@
 
 namespace spvtools {
 
+// This container is optimized to store and retrieve unsigned enum values.
+// The base model for this implementation is an open-addressing hashtable with linear probing.
+// For small enums (max index < 64), all operations are O(1).
+//
+// - Enums are stored in buckets (64 contiguous values max per bucket)
+// - Buckets ranges don't overlap, but don't have to be contiguous.
+// - Enums are packed into 64-bits buckets, using 1 bit per enum value.
+//
+// Example:
+//  - MyEnum { A = 0, B = 1, C = 64, D = 65 }
+//  - 2 buckets are required:
+//      - bucket 0, storing values in the range [ 0;  64[
+//      - bucket 1, storing values in the range [64; 128[
+//
+// - Buckets are stored in a sorted vector (sorted by bucket range).
+// - Retrieval is done by computing the theoretical bucket index using the enum value, and
+//   doing a linear scan from this position.
+// - Insertion is done by retrieving the bucket and either:
+//   - inserting a new bucket in the sorted vector when no buckets has a compatible range.
+//   - setting the corresponding bit in the bucket.
+//   This means insertion in the middle/beginning can cause a memmove when no bucket is available.
+//   In our case, this happens at most 23 times for the largest enum we have (Opcodes).
 template <typename T>
 class EnumSet {
+private:
   using BucketType = uint64_t;
   using ElementType = std::underlying_type_t<T>;
-
   static_assert(std::is_enum_v<T>, "EnumSets only works with enums.");
-  static_assert(std::is_signed_v<ElementType> == false,
-                "EnumSet doesn't supports signed enums.");
-  static_assert(sizeof(T) * 8ULL <= std::numeric_limits<ElementType>::max());
+  static_assert(std::is_signed_v<ElementType> == false, "EnumSet doesn't supports signed enums.");
 
   // Each bucket can hold up to `kBucketSize` distinct, contiguous enum values.
   // The first value a bucket can hold must be aligned on `kBucketSize`.
@@ -48,20 +68,25 @@ class EnumSet {
   // How many distinct values can a bucket hold? 1 bit per value.
   static constexpr size_t kBucketSize = sizeof(BucketType) * 8ULL;
 
-  // Returns the index of the bucket `value` would be stored in the best case.
-  static constexpr inline size_t compute_bucket_index(T value) {
+  // Returns the index of the bucket in which `value` would be stored in the best case.
+  static constexpr inline size_t compute_theoretical_bucket_index(T value) {
     return static_cast<size_t>(value) / kBucketSize;
-  }
-
-  // Returns the start of the bucket the enum `value` would belongs to.
-  static constexpr inline size_t compute_bucket_offset(T value) {
-    return static_cast<ElementType>(value) % kBucketSize;
   }
 
   // Returns the first storable enum value stored by the bucket that would
   // contain `value`.
   static constexpr inline T compute_bucket_start(T value) {
-    return static_cast<T>(kBucketSize * compute_bucket_index(value));
+    return static_cast<T>(kBucketSize * compute_theoretical_bucket_index(value));
+  }
+
+  // Returns the numerical difference between `value` for the first enum value its bucket can hold.
+  // Example:
+  //  - kBucketSize = 10
+  //  - value = 12
+  //  - value's bucket holds enum values in the range [10, 20[
+  //  - offset of value in the bucket is 2 (10 + 2 = 12).
+  static constexpr inline size_t compute_bucket_offset(T value) {
+    return static_cast<ElementType>(value) % kBucketSize;
   }
 
   // Returns the bitmask used to represent the enum `value` in its bucket.
@@ -217,7 +242,7 @@ class EnumSet {
       return 0;
     }
 
-    size_t index = std::min(buckets.size() - 1, compute_bucket_index(value));
+    size_t index = std::min(buckets.size() - 1, compute_theoretical_bucket_index(value));
     const T needle = compute_bucket_start(value);
 
     const T bucket_start = buckets[index].start;
