@@ -439,26 +439,50 @@ TEST(EnumSet, DefaultIsEmpty) {
   }
 }
 
-TEST(CapabilitySet, ForEachOrderIsEnumOrder) {
-  constexpr size_t kValueCount = 500;
-  std::vector<TestEnum> orderedValues(kValueCount);
-  for (size_t i = 0; i < kValueCount; i++) {
+namespace {
+std::vector<TestEnum> enumerateValuesFromToWithStep(size_t start, size_t end,
+                                                    size_t step) {
+  assert(end > start && "end > start");
+  std::vector<TestEnum> orderedValues(end - start);
+  for (size_t i = start; i < end; i += step) {
     orderedValues[i] = static_cast<TestEnum>(i);
   }
-  std::vector shuffledValues(orderedValues.cbegin(), orderedValues.cend());
+  return orderedValues;
+}
+
+EnumSet<TestEnum> createSetUnorderedInsertion(
+    const std::vector<TestEnum>& values) {
+  std::vector shuffledValues(values.cbegin(), values.cend());
   std::mt19937 rng(0);
   std::shuffle(shuffledValues.begin(), shuffledValues.end(), rng);
-
   EnumSet<TestEnum> set;
   for (auto value : shuffledValues) {
     set.Add(value);
   }
+  return set;
+}
+}  // namespace
+
+TEST(CapabilitySet, ForEachOrderIsEnumOrder) {
+  auto orderedValues = enumerateValuesFromToWithStep(0, 500, 1);
+  auto set = createSetUnorderedInsertion(orderedValues);
 
   size_t index = 0;
   set.ForEach([&orderedValues, &index](auto value) {
     EXPECT_THAT(value, Eq(orderedValues[index]));
     index++;
   });
+}
+
+TEST(CapabilitySet, RangeBasedLoopOrderIsEnumOrder) {
+  auto orderedValues = enumerateValuesFromToWithStep(0, 2, 1);
+  auto set = createSetUnorderedInsertion(orderedValues);
+
+  size_t index = 0;
+  for (auto value : set) {
+    ASSERT_THAT(value, Eq(orderedValues[index]));
+    index++;
+  }
 }
 
 TEST(CapabilitySet, ConstructSingleMemberMatrix) {

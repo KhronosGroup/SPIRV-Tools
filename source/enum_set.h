@@ -78,6 +78,57 @@ class EnumSet {
   static constexpr size_t kBucketSize = sizeof(BucketType) * 8ULL;
 
  public:
+  class Iterator : std::forward_iterator_tag {
+   public:
+    Iterator(const EnumSet* set_, size_t bucketIndex_, uint8_t bucketOffset_)
+        : set(set_), bucketIndex(bucketIndex_), bucketOffset(bucketOffset_) {}
+
+    Iterator& operator++() {
+      do {
+        if (bucketIndex >= set->buckets_.size()) {
+          bucketIndex = set->buckets_.size();
+          bucketOffset = 0;
+          break;
+        }
+
+        if (bucketOffset + 1 == kBucketSize) {
+          bucketOffset = 0;
+          ++bucketIndex;
+        } else {
+          ++bucketOffset;
+        }
+
+      } while (bucketIndex < set->buckets_.size() &&
+               !set->HasEnumAt(bucketIndex, bucketOffset));
+      return *this;
+    }
+
+    T operator*() const {
+      return GetValueFromBucket(set->buckets_[bucketIndex], bucketOffset);
+    }
+
+    bool operator!=(const Iterator& other) const {
+      return set != other.set || bucketOffset != other.bucketOffset ||
+             bucketIndex != other.bucketIndex;
+    }
+
+   private:
+    const EnumSet* set;
+    // Index of the bucket in the vector.
+    size_t bucketIndex;
+    // Offset in bits in the current bucket.
+    ElementType bucketOffset;
+  };
+
+ public:
+  Iterator begin() noexcept {
+    return Iterator(this, /* bucketIndex= */ 0, /* bucketOffset= */ 0);
+  }
+
+  Iterator end() noexcept {
+    return Iterator(this, buckets_.size(), /* bucketOffset= */ 0);
+  }
+
   // Creates an empty set.
   EnumSet() : buckets_(0) {}
 
@@ -275,6 +326,12 @@ class EnumSet {
            std::next(it)->start > bucket_start);
     assert(it == buckets_.begin() || std::prev(it)->start < bucket_start);
 #endif
+  }
+
+  bool HasEnumAt(size_t bucketIndex, BucketType bucketOffset) const {
+    assert(bucketIndex < buckets_.size());
+    assert(bucketOffset < kBucketSize);
+    return buckets_[bucketIndex].data & (1ULL << bucketOffset);
   }
 
   // Returns true if `lhs` and `rhs` hold the exact same values.
