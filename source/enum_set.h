@@ -36,32 +36,32 @@ class EnumSet {
                 "EnumSet doesn't supports signed enums.");
   static_assert(sizeof(T) * 8ULL <= std::numeric_limits<ElementType>::max());
 
-  // Each bucket can hold up to `BUCKET_SIZE` distinct, contiguous enum values.
-  // The first value a bucket can hold must be aligned on `BUCKET_SIZE`.
+  // Each bucket can hold up to `kBucketSize` distinct, contiguous enum values.
+  // The first value a bucket can hold must be aligned on `kBucketSize`.
   struct Bucket {
-    // bit mask to store `BUCKET_SIZE` enums.
+    // bit mask to store `kBucketSize` enums.
     BucketType data;
     // 1st enum this bucket can represent.
     T start;
   };
 
   // How many distinct values can a bucket hold? 1 bit per value.
-  static constexpr size_t BUCKET_SIZE = sizeof(BucketType) * 8ULL;
+  static constexpr size_t kBucketSize = sizeof(BucketType) * 8ULL;
 
   // Returns the index of the bucket `value` would be stored in the best case.
   static constexpr inline size_t compute_bucket_index(T value) {
-    return static_cast<size_t>(value) / BUCKET_SIZE;
+    return static_cast<size_t>(value) / kBucketSize;
   }
 
   // Returns the start of the bucket the enum `value` would belongs to.
   static constexpr inline size_t compute_bucket_offset(T value) {
-    return static_cast<ElementType>(value) % BUCKET_SIZE;
+    return static_cast<ElementType>(value) % kBucketSize;
   }
 
   // Returns the first storable enum value stored by the bucket that would
   // contain `value`.
   static constexpr inline T compute_bucket_start(T value) {
-    return static_cast<T>(BUCKET_SIZE * compute_bucket_index(value));
+    return static_cast<T>(kBucketSize * compute_bucket_index(value));
   }
 
   // Returns the bitmask used to represent the enum `value` in its bucket.
@@ -152,7 +152,7 @@ class EnumSet {
   // Values are sorted in increasing order using their numerical values.
   void ForEach(std::function<void(T)> unaryFunction) const {
     for (const auto& bucket : buckets) {
-      for (uint8_t i = 0; i < BUCKET_SIZE; i++) {
+      for (uint8_t i = 0; i < kBucketSize; i++) {
         if (bucket.data & (1ULL << i)) {
           unaryFunction(get_value_from_bucket(bucket, i));
         }
