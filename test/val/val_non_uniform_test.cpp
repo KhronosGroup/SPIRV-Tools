@@ -44,6 +44,8 @@ OpCapability GroupNonUniformShuffleRelative
 OpCapability GroupNonUniformArithmetic
 OpCapability GroupNonUniformClustered
 OpCapability GroupNonUniformQuad
+OpCapability GroupNonUniformPartitionedNV
+OpExtension "SPV_NV_shader_subgroup_partitioned"
 )";
 
   ss << capabilities_and_extensions;
@@ -598,7 +600,10 @@ INSTANTIATE_TEST_SUITE_P(
             Values(spv::Scope::Subgroup),
             Values("Reduce match_res", "InclusiveScan match_res",
                    "ExclusiveScan match_res",
-                   "ClusteredReduce match_res %u32_0"),
+                   "ClusteredReduce match_res %u32_0",
+                   "PartitionedReduceNV match_res %u32vec4_null",
+                   "PartitionedInclusiveScanNV match_res %u32vec4_null",
+                   "PartitionedExclusiveScanNV match_res %v4int_null"),
             Values("")));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -640,6 +645,21 @@ INSTANTIATE_TEST_SUITE_P(
             "ClusterSize must be present when Operation is ClusteredReduce")));
 
 INSTANTIATE_TEST_SUITE_P(
+    GroupNonUniformIntegerArithmeticMissingBallot, GroupNonUniform,
+    Combine(
+        Values("OpGroupNonUniformIAdd", "OpGroupNonUniformIMul",
+               "OpGroupNonUniformSMin", "OpGroupNonUniformUMin",
+               "OpGroupNonUniformSMax", "OpGroupNonUniformUMax",
+               "OpGroupNonUniformBitwiseAnd", "OpGroupNonUniformBitwiseOr",
+               "OpGroupNonUniformBitwiseXor"),
+        Values("%u32"), Values(spv::Scope::Subgroup),
+        Values("PartitionedReduceNV match_res",
+               "PartitionedInclusiveScanNV match_res",
+               "PartitionedExclusiveScanNV match_res"),
+        Values("Ballot must be present when Operation is PartitionedReduceNV, "
+               "PartitionedInclusiveScanNV, or PartitionedExclusiveScanNV")));
+
+INSTANTIATE_TEST_SUITE_P(
     GroupNonUniformIntegerArithmeticBadClusterSizeType, GroupNonUniform,
     Combine(Values("OpGroupNonUniformIAdd", "OpGroupNonUniformIMul",
                    "OpGroupNonUniformSMin", "OpGroupNonUniformUMin",
@@ -658,6 +678,25 @@ INSTANTIATE_TEST_SUITE_P(
                    "ClusteredReduce match_res %struct_null",
                    "ClusteredReduce match_res %v4int_null"),
             Values("ClusterSize must be an unsigned integer scalar")));
+
+INSTANTIATE_TEST_SUITE_P(
+    GroupNonUniformIntegerArithmeticBadBallotType, GroupNonUniform,
+    Combine(Values("OpGroupNonUniformIAdd", "OpGroupNonUniformIMul",
+                   "OpGroupNonUniformSMin", "OpGroupNonUniformUMin",
+                   "OpGroupNonUniformSMax", "OpGroupNonUniformUMax",
+                   "OpGroupNonUniformBitwiseAnd", "OpGroupNonUniformBitwiseOr",
+                   "OpGroupNonUniformBitwiseXor"),
+            Values("%u32"), Values(spv::Scope::Subgroup),
+            Values("PartitionedReduceNV match_res %true",
+                   "PartitionedReduceNV match_res %false",
+                   "PartitionedReduceNV match_res %int_0",
+                   "PartitionedReduceNV match_res %float_0",
+                   "PartitionedReduceNV match_res %u32_0",
+                   "PartitionedReduceNV match_res %u32vec3_null",
+                   "PartitionedReduceNV match_res %v2bool_false",
+                   "PartitionedReduceNV match_res %v4float_null",
+                   "PartitionedReduceNV match_res %struct_null"),
+            Values("Ballot must be a 4-component integer vector")));
 
 INSTANTIATE_TEST_SUITE_P(
     GroupNonUniformIntegerArithmeticClusterSizeNotConstant, GroupNonUniform,

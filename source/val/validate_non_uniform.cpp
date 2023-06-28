@@ -320,23 +320,43 @@ spv_result_t ValidateGroupNonUniformArithmetic(ValidationState_t& _,
   }
 
   const auto group_op = inst->GetOperandAs<spv::GroupOperation>(3);
-  if (group_op == spv::GroupOperation::ClusteredReduce &&
-      inst->operands().size() <= 5) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "ClusterSize must be present when Operation is ClusteredReduce";
-  }
-
-  if (inst->operands().size() > 5) {
-    const auto cluster_size_id = inst->GetOperandAs<uint32_t>(5);
-    const auto* cluster_size = _.FindDef(cluster_size_id);
-    if (!cluster_size || !_.IsUnsignedIntScalarType(cluster_size->type_id())) {
+  bool is_clustered_reduce = group_op == spv::GroupOperation::ClusteredReduce;
+  bool is_partitioned_nv =
+      group_op == spv::GroupOperation::PartitionedReduceNV ||
+      group_op == spv::GroupOperation::PartitionedInclusiveScanNV ||
+      group_op == spv::GroupOperation::PartitionedExclusiveScanNV;
+  if (inst->operands().size() <= 5) {
+    if (is_clustered_reduce) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "ClusterSize must be an unsigned integer scalar";
+             << "ClusterSize must be present when Operation is ClusteredReduce";
+    } else if (is_partitioned_nv) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Ballot must be present when Operation is PartitionedReduceNV, "
+                "PartitionedInclusiveScanNV, or PartitionedExclusiveScanNV";
     }
+  } else {
+    const auto operand_id = inst->GetOperandAs<uint32_t>(5);
+    const auto* operand = _.FindDef(operand_id);
+    if (is_partitioned_nv) {
+      if (!operand || !_.IsIntScalarOrVectorType(operand->type_id())) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Ballot must be a 4-component integer vector";
+      }
 
-    if (!spvOpcodeIsConstant(cluster_size->opcode())) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "ClusterSize must be a constant instruction";
+      if (_.GetDimension(operand->type_id()) != 4) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Ballot must be a 4-component integer vector";
+      }
+    } else {
+      if (!operand || !_.IsUnsignedIntScalarType(operand->type_id())) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "ClusterSize must be an unsigned integer scalar";
+      }
+
+      if (!spvOpcodeIsConstant(operand->opcode())) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "ClusterSize must be a constant instruction";
+      }
     }
   }
   return SPV_SUCCESS;
