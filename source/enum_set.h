@@ -68,40 +68,7 @@ private:
   // How many distinct values can a bucket hold? 1 bit per value.
   static constexpr size_t kBucketSize = sizeof(BucketType) * 8ULL;
 
-  // Returns the index of the bucket in which `value` would be stored in the best case.
-  static constexpr inline size_t compute_theoretical_bucket_index(T value) {
-    return static_cast<size_t>(value) / kBucketSize;
-  }
-
-  // Returns the first storable enum value stored by the bucket that would
-  // contain `value`.
-  static constexpr inline T compute_bucket_start(T value) {
-    return static_cast<T>(kBucketSize * compute_theoretical_bucket_index(value));
-  }
-
-  // Returns the numerical difference between `value` for the first enum value its bucket can hold.
-  // Example:
-  //  - kBucketSize = 10
-  //  - value = 12
-  //  - value's bucket holds enum values in the range [10, 20[
-  //  - offset of value in the bucket is 2 (10 + 2 = 12).
-  static constexpr inline size_t compute_bucket_offset(T value) {
-    return static_cast<ElementType>(value) % kBucketSize;
-  }
-
-  // Returns the bitmask used to represent the enum `value` in its bucket.
-  static constexpr inline BucketType compute_mask_for_value(T value) {
-    return 1ULL << compute_bucket_offset(value);
-  }
-
-  // Returns the `enum` stored in `bucket` at `offset`.
-  // `offset` is the bit-offset in the bucket storage.
-  static constexpr inline T get_value_from_bucket(const Bucket& bucket,
-                                                  ElementType offset) {
-    return static_cast<T>(static_cast<ElementType>(bucket.start) + offset);
-  }
-
- public:
+public:
   // Creates an empty set.
   EnumSet() : buckets(0) {}
 
@@ -188,26 +155,6 @@ private:
   // Returns true if the set is holds no values.
   bool IsEmpty() const { return buckets.size() == 0; }
 
-  // Returns true if `lhs` and `rhs` hold the exact same values.
-  friend bool operator==(const EnumSet& lhs, const EnumSet& rhs) {
-    if (lhs.buckets.size() != rhs.buckets.size()) {
-      return false;
-    }
-
-    for (size_t i = 0; i < lhs.buckets.size(); i++) {
-      if (rhs.buckets[i].start != lhs.buckets[i].start ||
-          rhs.buckets[i].data != lhs.buckets[i].data) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  // Returns true if `lhs` and `rhs` hold at least 1 different value.
-  friend bool operator!=(const EnumSet& lhs, const EnumSet& rhs) {
-    return !(lhs == rhs);
-  }
-
   // Returns true if this set contains at least one value contained in `in_set`.
   // Note: If `in_set` is empty, this function returns true.
   bool HasAnyOf(const EnumSet<T>& in_set) const {
@@ -229,9 +176,39 @@ private:
     return false;
   }
 
- private:
-  // Storage for the buckets.
-  std::vector<Bucket> buckets;
+private:
+  // Returns the index of the bucket in which `value` would be stored in the best case.
+  static constexpr inline size_t compute_theoretical_bucket_index(T value) {
+    return static_cast<size_t>(value) / kBucketSize;
+  }
+
+  // Returns the first storable enum value stored by the bucket that would
+  // contain `value`.
+  static constexpr inline T compute_bucket_start(T value) {
+    return static_cast<T>(kBucketSize * compute_theoretical_bucket_index(value));
+  }
+
+  // Returns the numerical difference between `value` for the first enum value its bucket can hold.
+  // Example:
+  //  - kBucketSize = 10
+  //  - value = 12
+  //  - value's bucket holds enum values in the range [10, 20[
+  //  - offset of value in the bucket is 2 (10 + 2 = 12).
+  static constexpr inline size_t compute_bucket_offset(T value) {
+    return static_cast<ElementType>(value) % kBucketSize;
+  }
+
+  // Returns the bitmask used to represent the enum `value` in its bucket.
+  static constexpr inline BucketType compute_mask_for_value(T value) {
+    return 1ULL << compute_bucket_offset(value);
+  }
+
+  // Returns the `enum` stored in `bucket` at `offset`.
+  // `offset` is the bit-offset in the bucket storage.
+  static constexpr inline T get_value_from_bucket(const Bucket& bucket,
+                                                  ElementType offset) {
+    return static_cast<T>(static_cast<ElementType>(bucket.start) + offset);
+  }
 
   // For a given enum `value`, finds the bucket index that could contain this
   // value. If no such bucket is found, the index at which the new bucket should
@@ -277,6 +254,30 @@ private:
                      compute_bucket_start(value)};
     buckets.emplace(buckets.begin() + index, std::move(bucket));
   }
+
+  // Returns true if `lhs` and `rhs` hold the exact same values.
+  friend bool operator==(const EnumSet& lhs, const EnumSet& rhs) {
+    if (lhs.buckets.size() != rhs.buckets.size()) {
+      return false;
+    }
+
+    for (size_t i = 0; i < lhs.buckets.size(); i++) {
+      if (rhs.buckets[i].start != lhs.buckets[i].start ||
+          rhs.buckets[i].data != lhs.buckets[i].data) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Returns true if `lhs` and `rhs` hold at least 1 different value.
+  friend bool operator!=(const EnumSet& lhs, const EnumSet& rhs) {
+    return !(lhs == rhs);
+  }
+
+
+  // Storage for the buckets.
+  std::vector<Bucket> buckets;
 };
 
 // A set of spv::Capability.
