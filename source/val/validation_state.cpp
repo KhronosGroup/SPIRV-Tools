@@ -360,9 +360,9 @@ void ValidationState_t::RegisterCapability(spv::Capability cap) {
   // Avoid redundant work.  Otherwise the recursion could induce work
   // quadrdatic in the capability dependency depth. (Ok, not much, but
   // it's something.)
-  if (module_capabilities_.Contains(cap)) return;
+  if (module_capabilities_.contains(cap)) return;
 
-  module_capabilities_.Add(cap);
+  module_capabilities_.insert(cap);
   spv_operand_desc desc;
   if (SPV_SUCCESS == grammar_.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
                                             uint32_t(cap), &desc)) {
@@ -419,9 +419,9 @@ void ValidationState_t::RegisterCapability(spv::Capability cap) {
 }
 
 void ValidationState_t::RegisterExtension(Extension ext) {
-  if (module_extensions_.Contains(ext)) return;
+  if (module_extensions_.contains(ext)) return;
 
-  module_extensions_.Add(ext);
+  module_extensions_.insert(ext);
 
   switch (ext) {
     case kSPV_AMD_gpu_shader_half_float:

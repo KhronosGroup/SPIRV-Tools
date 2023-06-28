@@ -178,10 +178,11 @@ spv_result_t CheckRequiredCapabilities(ValidationState_t& state,
 
       // Vulkan API requires more capabilities on rounding mode.
       if (spvIsVulkanEnv(state.context()->target_env)) {
-        enabling_capabilities.Add(spv::Capability::StorageUniformBufferBlock16);
-        enabling_capabilities.Add(spv::Capability::StorageUniform16);
-        enabling_capabilities.Add(spv::Capability::StoragePushConstant16);
-        enabling_capabilities.Add(spv::Capability::StorageInputOutput16);
+        enabling_capabilities.insert(
+            spv::Capability::StorageUniformBufferBlock16);
+        enabling_capabilities.insert(spv::Capability::StorageUniform16);
+        enabling_capabilities.insert(spv::Capability::StoragePushConstant16);
+        enabling_capabilities.insert(spv::Capability::StorageInputOutput16);
       }
     } else {
       enabling_capabilities = state.grammar().filterCapsAgainstTargetEnv(
@@ -195,7 +196,7 @@ spv_result_t CheckRequiredCapabilities(ValidationState_t& state,
     if (inst->opcode() != spv::Op::OpCapability) {
       const bool enabled_by_cap =
           state.HasAnyOfCapabilities(enabling_capabilities);
-      if (!enabling_capabilities.IsEmpty() && !enabled_by_cap) {
+      if (!enabling_capabilities.empty() && !enabled_by_cap) {
         return state.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
                << "Operand " << which_operand << " of "
                << spvOpcodeString(inst->opcode())
@@ -303,7 +304,7 @@ spv_result_t VersionCheck(ValidationState_t& _, const Instruction* inst) {
   }
 
   ExtensionSet exts(inst_desc->numExtensions, inst_desc->extensions);
-  if (exts.IsEmpty()) {
+  if (exts.empty()) {
     // If no extensions can enable this instruction, then emit error
     // messages only concerning core SPIR-V versions if errors happen.
     if (min_version == ~0u) {

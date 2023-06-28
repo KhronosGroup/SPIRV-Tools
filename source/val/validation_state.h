@@ -317,7 +317,7 @@ class ValidationState_t {
 
   /// Returns true if the capability is enabled in the module.
   bool HasCapability(spv::Capability cap) const {
-    return module_capabilities_.Contains(cap);
+    return module_capabilities_.contains(cap);
   }
 
   /// Returns a reference to the set of capabilities in the module.
@@ -328,7 +328,7 @@ class ValidationState_t {
 
   /// Returns true if the extension is enabled in the module.
   bool HasExtension(Extension ext) const {
-    return module_extensions_.Contains(ext);
+    return module_extensions_.contains(ext);
   }
 
   /// Returns true if any of the capabilities is enabled, or if |capabilities|
