@@ -173,7 +173,7 @@ class Parser {
   // Returns the endian-corrected word at the given position.
   uint32_t peekAt(size_t index) const {
     assert(index < _.num_words);
-    return spvFixWord(_.words[index], _.endian);
+    return _.native_words[index];
   }
 
   // Data members
