@@ -207,10 +207,6 @@ class Parser {
       operands.reserve(25);
       endian_converted_words.reserve(25);
       expected_operands.reserve(25);
-
-      native_words = std::make_unique<uint32_t[]>(num_words);
-      for (size_t i = 0; i < num_words; i++)
-        native_words[i] = spvFixWord(words[i], endian);
     }
     State() : State(0, 0, nullptr) {}
     const uint32_t* words;       // Words in the binary SPIR-V module.
@@ -267,6 +263,9 @@ spv_result_t Parser::parseModule() {
                         << _.words[0] << "'.";
   }
   _.requires_endian_conversion = !spvIsHostEndian(_.endian);
+  _.native_words = std::make_unique<uint32_t[]>(_.num_words);
+  for (size_t i = 0; i < _.num_words; i++)
+    _.native_words[i] = _.requires_endian_conversion ? spvFixWord(_.words[i], _.endian) : _.words[i];
 
   // Process the header.
   spv_header_t header;
