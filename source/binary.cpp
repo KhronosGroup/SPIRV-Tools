@@ -440,10 +440,6 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
 
   const uint32_t word = peek();
 
-  // Do the words in this operand have to be converted to native endianness?
-  // True for all but literal strings.
-  bool convert_operand_endianness = true;
-
   switch (type) {
     case SPV_OPERAND_TYPE_TYPE_ID:
       if (!word)
@@ -752,17 +748,12 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
 
   if (_.requires_endian_conversion) {
     // Copy instruction words.  Translate to native endianness as needed.
-    if (convert_operand_endianness) {
-      const spv_endianness_t endianness = _.endian;
-      std::transform(_.words + _.word_index, _.words + index_after_operand,
-                     std::back_inserter(*words),
-                     [endianness](const uint32_t raw_word) {
-                       return spvFixWord(raw_word, endianness);
-                     });
-    } else {
-      words->insert(words->end(), _.words + _.word_index,
-                    _.words + index_after_operand);
-    }
+    const spv_endianness_t endianness = _.endian;
+    std::transform(_.words + _.word_index, _.words + index_after_operand,
+                   std::back_inserter(*words),
+                   [endianness](const uint32_t raw_word) {
+                     return spvFixWord(raw_word, endianness);
+                   });
   }
 
   // Advance past the operand.
