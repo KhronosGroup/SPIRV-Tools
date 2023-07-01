@@ -207,6 +207,10 @@ class Parser {
       operands.reserve(25);
       endian_converted_words.reserve(25);
       expected_operands.reserve(25);
+
+      native_words = std::make_unique<uint32_t[]>(num_words);
+      for (size_t i = 0; i < num_words; i++)
+        native_words[i] = spvFixWord(words[i], endian);
     }
     State() : State(0, 0, nullptr) {}
     const uint32_t* words;       // Words in the binary SPIR-V module.
@@ -218,6 +222,7 @@ class Parser {
     // Is the SPIR-V binary in a different endianness from the host native
     // endianness?
     bool requires_endian_conversion;
+    std::unique_ptr<uint32_t[]> native_words;
 
     // Maps a result ID to its type ID.  By convention:
     //  - a result ID that is a type definition maps to itself.
@@ -748,12 +753,8 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
 
   if (_.requires_endian_conversion) {
     // Copy instruction words.  Translate to native endianness as needed.
-    const spv_endianness_t endianness = _.endian;
-    std::transform(_.words + _.word_index, _.words + index_after_operand,
-                   std::back_inserter(*words),
-                   [endianness](const uint32_t raw_word) {
-                     return spvFixWord(raw_word, endianness);
-                   });
+      words->insert(words->end(), _.native_words.get() + _.word_index,
+                    _.native_words.get() + index_after_operand);
   }
 
   // Advance past the operand.
