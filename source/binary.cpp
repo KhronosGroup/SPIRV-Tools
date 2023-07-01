@@ -591,7 +591,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
       const size_t max_words = _.num_words - _.word_index;
       std::string string =
-          spvtools::utils::MakeString(_.words + _.word_index, max_words, false);
+          spvtools::utils::MakeString(_.native_words.get() + _.word_index, max_words, false);
 
       if (string.length() == max_words * 4)
         return exhaustedInputDiagnostic(inst_offset, opcode, type);
