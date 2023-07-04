@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cassert>
 #include <cstdint>
 #include <functional>
 #include <initializer_list>
@@ -67,6 +68,10 @@ class EnumSet {
     BucketType data;
     // 1st enum this bucket can represent.
     T start;
+
+    friend bool operator==(const Bucket& lhs, const Bucket& rhs) {
+      return lhs.start == rhs.start && lhs.data == rhs.data;
+    }
   };
 
   // How many distinct values can a bucket hold? 1 bit per value.
@@ -115,7 +120,7 @@ class EnumSet {
       return;
     }
     auto& bucket = buckets_[index];
-    bucket.data |= compute_mask_for_value(value);
+    bucket.data |= ComputeMaskForValue(value);
   }
 
   // Removes the value `value` into the set.
@@ -127,7 +132,7 @@ class EnumSet {
       return;
     }
     auto& bucket = buckets_[index];
-    bucket.data &= ~compute_mask_for_value(value);
+    bucket.data &= ~ComputeMaskForValue(value);
     if (bucket.data == 0) {
       buckets_.erase(buckets_.cbegin() + index);
     }
@@ -141,7 +146,7 @@ class EnumSet {
       return false;
     }
     auto& bucket = buckets_[index];
-    return bucket.data & compute_mask_for_value(value);
+    return bucket.data & ComputeMaskForValue(value);
   }
 
   // Calls `unaryFunction` once for each value in the set.
@@ -181,30 +186,23 @@ class EnumSet {
   }
 
  private:
-  // Returns the index of the bucket in which `value` would be stored in the
-  // best case.
-  static constexpr inline size_t ComputeTheoreticalBucketIndex(T value) {
+  // Returns the index of the last bucket in which `value` could be stored.
+  static constexpr inline size_t ComputeLargestPossibleBucketIndexFor(T value) {
     return static_cast<size_t>(value) / kBucketSize;
   }
 
-  // Returns the first storable enum value stored by the bucket that would
-  // contain `value`.
+  // Returns the smallest enum value that could be contained in the same bucket as `value`.
   static constexpr inline T ComputeBucketStart(T value) {
-    return static_cast<T>(kBucketSize * ComputeTheoreticalBucketIndex(value));
+    return static_cast<T>(kBucketSize * ComputeLargestPossibleBucketIndexFor(value));
   }
 
-  // Returns the numerical difference between `value` for the first enum value
-  // its bucket can hold. Example:
-  //  - kBucketSize = 10
-  //  - value = 12
-  //  - value's bucket holds enum values in the range [10, 20[
-  //  - offset of value in the bucket is 2 (10 + 2 = 12).
+  //  Returns the index of the bit that corresponds to `value` in the bucket.
   static constexpr inline size_t ComputeBucketOffset(T value) {
     return static_cast<ElementType>(value) % kBucketSize;
   }
 
   // Returns the bitmask used to represent the enum `value` in its bucket.
-  static constexpr inline BucketType compute_mask_for_value(T value) {
+  static constexpr inline BucketType ComputeMaskForValue(T value) {
     return 1ULL << ComputeBucketOffset(value);
   }
 
@@ -225,7 +223,7 @@ class EnumSet {
     }
 
     size_t index =
-        std::min(buckets_.size() - 1, ComputeTheoreticalBucketIndex(value));
+        std::min(buckets_.size() - 1, ComputeLargestPossibleBucketIndexFor(value));
     const T needle = ComputeBucketStart(value);
 
     const T bucket_start = buckets_[index].start;
@@ -256,9 +254,15 @@ class EnumSet {
   // If the `index` is past the end, the bucket is inserted at the end of the
   // vector.
   void InsertBucketFor(size_t index, T value) {
-    Bucket bucket = {1ULL << ComputeBucketOffset(value),
-                     ComputeBucketStart(value)};
-    buckets_.emplace(buckets_.begin() + index, std::move(bucket));
+    const T bucket_start = ComputeBucketStart(value);
+    Bucket bucket = {1ULL << ComputeBucketOffset(value), bucket_start};
+    auto it = buckets_.emplace(buckets_.begin() + index, std::move(bucket));
+#if defined(NDEBUG)
+    (void) it; // Silencing unused variable warning.
+#else
+    assert(std::next(it) == buckets_.end() || std::next(it)->start > bucket_start);
+    assert(it == buckets_.begin() || std::prev(it)->start < bucket_start);
+#endif
   }
 
   // Returns true if `lhs` and `rhs` hold the exact same values.
@@ -266,14 +270,7 @@ class EnumSet {
     if (lhs.buckets_.size() != rhs.buckets_.size()) {
       return false;
     }
-
-    for (size_t i = 0; i < lhs.buckets_.size(); i++) {
-      if (rhs.buckets_[i].start != lhs.buckets_[i].start ||
-          rhs.buckets_[i].data != lhs.buckets_[i].data) {
-        return false;
-      }
-    }
-    return true;
+    return lhs.buckets_ == rhs.buckets_;
   }
 
   // Returns true if `lhs` and `rhs` hold at least 1 different value.
