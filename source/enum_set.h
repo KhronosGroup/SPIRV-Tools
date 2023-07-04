@@ -191,9 +191,11 @@ class EnumSet {
     return static_cast<size_t>(value) / kBucketSize;
   }
 
-  // Returns the smallest enum value that could be contained in the same bucket as `value`.
+  // Returns the smallest enum value that could be contained in the same bucket
+  // as `value`.
   static constexpr inline T ComputeBucketStart(T value) {
-    return static_cast<T>(kBucketSize * ComputeLargestPossibleBucketIndexFor(value));
+    return static_cast<T>(kBucketSize *
+                          ComputeLargestPossibleBucketIndexFor(value));
   }
 
   //  Returns the index of the bit that corresponds to `value` in the bucket.
@@ -222,8 +224,8 @@ class EnumSet {
       return 0;
     }
 
-    size_t index =
-        std::min(buckets_.size() - 1, ComputeLargestPossibleBucketIndexFor(value));
+    size_t index = std::min(buckets_.size() - 1,
+                            ComputeLargestPossibleBucketIndexFor(value));
     const T needle = ComputeBucketStart(value);
 
     const T bucket_start = buckets_[index].start;
@@ -258,9 +260,10 @@ class EnumSet {
     Bucket bucket = {1ULL << ComputeBucketOffset(value), bucket_start};
     auto it = buckets_.emplace(buckets_.begin() + index, std::move(bucket));
 #if defined(NDEBUG)
-    (void) it; // Silencing unused variable warning.
+    (void)it;  // Silencing unused variable warning.
 #else
-    assert(std::next(it) == buckets_.end() || std::next(it)->start > bucket_start);
+    assert(std::next(it) == buckets_.end() ||
+           std::next(it)->start > bucket_start);
     assert(it == buckets_.begin() || std::prev(it)->start < bucket_start);
 #endif
   }

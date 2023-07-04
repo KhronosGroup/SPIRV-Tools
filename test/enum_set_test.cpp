@@ -28,8 +28,8 @@ namespace {
 
 using spvtest::ElementsIn;
 using ::testing::Eq;
-using ::testing::ValuesIn;
 using ::testing::Values;
+using ::testing::ValuesIn;
 
 enum class TestEnum : uint32_t {
   ZERO = 0,
@@ -634,16 +634,12 @@ TEST_P(BoundaryTestWithParam, InsertedContains) {
   EXPECT_TRUE(set.Contains(GetParam()));
 }
 
-INSTANTIATE_TEST_SUITE_P(Samples, BoundaryTestWithParam, Values(
-      static_cast<spv::Capability>(0),
-      static_cast<spv::Capability>(63),
-      static_cast<spv::Capability>(64),
-      static_cast<spv::Capability>(65),
-      static_cast<spv::Capability>(127),
-      static_cast<spv::Capability>(128),
-      static_cast<spv::Capability>(129)
-));
-
+INSTANTIATE_TEST_SUITE_P(
+    Samples, BoundaryTestWithParam,
+    Values(static_cast<spv::Capability>(0), static_cast<spv::Capability>(63),
+           static_cast<spv::Capability>(64), static_cast<spv::Capability>(65),
+           static_cast<spv::Capability>(127), static_cast<spv::Capability>(128),
+           static_cast<spv::Capability>(129)));
 
 }  // namespace
 }  // namespace spvtools
