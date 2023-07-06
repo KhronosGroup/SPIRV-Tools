@@ -262,14 +262,17 @@ class EnumSet {
       return 0;
     }
 
-    // Found bucket contains a larger value. This can happen when some values are missing:
+    // Found bucket contains a larger value. This can happen when some values
+    // are missing.
+    //
     // Example: buckets: [ 0, 1, 2, 10 ]
     //   - If we search 3, the guessed bucket could be 10.
-    //   - we need to scan left from this position, until we find the bucket, or the insertion point.
+    //   - we need to scan left from this position, until we find the bucket, or
+    //   the insertion point.
     //
-    // This should be equivalent to std::lower_bound(buckets_.begin(), buckets_.begin() + index),
-    // but benchmark showed arrays are usually small, and the overhead of lower_bound is
-    // larger than this linear scan.
+    // This should be equivalent to std::lower_bound(buckets_.begin(),
+    // buckets_.begin() + index), but benchmark showed arrays are usually small,
+    // and the overhead of lower_bound is larger than this linear scan.
     for (index -= 1; index > 0 && buckets_[index].start > wanted_start; index--)
       continue;
 
