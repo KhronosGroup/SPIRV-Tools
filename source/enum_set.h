@@ -171,17 +171,31 @@ class EnumSet {
       return true;
     }
 
-    for (auto& lhs_bucket : buckets_) {
-      for (auto& rhs_bucket : in_set.buckets_) {
-        if (lhs_bucket.start != rhs_bucket.start) {
-          continue;
-        }
+    auto lhs = buckets_.cbegin();
+    auto rhs = in_set.buckets_.cbegin();
 
-        if (lhs_bucket.data & rhs_bucket.data) {
+    while (lhs != buckets_.cend() && rhs != in_set.buckets_.cend()) {
+      if (lhs->start == rhs->start) {
+        if (lhs->data & rhs->data) {
+          // At least 1 bit is shared. Early return.
           return true;
         }
+
+        lhs++;
+        rhs++;
+        continue;
       }
+
+      // LHS bucket is smaller than the current RHS bucket. Catching up on RHS.
+      if (lhs->start < rhs->start) {
+        lhs++;
+        continue;
+      }
+
+      // Otherwise, RHS needs to catch up on LHS.
+      rhs++;
     }
+
     return false;
   }
 
