@@ -226,30 +226,40 @@ class EnumSet {
 
     size_t index = std::min(buckets_.size() - 1,
                             ComputeLargestPossibleBucketIndexFor(value));
-    const T needle = ComputeBucketStart(value);
+    const T wanted_start = ComputeBucketStart(value);
 
     const T bucket_start = buckets_[index].start;
     // Computed index is the correct one.
-    if (bucket_start == needle) {
+    if (bucket_start == wanted_start) {
       return index;
     }
 
-    // Bucket contains smaller values. Linear scan right.
-    if (bucket_start < needle) {
-      for (index += 1;
-           index < buckets_.size() && buckets_[index].start < needle; index++) {
-      }
-      return index;
+    // Guessed bucket contains smaller values.
+    if (bucket_start < wanted_start) {
+      // The buckets are sorted, and the heuristic is value % kBucketSize.
+      // This means the only case the index could give a smaller bucket is
+      // if the guesses index was >= to buckets_.size().
+      // If the largest bucket doesn't match, then, no bucket will.
+      return index + 1;
     }
 
-    // Bucket contains larger values, insert front.
+    // Guessed bucket contains larger values, but there are no smaller buckets.
     if (index == 0) {
-      return index;
+      return 0;
     }
 
-    for (index -= 1; index > 0 && buckets_[index].start > needle; index--) {
-    }
-    return buckets_[index].start >= needle ? index : index + 1;
+    // Found bucket contains a larger value. This can happen when some values are missing:
+    // Example: buckets: [ 0, 1, 2, 10 ]
+    //   - If we search 3, the guessed bucket could be 10.
+    //   - we need to scan left from this position, until we find the bucket, or the insertion point.
+    //
+    // This should be equivalent to std::lower_bound(buckets_.begin(), buckets_.begin() + index),
+    // but benchmark showed arrays are usually small, and the overhead of lower_bound is
+    // larger than this linear scan.
+    for (index -= 1; index > 0 && buckets_[index].start > wanted_start; index--)
+      continue;
+
+    return buckets_[index].start >= wanted_start ? index : index + 1;
   }
 
   // Creates a new bucket to store `value` and inserts it at `index`.
