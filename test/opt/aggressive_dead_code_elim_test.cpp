@@ -7884,6 +7884,71 @@ TEST_F(AggressiveDCETest, RemoveWhenUsingPrintfExtension) {
   SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
 }
 
+TEST_F(AggressiveDCETest, FunctionReturnPointer) {
+  // Run DCE when a function returning a pointer to a reference is present
+
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability PhysicalStorageBufferAddresses
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint Vertex %2 "main" %3 %4
+               OpSource GLSL 450
+               OpSourceExtension "GL_EXT_buffer_reference"
+               OpSourceExtension "GL_EXT_scalar_block_layout"
+               OpName %4 "color"
+               OpMemberDecorate %5 0 Offset 0
+               OpDecorate %5 Block
+               OpMemberDecorate %7 0 Offset 0
+               OpDecorate %7 Block
+               OpDecorate %8 AliasedPointer
+               OpDecorate %4 Location 0
+          %9 = OpTypeVoid
+         %10 = OpTypeFunction %9
+               OpTypeForwardPointer %11 PhysicalStorageBuffer
+         %12 = OpTypeInt 32 0
+          %5 = OpTypeStruct %12
+         %11 = OpTypePointer PhysicalStorageBuffer %5
+;CHECK:         [[pt:%\w+]] = OpTypePointer PhysicalStorageBuffer {{%\w+}}
+         %13 = OpTypeFunction %11
+;CHECK:  [[pt_fn:%\w+]] = OpTypeFunction [[pt]]
+          %7 = OpTypeStruct %11
+         %14 = OpTypePointer PushConstant %7
+          %3 = OpVariable %14 PushConstant
+         %15 = OpTypeInt 32 1
+         %16 = OpConstant %15 0
+         %17 = OpTypePointer PushConstant %11
+         %18 = OpTypePointer Function %11
+         %19 = OpTypeFloat 32
+         %20 = OpTypeVector %19 4
+         %21 = OpTypePointer Output %20
+          %4 = OpVariable %21 Output
+         %22 = OpConstant %19 1
+         %23 = OpConstant %19 0
+         %24 = OpConstantComposite %20 %22 %23 %22 %22
+          %6 = OpFunction %11 None %13
+;CHECK:   [[fn:%\w+]] = OpFunction [[pt]] None [[pt_fn]]
+         %27 = OpLabel
+         %28 = OpAccessChain %17 %3 %16
+         %29 = OpLoad %11 %28
+               OpReturnValue %29
+               OpFunctionEnd
+          %2 = OpFunction %9 None %10
+         %25 = OpLabel
+          %8 = OpVariable %18 Function
+         %26 = OpFunctionCall %11 %6
+;CHECK:  {{%\w+}} = OpFunctionCall [[pt]] [[fn]]
+               OpStore %8 %26
+               OpStore %4 %24
+               OpReturn
+               OpFunctionEnd
+)";
+
+  // For physical storage buffer support
+  SetTargetEnv(SPV_ENV_VULKAN_1_2);
+  SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
