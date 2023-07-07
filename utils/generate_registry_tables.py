@@ -16,7 +16,7 @@
 
 import errno
 import os.path
-import xml.etree.ElementTree
+from xml.etree.ElementTree import XML, XMLParser, TreeBuilder
 
 
 def mkdir_p(directory):
@@ -78,8 +78,9 @@ def main():
                         help='output file for SPIR-V generators table')
     args = parser.parse_args()
 
-    with open(args.xml) as xml_in:
-       registry = xml.etree.ElementTree.fromstring(xml_in.read())
+    with open(args.xml, encoding='utf-8') as xml_in:
+      parser = XMLParser(target=TreeBuilder(), encoding='utf-8')
+      registry = XML(xml_in.read(), parser=parser)
 
     mkdir_p(os.path.dirname(args.generator_output))
     with open(args.generator_output, 'w') as f:
