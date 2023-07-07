@@ -238,45 +238,27 @@ class EnumSet {
       return 0;
     }
 
+    const T wanted_start = ComputeBucketStart(value);
+    assert(buckets_.size() > 0 &&
+           "Size must not be 0 here. Has the code above changed?");
     size_t index = std::min(buckets_.size() - 1,
                             ComputeLargestPossibleBucketIndexFor(value));
-    const T wanted_start = ComputeBucketStart(value);
 
-    const T bucket_start = buckets_[index].start;
-    // Computed index is the correct one.
-    if (bucket_start == wanted_start) {
-      return index;
+    // This loops behaves like std::upper_bound with a reverse iterator.
+    // Buckets are sorted. 3 main cases:
+    //  - The bucket matches
+    //    => returns the bucket index.
+    //  - The found bucket is larger
+    //    => scans left until it finds the correct bucket, or insertion point.
+    //  - The found bucket is smaller
+    //    => We are at the end, so we return past-end index for insertion.
+    for (; buckets_[index].start >= wanted_start; index--) {
+      if (index == 0) {
+        return 0;
+      }
     }
 
-    // Guessed bucket contains smaller values.
-    if (bucket_start < wanted_start) {
-      // The buckets are sorted, and the heuristic is value % kBucketSize.
-      // This means the only case the index could give a smaller bucket is
-      // if the guesses index was >= to buckets_.size().
-      // If the largest bucket doesn't match, then, no bucket will.
-      return index + 1;
-    }
-
-    // Guessed bucket contains larger values, but there are no smaller buckets.
-    if (index == 0) {
-      return 0;
-    }
-
-    // Found bucket contains a larger value. This can happen when some values
-    // are missing.
-    //
-    // Example: buckets: [ 0, 1, 2, 10 ]
-    //   - If we search 3, the guessed bucket could be 10.
-    //   - we need to scan left from this position, until we find the bucket, or
-    //   the insertion point.
-    //
-    // This should be equivalent to std::lower_bound(buckets_.begin(),
-    // buckets_.begin() + index), but benchmark showed arrays are usually small,
-    // and the overhead of lower_bound is larger than this linear scan.
-    for (index -= 1; index > 0 && buckets_[index].start > wanted_start; index--)
-      continue;
-
-    return buckets_[index].start >= wanted_start ? index : index + 1;
+    return index + 1;
   }
 
   // Creates a new bucket to store `value` and inserts it at `index`.
