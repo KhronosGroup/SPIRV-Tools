@@ -576,6 +576,29 @@ TEST(CapabilitySet, InsertWithEndHintWorks) {
   EXPECT_TRUE(set.contains(spv::Capability::Shader));
 }
 
+TEST(CapabilitySet, IteratorCanBeCopied) {
+  CapabilitySet set;
+  set.insert(spv::Capability::Matrix);
+  set.insert(spv::Capability::Shader);
+  set.insert(spv::Capability::Geometry);
+  set.insert(spv::Capability::Float64);
+  set.insert(spv::Capability::Float16);
+
+  auto a = set.begin();
+  ++a;
+  auto b = a;
+
+  EXPECT_EQ(*b, *a);
+  ++b;
+  EXPECT_NE(*b, *a);
+
+  ++a;
+  EXPECT_EQ(*b, *a);
+
+  ++a;
+  EXPECT_NE(*b, *a);
+}
+
 TEST(CapabilitySet, IteratorBeginToEndPostfix) {
   auto orderedValues = enumerateValuesFromToWithStep(0, 100, /* step= */ 1);
   auto set = createSetUnorderedInsertion(orderedValues);

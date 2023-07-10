@@ -134,7 +134,7 @@ class EnumSet {
       return !(operator!=(other));
     }
 
-    Iterator& operator=(const Iterator& other) const {
+    Iterator& operator=(const Iterator& other) {
       set_ = other.set_;
       bucketIndex_ = other.bucketIndex_;
       bucketOffset_ = other.bucketOffset_;
