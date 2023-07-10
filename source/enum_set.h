@@ -161,19 +161,11 @@ class EnumSet {
 
   iterator begin() const noexcept { return cbegin(); }
 
-  iterator begin() noexcept {
-    return iterator(this, /* bucketIndex= */ 0, /* bucketOffset= */ 0);
-  }
-
   iterator cend() const noexcept {
     return iterator(this, buckets_.size(), /* bucketOffset= */ 0);
   }
 
   iterator end() const noexcept { return cend(); }
-
-  iterator end() noexcept {
-    return iterator(this, buckets_.size(), /* bucketOffset= */ 0);
-  }
 
   // Creates an empty set.
   EnumSet() : buckets_(0), size_(0) {}
