@@ -533,7 +533,7 @@ TEST(CapabilitySet, AddEnum) {
 TEST(CapabilitySet, InsertReturnsIteratorToInserted) {
   CapabilitySet set;
 
-  auto [it, inserted] = set.insert(spv::Capability::Kernel);
+  auto[it, inserted] = set.insert(spv::Capability::Kernel);
 
   EXPECT_TRUE(inserted);
   EXPECT_EQ(*it, spv::Capability::Kernel);
@@ -543,13 +543,13 @@ TEST(CapabilitySet, InsertReturnsIteratorToElementOnDoubleInsertion) {
   CapabilitySet set;
   EXPECT_FALSE(set.contains(spv::Capability::Shader));
   {
-    auto [it, inserted] = set.insert(spv::Capability::Shader);
+    auto[it, inserted] = set.insert(spv::Capability::Shader);
     EXPECT_TRUE(inserted);
     EXPECT_EQ(*it, spv::Capability::Shader);
   }
   EXPECT_TRUE(set.contains(spv::Capability::Shader));
 
-  auto [it, inserted] = set.insert(spv::Capability::Shader);
+  auto[it, inserted] = set.insert(spv::Capability::Shader);
 
   EXPECT_FALSE(inserted);
   EXPECT_EQ(*it, spv::Capability::Shader);
