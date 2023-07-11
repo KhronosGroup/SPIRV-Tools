@@ -688,9 +688,10 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
         return diagnostic()
                << "Invalid " << spvOperandTypeStr(parsed_operand.type)
                << " operand: " << word
-               << ", if createing a new source language please use value 0 "
-                  "(Unknown) and when ready, register your source language to "
-                  "the SPRIV-Headers";
+               << ", if you are creating a new source language please use "
+                  "value 0 "
+                  "(Unknown) and when ready, add your source language to "
+                  "SPRIV-Headers";
       }
       // Prepare to accept operands to this operand, if needed.
       spvPushOperandTypes(entry->operandTypes, expected_operands);
