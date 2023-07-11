@@ -626,7 +626,6 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     } break;
 
     case SPV_OPERAND_TYPE_CAPABILITY:
-    case SPV_OPERAND_TYPE_SOURCE_LANGUAGE:
     case SPV_OPERAND_TYPE_EXECUTION_MODEL:
     case SPV_OPERAND_TYPE_ADDRESSING_MODEL:
     case SPV_OPERAND_TYPE_MEMORY_MODEL:
@@ -678,6 +677,20 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
         return diagnostic()
                << "Invalid " << spvOperandTypeStr(parsed_operand.type)
                << " operand: " << word;
+      }
+      // Prepare to accept operands to this operand, if needed.
+      spvPushOperandTypes(entry->operandTypes, expected_operands);
+    } break;
+
+    case SPV_OPERAND_TYPE_SOURCE_LANGUAGE: {
+      spv_operand_desc entry;
+      if (grammar_.lookupOperand(type, word, &entry)) {
+        return diagnostic()
+               << "Invalid " << spvOperandTypeStr(parsed_operand.type)
+               << " operand: " << word
+               << ", if createing a new source language please use value 0 "
+                  "(Unknown) and when ready, register your source language to "
+                  "the SPRIV-Headers";
       }
       // Prepare to accept operands to this operand, if needed.
       spvPushOperandTypes(entry->operandTypes, expected_operands);
