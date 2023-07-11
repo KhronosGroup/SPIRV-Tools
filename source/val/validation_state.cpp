@@ -1010,6 +1010,23 @@ bool ValidationState_t::IsUnsignedIntVectorType(uint32_t id) const {
   return false;
 }
 
+bool ValidationState_t::IsUnsignedIntScalarOrVectorType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  if (!inst) {
+    return false;
+  }
+
+  if (inst->opcode() == spv::Op::OpTypeInt) {
+    return inst->GetOperandAs<uint32_t>(2) == 0;
+  }
+
+  if (inst->opcode() == spv::Op::OpTypeVector) {
+    return IsUnsignedIntScalarType(GetComponentType(id));
+  }
+
+  return false;
+}
+
 bool ValidationState_t::IsSignedIntScalarType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
   return inst && inst->opcode() == spv::Op::OpTypeInt && inst->word(3) == 1;

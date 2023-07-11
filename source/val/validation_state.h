@@ -602,6 +602,7 @@ class ValidationState_t {
   bool IsIntScalarOrVectorType(uint32_t id) const;
   bool IsUnsignedIntScalarType(uint32_t id) const;
   bool IsUnsignedIntVectorType(uint32_t id) const;
+  bool IsUnsignedIntScalarOrVectorType(uint32_t id) const;
   bool IsSignedIntScalarType(uint32_t id) const;
   bool IsSignedIntVectorType(uint32_t id) const;
   bool IsBoolScalarType(uint32_t id) const;
