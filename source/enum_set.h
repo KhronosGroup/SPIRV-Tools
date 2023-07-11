@@ -87,9 +87,6 @@ class EnumSet {
     typedef std::forward_iterator_tag iterator_category;
     typedef size_t difference_type;
 
-    Iterator(const EnumSet* set, size_t bucketIndex, ElementType bucketOffset)
-        : set_(set), bucketIndex_(bucketIndex), bucketOffset_(bucketOffset) {}
-
     Iterator(const Iterator& other)
         : set_(other.set_),
           bucketIndex_(other.bucketIndex_),
@@ -142,11 +139,17 @@ class EnumSet {
     }
 
    private:
+    Iterator(const EnumSet* set, size_t bucketIndex, ElementType bucketOffset)
+        : set_(set), bucketIndex_(bucketIndex), bucketOffset_(bucketOffset) {}
+
+   private:
     const EnumSet* set_;
     // Index of the bucket in the vector.
     size_t bucketIndex_;
     // Offset in bits in the current bucket.
     ElementType bucketOffset_;
+
+    friend class EnumSet;
   };
 
   // Required to allow the use of std::inserter.
@@ -202,8 +205,6 @@ class EnumSet {
     return *this;
   }
 
-  // Add the enum value `value` into the set.
-  // The set is unchanged if the value already exists.
   // Matches std::unordered_set::insert behavior.
   std::pair<iterator, bool> insert(const T& value) {
     const size_t index = FindBucketForValue(value);
@@ -227,14 +228,18 @@ class EnumSet {
     return std::make_pair(Iterator(this, index, offset), true);
   }
 
-  // `insert` overload to allow STL compatibility.
-  // The hint is ignored.
+  // Inserts `value` in the set if possible.
+  // Similar to `std::unordered_set::insert`, except the hint is ignored.
+  // Returns an iterator to the inserted element, or the element preventing
+  // insertion.
   iterator insert(const_iterator, const T& value) {
     return insert(value).first;
   }
 
-  // `insert` overload to allow STL compatibility.
-  // The hint is ignored.
+  // Inserts `value` in the set if possible.
+  // Similar to `std::unordered_set::insert`, except the hint is ignored.
+  // Returns an iterator to the inserted element, or the element preventing
+  // insertion.
   iterator insert(const_iterator, T&& value) { return insert(value).first; }
 
   // Removes the value `value` into the set.
@@ -271,12 +276,12 @@ class EnumSet {
     return bucket.data & ComputeMaskForValue(value);
   }
 
-  // Wrapper on `Contains` which matches the STL API for sets.
+  // Returns the 1 if `value` is present in the set, `0` otherwise.
   inline size_t count(T value) const { return contains(value) ? 1 : 0; }
 
   // Calls `unaryFunction` once for each value in the set.
   // Values are sorted in increasing order using their numerical values.
-  // FIXME(Keenuts): replace usages with either ranged-for or std::for_each.
+  // TODO(#5315): replace usages with either ranged-for or std::for_each.
   void ForEach(std::function<void(T)> unaryFunction) const {
     for (const auto& bucket : buckets_) {
       for (ElementType i = 0; i < kBucketSize; i++) {
@@ -405,6 +410,8 @@ class EnumSet {
 #endif
   }
 
+  // Returns true if the bucket at `bucketIndex/ stores the enum at
+  // `bucketOffset`, false otherwise.
   bool HasEnumAt(size_t bucketIndex, BucketType bucketOffset) const {
     assert(bucketIndex < buckets_.size());
     assert(bucketOffset < kBucketSize);
