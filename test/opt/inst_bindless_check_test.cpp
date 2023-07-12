@@ -5224,6 +5224,140 @@ OpFunctionEnd)"
   SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
 }
 
+TEST_F(InstBindlessTest, VertexIndexOOB) {
+  // #version 450
+  // layout(std140, binding = 0) uniform foo { uint tex_index[1]; }
+  // uniform_index_buffer; layout(location = 0) out flat uint index; vec2
+  // vertices[3]; void main() {
+  //     vertices[0] = vec2(-1.0, -1.0);
+  //     vertices[1] = vec2( 1.0, -1.0);
+  //     vertices[2] = vec2( 0.0,  1.0);
+  //     gl_Position = vec4(vertices[gl_VertexIndex % 3], 0.0, 1.0);
+  //     index = uniform_index_buffer.tex_index[0];
+  // }
+  // clang-format off
+  const std::string text = R"(
+OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main" %vertices %_ %gl_VertexIndex %index %uniform_index_buffer
+OpSource GLSL 450
+OpName %main "main"
+OpName %vertices "vertices"
+OpName %gl_PerVertex "gl_PerVertex"
+OpMemberName %gl_PerVertex 0 "gl_Position"
+OpMemberName %gl_PerVertex 1 "gl_PointSize"
+OpMemberName %gl_PerVertex 2 "gl_ClipDistance"
+OpMemberName %gl_PerVertex 3 "gl_CullDistance"
+OpName %_ ""
+OpName %gl_VertexIndex "gl_VertexIndex"
+OpName %index "index"
+OpName %foo "foo"
+OpMemberName %foo 0 "tex_index"
+OpName %uniform_index_buffer "uniform_index_buffer"
+OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
+OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
+OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance
+OpDecorate %gl_PerVertex Block
+OpDecorate %gl_VertexIndex BuiltIn VertexIndex
+OpDecorate %index Flat
+OpDecorate %index Location 0
+OpDecorate %_arr_uint_uint_1 ArrayStride 16
+OpMemberDecorate %foo 0 Offset 0
+OpDecorate %foo Block
+OpDecorate %uniform_index_buffer DescriptorSet 0
+OpDecorate %uniform_index_buffer Binding 0)"
+    + kInputDecorations + kOutputDecorations +
+R"(%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%uint = OpTypeInt 32 0
+%uint_3 = OpConstant %uint 3
+%_arr_v2float_uint_3 = OpTypeArray %v2float %uint_3
+%_ptr_Private__arr_v2float_uint_3 = OpTypePointer Private %_arr_v2float_uint_3
+%vertices = OpVariable %_ptr_Private__arr_v2float_uint_3 Private
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%float_n1 = OpConstant %float -1
+%16 = OpConstantComposite %v2float %float_n1 %float_n1
+%_ptr_Private_v2float = OpTypePointer Private %v2float
+%int_1 = OpConstant %int 1
+%float_1 = OpConstant %float 1
+%21 = OpConstantComposite %v2float %float_1 %float_n1
+%int_2 = OpConstant %int 2
+%float_0 = OpConstant %float 0
+%25 = OpConstantComposite %v2float %float_0 %float_1
+%v4float = OpTypeVector %float 4
+%uint_1 = OpConstant %uint 1
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1
+%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex
+%_ = OpVariable %_ptr_Output_gl_PerVertex Output
+%_ptr_Input_int = OpTypePointer Input %int
+%gl_VertexIndex = OpVariable %_ptr_Input_int Input
+%int_3 = OpConstant %int 3
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_ptr_Output_uint = OpTypePointer Output %uint
+%index = OpVariable %_ptr_Output_uint Output
+%_arr_uint_uint_1 = OpTypeArray %uint %uint_1
+%foo = OpTypeStruct %_arr_uint_uint_1
+%_ptr_Uniform_foo = OpTypePointer Uniform %foo
+%uniform_index_buffer = OpVariable %_ptr_Uniform_foo Uniform
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint)"
+    + kInputGlobals + kOutputGlobals +
+R"(%main = OpFunction %void None %3
+%5 = OpLabel
+%18 = OpAccessChain %_ptr_Private_v2float %vertices %int_0
+OpStore %18 %16
+%22 = OpAccessChain %_ptr_Private_v2float %vertices %int_1
+OpStore %22 %21
+%26 = OpAccessChain %_ptr_Private_v2float %vertices %int_2
+OpStore %26 %25
+%35 = OpLoad %int %gl_VertexIndex
+%37 = OpSMod %int %35 %int_3
+%38 = OpAccessChain %_ptr_Private_v2float %vertices %37
+%39 = OpLoad %v2float %38
+%40 = OpCompositeExtract %float %39 0
+%41 = OpCompositeExtract %float %39 1
+%42 = OpCompositeConstruct %v4float %40 %41 %float_0 %float_1
+%44 = OpAccessChain %_ptr_Output_v4float %_ %int_0
+OpStore %44 %42
+%52 = OpAccessChain %_ptr_Uniform_uint %uniform_index_buffer %int_0 %int_0
+%53 = OpLoad %uint %52
+; CHECK-NOT: %53 = OpLoad %uint %52
+; CHECK: {{%\w+}} = OpIMul %uint %uint_16 %int_0
+; CHECK: {{%\w+}} = OpIAdd %uint %uint_0 {{%\w+}}
+; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
+; CHECK: {{%\w+}} = OpLoad %int %gl_VertexIndex
+; CHECK: {{%\w+}} = OpBitcast %uint {{%\w+}}
+; CHECK: {{%\w+}} = OpLoad %uint %gl_InstanceIndex
+; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_0 {{%\w+}} {{%\w+}} %uint_0
+; CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_desc_check %uint_23 %uint_87 {{%\w+}} %uint_0 %uint_0 %uint_0 {{%\w+}}
+; CHECK: OpSelectionMerge {{%\w+}} None
+; CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: {{%\w+}} = OpLoad %uint %52
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: OpBranch {{%\w+}}
+; CHECK: {{%\w+}} = OpLabel
+; CHECK: [[phi_result:%\w+]] = OpPhi %uint {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: OpStore %index [[phi_result]]
+OpStore %index %53
+; CHECK-NOT: OpStore %index %53
+OpReturn
+;CHECK: OpReturn
+OpFunctionEnd)"
+    + kStreamWrite6 + kCheckDesc;
+  // clang-format on
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_2);
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(text, true, 7u, 23u);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //   Compute shader
