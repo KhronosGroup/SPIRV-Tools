@@ -288,26 +288,26 @@ constexpr std::array kCapabilities{
 
 TEST(EnumSet, IsEmpty1) {
   EnumSet<TestEnum> set;
-  EXPECT_TRUE(set.IsEmpty());
-  set.Add(TestEnum::ZERO);
-  EXPECT_FALSE(set.IsEmpty());
+  EXPECT_TRUE(set.empty());
+  set.insert(TestEnum::ZERO);
+  EXPECT_FALSE(set.empty());
 }
 
 TEST(EnumSet, IsEmpty2) {
   EnumSet<TestEnum> set;
-  EXPECT_TRUE(set.IsEmpty());
-  set.Add(TestEnum::ONE_HUNDRED_FIFTY);
-  EXPECT_FALSE(set.IsEmpty());
+  EXPECT_TRUE(set.empty());
+  set.insert(TestEnum::ONE_HUNDRED_FIFTY);
+  EXPECT_FALSE(set.empty());
 }
 
 TEST(EnumSet, IsEmpty3) {
   EnumSet<TestEnum> set(TestEnum::FOUR);
-  EXPECT_FALSE(set.IsEmpty());
+  EXPECT_FALSE(set.empty());
 }
 
 TEST(EnumSet, IsEmpty4) {
   EnumSet<TestEnum> set(TestEnum::THREE_HUNDRED);
-  EXPECT_FALSE(set.IsEmpty());
+  EXPECT_FALSE(set.empty());
 }
 
 TEST(EnumSetHasAnyOf, EmptySetEmptyQuery) {
@@ -320,26 +320,26 @@ TEST(EnumSetHasAnyOf, EmptySetEmptyQuery) {
 TEST(EnumSetHasAnyOf, MaskSetEmptyQuery) {
   EnumSet<TestEnum> set;
   const EnumSet<TestEnum> empty;
-  set.Add(TestEnum::FIVE);
-  set.Add(TestEnum::EIGHT);
+  set.insert(TestEnum::FIVE);
+  set.insert(TestEnum::EIGHT);
   EXPECT_TRUE(set.HasAnyOf(empty));
 }
 
 TEST(EnumSetHasAnyOf, OverflowSetEmptyQuery) {
   EnumSet<TestEnum> set;
   const EnumSet<TestEnum> empty;
-  set.Add(TestEnum::TWO_HUNDRED);
-  set.Add(TestEnum::THREE_HUNDRED);
+  set.insert(TestEnum::TWO_HUNDRED);
+  set.insert(TestEnum::THREE_HUNDRED);
   EXPECT_TRUE(set.HasAnyOf(empty));
 }
 
 TEST(EnumSetHasAnyOf, EmptyQuery) {
   EnumSet<TestEnum> set;
   const EnumSet<TestEnum> empty;
-  set.Add(TestEnum::FIVE);
-  set.Add(TestEnum::EIGHT);
-  set.Add(TestEnum::TWO_HUNDRED);
-  set.Add(TestEnum::THREE_HUNDRED);
+  set.insert(TestEnum::FIVE);
+  set.insert(TestEnum::EIGHT);
+  set.insert(TestEnum::TWO_HUNDRED);
+  set.insert(TestEnum::THREE_HUNDRED);
   EXPECT_TRUE(set.HasAnyOf(empty));
 }
 
@@ -347,7 +347,7 @@ TEST(EnumSetHasAnyOf, EmptyQueryAlwaysTrue) {
   EnumSet<TestEnum> set;
   const EnumSet<TestEnum> empty;
   EXPECT_TRUE(set.HasAnyOf(empty));
-  set.Add(TestEnum::FIVE);
+  set.insert(TestEnum::FIVE);
   EXPECT_TRUE(set.HasAnyOf(empty));
 
   EXPECT_TRUE(
@@ -356,23 +356,23 @@ TEST(EnumSetHasAnyOf, EmptyQueryAlwaysTrue) {
 
 TEST(EnumSetHasAnyOf, ReflexiveMask) {
   EnumSet<TestEnum> set(TestEnum::THREE);
-  set.Add(TestEnum::TWENTY_FOUR);
-  set.Add(TestEnum::THIRTY);
+  set.insert(TestEnum::TWENTY_FOUR);
+  set.insert(TestEnum::THIRTY);
   EXPECT_TRUE(set.HasAnyOf(set));
 }
 
 TEST(EnumSetHasAnyOf, ReflexiveOverflow) {
   EnumSet<TestEnum> set(TestEnum::TWO_HUNDRED);
-  set.Add(TestEnum::TWO_HUNDRED);
-  set.Add(TestEnum::FOUR_HUNDRED);
+  set.insert(TestEnum::TWO_HUNDRED);
+  set.insert(TestEnum::FOUR_HUNDRED);
   EXPECT_TRUE(set.HasAnyOf(set));
 }
 
 TEST(EnumSetHasAnyOf, Reflexive) {
   EnumSet<TestEnum> set(TestEnum::THREE);
-  set.Add(TestEnum::TWENTY_FOUR);
-  set.Add(TestEnum::THREE_HUNDRED);
-  set.Add(TestEnum::FOUR_HUNDRED);
+  set.insert(TestEnum::TWENTY_FOUR);
+  set.insert(TestEnum::THREE_HUNDRED);
+  set.insert(TestEnum::FOUR_HUNDRED);
   EXPECT_TRUE(set.HasAnyOf(set));
 }
 
@@ -381,7 +381,7 @@ TEST(EnumSetHasAnyOf, EmptySetHasNone) {
   EnumSet<TestEnum> items;
   for (uint32_t i = 0; i < 200; ++i) {
     TestEnum enumValue = static_cast<TestEnum>(i);
-    items.Add(enumValue);
+    items.insert(enumValue);
     EXPECT_FALSE(set.HasAnyOf(items));
     EXPECT_FALSE(set.HasAnyOf(EnumSet<TestEnum>(enumValue)));
   }
@@ -391,12 +391,12 @@ TEST(EnumSetHasAnyOf, MaskSetMaskQuery) {
   EnumSet<TestEnum> set(TestEnum::ZERO);
   EnumSet<TestEnum> items(TestEnum::ONE);
   EXPECT_FALSE(set.HasAnyOf(items));
-  set.Add(TestEnum::TWO);
-  items.Add(TestEnum::THREE);
+  set.insert(TestEnum::TWO);
+  items.insert(TestEnum::THREE);
   EXPECT_FALSE(set.HasAnyOf(items));
-  set.Add(TestEnum::THREE);
+  set.insert(TestEnum::THREE);
   EXPECT_TRUE(set.HasAnyOf(items));
-  set.Add(TestEnum::FOUR);
+  set.insert(TestEnum::FOUR);
   EXPECT_TRUE(set.HasAnyOf(items));
 }
 
@@ -404,12 +404,12 @@ TEST(EnumSetHasAnyOf, OverflowSetOverflowQuery) {
   EnumSet<TestEnum> set(TestEnum::ONE_HUNDRED);
   EnumSet<TestEnum> items(TestEnum::TWO_HUNDRED);
   EXPECT_FALSE(set.HasAnyOf(items));
-  set.Add(TestEnum::THREE_HUNDRED);
-  items.Add(TestEnum::FOUR_HUNDRED);
+  set.insert(TestEnum::THREE_HUNDRED);
+  items.insert(TestEnum::FOUR_HUNDRED);
   EXPECT_FALSE(set.HasAnyOf(items));
-  set.Add(TestEnum::TWO_HUNDRED);
+  set.insert(TestEnum::TWO_HUNDRED);
   EXPECT_TRUE(set.HasAnyOf(items));
-  set.Add(TestEnum::FIVE_HUNDRED);
+  set.insert(TestEnum::FIVE_HUNDRED);
   EXPECT_TRUE(set.HasAnyOf(items));
 }
 
@@ -417,13 +417,13 @@ TEST(EnumSetHasAnyOf, GeneralCase) {
   EnumSet<TestEnum> set(TestEnum::ZERO);
   EnumSet<TestEnum> items(TestEnum::ONE_HUNDRED);
   EXPECT_FALSE(set.HasAnyOf(items));
-  set.Add(TestEnum::THREE_HUNDRED);
-  items.Add(TestEnum::FOUR);
+  set.insert(TestEnum::THREE_HUNDRED);
+  items.insert(TestEnum::FOUR);
   EXPECT_FALSE(set.HasAnyOf(items));
-  set.Add(TestEnum::FIVE);
-  items.Add(TestEnum::FIVE_HUNDRED);
+  set.insert(TestEnum::FIVE);
+  items.insert(TestEnum::FIVE_HUNDRED);
   EXPECT_FALSE(set.HasAnyOf(items));
-  set.Add(TestEnum::FIVE_HUNDRED);
+  set.insert(TestEnum::FIVE_HUNDRED);
   EXPECT_TRUE(set.HasAnyOf(items));
   EXPECT_FALSE(set.HasAnyOf(EnumSet<TestEnum>(TestEnum::TWENTY)));
   EXPECT_FALSE(set.HasAnyOf(EnumSet<TestEnum>(TestEnum::SIX_HUNDRED)));
@@ -435,24 +435,37 @@ TEST(EnumSetHasAnyOf, GeneralCase) {
 TEST(EnumSet, DefaultIsEmpty) {
   EnumSet<TestEnum> set;
   for (uint32_t i = 0; i < 1000; ++i) {
-    EXPECT_FALSE(set.Contains(static_cast<TestEnum>(i)));
+    EXPECT_FALSE(set.contains(static_cast<TestEnum>(i)));
   }
 }
 
-TEST(CapabilitySet, ForEachOrderIsEnumOrder) {
-  constexpr size_t kValueCount = 500;
-  std::vector<TestEnum> orderedValues(kValueCount);
-  for (size_t i = 0; i < kValueCount; i++) {
-    orderedValues[i] = static_cast<TestEnum>(i);
+namespace {
+std::vector<TestEnum> enumerateValuesFromToWithStep(size_t start, size_t end,
+                                                    size_t step) {
+  assert(end > start && "end > start");
+  std::vector<TestEnum> orderedValues;
+  for (size_t i = start; i < end; i += step) {
+    orderedValues.push_back(static_cast<TestEnum>(i));
   }
-  std::vector shuffledValues(orderedValues.cbegin(), orderedValues.cend());
+  return orderedValues;
+}
+
+EnumSet<TestEnum> createSetUnorderedInsertion(
+    const std::vector<TestEnum>& values) {
+  std::vector shuffledValues(values.cbegin(), values.cend());
   std::mt19937 rng(0);
   std::shuffle(shuffledValues.begin(), shuffledValues.end(), rng);
-
   EnumSet<TestEnum> set;
   for (auto value : shuffledValues) {
-    set.Add(value);
+    set.insert(value);
   }
+  return set;
+}
+}  // namespace
+
+TEST(CapabilitySet, ForEachOrderIsEnumOrder) {
+  auto orderedValues = enumerateValuesFromToWithStep(0, 500, /* step= */ 1);
+  auto set = createSetUnorderedInsertion(orderedValues);
 
   size_t index = 0;
   set.ForEach([&orderedValues, &index](auto value) {
@@ -461,71 +474,217 @@ TEST(CapabilitySet, ForEachOrderIsEnumOrder) {
   });
 }
 
+TEST(CapabilitySet, RangeBasedLoopOrderIsEnumOrder) {
+  auto orderedValues = enumerateValuesFromToWithStep(0, 2, /* step= */ 1);
+  auto set = createSetUnorderedInsertion(orderedValues);
+
+  size_t index = 0;
+  for (auto value : set) {
+    ASSERT_THAT(value, Eq(orderedValues[index]));
+    index++;
+  }
+}
+
 TEST(CapabilitySet, ConstructSingleMemberMatrix) {
   CapabilitySet s(spv::Capability::Matrix);
-  EXPECT_TRUE(s.Contains(spv::Capability::Matrix));
-  EXPECT_FALSE(s.Contains(spv::Capability::Shader));
-  EXPECT_FALSE(s.Contains(static_cast<spv::Capability>(1000)));
+  EXPECT_TRUE(s.contains(spv::Capability::Matrix));
+  EXPECT_FALSE(s.contains(spv::Capability::Shader));
+  EXPECT_FALSE(s.contains(static_cast<spv::Capability>(1000)));
 }
 
 TEST(CapabilitySet, ConstructSingleMemberMaxInMask) {
   CapabilitySet s(static_cast<spv::Capability>(63));
-  EXPECT_FALSE(s.Contains(spv::Capability::Matrix));
-  EXPECT_FALSE(s.Contains(spv::Capability::Shader));
-  EXPECT_TRUE(s.Contains(static_cast<spv::Capability>(63)));
-  EXPECT_FALSE(s.Contains(static_cast<spv::Capability>(64)));
-  EXPECT_FALSE(s.Contains(static_cast<spv::Capability>(1000)));
+  EXPECT_FALSE(s.contains(spv::Capability::Matrix));
+  EXPECT_FALSE(s.contains(spv::Capability::Shader));
+  EXPECT_TRUE(s.contains(static_cast<spv::Capability>(63)));
+  EXPECT_FALSE(s.contains(static_cast<spv::Capability>(64)));
+  EXPECT_FALSE(s.contains(static_cast<spv::Capability>(1000)));
 }
 
 TEST(CapabilitySet, ConstructSingleMemberMinOverflow) {
   // Check the first one that forces overflow beyond the mask.
   CapabilitySet s(static_cast<spv::Capability>(64));
-  EXPECT_FALSE(s.Contains(spv::Capability::Matrix));
-  EXPECT_FALSE(s.Contains(spv::Capability::Shader));
-  EXPECT_FALSE(s.Contains(static_cast<spv::Capability>(63)));
-  EXPECT_TRUE(s.Contains(static_cast<spv::Capability>(64)));
-  EXPECT_FALSE(s.Contains(static_cast<spv::Capability>(1000)));
+  EXPECT_FALSE(s.contains(spv::Capability::Matrix));
+  EXPECT_FALSE(s.contains(spv::Capability::Shader));
+  EXPECT_FALSE(s.contains(static_cast<spv::Capability>(63)));
+  EXPECT_TRUE(s.contains(static_cast<spv::Capability>(64)));
+  EXPECT_FALSE(s.contains(static_cast<spv::Capability>(1000)));
 }
 
 TEST(CapabilitySet, ConstructSingleMemberMaxOverflow) {
   // Check the max 32-bit signed int.
   CapabilitySet s(static_cast<spv::Capability>(0x7fffffffu));
-  EXPECT_FALSE(s.Contains(spv::Capability::Matrix));
-  EXPECT_FALSE(s.Contains(spv::Capability::Shader));
-  EXPECT_FALSE(s.Contains(static_cast<spv::Capability>(1000)));
-  EXPECT_TRUE(s.Contains(static_cast<spv::Capability>(0x7fffffffu)));
+  EXPECT_FALSE(s.contains(spv::Capability::Matrix));
+  EXPECT_FALSE(s.contains(spv::Capability::Shader));
+  EXPECT_FALSE(s.contains(static_cast<spv::Capability>(1000)));
+  EXPECT_TRUE(s.contains(static_cast<spv::Capability>(0x7fffffffu)));
 }
 
 TEST(CapabilitySet, AddEnum) {
   CapabilitySet s(spv::Capability::Shader);
-  s.Add(spv::Capability::Kernel);
-  s.Add(static_cast<spv::Capability>(42));
-  EXPECT_FALSE(s.Contains(spv::Capability::Matrix));
-  EXPECT_TRUE(s.Contains(spv::Capability::Shader));
-  EXPECT_TRUE(s.Contains(spv::Capability::Kernel));
-  EXPECT_TRUE(s.Contains(static_cast<spv::Capability>(42)));
+  s.insert(spv::Capability::Kernel);
+  s.insert(static_cast<spv::Capability>(42));
+  EXPECT_FALSE(s.contains(spv::Capability::Matrix));
+  EXPECT_TRUE(s.contains(spv::Capability::Shader));
+  EXPECT_TRUE(s.contains(spv::Capability::Kernel));
+  EXPECT_TRUE(s.contains(static_cast<spv::Capability>(42)));
+}
+
+TEST(CapabilitySet, InsertReturnsIteratorToInserted) {
+  CapabilitySet set;
+
+  auto[it, inserted] = set.insert(spv::Capability::Kernel);
+
+  EXPECT_TRUE(inserted);
+  EXPECT_EQ(*it, spv::Capability::Kernel);
+}
+
+TEST(CapabilitySet, InsertReturnsIteratorToElementOnDoubleInsertion) {
+  CapabilitySet set;
+  EXPECT_FALSE(set.contains(spv::Capability::Shader));
+  {
+    auto[it, inserted] = set.insert(spv::Capability::Shader);
+    EXPECT_TRUE(inserted);
+    EXPECT_EQ(*it, spv::Capability::Shader);
+  }
+  EXPECT_TRUE(set.contains(spv::Capability::Shader));
+
+  auto[it, inserted] = set.insert(spv::Capability::Shader);
+
+  EXPECT_FALSE(inserted);
+  EXPECT_EQ(*it, spv::Capability::Shader);
+  EXPECT_TRUE(set.contains(spv::Capability::Shader));
+}
+
+TEST(CapabilitySet, InsertWithHintWorks) {
+  CapabilitySet set;
+  EXPECT_FALSE(set.contains(spv::Capability::Shader));
+
+  auto it = set.insert(set.begin(), spv::Capability::Shader);
+
+  EXPECT_EQ(*it, spv::Capability::Shader);
+  EXPECT_TRUE(set.contains(spv::Capability::Shader));
+}
+
+TEST(CapabilitySet, InsertWithEndHintWorks) {
+  CapabilitySet set;
+  EXPECT_FALSE(set.contains(spv::Capability::Shader));
+
+  auto it = set.insert(set.end(), spv::Capability::Shader);
+
+  EXPECT_EQ(*it, spv::Capability::Shader);
+  EXPECT_TRUE(set.contains(spv::Capability::Shader));
+}
+
+TEST(CapabilitySet, IteratorCanBeCopied) {
+  CapabilitySet set;
+  set.insert(spv::Capability::Matrix);
+  set.insert(spv::Capability::Shader);
+  set.insert(spv::Capability::Geometry);
+  set.insert(spv::Capability::Float64);
+  set.insert(spv::Capability::Float16);
+
+  auto a = set.begin();
+  ++a;
+  auto b = a;
+
+  EXPECT_EQ(*b, *a);
+  ++b;
+  EXPECT_NE(*b, *a);
+
+  ++a;
+  EXPECT_EQ(*b, *a);
+
+  ++a;
+  EXPECT_NE(*b, *a);
+}
+
+TEST(CapabilitySet, IteratorBeginToEndPostfix) {
+  auto orderedValues = enumerateValuesFromToWithStep(0, 100, /* step= */ 1);
+  auto set = createSetUnorderedInsertion(orderedValues);
+
+  size_t index = 0;
+  for (auto it = set.cbegin(); it != set.cend(); it++, index++) {
+    EXPECT_EQ(*it, orderedValues[index]);
+  }
+}
+
+TEST(CapabilitySet, IteratorBeginToEndPrefix) {
+  auto orderedValues = enumerateValuesFromToWithStep(0, 100, /* step= */ 1);
+  auto set = createSetUnorderedInsertion(orderedValues);
+
+  size_t index = 0;
+  for (auto it = set.cbegin(); it != set.cend(); ++it, index++) {
+    EXPECT_EQ(*it, orderedValues[index]);
+  }
+}
+
+TEST(CapabilitySet, IteratorBeginToEndPrefixStep) {
+  auto orderedValues = enumerateValuesFromToWithStep(0, 100, /* step= */ 8);
+  auto set = createSetUnorderedInsertion(orderedValues);
+
+  size_t index = 0;
+  for (auto it = set.cbegin(); it != set.cend(); ++it, index++) {
+    ASSERT_EQ(*it, orderedValues[index]);
+  }
+}
+
+TEST(CapabilitySet, CompatibleWithSTLFind) {
+  CapabilitySet set;
+  set.insert(spv::Capability::Matrix);
+  set.insert(spv::Capability::Shader);
+  set.insert(spv::Capability::Geometry);
+  set.insert(spv::Capability::Tessellation);
+  set.insert(spv::Capability::Addresses);
+  set.insert(spv::Capability::Linkage);
+  set.insert(spv::Capability::Kernel);
+  set.insert(spv::Capability::Vector16);
+  set.insert(spv::Capability::Float16Buffer);
+  set.insert(spv::Capability::Float64);
+
+  {
+    auto it = std::find(set.cbegin(), set.cend(), spv::Capability::Vector16);
+    ASSERT_NE(it, set.end());
+    ASSERT_EQ(*it, spv::Capability::Vector16);
+  }
+
+  {
+    auto it = std::find(set.cbegin(), set.cend(), spv::Capability::Float16);
+    ASSERT_EQ(it, set.end());
+  }
+}
+
+TEST(CapabilitySet, CompatibleWithSTLForEach) {
+  auto orderedValues = enumerateValuesFromToWithStep(0, 100, /* step= */ 15);
+  auto set = createSetUnorderedInsertion(orderedValues);
+
+  size_t index = 0;
+  std::for_each(set.cbegin(), set.cend(), [&](auto item) {
+    ASSERT_EQ(item, orderedValues[index]);
+    index++;
+  });
 }
 
 TEST(CapabilitySet, InitializerListEmpty) {
   CapabilitySet s{};
   for (uint32_t i = 0; i < 1000; i++) {
-    EXPECT_FALSE(s.Contains(static_cast<spv::Capability>(i)));
+    EXPECT_FALSE(s.contains(static_cast<spv::Capability>(i)));
   }
 }
 
 TEST(CapabilitySet, LargeSetHasInsertedElements) {
   CapabilitySet set;
   for (auto c : kCapabilities) {
-    EXPECT_FALSE(set.Contains(c));
+    EXPECT_FALSE(set.contains(c));
   }
 
   for (auto c : kCapabilities) {
-    set.Add(c);
-    EXPECT_TRUE(set.Contains(c));
+    set.insert(c);
+    EXPECT_TRUE(set.contains(c));
   }
 
   for (auto c : kCapabilities) {
-    EXPECT_TRUE(set.Contains(c));
+    EXPECT_TRUE(set.contains(c));
   }
 }
 
@@ -536,16 +695,16 @@ TEST(CapabilitySet, LargeSetHasUnsortedInsertedElements) {
   std::shuffle(shuffledCapabilities.begin(), shuffledCapabilities.end(), rng);
   CapabilitySet set;
   for (auto c : shuffledCapabilities) {
-    EXPECT_FALSE(set.Contains(c));
+    EXPECT_FALSE(set.contains(c));
   }
 
   for (auto c : shuffledCapabilities) {
-    set.Add(c);
-    EXPECT_TRUE(set.Contains(c));
+    set.insert(c);
+    EXPECT_TRUE(set.contains(c));
   }
 
   for (auto c : shuffledCapabilities) {
-    EXPECT_TRUE(set.Contains(c));
+    EXPECT_TRUE(set.contains(c));
   }
 }
 
@@ -556,16 +715,16 @@ TEST(CapabilitySet, LargeSetHasUnsortedRemovedElement) {
   std::shuffle(shuffledCapabilities.begin(), shuffledCapabilities.end(), rng);
   CapabilitySet set;
   for (auto c : shuffledCapabilities) {
-    set.Add(c);
-    EXPECT_TRUE(set.Contains(c));
+    set.insert(c);
+    EXPECT_TRUE(set.contains(c));
   }
 
   for (auto c : kCapabilities) {
-    set.Remove(c);
+    set.erase(c);
   }
 
   for (auto c : shuffledCapabilities) {
-    EXPECT_FALSE(set.Contains(c));
+    EXPECT_FALSE(set.contains(c));
   }
 }
 
@@ -630,8 +789,8 @@ using BoundaryTestWithParam = ::testing::TestWithParam<spv::Capability>;
 
 TEST_P(BoundaryTestWithParam, InsertedContains) {
   CapabilitySet set;
-  set.Add(GetParam());
-  EXPECT_TRUE(set.Contains(GetParam()));
+  set.insert(GetParam());
+  EXPECT_TRUE(set.contains(GetParam()));
 }
 
 INSTANTIATE_TEST_SUITE_P(

@@ -78,68 +78,195 @@ class EnumSet {
   static constexpr size_t kBucketSize = sizeof(BucketType) * 8ULL;
 
  public:
+  class Iterator {
+   public:
+    typedef Iterator self_type;
+    typedef T value_type;
+    typedef T& reference;
+    typedef T* pointer;
+    typedef std::forward_iterator_tag iterator_category;
+    typedef size_t difference_type;
+
+    Iterator(const Iterator& other)
+        : set_(other.set_),
+          bucketIndex_(other.bucketIndex_),
+          bucketOffset_(other.bucketOffset_) {}
+
+    Iterator& operator++() {
+      do {
+        if (bucketIndex_ >= set_->buckets_.size()) {
+          bucketIndex_ = set_->buckets_.size();
+          bucketOffset_ = 0;
+          break;
+        }
+
+        if (bucketOffset_ + 1 == kBucketSize) {
+          bucketOffset_ = 0;
+          ++bucketIndex_;
+        } else {
+          ++bucketOffset_;
+        }
+
+      } while (bucketIndex_ < set_->buckets_.size() &&
+               !set_->HasEnumAt(bucketIndex_, bucketOffset_));
+      return *this;
+    }
+
+    Iterator operator++(int) {
+      Iterator old = *this;
+      operator++();
+      return old;
+    }
+
+    T operator*() const {
+      return GetValueFromBucket(set_->buckets_[bucketIndex_], bucketOffset_);
+    }
+
+    bool operator!=(const Iterator& other) const {
+      return set_ != other.set_ || bucketOffset_ != other.bucketOffset_ ||
+             bucketIndex_ != other.bucketIndex_;
+    }
+
+    bool operator==(const Iterator& other) const {
+      return !(operator!=(other));
+    }
+
+    Iterator& operator=(const Iterator& other) {
+      set_ = other.set_;
+      bucketIndex_ = other.bucketIndex_;
+      bucketOffset_ = other.bucketOffset_;
+      return *this;
+    }
+
+   private:
+    Iterator(const EnumSet* set, size_t bucketIndex, ElementType bucketOffset)
+        : set_(set), bucketIndex_(bucketIndex), bucketOffset_(bucketOffset) {}
+
+   private:
+    const EnumSet* set_;
+    // Index of the bucket in the vector.
+    size_t bucketIndex_;
+    // Offset in bits in the current bucket.
+    ElementType bucketOffset_;
+
+    friend class EnumSet;
+  };
+
+  // Required to allow the use of std::inserter.
+  using value_type = T;
+  using const_iterator = Iterator;
+  using iterator = Iterator;
+
+ public:
+  iterator cbegin() const noexcept {
+    return iterator(this, /* bucketIndex= */ 0, /* bucketOffset= */ 0);
+  }
+
+  iterator begin() const noexcept { return cbegin(); }
+
+  iterator cend() const noexcept {
+    return iterator(this, buckets_.size(), /* bucketOffset= */ 0);
+  }
+
+  iterator end() const noexcept { return cend(); }
+
   // Creates an empty set.
-  EnumSet() : buckets_(0) {}
+  EnumSet() : buckets_(0), size_(0) {}
 
   // Creates a set and store `value` in it.
-  EnumSet(T value) : EnumSet() { Add(value); }
+  EnumSet(T value) : EnumSet() { insert(value); }
 
   // Creates a set and stores each `values` in it.
   EnumSet(std::initializer_list<T> values) : EnumSet() {
     for (auto item : values) {
-      Add(item);
+      insert(item);
     }
   }
 
   // Creates a set, and insert `count` enum values pointed by `array` in it.
   EnumSet(ElementType count, const T* array) : EnumSet() {
     for (ElementType i = 0; i < count; i++) {
-      Add(array[i]);
+      insert(array[i]);
     }
   }
 
   // Copies the EnumSet `other` into a new EnumSet.
-  EnumSet(const EnumSet& other) : buckets_(other.buckets_) {}
+  EnumSet(const EnumSet& other)
+      : buckets_(other.buckets_), size_(other.size_) {}
 
   // Moves the EnumSet `other` into a new EnumSet.
-  EnumSet(EnumSet&& other) : buckets_(std::move(other.buckets_)) {}
+  EnumSet(EnumSet&& other)
+      : buckets_(std::move(other.buckets_)), size_(other.size_) {}
 
   // Deep-copies the EnumSet `other` into this EnumSet.
   EnumSet& operator=(const EnumSet& other) {
     buckets_ = other.buckets_;
+    size_ = other.size_;
     return *this;
   }
 
-  // Add the enum value `value` into the set.
-  // The set is unchanged if the value already exists.
-  void Add(T value) {
+  // Matches std::unordered_set::insert behavior.
+  std::pair<iterator, bool> insert(const T& value) {
     const size_t index = FindBucketForValue(value);
+    const ElementType offset = ComputeBucketOffset(value);
+
     if (index >= buckets_.size() ||
         buckets_[index].start != ComputeBucketStart(value)) {
+      size_ += 1;
       InsertBucketFor(index, value);
-      return;
+      return std::make_pair(Iterator(this, index, offset), true);
     }
+
     auto& bucket = buckets_[index];
+    const auto mask = ComputeMaskForValue(value);
+    if (bucket.data & mask) {
+      return std::make_pair(Iterator(this, index, offset), false);
+    }
+
+    size_ += 1;
     bucket.data |= ComputeMaskForValue(value);
+    return std::make_pair(Iterator(this, index, offset), true);
   }
+
+  // Inserts `value` in the set if possible.
+  // Similar to `std::unordered_set::insert`, except the hint is ignored.
+  // Returns an iterator to the inserted element, or the element preventing
+  // insertion.
+  iterator insert(const_iterator, const T& value) {
+    return insert(value).first;
+  }
+
+  // Inserts `value` in the set if possible.
+  // Similar to `std::unordered_set::insert`, except the hint is ignored.
+  // Returns an iterator to the inserted element, or the element preventing
+  // insertion.
+  iterator insert(const_iterator, T&& value) { return insert(value).first; }
 
   // Removes the value `value` into the set.
   // The set is unchanged if the value is not in the set.
-  void Remove(T value) {
+  size_t erase(const T& value) {
     const size_t index = FindBucketForValue(value);
     if (index >= buckets_.size() ||
         buckets_[index].start != ComputeBucketStart(value)) {
-      return;
+      return 0;
     }
+
     auto& bucket = buckets_[index];
-    bucket.data &= ~ComputeMaskForValue(value);
+    const auto mask = ComputeMaskForValue(value);
+    if (!(bucket.data & mask)) {
+      return 0;
+    }
+
+    size_ -= 1;
+    bucket.data &= ~mask;
     if (bucket.data == 0) {
       buckets_.erase(buckets_.cbegin() + index);
     }
+    return 1;
   }
 
   // Returns true if `value` is present in the set.
-  bool Contains(T value) const {
+  bool contains(T value) const {
     const size_t index = FindBucketForValue(value);
     if (index >= buckets_.size() ||
         buckets_[index].start != ComputeBucketStart(value)) {
@@ -149,12 +276,16 @@ class EnumSet {
     return bucket.data & ComputeMaskForValue(value);
   }
 
+  // Returns the 1 if `value` is present in the set, `0` otherwise.
+  inline size_t count(T value) const { return contains(value) ? 1 : 0; }
+
   // Calls `unaryFunction` once for each value in the set.
   // Values are sorted in increasing order using their numerical values.
+  // TODO(#5315): replace usages with either ranged-for or std::for_each.
   void ForEach(std::function<void(T)> unaryFunction) const {
     for (const auto& bucket : buckets_) {
-      for (uint8_t i = 0; i < kBucketSize; i++) {
-        if (bucket.data & (1ULL << i)) {
+      for (ElementType i = 0; i < kBucketSize; i++) {
+        if (bucket.data & (static_cast<BucketType>(1) << i)) {
           unaryFunction(GetValueFromBucket(bucket, i));
         }
       }
@@ -162,12 +293,14 @@ class EnumSet {
   }
 
   // Returns true if the set is holds no values.
-  bool IsEmpty() const { return buckets_.size() == 0; }
+  inline bool empty() const { return size_ == 0; }
+
+  size_t size() const { return size_; }
 
   // Returns true if this set contains at least one value contained in `in_set`.
   // Note: If `in_set` is empty, this function returns true.
   bool HasAnyOf(const EnumSet<T>& in_set) const {
-    if (in_set.IsEmpty()) {
+    if (in_set.empty()) {
       return true;
     }
 
@@ -213,7 +346,7 @@ class EnumSet {
   }
 
   //  Returns the index of the bit that corresponds to `value` in the bucket.
-  static constexpr inline size_t ComputeBucketOffset(T value) {
+  static constexpr inline ElementType ComputeBucketOffset(T value) {
     return static_cast<ElementType>(value) % kBucketSize;
   }
 
@@ -225,7 +358,7 @@ class EnumSet {
   // Returns the `enum` stored in `bucket` at `offset`.
   // `offset` is the bit-offset in the bucket storage.
   static constexpr inline T GetValueFromBucket(const Bucket& bucket,
-                                               ElementType offset) {
+                                               BucketType offset) {
     return static_cast<T>(static_cast<ElementType>(bucket.start) + offset);
   }
 
@@ -277,8 +410,20 @@ class EnumSet {
 #endif
   }
 
+  // Returns true if the bucket at `bucketIndex/ stores the enum at
+  // `bucketOffset`, false otherwise.
+  bool HasEnumAt(size_t bucketIndex, BucketType bucketOffset) const {
+    assert(bucketIndex < buckets_.size());
+    assert(bucketOffset < kBucketSize);
+    return buckets_[bucketIndex].data & (1ULL << bucketOffset);
+  }
+
   // Returns true if `lhs` and `rhs` hold the exact same values.
   friend bool operator==(const EnumSet& lhs, const EnumSet& rhs) {
+    if (lhs.size_ != rhs.size_) {
+      return false;
+    }
+
     if (lhs.buckets_.size() != rhs.buckets_.size()) {
       return false;
     }
@@ -292,6 +437,8 @@ class EnumSet {
 
   // Storage for the buckets.
   std::vector<Bucket> buckets_;
+  // How many enums is this set storing.
+  size_t size_;
 };
 
 // A set of spv::Capability.
