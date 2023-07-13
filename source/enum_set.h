@@ -119,6 +119,8 @@ class EnumSet {
     }
 
     T operator*() const {
+      assert(set_->HasEnumAt(bucketIndex_, bucketOffset_) &&
+             "operator*() called on an invalid iterator.");
       return GetValueFromBucket(set_->buckets_[bucketIndex_], bucketOffset_);
     }
 
@@ -143,11 +145,11 @@ class EnumSet {
         : set_(set), bucketIndex_(bucketIndex), bucketOffset_(bucketOffset) {}
 
    private:
-    const EnumSet* set_;
+    const EnumSet* set_ = nullptr;
     // Index of the bucket in the vector.
-    size_t bucketIndex_;
+    size_t bucketIndex_ = 0;
     // Offset in bits in the current bucket.
-    ElementType bucketOffset_;
+    ElementType bucketOffset_ = 0;
 
     friend class EnumSet;
   };
@@ -159,7 +161,18 @@ class EnumSet {
 
  public:
   iterator cbegin() const noexcept {
-    return iterator(this, /* bucketIndex= */ 0, /* bucketOffset= */ 0);
+    auto it = iterator(this, /* bucketIndex= */ 0, /* bucketOffset= */ 0);
+    if (buckets_.size() == 0) {
+      return it;
+    }
+
+    // The iterator has the logic to find the next valid bit. If the value 0
+    // is not stored, use it to find the next valid bit.
+    if (!HasEnumAt(it.bucketIndex_, it.bucketOffset_)) {
+      ++it;
+    }
+
+    return it;
   }
 
   iterator begin() const noexcept { return cbegin(); }
@@ -440,7 +453,7 @@ class EnumSet {
   // Storage for the buckets.
   std::vector<Bucket> buckets_;
   // How many enums is this set storing.
-  size_t size_;
+  size_t size_ = 0;
 };
 
 // A set of spv::Capability.

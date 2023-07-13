@@ -629,6 +629,61 @@ TEST(CapabilitySet, IteratorBeginToEndPrefixStep) {
   }
 }
 
+TEST(CapabilitySet, IteratorBeginOnEmpty) {
+  CapabilitySet set;
+
+  auto begin = set.begin();
+  auto end = set.end();
+  ASSERT_EQ(begin, end);
+}
+
+TEST(CapabilitySet, IteratorBeginOnSingleNonZeroValue) {
+  CapabilitySet set;
+  set.insert(spv::Capability::Shader);
+
+  auto begin = set.begin();
+  auto end = set.end();
+
+  ASSERT_NE(begin, end);
+  ASSERT_EQ(*begin, spv::Capability::Shader);
+}
+
+TEST(CapabilitySet, IteratorForLoopNonZeroValue) {
+  CapabilitySet set;
+  set.insert(spv::Capability::Shader);
+  set.insert(spv::Capability::Tessellation);
+
+  auto begin = set.begin();
+  auto end = set.end();
+
+  ASSERT_NE(begin, end);
+  ASSERT_EQ(*begin, spv::Capability::Shader);
+
+  begin++;
+  ASSERT_NE(begin, end);
+  ASSERT_EQ(*begin, spv::Capability::Tessellation);
+
+  begin++;
+  ASSERT_EQ(begin, end);
+}
+
+TEST(CapabilitySet, IteratorPastEnd) {
+  CapabilitySet set;
+  set.insert(spv::Capability::Shader);
+
+  auto begin = set.begin();
+  auto end = set.end();
+
+  ASSERT_NE(begin, end);
+  ASSERT_EQ(*begin, spv::Capability::Shader);
+
+  begin++;
+  ASSERT_EQ(begin, end);
+
+  begin++;
+  ASSERT_EQ(begin, end);
+}
+
 TEST(CapabilitySet, CompatibleWithSTLFind) {
   CapabilitySet set;
   set.insert(spv::Capability::Matrix);
