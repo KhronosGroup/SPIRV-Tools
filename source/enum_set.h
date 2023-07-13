@@ -243,7 +243,8 @@ class EnumSet {
   iterator insert(const_iterator, T&& value) { return insert(value).first; }
 
   // Removes the value `value` into the set.
-  // The set is unchanged if the value is not in the set.
+  // Similar to `std::unordered_set::erase`.
+  // Returns the number of erased elements.
   size_t erase(const T& value) {
     const size_t index = FindBucketForValue(value);
     if (index >= buckets_.size() ||
@@ -295,6 +296,7 @@ class EnumSet {
   // Returns true if the set is holds no values.
   inline bool empty() const { return size_ == 0; }
 
+  // Returns the number of enums stored in this set.
   size_t size() const { return size_; }
 
   // Returns true if this set contains at least one value contained in `in_set`.
