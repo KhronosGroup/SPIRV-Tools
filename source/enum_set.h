@@ -145,7 +145,7 @@ class EnumSet {
         : set_(set), bucketIndex_(bucketIndex), bucketOffset_(bucketOffset) {}
 
    private:
-    const EnumSet* set_;
+    const EnumSet* set_ = nullptr;
     // Index of the bucket in the vector.
     size_t bucketIndex_ = 0;
     // Offset in bits in the current bucket.
