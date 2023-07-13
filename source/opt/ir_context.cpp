@@ -251,6 +251,36 @@ bool IRContext::KillDef(uint32_t id) {
   return false;
 }
 
+bool IRContext::RemoveExtension(Extension extension) {
+  const std::string_view extensionName = ExtensionToString(extension);
+  bool removed = false;
+
+  const auto end = module()->extension_end();
+  for (auto it = module()->extension_begin(); it != end;) {
+    assert(it->NumOperands() == 1 && "Invalid extension instruction.");
+
+    if (extensionName != it->GetOperand(0).AsString()) {
+      ++it;
+      continue;
+    }
+
+    removed = true;
+    // `it` is an iterator on an intrusive list. Next is invalidated on the current node when
+    // an instruction is killed. The iterator must be moved forward before deleting the node.
+    auto instruction = &*it;
+    ++it;
+    KillInst(instruction);
+    // Note: nothing on the spec forbids a module to declare the same extension multiple times.
+    // This means we cannot break early once a declaration is removed.
+  }
+
+  if (feature_mgr_ != nullptr) {
+    feature_mgr_->RemoveExtension(extension);
+  }
+
+  return removed;
+}
+
 bool IRContext::ReplaceAllUsesWith(uint32_t before, uint32_t after) {
   return ReplaceAllUsesWithPredicate(before, after,
                                      [](Instruction*) { return true; });

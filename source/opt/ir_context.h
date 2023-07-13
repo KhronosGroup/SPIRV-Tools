@@ -26,6 +26,7 @@
 #include <utility>
 #include <vector>
 
+#include "source/enum_string_mapping.h"
 #include "source/assembly_grammar.h"
 #include "source/opt/cfg.h"
 #include "source/opt/constants.h"
@@ -159,7 +160,7 @@ class IRContext {
   inline IteratorRange<Module::inst_iterator> types_values();
   inline IteratorRange<Module::const_inst_iterator> types_values() const;
 
-  // Iterators for extension instructions contained in this module.
+  // Iterators for ext_inst import instructions contained in this module.
   inline Module::inst_iterator ext_inst_import_begin();
   inline Module::inst_iterator ext_inst_import_end();
   inline IteratorRange<Module::inst_iterator> ext_inst_imports();
@@ -210,6 +211,10 @@ class IRContext {
   // Appends an extension instruction to this module.
   inline void AddExtension(const std::string& ext_name);
   inline void AddExtension(std::unique_ptr<Instruction>&& e);
+  // Removes instruction declaring `extension` from this module.
+  // Returns true if the extension was removed, false otherwise.
+  bool RemoveExtension(Extension extension);
+
   // Appends an extended instruction set instruction to this module.
   inline void AddExtInstImport(const std::string& name);
   inline void AddExtInstImport(std::unique_ptr<Instruction>&& e);
@@ -772,7 +777,7 @@ class IRContext {
 
   // Analyzes the features in the owned module. Builds the manager if required.
   void AnalyzeFeatures() {
-    feature_mgr_ = MakeUnique<FeatureManager>(grammar_);
+    feature_mgr_ = std::unique_ptr<FeatureManager>(new FeatureManager(grammar_));
     feature_mgr_->Analyze(module());
   }
 

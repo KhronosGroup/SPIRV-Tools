@@ -25,26 +25,14 @@ namespace opt {
 // Tracks features enabled by a module. The IRContext has a FeatureManager.
 class FeatureManager {
  public:
-  explicit FeatureManager(const AssemblyGrammar& grammar) : grammar_(grammar) {}
-
   // Returns true if |ext| is an enabled extension in the module.
   bool HasExtension(Extension ext) const { return extensions_.contains(ext); }
-
-  // Removes the given |extension| from the current FeatureManager.
-  void RemoveExtension(Extension extension);
 
   // Returns true if |cap| is an enabled capability in the module.
   bool HasCapability(spv::Capability cap) const {
     return capabilities_.contains(cap);
   }
 
-  // Removes the given |capability| from the current FeatureManager.
-  void RemoveCapability(spv::Capability capability);
-
-  // Analyzes |module| and records enabled extensions and capabilities.
-  void Analyze(Module* module);
-
-  CapabilitySet* GetCapabilities() { return &capabilities_; }
   const CapabilitySet* GetCapabilities() const { return &capabilities_; }
 
   uint32_t GetExtInstImportId_GLSLstd450() const {
@@ -64,22 +52,35 @@ class FeatureManager {
     return !(a == b);
   }
 
-  // Adds the given |capability| and all implied capabilities into the current
-  // FeatureManager.
-  void AddCapability(spv::Capability capability);
+ private:
+  explicit FeatureManager(const AssemblyGrammar& grammar) : grammar_(grammar) {}
+
+  // Analyzes |module| and records enabled extensions and capabilities.
+  void Analyze(Module* module);
 
   // Add the extension |ext| to the feature manager.
   void AddExtension(Instruction* ext);
 
-  // Analyzes |module| and records imported external instruction sets.
-  void AddExtInstImportIds(Module* module);
-
- private:
   // Analyzes |module| and records enabled extensions.
   void AddExtensions(Module* module);
 
+  // Removes the given |extension| from the current FeatureManager.
+  void RemoveExtension(Extension extension);
+
+  // Adds the given |capability| and all implied capabilities into the current
+  // FeatureManager.
+  void AddCapability(spv::Capability capability);
+
   // Analyzes |module| and records enabled capabilities.
   void AddCapabilities(Module* module);
+
+  // Removes the given |capability| from the current FeatureManager.
+  void RemoveCapability(spv::Capability capability);
+
+  CapabilitySet* GetCapabilities() { return &capabilities_; }
+
+  // Analyzes |module| and records imported external instruction sets.
+  void AddExtInstImportIds(Module* module);
 
   // Auxiliary object for querying SPIR-V grammar facts.
   const AssemblyGrammar& grammar_;
@@ -100,6 +101,8 @@ class FeatureManager {
   // Common NonSemanticShader100DebugInfo external instruction import ids,
   // cached for performance.
   uint32_t extinst_importid_Shader100DebugInfo_ = 0;
+
+  friend class IRContext;
 };
 
 }  // namespace opt

@@ -1173,6 +1173,99 @@ TEST_P(TargetEnvCompareTest, Case) {
   }
 }
 
+TEST_F(IRContextTest, RemoveSingleExtension) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability ShaderClockKHR
+               OpCapability Int64
+               OpExtension "SPV_KHR_shader_clock"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+     %uint_1 = OpConstant %uint 1
+          %6 = OpTypeFunction %void
+       %bool = OpTypeBool
+          %8 = OpUndef %bool
+          %1 = OpFunction %void None %6
+          %9 = OpLabel
+         %10 = OpReadClockKHR %ulong %uint_1
+               OpReturn
+               OpFunctionEnd)";
+
+  std::unique_ptr<IRContext> ctx =
+      BuildModule(SPV_ENV_UNIVERSAL_1_6, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
+  EXPECT_FALSE(ctx->module()->extension_begin() == ctx->module()->extension_end());
+
+  EXPECT_TRUE(ctx->RemoveExtension(kSPV_KHR_shader_clock));
+
+  EXPECT_FALSE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
+  EXPECT_TRUE(ctx->module()->extension_begin() == ctx->module()->extension_end());
+}
+
+TEST_F(IRContextTest, DontRemoveOtherExtensions) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_device_group"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+          %6 = OpTypeFunction %void
+       %bool = OpTypeBool
+          %8 = OpUndef %bool
+          %1 = OpFunction %void None %6
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd)";
+  std::unique_ptr<IRContext> ctx =
+      BuildModule(SPV_ENV_UNIVERSAL_1_6, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_device_group));
+
+  EXPECT_FALSE(ctx->RemoveExtension(kSPV_KHR_shader_clock));
+
+  EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_device_group));
+}
+
+TEST_F(IRContextTest, RemoveMultipleExtensions) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability ShaderClockKHR
+               OpCapability Int64
+               OpExtension "SPV_KHR_shader_clock"
+               OpExtension "SPV_KHR_shader_clock"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+     %uint_1 = OpConstant %uint 1
+          %6 = OpTypeFunction %void
+       %bool = OpTypeBool
+          %8 = OpUndef %bool
+          %1 = OpFunction %void None %6
+          %9 = OpLabel
+         %10 = OpReadClockKHR %ulong %uint_1
+               OpReturn
+               OpFunctionEnd)";
+
+  std::unique_ptr<IRContext> ctx =
+      BuildModule(SPV_ENV_UNIVERSAL_1_6, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
+  EXPECT_FALSE(ctx->module()->extension_begin() == ctx->module()->extension_end());
+
+  EXPECT_TRUE(ctx->RemoveExtension(kSPV_KHR_shader_clock));
+
+  EXPECT_FALSE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
+  EXPECT_TRUE(ctx->module()->extension_begin() == ctx->module()->extension_end());
+}
+
 INSTANTIATE_TEST_SUITE_P(
     TestCase, TargetEnvCompareTest,
     ::testing::Values(
