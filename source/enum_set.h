@@ -167,7 +167,7 @@ class EnumSet {
     }
 
     // The iterator has the logic to find the next valid bit. If the value 0
-    // if not stored, use it to find the next valid bit.
+    // is not stored, use it to find the next valid bit.
     if (!HasEnumAt(it.bucketIndex_, it.bucketOffset_)) {
       ++it;
     }
