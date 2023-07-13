@@ -57,8 +57,10 @@ void FeatureManager::AddCapability(spv::Capability cap) {
   spv_operand_desc desc = {};
   if (SPV_SUCCESS == grammar_.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
                                             uint32_t(cap), &desc)) {
-    CapabilitySet(desc->numCapabilities, desc->capabilities)
-        .ForEach([this](spv::Capability c) { AddCapability(c); });
+    for (auto capability :
+         CapabilitySet(desc->numCapabilities, desc->capabilities)) {
+      AddCapability(capability);
+    }
   }
 }
 

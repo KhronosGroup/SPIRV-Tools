@@ -366,8 +366,10 @@ void ValidationState_t::RegisterCapability(spv::Capability cap) {
   spv_operand_desc desc;
   if (SPV_SUCCESS == grammar_.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
                                             uint32_t(cap), &desc)) {
-    CapabilitySet(desc->numCapabilities, desc->capabilities)
-        .ForEach([this](spv::Capability c) { RegisterCapability(c); });
+    for (auto capability :
+         CapabilitySet(desc->numCapabilities, desc->capabilities)) {
+      RegisterCapability(capability);
+    }
   }
 
   switch (cap) {

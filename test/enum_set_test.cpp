@@ -463,17 +463,6 @@ EnumSet<TestEnum> createSetUnorderedInsertion(
 }
 }  // namespace
 
-TEST(CapabilitySet, ForEachOrderIsEnumOrder) {
-  auto orderedValues = enumerateValuesFromToWithStep(0, 500, /* step= */ 1);
-  auto set = createSetUnorderedInsertion(orderedValues);
-
-  size_t index = 0;
-  set.ForEach([&orderedValues, &index](auto value) {
-    EXPECT_THAT(value, Eq(orderedValues[index]));
-    index++;
-  });
-}
-
 TEST(CapabilitySet, RangeBasedLoopOrderIsEnumOrder) {
   auto orderedValues = enumerateValuesFromToWithStep(0, 2, /* step= */ 1);
   auto set = createSetUnorderedInsertion(orderedValues);

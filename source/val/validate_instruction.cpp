@@ -38,14 +38,14 @@ namespace {
 std::string ToString(const CapabilitySet& capabilities,
                      const AssemblyGrammar& grammar) {
   std::stringstream ss;
-  capabilities.ForEach([&grammar, &ss](spv::Capability cap) {
+  for (auto capability : capabilities) {
     spv_operand_desc desc;
     if (SPV_SUCCESS == grammar.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
-                                             uint32_t(cap), &desc))
+                                             uint32_t(capability), &desc))
       ss << desc->name << " ";
     else
-      ss << uint32_t(cap) << " ";
-  });
+      ss << uint32_t(capability) << " ";
+  }
   return ss.str();
 }
 
