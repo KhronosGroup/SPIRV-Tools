@@ -293,19 +293,6 @@ class EnumSet {
   // Returns the 1 if `value` is present in the set, `0` otherwise.
   inline size_t count(T value) const { return contains(value) ? 1 : 0; }
 
-  // Calls `unaryFunction` once for each value in the set.
-  // Values are sorted in increasing order using their numerical values.
-  // TODO(#5315): replace usages with either ranged-for or std::for_each.
-  void ForEach(std::function<void(T)> unaryFunction) const {
-    for (const auto& bucket : buckets_) {
-      for (ElementType i = 0; i < kBucketSize; i++) {
-        if (bucket.data & (static_cast<BucketType>(1) << i)) {
-          unaryFunction(GetValueFromBucket(bucket, i));
-        }
-      }
-    }
-  }
-
   // Returns true if the set is holds no values.
   inline bool empty() const { return size_ == 0; }
 
