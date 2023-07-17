@@ -1173,24 +1173,16 @@ TEST_P(TargetEnvCompareTest, Case) {
   }
 }
 
-TEST_F(IRContextTest, RemoveSingleExtension) {
+TEST_F(IRContextTest, ReturnsTrueWhenExtensionIsRemoved) {
   const std::string text = R"(
                OpCapability Shader
-               OpCapability ShaderClockKHR
-               OpCapability Int64
                OpExtension "SPV_KHR_shader_clock"
                OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %1 "main"
        %void = OpTypeVoid
-       %uint = OpTypeInt 32 0
-      %ulong = OpTypeInt 64 0
-     %uint_1 = OpConstant %uint 1
           %6 = OpTypeFunction %void
-       %bool = OpTypeBool
-          %8 = OpUndef %bool
           %1 = OpFunction %void None %6
           %9 = OpLabel
-         %10 = OpReadClockKHR %ulong %uint_1
                OpReturn
                OpFunctionEnd)";
 
@@ -1198,28 +1190,88 @@ TEST_F(IRContextTest, RemoveSingleExtension) {
       BuildModule(SPV_ENV_UNIVERSAL_1_6, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
-  EXPECT_FALSE(ctx->module()->extension_begin() ==
-               ctx->module()->extension_end());
+  EXPECT_EQ(std::distance(ctx->module()->extension_begin(),
+                          ctx->module()->extension_end()),
+            1);
 
   EXPECT_TRUE(ctx->RemoveExtension(kSPV_KHR_shader_clock));
 
   EXPECT_FALSE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
-  EXPECT_TRUE(ctx->module()->extension_begin() ==
-              ctx->module()->extension_end());
+  EXPECT_EQ(std::distance(ctx->module()->extension_begin(),
+                          ctx->module()->extension_end()),
+            0);
 }
 
-TEST_F(IRContextTest, DontRemoveOtherExtensions) {
+TEST_F(IRContextTest, ReturnsFalseWhenExtensionIsNotRemoved) {
   const std::string text = R"(
                OpCapability Shader
                OpExtension "SPV_KHR_device_group"
                OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %1 "main"
        %void = OpTypeVoid
-       %uint = OpTypeInt 32 0
-     %uint_1 = OpConstant %uint 1
           %6 = OpTypeFunction %void
-       %bool = OpTypeBool
-          %8 = OpUndef %bool
+          %1 = OpFunction %void None %6
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd)";
+
+  std::unique_ptr<IRContext> ctx =
+      BuildModule(SPV_ENV_UNIVERSAL_1_6, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_device_group));
+  EXPECT_EQ(std::distance(ctx->module()->extension_begin(),
+                          ctx->module()->extension_end()),
+            1);
+
+  EXPECT_FALSE(ctx->RemoveExtension(kSPV_KHR_shader_clock));
+
+  EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_device_group));
+  EXPECT_EQ(std::distance(ctx->module()->extension_begin(),
+                          ctx->module()->extension_end()),
+            1);
+}
+
+TEST_F(IRContextTest, RemovesExtensionIfLast) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_device_group"
+               OpExtension "SPV_KHR_shader_clock"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+          %6 = OpTypeFunction %void
+          %1 = OpFunction %void None %6
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd)";
+
+  std::unique_ptr<IRContext> ctx =
+      BuildModule(SPV_ENV_UNIVERSAL_1_6, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_device_group));
+  EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
+  EXPECT_EQ(std::distance(ctx->module()->extension_begin(),
+                          ctx->module()->extension_end()),
+            2);
+
+  EXPECT_TRUE(ctx->RemoveExtension(kSPV_KHR_shader_clock));
+
+  EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_device_group));
+  EXPECT_FALSE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
+  EXPECT_EQ(std::distance(ctx->module()->extension_begin(),
+                          ctx->module()->extension_end()),
+            1);
+}
+
+TEST_F(IRContextTest, RemovesExtensionIfFirst) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_shader_clock"
+               OpExtension "SPV_KHR_device_group"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+          %6 = OpTypeFunction %void
           %1 = OpFunction %void None %6
           %9 = OpLabel
                OpReturn
@@ -1228,31 +1280,31 @@ TEST_F(IRContextTest, DontRemoveOtherExtensions) {
       BuildModule(SPV_ENV_UNIVERSAL_1_6, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_device_group));
+  EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
+  EXPECT_EQ(std::distance(ctx->module()->extension_begin(),
+                          ctx->module()->extension_end()),
+            2);
 
-  EXPECT_FALSE(ctx->RemoveExtension(kSPV_KHR_shader_clock));
+  EXPECT_TRUE(ctx->RemoveExtension(kSPV_KHR_shader_clock));
 
   EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_device_group));
+  EXPECT_FALSE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
+  EXPECT_EQ(std::distance(ctx->module()->extension_begin(),
+                          ctx->module()->extension_end()),
+            1);
 }
 
-TEST_F(IRContextTest, RemoveMultipleExtensions) {
+TEST_F(IRContextTest, RemovesMultipleExtensions) {
   const std::string text = R"(
                OpCapability Shader
-               OpCapability ShaderClockKHR
-               OpCapability Int64
                OpExtension "SPV_KHR_shader_clock"
                OpExtension "SPV_KHR_shader_clock"
                OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %1 "main"
        %void = OpTypeVoid
-       %uint = OpTypeInt 32 0
-      %ulong = OpTypeInt 64 0
-     %uint_1 = OpConstant %uint 1
           %6 = OpTypeFunction %void
-       %bool = OpTypeBool
-          %8 = OpUndef %bool
           %1 = OpFunction %void None %6
           %9 = OpLabel
-         %10 = OpReadClockKHR %ulong %uint_1
                OpReturn
                OpFunctionEnd)";
 
@@ -1260,14 +1312,113 @@ TEST_F(IRContextTest, RemoveMultipleExtensions) {
       BuildModule(SPV_ENV_UNIVERSAL_1_6, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
-  EXPECT_FALSE(ctx->module()->extension_begin() ==
-               ctx->module()->extension_end());
+  EXPECT_EQ(std::distance(ctx->module()->extension_begin(),
+                          ctx->module()->extension_end()),
+            2);
 
   EXPECT_TRUE(ctx->RemoveExtension(kSPV_KHR_shader_clock));
 
   EXPECT_FALSE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
-  EXPECT_TRUE(ctx->module()->extension_begin() ==
-              ctx->module()->extension_end());
+  EXPECT_EQ(std::distance(ctx->module()->extension_begin(),
+                          ctx->module()->extension_end()),
+            0);
+}
+
+TEST_F(IRContextTest, ReturnsTrueWhenCapabilityIsRemoved) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability ShaderClockKHR
+               OpExtension "SPV_KHR_shader_clock"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+          %6 = OpTypeFunction %void
+          %1 = OpFunction %void None %6
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd)";
+
+  std::unique_ptr<IRContext> ctx =
+      BuildModule(SPV_ENV_UNIVERSAL_1_6, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_TRUE(
+      ctx->get_feature_mgr()->HasCapability(spv::Capability::ShaderClockKHR));
+  EXPECT_EQ(std::distance(ctx->module()->capability_begin(),
+                          ctx->module()->capability_end()),
+            2);
+
+  EXPECT_TRUE(ctx->RemoveCapability(spv::Capability::ShaderClockKHR));
+
+  EXPECT_FALSE(
+      ctx->get_feature_mgr()->HasCapability(spv::Capability::ShaderClockKHR));
+  EXPECT_EQ(std::distance(ctx->module()->capability_begin(),
+                          ctx->module()->capability_end()),
+            1);
+}
+
+TEST_F(IRContextTest, ReturnsFalseWhenCapabilityIsNotRemoved) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability DeviceGroup
+               OpExtension "SPV_KHR_device_group"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+          %6 = OpTypeFunction %void
+          %1 = OpFunction %void None %6
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd)";
+
+  std::unique_ptr<IRContext> ctx =
+      BuildModule(SPV_ENV_UNIVERSAL_1_6, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_TRUE(
+      ctx->get_feature_mgr()->HasCapability(spv::Capability::DeviceGroup));
+  EXPECT_EQ(std::distance(ctx->module()->capability_begin(),
+                          ctx->module()->capability_end()),
+            2);
+
+  EXPECT_FALSE(ctx->RemoveCapability(spv::Capability::ShaderClockKHR));
+
+  EXPECT_TRUE(
+      ctx->get_feature_mgr()->HasCapability(spv::Capability::DeviceGroup));
+  EXPECT_EQ(std::distance(ctx->module()->capability_begin(),
+                          ctx->module()->capability_end()),
+            2);
+}
+
+TEST_F(IRContextTest, RemovesMultipleCapabilities) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability DeviceGroup
+               OpCapability DeviceGroup
+               OpExtension "SPV_KHR_device_group"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+          %6 = OpTypeFunction %void
+          %1 = OpFunction %void None %6
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd)";
+
+  std::unique_ptr<IRContext> ctx =
+      BuildModule(SPV_ENV_UNIVERSAL_1_6, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_TRUE(
+      ctx->get_feature_mgr()->HasCapability(spv::Capability::DeviceGroup));
+  EXPECT_EQ(std::distance(ctx->module()->capability_begin(),
+                          ctx->module()->capability_end()),
+            3);
+
+  EXPECT_TRUE(ctx->RemoveCapability(spv::Capability::DeviceGroup));
+
+  EXPECT_FALSE(
+      ctx->get_feature_mgr()->HasCapability(spv::Capability::DeviceGroup));
+  EXPECT_EQ(std::distance(ctx->module()->capability_begin(),
+                          ctx->module()->capability_end()),
+            1);
 }
 
 INSTANTIATE_TEST_SUITE_P(
