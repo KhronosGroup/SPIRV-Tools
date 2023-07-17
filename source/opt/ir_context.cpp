@@ -220,6 +220,28 @@ Instruction* IRContext::KillInst(Instruction* inst) {
   return next_instruction;
 }
 
+bool IRContext::KillInstructionIf(Module::inst_iterator begin,
+                                  Module::inst_iterator end,
+                                  std::function<bool(Instruction*)> condition) {
+  bool removed = false;
+  for (auto it = begin; it != end;) {
+    if (!condition(&*it)) {
+      ++it;
+      continue;
+    }
+
+    removed = true;
+    // `it` is an iterator on an intrusive list. Next is invalidated on the
+    // current node when an instruction is killed. The iterator must be moved
+    // forward before deleting the node.
+    auto instruction = &*it;
+    ++it;
+    KillInst(instruction);
+  }
+
+  return removed;
+}
+
 void IRContext::CollectNonSemanticTree(
     Instruction* inst, std::unordered_set<Instruction*>* to_kill) {
   if (!inst->HasResultId()) return;
@@ -251,32 +273,30 @@ bool IRContext::KillDef(uint32_t id) {
   return false;
 }
 
-bool IRContext::RemoveExtension(Extension extension) {
-  const std::string_view extensionName = ExtensionToString(extension);
-  bool removed = false;
+bool IRContext::RemoveCapability(spv::Capability capability) {
+  const bool removed = KillInstructionIf(
+      module()->capability_begin(), module()->capability_end(),
+      [capability](Instruction* inst) {
+        return static_cast<spv::Capability>(inst->GetSingleWordOperand(0)) ==
+               capability;
+      });
 
-  const auto end = module()->extension_end();
-  for (auto it = module()->extension_begin(); it != end;) {
-    assert(it->NumOperands() == 1 && "Invalid extension instruction.");
-
-    if (extensionName != it->GetOperand(0).AsString()) {
-      ++it;
-      continue;
-    }
-
-    removed = true;
-    // `it` is an iterator on an intrusive list. Next is invalidated on the
-    // current node when an instruction is killed. The iterator must be moved
-    // forward before deleting the node.
-    auto instruction = &*it;
-    ++it;
-    KillInst(instruction);
-    // Note: nothing on the spec forbids a module to declare the same extension
-    // multiple times. This means we cannot break early once a declaration is
-    // removed.
+  if (removed && feature_mgr_ != nullptr) {
+    feature_mgr_->RemoveCapability(capability);
   }
 
-  if (feature_mgr_ != nullptr) {
+  return removed;
+}
+
+bool IRContext::RemoveExtension(Extension extension) {
+  const std::string_view extensionName = ExtensionToString(extension);
+  const bool removed = KillInstructionIf(
+      module()->extension_begin(), module()->extension_end(),
+      [&extensionName](Instruction* inst) {
+        return inst->GetOperand(0).AsString() == extensionName;
+      });
+
+  if (removed && feature_mgr_ != nullptr) {
     feature_mgr_->RemoveExtension(extension);
   }
 

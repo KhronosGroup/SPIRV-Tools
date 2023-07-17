@@ -205,9 +205,12 @@ class IRContext {
 
   // Add |capability| to the module, if it is not already enabled.
   inline void AddCapability(spv::Capability capability);
-
   // Appends a capability instruction to this module.
   inline void AddCapability(std::unique_ptr<Instruction>&& c);
+  // Removes instruction declaring `capability` from this module.
+  // Returns true if the capability was removed, false otherwise.
+  bool RemoveCapability(spv::Capability capability);
+
   // Appends an extension instruction to this module.
   inline void AddExtension(const std::string& ext_name);
   inline void AddExtension(std::unique_ptr<Instruction>&& e);
@@ -426,6 +429,15 @@ class IRContext {
   // Returns a pointer to the instruction after |inst| or |nullptr| if no such
   // instruction exists.
   Instruction* KillInst(Instruction* inst);
+
+  // Deletes all the instruction in the range [`begin`; `end`[, for which the
+  // unary predicate `condition` returned true.
+  // Returns true if at least one instruction was removed, false otherwise.
+  //
+  // Pointer and iterator pointing to the deleted instructions become invalid.
+  // However other pointers and iterators are still valid.
+  bool KillInstructionIf(Module::inst_iterator begin, Module::inst_iterator end,
+                         std::function<bool(Instruction*)> condition);
 
   // Collects the non-semantic instruction tree that uses |inst|'s result id
   // to be killed later.
