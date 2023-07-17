@@ -15,9 +15,9 @@
 #ifndef SOURCE_OPT_MODULE_H_
 #define SOURCE_OPT_MODULE_H_
 
-#include <string_view>
 #include <functional>
 #include <memory>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>

@@ -265,13 +265,15 @@ bool IRContext::RemoveExtension(Extension extension) {
     }
 
     removed = true;
-    // `it` is an iterator on an intrusive list. Next is invalidated on the current node when
-    // an instruction is killed. The iterator must be moved forward before deleting the node.
+    // `it` is an iterator on an intrusive list. Next is invalidated on the
+    // current node when an instruction is killed. The iterator must be moved
+    // forward before deleting the node.
     auto instruction = &*it;
     ++it;
     KillInst(instruction);
-    // Note: nothing on the spec forbids a module to declare the same extension multiple times.
-    // This means we cannot break early once a declaration is removed.
+    // Note: nothing on the spec forbids a module to declare the same extension
+    // multiple times. This means we cannot break early once a declaration is
+    // removed.
   }
 
   if (feature_mgr_ != nullptr) {

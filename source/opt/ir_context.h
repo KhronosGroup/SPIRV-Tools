@@ -26,8 +26,8 @@
 #include <utility>
 #include <vector>
 
-#include "source/enum_string_mapping.h"
 #include "source/assembly_grammar.h"
+#include "source/enum_string_mapping.h"
 #include "source/opt/cfg.h"
 #include "source/opt/constants.h"
 #include "source/opt/debug_info_manager.h"
@@ -777,7 +777,8 @@ class IRContext {
 
   // Analyzes the features in the owned module. Builds the manager if required.
   void AnalyzeFeatures() {
-    feature_mgr_ = std::unique_ptr<FeatureManager>(new FeatureManager(grammar_));
+    feature_mgr_ =
+        std::unique_ptr<FeatureManager>(new FeatureManager(grammar_));
     feature_mgr_->Analyze(module());
   }
 

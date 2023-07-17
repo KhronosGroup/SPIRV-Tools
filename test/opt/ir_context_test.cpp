@@ -1198,12 +1198,14 @@ TEST_F(IRContextTest, RemoveSingleExtension) {
       BuildModule(SPV_ENV_UNIVERSAL_1_6, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
-  EXPECT_FALSE(ctx->module()->extension_begin() == ctx->module()->extension_end());
+  EXPECT_FALSE(ctx->module()->extension_begin() ==
+               ctx->module()->extension_end());
 
   EXPECT_TRUE(ctx->RemoveExtension(kSPV_KHR_shader_clock));
 
   EXPECT_FALSE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
-  EXPECT_TRUE(ctx->module()->extension_begin() == ctx->module()->extension_end());
+  EXPECT_TRUE(ctx->module()->extension_begin() ==
+              ctx->module()->extension_end());
 }
 
 TEST_F(IRContextTest, DontRemoveOtherExtensions) {
@@ -1258,12 +1260,14 @@ TEST_F(IRContextTest, RemoveMultipleExtensions) {
       BuildModule(SPV_ENV_UNIVERSAL_1_6, nullptr, text,
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   EXPECT_TRUE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
-  EXPECT_FALSE(ctx->module()->extension_begin() == ctx->module()->extension_end());
+  EXPECT_FALSE(ctx->module()->extension_begin() ==
+               ctx->module()->extension_end());
 
   EXPECT_TRUE(ctx->RemoveExtension(kSPV_KHR_shader_clock));
 
   EXPECT_FALSE(ctx->get_feature_mgr()->HasExtension(kSPV_KHR_shader_clock));
-  EXPECT_TRUE(ctx->module()->extension_begin() == ctx->module()->extension_end());
+  EXPECT_TRUE(ctx->module()->extension_begin() ==
+              ctx->module()->extension_end());
 }
 
 INSTANTIATE_TEST_SUITE_P(
