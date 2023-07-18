@@ -90,9 +90,8 @@ TEST_P(AssemblyGrammarTest, ReportsCorrectTargetEnv) {
   EXPECT_EQ(grammar().target_env(), target_env());
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    AssemblyGrammarTestSuite, AssemblyGrammarTest,
-    ValuesIn(spvtest::AllTargetEnvironments()));
+INSTANTIATE_TEST_SUITE_P(AssemblyGrammarTestSuite, AssemblyGrammarTest,
+                         ValuesIn(spvtest::AllTargetEnvironments()));
 
 TEST_P(AssemblyGrammarExtensionTest, CheckExtensionDeclaredForCapability) {
   const spv_target_env target_env = std::get<0>(GetParam());
