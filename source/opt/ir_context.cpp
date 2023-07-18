@@ -770,7 +770,7 @@ void IRContext::AddCombinatorsForExtension(Instruction* extension) {
 }
 
 void IRContext::InitializeCombinators() {
-  for (auto capability : *get_feature_mgr()->GetCapabilities()) {
+  for (auto capability : get_feature_mgr()->GetCapabilities()) {
     AddCombinatorsForCapability(uint32_t(capability));
   }
 
