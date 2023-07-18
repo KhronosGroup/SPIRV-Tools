@@ -190,6 +190,21 @@ CapabilitySet AssemblyGrammar::filterCapsAgainstTargetEnv(
   return cap_set;
 }
 
+ExtensionSet AssemblyGrammar::getExtensionsDeclaring(CapabilitySet capabilities) const {
+  ExtensionSet output;
+  const spv_operand_desc_t *desc = nullptr;
+  for (auto capability : capabilities) {
+    if (SPV_SUCCESS != lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, static_cast<uint32_t>(capability), &desc)) {
+      continue;
+    }
+
+    for (size_t i = 0; i < desc->numExtensions; i++) {
+      output.insert(desc->extensions[i]);
+    }
+  }
+  return output;
+}
+
 spv_result_t AssemblyGrammar::lookupOpcode(const char* name,
                                            spv_opcode_desc* desc) const {
   return spvOpcodeTableNameLookup(target_env_, opcodeTable_, name, desc);

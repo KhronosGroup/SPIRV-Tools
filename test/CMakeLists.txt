@@ -90,6 +90,7 @@ set(TEST_SOURCES
 
   assembly_context_test.cpp
   assembly_format_test.cpp
+  assembly_grammar_test.cpp
   binary_destroy_test.cpp
   binary_endianness_test.cpp
   binary_header_get_test.cpp

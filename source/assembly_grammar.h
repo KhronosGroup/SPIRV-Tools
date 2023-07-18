@@ -44,6 +44,11 @@ class AssemblyGrammar {
   CapabilitySet filterCapsAgainstTargetEnv(const spv::Capability* cap_array,
                                            uint32_t count) const;
 
+  // Returns all the extensions declaring at least one capability listed
+  // in `capabilities`.
+  // FIXME(#5332): makes the operand table depend on the target env.
+  ExtensionSet getExtensionsDeclaring(CapabilitySet capabilities) const;
+
   // Fills in the desc parameter with the information about the opcode
   // of the given name. Returns SPV_SUCCESS if the opcode was found, and
   // SPV_ERROR_INVALID_LOOKUP if the opcode does not exist.
