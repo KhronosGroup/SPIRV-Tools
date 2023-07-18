@@ -190,11 +190,14 @@ CapabilitySet AssemblyGrammar::filterCapsAgainstTargetEnv(
   return cap_set;
 }
 
-ExtensionSet AssemblyGrammar::getExtensionsDeclaring(CapabilitySet capabilities) const {
+ExtensionSet AssemblyGrammar::getExtensionsDeclaring(
+    CapabilitySet capabilities) const {
   ExtensionSet output;
-  const spv_operand_desc_t *desc = nullptr;
+  const spv_operand_desc_t* desc = nullptr;
   for (auto capability : capabilities) {
-    if (SPV_SUCCESS != lookupOperand(SPV_OPERAND_TYPE_CAPABILITY, static_cast<uint32_t>(capability), &desc)) {
+    if (SPV_SUCCESS != lookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
+                                     static_cast<uint32_t>(capability),
+                                     &desc)) {
       continue;
     }
 
