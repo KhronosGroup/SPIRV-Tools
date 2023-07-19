@@ -16,6 +16,16 @@ cmake_minimum_required(VERSION 3.17.2)
 
 project(spirv-tools)
 
+# Avoid a bug in CMake 3.22.1. By default it will set -std=c++11 for
+# targets in test/*, when those tests need -std=c++17.
+# https://github.com/KhronosGroup/SPIRV-Tools/issues/5340
+# The bug is fixed in CMake 3.22.2
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.22.1")
+  if (${CMAKE_VERSION} VERSION_LESS "3.22.2")
+    cmake_policy(SET CMP0128 NEW)
+  endif()
+endif()
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 enable_testing()
