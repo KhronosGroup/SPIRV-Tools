@@ -106,9 +106,9 @@ TEST_P(AssemblyGrammarExtensionTest, CheckExtensionDeclaredForCapability) {
 
 INSTANTIATE_TEST_SUITE_P(
     AssemblyGrammarExtensionTestSuite, AssemblyGrammarExtensionTest,
-    ValuesIn(
-        std::vector<std::tuple<spv_target_env, spv::Capability, ExtensionSet>>{
-            // clang-format off
+    ValuesIn(std::vector<
+             std::tuple<spv_target_env, spv::Capability, ExtensionSet>>{
+        // clang-format off
             {SPV_ENV_UNIVERSAL_1_0, spv::Capability::Matrix,  {}},
             {SPV_ENV_UNIVERSAL_1_0, spv::Capability::Shader,  {}},
             {SPV_ENV_UNIVERSAL_1_0, spv::Capability::Float16, {}},
@@ -141,8 +141,8 @@ INSTANTIATE_TEST_SUITE_P(
             {SPV_ENV_VULKAN_1_3, spv::Capability::FragmentBarycentricKHR,
               { kSPV_NV_fragment_shader_barycentric, kSPV_KHR_fragment_shader_barycentric }},
 
-            // clang-format on
-        }),
+        // clang-format on
+    }),
     AssemblyGrammarExtensionTest::PrintToStringParamName);
 
 }  // namespace

@@ -18,10 +18,10 @@
 #include <cassert>
 #include <cstring>
 
-#include "source/spirv_target_env.h"
 #include "source/ext_inst.h"
 #include "source/opcode.h"
 #include "source/operand.h"
+#include "source/spirv_target_env.h"
 #include "source/table.h"
 
 namespace spvtools {
