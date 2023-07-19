@@ -108,20 +108,40 @@ INSTANTIATE_TEST_SUITE_P(
     AssemblyGrammarExtensionTestSuite, AssemblyGrammarExtensionTest,
     ValuesIn(
         std::vector<std::tuple<spv_target_env, spv::Capability, ExtensionSet>>{
-            {SPV_ENV_UNIVERSAL_1_0, spv::Capability::Matrix, {}},
-            {SPV_ENV_UNIVERSAL_1_0, spv::Capability::Shader, {}},
-            {SPV_ENV_UNIVERSAL_1_0,
-             spv::Capability::Groups,
-             {kSPV_AMD_shader_ballot}},
+            // clang-format off
+            {SPV_ENV_UNIVERSAL_1_0, spv::Capability::Matrix,  {}},
+            {SPV_ENV_UNIVERSAL_1_0, spv::Capability::Shader,  {}},
             {SPV_ENV_UNIVERSAL_1_0, spv::Capability::Float16, {}},
-            {SPV_ENV_UNIVERSAL_1_0,
-             spv::Capability::MultiView,
-             {kSPV_KHR_multiview}},
 
-            // FIXME(#5332): This should report no extensions.
-            {SPV_ENV_VULKAN_1_3,
-             spv::Capability::MultiView,
-             {kSPV_KHR_multiview}},
+            // Those capabilities were brought into core.
+            // Extension requirement depend on the SPIRV version.
+            {SPV_ENV_UNIVERSAL_1_0, spv::Capability::MultiView,      { kSPV_KHR_multiview }},
+            {SPV_ENV_VULKAN_1_3,    spv::Capability::MultiView,      {}},
+            {SPV_ENV_VULKAN_1_0,    spv::Capability::DrawParameters, { kSPV_KHR_shader_draw_parameters }},
+            {SPV_ENV_VULKAN_1_3,    spv::Capability::DrawParameters, { }},
+
+            // This capability was added with Spirv 1.1.
+            // Not returning any extension is valid in both cases.
+            {SPV_ENV_UNIVERSAL_1_0,    spv::Capability::SubgroupDispatch, {}},
+            {SPV_ENV_UNIVERSAL_1_1,    spv::Capability::SubgroupDispatch, {}},
+
+            // Groups can be used with SPV_AMD_shader_ballot if some opcodes
+            // are used, but it is also a core capability.
+            {SPV_ENV_UNIVERSAL_1_0, spv::Capability::Groups,  {}},
+
+            // This capability implies RayQueryKHR & RayTracingKHR, each depending on an extension.
+            {SPV_ENV_VULKAN_1_3, spv::Capability::RayTraversalPrimitiveCullingKHR,  { kSPV_KHR_ray_query, kSPV_KHR_ray_tracing }},
+
+            // PerViewAttributesNV implies MultiView. But the extension is enough to allow the
+            // MultiView capability, even in 1.0 (No need for SPV_KHR_multiview).
+            {SPV_ENV_VULKAN_1_0, spv::Capability::PerViewAttributesNV,  { kSPV_NVX_multiview_per_view_attributes }},
+            {SPV_ENV_VULKAN_1_3, spv::Capability::PerViewAttributesNV,  { kSPV_NVX_multiview_per_view_attributes }},
+
+            // This capability can be enabled by either the core, of the vendor extension.
+            {SPV_ENV_VULKAN_1_3, spv::Capability::FragmentBarycentricKHR,
+              { kSPV_NV_fragment_shader_barycentric, kSPV_KHR_fragment_shader_barycentric }},
+
+            // clang-format on
         }),
     AssemblyGrammarExtensionTest::PrintToStringParamName);
 

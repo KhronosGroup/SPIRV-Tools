@@ -18,6 +18,7 @@
 #include <cassert>
 #include <cstring>
 
+#include "source/spirv_target_env.h"
 #include "source/ext_inst.h"
 #include "source/opcode.h"
 #include "source/operand.h"
@@ -199,6 +200,11 @@ ExtensionSet AssemblyGrammar::getExtensionsDeclaring(
                                      static_cast<uint32_t>(capability),
                                      &desc)) {
       continue;
+    }
+
+    // This capability is included in core, no need for extensions.
+    if (desc->minVersion <= spvVersionForTargetEnv(target_env_)) {
+      break;
     }
 
     for (size_t i = 0; i < desc->numExtensions; i++) {
