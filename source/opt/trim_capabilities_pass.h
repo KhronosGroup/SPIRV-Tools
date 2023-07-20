@@ -72,11 +72,14 @@ class TrimCapabilitiesPass : public Pass {
   // All the capabilities supported by this optimization pass. If your module
   // contains unsupported instruction, the pass could yield bad results.
   static constexpr std::array kSupportedCapabilities{
+      // clang-format off
+      spv::Capability::Groups,
       spv::Capability::Linkage,
+      spv::Capability::MinLod,
       spv::Capability::Shader,
       spv::Capability::ShaderClockKHR,
-      spv::Capability::Groups,
-      spv::Capability::MinLod
+      spv::Capability::StorageInputOutput16
+      // clang-format on
   };
 
   // Those capabilities disable all transformation of the module.
@@ -96,8 +99,11 @@ class TrimCapabilitiesPass : public Pass {
   TrimCapabilitiesPass(TrimCapabilitiesPass&&) = delete;
 
  private:
-  // Inserts every capability in `capabilities[capabilityCount]` supported by this pass into `output`.
-  inline void addSupportedCapabilitiesToSet(uint32_t capabilityCount, const spv::Capability* const capabilities, CapabilitySet *output) const {
+  // Inserts every capability in `capabilities[capabilityCount]` supported by
+  // this pass into `output`.
+  inline void addSupportedCapabilitiesToSet(
+      uint32_t capabilityCount, const spv::Capability* const capabilities,
+      CapabilitySet* output) const {
     for (uint32_t i = 0; i < capabilityCount; ++i) {
       if (supportedCapabilities_.contains(capabilities[i])) {
         output->insert(capabilities[i]);
@@ -105,22 +111,28 @@ class TrimCapabilitiesPass : public Pass {
     }
   }
 
-  // Given an `instruction`, determines the capabilities and extension it requires, and output them
-  // in `capabilities` and `extensions`.
-  // The returned capabilities form a subset of kSupportedCapabilities.
-  void addInstructionRequirements(Instruction *instruction, CapabilitySet *capabilities, ExtensionSet *extensions) const;
+  // Given an `instruction`, determines the capabilities and extension it
+  // requires, and output them in `capabilities` and `extensions`. The returned
+  // capabilities form a subset of kSupportedCapabilities.
+  void addInstructionRequirements(Instruction* instruction,
+                                  CapabilitySet* capabilities,
+                                  ExtensionSet* extensions) const;
 
   // Returns the list of required capabilities and extensions for the module.
   // The returned capabilities form a subset of kSupportedCapabilities.
-  std::pair<CapabilitySet, ExtensionSet> DetermineRequiredCapabilitiesAndExtensions() const;
+  std::pair<CapabilitySet, ExtensionSet>
+  DetermineRequiredCapabilitiesAndExtensions() const;
 
   // Trims capabilities not listed in `required_capabilities` if possible.
   // Returns whether or not the module was modified.
-  Pass::Status TrimUnrequiredCapabilities(const CapabilitySet& required_capabilities) const;
+  Pass::Status TrimUnrequiredCapabilities(
+      const CapabilitySet& required_capabilities) const;
 
-  // Trims extensions not listed in `required_extensions` if supported by this pass.
-  // An extensions is considered supported as soon as one capability this pass support requires it.
-  Pass::Status TrimUnrequiredExtensions(const ExtensionSet& required_extensions) const;
+  // Trims extensions not listed in `required_extensions` if supported by this
+  // pass. An extensions is considered supported as soon as one capability this
+  // pass support requires it.
+  Pass::Status TrimUnrequiredExtensions(
+      const ExtensionSet& required_extensions) const;
 
  public:
   const char* name() const override { return "trim-capabilities"; }
