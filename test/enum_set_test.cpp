@@ -286,6 +286,30 @@ constexpr std::array kCapabilities{
     spv::Capability::Max,
 };
 
+namespace {
+std::vector<TestEnum> enumerateValuesFromToWithStep(size_t start, size_t end,
+                                                    size_t step) {
+  assert(end > start && "end > start");
+  std::vector<TestEnum> orderedValues;
+  for (size_t i = start; i < end; i += step) {
+    orderedValues.push_back(static_cast<TestEnum>(i));
+  }
+  return orderedValues;
+}
+
+EnumSet<TestEnum> createSetUnorderedInsertion(
+    const std::vector<TestEnum>& values) {
+  std::vector shuffledValues(values.cbegin(), values.cend());
+  std::mt19937 rng(0);
+  std::shuffle(shuffledValues.begin(), shuffledValues.end(), rng);
+  EnumSet<TestEnum> set;
+  for (auto value : shuffledValues) {
+    set.insert(value);
+  }
+  return set;
+}
+}  // namespace
+
 TEST(EnumSet, IsEmpty1) {
   EnumSet<TestEnum> set;
   EXPECT_TRUE(set.empty());
@@ -439,29 +463,58 @@ TEST(EnumSet, DefaultIsEmpty) {
   }
 }
 
-namespace {
-std::vector<TestEnum> enumerateValuesFromToWithStep(size_t start, size_t end,
-                                                    size_t step) {
-  assert(end > start && "end > start");
-  std::vector<TestEnum> orderedValues;
-  for (size_t i = start; i < end; i += step) {
-    orderedValues.push_back(static_cast<TestEnum>(i));
-  }
-  return orderedValues;
+TEST(EnumSet, EqualityCompareEmpty) {
+  EnumSet<TestEnum> set1;
+  EnumSet<TestEnum> set2;
+
+  EXPECT_TRUE(set1 == set2);
+  EXPECT_FALSE(set1 != set2);
 }
 
-EnumSet<TestEnum> createSetUnorderedInsertion(
-    const std::vector<TestEnum>& values) {
-  std::vector shuffledValues(values.cbegin(), values.cend());
-  std::mt19937 rng(0);
-  std::shuffle(shuffledValues.begin(), shuffledValues.end(), rng);
-  EnumSet<TestEnum> set;
-  for (auto value : shuffledValues) {
-    set.insert(value);
-  }
-  return set;
+TEST(EnumSet, EqualityCompareSame) {
+  EnumSet<TestEnum> set1;
+  EnumSet<TestEnum> set2;
+
+  set1.insert(TestEnum::ONE);
+  set1.insert(TestEnum::TWENTY);
+  set2.insert(TestEnum::TWENTY);
+  set2.insert(TestEnum::ONE);
+
+  EXPECT_TRUE(set1 == set2);
+  EXPECT_FALSE(set1 != set2);
 }
-}  // namespace
+
+TEST(EnumSet, EqualityCompareDifferent) {
+  EnumSet<TestEnum> set1;
+  EnumSet<TestEnum> set2;
+
+  set1.insert(TestEnum::ONE);
+  set1.insert(TestEnum::TWENTY);
+  set2.insert(TestEnum::FIVE);
+  set2.insert(TestEnum::ONE);
+
+  EXPECT_FALSE(set1 == set2);
+  EXPECT_TRUE(set1 != set2);
+}
+
+TEST(EnumSet, ConstructFromIterators) {
+  auto orderedValues = enumerateValuesFromToWithStep(0, 2, /* step= */ 1);
+  EnumSet<TestEnum> set1 = createSetUnorderedInsertion(orderedValues);
+
+  EnumSet<TestEnum> set2(orderedValues.cbegin(), orderedValues.cend());
+
+  EXPECT_EQ(set1, set2);
+}
+
+TEST(EnumSet, InsertUsingIteratorRange) {
+  auto orderedValues = enumerateValuesFromToWithStep(0, 2, /* step= */ 1);
+  EnumSet<TestEnum> set1 = createSetUnorderedInsertion(orderedValues);
+
+  EnumSet<TestEnum> set2;
+  set2.insert(orderedValues.cbegin(), orderedValues.cend());
+
+  EXPECT_EQ(set1, set2);
+}
 
 TEST(CapabilitySet, RangeBasedLoopOrderIsEnumOrder) {
   auto orderedValues = enumerateValuesFromToWithStep(0, 2, /* step= */ 1);
