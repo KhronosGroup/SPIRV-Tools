@@ -33,7 +33,11 @@ class FeatureManager {
     return capabilities_.contains(cap);
   }
 
-  const CapabilitySet* GetCapabilities() const { return &capabilities_; }
+  // Returns the capabilities the module declares.
+  inline const CapabilitySet& GetCapabilities() const { return capabilities_; }
+
+  // Returns the extensions the module imports.
+  inline const ExtensionSet& GetExtensions() const { return extensions_; }
 
   uint32_t GetExtInstImportId_GLSLstd450() const {
     return extinst_importid_GLSLstd450_;
@@ -76,8 +80,6 @@ class FeatureManager {
 
   // Removes the given |capability| from the current FeatureManager.
   void RemoveCapability(spv::Capability capability);
-
-  CapabilitySet* GetCapabilities() { return &capabilities_; }
 
   // Analyzes |module| and records imported external instruction sets.
   void AddExtInstImportIds(Module* module);
