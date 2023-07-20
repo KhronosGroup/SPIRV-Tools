@@ -115,3 +115,12 @@ add_spvtools_unittest(TARGET opt
   LIBS SPIRV-Tools-opt
   PCH_FILE pch_test_opt
 )
+if (NOT "${SPIRV_SKIP_TESTS}" AND TARGET gmock_main)
+  if (MSVC)
+    if (${MSVC_VERSION} LESS 1920)
+      # The VS 2017 debug build requires /bigobj on test_opt
+      # https://github.com/KhronosGroup/SPIRV-Tools/issues/5335
+      target_compile_options(test_opt PRIVATE /bigobj)
+    endif()
+  endif()
+endif()
