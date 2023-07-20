@@ -142,7 +142,7 @@ elif [ $TOOL = "cmake-smoketest" ]; then
   cmake -GNinja -DRE2_BUILD_TESTING=OFF -DCMAKE_BUILD_TYPE="Release" ..
 
   echo $(date): Build glslang...
-  ninja glslangValidator
+  ninja glslang-standalone
 
   echo $(date): Build everything...
   ninja
