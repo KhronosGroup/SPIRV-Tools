@@ -34,10 +34,10 @@ class FeatureManager {
   }
 
   // Returns the capabilities the module declares.
-  inline const CapabilitySet GetCapabilities() const { return capabilities_; }
+  inline const CapabilitySet& GetCapabilities() const { return capabilities_; }
 
   // Returns the extensions the module imports.
-  inline const ExtensionSet GetExtensions() const { return extensions_; }
+  inline const ExtensionSet& GetExtensions() const { return extensions_; }
 
   uint32_t GetExtInstImportId_GLSLstd450() const {
     return extinst_importid_GLSLstd450_;
