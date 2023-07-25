@@ -165,21 +165,20 @@ void TrimCapabilitiesPass::addInstructionRequirements(
   }
 
   // First case: the opcode is itself gated by a capability.
-  do {
+  {
     const spv_opcode_desc_t* desc = {};
     auto result =
         context()->grammar().lookupOpcode(instruction->opcode(), &desc);
-    if (result != SPV_SUCCESS) {
-      break;
+    if (result == SPV_SUCCESS) {
+      addSupportedCapabilitiesToSet(desc->numCapabilities, desc->capabilities,
+                                    capabilities);
+      if (desc->minVersion <=
+          spvVersionForTargetEnv(context()->GetTargetEnv())) {
+        extensions->insert(desc->extensions,
+                           desc->extensions + desc->numExtensions);
+      }
     }
-
-    addSupportedCapabilitiesToSet(desc->numCapabilities, desc->capabilities,
-                                  capabilities);
-    if (desc->minVersion <= spvVersionForTargetEnv(context()->GetTargetEnv())) {
-      extensions->insert(desc->extensions,
-                         desc->extensions + desc->numExtensions);
-    }
-  } while (0);
+  }
 
   // Second case: one of the opcode operand is gated by a capability.
   const uint32_t operandCount = instruction->NumOperands();
