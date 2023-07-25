@@ -103,6 +103,7 @@ add_spvtools_unittest(TARGET opt
        strip_debug_info_test.cpp
        strip_nonsemantic_info_test.cpp
        struct_cfg_analysis_test.cpp
+       trim_capabilities_pass_test.cpp
        type_manager_test.cpp
        types_test.cpp
        unify_const_test.cpp

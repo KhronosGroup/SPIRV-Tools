@@ -122,6 +122,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   strip_nonsemantic_info_pass.h
   struct_cfg_analysis.h
   tree_iterator.h
+  trim_capabilities_pass.h
   type_manager.h
   types.h
   unify_const_pass.h
@@ -236,6 +237,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   strip_debug_info_pass.cpp
   strip_nonsemantic_info_pass.cpp
   struct_cfg_analysis.cpp
+  trim_capabilities_pass.cpp
   type_manager.cpp
   types.cpp
   unify_const_pass.cpp
