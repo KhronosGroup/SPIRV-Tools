@@ -159,46 +159,54 @@ TrimCapabilitiesPass::TrimCapabilitiesPass()
 void TrimCapabilitiesPass::addInstructionRequirements(
     Instruction* instruction, CapabilitySet* capabilities,
     ExtensionSet* extensions) const {
+  // Ignoring OpCapability instructions.
+  if (instruction->opcode() == spv::Op::OpCapability) {
+    return;
+  }
+
   // First case: the opcode is itself gated by a capability.
-  {
+  do {
     const spv_opcode_desc_t* desc = {};
     auto result =
         context()->grammar().lookupOpcode(instruction->opcode(), &desc);
-    if (result == SPV_SUCCESS) {
-      addSupportedCapabilitiesToSet(desc->numCapabilities, desc->capabilities,
-                                    capabilities);
+    if (result != SPV_SUCCESS) {
+      break;
     }
 
+    addSupportedCapabilitiesToSet(desc->numCapabilities, desc->capabilities,
+                                  capabilities);
     if (desc->minVersion <= spvVersionForTargetEnv(context()->GetTargetEnv())) {
       extensions->insert(desc->extensions,
                          desc->extensions + desc->numExtensions);
     }
-  }
+  } while (0);
 
   // Second case: one of the opcode operand is gated by a capability.
-  {
-    const uint32_t operandCount = instruction->NumOperands();
-    for (uint32_t i = 0; i < operandCount; i++) {
-      const auto& operand = instruction->GetOperand(i);
-      // No supported capability relies on a 2+-word operand.
-      if (operand.words.size() != 1) {
-        continue;
-      }
+  const uint32_t operandCount = instruction->NumOperands();
+  for (uint32_t i = 0; i < operandCount; i++) {
+    const auto& operand = instruction->GetOperand(i);
+    // No supported capability relies on a 2+-word operand.
+    if (operand.words.size() != 1) {
+      continue;
+    }
 
-      // No supported capability relies on a literal string operand.
-      if (operand.type == SPV_OPERAND_TYPE_LITERAL_STRING) {
-        continue;
-      }
+    // No supported capability relies on a literal string operand.
+    if (operand.type == SPV_OPERAND_TYPE_LITERAL_STRING) {
+      continue;
+    }
 
-      const spv_operand_desc_t* desc = {};
-      auto result = context()->grammar().lookupOperand(operand.type,
-                                                       operand.words[0], &desc);
-      if (result != SPV_SUCCESS) {
-        continue;
-      }
+    const spv_operand_desc_t* desc = {};
+    auto result = context()->grammar().lookupOperand(operand.type,
+                                                     operand.words[0], &desc);
+    if (result != SPV_SUCCESS) {
+      continue;
+    }
 
-      addSupportedCapabilitiesToSet(desc->numCapabilities, desc->capabilities,
-                                    capabilities);
+    addSupportedCapabilitiesToSet(desc->numCapabilities, desc->capabilities,
+                                  capabilities);
+    if (desc->minVersion <= spvVersionForTargetEnv(context()->GetTargetEnv())) {
+      extensions->insert(desc->extensions,
+                         desc->extensions + desc->numExtensions);
     }
   }
 
