@@ -790,6 +790,8 @@ static_library("spvtools_opt") {
     "source/opt/struct_cfg_analysis.cpp",
     "source/opt/struct_cfg_analysis.h",
     "source/opt/tree_iterator.h",
+    "source/opt/trim_capabilities_pass.cpp",
+    "source/opt/trim_capabilities_pass.h",
     "source/opt/type_manager.cpp",
     "source/opt/type_manager.h",
     "source/opt/types.cpp",
