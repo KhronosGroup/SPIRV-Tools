@@ -1071,6 +1071,11 @@ Optimizer::PassToken CreateFixFuncCallArgumentsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::FixFuncCallArgumentsPass>());
 }
+
+Optimizer::PassToken CreateTrimCapabilitiesPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::TrimCapabilitiesPass>());
+}
 }  // namespace spvtools
 
 extern "C" {
