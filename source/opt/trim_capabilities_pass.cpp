@@ -151,10 +151,33 @@ Handler_OpTypePointer_StorageInputOutput16(const Instruction* instruction) {
              : std::nullopt;
 }
 
+static std::optional<spv::Capability>
+Handler_OpTypePointer_StoragePushConstant16(const Instruction* instruction) {
+  assert(instruction->opcode() == spv::Op::OpTypePointer &&
+         "This handler only support OpTypePointer opcodes.");
+
+  // This capability is only required if the variable as an Input/Output storage
+  // class.
+  spv::StorageClass storage_class = spv::StorageClass(
+      instruction->GetSingleWordInOperand(kOpTypePointerStorageClassIndex));
+  if (storage_class != spv::StorageClass::PushConstant) {
+    return std::nullopt;
+  }
+
+  if (!Has16BitCapability(instruction->context()->get_feature_mgr())) {
+    return std::nullopt;
+  }
+
+  return AnyTypeOf(instruction, is16bitType)
+             ? std::optional(spv::Capability::StoragePushConstant16)
+             : std::nullopt;
+}
+
 // Opcode of interest to determine capabilities requirements.
-constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 1> kOpcodeHandlers{{
+constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 2> kOpcodeHandlers{{
     // clang-format off
     {spv::Op::OpTypePointer, Handler_OpTypePointer_StorageInputOutput16},
+    {spv::Op::OpTypePointer, Handler_OpTypePointer_StoragePushConstant16},
     // clang-format on
 }};
 
