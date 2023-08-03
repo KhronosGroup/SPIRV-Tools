@@ -285,6 +285,7 @@ OpName %main "main"
 %v2double_null = OpConstantNull %v2double
 %108 = OpConstant %half 0
 %half_1 = OpConstant %half 1
+%half_2 = OpConstant %half 2
 %half_0_1 = OpConstantComposite %v2half %108 %half_1
 %106 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
 %v4float_0_0_0_0 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
@@ -4515,6 +4516,17 @@ INSTANTIATE_TEST_SUITE_P(FloatRedundantFoldingTest, GeneralInstructionFoldingTes
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
             "%2 = OpDot %half %half_0_1 %half_0_1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0),
+    // Test case 23: Don't fold 1.0(half) / 2.0(half)
+    // We do not have to code to emulate 16-bit float operations. Just make sure we do not crash.
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_half Function\n" +
+            "%3 = OpLoad %half %n\n" +
+            "%2 = OpFDiv %half %half_1 %half_2\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 0)

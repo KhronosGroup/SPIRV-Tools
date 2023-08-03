@@ -1,6 +1,32 @@
 Revision history for SPIRV-Tools
 
-v2023.3 2023-15-15
+v2023.4 2023-07-17
+  - General
+    - Add support for LiteralFloat type (#5323)
+    - SPV_KHR_cooperative_matrix (#5286)
+    - Allow OpTypeBool in UniformConstant (#5237)
+    - Allow physical storage buffer pointer in IO (#5251)
+    - Remove const zero image operands (#5232)
+  - Optimizer
+    - Enable vector constant folding (#4913) (#5272)
+    - Fold negation of integer vectors (#5269)
+    - Add folding rule for OpTranspose (#5241)
+    - Add SPV_NV_bindless_texture to spirv optimizations (#5231)
+  - Instrument
+    - instrument: Cast gl_VertexIndex and InstanceIndex to uint (#5319)
+    - instrument: Fix buffer address length calculations (#5257)
+  - Validator
+    - Validate GroupNonUniform instructions (#5296)
+    - spirv-val: Label SPV_KHR_cooperative_matrix VUID (#5301)
+    - Validate layouts for PhysicalStorageBuffer pointers (#5291)
+    - spirv-val: Remove VUID from 1.3.251 spec (#5244)
+  - Diff
+    - spirv-diff: Update test expectations (#5264)
+    - spirv-diff: Leave undefined ids unpaired. (#5262)
+    - spirv-diff: Properly match SPV_KHR_ray_query types. (#5259)
+    - diff: Don't give up entry point matching too early. (#5224)
+
+v2023.3 2023-05-15
   - General
     - Update spirv_headers to include SPV_KHR_ray_tracing_position_fetch (#5205)
     - spirv-tools: Add support for QNX (#5211)

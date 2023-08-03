@@ -142,7 +142,7 @@ elif [ $TOOL = "cmake-smoketest" ]; then
   cmake -GNinja -DRE2_BUILD_TESTING=OFF -DCMAKE_BUILD_TYPE="Release" ..
 
   echo $(date): Build glslang...
-  ninja glslangValidator
+  ninja glslang-standalone
 
   echo $(date): Build everything...
   ninja
@@ -156,7 +156,7 @@ elif [ $TOOL = "cmake-smoketest" ]; then
   echo $(date): ctest completed.
 elif [ $TOOL = "cmake-android-ndk" ]; then
   using cmake-3.17.2
-  using ndk-r21d
+  using ndk-r25c
   using ninja-1.10.0
 
   clean_dir "$ROOT_DIR/build"
@@ -176,7 +176,7 @@ elif [ $TOOL = "cmake-android-ndk" ]; then
   ninja
   echo $(date): Build completed.
 elif [ $TOOL = "android-ndk-build" ]; then
-  using ndk-r21d
+  using ndk-r25c
 
   clean_dir "$ROOT_DIR/build"
   cd "$ROOT_DIR/build"
