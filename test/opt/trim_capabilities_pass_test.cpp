@@ -1134,7 +1134,7 @@ TEST_F(TrimCapabilitiesPassTest, StoragePushConstant16_RemovedSimplePointer) {
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StorageUniformBufferBlock16_RemainsSimplePointer_Vulkan1_0) {
+       StorageUniformBufferBlock16_RemainsSimplePointer_Vulkan1_0) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
   static_assert(spv::Capability::StorageUniformBufferBlock16 ==
                 spv::Capability::StorageBuffer16BitAccess);
@@ -1169,7 +1169,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StorageUniformBufferBlock16_RemainsSimplePointer_Vulkan1_1) {
+       StorageUniformBufferBlock16_RemainsSimplePointer_Vulkan1_1) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
   static_assert(spv::Capability::StorageUniformBufferBlock16 ==
                 spv::Capability::StorageBuffer16BitAccess);
@@ -1204,7 +1204,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StorageUniformBufferBlock16_RemovedSimplePointer) {
+       StorageUniformBufferBlock16_RemovedSimplePointer) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
   static_assert(spv::Capability::StorageUniformBufferBlock16 ==
                 spv::Capability::StorageBuffer16BitAccess);
