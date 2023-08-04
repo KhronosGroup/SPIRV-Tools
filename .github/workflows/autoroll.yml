@@ -23,7 +23,7 @@ jobs:
         run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 
       - name: Update PATH
-        run: echo "./depot_tools" >> $GITHUB_PATH
+        run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
 
       - name: Download dependencies
         run: python3 utils/git-sync-deps
