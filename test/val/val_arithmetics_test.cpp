@@ -1555,7 +1555,10 @@ TEST_F(ValidateArithmetics, CoopMatKHRSuccess) {
 %val14 = OpMatrixTimesScalar %u32matA %u32mat_A_1 %u32_1
 %val15 = OpMatrixTimesScalar %s32matA %s32mat_A_1 %s32_1
 %val16 = OpCooperativeMatrixMulAddKHR %f32matC %f16mat_A_1 %f16mat_B_1 %f16mat_C_1
-%val17 = OpCooperativeMatrixMulAddKHR %s32matC %s32mat_A_1 %s32mat_B_1 %s32mat_C_1)";
+%val17 = OpCooperativeMatrixMulAddKHR %s32matC %s32mat_A_1 %s32mat_B_1 %s32mat_C_1
+  MatrixASignedComponentsKHR|MatrixBSignedComponentsKHR|MatrixCSignedComponentsKHR|MatrixResultSignedComponentsKHR
+%val18 = OpCooperativeMatrixMulAddKHR %u32matC %u32mat_A_1 %u32mat_B_1 %u32mat_C_1
+)";
 
   CompileSuccessfully(GenerateCoopMatKHRCode("", body).c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
