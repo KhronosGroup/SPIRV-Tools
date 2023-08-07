@@ -300,6 +300,65 @@ TrimCapabilitiesPass::TrimCapabilitiesPass()
           TrimCapabilitiesPass::kUntouchableCapabilities.cend()),
       opcodeHandlers_(kOpcodeHandlers.cbegin(), kOpcodeHandlers.cend()) {}
 
+void TrimCapabilitiesPass::addInstructionRequirementsForOpcode(
+    spv::Op opcode, CapabilitySet* capabilities,
+    ExtensionSet* extensions) const {
+  const spv_opcode_desc_t* desc = {};
+  auto result = context()->grammar().lookupOpcode(opcode, &desc);
+  if (result != SPV_SUCCESS) {
+    return;
+  }
+
+  addSupportedCapabilitiesToSet(desc, capabilities);
+  addSupportedExtensionsToSet(desc, extensions);
+}
+
+void TrimCapabilitiesPass::addInstructionRequirementsForOperand(
+    const Operand& operand, CapabilitySet* capabilities,
+    ExtensionSet* extensions) const {
+  // No supported capability relies on a 2+-word operand.
+  if (operand.words.size() != 1) {
+    return;
+  }
+
+  // No supported capability relies on a literal string operand or an ID.
+  if (operand.type == SPV_OPERAND_TYPE_LITERAL_STRING ||
+      operand.type == SPV_OPERAND_TYPE_ID ||
+      operand.type == SPV_OPERAND_TYPE_RESULT_ID) {
+    return;
+  }
+
+  // case 1: Operand is a single value, can directly lookup.
+  if (!spvOperandIsConcreteMask(operand.type)) {
+    const spv_operand_desc_t* desc = {};
+    auto result = context()->grammar().lookupOperand(operand.type,
+                                                     operand.words[0], &desc);
+    if (result != SPV_SUCCESS) {
+      return;
+    }
+    addSupportedCapabilitiesToSet(desc, capabilities);
+    addSupportedExtensionsToSet(desc, extensions);
+    return;
+  }
+
+  // case 2: operand can be a bitmask, we need to decompose the lookup.
+  for (uint32_t i = 0; i < 32; i++) {
+    const uint32_t mask = (1 << i) & operand.words[0];
+    if (!mask) {
+      continue;
+    }
+
+    const spv_operand_desc_t* desc = {};
+    auto result = context()->grammar().lookupOperand(operand.type, mask, &desc);
+    if (result != SPV_SUCCESS) {
+      continue;
+    }
+
+    addSupportedCapabilitiesToSet(desc, capabilities);
+    addSupportedExtensionsToSet(desc, extensions);
+  }
+}
+
 void TrimCapabilitiesPass::addInstructionRequirements(
     Instruction* instruction, CapabilitySet* capabilities,
     ExtensionSet* extensions) const {
@@ -309,42 +368,14 @@ void TrimCapabilitiesPass::addInstructionRequirements(
     return;
   }
 
-  // First case: the opcode is itself gated by a capability.
-  {
-    const spv_opcode_desc_t* desc = {};
-    auto result =
-        context()->grammar().lookupOpcode(instruction->opcode(), &desc);
-    if (result == SPV_SUCCESS) {
-      addSupportedCapabilitiesToSet(desc, capabilities);
-      addSupportedExtensionsToSet(desc, extensions);
-    }
-  }
+  addInstructionRequirementsForOpcode(instruction->opcode(), capabilities,
+                                      extensions);
 
   // Second case: one of the opcode operand is gated by a capability.
   const uint32_t operandCount = instruction->NumOperands();
   for (uint32_t i = 0; i < operandCount; i++) {
-    const auto& operand = instruction->GetOperand(i);
-    // No supported capability relies on a 2+-word operand.
-    if (operand.words.size() != 1) {
-      continue;
-    }
-
-    // No supported capability relies on a literal string operand.
-    if (operand.type == SPV_OPERAND_TYPE_LITERAL_STRING ||
-        operand.type == SPV_OPERAND_TYPE_ID ||
-        operand.type == SPV_OPERAND_TYPE_RESULT_ID) {
-      continue;
-    }
-
-    const spv_operand_desc_t* desc = {};
-    auto result = context()->grammar().lookupOperand(operand.type,
-                                                     operand.words[0], &desc);
-    if (result != SPV_SUCCESS) {
-      continue;
-    }
-
-    addSupportedCapabilitiesToSet(desc, capabilities);
-    addSupportedExtensionsToSet(desc, extensions);
+    addInstructionRequirementsForOperand(instruction->GetOperand(i),
+                                         capabilities, extensions);
   }
 
   // Last case: some complex logic needs to be run to determine capabilities.
