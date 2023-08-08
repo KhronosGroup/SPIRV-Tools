@@ -2,6 +2,8 @@ Revision history for SPIRV-Tools
 
 v2023.4 2023-07-17
   - General
+    - Set cmake_policy CMP0128 (#5341)
+    - Add python3 requirement for the script (#5326)
     - Add support for LiteralFloat type (#5323)
     - SPV_KHR_cooperative_matrix (#5286)
     - Allow OpTypeBool in UniformConstant (#5237)
@@ -12,9 +14,12 @@ v2023.4 2023-07-17
     - Fold negation of integer vectors (#5269)
     - Add folding rule for OpTranspose (#5241)
     - Add SPV_NV_bindless_texture to spirv optimizations (#5231)
+    - Fix incorrect half float conversion (#5349)
+    - Add SPV_EXT_shader_atomic_float_add to allow lists (#5348)
   - Instrument
     - instrument: Cast gl_VertexIndex and InstanceIndex to uint (#5319)
     - instrument: Fix buffer address length calculations (#5257)
+    - instrument: Reduce number of inst_bindless_stream_write_6 calls (#5327)
   - Validator
     - Validate GroupNonUniform instructions (#5296)
     - spirv-val: Label SPV_KHR_cooperative_matrix VUID (#5301)
