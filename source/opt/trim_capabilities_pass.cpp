@@ -133,8 +133,8 @@ Handler_OpTypePointer_StorageInputOutput16(const Instruction* instruction) {
   assert(instruction->opcode() == spv::Op::OpTypePointer &&
          "This handler only support OpTypePointer opcodes.");
 
-  // This capability is only required if the variable has an Input/Output storage
-  // class.
+  // This capability is only required if the variable has an Input/Output
+  // storage class.
   spv::StorageClass storage_class = spv::StorageClass(
       instruction->GetSingleWordInOperand(kOpTypePointerStorageClassIndex));
   if (storage_class != spv::StorageClass::Input &&
