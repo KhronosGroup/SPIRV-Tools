@@ -2,7 +2,7 @@
 
 ## Latest builds
 
-Download the latest builds of the [master](https://github.com/KhronosGroup/SPIRV-Tools/tree/master) branch.
+Download the latest builds of the [main](https://github.com/KhronosGroup/SPIRV-Tools/tree/main) branch.
 
 ### Release build
 | Windows | Linux | MacOS |
