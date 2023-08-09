@@ -404,7 +404,7 @@ TEST_F(TrimCapabilitiesPassTest, AMDShaderBallotExtensionRemoved) {
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
-TEST_F(TrimCapabilitiesPassTest, MinLodCapabilityRemoved) {
+TEST_F(TrimCapabilitiesPassTest, MinLod_RemovedIfNotUsed) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Sampled1D
@@ -439,7 +439,7 @@ TEST_F(TrimCapabilitiesPassTest, MinLodCapabilityRemoved) {
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
-TEST_F(TrimCapabilitiesPassTest, MinLodCapabilityRemains) {
+TEST_F(TrimCapabilitiesPassTest, MinLod_RemainsWithOpImageSampleImplicitLod) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Sampled1D
@@ -474,25 +474,92 @@ TEST_F(TrimCapabilitiesPassTest, MinLodCapabilityRemains) {
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
-TEST_F(TrimCapabilitiesPassTest, StorageInputOutput16RemainsWithInputVariable) {
+TEST_F(TrimCapabilitiesPassTest,
+       MinLod_RemainsWithOpImageSparseSampleImplicitLod) {
   const std::string kTest = R"(
                       OpCapability Shader
-                      OpCapability Float16
-                      OpCapability StorageInputOutput16
-; CHECK:              OpCapability StorageInputOutput16
-                      OpExtension "SPV_KHR_16bit_storage"
+                      OpCapability SparseResidency
+                      OpCapability ImageGatherExtended
+                      OpCapability MinLod
+; CHECK:              OpCapability MinLod
                       OpMemoryModel Logical GLSL450
-                      OpEntryPoint GLCompute %2 "main" %input_var
-                      OpDecorate %input_var BuiltIn LocalInvocationIndex
+                      OpEntryPoint Fragment %2 "main"
+                      OpExecutionMode %2 OriginUpperLeft
               %void = OpTypeVoid
-              %half = OpTypeFloat 16
-               %ptr = OpTypePointer Input %half
+              %uint = OpTypeInt 32 0
+             %float = OpTypeFloat 32
+           %v2float = OpTypeVector %float 2
+           %v3float = OpTypeVector %float 3
+           %v4float = OpTypeVector %float 4
+        %type_image = OpTypeImage %float 2D 2 0 0 1 Unknown
+    %ptr_type_image = OpTypePointer UniformConstant %type_image
+      %type_sampler = OpTypeSampler
+  %ptr_type_sampler = OpTypePointer UniformConstant %type_sampler
+%type_sampled_image = OpTypeSampledImage %type_image
+     %sparse_struct = OpTypeStruct %uint %v4float
+           %float_0 = OpConstant %float 0
+          %float_00 = OpConstantComposite %v2float %float_0 %float_0
+         %float_000 = OpConstantComposite %v3float %float_0 %float_0 %float_0
+             %image = OpVariable %ptr_type_image UniformConstant
+           %sampler = OpVariable %ptr_type_sampler UniformConstant
                  %1 = OpTypeFunction %void
-         %input_var = OpVariable %ptr Input
                  %2 = OpFunction %void None %1
                  %3 = OpLabel
+                %21 = OpLoad %type_image %image
+                %22 = OpLoad %type_sampler %sampler
+                %24 = OpSampledImage %type_sampled_image %21 %22
+                %25 = OpImageSparseSampleImplicitLod %sparse_struct %24 %float_00 MinLod %float_0
                       OpReturn
-                      OpFunctionEnd
+                      OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+// FIXME(Keenuts): Add support for bitmask operands.
+TEST_F(TrimCapabilitiesPassTest,
+       DISABLED_MinLod_DetectsMinLodWithBitmaskImageOperand) {
+  const std::string kTest = R"(
+                            OpCapability MinLod
+; CHECK:                    OpCapability MinLod
+                            OpCapability Shader
+                            OpCapability SparseResidency
+                            OpCapability ImageGatherExtended
+                            OpMemoryModel Logical GLSL450
+                            OpEntryPoint Fragment %1 "main"
+                            OpExecutionMode %1 OriginUpperLeft
+            %type_sampler = OpTypeSampler
+                     %int = OpTypeInt 32 1
+                   %float = OpTypeFloat 32
+                   %v2int = OpTypeVector %int 2
+                 %v2float = OpTypeVector %float 2
+                 %v4float = OpTypeVector %float 4
+             %ptr_sampler = OpTypePointer UniformConstant %type_sampler
+              %type_image = OpTypeImage %float 2D 2 0 0 1 Unknown
+               %ptr_image = OpTypePointer UniformConstant %type_image
+                    %void = OpTypeVoid
+                    %uint = OpTypeInt 32 0
+      %type_sampled_image = OpTypeSampledImage %type_image
+             %type_struct = OpTypeStruct %uint %v4float
+
+                   %int_1 = OpConstant %int 1
+                 %float_0 = OpConstant %float 0
+                 %float_1 = OpConstant %float 1
+                       %8 = OpConstantComposite %v2float %float_0 %float_0
+                      %12 = OpConstantComposite %v2int %int_1 %int_1
+
+                       %2 = OpVariable %ptr_sampler UniformConstant
+                       %3 = OpVariable %ptr_image UniformConstant
+                      %27 = OpTypeFunction %void
+                       %1 = OpFunction %void None %27
+                      %28 = OpLabel
+                      %29 = OpLoad %type_image %3
+                      %30 = OpLoad %type_sampler %2
+                      %31 = OpSampledImage %type_sampled_image %29 %30
+                      %32 = OpImageSparseSampleImplicitLod %type_struct %31 %8 ConstOffset|MinLod %12 %float_0
+                            OpReturn
+                            OpFunctionEnd
   )";
   const auto result =
       SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
@@ -500,16 +567,68 @@ TEST_F(TrimCapabilitiesPassTest, StorageInputOutput16RemainsWithInputVariable) {
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       StorageInputOutput16RemainsWithInputVariableArray) {
+       StorageInputOutput16_RemainsWithInputPointer_Vulkan1_0) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
                       OpCapability StorageInputOutput16
-; CHECK:              OpCapability StorageInputOutput16
                       OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK:              OpExtension "SPV_KHR_16bit_storage"
                       OpMemoryModel Logical GLSL450
-                      OpEntryPoint GLCompute %2 "main" %input_var
-                      OpDecorate %input_var BuiltIn LocalInvocationIndex
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+               %ptr = OpTypePointer Input %half
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_0);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       StorageInputOutput16_RemainsWithInputPointer_Vulkan1_1) {
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageInputOutput16
+                      OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+               %ptr = OpTypePointer Input %half
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_1);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       StorageInputOutput16_RemainsWithInputPointerArray_Vulkan1_0) {
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageInputOutput16
+                      OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK:              OpExtension "SPV_KHR_16bit_storage"
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
               %void = OpTypeVoid
               %half = OpTypeFloat 16
               %uint = OpTypeInt 32 0
@@ -517,55 +636,111 @@ TEST_F(TrimCapabilitiesPassTest,
              %array = OpTypeArray %half %uint_1
                %ptr = OpTypePointer Input %array
                  %1 = OpTypeFunction %void
-         %input_var = OpVariable %ptr Input
                  %2 = OpFunction %void None %1
                  %3 = OpLabel
                       OpReturn
                       OpFunctionEnd
   )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_0);
   const auto result =
       SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       StorageInputOutput16RemainsWithInputVariableStruct) {
+       StorageInputOutput16_RemainsWithInputPointerArray_Vulkan1_1) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
                       OpCapability StorageInputOutput16
-; CHECK:              OpCapability StorageInputOutput16
                       OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
                       OpMemoryModel Logical GLSL450
-                      OpEntryPoint GLCompute %2 "main" %input_var
-                      OpDecorate %input_var BuiltIn LocalInvocationIndex
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+              %uint = OpTypeInt 32 0
+            %uint_1 = OpConstant %uint 1
+             %array = OpTypeArray %half %uint_1
+               %ptr = OpTypePointer Input %array
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_1);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       StorageInputOutput16_RemainsWithInputPointerStruct_Vulkan1_0) {
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageInputOutput16
+                      OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK:              OpExtension "SPV_KHR_16bit_storage"
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
               %void = OpTypeVoid
               %half = OpTypeFloat 16
             %struct = OpTypeStruct %half
                %ptr = OpTypePointer Input %struct
                  %1 = OpTypeFunction %void
-         %input_var = OpVariable %ptr Input
                  %2 = OpFunction %void None %1
                  %3 = OpLabel
                       OpReturn
                       OpFunctionEnd
   )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_0);
   const auto result =
       SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       StorageInputOutput16RemainsWithInputVariableStructOfStruct) {
+       StorageInputOutput16_RemainsWithInputPointerStruct_Vulkan1_1) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
                       OpCapability StorageInputOutput16
-; CHECK:              OpCapability StorageInputOutput16
                       OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
                       OpMemoryModel Logical GLSL450
-                      OpEntryPoint GLCompute %2 "main" %input_var
-                      OpDecorate %input_var BuiltIn LocalInvocationIndex
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+            %struct = OpTypeStruct %half
+               %ptr = OpTypePointer Input %struct
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_1);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       StorageInputOutput16_RemainsWithInputPointerStructOfStruct_Vulkan1_0) {
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageInputOutput16
+                      OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK:              OpExtension "SPV_KHR_16bit_storage"
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
               %void = OpTypeVoid
               %half = OpTypeFloat 16
              %float = OpTypeFloat 32
@@ -573,28 +748,57 @@ TEST_F(TrimCapabilitiesPassTest,
             %parent = OpTypeStruct %float %struct
                %ptr = OpTypePointer Input %parent
                  %1 = OpTypeFunction %void
-         %input_var = OpVariable %ptr Input
                  %2 = OpFunction %void None %1
                  %3 = OpLabel
                       OpReturn
                       OpFunctionEnd
   )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_0);
   const auto result =
       SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       StorageInputOutput16RemainsWithInputVariableArrayOfStruct) {
+       StorageInputOutput16_RemainsWithInputPointerStructOfStruct_Vulkan1_1) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
                       OpCapability StorageInputOutput16
-; CHECK:              OpCapability StorageInputOutput16
                       OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
                       OpMemoryModel Logical GLSL450
-                      OpEntryPoint GLCompute %2 "main" %input_var
-                      OpDecorate %input_var BuiltIn LocalInvocationIndex
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+             %float = OpTypeFloat 32
+            %struct = OpTypeStruct %float %half
+            %parent = OpTypeStruct %float %struct
+               %ptr = OpTypePointer Input %parent
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_1);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       StorageInputOutput16_RemainsWithInputPointerArrayOfStruct_Vulkan1_0) {
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageInputOutput16
+                      OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK:              OpExtension "SPV_KHR_16bit_storage"
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
               %void = OpTypeVoid
               %half = OpTypeFloat 16
             %struct = OpTypeStruct %half
@@ -603,83 +807,244 @@ TEST_F(TrimCapabilitiesPassTest,
              %array = OpTypeArray %struct %uint_1
                %ptr = OpTypePointer Input %array
                  %1 = OpTypeFunction %void
-         %input_var = OpVariable %ptr Input
                  %2 = OpFunction %void None %1
                  %3 = OpLabel
                       OpReturn
                       OpFunctionEnd
   )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_0);
   const auto result =
       SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       StorageInputOutput16RemainsWithInputVariableVector) {
+       StorageInputOutput16_RemainsWithInputPointerArrayOfStruct_Vulkan1_1) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
                       OpCapability StorageInputOutput16
-; CHECK:              OpCapability StorageInputOutput16
                       OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
                       OpMemoryModel Logical GLSL450
-                      OpEntryPoint GLCompute %2 "main" %input_var
-                      OpDecorate %input_var BuiltIn LocalInvocationIndex
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+            %struct = OpTypeStruct %half
+              %uint = OpTypeInt 32 0
+            %uint_1 = OpConstant %uint 1
+             %array = OpTypeArray %struct %uint_1
+               %ptr = OpTypePointer Input %array
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_1);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       StorageInputOutput16_RemainsWithInputPointerVector_Vulkan1_0) {
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageInputOutput16
+                      OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK:              OpExtension "SPV_KHR_16bit_storage"
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
               %void = OpTypeVoid
               %half = OpTypeFloat 16
             %vector = OpTypeVector %half 4
                %ptr = OpTypePointer Input %vector
                  %1 = OpTypeFunction %void
-         %input_var = OpVariable %ptr Input
                  %2 = OpFunction %void None %1
                  %3 = OpLabel
                       OpReturn
                       OpFunctionEnd
   )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_0);
   const auto result =
       SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       StorageInputOutput16RemainsWithInputVariableMatrix) {
+       StorageInputOutput16_RemainsWithInputPointerVector_Vulkan1_1) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
                       OpCapability StorageInputOutput16
-; CHECK:              OpCapability StorageInputOutput16
                       OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
                       OpMemoryModel Logical GLSL450
-                      OpEntryPoint GLCompute %2 "main" %input_var
-                      OpDecorate %input_var BuiltIn LocalInvocationIndex
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+            %vector = OpTypeVector %half 4
+               %ptr = OpTypePointer Input %vector
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_1);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       StorageInputOutput16_RemainsWithInputPointerMatrix_Vulkan1_0) {
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageInputOutput16
+                      OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK:              OpExtension "SPV_KHR_16bit_storage"
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
               %void = OpTypeVoid
               %half = OpTypeFloat 16
             %vector = OpTypeVector %half 4
             %matrix = OpTypeMatrix %vector 4
                %ptr = OpTypePointer Input %matrix
                  %1 = OpTypeFunction %void
-         %input_var = OpVariable %ptr Input
                  %2 = OpFunction %void None %1
                  %3 = OpLabel
                       OpReturn
                       OpFunctionEnd
   )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_0);
   const auto result =
       SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       StorageInputOutput16IsRemovedWithoutInputVariable) {
+       StorageInputOutput16_RemainsWithInputPointerMatrix_Vulkan1_1) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
                       OpCapability StorageInputOutput16
-; CHECK-NOT:          OpCapability StorageInputOutput16
                       OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
                       OpMemoryModel Logical GLSL450
-                      OpEntryPoint GLCompute %2 "main" %input_var
-                      OpDecorate %input_var BuiltIn LocalInvocationIndex
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+            %vector = OpTypeVector %half 4
+            %matrix = OpTypeMatrix %vector 4
+               %ptr = OpTypePointer Input %matrix
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_1);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       StorageInputOutput16_IsRemovedWithoutInputPointer) {
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageInputOutput16
+                      OpExtension "SPV_KHR_16bit_storage"
+; CHECK-NOT:          OpCapability StorageInputOutput16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_0);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       StorageInputOutput16_RemainsWithOutputPointer_Vulkan1_0) {
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageInputOutput16
+                      OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK:              OpExtension "SPV_KHR_16bit_storage"
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+               %ptr = OpTypePointer Output %half
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_0);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       StorageInputOutput16_RemainsWithOutputPointer_Vulkan1_1) {
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageInputOutput16
+                      OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StorageInputOutput16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+               %ptr = OpTypePointer Output %half
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_1);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       StorageInputOutput16_RemovedWithoutOutputPointer) {
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageInputOutput16
+                      OpExtension "SPV_KHR_16bit_storage"
+; CHECK-NOT:          OpCapability StorageInputOutput16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
               %void = OpTypeVoid
                  %1 = OpTypeFunction %void
                  %2 = OpFunction %void None %1
@@ -693,21 +1058,72 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       StorageInputOutput16RemainsWithOutputVariable) {
+       DISABLED_StoragePushConstant16_RemainsSimplePointer_Vulkan1_0) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
-                      OpCapability StorageInputOutput16
-; CHECK:              OpCapability StorageInputOutput16
+                      OpCapability StoragePushConstant16
                       OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StoragePushConstant16
+; CHECK:              OpExtension "SPV_KHR_16bit_storage"
                       OpMemoryModel Logical GLSL450
-                      OpEntryPoint GLCompute %2 "main" %input_var
-                      OpDecorate %input_var BuiltIn LocalInvocationIndex
+                      OpEntryPoint GLCompute %2 "main"
               %void = OpTypeVoid
               %half = OpTypeFloat 16
-               %ptr = OpTypePointer Output %half
+               %ptr = OpTypePointer PushConstant %half
                  %1 = OpTypeFunction %void
-         %input_var = OpVariable %ptr Output
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_0);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       DISABLED_StoragePushConstant16_RemainsSimplePointer_Vulkan1_1) {
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StoragePushConstant16
+                      OpExtension "SPV_KHR_16bit_storage"
+; CHECK:              OpCapability StoragePushConstant16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+               %ptr = OpTypePointer PushConstant %half
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_1);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       DISABLED_StoragePushConstant16_RemovedSimplePointer) {
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StoragePushConstant16
+                      OpExtension "SPV_KHR_16bit_storage"
+; CHECK-NOT:          OpCapability StoragePushConstant16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+               %ptr = OpTypePointer Function %half
+                 %1 = OpTypeFunction %void
                  %2 = OpFunction %void None %1
                  %3 = OpLabel
                       OpReturn
@@ -715,27 +1131,265 @@ TEST_F(TrimCapabilitiesPassTest,
   )";
   const auto result =
       SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
-  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       StorageInputOutput16IsRemovedWithoutOutputVariable) {
+       DISABLED_StorageUniformBufferBlock16_RemainsSimplePointer_Vulkan1_0) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
+  static_assert(spv::Capability::StorageUniformBufferBlock16 ==
+                spv::Capability::StorageBuffer16BitAccess);
+
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
-                      OpCapability StorageInputOutput16
-; CHECK-NOT:          OpCapability StorageInputOutput16
+                      OpCapability StorageBuffer16BitAccess
                       OpExtension "SPV_KHR_16bit_storage"
+
+; CHECK:              OpCapability StorageBuffer16BitAccess
+;                                   `-> StorageUniformBufferBlock16
+; CHECK:              OpExtension "SPV_KHR_16bit_storage"
+
                       OpMemoryModel Logical GLSL450
-                      OpEntryPoint GLCompute %2 "main" %input_var
-                      OpDecorate %input_var BuiltIn LocalInvocationIndex
+                      OpEntryPoint GLCompute %2 "main"
+                      OpDecorate %struct BufferBlock
               %void = OpTypeVoid
+              %half = OpTypeFloat 16
+            %struct = OpTypeStruct %half
+               %ptr = OpTypePointer Uniform %struct
                  %1 = OpTypeFunction %void
                  %2 = OpFunction %void None %1
                  %3 = OpLabel
                       OpReturn
                       OpFunctionEnd
   )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_0);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       DISABLED_StorageUniformBufferBlock16_RemainsSimplePointer_Vulkan1_1) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
+  static_assert(spv::Capability::StorageUniformBufferBlock16 ==
+                spv::Capability::StorageBuffer16BitAccess);
+
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageBuffer16BitAccess
+                      OpExtension "SPV_KHR_16bit_storage"
+
+; CHECK:              OpCapability StorageBuffer16BitAccess
+;                                   `-> StorageUniformBufferBlock16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
+
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
+                      OpDecorate %struct BufferBlock
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+            %struct = OpTypeStruct %half
+               %ptr = OpTypePointer Uniform %struct
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_1);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       DISABLED_StorageUniformBufferBlock16_RemovedSimplePointer) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
+  static_assert(spv::Capability::StorageUniformBufferBlock16 ==
+                spv::Capability::StorageBuffer16BitAccess);
+
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageBuffer16BitAccess
+                      OpExtension "SPV_KHR_16bit_storage"
+
+; CHECK-NOT:          OpCapability StorageBuffer16BitAccess
+;                                   `-> StorageUniformBufferBlock16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
+
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+            %struct = OpTypeStruct %half
+               %ptr = OpTypePointer Function %struct
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       DISABLED_StorageUniform16_RemovedWithBufferBlockPointer_Vulkan1_0) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
+  static_assert(spv::Capability::StorageUniformBufferBlock16 ==
+                spv::Capability::StorageBuffer16BitAccess);
+  static_assert(spv::Capability::StorageUniform16 ==
+                spv::Capability::UniformAndStorageBuffer16BitAccess);
+
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageBuffer16BitAccess
+                      OpCapability UniformAndStorageBuffer16BitAccess
+                      OpExtension "SPV_KHR_16bit_storage"
+
+; CHECK:              OpCapability StorageBuffer16BitAccess
+;                                   `-> StorageUniformBufferBlock16
+; CHECK-NOT:          OpCapability UniformAndStorageBuffer16BitAccess
+;                                   `-> StorageUniform16
+; CHECK:              OpExtension "SPV_KHR_16bit_storage"
+
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
+                      OpDecorate %struct BufferBlock
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+            %struct = OpTypeStruct %half
+               %ptr = OpTypePointer Uniform %struct
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_0);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       DISABLED_StorageUniform16_RemovedWithBufferBlockPointer_Vulkan1_1) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
+  static_assert(spv::Capability::StorageUniformBufferBlock16 ==
+                spv::Capability::StorageBuffer16BitAccess);
+  static_assert(spv::Capability::StorageUniform16 ==
+                spv::Capability::UniformAndStorageBuffer16BitAccess);
+
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageBuffer16BitAccess
+                      OpCapability UniformAndStorageBuffer16BitAccess
+                      OpExtension "SPV_KHR_16bit_storage"
+
+; CHECK:              OpCapability StorageBuffer16BitAccess
+;                                   `-> StorageUniformBufferBlock16
+; CHECK-NOT:          OpCapability UniformAndStorageBuffer16BitAccess
+;                                   `-> StorageUniform16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
+
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
+                      OpDecorate %struct BufferBlock
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+            %struct = OpTypeStruct %half
+               %ptr = OpTypePointer Uniform %struct
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_1);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       DISABLED_StorageUniform16_RemovedWithNonBlockUniformPointer_Vulkan1_0) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
+  static_assert(spv::Capability::StorageUniformBufferBlock16 ==
+                spv::Capability::StorageBuffer16BitAccess);
+  static_assert(spv::Capability::StorageUniform16 ==
+                spv::Capability::UniformAndStorageBuffer16BitAccess);
+
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageBuffer16BitAccess
+                      OpCapability UniformAndStorageBuffer16BitAccess
+                      OpExtension "SPV_KHR_16bit_storage"
+
+; CHECK-NOT:          OpCapability StorageBuffer16BitAccess
+;                                   `-> StorageUniformBufferBlock16
+; CHECK:              OpCapability UniformAndStorageBuffer16BitAccess
+;                                   `-> StorageUniform16
+; CHECK:              OpExtension "SPV_KHR_16bit_storage"
+
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+            %struct = OpTypeStruct %half
+               %ptr = OpTypePointer Uniform %struct
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_0);
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       DISABLED_StorageUniform16_RemovedWithNonBlockUniformPointer_Vulkan1_1) {
+  // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
+  static_assert(spv::Capability::StorageUniformBufferBlock16 ==
+                spv::Capability::StorageBuffer16BitAccess);
+  static_assert(spv::Capability::StorageUniform16 ==
+                spv::Capability::UniformAndStorageBuffer16BitAccess);
+
+  const std::string kTest = R"(
+                      OpCapability Shader
+                      OpCapability Float16
+                      OpCapability StorageBuffer16BitAccess
+                      OpCapability UniformAndStorageBuffer16BitAccess
+                      OpExtension "SPV_KHR_16bit_storage"
+
+; CHECK-NOT:          OpCapability StorageBuffer16BitAccess
+;                                   `-> StorageUniformBufferBlock16
+; CHECK:              OpCapability UniformAndStorageBuffer16BitAccess
+;                                   `-> StorageUniform16
+; CHECK-NOT:          OpExtension "SPV_KHR_16bit_storage"
+
+                      OpMemoryModel Logical GLSL450
+                      OpEntryPoint GLCompute %2 "main"
+              %void = OpTypeVoid
+              %half = OpTypeFloat 16
+            %struct = OpTypeStruct %half
+               %ptr = OpTypePointer Uniform %struct
+                 %1 = OpTypeFunction %void
+                 %2 = OpFunction %void None %1
+                 %3 = OpLabel
+                      OpReturn
+                      OpFunctionEnd
+  )";
+  SetTargetEnv(SPV_ENV_VULKAN_1_1);
   const auto result =
       SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
