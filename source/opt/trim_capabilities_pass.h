@@ -101,7 +101,7 @@ class TrimCapabilitiesPass : public Pass {
 
  private:
   // Inserts every capability listed by `descriptor` this pass supports into
-  // `output`. Expects a Descritor like `spv_opcode_desc_t` or
+  // `output`. Expects a Descriptor like `spv_opcode_desc_t` or
   // `spv_operand_desc_t`.
   template <class Descriptor>
   inline void addSupportedCapabilitiesToSet(const Descriptor* const descriptor,
@@ -116,7 +116,7 @@ class TrimCapabilitiesPass : public Pass {
   }
 
   // Inserts every extension listed by `descriptor` required by the module into
-  // `output`. Expects a Descritor like `spv_opcode_desc_t` or
+  // `output`. Expects a Descriptor like `spv_opcode_desc_t` or
   // `spv_operand_desc_t`.
   template <class Descriptor>
   inline void addSupportedExtensionsToSet(const Descriptor* const descriptor,
