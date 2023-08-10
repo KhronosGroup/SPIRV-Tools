@@ -5852,10 +5852,12 @@ TEST_F(ValidateImage, SignExtendV13Bad) {
 %res1 = OpImageRead %u32vec4 %img %u32vec2_01 SignExtend
 )";
 
-  EXPECT_THAT(CompileFailure(GenerateShaderCode(body, "", "Fragment", "",
-                                                SPV_ENV_UNIVERSAL_1_3),
-                             SPV_ENV_UNIVERSAL_1_3, SPV_ERROR_WRONG_VERSION),
-              HasSubstr("Invalid image operand 'SignExtend'"));
+  CompileSuccessfully(
+      GenerateShaderCode(body, "", "Fragment", "", SPV_ENV_UNIVERSAL_1_3));
+  ASSERT_EQ(SPV_ERROR_WRONG_VERSION, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("SignExtend(4096) requires SPIR-V version 1.4 or later"));
 }
 
 TEST_F(ValidateImage, ZeroExtendV13Bad) {
@@ -5864,10 +5866,12 @@ TEST_F(ValidateImage, ZeroExtendV13Bad) {
 %res1 = OpImageRead %u32vec4 %img %u32vec2_01 ZeroExtend
 )";
 
-  EXPECT_THAT(CompileFailure(GenerateShaderCode(body, "", "Fragment", "",
-                                                SPV_ENV_UNIVERSAL_1_3),
-                             SPV_ENV_UNIVERSAL_1_3, SPV_ERROR_WRONG_VERSION),
-              HasSubstr("Invalid image operand 'ZeroExtend'"));
+  CompileSuccessfully(
+      GenerateShaderCode(body, "", "Fragment", "", SPV_ENV_UNIVERSAL_1_3));
+  ASSERT_EQ(SPV_ERROR_WRONG_VERSION, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ZeroExtend(8192) requires SPIR-V version 1.4 or later"));
 }
 
 TEST_F(ValidateImage, SignExtendScalarUIntTexelV14Good) {

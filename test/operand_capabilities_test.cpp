@@ -18,7 +18,9 @@
 #include <vector>
 
 #include "gmock/gmock.h"
+#include "source/assembly_grammar.h"
 #include "source/enum_set.h"
+#include "source/operand.h"
 #include "test/unit_spirv.h"
 
 namespace spvtools {
@@ -31,12 +33,39 @@ using ::testing::TestWithParam;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
+// Emits a CapabilitySet to the given ostream, returning the ostream.
+inline std::ostream& operator<<(std::ostream& out, const CapabilitySet& cs) {
+  out << "CapabilitySet{";
+  auto ctx = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
+  spvtools::AssemblyGrammar grammar(ctx);
+  bool first = true;
+  for (auto c : cs) {
+    if (!first) {
+      out << " ";
+      first = false;
+    }
+    out << grammar.lookupOperandName(SPV_OPERAND_TYPE_CAPABILITY, uint32_t(c))
+        << "(" << uint32_t(c) << ")";
+  }
+  spvContextDestroy(ctx);
+  out << "}";
+  return out;
+}
+
 // A test case for mapping an enum to a capability mask.
 struct EnumCapabilityCase {
   spv_operand_type_t type;
   uint32_t value;
   CapabilitySet expected_capabilities;
 };
+// Emits an EnumCapabilityCase to the ostream, returning the ostream.
+inline std::ostream& operator<<(std::ostream& out,
+                                const EnumCapabilityCase& ecc) {
+  out << "EnumCapabilityCase{ " << spvOperandTypeStr(ecc.type) << "("
+      << unsigned(ecc.type) << "), " << ecc.value << ", "
+      << ecc.expected_capabilities << "}";
+  return out;
+}
 
 // Test fixture for testing EnumCapabilityCases.
 using EnumCapabilityTest =
@@ -56,7 +85,7 @@ TEST_P(EnumCapabilityTest, Sample) {
 
   EXPECT_THAT(ElementsIn(cap_set),
               Eq(ElementsIn(std::get<1>(GetParam()).expected_capabilities)))
-      << " capability value " << std::get<1>(GetParam()).value;
+      << " enum value " << std::get<1>(GetParam()).value;
   spvContextDestroy(context);
 }
 
@@ -417,7 +446,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 // See SPIR-V Section 3.20 Decoration
 INSTANTIATE_TEST_SUITE_P(
-    Decoration, EnumCapabilityTest,
+    Decoration_1_1, EnumCapabilityTest,
     Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
             ValuesIn(std::vector<EnumCapabilityCase>{
                 CASE1(DECORATION, Decoration::RelaxedPrecision, Shader),
@@ -468,6 +497,13 @@ INSTANTIATE_TEST_SUITE_P(
                       InputAttachment),
                 CASE1(DECORATION, Decoration::Alignment, Kernel),
             })));
+
+// See SPIR-V Section 3.20 Decoration
+INSTANTIATE_TEST_SUITE_P(Decoration_1_6, EnumCapabilityTest,
+                         Combine(Values(SPV_ENV_UNIVERSAL_1_6),
+                                 ValuesIn(std::vector<EnumCapabilityCase>{
+                                     CASE2(DECORATION, Decoration::Uniform,
+                                           Shader, UniformDecoration)})));
 
 #if 0
 // SpecId has different requirements in v1.0 and v1.1:
