@@ -98,9 +98,9 @@ spv_result_t spvOperandTableValueLookup(spv_target_env,
 
     // Assumes the underlying table is already sorted ascendingly according to
     // opcode value.
-    for (auto it = std::lower_bound(beg, end, needle, comp);
-         it != end && it->value == value; ++it) {
-      // We consider the current operand as available as long as
+    auto it = std::lower_bound(beg, end, needle, comp);
+    if (it != end && it->value == value) {
+      // The current operand is considered available as long as
       // it is in the grammar.  It might not be *valid* to use,
       // but that should be checked by the validator, not by parsing.
       *pEntry = it;
