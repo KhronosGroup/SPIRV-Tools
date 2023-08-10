@@ -1058,7 +1058,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StoragePushConstant16_RemainsSimplePointer_Vulkan1_0) {
+       StoragePushConstant16_RemainsSimplePointer_Vulkan1_0) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
@@ -1084,7 +1084,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StoragePushConstant16_RemainsSimplePointer_Vulkan1_1) {
+       StoragePushConstant16_RemainsSimplePointer_Vulkan1_1) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
@@ -1109,8 +1109,7 @@ TEST_F(TrimCapabilitiesPassTest,
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
-TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StoragePushConstant16_RemovedSimplePointer) {
+TEST_F(TrimCapabilitiesPassTest, StoragePushConstant16_RemovedSimplePointer) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
