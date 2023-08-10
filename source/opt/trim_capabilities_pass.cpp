@@ -179,7 +179,7 @@ Handler_OpTypePointer_StorageUniformBufferBlock16(
   assert(instruction->opcode() == spv::Op::OpTypePointer &&
          "This handler only support OpTypePointer opcodes.");
 
-  // This capability is only required if the variable as an Input/Output storage
+  // This capability is only required if the variable has a Uniform storage
   // class.
   spv::StorageClass storage_class = spv::StorageClass(
       instruction->GetSingleWordInOperand(kOpTypePointerStorageClassIndex));
