@@ -496,6 +496,10 @@ Options (in lexicographical order):)",
                covers reflection information defined by
                SPV_GOOGLE_hlsl_functionality1 and SPV_KHR_non_semantic_info)");
   printf(R"(
+  --switch-descriptorset=<from>:<to>
+               Switch any DescriptoSet decorations using the value <from> to
+               the new value <to>.)");
+  printf(R"(
   --target-env=<env>
                Set the target environment. Without this flag the target
                environment defaults to spv1.5. <env> must be one of
