@@ -81,6 +81,7 @@ class TrimCapabilitiesPass : public Pass {
       spv::Capability::ShaderClockKHR,
       spv::Capability::StorageInputOutput16,
       spv::Capability::StoragePushConstant16,
+      spv::Capability::StorageUniform16,
       spv::Capability::StorageUniformBufferBlock16
       // clang-format on
   };
