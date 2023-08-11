@@ -212,6 +212,10 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
       return "cooperative matrix layout";
     case SPV_OPERAND_TYPE_COOPERATIVE_MATRIX_USE:
       return "cooperative matrix use";
+    case SPV_OPERAND_TYPE_INITIALIZATION_MODE_QUALIFIER:
+      return "initialization mode qualifier";
+    case SPV_OPERAND_TYPE_HOST_ACCESS_QUALIFIER:
+      return "host access qualifier";
     case SPV_OPERAND_TYPE_IMAGE:
     case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
       return "image";
@@ -348,6 +352,8 @@ bool spvOperandIsConcrete(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_PACKED_VECTOR_FORMAT:
     case SPV_OPERAND_TYPE_COOPERATIVE_MATRIX_LAYOUT:
     case SPV_OPERAND_TYPE_COOPERATIVE_MATRIX_USE:
+    case SPV_OPERAND_TYPE_INITIALIZATION_MODE_QUALIFIER:
+    case SPV_OPERAND_TYPE_HOST_ACCESS_QUALIFIER:
       return true;
     default:
       break;
