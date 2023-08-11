@@ -59,6 +59,9 @@ Options (in lexicographical order):
                NOTE: The SPIR-V version used by the linked binary module
                depends only on the version of the inputs, and is not affected
                by this option.
+  --use-first-entrypoint
+               Use the entrypoint from the first input file and ignore any
+	       in subsequent input files.
   --verify-ids
                Verify that IDs in the resulting modules are truly unique.
   --version
@@ -78,6 +81,7 @@ FLAG_LONG_bool(   create_library,        /* default_value= */ false,            
 FLAG_LONG_bool(   allow_partial_linkage, /* default_value= */ false,               /* required= */ false);
 FLAG_SHORT_string(o,                     /* default_value= */ "",                  /* required= */ false);
 FLAG_LONG_string( target_env,            /* default_value= */ kDefaultEnvironment, /* required= */ false);
+FLAG_LONG_bool(   use_first_entrypoint,  /* default_value= */ false,               /* required= */ false);
 // clang-format on
 
 int main(int, const char* argv[]) {
@@ -120,6 +124,7 @@ int main(int, const char* argv[]) {
   options.SetAllowPartialLinkage(flags::allow_partial_linkage.value());
   options.SetCreateLibrary(flags::create_library.value());
   options.SetVerifyIds(flags::verify_ids.value());
+  options.SetUseFirstEntrypoint(flags::use_first_entrypoint.value());
 
   if (inFiles.empty()) {
     fprintf(stderr, "error: No input file specified\n");

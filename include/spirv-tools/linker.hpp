@@ -63,10 +63,16 @@ class LinkerOptions {
     allow_partial_linkage_ = allow_partial_linkage;
   }
 
+  bool GetUseFirstEntrypoint() const { return use_first_entrypoint_; }
+  void SetUseFirstEntrypoint(bool use_first_entry) {
+    use_first_entrypoint_ = use_first_entry;
+  }
+
  private:
-  bool create_library_;
-  bool verify_ids_;
-  bool allow_partial_linkage_;
+  bool create_library_{false};
+  bool verify_ids_{false};
+  bool allow_partial_linkage_{false};
+  bool use_first_entrypoint_{false};
 };
 
 // Links one or more SPIR-V modules into a new SPIR-V module. That is, combine

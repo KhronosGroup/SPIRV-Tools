@@ -147,5 +147,40 @@ OpFunctionEnd
   EXPECT_THAT(GetErrorMessage(), std::string());
 }
 
+TEST_F(EntryPoints, UseFirstEntrypoint) {
+  const std::string body1 = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %3 "main"
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  const std::string body2 = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %3 "main"
+%1 = OpTypeVoid
+%2 = OpTypeFunction %1
+%3 = OpFunction %1 None %2
+%4 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  LinkerOptions options;
+  options.SetUseFirstEntrypoint(true);
+
+  spvtest::Binary linked_binary;
+  EXPECT_EQ(SPV_SUCCESS,
+            AssembleAndLink({body1, body2}, &linked_binary, options));
+  EXPECT_THAT(GetErrorMessage(), std::string());
+  EXPECT_TRUE(Validate(linked_binary));
+  EXPECT_THAT(GetErrorMessage(), std::string());
+}
+
 }  // namespace
 }  // namespace spvtools

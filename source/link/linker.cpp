@@ -100,7 +100,8 @@ spv_result_t GenerateHeader(const MessageConsumer& consumer,
 spv_result_t MergeModules(const MessageConsumer& consumer,
                           const std::vector<Module*>& in_modules,
                           const AssemblyGrammar& grammar,
-                          IRContext* linked_context);
+                          IRContext* linked_context,
+                          const LinkerOptions& options);
 
 // Compute all pairs of import and export and return it in |linkings_to_do|.
 //
@@ -238,7 +239,8 @@ spv_result_t GenerateHeader(const MessageConsumer& consumer,
 spv_result_t MergeModules(const MessageConsumer& consumer,
                           const std::vector<Module*>& input_modules,
                           const AssemblyGrammar& grammar,
-                          IRContext* linked_context) {
+                          IRContext* linked_context,
+                          const LinkerOptions& options) {
   spv_position_t position = {};
 
   if (linked_context == nullptr)
@@ -314,26 +316,38 @@ spv_result_t MergeModules(const MessageConsumer& consumer,
       linked_memory_model_inst->Clone(linked_context)));
 
   std::vector<std::pair<uint32_t, std::string>> entry_points;
-  for (const auto& module : input_modules)
+  if (options.GetUseFirstEntrypoint()) {
+    const auto& module = *input_modules.begin();
     for (const auto& inst : module->entry_points()) {
       const uint32_t model = inst.GetSingleWordInOperand(0);
       const std::string name = inst.GetInOperand(2).AsString();
-      const auto i = std::find_if(
-          entry_points.begin(), entry_points.end(),
-          [model, name](const std::pair<uint32_t, std::string>& v) {
-            return v.first == model && v.second == name;
-          });
-      if (i != entry_points.end()) {
-        spv_operand_desc desc = nullptr;
-        grammar.lookupOperand(SPV_OPERAND_TYPE_EXECUTION_MODEL, model, &desc);
-        return DiagnosticStream(position, consumer, "", SPV_ERROR_INTERNAL)
-               << "The entry point \"" << name << "\", with execution model "
-               << desc->name << ", was already defined.";
-      }
       linked_module->AddEntryPoint(
           std::unique_ptr<Instruction>(inst.Clone(linked_context)));
       entry_points.emplace_back(model, name);
     }
+  } else {
+    for (const auto& module : input_modules) {
+      for (const auto& inst : module->entry_points()) {
+        const uint32_t model = inst.GetSingleWordInOperand(0);
+        const std::string name = inst.GetInOperand(2).AsString();
+        const auto i = std::find_if(
+            entry_points.begin(), entry_points.end(),
+            [model, name](const std::pair<uint32_t, std::string>& v) {
+              return v.first == model && v.second == name;
+            });
+        if (i != entry_points.end()) {
+          spv_operand_desc desc = nullptr;
+          grammar.lookupOperand(SPV_OPERAND_TYPE_EXECUTION_MODEL, model, &desc);
+          return DiagnosticStream(position, consumer, "", SPV_ERROR_INTERNAL)
+                 << "The entry point \"" << name << "\", with execution model "
+                 << desc->name << ", was already defined.";
+        }
+        linked_module->AddEntryPoint(
+            std::unique_ptr<Instruction>(inst.Clone(linked_context)));
+        entry_points.emplace_back(model, name);
+      }
+    }
+  }
 
   for (const auto& module : input_modules)
     for (const auto& inst : module->execution_modes())
@@ -760,7 +774,7 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
 
   // Phase 3: Merge all the binaries into a single one.
   AssemblyGrammar grammar(c_context);
-  res = MergeModules(consumer, modules, grammar, &linked_context);
+  res = MergeModules(consumer, modules, grammar, &linked_context, options);
   if (res != SPV_SUCCESS) return res;
 
   if (options.GetVerifyIds()) {
