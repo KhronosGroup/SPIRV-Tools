@@ -151,10 +151,117 @@ Handler_OpTypePointer_StorageInputOutput16(const Instruction* instruction) {
              : std::nullopt;
 }
 
+static std::optional<spv::Capability>
+Handler_OpTypePointer_StoragePushConstant16(const Instruction* instruction) {
+  assert(instruction->opcode() == spv::Op::OpTypePointer &&
+         "This handler only support OpTypePointer opcodes.");
+
+  // This capability is only required if the variable has a PushConstant storage
+  // class.
+  spv::StorageClass storage_class = spv::StorageClass(
+      instruction->GetSingleWordInOperand(kOpTypePointerStorageClassIndex));
+  if (storage_class != spv::StorageClass::PushConstant) {
+    return std::nullopt;
+  }
+
+  if (!Has16BitCapability(instruction->context()->get_feature_mgr())) {
+    return std::nullopt;
+  }
+
+  return AnyTypeOf(instruction, is16bitType)
+             ? std::optional(spv::Capability::StoragePushConstant16)
+             : std::nullopt;
+}
+
+static std::optional<spv::Capability>
+Handler_OpTypePointer_StorageUniformBufferBlock16(
+    const Instruction* instruction) {
+  assert(instruction->opcode() == spv::Op::OpTypePointer &&
+         "This handler only support OpTypePointer opcodes.");
+
+  // This capability is only required if the variable has a Uniform storage
+  // class.
+  spv::StorageClass storage_class = spv::StorageClass(
+      instruction->GetSingleWordInOperand(kOpTypePointerStorageClassIndex));
+  if (storage_class != spv::StorageClass::Uniform) {
+    return std::nullopt;
+  }
+
+  if (!Has16BitCapability(instruction->context()->get_feature_mgr())) {
+    return std::nullopt;
+  }
+
+  const auto* decoration_mgr = instruction->context()->get_decoration_mgr();
+  const bool matchesCondition =
+      AnyTypeOf(instruction, [decoration_mgr](const Instruction* item) {
+        if (!decoration_mgr->HasDecoration(item->result_id(),
+                                           spv::Decoration::BufferBlock)) {
+          return false;
+        }
+
+        return AnyTypeOf(item, is16bitType);
+      });
+
+  return matchesCondition
+             ? std::optional(spv::Capability::StorageUniformBufferBlock16)
+             : std::nullopt;
+}
+
+static std::optional<spv::Capability> Handler_OpTypePointer_StorageUniform16(
+    const Instruction* instruction) {
+  assert(instruction->opcode() == spv::Op::OpTypePointer &&
+         "This handler only support OpTypePointer opcodes.");
+
+  // This capability is only required if the variable has a Uniform storage
+  // class.
+  spv::StorageClass storage_class = spv::StorageClass(
+      instruction->GetSingleWordInOperand(kOpTypePointerStorageClassIndex));
+  if (storage_class != spv::StorageClass::Uniform) {
+    return std::nullopt;
+  }
+
+  const auto* feature_manager = instruction->context()->get_feature_mgr();
+  if (!Has16BitCapability(feature_manager)) {
+    return std::nullopt;
+  }
+
+  const bool hasBufferBlockCapability =
+      feature_manager->GetCapabilities().contains(
+          spv::Capability::StorageUniformBufferBlock16);
+  const auto* decoration_mgr = instruction->context()->get_decoration_mgr();
+  bool found16bitType = false;
+
+  DFSWhile(instruction, [decoration_mgr, hasBufferBlockCapability,
+                         &found16bitType](const Instruction* item) {
+    if (found16bitType) {
+      return false;
+    }
+
+    if (hasBufferBlockCapability &&
+        decoration_mgr->HasDecoration(item->result_id(),
+                                      spv::Decoration::BufferBlock)) {
+      return false;
+    }
+
+    if (is16bitType(item)) {
+      found16bitType = true;
+      return false;
+    }
+
+    return true;
+  });
+
+  return found16bitType ? std::optional(spv::Capability::StorageUniform16)
+                        : std::nullopt;
+}
+
 // Opcode of interest to determine capabilities requirements.
-constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 1> kOpcodeHandlers{{
+constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 4> kOpcodeHandlers{{
     // clang-format off
     {spv::Op::OpTypePointer, Handler_OpTypePointer_StorageInputOutput16},
+    {spv::Op::OpTypePointer, Handler_OpTypePointer_StoragePushConstant16},
+    {spv::Op::OpTypePointer, Handler_OpTypePointer_StorageUniformBufferBlock16},
+    {spv::Op::OpTypePointer, Handler_OpTypePointer_StorageUniform16}
     // clang-format on
 }};
 

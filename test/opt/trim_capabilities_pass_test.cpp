@@ -1058,7 +1058,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StoragePushConstant16_RemainsSimplePointer_Vulkan1_0) {
+       StoragePushConstant16_RemainsSimplePointer_Vulkan1_0) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
@@ -1084,7 +1084,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StoragePushConstant16_RemainsSimplePointer_Vulkan1_1) {
+       StoragePushConstant16_RemainsSimplePointer_Vulkan1_1) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
@@ -1109,8 +1109,7 @@ TEST_F(TrimCapabilitiesPassTest,
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
-TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StoragePushConstant16_RemovedSimplePointer) {
+TEST_F(TrimCapabilitiesPassTest, StoragePushConstant16_RemovedSimplePointer) {
   const std::string kTest = R"(
                       OpCapability Shader
                       OpCapability Float16
@@ -1135,7 +1134,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StorageUniformBufferBlock16_RemainsSimplePointer_Vulkan1_0) {
+       StorageUniformBufferBlock16_RemainsSimplePointer_Vulkan1_0) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
   static_assert(spv::Capability::StorageUniformBufferBlock16 ==
                 spv::Capability::StorageBuffer16BitAccess);
@@ -1170,7 +1169,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StorageUniformBufferBlock16_RemainsSimplePointer_Vulkan1_1) {
+       StorageUniformBufferBlock16_RemainsSimplePointer_Vulkan1_1) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
   static_assert(spv::Capability::StorageUniformBufferBlock16 ==
                 spv::Capability::StorageBuffer16BitAccess);
@@ -1205,7 +1204,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StorageUniformBufferBlock16_RemovedSimplePointer) {
+       StorageUniformBufferBlock16_RemovedSimplePointer) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
   static_assert(spv::Capability::StorageUniformBufferBlock16 ==
                 spv::Capability::StorageBuffer16BitAccess);
@@ -1238,7 +1237,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StorageUniform16_RemovedWithBufferBlockPointer_Vulkan1_0) {
+       StorageUniform16_RemovedWithBufferBlockPointer_Vulkan1_0) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
   static_assert(spv::Capability::StorageUniformBufferBlock16 ==
                 spv::Capability::StorageBuffer16BitAccess);
@@ -1278,7 +1277,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StorageUniform16_RemovedWithBufferBlockPointer_Vulkan1_1) {
+       StorageUniform16_RemovedWithBufferBlockPointer_Vulkan1_1) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
   static_assert(spv::Capability::StorageUniformBufferBlock16 ==
                 spv::Capability::StorageBuffer16BitAccess);
@@ -1318,7 +1317,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StorageUniform16_RemovedWithNonBlockUniformPointer_Vulkan1_0) {
+       StorageUniform16_RemovedWithNonBlockUniformPointer_Vulkan1_0) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
   static_assert(spv::Capability::StorageUniformBufferBlock16 ==
                 spv::Capability::StorageBuffer16BitAccess);
@@ -1357,7 +1356,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_StorageUniform16_RemovedWithNonBlockUniformPointer_Vulkan1_1) {
+       StorageUniform16_RemovedWithNonBlockUniformPointer_Vulkan1_1) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/5354
   static_assert(spv::Capability::StorageUniformBufferBlock16 ==
                 spv::Capability::StorageBuffer16BitAccess);
