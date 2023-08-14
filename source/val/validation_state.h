@@ -802,7 +802,8 @@ class ValidationState_t {
   // Check if instruction 'id' is a consumer of a texture decorated
   // with a QCOM image processing decoration
   bool IsQCOMImageProcessingTextureConsumer(uint32_t id) {
-    return qcom_image_processing_consumers_.find(id) != qcom_image_processing_consumers_.end();
+    return qcom_image_processing_consumers_.find(id) !=
+           qcom_image_processing_consumers_.end();
   }
 
  private:
