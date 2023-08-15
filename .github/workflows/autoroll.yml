@@ -47,6 +47,10 @@ jobs:
         if: steps.update_dependencies.outputs.changed == 'true'
         run: |
           git push --force --set-upstream origin roll_deps
-          gh pr create --label 'kokoro:run' --base main -f -r s-perron
+          # Create a PR. If it aready exists, the command fails, so ignore the return code.
+          gh pr create --base main -f -r s-perron || true 
+          # Add the 'kokoro:run' label so that the kokoro tests will be run.
+          gh pr edit --add-label 'kokoro:run'
+          gh pr merge --auto --squash
         env:
           GITHUB_TOKEN: ${{ github.token }}

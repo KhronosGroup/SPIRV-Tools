@@ -132,6 +132,13 @@ class TrimCapabilitiesPass : public Pass {
                    descriptor->extensions + descriptor->numExtensions);
   }
 
+  void addInstructionRequirementsForOpcode(spv::Op opcode,
+                                           CapabilitySet* capabilities,
+                                           ExtensionSet* extensions) const;
+  void addInstructionRequirementsForOperand(const Operand& operand,
+                                            CapabilitySet* capabilities,
+                                            ExtensionSet* extensions) const;
+
   // Given an `instruction`, determines the capabilities it requires, and output
   // them in `capabilities`. The returned capabilities form a subset of
   // kSupportedCapabilities.
