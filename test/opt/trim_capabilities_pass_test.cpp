@@ -517,9 +517,7 @@ TEST_F(TrimCapabilitiesPassTest,
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
-// FIXME(Keenuts): Add support for bitmask operands.
-TEST_F(TrimCapabilitiesPassTest,
-       DISABLED_MinLod_DetectsMinLodWithBitmaskImageOperand) {
+TEST_F(TrimCapabilitiesPassTest, MinLod_DetectsMinLodWithBitmaskImageOperand) {
   const std::string kTest = R"(
                             OpCapability MinLod
 ; CHECK:                    OpCapability MinLod
