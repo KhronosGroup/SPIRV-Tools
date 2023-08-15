@@ -6733,9 +6733,7 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationA) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationB) {
@@ -6794,9 +6792,7 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationB) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationC) {
@@ -6848,9 +6844,7 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationC) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationD) {
@@ -6902,9 +6896,7 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationD) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationA) {
@@ -6963,9 +6955,7 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationA) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationB) {
@@ -7024,9 +7014,7 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationB) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationC) {
@@ -7078,9 +7066,7 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationC) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationD) {
@@ -7132,9 +7118,7 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationD) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedNoDecorationA) {
@@ -7193,9 +7177,7 @@ TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedNoDecorationA) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedNoDecorationB) {
@@ -7248,9 +7230,7 @@ TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedNoDecorationB) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADInvalidUseA) {
@@ -7816,7 +7796,6 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDInvalidUseD) {
       getDiagnosticString(),
       HasSubstr("Illegal use of QCOM image processing decorated texture"));
 }
-
 
 TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedInvalidUseA) {
   std::string text = R"(
