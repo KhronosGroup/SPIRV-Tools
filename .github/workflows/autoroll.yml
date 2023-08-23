@@ -14,6 +14,7 @@ jobs:
       pull-requests: write
     name: Update dependencies
     runs-on: ubuntu-latest
+    if: github.repository == 'KhronosGroup/SPIRV-Tools'
 
     steps:
       - uses: actions/checkout@v3
