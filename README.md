@@ -1,4 +1,5 @@
 # SPIR-V Tools
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/KhronosGroup/SPIRV-Tools/badge)](https://securityscorecards.dev/viewer/?uri=github.com/KhronosGroup/SPIRV-Tools)
 
 NEWS 2023-01-11: Development occurs on the `main` branch.
 
