@@ -368,6 +368,13 @@ void TrimCapabilitiesPass::addInstructionRequirements(
     return;
   }
 
+  // Ignoring OpBeginInvocationInterlockEXT and OpEndInvocationInterlockEXT
+  // because they have three possible capabilities, only one of which is needed
+  if (instruction->opcode() == spv::Op::OpBeginInvocationInterlockEXT ||
+      instruction->opcode() == spv::Op::OpEndInvocationInterlockEXT) {
+    return;
+  }
+
   addInstructionRequirementsForOpcode(instruction->opcode(), capabilities,
                                       extensions);
 

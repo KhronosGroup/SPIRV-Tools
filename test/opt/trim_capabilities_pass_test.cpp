@@ -1392,6 +1392,202 @@ TEST_F(TrimCapabilitiesPassTest,
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
+TEST_F(TrimCapabilitiesPassTest, FragmentShaderRemoved) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability FragmentShaderPixelInterlockEXT
+               OpCapability FragmentShaderSampleInterlockEXT
+               OpCapability FragmentShaderShadingRateInterlockEXT
+               OpExtension "SPV_EXT_fragment_shader_interlock"
+; CHECK-NOT:   OpCapability FragmentShaderPixelInterlockEXT
+; CHECK-NOT:   OpCapability FragmentShaderSampleInterlockEXT
+; CHECK-NOT:   OpCapability FragmentShaderShadingRateInterlockEXT
+; CHECK-NOT:   OpExtension "SPV_EXT_fragment_shader_interlock"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+          %1 = OpTypeFunction %void
+          %2 = OpFunction %void None %1
+          %3 = OpLabel
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, FragmentShaderPixelInterlockOrderedRemains) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability FragmentShaderPixelInterlockEXT
+               OpCapability FragmentShaderSampleInterlockEXT
+               OpCapability FragmentShaderShadingRateInterlockEXT
+               OpExtension "SPV_EXT_fragment_shader_interlock"
+; CHECK:       OpCapability FragmentShaderPixelInterlockEXT
+; CHECK-NOT:   OpCapability FragmentShaderSampleInterlockEXT
+; CHECK-NOT:   OpCapability FragmentShaderShadingRateInterlockEXT
+; CHECK:       OpExtension "SPV_EXT_fragment_shader_interlock"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %main PixelInterlockOrderedEXT
+       %void = OpTypeVoid
+          %1 = OpTypeFunction %void
+          %2 = OpFunction %void None %1
+          %3 = OpLabel
+               OpBeginInvocationInterlockEXT
+               OpEndInvocationInterlockEXT
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, FragmentShaderPixelInterlockUnorderedRemains) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability FragmentShaderPixelInterlockEXT
+               OpCapability FragmentShaderSampleInterlockEXT
+               OpCapability FragmentShaderShadingRateInterlockEXT
+               OpExtension "SPV_EXT_fragment_shader_interlock"
+; CHECK:       OpCapability FragmentShaderPixelInterlockEXT
+; CHECK-NOT:   OpCapability FragmentShaderSampleInterlockEXT
+; CHECK-NOT:   OpCapability FragmentShaderShadingRateInterlockEXT
+; CHECK:       OpExtension "SPV_EXT_fragment_shader_interlock"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %main PixelInterlockUnorderedEXT
+       %void = OpTypeVoid
+          %1 = OpTypeFunction %void
+          %2 = OpFunction %void None %1
+          %3 = OpLabel
+               OpBeginInvocationInterlockEXT
+               OpEndInvocationInterlockEXT
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, FragmentShaderSampleInterlockOrderedRemains) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability FragmentShaderPixelInterlockEXT
+               OpCapability FragmentShaderSampleInterlockEXT
+               OpCapability FragmentShaderShadingRateInterlockEXT
+               OpExtension "SPV_EXT_fragment_shader_interlock"
+; CHECK-NOT:   OpCapability FragmentShaderPixelInterlockEXT
+; CHECK:       OpCapability FragmentShaderSampleInterlockEXT
+; CHECK-NOT:   OpCapability FragmentShaderShadingRateInterlockEXT
+; CHECK:       OpExtension "SPV_EXT_fragment_shader_interlock"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %main SampleInterlockOrderedEXT
+       %void = OpTypeVoid
+          %1 = OpTypeFunction %void
+          %2 = OpFunction %void None %1
+          %3 = OpLabel
+               OpBeginInvocationInterlockEXT
+               OpEndInvocationInterlockEXT
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       FragmentShaderSampleInterlockUnorderedRemains) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability FragmentShaderPixelInterlockEXT
+               OpCapability FragmentShaderSampleInterlockEXT
+               OpCapability FragmentShaderShadingRateInterlockEXT
+               OpExtension "SPV_EXT_fragment_shader_interlock"
+; CHECK-NOT:   OpCapability FragmentShaderPixelInterlockEXT
+; CHECK:       OpCapability FragmentShaderSampleInterlockEXT
+; CHECK-NOT:   OpCapability FragmentShaderShadingRateInterlockEXT
+; CHECK:       OpExtension "SPV_EXT_fragment_shader_interlock"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %main SampleInterlockUnorderedEXT
+       %void = OpTypeVoid
+          %1 = OpTypeFunction %void
+          %2 = OpFunction %void None %1
+          %3 = OpLabel
+               OpBeginInvocationInterlockEXT
+               OpEndInvocationInterlockEXT
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       FragmentShaderShadingRateInterlockOrderedRemains) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability FragmentShaderPixelInterlockEXT
+               OpCapability FragmentShaderSampleInterlockEXT
+               OpCapability FragmentShaderShadingRateInterlockEXT
+               OpExtension "SPV_EXT_fragment_shader_interlock"
+; CHECK-NOT:   OpCapability FragmentShaderPixelInterlockEXT
+; CHECK-NOT:   OpCapability FragmentShaderSampleInterlockEXT
+; CHECK:       OpCapability FragmentShaderShadingRateInterlockEXT
+; CHECK:       OpExtension "SPV_EXT_fragment_shader_interlock"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %main ShadingRateInterlockOrderedEXT
+       %void = OpTypeVoid
+          %1 = OpTypeFunction %void
+          %2 = OpFunction %void None %1
+          %3 = OpLabel
+               OpBeginInvocationInterlockEXT
+               OpEndInvocationInterlockEXT
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       FragmentShaderShadingRateInterlockUnorderedRemains) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability FragmentShaderPixelInterlockEXT
+               OpCapability FragmentShaderSampleInterlockEXT
+               OpCapability FragmentShaderShadingRateInterlockEXT
+               OpExtension "SPV_EXT_fragment_shader_interlock"
+; CHECK-NOT:   OpCapability FragmentShaderPixelInterlockEXT
+; CHECK-NOT:   OpCapability FragmentShaderSampleInterlockEXT
+; CHECK:       OpCapability FragmentShaderShadingRateInterlockEXT
+; CHECK:       OpExtension "SPV_EXT_fragment_shader_interlock"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %main ShadingRateInterlockUnorderedEXT
+       %void = OpTypeVoid
+          %1 = OpTypeFunction %void
+          %2 = OpFunction %void None %1
+          %3 = OpLabel
+               OpBeginInvocationInterlockEXT
+               OpEndInvocationInterlockEXT
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
