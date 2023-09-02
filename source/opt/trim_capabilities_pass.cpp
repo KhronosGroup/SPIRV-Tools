@@ -303,6 +303,13 @@ TrimCapabilitiesPass::TrimCapabilitiesPass()
 void TrimCapabilitiesPass::addInstructionRequirementsForOpcode(
     spv::Op opcode, CapabilitySet* capabilities,
     ExtensionSet* extensions) const {
+  // Ignoring OpBeginInvocationInterlockEXT and OpEndInvocationInterlockEXT
+  // because they have three possible capabilities, only one of which is needed
+  if (opcode == spv::Op::OpBeginInvocationInterlockEXT ||
+      opcode == spv::Op::OpEndInvocationInterlockEXT) {
+    return;
+  }
+
   const spv_opcode_desc_t* desc = {};
   auto result = context()->grammar().lookupOpcode(opcode, &desc);
   if (result != SPV_SUCCESS) {
@@ -365,13 +372,6 @@ void TrimCapabilitiesPass::addInstructionRequirements(
   // Ignoring OpCapability and OpExtension instructions.
   if (instruction->opcode() == spv::Op::OpCapability ||
       instruction->opcode() == spv::Op::OpExtension) {
-    return;
-  }
-
-  // Ignoring OpBeginInvocationInterlockEXT and OpEndInvocationInterlockEXT
-  // because they have three possible capabilities, only one of which is needed
-  if (instruction->opcode() == spv::Op::OpBeginInvocationInterlockEXT ||
-      instruction->opcode() == spv::Op::OpEndInvocationInterlockEXT) {
     return;
   }
 
