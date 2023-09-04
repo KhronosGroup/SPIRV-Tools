@@ -39,8 +39,11 @@ namespace {
 constexpr uint32_t kOpTypePointerStorageClassIndex = 0;
 constexpr uint32_t kTypeArrayTypeIndex = 0;
 constexpr uint32_t kOpTypeScalarBitWidthIndex = 0;
-constexpr uint32_t kTypePointerTypeIdInIdx = 1;
+constexpr uint32_t kTypePointerTypeIdInIndex = 1;
 constexpr uint32_t kOpTypeIntSizeIndex = 0;
+constexpr uint32_t kOpTypeImageArrayedIndex = 3;
+constexpr uint32_t kOpTypeImageMSIndex = kOpTypeImageArrayedIndex + 1;
+constexpr uint32_t kOpTypeImageSampledIndex = kOpTypeImageMSIndex + 1;
 
 // DFS visit of the type defined by `instruction`.
 // If `condition` is true, children of the current node are visited.
@@ -61,7 +64,7 @@ static void DFSWhile(const Instruction* instruction, UnaryPredicate condition) {
 
     if (item->opcode() == spv::Op::OpTypePointer) {
       instructions_to_visit.push(
-          item->GetSingleWordInOperand(kTypePointerTypeIdInIdx));
+          item->GetSingleWordInOperand(kTypePointerTypeIdInIndex));
       continue;
     }
 
@@ -266,14 +269,32 @@ static std::optional<spv::Capability> Handler_OpTypeInt_Int64(
   return size == 64 ? std::optional(spv::Capability::Int64) : std::nullopt;
 }
 
+static std::optional<spv::Capability> Handler_OpTypeImage_ImageMSArray(
+    const Instruction* instruction) {
+  assert(instruction->opcode() == spv::Op::OpTypeImage &&
+         "This handler only support OpTypeImage opcodes.");
+
+  const uint32_t arrayed =
+      instruction->GetSingleWordInOperand(kOpTypeImageArrayedIndex);
+  const uint32_t ms = instruction->GetSingleWordInOperand(kOpTypeImageMSIndex);
+  const uint32_t sampled =
+      instruction->GetSingleWordInOperand(kOpTypeImageSampledIndex);
+
+  return arrayed == 1 && sampled == 2 && ms == 1
+             ? std::optional(spv::Capability::ImageMSArray)
+             : std::nullopt;
+}
+
 // Opcode of interest to determine capabilities requirements.
-constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 5> kOpcodeHandlers{{
+constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 7> kOpcodeHandlers{{
     // clang-format off
+    {spv::Op::OpTypeImage,   Handler_OpTypeImage_ImageMSArray},
+    {spv::Op::OpTypeInt,     Handler_OpTypeInt_Int64 },
     {spv::Op::OpTypePointer, Handler_OpTypePointer_StorageInputOutput16},
     {spv::Op::OpTypePointer, Handler_OpTypePointer_StoragePushConstant16},
-    {spv::Op::OpTypePointer, Handler_OpTypePointer_StorageUniformBufferBlock16},
     {spv::Op::OpTypePointer, Handler_OpTypePointer_StorageUniform16},
-    {spv::Op::OpTypeInt, Handler_OpTypeInt_Int64 },
+    {spv::Op::OpTypePointer, Handler_OpTypePointer_StorageUniform16},
+    {spv::Op::OpTypePointer, Handler_OpTypePointer_StorageUniformBufferBlock16},
     // clang-format on
 }};
 

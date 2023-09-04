@@ -1953,6 +1953,143 @@ TEST_F(TrimCapabilitiesPassTest,
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
+TEST_F(TrimCapabilitiesPassTest,
+       ImageMSArray_RemainsIfSampledIs2AndArrayedIs1) {
+  const std::string kTest = R"(
+               OpCapability ImageMSArray
+ ; CHECK:      OpCapability ImageMSArray
+               OpCapability Shader
+               OpCapability StorageImageMultisample
+               OpCapability StorageImageReadWithoutFormat
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %var_image DescriptorSet 0
+               OpDecorate %var_image Binding 1
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+        %f32 = OpTypeFloat 32
+        %u32 = OpTypeInt 32 0
+     %uint_2 = OpConstant %u32 2
+     %uint_1 = OpConstant %u32 1
+     %v2uint = OpTypeVector %u32 2
+    %v4float = OpTypeVector %f32 4
+    %image = OpTypeImage %f32 2D 2 1 1 2 Unknown
+%ptr_image = OpTypePointer UniformConstant %image
+       %10 = OpConstantComposite %v2uint %uint_1 %uint_2
+%var_image = OpVariable %ptr_image UniformConstant
+     %main = OpFunction %void None %func
+ %main_lab = OpLabel
+       %18 = OpLoad %image %var_image
+       %19 = OpImageRead %v4float %18 %10 Sample %uint_2
+             OpReturn
+             OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, ImageMSArray_RemovedIfNotUsed) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability ImageMSArray
+; CHECK-NOT:   OpCapability ImageMSArray
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %out_var_SV_Target
+               OpExecutionMode %main OriginUpperLeft
+               OpSource HLSL 660
+               OpName %out_var_SV_Target "out.var.SV_Target"
+               OpName %main "main"
+               OpDecorate %out_var_SV_Target Location 0
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+%out_var_SV_Target = OpVariable %_ptr_Output_v4float Output
+       %main = OpFunction %void None %7
+          %8 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, ImageMSArray_RemovedIfArrayedIsNot1) {
+  const std::string kTest = R"(
+               OpCapability ImageMSArray
+ ; CHECK-NOT:  OpCapability ImageMSArray
+               OpCapability Shader
+               OpCapability StorageImageMultisample
+               OpCapability StorageImageReadWithoutFormat
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %var_image DescriptorSet 0
+               OpDecorate %var_image Binding 1
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+        %f32 = OpTypeFloat 32
+        %u32 = OpTypeInt 32 0
+     %uint_2 = OpConstant %u32 2
+     %uint_1 = OpConstant %u32 1
+     %v2uint = OpTypeVector %u32 2
+    %v4float = OpTypeVector %f32 4
+    %image = OpTypeImage %f32 2D 2 0 1 2 Unknown
+%ptr_image = OpTypePointer UniformConstant %image
+       %10 = OpConstantComposite %v2uint %uint_1 %uint_2
+%var_image = OpVariable %ptr_image UniformConstant
+     %main = OpFunction %void None %func
+ %main_lab = OpLabel
+       %18 = OpLoad %image %var_image
+       %19 = OpImageRead %v4float %18 %10 Sample %uint_2
+             OpReturn
+             OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, ImageMSArray_RemovedIfSampledNot2) {
+  const std::string kTest = R"(
+               OpCapability ImageMSArray
+ ; CHECK-NOT:  OpCapability ImageMSArray
+               OpCapability Shader
+               OpCapability StorageImageReadWithoutFormat
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %var_image DescriptorSet 0
+               OpDecorate %var_image Binding 1
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+        %f32 = OpTypeFloat 32
+        %u32 = OpTypeInt 32 0
+     %uint_3 = OpConstant %u32 3
+     %uint_2 = OpConstant %u32 2
+     %uint_1 = OpConstant %u32 1
+     %v3uint = OpTypeVector %u32 3
+    %v4float = OpTypeVector %f32 4
+    %image = OpTypeImage %f32 2D 2 1 0 2 Unknown
+%ptr_image = OpTypePointer UniformConstant %image
+       %10 = OpConstantComposite %v3uint %uint_1 %uint_2 %uint_3
+%var_image = OpVariable %ptr_image UniformConstant
+     %main = OpFunction %void None %func
+ %main_lab = OpLabel
+       %18 = OpLoad %image %var_image
+       %19 = OpImageRead %v4float %18 %10
+             OpReturn
+             OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
