@@ -40,6 +40,7 @@ constexpr uint32_t kOpTypePointerStorageClassIndex = 0;
 constexpr uint32_t kTypeArrayTypeIndex = 0;
 constexpr uint32_t kOpTypeScalarBitWidthIndex = 0;
 constexpr uint32_t kTypePointerTypeIdInIdx = 1;
+constexpr uint32_t kOpTypeIntSizeIndex = 0;
 
 // DFS visit of the type defined by `instruction`.
 // If `condition` is true, children of the current node are visited.
@@ -255,13 +256,24 @@ static std::optional<spv::Capability> Handler_OpTypePointer_StorageUniform16(
                         : std::nullopt;
 }
 
+static std::optional<spv::Capability> Handler_OpTypeInt_Int64(
+    const Instruction* instruction) {
+  assert(instruction->opcode() == spv::Op::OpTypeInt &&
+         "This handler only support OpTypeInt opcodes.");
+
+  const uint32_t size =
+      instruction->GetSingleWordInOperand(kOpTypeIntSizeIndex);
+  return size == 64 ? std::optional(spv::Capability::Int64) : std::nullopt;
+}
+
 // Opcode of interest to determine capabilities requirements.
-constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 4> kOpcodeHandlers{{
+constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 5> kOpcodeHandlers{{
     // clang-format off
     {spv::Op::OpTypePointer, Handler_OpTypePointer_StorageInputOutput16},
     {spv::Op::OpTypePointer, Handler_OpTypePointer_StoragePushConstant16},
     {spv::Op::OpTypePointer, Handler_OpTypePointer_StorageUniformBufferBlock16},
-    {spv::Op::OpTypePointer, Handler_OpTypePointer_StorageUniform16}
+    {spv::Op::OpTypePointer, Handler_OpTypePointer_StorageUniform16},
+    {spv::Op::OpTypeInt, Handler_OpTypeInt_Int64 },
     // clang-format on
 }};
 
