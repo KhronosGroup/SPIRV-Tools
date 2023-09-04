@@ -7969,8 +7969,9 @@ TEST_F(ValidateImage, ImageMSArray_ArrayedSampledTypeRequiresCapability) {
   const spv_target_env env = SPV_ENV_VULKAN_1_0;
   CompileSuccessfully(code, env);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability ImageMSArray is required to access storage image"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Capability ImageMSArray is required to access storage image"));
 }
 
 TEST_F(ValidateImage, ImageMSArray_SampledTypeDoesNotRequireCapability) {

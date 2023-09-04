@@ -696,8 +696,8 @@ spv_result_t ValidateImageReadWrite(ValidationState_t& _,
     if (info.multisampled == 1 && info.arrayed == 1 && info.sampled == 2 &&
         !_.HasCapability(spv::Capability::ImageMSArray)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-          << "Capability ImageMSArray is required to access storage "
-          << "image";
+             << "Capability ImageMSArray is required to access storage "
+             << "image";
     }
   } else if (info.sampled != 0) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
