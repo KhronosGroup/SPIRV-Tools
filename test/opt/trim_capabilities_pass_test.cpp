@@ -1392,7 +1392,7 @@ TEST_F(TrimCapabilitiesPassTest,
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
-TEST_F(TrimCapabilitiesPassTest, FragmentShaderRemoved) {
+TEST_F(TrimCapabilitiesPassTest, FragmentShaderInterlock_RemovedIfNotUsed) {
   const std::string kTest = R"(
                OpCapability Shader
                OpCapability FragmentShaderPixelInterlockEXT
@@ -1417,7 +1417,8 @@ TEST_F(TrimCapabilitiesPassTest, FragmentShaderRemoved) {
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
-TEST_F(TrimCapabilitiesPassTest, FragmentShaderPixelInterlockOrderedRemains) {
+TEST_F(TrimCapabilitiesPassTest,
+       FragmentShaderPixelInterlock_RemainsWhenOrderedIsUsed) {
   const std::string kTest = R"(
                OpCapability Shader
                OpCapability FragmentShaderPixelInterlockEXT
@@ -1445,7 +1446,8 @@ TEST_F(TrimCapabilitiesPassTest, FragmentShaderPixelInterlockOrderedRemains) {
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
-TEST_F(TrimCapabilitiesPassTest, FragmentShaderPixelInterlockUnorderedRemains) {
+TEST_F(TrimCapabilitiesPassTest,
+       FragmentShaderPixelInterlock_RemainsWhenUnorderedIsUsed) {
   const std::string kTest = R"(
                OpCapability Shader
                OpCapability FragmentShaderPixelInterlockEXT
@@ -1473,7 +1475,8 @@ TEST_F(TrimCapabilitiesPassTest, FragmentShaderPixelInterlockUnorderedRemains) {
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
-TEST_F(TrimCapabilitiesPassTest, FragmentShaderSampleInterlockOrderedRemains) {
+TEST_F(TrimCapabilitiesPassTest,
+       FragmentShaderSampleInterlock_RemainsWhenOrderedIsUsed) {
   const std::string kTest = R"(
                OpCapability Shader
                OpCapability FragmentShaderPixelInterlockEXT
@@ -1502,7 +1505,7 @@ TEST_F(TrimCapabilitiesPassTest, FragmentShaderSampleInterlockOrderedRemains) {
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       FragmentShaderSampleInterlockUnorderedRemains) {
+       FragmentShaderSampleInterlock_RemainsWhenUnorderedIsUsed) {
   const std::string kTest = R"(
                OpCapability Shader
                OpCapability FragmentShaderPixelInterlockEXT
@@ -1531,7 +1534,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       FragmentShaderShadingRateInterlockOrderedRemains) {
+       FragmentShaderShadingRateInterlock_RemainsWhenOrderedIsUsed) {
   const std::string kTest = R"(
                OpCapability Shader
                OpCapability FragmentShaderPixelInterlockEXT
@@ -1560,7 +1563,7 @@ TEST_F(TrimCapabilitiesPassTest,
 }
 
 TEST_F(TrimCapabilitiesPassTest,
-       FragmentShaderShadingRateInterlockUnorderedRemains) {
+       FragmentShaderShadingRateInterlock_RemainsWhenUnorderedIsUsed) {
   const std::string kTest = R"(
                OpCapability Shader
                OpCapability FragmentShaderPixelInterlockEXT
