@@ -6764,7 +6764,7 @@ TEST_F(AggressiveDCETest, ShaderDebugInfoKeepInFunctionElimStoreVar) {
          %60 = OpExtInst %void %1 DebugTypeVector %59 %uint_4
          %58 = OpExtInst %void %1 DebugTypeMember %10 %60 %55 %uint_12 %uint_5 %uint_0 %uint_128 %uint_3
          %57 = OpExtInst %void %1 DebugTypeComposite %8 %uint_1 %55 %uint_10 %uint_1 %56 %8 %uint_128 %uint_3 %58
-         %63 = OpExtInst %void %1 DebugTypeVector %59 %uint_2 
+         %63 = OpExtInst %void %1 DebugTypeVector %59 %uint_2
          %62 = OpExtInst %void %1 DebugTypeMember %12 %63 %55 %uint_7 %uint_5 %uint_0 %uint_64 %uint_3
          %61 = OpExtInst %void %1 DebugTypeComposite %11 %uint_1 %55 %uint_5 %uint_1 %56 %11 %uint_64 %uint_3 %62
          %64 = OpExtInst %void %1 DebugTypeComposite %13 %uint_0 %55 %uint_0 %uint_0 %56 %14 %51 %uint_3
@@ -7947,6 +7947,49 @@ TEST_F(AggressiveDCETest, FunctionReturnPointer) {
   // For physical storage buffer support
   SetTargetEnv(SPV_ENV_VULKAN_1_2);
   SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
+}
+
+TEST_F(AggressiveDCETest, KeepBeginEndInvocationInterlock) {
+  // OpBeginInvocationInterlockEXT and OpEndInvocationInterlockEXT delimit a
+  // critical section. As such, they should be treated as if they have side
+  // effects and should not be removed.
+  const std::string test =
+      R"(OpCapability Shader
+OpCapability FragmentShaderSampleInterlockEXT
+OpExtension "SPV_EXT_fragment_shader_interlock"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main" %gl_FragCoord
+OpExecutionMode %1 OriginUpperLeft
+OpExecutionMode %1 SampleInterlockOrderedEXT
+OpDecorate %gl_FragCoord BuiltIn FragCoord
+%float = OpTypeFloat 32
+%float_0 = OpConstant %float 0
+%v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%void = OpTypeVoid
+%8 = OpTypeFunction %void
+%bool = OpTypeBool
+%gl_FragCoord = OpVariable %_ptr_Input_v4float Input
+%1 = OpFunction %void None %8
+%10 = OpLabel
+%11 = OpLoad %v4float %gl_FragCoord
+%12 = OpCompositeExtract %float %11 0
+%13 = OpFOrdGreaterThan %bool %12 %float_0
+OpSelectionMerge %14 None
+OpBranchConditional %13 %15 %16
+%15 = OpLabel
+OpBeginInvocationInterlockEXT
+OpBranch %14
+%16 = OpLabel
+OpBeginInvocationInterlockEXT
+OpBranch %14
+%14 = OpLabel
+OpEndInvocationInterlockEXT
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<AggressiveDCEPass>(test, test, true, true);
 }
 
 }  // namespace
