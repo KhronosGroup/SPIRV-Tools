@@ -999,6 +999,7 @@ void AggressiveDCEPass::InitExtensions() {
       "SPV_KHR_fragment_shader_barycentric",
       "SPV_NV_bindless_texture",
       "SPV_EXT_shader_atomic_float_add",
+      "SPV_EXT_fragment_shader_interlock",
   });
 }
 
