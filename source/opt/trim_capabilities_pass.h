@@ -78,6 +78,7 @@ class TrimCapabilitiesPass : public Pass {
       spv::Capability::FragmentShaderSampleInterlockEXT,
       spv::Capability::FragmentShaderShadingRateInterlockEXT,
       spv::Capability::Groups,
+      spv::Capability::Int64,
       spv::Capability::Linkage,
       spv::Capability::MinLod,
       spv::Capability::Shader,
