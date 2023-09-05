@@ -1630,6 +1630,329 @@ TEST_F(TrimCapabilitiesPassTest, Int64_RemainsWhenUsed) {
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
+TEST_F(TrimCapabilitiesPassTest, RayQueryKHR_RemovedWhenUnused) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpExtension "SPV_KHR_ray_query"
+; CHECK-NOT:   OpCapability RayQueryKHR
+; CHECK-NOT:   OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %out_var_TEXCOORD1
+               OpSource HLSL 660
+               OpName %out_var_TEXCOORD1 "out.var.TEXCOORD1"
+               OpName %main "main"
+               OpDecorate %out_var_TEXCOORD1 Flat
+               OpDecorate %out_var_TEXCOORD1 Location 0
+       %uint = OpTypeInt 32 0
+  %uint_1234 = OpConstant %uint 1234
+%_ptr_Output_uint = OpTypePointer Output %uint
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+%out_var_TEXCOORD1 = OpVariable %_ptr_Output_uint Output
+       %main = OpFunction %void None %7
+          %8 = OpLabel
+               OpStore %out_var_TEXCOORD1 %uint_1234
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       RayQueryKHR_RemainsWhenAccelerationStructureIsPresent) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpExtension "SPV_KHR_ray_query"
+; CHECK:       OpCapability RayQueryKHR
+; CHECK:       OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 2 4
+               OpDecorate %var_bvh DescriptorSet 0
+               OpDecorate %var_bvh Binding 0
+        %bvh = OpTypeAccelerationStructureKHR
+    %ptr_bvh = OpTypePointer UniformConstant %bvh
+       %void = OpTypeVoid
+         %20 = OpTypeFunction %void
+    %var_bvh = OpVariable %ptr_bvh UniformConstant
+       %main = OpFunction %void None %20
+         %30 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, RayQueryKHR_RemainsWhenRayQueryTypeIsPresent) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpExtension "SPV_KHR_ray_query"
+; CHECK:       OpCapability RayQueryKHR
+; CHECK:       OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 2 4
+      %query = OpTypeRayQueryKHR
+       %void = OpTypeVoid
+         %20 = OpTypeFunction %void
+  %ptr_query = OpTypePointer Function %query
+       %main = OpFunction %void None %20
+         %30 = OpLabel
+  %var_query = OpVariable %ptr_query Function
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, RayQueryKHR_RemainsWhenUsed) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpExtension "SPV_KHR_ray_query"
+; CHECK:       OpCapability RayQueryKHR
+; CHECK:       OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 2 4
+               OpDecorate %bvh DescriptorSet 0
+               OpDecorate %bvh Binding 0
+               OpDecorate %output DescriptorSet 0
+               OpDecorate %output Binding 1
+               OpDecorate %_runtimearr_float ArrayStride 4
+               OpMemberDecorate %type_RWStructuredBuffer_float 0 Offset 0
+               OpDecorate %type_RWStructuredBuffer_float BufferBlock
+      %float = OpTypeFloat 32
+    %float_0 = OpConstant %float 0
+        %int = OpTypeInt 32 1
+    %v3float = OpTypeVector %float 3
+         %12 = OpConstantComposite %v3float %float_0 %float_0 %float_0
+      %int_0 = OpConstant %int 0
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+%accelerationStructureKHR = OpTypeAccelerationStructureKHR
+%_ptr_UniformConstant_accelerationStructureKHR = OpTypePointer UniformConstant %accelerationStructureKHR
+%_runtimearr_float = OpTypeRuntimeArray %float
+%type_RWStructuredBuffer_float = OpTypeStruct %_runtimearr_float
+%_ptr_Uniform_type_RWStructuredBuffer_float = OpTypePointer Uniform %type_RWStructuredBuffer_float
+       %void = OpTypeVoid
+         %20 = OpTypeFunction %void
+%rayQueryKHR = OpTypeRayQueryKHR
+%_ptr_Function_rayQueryKHR = OpTypePointer Function %rayQueryKHR
+       %bool = OpTypeBool
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+        %bvh = OpVariable %_ptr_UniformConstant_accelerationStructureKHR UniformConstant
+     %output = OpVariable %_ptr_Uniform_type_RWStructuredBuffer_float Uniform
+       %main = OpFunction %void None %20
+         %24 = OpLabel
+         %25 = OpVariable %_ptr_Function_rayQueryKHR Function
+         %26 = OpLoad %accelerationStructureKHR %bvh
+               OpRayQueryInitializeKHR %25 %26 %uint_0 %uint_0 %12 %float_0 %12 %float_0
+         %27 = OpRayQueryProceedKHR %bool %25
+         %28 = OpRayQueryGetIntersectionTypeKHR %uint %25 %uint_1
+         %29 = OpIEqual %bool %28 %uint_1
+               OpSelectionMerge %30 None
+               OpBranchConditional %29 %31 %30
+         %31 = OpLabel
+         %32 = OpAccessChain %_ptr_Uniform_float %output %int_0 %uint_0
+               OpStore %32 %float_0
+               OpBranch %30
+         %30 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       RayTracingKHR_RemainsWithIntersectionExecutionMode) {
+  const std::string kTest = R"(
+               OpCapability RayTracingKHR
+               OpExtension "SPV_KHR_ray_tracing"
+; CHECK:       OpCapability RayTracingKHR
+; CHECK:       OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint IntersectionKHR %main "main"
+               OpSource HLSL 660
+               OpName %main "main"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %main = OpFunction %void None %3
+          %4 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       RayTracingKHR_RemainsWithClosestHitExecutionMode) {
+  const std::string kTest = R"(
+               OpCapability RayTracingKHR
+               OpExtension "SPV_KHR_ray_tracing"
+; CHECK:       OpCapability RayTracingKHR
+; CHECK:       OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint ClosestHitKHR %main "main" %a
+               OpSource HLSL 630
+               OpName %Payload "Payload"
+               OpMemberName %Payload 0 "color"
+               OpName %a "a"
+               OpName %main "main"
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+    %Payload = OpTypeStruct %v4float
+%ptr_payload = OpTypePointer IncomingRayPayloadKHR %Payload
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+          %a = OpVariable %ptr_payload IncomingRayPayloadKHR
+       %main = OpFunction %void None %8
+          %9 = OpLabel
+         %10 = OpLoad %Payload %a
+               OpStore %a %10
+               OpReturn
+               OpFunctionEnd
+
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, RayTracingKHR_RemainsWithAnyHitExecutionMode) {
+  const std::string kTest = R"(
+               OpCapability RayTracingKHR
+               OpExtension "SPV_KHR_ray_tracing"
+; CHECK:       OpCapability RayTracingKHR
+; CHECK:       OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint AnyHitKHR %main "main" %a
+               OpSource HLSL 630
+               OpName %Payload "Payload"
+               OpMemberName %Payload 0 "color"
+               OpName %a "a"
+               OpName %main "main"
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+    %Payload = OpTypeStruct %v4float
+%ptr_payload = OpTypePointer IncomingRayPayloadKHR %Payload
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+          %a = OpVariable %ptr_payload IncomingRayPayloadKHR
+       %main = OpFunction %void None %8
+          %9 = OpLabel
+         %10 = OpLoad %Payload %a
+               OpStore %a %10
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, RayTracingKHR_RemainsWithMissExecutionMode) {
+  const std::string kTest = R"(
+               OpCapability RayTracingKHR
+               OpExtension "SPV_KHR_ray_tracing"
+; CHECK:       OpCapability RayTracingKHR
+; CHECK:       OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint MissKHR %main "main" %a
+               OpSource HLSL 630
+               OpName %Payload "Payload"
+               OpMemberName %Payload 0 "color"
+               OpName %a "a"
+               OpName %main "main"
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+    %Payload = OpTypeStruct %v4float
+%ptr_payload = OpTypePointer IncomingRayPayloadKHR %Payload
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+          %a = OpVariable %ptr_payload IncomingRayPayloadKHR
+       %main = OpFunction %void None %8
+          %9 = OpLabel
+         %10 = OpLoad %Payload %a
+               OpStore %a %10
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       RayTracingKHR_RemainsWithRayGenerationExecutionMode) {
+  const std::string kTest = R"(
+               OpCapability RayTracingKHR
+               OpExtension "SPV_KHR_ray_tracing"
+; CHECK:       OpCapability RayTracingKHR
+; CHECK:       OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint RayGenerationKHR %main "main"
+               OpSource HLSL 630
+               OpName %main "main"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %main = OpFunction %void None %3
+          %4 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       RayTracingKHR_RemainsWithCallableExecutionMode) {
+  const std::string kTest = R"(
+; CHECK:       OpCapability RayTracingKHR
+; CHECK:       OpExtension "SPV_KHR_ray_tracing"
+               OpCapability RayTracingKHR
+               OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint CallableKHR %main "main" %a
+               OpSource HLSL 660
+               OpName %Payload "Payload"
+               OpMemberName %Payload 0 "data"
+               OpName %a "a"
+               OpName %main "main"
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+    %Payload = OpTypeStruct %v4float
+%ptr_payload = OpTypePointer IncomingCallableDataKHR %Payload
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+          %a = OpVariable %ptr_payload IncomingCallableDataKHR
+       %main = OpFunction %void None %8
+          %9 = OpLabel
+         %10 = OpLoad %Payload %a
+               OpStore %a %10
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
