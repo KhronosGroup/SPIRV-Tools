@@ -7936,6 +7936,116 @@ TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedInvalidUseB) {
       HasSubstr("Illegal use of QCOM image processing decorated texture"));
 }
 
+TEST_F(ValidateImage, ImageMSArray_ArrayedSampledTypeRequiresCapability) {
+  const std::string code = R"(
+               OpCapability Shader
+               OpCapability StorageImageMultisample
+               OpCapability StorageImageReadWithoutFormat
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %var_image DescriptorSet 0
+               OpDecorate %var_image Binding 1
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+        %f32 = OpTypeFloat 32
+        %u32 = OpTypeInt 32 0
+     %uint_2 = OpConstant %u32 2
+     %uint_1 = OpConstant %u32 1
+     %v2uint = OpTypeVector %u32 2
+    %v4float = OpTypeVector %f32 4
+    %image = OpTypeImage %f32 2D 2 1 1 2 Unknown
+%ptr_image = OpTypePointer UniformConstant %image
+       %10 = OpConstantComposite %v2uint %uint_1 %uint_2
+%var_image = OpVariable %ptr_image UniformConstant
+     %main = OpFunction %void None %func
+ %main_lab = OpLabel
+       %18 = OpLoad %image %var_image
+       %19 = OpImageRead %v4float %18 %10 Sample %uint_2
+             OpReturn
+             OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Capability ImageMSArray is required to access storage image"));
+}
+
+TEST_F(ValidateImage, ImageMSArray_SampledTypeDoesNotRequireCapability) {
+  const std::string code = R"(
+               OpCapability Shader
+               OpCapability StorageImageMultisample
+               OpCapability StorageImageReadWithoutFormat
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %var_image DescriptorSet 0
+               OpDecorate %var_image Binding 1
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+        %f32 = OpTypeFloat 32
+        %u32 = OpTypeInt 32 0
+     %uint_2 = OpConstant %u32 2
+     %uint_1 = OpConstant %u32 1
+     %v2uint = OpTypeVector %u32 2
+    %v4float = OpTypeVector %f32 4
+    %image = OpTypeImage %f32 2D 2 0 1 2 Unknown
+%ptr_image = OpTypePointer UniformConstant %image
+       %10 = OpConstantComposite %v2uint %uint_1 %uint_2
+%var_image = OpVariable %ptr_image UniformConstant
+     %main = OpFunction %void None %func
+ %main_lab = OpLabel
+       %18 = OpLoad %image %var_image
+       %19 = OpImageRead %v4float %18 %10 Sample %uint_2
+             OpReturn
+             OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateImage, ImageMSArray_ArrayedTypeDoesNotRequireCapability) {
+  const std::string code = R"(
+               OpCapability Shader
+               OpCapability StorageImageReadWithoutFormat
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %var_image DescriptorSet 0
+               OpDecorate %var_image Binding 1
+       %void = OpTypeVoid
+       %func = OpTypeFunction %void
+        %f32 = OpTypeFloat 32
+        %u32 = OpTypeInt 32 0
+     %uint_3 = OpConstant %u32 3
+     %uint_2 = OpConstant %u32 2
+     %uint_1 = OpConstant %u32 1
+     %v3uint = OpTypeVector %u32 3
+    %v4float = OpTypeVector %f32 4
+    %image = OpTypeImage %f32 2D 2 1 0 2 Unknown
+%ptr_image = OpTypePointer UniformConstant %image
+       %10 = OpConstantComposite %v3uint %uint_1 %uint_2 %uint_3
+%var_image = OpVariable %ptr_image UniformConstant
+     %main = OpFunction %void None %func
+ %main_lab = OpLabel
+       %18 = OpLoad %image %var_image
+       %19 = OpImageRead %v4float %18 %10
+             OpReturn
+             OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
