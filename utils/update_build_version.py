@@ -111,17 +111,19 @@ def describe(repo_path):
     Runs 'git describe', or alternately 'git rev-parse HEAD', in directory.  If
     successful, returns the output; otherwise returns 'unknown hash, <date>'."""
 
-    success, output = command_output(['git', 'describe'], repo_path)
-    if not success:
-      output = command_output(['git', 'rev-parse', 'HEAD'], repo_path)
+    # if we're in a git repository, attempt to extract version info
+    if os.path.exists(".git"):
+        success, output = command_output(["git", "describe"], repo_path)
+        if not success:
+            output = command_output(["git", "rev-parse", "HEAD"], repo_path)
 
-    if success:
-      # decode() is needed here for Python3 compatibility. In Python2,
-      # str and bytes are the same type, but not in Python3.
-      # Popen.communicate() returns a bytes instance, which needs to be
-      # decoded into text data first in Python3. And this decode() won't
-      # hurt Python2.
-      return output.rstrip().decode()
+        if success:
+            # decode() is needed here for Python3 compatibility. In Python2,
+            # str and bytes are the same type, but not in Python3.
+            # Popen.communicate() returns a bytes instance, which needs to be
+            # decoded into text data first in Python3. And this decode() won't
+            # hurt Python2.
+            return output.rstrip().decode()
 
     # This is the fallback case where git gives us no information,
     # e.g. because the source tree might not be in a git tree.
