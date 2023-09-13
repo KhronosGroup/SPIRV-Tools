@@ -266,25 +266,21 @@ INSTANTIATE_TEST_SUITE_P(
     SamplerAddressingMode, EnumCapabilityTest,
     Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
             ValuesIn(std::vector<EnumCapabilityCase>{
-                CASE1(SAMPLER_ADDRESSING_MODE, SamplerAddressingMode::None,
-                      Kernel),
-                CASE1(SAMPLER_ADDRESSING_MODE,
-                      SamplerAddressingMode::ClampToEdge, Kernel),
-                CASE1(SAMPLER_ADDRESSING_MODE, SamplerAddressingMode::Clamp,
-                      Kernel),
-                CASE1(SAMPLER_ADDRESSING_MODE, SamplerAddressingMode::Repeat,
-                      Kernel),
-                CASE1(SAMPLER_ADDRESSING_MODE,
-                      SamplerAddressingMode::RepeatMirrored, Kernel),
-            })));
+                CASE0(SAMPLER_ADDRESSING_MODE, SamplerAddressingMode::None),
+                CASE0(SAMPLER_ADDRESSING_MODE,
+                      SamplerAddressingMode::ClampToEdge),
+                CASE0(SAMPLER_ADDRESSING_MODE, SamplerAddressingMode::Clamp),
+                CASE0(SAMPLER_ADDRESSING_MODE, SamplerAddressingMode::Repeat),
+                CASE0(SAMPLER_ADDRESSING_MODE,
+                      SamplerAddressingMode::RepeatMirrored)})));
 
 // See SPIR-V Section 3.10 Sampler Filter Mode
 INSTANTIATE_TEST_SUITE_P(
     SamplerFilterMode, EnumCapabilityTest,
     Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
             ValuesIn(std::vector<EnumCapabilityCase>{
-                CASE1(SAMPLER_FILTER_MODE, SamplerFilterMode::Nearest, Kernel),
-                CASE1(SAMPLER_FILTER_MODE, SamplerFilterMode::Linear, Kernel),
+                CASE0(SAMPLER_FILTER_MODE, SamplerFilterMode::Nearest),
+                CASE0(SAMPLER_FILTER_MODE, SamplerFilterMode::Linear),
             })));
 
 // See SPIR-V Section 3.11 Image Format
