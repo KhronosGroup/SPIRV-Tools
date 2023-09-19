@@ -470,10 +470,9 @@ spv_result_t InstructionPass(ValidationState_t& _, const Instruction* inst) {
     }
     _.set_addressing_model(inst->GetOperandAs<spv::AddressingModel>(0));
     _.set_memory_model(inst->GetOperandAs<spv::MemoryModel>(1));
-  } else if (opcode == spv::Op::OpExecutionMode) {
-    const uint32_t entry_point = inst->word(1);
-    _.RegisterExecutionModeForEntryPoint(entry_point,
-                                         spv::ExecutionMode(inst->word(2)));
+  } else if (opcode == spv::Op::OpExecutionMode ||
+             opcode == spv::Op::OpExecutionModeId) {
+    _.RegisterExecutionModeForEntryPoint(inst);
   } else if (opcode == spv::Op::OpVariable) {
     const auto storage_class = inst->GetOperandAs<spv::StorageClass>(2);
     if (auto error = LimitCheckNumVars(_, inst->id(), storage_class)) {
