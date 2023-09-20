@@ -3170,8 +3170,11 @@ spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtDefinition(
                 "constant. "
              << GetIdDesc(inst) << " is not a constant.";
       }
-    } else {
-        // can only validate product if static
+    } else if (inst.opcode() == spv::Op::OpConstantComposite) {
+      // can only validate product if static and not spec constant
+      if (_.FindDef(inst.word(3))->opcode() == spv::Op::OpConstant &&
+          _.FindDef(inst.word(4))->opcode() == spv::Op::OpConstant &&
+          _.FindDef(inst.word(5))->opcode() == spv::Op::OpConstant) {
         uint64_t x_size, y_size, z_size;
         // ValidateI32Vec above confirms there will be 3 words to read
         bool static_x = _.GetConstantValUint64(inst.word(3), &x_size);
@@ -3179,10 +3182,12 @@ spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtDefinition(
         bool static_z = _.GetConstantValUint64(inst.word(5), &z_size);
         if (static_x && static_y && static_z &&
             ((x_size * y_size * z_size) == 0)) {
-        return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-                << "WorkgroupSize decorations must not have a static "
-                    "product of zero (X = " << x_size << ", Y = " << y_size << ", Z = " << z_size << ").";
+          return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                 << "WorkgroupSize decorations must not have a static "
+                    "product of zero (X = "
+                 << x_size << ", Y = " << y_size << ", Z = " << z_size << ").";
         }
+      }
     }
 
   // Seed at reference checks with this built-in.

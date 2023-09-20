@@ -123,11 +123,24 @@ OpDecorate %int3_1 BuiltIn WorkgroupSize
 )" + kVoidFunction;
 
   CompileSuccessfully(spirv);
-  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "WorkgroupSize decorations must not have a static product of zero"));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateMode, GLComputeZeroSpecCompositeWorkgroupSize) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpDecorate %int3_1 BuiltIn WorkgroupSize
+%int = OpTypeInt 32 0
+%int3 = OpTypeVector %int 3
+%int_0 = OpSpecConstant %int 0
+%int_1 = OpSpecConstant %int 1
+%int3_1 = OpSpecConstantComposite %int3 %int_1 %int_0 %int_0
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateMode, KernelZeroWorkgroupSizeConstant) {
@@ -280,11 +293,7 @@ OpExecutionModeId %main LocalSizeId %int_1 %int_0 %int_1
 
   spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
   CompileSuccessfully(spirv, env);
-  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Local Size Id execution mode must not have a product of zero"));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(env));
 }
 
 TEST_F(ValidateMode, KernelZeroLocalSizeId) {
