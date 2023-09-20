@@ -434,13 +434,13 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag) {
              pass_name == "inst-desc-idx-check" ||
              pass_name == "inst-buff-oob-check") {
     // preserve legacy names
-    RegisterPass(CreateInstBindlessCheckPass(7, 23));
+    RegisterPass(CreateInstBindlessCheckPass(23));
     RegisterPass(CreateSimplificationPass());
     RegisterPass(CreateDeadBranchElimPass());
     RegisterPass(CreateBlockMergePass());
     RegisterPass(CreateAggressiveDCEPass(true));
   } else if (pass_name == "inst-buff-addr-check") {
-    RegisterPass(CreateInstBuffAddrCheckPass(7, 23));
+    RegisterPass(CreateInstBuffAddrCheckPass(23));
     RegisterPass(CreateAggressiveDCEPass(true));
   } else if (pass_name == "convert-relaxed-to-half") {
     RegisterPass(CreateConvertRelaxedToHalfPass());
@@ -980,10 +980,9 @@ Optimizer::PassToken CreateUpgradeMemoryModelPass() {
       MakeUnique<opt::UpgradeMemoryModel>());
 }
 
-Optimizer::PassToken CreateInstBindlessCheckPass(uint32_t desc_set,
-                                                 uint32_t shader_id) {
+Optimizer::PassToken CreateInstBindlessCheckPass(uint32_t shader_id) {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::InstBindlessCheckPass>(desc_set, shader_id));
+      MakeUnique<opt::InstBindlessCheckPass>(shader_id));
 }
 
 Optimizer::PassToken CreateInstDebugPrintfPass(uint32_t desc_set,
@@ -992,10 +991,9 @@ Optimizer::PassToken CreateInstDebugPrintfPass(uint32_t desc_set,
       MakeUnique<opt::InstDebugPrintfPass>(desc_set, shader_id));
 }
 
-Optimizer::PassToken CreateInstBuffAddrCheckPass(uint32_t desc_set,
-                                                 uint32_t shader_id) {
+Optimizer::PassToken CreateInstBuffAddrCheckPass(uint32_t shader_id) {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::InstBuffAddrCheckPass>(desc_set, shader_id));
+      MakeUnique<opt::InstBuffAddrCheckPass>(shader_id));
 }
 
 Optimizer::PassToken CreateConvertRelaxedToHalfPass() {
