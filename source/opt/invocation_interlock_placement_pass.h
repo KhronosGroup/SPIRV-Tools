@@ -83,10 +83,13 @@ class InvocationInterlockPlacementPass : public Pass {
   // last. Returns whether any instructions were removed.
   bool killDuplicateEnd(BasicBlock* block);
 
+  // Records whether a function will potentially execute a begin or end
+  // instruction.
+  void recordBeginOrEndInFunction(Function* func);
+
   // Recursively removes any begin or end instructions from func and any
-  // function func calls. Returns whether any begin or end instructions were
-  // removed.
-  ExtractionResult removeInstructionsFromFunction(Function* func);
+  // function func calls. Returns whether any instructions were removed.
+  bool removeInstructionsFromFunction(Function* func);
 
   // For every function call in any of the passed blocks, move any begin or end
   // instructions outside of the function call. Returns whether any extractions
@@ -127,6 +130,8 @@ class InvocationInterlockPlacementPass : public Pass {
   // Processes a single fragment shader entry function.
   bool processFragmentShaderEntry(Function* entry_func);
 
+  // Returns whether the module has the SPV_EXT_fragment_shader_interlock
+  // extension and one of the FragmentShader*InterlockEXT capabilities.
   bool isFragmentShaderInterlockEnabled();
 
   // Maps a function to whether that function originally held a begin or end

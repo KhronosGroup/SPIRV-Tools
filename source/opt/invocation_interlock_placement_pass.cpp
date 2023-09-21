@@ -125,35 +125,29 @@ bool InvocationInterlockPlacementPass::killDuplicateEnd(BasicBlock* block) {
   return true;
 }
 
-InvocationInterlockPlacementPass::ExtractionResult
-InvocationInterlockPlacementPass::removeInstructionsFromFunction(
+void InvocationInterlockPlacementPass::recordBeginOrEndInFunction(
     Function* func) {
   if (extracted_functions_.count(func)) {
-    return extracted_functions_[func];
+    return;
   }
 
   bool had_begin = false;
   bool had_end = false;
 
-  func->ForEachInst([this, func, &had_begin, &had_end](Instruction* inst) {
+  func->ForEachInst([this, &had_begin, &had_end](Instruction* inst) {
     switch (inst->opcode()) {
       case spv::Op::OpBeginInvocationInterlockEXT:
-        context()->KillInst(inst);
         had_begin = true;
         break;
       case spv::Op::OpEndInvocationInterlockEXT:
-        context()->KillInst(inst);
         had_end = true;
         break;
       case spv::Op::OpFunctionCall: {
         uint32_t function_id =
             inst->GetSingleWordInOperand(kFunctionCallFunctionIdInIdx);
         Function* inner_func = context()->GetFunction(function_id);
-        if (inner_func == func) {
-          // ignore recursive calls
-          return;
-        }
-        ExtractionResult result = removeInstructionsFromFunction(inner_func);
+        recordBeginOrEndInFunction(inner_func);
+        ExtractionResult result = extracted_functions_[inner_func];
         had_begin = had_begin || result.had_begin;
         had_end = had_end || result.had_end;
         break;
@@ -165,7 +159,26 @@ InvocationInterlockPlacementPass::removeInstructionsFromFunction(
 
   ExtractionResult result = {had_begin, had_end};
   extracted_functions_[func] = result;
-  return result;
+}
+
+bool InvocationInterlockPlacementPass::removeInstructionsFromFunction(
+    Function* func) {
+  bool modified = false;
+  func->ForEachInst([this, &modified](Instruction* inst) {
+    switch (inst->opcode()) {
+      case spv::Op::OpBeginInvocationInterlockEXT:
+        context()->KillInst(inst);
+        modified = true;
+        break;
+      case spv::Op::OpEndInvocationInterlockEXT:
+        context()->KillInst(inst);
+        modified = true;
+        break;
+      default:
+        break;
+    }
+  });
+  return modified;
 }
 
 bool InvocationInterlockPlacementPass::extractInstructionsFromCalls(
@@ -178,7 +191,7 @@ bool InvocationInterlockPlacementPass::extractInstructionsFromCalls(
         uint32_t function_id =
             inst->GetSingleWordInOperand(kFunctionCallFunctionIdInIdx);
         Function* func = context()->GetFunction(function_id);
-        ExtractionResult result = removeInstructionsFromFunction(func);
+        ExtractionResult result = extracted_functions_[func];
 
         if (result.had_begin) {
           Instruction* new_inst = new Instruction(
@@ -414,6 +427,22 @@ Pass::Status InvocationInterlockPlacementPass::Process() {
   }
 
   bool modified = false;
+
+  std::unordered_set<Function*> entry_points;
+  for (Instruction& entry_inst : context()->module()->entry_points()) {
+    uint32_t entry_id =
+        entry_inst.GetSingleWordInOperand(kEntryPointFunctionIdInIdx);
+    entry_points.insert(context()->GetFunction(entry_id));
+  }
+
+  for (auto fi = context()->module()->begin(); fi != context()->module()->end();
+       ++fi) {
+    Function* func = &*fi;
+    recordBeginOrEndInFunction(func);
+    if (!entry_points.count(func) && extracted_functions_.count(func)) {
+      modified |= removeInstructionsFromFunction(func);
+    }
+  }
 
   for (Instruction& entry_inst : context()->module()->entry_points()) {
     uint32_t entry_id =
