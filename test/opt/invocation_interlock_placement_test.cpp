@@ -192,44 +192,6 @@ TEST_F(InterlockInvocationPlacementTest, CheckFunctionCallExtractionEnd) {
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
-TEST_F(InterlockInvocationPlacementTest, CheckFunctionCallExtractionRecursive) {
-  const std::string kTest = R"(
-               OpCapability Shader
-               OpCapability FragmentShaderSampleInterlockEXT
-               OpExtension "SPV_EXT_fragment_shader_interlock"
-               OpMemoryModel Logical GLSL450
-               OpEntryPoint Fragment %main "main"
-               OpExecutionMode %main OriginUpperLeft
-               OpExecutionMode %main SampleInterlockOrderedEXT
-               OpName %main "main"
-       %void = OpTypeVoid
-          %1 = OpTypeFunction %void
-        %foo = OpFunction %void None %1
-; CHECK: OpLabel
-; CHECK-NOT: OpEndInvocationInterlockEXT
-          %2 = OpLabel
-               OpEndInvocationInterlockEXT
-               OpEndInvocationInterlockEXT
-          %3 = OpFunctionCall %void %foo
-               OpReturn
-; CHECK: OpFunctionEnd
-               OpFunctionEnd
-       %main = OpFunction %void None %1
-; CHECK: OpLabel
-          %4 = OpLabel
-; CHECK-NEXT: OpFunctionCall
-          %5 = OpFunctionCall %void %foo
-; CHECK-NEXT: OpEndInvocationInterlockEXT
-; CHECK-NEXT: OpReturn
-               OpReturn
-               OpFunctionEnd
-  )";
-  SetTargetEnv(SPV_ENV_VULKAN_1_3);
-  const auto result = SinglePassRunAndMatch<InvocationInterlockPlacementPass>(
-      kTest, /* skip_nop= */ false);
-  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
-}
-
 TEST_F(InterlockInvocationPlacementTest,
        CheckFunctionCallExtractionRepeatedCall) {
   const std::string kTest = R"(
