@@ -631,7 +631,7 @@ TEST_F(InterlockInvocationPlacementTest, CheckSplitSwitch) {
 ; CHECK-NEXT: OpBranch [[merge]]
                OpBranch %8
 
-; CHECK-DAG: [[merge]] = OpLabel
+; CHECK-NEXT: [[merge]] = OpLabel
           %8 = OpLabel
 ; CHECK-NOT: OpBeginInvocationInterlockEXT
                OpBeginInvocationInterlockEXT

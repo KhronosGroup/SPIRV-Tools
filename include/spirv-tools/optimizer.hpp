@@ -996,9 +996,9 @@ Optimizer::PassToken CreateSwitchDescriptorSetPass(uint32_t ds_from,
                                                    uint32_t ds_to);
 
 // Creates an invocation interlock placement pass.
-// This pass will ensure that an entry point will only have at most one
+// This pass ensures that an entry point will have at most one
 // OpBeginInterlockInvocationEXT and one OpEndInterlockInvocationEXT, in that
-// order
+// order.
 Optimizer::PassToken CreateInvocationInterlockPlacementPass();
 }  // namespace spvtools
 

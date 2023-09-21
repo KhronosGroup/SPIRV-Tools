@@ -39,21 +39,22 @@ namespace {
 constexpr uint32_t kEntryPointExecutionModelInIdx = 0;
 constexpr uint32_t kEntryPointFunctionIdInIdx = 1;
 constexpr uint32_t kFunctionCallFunctionIdInIdx = 0;
-
-template <typename T, typename U>
-constexpr bool has(T container, U value) {
-  return container.find(value) != container.end();
-}
 }  // namespace
 
 bool InvocationInterlockPlacementPass::hasSingleNextBlock(uint32_t block_id,
-                                                          bool forward_flow) {
-  if (forward_flow) {
+                                                          bool reverse_cfg) {
+  if (reverse_cfg) {
     // We are traversing forward, so check whether there is a single successor.
     BasicBlock* block = cfg()->block(block_id);
 
-    return block->tail()->opcode() != spv::Op::OpBranchConditional &&
-           block->tail()->opcode() != spv::Op::OpSwitch;
+    switch (block->tail()->opcode()) {
+      case spv::Op::OpBranchConditional:
+        return false;
+      case spv::Op::OpSwitch:
+        return block->tail()->NumInOperandWords() == 1;
+      default:
+        return !block->tail()->IsReturnOrAbort();
+    }
   } else {
     // We are traversing backward, so check whether there is a single
     // predecessor.
@@ -62,8 +63,8 @@ bool InvocationInterlockPlacementPass::hasSingleNextBlock(uint32_t block_id,
 }
 
 void InvocationInterlockPlacementPass::forEachNext(
-    uint32_t block_id, bool forward_flow, std::function<void(uint32_t)> f) {
-  if (forward_flow) {
+    uint32_t block_id, bool reverse_cfg, std::function<void(uint32_t)> f) {
+  if (reverse_cfg) {
     BasicBlock* block = cfg()->block(block_id);
 
     block->ForEachSuccessorLabel([f](uint32_t succ_id) { f(succ_id); });
@@ -75,16 +76,15 @@ void InvocationInterlockPlacementPass::forEachNext(
 }
 
 void InvocationInterlockPlacementPass::addInstructionAtEdge(BasicBlock* block,
-                                                            bool forward_flow) {
-  if (forward_flow) {
+                                                            spv::Op opcode,
+                                                            bool reverse_cfg) {
+  if (reverse_cfg) {
     // Insert a begin instruction at the end of the block.
-    Instruction* begin_inst =
-        new Instruction(context(), spv::Op::OpBeginInvocationInterlockEXT);
+    Instruction* begin_inst = new Instruction(context(), opcode);
     begin_inst->InsertAfter(&*--block->tail());
   } else {
     // Insert an end instruction at the end of the block.
-    Instruction* end_inst =
-        new Instruction(context(), spv::Op::OpEndInvocationInterlockEXT);
+    Instruction* end_inst = new Instruction(context(), opcode);
     end_inst->InsertBefore(&*block->begin());
   }
 }
@@ -128,7 +128,7 @@ bool InvocationInterlockPlacementPass::killDuplicateEnd(BasicBlock* block) {
 InvocationInterlockPlacementPass::ExtractionResult
 InvocationInterlockPlacementPass::removeInstructionsFromFunction(
     Function* func) {
-  if (has(extracted_functions_, func)) {
+  if (extracted_functions_.count(func)) {
     return extracted_functions_[func];
   }
 
@@ -198,7 +198,7 @@ bool InvocationInterlockPlacementPass::extractInstructionsFromCalls(
   return modified;
 }
 
-void InvocationInterlockPlacementPass::computeBeginAndEnd(
+void InvocationInterlockPlacementPass::recordExistingBeginAndEndBlock(
     std::vector<BasicBlock*> blocks) {
   for (BasicBlock* block : blocks) {
     block->ForEachInst([this, block](Instruction* inst) {
@@ -216,10 +216,10 @@ void InvocationInterlockPlacementPass::computeBeginAndEnd(
   }
 }
 
-void InvocationInterlockPlacementPass::computeReachableBlocks(
-    BlockSet& inside, BlockSet& previous_inside, bool forward_flow) {
-  BlockSet& starting_nodes = forward_flow ? begin_ : end_;
-  inside = starting_nodes;
+InvocationInterlockPlacementPass::BlockSet
+InvocationInterlockPlacementPass::computeReachableBlocks(
+    BlockSet& previous_inside, BlockSet& starting_nodes, bool reverse_cfg) {
+  BlockSet inside = starting_nodes;
 
   std::deque<uint32_t> worklist;
   worklist.insert(worklist.begin(), starting_nodes.begin(),
@@ -229,27 +229,28 @@ void InvocationInterlockPlacementPass::computeReachableBlocks(
     uint32_t block_id = worklist.front();
     worklist.pop_front();
 
-    forEachNext(block_id, forward_flow,
+    forEachNext(block_id, reverse_cfg,
                 [&inside, &previous_inside, &worklist](uint32_t next_id) {
                   previous_inside.insert(next_id);
-                  if (!has(inside, next_id)) {
+                  if (inside.insert(next_id).second) {
                     worklist.push_back(next_id);
                   }
-                  inside.insert(next_id);
                 });
   }
+
+  return inside;
 }
 
 bool InvocationInterlockPlacementPass::removeUnneededInstructions(
     BasicBlock* block) {
   bool modified = false;
-  if (!has(predecessors_after_begin_, block->id()) &&
-      has(after_begin_, block->id())) {
+  if (!predecessors_after_begin_.count(block->id()) &&
+      after_begin_.count(block->id())) {
     // None of the previous blocks are in the critical section, but this block
     // is. This can only happen if this block already has at least one begin
     // instruction. Leave the first begin instruction, and remove any others.
     modified |= killDuplicateBegin(block);
-  } else if (has(predecessors_after_begin_, block->id())) {
+  } else if (predecessors_after_begin_.count(block->id())) {
     // At least one previous block is in the critical section; remove all
     // begin instructions in this block.
     modified |= context()->KillInstructionIf(
@@ -258,11 +259,11 @@ bool InvocationInterlockPlacementPass::removeUnneededInstructions(
         });
   }
 
-  if (!has(successors_before_end_, block->id()) &&
-      has(before_end_, block->id())) {
+  if (!successors_before_end_.count(block->id()) &&
+      before_end_.count(block->id())) {
     // Same as above
     modified |= killDuplicateEnd(block);
-  } else if (has(successors_before_end_, block->id())) {
+  } else if (successors_before_end_.count(block->id())) {
     modified |= context()->KillInstructionIf(
         block->begin(), block->end(), [](Instruction* inst) {
           return inst->opcode() == spv::Op::OpEndInvocationInterlockEXT;
@@ -304,35 +305,30 @@ BasicBlock* InvocationInterlockPlacementPass::splitEdge(BasicBlock* block,
 }
 
 bool InvocationInterlockPlacementPass::placeInstructionsForEdge(
-    BasicBlock* block, uint32_t next_id, bool forward_flow) {
+    BasicBlock* block, uint32_t next_id, BlockSet& inside,
+    BlockSet& previous_inside, spv::Op opcode, bool reverse_cfg) {
   bool modified = false;
 
-  BlockSet& inside = forward_flow ? after_begin_ : before_end_;
-  BlockSet& previous_inside =
-      forward_flow ? predecessors_after_begin_ : successors_before_end_;
-
-  if (has(previous_inside, next_id) && !has(inside, block->id())) {
+  if (previous_inside.count(next_id) && !inside.count(block->id())) {
     // This block is not in the critical section but the next block is, so
     // we need to add begin or end instructions to the edge.
 
     modified = true;
 
-    if (hasSingleNextBlock(block->id(), forward_flow)) {
+    if (hasSingleNextBlock(block->id(), reverse_cfg)) {
       // This is the only next block.
-      addInstructionAtEdge(block, forward_flow);
+      addInstructionAtEdge(block, opcode, reverse_cfg);
     } else {
       // This block has multiple next blocks. Split the edge and insert the
       // instruction in the new next block.
       BasicBlock* new_branch;
-      if (forward_flow) {
+      if (reverse_cfg) {
         new_branch = splitEdge(block, next_id);
       } else {
         new_branch = splitEdge(cfg()->block(next_id), block->id());
       }
 
-      auto inst = new Instruction(
-          context(), forward_flow ? spv::Op::OpBeginInvocationInterlockEXT
-                                  : spv::Op::OpEndInvocationInterlockEXT);
+      auto inst = new Instruction(context(), opcode);
       inst->InsertBefore(&*new_branch->tail());
     }
   }
@@ -344,10 +340,13 @@ bool InvocationInterlockPlacementPass::placeInstructions(BasicBlock* block) {
   bool modified = false;
 
   block->ForEachSuccessorLabel([this, block, &modified](uint32_t succ_id) {
-    modified |=
-        placeInstructionsForEdge(block, succ_id, /* flowForward= */ true);
+    modified |= placeInstructionsForEdge(
+        block, succ_id, after_begin_, predecessors_after_begin_,
+        spv::Op::OpBeginInvocationInterlockEXT, /* reverse_cfg= */ true);
     modified |= placeInstructionsForEdge(cfg()->block(succ_id), block->id(),
-                                         /* flowForward= */ false);
+                                         before_end_, successors_before_end_,
+                                         spv::Op::OpEndInvocationInterlockEXT,
+                                         /* reverse_cfg= */ false);
   });
 
   return modified;
@@ -365,12 +364,12 @@ bool InvocationInterlockPlacementPass::processFragmentShaderEntry(
   }
 
   modified |= extractInstructionsFromCalls(original_blocks);
-  computeBeginAndEnd(original_blocks);
+  recordExistingBeginAndEndBlock(original_blocks);
 
-  computeReachableBlocks(after_begin_, predecessors_after_begin_,
-                         /* forward_flow= */ true);
-  computeReachableBlocks(before_end_, successors_before_end_,
-                         /* forward_flow= */ false);
+  after_begin_ = computeReachableBlocks(predecessors_after_begin_, begin_,
+                                        /* reverse_cfg= */ true);
+  before_end_ = computeReachableBlocks(successors_before_end_, end_,
+                                       /* reverse_cfg= */ false);
 
   for (BasicBlock* block : original_blocks) {
     modified |= removeUnneededInstructions(block);
@@ -379,17 +378,35 @@ bool InvocationInterlockPlacementPass::processFragmentShaderEntry(
   return modified;
 }
 
+bool InvocationInterlockPlacementPass::isFragmentShaderInterlockEnabled() {
+  if (!context()->get_feature_mgr()->HasExtension(
+          kSPV_EXT_fragment_shader_interlock)) {
+    return false;
+  }
+
+  if (context()->get_feature_mgr()->HasCapability(
+          spv::Capability::FragmentShaderSampleInterlockEXT)) {
+    return true;
+  }
+
+  if (context()->get_feature_mgr()->HasCapability(
+          spv::Capability::FragmentShaderPixelInterlockEXT)) {
+    return true;
+  }
+
+  if (context()->get_feature_mgr()->HasCapability(
+          spv::Capability::FragmentShaderShadingRateInterlockEXT)) {
+    return true;
+  }
+
+  return false;
+}
+
 Pass::Status InvocationInterlockPlacementPass::Process() {
   // Skip this pass if the necessary extension or capability is missing
-  if (!context()->get_feature_mgr()->HasExtension(
-          kSPV_EXT_fragment_shader_interlock) ||
-      !(context()->get_feature_mgr()->HasCapability(
-            spv::Capability::FragmentShaderSampleInterlockEXT) ||
-        context()->get_feature_mgr()->HasCapability(
-            spv::Capability::FragmentShaderPixelInterlockEXT) ||
-        context()->get_feature_mgr()->HasCapability(
-            spv::Capability::FragmentShaderShadingRateInterlockEXT)))
+  if (!isFragmentShaderInterlockEnabled()) {
     return Status::SuccessWithoutChange;
+  }
 
   bool modified = false;
 

@@ -55,30 +55,26 @@ class InvocationInterlockPlacementPass : public Pass {
   };
 
   // Check if a block has only a single next block, depending on the directing
-  // that we are traversing the CFG. If forward_flow is true, we are walking
+  // that we are traversing the CFG. If reverse_cfg is true, we are walking
   // forward through the CFG, and will return if the block has only one
   // successor. Otherwise, we are walking backward through the CFG, and will
   // return if the block has only one predecessor.
-  bool hasSingleNextBlock(uint32_t block_id, bool forward_flow);
+  bool hasSingleNextBlock(uint32_t block_id, bool reverse_cfg);
 
   // Iterate over each of a block's predecessors or successors, depending on
-  // direction. If forward_flow is true, we are walking forward through the CFG,
+  // direction. If reverse_cfg is true, we are walking forward through the CFG,
   // and need to iterate over the successors. Otherwise, we are walking backward
   // through the CFG, and need to iterate over the predecessors.
-  void forEachNext(uint32_t block_id, bool forward_flow,
+  void forEachNext(uint32_t block_id, bool reverse_cfg,
                    std::function<void(uint32_t)> f);
 
   // Add either a begin or end instruction to the edge of the basic block. If
-  // forward_flow is true, we are walking forward through the CFG, and want to
+  // reverse_cfg is true, we are walking forward through the CFG, and want to
   // add a begin instruction to the end of the block. Otherwise, we are walking
   // backward through the CFG, and want to add an end instruction to the
   // beginning of the basic block.
-  void addInstructionAtEdge(BasicBlock* block, bool forward_flow);
-
-  // Populates begin_ with the set of blocks that
-  // contain OpBeginInvocationInterlockEXT, and end_ with the set of blocks that
-  // contain OpEndInvocationInterlockEXT
-  // void computeBeginAndEnd();
+  void addInstructionAtEdge(BasicBlock* block, spv::Op opcode,
+                            bool reverse_cfg);
 
   // Remove every OpBeginInvocationInterlockEXT instruction in block after the
   // first. Returns whether any instructions were removed.
@@ -97,19 +93,19 @@ class InvocationInterlockPlacementPass : public Pass {
   // occurred.
   bool extractInstructionsFromCalls(std::vector<BasicBlock*> blocks);
 
-  // Finds the sets of blocks begin_ and end_ that contain
-  // OpBeginInvocationInterlockEXT and OpEndInvocationInterlockEXT,
-  // respectively.
-  void computeBeginAndEnd(std::vector<BasicBlock*> blocks);
+  // Finds the sets of blocks that contain OpBeginInvocationInterlockEXT and
+  // OpEndInvocationInterlockEXT, storing them in the member variables begin_
+  // and end_ respectively.
+  void recordExistingBeginAndEndBlock(std::vector<BasicBlock*> blocks);
 
   // Compute the set of blocks including or after the barrier instruction, and
   // the set of blocks with any previous blocks inside the barrier instruction.
-  // If forward_flow is true, move forward through the CFG, computing
+  // If reverse_cfg is true, move forward through the CFG, computing
   // after_begin_ and predecessors_after_begin_computing after_begin_ and
   // predecessors_after_begin_, otherwise, move backward through the CFG,
   // computing before_end_ and successors_before_end_.
-  void computeReachableBlocks(BlockSet& out_set, BlockSet& in_set,
-                              bool forwardFlow);
+  BlockSet computeReachableBlocks(BlockSet& in_set, BlockSet& starting_nodes,
+                                  bool reverse_cfg);
 
   // Remove unneeded begin and end instructions in block.
   bool removeUnneededInstructions(BasicBlock* block);
@@ -121,14 +117,17 @@ class InvocationInterlockPlacementPass : public Pass {
 
   // For the edge from block to next_id, places a begin or end instruction on
   // the edge, based on the direction we are walking the CFG, specified in
-  // forward_flow.
+  // reverse_cfg.
   bool placeInstructionsForEdge(BasicBlock* block, uint32_t next_id,
-                                bool forward_flow);
+                                BlockSet& inside, BlockSet& previous_inside,
+                                spv::Op opcode, bool reverse_cfg);
   // Calls placeInstructionsForEdge for each edge in block.
   bool placeInstructions(BasicBlock* block);
 
   // Processes a single fragment shader entry function.
   bool processFragmentShaderEntry(Function* entry_func);
+
+  bool isFragmentShaderInterlockEnabled();
 
   // Maps a function to whether that function originally held a begin or end
   // instruction.
