@@ -4,23 +4,3 @@ updates:
     directory: /
     schedule:
       interval: daily
-
-  - package-ecosystem: npm
-    directory: /source/wasm
-    schedule:
-      interval: daily
-
-  - package-ecosystem: npm
-    directory: /tools/sva
-    schedule:
-      interval: daily
-
-  - package-ecosystem: gomod
-    directory: /utils/vscode
-    schedule:
-      interval: daily
-
-  - package-ecosystem: npm
-    directory: /utils/vscode
-    schedule:
-      interval: daily
