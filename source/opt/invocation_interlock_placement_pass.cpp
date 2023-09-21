@@ -317,6 +317,11 @@ bool InvocationInterlockPlacementPass::placeInstructionsForEdge(
 
     if (hasSingleNextBlock(block->id(), reverse_cfg)) {
       // This is the only next block.
+
+      // Additionally, because `next_id` is in `previous_inside`, we know that
+      // `next_id` has at least one previous block in `inside`. And because
+      // 'block` is not in `inside`, that means there `next_id` has to have at
+      // least one other previous block in `inside.
       addInstructionAtEdge(block, opcode, reverse_cfg);
     } else {
       // This block has multiple next blocks. Split the edge and insert the
