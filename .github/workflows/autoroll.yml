@@ -48,7 +48,7 @@ jobs:
         run: |
           git push --force --set-upstream origin roll_deps
           # Create a PR. If it aready exists, the command fails, so ignore the return code.
-          gh pr create --base main -f -r KhronosGroup/spirv-tools-autoroll || true 
+          gh pr create --base main -f || true 
           # Add the 'kokoro:run' label so that the kokoro tests will be run.
           gh pr edit --add-label 'kokoro:run'
           gh pr merge --auto --squash
