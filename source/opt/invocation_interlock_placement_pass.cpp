@@ -75,15 +75,20 @@ void InvocationInterlockPlacementPass::forEachNext(
   }
 }
 
-void InvocationInterlockPlacementPass::addInstructionAtEdge(BasicBlock* block,
-                                                            spv::Op opcode,
-                                                            bool reverse_cfg) {
-  if (reverse_cfg) {
+void InvocationInterlockPlacementPass::addInstructionAtBlockBoundary(
+    BasicBlock* block, spv::Op opcode, bool at_end) {
+  if (at_end) {
+    assert(block->begin()->opcode() != spv::Op::OpPhi &&
+           "addInstructionAtBlockBoundary expects to be called with at_end == "
+           "true only if there is a single successor to block");
     // Insert a begin instruction at the end of the block.
     Instruction* begin_inst = new Instruction(context(), opcode);
     begin_inst->InsertAfter(&*--block->tail());
   } else {
-    // Insert an end instruction at the end of the block.
+    assert(block->begin()->opcode() != spv::Op::OpPhi &&
+           "addInstructionAtBlockBoundary expects to be called with at_end == "
+           "false only if there is a single predecessor to block");
+    // Insert an end instruction at the beginning of the block.
     Instruction* end_inst = new Instruction(context(), opcode);
     end_inst->InsertBefore(&*block->begin());
   }
@@ -161,8 +166,8 @@ void InvocationInterlockPlacementPass::recordBeginOrEndInFunction(
   extracted_functions_[func] = result;
 }
 
-bool InvocationInterlockPlacementPass::removeInstructionsFromFunction(
-    Function* func) {
+bool InvocationInterlockPlacementPass::
+    removeBeginAndEndInstructionsFromFunction(Function* func) {
   bool modified = false;
   func->ForEachInst([this, &modified](Instruction* inst) {
     switch (inst->opcode()) {
@@ -231,7 +236,8 @@ void InvocationInterlockPlacementPass::recordExistingBeginAndEndBlock(
 
 InvocationInterlockPlacementPass::BlockSet
 InvocationInterlockPlacementPass::computeReachableBlocks(
-    BlockSet& previous_inside, BlockSet& starting_nodes, bool reverse_cfg) {
+    BlockSet& previous_inside, const BlockSet& starting_nodes,
+    bool reverse_cfg) {
   BlockSet inside = starting_nodes;
 
   std::deque<uint32_t> worklist;
@@ -323,8 +329,9 @@ bool InvocationInterlockPlacementPass::placeInstructionsForEdge(
   bool modified = false;
 
   if (previous_inside.count(next_id) && !inside.count(block->id())) {
-    // This block is not in the critical section but the next block is, so
-    // we need to add begin or end instructions to the edge.
+    // This block is not in the critical section but the next has at least one
+    // other previous block that is, so this block should be enter it as well.
+    // We need to add begin or end instructions to the edge.
 
     modified = true;
 
@@ -335,7 +342,7 @@ bool InvocationInterlockPlacementPass::placeInstructionsForEdge(
       // `next_id` has at least one previous block in `inside`. And because
       // 'block` is not in `inside`, that means there `next_id` has to have at
       // least one other previous block in `inside.
-      addInstructionAtEdge(block, opcode, reverse_cfg);
+      addInstructionAtBlockBoundary(block, opcode, reverse_cfg);
     } else {
       // This block has multiple next blocks. Split the edge and insert the
       // instruction in the new next block.
@@ -440,7 +447,7 @@ Pass::Status InvocationInterlockPlacementPass::Process() {
     Function* func = &*fi;
     recordBeginOrEndInFunction(func);
     if (!entry_points.count(func) && extracted_functions_.count(func)) {
-      modified |= removeInstructionsFromFunction(func);
+      modified |= removeBeginAndEndInstructionsFromFunction(func);
     }
   }
 

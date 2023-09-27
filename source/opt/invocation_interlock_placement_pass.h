@@ -69,12 +69,10 @@ class InvocationInterlockPlacementPass : public Pass {
                    std::function<void(uint32_t)> f);
 
   // Add either a begin or end instruction to the edge of the basic block. If
-  // reverse_cfg is true, we are walking forward through the CFG, and want to
-  // add a begin instruction to the end of the block. Otherwise, we are walking
-  // backward through the CFG, and want to add an end instruction to the
-  // beginning of the basic block.
-  void addInstructionAtEdge(BasicBlock* block, spv::Op opcode,
-                            bool reverse_cfg);
+  // at_end is true, add the instruction to the end of the block; otherwise add
+  // the instruction to the beginning of the basic block.
+  void addInstructionAtBlockBoundary(BasicBlock* block, spv::Op opcode,
+                                     bool at_end);
 
   // Remove every OpBeginInvocationInterlockEXT instruction in block after the
   // first. Returns whether any instructions were removed.
@@ -89,7 +87,7 @@ class InvocationInterlockPlacementPass : public Pass {
 
   // Recursively removes any begin or end instructions from func and any
   // function func calls. Returns whether any instructions were removed.
-  bool removeInstructionsFromFunction(Function* func);
+  bool removeBeginAndEndInstructionsFromFunction(Function* func);
 
   // For every function call in any of the passed blocks, move any begin or end
   // instructions outside of the function call. Returns whether any extractions
@@ -107,7 +105,8 @@ class InvocationInterlockPlacementPass : public Pass {
   // after_begin_ and predecessors_after_begin_computing after_begin_ and
   // predecessors_after_begin_, otherwise, move backward through the CFG,
   // computing before_end_ and successors_before_end_.
-  BlockSet computeReachableBlocks(BlockSet& in_set, BlockSet& starting_nodes,
+  BlockSet computeReachableBlocks(BlockSet& in_set,
+                                  const BlockSet& starting_nodes,
                                   bool reverse_cfg);
 
   // Remove unneeded begin and end instructions in block.
