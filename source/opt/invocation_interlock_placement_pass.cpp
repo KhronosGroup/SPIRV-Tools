@@ -353,7 +353,9 @@ bool InvocationInterlockPlacementPass::placeInstructionsForEdge(
       // the previous blocks.
       forEachNext(next_id, !reverse_cfg,
                   [&next_has_previous_inside, inside](uint32_t previous_id) {
-                    next_has_previous_inside |= inside.count(previous_id);
+                    if (inside.count(previous_id)) {
+                      next_has_previous_inside = true;
+                    }
                   });
       assert(next_has_previous_inside &&
              "`previous_inside` must be the set of blocks with at least one "
