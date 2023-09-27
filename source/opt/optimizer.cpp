@@ -158,7 +158,8 @@ Optimizer& Optimizer::RegisterLegalizationPasses(bool preserve_interface) {
           .RegisterPass(CreateDeadInsertElimPass())
           .RegisterPass(CreateReduceLoadSizePass())
           .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
-          .RegisterPass(CreateInterpolateFixupPass());
+          .RegisterPass(CreateInterpolateFixupPass())
+          .RegisterPass(CreateInvocationInterlockPlacementPass());
 }
 
 Optimizer& Optimizer::RegisterLegalizationPasses() {
@@ -1112,6 +1113,11 @@ Optimizer::PassToken CreateTrimCapabilitiesPass() {
 Optimizer::PassToken CreateSwitchDescriptorSetPass(uint32_t from, uint32_t to) {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::SwitchDescriptorSetPass>(from, to));
+}
+
+Optimizer::PassToken CreateInvocationInterlockPlacementPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::InvocationInterlockPlacementPass>());
 }
 }  // namespace spvtools
 

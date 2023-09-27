@@ -994,6 +994,12 @@ Optimizer::PassToken CreateTrimCapabilitiesPass();
 // use the new value |ds_to|.
 Optimizer::PassToken CreateSwitchDescriptorSetPass(uint32_t ds_from,
                                                    uint32_t ds_to);
+
+// Creates an invocation interlock placement pass.
+// This pass ensures that an entry point will have at most one
+// OpBeginInterlockInvocationEXT and one OpEndInterlockInvocationEXT, in that
+// order.
+Optimizer::PassToken CreateInvocationInterlockPlacementPass();
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_

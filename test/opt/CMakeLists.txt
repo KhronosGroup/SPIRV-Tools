@@ -66,6 +66,7 @@ add_spvtools_unittest(TARGET opt
        instruction_list_test.cpp
        instruction_test.cpp
        interface_var_sroa_test.cpp
+       invocation_interlock_placement_test.cpp
        interp_fixup_test.cpp
        ir_builder.cpp
        ir_context_test.cpp
