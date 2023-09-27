@@ -311,7 +311,9 @@ BasicBlock* InvocationInterlockPlacementPass::splitEdge(BasicBlock* block,
          block->tail()->opcode() == spv::Op::OpSwitch);
 
   // Update the first branch to successor to instead branch to
-  // new_successor
+  // the new successor. If there are multiple edges, we arbitrarily choose the
+  // first time it appears in the list. The other edges to `succ_id` will have
+  // to be split by another call to `splitEdge`.
   block->tail()->WhileEachInId([new_succ, succ_id](uint32_t* branch_id) {
     if (*branch_id == succ_id) {
       *branch_id = new_succ->id();
@@ -340,8 +342,23 @@ bool InvocationInterlockPlacementPass::placeInstructionsForEdge(
 
       // Additionally, because `next_id` is in `previous_inside`, we know that
       // `next_id` has at least one previous block in `inside`. And because
-      // 'block` is not in `inside`, that means there `next_id` has to have at
-      // least one other previous block in `inside.
+      // 'block` is not in `inside`, that means the `next_id` has to have at
+      // least one other previous block in `inside`.
+
+      // This is solely for a debug assertion. It is essentially recomputing the
+      // value of `previous_inside` to verify that it was computed correctly
+      // such that the above statement is true.
+      bool next_has_previous_inside = false;
+      // By passing !reverse_cfg to forEachNext, we are actually iterating over
+      // the previous blocks.
+      forEachNext(next_id, !reverse_cfg,
+                  [&next_has_previous_inside, inside](uint32_t previous_id) {
+                    next_has_previous_inside |= inside.count(previous_id);
+                  });
+      assert(next_has_previous_inside &&
+             "`previous_inside` must be the set of blocks with at least one "
+             "previous block in `inside`");
+
       addInstructionAtBlockBoundary(block, opcode, reverse_cfg);
     } else {
       // This block has multiple next blocks. Split the edge and insert the
