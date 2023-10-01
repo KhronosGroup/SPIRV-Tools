@@ -27,26 +27,26 @@ function(pop_variable var)
 endfunction()
 
 if (DEFINED SPIRV-Headers_SOURCE_DIR)
-  # This allows flexible position of the SPIRV-Headers repo.
-  set(SPIRV_HEADER_DIR ${SPIRV-Headers_SOURCE_DIR})
+  add_subdirectory(${SPIRV-Headers_SOURCE_DIR})
+  set(SPIRV-Headers_INCLUDE_DIRS ${SPIRV-Headers_SOURCE_DIR}/include)
+elseif (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/spirv-headers/)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spirv-headers/)
+  set(SPIRV-Headers_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/spirv-headers/include)
+elseif(IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Headers/)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Headers/)
+  set(SPIRV-Headers_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Headers/include)
+elseif()
 else()
-  set(SPIRV_HEADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/spirv-headers)
-endif()
-
-if (IS_DIRECTORY ${SPIRV_HEADER_DIR})
-  # TODO(dneto): We should not be modifying the parent scope.
-  set(SPIRV_HEADER_INCLUDE_DIR ${SPIRV_HEADER_DIR}/include PARENT_SCOPE)
-
-  # Add SPIRV-Headers as a sub-project if it isn't already defined.
-  # Do this so enclosing projects can use SPIRV-Headers_SOURCE_DIR to find
-  # headers to include.
-  if (NOT DEFINED SPIRV-Headers_SOURCE_DIR)
-    add_subdirectory(${SPIRV_HEADER_DIR})
+  find_package(SPIRV-Headers QUIET)
+  if (SPIRV-Headers_FOUND)
+    get_target_property(SPIRV-Headers_INCLUDE_DIRS SPIRV-Headers::SPIRV-Headers INTERFACE_INCLUDE_DIRECTORIES)
+  else ()
+    message(FATAL_ERROR
+      "SPIRV-Headers was not found - please checkout a copy under external/.")
   endif()
-else()
-  message(FATAL_ERROR
-    "SPIRV-Headers was not found - please checkout a copy under external/.")
 endif()
+set(SPIRV_HEADER_INCLUDE_DIR ${SPIRV-Headers_INCLUDE_DIRS} PARENT_SCOPE)
+message(STATUS "Found SPIRV-Headers: ${SPIRV-Headers_INCLUDE_DIRS}")
 
 if (NOT ${SPIRV_SKIP_TESTS})
   # Find gmock if we can. If it's not already configured, then try finding
