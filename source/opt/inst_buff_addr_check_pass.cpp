@@ -301,6 +301,11 @@ Pass::Status InstBuffAddrCheckPass::ProcessImpl() {
     context()->AddExtension("SPV_KHR_physical_storage_buffer");
   }
 
+  context()->AddCapability(spv::Capability::PhysicalStorageBufferAddresses);
+  Instruction* memory_model = get_module()->GetMemoryModel();
+  memory_model->SetInOperand(
+      0u, {uint32_t(spv::AddressingModel::PhysicalStorageBuffer64)});
+
   context()->AddCapability(spv::Capability::Int64);
   context()->AddCapability(spv::Capability::Linkage);
   // Perform bindless bounds check on each entry point function in module
@@ -311,14 +316,13 @@ Pass::Status InstBuffAddrCheckPass::ProcessImpl() {
         return GenBuffAddrCheckCode(ref_inst_itr, ref_block_itr, stage_idx,
                                     new_blocks);
       };
-  bool modified = InstProcessEntryPointCallTree(pfn);
-  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+  InstProcessEntryPointCallTree(pfn);
+  // This pass always changes the memory model, so that linking will work
+  // properly.
+  return Status::SuccessWithChange;
 }
 
 Pass::Status InstBuffAddrCheckPass::Process() {
-  if (!get_feature_mgr()->HasCapability(
-          spv::Capability::PhysicalStorageBufferAddressesEXT))
-    return Status::SuccessWithoutChange;
   InitInstBuffAddrCheck();
   return ProcessImpl();
 }

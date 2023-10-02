@@ -724,7 +724,6 @@ void InstBindlessCheckPass::InitializeInstBindlessCheck() {
 }
 
 Pass::Status InstBindlessCheckPass::ProcessImpl() {
-  bool modified = false;
   // The memory model and linkage must always be updated for spirv-link to work
   // correctly.
   AddStorageBufferExt();
@@ -747,8 +746,10 @@ Pass::Status InstBindlessCheckPass::ProcessImpl() {
                                 new_blocks);
       };
 
-  modified = InstProcessEntryPointCallTree(pfn);
-  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+  InstProcessEntryPointCallTree(pfn);
+  // This pass always changes the memory model, so that linking will work
+  // properly.
+  return Status::SuccessWithChange;
 }
 
 Pass::Status InstBindlessCheckPass::Process() {
