@@ -36,6 +36,7 @@ namespace spvtools {
 namespace opt {
 
 namespace {
+constexpr uint32_t kOpTypeFloatSizeIndex = 0;
 constexpr uint32_t kOpTypePointerStorageClassIndex = 0;
 constexpr uint32_t kTypeArrayTypeIndex = 0;
 constexpr uint32_t kOpTypeScalarBitWidthIndex = 0;
@@ -131,6 +132,16 @@ static bool Has16BitCapability(const FeatureManager* feature_manager) {
 //
 // Handler names follow the following convention:
 //  Handler_<Opcode>_<Capability>()
+
+static std::optional<spv::Capability> Handler_OpTypeFloat_Float64(
+    const Instruction* instruction) {
+  assert(instruction->opcode() == spv::Op::OpTypeFloat &&
+         "This handler only support OpTypeFloat opcodes.");
+
+  const uint32_t size =
+      instruction->GetSingleWordInOperand(kOpTypeFloatSizeIndex);
+  return size == 64 ? std::optional(spv::Capability::Float64) : std::nullopt;
+}
 
 static std::optional<spv::Capability>
 Handler_OpTypePointer_StorageInputOutput16(const Instruction* instruction) {
@@ -286,8 +297,9 @@ static std::optional<spv::Capability> Handler_OpTypeImage_ImageMSArray(
 }
 
 // Opcode of interest to determine capabilities requirements.
-constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 7> kOpcodeHandlers{{
+constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 8> kOpcodeHandlers{{
     // clang-format off
+    {spv::Op::OpTypeFloat,   Handler_OpTypeFloat_Float64 },
     {spv::Op::OpTypeImage,   Handler_OpTypeImage_ImageMSArray},
     {spv::Op::OpTypeInt,     Handler_OpTypeInt_Int64 },
     {spv::Op::OpTypePointer, Handler_OpTypePointer_StorageInputOutput16},
