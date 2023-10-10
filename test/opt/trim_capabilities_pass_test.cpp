@@ -2142,11 +2142,12 @@ TEST_F(TrimCapabilitiesPassTest,
 ; CHECK:       OpCapability ComputeDerivativeGroupQuadsNV
 ; CHECK-NOT:   OpCapability ComputeDerivativeGroupLinearNV
                OpCapability Shader
+; CHECK:       OpExtension "SPV_NV_compute_shader_derivatives"
+               OpExtension "SPV_NV_compute_shader_derivatives"
                OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %1 "main"
                OpExecutionMode %1 DerivativeGroupQuadsNV
        %void = OpTypeVoid
-      %float = OpTypeFloat 64
           %3 = OpTypeFunction %void
           %1 = OpFunction %void None %3
           %6 = OpLabel
@@ -2167,6 +2168,8 @@ TEST_F(TrimCapabilitiesPassTest,
 ; CHECK:       OpCapability ComputeDerivativeGroupLinearNV
 ; CHECK-NOT:   OpCapability ComputeDerivativeGroupQuadsNV
                OpCapability Shader
+; CHECK:       OpExtension "SPV_NV_compute_shader_derivatives"
+               OpExtension "SPV_NV_compute_shader_derivatives"
                OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %1 "main"
                OpExecutionMode %1 DerivativeGroupLinearNV
