@@ -12,6 +12,7 @@ v2023.5 2023-10-15
     - opt: Add SwitchDescriptorSetPass (#5375)
     - opt: add FragmentShader*InterlockEXT to capability trim pass (#5390)
     - opt: add Int64 capability to trim pass (#5398)
+    - opt: add Float64 capability to trim pass (#5428)
     - opt: add raytracing/rayquery to trim pass (#5397)
     - opt: add ImageMSArray capability to trim pass. (#5395)
     - Add SPV_KHR_physical_storage_buffer to allowlists (#5402)
@@ -19,6 +20,7 @@ v2023.5 2023-10-15
     - Make sure that fragment shader interlock instructions are not removed by DCE (#5400)
     - instrument: Use Import linkage for instrumentation functions (#5355)
     - Add a new legalization pass to dedupe invocation interlock instructions (#5409)
+    - instrument: Ensure linking works even of nothing is changed (#5419)
   - Validator
     - Move token version/cap/ext checks from parsing to validation (#5370)
     - val: re-add ImageMSArray validation (#5394)
