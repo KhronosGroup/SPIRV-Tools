@@ -91,7 +91,9 @@ class TrimCapabilitiesPass : public Pass {
       spv::Capability::StoragePushConstant16,
       spv::Capability::StorageUniform16,
       spv::Capability::StorageUniformBufferBlock16,
-      spv::Capability::ImageMSArray
+      spv::Capability::ImageMSArray,
+      spv::Capability::ComputeDerivativeGroupQuadsNV,
+      spv::Capability::ComputeDerivativeGroupLinearNV
       // clang-format on
   };
 

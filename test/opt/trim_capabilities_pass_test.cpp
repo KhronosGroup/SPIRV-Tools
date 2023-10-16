@@ -63,6 +63,8 @@ TEST_F(TrimCapabilitiesPassTest, CheckKnownAliasTransformations) {
                OpCapability DotProductInput4x8BitKHR
                OpCapability DotProductInput4x8BitPackedKHR
                OpCapability DotProductKHR
+               OpCapability ComputeDerivativeGroupQuadsNV
+               OpCapability ComputeDerivativeGroupLinearNV
 ; CHECK: OpCapability Linkage
 ; CHECK-NOT: OpCapability StorageUniform16
 ; CHECK-NOT: OpCapability StorageUniformBufferBlock16
@@ -89,6 +91,8 @@ TEST_F(TrimCapabilitiesPassTest, CheckKnownAliasTransformations) {
 ; CHECK-NOT: OpCapability DotProductInput4x8BitKHR
 ; CHECK-NOT: OpCapability DotProductInput4x8BitPackedKHR
 ; CHECK-NOT: OpCapability DotProductKHR
+; CHECK-NOT: OpCapability ComputeDerivativeGroupQuadsNV
+; CHECK-NOT: OpCapability ComputeDerivativeGroupLinearNV
 ; CHECK: OpCapability UniformAndStorageBuffer16BitAccess
 ; CHECK: OpCapability StorageBuffer16BitAccess
 ; CHECK: OpCapability ShaderViewportIndexLayerEXT
@@ -2127,6 +2131,59 @@ TEST_F(TrimCapabilitiesPassTest, Float64_RemainsWhenUsed) {
   const auto result =
       SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       ComputeDerivativeGroupQuads_ReamainsWithExecMode) {
+  const std::string kTest = R"(
+               OpCapability ComputeDerivativeGroupQuadsNV
+               OpCapability ComputeDerivativeGroupLinearNV
+; CHECK-NOT:   OpCapability ComputeDerivativeGroupLinearNV
+; CHECK:       OpCapability ComputeDerivativeGroupQuadsNV
+; CHECK-NOT:   OpCapability ComputeDerivativeGroupLinearNV
+               OpCapability Shader
+; CHECK:       OpExtension "SPV_NV_compute_shader_derivatives"
+               OpExtension "SPV_NV_compute_shader_derivatives"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %1 DerivativeGroupQuadsNV
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       ComputeDerivativeGroupLinear_ReamainsWithExecMode) {
+  const std::string kTest = R"(
+               OpCapability ComputeDerivativeGroupLinearNV
+               OpCapability ComputeDerivativeGroupQuadsNV
+; CHECK-NOT:   OpCapability ComputeDerivativeGroupQuadsNV
+; CHECK:       OpCapability ComputeDerivativeGroupLinearNV
+; CHECK-NOT:   OpCapability ComputeDerivativeGroupQuadsNV
+               OpCapability Shader
+; CHECK:       OpExtension "SPV_NV_compute_shader_derivatives"
+               OpExtension "SPV_NV_compute_shader_derivatives"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+               OpExecutionMode %1 DerivativeGroupLinearNV
+       %void = OpTypeVoid
+      %float = OpTypeFloat 64
+          %3 = OpTypeFunction %void
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
 }  // namespace
