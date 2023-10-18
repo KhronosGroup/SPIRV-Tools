@@ -112,10 +112,11 @@ def describe(repo_path):
     successful, returns the output; otherwise returns 'unknown hash, <date>'."""
 
     # if we're in a git repository, attempt to extract version info
-    if os.path.exists(".git"):
+    success, output = command_output(["git", "rev-parse", "--show-toplevel"], repo_path)
+    if success:
         success, output = command_output(["git", "describe"], repo_path)
         if not success:
-            output = command_output(["git", "rev-parse", "HEAD"], repo_path)
+            success, output = command_output(["git", "rev-parse", "HEAD"], repo_path)
 
         if success:
             # decode() is needed here for Python3 compatibility. In Python2,
