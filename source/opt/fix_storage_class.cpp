@@ -318,7 +318,8 @@ uint32_t FixStorageClass::WalkAccessChainType(Instruction* inst, uint32_t id) {
         const analysis::Constant* index_const =
             context()->get_constant_mgr()->FindDeclaredConstant(
                 inst->GetSingleWordInOperand(i));
-        uint32_t index = index_const->GetU32();
+        uint32_t index =
+            static_cast<uint32_t>(index_const->GetZeroExtendedValue());
         id = type_inst->GetSingleWordInOperand(index);
         break;
       }
