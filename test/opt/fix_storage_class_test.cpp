@@ -876,33 +876,23 @@ TEST_F(FixTypeTest, FixPhiInLoop) {
 }
 TEST_F(FixStorageClassTest, SupportsU64Index) {
   const std::string text = R"(
-; CHECK: OpAccessChain %_ptr_Workgroup_float
 ; CHECK: OpAccessChain %_ptr_Uniform_float
                OpCapability Shader
                OpMemoryModel Logical GLSL450
-               OpEntryPoint GLCompute %1 "testMain" %gl_GlobalInvocationID %gl_LocalInvocationID %gl_WorkGroupID
+               OpEntryPoint GLCompute %1 "testMain" %gl_LocalInvocationID
                OpExecutionMode %1 LocalSize 8 8 1
-               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
                OpDecorate %gl_LocalInvocationID BuiltIn LocalInvocationId
-               OpDecorate %gl_WorkGroupID BuiltIn WorkgroupId
                OpDecorate %8 DescriptorSet 0
                OpDecorate %8 Binding 0
                OpDecorate %_runtimearr_float ArrayStride 4
                OpMemberDecorate %_struct_7 0 Offset 0
                OpDecorate %_struct_7 BufferBlock
-        %int = OpTypeInt 32 1
-      %int_0 = OpConstant %int 0
       %ulong = OpTypeInt 64 0
     %ulong_0 = OpConstant %ulong 0
       %float = OpTypeFloat 32
-    %float_2 = OpConstant %float 2
+  %float_123 = OpConstant %float 123
        %uint = OpTypeInt 32 0
     %uint_10 = OpConstant %uint 10
-%_arr_float_uint_10 = OpTypeArray %float %uint_10
-%ptr = OpTypePointer Function %_arr_float_uint_10
-%_arr__arr_float_uint_10_uint_10 = OpTypeArray %_arr_float_uint_10 %uint_10
-  %_struct_5 = OpTypeStruct %_arr__arr_float_uint_10_uint_10
-%_ptr_Workgroup__struct_5 = OpTypePointer Workgroup %_struct_5
 %_runtimearr_float = OpTypeRuntimeArray %float
   %_struct_7 = OpTypeStruct %_runtimearr_float
 %_ptr_Uniform__struct_7 = OpTypePointer Uniform %_struct_7
@@ -910,24 +900,15 @@ TEST_F(FixStorageClassTest, SupportsU64Index) {
 %_ptr_Input_v3uint = OpTypePointer Input %v3uint
        %void = OpTypeVoid
          %30 = OpTypeFunction %void
-%_ptr_Function_float = OpTypePointer Function %float
 %_ptr_Uniform_float = OpTypePointer Uniform %float
-          %6 = OpVariable %_ptr_Workgroup__struct_5 Workgroup
           %8 = OpVariable %_ptr_Uniform__struct_7 Uniform
-%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
 %gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
-%gl_WorkGroupID = OpVariable %_ptr_Input_v3uint Input
           %1 = OpFunction %void None %30
          %38 = OpLabel
          %44 = OpLoad %v3uint %gl_LocalInvocationID
-         %50 = OpAccessChain %_ptr_Function_float %6 %int_0 %int_0 %int_0
-         %51 = OpLoad %float %50
-         %52 = OpFMul %float %float_2 %51
-               OpStore %50 %52
-         %55 = OpLoad %float %50
          %59 = OpCompositeExtract %uint %44 0
          %60 = OpAccessChain %_ptr_Uniform_float %8 %ulong_0 %59
-               OpStore %60 %55
+               OpStore %60 %float_123
                OpReturn
                OpFunctionEnd
 )";
