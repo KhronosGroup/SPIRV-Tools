@@ -1,0 +1,22 @@
+name: iOS
+
+on:
+    push:
+    workflow_dispatch:
+    pull_request:
+      branches:
+      - main
+
+permissions: read-all
+
+jobs:
+  iOS:
+    name: iOS Build
+    runs-on: mac-13
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: lukka/get-cmake@8be6cca406b575906541e8e3b885d46f416bba39 # v3.27.7
+      - run: python3 utils/git-sync-deps
+      - run: cmake -S . -B build -D CMAKE_SYSTEM_NAME=iOS -D SPIRV_SKIP_EXECUTABLES=ON
+      - run: cmake --build build
+      - run: cmake --install build --prefix /etc
