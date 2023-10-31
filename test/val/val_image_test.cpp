@@ -5950,7 +5950,7 @@ TEST_F(ValidateImage, ZeroExtendScalarUIntTexelV14Good) {
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
-TEST_F(ValidateImage, ZeroExtendScalarSIntTexelV14Good) {
+TEST_F(ValidateImage, ZeroExtendScalarSIntTexelV14) {
   // Zeroed int sampled type
   const std::string body = R"(
 %img = OpLoad %type_image_s32_2d_0002 %uniform_image_s32_2d_0002
@@ -5961,8 +5961,11 @@ TEST_F(ValidateImage, ZeroExtendScalarSIntTexelV14Good) {
   CompileSuccessfully(
       GenerateShaderCode(body, extra, "Fragment", "", SPV_ENV_UNIVERSAL_1_4),
       SPV_ENV_UNIVERSAL_1_4);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), Eq(""));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Using SignExtend, but result type is a signed integer type."));
 }
 
 TEST_F(ValidateImage, ZeroExtendScalarVectorUIntTexelV14Good) {
@@ -5979,7 +5982,7 @@ TEST_F(ValidateImage, ZeroExtendScalarVectorUIntTexelV14Good) {
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
-TEST_F(ValidateImage, ZeroExtendVectorSIntTexelV14Good) {
+TEST_F(ValidateImage, ZeroExtendVectorSIntTexelV14) {
   const std::string body = R"(
 %img = OpLoad %type_image_s32_2d_0002 %uniform_image_s32_2d_0002
 %res1 = OpImageRead %s32vec4 %img %u32vec2_01 ZeroExtend
@@ -5989,8 +5992,11 @@ TEST_F(ValidateImage, ZeroExtendVectorSIntTexelV14Good) {
   CompileSuccessfully(
       GenerateShaderCode(body, extra, "Fragment", "", SPV_ENV_UNIVERSAL_1_4),
       SPV_ENV_UNIVERSAL_1_4);
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), Eq(""));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Using SignExtend, but result type is a signed integer type."));
 }
 
 TEST_F(ValidateImage, ReadLodAMDSuccess1) {
@@ -8209,7 +8215,7 @@ TEST_F(ValidateImage, TypeImageVulkanStorageSignExtendOverride) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 
-TEST_F(ValidateImage, TypeImageVulkanStorageZeroExtendOverride) {
+TEST_F(ValidateImage, TypeImageVulkanStorageZeroExtendSigned) {
   const std::string code = R"(
     OpCapability Shader
     OpMemoryModel Logical GLSL450
@@ -8238,7 +8244,12 @@ TEST_F(ValidateImage, TypeImageVulkanStorageZeroExtendOverride) {
 )";
 
   CompileSuccessfully(code.c_str(), SPV_ENV_VULKAN_1_2);
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Image-04965"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Using SignExtend, but result type is a signed integer type"));
 }
 
 TEST_F(ValidateImage, TypeImageVulkanStorageZeroExtendRedundant) {
@@ -8317,21 +8328,8 @@ TEST_F(ValidateImage, TypeImageVulkanStorageZeroExtendFloat) {
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-StandaloneSpirv-Image-04965"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Can't use SignExtend or ZeroExtend on float images"));
-}
-
-TEST_F(ValidateImage, BothSignExtendZeroExtendTogether) {
-  const std::string body = R"(
-%img = OpLoad %type_image_s32_2d_0002 %uniform_image_s32_2d_0002
-%res1 = OpImageRead %s32vec4 %img %u32vec2_01 SignExtend ZeroExtend
-)";
-  const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
-
-  EXPECT_THAT(CompileFailure(GenerateShaderCode(body, extra, "Fragment", "",
-                                                SPV_ENV_UNIVERSAL_1_4),
-                             SPV_ENV_UNIVERSAL_1_4),
-              HasSubstr("Expected <opcode> or <result-id> at the beginning of "
-                        "an instruction"));
+              HasSubstr("Using SignExtend, but result type is not a scalar or "
+                        "vector integer type."));
 }
 
 }  // namespace
