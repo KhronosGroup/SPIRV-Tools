@@ -304,15 +304,11 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
   endmacro()
 endif()
 
-# Defaults to OFF if the user didn't set it.
-option(SPIRV_SKIP_EXECUTABLES
-  "Skip building the executable and tests along with the library"
-  ${SPIRV_SKIP_EXECUTABLES})
-option(SPIRV_SKIP_TESTS
-  "Skip building tests along with the library" ${SPIRV_SKIP_TESTS})
-if ("${SPIRV_SKIP_EXECUTABLES}")
+option(SPIRV_SKIP_EXECUTABLES "Skip building the executable and tests along with the library")
+if (SPIRV_SKIP_EXECUTABLES)
   set(SPIRV_SKIP_TESTS ON)
 endif()
+option(SPIRV_SKIP_TESTS "Skip building tests along with the library")
 
 # Defaults to ON.  The checks can be time consuming.
 # Turn off if they take too long.
