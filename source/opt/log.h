@@ -49,7 +49,9 @@
 #if !defined(NDEBUG) && defined(SPIRV_LOG_DEBUG)
 #define SPIRV_DEBUG(consumer, ...) SPIRV_DEBUG_IMPL(consumer, __VA_ARGS__)
 #else
-#define SPIRV_DEBUG(consumer, ...)
+// Adding a use to avoid errors in the release build related to unused
+// consumers.
+#define SPIRV_DEBUG(consumer, ...) (void)(consumer)
 #endif
 
 // Helper macros for concatenating arguments.
