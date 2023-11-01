@@ -8003,6 +8003,7 @@ TEST_F(ValidateDecorations, WorkgroupBlockVariableWith16BitType) {
                OpCapability Shader
                OpCapability Float16
                OpCapability Int16
+               OpCapability WorkgroupMemoryExplicitLayoutKHR
                OpCapability WorkgroupMemoryExplicitLayout16BitAccessKHR
                OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
                OpMemoryModel Logical GLSL450
@@ -8263,6 +8264,37 @@ TEST_F(ValidateDecorations, WorkgroupSingleBlockVariableBadLayout) {
       HasSubstr("Block for variable in Workgroup storage class must follow "
                 "relaxed storage buffer layout rules: "
                 "member 0 at offset 1 is not aligned to 4"));
+}
+
+TEST_F(ValidateDecorations, WorkgroupBlockNoCapability) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpMemberDecorate %struct 0 Offset 0
+               OpMemberDecorate %struct 1 Offset 4
+               OpDecorate %struct Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+     %struct = OpTypeStruct %int %int
+%ptr_workgroup = OpTypePointer Workgroup %struct
+          %_ = OpVariable %ptr_workgroup Workgroup
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_BINARY,
+            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1_SPIRV_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Workgroup Storage Class variables can't be decorated with Block "
+          "unless declaring the WorkgroupMemoryExplicitLayoutKHR capability"));
 }
 
 TEST_F(ValidateDecorations, BadMatrixStrideUniform) {
