@@ -111,7 +111,6 @@ set(TEST_SOURCES
   hex_float_test.cpp
   immediate_int_test.cpp
   libspirv_macros_test.cpp
-  log_test.cpp
   named_id_test.cpp
   name_mapper_test.cpp
   opcode_make_test.cpp
