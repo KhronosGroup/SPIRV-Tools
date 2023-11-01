@@ -176,6 +176,8 @@ OpName %main "main"
 %_ptr_struct_v2int_int_int = OpTypePointer Function %struct_v2int_int_int
 %_ptr_v2float = OpTypePointer Function %v2float
 %_ptr_v2double = OpTypePointer Function %v2double
+%int_2 = OpConstant %int 2
+%int_arr_2 = OpTypeArray %int %int_2
 %short_0 = OpConstant %short 0
 %short_2 = OpConstant %short 2
 %short_3 = OpConstant %short 3
@@ -185,7 +187,6 @@ OpName %main "main"
 %103 = OpConstant %int 7 ; Need a def with an numerical id to define id maps.
 %int_0 = OpConstant %int 0
 %int_1 = OpConstant %int 1
-%int_2 = OpConstant %int 2
 %int_3 = OpConstant %int 3
 %int_4 = OpConstant %int 4
 %int_10 = OpConstant %int 10
@@ -323,6 +324,7 @@ OpName %main "main"
 %short_0x4400 = OpConstant %short 0x4400
 %ushort_0xBC00 = OpConstant %ushort 0xBC00
 %short_0xBC00 = OpConstant %short 0xBC00
+%int_arr_2_undef = OpUndef %int_arr_2
 )";
 
   return header;
@@ -7648,7 +7650,24 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
 	    "%4 = OpCompositeExtract %int %struct_v2int_int_int 3\n" +
 	    "OpReturn\n" +
 	    "OpFunctionEnd",
-	4, false)
+	4, false),
+    // Test case 18: Fold when every element of an array is inserted.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
+            "; CHECK: [[int2:%\\w+]] = OpConstant [[int]] 2\n" +
+            "; CHECK-DAG: [[arr_type:%\\w+]] = OpTypeArray [[int]] [[int2]]\n" +
+            "; CHECK-DAG: [[int10:%\\w+]] = OpConstant [[int]] 10\n" +
+            "; CHECK-DAG: [[int1:%\\w+]] = OpConstant [[int]] 1\n" +
+            "; CHECK: [[construct:%\\w+]] = OpCompositeConstruct [[arr_type]] [[int10]] [[int1]]\n" +
+            "; CHECK: %5 = OpCopyObject [[arr_type]] [[construct]]\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%4 = OpCompositeInsert %int_arr_2 %int_10 %int_arr_2_undef 0\n" +
+            "%5 = OpCompositeInsert %int_arr_2 %int_1 %4 1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        5, true)
 ));
 
 INSTANTIATE_TEST_SUITE_P(DotProductMatchingTest, MatchingInstructionFoldingTest,
