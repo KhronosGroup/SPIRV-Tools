@@ -36,7 +36,9 @@
 #if !defined(NDEBUG)
 #define SPIRV_ASSERT(consumer, ...) SPIRV_ASSERT_IMPL(consumer, __VA_ARGS__)
 #else
-#define SPIRV_ASSERT(consumer, ...)
+// Adding a use to avoid errors in the release build related to unused
+// consumers.
+#define SPIRV_ASSERT(consumer, ...) (void)(consumer)
 #endif
 
 // Logs a debug message to the consumer. Accepts the following formats:
