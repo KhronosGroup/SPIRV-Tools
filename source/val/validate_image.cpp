@@ -178,7 +178,8 @@ bool IsValidGatherLodBiasAMD(const ValidationState_t& _, spv::Op opcode) {
   return false;
 }
 
-bool IsSignedInt32ImageFormat(spv::ImageFormat format) {
+// Signed or Unsigned Integer Format
+bool IsIntImageFormat(spv::ImageFormat format) {
   switch (format) {
     case spv::ImageFormat::Rgba32i:
     case spv::ImageFormat::Rgba16i:
@@ -199,6 +200,8 @@ bool IsSignedInt32ImageFormat(spv::ImageFormat format) {
     case spv::ImageFormat::Rg8ui:
     case spv::ImageFormat::R16ui:
     case spv::ImageFormat::R8ui:
+    case spv::ImageFormat::R64ui:
+    case spv::ImageFormat::R64i:
       return true;
     default:
       break;
@@ -206,7 +209,7 @@ bool IsSignedInt32ImageFormat(spv::ImageFormat format) {
   return false;
 }
 
-bool IsSignedInt64ImageFormat(spv::ImageFormat format) {
+bool IsInt64ImageFormat(spv::ImageFormat format) {
   switch (format) {
     case spv::ImageFormat::R64ui:
     case spv::ImageFormat::R64i:
@@ -263,10 +266,6 @@ bool IsFloatImageFormat(spv::ImageFormat format) {
       break;
   }
   return false;
-}
-
-bool IsIntImageFormat(spv::ImageFormat format) {
-  return IsSignedInt32ImageFormat(format) || IsSignedInt64ImageFormat(format);
 }
 
 // Returns true if the opcode is a Image instruction which applies
@@ -1066,11 +1065,11 @@ spv_result_t ValidateTypeImage(ValidationState_t& _, const Instruction* inst) {
                << _.VkErrorID(4965)
                << "Image Format type (float or int) does not match Sample Type "
                   "operand";
-      }
-      if (is_int) {
+      } else if (is_int) {
         const uint32_t bit_width = _.GetBitWidth(info.sampled_type);
-        if ((bit_width == 32 && !IsSignedInt32ImageFormat(info.format)) ||
-            (bit_width == 64 && !IsSignedInt64ImageFormat(info.format))) {
+        // format check above to be int
+        if ((bit_width == 32 && IsInt64ImageFormat(info.format)) ||
+            (bit_width == 64 && !IsInt64ImageFormat(info.format))) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << _.VkErrorID(4965)
                  << "Image Format width (32 or 64) does not match Sample Type "
