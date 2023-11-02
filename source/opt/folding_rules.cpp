@@ -2080,7 +2080,7 @@ uint32_t GetNumberOfElements(const analysis::Type* type) {
     return static_cast<uint32_t>(struct_type->element_types().size());
   }
   if (auto* array_type = type->AsArray()) {
-    if (array_type->length_info().words[0] == 0 &&
+    if (array_type->length_info().words[0] == analysis::Array::LengthInfo::kConstant &&
         array_type->length_info().words.size() == 2) {
       return array_type->length_info().words[1];
     }
