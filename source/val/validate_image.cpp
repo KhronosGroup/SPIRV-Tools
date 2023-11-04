@@ -759,15 +759,10 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     // void, and the Format is Unknown.
     // In Vulkan, the texel type is only known in all cases by the pipeline
     // setup.
-    if (!_.IsIntScalarOrVectorType(result_type)) {
+    if (!_.IsUnsignedIntScalarOrVectorType(result_type)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << _.VkErrorID(4965)
-             << "Using SignExtend, but result type is not a scalar or vector "
-                "integer type.";
-    } else if (!_.IsUnsignedIntScalarOrVectorType(result_type)) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << _.VkErrorID(4965)
-             << "Using SignExtend, but result type is a signed integer type.";
+             << "Using ZeroExtend, but result type is a signed integer type.";
     }
   }
 

@@ -5965,7 +5965,7 @@ TEST_F(ValidateImage, ZeroExtendScalarSIntTexelV14) {
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Using SignExtend, but result type is a signed integer type."));
+      HasSubstr("Using ZeroExtend, but result type is a signed integer type."));
 }
 
 TEST_F(ValidateImage, ZeroExtendScalarVectorUIntTexelV14Good) {
@@ -5996,7 +5996,7 @@ TEST_F(ValidateImage, ZeroExtendVectorSIntTexelV14) {
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Using SignExtend, but result type is a signed integer type."));
+      HasSubstr("Using ZeroExtend, but result type is a signed integer type."));
 }
 
 TEST_F(ValidateImage, ReadLodAMDSuccess1) {
@@ -8249,7 +8249,7 @@ TEST_F(ValidateImage, TypeImageVulkanStorageZeroExtendSigned) {
               AnyVUID("VUID-StandaloneSpirv-Image-04965"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Using SignExtend, but result type is a signed integer type"));
+      HasSubstr("Using ZeroExtend, but result type is a signed integer type"));
 }
 
 TEST_F(ValidateImage, TypeImageVulkanStorageZeroExtendRedundant) {
@@ -8327,9 +8327,9 @@ TEST_F(ValidateImage, TypeImageVulkanStorageZeroExtendFloat) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-StandaloneSpirv-Image-04965"));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Using SignExtend, but result type is not a scalar or "
-                        "vector integer type."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Using ZeroExtend, but result type is a signed integer type."));
 }
 
 }  // namespace
