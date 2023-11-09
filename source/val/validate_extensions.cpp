@@ -3168,16 +3168,16 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           break;
         }
         case CommonDebugInfoDebugTypePointer: {
-          auto validate_base_type =
-              ValidateOperandBaseType(_, inst, 5, ext_inst_name);
+          auto validate_base_type = ValidateOperandDebugType(
+              _, "Base Type", inst, 5, ext_inst_name, false);
           if (validate_base_type != SPV_SUCCESS) return validate_base_type;
           CHECK_CONST_UINT_OPERAND("Storage Class", 6);
           CHECK_CONST_UINT_OPERAND("Flags", 7);
           break;
         }
         case CommonDebugInfoDebugTypeQualifier: {
-          auto validate_base_type =
-              ValidateOperandBaseType(_, inst, 5, ext_inst_name);
+          auto validate_base_type = ValidateOperandDebugType(
+              _, "Base Type", inst, 5, ext_inst_name, false);
           if (validate_base_type != SPV_SUCCESS) return validate_base_type;
           CHECK_CONST_UINT_OPERAND("Type Qualifier", 6);
           break;
