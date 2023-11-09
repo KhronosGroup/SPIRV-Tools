@@ -12,8 +12,8 @@ vars = {
   # Use protobufs before they gained the dependency on abseil
   'protobuf_revision': 'v21.12',
 
-  're2_revision': '24d460a9db6048b9d3e05cfdea13ec9d592545ad',
-  'spirv_headers_revision': '88bc5e321c2839707df8b1ab534e243e00744177',
+  're2_revision': '974f44c8d45242e710dc0a85a4defffdb3ce07fc',
+  'spirv_headers_revision': '38f39dae5baaa24431b24ac659054ebe972fa1e6',
 }
 
 deps = {
