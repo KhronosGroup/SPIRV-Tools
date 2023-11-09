@@ -54,11 +54,11 @@ Some versions of SPIRV-Tools are tagged as stable releases (see
 These versions undergo extra testing.
 Releases are not directly related to releases (or versions) of
 [SPIRV-Headers][spirv-headers].
-Releases of SPIRV-Tools are tested against the version of SPIRV-Headers listed
-in the [DEPS](DEPS) file.
+Releases of SPIRV-Tools are tested against the version of SPIRV-Headers committed
+as a git submodule in [external/spirv-headers](external/spirv-headers).
 The release generally uses the most recent compatible version of SPIRV-Headers
 available at the time of release.
-No version of SPIRV-Headers other than the one listed in the DEPS file is
+No version of SPIRV-Headers other than the one committed as a git submodule is
 guaranteed to work with the SPIRV-Tools release.
 
 ## Supported features
@@ -280,20 +280,16 @@ We intend to maintain a linear history on the GitHub `main` branch.
 
 Example of getting sources, assuming SPIRV-Tools is configured as a standalone project:
 
-    git clone https://github.com/KhronosGroup/SPIRV-Tools.git   spirv-tools
-    cd spirv-tools
-
-    # Check out sources for dependencies, at versions known to work together,
-    # as listed in the DEPS file.
-    python3 utils/git-sync-deps
+    git clone --recursive https://github.com/KhronosGroup/SPIRV-Tools.git spirv-tools
 
 For some kinds of development, you may need the latest sources from the third-party projects:
 
-    git clone https://github.com/KhronosGroup/SPIRV-Headers.git spirv-tools/external/spirv-headers
-    git clone https://github.com/google/googletest.git          spirv-tools/external/googletest
-    git clone https://github.com/google/effcee.git              spirv-tools/external/effcee
-    git clone https://github.com/google/re2.git                 spirv-tools/external/re2
-    git clone https://github.com/abseil/abseil-cpp.git          spirv-tools/external/abseil_cpp
+    cd spirv-tools
+    git submodule update --init --remote external/spirv-headers
+    git submodule update --init --remote external/googletest
+    git submodule update --init --remote external/effcee
+    git submodule update --init --remote external/re2
+    git submodule update --init --remote external/abseil_cpp
 
 #### Dependency on Effcee
 
@@ -496,13 +492,12 @@ $ANDROID_NDK/ndk-build -C ../android_test     \
                       NDK_APP_OUT=`pwd`/app
 ```
 
-### Updating DEPS
+### Updating depedencies
 
-Occasionally the entries in [DEPS](DEPS) will need to be updated. This is done on
-demand when there is a request to do this, often due to downstream breakages.
-To update `DEPS`, run `utils/roll_deps.sh` and confirm that tests pass.
-The script requires Chromium's
-[`depot_tools`](https://chromium.googlesource.com/chromium/tools/depot_tools).
+Occasionally the git submodules will need to be updated. This is done
+automatically by the Github [autroll](.github/workflows/autoroll.yml) workflow.
+To update git submodules manually, run `utils/roll_deps.sh` and confirm that
+tests pass.
 
 ## Library
 

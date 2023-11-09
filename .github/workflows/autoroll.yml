@@ -17,16 +17,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      # Checkout the depot tools they are needed by roll_deps.sh
-      - name: Checkout depot tools
-        run: git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-
-      - name: Update PATH
-        run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
-
-      - name: Download dependencies
-        run: python3 utils/git-sync-deps
+        with:
+          submodules: 'true'
 
       - name: Setup git user information
         run: |

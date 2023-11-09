@@ -4,13 +4,6 @@
 compile_commands.json
 /build*/
 /buildtools/
-/external/abseil_cpp/
-/external/googletest
-/external/SPIRV-Headers
-/external/spirv-headers
-/external/effcee
-/external/re2
-/external/protobuf
 /out
 /TAGS
 /third_party/llvm-build/

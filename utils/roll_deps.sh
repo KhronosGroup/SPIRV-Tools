@@ -13,10 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Attempts to roll all entries in DEPS to tip-of-tree and create a commit.
-#
-# Depends on roll-dep from depot_tools
-# (https://chromium.googlesource.com/chromium/tools/depot_tools) being in PATH.
+# Attempts to roll submodules to tip-of-tree and create a commit.
 
 set -eo pipefail
 
@@ -34,27 +31,25 @@ dependencies=("external/effcee/"
               "external/re2/"
               "external/spirv-headers/")
 
-
-branch="origin/main"
-
 # This script assumes it's parent directory is the repo root.
 repo_path=$(dirname "$0")/..
 
 cd "$repo_path"
 
 if [[ $(git diff --stat) != '' ]]; then
-    echo "Working tree is dirty, commit changes before attempting to roll DEPS"
+    echo "Working tree is dirty, commit changes before attempting to roll dependencies"
     exit 1
 fi
-
-echo "*** Ignore messages about running 'git cl upload' ***"
-
-old_head=$(git rev-parse HEAD)
 
 set +e
 
 for dep in ${dependencies[@]}; do
   echo "Rolling $dep"
-  roll-dep --ignore-dirty-tree --roll-to="${branch}" "${dep}"
+  git submodule update --init --remote -- ${dep}
   ExitIfIsInterestingError $?
 done
+
+if [[ $(git diff --stat) != '' ]]; then
+  echo "Committing updates"
+  git commit -am "Roll dependencies"
+fi
