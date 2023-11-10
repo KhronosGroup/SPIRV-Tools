@@ -62,9 +62,7 @@ def mkdir_p(directory):
 def command_output(cmd, directory):
     """Runs a command in a directory and returns its standard output stream.
 
-    Captures the standard error stream.
-
-    Raises a RuntimeError if the command fails to launch or otherwise fails.
+    Returns (False, None) if the command fails to launch or otherwise fails.
     """
     try:
       # Set shell=True on Windows so that Chromium's git.bat can be found when
@@ -74,11 +72,10 @@ def command_output(cmd, directory):
                            stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE,
                            shell=os.name == 'nt')
-      (stdout, stderr) = p.communicate()
+      (stdout, _) = p.communicate()
       if p.returncode != 0:
-        logging.error('Failed to run "{}" in "{}": {}'.format(cmd, directory, stderr.decode()))
+        return False, None
     except Exception as e:
-        logging.error('Failed to run "{}" in "{}": {}'.format(cmd, directory, str(e)))
         return False, None
     return p.returncode == 0, stdout
 
@@ -127,7 +124,8 @@ def describe(repo_path):
             return output.rstrip().decode()
 
     # This is the fallback case where git gives us no information,
-    # e.g. because the source tree might not be in a git tree.
+    # e.g. because the source tree might not be in a git tree or
+    # git is not available on the system.
     # In this case, usually use a timestamp.  However, to ensure
     # reproducible builds, allow the builder to override the wall
     # clock time with environment variable SOURCE_DATE_EPOCH
