@@ -71,7 +71,7 @@ build() {
 
 if [ ! -d external/spirv-headers ] ; then
     echo "Fetching SPIRV-headers"
-    git clone https://github.com/KhronosGroup/SPIRV-Headers.git external/spirv-headers
+    git submodule update --init -- external/spirv-headers
 fi
 
 echo Building ${BASH_REMATCH[1]}
