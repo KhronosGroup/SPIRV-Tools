@@ -111,7 +111,7 @@ def describe(repo_path):
     # if we're in a git repository, attempt to extract version info
     success, output = command_output(["git", "rev-parse", "--show-toplevel"], repo_path)
     if success:
-        success, output = command_output(["git", "describe"], repo_path)
+        success, output = command_output(["git", "describe", "--tags", "--match=v*", "--long"], repo_path)
         if not success:
             success, output = command_output(["git", "rev-parse", "HEAD"], repo_path)
 
