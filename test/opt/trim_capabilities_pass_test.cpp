@@ -2366,6 +2366,126 @@ TEST_F(TrimCapabilitiesPassTest,
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
 }
 
+TEST_F(TrimCapabilitiesPassTest, PhysicalStorageBuffer_RemovedWhenUnused) {
+  const std::string kTest = R"(
+               OpCapability PhysicalStorageBufferAddresses
+; CHECK-NOT:   OpCapability PhysicalStorageBufferAddresses
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       PhysicalStorageBuffer_RemainsWithOpTypeForwardPointer) {
+  const std::string kTest = R"(
+               OpCapability PhysicalStorageBufferAddresses
+; CHECK:       OpCapability PhysicalStorageBufferAddresses
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 2 4
+       %void = OpTypeVoid
+        %int = OpTypeInt 32 0
+     %struct = OpTypeStruct %int
+               OpTypeForwardPointer %ptr PhysicalStorageBuffer
+        %ptr = OpTypePointer PhysicalStorageBuffer %struct
+          %3 = OpTypeFunction %void
+       %main = OpFunction %void None %3
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       PhysicalStorageBuffer_RemainsWithPhysicalStorageBufferStorage) {
+  const std::string kTest = R"(
+               OpCapability PhysicalStorageBufferAddresses
+; CHECK:       OpCapability PhysicalStorageBufferAddresses
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 2 4
+       %void = OpTypeVoid
+        %int = OpTypeInt 32 0
+     %struct = OpTypeStruct %int
+        %ptr = OpTypePointer PhysicalStorageBuffer %struct
+          %3 = OpTypeFunction %void
+       %main = OpFunction %void None %3
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       PhysicalStorageBuffer_RemainsWithRestrictDecoration) {
+  const std::string kTest = R"(
+               OpCapability PhysicalStorageBufferAddresses
+; CHECK:       OpCapability PhysicalStorageBufferAddresses
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 2 4
+               OpDecorate %var RestrictPointer
+       %void = OpTypeVoid
+        %int = OpTypeInt 32 0
+     %struct = OpTypeStruct %int
+        %ptr = OpTypePointer Function %struct
+          %3 = OpTypeFunction %void
+       %main = OpFunction %void None %3
+          %6 = OpLabel
+        %var = OpVariable %ptr Function
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       PhysicalStorageBuffer_RemainsWithAliasedDecoration) {
+  const std::string kTest = R"(
+               OpCapability PhysicalStorageBufferAddresses
+; CHECK:       OpCapability PhysicalStorageBufferAddresses
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 2 4
+               OpDecorate %var AliasedPointer
+       %void = OpTypeVoid
+        %int = OpTypeInt 32 0
+     %struct = OpTypeStruct %int
+        %ptr = OpTypePointer Function %struct
+          %3 = OpTypeFunction %void
+       %main = OpFunction %void None %3
+          %6 = OpLabel
+        %var = OpVariable %ptr Function
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
