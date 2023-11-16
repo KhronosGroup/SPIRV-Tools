@@ -482,8 +482,8 @@ spv_result_t ValidateClspvReflectionArgumentBuffer(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateClspvReflectionArgumentOffsetBuffer(ValidationState_t& _,
-                                                         const Instruction* inst) {
+spv_result_t ValidateClspvReflectionArgumentOffsetBuffer(
+    ValidationState_t& _, const Instruction* inst) {
   const auto num_operands = inst->operands().size();
   if (auto error = ValidateKernelDecl(_, inst)) {
     return error;
@@ -802,7 +802,7 @@ spv_result_t ValidateClspvReflectionPushConstantData(ValidationState_t& _,
 }
 
 spv_result_t ValidateClspvReflectionPrintfInfo(ValidationState_t& _,
-                                              const Instruction* inst) {
+                                               const Instruction* inst) {
   if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(4))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "PrintfID must be a 32-bit unsigned integer OpConstant";
@@ -823,8 +823,8 @@ spv_result_t ValidateClspvReflectionPrintfInfo(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateClspvReflectionPrintfStorageBuffer(ValidationState_t& _,
-                                                        const Instruction* inst) {
+spv_result_t ValidateClspvReflectionPrintfStorageBuffer(
+    ValidationState_t& _, const Instruction* inst) {
   if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(4))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "DescriptorSet must be a 32-bit unsigned integer OpConstant";
@@ -843,8 +843,8 @@ spv_result_t ValidateClspvReflectionPrintfStorageBuffer(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateClspvReflectionPrintfPushConstant(ValidationState_t& _,
-                                                       const Instruction* inst) {
+spv_result_t ValidateClspvReflectionPrintfPushConstant(
+    ValidationState_t& _, const Instruction* inst) {
   if (!IsUint32Constant(_, inst->GetOperandAs<uint32_t>(4))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Offset must be a 32-bit unsigned integer OpConstant";
