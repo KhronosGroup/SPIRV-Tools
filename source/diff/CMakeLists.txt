@@ -38,7 +38,7 @@ target_link_libraries(SPIRV-Tools-diff
 set_property(TARGET SPIRV-Tools-diff PROPERTY FOLDER "SPIRV-Tools libraries")
 spvtools_check_symbol_exports(SPIRV-Tools-diff)
 
-if(ENABLE_SPIRV_TOOLS_INSTALL)
+if(PROJECT_IS_TOP_LEVEL)
   install(TARGETS SPIRV-Tools-diff EXPORT SPIRV-Tools-diffTargets)
   export(EXPORT SPIRV-Tools-diffTargets FILE SPIRV-Tools-diffTargets.cmake)
 
@@ -48,4 +48,4 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
 
   spvtools_generate_config_file(SPIRV-Tools-diff)
   install(FILES ${CMAKE_BINARY_DIR}/SPIRV-Tools-diffConfig.cmake DESTINATION ${PACKAGE_DIR})
-endif(ENABLE_SPIRV_TOOLS_INSTALL)
+endif()

@@ -23,6 +23,6 @@
 # permissions.
 # We have a .sh extension because Windows users often configure
 # executable settings via filename extension.
-if(ENABLE_SPIRV_TOOLS_INSTALL)
+if(PROJECT_IS_TOP_LEVEL)
   install(PROGRAMS spirv-lesspipe.sh DESTINATION ${CMAKE_INSTALL_BINDIR})
-endif(ENABLE_SPIRV_TOOLS_INSTALL)
+endif()

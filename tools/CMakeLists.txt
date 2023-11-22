@@ -87,9 +87,9 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   if(SPIRV_BUILD_FUZZER)
     add_spvtools_tool(TARGET spirv-fuzz SRCS fuzz/fuzz.cpp util/cli_consumer.cpp LIBS SPIRV-Tools-fuzz ${SPIRV_TOOLS_FULL_VISIBILITY})
     set(SPIRV_INSTALL_TARGETS ${SPIRV_INSTALL_TARGETS} spirv-fuzz)
-  endif(SPIRV_BUILD_FUZZER)
+  endif()
 
-  if(ENABLE_SPIRV_TOOLS_INSTALL)
+  if(PROJECT_IS_TOP_LEVEL)
     install(TARGETS ${SPIRV_INSTALL_TARGETS} EXPORT SPIRV-Tools-toolsTargets)
     export(EXPORT SPIRV-Tools-toolsTargets FILE SPIRV-Tools-toolsTargets.cmake)
 
@@ -104,5 +104,5 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
       )
 
     install(FILES ${CMAKE_BINARY_DIR}/SPIRV-Tools-toolsConfig.cmake DESTINATION ${PACKAGE_DIR})
-  endif(ENABLE_SPIRV_TOOLS_INSTALL)
+  endif()
 endif()

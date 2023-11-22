@@ -35,14 +35,18 @@
 # Note that symbol IDs are not preserved through a load/edit/save operation.
 # This may change if the ability is added to spirv-as.
 
-option(SPIRV_TOOLS_INSTALL_EMACS_HELPERS
-  "Install Emacs helper to disassemble/assemble SPIR-V binaries on file load/save."
-  ${SPIRV_TOOLS_INSTALL_EMACS_HELPERS})
-if (${SPIRV_TOOLS_INSTALL_EMACS_HELPERS})
-  if(EXISTS /etc/emacs/site-start.d)
-    if(ENABLE_SPIRV_TOOLS_INSTALL)
-      install(FILES 50spirv-tools.el DESTINATION /etc/emacs/site-start.d)
-    endif(ENABLE_SPIRV_TOOLS_INSTALL)
-  endif()
+option(SPIRV_TOOLS_INSTALL_EMACS_HELPERS "Install Emacs helper to disassemble/assemble SPIR-V binaries on file load/save.")
+if (NOT SPIRV_TOOLS_INSTALL_EMACS_HELPERS)
+  return()
 endif()
+
+if (NOT PROJECT_IS_TOP_LEVEL)
+  return()
+endif()
+
+if (NOT EXISTS /etc/emacs/site-start.d)
+  return()
+endif()
+
+install(FILES 50spirv-tools.el DESTINATION /etc/emacs/site-start.d)
 

@@ -424,7 +424,7 @@ if (ANDROID)
     endforeach()
 endif()
 
-if(ENABLE_SPIRV_TOOLS_INSTALL)
+if(PROJECT_IS_TOP_LEVEL)
   install(TARGETS ${SPIRV_TOOLS_TARGETS} EXPORT ${SPIRV_TOOLS}Targets)
   export(EXPORT ${SPIRV_TOOLS}Targets FILE ${SPIRV_TOOLS}Target.cmake)
 
@@ -439,7 +439,7 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
     "    get_target_property(${SPIRV_TOOLS}_INCLUDE_DIRS ${SPIRV_TOOLS} INTERFACE_INCLUDE_DIRECTORIES)\n"
     "endif()\n")
   install(FILES ${CMAKE_BINARY_DIR}/${SPIRV_TOOLS}Config.cmake DESTINATION ${PACKAGE_DIR})
-endif(ENABLE_SPIRV_TOOLS_INSTALL)
+endif()
 
 if(MSVC AND (NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")))
   # Enable parallel builds across four cores for this lib

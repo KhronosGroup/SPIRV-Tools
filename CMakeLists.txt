@@ -16,6 +16,11 @@ cmake_minimum_required(VERSION 3.17.2)
 
 project(spirv-tools)
 
+if (CMAKE_VERSION VERSION_LESS "3.21")
+    # https://cmake.org/cmake/help/latest/variable/PROJECT_IS_TOP_LEVEL.html
+    string(COMPARE EQUAL ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR} PROJECT_IS_TOP_LEVEL)
+endif()
+
 # Avoid a bug in CMake 3.22.1. By default it will set -std=c++11 for
 # targets in test/*, when those tests need -std=c++17.
 # https://github.com/KhronosGroup/SPIRV-Tools/issues/5340
@@ -31,7 +36,9 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 enable_testing()
 set(SPIRV_TOOLS "SPIRV-Tools")
 
-include(GNUInstallDirs)
+if(PROJECT_IS_TOP_LEVEL)
+  include(GNUInstallDirs)
+endif()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -89,11 +96,6 @@ endif()
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
   message(STATUS "No build type selected, default to Debug")
   set(CMAKE_BUILD_TYPE "Debug")
-endif()
-
-option(SKIP_SPIRV_TOOLS_INSTALL "Skip installation" ${SKIP_SPIRV_TOOLS_INSTALL})
-if(NOT ${SKIP_SPIRV_TOOLS_INSTALL})
-  set(ENABLE_SPIRV_TOOLS_INSTALL ON)
 endif()
 
 option(SPIRV_BUILD_COMPRESSION "Build SPIR-V compressing codec" OFF)
@@ -283,7 +285,7 @@ else()
   endmacro()
 endif()
 
-if(ENABLE_SPIRV_TOOLS_INSTALL)
+if(PROJECT_IS_TOP_LEVEL)
   if(WIN32 AND NOT MINGW)
     macro(spvtools_config_package_dir TARGET PATH)
       set(${PATH} ${TARGET}/cmake)
@@ -356,7 +358,7 @@ add_subdirectory(tools)
 add_subdirectory(test)
 add_subdirectory(examples)
 
-if(ENABLE_SPIRV_TOOLS_INSTALL)
+if(PROJECT_IS_TOP_LEVEL)
   install(
     FILES
       ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/libspirv.h
@@ -366,7 +368,7 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
       ${CMAKE_CURRENT_SOURCE_DIR}/include/spirv-tools/instrument.hpp
     DESTINATION
       ${CMAKE_INSTALL_INCLUDEDIR}/spirv-tools/)
-endif(ENABLE_SPIRV_TOOLS_INSTALL)
+endif()
 
 if (NOT "${SPIRV_SKIP_TESTS}")
   add_test(NAME spirv-tools-copyrights
@@ -403,7 +405,7 @@ add_custom_target(spirv-tools-shared-pkg-config ALL
         DEPENDS "CHANGES" "cmake/SPIRV-Tools-shared.pc.in" "cmake/write_pkg_config.cmake")
 
 # Install pkg-config file
-if (ENABLE_SPIRV_TOOLS_INSTALL)
+if (PROJECT_IS_TOP_LEVEL)
   install(
     FILES
       ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools.pc
