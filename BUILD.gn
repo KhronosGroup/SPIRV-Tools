@@ -366,6 +366,9 @@ config("spvtools_internal_config") {
       "-Wno-newline-eof",
       "-Wno-unreachable-code-break",
       "-Wno-unreachable-code-return",
+      # Workaround for Android NDK issue in spirv-fuzz and spirv-reduce
+      # https://crbug.com/1505825
+      "-Wno-nonnull",
     ]
   } else if (!is_win) {
     # Work around a false-positive on a Skia GCC 10 builder.
