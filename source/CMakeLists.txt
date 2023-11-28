@@ -418,12 +418,6 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   endif()
 endif()
 
-if (ANDROID)
-    foreach(target ${SPIRV_TOOLS_TARGETS})
-        target_link_libraries(${target} PRIVATE android log)
-    endforeach()
-endif()
-
 if(ENABLE_SPIRV_TOOLS_INSTALL)
   install(TARGETS ${SPIRV_TOOLS_TARGETS} EXPORT ${SPIRV_TOOLS}Targets)
   export(EXPORT ${SPIRV_TOOLS}Targets FILE ${SPIRV_TOOLS}Target.cmake)
