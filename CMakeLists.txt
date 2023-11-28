@@ -304,6 +304,18 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
   endmacro()
 endif()
 
+# Currently iOS and Android are very similar.
+# They both have their own packaging (APP/APK).
+# Which makes regular executables/testing problematic.
+#
+# Currently the only deliverables for these platforms are
+# libraries (either STATIC or SHARED).
+#
+# Furthermore testing is equally problematic.
+if (IOS OR ANDROID)
+  set(SPIRV_SKIP_EXECUTABLES ON)
+endif()
+
 option(SPIRV_SKIP_EXECUTABLES "Skip building the executable and tests along with the library")
 if (SPIRV_SKIP_EXECUTABLES)
   set(SPIRV_SKIP_TESTS ON)
