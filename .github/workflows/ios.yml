@@ -1,0 +1,30 @@
+name: iOS
+permissions:
+  contents: read
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+        matrix:
+          os: [ macos-12, macos-13 ]
+    steps:
+        - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        - uses: lukka/get-cmake@8be6cca406b575906541e8e3b885d46f416bba39 # v3.27.7
+        - name: Download dependencies
+          run: python3 utils/git-sync-deps
+        # NOTE: The MacOS SDK ships universal binaries. CI should reflect this.
+        - name: Configure Universal Binary for iOS
+          run: |
+            cmake -S . -B build \
+            -D CMAKE_BUILD_TYPE=Debug \
+            -D CMAKE_SYSTEM_NAME=iOS \
+            "-D CMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
+            -G Ninja
+          env:
+            # Linker warnings as errors
+            LDFLAGS: -Wl,-fatal_warnings
+        - run: cmake --build build
+        - run: cmake --install build --prefix /tmp
