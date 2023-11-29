@@ -23,5 +23,8 @@ jobs:
             -D CMAKE_SYSTEM_NAME=iOS \
             "-D CMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
             -G Ninja
+          env:
+            # Linker warnings as errors
+            LDFLAGS: -Wl,-fatal_warnings
         - run: cmake --build build
         - run: cmake --install build --prefix /tmp
