@@ -74,7 +74,7 @@ OpExtension "SPV_KHR_non_semantic_info"
 ; CHECK: OpExtension "SPV_KHR_storage_buffer_storage_class"
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %2 "MainPs" %3 %4
-; CHECK: OpEntryPoint Fragment %2 "MainPs" %3 %4 %gl_FragCoord
+; CHECK: OpEntryPoint Fragment %2 "MainPs" %3 %4
 OpExecutionMode %2 OriginUpperLeft
 %5 = OpString "Color is %vn"
 )";
@@ -87,8 +87,6 @@ OpDecorate %7 DescriptorSet 0
 OpDecorate %7 Binding 0
 OpDecorate %3 Location 0
 OpDecorate %4 Location 0
-; CHECK: OpDecorate %gl_FragCoord BuiltIn FragCoord
-; CHECK: OpDecorate %_runtimearr_uint ArrayStride 4
 )" + kOutputDecorations;
 
   const std::string globals =
@@ -109,10 +107,7 @@ OpDecorate %4 Location 0
 %_ptr_Output_v4float = OpTypePointer Output %v4float
 %4 = OpVariable %_ptr_Output_v4float Output
 ; CHECK: %uint = OpTypeInt 32 0
-; CHECK: %_ptr_Input_v4float = OpTypePointer Input %v4float
-; CHECK: %gl_FragCoord = OpVariable %_ptr_Input_v4float Input
-; CHECK: %v4uint = OpTypeVector %uint 4
-; CHECK: [[func_type:%\w+]] = OpTypeFunction %void %uint %uint %v4uint %uint %uint %uint %uint %uint
+; CHECK: [[func_type:%\w+]] = OpTypeFunction %void %uint %uint %uint %uint %uint %uint %uint
 ; CHECK: %_runtimearr_uint = OpTypeRuntimeArray %uint
 )" + kOutputGlobals + R"(
 ; CHECK: %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
@@ -138,12 +133,7 @@ OpDecorate %4 Location 0
 ; CHECK: {{%\w+}} = OpBitcast %uint {{%\w+}}
 ; CHECK: {{%\w+}} = OpCompositeExtract %float %25 3
 ; CHECK: {{%\w+}} = OpBitcast %uint {{%\w+}}
-; CHECK: {{%\w+}} = OpLoad %v4float %gl_FragCoord
-; CHECK: {{%\w+}} = OpBitcast %v4uint {{%\w+}}
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 0
-; CHECK: {{%\w+}} = OpCompositeExtract %uint {{%\w+}} 1
-; CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_4 {{%\w+}} {{%\w+}} %uint_0
-; CHECK: {{%\w+}} = OpFunctionCall %void %inst_printf_stream_write_5 %uint_23 %uint_36 {{%\w+}} %uint_5 {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK: {{%\w+}} = OpFunctionCall %void %inst_printf_stream_write_5 %uint_23 %uint_36 %uint_5 {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
 ; CHECK: OpBranch {{%\w+}}
 ; CHECK: {{%\w+}} = OpLabel
 OpStore %4 %25
@@ -155,7 +145,6 @@ OpFunctionEnd
 ; CHECK: %inst_printf_stream_write_5 = OpFunction %void None {{%\w+}}
 ; CHECK: [[sw_shader_id:%\w+]] = OpFunctionParameter %uint
 ; CHECK: [[sw_inst_idx:%\w+]] = OpFunctionParameter %uint
-; CHECK: [[sw_stage_info:%\w+]] = OpFunctionParameter %v4uint
 ; CHECK: [[sw_param_1:%\w+]] = OpFunctionParameter %uint
 ; CHECK: [[sw_param_2:%\w+]] = OpFunctionParameter %uint
 ; CHECK: [[sw_param_3:%\w+]] = OpFunctionParameter %uint
@@ -163,8 +152,8 @@ OpFunctionEnd
 ; CHECK: [[sw_param_5:%\w+]] = OpFunctionParameter %uint
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_1
-; CHECK: {{%\w+}} = OpAtomicIAdd %uint {{%\w+}} %uint_4 %uint_0 %uint_12
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_12
+; CHECK: {{%\w+}} = OpAtomicIAdd %uint {{%\w+}} %uint_4 %uint_0 %uint_8
+; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_8
 ; CHECK: {{%\w+}} = OpArrayLength %uint [[output_buffer_var]] 2
 ; CHECK: {{%\w+}} = OpULessThanEqual %bool {{%\w+}} {{%\w+}}
 ; CHECK: OpSelectionMerge {{%\w+}} None
@@ -172,42 +161,26 @@ OpFunctionEnd
 ; CHECK: {{%\w+}} = OpLabel
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_0
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} %uint_12
+; CHECK: OpStore {{%\w+}} %uint_8
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_1
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
 ; CHECK: OpStore {{%\w+}} [[sw_shader_id]]
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_2
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
 ; CHECK: OpStore {{%\w+}} [[sw_inst_idx]]
-; CHECK: {{%\w+}} = OpCompositeExtract %uint [[sw_stage_info]] 0
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_3
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpCompositeExtract %uint [[sw_stage_info]] 1
+; CHECK: OpStore {{%\w+}} [[sw_param_1]]
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_4
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpCompositeExtract %uint [[sw_stage_info]] 2
+; CHECK: OpStore {{%\w+}} [[sw_param_2]]
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_5
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpCompositeExtract %uint [[sw_stage_info]] 3
+; CHECK: OpStore {{%\w+}} [[sw_param_3]]
 ; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_6
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} {{%\w+}}
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_7
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[sw_param_1]]
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_8
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[sw_param_2]]
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_9
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
-; CHECK: OpStore {{%\w+}} [[sw_param_3]]
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_10
-; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
 ; CHECK: OpStore {{%\w+}} [[sw_param_4]]
-; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_11
+; CHECK: {{%\w+}} = OpIAdd %uint {{%\w+}} %uint_7
 ; CHECK: {{%\w+}} = OpAccessChain %_ptr_StorageBuffer_uint [[output_buffer_var]] %uint_2 {{%\w+}}
 ; CHECK: OpStore {{%\w+}} [[sw_param_5]]
 ; CHECK: OpBranch {{%\w+}}
