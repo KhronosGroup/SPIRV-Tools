@@ -30,12 +30,6 @@
 
 namespace {
 
-// Check that the std::system function can actually be used.
-bool CheckExecuteCommand() {
-  int res = std::system(nullptr);
-  return res != 0;
-}
-
 // Execute a command using the shell.
 // Returns true if and only if the command's exit status was 0.
 bool ExecuteCommand(const std::string& command) {
@@ -281,12 +275,6 @@ int main(int argc, const char** argv) {
 
   if (status.action == REDUCE_STOP) {
     return status.code;
-  }
-
-  if (!CheckExecuteCommand()) {
-    std::cerr << "could not find shell interpreter for executing a command"
-              << std::endl;
-    return 2;
   }
 
   spvtools::reduce::Reducer reducer(target_env);
