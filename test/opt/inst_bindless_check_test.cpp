@@ -916,6 +916,259 @@ OpFunctionEnd
                                                true, 23u);
 }
 
+TEST_F(InstBindlessTest, InstrumentTesc) {
+  // This test verifies that the pass will correctly instrument tessellation
+  // control shader
+  //
+  // clang-format off
+  //
+  // #version 450
+  // layout(vertices = 3) out;
+  // layout(set = 0, binding = 0) uniform texture1D _77;
+  // layout(set = 0, binding = 1) uniform sampler _78;
+
+  // layout(location = 1) flat in int _3[];
+  // layout(location = 0) out vec4 _5[3];
+
+  // void main()
+  // {
+  //     float param;
+  //     if (_3[gl_InvocationID] == 0)
+  //     {
+  //         param = 0.0234375;
+  //     }
+  //     else
+  //     {
+  //         param = 1.0156199932098388671875;
+  //     }
+  //     _5[gl_InvocationID] = textureLod(sampler1D(_77, _78), param, 0.0);
+  //     vec4 _203;
+  //     if (gl_InvocationID == 0)
+  //     {
+  //         _203 = gl_in[0].gl_Position;
+  //     }
+  //     else
+  //     {
+  //         _203 = gl_in[2].gl_Position;
+  //     }
+  //     gl_out[gl_InvocationID].gl_Position = _203;
+  //     gl_TessLevelInner[0] = 2.7999999523162841796875;
+  //     gl_TessLevelInner[1] = 2.7999999523162841796875;
+  //     gl_TessLevelOuter[0] = 2.7999999523162841796875;
+  //     gl_TessLevelOuter[1] = 2.7999999523162841796875;
+  //     gl_TessLevelOuter[2] = 2.7999999523162841796875;
+  //     gl_TessLevelOuter[3] = 2.7999999523162841796875;
+  // }
+  //
+  // clang-format on
+  //
+  //
+
+  // clang-format off
+  const std::string defs = R"(
+OpCapability Tessellation
+OpCapability Sampled1D
+;CHECK: OpCapability Linkage
+;CHECK: OpExtension "SPV_KHR_storage_buffer_storage_class"
+;CHECK: OpExtension "SPV_KHR_physical_storage_buffer"
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+;CHECK: OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint TessellationControl %main "main" %_3 %gl_InvocationID %_5 %gl_in %gl_out %gl_TessLevelInner %gl_TessLevelOuter
+;CHECK: OpEntryPoint TessellationControl %main "main" %_3 %gl_InvocationID %_5 %gl_in %gl_out %gl_TessLevelInner %gl_TessLevelOuter %gl_PrimitiveID
+OpExecutionMode %main OutputVertices 3
+OpSource GLSL 450
+OpName %main "main"
+OpName %_3 "_3"
+OpName %gl_InvocationID "gl_InvocationID"
+OpName %param "param"
+OpName %_5 "_5"
+OpName %_77 "_77"
+OpName %_78 "_78"
+OpName %_203 "_203"
+OpName %gl_PerVertex "gl_PerVertex"
+OpMemberName %gl_PerVertex 0 "gl_Position"
+OpMemberName %gl_PerVertex 1 "gl_PointSize"
+OpMemberName %gl_PerVertex 2 "gl_ClipDistance"
+OpMemberName %gl_PerVertex 3 "gl_CullDistance"
+OpName %gl_in "gl_in"
+OpName %gl_PerVertex_0 "gl_PerVertex"
+OpMemberName %gl_PerVertex_0 0 "gl_Position"
+OpMemberName %gl_PerVertex_0 1 "gl_PointSize"
+OpMemberName %gl_PerVertex_0 2 "gl_ClipDistance"
+OpMemberName %gl_PerVertex_0 3 "gl_CullDistance"
+OpName %gl_out "gl_out"
+OpName %gl_TessLevelInner "gl_TessLevelInner"
+OpName %gl_TessLevelOuter "gl_TessLevelOuter"
+OpDecorate %_3 Flat
+OpDecorate %_3 Location 1
+OpDecorate %gl_InvocationID BuiltIn InvocationId
+OpDecorate %_5 Location 0
+OpDecorate %_77 DescriptorSet 0
+OpDecorate %_77 Binding 0
+OpDecorate %_78 DescriptorSet 0
+OpDecorate %_78 Binding 1
+OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
+OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
+OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance
+OpDecorate %gl_PerVertex Block
+OpMemberDecorate %gl_PerVertex_0 0 BuiltIn Position
+OpMemberDecorate %gl_PerVertex_0 1 BuiltIn PointSize
+OpMemberDecorate %gl_PerVertex_0 2 BuiltIn ClipDistance
+OpMemberDecorate %gl_PerVertex_0 3 BuiltIn CullDistance
+OpDecorate %gl_PerVertex_0 Block
+OpDecorate %gl_TessLevelInner Patch
+OpDecorate %gl_TessLevelInner BuiltIn TessLevelInner
+OpDecorate %gl_TessLevelOuter Patch
+OpDecorate %gl_TessLevelOuter BuiltIn TessLevelOuter
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%uint = OpTypeInt 32 0
+%uint_32 = OpConstant %uint 32
+%_arr_int_uint_32 = OpTypeArray %int %uint_32
+%_ptr_Input__arr_int_uint_32 = OpTypePointer Input %_arr_int_uint_32
+%_3 = OpVariable %_ptr_Input__arr_int_uint_32 Input
+%_ptr_Input_int = OpTypePointer Input %int
+%gl_InvocationID = OpVariable %_ptr_Input_int Input
+%int_0 = OpConstant %int 0
+%bool = OpTypeBool
+%float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%float_0_0234375 = OpConstant %float 0.0234375
+%float_1_01561999 = OpConstant %float 1.01561999
+%v4float = OpTypeVector %float 4
+%uint_3 = OpConstant %uint 3
+%_arr_v4float_uint_3 = OpTypeArray %v4float %uint_3
+%_ptr_Output__arr_v4float_uint_3 = OpTypePointer Output %_arr_v4float_uint_3
+%_5 = OpVariable %_ptr_Output__arr_v4float_uint_3 Output
+%34 = OpTypeImage %float 1D 0 0 0 1 Unknown
+%_ptr_UniformConstant_34 = OpTypePointer UniformConstant %34
+%_77 = OpVariable %_ptr_UniformConstant_34 UniformConstant
+%38 = OpTypeSampler
+%_ptr_UniformConstant_38 = OpTypePointer UniformConstant %38
+%_78 = OpVariable %_ptr_UniformConstant_38 UniformConstant
+%42 = OpTypeSampledImage %34
+%float_0 = OpConstant %float 0
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%uint_1 = OpConstant %uint 1
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1
+%_arr_gl_PerVertex_uint_32 = OpTypeArray %gl_PerVertex %uint_32
+%_ptr_Input__arr_gl_PerVertex_uint_32 = OpTypePointer Input %_arr_gl_PerVertex_uint_32
+%gl_in = OpVariable %_ptr_Input__arr_gl_PerVertex_uint_32 Input
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%int_2 = OpConstant %int 2
+%gl_PerVertex_0 = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1
+%_arr_gl_PerVertex_0_uint_3 = OpTypeArray %gl_PerVertex_0 %uint_3
+%_ptr_Output__arr_gl_PerVertex_0_uint_3 = OpTypePointer Output %_arr_gl_PerVertex_0_uint_3
+%gl_out = OpVariable %_ptr_Output__arr_gl_PerVertex_0_uint_3 Output
+%uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+%_ptr_Output__arr_float_uint_2 = OpTypePointer Output %_arr_float_uint_2
+%gl_TessLevelInner = OpVariable %_ptr_Output__arr_float_uint_2 Output
+%float_2_79999995 = OpConstant %float 2.79999995
+%_ptr_Output_float = OpTypePointer Output %float
+%int_1 = OpConstant %int 1
+%uint_4 = OpConstant %uint 4
+%_arr_float_uint_4 = OpTypeArray %float %uint_4
+%_ptr_Output__arr_float_uint_4 = OpTypePointer Output %_arr_float_uint_4
+%gl_TessLevelOuter = OpVariable %_ptr_Output__arr_float_uint_4 Output
+%int_3 = OpConstant %int 3
+)";
+
+  const std::string main_func =
+      R"(
+%main = OpFunction %void None %3
+%5 = OpLabel
+%param = OpVariable %_ptr_Function_float Function
+%_203 = OpVariable %_ptr_Function_v4float Function
+%14 = OpLoad %int %gl_InvocationID
+%15 = OpAccessChain %_ptr_Input_int %_3 %14
+%16 = OpLoad %int %15
+%19 = OpIEqual %bool %16 %int_0
+OpSelectionMerge %21 None
+OpBranchConditional %19 %20 %26
+%20 = OpLabel
+;CHECK-NOT: %15 = OpAccessChain %_ptr_Input_int %_3 %14
+;CHECK: OpBranch {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+;CHECK: {{%\w+}} = OpLoad %int %gl_InvocationID
+;CHECK: {{%\w+}} = OpAccessChain %_ptr_Input_int %_3 {{%\w+}}
+;CHECK: {{%\w+}} = OpLoad %int {{%\w+}}
+;CHECK: {{%\w+}} = OpIEqual %bool {{%\w+}} %int_0
+;CHECK: OpSelectionMerge {{%\w+}} None
+;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+;CHECK: {{%\w+}} = OpLabel
+OpStore %param %float_0_0234375
+OpBranch %21
+%26 = OpLabel
+OpStore %param %float_1_01561999
+OpBranch %21
+%21 = OpLabel
+%33 = OpLoad %int %gl_InvocationID
+%37 = OpLoad %34 %_77
+%41 = OpLoad %38 %_78
+%43 = OpSampledImage %42 %37 %41
+%44 = OpLoad %float %param
+;CHECK: {{%\w+}} = OpLoad %int %gl_InvocationID
+;CHECK: {{%\w+}} = OpBitcast %uint {{%\w+}}
+;CHECK: {{%\w+}} = OpLoad %uint %gl_PrimitiveID
+;CHECK: {{%\w+}} = OpCompositeConstruct %v4uint %uint_1 {{%\w+}} {{%\w+}} %uint_0
+;CHECK: {{%\w+}} = OpFunctionCall %bool %inst_bindless_check_desc %uint_23 %uint_129 {{%\w+}} %uint_0 %uint_0 %uint_0 %uint_0
+;CHECK: OpSelectionMerge {{%\w+}} None
+;CHECK: OpBranchConditional {{%\w+}} {{%\w+}} {{%\w+}}
+%46 = OpImageSampleExplicitLod %v4float %43 %44 Lod %float_0
+%48 = OpAccessChain %_ptr_Output_v4float %_5 %33
+OpStore %48 %46
+;CHECK-NOT: %48 = OpAccessChain %_ptr_Output_v4float %_5 %33
+;CHECK-NOT: OpStore %48 %46
+;CHECK: [[phi_result:%\w+]] = OpPhi %v4float {{%\w+}} {{%\w+}} {{%\w+}} {{%\w+}}
+;CHECK: [[access_chain:%\w+]] = OpAccessChain %_ptr_Output_v4float %_5 {{%\w+}}
+;CHECK: OpStore [[access_chain]] [[phi_result]]
+%49 = OpLoad %int %gl_InvocationID
+%50 = OpIEqual %bool %49 %int_0
+OpSelectionMerge %52 None
+OpBranchConditional %50 %51 %64
+%51 = OpLabel
+%62 = OpAccessChain %_ptr_Input_v4float %gl_in %int_0 %int_0
+%63 = OpLoad %v4float %62
+OpStore %_203 %63
+OpBranch %52
+%64 = OpLabel
+%66 = OpAccessChain %_ptr_Input_v4float %gl_in %int_2 %int_0
+%67 = OpLoad %v4float %66
+OpStore %_203 %67
+OpBranch %52
+%52 = OpLabel
+%72 = OpLoad %int %gl_InvocationID
+%73 = OpLoad %v4float %_203
+%74 = OpAccessChain %_ptr_Output_v4float %gl_out %72 %int_0
+OpStore %74 %73
+%81 = OpAccessChain %_ptr_Output_float %gl_TessLevelInner %int_0
+OpStore %81 %float_2_79999995
+%83 = OpAccessChain %_ptr_Output_float %gl_TessLevelInner %int_1
+OpStore %83 %float_2_79999995
+%88 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_0
+OpStore %88 %float_2_79999995
+%89 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_1
+OpStore %89 %float_2_79999995
+%90 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_2
+OpStore %90 %float_2_79999995
+%92 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_3
+OpStore %92 %float_2_79999995
+OpReturn
+OpFunctionEnd
+)";
+  // clang-format on
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndMatch<InstBindlessCheckPass>(defs + kImportStub + main_func,
+                                               true, 23u);
+}
+
 TEST_F(InstBindlessTest, MultipleDebugFunctions) {
   // Same source as Simple, but compiled -g and not optimized, especially not
   // inlined. The OpSource has had the source extracted for the sake of brevity.
