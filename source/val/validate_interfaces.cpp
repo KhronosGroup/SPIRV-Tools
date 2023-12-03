@@ -311,9 +311,15 @@ spv_result_t GetLocationsForVariable(
     }
   }
 
-  // Vulkan 14.1.3: Tessellation control and mesh per-vertex outputs and
-  // tessellation control, evaluation and geometry per-vertex inputs have a
-  // layer of arraying that is not included in interface matching.
+  // Vulkan 14.1.3: Some interfaces have a layer of arraying
+  // that is not included in interface matching:
+  // - Tessellation control input and output, except Patch decoration
+  // - Tessellation evaluation input, except Patch decoration
+  // - Geometry input
+  // - Fragment input with PerVertexKHR decoration
+  // - Task output, except PerTaskNV decoration
+  // - Mesh input, except PerTaskNV decoration
+  // - Mesh output
   bool is_arrayed = false;
   switch (entry_point->GetOperandAs<spv::ExecutionModel>(0)) {
     case spv::ExecutionModel::TessellationControl:
@@ -336,10 +342,23 @@ spv_result_t GetLocationsForVariable(
         is_arrayed = true;
       }
       break;
-    case spv::ExecutionModel::MeshNV:
+    case spv::ExecutionModel::TaskNV:
       if (is_output && !has_per_task_nv) {
         is_arrayed = true;
       }
+      break;
+    case spv::ExecutionModel::TaskEXT:
+      if (is_output) {
+        is_arrayed = true;
+      }
+      break;
+    case spv::ExecutionModel::MeshNV:
+      if (is_output || !has_per_task_nv) {
+        is_arrayed = true;
+      }
+      break;
+    case spv::ExecutionModel::MeshEXT:
+      is_arrayed = true;
       break;
     default:
       break;
