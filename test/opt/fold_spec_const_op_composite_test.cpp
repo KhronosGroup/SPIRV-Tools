@@ -674,6 +674,31 @@ TEST_F(FoldSpecConstantOpAndCompositePassBasicTest, CompositeInsertMatrixNull) {
   SinglePassRunAndMatch<FoldSpecConstantOpAndCompositePass>(test, false);
 }
 
+// Silently ignore spec constants that cannot be folded
+TEST_F(FoldSpecConstantOpAndCompositePassBasicTest, UnfoldableOp) {
+  const std::string test = R"(
+               OpCapability Shader
+               OpCapability SignedZeroInfNanPreserve
+               OpExtension "SPV_KHR_float_controls"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main"
+               OpSource GLSL 450
+               OpDecorate %v SpecId 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %float = OpTypeFloat 32
+          %v = OpConstant %float 0x1p-1
+%c = OpSpecConstantOp %float QuantizeToF16 %v
+;CHECK: {{%\w+}} = OpSpecConstantOp {{%\w+}} QuantizeToF16 {{%\w+}}
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<FoldSpecConstantOpAndCompositePass>(test, false);
+}
+
 // All types and some common constants that are potentially required in
 // FoldSpecConstantOpAndCompositeTest.
 std::vector<std::string> CommonTypesAndConstants() {
