@@ -277,7 +277,7 @@ constexpr std::array kCapabilities{
     spv::Capability::GroupNonUniformRotateKHR,
     spv::Capability::AtomicFloat32AddEXT,
     spv::Capability::AtomicFloat64AddEXT,
-    spv::Capability::LongConstantCompositeINTEL,
+    spv::Capability::LongCompositesINTEL,
     spv::Capability::OptNoneINTEL,
     spv::Capability::AtomicFloat16AddEXT,
     spv::Capability::DebugInfoModuleINTEL,
