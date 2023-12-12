@@ -211,9 +211,21 @@ class ValidationState_t {
   /// instruction
   bool in_block() const;
 
+  /// Description is unique and not shared by all entry points with same id
   struct EntryPointDescription {
     std::string name;
     std::vector<uint32_t> interfaces;
+  };
+
+  /// All the meta data about a single entry point id
+  struct EntryPointData {
+    std::vector<EntryPointDescription> descriptions;
+    /// It is presumed that the same function could theoretically be used as
+    /// 'main' by multiple OpEntryPoint instructions.
+    std::set<spv::ExecutionModel> execution_models;
+    std::set<spv::ExecutionMode> execution_modes;
+    const Instruction* local_size = nullptr;
+    const Instruction* local_size_id = nullptr;
   };
 
   /// Registers |id| as an entry point with |execution_model| and |interfaces|.
@@ -221,8 +233,8 @@ class ValidationState_t {
                           spv::ExecutionModel execution_model,
                           EntryPointDescription&& desc) {
     entry_points_.push_back(id);
-    entry_point_to_execution_models_[id].insert(execution_model);
-    entry_point_descriptions_[id].emplace_back(desc);
+    entry_point_data_[id].execution_models.insert(execution_model);
+    entry_point_data_[id].descriptions.emplace_back(desc);
   }
 
   /// Returns a list of entry point function ids
@@ -235,38 +247,66 @@ class ValidationState_t {
   }
 
   /// Registers execution mode for the given entry point.
-  void RegisterExecutionModeForEntryPoint(uint32_t entry_point,
-                                          spv::ExecutionMode execution_mode) {
-    entry_point_to_execution_modes_[entry_point].insert(execution_mode);
+  void RegisterExecutionModeForEntryPoint(const Instruction* inst) {
+    const uint32_t entry_point = inst->word(1);
+    const spv::ExecutionMode mode = spv::ExecutionMode(inst->word(2));
+    entry_point_data_[entry_point].execution_modes.insert(mode);
+
+    // Save for now since the IDs might have not been parsed yet
+    if (mode == spv::ExecutionMode::LocalSize) {
+      entry_point_data_[entry_point].local_size = inst;
+    } else if (mode == spv::ExecutionMode::LocalSizeId) {
+      entry_point_data_[entry_point].local_size_id = inst;
+    }
   }
 
   /// Returns the interface descriptions of a given entry point.
   const std::vector<EntryPointDescription>& entry_point_descriptions(
       uint32_t entry_point) {
-    return entry_point_descriptions_.at(entry_point);
+    return entry_point_data_[entry_point].descriptions;
   }
 
   /// Returns Execution Models for the given Entry Point.
   /// Returns nullptr if none found (would trigger assertion).
   const std::set<spv::ExecutionModel>* GetExecutionModels(
       uint32_t entry_point) const {
-    const auto it = entry_point_to_execution_models_.find(entry_point);
-    if (it == entry_point_to_execution_models_.end()) {
+    const auto it = entry_point_data_.find(entry_point);
+    if (it == entry_point_data_.end()) {
       assert(0);
       return nullptr;
     }
-    return &it->second;
+    return &it->second.execution_models;
   }
 
   /// Returns Execution Modes for the given Entry Point.
   /// Returns nullptr if none found.
   const std::set<spv::ExecutionMode>* GetExecutionModes(
       uint32_t entry_point) const {
-    const auto it = entry_point_to_execution_modes_.find(entry_point);
-    if (it == entry_point_to_execution_modes_.end()) {
+    const auto it = entry_point_data_.find(entry_point);
+    if (it == entry_point_data_.end()) {
       return nullptr;
     }
-    return &it->second;
+    return &it->second.execution_modes;
+  }
+
+  /// Returns the Local Size Execution Modes for the given Entry Point.
+  /// Returns nullptr if none found.
+  const Instruction* GetLocalSizeInstruction(uint32_t entry_point) const {
+    const auto it = entry_point_data_.find(entry_point);
+    if (it == entry_point_data_.end()) {
+      return nullptr;
+    }
+    return it->second.local_size;
+  }
+
+  /// Returns the Local Size Id Execution Modes for the given Entry Point.
+  /// Returns nullptr if none found.
+  const Instruction* GetLocalSizeIdInstruction(uint32_t entry_point) const {
+    const auto it = entry_point_data_.find(entry_point);
+    if (it == entry_point_data_.end()) {
+      return nullptr;
+    }
+    return it->second.local_size_id;
   }
 
   /// Traverses call tree and computes function_to_entry_points_.
@@ -870,9 +910,8 @@ class ValidationState_t {
   /// IDs that are entry points, ie, arguments to OpEntryPoint.
   std::vector<uint32_t> entry_points_;
 
-  /// Maps an entry point id to its descriptions.
-  std::unordered_map<uint32_t, std::vector<EntryPointDescription>>
-      entry_point_descriptions_;
+  /// Maps an entry point id to all the information about it.
+  std::unordered_map<uint32_t, EntryPointData> entry_point_data_;
 
   /// IDs that are entry points, ie, arguments to OpEntryPoint, and root a call
   /// graph that recurses.
@@ -929,16 +968,6 @@ class ValidationState_t {
 
   /// Maps function ids to function stat objects.
   std::unordered_map<uint32_t, Function*> id_to_function_;
-
-  /// Mapping entry point -> execution models. It is presumed that the same
-  /// function could theoretically be used as 'main' by multiple OpEntryPoint
-  /// instructions.
-  std::unordered_map<uint32_t, std::set<spv::ExecutionModel>>
-      entry_point_to_execution_models_;
-
-  /// Mapping entry point -> execution modes.
-  std::unordered_map<uint32_t, std::set<spv::ExecutionMode>>
-      entry_point_to_execution_modes_;
 
   /// Mapping function -> array of entry points inside this
   /// module which can (indirectly) call the function.
