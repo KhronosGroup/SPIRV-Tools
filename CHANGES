@@ -1,5 +1,22 @@
 Revision history for SPIRV-Tools
 
+v2023.6 2023-12-18
+  - General
+    - update_build_version.py produce deterministic header. (#5426)
+    - Support missing git in update_build_version.py (#5473)
+  - Optimizer
+    - Add ComputeDerivativeGroup*NV capabilities to trim capabilities pass. (#5430)
+    - Do not crash when tryingto fold unsupported spec constant (#5496)
+    - instrument: Fix handling of gl_InvocationID (#5493)
+    - Fix nullptr argument in MarkInsertChain (#5465)
+    - opt: support 64-bit OpAccessChain index in FixStorageClass (#5446)
+    - opt: add StorageImageReadWithoutFormat to cap trim (#5475)
+    - opt: add PhysicalStorageBufferAddresses to trim (#5476)
+    - Fix array size calculation (#5463
+  - Validator
+    - spirv-val: Loosen restriction on base type of DebugTypePointer and DebugTypeQualifier (#5479)
+    - spirv-val: Add WorkgroupMemoryExplicitLayoutKHR check for Block (#5461)
+
 v2023.5 2023-10-15
   - General
     - Support 2 Intel extensions (#5357)
