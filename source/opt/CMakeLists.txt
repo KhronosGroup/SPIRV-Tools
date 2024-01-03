@@ -94,6 +94,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   loop_unswitch_pass.h
   mem_pass.h
   merge_return_pass.h
+  modify_maximal_reconvergence.h
   module.h
   null_pass.h
   passes.h
@@ -214,6 +215,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   loop_unswitch_pass.cpp
   mem_pass.cpp
   merge_return_pass.cpp
+  modify_maximal_reconvergence.cpp
   module.cpp
   optimizer.cpp
   pass.cpp
