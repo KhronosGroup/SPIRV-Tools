@@ -2486,6 +2486,104 @@ TEST_F(TrimCapabilitiesPassTest,
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
+TEST_F(TrimCapabilitiesPassTest, Float16_RemovedWhenUnused) {
+  const std::string kTest = R"(
+               OpCapability Float16
+; CHECK-NOT:   OpCapability Float16
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, Float16_RemainsWhenUsed) {
+  const std::string kTest = R"(
+               OpCapability Float16
+; CHECK:       OpCapability Float16
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+      %float = OpTypeFloat 16
+          %3 = OpTypeFunction %void
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, Int16_RemovedWhenUnused) {
+  const std::string kTest = R"(
+               OpCapability Int16
+; CHECK-NOT:   OpCapability Int16
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, Int16_RemainsWhenUsed) {
+  const std::string kTest = R"(
+               OpCapability Int16
+; CHECK:       OpCapability Int16
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+        %int = OpTypeInt 16 1
+          %3 = OpTypeFunction %void
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, UInt16_RemainsWhenUsed) {
+  const std::string kTest = R"(
+               OpCapability Int16
+; CHECK:       OpCapability Int16
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+       %uint = OpTypeInt 16 0
+          %3 = OpTypeFunction %void
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
