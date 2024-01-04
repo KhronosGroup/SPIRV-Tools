@@ -879,11 +879,13 @@ spv_result_t StructuredControlFlowChecks(
 
 spv_result_t MaximalReconvergenceChecks(ValidationState_t& _) {
   // Find all the entry points with the MaximallReconvergencesKHR execution mode.
+  std::unordered_set<uint32_t> maximal_funcs;
   std::unordered_set<uint32_t> maximal_entry_points;
   for (auto entry_point : _.entry_points()) {
     const auto* exec_modes = _.GetExecutionModes(entry_point);
     if (exec_modes && exec_modes->count(spv::ExecutionMode::MaximallyReconvergesKHR)) {
       maximal_entry_points.insert(entry_point);
+      maximal_funcs.insert(entry_point);
     }
   }
 
@@ -892,7 +894,6 @@ spv_result_t MaximalReconvergenceChecks(ValidationState_t& _) {
   }
 
   // Find all the functions reachable from a maximal reconvergence entry point.
-  std::unordered_set<uint32_t> maximal_funcs;
   for (const auto& func : _.functions()) {
     const auto& entry_points = _.EntryPointReferences(func.id());
     for (auto id : entry_points) {
@@ -933,26 +934,32 @@ spv_result_t MaximalReconvergenceChecks(ValidationState_t& _) {
       }
       if (unique_preds.size() < 2) continue;
 
+
       const auto *terminator = block->terminator();
       const auto index = terminator - &_.ordered_instructions()[0];
-      const auto *pre_terminator = &_.ordered_instructions()[index];
+      const auto *pre_terminator = &_.ordered_instructions()[index - 1];
       if (pre_terminator->opcode() == spv::Op::OpLoopMerge)
         continue;
 
       const auto *label = _.FindDef(block->id());
+      bool ok = false;
       for (const auto& pair : label->uses()) {
         const auto* use_inst = pair.first;
         switch (use_inst->opcode()) {
           case spv::Op::OpSelectionMerge:
           case spv::Op::OpLoopMerge:
           case spv::Op::OpSwitch:
+            ok = true;
             break;
           default:
-            return _.diag(SPV_ERROR_INVALID_CFG, label)
-                   << "In entry points using the MaximallyReconvergesKHR "
-                      "execution mode, this basic block must not have multiple "
-                      "unique predecessors";
+            break;
         }
+      }
+      if (!ok) {
+        return _.diag(SPV_ERROR_INVALID_CFG, label)
+               << "In entry points using the MaximallyReconvergesKHR "
+                  "execution mode, this basic block must not have multiple "
+                  "unique predecessors";
       }
     }
   }

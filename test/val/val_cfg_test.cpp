@@ -4967,6 +4967,37 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateCFG, MaximalReconvergenceLoopMultiplePredsOk2) {
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_maximal_reconvergence"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionMode %main MaximallyReconvergesKHR
+%void = OpTypeVoid
+%bool = OpTypeBool
+%cond = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%main_entry = OpLabel
+OpBranch %loop
+%loop = OpLabel
+OpLoopMerge %merge %cont None
+OpBranch %body
+%body = OpLabel
+OpBranch %cont
+%cont = OpLabel
+OpBranchConditional %cond %loop %merge
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateCFG, MaximalReconvergenceSelectionMergeMultiplePredsOk) {
   const std::string text = R"(
 OpCapability Shader
@@ -4975,6 +5006,36 @@ OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 1 1 1
 OpExecutionMode %main MaximallyReconvergesKHR
+%void = OpTypeVoid
+%bool = OpTypeBool
+%cond = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%main_entry = OpLabel
+OpSelectionMerge %merge None
+OpBranchConditional %cond %then %else
+%then = OpLabel
+OpBranch %merge
+%else = OpLabel
+OpBranch %merge
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateCFG, MaximalReconvergenceSelectionMergeMultiplePredsOk2) {
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_maximal_reconvergence"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionMode %main MaximallyReconvergesKHR
+OpName %merge "merge"
 %void = OpTypeVoid
 %bool = OpTypeBool
 %cond = OpUndef %bool
