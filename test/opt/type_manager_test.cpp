@@ -944,15 +944,12 @@ OpMemoryModel Logical GLSL450
   std::vector<std::unique_ptr<Type>> types = GenerateAllTypes();
   uint32_t id = 1u;
   for (auto& t : types) {
-    std::cout << ". id " << id << std::endl;
     context->get_type_mgr()->RegisterType(id, *t);
     EXPECT_EQ(*t, *context->get_type_mgr()->GetType(id));
   }
-  std::cout << "clear" << id << std::endl;
   types.clear();
 
   for (; id > 0; --id) {
-    std::cout << ". remove id " << id << std::endl;
     context->get_type_mgr()->RemoveId(id);
     EXPECT_EQ(nullptr, context->get_type_mgr()->GetType(id));
   }
