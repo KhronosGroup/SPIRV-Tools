@@ -2902,6 +2902,10 @@ OpEntryPoint Fragment %func "func"
 OpExecutionMode %func OriginUpperLeft
 OpDecorate %struct Block
 OpMemberDecorate %struct 0 Offset 0
+OpDecorate %2 DescriptorSet 0
+OpDecorate %2 Binding 0
+OpDecorate %3 DescriptorSet 0
+OpDecorate %3 Binding 1
 %sampler_t = OpTypeSampler
 %uint = OpTypeInt 32 0
 %array_t = OpTypeRuntimeArray %sampler_t
@@ -2966,6 +2970,8 @@ OpExecutionMode %func OriginUpperLeft
 OpDecorate %array_t ArrayStride 4
 OpMemberDecorate %struct_t 0 Offset 0
 OpDecorate %struct_t Block
+OpDecorate %2 DescriptorSet 0
+OpDecorate %2 Binding 0
 %uint_t = OpTypeInt 32 0
 %array_t = OpTypeRuntimeArray %uint_t
 %struct_t = OpTypeStruct %array_t
@@ -3057,6 +3063,8 @@ OpExecutionMode %func OriginUpperLeft
 OpDecorate %array_t ArrayStride 4
 OpMemberDecorate %struct_t 0 Offset 0
 OpDecorate %struct_t BufferBlock
+OpDecorate %2 DescriptorSet 0
+OpDecorate %2 Binding 0
 %uint_t = OpTypeInt 32 0
 %array_t = OpTypeRuntimeArray %uint_t
 %struct_t = OpTypeStruct %array_t
@@ -3182,6 +3190,8 @@ OpEntryPoint Fragment %func "func"
 OpExecutionMode %func OriginUpperLeft
 OpMemberDecorate %struct_t 0 Offset 0
 OpDecorate %struct_t Block
+OpDecorate %2 DescriptorSet 0
+OpDecorate %2 Binding 0
 %uint_t = OpTypeInt 32 0
 %struct_t = OpTypeStruct %uint_t
 %array_t = OpTypeRuntimeArray %struct_t
@@ -3427,6 +3437,8 @@ OpExecutionMode %func OriginUpperLeft
 OpDecorate %inner_array_t ArrayStride 4
 OpMemberDecorate %struct_t 0 Offset 0
 OpDecorate %struct_t Block
+OpDecorate %2 DescriptorSet 0
+OpDecorate %2 Binding 0
 %uint_t = OpTypeInt 32 0
 %inner_array_t = OpTypeRuntimeArray %uint_t
 %struct_t = OpTypeStruct %inner_array_t
@@ -3456,6 +3468,8 @@ OpExecutionMode %func OriginUpperLeft
 OpDecorate %inner_array_t ArrayStride 4
 OpMemberDecorate %struct_t 0 Offset 0
 OpDecorate %struct_t Block
+OpDecorate %2 DescriptorSet 0
+OpDecorate %2 Binding 0
 %uint_t = OpTypeInt 32 0
 %inner_array_t = OpTypeRuntimeArray %uint_t
 %struct_t = OpTypeStruct %inner_array_t
