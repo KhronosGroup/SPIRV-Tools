@@ -392,6 +392,11 @@ Options (in lexicographical order):)",
                Ensure that the optimizer preserves all bindings declared within
                the module, even when those bindings are unused.)");
   printf(R"(
+  --preserve-interface
+               Ensure that input and output variables are not removed from the
+               shader, even if they are unused. Note that this option applies to
+               all passes that will be run regardless of the order of the flags.)");
+  printf(R"(
   --preserve-spec-constants
                Ensure that the optimizer preserves all specialization constants declared
                within the module, even when those constants are unused.)");
@@ -701,6 +706,7 @@ OptStatus ParseFlags(int argc, const char** argv,
                      spvtools::ValidatorOptions* validator_options,
                      spvtools::OptimizerOptions* optimizer_options) {
   std::vector<std::string> pass_flags;
+  bool preserve_interface = true;
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
     if ('-' == cur_arg[0]) {
@@ -790,6 +796,8 @@ OptStatus ParseFlags(int argc, const char** argv,
         validator_options->SetSkipBlockLayout(true);
       } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
         validator_options->SetRelaxStructStore(true);
+      } else if (0 == strcmp(cur_arg, "--preserve-interface")) {
+        preserve_interface = true;
       } else {
         // Some passes used to accept the form '--pass arg', canonicalize them
         // to '--pass=arg'.
@@ -812,7 +820,7 @@ OptStatus ParseFlags(int argc, const char** argv,
     }
   }
 
-  if (!optimizer->RegisterPassesFromFlags(pass_flags)) {
+  if (!optimizer->RegisterPassesFromFlags(pass_flags, preserve_interface)) {
     return {OPT_STOP, 1};
   }
 
