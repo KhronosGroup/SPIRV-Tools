@@ -1713,6 +1713,75 @@ TEST_F(ConvertToHalfTest, PreserveImageOperandPrecision) {
   SinglePassRunAndMatch<ConvertToHalfPass>(test, true);
 }
 
+TEST_F(ConvertToHalfTest, DontRelaxDecoratedOpCompositeExtract) {
+  // This test checks that a OpCompositeExtract with a Struct operand won't be
+  // relaxed, even if it is explicitly decorated with RelaxedPrecision.
+  const std::string test =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main"
+OpExecutionMode %1 OriginUpperLeft
+OpDecorate %9 RelaxedPrecision
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_struct_6 = OpTypeStruct %v4float
+%7 = OpUndef %_struct_6
+%1 = OpFunction %void None %3
+%8 = OpLabel
+%9 = OpCompositeExtract %float %7 0 3
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string expected =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main"
+OpExecutionMode %1 OriginUpperLeft
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_struct_6 = OpTypeStruct %v4float
+%7 = OpUndef %_struct_6
+%1 = OpFunction %void None %3
+%8 = OpLabel
+%9 = OpCompositeExtract %float %7 0 3
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<ConvertToHalfPass>(test, expected, true);
+}
+
+TEST_F(ConvertToHalfTest, DontRelaxOpCompositeExtract) {
+  // This test checks that a OpCompositeExtract with a Struct operand won't be
+  // relaxed, even if its result has no uses.
+  const std::string test =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %1 "main"
+OpExecutionMode %1 OriginUpperLeft
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_struct_6 = OpTypeStruct %v4float
+%7 = OpUndef %_struct_6
+%1 = OpFunction %void None %3
+%8 = OpLabel
+%9 = OpCompositeExtract %float %7 0 3
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<ConvertToHalfPass>(test, test, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
