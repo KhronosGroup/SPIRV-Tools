@@ -46,6 +46,45 @@ bool is_interface_variable(const Instruction* inst, bool is_spv_1_4) {
   }
 }
 
+bool ContainsPhysicalStorageBuffer(ValidationState_t& _,
+                                   const Instruction* pointer) {
+  // Unpack array
+  while (pointer->opcode() == spv::Op::OpTypeArray ||
+         pointer->opcode() == spv::Op::OpTypeRuntimeArray) {
+    pointer = _.FindDef(pointer->GetOperandAs<uint32_t>(1));
+  }
+
+  if (pointer->opcode() == spv::Op::OpTypeStruct) {
+    for (size_t member_index = 1; member_index < pointer->operands().size();
+         ++member_index) {
+      auto member_type =
+          _.FindDef(pointer->GetOperandAs<uint32_t>(member_index));
+      if (ContainsPhysicalStorageBuffer(_, member_type)) return true;
+    }
+  }
+
+  return pointer->opcode() == spv::Op::OpTypePointer &&
+         pointer->GetOperandAs<spv::StorageClass>(1) ==
+             spv::StorageClass::PhysicalStorageBuffer;
+}
+
+// Special validation for varibles that are between shader stages
+spv_result_t ValidateInputOutputInterfaceVariables(ValidationState_t& _,
+                                                   const Instruction* var) {
+  auto var_pointer = _.FindDef(var->GetOperandAs<uint32_t>(0));
+  auto pointer = _.FindDef(var_pointer->GetOperandAs<uint32_t>(2));
+
+  if (ContainsPhysicalStorageBuffer(_, pointer)) {
+    return _.diag(SPV_ERROR_INVALID_ID, var)
+           << _.VkErrorID(9557) << "Input/Output interface variable id <"
+           << var->id()
+           << "> contains a PhysicalStorageBuffer pointer, which is not "
+              "allowed. If you want to interface shader stages with a "
+              "PhysicalStorageBuffer, cast to a uint64 or uvec2 instead.";
+  }
+  return SPV_SUCCESS;
+}
+
 // Checks that \c var is listed as an interface in all the entry points that use
 // it.
 spv_result_t check_interface_variable(ValidationState_t& _,
@@ -103,6 +142,12 @@ spv_result_t check_interface_variable(ValidationState_t& _,
                << ">, but is not listed as an interface";
       }
     }
+  }
+
+  if (var->GetOperandAs<spv::StorageClass>(2) == spv::StorageClass::Input ||
+      var->GetOperandAs<spv::StorageClass>(2) == spv::StorageClass::Output) {
+    if (auto error = ValidateInputOutputInterfaceVariables(_, var))
+      return error;
   }
 
   return SPV_SUCCESS;
