@@ -31,7 +31,7 @@ class ModifyMaximalReconvergence : public Pass {
   const char* name() const override { return "modify-maximal-reconvergence"; }
   Status Process() override;
 
-  explicit ModifyMaximalReconvergence(bool add = true) : Pass(), _add(add) {}
+  explicit ModifyMaximalReconvergence(bool add = true) : Pass(), add_(add) {}
 
   IRContext::Analysis GetPreservedAnalyses() override {
     return IRContext::kAnalysisDefUse |
@@ -45,7 +45,7 @@ class ModifyMaximalReconvergence : public Pass {
   bool AddMaximalReconvergence();
   bool RemoveMaximalReconvergence();
 
-  bool _add;
+  bool add_;
 };
 }  // namespace opt
 }  // namespace spvtools

@@ -878,12 +878,14 @@ spv_result_t StructuredControlFlowChecks(
 }
 
 spv_result_t MaximalReconvergenceChecks(ValidationState_t& _) {
-  // Find all the entry points with the MaximallReconvergencesKHR execution mode.
+  // Find all the entry points with the MaximallyReconvergencesKHR execution
+  // mode.
   std::unordered_set<uint32_t> maximal_funcs;
   std::unordered_set<uint32_t> maximal_entry_points;
   for (auto entry_point : _.entry_points()) {
     const auto* exec_modes = _.GetExecutionModes(entry_point);
-    if (exec_modes && exec_modes->count(spv::ExecutionMode::MaximallyReconvergesKHR)) {
+    if (exec_modes &&
+        exec_modes->count(spv::ExecutionMode::MaximallyReconvergesKHR)) {
       maximal_entry_points.insert(entry_point);
       maximal_funcs.insert(entry_point);
     }
@@ -920,9 +922,8 @@ spv_result_t MaximalReconvergenceChecks(ValidationState_t& _) {
   // Check for invalid multiple predecessors. Only loop headers, continue
   // targets, merge targets or switch targets or defaults may have multiple
   // unique predecessors.
-  for (const auto &func : _.functions()) {
-    if (!maximal_funcs.count(func.id()))
-      continue;
+  for (const auto& func : _.functions()) {
+    if (!maximal_funcs.count(func.id())) continue;
 
     for (const auto* block : func.ordered_blocks()) {
       std::unordered_set<uint32_t> unique_preds;
@@ -934,14 +935,12 @@ spv_result_t MaximalReconvergenceChecks(ValidationState_t& _) {
       }
       if (unique_preds.size() < 2) continue;
 
-
-      const auto *terminator = block->terminator();
+      const auto* terminator = block->terminator();
       const auto index = terminator - &_.ordered_instructions()[0];
-      const auto *pre_terminator = &_.ordered_instructions()[index - 1];
-      if (pre_terminator->opcode() == spv::Op::OpLoopMerge)
-        continue;
+      const auto* pre_terminator = &_.ordered_instructions()[index - 1];
+      if (pre_terminator->opcode() == spv::Op::OpLoopMerge) continue;
 
-      const auto *label = _.FindDef(block->id());
+      const auto* label = _.FindDef(block->id());
       bool ok = false;
       for (const auto& pair : label->uses()) {
         const auto* use_inst = pair.first;

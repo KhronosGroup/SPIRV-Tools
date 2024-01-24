@@ -22,7 +22,7 @@ namespace opt {
 
 Pass::Status ModifyMaximalReconvergence::Process() {
   bool changed = false;
-  if (_add) {
+  if (add_) {
     changed = AddMaximalReconvergence();
   } else {
     changed = RemoveMaximalReconvergence();
