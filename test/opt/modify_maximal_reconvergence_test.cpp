@@ -194,7 +194,8 @@ OpCapability Linkage
 OpMemoryModel Logical OpenCL
 )";
 
-  SinglePassRunAndCheck<opt::ModifyMaximalReconvergence>(text, text, false, true, false);
+  SinglePassRunAndCheck<opt::ModifyMaximalReconvergence>(text, text, false,
+                                                         true, false);
 }
 
 TEST_F(ModifyMaximalReconvergenceTest, RemoveOnlyExtension) {
