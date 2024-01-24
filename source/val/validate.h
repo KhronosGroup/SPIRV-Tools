@@ -82,7 +82,8 @@ spv_result_t ValidateAdjacency(ValidationState_t& _);
 /// @return SPV_SUCCESS if no errors are found.
 spv_result_t ValidateInterfaces(ValidationState_t& _);
 
-/// @brief Validates entry point call tree requirements of SPV_KHR_float_controls2
+/// @brief Validates entry point call tree requirements of
+/// SPV_KHR_float_controls2
 ///
 /// Checks that no entry point using FPFastMathDefault uses:
 /// * FPFastMathMode Fast
