@@ -66,19 +66,11 @@ struct EnumCapabilityCase {
 // to emit failure cases when they occur, which helps debug tests.
 inline std::ostream& operator<<(std::ostream& out, EnumCapabilityCase e) {
   out << "{" << spvOperandTypeStr(e.type) << " " << e.value << " "
-      << show(e.expected_capabilities) << " }";
+      << e.expected_capabilities << " }";
   return out;
 }
 
 using EnvEnumCapabilityCase = std::tuple<spv_target_env, EnumCapabilityCase>;
-
-// Emits an EnvEnumCapabilityCase to the given output stream. This is used
-// to emit failure cases when they occur, which helps debug tests.
-inline std::ostream& operator<<(std::ostream& out, EnvEnumCapabilityCase e) {
-  out << "EnvEnumCapabilityTest{ " << spvLogStringForEnv(std::get<0>(e)) << " "
-      << std::get<1>(e) << " }";
-  return out;
-}
 
 // Test fixture for testing EnumCapabilityCases.
 using EnumCapabilityTest =
