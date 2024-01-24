@@ -14,7 +14,6 @@
 
 // Test capability dependencies for enums.
 
-#include <iostream>
 #include <tuple>
 #include <vector>
 
@@ -37,25 +36,23 @@ using ::testing::TestWithParam;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
-// Emits a CapabilitySet to the given output stream.
-std::string show(const CapabilitySet& cs) {
-  std::ostringstream outs;
-  if (!cs.IsEmpty()) {
-    // The specific environment doesn't matter.
-    auto context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
-    auto grammar = spvtools::AssemblyGrammar(context);
-    spv_operand_desc desc;
-    outs << "{";
-    cs.ForEach([&](spv::Capability cap) {
-      if (grammar.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
-                                static_cast<uint32_t>(cap), &desc)) {
-        outs << " " << desc->name;
-      }
-    });
-    spvContextDestroy(context);
-    outs << "}";
+// Emits a CapabilitySet to the given ostream, returning the ostream.
+inline std::ostream& operator<<(std::ostream& out, const CapabilitySet& cs) {
+  out << "CapabilitySet{";
+  auto ctx = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
+  spvtools::AssemblyGrammar grammar(ctx);
+  bool first = true;
+  for (auto c : cs) {
+    if (!first) {
+      out << " ";
+      first = false;
+    }
+    out << grammar.lookupOperandName(SPV_OPERAND_TYPE_CAPABILITY, uint32_t(c))
+        << "(" << uint32_t(c) << ")";
   }
-  return outs.str();
+  spvContextDestroy(ctx);
+  out << "}";
+  return out;
 }
 
 // A test case for mapping an enum to a capability mask.
@@ -75,6 +72,14 @@ inline std::ostream& operator<<(std::ostream& out, EnumCapabilityCase e) {
 
 using EnvEnumCapabilityCase = std::tuple<spv_target_env, EnumCapabilityCase>;
 
+// Emits an EnvEnumCapabilityCase to the given output stream. This is used
+// to emit failure cases when they occur, which helps debug tests.
+inline std::ostream& operator<<(std::ostream& out, EnvEnumCapabilityCase e) {
+  out << "EnvEnumCapabilityTest{ " << spvLogStringForEnv(std::get<0>(e)) << " "
+      << std::get<1>(e) << " }";
+  return out;
+}
+
 // Test fixture for testing EnumCapabilityCases.
 using EnumCapabilityTest =
     TestWithParam<std::tuple<spv_target_env, EnumCapabilityCase>>;
@@ -93,8 +98,7 @@ TEST_P(EnumCapabilityTest, Sample) {
 
   EXPECT_THAT(ElementsIn(cap_set),
               Eq(ElementsIn(std::get<1>(GetParam()).expected_capabilities)))
-      << " capability value " << std::get<1>(GetParam()).value << " "
-      << show(cap_set);
+      << " enum value " << std::get<1>(GetParam()).value;
   spvContextDestroy(context);
 }
 
