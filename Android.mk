@@ -157,6 +157,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/loop_utils.cpp \
 		source/opt/mem_pass.cpp \
 		source/opt/merge_return_pass.cpp \
+		source/opt/modify_maximal_reconvergence.cpp \
 		source/opt/module.cpp \
 		source/opt/optimizer.cpp \
 		source/opt/pass.cpp \

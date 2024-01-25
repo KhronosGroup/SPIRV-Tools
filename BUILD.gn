@@ -737,6 +737,8 @@ static_library("spvtools_opt") {
     "source/opt/mem_pass.h",
     "source/opt/merge_return_pass.cpp",
     "source/opt/merge_return_pass.h",
+    "source/opt/modify_maximal_reconvergence.cpp",
+    "source/opt/modify_maximal_reconvergence.h",
     "source/opt/module.cpp",
     "source/opt/module.h",
     "source/opt/null_pass.h",

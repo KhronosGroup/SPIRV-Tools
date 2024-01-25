@@ -1306,6 +1306,28 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
+TEST_F(ValidateMode, MaximalReconvergenceRequiresExtension) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionMode %main MaximallyReconvergesKHR
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_MISSING_EXTENSION, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("(6023) requires one of these extensions: "
+                        "SPV_KHR_maximal_reconvergence "));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
