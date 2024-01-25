@@ -21,6 +21,9 @@
 #include "source/assembly_grammar.h"
 #include "source/enum_set.h"
 #include "source/operand.h"
+#include "source/spirv_target_env.h"
+#include "source/table.h"
+#include "spirv-tools/libspirv.h"
 #include "test/unit_spirv.h"
 
 namespace spvtools {
@@ -58,14 +61,16 @@ struct EnumCapabilityCase {
   uint32_t value;
   CapabilitySet expected_capabilities;
 };
-// Emits an EnumCapabilityCase to the ostream, returning the ostream.
-inline std::ostream& operator<<(std::ostream& out,
-                                const EnumCapabilityCase& ecc) {
-  out << "EnumCapabilityCase{ " << spvOperandTypeStr(ecc.type) << "("
-      << unsigned(ecc.type) << "), " << ecc.value << ", "
-      << ecc.expected_capabilities << "}";
+
+// Emits an EnumCapabilityCase to the given output stream. This is used
+// to emit failure cases when they occur, which helps debug tests.
+inline std::ostream& operator<<(std::ostream& out, EnumCapabilityCase e) {
+  out << "{" << spvOperandTypeStr(e.type) << " " << e.value << " "
+      << e.expected_capabilities << " }";
   return out;
 }
+
+using EnvEnumCapabilityCase = std::tuple<spv_target_env, EnumCapabilityCase>;
 
 // Test fixture for testing EnumCapabilityCases.
 using EnumCapabilityTest =
