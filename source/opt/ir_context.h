@@ -230,7 +230,7 @@ class IRContext {
   // Set the memory model for this module.
   inline void SetMemoryModel(std::unique_ptr<Instruction>&& m);
   // Get the memory model for this module.
-  inline Instruction* GetMemoryModel();
+  inline const Instruction* GetMemoryModel() const;
   // Appends an entry point instruction to this module.
   inline void AddEntryPoint(std::unique_ptr<Instruction>&& e);
   // Appends an execution mode instruction to this module.
@@ -1158,7 +1158,9 @@ void IRContext::SetMemoryModel(std::unique_ptr<Instruction>&& m) {
   module()->SetMemoryModel(std::move(m));
 }
 
-Instruction* IRContext::GetMemoryModel() { return module()->GetMemoryModel(); }
+const Instruction* IRContext::GetMemoryModel() const {
+  return module()->GetMemoryModel();
+}
 
 void IRContext::AddEntryPoint(std::unique_ptr<Instruction>&& e) {
   module()->AddEntryPoint(std::move(e));

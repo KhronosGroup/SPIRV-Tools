@@ -2638,11 +2638,15 @@ TEST_F(TrimCapabilitiesPassTest,
                OpCapability VulkanMemoryModelDeviceScope
 ; CHECK:       OpCapability VulkanMemoryModelDeviceScope
                OpCapability Shader
+               OpCapability ShaderClockKHR
+               OpCapability Int64
+               OpExtension "SPV_KHR_shader_clock"
                OpMemoryModel Logical Vulkan
                OpEntryPoint GLCompute %main "main"
                OpExecutionMode %main LocalSize 1 2 4
        %void = OpTypeVoid
        %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
      %uint_1 = OpConstant %uint 1
           %3 = OpTypeFunction %void
        %main = OpFunction %void None %3
