@@ -335,6 +335,12 @@ Options (in lexicographical order):)",
                These conditions are guaranteed to be met after running
                dead-branch elimination.)");
   printf(R"(
+  --modify-maximal-reconvergence=[add|remove]
+               Add or remove the MaximallyReconvergesKHR execution mode to all
+               entry points in the module.
+               Note: when adding the execution mode, no attempt is made to
+               determine if any ray tracing repack instructions are used.)");
+  printf(R"(
   --loop-unswitch
                Hoists loop-invariant conditionals out of loops by duplicating
                the loop on each branch of the conditional and adjusting each
