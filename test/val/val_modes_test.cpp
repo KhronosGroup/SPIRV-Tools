@@ -1377,8 +1377,10 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The Target Type operand must be a floating-point scalar type"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "The Target Type operand must be a floating-point scalar type"));
 }
 
 TEST_F(ValidateMode, FPFastMathDefaultNotAFloatType) {
@@ -1402,8 +1404,10 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The Target Type operand must be a floating-point scalar type"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "The Target Type operand must be a floating-point scalar type"));
 }
 
 TEST_F(ValidateMode, FPFastMathDefaultNotAFloatScalarType) {
@@ -1429,8 +1433,10 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The Target Type operand must be a floating-point scalar type"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "The Target Type operand must be a floating-point scalar type"));
 }
 
 TEST_F(ValidateMode, FPFastMathDefaultSpecConstant) {
