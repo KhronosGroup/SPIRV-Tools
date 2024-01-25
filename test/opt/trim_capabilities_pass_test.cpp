@@ -2584,6 +2584,82 @@ TEST_F(TrimCapabilitiesPassTest, UInt16_RemainsWhenUsed) {
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
+TEST_F(TrimCapabilitiesPassTest,
+       VulkanMemoryModelDeviceScope_RemovedWhenUnused) {
+  const std::string kTest = R"(
+               OpCapability VulkanMemoryModelDeviceScope
+; CHECK-NOT:   OpCapability VulkanMemoryModelDeviceScope
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       VulkanMemoryModelDeviceScope_RemovedWhenUsedWithGLSL450) {
+  const std::string kTest = R"(
+               OpCapability VulkanMemoryModelDeviceScope
+; CHECK-NOT:   OpCapability VulkanMemoryModelDeviceScope
+               OpCapability Shader
+               OpCapability ShaderClockKHR
+               OpCapability Int64
+               OpExtension "SPV_KHR_shader_clock"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 2 4
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+     %uint_1 = OpConstant %uint 1
+          %3 = OpTypeFunction %void
+       %main = OpFunction %void None %3
+          %6 = OpLabel
+         %22 = OpReadClockKHR %ulong %uint_1 ; Device Scope
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       VulkanMemoryModelDeviceScope_RemainsWhenUsedWithVulkan) {
+  const std::string kTest = R"(
+               OpCapability VulkanMemoryModelDeviceScope
+; CHECK:       OpCapability VulkanMemoryModelDeviceScope
+               OpCapability Shader
+               OpCapability ShaderClockKHR
+               OpCapability Int64
+               OpExtension "SPV_KHR_shader_clock"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 2 4
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+      %ulong = OpTypeInt 64 0
+     %uint_1 = OpConstant %uint 1
+          %3 = OpTypeFunction %void
+       %main = OpFunction %void None %3
+          %6 = OpLabel
+         %22 = OpReadClockKHR %ulong %uint_1 ; Device Scope
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
