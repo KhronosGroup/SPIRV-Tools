@@ -1324,7 +1324,8 @@ OpFunctionEnd
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_MISSING_EXTENSION, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("(6023) requires one of these extensions: SPV_KHR_maximal_reconvergence "));
+              HasSubstr("(6023) requires one of these extensions: "
+                        "SPV_KHR_maximal_reconvergence "));
 }
 
 }  // namespace
