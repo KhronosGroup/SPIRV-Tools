@@ -384,7 +384,8 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
             bool is_int32 = false;
             bool is_const = false;
             uint32_t value = 0;
-            std::tie(is_int32, is_const, value) = _.EvalInt32IfConst(operand_id);
+            std::tie(is_int32, is_const, value) =
+                _.EvalInt32IfConst(operand_id);
             if (is_int32 && is_const) {
               // Valid values include up to 0x00040000 (AllowTransform).
               uint32_t invalid_mask = 0xfff80000;
@@ -398,8 +399,9 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
                 return _.diag(SPV_ERROR_INVALID_ID, inst)
                        << "The Fast Math Default operand must not include Fast";
               }
-              const auto reassoc_contract = spv::FPFastMathModeMask::AllowContract |
-                                            spv::FPFastMathModeMask::AllowReassoc;
+              const auto reassoc_contract =
+                  spv::FPFastMathModeMask::AllowContract |
+                  spv::FPFastMathModeMask::AllowReassoc;
               if ((value & static_cast<uint32_t>(
                                spv::FPFastMathModeMask::AllowTransform)) != 0 &&
                   ((value & static_cast<uint32_t>(reassoc_contract)) !=
@@ -723,8 +725,9 @@ spv_result_t ValidateFloatControls2(ValidationState_t& _) {
 
   std::vector<std::pair<const Instruction*, spv::Decoration>> worklist;
   for (const auto& inst : _.ordered_instructions()) {
-    if (inst.opcode() != spv::Op::OpDecorate)
+    if (inst.opcode() != spv::Op::OpDecorate) {
       continue;
+    }
 
     const auto decoration = inst.GetOperandAs<spv::Decoration>(1);
     const auto target_id = inst.GetOperandAs<uint32_t>(0);
