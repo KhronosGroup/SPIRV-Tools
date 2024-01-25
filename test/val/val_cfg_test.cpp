@@ -4803,7 +4803,8 @@ TEST_F(ValidateCFG, BadSwitch) {
                         "via a structured exit"));
 }
 
-TEST_F(ValidateCFG, MaximalReconvergenceBranchConditionalSameTargetNotInCallTree) {
+TEST_F(ValidateCFG,
+       MaximalReconvergenceBranchConditionalSameTargetNotInCallTree) {
   const std::string text = R"(
 OpCapability Shader
 OpExtension "SPV_KHR_maximal_reconvergence"
