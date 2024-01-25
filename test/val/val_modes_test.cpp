@@ -1306,7 +1306,6 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
-<<<<<<< HEAD
 TEST_F(ValidateMode, MaximalReconvergenceRequiresExtension) {
   const std::string spirv = R"(
 OpCapability Shader
@@ -1873,7 +1872,6 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("FPFastMathMode Fast cannot be used by an entry point "
                         "with the FPFastMathDefault execution mode"));
->>>>>>> 6b56fb66 (SPV_KHR_float_controls2 validation)
 }
 
 }  // namespace
