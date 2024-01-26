@@ -180,7 +180,8 @@ TEST_P(GroupNonUniform, Vulkan1p1) {
   std::ostringstream sstr;
   sstr << "%result = " << opcode << " ";
   sstr << type << " ";
-  if (opcode != "OpGroupNonUniformQuadAllKHR" && opcode != "OpGroupNonUniformQuadAnyKHR") {
+  if (opcode != "OpGroupNonUniformQuadAllKHR" &&
+      opcode != "OpGroupNonUniformQuadAnyKHR") {
     sstr << ConvertScope(execution_scope) << " ";
   }
   sstr << args << "\n";
@@ -222,7 +223,8 @@ TEST_P(GroupNonUniform, Spirv1p3) {
   std::ostringstream sstr;
   sstr << "%result = " << opcode << " ";
   sstr << type << " ";
-  if (opcode != "OpGroupNonUniformQuadAllKHR" && opcode != "OpGroupNonUniformQuadAnyKHR") {
+  if (opcode != "OpGroupNonUniformQuadAllKHR" &&
+      opcode != "OpGroupNonUniformQuadAnyKHR") {
     sstr << ConvertScope(execution_scope) << " ";
   }
   sstr << args << "\n";
