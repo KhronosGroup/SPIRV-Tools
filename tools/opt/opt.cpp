@@ -525,6 +525,10 @@ Options (in lexicographical order):)",
                USR/SYS time are returned by getrusage() and can have a small
                error.)");
   printf(R"(
+  --trim-capabilities
+               Remove unnecessary capabilities and extensions declared within the
+               module.)");
+  printf(R"(
   --upgrade-memory-model
                Upgrades the Logical GLSL450 memory model to Logical VulkanKHR.
                Transforms memory, image, atomic and barrier operations to conform

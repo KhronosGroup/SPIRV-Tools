@@ -623,6 +623,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
              pass_args.c_str());
       return false;
     }
+  } else if (pass_name == "trim-capabilities") {
+    RegisterPass(CreateTrimCapabilitiesPass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
