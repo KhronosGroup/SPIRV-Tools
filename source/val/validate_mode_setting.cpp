@@ -564,8 +564,8 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
                                  model == spv::ExecutionModel::GLCompute);
                        })) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "Execution mode can only be used with the Fragment or GLCompute "
-                  "execution model.";
+               << "Execution mode can only be used with the Fragment or "
+                  "GLCompute execution model.";
       }
       break;
     case spv::ExecutionMode::PixelCenterInteger:

@@ -1876,6 +1876,7 @@ OpFunctionEnd
 
 TEST_F(ValidateMode, FragmentShaderRequireFullQuadsKHR) {
   const std::string spirv = R"(
+OpCapability Shader
 OpCapability GroupNonUniform
 OpCapability GroupNonUniformVote
 OpCapability GroupNonUniformBallot
@@ -1948,8 +1949,9 @@ OpReturn
 OpFunctionEnd
 )";
 
-  CompileSuccessfully(spirv);
-  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA,
+              ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -1958,6 +1960,7 @@ OpFunctionEnd
 
 TEST_F(ValidateMode, FragmentShaderQuadDerivativesKHR) {
   const std::string spirv = R"(
+OpCapability Shader
 OpCapability GroupNonUniform
 OpCapability GroupNonUniformVote
 OpCapability QuadControlKHR
@@ -2040,12 +2043,13 @@ OpReturn
 OpFunctionEnd
 )";
 
-  CompileSuccessfully(spirv);
-  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA,
+              ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(
-    getDiagnosticString(),
-    HasSubstr(
-       "Execution mode can only be used with the Fragment execution model"));
+      getDiagnosticString(),
+      HasSubstr(
+          "Execution mode can only be used with the Fragment execution model"));
 }
 
 }  // namespace

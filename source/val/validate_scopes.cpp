@@ -100,7 +100,7 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
       if ((spvOpcodeIsNonUniformGroupOperation(opcode) &&
            (opcode != spv::Op::OpGroupNonUniformQuadAllKHR) &&
            (opcode != spv::Op::OpGroupNonUniformQuadAnyKHR)) &&
-           (value != spv::Scope::Subgroup)) {
+          (value != spv::Scope::Subgroup)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << _.VkErrorID(4642) << spvOpcodeString(opcode)
                << ": in Vulkan environment Execution scope is limited to "

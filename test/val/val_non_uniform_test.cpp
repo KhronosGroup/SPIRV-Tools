@@ -47,6 +47,7 @@ OpCapability GroupNonUniformQuad
 OpCapability GroupNonUniformPartitionedNV
 OpCapability QuadControlKHR
 OpExtension "SPV_NV_shader_subgroup_partitioned"
+OpExtension "SPV_KHR_quad_control"
 )";
 
   ss << capabilities_and_extensions;
@@ -179,7 +180,9 @@ TEST_P(GroupNonUniform, Vulkan1p1) {
   std::ostringstream sstr;
   sstr << "%result = " << opcode << " ";
   sstr << type << " ";
-  sstr << ConvertScope(execution_scope) << " ";
+  if (opcode != "OpGroupNonUniformQuadAllKHR" && opcode != "OpGroupNonUniformQuadAnyKHR") {
+    sstr << ConvertScope(execution_scope) << " ";
+  }
   sstr << args << "\n";
 
   CompileSuccessfully(GenerateShaderCode(sstr.str()), SPV_ENV_VULKAN_1_1);
@@ -219,7 +222,9 @@ TEST_P(GroupNonUniform, Spirv1p3) {
   std::ostringstream sstr;
   sstr << "%result = " << opcode << " ";
   sstr << type << " ";
-  sstr << ConvertScope(execution_scope) << " ";
+  if (opcode != "OpGroupNonUniformQuadAllKHR" && opcode != "OpGroupNonUniformQuadAnyKHR") {
+    sstr << ConvertScope(execution_scope) << " ";
+  }
   sstr << args << "\n";
 
   CompileSuccessfully(GenerateShaderCode(sstr.str()), SPV_ENV_UNIVERSAL_1_3);
@@ -870,13 +875,17 @@ INSTANTIATE_TEST_SUITE_P(
             Values("ClusteredReduce match_res %u32_undef"),
             Values("ClusterSize must be a constant instruction")));
 
+// Subgroup scope is not actual parameter, but used for test expectations,
 INSTANTIATE_TEST_SUITE_P(GroupNonUniformQuadAllKHR, GroupNonUniform,
                          Combine(Values("OpGroupNonUniformQuadAllKHR"),
-                                 Values("%bool"), Values("%true"), Values("")));
+                                 Values("%bool"), Values(spv::Scope::Subgroup),
+                                 Values("%true"), Values("")));
 
+// Subgroup scope is not actual parameter, but used for test expectations,
 INSTANTIATE_TEST_SUITE_P(GroupNonUniformQuadAnyKHR, GroupNonUniform,
                          Combine(Values("OpGroupNonUniformQuadAnyKHR"),
-                                 Values("%bool"), Values("%true"), Values("")));
+                                 Values("%bool"), Values(spv::Scope::Subgroup),
+                                 Values("%true"), Values("")));
 
 TEST_F(ValidateGroupNonUniform, VulkanGroupNonUniformBallotBitCountOperation) {
   std::string test = R"(
