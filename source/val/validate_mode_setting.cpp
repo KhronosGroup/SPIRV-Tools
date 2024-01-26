@@ -557,6 +557,17 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
                   "model.";
       }
       break;
+    case spv::ExecutionMode::QuadDerivativesKHR:
+      if (!std::all_of(models->begin(), models->end(),
+                       [](const spv::ExecutionModel& model) {
+                         return (model == spv::ExecutionModel::Fragment ||
+                                 model == spv::ExecutionModel::GLCompute);
+                       })) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Execution mode can only be used with the Fragment or "
+                  "GLCompute execution model.";
+      }
+      break;
     case spv::ExecutionMode::PixelCenterInteger:
     case spv::ExecutionMode::OriginUpperLeft:
     case spv::ExecutionMode::OriginLowerLeft:
@@ -581,6 +592,7 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
     case spv::ExecutionMode::StencilRefUnchangedBackAMD:
     case spv::ExecutionMode::StencilRefGreaterBackAMD:
     case spv::ExecutionMode::StencilRefLessBackAMD:
+    case spv::ExecutionMode::RequireFullQuadsKHR:
       if (!std::all_of(models->begin(), models->end(),
                        [](const spv::ExecutionModel& model) {
                          return model == spv::ExecutionModel::Fragment;
