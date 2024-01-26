@@ -423,8 +423,12 @@ spv_result_t NonUniformPass(ValidationState_t& _, const Instruction* inst) {
 
   if (spvOpcodeIsNonUniformGroupOperation(opcode)) {
     const uint32_t execution_scope = inst->GetOperandAs<uint32_t>(2);
-    if (auto error = ValidateExecutionScope(_, inst, execution_scope)) {
-      return error;
+    // OpGroupNonUniformQuadAllKHR and OpGroupNonUniformQuadAnyKHR don't have scope paramter
+    if ((opcode != spv::Op::OpGroupNonUniformQuadAllKHR) && (opcode != spv::Op::OpGroupNonUniformQuadAnyKHR)) {
+      const uint32_t execution_scope = inst->word(3);
+      if (auto error = ValidateExecutionScope(_, inst, execution_scope)) {
+        return error;
+      }
     }
   }
 

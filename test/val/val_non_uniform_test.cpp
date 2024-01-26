@@ -45,6 +45,7 @@ OpCapability GroupNonUniformArithmetic
 OpCapability GroupNonUniformClustered
 OpCapability GroupNonUniformQuad
 OpCapability GroupNonUniformPartitionedNV
+OpCapability QuadControlKHR
 OpExtension "SPV_NV_shader_subgroup_partitioned"
 )";
 
@@ -868,6 +869,14 @@ INSTANTIATE_TEST_SUITE_P(
             Values("%bool"), Values(spv::Scope::Subgroup),
             Values("ClusteredReduce match_res %u32_undef"),
             Values("ClusterSize must be a constant instruction")));
+
+INSTANTIATE_TEST_SUITE_P(GroupNonUniformQuadAllKHR, GroupNonUniform,
+                         Combine(Values("OpGroupNonUniformQuadAllKHR"),
+                                 Values("%bool"), Values("%true"), Values("")));
+
+INSTANTIATE_TEST_SUITE_P(GroupNonUniformQuadAnyKHR, GroupNonUniform,
+                         Combine(Values("OpGroupNonUniformQuadAnyKHR"),
+                                 Values("%bool"), Values("%true"), Values("")));
 
 TEST_F(ValidateGroupNonUniform, VulkanGroupNonUniformBallotBitCountOperation) {
   std::string test = R"(
