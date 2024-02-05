@@ -44,6 +44,16 @@ bool IsMerge(IRContext* context, uint32_t id) {
       });
 }
 
+bool IsMaximalReconvergenceExtEnabled(IRContext* context) {
+  for (auto extension : context->extensions()) {
+    if (extension.GetOperand(0).AsString() == "SPV_KHR_maximal_reconvergence") {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // Returns true if |block| is the merge target of a merge instruction.
 bool IsMerge(IRContext* context, BasicBlock* block) {
   return IsMerge(context, block->id());
@@ -95,6 +105,16 @@ bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block) {
   bool succ_is_merge = IsMerge(context, lab_id);
   if (pred_is_merge && succ_is_merge) {
     // Cannot merge two merges together.
+    return false;
+  }
+
+  // Note: This means that the instructions in a break block will execute as if
+  // they were still diverged according to the loop iteration. This restricts
+  // potential transformations an implementation may perform on the IR to match
+  // shader author expectations. Similarly, instructions in the loop construct
+  // cannot be moved into the continue construct unless it can be proven that
+  // invocations are always converged.
+  if (succ_is_merge && IsMaximalReconvergenceExtEnabled(context)) {
     return false;
   }
 
