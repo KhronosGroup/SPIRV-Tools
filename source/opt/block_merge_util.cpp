@@ -44,16 +44,6 @@ bool IsMerge(IRContext* context, uint32_t id) {
       });
 }
 
-bool IsMaximalReconvergenceExtEnabled(IRContext* context) {
-  for (auto extension : context->extensions()) {
-    if (extension.GetOperand(0).AsString() == "SPV_KHR_maximal_reconvergence") {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 // Returns true if |block| is the merge target of a merge instruction.
 bool IsMerge(IRContext* context, BasicBlock* block) {
   return IsMerge(context, block->id());
