@@ -16,7 +16,6 @@
 #include <limits>
 #include <memory>
 #include <string>
-#include <unordered_set>
 #include <vector>
 
 #include "effcee/effcee.h"
@@ -127,7 +126,7 @@ template <class ElementType, class Function>
 void CheckForExpectedScalarConstant(Instruction* inst,
                                     ElementType expected_result,
                                     Function GetValue) {
-  if (inst == nullptr) return;
+  ASSERT_TRUE(inst);
 
   IRContext* context = inst->context();
   analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
@@ -158,9 +157,7 @@ template <class ElementType, class Function>
 void CheckForExpectedVectorConstant(Instruction* inst,
                                     std::vector<ElementType> expected_result,
                                     Function GetValue) {
-  if (inst == nullptr) {
-    return;
-  }
+  ASSERT_TRUE(inst);
 
   IRContext* context = inst->context();
   EXPECT_EQ(inst->opcode(), spv::Op::OpCopyObject);
@@ -1060,24 +1057,6 @@ INSTANTIATE_TEST_SUITE_P(TestCase, UIntVectorInstructionFoldingTest,
           "OpReturn\n" +
           "OpFunctionEnd",
       2, {0,3}),
-    InstructionFoldingCase<std::vector<uint32_t>>(
-      Header() + "%main = OpFunction %void None %void_func\n" +
-          "%main_lab = OpLabel\n" +
-          "%n = OpVariable %_ptr_int Function\n" +
-          "%load = OpLoad %int %n\n" +
-          "%2 = OpVectorShuffle %v2int %v2int_null %v2int_2_3 4294967295 3\n" +
-          "OpReturn\n" +
-          "OpFunctionEnd",
-      2, {0,0}),
-    InstructionFoldingCase<std::vector<uint32_t>>(
-      Header() + "%main = OpFunction %void None %void_func\n" +
-          "%main_lab = OpLabel\n" +
-          "%n = OpVariable %_ptr_int Function\n" +
-          "%load = OpLoad %int %n\n" +
-          "%2 = OpVectorShuffle %v2int %v2int_null %v2int_2_3 0 4294967295 \n" +
-          "OpReturn\n" +
-          "OpFunctionEnd",
-      2, {0,0}),
     // Test case 4: fold bit-cast int -24 to unsigned int
     InstructionFoldingCase<std::vector<uint32_t>>(
       Header() + "%main = OpFunction %void None %void_func\n" +
@@ -4729,7 +4708,31 @@ INSTANTIATE_TEST_SUITE_P(IntegerRedundantFoldingTest, GeneralInstructionFoldingT
             "%2 = OpIAdd %v2int %v2int_0_0 %3\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, 3)
+        2, 3),
+    // Test case 8: Don't fold because of undefined value. Using 4294967295
+    // means that entry is undefined. We do not expect it to ever happen, so
+    // not worth folding.
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_int Function\n" +
+            "%load = OpLoad %int %n\n" +
+            "%2 = OpVectorShuffle %v2int %v2int_null %v2int_2_3 4294967295 3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0),
+    // Test case 9: Don't fold because of undefined value. Using 4294967295
+    // means that entry is undefined. We do not expect it to ever happen, so
+    // not worth folding.
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_int Function\n" +
+            "%load = OpLoad %int %n\n" +
+            "%2 = OpVectorShuffle %v2int %v2int_null %v2int_2_3 0 4294967295 \n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0)
 ));
 
 INSTANTIATE_TEST_SUITE_P(ClampAndCmpLHS, GeneralInstructionFoldingTest,
