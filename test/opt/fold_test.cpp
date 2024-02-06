@@ -144,12 +144,12 @@ void CheckForExpectedScalarConstant(Instruction* inst,
   ASSERT_TRUE(result);
 
   // Check if the result matches the expected value.
-  // If ExpectedType is not a float type, it should cast the value to a float
+  // If ExpectedType is not a float type, it should cast the value to a double
   // and never get a nan.
   if (!std::isnan(static_cast<double>(expected_result))) {
     EXPECT_EQ(expected_result, GetValue(result));
   } else {
-    EXPECT_TRUE(std::isnan(GetValue(result)));
+    EXPECT_TRUE(std::isnan(static_cast<double>(GetValue(result))));
   }
 }
 
