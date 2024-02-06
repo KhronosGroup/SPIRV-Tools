@@ -147,7 +147,7 @@ void CheckForExpectedScalarConstant(Instruction* inst,
   // Check if the result matches the expected value.
   // If ExpectedType is not a float type, it should cast the value to a float
   // and never get a nan.
-  if (!std::isnan(expected_result)) {
+  if (!std::isnan(static_cast<double>(expected_result))) {
     EXPECT_EQ(expected_result, GetValue(result));
   } else {
     EXPECT_TRUE(std::isnan(GetValue(result)));
@@ -8256,9 +8256,9 @@ TEST_P(EntryPointFoldingTest, Case) {
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
-  // Find the instruction to test.
+  // Find the first entry point. That is the instruction we want to fold.
   Instruction* inst = nullptr;
-  ASSERT_GT(context->module()->entry_points().size(), 0);
+  ASSERT_FALSE(context->module()->entry_points().empty());
   inst = &*context->module()->entry_points().begin();
   assert(inst && "Invalid test.  Could not find entry point instruction to fold.");
   std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
