@@ -16,7 +16,6 @@
 #include <limits>
 #include <memory>
 #include <string>
-#include <unordered_set>
 #include <vector>
 
 #include "effcee/effcee.h"
@@ -67,42 +66,132 @@ struct InstructionFoldingCase {
   ResultType expected_result;
 };
 
+std::tuple<std::unique_ptr<IRContext>, Instruction*> GetInstructionToFold(
+    const std::string test_body, const uint32_t id_to_fold,
+    spv_target_env spv_env) {
+  // Build module.
+  std::unique_ptr<IRContext> context =
+      BuildModule(spv_env, nullptr, test_body,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  EXPECT_NE(nullptr, context);
+  if (context == nullptr) {
+    return {nullptr, nullptr};
+  }
+
+  // Fold the instruction to test.
+  if (id_to_fold != 0) {
+    analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+    Instruction* inst = def_use_mgr->GetDef(id_to_fold);
+    return {std::move(context), inst};
+  }
+
+  // If there is not ID, we get the instruction just before a terminator
+  // instruction. That could be a return or abort. This is used for cases where
+  // the instruction we want to fold does not have a result id.
+  Function* func = &*context->module()->begin();
+  for (auto& bb : *func) {
+    Instruction* terminator = bb.terminator();
+    if (terminator->IsReturnOrAbort()) {
+      return {std::move(context), terminator->PreviousNode()};
+    }
+  }
+  return {nullptr, nullptr};
+}
+
+std::tuple<std::unique_ptr<IRContext>, Instruction*> FoldInstruction(
+    const std::string test_body, const uint32_t id_to_fold,
+    spv_target_env spv_env) {
+  // Build module.
+  std::unique_ptr<IRContext> context;
+  Instruction* inst = nullptr;
+  std::tie(context, inst) =
+      GetInstructionToFold(test_body, id_to_fold, spv_env);
+
+  std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
+  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
+  EXPECT_EQ(inst->result_id(), original_inst->result_id());
+  EXPECT_EQ(inst->type_id(), original_inst->type_id());
+
+  if (!succeeded && inst != nullptr) {
+    EXPECT_EQ(inst->NumInOperands(), original_inst->NumInOperands());
+    for (uint32_t i = 0; i < inst->NumInOperands(); ++i) {
+      EXPECT_EQ(inst->GetOperand(i), original_inst->GetOperand(i));
+    }
+  }
+
+  return {std::move(context), succeeded ? inst : nullptr};
+}
+
+template <class ElementType, class Function>
+void CheckForExpectedScalarConstant(Instruction* inst,
+                                    ElementType expected_result,
+                                    Function GetValue) {
+  ASSERT_TRUE(inst);
+
+  IRContext* context = inst->context();
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  while (inst->opcode() == spv::Op::OpCopyObject) {
+    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
+  }
+
+  // Make sure we have a constant.
+  analysis::ConstantManager* const_mrg = context->get_constant_mgr();
+  const analysis::Constant* constant = const_mrg->GetConstantFromInst(inst);
+  ASSERT_TRUE(constant);
+
+  // Make sure the constant is a scalar.
+  const analysis::ScalarConstant* result = constant->AsScalarConstant();
+  ASSERT_TRUE(result);
+
+  // Check if the result matches the expected value.
+  // If ExpectedType is not a float type, it should cast the value to a double
+  // and never get a nan.
+  if (!std::isnan(static_cast<double>(expected_result))) {
+    EXPECT_EQ(expected_result, GetValue(result));
+  } else {
+    EXPECT_TRUE(std::isnan(static_cast<double>(GetValue(result))));
+  }
+}
+
+template <class ElementType, class Function>
+void CheckForExpectedVectorConstant(Instruction* inst,
+                                    std::vector<ElementType> expected_result,
+                                    Function GetValue) {
+  ASSERT_TRUE(inst);
+
+  IRContext* context = inst->context();
+  EXPECT_EQ(inst->opcode(), spv::Op::OpCopyObject);
+  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+  inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
+  std::vector<spv::Op> opcodes = {spv::Op::OpConstantComposite};
+  EXPECT_THAT(opcodes, Contains(inst->opcode()));
+  analysis::ConstantManager* const_mrg = context->get_constant_mgr();
+  const analysis::Constant* result = const_mrg->GetConstantFromInst(inst);
+  EXPECT_NE(result, nullptr);
+  if (result != nullptr) {
+    const std::vector<const analysis::Constant*>& componenets =
+        result->AsVectorConstant()->GetComponents();
+    EXPECT_EQ(componenets.size(), expected_result.size());
+    for (size_t i = 0; i < componenets.size(); i++) {
+      EXPECT_EQ(expected_result[i], GetValue(componenets[i]));
+    }
+  }
+}
+
 using IntegerInstructionFoldingTest =
     ::testing::TestWithParam<InstructionFoldingCase<uint32_t>>;
 
 TEST_P(IntegerInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
-
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-
-  // Make sure the instruction folded as expected.
-  EXPECT_TRUE(succeeded);
-  if (inst != nullptr) {
-    EXPECT_EQ(inst->opcode(), spv::Op::OpCopyObject);
-    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
-    EXPECT_EQ(inst->opcode(), spv::Op::OpConstant);
-    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const analysis::Constant* constant = const_mrg->GetConstantFromInst(inst);
-    // We expect to see either integer types or 16-bit float types here.
-    EXPECT_TRUE((constant->AsIntConstant() != nullptr) ||
-                ((constant->AsFloatConstant() != nullptr) &&
-                 (constant->type()->AsFloat()->width() == 16)));
-    const analysis::ScalarConstant* result =
-        const_mrg->GetConstantFromInst(inst)->AsScalarConstant();
-    EXPECT_NE(result, nullptr);
-    if (result != nullptr) {
-      EXPECT_EQ(result->GetU32BitValue(), tc.expected_result);
-    }
-  }
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) =
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+  CheckForExpectedScalarConstant(
+      inst, tc.expected_result, [](const analysis::Constant* c) {
+        return c->AsScalarConstant()->GetU32BitValue();
+      });
 }
 
 // Returns a common SPIR-V header for all of the test that follow.
@@ -937,37 +1026,13 @@ using UIntVectorInstructionFoldingTest =
 TEST_P(UIntVectorInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
-
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  spv::Op original_opcode = inst->opcode();
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-
-  // Make sure the instruction folded as expected.
-  EXPECT_EQ(succeeded, inst == nullptr || inst->opcode() != original_opcode);
-  if (succeeded && inst != nullptr) {
-    EXPECT_EQ(inst->opcode(), spv::Op::OpCopyObject);
-    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
-    std::vector<spv::Op> opcodes = {spv::Op::OpConstantComposite};
-    EXPECT_THAT(opcodes, Contains(inst->opcode()));
-    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const analysis::Constant* result = const_mrg->GetConstantFromInst(inst);
-    EXPECT_NE(result, nullptr);
-    if (result != nullptr) {
-      const std::vector<const analysis::Constant*>& componenets =
-          result->AsVectorConstant()->GetComponents();
-      EXPECT_EQ(componenets.size(), tc.expected_result.size());
-      for (size_t i = 0; i < componenets.size(); i++) {
-        EXPECT_EQ(tc.expected_result[i], componenets[i]->GetU32());
-      }
-    }
-  }
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) =
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+  CheckForExpectedVectorConstant(
+      inst, tc.expected_result,
+      [](const analysis::Constant* c) { return c->GetU32(); });
 }
 
 // clang-format off
@@ -992,24 +1057,6 @@ INSTANTIATE_TEST_SUITE_P(TestCase, UIntVectorInstructionFoldingTest,
           "OpReturn\n" +
           "OpFunctionEnd",
       2, {0,3}),
-    InstructionFoldingCase<std::vector<uint32_t>>(
-      Header() + "%main = OpFunction %void None %void_func\n" +
-          "%main_lab = OpLabel\n" +
-          "%n = OpVariable %_ptr_int Function\n" +
-          "%load = OpLoad %int %n\n" +
-          "%2 = OpVectorShuffle %v2int %v2int_null %v2int_2_3 4294967295 3\n" +
-          "OpReturn\n" +
-          "OpFunctionEnd",
-      2, {0,0}),
-    InstructionFoldingCase<std::vector<uint32_t>>(
-      Header() + "%main = OpFunction %void None %void_func\n" +
-          "%main_lab = OpLabel\n" +
-          "%n = OpVariable %_ptr_int Function\n" +
-          "%load = OpLoad %int %n\n" +
-          "%2 = OpVectorShuffle %v2int %v2int_null %v2int_2_3 0 4294967295 \n" +
-          "OpReturn\n" +
-          "OpFunctionEnd",
-      2, {0,0}),
     // Test case 4: fold bit-cast int -24 to unsigned int
     InstructionFoldingCase<std::vector<uint32_t>>(
       Header() + "%main = OpFunction %void None %void_func\n" +
@@ -1047,36 +1094,14 @@ using IntVectorInstructionFoldingTest =
 TEST_P(IntVectorInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) =
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
 
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-
-  // Make sure the instruction folded as expected.
-  EXPECT_TRUE(succeeded);
-  if (succeeded && inst != nullptr) {
-    EXPECT_EQ(inst->opcode(), spv::Op::OpCopyObject);
-    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
-    std::vector<spv::Op> opcodes = {spv::Op::OpConstantComposite};
-    EXPECT_THAT(opcodes, Contains(inst->opcode()));
-    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const analysis::Constant* result = const_mrg->GetConstantFromInst(inst);
-    EXPECT_NE(result, nullptr);
-    if (result != nullptr) {
-      const std::vector<const analysis::Constant*>& componenets =
-          result->AsVectorConstant()->GetComponents();
-      EXPECT_EQ(componenets.size(), tc.expected_result.size());
-      for (size_t i = 0; i < componenets.size(); i++) {
-        EXPECT_EQ(tc.expected_result[i], componenets[i]->GetS32());
-      }
-    }
-  }
+  CheckForExpectedVectorConstant(
+      inst, tc.expected_result,
+      [](const analysis::Constant* c) { return c->GetS32(); });
 }
 
 // clang-format off
@@ -1123,36 +1148,13 @@ using DoubleVectorInstructionFoldingTest =
 TEST_P(DoubleVectorInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
-
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-
-  // Make sure the instruction folded as expected.
-  EXPECT_TRUE(succeeded);
-  if (succeeded && inst != nullptr) {
-    EXPECT_EQ(inst->opcode(), spv::Op::OpCopyObject);
-    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
-    std::vector<spv::Op> opcodes = {spv::Op::OpConstantComposite};
-    EXPECT_THAT(opcodes, Contains(inst->opcode()));
-    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const analysis::Constant* result = const_mrg->GetConstantFromInst(inst);
-    EXPECT_NE(result, nullptr);
-    if (result != nullptr) {
-      const std::vector<const analysis::Constant*>& componenets =
-          result->AsVectorConstant()->GetComponents();
-      EXPECT_EQ(componenets.size(), tc.expected_result.size());
-      for (size_t i = 0; i < componenets.size(); i++) {
-        EXPECT_EQ(tc.expected_result[i], componenets[i]->GetDouble());
-      }
-    }
-  }
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) =
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+  CheckForExpectedVectorConstant(
+      inst, tc.expected_result,
+      [](const analysis::Constant* c) { return c->GetDouble(); });
 }
 
 // clang-format off
@@ -1247,37 +1249,10 @@ using FloatVectorInstructionFoldingTest =
 TEST_P(FloatVectorInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
-
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  spv::Op original_opcode = inst->opcode();
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-
-  // Make sure the instruction folded as expected.
-  EXPECT_EQ(succeeded, inst == nullptr || inst->opcode() != original_opcode);
-  if (succeeded && inst != nullptr) {
-    EXPECT_EQ(inst->opcode(), spv::Op::OpCopyObject);
-    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
-    std::vector<spv::Op> opcodes = {spv::Op::OpConstantComposite};
-    EXPECT_THAT(opcodes, Contains(inst->opcode()));
-    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const analysis::Constant* result = const_mrg->GetConstantFromInst(inst);
-    EXPECT_NE(result, nullptr);
-    if (result != nullptr) {
-      const std::vector<const analysis::Constant*>& componenets =
-          result->AsVectorConstant()->GetComponents();
-      EXPECT_EQ(componenets.size(), tc.expected_result.size());
-      for (size_t i = 0; i < componenets.size(); i++) {
-        EXPECT_EQ(tc.expected_result[i], componenets[i]->GetFloat());
-      }
-    }
-  }
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) = FoldInstruction(tc.test_body, tc.id_to_fold,SPV_ENV_UNIVERSAL_1_1);
+  CheckForExpectedVectorConstant(inst, tc.expected_result, [](const analysis::Constant* c){ return c->GetFloat();});
 }
 
 // clang-format off
@@ -1389,22 +1364,14 @@ using FloatMatrixInstructionFoldingTest = ::testing::TestWithParam<
 TEST_P(FloatMatrixInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) =
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
 
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-
-  // Make sure the instruction folded as expected.
-  EXPECT_TRUE(succeeded);
   EXPECT_EQ(inst->opcode(), spv::Op::OpCopyObject);
-
   if (inst->opcode() == spv::Op::OpCopyObject) {
+    analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
     inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Constant* result = const_mgr->GetConstantFromInst(inst);
@@ -1466,33 +1433,13 @@ using BooleanInstructionFoldingTest =
 TEST_P(BooleanInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
-
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-
-  // Make sure the instruction folded as expected.
-  EXPECT_TRUE(succeeded);
-  if (inst != nullptr) {
-    EXPECT_EQ(inst->opcode(), spv::Op::OpCopyObject);
-    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
-    std::vector<spv::Op> bool_opcodes = {spv::Op::OpConstantTrue,
-                                         spv::Op::OpConstantFalse};
-    EXPECT_THAT(bool_opcodes, Contains(inst->opcode()));
-    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const analysis::BoolConstant* result =
-        const_mrg->GetConstantFromInst(inst)->AsBoolConstant();
-    EXPECT_NE(result, nullptr);
-    if (result != nullptr) {
-      EXPECT_EQ(result->value(), tc.expected_result);
-    }
-  }
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) =
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+  CheckForExpectedScalarConstant(
+      inst, tc.expected_result,
+      [](const analysis::Constant* c) { return c->AsBoolConstant()->value(); });
 }
 
 // clang-format off
@@ -2078,35 +2025,15 @@ using FloatInstructionFoldingTest =
 TEST_P(FloatInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) =
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
 
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-
-  // Make sure the instruction folded as expected.
-  EXPECT_TRUE(succeeded);
-  if (inst != nullptr) {
-    EXPECT_EQ(inst->opcode(), spv::Op::OpCopyObject);
-    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
-    EXPECT_EQ(inst->opcode(), spv::Op::OpConstant);
-    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const analysis::FloatConstant* result =
-        const_mrg->GetConstantFromInst(inst)->AsFloatConstant();
-    EXPECT_NE(result, nullptr);
-    if (result != nullptr) {
-      if (!std::isnan(tc.expected_result)) {
-        EXPECT_EQ(result->GetFloatValue(), tc.expected_result);
-      } else {
-        EXPECT_TRUE(std::isnan(result->GetFloatValue()));
-      }
-    }
-  }
+  CheckForExpectedScalarConstant(inst, tc.expected_result,
+                                 [](const analysis::Constant* c) {
+                                   return c->AsFloatConstant()->GetFloatValue();
+                                 });
 }
 
 // Not testing NaNs because there are no expectations concerning NaNs according
@@ -2511,35 +2438,14 @@ using DoubleInstructionFoldingTest =
 TEST_P(DoubleInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
-
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-
-  // Make sure the instruction folded as expected.
-  EXPECT_TRUE(succeeded);
-  if (inst != nullptr) {
-    EXPECT_EQ(inst->opcode(), spv::Op::OpCopyObject);
-    inst = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
-    EXPECT_EQ(inst->opcode(), spv::Op::OpConstant);
-    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const analysis::FloatConstant* result =
-        const_mrg->GetConstantFromInst(inst)->AsFloatConstant();
-    EXPECT_NE(result, nullptr);
-    if (result != nullptr) {
-      if (!std::isnan(tc.expected_result)) {
-        EXPECT_EQ(result->GetDoubleValue(), tc.expected_result);
-      } else {
-        EXPECT_TRUE(std::isnan(result->GetDoubleValue()));
-      }
-    }
-  }
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) =
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+  CheckForExpectedScalarConstant(
+      inst, tc.expected_result, [](const analysis::Constant* c) {
+        return c->AsFloatConstant()->GetDoubleValue();
+      });
 }
 
 // clang-format off
@@ -3397,32 +3303,22 @@ using IntegerInstructionFoldingTestWithMap =
 TEST_P(IntegerInstructionFoldingTestWithMap, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) =
+      GetInstructionToFold(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_5);
 
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
   inst = context->get_instruction_folder().FoldInstructionToConstant(inst,
                                                                      tc.id_map);
-
-  // Make sure the instruction folded as expected.
   EXPECT_NE(inst, nullptr);
-  if (inst != nullptr) {
-    EXPECT_EQ(inst->opcode(), spv::Op::OpConstant);
-    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const analysis::IntConstant* result =
-        const_mrg->GetConstantFromInst(inst)->AsIntConstant();
-    EXPECT_NE(result, nullptr);
-    if (result != nullptr) {
-      EXPECT_EQ(result->GetU32BitValue(), tc.expected_result);
-    }
-  }
+
+  CheckForExpectedScalarConstant(inst, tc.expected_result,
+                                 [](const analysis::Constant* c) {
+                                   return c->AsIntConstant()->GetU32BitValue();
+                                 });
 }
 // clang-format off
+
 INSTANTIATE_TEST_SUITE_P(TestCase, IntegerInstructionFoldingTestWithMap,
   ::testing::Values(
       // Test case 0: fold %3 = 0; %3 * n
@@ -3445,32 +3341,16 @@ using BooleanInstructionFoldingTestWithMap =
 TEST_P(BooleanInstructionFoldingTestWithMap, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
-
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) =
+      GetInstructionToFold(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_5);
   inst = context->get_instruction_folder().FoldInstructionToConstant(inst,
                                                                      tc.id_map);
-
-  // Make sure the instruction folded as expected.
-  EXPECT_NE(inst, nullptr);
-  if (inst != nullptr) {
-    std::vector<spv::Op> bool_opcodes = {spv::Op::OpConstantTrue,
-                                         spv::Op::OpConstantFalse};
-    EXPECT_THAT(bool_opcodes, Contains(inst->opcode()));
-    analysis::ConstantManager* const_mrg = context->get_constant_mgr();
-    const analysis::BoolConstant* result =
-        const_mrg->GetConstantFromInst(inst)->AsBoolConstant();
-    EXPECT_NE(result, nullptr);
-    if (result != nullptr) {
-      EXPECT_EQ(result->value(), tc.expected_result);
-    }
-  }
+  ASSERT_NE(inst, nullptr);
+  CheckForExpectedScalarConstant(
+      inst, tc.expected_result,
+      [](const analysis::Constant* c) { return c->AsBoolConstant()->value(); });
 }
 
 // clang-format off
@@ -3496,30 +3376,15 @@ using GeneralInstructionFoldingTest =
 TEST_P(GeneralInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) =
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
 
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-
-  // Make sure the instruction folded as expected.
-  EXPECT_EQ(inst->result_id(), original_inst->result_id());
-  EXPECT_EQ(inst->type_id(), original_inst->type_id());
-  EXPECT_TRUE((!succeeded) == (tc.expected_result == 0));
-  if (succeeded) {
+  EXPECT_TRUE((inst == nullptr) == (tc.expected_result == 0));
+  if (inst != nullptr) {
     EXPECT_EQ(inst->opcode(), spv::Op::OpCopyObject);
     EXPECT_EQ(inst->GetSingleWordInOperand(0), tc.expected_result);
-  } else {
-    EXPECT_EQ(inst->NumInOperands(), original_inst->NumInOperands());
-    for (uint32_t i = 0; i < inst->NumInOperands(); ++i) {
-      EXPECT_EQ(inst->GetOperand(i), original_inst->GetOperand(i));
-    }
   }
 }
 
@@ -4843,7 +4708,31 @@ INSTANTIATE_TEST_SUITE_P(IntegerRedundantFoldingTest, GeneralInstructionFoldingT
             "%2 = OpIAdd %v2int %v2int_0_0 %3\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, 3)
+        2, 3),
+    // Test case 8: Don't fold because of undefined value. Using 4294967295
+    // means that entry is undefined. We do not expect it to ever happen, so
+    // not worth folding.
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_int Function\n" +
+            "%load = OpLoad %int %n\n" +
+            "%2 = OpVectorShuffle %v2int %v2int_null %v2int_2_3 4294967295 3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0),
+    // Test case 9: Don't fold because of undefined value. Using 4294967295
+    // means that entry is undefined. We do not expect it to ever happen, so
+    // not worth folding.
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_int Function\n" +
+            "%load = OpLoad %int %n\n" +
+            "%2 = OpVectorShuffle %v2int %v2int_null %v2int_2_3 0 4294967295 \n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0)
 ));
 
 INSTANTIATE_TEST_SUITE_P(ClampAndCmpLHS, GeneralInstructionFoldingTest,
@@ -5165,30 +5054,15 @@ using ToNegateFoldingTest =
 TEST_P(ToNegateFoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) =
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
 
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-
-  // Make sure the instruction folded as expected.
-  EXPECT_EQ(inst->result_id(), original_inst->result_id());
-  EXPECT_EQ(inst->type_id(), original_inst->type_id());
-  EXPECT_TRUE((!succeeded) == (tc.expected_result == 0));
-  if (succeeded) {
+  EXPECT_TRUE((inst == nullptr) == (tc.expected_result == 0));
+  if (inst != nullptr) {
     EXPECT_EQ(inst->opcode(), spv::Op::OpFNegate);
     EXPECT_EQ(inst->GetSingleWordInOperand(0), tc.expected_result);
-  } else {
-    EXPECT_EQ(inst->NumInOperands(), original_inst->NumInOperands());
-    for (uint32_t i = 0; i < inst->NumInOperands(); ++i) {
-      EXPECT_EQ(inst->GetOperand(i), original_inst->GetOperand(i));
-    }
   }
 }
 
@@ -5287,19 +5161,12 @@ using MatchingInstructionFoldingTest =
 TEST_P(MatchingInstructionFoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) = FoldInstruction(tc.test_body, tc.id_to_fold,SPV_ENV_UNIVERSAL_1_1);
 
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-  EXPECT_EQ(succeeded, tc.expected_result);
-  if (succeeded) {
+  EXPECT_EQ(inst != nullptr, tc.expected_result);
+  if (inst != nullptr) {
     Match(tc.test_body, context.get());
   }
 }
@@ -8046,27 +7913,13 @@ using MatchingInstructionWithNoResultFoldingTest =
 TEST_P(MatchingInstructionWithNoResultFoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) = FoldInstruction(tc.test_body, tc.id_to_fold,SPV_ENV_UNIVERSAL_1_1);
 
-  // Fold the instruction to test.
-  Instruction* inst = nullptr;
-  Function* func = &*context->module()->begin();
-  for (auto& bb : *func) {
-    Instruction* terminator = bb.terminator();
-    if (terminator->IsReturnOrAbort()) {
-      inst = terminator->PreviousNode();
-      break;
-    }
-  }
-  assert(inst && "Invalid test.  Could not find instruction to fold.");
-  std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-  EXPECT_EQ(succeeded, tc.expected_result);
-  if (succeeded) {
+  // Find the instruction to test.
+  EXPECT_EQ(inst != nullptr, tc.expected_result);
+  if (inst != nullptr) {
     Match(tc.test_body, context.get());
   }
 }
@@ -8406,8 +8259,9 @@ TEST_P(EntryPointFoldingTest, Case) {
                   SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
   ASSERT_NE(nullptr, context);
 
-  // Fold the instruction to test.
+  // Find the first entry point. That is the instruction we want to fold.
   Instruction* inst = nullptr;
+  ASSERT_FALSE(context->module()->entry_points().empty());
   inst = &*context->module()->entry_points().begin();
   assert(inst && "Invalid test.  Could not find entry point instruction to fold.");
   std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
@@ -8500,19 +8354,12 @@ using SPV14FoldingTest =
 TEST_P(SPV14FoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_4, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) = FoldInstruction(tc.test_body, tc.id_to_fold,SPV_ENV_UNIVERSAL_1_4);
 
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-  EXPECT_EQ(succeeded, tc.expected_result);
-  if (succeeded) {
+  EXPECT_EQ(inst != nullptr, tc.expected_result);
+  if (inst !=  nullptr) {
     Match(tc.test_body, context.get());
   }
 }
@@ -8613,19 +8460,12 @@ using FloatControlsFoldingTest =
 TEST_P(FloatControlsFoldingTest, Case) {
   const auto& tc = GetParam();
 
-  // Build module.
-  std::unique_ptr<IRContext> context =
-      BuildModule(SPV_ENV_UNIVERSAL_1_4, nullptr, tc.test_body,
-                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
-  ASSERT_NE(nullptr, context);
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) = FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_4);
 
-  // Fold the instruction to test.
-  analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
-  Instruction* inst = def_use_mgr->GetDef(tc.id_to_fold);
-  std::unique_ptr<Instruction> original_inst(inst->Clone(context.get()));
-  bool succeeded = context->get_instruction_folder().FoldInstruction(inst);
-  EXPECT_EQ(succeeded, tc.expected_result);
-  if (succeeded) {
+  EXPECT_EQ(inst != nullptr, tc.expected_result);
+  if (inst != nullptr) {
     Match(tc.test_body, context.get());
   }
 }
