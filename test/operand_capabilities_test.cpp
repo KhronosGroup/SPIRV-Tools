@@ -340,37 +340,37 @@ INSTANTIATE_TEST_SUITE_P(
 // See SPIR-V Section 3.12 Image Channel Order
 INSTANTIATE_TEST_SUITE_P(
     ImageChannelOrder, EnumCapabilityTest,
-    Combine(
-        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
-        ValuesIn(std::vector<EnumCapabilityCase>{
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::R),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::A),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::RG),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::RA),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::RGB),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::RGBA),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::BGRA),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::ARGB),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::Intensity),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::Luminance),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::Rx),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::RGx),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::RGBx),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::Depth),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::DepthStencil),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::sRGB),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::sRGBx),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::sRGBA),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::sBGRA),
-            CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::ABGR),
-        })));
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
+            ValuesIn(std::vector<EnumCapabilityCase>{
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::R),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::A),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::RG),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::RA),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::RGB),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::RGBA),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::BGRA),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::ARGB),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::Intensity),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::Luminance),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::Rx),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::RGx),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::RGBx),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::Depth),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::DepthStencil),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::sRGB),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::sRGBx),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::sRGBA),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::sBGRA),
+                CASE0(IMAGE_CHANNEL_ORDER, ImageChannelOrder::ABGR),
+            })));
 
 // See SPIR-V Section 3.13 Image Channel Data Type
 INSTANTIATE_TEST_SUITE_P(
     ImageChannelDataType, EnumCapabilityTest,
-    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
-            ValuesIn(std::vector<EnumCapabilityCase>{
-                // clang-format off
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1),
+        ValuesIn(std::vector<EnumCapabilityCase>{
+            // clang-format off
                 CASE0(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataType::SnormInt8),
                 CASE0(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataType::SnormInt16),
                 CASE0(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataType::UnormInt8),
@@ -388,8 +388,8 @@ INSTANTIATE_TEST_SUITE_P(
                 CASE0(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataType::Float),
                 CASE0(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataType::UnormInt24),
                 CASE0(IMAGE_CHANNEL_DATA_TYPE, ImageChannelDataType::UnormInt101010_2),
-                // clang-format on
-            })));
+            // clang-format on
+        })));
 
 // See SPIR-V Section 3.14 Image Operands
 INSTANTIATE_TEST_SUITE_P(
