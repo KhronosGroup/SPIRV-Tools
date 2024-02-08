@@ -310,6 +310,8 @@ OpName %main "main"
 %long_n3689348814741910323 = OpConstant %long -3689348814741910323
 %long_min = OpConstant %long -9223372036854775808
 %long_max = OpConstant %long 9223372036854775807
+%ulong_7 = OpConstant %ulong 7
+%ulong_4611686018427387904 = OpConstant %ulong 4611686018427387904
 %uint_0 = OpConstant %uint 0
 %uint_1 = OpConstant %uint 1
 %uint_2 = OpConstant %uint 2
@@ -1156,7 +1158,7 @@ INSTANTIATE_TEST_SUITE_P(
                 "%main_lab = OpLabel\n" +
                 "%n = OpVariable %_ptr_int Function\n" +
                 "%load = OpLoad %int %n\n" +
-                "%2 = OpUDiv %long %long_4611686018427387904 %long_2\n" +
+                "%2 = OpUDiv %ulong %ulong_4611686018427387904 %ulong_2\n" +
                 "OpReturn\n" + "OpFunctionEnd",
             2, 4611686018427387904 / 2),
         // Test case 4: fold 4611686018427387904/2 (signed)
@@ -1183,7 +1185,7 @@ INSTANTIATE_TEST_SUITE_P(
                 "%main_lab = OpLabel\n" +
                 "%n = OpVariable %_ptr_int Function\n" +
                 "%load = OpLoad %int %n\n" +
-                "%2 = OpUMod %long %long_4611686018427387904 %long_7\n" +
+                "%2 = OpUMod %ulong %ulong_4611686018427387904 %ulong_7\n" +
                 "OpReturn\n" + "OpFunctionEnd",
             2, 4611686018427387904ull % 7ull),
         // Test case 7: fold 7 mod 3 (signed)
