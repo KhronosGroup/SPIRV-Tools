@@ -1718,9 +1718,8 @@ BinaryScalarFoldingRule FoldBinaryIntegerOperation(uint64_t (*op)(uint64_t,
         assert(integer_type == result_type->AsInteger());
         assert(integer_type == b->type()->AsInteger());
 
-        // In SPIR-V, the signedness of the operands is determined by the
-        // opcode, and not by the type of the operands. This is why we use the
-        // template argument to determine how to interpret the operands.
+        // In SPIR-V, all operations support unsigned types, but the way they are interpreted depends on the opcode.
+        // This is why we use the template argument to determine how to interpret the operands.
         uint64_t ia = (signedness == Signed ? a->GetSignExtendedValue()
                                             : a->GetZeroExtendedValue());
         uint64_t ib = (signedness == Signed ? b->GetSignExtendedValue()
