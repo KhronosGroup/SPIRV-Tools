@@ -4118,23 +4118,7 @@ INSTANTIATE_TEST_SUITE_P(IntegerArithmeticTestCases, GeneralInstructionFoldingTe
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 0),
-    // Test case 38: Don't fold 2 + 3 (long), bad length
-    InstructionFoldingCase<uint32_t>(
-        Header() + "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%2 = OpIAdd %long %long_2 %long_3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, 0),
-    // Test case 39: Don't fold 2 + 3 (short), bad length
-    InstructionFoldingCase<uint32_t>(
-        Header() + "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%2 = OpIAdd %short %short_2 %short_3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, 0),
-    // Test case 40: fold 1*n
+    // Test case 38: fold 1*n
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -4144,7 +4128,7 @@ INSTANTIATE_TEST_SUITE_P(IntegerArithmeticTestCases, GeneralInstructionFoldingTe
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 3),
-    // Test case 41: fold n*1
+    // Test case 39: fold n*1
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -4154,7 +4138,7 @@ INSTANTIATE_TEST_SUITE_P(IntegerArithmeticTestCases, GeneralInstructionFoldingTe
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 3),
-    // Test case 42: Don't fold comparisons of 64-bit types
+    // Test case 40: Don't fold comparisons of 64-bit types
     // (https://github.com/KhronosGroup/SPIRV-Tools/issues/3343).
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
