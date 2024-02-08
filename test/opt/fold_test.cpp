@@ -1149,7 +1149,7 @@ INSTANTIATE_TEST_SUITE_P(
                 "%load = OpLoad %int %n\n" +
                 "%2 = OpIMul %long %long_2 %long_4611686018427387904\n" +
                 "OpReturn\n" + "OpFunctionEnd",
-            2, 2 * 4611686018427387904),
+            2, 9223372036854775808ull),
         // Test case 3: fold 4611686018427387904/2 (unsigned)
         InstructionFoldingCase<uint64_t>(
             Header() + "%main = OpFunction %void None %void_func\n" +
