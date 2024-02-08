@@ -1713,13 +1713,14 @@ BinaryScalarFoldingRule FoldBinaryIntegerOperation(uint64_t (*op)(uint64_t,
            const analysis::Constant* b,
            analysis::ConstantManager* const_mgr) -> const analysis::Constant* {
         assert(result_type != nullptr && a != nullptr && b != nullptr);
-        const analysis::Integer* integer_type = a->type()->AsInteger();
+        const analysis::Integer* integer_type = result_type->AsInteger();
         assert(integer_type != nullptr);
-        assert(integer_type == result_type->AsInteger());
+        assert(integer_type == a->type()->AsInteger());
         assert(integer_type == b->type()->AsInteger());
 
-        // In SPIR-V, all operations support unsigned types, but the way they are interpreted depends on the opcode.
-        // This is why we use the template argument to determine how to interpret the operands.
+        // In SPIR-V, all operations support unsigned types, but the way they
+        // are interpreted depends on the opcode. This is why we use the
+        // template argument to determine how to interpret the operands.
         uint64_t ia = (signedness == Signed ? a->GetSignExtendedValue()
                                             : a->GetZeroExtendedValue());
         uint64_t ib = (signedness == Signed ? b->GetSignExtendedValue()
