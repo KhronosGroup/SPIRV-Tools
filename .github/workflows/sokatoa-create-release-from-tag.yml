@@ -4,7 +4,6 @@ permissions:
   contents: write
   
 on:
-  pull_request: #TODO
   workflow_dispatch:
     inputs:
       release_tag:
