@@ -730,6 +730,9 @@ class ValidationState_t {
   // OpSpecConstant* return |is_const_int32| as false since their values cannot
   // be relied upon during validation.
   std::tuple<bool, bool, uint32_t> EvalInt32IfConst(uint32_t id) const;
+  // Tries to evaluate a 32-bit scalar float constant.
+  // Returns tuple <is_float32, is_const_float32, value>.
+  std::tuple<bool, bool, float> EvalFloat32IfConst(uint32_t id) const;
 
   // Returns the disassembly string for the given instruction.
   std::string Disassemble(const Instruction& inst) const;

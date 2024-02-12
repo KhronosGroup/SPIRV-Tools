@@ -40,12 +40,12 @@ OpCapability Shader
 OpCapability Int64
 OpCapability Float64
 OpCapability RayQueryKHR
-OpExtension "SPV_KHR_ray_query"
 )";
 
   ss << capabilities_and_extensions;
 
   ss << R"(
+OpExtension "SPV_KHR_ray_query"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 1 1 1
@@ -623,6 +623,237 @@ TEST_F(ValidateRayQuery, RayQueryArraySuccess) {
                        OpFunctionEnd
 )";
   CompileSuccessfully(shader);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateRayQuery, InitializeMinMoreThanMax) {
+  const std::string declarations = R"(
+%f32_1 = OpConstant %f32 1
+%f32_2 = OpConstant %f32 2
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %as %u32_0 %u32_0 %f32vec3_0 %f32_2 %f32vec3_0 %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", declarations).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Ray Tmin (2) is larger than Ray Tmax (1)"));
+}
+
+TEST_F(ValidateRayQuery, InitializeMinMoreThanMaxRuntime) {
+  // Can't check TMin as it is a dynamic variable, so should not return any
+  // static errors
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %tlas DescriptorSet 0
+               OpDecorate %tlas Binding 0
+               OpMemberDecorate %storage_buffer 0 Offset 0
+               OpDecorate %storage_buffer BufferBlock
+               OpDecorate %foo DescriptorSet 0
+               OpDecorate %foo Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+          %6 = OpTypeRayQueryKHR
+%_ptr_Private_6 = OpTypePointer Private %6
+   %rayQuery = OpVariable %_ptr_Private_6 Private
+          %9 = OpTypeAccelerationStructureKHR
+%_ptr_UniformConstant_9 = OpTypePointer UniformConstant %9
+       %tlas = OpVariable %_ptr_UniformConstant_9 UniformConstant
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+   %uint_255 = OpConstant %uint 255
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+    %float_0 = OpConstant %float 0
+         %19 = OpConstantComposite %v3float %float_0 %float_0 %float_0
+%storage_buffer = OpTypeStruct %float
+%_ptr_Uniform_storage_buffer = OpTypePointer Uniform %storage_buffer
+        %foo = OpVariable %_ptr_Uniform_storage_buffer Uniform
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+    %float_1 = OpConstant %float 1
+         %29 = OpConstantComposite %v3float %float_1 %float_0 %float_0
+    %float_4 = OpConstant %float 4
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %12 = OpLoad %9 %tlas
+         %26 = OpAccessChain %_ptr_Uniform_float %foo %int_0
+%descriptor_float = OpLoad %float %26
+               OpRayQueryInitializeKHR %rayQuery %12 %uint_0 %uint_255 %19 %descriptor_float %29 %float_4
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateRayQuery, InitializeMinNegative) {
+  const std::string declarations = R"(
+%f32_1 = OpConstant %f32 1
+%f32_n1 = OpConstant %f32 -1
+)";
+
+  const std::string body = R"(
+%as = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %as %u32_0 %u32_0 %f32vec3_0 %f32_n1 %f32vec3_0 %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", declarations).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Ray Tmin is negative (-1)"));
+}
+
+TEST_F(ValidateRayQuery, InitializeRayFlagsBothSkipPrimitiveCulling) {
+  const std::string capabilities = R"(
+OpCapability RayTraversalPrimitiveCullingKHR
+)";
+
+  // SkipTrianglesKHR | SkipAABBsKHR
+  const std::string declarations = R"(
+%u32_768 = OpConstant %u32 768
+)";
+
+  const std::string body = R"(
+%load = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %load %u32_768 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities, declarations).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Ray Flags contains both SkipTrianglesKHR and SkipAABBsKHR"));
+}
+
+TEST_F(ValidateRayQuery, InitializeRayFlagsSkipAABBs) {
+  const std::string capabilities = R"(
+OpCapability RayTraversalPrimitiveCullingKHR
+)";
+
+  // only SkipAABBsKHR
+  const std::string declarations = R"(
+%u32_512 = OpConstant %u32 512
+)";
+
+  const std::string body = R"(
+%load = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %load %u32_512 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities, declarations).c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateRayQuery, InitializeRayFlagsSkipTriangleCullBack) {
+  const std::string capabilities = R"(
+OpCapability RayTraversalPrimitiveCullingKHR
+)";
+
+  // SkipTrianglesKHR and CullBackFacingTrianglesKHR
+  const std::string declarations = R"(
+%u32_272 = OpConstant %u32 272
+)";
+
+  const std::string body = R"(
+%load = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %load %u32_272 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities, declarations).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Ray Flags contains more than one of SkipTrianglesKHR or "
+                "CullFrontFacingTrianglesKHR or CullBackFacingTrianglesKHR"));
+}
+
+TEST_F(ValidateRayQuery, InitializeRayFlagsSkipTriangleCullFrontAndBack) {
+  const std::string capabilities = R"(
+OpCapability RayTraversalPrimitiveCullingKHR
+)";
+
+  // SkipTrianglesKHR and CullFrontFacingTrianglesKHR and
+  // CullBackFacingTrianglesKHR
+  const std::string declarations = R"(
+%u32_304 = OpConstant %u32 304
+)";
+
+  const std::string body = R"(
+%load = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %load %u32_304 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities, declarations).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Ray Flags contains more than one of SkipTrianglesKHR or "
+                "CullFrontFacingTrianglesKHR or CullBackFacingTrianglesKHR"));
+}
+
+TEST_F(ValidateRayQuery, InitializeRayFlagsSkipAABBCullBackward) {
+  const std::string capabilities = R"(
+OpCapability RayTraversalPrimitiveCullingKHR
+)";
+
+  // SkipAABBsKHR and CullBackFacingTrianglesKHR (legal)
+  const std::string declarations = R"(
+%u32_528 = OpConstant %u32 528
+)";
+
+  const std::string body = R"(
+%load = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %load %u32_528 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities, declarations).c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateRayQuery, InitializeRayFlagsOpaqueAndCullNoOpaque) {
+  // OpaqueKHR and CullNoOpaqueKHR
+  const std::string declarations = R"(
+%u32_129 = OpConstant %u32 129
+)";
+
+  const std::string body = R"(
+%load = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %load %u32_129 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", declarations).c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Ray Flags contains more than one of OpaqueKHR or "
+                        "NoOpaqueKHR or CullOpaqueKHR or CullNoOpaqueKHR"));
+}
+
+TEST_F(ValidateRayQuery, InitializeRayFlagsOpaqueAndCullBack) {
+  // OpaqueKHR and CullBackFacingTrianglesKHR (legal)
+  const std::string declarations = R"(
+%u32_17 = OpConstant %u32 17
+)";
+
+  const std::string body = R"(
+%load = OpLoad %type_as %top_level_as
+OpRayQueryInitializeKHR %ray_query %load %u32_17 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, "", declarations).c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 

@@ -15,6 +15,7 @@
 #include "source/val/validation_state.h"
 
 #include <cassert>
+#include <cstring>
 #include <stack>
 #include <utility>
 
@@ -1372,6 +1373,34 @@ std::tuple<bool, bool, uint32_t> ValidationState_t::EvalInt32IfConst(
 
   assert(inst->words().size() == 4);
   return std::make_tuple(true, true, inst->word(3));
+}
+
+std::tuple<bool, bool, float> ValidationState_t::EvalFloat32IfConst(
+    uint32_t id) const {
+  const Instruction* const inst = FindDef(id);
+  assert(inst);
+  const uint32_t type = inst->type_id();
+
+  if (type == 0 || !IsFloatScalarType(type) || GetBitWidth(type) != 32) {
+    return std::make_tuple(false, false, 0.0f);
+  }
+
+  // Spec constant values cannot be evaluated so don't consider constant for
+  // the purpose of this method.
+  if (!spvOpcodeIsConstant(inst->opcode()) ||
+      spvOpcodeIsSpecConstant(inst->opcode())) {
+    return std::make_tuple(true, false, 0.0f);
+  }
+
+  if (inst->opcode() == spv::Op::OpConstantNull) {
+    return std::make_tuple(true, true, 0.0f);
+  }
+
+  assert(inst->words().size() == 4);
+  uint32_t word = inst->word(3);
+  float value = 0;
+  std::memcpy(&value, &word, sizeof(float));
+  return std::make_tuple(true, true, value);
 }
 
 void ValidationState_t::ComputeFunctionToEntryPointMapping() {
