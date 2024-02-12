@@ -12,7 +12,7 @@ jobs:
           os: [ macos-12, macos-13 ]
     steps:
         - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        - uses: lukka/get-cmake@23a189c2ed38ec264f5026ce2303e5b7a664345c # v3.28.2
+        - uses: lukka/get-cmake@139aae96315b496d9af1b5e9abe53b15ca7eece8 # v3.28.3
         - name: Download dependencies
           run: python3 utils/git-sync-deps
         # NOTE: The MacOS SDK ships universal binaries. CI should reflect this.
