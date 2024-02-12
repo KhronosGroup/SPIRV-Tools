@@ -1,15 +1,15 @@
 name: Sokatoa create release from tag
 
-env:
-  RELEASE_TAG: "2023.2"
-
+permissions:
+  contents: write
+  
 on:
   pull_request: #TODO
   workflow_dispatch:
     inputs:
       release_tag:
         description: 'Release tag'
-        default: env.RELEASE_TAG
+        default: 'v2023.2'
         required: true
         type: string
 
@@ -22,11 +22,13 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          name: ${{ github.ref_name }}
+          name: ${{ github.event.inputs.RELEASE_TAG }}
+          tag_name: ${{ github.event.inputs.RELEASE_TAG }}
           draft: false
           prerelease: false
           generate_release_notes: false
-
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build:
     name: ${{ matrix.os }}
     needs: create_release
@@ -40,14 +42,10 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Set release_tag variable
-        shell: bash
-        run: |
-          echo "RELEASE_TAG=${{ github.event.inputs.RELEASE_TAG || env.RELEASE_TAG }}" >> $GITHUB_ENV
-
       - name: Checkout
         uses: actions/checkout@v4
-        ref: $RELEASE_TAG
+        with:
+          ref: ${{ github.event.inputs.RELEASE_TAG }}
 
       - name: Build
         shell: bash
@@ -58,17 +56,36 @@ jobs:
           cmake ../ -DSPIRV_SKIP_TESTS=ON -DCMAKE_BUILD_TYPE=Release
           cmake --build . --config Release -j 12
 
+      - name: Archive results
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir ${{ github.event.inputs.RELEASE_TAG }}
+          cp build/tools/spirv-dis ${{ github.event.inputs.RELEASE_TAG }}
+          tar -czvf ${{ github.event.inputs.RELEASE_TAG }}.tar.gz -C ${{ github.event.inputs.RELEASE_TAG }} `ls -A ${{ github.event.inputs.RELEASE_TAG }}`
+
+      - name: Archive results
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir ${{ github.event.inputs.RELEASE_TAG }}
+          cp build/tools/Release/spirv-dis.exe ${{ github.event.inputs.RELEASE_TAG }}
+          7z a -r ${{ github.event.inputs.RELEASE_TAG }}.zip ./${{ github.event.inputs.RELEASE_TAG }}/*
+
       - name: Upload artifacts
         if: runner.os == 'Linux'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ needs.create_release.outputs.tag-name }}
-          files: build/tools/spirv-dis
+          tag_name: ${{ github.event.inputs.RELEASE_TAG }}
+          files: ${{ github.event.inputs.RELEASE_TAG }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifacts
         if: runner.os == 'Windows'
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ needs.create_release.outputs.tag-name }}
-          files: build/tools/spirv-dis.exe
-            
+          tag_name: ${{ github.event.inputs.RELEASE_TAG }}
+          files: ${{ github.event.inputs.RELEASE_TAG }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
