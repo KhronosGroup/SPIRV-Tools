@@ -118,8 +118,6 @@ bool FoldSpecConstantOpAndCompositePass::ProcessOpSpecConstantOp(
   folded_inst = FoldWithInstructionFolder(pos);
   if (!folded_inst) {
     folded_inst = DoComponentWiseOperation(pos);
-  } else {
-    std::cerr << inst->PrettyPrint() << "\n";
   }
   if (!folded_inst) return false;
 
