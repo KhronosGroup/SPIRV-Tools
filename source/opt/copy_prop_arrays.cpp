@@ -367,6 +367,14 @@ CopyPropagateArrays::BuildMemoryObjectFromInsert(Instruction* insert_inst) {
   } else if (const analysis::Array* array_type = result_type->AsArray()) {
     const analysis::Constant* length_const =
         const_mgr->FindDeclaredConstant(array_type->LengthId());
+
+    // If the size of the array is not known at compile time, then we cannot
+    // create the memory object. This can happen when the size of the array is
+    // an OpSpecConstant.
+    if (length_const == nullptr) {
+      return nullptr;
+    }
+
     number_of_elements = length_const->GetU32();
   } else if (const analysis::Vector* vector_type = result_type->AsVector()) {
     number_of_elements = vector_type->element_count();
@@ -806,6 +814,11 @@ uint32_t CopyPropagateArrays::MemoryObject::GetNumberOfMembers() {
     const analysis::Constant* length_const =
         context->get_constant_mgr()->FindDeclaredConstant(
             array_type->LengthId());
+
+    if (length_const == nullptr) {
+      // This can happen if the length is an OpSpecConstant.
+      return 0;
+    }
     assert(length_const->type()->AsInteger());
     return length_const->GetU32();
   } else if (const analysis::Vector* vector_type = type->AsVector()) {
