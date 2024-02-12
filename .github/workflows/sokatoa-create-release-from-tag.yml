@@ -1,0 +1,74 @@
+name: Sokatoa create release from tag
+
+env:
+  RELEASE_TAG: "2023.2"
+
+on:
+  pull_request: #TODO
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag'
+        default: env.RELEASE_TAG
+        required: true
+        type: string
+
+jobs:
+  create_release:
+    name: Create Release
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+
+  build:
+    name: ${{ matrix.os }}
+    needs: create_release
+    strategy:
+      fail-fast: false
+      matrix:
+        # free runners
+        os: [windows-2019, ubuntu-20.04]
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Set release_tag variable
+        shell: bash
+        run: |
+          echo "RELEASE_TAG=${{ github.event.inputs.RELEASE_TAG || env.RELEASE_TAG }}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        ref: $RELEASE_TAG
+
+      - name: Build
+        shell: bash
+        run: |
+          python3 utils/git-sync-deps
+          mkdir build
+          cd build
+          cmake ../ -DSPIRV_SKIP_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release -j 12
+
+      - name: Upload artifacts
+        if: runner.os == 'Linux'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.create_release.outputs.tag-name }}
+          files: build/tools/spirv-dis
+
+      - name: Upload artifacts
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.create_release.outputs.tag-name }}
+          files: build/tools/spirv-dis.exe
+            
