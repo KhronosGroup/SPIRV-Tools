@@ -676,6 +676,7 @@ Pass::Status AggressiveDCEPass::ProcessImpl() {
   // return unmodified.
   if (!AllExtensionsSupported()) return Status::SuccessWithoutChange;
 
+  std::cerr << "STEVEN: pass all prereq.\n";
   // Eliminate Dead functions.
   bool modified = EliminateDeadFunctions();
 
