@@ -6733,7 +6733,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationA) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationB) {
@@ -6792,7 +6793,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationB) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationC) {
@@ -6844,7 +6846,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationC) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationD) {
@@ -6896,7 +6899,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationD) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationA) {
@@ -6955,7 +6959,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationA) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationB) {
@@ -7014,7 +7019,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationB) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationC) {
@@ -7066,7 +7072,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationC) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationD) {
@@ -7118,7 +7125,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationD) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedNoDecorationA) {
@@ -7177,7 +7185,8 @@ TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedNoDecorationA) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration WeightTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration WeightTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedNoDecorationB) {
@@ -7230,7 +7239,8 @@ TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedNoDecorationB) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration WeightTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration WeightTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchWindowSADInvalidUseA) {
@@ -7989,7 +7999,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorTargetIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorTargetIS) {
@@ -8045,7 +8056,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorTargetIS) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorRefIT) {
@@ -8101,7 +8113,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorRefIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorRefIS) {
@@ -8157,7 +8170,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorRefIS) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorTargetNIT) {
@@ -8220,7 +8234,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorTargetNIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorTargetNIS) {
@@ -8283,7 +8298,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorTargetNIS) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorRefNIT) {
@@ -8346,7 +8362,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorRefNIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorRefNIS) {
@@ -8409,7 +8426,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorRefNIS) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorTargetIT) {
@@ -8465,7 +8483,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorTargetIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorTargetIS) {
@@ -8521,7 +8540,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorTargetIS) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorRefIT) {
@@ -8577,7 +8597,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorRefIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorRefIS) {
@@ -8633,7 +8654,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorRefIS) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorTargetNIT) {
@@ -8696,7 +8718,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorTargetNIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorTargetNIS) {
@@ -8759,7 +8782,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorTargetNIS) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorRefNIT) {
@@ -8822,7 +8846,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorRefNIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorRefNIS) {
@@ -8885,7 +8910,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorRefNIS) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADNoDecorTargetIT) {
@@ -8939,7 +8965,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADNoDecorTargetIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADNoDecorRefIT) {
@@ -8993,7 +9020,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADNoDecorRefIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADNoDecorTargetNIT) {
@@ -9054,7 +9082,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADNoDecorTargetNIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADNoDecorRefNIT) {
@@ -9115,7 +9144,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADNoDecorRefNIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDNoDecorTargetIT) {
@@ -9169,7 +9199,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDNoDecorTargetIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDNoDecorRefIT) {
@@ -9223,7 +9254,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDNoDecorRefIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDNoDecorTargetNIT) {
@@ -9284,7 +9316,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDNoDecorTargetNIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDNoDecorRefNIT) {
@@ -9345,10 +9378,12 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDNoDecorRefNIT) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
-TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADInvalidUseTargetI) {
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchWindowSADInvalidUseTargetI) {
   const std::string text = R"(
                OpCapability Shader
                OpCapability TextureBlockMatchQCOM
@@ -9486,7 +9521,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADInvalidUseRefI) {
       HasSubstr("Illegal use of QCOM image processing decorated texture"));
 }
 
-TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADInvalidUseTargetNI) {
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchWindowSADInvalidUseTargetNI) {
   const std::string text = R"(
                OpCapability Shader
                OpCapability TextureBlockMatchQCOM
@@ -9636,7 +9672,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADInvalidUseRefNI) {
       HasSubstr("Illegal use of QCOM image processing decorated texture"));
 }
 
-TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDInvalidUseTargetI) {
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchWindowSSDInvalidUseTargetI) {
   const std::string text = R"(
                OpCapability Shader
                OpCapability TextureBlockMatchQCOM
@@ -9774,7 +9811,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDInvalidUseRefI) {
       HasSubstr("Illegal use of QCOM image processing decorated texture"));
 }
 
-TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDInvalidUseTargetNI) {
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchWindowSSDInvalidUseTargetNI) {
   const std::string text = R"(
                OpCapability Shader
                OpCapability TextureBlockMatchQCOM
@@ -9924,7 +9962,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDInvalidUseRefNI) {
       HasSubstr("Illegal use of QCOM image processing decorated texture"));
 }
 
-TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADInvalidUseTargetI) {
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchGatherSADInvalidUseTargetI) {
   const std::string text = R"(
                OpCapability Shader
                OpCapability TextureBlockMatchQCOM
@@ -10058,7 +10097,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADInvalidUseRefI) {
       HasSubstr("Illegal use of QCOM image processing decorated texture"));
 }
 
-TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADInvalidUseTargetNI) {
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchGatherSADInvalidUseTargetNI) {
   const std::string text = R"(
                OpCapability Shader
                OpCapability TextureBlockMatchQCOM
@@ -10204,7 +10244,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADInvalidUseRefNI) {
       HasSubstr("Illegal use of QCOM image processing decorated texture"));
 }
 
-TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDInvalidUseTargetI) {
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchGatherSSDInvalidUseTargetI) {
   const std::string text = R"(
                OpCapability Shader
                OpCapability TextureBlockMatchQCOM
@@ -10338,7 +10379,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDInvalidUseRefI) {
       HasSubstr("Illegal use of QCOM image processing decorated texture"));
 }
 
-TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDInvalidUseTargetNI) {
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchGatherSSDInvalidUseTargetNI) {
   const std::string text = R"(
                OpCapability Shader
                OpCapability TextureBlockMatchQCOM
