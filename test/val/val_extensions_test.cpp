@@ -131,7 +131,8 @@ TEST_F(ValidateExtensionCapabilities, DeclCapabilityFailure) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr("SPV_KHR_device_group"));
 }
 
-TEST_F(ValidateExtensionCapabilities, DeclCapabilityFailureBlockMatchWIndowSAD) {
+TEST_F(ValidateExtensionCapabilities,
+       DeclCapabilityFailureBlockMatchWIndowSAD) {
   const std::string str = R"(
                OpCapability Shader
                OpCapability TextureBlockMatch2QCOM
@@ -229,7 +230,8 @@ TEST_F(ValidateExtensionCapabilities, DeclCapabilityFailureBlockMatchWIndowSAD) 
   EXPECT_THAT(getDiagnosticString(), HasSubstr("SPV_QCOM_image_processing"));
 }
 
-TEST_F(ValidateExtensionCapabilities, DeclCapabilityFailureBlockMatchWIndowSSD) {
+TEST_F(ValidateExtensionCapabilities,
+       DeclCapabilityFailureBlockMatchWIndowSSD) {
   const std::string str = R"(
                OpCapability Shader
                OpCapability TextureBlockMatch2QCOM
