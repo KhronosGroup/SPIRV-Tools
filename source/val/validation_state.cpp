@@ -954,6 +954,20 @@ bool ValidationState_t::IsFloatVectorType(uint32_t id) const {
   return false;
 }
 
+bool ValidationState_t::IsFloat16Vector2Or4Type(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  assert(inst);
+
+  if (inst->opcode() == spv::Op::OpTypeVector) {
+    uint32_t vectorDim = GetDimension(id);
+    return IsFloatScalarType(GetComponentType(id)) &&
+           (vectorDim == 2 || vectorDim == 4) &&
+           (GetBitWidth(GetComponentType(id)) == 16);
+  }
+
+  return false;
+}
+
 bool ValidationState_t::IsFloatScalarOrVectorType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
   if (!inst) {
