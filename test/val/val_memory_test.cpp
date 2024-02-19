@@ -5115,6 +5115,79 @@ TEST_F(ValidateMemory, VulkanPtrAccessChainWorkgroupNoArrayStrideSuccess) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 
+TEST_F(ValidateMemory, StorageBufferArrayBadIndexVulkan) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %var
+OpExecutionMode %main LocalSize 1 1 1
+OpMemberDecorate %storage_buffer_b 0 Offset 0
+OpDecorate %storage_buffer_b Block
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 1
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%storage_buffer_b = OpTypeStruct %int
+%uint = OpTypeInt 32 0
+%uint_3 = OpConstant %uint 3
+%array = OpTypeArray %storage_buffer_b %uint_3
+%var_ptr = OpTypePointer StorageBuffer %array
+%var = OpVariable %var_ptr StorageBuffer
+%int_3 = OpConstant %int 3
+%int_0 = OpConstant %int 0
+%sb_ptr = OpTypePointer StorageBuffer %int
+%main = OpFunction %void None %func
+%label = OpLabel
+%ac = OpAccessChain %sb_ptr %var %int_3 %int_0
+OpStore %ac %int_3
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Index is out of bounds: OpAccessChain can not find index 3 "
+                "into the array <id> '9[%_arr__struct_3_uint_3]' of length 3"));
+}
+
+TEST_F(ValidateMemory, SamplerArrayBadIndexVulkan) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %sampler_array
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %sampler_array DescriptorSet 2
+OpDecorate %sampler_array Binding 1
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%sampler = OpTypeSampler
+%uint = OpTypeInt 32 0
+%uint_2 = OpConstant %uint 2
+%array = OpTypeArray %sampler %uint_2
+%var_ptr = OpTypePointer UniformConstant %array
+%sampler_array = OpVariable %var_ptr UniformConstant
+%int = OpTypeInt 32 1
+%int_2 = OpConstant %int 2
+%uc_ptr = OpTypePointer UniformConstant %sampler
+%main = OpFunction %void None %func
+%label = OpLabel
+%ac = OpAccessChain %uc_ptr %sampler_array %int_2
+%load = OpLoad %sampler %ac
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Index is out of bounds: OpAccessChain can not find index 2 "
+                "into the array <id> '8[%_arr_5_uint_2]' of length 2"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
