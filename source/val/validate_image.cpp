@@ -495,7 +495,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     }
 
     uint64_t array_size = 0;
-    if (!_.GetConstantValUint64(type_inst->word(3), &array_size)) {
+    if (!_.EvalConstantValUint64(type_inst->word(3), &array_size)) {
       assert(0 && "Array type definition is corrupt");
     }
 
@@ -1210,7 +1210,7 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
 
   if (info.multisampled == 0) {
     uint64_t ms = 0;
-    if (!_.GetConstantValUint64(inst->GetOperandAs<uint32_t>(4), &ms) ||
+    if (!_.EvalConstantValUint64(inst->GetOperandAs<uint32_t>(4), &ms) ||
         ms != 0) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Expected Sample for Image with MS 0 to be a valid <id> for "
