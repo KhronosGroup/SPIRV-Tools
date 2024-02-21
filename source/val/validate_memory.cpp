@@ -1396,7 +1396,8 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
                  << num_struct_members - 1 << ".";
         }
         // Struct members IDs start at word 2 of OpTypeStruct.
-        auto structMemberId = type_pointee->word(cur_index + 2);
+        const size_t word_index = static_cast<size_t>(cur_index) + 2;
+        auto structMemberId = type_pointee->word(word_index);
         type_pointee = _.FindDef(structMemberId);
         break;
       }
