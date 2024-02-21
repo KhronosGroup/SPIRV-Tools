@@ -109,6 +109,7 @@ set(TEST_SOURCES
   ext_inst.cldebug100_test.cpp
   ext_inst.debuginfo_test.cpp
   ext_inst.glsl_test.cpp
+  ext_inst.graph_debuginfo_test.cpp
   ext_inst.non_semantic_test.cpp
   ext_inst.opencl_test.cpp
   ext_inst.tosa_test.cpp

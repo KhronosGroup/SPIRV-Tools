@@ -33,6 +33,7 @@
 #include "source/val/validation_state.h"
 #include "spirv-tools/libspirv.h"
 #include "spirv/unified1/NonSemanticClspvReflection.h"
+#include "spirv/unified1/NonSemanticGraphDebugInfo.h"
 #include "spirv/unified1/NonSemanticShaderDebugInfo.h"
 
 namespace spvtools {
@@ -81,6 +82,55 @@ bool IsUint32Constant(ValidationState_t& _, uint32_t id) {
   }
 
   return IsIntScalar(_, inst->type_id(), true, true);
+}
+
+bool IsGraphDebugInfoDebugGraph(const Instruction* inst) {
+  return spvIsExtendedInstruction(inst->opcode()) &&
+         inst->ext_inst_type() ==
+             SPV_EXT_INST_TYPE_NONSEMANTIC_GRAPH_DEBUGINFO &&
+         inst->word(4) == NonSemanticGraphDebugInfoDebugGraph;
+}
+
+bool IsTopLevelCompositeOfTensors(ValidationState_t& _, uint32_t type_id) {
+  const auto* type = _.FindDef(type_id);
+  if (!type) return false;
+
+  if (type->opcode() == spv::Op::OpTypeArray ||
+      type->opcode() == spv::Op::OpTypeRuntimeArray) {
+    const auto* element_type = _.FindDef(type->word(2));
+    return element_type && element_type->opcode() == spv::Op::OpTypeTensorARM;
+  }
+
+  if (type->opcode() == spv::Op::OpTypeStruct) {
+    for (uint32_t word_index = 2; word_index < type->words().size();
+         ++word_index) {
+      const auto* member_type = _.FindDef(type->word(word_index));
+      if (!member_type || member_type->opcode() != spv::Op::OpTypeTensorARM) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  return false;
+}
+
+bool IsInstructionInGraph(ValidationState_t& _, uint32_t inst_id,
+                          uint32_t graph_id) {
+  bool in_graph = false;
+  for (const auto& module_inst : _.ordered_instructions()) {
+    if (module_inst.opcode() == spv::Op::OpGraphARM) {
+      in_graph = module_inst.id() == graph_id;
+    }
+
+    if (in_graph && module_inst.id() == inst_id) return true;
+
+    if (in_graph && module_inst.opcode() == spv::Op::OpGraphEndARM) {
+      in_graph = false;
+    }
+  }
+
+  return false;
 }
 
 uint32_t GetUint32Constant(ValidationState_t& _, uint32_t id) {
@@ -1352,6 +1402,33 @@ spv_result_t ValidateExtInstImport(ValidationState_t& _,
     }
 
     _.RegisterShaderDebugInfo(inst->id());
+  }
+
+  const std::string nsgdi_prefix = "NonSemantic.Graph.DebugInfo.";
+  if (name.find(nsgdi_prefix) == 0) {
+    auto version_string = name.substr(nsgdi_prefix.size());
+    if (version_string.empty()) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "NonSemantic.Graph.DebugInfo import does not encode the "
+                "version correctly";
+    }
+    char* end_ptr;
+    uint32_t ver = static_cast<uint32_t>(
+        std::strtoul(version_string.c_str(), &end_ptr, 10));
+    if (end_ptr && *end_ptr != '\0') {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "NonSemantic.Graph.DebugInfo import does not encode the "
+                "version correctly";
+    }
+    if (ver == 0 || ver > NonSemanticGraphDebugInfoRevision) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "NonSemantic.Graph.DebugInfo import version " << ver
+             << " is not supported";
+    }
+    if (!_.HasExtension(kSPV_ARM_graph)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "NonSemantic.Graph.DebugInfo requires SPV_ARM_graph";
+    }
   }
 
   return SPV_SUCCESS;
@@ -4196,6 +4273,96 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateExtInstGraphDebugInfo(ValidationState_t& _,
+                                           const Instruction* inst) {
+  if (!_.IsVoidType(inst->type_id())) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << GetExtInstName(_, inst) << ": "
+           << "expected result type must be a result id of OpTypeVoid";
+  }
+
+  const auto ext_inst_key =
+      NonSemanticGraphDebugInfoInstructions(inst->word(4));
+  switch (ext_inst_key) {
+    case NonSemanticGraphDebugInfoDebugGraph: {
+      CHECK_OPERAND("Graph", spv::Op::OpGraphARM, 5);
+      CHECK_OPERAND("Name", spv::Op::OpString, 6);
+      break;
+    }
+
+    case NonSemanticGraphDebugInfoDebugOperation: {
+      const auto* debug_graph = _.FindDef(inst->word(5));
+      if (!debug_graph || !IsGraphDebugInfoDebugGraph(debug_graph)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << GetExtInstName(_, inst) << ": expected operand DebugGraph "
+               << "must be a result id of NonSemantic.Graph.DebugInfo "
+               << "DebugGraph";
+      }
+      CHECK_OPERAND("Name", spv::Op::OpString, 6);
+      if (inst->words().size() < 8) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << GetExtInstName(_, inst) << ": expected operand "
+               << "Instructions must contain at least one instruction";
+      }
+
+      const uint32_t graph_id = debug_graph->word(5);
+      for (uint32_t word_index = 7; word_index < inst->words().size();
+           ++word_index) {
+        const uint32_t instruction_id = inst->word(word_index);
+        if (!IsInstructionInGraph(_, instruction_id, graph_id)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << GetExtInstName(_, inst) << ": expected operand "
+                 << "Instructions must be result ids of instructions within "
+                 << "the graph described by DebugGraph";
+        }
+      }
+      break;
+    }
+
+    case NonSemanticGraphDebugInfoDebugTensor: {
+      const auto* tensor = _.FindDef(inst->word(5));
+      const uint32_t tensor_type_id = tensor ? tensor->type_id() : 0;
+      const auto* tensor_type = _.FindDef(tensor_type_id);
+      const bool is_tensor =
+          tensor_type && tensor_type->opcode() == spv::Op::OpTypeTensorARM;
+      const bool is_composite_tensor =
+          IsTopLevelCompositeOfTensors(_, tensor_type_id);
+      if (!is_tensor && !is_composite_tensor) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << GetExtInstName(_, inst) << ": expected operand Tensor "
+               << "must be a value of OpTypeTensorARM or a composite type "
+               << "whose top-level constituents are OpTypeTensorARM";
+      }
+      CHECK_OPERAND("Name", spv::Op::OpString, 6);
+
+      const bool has_index = inst->words().size() > 7;
+      if (is_composite_tensor && !has_index) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << GetExtInstName(_, inst) << ": expected operand Index "
+               << "must be present when Tensor has composite type";
+      }
+      if (has_index) {
+        if (!is_composite_tensor) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << GetExtInstName(_, inst) << ": expected operand Tensor "
+                 << "must have composite type when Index is present";
+        }
+        if (!IsUint32Constant(_, inst->word(7))) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << GetExtInstName(_, inst) << ": expected operand Index "
+                 << "must be a result id of 32-bit unsigned OpConstant";
+        }
+      }
+      break;
+    }
+
+    default:
+      break;
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateExtInstNonsemanticClspvReflection(
     ValidationState_t& _, const Instruction* inst) {
   auto import_inst = _.FindDef(inst->GetOperandAs<uint32_t>(2));
@@ -4236,6 +4403,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
     return ValidateExtInstDebugInfo(_, inst);
   } else if (ext_inst_type == SPV_EXT_INST_TYPE_NONSEMANTIC_CLSPVREFLECTION) {
     return ValidateExtInstNonsemanticClspvReflection(_, inst);
+  } else if (ext_inst_type == SPV_EXT_INST_TYPE_NONSEMANTIC_GRAPH_DEBUGINFO) {
+    return ValidateExtInstGraphDebugInfo(_, inst);
   }
 
   return SPV_SUCCESS;

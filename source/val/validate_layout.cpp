@@ -400,6 +400,11 @@ spv_result_t GraphScopedInstructions(ValidationState_t& _,
         }
         break;
       default:
+        if ((opcode == spv::Op::OpExtInst) &&
+            spvExtInstIsNonSemantic(inst->ext_inst_type())) {
+          break;
+        }
+
         if (_.graph_definition_region() == kGraphDefinitionOutside) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                  << "Op" << spvOpcodeString(opcode)
