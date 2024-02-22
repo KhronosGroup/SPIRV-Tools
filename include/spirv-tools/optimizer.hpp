@@ -37,14 +37,14 @@ struct DescriptorSetAndBinding;
 // provides methods for registering optimization passes and optimizing.
 //
 // Instances of this class provides basic thread-safety guarantee.
-class Optimizer {
+class SPIRV_TOOLS_EXPORT Optimizer {
  public:
   // The token for an optimization pass. It is returned via one of the
   // Create*Pass() standalone functions at the end of this header file and
   // consumed by the RegisterPass() method. Tokens are one-time objects that
   // only support move; copying is not allowed.
   struct PassToken {
-    struct Impl;  // Opaque struct for holding internal data.
+    struct SPIRV_TOOLS_LOCAL Impl;  // Opaque struct for holding internal data.
 
     PassToken(std::unique_ptr<Impl>);
 
@@ -239,7 +239,7 @@ class Optimizer {
   Optimizer& SetValidateAfterAll(bool validate);
 
  private:
-  struct Impl;                  // Opaque struct for holding internal data.
+  struct SPIRV_TOOLS_LOCAL Impl;  // Opaque struct for holding internal data.
   std::unique_ptr<Impl> impl_;  // Unique pointer to internal data.
 };
 
