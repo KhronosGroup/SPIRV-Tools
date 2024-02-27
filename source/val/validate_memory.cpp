@@ -1386,10 +1386,10 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
         // should be less than the number of struct members.
         const int64_t num_struct_members =
             static_cast<int64_t>(type_pointee->words().size() - 2);
-        if (cur_index >= num_struct_members) {
+        if (cur_index >= num_struct_members || cur_index < 0) {
           return _.diag(SPV_ERROR_INVALID_ID, cur_word_instr)
                  << "Index is out of bounds: " << instr_name
-                 << " can not find index " << cur_index
+                 << " cannot find index " << cur_index
                  << " into the structure <id> "
                  << _.getIdName(type_pointee->id()) << ". This structure has "
                  << num_struct_members << " members. Largest valid index is "
@@ -1410,7 +1410,7 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
       }
     }
   }
-  // At this point, we have fully walked down from the base using the indeces.
+  // At this point, we have fully walked down from the base using the indices.
   // The type being pointed to should be the same as the result type.
   if (type_pointee->id() != result_type_pointee->id()) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)

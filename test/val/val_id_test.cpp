@@ -4225,7 +4225,7 @@ OpReturn
 OpFunctionEnd
   )";
   const std::string expected_err = "Index is out of bounds: " + instr +
-                                   " can not find index 3 into the structure "
+                                   " cannot find index 3 into the structure "
                                    "<id> '25[%_struct_25]'. This structure "
                                    "has 3 members. Largest valid index is 2.";
   CompileSuccessfully(spirv);
