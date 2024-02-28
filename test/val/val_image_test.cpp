@@ -6733,7 +6733,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationA) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationB) {
@@ -6792,7 +6793,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationB) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationC) {
@@ -6844,7 +6846,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationC) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationD) {
@@ -6896,7 +6899,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADNoDecorationD) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationA) {
@@ -6955,7 +6959,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationA) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationB) {
@@ -7014,7 +7019,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationB) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationC) {
@@ -7066,7 +7072,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationC) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationD) {
@@ -7118,7 +7125,8 @@ TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSSDNoDecorationD) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedNoDecorationA) {
@@ -7177,7 +7185,8 @@ TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedNoDecorationA) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration WeightTextureQCOM"));
 }
 
 TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedNoDecorationB) {
@@ -7230,10 +7239,11 @@ TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedNoDecorationB) {
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Missing decoration"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration WeightTextureQCOM"));
 }
 
-TEST_F(ValidateImage, QCOMImageProcessingBlockMatchSADInvalidUseA) {
+TEST_F(ValidateImage, QCOMImageProcessingBlockMatchWindowSADInvalidUseA) {
   std::string text = R"(
 ; SPIR-V
 ; Version: 1.0
@@ -7925,6 +7935,2586 @@ TEST_F(ValidateImage, QCOMImageProcessingSampleWeightedInvalidUseB) {
          %42 = OpCompositeConstruct %v3float %39 %40 %41
          %43 = OpImageSampleImplicitLod %v4float %36 %42
                OpStore %3 %43
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorTargetIT) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %4 Binding 4
+               OpDecorate %4 BlockMatchSamplerQCOM
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+               OpDecorate %5 BlockMatchSamplerQCOM
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %19 = OpTypeSampledImage %18
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+          %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+          %5 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+         %21 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %7
+         %22 = OpLabel
+         %23 = OpVariable %_ptr_Function_v2uint Function
+         %24 = OpLoad %19 %4
+         %25 = OpLoad %v2uint %23
+         %26 = OpLoad %19 %5
+         %27 = OpLoad %v2uint %23
+         %28 = OpLoad %v2uint %23
+         %29 = OpImageBlockMatchWindowSADQCOM %v4float %24 %25 %26 %27 %28
+               OpStore %3 %29
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorTargetIS) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %4 Binding 4
+               OpDecorate %4 BlockMatchTextureQCOM
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+               OpDecorate %5 BlockMatchSamplerQCOM
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %19 = OpTypeSampledImage %18
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+          %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+          %5 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+         %21 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %7
+         %22 = OpLabel
+         %23 = OpVariable %_ptr_Function_v2uint Function
+         %24 = OpLoad %19 %4
+         %25 = OpLoad %v2uint %23
+         %26 = OpLoad %19 %5
+         %27 = OpLoad %v2uint %23
+         %28 = OpLoad %v2uint %23
+         %29 = OpImageBlockMatchWindowSADQCOM %v4float %24 %25 %26 %27 %28
+               OpStore %3 %29
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorRefIT) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %4 Binding 4
+               OpDecorate %4 BlockMatchTextureQCOM
+               OpDecorate %4 BlockMatchSamplerQCOM
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 5
+               OpDecorate %5 BlockMatchSamplerQCOM
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %19 = OpTypeSampledImage %18
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+          %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+          %5 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+         %21 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %7
+         %22 = OpLabel
+         %23 = OpVariable %_ptr_Function_v2uint Function
+         %24 = OpLoad %19 %4
+         %25 = OpLoad %v2uint %23
+         %26 = OpLoad %19 %5
+         %27 = OpLoad %v2uint %23
+         %28 = OpLoad %v2uint %23
+         %29 = OpImageBlockMatchWindowSADQCOM %v4float %24 %25 %26 %27 %28
+               OpStore %3 %29
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorRefIS) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %4 Binding 4
+               OpDecorate %4 BlockMatchTextureQCOM
+               OpDecorate %4 BlockMatchSamplerQCOM
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %19 = OpTypeSampledImage %18
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+          %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+          %5 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+         %21 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %7
+         %22 = OpLabel
+         %23 = OpVariable %_ptr_Function_v2uint Function
+         %24 = OpLoad %19 %4
+         %25 = OpLoad %v2uint %23
+         %26 = OpLoad %19 %5
+         %27 = OpLoad %v2uint %23
+         %28 = OpLoad %v2uint %23
+         %29 = OpImageBlockMatchWindowSADQCOM %v4float %24 %25 %26 %27 %28
+               OpStore %3 %29
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorTargetNIT) {
+  const std::string text = R"(
+           OpCapability Shader
+           OpCapability TextureBlockMatchQCOM
+           OpCapability TextureBlockMatch2QCOM
+           OpExtension "SPV_QCOM_image_processing"
+           OpExtension "SPV_QCOM_image_processing2"
+      %1 = OpExtInstImport "GLSL.std.450"
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+           OpExecutionMode %2 OriginUpperLeft
+           OpDecorate %3 Location 0
+           OpDecorate %4 DescriptorSet 0
+           OpDecorate %4 Binding 1
+           OpDecorate %4 BlockMatchSamplerQCOM
+           OpDecorate %5 DescriptorSet 0
+           OpDecorate %5 Binding 3
+           OpDecorate %6 DescriptorSet 0
+           OpDecorate %6 Binding 2
+           OpDecorate %6 BlockMatchTextureQCOM
+           OpDecorate %6 BlockMatchSamplerQCOM
+   %void = OpTypeVoid
+      %8 = OpTypeFunction %void
+   %uint = OpTypeInt 32 0
+ %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+  %float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%uint_4 = OpConstant %uint 4
+    %17 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+     %3 = OpVariable %_ptr_Output_v4float Output
+    %19 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+     %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %21 = OpTypeSampler
+%_ptr_UniformConstant_21 = OpTypePointer UniformConstant %21
+    %5 = OpVariable %_ptr_UniformConstant_21 UniformConstant
+   %23 = OpTypeSampledImage %19
+    %6 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %2 = OpFunction %void None %8
+   %24 = OpLabel
+   %25 = OpVariable %_ptr_Function_v2uint Function
+   %26 = OpLoad %19 %4
+   %27 = OpLoad %21 %5
+   %28 = OpSampledImage %23 %26 %27
+   %29 = OpLoad %v2uint %25
+   %30 = OpLoad %19 %6
+   %31 = OpLoad %21 %5
+   %32 = OpSampledImage %23 %30 %31
+   %33 = OpImageBlockMatchWindowSADQCOM %v4float %28 %29 %32 %29 %29
+         OpStore %3 %33
+         OpReturn
+         OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorTargetNIS) {
+  const std::string text = R"(
+           OpCapability Shader
+           OpCapability TextureBlockMatchQCOM
+           OpCapability TextureBlockMatch2QCOM
+           OpExtension "SPV_QCOM_image_processing"
+           OpExtension "SPV_QCOM_image_processing2"
+      %1 = OpExtInstImport "GLSL.std.450"
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+           OpExecutionMode %2 OriginUpperLeft
+           OpDecorate %3 Location 0
+           OpDecorate %4 DescriptorSet 0
+           OpDecorate %4 Binding 1
+           OpDecorate %4 BlockMatchTextureQCOM
+           OpDecorate %5 DescriptorSet 0
+           OpDecorate %5 Binding 3
+           OpDecorate %6 DescriptorSet 0
+           OpDecorate %6 Binding 2
+           OpDecorate %6 BlockMatchTextureQCOM
+           OpDecorate %6 BlockMatchSamplerQCOM
+   %void = OpTypeVoid
+      %8 = OpTypeFunction %void
+   %uint = OpTypeInt 32 0
+ %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+  %float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%uint_4 = OpConstant %uint 4
+    %17 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+     %3 = OpVariable %_ptr_Output_v4float Output
+    %19 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+     %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %21 = OpTypeSampler
+%_ptr_UniformConstant_21 = OpTypePointer UniformConstant %21
+    %5 = OpVariable %_ptr_UniformConstant_21 UniformConstant
+   %23 = OpTypeSampledImage %19
+    %6 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %2 = OpFunction %void None %8
+   %24 = OpLabel
+   %25 = OpVariable %_ptr_Function_v2uint Function
+   %26 = OpLoad %19 %4
+   %27 = OpLoad %21 %5
+   %28 = OpSampledImage %23 %26 %27
+   %29 = OpLoad %v2uint %25
+   %30 = OpLoad %19 %6
+   %31 = OpLoad %21 %5
+   %32 = OpSampledImage %23 %30 %31
+   %33 = OpImageBlockMatchWindowSADQCOM %v4float %28 %29 %32 %29 %29
+         OpStore %3 %33
+         OpReturn
+         OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorRefNIT) {
+  const std::string text = R"(
+           OpCapability Shader
+           OpCapability TextureBlockMatchQCOM
+           OpCapability TextureBlockMatch2QCOM
+           OpExtension "SPV_QCOM_image_processing"
+           OpExtension "SPV_QCOM_image_processing2"
+      %1 = OpExtInstImport "GLSL.std.450"
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+           OpExecutionMode %2 OriginUpperLeft
+           OpDecorate %3 Location 0
+           OpDecorate %4 DescriptorSet 0
+           OpDecorate %4 Binding 1
+           OpDecorate %4 BlockMatchTextureQCOM
+           OpDecorate %4 BlockMatchSamplerQCOM
+           OpDecorate %5 DescriptorSet 0
+           OpDecorate %5 Binding 3
+           OpDecorate %6 DescriptorSet 0
+           OpDecorate %6 Binding 2
+           OpDecorate %6 BlockMatchSamplerQCOM
+   %void = OpTypeVoid
+      %8 = OpTypeFunction %void
+   %uint = OpTypeInt 32 0
+ %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+  %float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%uint_4 = OpConstant %uint 4
+    %17 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+     %3 = OpVariable %_ptr_Output_v4float Output
+    %19 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+     %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %21 = OpTypeSampler
+%_ptr_UniformConstant_21 = OpTypePointer UniformConstant %21
+    %5 = OpVariable %_ptr_UniformConstant_21 UniformConstant
+   %23 = OpTypeSampledImage %19
+    %6 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %2 = OpFunction %void None %8
+   %24 = OpLabel
+   %25 = OpVariable %_ptr_Function_v2uint Function
+   %26 = OpLoad %19 %4
+   %27 = OpLoad %21 %5
+   %28 = OpSampledImage %23 %26 %27
+   %29 = OpLoad %v2uint %25
+   %30 = OpLoad %19 %6
+   %31 = OpLoad %21 %5
+   %32 = OpSampledImage %23 %30 %31
+   %33 = OpImageBlockMatchWindowSADQCOM %v4float %28 %29 %32 %29 %29
+         OpStore %3 %33
+         OpReturn
+         OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorRefNIS) {
+  const std::string text = R"(
+           OpCapability Shader
+           OpCapability TextureBlockMatchQCOM
+           OpCapability TextureBlockMatch2QCOM
+           OpExtension "SPV_QCOM_image_processing"
+           OpExtension "SPV_QCOM_image_processing2"
+      %1 = OpExtInstImport "GLSL.std.450"
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+           OpExecutionMode %2 OriginUpperLeft
+           OpDecorate %3 Location 0
+           OpDecorate %4 DescriptorSet 0
+           OpDecorate %4 Binding 1
+           OpDecorate %4 BlockMatchTextureQCOM
+           OpDecorate %4 BlockMatchSamplerQCOM
+           OpDecorate %5 DescriptorSet 0
+           OpDecorate %5 Binding 3
+           OpDecorate %6 DescriptorSet 0
+           OpDecorate %6 Binding 2
+           OpDecorate %6 BlockMatchTextureQCOM
+   %void = OpTypeVoid
+      %8 = OpTypeFunction %void
+   %uint = OpTypeInt 32 0
+ %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+  %float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%uint_4 = OpConstant %uint 4
+    %17 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+     %3 = OpVariable %_ptr_Output_v4float Output
+    %19 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+     %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %21 = OpTypeSampler
+%_ptr_UniformConstant_21 = OpTypePointer UniformConstant %21
+    %5 = OpVariable %_ptr_UniformConstant_21 UniformConstant
+   %23 = OpTypeSampledImage %19
+    %6 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %2 = OpFunction %void None %8
+   %24 = OpLabel
+   %25 = OpVariable %_ptr_Function_v2uint Function
+   %26 = OpLoad %19 %4
+   %27 = OpLoad %21 %5
+   %28 = OpSampledImage %23 %26 %27
+   %29 = OpLoad %v2uint %25
+   %30 = OpLoad %19 %6
+   %31 = OpLoad %21 %5
+   %32 = OpSampledImage %23 %30 %31
+   %33 = OpImageBlockMatchWindowSADQCOM %v4float %28 %29 %32 %29 %29
+         OpStore %3 %33
+         OpReturn
+         OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorTargetIT) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %4 Binding 4
+               OpDecorate %4 BlockMatchSamplerQCOM
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+               OpDecorate %5 BlockMatchSamplerQCOM
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %19 = OpTypeSampledImage %18
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+          %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+          %5 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+         %21 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %7
+         %22 = OpLabel
+         %23 = OpVariable %_ptr_Function_v2uint Function
+         %24 = OpLoad %19 %4
+         %25 = OpLoad %v2uint %23
+         %26 = OpLoad %19 %5
+         %27 = OpLoad %v2uint %23
+         %28 = OpLoad %v2uint %23
+         %29 = OpImageBlockMatchWindowSSDQCOM %v4float %24 %25 %26 %27 %28
+               OpStore %3 %29
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorTargetIS) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %4 Binding 4
+               OpDecorate %4 BlockMatchTextureQCOM
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+               OpDecorate %5 BlockMatchSamplerQCOM
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %19 = OpTypeSampledImage %18
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+          %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+          %5 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+         %21 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %7
+         %22 = OpLabel
+         %23 = OpVariable %_ptr_Function_v2uint Function
+         %24 = OpLoad %19 %4
+         %25 = OpLoad %v2uint %23
+         %26 = OpLoad %19 %5
+         %27 = OpLoad %v2uint %23
+         %28 = OpLoad %v2uint %23
+         %29 = OpImageBlockMatchWindowSSDQCOM %v4float %24 %25 %26 %27 %28
+               OpStore %3 %29
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorRefIT) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %4 Binding 4
+               OpDecorate %4 BlockMatchTextureQCOM
+               OpDecorate %4 BlockMatchSamplerQCOM
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 5
+               OpDecorate %5 BlockMatchSamplerQCOM
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %19 = OpTypeSampledImage %18
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+          %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+          %5 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+         %21 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %7
+         %22 = OpLabel
+         %23 = OpVariable %_ptr_Function_v2uint Function
+         %24 = OpLoad %19 %4
+         %25 = OpLoad %v2uint %23
+         %26 = OpLoad %19 %5
+         %27 = OpLoad %v2uint %23
+         %28 = OpLoad %v2uint %23
+         %29 = OpImageBlockMatchWindowSSDQCOM %v4float %24 %25 %26 %27 %28
+               OpStore %3 %29
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorRefIS) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %4 Binding 4
+               OpDecorate %4 BlockMatchTextureQCOM
+               OpDecorate %4 BlockMatchSamplerQCOM
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %19 = OpTypeSampledImage %18
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+          %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+          %5 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+         %21 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %7
+         %22 = OpLabel
+         %23 = OpVariable %_ptr_Function_v2uint Function
+         %24 = OpLoad %19 %4
+         %25 = OpLoad %v2uint %23
+         %26 = OpLoad %19 %5
+         %27 = OpLoad %v2uint %23
+         %28 = OpLoad %v2uint %23
+         %29 = OpImageBlockMatchWindowSSDQCOM %v4float %24 %25 %26 %27 %28
+               OpStore %3 %29
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorTargetNIT) {
+  const std::string text = R"(
+           OpCapability Shader
+           OpCapability TextureBlockMatchQCOM
+           OpCapability TextureBlockMatch2QCOM
+           OpExtension "SPV_QCOM_image_processing"
+           OpExtension "SPV_QCOM_image_processing2"
+      %1 = OpExtInstImport "GLSL.std.450"
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+           OpExecutionMode %2 OriginUpperLeft
+           OpDecorate %3 Location 0
+           OpDecorate %4 DescriptorSet 0
+           OpDecorate %4 Binding 1
+           OpDecorate %4 BlockMatchSamplerQCOM
+           OpDecorate %5 DescriptorSet 0
+           OpDecorate %5 Binding 3
+           OpDecorate %6 DescriptorSet 0
+           OpDecorate %6 Binding 2
+           OpDecorate %6 BlockMatchTextureQCOM
+           OpDecorate %6 BlockMatchSamplerQCOM
+   %void = OpTypeVoid
+      %8 = OpTypeFunction %void
+   %uint = OpTypeInt 32 0
+ %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+  %float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%uint_4 = OpConstant %uint 4
+    %17 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+     %3 = OpVariable %_ptr_Output_v4float Output
+    %19 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+     %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %21 = OpTypeSampler
+%_ptr_UniformConstant_21 = OpTypePointer UniformConstant %21
+    %5 = OpVariable %_ptr_UniformConstant_21 UniformConstant
+   %23 = OpTypeSampledImage %19
+    %6 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %2 = OpFunction %void None %8
+   %24 = OpLabel
+   %25 = OpVariable %_ptr_Function_v2uint Function
+   %26 = OpLoad %19 %4
+   %27 = OpLoad %21 %5
+   %28 = OpSampledImage %23 %26 %27
+   %29 = OpLoad %v2uint %25
+   %30 = OpLoad %19 %6
+   %31 = OpLoad %21 %5
+   %32 = OpSampledImage %23 %30 %31
+   %33 = OpImageBlockMatchWindowSSDQCOM %v4float %28 %29 %32 %29 %29
+         OpStore %3 %33
+         OpReturn
+         OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorTargetNIS) {
+  const std::string text = R"(
+           OpCapability Shader
+           OpCapability TextureBlockMatchQCOM
+           OpCapability TextureBlockMatch2QCOM
+           OpExtension "SPV_QCOM_image_processing"
+           OpExtension "SPV_QCOM_image_processing2"
+      %1 = OpExtInstImport "GLSL.std.450"
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+           OpExecutionMode %2 OriginUpperLeft
+           OpDecorate %3 Location 0
+           OpDecorate %4 DescriptorSet 0
+           OpDecorate %4 Binding 1
+           OpDecorate %4 BlockMatchTextureQCOM
+           OpDecorate %5 DescriptorSet 0
+           OpDecorate %5 Binding 3
+           OpDecorate %6 DescriptorSet 0
+           OpDecorate %6 Binding 2
+           OpDecorate %6 BlockMatchTextureQCOM
+           OpDecorate %6 BlockMatchSamplerQCOM
+   %void = OpTypeVoid
+      %8 = OpTypeFunction %void
+   %uint = OpTypeInt 32 0
+ %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+  %float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%uint_4 = OpConstant %uint 4
+    %17 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+     %3 = OpVariable %_ptr_Output_v4float Output
+    %19 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+     %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %21 = OpTypeSampler
+%_ptr_UniformConstant_21 = OpTypePointer UniformConstant %21
+    %5 = OpVariable %_ptr_UniformConstant_21 UniformConstant
+   %23 = OpTypeSampledImage %19
+    %6 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %2 = OpFunction %void None %8
+   %24 = OpLabel
+   %25 = OpVariable %_ptr_Function_v2uint Function
+   %26 = OpLoad %19 %4
+   %27 = OpLoad %21 %5
+   %28 = OpSampledImage %23 %26 %27
+   %29 = OpLoad %v2uint %25
+   %30 = OpLoad %19 %6
+   %31 = OpLoad %21 %5
+   %32 = OpSampledImage %23 %30 %31
+   %33 = OpImageBlockMatchWindowSSDQCOM %v4float %28 %29 %32 %29 %29
+         OpStore %3 %33
+         OpReturn
+         OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorRefNIT) {
+  const std::string text = R"(
+           OpCapability Shader
+           OpCapability TextureBlockMatchQCOM
+           OpCapability TextureBlockMatch2QCOM
+           OpExtension "SPV_QCOM_image_processing"
+           OpExtension "SPV_QCOM_image_processing2"
+      %1 = OpExtInstImport "GLSL.std.450"
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+           OpExecutionMode %2 OriginUpperLeft
+           OpDecorate %3 Location 0
+           OpDecorate %4 DescriptorSet 0
+           OpDecorate %4 Binding 1
+           OpDecorate %4 BlockMatchTextureQCOM
+           OpDecorate %4 BlockMatchSamplerQCOM
+           OpDecorate %5 DescriptorSet 0
+           OpDecorate %5 Binding 3
+           OpDecorate %6 DescriptorSet 0
+           OpDecorate %6 Binding 2
+           OpDecorate %6 BlockMatchSamplerQCOM
+   %void = OpTypeVoid
+      %8 = OpTypeFunction %void
+   %uint = OpTypeInt 32 0
+ %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+  %float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%uint_4 = OpConstant %uint 4
+    %17 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+     %3 = OpVariable %_ptr_Output_v4float Output
+    %19 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+     %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %21 = OpTypeSampler
+%_ptr_UniformConstant_21 = OpTypePointer UniformConstant %21
+    %5 = OpVariable %_ptr_UniformConstant_21 UniformConstant
+   %23 = OpTypeSampledImage %19
+    %6 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %2 = OpFunction %void None %8
+   %24 = OpLabel
+   %25 = OpVariable %_ptr_Function_v2uint Function
+   %26 = OpLoad %19 %4
+   %27 = OpLoad %21 %5
+   %28 = OpSampledImage %23 %26 %27
+   %29 = OpLoad %v2uint %25
+   %30 = OpLoad %19 %6
+   %31 = OpLoad %21 %5
+   %32 = OpSampledImage %23 %30 %31
+   %33 = OpImageBlockMatchWindowSSDQCOM %v4float %28 %29 %32 %29 %29
+         OpStore %3 %33
+         OpReturn
+         OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorRefNIS) {
+  const std::string text = R"(
+           OpCapability Shader
+           OpCapability TextureBlockMatchQCOM
+           OpCapability TextureBlockMatch2QCOM
+           OpExtension "SPV_QCOM_image_processing"
+           OpExtension "SPV_QCOM_image_processing2"
+      %1 = OpExtInstImport "GLSL.std.450"
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+           OpExecutionMode %2 OriginUpperLeft
+           OpDecorate %3 Location 0
+           OpDecorate %4 DescriptorSet 0
+           OpDecorate %4 Binding 1
+           OpDecorate %4 BlockMatchTextureQCOM
+           OpDecorate %4 BlockMatchSamplerQCOM
+           OpDecorate %5 DescriptorSet 0
+           OpDecorate %5 Binding 3
+           OpDecorate %6 DescriptorSet 0
+           OpDecorate %6 Binding 2
+           OpDecorate %6 BlockMatchTextureQCOM
+   %void = OpTypeVoid
+      %8 = OpTypeFunction %void
+   %uint = OpTypeInt 32 0
+ %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+  %float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%uint_4 = OpConstant %uint 4
+    %17 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+     %3 = OpVariable %_ptr_Output_v4float Output
+    %19 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+     %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %21 = OpTypeSampler
+%_ptr_UniformConstant_21 = OpTypePointer UniformConstant %21
+    %5 = OpVariable %_ptr_UniformConstant_21 UniformConstant
+   %23 = OpTypeSampledImage %19
+    %6 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %2 = OpFunction %void None %8
+   %24 = OpLabel
+   %25 = OpVariable %_ptr_Function_v2uint Function
+   %26 = OpLoad %19 %4
+   %27 = OpLoad %21 %5
+   %28 = OpSampledImage %23 %26 %27
+   %29 = OpLoad %v2uint %25
+   %30 = OpLoad %19 %6
+   %31 = OpLoad %21 %5
+   %32 = OpSampledImage %23 %30 %31
+   %33 = OpImageBlockMatchWindowSSDQCOM %v4float %28 %29 %32 %29 %29
+         OpStore %3 %33
+         OpReturn
+         OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchSamplerQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADNoDecorTargetIT) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %4 Binding 4
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %19 = OpTypeSampledImage %18
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+          %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+          %5 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+         %21 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %7
+         %22 = OpLabel
+         %23 = OpVariable %_ptr_Function_v2uint Function
+         %24 = OpLoad %19 %4
+         %25 = OpLoad %v2uint %23
+         %26 = OpLoad %19 %5
+         %27 = OpLoad %v2uint %23
+         %28 = OpLoad %v2uint %23
+         %29 = OpImageBlockMatchGatherSADQCOM %v4float %24 %25 %26 %27 %28
+               OpStore %3 %29
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADNoDecorRefIT) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %4 Binding 4
+               OpDecorate %4 BlockMatchTextureQCOM
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 5
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %19 = OpTypeSampledImage %18
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+          %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+          %5 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+         %21 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %7
+         %22 = OpLabel
+         %23 = OpVariable %_ptr_Function_v2uint Function
+         %24 = OpLoad %19 %4
+         %25 = OpLoad %v2uint %23
+         %26 = OpLoad %19 %5
+         %27 = OpLoad %v2uint %23
+         %28 = OpLoad %v2uint %23
+         %29 = OpImageBlockMatchGatherSADQCOM %v4float %24 %25 %26 %27 %28
+               OpStore %3 %29
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADNoDecorTargetNIT) {
+  const std::string text = R"(
+           OpCapability Shader
+           OpCapability TextureBlockMatchQCOM
+           OpCapability TextureBlockMatch2QCOM
+           OpExtension "SPV_QCOM_image_processing"
+           OpExtension "SPV_QCOM_image_processing2"
+      %1 = OpExtInstImport "GLSL.std.450"
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+           OpExecutionMode %2 OriginUpperLeft
+           OpDecorate %3 Location 0
+           OpDecorate %4 DescriptorSet 0
+           OpDecorate %4 Binding 1
+           OpDecorate %5 DescriptorSet 0
+           OpDecorate %5 Binding 3
+           OpDecorate %6 DescriptorSet 0
+           OpDecorate %6 Binding 2
+           OpDecorate %6 BlockMatchTextureQCOM
+   %void = OpTypeVoid
+      %8 = OpTypeFunction %void
+   %uint = OpTypeInt 32 0
+ %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+  %float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%uint_4 = OpConstant %uint 4
+    %17 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+     %3 = OpVariable %_ptr_Output_v4float Output
+    %19 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+     %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %21 = OpTypeSampler
+%_ptr_UniformConstant_21 = OpTypePointer UniformConstant %21
+    %5 = OpVariable %_ptr_UniformConstant_21 UniformConstant
+   %23 = OpTypeSampledImage %19
+    %6 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %2 = OpFunction %void None %8
+   %24 = OpLabel
+   %25 = OpVariable %_ptr_Function_v2uint Function
+   %26 = OpLoad %19 %4
+   %27 = OpLoad %21 %5
+   %28 = OpSampledImage %23 %26 %27
+   %29 = OpLoad %v2uint %25
+   %30 = OpLoad %19 %6
+   %31 = OpLoad %21 %5
+   %32 = OpSampledImage %23 %30 %31
+   %33 = OpImageBlockMatchGatherSADQCOM %v4float %28 %29 %32 %29 %29
+         OpStore %3 %33
+         OpReturn
+         OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADNoDecorRefNIT) {
+  const std::string text = R"(
+           OpCapability Shader
+           OpCapability TextureBlockMatchQCOM
+           OpCapability TextureBlockMatch2QCOM
+           OpExtension "SPV_QCOM_image_processing"
+           OpExtension "SPV_QCOM_image_processing2"
+      %1 = OpExtInstImport "GLSL.std.450"
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+           OpExecutionMode %2 OriginUpperLeft
+           OpDecorate %3 Location 0
+           OpDecorate %4 DescriptorSet 0
+           OpDecorate %4 Binding 1
+           OpDecorate %4 BlockMatchTextureQCOM
+           OpDecorate %5 DescriptorSet 0
+           OpDecorate %5 Binding 3
+           OpDecorate %6 DescriptorSet 0
+           OpDecorate %6 Binding 2
+   %void = OpTypeVoid
+      %8 = OpTypeFunction %void
+   %uint = OpTypeInt 32 0
+ %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+  %float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%uint_4 = OpConstant %uint 4
+    %17 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+     %3 = OpVariable %_ptr_Output_v4float Output
+    %19 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+     %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %21 = OpTypeSampler
+%_ptr_UniformConstant_21 = OpTypePointer UniformConstant %21
+    %5 = OpVariable %_ptr_UniformConstant_21 UniformConstant
+   %23 = OpTypeSampledImage %19
+    %6 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %2 = OpFunction %void None %8
+   %24 = OpLabel
+   %25 = OpVariable %_ptr_Function_v2uint Function
+   %26 = OpLoad %19 %4
+   %27 = OpLoad %21 %5
+   %28 = OpSampledImage %23 %26 %27
+   %29 = OpLoad %v2uint %25
+   %30 = OpLoad %19 %6
+   %31 = OpLoad %21 %5
+   %32 = OpSampledImage %23 %30 %31
+   %33 = OpImageBlockMatchGatherSADQCOM %v4float %28 %29 %32 %29 %29
+         OpStore %3 %33
+         OpReturn
+         OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDNoDecorTargetIT) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %4 Binding 4
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %19 = OpTypeSampledImage %18
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+          %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+          %5 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+         %21 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %7
+         %22 = OpLabel
+         %23 = OpVariable %_ptr_Function_v2uint Function
+         %24 = OpLoad %19 %4
+         %25 = OpLoad %v2uint %23
+         %26 = OpLoad %19 %5
+         %27 = OpLoad %v2uint %23
+         %28 = OpLoad %v2uint %23
+         %29 = OpImageBlockMatchGatherSSDQCOM %v4float %24 %25 %26 %27 %28
+               OpStore %3 %29
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDNoDecorRefIT) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %4 Binding 4
+               OpDecorate %4 BlockMatchTextureQCOM
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 5
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %3 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %19 = OpTypeSampledImage %18
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+          %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+          %5 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+         %21 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %7
+         %22 = OpLabel
+         %23 = OpVariable %_ptr_Function_v2uint Function
+         %24 = OpLoad %19 %4
+         %25 = OpLoad %v2uint %23
+         %26 = OpLoad %19 %5
+         %27 = OpLoad %v2uint %23
+         %28 = OpLoad %v2uint %23
+         %29 = OpImageBlockMatchGatherSSDQCOM %v4float %24 %25 %26 %27 %28
+               OpStore %3 %29
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDNoDecorTargetNIT) {
+  const std::string text = R"(
+           OpCapability Shader
+           OpCapability TextureBlockMatchQCOM
+           OpCapability TextureBlockMatch2QCOM
+           OpExtension "SPV_QCOM_image_processing"
+           OpExtension "SPV_QCOM_image_processing2"
+      %1 = OpExtInstImport "GLSL.std.450"
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+           OpExecutionMode %2 OriginUpperLeft
+           OpDecorate %3 Location 0
+           OpDecorate %4 DescriptorSet 0
+           OpDecorate %4 Binding 1
+           OpDecorate %5 DescriptorSet 0
+           OpDecorate %5 Binding 3
+           OpDecorate %6 DescriptorSet 0
+           OpDecorate %6 Binding 2
+           OpDecorate %6 BlockMatchTextureQCOM
+   %void = OpTypeVoid
+      %8 = OpTypeFunction %void
+   %uint = OpTypeInt 32 0
+ %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+  %float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%uint_4 = OpConstant %uint 4
+    %17 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+     %3 = OpVariable %_ptr_Output_v4float Output
+    %19 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+     %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %21 = OpTypeSampler
+%_ptr_UniformConstant_21 = OpTypePointer UniformConstant %21
+    %5 = OpVariable %_ptr_UniformConstant_21 UniformConstant
+   %23 = OpTypeSampledImage %19
+    %6 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %2 = OpFunction %void None %8
+   %24 = OpLabel
+   %25 = OpVariable %_ptr_Function_v2uint Function
+   %26 = OpLoad %19 %4
+   %27 = OpLoad %21 %5
+   %28 = OpSampledImage %23 %26 %27
+   %29 = OpLoad %v2uint %25
+   %30 = OpLoad %19 %6
+   %31 = OpLoad %21 %5
+   %32 = OpSampledImage %23 %30 %31
+   %33 = OpImageBlockMatchGatherSSDQCOM %v4float %28 %29 %32 %29 %29
+         OpStore %3 %33
+         OpReturn
+         OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDNoDecorRefNIT) {
+  const std::string text = R"(
+           OpCapability Shader
+           OpCapability TextureBlockMatchQCOM
+           OpCapability TextureBlockMatch2QCOM
+           OpExtension "SPV_QCOM_image_processing"
+           OpExtension "SPV_QCOM_image_processing2"
+      %1 = OpExtInstImport "GLSL.std.450"
+           OpMemoryModel Logical GLSL450
+           OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+           OpExecutionMode %2 OriginUpperLeft
+           OpDecorate %3 Location 0
+           OpDecorate %4 DescriptorSet 0
+           OpDecorate %4 Binding 1
+           OpDecorate %4 BlockMatchTextureQCOM
+           OpDecorate %5 DescriptorSet 0
+           OpDecorate %5 Binding 3
+           OpDecorate %6 DescriptorSet 0
+           OpDecorate %6 Binding 2
+   %void = OpTypeVoid
+      %8 = OpTypeFunction %void
+   %uint = OpTypeInt 32 0
+ %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+  %float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_float = OpTypePointer Input %float
+%_ptr_Function_uint = OpTypePointer Function %uint
+%uint_4 = OpConstant %uint 4
+    %17 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+     %3 = OpVariable %_ptr_Output_v4float Output
+    %19 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_19 = OpTypePointer UniformConstant %19
+     %4 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %21 = OpTypeSampler
+%_ptr_UniformConstant_21 = OpTypePointer UniformConstant %21
+    %5 = OpVariable %_ptr_UniformConstant_21 UniformConstant
+   %23 = OpTypeSampledImage %19
+    %6 = OpVariable %_ptr_UniformConstant_19 UniformConstant
+    %2 = OpFunction %void None %8
+   %24 = OpLabel
+   %25 = OpVariable %_ptr_Function_v2uint Function
+   %26 = OpLoad %19 %4
+   %27 = OpLoad %21 %5
+   %28 = OpSampledImage %23 %26 %27
+   %29 = OpLoad %v2uint %25
+   %30 = OpLoad %19 %6
+   %31 = OpLoad %21 %5
+   %32 = OpSampledImage %23 %30 %31
+   %33 = OpImageBlockMatchGatherSSDQCOM %v4float %28 %29 %32 %29 %29
+         OpStore %3 %33
+         OpReturn
+         OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Missing decoration BlockMatchTextureQCOM"));
+}
+
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchWindowSADInvalidUseTargetI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 Location 0
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 4
+               OpDecorate %6 DescriptorSet 0
+               OpDecorate %6 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+               OpDecorate %5 BlockMatchSamplerQCOM
+               OpDecorate %6 BlockMatchTextureQCOM
+               OpDecorate %6 BlockMatchSamplerQCOM
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+          %3 = OpVariable %_ptr_Input_v4float Input
+     %uint_4 = OpConstant %uint 4
+         %16 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %4 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_18 = OpTypePointer UniformConstant %18
+         %20 = OpTypeSampledImage %18
+%_ptr_UniformConstant_20 = OpTypePointer UniformConstant %20
+          %5 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+          %6 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+    %v2float = OpTypeVector %float 2
+         %23 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %8
+         %24 = OpLabel
+         %25 = OpVariable %_ptr_Function_v2uint Function
+               OpStore %25 %16
+         %26 = OpLoad %20 %5
+         %27 = OpLoad %v2uint %25
+         %28 = OpLoad %20 %6
+         %29 = OpLoad %v2uint %25
+         %30 = OpLoad %v2uint %25
+         %31 = OpImageBlockMatchWindowSADQCOM %v4float %26 %27 %28 %29 %30
+               OpStore %4 %31
+         %32 = OpLoad %20 %5
+         %33 = OpLoad %v4float %3
+         %34 = OpVectorShuffle %v2float %33 %33 0 2
+         %35 = OpImageSampleImplicitLod %v4float %32 %34
+               OpStore %4 %35
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADInvalidUseRefI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 Location 0
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 4
+               OpDecorate %6 DescriptorSet 0
+               OpDecorate %6 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+               OpDecorate %5 BlockMatchSamplerQCOM
+               OpDecorate %6 BlockMatchTextureQCOM
+               OpDecorate %6 BlockMatchSamplerQCOM
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+          %3 = OpVariable %_ptr_Input_v4float Input
+     %uint_4 = OpConstant %uint 4
+         %16 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %4 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_18 = OpTypePointer UniformConstant %18
+         %20 = OpTypeSampledImage %18
+%_ptr_UniformConstant_20 = OpTypePointer UniformConstant %20
+          %5 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+          %6 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+    %v2float = OpTypeVector %float 2
+         %23 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %8
+         %24 = OpLabel
+         %25 = OpVariable %_ptr_Function_v2uint Function
+               OpStore %25 %16
+         %26 = OpLoad %20 %5
+         %27 = OpLoad %v2uint %25
+         %28 = OpLoad %20 %6
+         %29 = OpLoad %v2uint %25
+         %30 = OpLoad %v2uint %25
+         %31 = OpImageBlockMatchWindowSADQCOM %v4float %26 %27 %28 %29 %30
+               OpStore %4 %31
+         %32 = OpLoad %20 %6
+         %33 = OpLoad %v4float %3
+         %34 = OpVectorShuffle %v2float %33 %33 0 2
+         %35 = OpImageSampleImplicitLod %v4float %32 %34
+               OpStore %4 %35
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchWindowSADInvalidUseTargetNI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %100 %101 %102 %103 %104
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %100 Location 0
+               OpDecorate %101 Location 0
+               OpDecorate %102 DescriptorSet 0
+               OpDecorate %102 Binding 1
+               OpDecorate %103 DescriptorSet 0
+               OpDecorate %103 Binding 3
+               OpDecorate %104 DescriptorSet 0
+               OpDecorate %104 Binding 2
+               OpDecorate %102 BlockMatchTextureQCOM
+               OpDecorate %102 BlockMatchSamplerQCOM
+               OpDecorate %104 BlockMatchTextureQCOM
+               OpDecorate %104 BlockMatchSamplerQCOM
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+ %100 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+  %101 = OpVariable %_ptr_Output_v4float Output
+         %42 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_42 = OpTypePointer UniformConstant %42
+ %102 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+         %46 = OpTypeSampler
+%_ptr_UniformConstant_46 = OpTypePointer UniformConstant %46
+       %103 = OpVariable %_ptr_UniformConstant_46 UniformConstant
+         %50 = OpTypeSampledImage %42
+ %104 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+    %v2float = OpTypeVector %float 2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpVariable %_ptr_Function_v2uint Function
+         %45 = OpLoad %42 %102
+         %49 = OpLoad %46 %103
+         %51 = OpSampledImage %50 %45 %49
+         %52 = OpLoad %v2uint %15
+         %54 = OpLoad %42 %104
+         %55 = OpLoad %46 %103
+         %56 = OpSampledImage %50 %54 %55
+         %57 = OpLoad %v2uint %15
+         %58 = OpLoad %v2uint %15
+         %59 = OpImageBlockMatchWindowSADQCOM %v4float %51 %52 %56 %57 %58
+               OpStore %101 %59
+         %69 = OpLoad %42 %102
+         %70 = OpLoad %46 %103
+         %71 = OpSampledImage %50 %69 %70
+         %73 = OpLoad %v4float %100
+         %74 = OpVectorShuffle %v2float %73 %73 0 0
+         %75 = OpImageSampleImplicitLod %v4float %71 %74
+               OpStore %101 %75
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADInvalidUseRefNI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %100 %101 %102 %103 %104
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %100 Location 0
+               OpDecorate %101 Location 0
+               OpDecorate %102 DescriptorSet 0
+               OpDecorate %102 Binding 1
+               OpDecorate %103 DescriptorSet 0
+               OpDecorate %103 Binding 3
+               OpDecorate %104 DescriptorSet 0
+               OpDecorate %104 Binding 2
+               OpDecorate %102 BlockMatchTextureQCOM
+               OpDecorate %102 BlockMatchSamplerQCOM
+               OpDecorate %104 BlockMatchTextureQCOM
+               OpDecorate %104 BlockMatchSamplerQCOM
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+ %100 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+  %101 = OpVariable %_ptr_Output_v4float Output
+         %42 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_42 = OpTypePointer UniformConstant %42
+ %102 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+         %46 = OpTypeSampler
+%_ptr_UniformConstant_46 = OpTypePointer UniformConstant %46
+       %103 = OpVariable %_ptr_UniformConstant_46 UniformConstant
+         %50 = OpTypeSampledImage %42
+ %104 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+    %v2float = OpTypeVector %float 2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpVariable %_ptr_Function_v2uint Function
+         %45 = OpLoad %42 %102
+         %49 = OpLoad %46 %103
+         %51 = OpSampledImage %50 %45 %49
+         %52 = OpLoad %v2uint %15
+         %54 = OpLoad %42 %104
+         %55 = OpLoad %46 %103
+         %56 = OpSampledImage %50 %54 %55
+         %57 = OpLoad %v2uint %15
+         %58 = OpLoad %v2uint %15
+         %59 = OpImageBlockMatchWindowSADQCOM %v4float %51 %52 %56 %57 %58
+               OpStore %101 %59
+         %69 = OpLoad %42 %104
+         %70 = OpLoad %46 %103
+         %71 = OpSampledImage %50 %69 %70
+         %73 = OpLoad %v4float %100
+         %74 = OpVectorShuffle %v2float %73 %73 0 0
+         %75 = OpImageSampleImplicitLod %v4float %71 %74
+               OpStore %101 %75
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchWindowSSDInvalidUseTargetI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 Location 0
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 4
+               OpDecorate %6 DescriptorSet 0
+               OpDecorate %6 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+               OpDecorate %5 BlockMatchSamplerQCOM
+               OpDecorate %6 BlockMatchTextureQCOM
+               OpDecorate %6 BlockMatchSamplerQCOM
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+          %3 = OpVariable %_ptr_Input_v4float Input
+     %uint_4 = OpConstant %uint 4
+         %16 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %4 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_18 = OpTypePointer UniformConstant %18
+         %20 = OpTypeSampledImage %18
+%_ptr_UniformConstant_20 = OpTypePointer UniformConstant %20
+          %5 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+          %6 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+    %v2float = OpTypeVector %float 2
+         %23 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %8
+         %24 = OpLabel
+         %25 = OpVariable %_ptr_Function_v2uint Function
+               OpStore %25 %16
+         %26 = OpLoad %20 %5
+         %27 = OpLoad %v2uint %25
+         %28 = OpLoad %20 %6
+         %29 = OpLoad %v2uint %25
+         %30 = OpLoad %v2uint %25
+         %31 = OpImageBlockMatchWindowSSDQCOM %v4float %26 %27 %28 %29 %30
+               OpStore %4 %31
+         %32 = OpLoad %20 %5
+         %33 = OpLoad %v4float %3
+         %34 = OpVectorShuffle %v2float %33 %33 0 2
+         %35 = OpImageSampleImplicitLod %v4float %32 %34
+               OpStore %4 %35
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDInvalidUseRefI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 Location 0
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 4
+               OpDecorate %6 DescriptorSet 0
+               OpDecorate %6 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+               OpDecorate %5 BlockMatchSamplerQCOM
+               OpDecorate %6 BlockMatchTextureQCOM
+               OpDecorate %6 BlockMatchSamplerQCOM
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+          %3 = OpVariable %_ptr_Input_v4float Input
+     %uint_4 = OpConstant %uint 4
+         %16 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %4 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_18 = OpTypePointer UniformConstant %18
+         %20 = OpTypeSampledImage %18
+%_ptr_UniformConstant_20 = OpTypePointer UniformConstant %20
+          %5 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+          %6 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+    %v2float = OpTypeVector %float 2
+         %23 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %8
+         %24 = OpLabel
+         %25 = OpVariable %_ptr_Function_v2uint Function
+               OpStore %25 %16
+         %26 = OpLoad %20 %5
+         %27 = OpLoad %v2uint %25
+         %28 = OpLoad %20 %6
+         %29 = OpLoad %v2uint %25
+         %30 = OpLoad %v2uint %25
+         %31 = OpImageBlockMatchWindowSSDQCOM %v4float %26 %27 %28 %29 %30
+               OpStore %4 %31
+         %32 = OpLoad %20 %6
+         %33 = OpLoad %v4float %3
+         %34 = OpVectorShuffle %v2float %33 %33 0 2
+         %35 = OpImageSampleImplicitLod %v4float %32 %34
+               OpStore %4 %35
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchWindowSSDInvalidUseTargetNI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %100 %101 %102 %103 %104
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %100 Location 0
+               OpDecorate %101 Location 0
+               OpDecorate %102 DescriptorSet 0
+               OpDecorate %102 Binding 1
+               OpDecorate %103 DescriptorSet 0
+               OpDecorate %103 Binding 3
+               OpDecorate %104 DescriptorSet 0
+               OpDecorate %104 Binding 2
+               OpDecorate %102 BlockMatchTextureQCOM
+               OpDecorate %102 BlockMatchSamplerQCOM
+               OpDecorate %104 BlockMatchTextureQCOM
+               OpDecorate %104 BlockMatchSamplerQCOM
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+ %100 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+  %101 = OpVariable %_ptr_Output_v4float Output
+         %42 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_42 = OpTypePointer UniformConstant %42
+ %102 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+         %46 = OpTypeSampler
+%_ptr_UniformConstant_46 = OpTypePointer UniformConstant %46
+       %103 = OpVariable %_ptr_UniformConstant_46 UniformConstant
+         %50 = OpTypeSampledImage %42
+ %104 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+    %v2float = OpTypeVector %float 2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpVariable %_ptr_Function_v2uint Function
+         %45 = OpLoad %42 %102
+         %49 = OpLoad %46 %103
+         %51 = OpSampledImage %50 %45 %49
+         %52 = OpLoad %v2uint %15
+         %54 = OpLoad %42 %104
+         %55 = OpLoad %46 %103
+         %56 = OpSampledImage %50 %54 %55
+         %57 = OpLoad %v2uint %15
+         %58 = OpLoad %v2uint %15
+         %59 = OpImageBlockMatchWindowSSDQCOM %v4float %51 %52 %56 %57 %58
+               OpStore %101 %59
+         %69 = OpLoad %42 %102
+         %70 = OpLoad %46 %103
+         %71 = OpSampledImage %50 %69 %70
+         %73 = OpLoad %v4float %100
+         %74 = OpVectorShuffle %v2float %73 %73 0 0
+         %75 = OpImageSampleImplicitLod %v4float %71 %74
+               OpStore %101 %75
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDInvalidUseRefNI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %100 %101 %102 %103 %104
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %100 Location 0
+               OpDecorate %101 Location 0
+               OpDecorate %102 DescriptorSet 0
+               OpDecorate %102 Binding 1
+               OpDecorate %103 DescriptorSet 0
+               OpDecorate %103 Binding 3
+               OpDecorate %104 DescriptorSet 0
+               OpDecorate %104 Binding 2
+               OpDecorate %102 BlockMatchTextureQCOM
+               OpDecorate %102 BlockMatchSamplerQCOM
+               OpDecorate %104 BlockMatchTextureQCOM
+               OpDecorate %104 BlockMatchSamplerQCOM
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+ %100 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+  %101 = OpVariable %_ptr_Output_v4float Output
+         %42 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_42 = OpTypePointer UniformConstant %42
+ %102 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+         %46 = OpTypeSampler
+%_ptr_UniformConstant_46 = OpTypePointer UniformConstant %46
+       %103 = OpVariable %_ptr_UniformConstant_46 UniformConstant
+         %50 = OpTypeSampledImage %42
+ %104 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+    %v2float = OpTypeVector %float 2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpVariable %_ptr_Function_v2uint Function
+         %45 = OpLoad %42 %102
+         %49 = OpLoad %46 %103
+         %51 = OpSampledImage %50 %45 %49
+         %52 = OpLoad %v2uint %15
+         %54 = OpLoad %42 %104
+         %55 = OpLoad %46 %103
+         %56 = OpSampledImage %50 %54 %55
+         %57 = OpLoad %v2uint %15
+         %58 = OpLoad %v2uint %15
+         %59 = OpImageBlockMatchWindowSSDQCOM %v4float %51 %52 %56 %57 %58
+               OpStore %101 %59
+         %69 = OpLoad %42 %104
+         %70 = OpLoad %46 %103
+         %71 = OpSampledImage %50 %69 %70
+         %73 = OpLoad %v4float %100
+         %74 = OpVectorShuffle %v2float %73 %73 0 0
+         %75 = OpImageSampleImplicitLod %v4float %71 %74
+               OpStore %101 %75
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchGatherSADInvalidUseTargetI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 Location 0
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 4
+               OpDecorate %6 DescriptorSet 0
+               OpDecorate %6 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+               OpDecorate %6 BlockMatchTextureQCOM
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+          %3 = OpVariable %_ptr_Input_v4float Input
+     %uint_4 = OpConstant %uint 4
+         %16 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %4 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_18 = OpTypePointer UniformConstant %18
+         %20 = OpTypeSampledImage %18
+%_ptr_UniformConstant_20 = OpTypePointer UniformConstant %20
+          %5 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+          %6 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+    %v2float = OpTypeVector %float 2
+         %23 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %8
+         %24 = OpLabel
+         %25 = OpVariable %_ptr_Function_v2uint Function
+               OpStore %25 %16
+         %26 = OpLoad %20 %5
+         %27 = OpLoad %v2uint %25
+         %28 = OpLoad %20 %6
+         %29 = OpLoad %v2uint %25
+         %30 = OpLoad %v2uint %25
+         %31 = OpImageBlockMatchGatherSADQCOM %v4float %26 %27 %28 %29 %30
+               OpStore %4 %31
+         %32 = OpLoad %20 %5
+         %33 = OpLoad %v4float %3
+         %34 = OpVectorShuffle %v2float %33 %33 0 2
+         %35 = OpImageSampleImplicitLod %v4float %32 %34
+               OpStore %4 %35
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADInvalidUseRefI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 Location 0
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 4
+               OpDecorate %6 DescriptorSet 0
+               OpDecorate %6 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+               OpDecorate %6 BlockMatchTextureQCOM
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+          %3 = OpVariable %_ptr_Input_v4float Input
+     %uint_4 = OpConstant %uint 4
+         %16 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %4 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_18 = OpTypePointer UniformConstant %18
+         %20 = OpTypeSampledImage %18
+%_ptr_UniformConstant_20 = OpTypePointer UniformConstant %20
+          %5 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+          %6 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+    %v2float = OpTypeVector %float 2
+         %23 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %8
+         %24 = OpLabel
+         %25 = OpVariable %_ptr_Function_v2uint Function
+               OpStore %25 %16
+         %26 = OpLoad %20 %5
+         %27 = OpLoad %v2uint %25
+         %28 = OpLoad %20 %6
+         %29 = OpLoad %v2uint %25
+         %30 = OpLoad %v2uint %25
+         %31 = OpImageBlockMatchGatherSADQCOM %v4float %26 %27 %28 %29 %30
+               OpStore %4 %31
+         %32 = OpLoad %20 %6
+         %33 = OpLoad %v4float %3
+         %34 = OpVectorShuffle %v2float %33 %33 0 2
+         %35 = OpImageSampleImplicitLod %v4float %32 %34
+               OpStore %4 %35
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchGatherSADInvalidUseTargetNI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %100 %101 %102 %103 %104
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %100 Location 0
+               OpDecorate %101 Location 0
+               OpDecorate %102 DescriptorSet 0
+               OpDecorate %102 Binding 1
+               OpDecorate %103 DescriptorSet 0
+               OpDecorate %103 Binding 3
+               OpDecorate %104 DescriptorSet 0
+               OpDecorate %104 Binding 2
+               OpDecorate %102 BlockMatchTextureQCOM
+               OpDecorate %104 BlockMatchTextureQCOM
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+ %100 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+  %101 = OpVariable %_ptr_Output_v4float Output
+         %42 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_42 = OpTypePointer UniformConstant %42
+ %102 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+         %46 = OpTypeSampler
+%_ptr_UniformConstant_46 = OpTypePointer UniformConstant %46
+       %103 = OpVariable %_ptr_UniformConstant_46 UniformConstant
+         %50 = OpTypeSampledImage %42
+ %104 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+    %v2float = OpTypeVector %float 2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpVariable %_ptr_Function_v2uint Function
+         %45 = OpLoad %42 %102
+         %49 = OpLoad %46 %103
+         %51 = OpSampledImage %50 %45 %49
+         %52 = OpLoad %v2uint %15
+         %54 = OpLoad %42 %104
+         %55 = OpLoad %46 %103
+         %56 = OpSampledImage %50 %54 %55
+         %57 = OpLoad %v2uint %15
+         %58 = OpLoad %v2uint %15
+         %59 = OpImageBlockMatchGatherSADQCOM %v4float %51 %52 %56 %57 %58
+               OpStore %101 %59
+         %69 = OpLoad %42 %102
+         %70 = OpLoad %46 %103
+         %71 = OpSampledImage %50 %69 %70
+         %73 = OpLoad %v4float %100
+         %74 = OpVectorShuffle %v2float %73 %73 0 0
+         %75 = OpImageSampleImplicitLod %v4float %71 %74
+               OpStore %101 %75
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSADInvalidUseRefNI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %100 %101 %102 %103 %104
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %100 Location 0
+               OpDecorate %101 Location 0
+               OpDecorate %102 DescriptorSet 0
+               OpDecorate %102 Binding 1
+               OpDecorate %103 DescriptorSet 0
+               OpDecorate %103 Binding 3
+               OpDecorate %104 DescriptorSet 0
+               OpDecorate %104 Binding 2
+               OpDecorate %102 BlockMatchTextureQCOM
+               OpDecorate %104 BlockMatchTextureQCOM
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+ %100 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+  %101 = OpVariable %_ptr_Output_v4float Output
+         %42 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_42 = OpTypePointer UniformConstant %42
+ %102 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+         %46 = OpTypeSampler
+%_ptr_UniformConstant_46 = OpTypePointer UniformConstant %46
+       %103 = OpVariable %_ptr_UniformConstant_46 UniformConstant
+         %50 = OpTypeSampledImage %42
+ %104 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+    %v2float = OpTypeVector %float 2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpVariable %_ptr_Function_v2uint Function
+         %45 = OpLoad %42 %102
+         %49 = OpLoad %46 %103
+         %51 = OpSampledImage %50 %45 %49
+         %52 = OpLoad %v2uint %15
+         %54 = OpLoad %42 %104
+         %55 = OpLoad %46 %103
+         %56 = OpSampledImage %50 %54 %55
+         %57 = OpLoad %v2uint %15
+         %58 = OpLoad %v2uint %15
+         %59 = OpImageBlockMatchGatherSADQCOM %v4float %51 %52 %56 %57 %58
+               OpStore %101 %59
+         %69 = OpLoad %42 %104
+         %70 = OpLoad %46 %103
+         %71 = OpSampledImage %50 %69 %70
+         %73 = OpLoad %v4float %100
+         %74 = OpVectorShuffle %v2float %73 %73 0 0
+         %75 = OpImageSampleImplicitLod %v4float %71 %74
+               OpStore %101 %75
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchGatherSSDInvalidUseTargetI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 Location 0
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 4
+               OpDecorate %6 DescriptorSet 0
+               OpDecorate %6 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+               OpDecorate %6 BlockMatchTextureQCOM
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+          %3 = OpVariable %_ptr_Input_v4float Input
+     %uint_4 = OpConstant %uint 4
+         %16 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %4 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_18 = OpTypePointer UniformConstant %18
+         %20 = OpTypeSampledImage %18
+%_ptr_UniformConstant_20 = OpTypePointer UniformConstant %20
+          %5 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+          %6 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+    %v2float = OpTypeVector %float 2
+         %23 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %8
+         %24 = OpLabel
+         %25 = OpVariable %_ptr_Function_v2uint Function
+               OpStore %25 %16
+         %26 = OpLoad %20 %5
+         %27 = OpLoad %v2uint %25
+         %28 = OpLoad %20 %6
+         %29 = OpLoad %v2uint %25
+         %30 = OpLoad %v2uint %25
+         %31 = OpImageBlockMatchGatherSSDQCOM %v4float %26 %27 %28 %29 %30
+               OpStore %4 %31
+         %32 = OpLoad %20 %5
+         %33 = OpLoad %v4float %3
+         %34 = OpVectorShuffle %v2float %33 %33 0 2
+         %35 = OpImageSampleImplicitLod %v4float %32 %34
+               OpStore %4 %35
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDInvalidUseRefI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main" %3 %4 %5 %6
+               OpExecutionMode %2 OriginUpperLeft
+               OpDecorate %3 Location 0
+               OpDecorate %4 Location 0
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 4
+               OpDecorate %6 DescriptorSet 0
+               OpDecorate %6 Binding 5
+               OpDecorate %5 BlockMatchTextureQCOM
+               OpDecorate %6 BlockMatchTextureQCOM
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+          %3 = OpVariable %_ptr_Input_v4float Input
+     %uint_4 = OpConstant %uint 4
+         %16 = OpConstantComposite %v2uint %uint_4 %uint_4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %4 = OpVariable %_ptr_Output_v4float Output
+         %18 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_18 = OpTypePointer UniformConstant %18
+         %20 = OpTypeSampledImage %18
+%_ptr_UniformConstant_20 = OpTypePointer UniformConstant %20
+          %5 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+          %6 = OpVariable %_ptr_UniformConstant_20 UniformConstant
+    %v2float = OpTypeVector %float 2
+         %23 = OpTypeImage %float 2D 0 1 0 1 Unknown
+          %2 = OpFunction %void None %8
+         %24 = OpLabel
+         %25 = OpVariable %_ptr_Function_v2uint Function
+               OpStore %25 %16
+         %26 = OpLoad %20 %5
+         %27 = OpLoad %v2uint %25
+         %28 = OpLoad %20 %6
+         %29 = OpLoad %v2uint %25
+         %30 = OpLoad %v2uint %25
+         %31 = OpImageBlockMatchGatherSSDQCOM %v4float %26 %27 %28 %29 %30
+               OpStore %4 %31
+         %32 = OpLoad %20 %6
+         %33 = OpLoad %v4float %3
+         %34 = OpVectorShuffle %v2float %33 %33 0 2
+         %35 = OpImageSampleImplicitLod %v4float %32 %34
+               OpStore %4 %35
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage,
+       QCOMImageProcessing2BlockMatchGatherSSDInvalidUseTargetNI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %100 %101 %102 %103 %104
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %100 Location 0
+               OpDecorate %101 Location 0
+               OpDecorate %102 DescriptorSet 0
+               OpDecorate %102 Binding 1
+               OpDecorate %103 DescriptorSet 0
+               OpDecorate %103 Binding 3
+               OpDecorate %104 DescriptorSet 0
+               OpDecorate %104 Binding 2
+               OpDecorate %102 BlockMatchTextureQCOM
+               OpDecorate %104 BlockMatchTextureQCOM
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+ %100 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+  %101 = OpVariable %_ptr_Output_v4float Output
+         %42 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_42 = OpTypePointer UniformConstant %42
+ %102 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+         %46 = OpTypeSampler
+%_ptr_UniformConstant_46 = OpTypePointer UniformConstant %46
+       %103 = OpVariable %_ptr_UniformConstant_46 UniformConstant
+         %50 = OpTypeSampledImage %42
+ %104 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+    %v2float = OpTypeVector %float 2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpVariable %_ptr_Function_v2uint Function
+         %45 = OpLoad %42 %102
+         %49 = OpLoad %46 %103
+         %51 = OpSampledImage %50 %45 %49
+         %52 = OpLoad %v2uint %15
+         %54 = OpLoad %42 %104
+         %55 = OpLoad %46 %103
+         %56 = OpSampledImage %50 %54 %55
+         %57 = OpLoad %v2uint %15
+         %58 = OpLoad %v2uint %15
+         %59 = OpImageBlockMatchGatherSSDQCOM %v4float %51 %52 %56 %57 %58
+               OpStore %101 %59
+         %69 = OpLoad %42 %102
+         %70 = OpLoad %46 %103
+         %71 = OpSampledImage %50 %69 %70
+         %73 = OpLoad %v4float %100
+         %74 = OpVectorShuffle %v2float %73 %73 0 0
+         %75 = OpImageSampleImplicitLod %v4float %71 %74
+               OpStore %101 %75
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Illegal use of QCOM image processing decorated texture"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDInvalidUseRefNI) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability TextureBlockMatchQCOM
+               OpCapability TextureBlockMatch2QCOM
+               OpExtension "SPV_QCOM_image_processing"
+               OpExtension "SPV_QCOM_image_processing2"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %100 %101 %102 %103 %104
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %100 Location 0
+               OpDecorate %101 Location 0
+               OpDecorate %102 DescriptorSet 0
+               OpDecorate %102 Binding 1
+               OpDecorate %103 DescriptorSet 0
+               OpDecorate %103 Binding 3
+               OpDecorate %104 DescriptorSet 0
+               OpDecorate %104 Binding 2
+               OpDecorate %102 BlockMatchTextureQCOM
+               OpDecorate %104 BlockMatchTextureQCOM
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+ %100 = OpVariable %_ptr_Input_v4float Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+  %101 = OpVariable %_ptr_Output_v4float Output
+         %42 = OpTypeImage %float 2D 0 0 0 1 Unknown
+%_ptr_UniformConstant_42 = OpTypePointer UniformConstant %42
+ %102 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+         %46 = OpTypeSampler
+%_ptr_UniformConstant_46 = OpTypePointer UniformConstant %46
+       %103 = OpVariable %_ptr_UniformConstant_46 UniformConstant
+         %50 = OpTypeSampledImage %42
+ %104 = OpVariable %_ptr_UniformConstant_42 UniformConstant
+    %v2float = OpTypeVector %float 2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpVariable %_ptr_Function_v2uint Function
+         %45 = OpLoad %42 %102
+         %49 = OpLoad %46 %103
+         %51 = OpSampledImage %50 %45 %49
+         %52 = OpLoad %v2uint %15
+         %54 = OpLoad %42 %104
+         %55 = OpLoad %46 %103
+         %56 = OpSampledImage %50 %54 %55
+         %57 = OpLoad %v2uint %15
+         %58 = OpLoad %v2uint %15
+         %59 = OpImageBlockMatchGatherSSDQCOM %v4float %51 %52 %56 %57 %58
+               OpStore %101 %59
+         %69 = OpLoad %42 %104
+         %70 = OpLoad %46 %103
+         %71 = OpSampledImage %50 %69 %70
+         %73 = OpLoad %v4float %100
+         %74 = OpVectorShuffle %v2float %73 %73 0 0
+         %75 = OpImageSampleImplicitLod %v4float %71 %74
+               OpStore %101 %75
                OpReturn
                OpFunctionEnd
 )";
