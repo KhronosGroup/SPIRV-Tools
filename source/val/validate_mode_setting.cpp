@@ -346,6 +346,7 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
       case spv::ExecutionMode::LocalSizeHintId:
       case spv::ExecutionMode::LocalSizeId:
       case spv::ExecutionMode::FPFastMathDefault:
+      case spv::ExecutionMode::MaximumRegistersIdINTEL:
         valid_mode = true;
         break;
       default:

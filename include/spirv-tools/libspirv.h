@@ -301,6 +301,8 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_LOAD_CACHE_CONTROL,
   // Enum type from SPV_INTEL_cache_controls
   SPV_OPERAND_TYPE_STORE_CACHE_CONTROL,
+  // Enum type from SPV_INTEL_maximum_registers
+  SPV_OPERAND_TYPE_NAMED_MAXIMUM_NUMBER_OF_REGISTERS,
 
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.
