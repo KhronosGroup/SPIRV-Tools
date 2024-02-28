@@ -1374,33 +1374,30 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
       case spv::Op::OpTypeStruct: {
         // In case of structures, there is an additional constraint on the
         // index: the index must be an OpConstant.
-        if (spv::Op::OpConstant != cur_word_instr->opcode()) {
+        int64_t cur_index;
+        if (!_.EvalConstantValInt64(cur_word, &cur_index)) {
           return _.diag(SPV_ERROR_INVALID_ID, cur_word_instr)
                  << "The <id> passed to " << instr_name
                  << " to index into a "
                     "structure must be an OpConstant.";
         }
-        // Get the index value from the OpConstant (word 3 of OpConstant).
-        // OpConstant could be a signed integer. But it's okay to treat it as
-        // unsigned because a negative constant int would never be seen as
-        // correct as a struct offset, since structs can't have more than 2
-        // billion members.
-        const uint32_t cur_index = cur_word_instr->word(3);
+
         // The index points to the struct member we want, therefore, the index
         // should be less than the number of struct members.
-        const uint32_t num_struct_members =
-            static_cast<uint32_t>(type_pointee->words().size() - 2);
-        if (cur_index >= num_struct_members) {
+        const int64_t num_struct_members =
+            static_cast<int64_t>(type_pointee->words().size() - 2);
+        if (cur_index >= num_struct_members || cur_index < 0) {
           return _.diag(SPV_ERROR_INVALID_ID, cur_word_instr)
                  << "Index is out of bounds: " << instr_name
-                 << " can not find index " << cur_index
+                 << " cannot find index " << cur_index
                  << " into the structure <id> "
                  << _.getIdName(type_pointee->id()) << ". This structure has "
                  << num_struct_members << " members. Largest valid index is "
                  << num_struct_members - 1 << ".";
         }
         // Struct members IDs start at word 2 of OpTypeStruct.
-        auto structMemberId = type_pointee->word(cur_index + 2);
+        const size_t word_index = static_cast<size_t>(cur_index) + 2;
+        auto structMemberId = type_pointee->word(word_index);
         type_pointee = _.FindDef(structMemberId);
         break;
       }
@@ -1413,7 +1410,7 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
       }
     }
   }
-  // At this point, we have fully walked down from the base using the indeces.
+  // At this point, we have fully walked down from the base using the indices.
   // The type being pointed to should be the same as the result type.
   if (type_pointee->id() != result_type_pointee->id()) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)

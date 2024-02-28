@@ -5115,6 +5115,60 @@ TEST_F(ValidateMemory, VulkanPtrAccessChainWorkgroupNoArrayStrideSuccess) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 
+TEST_F(ValidateMemory, AccessChainNegativeStructIndex32) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%_struct_4 = OpTypeStruct %int %int %int
+%_ptr_Function__struct_4 = OpTypePointer Function %_struct_4
+%_ptr_Function_int = OpTypePointer Function %int
+%int_n224 = OpConstant %int -224
+%fn = OpFunction %void Inline %void_fn
+%entry = OpLabel
+%var = OpVariable %_ptr_Function__struct_4 Function
+%gep = OpInBoundsAccessChain %_ptr_Function_int %var %int_n224
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Index is out of bounds"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("cannot find index -224"));
+}
+
+TEST_F(ValidateMemory, AccessChainNegativeStructIndex64) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability Int64
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%long = OpTypeInt 64 1
+%_struct_4 = OpTypeStruct %int %int %int
+%_ptr_Function__struct_4 = OpTypePointer Function %_struct_4
+%_ptr_Function_int = OpTypePointer Function %int
+%long_n224 = OpConstant %long -224
+%fn = OpFunction %void Inline %void_fn
+%entry = OpLabel
+%var = OpVariable %_ptr_Function__struct_4 Function
+%gep = OpInBoundsAccessChain %_ptr_Function_int %var %long_n224
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Index is out of bounds"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("cannot find index -224"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

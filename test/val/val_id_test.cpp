@@ -1056,7 +1056,7 @@ TEST_P(ValidateIdWithMessage, OpTypeArrayLengthNull) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr(make_message("OpTypeArray Length <id> '2[%2]' default "
-                                     "value must be at least 1.")));
+                                     "value must be at least 1: found 0")));
 }
 
 TEST_P(ValidateIdWithMessage, OpTypeArrayLengthSpecConst) {
@@ -4225,7 +4225,7 @@ OpReturn
 OpFunctionEnd
   )";
   const std::string expected_err = "Index is out of bounds: " + instr +
-                                   " can not find index 3 into the structure "
+                                   " cannot find index 3 into the structure "
                                    "<id> '25[%_struct_25]'. This structure "
                                    "has 3 members. Largest valid index is 2.";
   CompileSuccessfully(spirv);
