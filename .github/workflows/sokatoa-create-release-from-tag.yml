@@ -61,7 +61,7 @@ jobs:
         run: |
           mkdir ${{ github.event.inputs.RELEASE_TAG }}
           cp build/tools/spirv-dis ${{ github.event.inputs.RELEASE_TAG }}
-          tar -czvf ${{ github.event.inputs.RELEASE_TAG }}_$RUNNER_OS.tar.gz -C ${{ github.event.inputs.RELEASE_TAG }} `ls -A ${{ github.event.inputs.RELEASE_TAG }}`
+          tar -czvf ${{ github.event.inputs.RELEASE_TAG }}_${{ runner.os }}.tar.gz -C ${{ github.event.inputs.RELEASE_TAG }} `ls -A ${{ github.event.inputs.RELEASE_TAG }}`
 
       - name: Archive results
         if: runner.os == 'Windows'
@@ -76,7 +76,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.event.inputs.RELEASE_TAG }}
-          files: ${{ github.event.inputs.RELEASE_TAG }}_$RUNNER_OS.tar.gz
+          files: ${{ github.event.inputs.RELEASE_TAG }}_${{ runner.os }}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
