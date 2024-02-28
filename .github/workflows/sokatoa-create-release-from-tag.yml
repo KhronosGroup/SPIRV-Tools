@@ -35,7 +35,7 @@ jobs:
       fail-fast: false
       matrix:
         # free runners
-        os: [windows-2019, ubuntu-20.04]
+        os: [windows-2019, ubuntu-20.04, macos-12]
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -56,12 +56,12 @@ jobs:
           cmake --build . --config Release -j 12
 
       - name: Archive results
-        if: runner.os == 'Linux'
+        if: runner.os != 'Windows'
         shell: bash
         run: |
           mkdir ${{ github.event.inputs.RELEASE_TAG }}
           cp build/tools/spirv-dis ${{ github.event.inputs.RELEASE_TAG }}
-          tar -czvf ${{ github.event.inputs.RELEASE_TAG }}.tar.gz -C ${{ github.event.inputs.RELEASE_TAG }} `ls -A ${{ github.event.inputs.RELEASE_TAG }}`
+          tar -czvf ${{ github.event.inputs.RELEASE_TAG }}_$RUNNER_OS.tar.gz -C ${{ github.event.inputs.RELEASE_TAG }} `ls -A ${{ github.event.inputs.RELEASE_TAG }}`
 
       - name: Archive results
         if: runner.os == 'Windows'
@@ -72,11 +72,11 @@ jobs:
           7z a -r ${{ github.event.inputs.RELEASE_TAG }}.zip ./${{ github.event.inputs.RELEASE_TAG }}/*
 
       - name: Upload artifacts
-        if: runner.os == 'Linux'
+        if: runner.os != 'Windows'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.event.inputs.RELEASE_TAG }}
-          files: ${{ github.event.inputs.RELEASE_TAG }}.tar.gz
+          files: ${{ github.event.inputs.RELEASE_TAG }}_$RUNNER_OS.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
