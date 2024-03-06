@@ -711,6 +711,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     case SPV_OPERAND_TYPE_IMAGE:
     case SPV_OPERAND_TYPE_OPTIONAL_IMAGE:
     case SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS:
+    case SPV_OPERAND_TYPE_OPTIONAL_RAW_ACCESS_CHAIN_OPERANDS:
     case SPV_OPERAND_TYPE_SELECTION_CONTROL:
     case SPV_OPERAND_TYPE_CLDEBUG100_DEBUG_INFO_FLAGS:
     case SPV_OPERAND_TYPE_DEBUG_INFO_FLAGS:
@@ -721,10 +722,12 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       // Map an optional operand type to its corresponding concrete type.
       if (type == SPV_OPERAND_TYPE_OPTIONAL_IMAGE)
         parsed_operand.type = SPV_OPERAND_TYPE_IMAGE;
-      else if (type == SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS)
+      if (type == SPV_OPERAND_TYPE_OPTIONAL_MEMORY_ACCESS)
         parsed_operand.type = SPV_OPERAND_TYPE_MEMORY_ACCESS;
       if (type == SPV_OPERAND_TYPE_OPTIONAL_COOPERATIVE_MATRIX_OPERANDS)
         parsed_operand.type = SPV_OPERAND_TYPE_COOPERATIVE_MATRIX_OPERANDS;
+      if (type == SPV_OPERAND_TYPE_OPTIONAL_RAW_ACCESS_CHAIN_OPERANDS)
+        parsed_operand.type = SPV_OPERAND_TYPE_RAW_ACCESS_CHAIN_OPERANDS;
 
       // Check validity of set mask bits. Also prepare for operands for those
       // masks if they have any.  To get operand order correct, scan from
