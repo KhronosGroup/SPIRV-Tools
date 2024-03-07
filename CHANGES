@@ -1,5 +1,37 @@
 Revision history for SPIRV-Tools
 
+v2024.1 2024-03-06
+  - General
+    - Add tooling support for SPV_KHR_maximal_reconvergence (#5542)
+    - Add support for SPV_KHR_float_controls2 (#5543)
+    - SPV_KHR_quad_control (#5547)
+    - Fold 64-bit int operations (#5561)
+    - update image enum tests to remove Kernel capability (#5562)
+    - Support operand kind for SPV_INTEL_maximum_registers (#5580)
+    - SPV_NV_shader_atomic_fp16_vector (#5581)
+    - Support for SPV_QCOM_image_processing2 (#5582)
+    - Fix access chain struct checks (#5592)
+  - Optimizer
+    - opt: add Int16 and Float16 to capability trim pass (#5519)
+    - Add preserver-interface option to spirv-opt (#5524)
+    - spirv-opt: Fix OpCompositeExtract relaxation with struct operands (#5536)
+    - opt: Add VulkanMemoryModelDeviceScope to trim (#5544)
+    - opt: Add TrimCapabilities pass to spirv-opt tool (#5545)
+    - Add modify-maximal-reconvergence to spirv-opt help (#5546)
+    - opt: add SPV_EXT_mesh_shader to opt allowlist (#5551)
+    - opt: Add OpEntryPoint to DescriptorScalarReplacement pass (#5553)
+    - opt: prevent meld to merge block with MaximalReconvergence (#5557)
+    - [OPT] Use new instruction folder for for all opcodes in spec consti folding (#5569)
+    - [OPT] Identify arrays with unknown length in copy prop arrays (#5570)
+    - [OPT] Add removed unused interface var pass to legalization passes (#5579)
+  - Validator
+    - spirv-val: Re-enable OpControlBarrier VU (#5527)
+    - spirv-val: Add Mesh Primitive Built-In validaiton (#5529)
+    - spirv-val: Validate PhysicalStorageBuffer Stage Interface (#5539)
+    - spirv-val: Multiple interface var with same SC (#5528)
+    - spirv-val: Revert Validate PhysicalStorageBuffer Stage Interface (#5575)
+    - spirv-val: Make Constant evaluation consistent (#5587)
+
 v2023.6 2023-12-18
   - General
     - update_build_version.py produce deterministic header. (#5426)
