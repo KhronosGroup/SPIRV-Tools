@@ -328,6 +328,10 @@ spvtools_vendor_tables = [
     "...nil...",
   ],
   [
+    "nonsemantic.vkspreflection",
+    "...nil...",
+  ],
+  [
     "nonsemantic.shader.debuginfo.100",
     "SHDEBUG100_",
   ],

@@ -58,6 +58,8 @@ generate_vendor_tables(extension = "debuginfo")
 
 generate_vendor_tables(extension = "nonsemantic.clspvreflection")
 
+generate_vendor_tables(extension = "nonsemantic.vkspreflection")
+
 generate_vendor_tables(
     extension = "opencl.debuginfo.100",
     operand_kind_prefix = "CLDEBUG100_",
@@ -146,6 +148,7 @@ cc_library(
         ":gen_opencl_tables_unified1",
         ":gen_vendor_tables_debuginfo",
         ":gen_vendor_tables_nonsemantic_clspvreflection",
+        ":gen_vendor_tables_nonsemantic_vkspreflection",
         ":gen_vendor_tables_nonsemantic_shader_debuginfo_100",
         ":gen_vendor_tables_opencl_debuginfo_100",
         ":gen_vendor_tables_spv_amd_gcn_shader",
