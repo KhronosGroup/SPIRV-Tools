@@ -11,7 +11,7 @@ jobs:
         matrix:
           os: [ macos-12, macos-13 ]
     steps:
-        - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         - uses: lukka/get-cmake@139aae96315b496d9af1b5e9abe53b15ca7eece8 # v3.28.3
         - name: Download dependencies
           run: python3 utils/git-sync-deps
