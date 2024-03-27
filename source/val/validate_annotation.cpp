@@ -143,6 +143,11 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
         return fail(0) << "must be a variable";
       }
       break;
+    case spv::Decoration::PerPrimitiveNV:
+      if (target->opcode() != spv::Op::OpVariable) {
+        return fail(0) << "must be a memory object declaration";
+      }
+      break;
     case spv::Decoration::NoPerspective:
     case spv::Decoration::Flat:
     case spv::Decoration::Patch:
@@ -360,6 +365,15 @@ spv_result_t ValidateMemberDecorate(ValidationState_t& _,
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << _.SpvDecorationString(decoration)
            << " cannot be applied to structure members";
+  }
+  
+  const auto target_id = inst->GetOperandAs<uint32_t>(0);
+  const auto target = _.FindDef(target_id);
+  if (decoration == spv::Decoration::PerPrimitiveNV && 
+    target->opcode() != spv::Op::OpTypeStruct) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << _.SpvDecorationString(decoration)
+             << " must be a memory object declaration";
   }
 
   return SPV_SUCCESS;
