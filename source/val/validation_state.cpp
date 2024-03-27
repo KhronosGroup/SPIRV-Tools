@@ -2054,6 +2054,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-PrimitiveId-PrimitiveId-04330);
     case 4334:
       return VUID_WRAP(VUID-PrimitiveId-PrimitiveId-04334);
+    case 4336:
+      return VUID_WRAP(VUID-PrimitiveId-PrimitiveId-04336);
     case 4337:
       return VUID_WRAP(VUID-PrimitiveId-PrimitiveId-04337);
     case 4345:
@@ -2382,30 +2384,62 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeImage-06924);
     case 6925:
       return VUID_WRAP(VUID-StandaloneSpirv-Uniform-06925);
+    case 7034:
+      return VUID_WRAP(VUID-CullPrimitiveEXT-CullPrimitiveEXT-07034);
+    case 7035:
+      return VUID_WRAP(VUID-CullPrimitiveEXT-CullPrimitiveEXT-07035);
+    case 7036:
+      return VUID_WRAP(VUID-CullPrimitiveEXT-CullPrimitiveEXT-07036);
+    case 7038:
+      return VUID_WRAP(VUID-CullPrimitiveEXT-CullPrimitiveEXT-07038);
+    case 7039:
+        return VUID_WRAP(VUID-Layer-Layer-07039);
+    case 7040:
+      return VUID_WRAP(VUID-PrimitiveId-PrimitiveId-07040);
     case 7041:
       return VUID_WRAP(VUID-PrimitivePointIndicesEXT-PrimitivePointIndicesEXT-07041);
+    case 7042:
+      return VUID_WRAP(VUID-PrimitivePointIndicesEXT-PrimitivePointIndicesEXT-07042);
     case 7043:
       return VUID_WRAP(VUID-PrimitivePointIndicesEXT-PrimitivePointIndicesEXT-07043);
     case 7044:
       return VUID_WRAP(VUID-PrimitivePointIndicesEXT-PrimitivePointIndicesEXT-07044);
+    case 7046:
+      return VUID_WRAP(VUID-PrimitivePointIndicesEXT-PrimitivePointIndicesEXT-07046);
     case 7047:
       return VUID_WRAP(VUID-PrimitiveLineIndicesEXT-PrimitiveLineIndicesEXT-07047);
+    case 7048:
+      return VUID_WRAP(VUID-PrimitiveLineIndicesEXT-PrimitiveLineIndicesEXT-07048);
     case 7049:
       return VUID_WRAP(VUID-PrimitiveLineIndicesEXT-PrimitiveLineIndicesEXT-07049);
     case 7050:
       return VUID_WRAP(VUID-PrimitiveLineIndicesEXT-PrimitiveLineIndicesEXT-07050);
+    case 7052:
+      return VUID_WRAP(VUID-PrimitiveLineIndicesEXT-PrimitiveLineIndicesEXT-07052);
     case 7053:
       return VUID_WRAP(VUID-PrimitiveTriangleIndicesEXT-PrimitiveTriangleIndicesEXT-07053);
+    case 7054:
+      return VUID_WRAP(VUID-PrimitiveTriangleIndicesEXT-PrimitiveTriangleIndicesEXT-07054);
     case 7055:
       return VUID_WRAP(VUID-PrimitiveTriangleIndicesEXT-PrimitiveTriangleIndicesEXT-07055);
     case 7056:
       return VUID_WRAP(VUID-PrimitiveTriangleIndicesEXT-PrimitiveTriangleIndicesEXT-07056);
+    case 7058:
+      return VUID_WRAP(VUID-PrimitiveTriangleIndicesEXT-PrimitiveTriangleIndicesEXT-07058);
+    case 7059:
+      return VUID_WRAP(VUID-PrimitiveShadingRateKHR-PrimitiveShadingRateKHR-07059);
+    case 7060:
+      return VUID_WRAP(VUID-ViewportIndex-ViewportIndex-07060);
     case 7102:
       return VUID_WRAP(VUID-StandaloneSpirv-MeshEXT-07102);
-    case 7320:
-      return VUID_WRAP(VUID-StandaloneSpirv-ExecutionModel-07320);
     case 7290:
       return VUID_WRAP(VUID-StandaloneSpirv-Input-07290);
+    case 7320:
+      return VUID_WRAP(VUID-StandaloneSpirv-ExecutionModel-07320);
+    case 7330:
+      return VUID_WRAP(VUID-StandaloneSpirv-ExecutionModel-07330);
+    case 7331:
+      return VUID_WRAP(VUID-StandaloneSpirv-ExecutionModel-07331);
     case 7650:
       return VUID_WRAP(VUID-StandaloneSpirv-Base-07650);
     case 7651:

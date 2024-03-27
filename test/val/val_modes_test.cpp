@@ -997,6 +997,109 @@ OpExecutionMode %main OutputPoints
   EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateModeExecution, MeshEXTOutputVertices) {
+  const std::string spirv = R"(
+OpCapability MeshShadingEXT
+OpExtension "SPV_EXT_mesh_shader"
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint MeshEXT %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionMode %main OutputVertices 3
+OpExecutionMode %main OutputPrimitivesNV 1
+OpExecutionMode %main OutputTrianglesNV
+OpSource GLSL 460
+OpSourceExtension "GL_EXT_mesh_shader"
+OpName %main "main"
+OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_3 = OpConstant %uint 3
+%uint_1 = OpConstant %uint 1
+%v3uint = OpTypeVector %uint 3
+%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_1 %uint_1 %uint_1
+%main = OpFunction %void None %3
+%5 = OpLabel
+OpSetMeshOutputsEXT %uint_3 %uint_1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+}
+
+TEST_F(ValidateModeExecution, VulkanBadMeshEXTOutputVertices) {
+  const std::string spirv = R"(
+OpCapability MeshShadingEXT
+OpExtension "SPV_EXT_mesh_shader"
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint MeshEXT %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionMode %main OutputVertices 0
+OpExecutionMode %main OutputPrimitivesNV 1
+OpExecutionMode %main OutputTrianglesNV
+OpSource GLSL 460
+OpSourceExtension "GL_EXT_mesh_shader"
+OpName %main "main"
+OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_3 = OpConstant %uint 3
+%uint_1 = OpConstant %uint 1
+%v3uint = OpTypeVector %uint 3
+%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_1 %uint_1 %uint_1
+%main = OpFunction %void None %3
+%5 = OpLabel
+OpSetMeshOutputsEXT %uint_3 %uint_1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-ExecutionModel-07330"));
+}
+
+TEST_F(ValidateModeExecution, VulkanBadMeshEXTOutputOutputPrimitivesEXT) {
+  const std::string spirv = R"(
+OpCapability MeshShadingEXT
+OpExtension "SPV_EXT_mesh_shader"
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint MeshEXT %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionMode %main OutputVertices 1
+OpExecutionMode %main OutputPrimitivesNV 0
+OpExecutionMode %main OutputTrianglesNV
+OpSource GLSL 460
+OpSourceExtension "GL_EXT_mesh_shader"
+OpName %main "main"
+OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_3 = OpConstant %uint 3
+%uint_1 = OpConstant %uint 1
+%v3uint = OpTypeVector %uint 3
+%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_1 %uint_1 %uint_1
+%main = OpFunction %void None %3
+%5 = OpLabel
+OpSetMeshOutputsEXT %uint_3 %uint_1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-ExecutionModel-07331"));
+}
+
 TEST_F(ValidateModeExecution, MeshNVOutputVertices) {
   const std::string spirv = R"(
 OpCapability Shader
