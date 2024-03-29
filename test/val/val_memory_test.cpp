@@ -2773,6 +2773,73 @@ OpFunctionEnd
                         "%_ptr_Uniform__struct_2 Uniform\n"));
 }
 
+TEST_F(ValidateMemory, VulkanRTAInsideUniformStructWithoutBufferBlockBadSPV13) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource HLSL 600
+               OpName %main "main"
+               OpDecorate %2 DescriptorSet 0
+               OpDecorate %2 Binding 0
+               OpDecorate %_runtimearr_int ArrayStride 16
+               OpMemberDecorate %_struct_4 0 Offset 0
+               OpDecorate %_struct_4 Block
+        %int = OpTypeInt 32 1
+%_runtimearr_int = OpTypeRuntimeArray %int
+  %_struct_4 = OpTypeStruct %_runtimearr_int
+%_ptr_Uniform__struct_4 = OpTypePointer Uniform %_struct_4
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+          %2 = OpVariable %_ptr_Uniform__struct_4 Uniform
+       %main = OpFunction %void None %8
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpTypeRuntimeArray-04680"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("For Vulkan, an OpTypeStruct variable containing an "
+                        "OpTypeRuntimeArray must be decorated with BufferBlock "
+                        "if it has storage class Uniform.\n  %2 = OpVariable "
+                        "%_ptr_Uniform__struct_4 Uniform\n"));
+}
+
+TEST_F(ValidateMemory, VulkanRTAInsideUniformStructWithoutBufferBlockGoodSPV14) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource HLSL 600
+               OpName %main "main"
+               OpDecorate %2 DescriptorSet 0
+               OpDecorate %2 Binding 0
+               OpDecorate %_runtimearr_int ArrayStride 16
+               OpMemberDecorate %_struct_4 0 Offset 0
+               OpDecorate %_struct_4 Block
+        %int = OpTypeInt 32 1
+%_runtimearr_int = OpTypeRuntimeArray %int
+  %_struct_4 = OpTypeStruct %_runtimearr_int
+%_ptr_Uniform__struct_4 = OpTypePointer Uniform %_struct_4
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+          %2 = OpVariable %_ptr_Uniform__struct_4 Uniform
+       %main = OpFunction %void None %8
+          %9 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1_SPIRV_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1_SPIRV_1_4));
+}
+
 TEST_F(ValidateMemory, VulkanRTAInsideRTABad) {
   std::string spirv = R"(
 OpCapability Shader
