@@ -52,10 +52,10 @@ version.  An API call reports the software version as a C-style string.
 The official releases for SPIRV-Tools can be found on LunarG's
 [SDK download page](https://vulkan.lunarg.com/sdk/home).
 
-You can found either the prebuilt, and QA testes binaries, or download the
+You can find either the prebuilt, and QA tested binaries, or download the
 SDK Config, which lists the commits to use to build the release from scratch.
 
-GitHub releases are deprecated, and we will now publish new releases until
+GitHub releases are deprecated, and we will not publish new releases until
 further notice.
 
 ## Supported features
