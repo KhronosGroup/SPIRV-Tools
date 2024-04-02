@@ -24,6 +24,13 @@ headers, and XML registry.
 
 ## Downloads
 
+The official releases for SPIRV-Tools can be found on LunarG's
+[SDK download page](https://vulkan.lunarg.com/sdk/home).
+
+For convenience, here are also links to the latest builds (HEAD).
+Those are untested automated builds. Those are not official releases, nor
+are guaranteed to work. Official releases builds are in the Vulkan SDK.
+
 <img alt="Linux" src="kokoro/img/linux.png" width="20px" height="20px" hspace="2px"/>[![Linux Build Status](https://storage.googleapis.com/spirv-tools/badges/build_status_linux_clang_release.svg)](https://storage.googleapis.com/spirv-tools/badges/build_link_linux_clang_release.html)
 <img alt="MacOS" src="kokoro/img/macos.png" width="20px" height="20px" hspace="2px"/>[![MacOS Build Status](https://storage.googleapis.com/spirv-tools/badges/build_status_macos_clang_release.svg)](https://storage.googleapis.com/spirv-tools/badges/build_link_macos_clang_release.html)
 <img alt="Windows" src="kokoro/img/windows.png" width="20px" height="20px" hspace="2px"/>[![Windows Build Status](https://storage.googleapis.com/spirv-tools/badges/build_status_windows_release.svg)](https://storage.googleapis.com/spirv-tools/badges/build_link_windows_vs2019_release.html)
@@ -49,17 +56,14 @@ version.  An API call reports the software version as a C-style string.
 
 ## Releases
 
-Some versions of SPIRV-Tools are tagged as stable releases (see
-[tags](https://github.com/KhronosGroup/SPIRV-Tools/tags) on github).
-These versions undergo extra testing.
-Releases are not directly related to releases (or versions) of
-[SPIRV-Headers][spirv-headers].
-Releases of SPIRV-Tools are tested against the version of SPIRV-Headers listed
-in the [DEPS](DEPS) file.
-The release generally uses the most recent compatible version of SPIRV-Headers
-available at the time of release.
-No version of SPIRV-Headers other than the one listed in the DEPS file is
-guaranteed to work with the SPIRV-Tools release.
+The official releases for SPIRV-Tools can be found on LunarG's
+[SDK download page](https://vulkan.lunarg.com/sdk/home).
+
+You can find either the prebuilt, and QA tested binaries, or download the
+SDK Config, which lists the commits to use to build the release from scratch.
+
+GitHub releases are deprecated, and we will not publish new releases until
+further notice.
 
 ## Supported features
 
