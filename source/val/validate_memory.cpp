@@ -748,7 +748,9 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
                       "PhysicalStorageBuffer.";
           }
         } else if (storage_class == spv::StorageClass::Uniform) {
-          if (!_.HasDecoration(value_id, spv::Decoration::BufferBlock) && spvVersionForTargetEnv(_.context()->target_env) < SPV_SPIRV_VERSION_WORD(1, 4)) {
+          if (!_.HasDecoration(value_id, spv::Decoration::BufferBlock) &&
+              spvVersionForTargetEnv(_.context()->target_env) <
+                  SPV_SPIRV_VERSION_WORD(1, 4)) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
                    << _.VkErrorID(4680)
                    << "For Vulkan, an OpTypeStruct variable containing an "

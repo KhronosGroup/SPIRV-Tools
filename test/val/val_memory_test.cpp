@@ -2810,7 +2810,8 @@ TEST_F(ValidateMemory, VulkanRTAInsideUniformStructWithoutBufferBlockBadSPV13) {
                         "%_ptr_Uniform__struct_4 Uniform\n"));
 }
 
-TEST_F(ValidateMemory, VulkanRTAInsideUniformStructWithoutBufferBlockGoodSPV14) {
+TEST_F(ValidateMemory,
+       VulkanRTAInsideUniformStructWithoutBufferBlockGoodSPV14) {
   std::string spirv = R"(
                OpCapability Shader
                OpMemoryModel Logical GLSL450
