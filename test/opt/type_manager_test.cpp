@@ -942,10 +942,11 @@ OpMemoryModel Logical GLSL450
   EXPECT_NE(context, nullptr);
 
   std::vector<std::unique_ptr<Type>> types = GenerateAllTypes();
-  uint32_t id = 1u;
+  uint32_t id = 0u;
   for (auto& t : types) {
-    context->get_type_mgr()->RegisterType(id, *t);
+    context->get_type_mgr()->RegisterType(++id, *t);
     EXPECT_EQ(*t, *context->get_type_mgr()->GetType(id));
+    EXPECT_EQ(id, context->get_type_mgr()->GetId(t.get()));
   }
   types.clear();
 
@@ -1197,6 +1198,39 @@ OpMemoryModel Logical GLSL450
 
   context->get_type_mgr()->FindPointerToType(2, spv::StorageClass::Function);
   Match(text, context.get());
+}
+
+// Structures containing circular type references
+// (from https://github.com/KhronosGroup/SPIRV-Tools/issues/5623).
+TEST(TypeManager, CircularPointerToStruct) {
+  const std::string text = R"(
+               OpCapability VariablePointers
+               OpCapability PhysicalStorageBufferAddresses
+               OpCapability Int64
+               OpCapability Shader
+               OpExtension "SPV_KHR_variable_pointers"
+               OpExtension "SPV_KHR_physical_storage_buffer"
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint Fragment %1 "main"
+               OpExecutionMode %1 OriginUpperLeft
+               OpExecutionMode %1 DepthReplacing
+               OpDecorate %1200 ArrayStride 24
+               OpMemberDecorate %600 0 Offset 0
+               OpMemberDecorate %800 0 Offset 0
+               OpMemberDecorate %120 0 Offset 16
+               OpTypeForwardPointer %1200 PhysicalStorageBuffer
+                 %600 = OpTypeStruct %1200
+                 %800 = OpTypeStruct %1200
+                 %120 = OpTypeStruct %800
+                %1200 = OpTypePointer PhysicalStorageBuffer %120
+  )";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  TypeManager manager(nullptr, context.get());
+  uint32_t id = manager.FindPointerToType(600, spv::StorageClass::Function);
+  EXPECT_EQ(id, 1201);
 }
 
 }  // namespace
