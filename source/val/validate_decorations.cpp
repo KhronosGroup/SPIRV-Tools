@@ -1325,21 +1325,14 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
 
 // Returns true if |decoration| cannot be applied to the same id more than once.
 bool AtMostOncePerId(spv::Decoration decoration) {
-  return decoration == spv::Decoration::ArrayStride;
+  return decoration != spv::Decoration::UserSemantic &&
+         decoration != spv::Decoration::FuncParamAttr;
 }
 
 // Returns true if |decoration| cannot be applied to the same member more than
 // once.
 bool AtMostOncePerMember(spv::Decoration decoration) {
-  switch (decoration) {
-    case spv::Decoration::Offset:
-    case spv::Decoration::MatrixStride:
-    case spv::Decoration::RowMajor:
-    case spv::Decoration::ColMajor:
-      return true;
-    default:
-      return false;
-  }
+  return decoration != spv::Decoration::UserSemantic;
 }
 
 spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
