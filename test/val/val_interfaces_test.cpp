@@ -420,8 +420,9 @@ OpFunctionEnd
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("decorated with Location multiple times is not allowed"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("decorated with Location multiple times is not allowed"));
 }
 
 TEST_F(ValidateInterfacesTest, VulkanLocationsVariableAndMemberAssigned) {
@@ -506,8 +507,9 @@ OpFunctionEnd
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("decorated with Location multiple times is not allowed"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("decorated with Location multiple times is not allowed"));
 }
 
 TEST_F(ValidateInterfacesTest, VulkanLocationsMissingAssignmentStructMember) {
@@ -1158,8 +1160,9 @@ OpFunctionEnd
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("decorated with Component multiple times is not allowed"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("decorated with Component multiple times is not allowed"));
 }
 
 TEST_F(ValidateInterfacesTest,

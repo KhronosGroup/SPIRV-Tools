@@ -1042,8 +1042,10 @@ OpExtension "SPV_KHR_float_controls"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 1 1 1
-OpExecutionMode %main )" + mode + R"( 16
-OpExecutionMode %main )" + mode + R"( 32
+OpExecutionMode %main )" + mode +
+                            R"( 16
+OpExecutionMode %main )" + mode +
+                            R"( 32
 %void = OpTypeVoid
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
@@ -1069,8 +1071,10 @@ OpExtension "SPV_KHR_float_controls"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 1 1 1
-OpExecutionMode %main )" + mode + R"( 32
-OpExecutionMode %main )" + mode + R"( 32
+OpExecutionMode %main )" + mode +
+                            R"( 32
+OpExecutionMode %main )" + mode +
+                            R"( 32
 %void = OpTypeVoid
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
@@ -1101,8 +1105,10 @@ OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main"
 OpExecutionMode %main OriginUpperLeft
-OpExecutionMode %main )" + mode + R"(
-OpExecutionMode %main )" + mode + R"(
+OpExecutionMode %main )" + mode +
+                            R"(
+OpExecutionMode %main )" + mode +
+                            R"(
 %void = OpTypeVoid
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
