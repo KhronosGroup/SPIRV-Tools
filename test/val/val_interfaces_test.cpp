@@ -419,9 +419,10 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Variable has conflicting location decorations"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("decorated with Location multiple times is not allowed"));
 }
 
 TEST_F(ValidateInterfacesTest, VulkanLocationsVariableAndMemberAssigned) {
@@ -505,9 +506,10 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Member index 1 has conflicting location assignments"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("decorated with Location multiple times is not allowed"));
 }
 
 TEST_F(ValidateInterfacesTest, VulkanLocationsMissingAssignmentStructMember) {
@@ -1157,9 +1159,10 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Variable has conflicting component decorations"));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("decorated with Component multiple times is not allowed"));
 }
 
 TEST_F(ValidateInterfacesTest,
@@ -1186,10 +1189,10 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Member index 0 has conflicting component assignments"));
+      HasSubstr("decorated with Component multiple times is not allowed"));
 }
 
 TEST_F(ValidateInterfacesTest, VulkanLocationsVariableConflictOutputIndex1) {

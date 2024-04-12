@@ -1027,6 +1027,162 @@ OpExecutionModeId %main LocalSizeId %int_1 %int_1 %int_1
                         "constant instructions."));
 }
 
+using AllowMultipleExecutionModes = spvtest::ValidateBase<std::string>;
+
+TEST_P(AllowMultipleExecutionModes, DifferentOperand) {
+  const std::string mode = GetParam();
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability DenormPreserve
+OpCapability DenormFlushToZero
+OpCapability SignedZeroInfNanPreserve
+OpCapability RoundingModeRTE
+OpCapability RoundingModeRTZ
+OpExtension "SPV_KHR_float_controls"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionMode %main )" + mode +
+                            R"( 16
+OpExecutionMode %main )" + mode +
+                            R"( 32
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_P(AllowMultipleExecutionModes, SameOperand) {
+  const std::string mode = GetParam();
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability DenormPreserve
+OpCapability DenormFlushToZero
+OpCapability SignedZeroInfNanPreserve
+OpCapability RoundingModeRTE
+OpCapability RoundingModeRTZ
+OpExtension "SPV_KHR_float_controls"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionMode %main )" + mode +
+                            R"( 32
+OpExecutionMode %main )" + mode +
+                            R"( 32
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("execution mode must not be specified multiple times "
+                        "for the same entry point and operands"));
+}
+
+INSTANTIATE_TEST_SUITE_P(MultipleFloatControlsExecModes,
+                         AllowMultipleExecutionModes,
+                         Values("DenormPreserve", "DenormFlushToZero",
+                                "SignedZeroInfNanPreserve", "RoundingModeRTE",
+                                "RoundingModeRTZ"));
+
+using MultipleExecModes = spvtest::ValidateBase<std::string>;
+
+TEST_P(MultipleExecModes, DuplicateMode) {
+  const std::string mode = GetParam();
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpExecutionMode %main )" + mode +
+                            R"(
+OpExecutionMode %main )" + mode +
+                            R"(
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("execution mode must not be specified multiple times "
+                        "per entry point"));
+}
+
+INSTANTIATE_TEST_SUITE_P(MultipleFragmentExecMode, MultipleExecModes,
+                         Values("DepthReplacing", "DepthGreater", "DepthLess",
+                                "DepthUnchanged"));
+
+TEST_F(ValidateMode, FloatControls2FPFastMathDefaultSameOperand) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionModeId %main FPFastMathDefault %float %none
+OpExecutionModeId %main FPFastMathDefault %float %none
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 0
+%none = OpConstant %int 0
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("execution mode must not be specified multiple times "
+                        "for the same entry point and operands"));
+}
+
+TEST_F(ValidateMode, FloatControls2FPFastMathDefaultDifferentOperand) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability FloatControls2
+OpExtension "SPV_KHR_float_controls2"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionModeId %main FPFastMathDefault %float %none
+OpExecutionModeId %main FPFastMathDefault %half %none
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 0
+%none = OpConstant %int 0
+%half = OpTypeFloat 16
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_2));
+}
+
 TEST_F(ValidateMode, FragmentShaderInterlockVertexBad) {
   const std::string spirv = R"(
 OpCapability Shader
