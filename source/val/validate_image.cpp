@@ -914,7 +914,15 @@ spv_result_t ValidateTypeImage(ValidationState_t& _, const Instruction* inst) {
 
     if (info.dim == spv::Dim::SubpassData && info.arrayed != 0) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << _.VkErrorID(6214) << "Dim SubpassData requires Arrayed to be 0";
+             << _.VkErrorID(6214)
+             << "Dim SubpassData requires Arrayed to be 0 in the Vulkan "
+                "environment";
+    }
+
+    if (info.dim == spv::Dim::Rect) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << _.VkErrorID(9638)
+             << "Dim must not be Rect in the Vulkan environment";
     }
   }
 
