@@ -786,6 +786,21 @@ TEST_F(ValidateImage, TypeImageWrongArrayForSubpassDataVulkan) {
               HasSubstr("Dim SubpassData requires Arrayed to be 0"));
 }
 
+TEST_F(ValidateImage, TypeImageDimRectVulkan) {
+  const std::string code = GetShaderHeader("OpCapability InputAttachment\n") +
+                           R"(
+%img_type = OpTypeImage %f32 Rect 0 1 0 2 Unknown
+)" + TrivialMain();
+
+  CompileSuccessfully(code.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  // Can't actually hit VUID-StandaloneSpirv-OpTypeImage-09638
+  EXPECT_THAT(
+      getDiagnosticString(),
+      AnyVUID("TypeImage requires one of these capabilities: SampledRect"));
+}
+
 TEST_F(ValidateImage, TypeImageWrongSampledTypeForTileImageDataEXT) {
   const std::string code = GetShaderHeader(
                                "OpCapability TileImageColorReadAccessEXT\n"
