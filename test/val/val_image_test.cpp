@@ -8332,9 +8332,9 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADNoDecorRefNIT) {
            OpDecorate %4 DescriptorSet 0
            OpDecorate %4 Binding 1
            OpDecorate %4 BlockMatchTextureQCOM
-           OpDecorate %4 BlockMatchSamplerQCOM
            OpDecorate %5 DescriptorSet 0
            OpDecorate %5 Binding 3
+           OpDecorate %5 BlockMatchSamplerQCOM
            OpDecorate %6 DescriptorSet 0
            OpDecorate %6 Binding 2
            OpDecorate %6 BlockMatchSamplerQCOM
@@ -8816,9 +8816,9 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDNoDecorRefNIT) {
            OpDecorate %4 DescriptorSet 0
            OpDecorate %4 Binding 1
            OpDecorate %4 BlockMatchTextureQCOM
-           OpDecorate %4 BlockMatchSamplerQCOM
            OpDecorate %5 DescriptorSet 0
            OpDecorate %5 Binding 3
+           OpDecorate %5 BlockMatchSamplerQCOM
            OpDecorate %6 DescriptorSet 0
            OpDecorate %6 Binding 2
            OpDecorate %6 BlockMatchSamplerQCOM
@@ -9557,9 +9557,8 @@ TEST_F(ValidateImage,
                OpDecorate %104 DescriptorSet 0
                OpDecorate %104 Binding 2
                OpDecorate %102 BlockMatchTextureQCOM
-               OpDecorate %102 BlockMatchSamplerQCOM
+               OpDecorate %103 BlockMatchSamplerQCOM
                OpDecorate %104 BlockMatchTextureQCOM
-               OpDecorate %104 BlockMatchSamplerQCOM
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
        %uint = OpTypeInt 32 0
@@ -9632,9 +9631,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSADInvalidUseRefNI) {
                OpDecorate %104 DescriptorSet 0
                OpDecorate %104 Binding 2
                OpDecorate %102 BlockMatchTextureQCOM
-               OpDecorate %102 BlockMatchSamplerQCOM
+               OpDecorate %103 BlockMatchSamplerQCOM
                OpDecorate %104 BlockMatchTextureQCOM
-               OpDecorate %104 BlockMatchSamplerQCOM
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
        %uint = OpTypeInt 32 0
@@ -9847,9 +9845,8 @@ TEST_F(ValidateImage,
                OpDecorate %104 DescriptorSet 0
                OpDecorate %104 Binding 2
                OpDecorate %102 BlockMatchTextureQCOM
-               OpDecorate %102 BlockMatchSamplerQCOM
+               OpDecorate %103 BlockMatchSamplerQCOM
                OpDecorate %104 BlockMatchTextureQCOM
-               OpDecorate %104 BlockMatchSamplerQCOM
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
        %uint = OpTypeInt 32 0
@@ -9922,9 +9919,8 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchWindowSSDInvalidUseRefNI) {
                OpDecorate %104 DescriptorSet 0
                OpDecorate %104 Binding 2
                OpDecorate %102 BlockMatchTextureQCOM
-               OpDecorate %102 BlockMatchSamplerQCOM
+               OpDecorate %103 BlockMatchSamplerQCOM
                OpDecorate %104 BlockMatchTextureQCOM
-               OpDecorate %104 BlockMatchSamplerQCOM
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
        %uint = OpTypeInt 32 0
