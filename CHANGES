@@ -1,5 +1,20 @@
 Revision history for SPIRV-Tools
 
+v2024.2 2024-04-22
+  - General
+    - Add SPIRV_TOOLS_EXPORT to public C++ API (#5591)
+    - Use bazel 7 and bzlmod (#5601)
+  - Optimizer
+    - opt: add GroupNonUniformPartitionedNV capability to trim pass (#5648)
+    - Fix rebuilding types with circular references. (#5637)
+    - Add AliasedPointer decoration (#5635)
+    - add support for vulkan-shader-profiler external passes (#5512)
+  - Validator
+    - A fix to support of SPV_QCOM_image_processing2 (#5646)
+    - spirv-val: Add Vulkan check for Rect Dim in OpTypeImage (#5644)
+    - Validate duplicate decorations and execution modes (#5641)
+    - Validator: Support SPV_NV_raw_access_chains (#5568)
+
 v2024.1 2024-03-06
   - General
     - Add tooling support for SPV_KHR_maximal_reconvergence (#5542)
