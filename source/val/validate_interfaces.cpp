@@ -536,6 +536,11 @@ spv_result_t ValidateLocations(ValidationState_t& _,
       continue;
     }
 
+    // The two Tessellation stages have a "Patch" variable that interface with
+    // the Location mechanism, but are not suppose to be tied to the "normal"
+    // input/output Location.
+    // TODO - SPIR-V allows the Patch decoration to be applied to struct
+    // members, but is not allowed in GLSL/HLSL
     bool has_patch = false;
     for (auto& dec : _.id_decorations(interface_var->id())) {
       if (dec.dec_type() == spv::Decoration::Patch) {
