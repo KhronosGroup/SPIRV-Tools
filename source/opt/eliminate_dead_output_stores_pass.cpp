@@ -27,6 +27,8 @@ constexpr uint32_t kOpDecorateBuiltInLiteralInIdx = 2;
 constexpr uint32_t kOpDecorateMemberBuiltInLiteralInIdx = 3;
 constexpr uint32_t kOpAccessChainIdx0InIdx = 1;
 constexpr uint32_t kOpConstantValueInIdx = 0;
+constexpr uint32_t kVariableStorageClassInIdx = 0;
+constexpr uint32_t kSpvTypePointerTypeIdInIdx = 1;
 }  // namespace
 
 Pass::Status EliminateDeadOutputStoresPass::Process() {
@@ -43,6 +45,64 @@ void EliminateDeadOutputStoresPass::InitializeElimination() {
 
 bool EliminateDeadOutputStoresPass::IsLiveBuiltin(uint32_t bi) {
   return live_builtins_->find(bi) != live_builtins_->end();
+}
+
+bool EliminateDeadOutputStoresPass::IsVariableRead(
+    Instruction const* const variable) {
+  analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
+
+  bool is_read = false;
+  def_use_mgr->ForEachUser(variable, [&is_read](Instruction* user) {
+    if (user->opcode() == spv::Op::OpLoad) is_read = true;
+  });
+
+  return is_read;
+}
+
+bool EliminateDeadOutputStoresPass::DemoteToPrivate(
+    Instruction* const variable) {
+  assert(spv::StorageClass(variable->GetSingleWordInOperand(
+             kVariableStorageClassInIdx)) == spv::StorageClass::Output);
+
+  auto type_mgr = context()->get_type_mgr();
+
+  // Set the variable's storage class to private.
+  variable->SetInOperand(kVariableStorageClassInIdx,
+                         {uint32_t(spv::StorageClass::Private)});
+
+  // Get the pointee type of the variable.
+  auto const res_type = get_def_use_mgr()->GetDef(variable->type_id());
+  auto pointee_type_id =
+      res_type->GetSingleWordInOperand(kSpvTypePointerTypeIdInIdx);
+
+  // Find a type that matches the pointee type and uses private storage.
+  pointee_type_id =
+      type_mgr->FindPointerToType(pointee_type_id, spv::StorageClass::Private);
+  if (pointee_type_id == 0) {
+    return false;
+  }
+  context()->UpdateDefUse(get_def_use_mgr()->GetDef(pointee_type_id));
+
+  // Remove variable decorations that are not valid for private storage.
+  get_def_use_mgr()->ForEachUser(variable, [this](Instruction* user) {
+    if (user->opcode() == spv::Op::OpDecorate) {
+      auto const decoration = spv::Decoration(user->GetSingleWordInOperand(1));
+      if (decoration == spv::Decoration::Location ||
+          decoration == spv::Decoration::Component) {
+        kill_list_.push_back(user);
+      }
+    }
+  });
+
+  // Update the variable's result type to match the pointee type.
+  variable->SetResultType(pointee_type_id);
+  context()->UpdateDefUse(variable);
+
+  // Move the variable after the result type.
+  variable->RemoveFromList();
+  variable->InsertAfter(get_def_use_mgr()->GetDef(pointee_type_id));
+
+  return true;
 }
 
 bool EliminateDeadOutputStoresPass::AnyLocsAreLive(uint32_t start,
@@ -194,6 +254,17 @@ Pass::Status EliminateDeadOutputStoresPass::DoDeadOutputStoreElimination() {
     if (ptr_type->storage_class() != spv::StorageClass::Output) {
       continue;
     }
+
+    // Stores to write-only output variables are safe to eliminate; however,
+    // stores to read-write output variables may be required for functional
+    // correctness. If a read-write output variable is detected, then it will
+    // be demoted to a private variable and any associated stores will not be
+    // eliminated.
+    if (IsVariableRead(&var)) {
+      if (!DemoteToPrivate(&var)) return Status::Failure;
+      continue;
+    }
+
     // If builtin decoration on variable, process as builtin.
     auto var_id = var.result_id();
     bool is_builtin = false;
@@ -217,7 +288,7 @@ Pass::Status EliminateDeadOutputStoresPass::DoDeadOutputStoreElimination() {
     // locations are dead, kill store or all access chain's stores
     def_use_mgr->ForEachUser(
         var_id, [this, &var, is_builtin](Instruction* user) {
-          auto op = user->opcode();
+          auto const op = user->opcode();
           if (op == spv::Op::OpEntryPoint || op == spv::Op::OpName ||
               op == spv::Op::OpDecorate || user->IsNonSemanticInstruction())
             return;
