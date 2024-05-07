@@ -627,8 +627,9 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
         // Matrix stride would be on the array element in the struct.
         const auto stride = constraint.matrix_stride;
         if (!IsAlignedTo(stride, alignment)) {
-          return fail(memberIdx) << "is a matrix with stride " << stride
-                                 << " not satisfying alignment to " << alignment;
+          return fail(memberIdx)
+                 << "is a matrix with stride " << stride
+                 << " not satisfying alignment to " << alignment;
         }
       }
 
