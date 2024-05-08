@@ -671,6 +671,8 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     case SPV_OPERAND_TYPE_OVERFLOW_MODES:
     case SPV_OPERAND_TYPE_PACKED_VECTOR_FORMAT:
     case SPV_OPERAND_TYPE_OPTIONAL_PACKED_VECTOR_FORMAT:
+    case SPV_OPERAND_TYPE_LOAD_CACHE_CONTROL:
+    case SPV_OPERAND_TYPE_STORE_CACHE_CONTROL:
     case SPV_OPERAND_TYPE_NAMED_MAXIMUM_NUMBER_OF_REGISTERS: {
       // A single word that is a plain enum value.
 
