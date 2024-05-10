@@ -2530,8 +2530,7 @@ OpStore %111 %115
 %116 = OpLoad %71 %111
 %121 = OpLoad %6 %60
 %122 = OpAccessChain %82 %120 %79 %121
-OpCooperativeMatrixStoreKHR %122 %116 %39 %84 )" +
-                  storeMemoryAccess + R"( %81
+OpCooperativeMatrixStoreKHR %122 %116 %39 %84 )" + storeMemoryAccess + R"( %81
 OpReturn
 OpFunctionEnd
 )";
