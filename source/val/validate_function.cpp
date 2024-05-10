@@ -224,6 +224,10 @@ spv_result_t ValidateFunctionParameter(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+bool IsVarArgFunction(const std::string function_name) {
+  return (function_name == "printf");
+}
+
 spv_result_t ValidateFunctionCall(ValidationState_t& _,
                                   const Instruction* inst) {
   const auto function_id = inst->GetOperandAs<uint32_t>(2);
@@ -251,7 +255,13 @@ spv_result_t ValidateFunctionCall(ValidationState_t& _,
 
   const auto function_call_arg_count = inst->words().size() - 4;
   const auto function_param_count = function_type->words().size() - 3;
-  if (function_param_count != function_call_arg_count) {
+
+  bool isVarArgFunction = IsVarArgFunction(_.getName(function_id));
+
+  if (  // Not enough arguments
+      function_param_count > function_call_arg_count ||
+      // Too many arguments and function does not have varargs
+      (!isVarArgFunction && function_param_count < function_call_arg_count)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpFunctionCall Function <id>'s parameter count does not match "
               "the argument count.";
@@ -260,6 +270,9 @@ spv_result_t ValidateFunctionCall(ValidationState_t& _,
   for (size_t argument_index = 3, param_index = 2;
        argument_index < inst->operands().size();
        argument_index++, param_index++) {
+    // If actual argument is in the untyped portion of the vararg function's
+    // declaration stop checking.
+    if (isVarArgFunction && (param_index - 2) >= function_param_count) break;
     const auto argument_id = inst->GetOperandAs<uint32_t>(argument_index);
     const auto argument = _.FindDef(argument_id);
     if (!argument) {

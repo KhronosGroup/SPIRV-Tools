@@ -255,6 +255,12 @@ std::string ValidationState_t::getIdName(uint32_t id) const {
   return out.str();
 }
 
+const std::string ValidationState_t::getName(uint32_t id) const {
+  const std::string id_name = name_mapper_(id);
+
+  return id_name;
+}
+
 size_t ValidationState_t::unresolved_forward_id_count() const {
   return unresolved_forward_ids_.size();
 }

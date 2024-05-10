@@ -151,6 +151,9 @@ class ValidationState_t {
   /// the OpName instruction
   std::string getIdName(uint32_t id) const;
 
+  /// Returns the string assigned to id by the OpName instruction
+  const std::string getName(uint32_t id) const;
+
   /// Accessor function for ID bound.
   uint32_t getIdBound() const;
 
