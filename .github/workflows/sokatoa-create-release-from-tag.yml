@@ -61,6 +61,8 @@ jobs:
         run: |
           mkdir ${{ github.event.inputs.RELEASE_TAG }}
           cp build/tools/spirv-dis ${{ github.event.inputs.RELEASE_TAG }}
+          cp build/source/*.a ${{ github.event.inputs.RELEASE_TAG }}
+          cp include ${{ github.event.inputs.RELEASE_TAG }}
           tar -czvf ${{ github.event.inputs.RELEASE_TAG }}_${{ runner.os }}.tar.gz -C ${{ github.event.inputs.RELEASE_TAG }} `ls -A ${{ github.event.inputs.RELEASE_TAG }}`
 
       - name: Archive results
@@ -69,6 +71,8 @@ jobs:
         run: |
           mkdir ${{ github.event.inputs.RELEASE_TAG }}
           cp build/tools/Release/spirv-dis.exe ${{ github.event.inputs.RELEASE_TAG }}
+          cp build/source/*.lib ${{ github.event.inputs.RELEASE_TAG }}
+          cp include ${{ github.event.inputs.RELEASE_TAG }}
           7z a -r ${{ github.event.inputs.RELEASE_TAG }}.zip ./${{ github.event.inputs.RELEASE_TAG }}/*
 
       - name: Upload artifacts
