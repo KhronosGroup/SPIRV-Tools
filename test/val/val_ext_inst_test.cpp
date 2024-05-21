@@ -446,7 +446,7 @@ OpCapability Matrix
 %u8arr_ptr_uniform_constant = OpTypePointer UniformConstant %u8arr
 %u8arr_uniform_constant = OpVariable %u8arr_ptr_uniform_constant UniformConstant
 %u8_ptr_uniform_constant = OpTypePointer UniformConstant %u8
-%u8_ptr_generic = OpTypePointer Generic %u8
+%u8_ptr_input = OpTypePointer Input %u8
 
 %main = OpFunction %void None %func
 %main_entry = OpLabel
@@ -5255,10 +5255,10 @@ TEST_F(ValidateExtInst, OpenCLStdPrintfFormatNotPointer) {
                 "type"));
 }
 
-TEST_F(ValidateExtInst, OpenCLStdPrintfFormatNotUniformConstStorageClass) {
+TEST_F(ValidateExtInst, OpenCLStdPrintfFormatNotAllowedStorageClass) {
   const std::string body = R"(
 %format_const = OpAccessChain %u8_ptr_uniform_constant %u8arr_uniform_constant %u32_0
-%format = OpBitcast %u8_ptr_generic %format_const
+%format = OpBitcast %u8_ptr_input %format_const
 %val1 = OpExtInst %u32 %extinst printf %format %u32_0 %u32_1
 )";
 
@@ -5266,7 +5266,7 @@ TEST_F(ValidateExtInst, OpenCLStdPrintfFormatNotUniformConstStorageClass) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpenCL.std printf: expected Format storage class to "
-                        "be UniformConstant"));
+                        "be UniformConstant, Crossworkgroup, Workgroup, Function, or Generic"));
 }
 
 TEST_F(ValidateExtInst, OpenCLStdPrintfFormatNotU8Pointer) {
