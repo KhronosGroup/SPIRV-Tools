@@ -71,15 +71,6 @@ uint32_t GetArrayStride(uint32_t array_id, ValidationState_t& vstate) {
   return 0;
 }
 
-// Returns true if the given variable has a BuiltIn decoration.
-bool isBuiltInVar(uint32_t var_id, ValidationState_t& vstate) {
-  const auto& decorations = vstate.id_decorations(var_id);
-  return std::any_of(decorations.begin(), decorations.end(),
-                     [](const Decoration& d) {
-                       return spv::Decoration::BuiltIn == d.dec_type();
-                     });
-}
-
 // Returns true if the given structure type has any members with BuiltIn
 // decoration.
 bool isBuiltInStruct(uint32_t struct_id, ValidationState_t& vstate) {
@@ -786,6 +777,8 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
     int num_workgroup_variables_with_aliased = 0;
     for (const auto& desc : descs) {
       std::unordered_set<Instruction*> seen_vars;
+      std::unordered_set<spv::BuiltIn> input_var_builtin;
+      std::unordered_set<spv::BuiltIn> output_var_builtin;
       for (auto interface : desc.interfaces) {
         Instruction* var_instr = vstate.FindDef(interface);
         if (!var_instr || spv::Op::OpVariable != var_instr->opcode()) {
@@ -848,9 +841,40 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
             break;
           if (auto error = CheckBuiltInVariable(interface, vstate))
             return error;
-        } else if (isBuiltInVar(interface, vstate)) {
-          if (auto error = CheckBuiltInVariable(interface, vstate))
-            return error;
+        } else {
+          // If there is not builtin block, check for builtin on the variable
+          for (auto& dec : vstate.id_decorations(interface)) {
+            if (dec.dec_type() != spv::Decoration::BuiltIn) continue;
+
+            if (auto error = CheckBuiltInVariable(interface, vstate))
+              return error;
+
+            if (!spvIsVulkanEnv(vstate.context()->target_env)) continue;
+
+            const spv::BuiltIn builtin = dec.builtin();
+            if (storage_class == spv::StorageClass::Input) {
+              if (!input_var_builtin.insert(builtin).second) {
+                return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
+                       << vstate.VkErrorID(9658)
+                       << "OpEntryPoint contains duplicate input variables "
+                          "with "
+                       << vstate.grammar().lookupOperandName(
+                              SPV_OPERAND_TYPE_BUILT_IN, (uint32_t)builtin)
+                       << " builtin";
+              }
+            }
+            if (storage_class == spv::StorageClass::Output) {
+              if (!output_var_builtin.insert(builtin).second) {
+                return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
+                       << vstate.VkErrorID(9659)
+                       << "OpEntryPoint contains duplicate output variables "
+                          "with "
+                       << vstate.grammar().lookupOperandName(
+                              SPV_OPERAND_TYPE_BUILT_IN, (uint32_t)builtin)
+                       << " builtin";
+              }
+            }
+          }
         }
 
         if (storage_class == spv::StorageClass::Workgroup) {
