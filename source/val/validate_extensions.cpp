@@ -2968,7 +2968,9 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
         if (format_storage_class != spv::StorageClass::UniformConstant &&
             // Extension SPV_EXT_relaxed_printf_string_address_space allows
-            // format strings in Global, Local, Private and Generic address spaces
+            // format strings in Global, Local, Private and Generic address
+            // spaces
+
             // Global
             format_storage_class != spv::StorageClass::CrossWorkgroup &&
             // Local
@@ -2979,7 +2981,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             format_storage_class != spv::StorageClass::Generic) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
-                 << "expected Format storage class to be UniformConstant, Crossworkgroup, Workgroup, Function, or Generic";
+                 << "expected Format storage class to be UniformConstant, "
+                    "Crossworkgroup, Workgroup, Function, or Generic";
         }
 
         if (!_.IsIntScalarType(format_data_type) ||

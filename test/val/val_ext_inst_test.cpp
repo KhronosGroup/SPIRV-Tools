@@ -5266,7 +5266,8 @@ TEST_F(ValidateExtInst, OpenCLStdPrintfFormatNotAllowedStorageClass) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpenCL.std printf: expected Format storage class to "
-                        "be UniformConstant, Crossworkgroup, Workgroup, Function, or Generic"));
+                        "be UniformConstant, Crossworkgroup, Workgroup, "
+                        "Function, or Generic"));
 }
 
 TEST_F(ValidateExtInst, OpenCLStdPrintfFormatNotU8Pointer) {
