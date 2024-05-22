@@ -7933,21 +7933,15 @@ INSTANTIATE_TEST_SUITE_P(VectorShuffleMatchingTest, MatchingInstructionFoldingTe
         3, true)
  ));
 
+// Issue #5658: The Adreno compiler does not handle 16-bit FMA instructions well.
+// We want to avoid this by not generating FMA. We decided to never generate
+// FMAs because, from a SPIR-V perspective, it is neutral. The ICD can generate
+// the FMA if it wants. The simplest code is no code.
 INSTANTIATE_TEST_SUITE_P(FmaGenerationMatchingTest, MatchingInstructionFoldingTest,
 ::testing::Values(
-   // Test case 0: (x * y) + a = Fma(x, y, a)
+   // Test case 0: Don't fold (x * y) + a
    InstructionFoldingCase<bool>(
        Header() +
-           "; CHECK: [[ext:%\\w+]] = OpExtInstImport \"GLSL.std.450\"\n" +
-           "; CHECK: OpFunction\n" +
-           "; CHECK: [[x:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[y:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[a:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[lx:%\\w+]] = OpLoad {{%\\w+}} [[x]]\n" +
-           "; CHECK: [[ly:%\\w+]] = OpLoad {{%\\w+}} [[y]]\n" +
-           "; CHECK: [[la:%\\w+]] = OpLoad {{%\\w+}} [[a]]\n" +
-           "; CHECK: [[fma:%\\w+]] = OpExtInst {{%\\w+}} [[ext]] Fma [[lx]] [[ly]] [[la]]\n" +
-           "; CHECK: OpStore {{%\\w+}} [[fma]]\n" +
            "%main = OpFunction %void None %void_func\n" +
            "%main_lab = OpLabel\n" +
            "%x = OpVariable %_ptr_float Function\n" +
@@ -7961,20 +7955,10 @@ INSTANTIATE_TEST_SUITE_P(FmaGenerationMatchingTest, MatchingInstructionFoldingTe
            "OpStore %a %3\n" +
            "OpReturn\n" +
            "OpFunctionEnd",
-       3, true),
-    // Test case 1:  a + (x * y) = Fma(x, y, a)
+       3, false),
+    // Test case 1: Don't fold a + (x * y)
    InstructionFoldingCase<bool>(
        Header() +
-           "; CHECK: [[ext:%\\w+]] = OpExtInstImport \"GLSL.std.450\"\n" +
-           "; CHECK: OpFunction\n" +
-           "; CHECK: [[x:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[y:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[a:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[lx:%\\w+]] = OpLoad {{%\\w+}} [[x]]\n" +
-           "; CHECK: [[ly:%\\w+]] = OpLoad {{%\\w+}} [[y]]\n" +
-           "; CHECK: [[la:%\\w+]] = OpLoad {{%\\w+}} [[a]]\n" +
-           "; CHECK: [[fma:%\\w+]] = OpExtInst {{%\\w+}} [[ext]] Fma [[lx]] [[ly]] [[la]]\n" +
-           "; CHECK: OpStore {{%\\w+}} [[fma]]\n" +
            "%main = OpFunction %void None %void_func\n" +
            "%main_lab = OpLabel\n" +
            "%x = OpVariable %_ptr_float Function\n" +
@@ -7988,20 +7972,10 @@ INSTANTIATE_TEST_SUITE_P(FmaGenerationMatchingTest, MatchingInstructionFoldingTe
            "OpStore %a %3\n" +
            "OpReturn\n" +
            "OpFunctionEnd",
-       3, true),
-   // Test case 2: (x * y) + a = Fma(x, y, a) with vectors
+       3, false),
+   // Test case 2: Don't fold (x * y) + a with vectors
    InstructionFoldingCase<bool>(
        Header() +
-           "; CHECK: [[ext:%\\w+]] = OpExtInstImport \"GLSL.std.450\"\n" +
-           "; CHECK: OpFunction\n" +
-           "; CHECK: [[x:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[y:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[a:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[lx:%\\w+]] = OpLoad {{%\\w+}} [[x]]\n" +
-           "; CHECK: [[ly:%\\w+]] = OpLoad {{%\\w+}} [[y]]\n" +
-           "; CHECK: [[la:%\\w+]] = OpLoad {{%\\w+}} [[a]]\n" +
-           "; CHECK: [[fma:%\\w+]] = OpExtInst {{%\\w+}} [[ext]] Fma [[lx]] [[ly]] [[la]]\n" +
-           "; CHECK: OpStore {{%\\w+}} [[fma]]\n" +
            "%main = OpFunction %void None %void_func\n" +
            "%main_lab = OpLabel\n" +
            "%x = OpVariable %_ptr_v4float Function\n" +
@@ -8015,20 +7989,10 @@ INSTANTIATE_TEST_SUITE_P(FmaGenerationMatchingTest, MatchingInstructionFoldingTe
            "OpStore %a %3\n" +
            "OpReturn\n" +
            "OpFunctionEnd",
-       3, true),
-    // Test case 3:  a + (x * y) = Fma(x, y, a) with vectors
+       3,false),
+    // Test case 3: Don't fold a + (x * y) with vectors
    InstructionFoldingCase<bool>(
        Header() +
-           "; CHECK: [[ext:%\\w+]] = OpExtInstImport \"GLSL.std.450\"\n" +
-           "; CHECK: OpFunction\n" +
-           "; CHECK: [[x:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[y:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[a:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[lx:%\\w+]] = OpLoad {{%\\w+}} [[x]]\n" +
-           "; CHECK: [[ly:%\\w+]] = OpLoad {{%\\w+}} [[y]]\n" +
-           "; CHECK: [[la:%\\w+]] = OpLoad {{%\\w+}} [[a]]\n" +
-           "; CHECK: [[fma:%\\w+]] = OpExtInst {{%\\w+}} [[ext]] Fma [[lx]] [[ly]] [[la]]\n" +
-           "; CHECK: OpStore {{%\\w+}} [[fma]]\n" +
            "%main = OpFunction %void None %void_func\n" +
            "%main_lab = OpLabel\n" +
            "%x = OpVariable %_ptr_float Function\n" +
@@ -8042,46 +8006,8 @@ INSTANTIATE_TEST_SUITE_P(FmaGenerationMatchingTest, MatchingInstructionFoldingTe
            "OpStore %a %3\n" +
            "OpReturn\n" +
            "OpFunctionEnd",
-       3, true),
-    // Test 4: that the OpExtInstImport instruction is generated if it is missing.
-   InstructionFoldingCase<bool>(
-           std::string() +
-           "; CHECK: [[ext:%\\w+]] = OpExtInstImport \"GLSL.std.450\"\n" +
-           "; CHECK: OpFunction\n" +
-           "; CHECK: [[x:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[y:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[a:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[lx:%\\w+]] = OpLoad {{%\\w+}} [[x]]\n" +
-           "; CHECK: [[ly:%\\w+]] = OpLoad {{%\\w+}} [[y]]\n" +
-           "; CHECK: [[la:%\\w+]] = OpLoad {{%\\w+}} [[a]]\n" +
-           "; CHECK: [[fma:%\\w+]] = OpExtInst {{%\\w+}} [[ext]] Fma [[lx]] [[ly]] [[la]]\n" +
-           "; CHECK: OpStore {{%\\w+}} [[fma]]\n" +
-           "OpCapability Shader\n" +
-           "OpMemoryModel Logical GLSL450\n" +
-           "OpEntryPoint Fragment %main \"main\"\n" +
-           "OpExecutionMode %main OriginUpperLeft\n" +
-           "OpSource GLSL 140\n" +
-           "OpName %main \"main\"\n" +
-           "%void = OpTypeVoid\n" +
-           "%void_func = OpTypeFunction %void\n" +
-           "%bool = OpTypeBool\n" +
-           "%float = OpTypeFloat 32\n" +
-           "%_ptr_float = OpTypePointer Function %float\n" +
-           "%main = OpFunction %void None %void_func\n" +
-           "%main_lab = OpLabel\n" +
-           "%x = OpVariable %_ptr_float Function\n" +
-           "%y = OpVariable %_ptr_float Function\n" +
-           "%a = OpVariable %_ptr_float Function\n" +
-           "%lx = OpLoad %float %x\n" +
-           "%ly = OpLoad %float %y\n" +
-           "%mul = OpFMul %float %lx %ly\n" +
-           "%la = OpLoad %float %a\n" +
-           "%3 = OpFAdd %float %mul %la\n" +
-           "OpStore %a %3\n" +
-           "OpReturn\n" +
-           "OpFunctionEnd",
-       3, true),
-   // Test 5: Don't fold if the multiple is marked no contract.
+       3, false),
+   // Test 4: Don't fold if the multiple is marked no contract.
    InstructionFoldingCase<bool>(
        std::string() +
            "OpCapability Shader\n" +
@@ -8110,7 +8036,7 @@ INSTANTIATE_TEST_SUITE_P(FmaGenerationMatchingTest, MatchingInstructionFoldingTe
            "OpReturn\n" +
            "OpFunctionEnd",
        3, false),
-       // Test 6: Don't fold if the add is marked no contract.
+       // Test 5: Don't fold if the add is marked no contract.
        InstructionFoldingCase<bool>(
            std::string() +
                "OpCapability Shader\n" +
@@ -8139,20 +8065,9 @@ INSTANTIATE_TEST_SUITE_P(FmaGenerationMatchingTest, MatchingInstructionFoldingTe
                "OpReturn\n" +
                "OpFunctionEnd",
            3, false),
-    // Test case 7: (x * y) - a = Fma(x, y, -a)
+    // Test case 6: Don't fold (x * y) - a
     InstructionFoldingCase<bool>(
        Header() +
-           "; CHECK: [[ext:%\\w+]] = OpExtInstImport \"GLSL.std.450\"\n" +
-           "; CHECK: OpFunction\n" +
-           "; CHECK: [[x:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[y:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[a:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[lx:%\\w+]] = OpLoad {{%\\w+}} [[x]]\n" +
-           "; CHECK: [[ly:%\\w+]] = OpLoad {{%\\w+}} [[y]]\n" +
-           "; CHECK: [[la:%\\w+]] = OpLoad {{%\\w+}} [[a]]\n" +
-           "; CHECK: [[na:%\\w+]] = OpFNegate {{%\\w+}} [[la]]\n" +
-           "; CHECK: [[fma:%\\w+]] = OpExtInst {{%\\w+}} [[ext]] Fma [[lx]] [[ly]] [[na]]\n" +
-           "; CHECK: OpStore {{%\\w+}} [[fma]]\n" +
            "%main = OpFunction %void None %void_func\n" +
            "%main_lab = OpLabel\n" +
            "%x = OpVariable %_ptr_float Function\n" +
@@ -8166,21 +8081,10 @@ INSTANTIATE_TEST_SUITE_P(FmaGenerationMatchingTest, MatchingInstructionFoldingTe
            "OpStore %a %3\n" +
            "OpReturn\n" +
            "OpFunctionEnd",
-       3, true),
-   // Test case 8: a - (x * y) = Fma(-x, y, a)
+       3, false),
+   // Test case 7: Don't fold a - (x * y)
    InstructionFoldingCase<bool>(
        Header() +
-           "; CHECK: [[ext:%\\w+]] = OpExtInstImport \"GLSL.std.450\"\n" +
-           "; CHECK: OpFunction\n" +
-           "; CHECK: [[x:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[y:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[a:%\\w+]] = OpVariable {{%\\w+}} Function\n" +
-           "; CHECK: [[lx:%\\w+]] = OpLoad {{%\\w+}} [[x]]\n" +
-           "; CHECK: [[ly:%\\w+]] = OpLoad {{%\\w+}} [[y]]\n" +
-           "; CHECK: [[la:%\\w+]] = OpLoad {{%\\w+}} [[a]]\n" +
-           "; CHECK: [[nx:%\\w+]] = OpFNegate {{%\\w+}} [[lx]]\n" +
-           "; CHECK: [[fma:%\\w+]] = OpExtInst {{%\\w+}} [[ext]] Fma [[nx]] [[ly]] [[la]]\n" +
-           "; CHECK: OpStore {{%\\w+}} [[fma]]\n" +
            "%main = OpFunction %void None %void_func\n" +
            "%main_lab = OpLabel\n" +
            "%x = OpVariable %_ptr_float Function\n" +
@@ -8194,7 +8098,7 @@ INSTANTIATE_TEST_SUITE_P(FmaGenerationMatchingTest, MatchingInstructionFoldingTe
            "OpStore %a %3\n" +
            "OpReturn\n" +
            "OpFunctionEnd",
-       3, true)
+       3, false)
 ));
 
 using MatchingInstructionWithNoResultFoldingTest =
