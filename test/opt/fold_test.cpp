@@ -7827,7 +7827,21 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "%5 = OpCompositeInsert %int_arr_2 %int_1 %4 1\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        5, true)
+        5, true),
+    // Test case 19: Don't fold for isomorphic structs
+    InstructionFoldingCase<bool>(
+        Header() +
+            "%structA = OpTypeStruct %ulong\n" +
+            "%structB = OpTypeStruct %ulong\n" +
+            "%structC = OpTypeStruct %structB\n" +
+            "%struct_a_undef = OpUndef %structA\n" +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%3 = OpCompositeExtract %ulong %struct_a_undef 0\n" +
+            "%4 = OpCompositeConstruct %structB %3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        4, false)
 ));
 
 INSTANTIATE_TEST_SUITE_P(DotProductMatchingTest, MatchingInstructionFoldingTest,
