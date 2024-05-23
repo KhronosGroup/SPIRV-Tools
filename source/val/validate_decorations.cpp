@@ -853,7 +853,10 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
 
             const spv::BuiltIn builtin = dec.builtin();
             if (storage_class == spv::StorageClass::Input) {
-              if (!input_var_builtin.insert(builtin).second) {
+              // RayTmaxKHR can be duplicated
+              // (https://gitlab.khronos.org/vulkan/vulkan/-/issues/3885)
+              if (!input_var_builtin.insert(builtin).second &&
+                  builtin != spv::BuiltIn::RayTmaxKHR) {
                 return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
                        << vstate.VkErrorID(9658)
                        << "OpEntryPoint contains duplicate input variables "

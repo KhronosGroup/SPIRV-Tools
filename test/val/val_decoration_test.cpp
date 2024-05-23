@@ -9841,6 +9841,47 @@ TEST_F(ValidateDecorations, MultipleBuiltinsOutputFragment) {
               AnyVUID("VUID-StandaloneSpirv-OpEntryPoint-09659"));
 }
 
+// Exception being discussed in
+// https://gitlab.khronos.org/vulkan/vulkan/-/issues/3885 simplified version of
+// Glsl/CompileToSpirv14Test.FromFile/spv_ext_AnyHitShader_rahit
+TEST_F(ValidateDecorations, MultipleBuiltinsRayTmaxKHR) {
+  const std::string body = R"(
+               OpCapability RayTracingKHR
+               OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint AnyHitKHR %main "main" %gl_RayTmaxEXT %gl_HitTEXT %incomingPayload
+               OpDecorate %gl_RayTmaxEXT BuiltIn RayTmaxKHR
+               OpDecorate %gl_HitTEXT BuiltIn RayTmaxKHR
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%_ptr_Input_float = OpTypePointer Input %float
+%gl_RayTmaxEXT = OpVariable %_ptr_Input_float Input
+ %gl_HitTEXT = OpVariable %_ptr_Input_float Input
+    %v4float = OpTypeVector %float 4
+%_ptr_IncomingRayPayloadKHR_v4float = OpTypePointer IncomingRayPayloadKHR %v4float
+%incomingPayload = OpVariable %_ptr_IncomingRayPayloadKHR_v4float IncomingRayPayloadKHR
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %a = OpVariable %_ptr_Function_float Function
+          %b = OpVariable %_ptr_Function_float Function
+         %11 = OpLoad %float %gl_RayTmaxEXT
+               OpStore %a %11
+         %14 = OpLoad %float %gl_HitTEXT
+               OpStore %b %14
+         %18 = OpLoad %float %a
+         %19 = OpLoad %float %b
+         %22 = OpCompositeConstruct %v4float %18 %18 %19 %19
+               OpStore %incomingPayload %22
+               OpTerminateRayKHR
+               OpFunctionEnd
+    )";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
