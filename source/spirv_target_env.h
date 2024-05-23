@@ -16,6 +16,8 @@
 #define SOURCE_SPIRV_TARGET_ENV_H_
 
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "spirv-tools/libspirv.h"
 
@@ -45,5 +47,43 @@ std::string spvLogStringForEnv(spv_target_env env);
 // |wrap| is the max length of lines the user desires. Word-wrapping will
 //        occur to satisfy this limit.
 std::string spvTargetEnvList(const int pad, const int wrap);
+
+// Reads the target environment from the header comments of disassembly. Returns
+// true if valid name found, false otherwise.
+bool spvReadEnvironmentFromText(std::vector<char>& text, spv_target_env* env);
+
+static constexpr std::pair<const char*, spv_target_env> spvTargetEnvNameMap[] =
+    {
+        {"vulkan1.1spv1.4", SPV_ENV_VULKAN_1_1_SPIRV_1_4},
+        {"vulkan1.0", SPV_ENV_VULKAN_1_0},
+        {"vulkan1.1", SPV_ENV_VULKAN_1_1},
+        {"vulkan1.2", SPV_ENV_VULKAN_1_2},
+        {"vulkan1.3", SPV_ENV_VULKAN_1_3},
+        {"spv1.0", SPV_ENV_UNIVERSAL_1_0},
+        {"spv1.1", SPV_ENV_UNIVERSAL_1_1},
+        {"spv1.2", SPV_ENV_UNIVERSAL_1_2},
+        {"spv1.3", SPV_ENV_UNIVERSAL_1_3},
+        {"spv1.4", SPV_ENV_UNIVERSAL_1_4},
+        {"spv1.5", SPV_ENV_UNIVERSAL_1_5},
+        {"spv1.6", SPV_ENV_UNIVERSAL_1_6},
+        {"opencl1.2embedded", SPV_ENV_OPENCL_EMBEDDED_1_2},
+        {"opencl1.2", SPV_ENV_OPENCL_1_2},
+        {"opencl2.0embedded", SPV_ENV_OPENCL_EMBEDDED_2_0},
+        {"opencl2.0", SPV_ENV_OPENCL_2_0},
+        {"opencl2.1embedded", SPV_ENV_OPENCL_EMBEDDED_2_1},
+        {"opencl2.1", SPV_ENV_OPENCL_2_1},
+        {"opencl2.2embedded", SPV_ENV_OPENCL_EMBEDDED_2_2},
+        {"opencl2.2", SPV_ENV_OPENCL_2_2},
+        {"opengl4.0", SPV_ENV_OPENGL_4_0},
+        {"opengl4.1", SPV_ENV_OPENGL_4_1},
+        {"opengl4.2", SPV_ENV_OPENGL_4_2},
+        {"opengl4.3", SPV_ENV_OPENGL_4_3},
+        {"opengl4.5", SPV_ENV_OPENGL_4_5},
+        {"assume", SPV_ENV_MAX},
+};
+static constexpr auto kAssumeIndex = 25;
+// The index in the map of the first SPV_ENV_UNIVERSAL version, assuming that
+// versions are enumerated in order from 1.0
+static constexpr auto kSpvEnvUniversalStart = 5;
 
 #endif  // SOURCE_SPIRV_TARGET_ENV_H_

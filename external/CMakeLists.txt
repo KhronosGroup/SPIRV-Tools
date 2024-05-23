@@ -45,7 +45,7 @@ if (IS_DIRECTORY ${SPIRV_HEADER_DIR})
   endif()
 else()
   message(FATAL_ERROR
-    "SPIRV-Headers was not found - please checkout a copy under external/.")
+    "SPIRV-Headers was not found - please checkout a copy at external/spirv-headers.")
 endif()
 
 if (NOT ${SPIRV_SKIP_TESTS})

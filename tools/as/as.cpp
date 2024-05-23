@@ -22,7 +22,9 @@
 #include "tools/io.h"
 #include "tools/util/flags.h"
 
-static const auto kDefaultEnvironment = "spv1.6";
+static const auto kDefaultEnvironment = kAssumeIndex;
+constexpr auto kDefaultEnvironmentName =
+    spvTargetEnvNameMap[kDefaultEnvironment].first;
 static const std::string kHelpText =
     R"(%s - Create a SPIR-V binary module from SPIR-V assembly text
 
@@ -48,12 +50,13 @@ Options:
 )";
 
 // clang-format off
-FLAG_SHORT_bool(  h,                    /* default_value= */ false,               /* required= */ false);
-FLAG_LONG_bool(   help,                 /* default_value= */ false,               /* required= */false);
-FLAG_LONG_bool(   version,              /* default_value= */ false,               /* required= */ false);
-FLAG_LONG_bool(   preserve_numeric_ids, /* default_value= */ false,               /* required= */ false);
-FLAG_SHORT_string(o,                    /* default_value= */ "",                  /* required= */ false);
-FLAG_LONG_string( target_env,           /* default_value= */ kDefaultEnvironment, /* required= */ false);
+//                flag name=            default_value=           required=
+FLAG_SHORT_bool(  h,                    false,                   false);
+FLAG_LONG_bool(   help,                 false,                   false);
+FLAG_LONG_bool(   version,              false,                   false);
+FLAG_LONG_bool(   preserve_numeric_ids, false,                   false);
+FLAG_SHORT_string(o,                    "",                      false);
+FLAG_LONG_string( target_env,           kDefaultEnvironmentName, false);
 // clang-format on
 
 int main(int, const char** argv) {
@@ -68,15 +71,7 @@ int main(int, const char** argv) {
   }
 
   if (flags::version.value()) {
-    spv_target_env target_env;
-    bool success = spvParseTargetEnv(kDefaultEnvironment, &target_env);
-    assert(success && "Default environment should always parse.");
-    if (!success) {
-      fprintf(stderr,
-              "error: invalid default target environment. Please report this "
-              "issue.");
-      return 1;
-    }
+    spv_target_env target_env = spvTargetEnvNameMap[kDefaultEnvironment].second;
     printf("%s\n", spvSoftwareVersionDetailsString());
     printf("Target: %s\n", spvTargetEnvDescription(target_env));
     return 0;
@@ -107,6 +102,15 @@ int main(int, const char** argv) {
 
   std::vector<char> contents;
   if (!ReadTextFile<char>(inFile.c_str(), &contents)) return 1;
+
+  if (target_env == spv_target_env::SPV_ENV_MAX) {
+    // Resolve previously undecided environment type
+    if (!spvReadEnvironmentFromText(contents, &target_env)) {
+      fprintf(stderr,
+              "error: target env could not be assumed. Use --target-env"
+              "to specify.\n");
+    }
+  }
 
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;
