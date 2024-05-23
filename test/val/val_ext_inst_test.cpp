@@ -5273,13 +5273,16 @@ TEST_F(ValidateExtInst, OpenCLStdPrintfFormatNotUniformConstStorageClass) {
 TEST_F(ValidateExtInst,
        OpenCLStdPrintfFormatWithExtensionNotAllowedStorageClass) {
   const std::string body = R"(
-OpExtension "SPV_EXT_relaxed_printf_string_address_space"
 %format_const = OpAccessChain %u8_ptr_uniform_constant %u8arr_uniform_constant %u32_0
 %format = OpBitcast %u8_ptr_input %format_const
 %val1 = OpExtInst %u32 %extinst printf %format %u32_0 %u32_1
 )";
 
-  CompileSuccessfully(GenerateKernelCode(body));
+  const std::string extension = R"(
+OpExtension  "SPV_EXT_relaxed_printf_string_address_space"
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body, extension));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpenCL.std printf: expected Format storage class to "
