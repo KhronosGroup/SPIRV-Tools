@@ -109,6 +109,7 @@ int main(int, const char** argv) {
       fprintf(stderr,
               "error: target env could not be assumed. Use --target-env"
               "to specify.\n");
+      return 1;
     }
   }
 
