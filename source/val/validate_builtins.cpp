@@ -667,6 +667,36 @@ class BuiltInsValidator {
   // instruction.
   void Update(const Instruction& inst);
 
+  uint32_t GetMeshEntryPoint() {
+    if (mesh_entry_point_ == 0) {
+      for (const uint32_t entry_point : _.entry_points()) {
+        // Every entry point from which this function is called needs to have
+        // Execution Mode DepthReplacing.
+        const auto* models = _.GetExecutionModels(entry_point);
+        if (models->find(spv::ExecutionModel::MeshEXT ) != models->end() ||
+            models->find(spv::ExecutionModel::MeshNV ) != models->end()) {
+          mesh_entry_point_ = entry_point;
+          break;
+        }
+      }
+    }
+    return mesh_entry_point_;
+  }
+
+  bool isMeshInterfaceVar(const Instruction& inst) {
+    uint32_t mesh_entry_point = GetMeshEntryPoint();
+    if (!mesh_entry_point) return false;
+    for (const auto& desc : _.entry_point_descriptions(mesh_entry_point)) {
+      for (auto interface : desc.interfaces) {
+        if (inst.id() == interface) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+
   ValidationState_t& _;
 
   // Mapping id -> list of rules which validate instruction referencing the
@@ -684,7 +714,7 @@ class BuiltInsValidator {
   // or to no_entry_points_. The pointer is guaranteed to never be null.
   const std::vector<uint32_t> no_entry_points;
   const std::vector<uint32_t>* entry_points_ = &no_entry_points;
-
+  uint32_t mesh_entry_point_ = 0;
   // Execution models with which the current function can be called.
   std::set<spv::ExecutionModel> execution_models_;
 };
@@ -2146,6 +2176,28 @@ spv_result_t BuiltInsValidator::ValidatePrimitiveIdAtDefinition(
         return error;
       }
     }
+
+    if (isMeshInterfaceVar(inst)) {
+      if (_.HasCapability(spv::Capability::MeshShadingEXT) &&
+          !_.HasDecoration(inst.id(), spv::Decoration::PerPrimitiveEXT)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+               << _.VkErrorID(7040)
+               << "According to the Vulkan spec the variable decorated with "
+                  "Builtin PrimitiveId within the MeshEXT Execution Model must "
+                  "also be decorated with the PerPrimitiveEXT decoration. ";
+      }
+#if 0
+      const spv::StorageClass storage_class =
+          inst.GetOperandAs<spv::StorageClass>(2);
+      if (storage_class != spv::StorageClass::Output) {
+        return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+               << _.VkErrorID(4336)
+               << "According to the Vulkan spec the variable decorated with "
+                  "Builtin PrimitiveId within the MeshEXT Execution Model must "
+                  "must be declared using the Output Storage Class. ";
+      }
+#endif
+    }
   }
 
   // Seed at reference checks with this built-in.
@@ -2752,6 +2804,21 @@ spv_result_t BuiltInsValidator::ValidateLayerOrViewportIndexAtDefinition(
               })) {
         return error;
       }
+    }
+
+    if (isMeshInterfaceVar(inst) &&
+        _.HasCapability(spv::Capability::MeshShadingEXT) &&
+        !_.HasDecoration(inst.id(), spv::Decoration::PerPrimitiveEXT)) {
+      const spv::BuiltIn label = spv::BuiltIn(decoration.params()[0]);
+      uint32_t vkerrid = (label == spv::BuiltIn::Layer) ? 7039 : 7060;
+      return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+             << _.VkErrorID(vkerrid)
+             << "According to the Vulkan spec the variable decorated with "
+                "Builtin "
+             << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                              decoration.params()[0])
+             << " within the MeshEXT Execution Model must also be decorated "
+                "with the PerPrimitiveEXT decoration. ";
     }
   }
 
@@ -3458,6 +3525,7 @@ spv_result_t BuiltInsValidator::ValidateViewIndexAtReference(
                                    referenced_from_inst, execution_model);
       }
     }
+    
   }
 
   if (function_id_ == 0) {
@@ -4167,6 +4235,23 @@ spv_result_t BuiltInsValidator::ValidateRayTracingBuiltinsAtReference(
 spv_result_t BuiltInsValidator::ValidateMeshShadingEXTBuiltinsAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
   if (spvIsVulkanEnv(_.context()->target_env)) {
+    uint32_t mesh_entry_point = GetMeshEntryPoint();
+    assert(mesh_entry_point);
+    bool execution_mode_OuputPoints = false;
+    bool execution_mode_OutputLinesEXT = false;
+    bool execution_mode_OutputTrianglesEXT = false;
+
+    const auto* modes = _.GetExecutionModes(mesh_entry_point);
+    if (modes->find(spv::ExecutionMode::OutputPoints) != modes->end()) {
+        execution_mode_OuputPoints = true;
+    }
+    if (modes->find(spv::ExecutionMode::OutputLinesEXT) != modes->end()) {
+        execution_mode_OutputLinesEXT = true;
+    }
+    if (modes->find(spv::ExecutionMode::OutputTrianglesEXT) !=
+        modes->end()) {
+        execution_mode_OutputTrianglesEXT = true;
+    }
     const spv::BuiltIn builtin = spv::BuiltIn(decoration.params()[0]);
     uint32_t vuid = GetVUIDForBuiltin(builtin, VUIDErrorType);
     if (builtin == spv::BuiltIn::PrimitivePointIndicesEXT) {
@@ -4184,6 +4269,12 @@ spv_result_t BuiltInsValidator::ValidateMeshShadingEXTBuiltinsAtDefinition(
                        << message;
               })) {
         return error;
+      }
+      if (!execution_mode_OuputPoints) {
+        return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+               << _.VkErrorID(7042)
+               << "The PrimitivePointIndicesEXT decoration must be used with "
+                  "the OutputPoints Execution Mode";
       }
     }
     if (builtin == spv::BuiltIn::PrimitiveLineIndicesEXT) {
@@ -4203,6 +4294,12 @@ spv_result_t BuiltInsValidator::ValidateMeshShadingEXTBuiltinsAtDefinition(
               })) {
         return error;
       }
+      if (!execution_mode_OutputLinesEXT) {
+        return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+               << _.VkErrorID(7048)
+               << "The PrimitiveLineIndicesEXT decoration must be used with "
+                  "the OutputLinesEXT Execution Mode";
+      }
     }
     if (builtin == spv::BuiltIn::PrimitiveTriangleIndicesEXT) {
       if (spv_result_t error = ValidateArrayedI32Vec(
@@ -4220,6 +4317,12 @@ spv_result_t BuiltInsValidator::ValidateMeshShadingEXTBuiltinsAtDefinition(
                        << message;
               })) {
         return error;
+      }
+      if (!execution_mode_OutputTrianglesEXT) {
+        return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+               << _.VkErrorID(7054)
+               << "The PrimitiveTriangleIndicesEXT decoration must be used with "
+                  "the OutputTrianglesEXT Execution Mode";
       }
     }
   }
@@ -4249,7 +4352,6 @@ spv_result_t BuiltInsValidator::ValidateMeshShadingEXTBuiltinsAtReference(
                                  referenced_from_inst)
              << " " << GetStorageClassDesc(referenced_from_inst);
     }
-
     for (const spv::ExecutionModel execution_model : execution_models_) {
       if (execution_model != spv::ExecutionModel::MeshEXT) {
         uint32_t vuid = GetVUIDForBuiltin(builtin, VUIDErrorExecutionModel);
