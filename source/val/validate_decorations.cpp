@@ -869,8 +869,6 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
               ++num_builtin_block_outputs;
             if (num_builtin_block_inputs > 1 || num_builtin_block_outputs > 1)
               break;
-            if (auto error = CheckBuiltInVariable(interface, vstate))
-              return error;
           }
         }
 
