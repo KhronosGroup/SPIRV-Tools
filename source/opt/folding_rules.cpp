@@ -2005,15 +2005,15 @@ bool DoInsertedValuesCoverEntireObject(
   return true;
 }
 
-// Returns the type of the element that immediately contains the element being
-// inserted by the OpCompositeInsert instruction |inst|.
-const analysis::Type* GetContainerType(Instruction* inst) {
+// Returns id of the type of the element that immediately contains the element
+// being inserted by the OpCompositeInsert instruction |inst|. Returns 0 if it
+// could not be found.
+uint32_t GetContainerTypeId(Instruction* inst) {
   assert(inst->opcode() == spv::Op::OpCompositeInsert);
   analysis::DefUseManager* def_use_manager = inst->context()->get_def_use_mgr();
   uint32_t container_type_id = GetElementType(
       inst->type_id(), inst->begin() + 4, inst->end() - 1, def_use_manager);
-  analysis::TypeManager* type_mgr = inst->context()->get_type_mgr();
-  return type_mgr->GetType(container_type_id);
+  return container_type_id;
 }
 
 // Returns an OpCompositeConstruct instruction that build an object with
@@ -2060,18 +2060,20 @@ bool CompositeInsertToCompositeConstruct(
   if (inst->NumInOperands() < 3) return false;
 
   std::map<uint32_t, uint32_t> values_inserted = GetInsertedValues(inst);
-  const analysis::Type* container_type = GetContainerType(inst);
-  if (container_type == nullptr) {
-    return false;
-  }
-
-  if (!DoInsertedValuesCoverEntireObject(container_type, values_inserted)) {
+  uint32_t container_type_id = GetContainerTypeId(inst);
+  if (container_type_id == 0) {
     return false;
   }
 
   analysis::TypeManager* type_mgr = context->get_type_mgr();
-  Instruction* construct = BuildCompositeConstruct(
-      type_mgr->GetId(container_type), values_inserted, inst);
+  const analysis::Type* container_type = type_mgr->GetType(container_type_id);
+  assert(container_type && "GetContainerTypeId returned a bad id.");
+  if (!DoInsertedValuesCoverEntireObject(container_type, values_inserted)) {
+    return false;
+  }
+
+  Instruction* construct =
+      BuildCompositeConstruct(container_type_id, values_inserted, inst);
   InsertConstructedObject(inst, construct);
   return true;
 }
