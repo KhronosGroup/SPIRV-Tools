@@ -47,9 +47,9 @@ def incompatible_with(incompatible_constraints):
         for constraint in incompatible_constraints
     }]))
 
-DEBUGINFO_GRAMMAR_JSON_FILE = "@spirv_headers//:spirv_ext_inst_debuginfo_grammar_unified1"
-CLDEBUGINFO100_GRAMMAR_JSON_FILE = "@spirv_headers//:spirv_ext_inst_opencl_debuginfo_100_grammar_unified1"
-SHDEBUGINFO100_GRAMMAR_JSON_FILE = "@spirv_headers//:spirv_ext_inst_nonsemantic_shader_debuginfo_100_grammar_unified1"
+DEBUGINFO_GRAMMAR_JSON_FILE = "@spirv-headers//:spirv_ext_inst_debuginfo_grammar_unified1"
+CLDEBUGINFO100_GRAMMAR_JSON_FILE = "@spirv-headers//:spirv_ext_inst_opencl_debuginfo_100_grammar_unified1"
+SHDEBUGINFO100_GRAMMAR_JSON_FILE = "@spirv-headers//:spirv_ext_inst_nonsemantic_shader_debuginfo_100_grammar_unified1"
 
 def _merge_dicts(dicts):
     merged = {}
@@ -62,7 +62,7 @@ def generate_core_tables(version):
         fail("Must specify version", "version")
 
     grammars = dict(
-        core_grammar = "@spirv_headers//:spirv_core_grammar_{}".format(version),
+        core_grammar = "@spirv-headers//:spirv_core_grammar_{}".format(version),
         debuginfo_grammar = DEBUGINFO_GRAMMAR_JSON_FILE,
         cldebuginfo_grammar = CLDEBUGINFO100_GRAMMAR_JSON_FILE,
     )
@@ -97,7 +97,7 @@ def generate_enum_string_mapping(version):
         fail("Must specify version", "version")
 
     grammars = dict(
-        core_grammar = "@spirv_headers//:spirv_core_grammar_{}".format(version),
+        core_grammar = "@spirv-headers//:spirv_core_grammar_{}".format(version),
         debuginfo_grammar = DEBUGINFO_GRAMMAR_JSON_FILE,
         cldebuginfo_grammar = CLDEBUGINFO100_GRAMMAR_JSON_FILE,
     )
@@ -132,7 +132,7 @@ def generate_opencl_tables(version):
         fail("Must specify version", "version")
 
     grammars = dict(
-        opencl_grammar = "@spirv_headers//:spirv_opencl_grammar_{}".format(version),
+        opencl_grammar = "@spirv-headers//:spirv_opencl_grammar_{}".format(version),
     )
 
     outs = dict(
@@ -160,7 +160,7 @@ def generate_glsl_tables(version):
         fail("Must specify version", "version")
 
     grammars = dict(
-        gsls_grammar = "@spirv_headers//:spirv_glsl_grammar_{}".format(version),
+        gsls_grammar = "@spirv-headers//:spirv_glsl_grammar_{}".format(version),
     )
     outs = dict(
         gsls_insts_outs = "glsl.std.450.insts.inc",
@@ -189,7 +189,7 @@ def generate_vendor_tables(extension, operand_kind_prefix = ""):
 
     extension_rule = extension.replace("-", "_").replace(".", "_")
     grammars = dict(
-        vendor_grammar = "@spirv_headers//:spirv_ext_inst_{}_grammar_unified1".format(extension_rule),
+        vendor_grammar = "@spirv-headers//:spirv_ext_inst_{}_grammar_unified1".format(extension_rule),
     )
     outs = dict(
         vendor_insts_output = "{}.insts.inc".format(extension),

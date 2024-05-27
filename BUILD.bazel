@@ -92,10 +92,10 @@ py_binary(
 
 genrule(
     name = "generators_inc",
-    srcs = ["@spirv_headers//:spirv_xml_registry"],
+    srcs = ["@spirv-headers//:spirv_xml_registry"],
     outs = ["generators.inc"],
-    cmd = "$(location :generate_registry_tables) --xml=$(location @spirv_headers//:spirv_xml_registry) --generator-output=$(location generators.inc)",
-    cmd_bat = "$(location :generate_registry_tables) --xml=$(location @spirv_headers//:spirv_xml_registry) --generator-output=$(location generators.inc)",
+    cmd = "$(location :generate_registry_tables) --xml=$(location @spirv-headers//:spirv_xml_registry) --generator-output=$(location generators.inc)",
+    cmd_bat = "$(location :generate_registry_tables) --xml=$(location @spirv-headers//:spirv_xml_registry) --generator-output=$(location generators.inc)",
     tools = [":generate_registry_tables"],
 )
 
@@ -171,8 +171,8 @@ cc_library(
     copts = COMMON_COPTS,
     includes = ["include"],
     deps = [
-        "@spirv_headers//:spirv_common_headers",
-        "@spirv_headers//:spirv_cpp11_headers",
+        "@spirv-headers//:spirv_common_headers",
+        "@spirv-headers//:spirv_cpp11_headers",
     ],
 )
 
@@ -203,7 +203,7 @@ cc_library(
     copts = COMMON_COPTS,
     deps = [
         ":spirv_tools_internal",
-        "@spirv_headers//:spirv_common_headers",
+        "@spirv-headers//:spirv_common_headers",
     ],
 )
 
@@ -319,7 +319,7 @@ cc_binary(
         ":spirv_tools_opt_internal",
         ":tools_io",
         ":tools_util",
-        "@spirv_headers//:spirv_cpp_headers",
+        "@spirv-headers//:spirv_cpp_headers",
     ],
 )
 
@@ -472,7 +472,7 @@ cc_test(
         ":spirv_tools_opt_internal",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
-        "@spirv_headers//:spirv_cpp11_headers",
+        "@spirv-headers//:spirv_cpp11_headers",
     ],
 )
 
@@ -498,8 +498,8 @@ cc_library(
         ":spirv_tools_internal",
         ":spirv_tools_link",
         ":test_lib",
-        "@com_google_effcee//:effcee",
-        "@com_googlesource_code_re2//:re2",
+        "@effcee//:effcee",
+        "@re2//:re2",
     ],
 )
 
@@ -552,7 +552,7 @@ cc_library(
     deps = [
         ":spirv_tools_internal",
         ":spirv_tools_opt_internal",
-        "@com_google_effcee//:effcee",
+        "@effcee//:effcee",
         "@googletest//:gtest",
     ],
 )
@@ -568,7 +568,7 @@ cc_library(
         ":spirv_tools_internal",
         ":spirv_tools_opt_internal",
         ":test_lib",
-        "@com_google_effcee//:effcee",
+        "@effcee//:effcee",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],
@@ -601,7 +601,7 @@ cc_library(
         ":opt_test_lib",
         ":spirv_tools",
         ":spirv_tools_opt_internal",
-        "@com_google_effcee//:effcee",
+        "@effcee//:effcee",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],
