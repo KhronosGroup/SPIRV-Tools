@@ -9670,6 +9670,303 @@ OpFunctionEnd
       HasSubstr("is a matrix with stride 8 not satisfying alignment to 16"));
 }
 
+TEST_F(ValidateDecorations, MultipleBuiltinsInputVertex) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpCapability DrawParameters
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %_ %gl_BaseInstance1 %gl_BaseInstance2
+               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
+               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance
+               OpDecorate %gl_PerVertex Block
+               OpDecorate %gl_BaseInstance1 BuiltIn BaseInstance
+               OpDecorate %gl_BaseInstance2 BuiltIn BaseInstance
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1
+%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex
+          %_ = OpVariable %_ptr_Output_gl_PerVertex Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+    %float_0 = OpConstant %float 0
+         %17 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%_ptr_Input_int = OpTypePointer Input %int
+%gl_BaseInstance1 = OpVariable %_ptr_Input_int Input
+%gl_BaseInstance2 = OpVariable %_ptr_Input_int Input
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %20 = OpLoad %int %gl_BaseInstance1
+         %21 = OpConvertSToF %float %20
+         %22 = OpVectorTimesScalar %v4float %17 %21
+         %24 = OpAccessChain %_ptr_Output_v4float %_ %int_0
+               OpStore %24 %22
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpEntryPoint contains duplicate input variables with "
+                        "BaseInstance builtin"));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpEntryPoint-09658"));
+}
+
+TEST_F(ValidateDecorations, MultipleBuiltinsInputMesh) {
+  const std::string body = R"(
+               OpCapability DrawParameters
+               OpCapability MeshShadingEXT
+               OpExtension "SPV_EXT_mesh_shader"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint MeshEXT %main "main" %gl_DrawID_1 %gl_DrawID_2
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionMode %main OutputVertices 32
+               OpExecutionMode %main OutputPrimitivesEXT 32
+               OpExecutionMode %main OutputTrianglesEXT
+               OpDecorate %gl_DrawID_1 BuiltIn DrawIndex
+               OpDecorate %gl_DrawID_2 BuiltIn DrawIndex
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Input_int = OpTypePointer Input %int
+  %gl_DrawID_1 = OpVariable %_ptr_Input_int Input
+  %gl_DrawID_2 = OpVariable %_ptr_Input_int Input
+       %uint = OpTypeInt 32 0
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %9 = OpLoad %int %gl_DrawID_1
+         %11 = OpBitcast %uint %9
+         %12 = OpLoad %int %gl_DrawID_2
+         %13 = OpBitcast %uint %12
+               OpSetMeshOutputsEXT %11 %13
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpEntryPoint contains duplicate input variables with "
+                        "DrawIndex builtin"));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpEntryPoint-09658"));
+}
+
+TEST_F(ValidateDecorations, MultipleBuiltinsInputCompute) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_ %gl_WorkGroupID_1 %gl_WorkGroupID_2
+               OpExecutionMode %main LocalSize 1 1 1
+               OpMemberDecorate %Buffers 0 Offset 0
+               OpDecorate %Buffers Block
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 0
+               OpDecorate %gl_WorkGroupID_1 BuiltIn WorkgroupId
+               OpDecorate %gl_WorkGroupID_2 BuiltIn WorkgroupId
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+    %Buffers = OpTypeStruct %v3uint
+%_ptr_StorageBuffer_Buffers = OpTypePointer StorageBuffer %Buffers
+          %_ = OpVariable %_ptr_StorageBuffer_Buffers StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%gl_WorkGroupID_1 = OpVariable %_ptr_Input_v3uint Input
+%gl_WorkGroupID_2 = OpVariable %_ptr_Input_v3uint Input
+%_ptr_StorageBuffer_v3uint = OpTypePointer StorageBuffer %v3uint
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %15 = OpLoad %v3uint %gl_WorkGroupID_1
+         %16 = OpLoad %v3uint %gl_WorkGroupID_2
+         %17 = OpIAdd %v3uint %15 %16
+         %19 = OpAccessChain %_ptr_StorageBuffer_v3uint %_ %int_0
+               OpStore %19 %17
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpEntryPoint contains duplicate input variables with "
+                        "WorkgroupId builtin"));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpEntryPoint-09658"));
+}
+
+TEST_F(ValidateDecorations, MultipleBuiltinsOutputFragment) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %gl_FragDepth_1 %gl_FragDepth_2
+               OpExecutionMode %main OriginUpperLeft
+               OpExecutionMode %main DepthReplacing
+               OpDecorate %gl_FragDepth_1 BuiltIn FragDepth
+               OpDecorate %gl_FragDepth_2 BuiltIn FragDepth
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Output_float = OpTypePointer Output %float
+%gl_FragDepth_1 = OpVariable %_ptr_Output_float Output
+%gl_FragDepth_2 = OpVariable %_ptr_Output_float Output
+    %float_1 = OpConstant %float 1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpStore %gl_FragDepth_1 %float_1
+         %10 = OpLoad %float %gl_FragDepth_1
+         %11 = OpFAdd %float %10 %float_1
+               OpStore %gl_FragDepth_2 %11
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpEntryPoint contains duplicate output variables with "
+                        "FragDepth builtin"));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpEntryPoint-09659"));
+}
+
+TEST_F(ValidateDecorations, MultipleBuiltinsRayTmaxKHR) {
+  const std::string body = R"(
+               OpCapability RayTracingKHR
+               OpExtension "SPV_KHR_ray_tracing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint AnyHitKHR %main "main" %gl_RayTmaxEXT %gl_HitTEXT %incomingPayload
+               OpDecorate %gl_RayTmaxEXT BuiltIn RayTmaxKHR
+               OpDecorate %gl_HitTEXT BuiltIn RayTmaxKHR
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+%_ptr_Input_float = OpTypePointer Input %float
+%gl_RayTmaxEXT = OpVariable %_ptr_Input_float Input
+ %gl_HitTEXT = OpVariable %_ptr_Input_float Input
+    %v4float = OpTypeVector %float 4
+%_ptr_IncomingRayPayloadKHR_v4float = OpTypePointer IncomingRayPayloadKHR %v4float
+%incomingPayload = OpVariable %_ptr_IncomingRayPayloadKHR_v4float IncomingRayPayloadKHR
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %a = OpVariable %_ptr_Function_float Function
+          %b = OpVariable %_ptr_Function_float Function
+         %11 = OpLoad %float %gl_RayTmaxEXT
+               OpStore %a %11
+         %14 = OpLoad %float %gl_HitTEXT
+               OpStore %b %14
+         %18 = OpLoad %float %a
+         %19 = OpLoad %float %b
+         %22 = OpCompositeConstruct %v4float %18 %18 %19 %19
+               OpStore %incomingPayload %22
+               OpTerminateRayKHR
+               OpFunctionEnd
+    )";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpEntryPoint contains duplicate input variables with RayTmax"));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpEntryPoint-09658"));
+}
+
+TEST_F(ValidateDecorations, MultipleBuiltinsBlock) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %var
+               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex 1 BuiltIn Position
+               OpDecorate %gl_PerVertex Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%gl_PerVertex = OpTypeStruct %v4float %v4float
+%_ptr_gl_PerVertex = OpTypePointer Output %gl_PerVertex
+        %var = OpVariable %_ptr_gl_PerVertex Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+    %float_0 = OpConstant %float 0
+         %17 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+   %ptr_vec4 = OpTypePointer Output %v4float
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %19 = OpAccessChain %ptr_vec4 %var %int_0
+               OpStore %19 %17
+         %22 = OpAccessChain %ptr_vec4 %var %int_1
+               OpStore %22 %17
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpEntryPoint contains duplicate output variables with Position"));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpEntryPoint-09659"));
+}
+
+TEST_F(ValidateDecorations, MultipleBuiltinsBlockMixed) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Vertex %main "main" %var %position
+               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+               OpDecorate %gl_PerVertex Block
+               OpDecorate %position BuiltIn Position
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%gl_PerVertex = OpTypeStruct %v4float
+%_ptr_gl_PerVertex = OpTypePointer Output %gl_PerVertex
+        %var = OpVariable %_ptr_gl_PerVertex Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+    %float_0 = OpConstant %float 0
+         %17 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+   %ptr_vec4 = OpTypePointer Output %v4float
+   %position = OpVariable %ptr_vec4 Output
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %19 = OpAccessChain %ptr_vec4 %var %int_0
+               OpStore %19 %17
+               OpStore %position %17
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpEntryPoint contains duplicate output variables with Position"));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpEntryPoint-09659"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
