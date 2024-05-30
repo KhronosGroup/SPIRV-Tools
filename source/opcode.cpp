@@ -225,6 +225,7 @@ int32_t spvOpcodeIsSpecConstant(const spv::Op opcode) {
     case spv::Op::OpSpecConstantFalse:
     case spv::Op::OpSpecConstant:
     case spv::Op::OpSpecConstantComposite:
+    case spv::Op::OpSpecConstantCompositeReplicateEXT:
     case spv::Op::OpSpecConstantOp:
       return true;
     default:
@@ -238,6 +239,7 @@ int32_t spvOpcodeIsConstant(const spv::Op opcode) {
     case spv::Op::OpConstantFalse:
     case spv::Op::OpConstant:
     case spv::Op::OpConstantComposite:
+    case spv::Op::OpConstantCompositeReplicateEXT:
     case spv::Op::OpConstantSampler:
     case spv::Op::OpConstantNull:
     case spv::Op::OpConstantFunctionPointerINTEL:
@@ -245,6 +247,7 @@ int32_t spvOpcodeIsConstant(const spv::Op opcode) {
     case spv::Op::OpSpecConstantFalse:
     case spv::Op::OpSpecConstant:
     case spv::Op::OpSpecConstantComposite:
+    case spv::Op::OpSpecConstantCompositeReplicateEXT:
     case spv::Op::OpSpecConstantOp:
       return true;
     default:
