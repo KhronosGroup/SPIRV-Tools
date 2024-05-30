@@ -7568,7 +7568,7 @@ TEST_F(AggressiveDCETest, PreserveInterface) {
 OpExtension "SPV_KHR_ray_tracing"
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
-OpEntryPoint RayGenerationNV %2 "main" %3 %4
+OpEntryPoint RayGenerationKHR %2 "main" %3 %4
 OpDecorate %3 Location 0
 OpDecorate %4 DescriptorSet 2
 OpDecorate %4 Binding 0
@@ -7577,8 +7577,8 @@ OpDecorate %4 Binding 0
 %uint = OpTypeInt 32 0
 %uint_0 = OpConstant %uint 0
 %float = OpTypeFloat 32
-%_ptr_CallableDataNV_float = OpTypePointer CallableDataNV %float
-%3 = OpVariable %_ptr_CallableDataNV_float CallableDataNV
+%_ptr_CallableDataKHR_float = OpTypePointer CallableDataKHR %float
+%3 = OpVariable %_ptr_CallableDataKHR_float CallableDataKHR
 %13 = OpTypeAccelerationStructureKHR
 %_ptr_UniformConstant_13 = OpTypePointer UniformConstant %13
 %4 = OpVariable %_ptr_UniformConstant_13 UniformConstant
