@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
         printf("%s\n", spvSoftwareVersionDetailsString());
         printf(
             "Targets:\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  "
-            "%s\n %s\n %s\n %s\n",
+            "%s\n  %s\n  %s\n  %s\n",
             spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_0),
             spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_1),
             spvTargetEnvDescription(SPV_ENV_UNIVERSAL_1_2),
