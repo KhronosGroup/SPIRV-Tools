@@ -720,7 +720,7 @@ bool spvOpcodeIsImageSample(const spv::Op opcode) {
   }
 }
 
-bool spvOpcodeIsExtInst(const spv::Op opcode) {
+bool spvIsExtendedInstruction(const spv::Op opcode) {
   switch (opcode) {
     case spv::Op::OpExtInst:
     case spv::Op::OpExtInstWithForwardRefs:

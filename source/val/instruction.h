@@ -88,13 +88,13 @@ class Instruction {
   }
 
   bool IsNonSemantic() const {
-    return spvOpcodeIsExtInst(opcode()) &&
+    return spvIsExtendedInstruction(opcode()) &&
            spvExtInstIsNonSemantic(inst_.ext_inst_type);
   }
 
   /// True if this is an OpExtInst for debug info extension.
   bool IsDebugInfo() const {
-    return spvOpcodeIsExtInst(opcode()) &&
+    return spvIsExtendedInstruction(opcode()) &&
            spvExtInstIsDebugInfo(inst_.ext_inst_type);
   }
 

@@ -147,7 +147,7 @@ bool DoesDebugInfoOperandMatchExpectation(
     const Instruction* inst, uint32_t word_index) {
   if (inst->words().size() <= word_index) return false;
   auto* debug_inst = _.FindDef(inst->word(word_index));
-  if (!spvOpcodeIsExtInst(debug_inst->opcode()) ||
+  if (!spvIsExtendedInstruction(debug_inst->opcode()) ||
       (debug_inst->ext_inst_type() != SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100 &&
        debug_inst->ext_inst_type() !=
            SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100) ||
@@ -165,7 +165,7 @@ bool DoesDebugInfoOperandMatchExpectation(
     const Instruction* inst, uint32_t word_index) {
   if (inst->words().size() <= word_index) return false;
   auto* debug_inst = _.FindDef(inst->word(word_index));
-  if (!spvOpcodeIsExtInst(debug_inst->opcode()) ||
+  if (!spvIsExtendedInstruction(debug_inst->opcode()) ||
       (debug_inst->ext_inst_type() !=
        SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100) ||
       !expectation(
@@ -409,7 +409,7 @@ spv_result_t ValidateClspvReflectionArgumentInfo(ValidationState_t& _,
 spv_result_t ValidateKernelDecl(ValidationState_t& _, const Instruction* inst) {
   const auto decl_id = inst->GetOperandAs<uint32_t>(4);
   const auto decl = _.FindDef(decl_id);
-  if (!decl || !spvOpcodeIsExtInst(decl->opcode())) {
+  if (!decl || !spvIsExtendedInstruction(decl->opcode())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Kernel must be a Kernel extended instruction";
   }
@@ -432,7 +432,7 @@ spv_result_t ValidateKernelDecl(ValidationState_t& _, const Instruction* inst) {
 spv_result_t ValidateArgInfo(ValidationState_t& _, const Instruction* inst,
                              uint32_t info_index) {
   auto info = _.FindDef(inst->GetOperandAs<uint32_t>(info_index));
-  if (!info || !spvOpcodeIsExtInst(info->opcode())) {
+  if (!info || !spvIsExtendedInstruction(info->opcode())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "ArgInfo must be an ArgumentInfo extended instruction";
   }
@@ -3727,7 +3727,7 @@ spv_result_t ExtensionPass(ValidationState_t& _, const Instruction* inst) {
     spv_result_t result = ValidateExtInstWithForwardRefs(_, inst);
     if (result != SPV_SUCCESS) return result;
   }
-  if (spvOpcodeIsExtInst(opcode)) return ValidateExtInst(_, inst);
+  if (spvIsExtendedInstruction(opcode)) return ValidateExtInst(_, inst);
 
   return SPV_SUCCESS;
 }

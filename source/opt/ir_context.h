@@ -521,7 +521,7 @@ class IRContext {
     constexpr uint32_t kExtInstSetIdInIndx = 0;
     constexpr uint32_t kExtInstInstructionInIndx = 1;
 
-    if (!spvOpcodeIsExtInst(inst->opcode())) {
+    if (inst->opcode() != spv::Op::OpExtInst) {
       return combinator_ops_[0].count(uint32_t(inst->opcode())) != 0;
     } else {
       uint32_t set = inst->GetSingleWordInOperand(kExtInstSetIdInIndx);

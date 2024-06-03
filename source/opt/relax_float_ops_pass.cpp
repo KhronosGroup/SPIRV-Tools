@@ -25,7 +25,7 @@ bool RelaxFloatOpsPass::IsRelaxable(Instruction* inst) {
   return target_ops_core_f_rslt_.count(inst->opcode()) != 0 ||
          target_ops_core_f_opnd_.count(inst->opcode()) != 0 ||
          sample_ops_.count(inst->opcode()) != 0 ||
-         (spvOpcodeIsExtInst(inst->opcode()) &&
+         (inst->opcode() == spv::Op::OpExtInst &&
           inst->GetSingleWordInOperand(0) ==
               context()->get_feature_mgr()->GetExtInstImportId_GLSLstd450() &&
           target_ops_450_.count(inst->GetSingleWordInOperand(1)) != 0);

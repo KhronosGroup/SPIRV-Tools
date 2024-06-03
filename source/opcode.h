@@ -147,7 +147,7 @@ bool spvOpcodeIsLinearAlgebra(spv::Op opcode);
 bool spvOpcodeIsImageSample(spv::Op opcode);
 
 // Returns true if the opcode is either OpExtInst or OpExtInstWithForwardRefs
-bool spvOpcodeIsExtInst(spv::Op opcode);
+bool spvIsExtendedInstruction(spv::Op opcode);
 
 // Returns a vector containing the indices of the memory semantics <id>
 // operands for |opcode|.
