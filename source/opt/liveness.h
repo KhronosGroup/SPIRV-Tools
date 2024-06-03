@@ -41,7 +41,7 @@ class LivenessManager {
   // Return true if builtin |bi| is being analyzed.
   bool IsAnalyzedBuiltin(uint32_t bi);
 
-  // Return the result type of |ac| when applied to |cur_type|. Set
+  // Return the result type of |ac| when applied to |cur_type_id|. Set
   // |no_loc| to true if no loc found. Set |is_patch| indicates if the variable
   // is a patch variable. Set |input| if the variable is an input variable.
   // Otherwise it is assumed that the variable is an output variable.
@@ -68,11 +68,11 @@ class LivenessManager {
   // Mark |count| locations starting at location |start|.
   void MarkLocsLive(uint32_t start, uint32_t count);
 
-  // Return type of component of aggregate type |agg_type| at |index|
+  // Return type of the member |index| in the aggregate type |agg_type_id|.
   uint32_t GetComponentType(uint32_t index, uint32_t agg_type_id) const;
 
-  // Return offset of |index| into aggregate type |agg_type| in units of
-  // input locations
+  // Return offset of member |index| in the aggregate type |agg_type_id| in
+  // units of input locations.
   uint32_t GetLocOffset(uint32_t index, uint32_t agg_type_id) const;
 
   // Populate live_locs_ and live_builtins_
