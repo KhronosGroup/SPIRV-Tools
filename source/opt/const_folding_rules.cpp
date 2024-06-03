@@ -735,7 +735,7 @@ ConstantFoldingRule FoldUnaryOp(UnaryScalarFoldingRule scalar_rule) {
     const analysis::Vector* vector_type = result_type->AsVector();
 
     const analysis::Constant* arg =
-        (inst->opcode() == spv::Op::OpExtInst) ? constants[1] : constants[0];
+        spvOpcodeIsExtInst(inst->opcode()) ? constants[1] : constants[0];
 
     if (arg == nullptr) {
       return nullptr;
@@ -780,16 +780,16 @@ ConstantFoldingRule FoldBinaryOp(BinaryScalarFoldingRule scalar_rule) {
                        const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
     assert(constants.size() == inst->NumInOperands());
-    assert(constants.size() == (inst->opcode() == spv::Op::OpExtInst ? 3 : 2));
+    assert(constants.size() == (spvOpcodeIsExtInst(inst->opcode()) ? 3 : 2));
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     analysis::TypeManager* type_mgr = context->get_type_mgr();
     const analysis::Type* result_type = type_mgr->GetType(inst->type_id());
     const analysis::Vector* vector_type = result_type->AsVector();
 
     const analysis::Constant* arg1 =
-        (inst->opcode() == spv::Op::OpExtInst) ? constants[1] : constants[0];
+        spvOpcodeIsExtInst(inst->opcode()) ? constants[1] : constants[0];
     const analysis::Constant* arg2 =
-        (inst->opcode() == spv::Op::OpExtInst) ? constants[2] : constants[1];
+        spvOpcodeIsExtInst(inst->opcode()) ? constants[2] : constants[1];
 
     if (arg1 == nullptr || arg2 == nullptr) {
       return nullptr;
@@ -902,7 +902,7 @@ ConstantFoldingRule FoldFPBinaryOp(BinaryScalarFoldingRule scalar_rule) {
     if (!inst->IsFloatingPointFoldingAllowed()) {
       return nullptr;
     }
-    if (inst->opcode() == spv::Op::OpExtInst) {
+    if (spvOpcodeIsExtInst(inst->opcode())) {
       return FoldFPBinaryOp(scalar_rule, inst->type_id(),
                             {constants[1], constants[2]}, context);
     }
@@ -1283,7 +1283,7 @@ ConstantFoldingRule FoldFClampFeedingCompare(spv::Op cmp_opcode) {
       return nullptr;
     }
 
-    if (operand_inst->opcode() != spv::Op::OpExtInst) {
+    if (!spvOpcodeIsExtInst(operand_inst->opcode())) {
       return nullptr;
     }
 
@@ -1415,7 +1415,7 @@ ConstantFoldingRule FoldFMix() {
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
-    assert(inst->opcode() == spv::Op::OpExtInst &&
+    assert(spvOpcodeIsExtInst(inst->opcode()) &&
            "Expecting an extended instruction.");
     assert(inst->GetSingleWordInOperand(0) ==
                context->get_feature_mgr()->GetExtInstImportId_GLSLstd450() &&
@@ -1565,7 +1565,7 @@ const analysis::Constant* FoldMax(const analysis::Type* result_type,
 const analysis::Constant* FoldClamp1(
     IRContext* context, Instruction* inst,
     const std::vector<const analysis::Constant*>& constants) {
-  assert(inst->opcode() == spv::Op::OpExtInst &&
+  assert(spvOpcodeIsExtInst(inst->opcode()) &&
          "Expecting an extended instruction.");
   assert(inst->GetSingleWordInOperand(0) ==
              context->get_feature_mgr()->GetExtInstImportId_GLSLstd450() &&
@@ -1591,7 +1591,7 @@ const analysis::Constant* FoldClamp1(
 const analysis::Constant* FoldClamp2(
     IRContext* context, Instruction* inst,
     const std::vector<const analysis::Constant*>& constants) {
-  assert(inst->opcode() == spv::Op::OpExtInst &&
+  assert(spvOpcodeIsExtInst(inst->opcode()) &&
          "Expecting an extended instruction.");
   assert(inst->GetSingleWordInOperand(0) ==
              context->get_feature_mgr()->GetExtInstImportId_GLSLstd450() &&
@@ -1619,7 +1619,7 @@ const analysis::Constant* FoldClamp2(
 const analysis::Constant* FoldClamp3(
     IRContext* context, Instruction* inst,
     const std::vector<const analysis::Constant*>& constants) {
-  assert(inst->opcode() == spv::Op::OpExtInst &&
+  assert(spvOpcodeIsExtInst(inst->opcode()) &&
          "Expecting an extended instruction.");
   assert(inst->GetSingleWordInOperand(0) ==
              context->get_feature_mgr()->GetExtInstImportId_GLSLstd450() &&

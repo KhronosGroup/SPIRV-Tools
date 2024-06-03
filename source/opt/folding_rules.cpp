@@ -1877,7 +1877,7 @@ FoldingRule FMixFeedingExtract() {
         inst->GetSingleWordInOperand(kExtractCompositeIdInIdx);
     Instruction* composite_inst = def_use_mgr->GetDef(composite_id);
 
-    if (composite_inst->opcode() != spv::Op::OpExtInst) {
+    if (!spvOpcodeIsExtInst(composite_inst->opcode())) {
       return false;
     }
 
@@ -2388,8 +2388,8 @@ FoldingRule RedundantFDiv() {
 FoldingRule RedundantFMix() {
   return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
-    assert(inst->opcode() == spv::Op::OpExtInst &&
-           "Wrong opcode.  Should be OpExtInst.");
+    assert(spvOpcodeIsExtInst(inst->opcode()) &&
+           "Wrong opcode.  Should be OpExtInst or OpExtInstWithForwardRefs.");
 
     if (!inst->IsFloatingPointFoldingAllowed()) {
       return false;

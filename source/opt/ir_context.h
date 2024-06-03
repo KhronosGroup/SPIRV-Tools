@@ -202,8 +202,8 @@ class IRContext {
   inline IteratorRange<Module::const_inst_iterator> debugs3() const;
 
   // Iterators for debug info instructions (excluding OpLine & OpNoLine)
-  // contained in this module.  These are OpExtInst for DebugInfo extension
-  // placed between section 9 and 10.
+  // contained in this module.  These are OpExtInst & OpExtInstWithForwardRefs
+  // for DebugInfo extension placed between section 9 and 10.
   inline Module::inst_iterator ext_inst_debuginfo_begin();
   inline Module::inst_iterator ext_inst_debuginfo_end();
   inline IteratorRange<Module::inst_iterator> ext_inst_debuginfo();
@@ -521,7 +521,7 @@ class IRContext {
     constexpr uint32_t kExtInstSetIdInIndx = 0;
     constexpr uint32_t kExtInstInstructionInIndx = 1;
 
-    if (inst->opcode() != spv::Op::OpExtInst) {
+    if (!spvOpcodeIsExtInst(inst->opcode())) {
       return combinator_ops_[0].count(uint32_t(inst->opcode())) != 0;
     } else {
       uint32_t set = inst->GetSingleWordInOperand(kExtInstSetIdInIndx);

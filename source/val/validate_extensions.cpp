@@ -147,7 +147,7 @@ bool DoesDebugInfoOperandMatchExpectation(
     const Instruction* inst, uint32_t word_index) {
   if (inst->words().size() <= word_index) return false;
   auto* debug_inst = _.FindDef(inst->word(word_index));
-  if (debug_inst->opcode() != spv::Op::OpExtInst ||
+  if (!spvOpcodeIsExtInst(debug_inst->opcode()) ||
       (debug_inst->ext_inst_type() != SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100 &&
        debug_inst->ext_inst_type() !=
            SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100) ||
@@ -165,7 +165,7 @@ bool DoesDebugInfoOperandMatchExpectation(
     const Instruction* inst, uint32_t word_index) {
   if (inst->words().size() <= word_index) return false;
   auto* debug_inst = _.FindDef(inst->word(word_index));
-  if (debug_inst->opcode() != spv::Op::OpExtInst ||
+  if (!spvOpcodeIsExtInst(debug_inst->opcode()) ||
       (debug_inst->ext_inst_type() !=
        SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100) ||
       !expectation(
@@ -409,7 +409,7 @@ spv_result_t ValidateClspvReflectionArgumentInfo(ValidationState_t& _,
 spv_result_t ValidateKernelDecl(ValidationState_t& _, const Instruction* inst) {
   const auto decl_id = inst->GetOperandAs<uint32_t>(4);
   const auto decl = _.FindDef(decl_id);
-  if (!decl || decl->opcode() != spv::Op::OpExtInst) {
+  if (!decl || !spvOpcodeIsExtInst(decl->opcode())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Kernel must be a Kernel extended instruction";
   }
@@ -432,7 +432,7 @@ spv_result_t ValidateKernelDecl(ValidationState_t& _, const Instruction* inst) {
 spv_result_t ValidateArgInfo(ValidationState_t& _, const Instruction* inst,
                              uint32_t info_index) {
   auto info = _.FindDef(inst->GetOperandAs<uint32_t>(info_index));
-  if (!info || info->opcode() != spv::Op::OpExtInst) {
+  if (!info || !spvOpcodeIsExtInst(info->opcode())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "ArgInfo must be an ArgumentInfo extended instruction";
   }
@@ -1077,6 +1077,23 @@ spv_result_t ValidateExtInstImport(ValidationState_t& _,
              << "NonSemantic extended instruction sets cannot be declared "
                 "without SPV_KHR_non_semantic_info.";
     }
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateExtInstWithForwardRefs(ValidationState_t& _,
+                                            const Instruction* inst) {
+  if (!_.HasExtension(kSPV_KHR_relaxed_extended_instruction)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "OpExtInstWithForwardRefs instruction requires "
+           << "SPV_KHR_relaxed_extended_instruction";
+  }
+
+  if (!_.HasExtension(kSPV_KHR_non_semantic_info)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "OpExtInstWithForwardRefs instruction requires "
+           << "SPV_KHR_non_semantic_info";
   }
 
   return SPV_SUCCESS;
@@ -3706,7 +3723,11 @@ spv_result_t ExtensionPass(ValidationState_t& _, const Instruction* inst) {
   const spv::Op opcode = inst->opcode();
   if (opcode == spv::Op::OpExtension) return ValidateExtension(_, inst);
   if (opcode == spv::Op::OpExtInstImport) return ValidateExtInstImport(_, inst);
-  if (opcode == spv::Op::OpExtInst) return ValidateExtInst(_, inst);
+  if (opcode == spv::Op::OpExtInstWithForwardRefs) {
+    spv_result_t result = ValidateExtInstWithForwardRefs(_, inst);
+    if (result != SPV_SUCCESS) return result;
+  }
+  if (spvOpcodeIsExtInst(opcode)) return ValidateExtInst(_, inst);
 
   return SPV_SUCCESS;
 }
