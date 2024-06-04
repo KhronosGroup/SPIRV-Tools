@@ -7472,6 +7472,81 @@ OpFunctionEnd
   }
 }
 
+TEST_F(ValidateExtInst, OpExtInstWithForwardNotAllowedSemantic) {
+  const std::string body = R"(
+             OpCapability Shader
+             OpExtension "SPV_KHR_non_semantic_info"
+             OpExtension "SPV_KHR_relaxed_extended_instruction"
+        %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+  %extinst = OpExtInstImport "GLSL.std.450"
+             OpMemoryModel Logical GLSL450
+             OpEntryPoint GLCompute %2 "main"
+             OpExecutionMode %2 LocalSize 1 1 1
+        %3 = OpString "sample"
+     %void = OpTypeVoid
+     %uint = OpTypeInt 32 0
+      %f32 = OpTypeFloat 32
+   %uint_0 = OpConstant %uint 0
+    %f32_0 = OpConstant %f32 0
+    %f32_1 = OpConstant %f32 1
+        %7 = OpTypeFunction %void
+        %8 = OpExtInst %void %1 DebugSource %3 %3
+        %9 = OpExtInst %void %1 DebugCompilationUnit %uint_0 %uint_0 %8 %uint_0
+       %10 = OpExtInstWithForwardRefs %void %1 DebugTypeFunction %uint_0 %11
+       %12 = OpExtInstWithForwardRefs %void %1 DebugFunction %3 %10 %8 %uint_0 %uint_0 %11 %3 %uint_0 %uint_0
+       %11 = OpExtInst %void %1 DebugTypeComposite %3 %uint_0 %8 %uint_0 %uint_0 %9 %3 %uint_0 %uint_0 %12
+        %2 = OpFunction %void None %7
+       %13 = OpLabel
+       %18 = OpExtInstWithForwardRefs %f32 %extinst FMin %f32_0 %19
+       %19 = OpExtInst %f32 %extinst FMin %f32_0 %f32_1
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(body);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpExtInstWithForwardRefs is only allowed with non-semantic "
+          "instructions.\n"
+          "  %18 = OpExtInstWithForwardRefs %float %2 FMin %float_0 %19\n"));
+}
+
+TEST_F(ValidateExtInst, OpExtInstRequiresNonSemanticBefore16) {
+  const std::string body = R"(
+             OpCapability Shader
+             OpExtension "SPV_KHR_non_semantic_info"
+        %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+  %extinst = OpExtInstImport "GLSL.std.450"
+             OpMemoryModel Logical GLSL450
+             OpEntryPoint GLCompute %2 "main"
+             OpExecutionMode %2 LocalSize 1 1 1
+        %3 = OpString "sample"
+     %void = OpTypeVoid
+     %uint = OpTypeInt 32 0
+   %uint_0 = OpConstant %uint 0
+        %7 = OpTypeFunction %void
+        %8 = OpExtInst %void %1 DebugSource %3 %3
+        %9 = OpExtInst %void %1 DebugCompilationUnit %uint_0 %uint_0 %8 %uint_0
+       %10 = OpExtInstWithForwardRefs %void %1 DebugTypeFunction %uint_0 %11
+       %12 = OpExtInstWithForwardRefs %void %1 DebugFunction %3 %10 %8 %uint_0 %uint_0 %11 %3 %uint_0 %uint_0
+       %11 = OpExtInst %void %1 DebugTypeComposite %3 %uint_0 %8 %uint_0 %uint_0 %9 %3 %uint_0 %uint_0 %12
+        %2 = OpFunction %void None %7
+       %13 = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(body);
+  ASSERT_EQ(SPV_ERROR_MISSING_EXTENSION, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ExtInstWithForwardRefs requires one of the following "
+                        "extensions: SPV_KHR_relaxed_extended_instruction \n"
+                        "  %11 = OpExtInstWithForwardRefs %void %1 "
+                        "DebugTypeFunction %uint_0 %12\n"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

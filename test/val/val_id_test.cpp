@@ -6907,6 +6907,113 @@ TEST_P(ValidateIdWithMessage, NVBindlessSamplerInStruct) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
+TEST_P(ValidateIdWithMessage, OpExtInstWithForwardRefsDisallowedNoForwardRef) {
+  std::string spirv = R"(
+             OpCapability Shader
+             OpExtension "SPV_KHR_non_semantic_info"
+             OpExtension "SPV_KHR_relaxed_extended_instruction"
+        %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+             OpMemoryModel Logical GLSL450
+             OpEntryPoint GLCompute %main "main"
+             OpExecutionMode %main LocalSize 1 1 1
+     %void = OpTypeVoid
+%main_type = OpTypeFunction %void
+        %4 = OpExtInstWithForwardRefs %void %1 DebugInfoNone
+     %main = OpFunction %void None %main_type
+        %5 = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(make_message("Opcode OpExtInstWithForwardRefs must have at "
+                             "least one forward declared ID.")));
+}
+
+TEST_P(ValidateIdWithMessage, OpExtInstNoForwardRef) {
+  std::string spirv = R"(
+             OpCapability Shader
+             OpExtension "SPV_KHR_non_semantic_info"
+             OpExtension "SPV_KHR_relaxed_extended_instruction"
+        %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+             OpMemoryModel Logical GLSL450
+             OpEntryPoint GLCompute %main "main"
+             OpExecutionMode %main LocalSize 1 1 1
+     %void = OpTypeVoid
+%main_type = OpTypeFunction %void
+        %4 = OpExtInst %void %1 DebugInfoNone
+     %main = OpFunction %void None %main_type
+        %5 = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+}
+
+TEST_P(ValidateIdWithMessage,
+       OpExtInstWithForwardRefsAllowedForwardReferenceInNonSemantic) {
+  std::string spirv = R"(
+             OpCapability Shader
+             OpExtension "SPV_KHR_non_semantic_info"
+             OpExtension "SPV_KHR_relaxed_extended_instruction"
+        %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+             OpMemoryModel Logical GLSL450
+             OpEntryPoint GLCompute %2 "main"
+             OpExecutionMode %2 LocalSize 1 1 1
+        %3 = OpString "sample"
+     %void = OpTypeVoid
+     %uint = OpTypeInt 32 0
+   %uint_0 = OpConstant %uint 0
+        %7 = OpTypeFunction %void
+        %8 = OpExtInst %void %1 DebugSource %3 %3
+        %9 = OpExtInst %void %1 DebugCompilationUnit %uint_0 %uint_0 %8 %uint_0
+       %10 = OpExtInstWithForwardRefs %void %1 DebugTypeFunction %uint_0 %11
+       %12 = OpExtInstWithForwardRefs %void %1 DebugFunction %3 %10 %8 %uint_0 %uint_0 %11 %3 %uint_0 %uint_0
+       %11 = OpExtInst %void %1 DebugTypeComposite %3 %uint_0 %8 %uint_0 %uint_0 %9 %3 %uint_0 %uint_0 %12
+        %2 = OpFunction %void None %7
+       %13 = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+}
+
+TEST_P(ValidateIdWithMessage, OpExtInstNoForwardDeclAllowed) {
+  std::string spirv = R"(
+             OpCapability Shader
+        %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+             OpMemoryModel Logical GLSL450
+             OpEntryPoint GLCompute %2 "main"
+             OpExecutionMode %2 LocalSize 1 1 1
+        %3 = OpString "sample"
+     %void = OpTypeVoid
+     %uint = OpTypeInt 32 0
+   %uint_0 = OpConstant %uint 0
+        %7 = OpTypeFunction %void
+        %8 = OpExtInst %void %1 DebugSource %3 %3
+        %9 = OpExtInst %void %1 DebugCompilationUnit %uint_0 %uint_0 %8 %uint_0
+       %10 = OpExtInst %void %1 DebugTypeFunction %uint_0 %11
+       %12 = OpExtInst %void %1 DebugFunction %3 %10 %8 %uint_0 %uint_0 %11 %3 %uint_0 %uint_0
+       %11 = OpExtInst %void %1 DebugTypeComposite %3 %uint_0 %8 %uint_0 %uint_0 %9 %3 %uint_0 %uint_0 %12
+        %2 = OpFunction %void None %7
+       %13 = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr(make_message("ID '11[%11]' has not been defined")));
+}
+
 INSTANTIATE_TEST_SUITE_P(, ValidateIdWithMessage, ::testing::Bool());
 
 }  // namespace
