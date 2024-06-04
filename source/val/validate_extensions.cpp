@@ -1082,23 +1082,6 @@ spv_result_t ValidateExtInstImport(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateExtInstWithForwardRefs(ValidationState_t& _,
-                                            const Instruction* inst) {
-  if (!_.HasExtension(kSPV_KHR_relaxed_extended_instruction)) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "OpExtInstWithForwardRefs instruction requires "
-           << "SPV_KHR_relaxed_extended_instruction";
-  }
-
-  if (!_.HasExtension(kSPV_KHR_non_semantic_info)) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "OpExtInstWithForwardRefs instruction requires "
-           << "SPV_KHR_non_semantic_info";
-  }
-
-  return SPV_SUCCESS;
-}
-
 spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
   const uint32_t result_type = inst->type_id();
   const uint32_t num_operands = static_cast<uint32_t>(inst->operands().size());
@@ -3723,10 +3706,6 @@ spv_result_t ExtensionPass(ValidationState_t& _, const Instruction* inst) {
   const spv::Op opcode = inst->opcode();
   if (opcode == spv::Op::OpExtension) return ValidateExtension(_, inst);
   if (opcode == spv::Op::OpExtInstImport) return ValidateExtInstImport(_, inst);
-  if (opcode == spv::Op::OpExtInstWithForwardRefs) {
-    spv_result_t result = ValidateExtInstWithForwardRefs(_, inst);
-    if (result != SPV_SUCCESS) return result;
-  }
   if (spvIsExtendedInstruction(opcode)) return ValidateExtInst(_, inst);
 
   return SPV_SUCCESS;

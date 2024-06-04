@@ -137,12 +137,6 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
     // We only care about Id operands, which are a single word.
     const uint32_t operand_word = inst->word(operand.offset);
 
-    if (inst->opcode() == spv::Op::OpExtInstWithForwardRefs) {
-      if (inst->opcode() == spv::Op::OpExtInst) {
-        return SPV_ERROR_INTERNAL;
-      }
-    }
-
     auto ret = SPV_ERROR_INTERNAL;
     switch (type) {
       case SPV_OPERAND_TYPE_RESULT_ID:
