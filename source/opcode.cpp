@@ -720,6 +720,16 @@ bool spvOpcodeIsImageSample(const spv::Op opcode) {
   }
 }
 
+bool spvIsExtendedInstruction(const spv::Op opcode) {
+  switch (opcode) {
+    case spv::Op::OpExtInst:
+    case spv::Op::OpExtInstWithForwardRefs:
+      return true;
+    default:
+      return false;
+  }
+}
+
 std::vector<uint32_t> spvOpcodeMemorySemanticsOperandIndices(spv::Op opcode) {
   switch (opcode) {
     case spv::Op::OpMemoryBarrier:

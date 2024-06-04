@@ -1684,6 +1684,7 @@ spv_result_t CheckIntegerWrapDecoration(ValidationState_t& vstate,
     case spv::Op::OpSNegate:
       return SPV_SUCCESS;
     case spv::Op::OpExtInst:
+    case spv::Op::OpExtInstWithForwardRefs:
       // TODO(dneto): Only certain extended instructions allow these
       // decorations.  For now allow anything.
       return SPV_SUCCESS;
