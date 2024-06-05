@@ -15,6 +15,7 @@
 #ifndef SOURCE_VAL_DECORATION_H_
 #define SOURCE_VAL_DECORATION_H_
 
+#include <cassert>
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
