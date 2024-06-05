@@ -141,7 +141,8 @@ void LocalSingleStoreElimPass::InitExtensionAllowList() {
                                 "SPV_NV_bindless_texture",
                                 "SPV_EXT_shader_atomic_float_add",
                                 "SPV_EXT_fragment_shader_interlock",
-                                "SPV_NV_compute_shader_derivatives"});
+                                "SPV_NV_compute_shader_derivatives",
+                                "SPV_KHR_cooperative_matrix"});
 }
 bool LocalSingleStoreElimPass::ProcessVariable(Instruction* var_inst) {
   std::vector<Instruction*> users;
