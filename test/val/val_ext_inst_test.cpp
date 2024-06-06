@@ -7540,11 +7540,12 @@ TEST_F(ValidateExtInst, OpExtInstRequiresNonSemanticBefore16) {
 
   CompileSuccessfully(body);
   ASSERT_EQ(SPV_ERROR_MISSING_EXTENSION, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ExtInstWithForwardRefsKHR requires one of the following "
-                        "extensions: SPV_KHR_relaxed_extended_instruction \n"
-                        "  %11 = OpExtInstWithForwardRefsKHR %void %1 "
-                        "DebugTypeFunction %uint_0 %12\n"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ExtInstWithForwardRefsKHR requires one of the following "
+                "extensions: SPV_KHR_relaxed_extended_instruction \n"
+                "  %11 = OpExtInstWithForwardRefsKHR %void %1 "
+                "DebugTypeFunction %uint_0 %12\n"));
 }
 
 }  // namespace
