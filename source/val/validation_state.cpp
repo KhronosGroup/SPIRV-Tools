@@ -76,7 +76,7 @@ ModuleLayoutSection InstructionLayoutSection(
       if (current_section == kLayoutTypes) return kLayoutTypes;
       return kLayoutFunctionDefinitions;
     case spv::Op::OpExtInst:
-    case spv::Op::OpExtInstWithForwardRefs:
+    case spv::Op::OpExtInstWithForwardRefsKHR:
       // spv::Op::OpExtInst is only allowed in types section for certain
       // extended instruction sets. This will be checked separately.
       if (current_section == kLayoutTypes) return kLayoutTypes;

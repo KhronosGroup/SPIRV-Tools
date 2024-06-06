@@ -568,8 +568,8 @@ TEST_F(ValidateRelaxedExtendedInstructionExt, RequiresExtension) {
         %7 = OpTypeFunction %void
         %8 = OpExtInst %void %1 DebugSource %3 %3
         %9 = OpExtInst %void %1 DebugCompilationUnit %uint_0 %uint_0 %8 %uint_0
-       %10 = OpExtInstWithForwardRefs %void %1 DebugTypeFunction %uint_0 %11
-       %12 = OpExtInstWithForwardRefs %void %1 DebugFunction %3 %10 %8 %uint_0 %uint_0 %11 %3 %uint_0 %uint_0
+       %10 = OpExtInstWithForwardRefsKHR %void %1 DebugTypeFunction %uint_0 %11
+       %12 = OpExtInstWithForwardRefsKHR %void %1 DebugFunction %3 %10 %8 %uint_0 %uint_0 %11 %3 %uint_0 %uint_0
        %11 = OpExtInst %void %1 DebugTypeComposite %3 %uint_0 %8 %uint_0 %uint_0 %9 %3 %uint_0 %uint_0 %12
         %2 = OpFunction %void None %7
        %13 = OpLabel
@@ -582,9 +582,10 @@ TEST_F(ValidateRelaxedExtendedInstructionExt, RequiresExtension) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "ExtInstWithForwardRefs requires one of the following extensions:"
+          "ExtInstWithForwardRefsKHR requires one of the following extensions:"
           " SPV_KHR_relaxed_extended_instruction \n"
-          "  %10 = OpExtInstWithForwardRefs %void %1 DebugTypeFunction %uint_0 "
+          "  %10 = OpExtInstWithForwardRefsKHR %void %1 DebugTypeFunction "
+          "%uint_0 "
           "%11\n"));
 }
 

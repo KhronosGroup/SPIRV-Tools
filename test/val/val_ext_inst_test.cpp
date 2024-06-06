@@ -7492,12 +7492,12 @@ TEST_F(ValidateExtInst, OpExtInstWithForwardNotAllowedSemantic) {
         %7 = OpTypeFunction %void
         %8 = OpExtInst %void %1 DebugSource %3 %3
         %9 = OpExtInst %void %1 DebugCompilationUnit %uint_0 %uint_0 %8 %uint_0
-       %10 = OpExtInstWithForwardRefs %void %1 DebugTypeFunction %uint_0 %11
-       %12 = OpExtInstWithForwardRefs %void %1 DebugFunction %3 %10 %8 %uint_0 %uint_0 %11 %3 %uint_0 %uint_0
+       %10 = OpExtInstWithForwardRefsKHR %void %1 DebugTypeFunction %uint_0 %11
+       %12 = OpExtInstWithForwardRefsKHR %void %1 DebugFunction %3 %10 %8 %uint_0 %uint_0 %11 %3 %uint_0 %uint_0
        %11 = OpExtInst %void %1 DebugTypeComposite %3 %uint_0 %8 %uint_0 %uint_0 %9 %3 %uint_0 %uint_0 %12
         %2 = OpFunction %void None %7
        %13 = OpLabel
-       %18 = OpExtInstWithForwardRefs %f32 %extinst FMin %f32_0 %19
+       %18 = OpExtInstWithForwardRefsKHR %f32 %extinst FMin %f32_0 %19
        %19 = OpExtInst %f32 %extinst FMin %f32_0 %f32_1
              OpReturn
              OpFunctionEnd
@@ -7508,9 +7508,9 @@ TEST_F(ValidateExtInst, OpExtInstWithForwardNotAllowedSemantic) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpExtInstWithForwardRefs is only allowed with non-semantic "
+          "OpExtInstWithForwardRefsKHR is only allowed with non-semantic "
           "instructions.\n"
-          "  %18 = OpExtInstWithForwardRefs %float %2 FMin %float_0 %19\n"));
+          "  %18 = OpExtInstWithForwardRefsKHR %float %2 FMin %float_0 %19\n"));
 }
 
 TEST_F(ValidateExtInst, OpExtInstRequiresNonSemanticBefore16) {
@@ -7529,8 +7529,8 @@ TEST_F(ValidateExtInst, OpExtInstRequiresNonSemanticBefore16) {
         %7 = OpTypeFunction %void
         %8 = OpExtInst %void %1 DebugSource %3 %3
         %9 = OpExtInst %void %1 DebugCompilationUnit %uint_0 %uint_0 %8 %uint_0
-       %10 = OpExtInstWithForwardRefs %void %1 DebugTypeFunction %uint_0 %11
-       %12 = OpExtInstWithForwardRefs %void %1 DebugFunction %3 %10 %8 %uint_0 %uint_0 %11 %3 %uint_0 %uint_0
+       %10 = OpExtInstWithForwardRefsKHR %void %1 DebugTypeFunction %uint_0 %11
+       %12 = OpExtInstWithForwardRefsKHR %void %1 DebugFunction %3 %10 %8 %uint_0 %uint_0 %11 %3 %uint_0 %uint_0
        %11 = OpExtInst %void %1 DebugTypeComposite %3 %uint_0 %8 %uint_0 %uint_0 %9 %3 %uint_0 %uint_0 %12
         %2 = OpFunction %void None %7
        %13 = OpLabel
@@ -7540,11 +7540,12 @@ TEST_F(ValidateExtInst, OpExtInstRequiresNonSemanticBefore16) {
 
   CompileSuccessfully(body);
   ASSERT_EQ(SPV_ERROR_MISSING_EXTENSION, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ExtInstWithForwardRefs requires one of the following "
-                        "extensions: SPV_KHR_relaxed_extended_instruction \n"
-                        "  %11 = OpExtInstWithForwardRefs %void %1 "
-                        "DebugTypeFunction %uint_0 %12\n"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ExtInstWithForwardRefsKHR requires one of the following "
+                "extensions: SPV_KHR_relaxed_extended_instruction \n"
+                "  %11 = OpExtInstWithForwardRefsKHR %void %1 "
+                "DebugTypeFunction %uint_0 %12\n"));
 }
 
 }  // namespace
