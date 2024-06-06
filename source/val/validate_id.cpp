@@ -178,7 +178,7 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
                      !inst->IsNonSemantic() && !spvOpcodeIsDecoration(opcode) &&
                      !spvOpcodeIsBranch(opcode) && opcode != spv::Op::OpPhi &&
                      opcode != spv::Op::OpExtInst &&
-                     opcode != spv::Op::OpExtInstWithForwardRefs &&
+                     opcode != spv::Op::OpExtInstWithForwardRefsKHR &&
                      opcode != spv::Op::OpExtInstImport &&
                      opcode != spv::Op::OpSelectionMerge &&
                      opcode != spv::Op::OpLoopMerge &&
@@ -239,10 +239,10 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
         // defined" error before we could give a more helpful message. For this
         // reason, this test is done here, so we can be more helpful to the
         // user.
-        if (inst->opcode() == spv::Op::OpExtInstWithForwardRefs &&
+        if (inst->opcode() == spv::Op::OpExtInstWithForwardRefsKHR &&
             !inst->IsNonSemantic())
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << "OpExtInstWithForwardRefs is only allowed with "
+                 << "OpExtInstWithForwardRefsKHR is only allowed with "
                     "non-semantic instructions.";
         ret = SPV_SUCCESS;
         break;
@@ -253,10 +253,11 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
     if (SPV_SUCCESS != ret) return ret;
   }
   const bool must_have_forward_declared_ids =
-      inst->opcode() == spv::Op::OpExtInstWithForwardRefs;
+      inst->opcode() == spv::Op::OpExtInstWithForwardRefsKHR;
   if (must_have_forward_declared_ids && !has_forward_declared_ids) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Opcode OpExtInstWithForwardRefs must have at least one forward "
+           << "Opcode OpExtInstWithForwardRefsKHR must have at least one "
+              "forward "
               "declared ID.";
   }
 
