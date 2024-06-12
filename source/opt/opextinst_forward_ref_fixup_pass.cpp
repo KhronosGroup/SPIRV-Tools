@@ -19,12 +19,17 @@
 
 #include "source/extensions.h"
 #include "source/opt/ir_context.h"
+#include "source/opt/module.h"
 #include "type_manager.h"
 
 namespace spvtools {
 namespace opt {
 namespace {
 
+// Returns true if the instruction |inst| has a forward reference to another
+// debug instruction.
+// |debug_ids| contains the list of IDs belonging to debug instructions.
+// |seen_ids| contains the list of IDs already seen.
 bool HasForwardReference(const Instruction& inst,
                          const std::unordered_set<uint32_t>& debug_ids,
                          const std::unordered_set<uint32_t>& seen_ids) {
@@ -41,6 +46,8 @@ bool HasForwardReference(const Instruction& inst,
   return false;
 }
 
+// Replaced |inst| opcode with OpExtInstWithForwardRefsKHR or OpExtInst
+// if required to comply with forward references.
 bool ReplaceOpcodeIfRequired(Instruction& inst, bool hasForwardReferences) {
   if (hasForwardReferences &&
       inst.opcode() != spv::Op::OpExtInstWithForwardRefsKHR)
@@ -52,10 +59,11 @@ bool ReplaceOpcodeIfRequired(Instruction& inst, bool hasForwardReferences) {
   return true;
 }
 
-template <typename T>
-std::unordered_set<uint32_t> gatherResultIds(const T& list) {
+// Returns all the result IDs of the instructions in |range|.
+std::unordered_set<uint32_t> gatherResultIds(
+    const IteratorRange<Module::inst_iterator>& range) {
   std::unordered_set<uint32_t> output;
-  for (const auto& it : list) output.insert(it.result_id());
+  for (const auto& it : range) output.insert(it.result_id());
   return output;
 }
 
