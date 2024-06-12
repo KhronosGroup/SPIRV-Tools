@@ -24,7 +24,7 @@ namespace opt {
 
 class OpExtInstWithForwardReferenceFixupPass : public Pass {
  public:
-  const char* name() const override { return "opextinst-fwdref-fixup"; }
+  const char* name() const override { return "fix-opextinst-opcodes"; }
   Status Process() override;
 
   IRContext::Analysis GetPreservedAnalyses() override {
