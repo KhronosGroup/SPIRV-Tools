@@ -39,47 +39,22 @@ std::string dis(std::string const& buffer, uint32_t env, uint32_t options) {
   return disassembly;
 }
 
-emscripten::val as(std::string const& source, uint32_t env, uint32_t options) {
+std::string as(std::string const& source, uint32_t env, uint32_t options) {
   spvtools::SpirvTools core(static_cast<spv_target_env>(env));
   core.SetMessageConsumer(print_msg_to_stderr);
 
   std::vector<uint32_t> spirv;
   if (!core.Assemble(source, &spirv, options)) spirv.clear();
-  const uint8_t* ptr = reinterpret_cast<const uint8_t*>(spirv.data());
-  return emscripten::val(emscripten::typed_memory_view(spirv.size() * 4,
-    ptr));
+  // Copy the data out.
+  const auto* ptr = reinterpret_cast<const char*>(spirv.data());
+  return std::string(ptr,spirv.size()*4);
 }
 
 EMSCRIPTEN_BINDINGS(my_module) {
   function("dis", &dis);
   function("as", &as);
-  
-  constant("SPV_ENV_UNIVERSAL_1_0", static_cast<uint32_t>(SPV_ENV_UNIVERSAL_1_0));
-  constant("SPV_ENV_VULKAN_1_0", static_cast<uint32_t>(SPV_ENV_VULKAN_1_0));
-  constant("SPV_ENV_UNIVERSAL_1_1", static_cast<uint32_t>(SPV_ENV_UNIVERSAL_1_1));
-  constant("SPV_ENV_OPENCL_2_1", static_cast<uint32_t>(SPV_ENV_OPENCL_2_1));
-  constant("SPV_ENV_OPENCL_2_2", static_cast<uint32_t>(SPV_ENV_OPENCL_2_2));
-  constant("SPV_ENV_OPENGL_4_0", static_cast<uint32_t>(SPV_ENV_OPENGL_4_0));
-  constant("SPV_ENV_OPENGL_4_1", static_cast<uint32_t>(SPV_ENV_OPENGL_4_1));
-  constant("SPV_ENV_OPENGL_4_2", static_cast<uint32_t>(SPV_ENV_OPENGL_4_2));
-  constant("SPV_ENV_OPENGL_4_3", static_cast<uint32_t>(SPV_ENV_OPENGL_4_3));
-  constant("SPV_ENV_OPENGL_4_5", static_cast<uint32_t>(SPV_ENV_OPENGL_4_5));
-  constant("SPV_ENV_UNIVERSAL_1_2", static_cast<uint32_t>(SPV_ENV_UNIVERSAL_1_2));
-  constant("SPV_ENV_OPENCL_1_2", static_cast<uint32_t>(SPV_ENV_OPENCL_1_2));
-  constant("SPV_ENV_OPENCL_EMBEDDED_1_2", static_cast<uint32_t>(SPV_ENV_OPENCL_EMBEDDED_1_2));
-  constant("SPV_ENV_OPENCL_2_0", static_cast<uint32_t>(SPV_ENV_OPENCL_2_0));
-  constant("SPV_ENV_OPENCL_EMBEDDED_2_0", static_cast<uint32_t>(SPV_ENV_OPENCL_EMBEDDED_2_0));
-  constant("SPV_ENV_OPENCL_EMBEDDED_2_1", static_cast<uint32_t>(SPV_ENV_OPENCL_EMBEDDED_2_1));
-  constant("SPV_ENV_OPENCL_EMBEDDED_2_2", static_cast<uint32_t>(SPV_ENV_OPENCL_EMBEDDED_2_2));
-  constant("SPV_ENV_UNIVERSAL_1_3", static_cast<uint32_t>(SPV_ENV_UNIVERSAL_1_3));
-  constant("SPV_ENV_VULKAN_1_1", static_cast<uint32_t>(SPV_ENV_VULKAN_1_1));
-  constant("SPV_ENV_WEBGPU_0", static_cast<uint32_t>(SPV_ENV_WEBGPU_0));
-  constant("SPV_ENV_UNIVERSAL_1_4", static_cast<uint32_t>(SPV_ENV_UNIVERSAL_1_4));
-  constant("SPV_ENV_VULKAN_1_1_SPIRV_1_4", static_cast<uint32_t>(SPV_ENV_VULKAN_1_1_SPIRV_1_4));
-  constant("SPV_ENV_UNIVERSAL_1_5", static_cast<uint32_t>(SPV_ENV_UNIVERSAL_1_5));
-  constant("SPV_ENV_VULKAN_1_2", static_cast<uint32_t>(SPV_ENV_VULKAN_1_2));
-  constant("SPV_ENV_UNIVERSAL_1_6",
-           static_cast<uint32_t>(SPV_ENV_UNIVERSAL_1_6));
+
+#include "spv_env.inc"
 
   constant("SPV_BINARY_TO_TEXT_OPTION_NONE", static_cast<uint32_t>(SPV_BINARY_TO_TEXT_OPTION_NONE));
   constant("SPV_BINARY_TO_TEXT_OPTION_PRINT", static_cast<uint32_t>(SPV_BINARY_TO_TEXT_OPTION_PRINT));

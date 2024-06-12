@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const spirvTools = require("../../out/web/spirv-tools");
+const spirvTools = require("../../out/web/spirv-tools/spirv-tools");
 const fs = require("fs");
 const util = require("util");
 const readFile = util.promisify(fs.readFile);
@@ -43,12 +43,13 @@ const test = async () => {
       %int = OpTypeInt 32 1 
      %spec = OpSpecConstant %int 0 
     %const = OpConstant %int 42`;
+
   const asResult = spv.as(
     source,
     spv.SPV_ENV_UNIVERSAL_1_3,
     spv.SPV_TEXT_TO_BINARY_OPTION_NONE
   );
-  console.log(`as returned ${asResult.byteLength} bytes`);
+  console.log(`as returned ${asResult.length} bytes`);
 
   // re-disassemble
   const disResult = spv.dis(
