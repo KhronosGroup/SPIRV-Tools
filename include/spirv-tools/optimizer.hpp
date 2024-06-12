@@ -857,9 +857,9 @@ Optimizer::PassToken CreateAmdExtToKhrPass();
 Optimizer::PassToken CreateInterpolateFixupPass();
 
 // Replace OpExtInst instructions with OpExtInstWithForwardRefsKHR when
-// the instruction contains a forward references, and replaces
-// OpExtInstWithForwardRefsKHR with OpExtInst when there is no forward
-// references.
+// the instruction contains a forward reference to another debug instuction.
+// Replace OpExtInstWithForwardRefsKHR with OpExtInst when there are no forward
+// reference to another debug instruction.
 Optimizer::PassToken CreateOpExtInstWithForwardReferenceFixupPass();
 
 // Removes unused components from composite input variables. Current
