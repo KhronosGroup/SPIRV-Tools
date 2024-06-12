@@ -1076,11 +1076,6 @@ Optimizer::PassToken CreateInterpolateFixupPass() {
       MakeUnique<opt::InterpFixupPass>());
 }
 
-Optimizer::PassToken CreateOpExtInstWithForwardReferenceFixupPass() {
-  return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::OpExtInstWithForwardReferenceFixupPass>());
-}
-
 Optimizer::PassToken CreateEliminateDeadInputComponentsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::EliminateDeadIOComponentsPass>(spv::StorageClass::Input,
@@ -1154,6 +1149,12 @@ Optimizer::PassToken CreateModifyMaximalReconvergencePass(bool add) {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::ModifyMaximalReconvergence>(add));
 }
+
+Optimizer::PassToken CreateOpExtInstWithForwardReferenceFixupPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::OpExtInstWithForwardReferenceFixupPass>());
+}
+
 }  // namespace spvtools
 
 extern "C" {
