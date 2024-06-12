@@ -169,7 +169,8 @@ Optimizer& Optimizer::RegisterLegalizationPasses(bool preserve_interface) {
           .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
           .RegisterPass(CreateRemoveUnusedInterfaceVariablesPass())
           .RegisterPass(CreateInterpolateFixupPass())
-          .RegisterPass(CreateInvocationInterlockPlacementPass());
+          .RegisterPass(CreateInvocationInterlockPlacementPass())
+          .RegisterPass(CreateOpExtInstWithForwardReferenceFixupPass());
 }
 
 Optimizer& Optimizer::RegisterLegalizationPasses() {
@@ -323,6 +324,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
     RegisterPass(CreateStripReflectInfoPass());
   } else if (pass_name == "strip-nonsemantic") {
     RegisterPass(CreateStripNonSemanticInfoPass());
+  } else if (pass_name == "fix-opextinst-opcodes") {
+    RegisterPass(CreateOpExtInstWithForwardReferenceFixupPass());
   } else if (pass_name == "set-spec-const-default-value") {
     if (pass_args.size() > 0) {
       auto spec_ids_vals =
@@ -1071,6 +1074,11 @@ Optimizer::PassToken CreateAmdExtToKhrPass() {
 Optimizer::PassToken CreateInterpolateFixupPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::InterpFixupPass>());
+}
+
+Optimizer::PassToken CreateOpExtInstWithForwardReferenceFixupPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::OpExtInstWithForwardReferenceFixupPass>());
 }
 
 Optimizer::PassToken CreateEliminateDeadInputComponentsPass() {
