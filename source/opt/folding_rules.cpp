@@ -180,8 +180,14 @@ std::vector<uint32_t> GetWordsFromNumericScalarOrVectorConstant(
 const analysis::Constant* ConvertWordsToNumericScalarOrVectorConstant(
     analysis::ConstantManager* const_mgr, const std::vector<uint32_t>& words,
     const analysis::Type* type) {
-  if (type->AsInteger() || type->AsFloat())
-    return const_mgr->GetConstant(type, words);
+  const spvtools::opt::analysis::Integer* int_type = type->AsInteger();
+
+  if (int_type && int_type->width() <= 32) {
+    assert(words.size() == 1);
+    return const_mgr->GenerateIntegerConstant(int_type, words[0]);
+  }
+
+  if (int_type || type->AsFloat()) return const_mgr->GetConstant(type, words);
   if (const auto* vec_type = type->AsVector())
     return const_mgr->GetNumericVectorConstantWithWords(vec_type, words);
   return nullptr;

@@ -924,7 +924,7 @@ INSTANTIATE_TEST_SUITE_P(TestCase, IntegerInstructionFoldingTest,
             "%2 = OpBitcast %ushort %short_0xBC00\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, 0xFFFFBC00),
+        2, 0xBC00),
     // Test case 53: Bit-cast half 1 to ushort
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
@@ -940,7 +940,7 @@ INSTANTIATE_TEST_SUITE_P(TestCase, IntegerInstructionFoldingTest,
             "%2 = OpBitcast %short %ushort_0xBC00\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, 0xBC00),
+        2, 0xFFFFBC00),
     // Test case 55: Bit-cast short 0xBC00 to short
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
@@ -996,7 +996,7 @@ INSTANTIATE_TEST_SUITE_P(TestCase, IntegerInstructionFoldingTest,
             "%2 = OpBitcast %ubyte %byte_n1\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, 0xFFFFFFFF),
+        2, 0xFF),
     // Test case 62: Negate 2.
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
