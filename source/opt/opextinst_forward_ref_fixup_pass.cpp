@@ -46,7 +46,7 @@ bool HasForwardReference(const Instruction& inst,
   return false;
 }
 
-// Replaced |inst| opcode with OpExtInstWithForwardRefsKHR or OpExtInst
+// Replace |inst| opcode with OpExtInstWithForwardRefsKHR or OpExtInst
 // if required to comply with forward references.
 bool ReplaceOpcodeIfRequired(Instruction& inst, bool hasForwardReferences) {
   if (hasForwardReferences &&
