@@ -71,6 +71,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   interface_var_sroa.h
   invocation_interlock_placement_pass.h
   interp_fixup_pass.h
+  opextinst_forward_ref_fixup_pass.h
   ir_builder.h
   ir_context.h
   ir_loader.h
@@ -191,6 +192,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   interface_var_sroa.cpp
   invocation_interlock_placement_pass.cpp
   interp_fixup_pass.cpp
+  opextinst_forward_ref_fixup_pass.cpp
   ir_context.cpp
   ir_loader.cpp
   licm_pass.cpp

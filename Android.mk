@@ -157,6 +157,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/merge_return_pass.cpp \
 		source/opt/modify_maximal_reconvergence.cpp \
 		source/opt/module.cpp \
+		source/opt/opextinst_forward_ref_fixup_pass.cpp \
 		source/opt/optimizer.cpp \
 		source/opt/pass.cpp \
 		source/opt/pass_manager.cpp \
