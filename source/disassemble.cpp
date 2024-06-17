@@ -605,7 +605,7 @@ uint32_t GetLineLengthWithoutColor(const std::string line) {
     if (line[i] == '\x1b') {
       do {
         ++i;
-      } while (line[i] != 'm');
+      } while (i < line.size() && line[i] != 'm');
       continue;
     }
 
