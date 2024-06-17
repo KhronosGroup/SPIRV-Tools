@@ -130,9 +130,10 @@ TEST_P(ExtensionRoundTripTest, Samples) {
   EXPECT_THAT(CompiledInstructions(ac.input, env), Eq(ac.expected));
 
   // Check round trip through the disassembler.
-  EXPECT_THAT(EncodeAndDecodeSuccessfully(ac.input,
-                                          SPV_BINARY_TO_TEXT_OPTION_NONE, env),
-              Eq(ac.input))
+  EXPECT_THAT(
+      EncodeAndDecodeSuccessfully(ac.input, SPV_BINARY_TO_TEXT_OPTION_NONE,
+                                  SPV_TEXT_TO_BINARY_OPTION_NONE, env),
+      Eq(ac.input))
       << "target env: " << spvTargetEnvDescription(env) << "\n";
 }
 
