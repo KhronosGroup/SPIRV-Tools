@@ -498,8 +498,7 @@ cc_library(
         ":spirv_tools_internal",
         ":spirv_tools_link",
         ":test_lib",
-        "@com_google_effcee//:effcee",
-        "@com_googlesource_code_re2//:re2",
+        "@effcee//:effcee",
     ],
 )
 
@@ -552,7 +551,7 @@ cc_library(
     deps = [
         ":spirv_tools_internal",
         ":spirv_tools_opt_internal",
-        "@com_google_effcee//:effcee",
+        "@effcee//:effcee",
         "@googletest//:gtest",
     ],
 )
@@ -568,7 +567,7 @@ cc_library(
         ":spirv_tools_internal",
         ":spirv_tools_opt_internal",
         ":test_lib",
-        "@com_google_effcee//:effcee",
+        "@effcee//:effcee",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],
@@ -601,7 +600,7 @@ cc_library(
         ":opt_test_lib",
         ":spirv_tools",
         ":spirv_tools_opt_internal",
-        "@com_google_effcee//:effcee",
+        "@effcee//:effcee",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],
