@@ -585,7 +585,7 @@ TEST_F(ValidateConversion, FConvertDifferentDimension) {
                         "Type: FConvert"));
 }
 
-TEST_F(ValidateConversion, FConvertSameBitWidth) {
+TEST_F(ValidateConversion, FConvertSameBitWidthNoEncoding) {
   const std::string body = R"(
 %val = OpFConvert %f32 %f32_1
 )";
@@ -593,8 +593,28 @@ TEST_F(ValidateConversion, FConvertSameBitWidth) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected input to have different bit width from "
-                        "Result Type: FConvert"));
+              HasSubstr("Expected component type of Value to be different from "
+                        "component type of Result Type: FConvert"));
+}
+
+TEST_F(ValidateConversion, ValidFConvertSameBitWidthDifferentEncoding) {
+  const std::string extensions = R"(
+OpCapability Float8EXT
+OpExtension "SPV_EXT_float8"
+)";
+  const std::string types = R"(
+%fp8e4m3 = OpTypeFloat 8 Float8E4M3EXT
+%fp8e5m2 = OpTypeFloat 8 Float8E5M2EXT
+%fp8e4m3_1 = OpConstant %fp8e4m3 1
+%fp8e5m2_1 = OpConstant %fp8e5m2 1
+)";
+  const std::string body = R"(
+%val1 = OpFConvert %fp8e4m3 %fp8e5m2_1
+%val2 = OpFConvert %fp8e5m2 %fp8e4m3_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateConversion, FConvertFloat16ToBFloat16) {

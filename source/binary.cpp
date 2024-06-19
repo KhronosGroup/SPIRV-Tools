@@ -190,6 +190,7 @@ class Parser {
   struct NumberType {
     spv_number_kind_t type;
     uint32_t bit_width;
+    spv_fp_encoding_t encoding;
   };
 
   // The state used to parse a single SPIR-V binary module.
@@ -385,8 +386,6 @@ spv_result_t Parser::parseInstruction() {
   assert(_.requires_endian_conversion ||
          (_.endian_converted_words.size() == 1));
 
-  recordNumberType(inst_offset, &inst);
-
   if (_.requires_endian_conversion) {
     // We must wait until here to set this pointer, because the vector might
     // have been be resized while we accumulated its elements.
@@ -397,6 +396,8 @@ spv_result_t Parser::parseInstruction() {
     inst.words = _.words + inst_offset;
   }
   inst.num_words = inst_word_count;
+
+  recordNumberType(inst_offset, &inst);
 
   // We must wait until here to set this pointer, because the vector might
   // have been be resized while we accumulated its elements.
@@ -833,6 +834,7 @@ spv_result_t Parser::setNumericTypeInfoForType(
 
   parsed_operand->number_kind = info.type;
   parsed_operand->number_bit_width = info.bit_width;
+  parsed_operand->fp_encoding = info.encoding;
   // Round up the word count.
   parsed_operand->num_words = static_cast<uint16_t>((info.bit_width + 31) / 32);
   return SPV_SUCCESS;
@@ -850,6 +852,15 @@ void Parser::recordNumberType(size_t inst_offset,
     } else if (spv::Op::OpTypeFloat == opcode) {
       info.type = SPV_NUMBER_FLOATING;
       info.bit_width = peekAt(inst_offset + 2);
+      if (inst->num_words >= 4) {
+        const char* encoding = grammar_.lookupOperandName(
+            SPV_OPERAND_TYPE_FPENCODING, peekAt(inst_offset + 3));
+        if (0 == strcmp(encoding, "Float8E4M3EXT"))
+          info.encoding = SPV_FP_ENCODING_E4M3;
+        else if (0 == strcmp(encoding, "Float8E5M2EXT"))
+          info.encoding = SPV_FP_ENCODING_E5M2;
+        // TODO Bfloat16
+      }
     }
     // The *result* Id of a type generating instruction is the type Id.
     _.type_id_to_number_type_info[inst->result_id] = info;

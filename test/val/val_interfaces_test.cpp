@@ -2022,7 +2022,8 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
-TEST_F(ValidateInterfacesTest, ValidInstructionType) {
+TEST_F(ValidateInterfacesTest,
+       InvalidBfloat16VariableWithInputOutputStorageClass) {
   const std::string text = R"(
 OpCapability Shader
 OpCapability BFloat16TypeKHR
@@ -2050,6 +2051,70 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Bfloat16 OpVariable <id> '2[%2]' must not be declared "
                         "with a Storage Class of Input or Output.\n"));
+}
+
+TEST_F(ValidateInterfacesTest,
+       InvalidFP8E4M3VariableWithInputOutputStorageClass) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Float8EXT
+OpExtension "SPV_EXT_float8"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in %out
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %in Location 0
+OpDecorate %out Location 0
+%void = OpTypeVoid
+%fp8e4m3 = OpTypeFloat 8 Float8E4M3EXT
+%in_ptr = OpTypePointer Input %fp8e4m3
+%out_ptr = OpTypePointer Output %fp8e4m3
+%in = OpVariable %in_ptr Input
+%out = OpVariable %out_ptr Output
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("FP8 E4M3/E5M2 OpVariable <id> '2[%2]' must not be declared "
+                "with a Storage Class of Input or Output.\n"));
+}
+
+TEST_F(ValidateInterfacesTest,
+       InvalidFP8E5M2VariableWithInputOutputStorageClass) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Float8EXT
+OpExtension "SPV_EXT_float8"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in %out
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %in Location 0
+OpDecorate %out Location 0
+%void = OpTypeVoid
+%fp8e5m2 = OpTypeFloat 8 Float8E5M2EXT
+%in_ptr = OpTypePointer Input %fp8e5m2
+%out_ptr = OpTypePointer Output %fp8e5m2
+%in = OpVariable %in_ptr Input
+%out = OpVariable %out_ptr Output
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("FP8 E4M3/E5M2 OpVariable <id> '2[%2]' must not be declared "
+                "with a Storage Class of Input or Output.\n"));
 }
 
 }  // namespace

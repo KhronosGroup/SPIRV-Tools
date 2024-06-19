@@ -811,7 +811,7 @@ spv_result_t spvTextEncodeOpcode(const spvtools::AssemblyGrammar& grammar,
   }
 
   if (spvOpcodeGeneratesType(pInst->opcode)) {
-    if (context->recordTypeDefinition(pInst) != SPV_SUCCESS) {
+    if (context->recordTypeDefinition(grammar, pInst) != SPV_SUCCESS) {
       return SPV_ERROR_INVALID_TEXT;
     }
   } else if (opcodeEntry->hasType) {

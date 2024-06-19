@@ -254,13 +254,13 @@ spv_result_t AssemblyContext::binaryEncodeNumericLiteral(
              << "Unexpected numeric literal type";
     case IdTypeClass::kScalarIntegerType:
       if (type.isSigned) {
-        number_type = {type.bitwidth, SPV_NUMBER_SIGNED_INT};
+        number_type = {type.bitwidth, SPV_NUMBER_SIGNED_INT, type.encoding};
       } else {
-        number_type = {type.bitwidth, SPV_NUMBER_UNSIGNED_INT};
+        number_type = {type.bitwidth, SPV_NUMBER_UNSIGNED_INT, type.encoding};
       }
       break;
     case IdTypeClass::kScalarFloatType:
-      number_type = {type.bitwidth, SPV_NUMBER_FLOATING};
+      number_type = {type.bitwidth, SPV_NUMBER_FLOATING, type.encoding};
       break;
     case IdTypeClass::kBottom:
       // kBottom means the type is unknown and we need to infer the type before
@@ -270,11 +270,11 @@ spv_result_t AssemblyContext::binaryEncodeNumericLiteral(
       // signed integer, otherwise an unsigned integer.
       uint32_t bitwidth = static_cast<uint32_t>(assumedBitWidth(type));
       if (strchr(val, '.')) {
-        number_type = {bitwidth, SPV_NUMBER_FLOATING};
+        number_type = {bitwidth, SPV_NUMBER_FLOATING, type.encoding};
       } else if (type.isSigned || val[0] == '-') {
-        number_type = {bitwidth, SPV_NUMBER_SIGNED_INT};
+        number_type = {bitwidth, SPV_NUMBER_SIGNED_INT, type.encoding};
       } else {
-        number_type = {bitwidth, SPV_NUMBER_UNSIGNED_INT};
+        number_type = {bitwidth, SPV_NUMBER_UNSIGNED_INT, type.encoding};
       }
       break;
   }
@@ -319,7 +319,7 @@ spv_result_t AssemblyContext::binaryEncodeString(const char* value,
 }
 
 spv_result_t AssemblyContext::recordTypeDefinition(
-    const spv_instruction_t* pInst) {
+    const spvtools::AssemblyGrammar& grammar, const spv_instruction_t* pInst) {
   uint32_t value = pInst->words[1];
   if (types_.find(value) != types_.end()) {
     return diagnostic() << "Value " << value
@@ -330,14 +330,28 @@ spv_result_t AssemblyContext::recordTypeDefinition(
     if (pInst->words.size() != 4)
       return diagnostic() << "Invalid OpTypeInt instruction";
     types_[value] = {pInst->words[2], pInst->words[3] != 0,
-                     IdTypeClass::kScalarIntegerType};
+                     IdTypeClass::kScalarIntegerType, SPV_FP_ENCODING_UNKNOWN};
   } else if (pInst->opcode == spv::Op::OpTypeFloat) {
     if ((pInst->words.size() != 3) && (pInst->words.size() != 4))
       return diagnostic() << "Invalid OpTypeFloat instruction";
-    // TODO(kpet) Do we need to record the FP Encoding here?
-    types_[value] = {pInst->words[2], false, IdTypeClass::kScalarFloatType};
+    spv_fp_encoding_t enc = SPV_FP_ENCODING_UNKNOWN;
+    if (pInst->words.size() >= 4) {
+      const char* encoding = grammar.lookupOperandName(
+          SPV_OPERAND_TYPE_FPENCODING, pInst->words[3]);
+      if (0 == strcmp(encoding, "Float8E4M3EXT"))
+        enc = SPV_FP_ENCODING_E4M3;
+      else if (0 == strcmp(encoding, "Float8E5M2EXT"))
+        enc = SPV_FP_ENCODING_E5M2;
+      else if (0 == strcmp(encoding, "BFloat16KHR"))
+        enc = SPV_FP_ENCODING_BFLOAT16;
+      else
+        return diagnostic() << "Invalid OpTypeFloat encoding";
+    }
+    types_[value] = {pInst->words[2], false, IdTypeClass::kScalarFloatType,
+                     enc};
   } else {
-    types_[value] = {0, false, IdTypeClass::kOtherType};
+    types_[value] = {0, false, IdTypeClass::kOtherType,
+                     SPV_FP_ENCODING_UNKNOWN};
   }
   return SPV_SUCCESS;
 }

@@ -23,6 +23,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "source/assembly_grammar.h"
 #include "source/diagnostic.h"
 #include "source/instruction.h"
 #include "source/text.h"
@@ -47,6 +48,7 @@ struct IdType {
   uint32_t bitwidth;  // Safe to assume that we will not have > 2^32 bits.
   bool isSigned;      // This is only significant if type_class is integral.
   IdTypeClass type_class;
+  spv_fp_encoding_t encoding;
 };
 
 // Default equality operator for IdType. Tests if all members are the same.
@@ -226,7 +228,8 @@ class AssemblyContext {
   // pInst is expected to be completely filled in by the time this instruction
   // is called.
   // Returns SPV_SUCCESS on success, or SPV_ERROR_INVALID_VALUE on error.
-  spv_result_t recordTypeDefinition(const spv_instruction_t* pInst);
+  spv_result_t recordTypeDefinition(const spvtools::AssemblyGrammar& grammar,
+                                    const spv_instruction_t* pInst);
 
   // Tracks the relationship between the value and its type.
   spv_result_t recordTypeIdForValue(uint32_t value, uint32_t type);
