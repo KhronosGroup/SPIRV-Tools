@@ -181,6 +181,31 @@ T ClearHighBits(T word, size_t num_bits_to_set) {
                     false);
 }
 
+// Returns the value obtained by extracting the |number_of_bits| least
+// significant bits from |value|, and sign-extending it to 64-bits.
+template <typename T>
+T SignExtendValue(T value, uint32_t number_of_bits) {
+  const uint32_t bit_width = sizeof(value) * 8;
+  if (number_of_bits == bit_width) return value;
+
+  bool is_negative = utils::IsBitAtPositionSet(value, number_of_bits - 1);
+  if (is_negative) {
+    value = utils::SetHighBits(value, bit_width - number_of_bits);
+  } else {
+    value = utils::ClearHighBits(value, bit_width - number_of_bits);
+  }
+  return value;
+}
+
+// Returns the value obtained by extracting the |number_of_bits| least
+// significant bits from |value|, and zero-extending it to 64-bits.
+template <typename T>
+T ZeroExtendValue(T value, uint32_t number_of_bits) {
+  const uint32_t bit_width = sizeof(value) * 8;
+  if (number_of_bits == bit_width) return value;
+  return utils::ClearHighBits(value, bit_width - number_of_bits);
+}
+
 }  // namespace utils
 }  // namespace spvtools
 
