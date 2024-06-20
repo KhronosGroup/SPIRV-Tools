@@ -1,5 +1,19 @@
 Revision history for SPIRV-Tools
 
+v2024.3 2024-06-20
+  - General
+  - Optimizer
+    - Do not fold mul and adds to generate fmas (#5682)
+    - add OpExtInst forward ref fixup pass (#5708)
+  - Validator
+    - Separate Location check for tess patch (#5654)
+    - Validate MemoryAccessMask of OpCooperativeMatrixStoreKHR (#5668)
+    - OpSampledImage extra validation (#5695)
+    - add support for OpExtInstWithForwardRefs (#5698)A
+  - Disassembler
+    - add decorations to comments (#5675)
+    - Add --nested-indent and --reorder-blocks (#5671)
+
 v2024.2 2024-04-22
   - General
     - Add SPIRV_TOOLS_EXPORT to public C++ API (#5591)
