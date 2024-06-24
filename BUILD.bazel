@@ -499,6 +499,7 @@ cc_library(
         ":spirv_tools_link",
         ":test_lib",
         "@effcee//:effcee",
+        "@re2//:re2",
     ],
 )
 
