@@ -6,6 +6,12 @@ local_path_override(
     path = "external/googletest",
 )
 
+bazel_dep(name = "re2", dev_dependency = True)
+local_path_override(
+    module_name = "re2",
+    path = "external/re2",
+)
+
 bazel_dep(name = "effcee", dev_dependency = True)
 local_path_override(
     module_name = "effcee",
