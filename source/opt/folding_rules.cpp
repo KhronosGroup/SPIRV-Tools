@@ -696,6 +696,11 @@ FoldingRule MergeMulMulArithmetic() {
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
+
+    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+      return false;
+    }
+
     if (HasFloatingPoint(type) && !inst->IsFloatingPointFoldingAllowed())
       return false;
 
@@ -823,6 +828,11 @@ FoldingRule MergeMulNegateArithmetic() {
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
+
+    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+      return false;
+    }
+
     bool uses_float = HasFloatingPoint(type);
     if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
 
