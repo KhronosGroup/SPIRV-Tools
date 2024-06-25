@@ -1107,6 +1107,22 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    const auto isForbiddenType = [](const Instruction* type_inst) {
+      auto opcode = type_inst->opcode();
+      // TODO(https://github.com/KhronosGroup/SPIRV-Tools/issues/4796): add
+      // OpTypeImage and OpTypeSampler.
+      return opcode == spv::Op::OpTypeSampledImage ||
+             opcode == spv::Op::OpTypeAccelerationStructureKHR;
+    };
+    if (_.ContainsType(object_type->id(), isForbiddenType)) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << _.VkErrorID(6924)
+             << "Cannot store to OpTypeImage, OpTypeSampler, "
+                "OpTypeSampledImage, or OpTypeAccelerationStructureKHR objects";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
