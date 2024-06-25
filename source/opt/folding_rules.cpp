@@ -112,6 +112,12 @@ bool IsValidResult(T val) {
   }
 }
 
+// Returns true if `type` is a cooperative matrix.
+bool IsCooperativeMatrix(const analysis::Type* type) {
+  return type->kind() == analysis::Type::kCooperativeMatrixKHR ||
+         type->kind() == analysis::Type::kCooperativeMatrixNV;
+}
+
 const analysis::Constant* ConstInput(
     const std::vector<const analysis::Constant*>& constants) {
   return constants[0] ? constants[0] : constants[1];
@@ -314,7 +320,7 @@ FoldingRule ReciprocalFDiv() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+    if (IsCooperativeMatrix(type)) {
       return false;
     }
 
@@ -400,7 +406,7 @@ FoldingRule MergeNegateMulDivArithmetic() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+    if (IsCooperativeMatrix(type)) {
       return false;
     }
 
@@ -466,7 +472,7 @@ FoldingRule MergeNegateAddSubArithmetic() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+    if (IsCooperativeMatrix(type)) {
       return false;
     }
 
@@ -702,7 +708,7 @@ FoldingRule MergeMulMulArithmetic() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+    if (IsCooperativeMatrix(type)) {
       return false;
     }
 
@@ -761,7 +767,7 @@ FoldingRule MergeMulDivArithmetic() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+    if (IsCooperativeMatrix(type)) {
       return false;
     }
 
@@ -839,7 +845,7 @@ FoldingRule MergeMulNegateArithmetic() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+    if (IsCooperativeMatrix(type)) {
       return false;
     }
 
@@ -884,7 +890,7 @@ FoldingRule MergeDivDivArithmetic() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+    if (IsCooperativeMatrix(type)) {
       return false;
     }
 
@@ -962,7 +968,7 @@ FoldingRule MergeDivMulArithmetic() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+    if (IsCooperativeMatrix(type)) {
       return false;
     }
 
@@ -1109,7 +1115,7 @@ FoldingRule MergeSubNegateArithmetic() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+    if (IsCooperativeMatrix(type)) {
       return false;
     }
 
@@ -1162,7 +1168,7 @@ FoldingRule MergeAddAddArithmetic() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (type->kind() == analysis::Type::Kind::kCooperativeMatrixKHR) {
+    if (IsCooperativeMatrix(type)) {
       return false;
     }
 
@@ -1215,7 +1221,7 @@ FoldingRule MergeAddSubArithmetic() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (type->kind() == analysis::Type::Kind::kCooperativeMatrixKHR) {
+    if (IsCooperativeMatrix(type)) {
       return false;
     }
 
@@ -1280,7 +1286,7 @@ FoldingRule MergeSubAddArithmetic() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+    if (IsCooperativeMatrix(type)) {
       return false;
     }
 
@@ -1351,7 +1357,7 @@ FoldingRule MergeSubSubArithmetic() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+    if (IsCooperativeMatrix(type)) {
       return false;
     }
 
@@ -1449,7 +1455,7 @@ FoldingRule MergeGenericAddSubArithmetic() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+    if (IsCooperativeMatrix(type)) {
       return false;
     }
 
