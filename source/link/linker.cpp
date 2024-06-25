@@ -52,6 +52,7 @@ using opt::PassManager;
 using opt::RemoveDuplicatesPass;
 using opt::analysis::DecorationManager;
 using opt::analysis::DefUseManager;
+using opt::analysis::Function;
 using opt::analysis::Type;
 using opt::analysis::TypeManager;
 
@@ -126,6 +127,7 @@ spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
 // checked.
 spv_result_t CheckImportExportCompatibility(const MessageConsumer& consumer,
                                             const LinkageTable& linkings_to_do,
+                                            bool allow_ptr_type_mismatch,
                                             opt::IRContext* context);
 
 // Remove linkage specific instructions, such as prototypes of imported
@@ -502,6 +504,7 @@ spv_result_t GetImportExportPairs(const MessageConsumer& consumer,
 
 spv_result_t CheckImportExportCompatibility(const MessageConsumer& consumer,
                                             const LinkageTable& linkings_to_do,
+                                            bool allow_ptr_type_mismatch,
                                             opt::IRContext* context) {
   spv_position_t position = {};
 
@@ -509,11 +512,35 @@ spv_result_t CheckImportExportCompatibility(const MessageConsumer& consumer,
   const DecorationManager& decoration_manager = *context->get_decoration_mgr();
   const TypeManager& type_manager = *context->get_type_mgr();
   for (const auto& linking_entry : linkings_to_do) {
-    Type* imported_symbol_type =
-        type_manager.GetType(linking_entry.imported_symbol.type_id);
-    Type* exported_symbol_type =
-        type_manager.GetType(linking_entry.exported_symbol.type_id);
-    if (!(*imported_symbol_type == *exported_symbol_type))
+    Function* imported_symbol_type =
+        type_manager.GetType(linking_entry.imported_symbol.type_id)
+            ->AsFunction();
+    Function* exported_symbol_type =
+        type_manager.GetType(linking_entry.exported_symbol.type_id)
+            ->AsFunction();
+    if (!(*imported_symbol_type == *exported_symbol_type)) {
+      const auto& imported_params = imported_symbol_type->param_types();
+      const auto& exported_params = exported_symbol_type->param_types();
+      // allow_ptr_type_mismatch allows linking functions where the pointer type
+      // of arguments doesn't match. Everything else still needs to be equal.
+      // This is to workaround LLVM-17+ not having typed pointers and generated
+      // SPIR-Vs not knowing the actual pointer types in some cases.
+      if (allow_ptr_type_mismatch &&
+          imported_params.size() == exported_params.size()) {
+        bool correct = true;
+        for (size_t i = 0; i < imported_params.size(); i++) {
+          const auto& imported_param = imported_params[i];
+          const auto& exported_param = exported_params[i];
+
+          if (!imported_param->IsSame(exported_param) &&
+              imported_param->kind() != Type::kPointer &&
+              exported_param->kind() != Type::kPointer) {
+            correct = false;
+            break;
+          }
+        }
+        if (correct) continue;
+      }
       return DiagnosticStream(position, consumer, "", SPV_ERROR_INVALID_BINARY)
              << "Type mismatch on symbol \""
              << linking_entry.imported_symbol.name
@@ -521,6 +548,7 @@ spv_result_t CheckImportExportCompatibility(const MessageConsumer& consumer,
              << linking_entry.imported_symbol.id
              << " and exported variable/function %"
              << linking_entry.exported_symbol.id << ".";
+    }
   }
 
   // Ensure the import and export decorations are similar
@@ -696,6 +724,44 @@ spv_result_t VerifyLimits(const MessageConsumer& consumer,
   return SPV_SUCCESS;
 }
 
+spv_result_t FixFunctionCallTypes(opt::IRContext& context,
+                                  const LinkageTable& linkings) {
+  auto mod = context.module();
+  const auto type_manager = context.get_type_mgr();
+
+  for (auto& func : *mod) {
+    func.ForEachInst([&](Instruction* inst) {
+      if (inst->opcode() != spv::Op::OpFunctionCall) return;
+      opt::Operand& target = inst->GetInOperand(0);
+
+      // only fix calls to imported functions
+      auto linking = std::find_if(
+          linkings.begin(), linkings.end(), [&](const auto& entry) {
+            return entry.exported_symbol.id == target.AsId();
+          });
+      if (linking == linkings.end()) return;
+
+      Function* exported_symbol_type =
+          type_manager->GetType(linking->exported_symbol.type_id)->AsFunction();
+
+      for (uint32_t i = 1; i < inst->NumInOperands(); ++i) {
+        const Type* arg_type = exported_symbol_type->param_types()[i - 1];
+        if (arg_type->kind() != Type::kPointer) continue;
+
+        const auto ptr_type = arg_type->AsPointer();
+        opt::Operand& arg = inst->GetInOperand(i);
+        // TODO:
+        //  - get target type id
+        //  - insert instruction
+        //  - replace operand
+        new Instruction(&context, spv::Op::OpBitcast, ..., 0u, {{SPV_OPERAND_TYPE_ID, arg.AsId()}});
+        inst->SetInOperand(i, {arg.AsId()});
+      }
+    });
+  }
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 spv_result_t Link(const Context& context,
@@ -782,8 +848,9 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
   if (res != SPV_SUCCESS) return res;
 
   // Phase 5: Ensure the import and export have the same types and decorations.
-  res =
-      CheckImportExportCompatibility(consumer, linkings_to_do, &linked_context);
+  res = CheckImportExportCompatibility(consumer, linkings_to_do,
+                                       options.GetAllowPtrTypeMismatch(),
+                                       &linked_context);
   if (res != SPV_SUCCESS) return res;
 
   // Phase 6: Remove duplicates
@@ -815,21 +882,27 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
                                           &linked_context);
   if (res != SPV_SUCCESS) return res;
 
-  // Phase 10: Compact the IDs used in the module
+  // Phase 10: Optionall fix function call types
+  if (options.GetAllowPtrTypeMismatch()) {
+    res = FixFunctionCallTypes(linked_context, linkings_to_do);
+    if (res != SPV_SUCCESS) return res;
+  }
+
+  // Phase 11: Compact the IDs used in the module
   manager.AddPass<opt::CompactIdsPass>();
   pass_res = manager.Run(&linked_context);
   if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
-  // Phase 11: Recompute EntryPoint variables
+  // Phase 12: Recompute EntryPoint variables
   manager.AddPass<opt::RemoveUnusedInterfaceVariablesPass>();
   pass_res = manager.Run(&linked_context);
   if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
-  // Phase 12: Warn if SPIR-V limits were exceeded
+  // Phase 13: Warn if SPIR-V limits were exceeded
   res = VerifyLimits(consumer, linked_context);
   if (res != SPV_SUCCESS) return res;
 
-  // Phase 13: Output the module
+  // Phase 14: Output the module
   linked_context.module()->ToBinary(linked_binary, true);
 
   return SPV_SUCCESS;
