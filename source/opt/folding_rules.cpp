@@ -313,6 +313,11 @@ FoldingRule ReciprocalFDiv() {
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
+
+    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+      return false;
+    }
+
     if (!inst->IsFloatingPointFoldingAllowed()) return false;
 
     uint32_t width = ElementWidth(type);
@@ -755,6 +760,11 @@ FoldingRule MergeMulDivArithmetic() {
 
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
+
+    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+      return false;
+    }
+
     if (!inst->IsFloatingPointFoldingAllowed()) return false;
 
     uint32_t width = ElementWidth(type);
@@ -873,6 +883,11 @@ FoldingRule MergeDivDivArithmetic() {
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
+
+    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+      return false;
+    }
+
     if (!inst->IsFloatingPointFoldingAllowed()) return false;
 
     uint32_t width = ElementWidth(type);
@@ -946,6 +961,11 @@ FoldingRule MergeDivMulArithmetic() {
 
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
+
+    if (type->kind() == analysis::Type::kCooperativeMatrixKHR) {
+      return false;
+    }
+
     if (!inst->IsFloatingPointFoldingAllowed()) return false;
 
     uint32_t width = ElementWidth(type);
