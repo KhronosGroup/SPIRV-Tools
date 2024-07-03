@@ -671,6 +671,8 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     case SPV_OPERAND_TYPE_OVERFLOW_MODES:
     case SPV_OPERAND_TYPE_PACKED_VECTOR_FORMAT:
     case SPV_OPERAND_TYPE_OPTIONAL_PACKED_VECTOR_FORMAT:
+    case SPV_OPERAND_TYPE_FPENCODING:
+    case SPV_OPERAND_TYPE_OPTIONAL_FPENCODING:
     case SPV_OPERAND_TYPE_NAMED_MAXIMUM_NUMBER_OF_REGISTERS: {
       // A single word that is a plain enum value.
 
@@ -679,6 +681,8 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
         parsed_operand.type = SPV_OPERAND_TYPE_ACCESS_QUALIFIER;
       if (type == SPV_OPERAND_TYPE_OPTIONAL_PACKED_VECTOR_FORMAT)
         parsed_operand.type = SPV_OPERAND_TYPE_PACKED_VECTOR_FORMAT;
+      if (type == SPV_OPERAND_TYPE_OPTIONAL_FPENCODING)
+        parsed_operand.type = SPV_OPERAND_TYPE_FPENCODING;
 
       spv_operand_desc entry;
       if (grammar_.lookupOperand(type, word, &entry)) {

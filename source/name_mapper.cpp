@@ -218,6 +218,7 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
     } break;
     case spv::Op::OpTypeFloat: {
       const auto bit_width = inst.words[2];
+      // TODO: Handle optional fpencoding enum once actually used.
       switch (bit_width) {
         case 16:
           SaveName(result_id, "half");

@@ -944,6 +944,7 @@ void InstructionDisassembler::EmitOperand(std::ostream& stream,
     case SPV_OPERAND_TYPE_FPDENORM_MODE:
     case SPV_OPERAND_TYPE_FPOPERATION_MODE:
     case SPV_OPERAND_TYPE_QUANTIZATION_MODES:
+    case SPV_OPERAND_TYPE_FPENCODING:
     case SPV_OPERAND_TYPE_OVERFLOW_MODES: {
       spv_operand_desc entry;
       if (grammar_.lookupOperand(operand.type, word, &entry))
