@@ -773,7 +773,14 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
     if (res != SPV_SUCCESS) return res;
   }
 
-  // Phase 4: Find the import/export pairs
+  // Phase 4: Remove duplicates
+  PassManager manager;
+  manager.SetMessageConsumer(consumer);
+  manager.AddPass<RemoveDuplicatesPass>();
+  opt::Pass::Status pass_res = manager.Run(&linked_context);
+  if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
+
+  // Phase 5: Find the import/export pairs
   LinkageTable linkings_to_do;
   res = GetImportExportPairs(consumer, linked_context,
                              *linked_context.get_def_use_mgr(),
@@ -781,17 +788,10 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
                              options.GetAllowPartialLinkage(), &linkings_to_do);
   if (res != SPV_SUCCESS) return res;
 
-  // Phase 5: Ensure the import and export have the same types and decorations.
+  // Phase 6: Ensure the import and export have the same types and decorations.
   res =
       CheckImportExportCompatibility(consumer, linkings_to_do, &linked_context);
   if (res != SPV_SUCCESS) return res;
-
-  // Phase 6: Remove duplicates
-  PassManager manager;
-  manager.SetMessageConsumer(consumer);
-  manager.AddPass<RemoveDuplicatesPass>();
-  opt::Pass::Status pass_res = manager.Run(&linked_context);
-  if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
   // Phase 7: Remove all names and decorations of import variables/functions
   for (const auto& linking_entry : linkings_to_do) {
