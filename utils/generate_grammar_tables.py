@@ -512,6 +512,10 @@ def generate_enum_operand_kind(enum, synthetic_exts_list):
     name = '{}_{}Entries'.format(PYGEN_VARIABLE_PREFIX, kind)
     entries = ['  {}'.format(generate_enum_operand_kind_entry(e, extension_map))
                for e in entries]
+    if len(entries) == 0:
+        # Insert a dummy entry. Otherwise the array is empty and compilation
+        # will fail in MSVC.
+        entries = ['  {"place holder", 0, 0, nullptr, 0, nullptr, {}, SPV_SPIRV_VERSION_WORD(999,0), 0}']
 
     template = ['static const spv_operand_desc_t {name}[] = {{',
                 '{entries}', '}};']
