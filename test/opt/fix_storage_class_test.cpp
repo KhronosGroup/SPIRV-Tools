@@ -916,6 +916,43 @@ TEST_F(FixStorageClassTest, SupportsU64Index) {
   SinglePassRunAndMatch<FixStorageClass>(text, false);
 }
 
+TEST_F(FixStorageClassTest, CorrectlyProcessAccessChainOnCoopMatrix) {
+  const std::string text = R"(OpCapability CooperativeMatrixKHR
+OpCapability Shader
+OpExtension "SPV_KHR_cooperative_matrix"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %1 "main"
+OpExecutionMode %1 LocalSize 64 1 1
+OpSource HLSL 600
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_3 = OpConstant %uint 3
+%uint_16 = OpConstant %uint 16
+%uint_4 = OpConstant %uint 4
+%9 = OpTypeCooperativeMatrixKHR %int %uint_3 %uint_16 %uint_4 %uint_0
+%void = OpTypeVoid
+%11 = OpTypeFunction %void
+%_struct_12 = OpTypeStruct %9
+%_ptr_Function__struct_12 = OpTypePointer Function %_struct_12
+%_ptr_Function_9 = OpTypePointer Function %9
+%_ptr_Function_int = OpTypePointer Function %int
+%_ptr_Function__ptr_Function_int = OpTypePointer Function %_ptr_Function_int
+%1 = OpFunction %void None %11
+%17 = OpLabel
+%18 = OpVariable %_ptr_Function__ptr_Function_int Function
+%19 = OpVariable %_ptr_Function__struct_12 Function
+%20 = OpAccessChain %_ptr_Function_9 %19 %int_0
+%21 = OpAccessChain %_ptr_Function_int %20 %uint_4
+OpStore %18 %21
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<FixStorageClass>(text, text, false, false);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
