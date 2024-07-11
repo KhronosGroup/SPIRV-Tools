@@ -1059,7 +1059,20 @@ Optimizer::PassToken CreateSpreadVolatileSemanticsPass() {
 
 Optimizer::PassToken CreateDescriptorScalarReplacementPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::DescriptorScalarReplacement>());
+      MakeUnique<opt::DescriptorScalarReplacement>(
+          /* flatten_composites= */ true, /* flatten_arrays= */ true));
+}
+
+Optimizer::PassToken CreateDescriptorCompositeScalarReplacementPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::DescriptorScalarReplacement>(
+          /* flatten_composites= */ true, /* flatten_arrays= */ false));
+}
+
+Optimizer::PassToken CreateDescriptorArrayScalarReplacementPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::DescriptorScalarReplacement>(
+          /* flatten_composites= */ false, /* flatten_arrays= */ true));
 }
 
 Optimizer::PassToken CreateWrapOpKillPass() {
