@@ -703,7 +703,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
                << ", if you are creating a new source language please use "
                   "value 0 "
                   "(Unknown) and when ready, add your source language to "
-                  "SPRIV-Headers";
+                  "SPIRV-Headers";
       }
       // Prepare to accept operands to this operand, if needed.
       spvPushOperandTypes(entry->operandTypes, expected_operands);
