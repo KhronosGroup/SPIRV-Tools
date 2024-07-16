@@ -869,6 +869,9 @@ uint32_t ValidationState_t::GetComponentType(uint32_t id) const {
     case spv::Op::OpTypeBool:
       return id;
 
+    case spv::Op::OpTypeArray:
+      return inst->word(2);
+
     case spv::Op::OpTypeVector:
       return inst->word(2);
 
@@ -990,6 +993,19 @@ bool ValidationState_t::IsFloatScalarOrVectorType(uint32_t id) const {
 bool ValidationState_t::IsIntScalarType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
   return inst && inst->opcode() == spv::Op::OpTypeInt;
+}
+
+bool ValidationState_t::IsIntArrayType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  if (!inst) {
+    return false;
+  }
+
+  if (inst->opcode() == spv::Op::OpTypeArray) {
+    return IsIntScalarType(GetComponentType(id));
+  }
+
+  return false;
 }
 
 bool ValidationState_t::IsIntVectorType(uint32_t id) const {
