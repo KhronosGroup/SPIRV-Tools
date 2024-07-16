@@ -157,7 +157,8 @@ spv_result_t ValidateFunctionParameter(ValidationState_t& _,
         _.FindDef(param_nonarray_type_id)->GetOperandAs<uint32_t>(1u);
   }
   if (_.GetIdOpcode(param_nonarray_type_id) == spv::Op::OpTypePointer ||
-      _.GetIdOpcode(param_nonarray_type_id) == spv::Op::OpTypeUntypedPointerKHR) {
+      _.GetIdOpcode(param_nonarray_type_id) ==
+          spv::Op::OpTypeUntypedPointerKHR) {
     auto param_nonarray_type = _.FindDef(param_nonarray_type_id);
     if (param_nonarray_type->GetOperandAs<spv::StorageClass>(1u) ==
         spv::StorageClass::PhysicalStorageBuffer) {

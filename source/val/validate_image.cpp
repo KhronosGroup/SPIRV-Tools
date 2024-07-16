@@ -1138,7 +1138,8 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
   if (result_type->opcode() == spv::Op::OpTypePointer) {
     ptr_type = result_type->GetOperandAs<uint32_t>(2);
     const auto ptr_opcode = _.GetIdOpcode(ptr_type);
-    if (ptr_opcode != spv::Op::OpTypeInt && ptr_opcode != spv::Op::OpTypeFloat &&
+    if (ptr_opcode != spv::Op::OpTypeInt &&
+        ptr_opcode != spv::Op::OpTypeFloat &&
         ptr_opcode != spv::Op::OpTypeVoid &&
         !(ptr_opcode == spv::Op::OpTypeVector &&
           _.HasCapability(spv::Capability::AtomicFloat16VectorNV) &&

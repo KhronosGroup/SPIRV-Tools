@@ -1700,12 +1700,9 @@ bool ValidationState_t::ContainsRuntimeArray(uint32_t id) const {
 
 bool ValidationState_t::ContainsUntypedPointer(uint32_t id) const {
   const auto inst = FindDef(id);
-  if (!inst)
-    return false;
-  if (!spvOpcodeGeneratesType(inst->opcode()))
-    return false;
-  if (inst->opcode() == spv::Op::OpTypeUntypedPointerKHR)
-    return true;
+  if (!inst) return false;
+  if (!spvOpcodeGeneratesType(inst->opcode())) return false;
+  if (inst->opcode() == spv::Op::OpTypeUntypedPointerKHR) return true;
 
   switch (inst->opcode()) {
     case spv::Op::OpTypeArray:

@@ -76,9 +76,7 @@ class ValidateBase : public ::testing::Test,
     diagnostic_ = nullptr;
   }
 
-  void SetAssembleOptions(uint32_t options) {
-    assemble_options_ = options;
-  }
+  void SetAssembleOptions(uint32_t options) { assemble_options_ = options; }
 
   std::string getDiagnosticString();
   spv_position_t getErrorPosition();

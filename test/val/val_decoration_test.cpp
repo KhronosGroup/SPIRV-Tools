@@ -10155,7 +10155,8 @@ OpDecorate %var Binding 0
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %struct = OpTypeStruct %int
-%ptr = OpTypeUntypedPointerKHR )" + sc + R"(
+%ptr = OpTypeUntypedPointerKHR )" +
+                            sc + R"(
 %var = OpUntypedVariableKHR %ptr )" + sc + R"( %struct
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
@@ -10188,7 +10189,8 @@ OpDecorate %var DescriptorSet 0
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %struct = OpTypeStruct %int
-%ptr = OpTypeUntypedPointerKHR )" + sc + R"(
+%ptr = OpTypeUntypedPointerKHR )" +
+                            sc + R"(
 %var = OpUntypedVariableKHR %ptr )" + sc + R"( %struct
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
@@ -10242,7 +10244,8 @@ OpMemberDecorate %test_type 1 Offset 1
 %struct = OpTypeStruct %int %int
 %test_type = OpTypeStruct %int %int
 %test_val = OpConstantNull %test_type
-%ptr = OpTypeUntypedPointerKHR )" + sc + R"(
+%ptr = OpTypeUntypedPointerKHR )" +
+                            sc + R"(
 %var = OpUntypedVariableKHR %ptr )" + sc + R"( %struct
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
@@ -10294,7 +10297,8 @@ OpMemberDecorate %struct 1 Offset 4
 %test_type = OpTypeArray %int4 %int_4
 %test_val = OpConstantNull %test_type
 %struct = OpTypeStruct %int %int
-%ptr = OpTypeUntypedPointerKHR )" + sc + R"(
+%ptr = OpTypeUntypedPointerKHR )" +
+                            sc + R"(
 %var = OpUntypedVariableKHR %ptr )" + sc + R"( %struct
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn

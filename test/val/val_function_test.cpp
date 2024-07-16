@@ -903,7 +903,8 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateFunctionCall, UntypedPointerParameterNotMemoryObjectDeclaration) {
+TEST_F(ValidateFunctionCall,
+       UntypedPointerParameterNotMemoryObjectDeclaration) {
   const std::string spirv = R"(
 OpCapability Shader
 OpCapability UntypedPointersKHR
@@ -938,7 +939,8 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Pointer operand '3[%gep]' must be a memory object declaration"));
+      HasSubstr(
+          "Pointer operand '3[%gep]' must be a memory object declaration"));
 }
 
 INSTANTIATE_TEST_SUITE_P(StorageClass, ValidateFunctionCall,

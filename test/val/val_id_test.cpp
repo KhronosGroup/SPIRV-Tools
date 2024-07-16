@@ -1199,7 +1199,8 @@ OpMemoryModel Logical GLSL450
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
 }
 
-TEST_P(ValidateIdWithMessage, OpTypeUntypedPointerWorkgroupMissingExplicitLayout) {
+TEST_P(ValidateIdWithMessage,
+       OpTypeUntypedPointerWorkgroupMissingExplicitLayout) {
   const std::string spirv = R"(
 OpCapability Shader
 OpCapability UntypedPointersKHR

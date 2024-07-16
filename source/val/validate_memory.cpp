@@ -411,7 +411,8 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
 
   auto result_type = _.FindDef(inst->type_id());
   if (untyped_pointer) {
-    if (!result_type || result_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)
+    if (!result_type ||
+        result_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "Result type must be an untyped pointer";
   } else {
@@ -975,8 +976,9 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
   }
 
   const auto pointer_type = _.FindDef(pointer->type_id());
-  if (!pointer_type || (pointer_type->opcode() != spv::Op::OpTypePointer &&
-                        pointer_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
+  if (!pointer_type ||
+      (pointer_type->opcode() != spv::Op::OpTypePointer &&
+       pointer_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpLoad type for pointer <id> " << _.getIdName(pointer_id)
            << " is not a pointer type.";
@@ -1033,8 +1035,9 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
            << " is not a logical pointer.";
   }
   const auto pointer_type = _.FindDef(pointer->type_id());
-  if (!pointer_type || (pointer_type->opcode() != spv::Op::OpTypePointer &&
-                        pointer_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
+  if (!pointer_type ||
+      (pointer_type->opcode() != spv::Op::OpTypePointer &&
+       pointer_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpStore type for pointer <id> " << _.getIdName(pointer_id)
            << " is not a pointer type.";
@@ -1126,7 +1129,8 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
   }
 
   if (type && (type->id() != object_type->id())) {
-    if (!_.options()->relax_struct_store || type->opcode() != spv::Op::OpTypeStruct ||
+    if (!_.options()->relax_struct_store ||
+        type->opcode() != spv::Op::OpTypeStruct ||
         object_type->opcode() != spv::Op::OpTypeStruct) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "OpStore Pointer <id> " << _.getIdName(pointer_id)
@@ -1246,8 +1250,10 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction* inst) {
   }
 
   if (inst->opcode() == spv::Op::OpCopyMemory) {
-    const bool target_typed = target_pointer_type->opcode() == spv::Op::OpTypePointer;
-    const bool source_typed = source_pointer_type->opcode() == spv::Op::OpTypePointer;
+    const bool target_typed =
+        target_pointer_type->opcode() == spv::Op::OpTypePointer;
+    const bool source_typed =
+        source_pointer_type->opcode() == spv::Op::OpTypePointer;
     Instruction* target_type = nullptr;
     Instruction* source_type = nullptr;
     if (target_typed) {
@@ -1458,7 +1464,8 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
   // OpTypeUntypedPointerKHR for untyped access chains.
   auto result_type = _.FindDef(inst->type_id());
   if (untyped_pointer) {
-    if (!result_type || spv::Op::OpTypeUntypedPointerKHR != result_type->opcode()) {
+    if (!result_type ||
+        spv::Op::OpTypeUntypedPointerKHR != result_type->opcode()) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "The Result Type of " << instr_name << " <id> "
              << _.getIdName(inst->id())
@@ -2077,7 +2084,8 @@ spv_result_t ValidateCooperativeMatrixLoadStoreKHR(ValidationState_t& _,
            << " is not a pointer type.";
   }
 
-  const bool untyped = pointer_type->opcode() == spv::Op::OpTypeUntypedPointerKHR;
+  const bool untyped =
+      pointer_type->opcode() == spv::Op::OpTypeUntypedPointerKHR;
   const auto storage_class_index = 1u;
   const auto storage_class =
       pointer_type->GetOperandAs<spv::StorageClass>(storage_class_index);

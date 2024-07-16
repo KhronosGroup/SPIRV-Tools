@@ -773,14 +773,16 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
       std::unordered_set<spv::BuiltIn> output_var_builtin;
       for (auto interface : desc.interfaces) {
         Instruction* var_instr = vstate.FindDef(interface);
-        if (!var_instr || (spv::Op::OpVariable != var_instr->opcode() &&
-                           spv::Op::OpUntypedVariableKHR != var_instr->opcode())) {
+        if (!var_instr ||
+            (spv::Op::OpVariable != var_instr->opcode() &&
+             spv::Op::OpUntypedVariableKHR != var_instr->opcode())) {
           return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
                  << "Interfaces passed to OpEntryPoint must be variables. "
                     "Found Op"
                  << spvOpcodeString(var_instr->opcode()) << ".";
         }
-        const bool untyped_pointers = var_instr->opcode() == spv::Op::OpUntypedVariableKHR;
+        const bool untyped_pointers =
+            var_instr->opcode() == spv::Op::OpUntypedVariableKHR;
         const auto sc_index = 2u;
         const spv::StorageClass storage_class =
             var_instr->GetOperandAs<spv::StorageClass>(sc_index);
@@ -891,9 +893,11 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
                        << "Untyped workgroup variables in shaders must be "
                           "block decorated";
               }
-              if (hasDecoration(var_instr->id(), spv::Decoration::Aliased, vstate))
+              if (hasDecoration(var_instr->id(), spv::Decoration::Aliased,
+                                vstate))
                 ++num_workgroup_variables_with_aliased;
-            } else if (untyped_pointers && vstate.HasCapability(spv::Capability::Shader)) {
+            } else if (untyped_pointers &&
+                       vstate.HasCapability(spv::Capability::Shader)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
                      << "Untyped workgroup variables in shaders must be block "
                         "decorated structs";
@@ -1114,7 +1118,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
     MemberConstraints constraints;
     if (spv::Op::OpVariable == inst.opcode() ||
         spv::Op::OpUntypedVariableKHR == inst.opcode()) {
-      const bool untyped_pointer = inst.opcode() == spv::Op::OpUntypedVariableKHR;
+      const bool untyped_pointer =
+          inst.opcode() == spv::Op::OpUntypedVariableKHR;
       const auto var_id = inst.id();
       // For storage class / decoration combinations, see Vulkan 14.5.4 "Offset
       // and Stride Assignment".
@@ -1386,9 +1391,9 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
         ComputeMemberConstraintsForStruct(&constraints, pointee_type_id,
                                           LayoutConstraints(), vstate);
       }
-      if (auto res = checkLayout(pointee_type_id, "PhysicalStorageBuffer", "Block",
-                                 !buffer, scalar_block_layout, 0, constraints,
-                                 vstate)) {
+      if (auto res = checkLayout(pointee_type_id, "PhysicalStorageBuffer",
+                                 "Block", !buffer, scalar_block_layout, 0,
+                                 constraints, vstate)) {
         return res;
       }
     } else if (vstate.HasCapability(spv::Capability::UntypedPointersKHR) &&

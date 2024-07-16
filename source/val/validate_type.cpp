@@ -591,7 +591,8 @@ spv_result_t ValidateTypeUntypedPointerKHR(ValidationState_t& _,
     const auto sc = inst->GetOperandAs<spv::StorageClass>(1);
     switch (sc) {
       case spv::StorageClass::Workgroup:
-        if (!_.HasCapability(spv::Capability::WorkgroupMemoryExplicitLayoutKHR)) {
+        if (!_.HasCapability(
+                spv::Capability::WorkgroupMemoryExplicitLayoutKHR)) {
           return _.diag(SPV_ERROR_INVALID_ID, inst)
                  << "Workgroup storage class untyped pointers in Vulkan "
                     "require WorkgroupMemoryExplicitLayoutKHR be declared";
