@@ -84,7 +84,7 @@ OpMemoryModel Logical GLSL450
       HasSubstr("Cannot create undefined values with 8- or 16-bit types"));
 }
 
-const std::string ShaderClockSpriv = R"(
+const std::string ShaderClockSpirv = R"(
 OpCapability Shader
 OpCapability Int64
 OpCapability ShaderClockKHR
@@ -103,7 +103,7 @@ OpName %time1 "time1"
 )";
 
 TEST_F(ValidateMisc, ShaderClockInt64) {
-  const std::string spirv = ShaderClockSpriv + R"(
+  const std::string spirv = ShaderClockSpirv + R"(
 %3 = OpTypeFunction %void
 %uint = OpTypeInt 32 0
 %_ptr_Function_uint = OpTypePointer Function %uint
@@ -123,7 +123,7 @@ OpFunctionEnd)";
 }
 
 TEST_F(ValidateMisc, ShaderClockVec2) {
-  const std::string spirv = ShaderClockSpriv + R"(
+  const std::string spirv = ShaderClockSpirv + R"(
 %3 = OpTypeFunction %void
 %ulong = OpTypeInt 64 0
 %_ptr_Function_ulong = OpTypePointer Function %ulong
@@ -145,7 +145,7 @@ OpFunctionEnd)";
 }
 
 TEST_F(ValidateMisc, ShaderClockInvalidScopeValue) {
-  const std::string spirv = ShaderClockSpriv + R"(
+  const std::string spirv = ShaderClockSpirv + R"(
 %3 = OpTypeFunction %void
 %ulong = OpTypeInt 64 0
 %uint = OpTypeInt 32 0
@@ -166,7 +166,7 @@ OpFunctionEnd)";
 }
 
 TEST_F(ValidateMisc, ShaderClockSubgroupScope) {
-  const std::string spirv = ShaderClockSpriv + R"(
+  const std::string spirv = ShaderClockSpirv + R"(
 %3 = OpTypeFunction %void
 %ulong = OpTypeInt 64 0
 %uint = OpTypeInt 32 0
@@ -186,7 +186,7 @@ OpFunctionEnd)";
 }
 
 TEST_F(ValidateMisc, ShaderClockDeviceScope) {
-  const std::string spirv = ShaderClockSpriv + R"(
+  const std::string spirv = ShaderClockSpirv + R"(
 %3 = OpTypeFunction %void
 %ulong = OpTypeInt 64 0
 %uint = OpTypeInt 32 0
@@ -206,7 +206,7 @@ OpFunctionEnd)";
 }
 
 TEST_F(ValidateMisc, ShaderClockWorkgroupScope) {
-  const std::string spirv = ShaderClockSpriv + R"(
+  const std::string spirv = ShaderClockSpirv + R"(
 %3 = OpTypeFunction %void
 %ulong = OpTypeInt 64 0
 %uint = OpTypeInt 32 0
@@ -228,7 +228,7 @@ OpFunctionEnd)";
 }
 
 TEST_F(ValidateMisc, VulkanShaderClockWorkgroupScope) {
-  const std::string spirv = ShaderClockSpriv + R"(
+  const std::string spirv = ShaderClockSpirv + R"(
 %3 = OpTypeFunction %void
 %ulong = OpTypeInt 64 0
 %uint = OpTypeInt 32 0
