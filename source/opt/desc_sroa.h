@@ -36,7 +36,13 @@ class DescriptorScalarReplacement : public Pass {
       : flatten_composites_(flatten_composites),
         flatten_arrays_(flatten_arrays) {}
 
-  const char* name() const override { return "descriptor-scalar-replacement"; }
+  const char* name() const override {
+    if (flatten_composites_ && flatten_arrays_)
+      return "descriptor-scalar-replacement";
+    if (flatten_composites_)
+      return "descriptor-compososite-scalar-replacement";
+    return "descriptor-array-scalar-replacement";
+  }
 
   Status Process() override;
 

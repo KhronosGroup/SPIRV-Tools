@@ -364,6 +364,10 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
     RegisterPass(CreateSpreadVolatileSemanticsPass());
   } else if (pass_name == "descriptor-scalar-replacement") {
     RegisterPass(CreateDescriptorScalarReplacementPass());
+  } else if (pass_name == "descriptor-composite-scalar-replacement") {
+    RegisterPass(CreateDescriptorCompositeScalarReplacementPass());
+  } else if (pass_name == "descriptor-array-scalar-replacement") {
+    RegisterPass(CreateDescriptorArrayScalarReplacementPass());
   } else if (pass_name == "eliminate-dead-code-aggressive") {
     RegisterPass(CreateAggressiveDCEPass(preserve_interface));
   } else if (pass_name == "eliminate-insert-extract") {

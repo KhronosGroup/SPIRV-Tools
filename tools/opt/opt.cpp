@@ -181,6 +181,14 @@ Options (in lexicographical order):)",
                must be in OpAccessChain instructions with a literal index for
                the first index.)");
   printf(R"(
+  --descriptor-composite-scalar-replacement
+               Same as descriptor-scalar-replacement, but only impacts composite/structs.
+               For details, see --descriptor-scalar-replacement help.)");
+  printf(R"(
+  --descriptor-array-scalar-replacement
+               Same as descriptor-scalar-replacement, but only impacts arrays.
+               For details, see --descriptor-scalar-replacement help.)");
+  printf(R"(
   --eliminate-dead-branches
                Convert conditional branches with constant condition to the
                indicated unconditional branch. Delete all resulting dead
