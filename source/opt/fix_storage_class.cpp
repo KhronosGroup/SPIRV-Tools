@@ -141,22 +141,26 @@ bool FixStorageClass::IsPointerResultType(Instruction* inst) {
   if (inst->type_id() == 0) {
     return false;
   }
-  const analysis::Type* ret_type =
-      context()->get_type_mgr()->GetType(inst->type_id());
-  return ret_type->AsPointer() != nullptr;
+
+  Instruction* type_def = get_def_use_mgr()->GetDef(inst->type_id());
+  return type_def->opcode() == spv::Op::OpTypePointer;
 }
 
 bool FixStorageClass::IsPointerToStorageClass(Instruction* inst,
                                               spv::StorageClass storage_class) {
-  analysis::TypeManager* type_mgr = context()->get_type_mgr();
-  analysis::Type* pType = type_mgr->GetType(inst->type_id());
-  const analysis::Pointer* result_type = pType->AsPointer();
-
-  if (result_type == nullptr) {
+  if (inst->type_id() == 0) {
     return false;
   }
 
-  return (result_type->storage_class() == storage_class);
+  Instruction* type_def = get_def_use_mgr()->GetDef(inst->type_id());
+  if (type_def->opcode() != spv::Op::OpTypePointer) {
+    return false;
+  }
+
+  const uint32_t kPointerTypeStorageClassIndex = 0;
+  spv::StorageClass pointer_storage_class = static_cast<spv::StorageClass>(
+      type_def->GetSingleWordInOperand(kPointerTypeStorageClassIndex));
+  return pointer_storage_class == storage_class;
 }
 
 bool FixStorageClass::ChangeResultType(Instruction* inst,
@@ -301,9 +305,9 @@ uint32_t FixStorageClass::WalkAccessChainType(Instruction* inst, uint32_t id) {
       break;
   }
 
-  Instruction* orig_type_inst = get_def_use_mgr()->GetDef(id);
-  assert(orig_type_inst->opcode() == spv::Op::OpTypePointer);
-  id = orig_type_inst->GetSingleWordInOperand(1);
+  Instruction* id_type_inst = get_def_use_mgr()->GetDef(id);
+  assert(id_type_inst->opcode() == spv::Op::OpTypePointer);
+  id = id_type_inst->GetSingleWordInOperand(1);
 
   for (uint32_t i = start_idx; i < inst->NumInOperands(); ++i) {
     Instruction* type_inst = get_def_use_mgr()->GetDef(id);
@@ -334,6 +338,15 @@ uint32_t FixStorageClass::WalkAccessChainType(Instruction* inst, uint32_t id) {
     }
     assert(id != 0 &&
            "Tried to extract from an object where it cannot be done.");
+  }
+
+  Instruction* orig_type_inst = get_def_use_mgr()->GetDef(inst->type_id());
+  assert(orig_type_inst->opcode() == spv::Op::OpTypePointer);
+  if (orig_type_inst->GetSingleWordInOperand(1) == id) {
+    // The existing type is correct. Avoid the search for the type. Note that if
+    // there is a duplicate type, the search below could return a different type
+    // forcing more changes to the code than necessary.
+    return inst->type_id();
   }
 
   return context()->get_type_mgr()->FindPointerToType(
