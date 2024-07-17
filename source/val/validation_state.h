@@ -649,6 +649,9 @@ class ValidationState_t {
                     const std::function<bool(const Instruction*)>& f,
                     bool traverse_all_types = true) const;
 
+  // Returns true if |id| is type id that contains an untyped pointer.
+  bool ContainsUntypedPointer(uint32_t id) const;
+
   // Returns type_id if id has type or zero otherwise.
   uint32_t GetTypeId(uint32_t id) const;
 

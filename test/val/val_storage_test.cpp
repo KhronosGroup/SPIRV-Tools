@@ -165,7 +165,7 @@ TEST_F(ValidateStorage, GenericVariableOutsideFunction) {
   CompileSuccessfully(str);
   ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpVariable storage class cannot be Generic"));
+              HasSubstr("Variable storage class cannot be Generic"));
 }
 
 TEST_F(ValidateStorage, GenericVariableInsideFunction) {
@@ -187,7 +187,7 @@ TEST_F(ValidateStorage, GenericVariableInsideFunction) {
   CompileSuccessfully(str);
   EXPECT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpVariable storage class cannot be Generic"));
+              HasSubstr("Variable storage class cannot be Generic"));
 }
 
 TEST_F(ValidateStorage, RelaxedLogicalPointerFunctionParam) {
