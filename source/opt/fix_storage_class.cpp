@@ -312,6 +312,7 @@ uint32_t FixStorageClass::WalkAccessChainType(Instruction* inst, uint32_t id) {
       case spv::Op::OpTypeRuntimeArray:
       case spv::Op::OpTypeMatrix:
       case spv::Op::OpTypeVector:
+      case spv::Op::OpTypeCooperativeMatrixKHR:
         id = type_inst->GetSingleWordInOperand(0);
         break;
       case spv::Op::OpTypeStruct: {
