@@ -287,8 +287,11 @@ int32_t spvOpcodeIsComposite(const spv::Op opcode) {
 bool spvOpcodeReturnsLogicalVariablePointer(const spv::Op opcode) {
   switch (opcode) {
     case spv::Op::OpVariable:
+    case spv::Op::OpUntypedVariableKHR:
     case spv::Op::OpAccessChain:
     case spv::Op::OpInBoundsAccessChain:
+    case spv::Op::OpUntypedAccessChainKHR:
+    case spv::Op::OpUntypedInBoundsAccessChainKHR:
     case spv::Op::OpFunctionParameter:
     case spv::Op::OpImageTexelPointer:
     case spv::Op::OpCopyObject:
@@ -296,6 +299,7 @@ bool spvOpcodeReturnsLogicalVariablePointer(const spv::Op opcode) {
     case spv::Op::OpPhi:
     case spv::Op::OpFunctionCall:
     case spv::Op::OpPtrAccessChain:
+    case spv::Op::OpUntypedPtrAccessChainKHR:
     case spv::Op::OpLoad:
     case spv::Op::OpConstantNull:
     case spv::Op::OpRawAccessChainNV:
@@ -308,8 +312,11 @@ bool spvOpcodeReturnsLogicalVariablePointer(const spv::Op opcode) {
 int32_t spvOpcodeReturnsLogicalPointer(const spv::Op opcode) {
   switch (opcode) {
     case spv::Op::OpVariable:
+    case spv::Op::OpUntypedVariableKHR:
     case spv::Op::OpAccessChain:
     case spv::Op::OpInBoundsAccessChain:
+    case spv::Op::OpUntypedAccessChainKHR:
+    case spv::Op::OpUntypedInBoundsAccessChainKHR:
     case spv::Op::OpFunctionParameter:
     case spv::Op::OpImageTexelPointer:
     case spv::Op::OpCopyObject:
@@ -351,6 +358,7 @@ int32_t spvOpcodeGeneratesType(spv::Op op) {
     // spv::Op::OpTypeAccelerationStructureNV
     case spv::Op::OpTypeRayQueryKHR:
     case spv::Op::OpTypeHitObjectNV:
+    case spv::Op::OpTypeUntypedPointerKHR:
       return true;
     default:
       // In particular, OpTypeForwardPointer does not generate a type,
@@ -787,6 +795,19 @@ bool spvOpcodeIsBit(spv::Op opcode) {
     case spv::Op::OpNot:
     case spv::Op::OpBitReverse:
     case spv::Op::OpBitCount:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool spvOpcodeGeneratesUntypedPointer(spv::Op opcode) {
+  switch (opcode) {
+    case spv::Op::OpUntypedVariableKHR:
+    case spv::Op::OpUntypedAccessChainKHR:
+    case spv::Op::OpUntypedInBoundsAccessChainKHR:
+    case spv::Op::OpUntypedPtrAccessChainKHR:
+    case spv::Op::OpUntypedInBoundsPtrAccessChainKHR:
       return true;
     default:
       return false;

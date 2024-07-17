@@ -9362,6 +9362,37 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
+TEST_F(ValidateDecorations, UntypedVariableDuplicateInterface) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %var %var
+OpName %var "var"
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%struct = OpTypeStruct %int
+%ptr = OpTypeUntypedPointerKHR Workgroup
+%var = OpUntypedVariableKHR %ptr Workgroup %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Non-unique OpEntryPoint interface '2[%var]' is disallowed"));
+}
+
 TEST_F(ValidateDecorations, PhysicalStorageBufferMissingOffset) {
   const std::string spirv = R"(
 OpCapability Shader
@@ -9965,6 +9996,372 @@ TEST_F(ValidateDecorations, MultipleBuiltinsBlockMixed) {
           "OpEntryPoint contains duplicate output variables with Position"));
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-StandaloneSpirv-OpEntryPoint-09659"));
+}
+
+TEST_F(ValidateDecorations, UntypedVariableWorkgroupRequiresStruct) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %var
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%ptr = OpTypeUntypedPointerKHR Workgroup
+%var = OpUntypedVariableKHR %ptr Workgroup %int
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Untyped workgroup variables in shaders must be block "
+                        "decorated structs"));
+}
+
+TEST_F(ValidateDecorations, UntypedVariableWorkgroupRequiresBlockStruct) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %var
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%struct = OpTypeStruct %int
+%ptr = OpTypeUntypedPointerKHR Workgroup
+%var = OpUntypedVariableKHR %ptr Workgroup %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Untyped workgroup variables in shaders must be block "
+                        "decorated"));
+}
+
+TEST_F(ValidateDecorations, UntypedVariableStorageBufferMissingBlock) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %struct "struct"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%struct = OpTypeStruct %int
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%var = OpUntypedVariableKHR %ptr StorageBuffer %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("StorageBuffer id '2' is missing Block decoration"));
+}
+
+TEST_F(ValidateDecorations, UntypedVariableUniformMissingBlock) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %struct "struct"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%struct = OpTypeStruct %int
+%ptr = OpTypeUntypedPointerKHR Uniform
+%var = OpUntypedVariableKHR %ptr Uniform %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Uniform id '2' is missing Block or BufferBlock decoration"));
+}
+
+TEST_F(ValidateDecorations, UntypedVariablePushConstantMissingBlock) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %struct "struct"
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%struct = OpTypeStruct %int
+%ptr = OpTypeUntypedPointerKHR PushConstant
+%var = OpUntypedVariableKHR %ptr PushConstant %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("PushConstant id '2' is missing Block decoration"));
+}
+
+using UntypedVariableSetAndBinding = spvtest::ValidateBase<std::string>;
+
+TEST_P(UntypedVariableSetAndBinding, MissingSet) {
+  const auto sc = GetParam();
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %var "var"
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%struct = OpTypeStruct %int
+%ptr = OpTypeUntypedPointerKHR )" +
+                            sc + R"(
+%var = OpUntypedVariableKHR %ptr )" + sc + R"( %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%load = OpLoad %struct %var
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr(sc + " id '2' is missing DescriptorSet decoration"));
+}
+
+TEST_P(UntypedVariableSetAndBinding, MissingBinding) {
+  const auto sc = GetParam();
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %var "var"
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %var DescriptorSet 0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%struct = OpTypeStruct %int
+%ptr = OpTypeUntypedPointerKHR )" +
+                            sc + R"(
+%var = OpUntypedVariableKHR %ptr )" + sc + R"( %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%load = OpLoad %struct %var
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr(sc + " id '2' is missing Binding decoration"));
+}
+
+INSTANTIATE_TEST_SUITE_P(ValidateUntypedVariableSetAndBinding,
+                         UntypedVariableSetAndBinding,
+                         Values("StorageBuffer", "Uniform"));
+
+using UntypedPointerLayout =
+    spvtest::ValidateBase<std::tuple<std::string, std::string>>;
+
+TEST_P(UntypedPointerLayout, BadOffset) {
+  const auto sc = std::get<0>(GetParam());
+  const auto op = std::get<1>(GetParam());
+  const std::string set = (sc == "StorageBuffer" || sc == "Uniform"
+                               ? R"(OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+)"
+                               : R"()");
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_KHR_variable_pointers"
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %var
+OpExecutionMode %main LocalSize 1 1 1
+OpName %var "var"
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpMemberDecorate %struct 1 Offset 4
+)" + set + R"(OpMemberDecorate %test_type 0 Offset 0
+OpMemberDecorate %test_type 1 Offset 1
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%struct = OpTypeStruct %int %int
+%test_type = OpTypeStruct %int %int
+%test_val = OpConstantNull %test_type
+%ptr = OpTypeUntypedPointerKHR )" +
+                            sc + R"(
+%var = OpUntypedVariableKHR %ptr )" + sc + R"( %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+)" + op + R"(
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  const bool read_only = sc == "Uniform" || sc == "PushConstant";
+  if (!read_only || op.find("OpStore") == std::string::npos) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("member 1 at offset 1 is not aligned to"));
+  }
+}
+
+TEST_P(UntypedPointerLayout, BadStride) {
+  const auto sc = std::get<0>(GetParam());
+  const auto op = std::get<1>(GetParam());
+  const std::string set = (sc == "StorageBuffer" || sc == "Uniform"
+                               ? R"(OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+)"
+                               : R"()");
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_KHR_variable_pointers"
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %var
+OpExecutionMode %main LocalSize 1 1 1
+OpName %var "var"
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpMemberDecorate %struct 1 Offset 4
+)" + set + R"(OpDecorate %test_type ArrayStride 4
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%int4 = OpTypeVector %int 4
+%test_type = OpTypeArray %int4 %int_4
+%test_val = OpConstantNull %test_type
+%struct = OpTypeStruct %int %int
+%ptr = OpTypeUntypedPointerKHR )" +
+                            sc + R"(
+%var = OpUntypedVariableKHR %ptr )" + sc + R"( %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+)" + op + R"(
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  const bool read_only = sc == "Uniform" || sc == "PushConstant";
+  if (!read_only || op.find("OpStore") == std::string::npos) {
+    EXPECT_THAT(
+        getDiagnosticString(),
+        HasSubstr("array with stride 4 not satisfying alignment to 16"));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    ValidateUntypedPointerLayout, UntypedPointerLayout,
+    Combine(Values("StorageBuffer", "Uniform", "PushConstant", "Workgroup"),
+            Values("%gep = OpUntypedAccessChainKHR %ptr %test_type %var %int_0",
+                   "%gep = OpUntypedInBoundsAccessChainKHR %ptr %test_type "
+                   "%var %int_0",
+                   "%gep = OpUntypedPtrAccessChainKHR %ptr %test_type %var "
+                   "%int_0 %int_0",
+                   "%ld = OpLoad %test_type %var", "OpStore %var %test_val")));
+
+TEST_F(ValidateDecorations, UntypedArrayLengthMissingOffset) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct Block
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+OpDecorate %array ArrayStride 4
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%array = OpTypeRuntimeArray %int
+%struct = OpTypeStruct %array
+%block = OpTypeStruct %array
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%var = OpUntypedVariableKHR %ptr StorageBuffer %block
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%len = OpUntypedArrayLengthKHR %int %struct %var 0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("member 0 is missing an Offset decoration"));
 }
 
 }  // namespace

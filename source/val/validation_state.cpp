@@ -73,6 +73,7 @@ ModuleLayoutSection InstructionLayoutSection(
     case spv::Op::OpTypeForwardPointer:
       return kLayoutTypes;
     case spv::Op::OpVariable:
+    case spv::Op::OpUntypedVariableKHR:
       if (current_section == kLayoutTypes) return kLayoutTypes;
       return kLayoutFunctionDefinitions;
     case spv::Op::OpExtInst:
@@ -1185,7 +1186,9 @@ bool ValidationState_t::GetStructMemberTypes(
 
 bool ValidationState_t::IsPointerType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
-  return inst && inst->opcode() == spv::Op::OpTypePointer;
+  assert(inst);
+  return inst->opcode() == spv::Op::OpTypePointer ||
+         inst->opcode() == spv::Op::OpTypeUntypedPointerKHR;
 }
 
 bool ValidationState_t::GetPointerTypeInfo(
@@ -1195,6 +1198,12 @@ bool ValidationState_t::GetPointerTypeInfo(
 
   const Instruction* inst = FindDef(id);
   assert(inst);
+  if (inst->opcode() == spv::Op::OpTypeUntypedPointerKHR) {
+    *storage_class = spv::StorageClass(inst->word(2));
+    *data_type = 0;
+    return true;
+  }
+
   if (inst->opcode() != spv::Op::OpTypePointer) return false;
 
   *storage_class = spv::StorageClass(inst->word(2));
@@ -1703,6 +1712,39 @@ bool ValidationState_t::ContainsRuntimeArray(uint32_t id) const {
     return inst->opcode() == spv::Op::OpTypeRuntimeArray;
   };
   return ContainsType(id, f, /* traverse_all_types = */ false);
+}
+
+bool ValidationState_t::ContainsUntypedPointer(uint32_t id) const {
+  const auto inst = FindDef(id);
+  if (!inst) return false;
+  if (!spvOpcodeGeneratesType(inst->opcode())) return false;
+  if (inst->opcode() == spv::Op::OpTypeUntypedPointerKHR) return true;
+
+  switch (inst->opcode()) {
+    case spv::Op::OpTypeArray:
+    case spv::Op::OpTypeRuntimeArray:
+    case spv::Op::OpTypeVector:
+    case spv::Op::OpTypeMatrix:
+    case spv::Op::OpTypeImage:
+    case spv::Op::OpTypeSampledImage:
+    case spv::Op::OpTypeCooperativeMatrixNV:
+      return ContainsUntypedPointer(inst->GetOperandAs<uint32_t>(1u));
+    case spv::Op::OpTypePointer:
+      if (IsForwardPointer(id)) return false;
+      return ContainsUntypedPointer(inst->GetOperandAs<uint32_t>(2u));
+    case spv::Op::OpTypeFunction:
+    case spv::Op::OpTypeStruct: {
+      for (uint32_t i = 1; i < inst->operands().size(); ++i) {
+        if (ContainsUntypedPointer(inst->GetOperandAs<uint32_t>(i)))
+          return true;
+      }
+      return false;
+    }
+    default:
+      return false;
+  }
+
+  return false;
 }
 
 bool ValidationState_t::IsValidStorageClass(

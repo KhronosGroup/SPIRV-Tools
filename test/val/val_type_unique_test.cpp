@@ -270,6 +270,24 @@ OpMemoryModel Logical GLSL450
               Not(HasSubstr(GetErrorString(spv::Op::OpTypePointer))));
 }
 
+TEST_F(ValidateTypeUnique, DuplicateUntypedPointer) {
+  std::string str = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability UntypedPointersKHR
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+%u32 = OpTypeInt 32 0
+%ptr1 = OpTypeUntypedPointerKHR Workgroup
+%ptr2 = OpTypeUntypedPointerKHR Workgroup
+)";
+
+  CompileSuccessfully(str.c_str(), SPV_ENV_UNIVERSAL_1_4);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
