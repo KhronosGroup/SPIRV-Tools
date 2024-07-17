@@ -10210,7 +10210,8 @@ INSTANTIATE_TEST_SUITE_P(ValidateUntypedVariableSetAndBinding,
                          UntypedVariableSetAndBinding,
                          Values("StorageBuffer", "Uniform"));
 
-using UntypedPointerLayout = spvtest::ValidateBase<std::tuple<std::string, std::string>>;
+using UntypedPointerLayout =
+    spvtest::ValidateBase<std::tuple<std::string, std::string>>;
 
 TEST_P(UntypedPointerLayout, BadOffset) {
   const auto sc = std::get<0>(GetParam());

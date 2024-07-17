@@ -829,7 +829,8 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
         (!_.HasCapability(spv::Capability::Float16) &&
          _.ContainsSizedIntOrFloatType(value_id, spv::Op::OpTypeFloat, 16))) {
       auto underlying_type = value_type;
-      while (underlying_type && underlying_type->opcode() == spv::Op::OpTypePointer) {
+      while (underlying_type &&
+             underlying_type->opcode() == spv::Op::OpTypePointer) {
         storage_class = underlying_type->GetOperandAs<spv::StorageClass>(1u);
         underlying_type =
             _.FindDef(underlying_type->GetOperandAs<uint32_t>(2u));
@@ -894,7 +895,8 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     if (!_.HasCapability(spv::Capability::Int8) &&
         _.ContainsSizedIntOrFloatType(value_id, spv::Op::OpTypeInt, 8)) {
       auto underlying_type = value_type;
-      while (underlying_type && underlying_type->opcode() == spv::Op::OpTypePointer) {
+      while (underlying_type &&
+             underlying_type->opcode() == spv::Op::OpTypePointer) {
         storage_class = underlying_type->GetOperandAs<spv::StorageClass>(1u);
         underlying_type =
             _.FindDef(underlying_type->GetOperandAs<uint32_t>(2u));

@@ -529,7 +529,8 @@ spv_result_t ValidateLocations(ValidationState_t& _,
     auto interface_id = entry_point->GetOperandAs<uint32_t>(i);
     auto interface_var = _.FindDef(interface_id);
     const auto sc_index = 2u;
-    auto storage_class = interface_var->GetOperandAs<spv::StorageClass>(sc_index);
+    auto storage_class =
+        interface_var->GetOperandAs<spv::StorageClass>(sc_index);
     if (storage_class != spv::StorageClass::Input &&
         storage_class != spv::StorageClass::Output) {
       continue;

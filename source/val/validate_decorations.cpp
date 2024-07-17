@@ -1450,7 +1450,6 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                      : (sc == spv::StorageClass::Workgroup ? "Workgroup"
                                                            : "StorageBuffer"));
 
-      //const auto data_type_id = inst.GetOperandAs<uint32_t>(2);
       const auto data_type = vstate.FindDef(data_type_id);
       scalar_block_layout =
           sc == spv::StorageClass::Workgroup
