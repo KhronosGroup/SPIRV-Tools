@@ -134,7 +134,12 @@ void AggressiveDCEPass::AddStores(Function* func, uint32_t ptrId) {
         }
         break;
       // If default, assume it stores e.g. frexp, modf, function call
-      case spv::Op::OpStore:
+      case spv::Op::OpStore: {
+        const uint32_t kStoreTargetAddrInIdx = 0;
+        if (user->GetSingleWordInOperand(kStoreTargetAddrInIdx) == ptrId)
+          AddToWorklist(user);
+        break;
+      }
       default:
         AddToWorklist(user);
         break;
