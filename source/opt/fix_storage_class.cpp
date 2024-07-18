@@ -308,6 +308,8 @@ uint32_t FixStorageClass::WalkAccessChainType(Instruction* inst, uint32_t id) {
   Instruction* id_type_inst = get_def_use_mgr()->GetDef(id);
   assert(id_type_inst->opcode() == spv::Op::OpTypePointer);
   id = id_type_inst->GetSingleWordInOperand(1);
+  spv::StorageClass input_storage_class =
+      static_cast<spv::StorageClass>(id_type_inst->GetSingleWordInOperand(0));
 
   for (uint32_t i = start_idx; i < inst->NumInOperands(); ++i) {
     Instruction* type_inst = get_def_use_mgr()->GetDef(id);
@@ -341,17 +343,18 @@ uint32_t FixStorageClass::WalkAccessChainType(Instruction* inst, uint32_t id) {
   }
 
   Instruction* orig_type_inst = get_def_use_mgr()->GetDef(inst->type_id());
+  spv::StorageClass orig_storage_class =
+      static_cast<spv::StorageClass>(orig_type_inst->GetSingleWordInOperand(0));
   assert(orig_type_inst->opcode() == spv::Op::OpTypePointer);
-  if (orig_type_inst->GetSingleWordInOperand(1) == id) {
+  if (orig_type_inst->GetSingleWordInOperand(1) == id &&
+      input_storage_class == orig_storage_class) {
     // The existing type is correct. Avoid the search for the type. Note that if
     // there is a duplicate type, the search below could return a different type
     // forcing more changes to the code than necessary.
     return inst->type_id();
   }
 
-  return context()->get_type_mgr()->FindPointerToType(
-      id, static_cast<spv::StorageClass>(
-              orig_type_inst->GetSingleWordInOperand(0)));
+  return context()->get_type_mgr()->FindPointerToType(id, input_storage_class);
 }
 
 // namespace opt
