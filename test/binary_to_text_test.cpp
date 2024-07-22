@@ -402,6 +402,22 @@ INSTANTIATE_TEST_SUITE_P(
                 "OpDecorateId %1 MaxByteOffsetId %2\n",
             })));
 
+INSTANTIATE_TEST_SUITE_P(
+    CacheControlsINTEL, RoundTripInstructionsTest,
+    Combine(
+        ::testing::Values(SPV_ENV_UNIVERSAL_1_0),
+        ::testing::ValuesIn(std::vector<std::string>{
+            "OpDecorate %1 CacheControlLoadINTEL 0 UncachedINTEL\n",
+            "OpDecorate %1 CacheControlLoadINTEL 1 CachedINTEL\n",
+            "OpDecorate %1 CacheControlLoadINTEL 2 StreamingINTEL\n",
+            "OpDecorate %1 CacheControlLoadINTEL 3 InvalidateAfterReadINTEL\n",
+            "OpDecorate %1 CacheControlLoadINTEL 4 ConstCachedINTEL\n",
+            "OpDecorate %1 CacheControlStoreINTEL 0 UncachedINTEL\n",
+            "OpDecorate %1 CacheControlStoreINTEL 1 WriteThroughINTEL\n",
+            "OpDecorate %1 CacheControlStoreINTEL 2 WriteBackINTEL\n",
+            "OpDecorate %1 CacheControlStoreINTEL 3 StreamingINTEL\n",
+        })));
+
 using MaskSorting = TextToBinaryTest;
 
 TEST_F(MaskSorting, MasksAreSortedFromLSBToMSB) {
