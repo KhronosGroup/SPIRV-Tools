@@ -7992,6 +7992,83 @@ OpFunctionEnd
   SinglePassRunAndCheck<AggressiveDCEPass>(test, test, true, true);
 }
 
+TEST_F(AggressiveDCETest, StoringAPointer) {
+  // A store that stores a pointer should not be kept live because the value
+  // being stored is eventually loaded from.
+
+  const std::string text = R"(
+               OpCapability CooperativeMatrixKHR
+               OpCapability Shader
+               OpExtension "SPV_KHR_cooperative_matrix"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main" %2
+               OpExecutionMode %1 LocalSize 64 1 1
+               OpSource HLSL 600
+               OpDecorate %2 DescriptorSet 0
+               OpDecorate %2 Binding 0
+               OpDecorate %_runtimearr_int ArrayStride 4
+               OpMemberDecorate %_struct_4 0 Offset 0
+               OpDecorate %_struct_4 Block
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+    %uint_64 = OpConstant %uint 64
+     %uint_3 = OpConstant %uint 3
+    %uint_16 = OpConstant %uint 16
+     %uint_4 = OpConstant %uint 4
+%_runtimearr_int = OpTypeRuntimeArray %int
+  %_struct_4 = OpTypeStruct %_runtimearr_int
+%_ptr_StorageBuffer__struct_4 = OpTypePointer StorageBuffer %_struct_4
+       %void = OpTypeVoid
+         %16 = OpTypeFunction %void
+; CHECK: [[mat:%\w+]] = OpTypeCooperativeMatrixKHR %int %uint_3 %uint_16 %uint_4 %uint_0
+         %17 = OpTypeCooperativeMatrixKHR %int %uint_3 %uint_16 %uint_4 %uint_0
+; CHECK: [[struct:%\w+]] = OpTypeStruct [[mat]]
+ %_struct_18 = OpTypeStruct %17
+; CHECK: [[ptr:%\w+]] = OpTypePointer Function [[struct]]
+%_ptr_Function__struct_18 = OpTypePointer Function %_struct_18
+%_ptr_StorageBuffer_int = OpTypePointer StorageBuffer %int
+%_ptr_Function_17 = OpTypePointer Function %17
+%_ptr_Function_int = OpTypePointer Function %int
+%_ptr_Function__ptr_Function_int = OpTypePointer Function %_ptr_Function_int
+          %2 = OpVariable %_ptr_StorageBuffer__struct_4 StorageBuffer
+
+; The stored to the fist two variables should be removed and the variables
+; as well. The only function scope variable should be the cooperative matrix.
+; CHECK: OpFunction
+; CHECK-NOT: OpVariable %_ptr_Function__ptr_Function_int Function
+; CHECK: OpVariable [[ptr]] Function
+; CHECK-NOT: OpVariable
+          %1 = OpFunction %void None %16
+         %24 = OpLabel
+         %25 = OpVariable %_ptr_Function__ptr_Function_int Function
+         %26 = OpVariable %_ptr_Function__ptr_Function_int Function
+         %27 = OpVariable %_ptr_Function__struct_18 Function
+         %28 = OpAccessChain %_ptr_StorageBuffer_int %2 %int_0 %uint_0
+         %29 = OpCooperativeMatrixLoadKHR %17 %28 %int_1
+         %30 = OpCompositeConstruct %_struct_18 %29
+               OpStore %27 %30
+         %31 = OpAccessChain %_ptr_Function_17 %27 %int_0
+         %32 = OpAccessChain %_ptr_Function_int %27 %int_0 %uint_0
+               OpStore %26 %32
+         %33 = OpLoad %int %32
+         %34 = OpIAdd %int %33 %int_1
+               OpStore %25 %32
+               OpStore %32 %34
+         %35 = OpAccessChain %_ptr_StorageBuffer_int %2 %int_0 %uint_64
+         %36 = OpLoad %17 %31
+               OpCooperativeMatrixStoreKHR %35 %36 %int_0
+               OpReturn
+               OpFunctionEnd
+)";
+
+  // For physical storage buffer support
+  SetTargetEnv(SPV_ENV_VULKAN_1_2);
+  SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
