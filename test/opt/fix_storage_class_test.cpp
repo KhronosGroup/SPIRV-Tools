@@ -953,6 +953,40 @@ OpFunctionEnd
   SinglePassRunAndCheck<FixStorageClass>(text, text, false, false);
 }
 
+// Tests that the pass is not confused when there are multiple definitions
+// of a pointer type to the same type with the same storage class.
+TEST_F(FixStorageClassTest, DuplicatePointerType) {
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %1 "main"
+OpExecutionMode %1 LocalSize 64 1 1
+OpSource HLSL 600
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_3 = OpConstant %uint 3
+%_arr_uint_uint_3 = OpTypeArray %uint %uint_3
+%void = OpTypeVoid
+%7 = OpTypeFunction %void
+%_struct_8 = OpTypeStruct %_arr_uint_uint_3
+%_ptr_Function__struct_8 = OpTypePointer Function %_struct_8
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Function__arr_uint_uint_3 = OpTypePointer Function %_arr_uint_uint_3
+%_ptr_Function_uint_0 = OpTypePointer Function %uint
+%_ptr_Function__ptr_Function_uint_0 = OpTypePointer Function %_ptr_Function_uint_0
+%1 = OpFunction %void None %7
+%14 = OpLabel
+%15 = OpVariable %_ptr_Function__ptr_Function_uint_0 Function
+%16 = OpVariable %_ptr_Function__struct_8 Function
+%17 = OpAccessChain %_ptr_Function__arr_uint_uint_3 %16 %uint_0
+%18 = OpAccessChain %_ptr_Function_uint_0 %17 %uint_0
+OpStore %15 %18
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndCheck<FixStorageClass>(text, text, false);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
