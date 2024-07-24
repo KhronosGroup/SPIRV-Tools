@@ -1,4 +1,6 @@
 // Copyright (c) 2016 Google Inc.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -803,6 +805,14 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
         return type;
       }
       break;
+    case spv::Op::OpTypeNodePayloadArrayAMDX:
+      type = new NodePayloadArray(GetType(inst.GetSingleWordInOperand(0)));
+      if (id_to_incomplete_type_.count(inst.GetSingleWordInOperand(0))) {
+        incomplete_types_.emplace_back(inst.result_id(), type);
+        id_to_incomplete_type_[inst.result_id()] = type;
+        return type;
+      }
+      break;
     case spv::Op::OpTypeStruct: {
       std::vector<const Type*> element_types;
       bool incomplete_type = false;
@@ -940,7 +950,8 @@ void TypeManager::AttachDecoration(const Instruction& inst, Type* type) {
   if (!IsAnnotationInst(opcode)) return;
 
   switch (opcode) {
-    case spv::Op::OpDecorate: {
+    case spv::Op::OpDecorate:
+    case spv::Op::OpDecorateId: {
       const auto count = inst.NumOperands();
       std::vector<uint32_t> data;
       for (uint32_t i = 1; i < count; ++i) {

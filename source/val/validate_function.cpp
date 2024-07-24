@@ -1,4 +1,6 @@
 // Copyright (c) 2018 Google LLC.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -302,6 +304,7 @@ spv_result_t ValidateFunctionCall(ValidationState_t& _,
           case spv::StorageClass::Private:
           case spv::StorageClass::Workgroup:
           case spv::StorageClass::AtomicCounter:
+          case spv::StorageClass::NodePayloadAMDX:
             // These are always allowed.
             break;
           case spv::StorageClass::StorageBuffer:

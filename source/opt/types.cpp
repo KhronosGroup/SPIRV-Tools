@@ -1,4 +1,6 @@
 // Copyright (c) 2016 Google Inc.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -90,6 +92,7 @@ bool Type::IsUniqueType() const {
     case kStruct:
     case kArray:
     case kRuntimeArray:
+    case kNodePayloadArray:
       return false;
     default:
       return true;
@@ -218,6 +221,7 @@ size_t Type::ComputeHashValue(size_t hash, SeenTypes* seen) const {
     DeclareKindCase(SampledImage);
     DeclareKindCase(Array);
     DeclareKindCase(RuntimeArray);
+    DeclareKindCase(NodePayloadArray);
     DeclareKindCase(Struct);
     DeclareKindCase(Opaque);
     DeclareKindCase(Pointer);
@@ -482,6 +486,32 @@ size_t RuntimeArray::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
 }
 
 void RuntimeArray::ReplaceElementType(const Type* type) {
+  element_type_ = type;
+}
+
+NodePayloadArray::NodePayloadArray(const Type* type)
+    : Type(kNodePayloadArray), element_type_(type) {
+  assert(!type->AsVoid());
+}
+
+bool NodePayloadArray::IsSameImpl(const Type* that, IsSameCache* seen) const {
+  const NodePayloadArray* rat = that->AsNodePayloadArray();
+  if (!rat) return false;
+  return element_type_->IsSameImpl(rat->element_type_, seen) &&
+         HasSameDecorations(that);
+}
+
+std::string NodePayloadArray::str() const {
+  std::ostringstream oss;
+  oss << "[" << element_type_->str() << "]";
+  return oss.str();
+}
+
+size_t NodePayloadArray::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
+  return element_type_->ComputeHashValue(hash, seen);
+}
+
+void NodePayloadArray::ReplaceElementType(const Type* type) {
   element_type_ = type;
 }
 

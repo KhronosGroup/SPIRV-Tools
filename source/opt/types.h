@@ -1,4 +1,6 @@
 // Copyright (c) 2016 Google Inc.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,6 +48,7 @@ class Sampler;
 class SampledImage;
 class Array;
 class RuntimeArray;
+class NodePayloadArray;
 class Struct;
 class Opaque;
 class Pointer;
@@ -87,6 +90,7 @@ class Type {
     kSampledImage,
     kArray,
     kRuntimeArray,
+    kNodePayloadArray,
     kStruct,
     kOpaque,
     kPointer,
@@ -189,6 +193,7 @@ class Type {
   DeclareCastMethod(SampledImage)
   DeclareCastMethod(Array)
   DeclareCastMethod(RuntimeArray)
+  DeclareCastMethod(NodePayloadArray)
   DeclareCastMethod(Struct)
   DeclareCastMethod(Opaque)
   DeclareCastMethod(Pointer)
@@ -423,6 +428,27 @@ class RuntimeArray : public Type {
 
   RuntimeArray* AsRuntimeArray() override { return this; }
   const RuntimeArray* AsRuntimeArray() const override { return this; }
+
+  size_t ComputeExtraStateHash(size_t hash, SeenTypes* seen) const override;
+
+  void ReplaceElementType(const Type* element_type);
+
+ private:
+  bool IsSameImpl(const Type* that, IsSameCache*) const override;
+
+  const Type* element_type_;
+};
+
+class NodePayloadArray : public Type {
+ public:
+  NodePayloadArray(const Type* element_type);
+  NodePayloadArray(const NodePayloadArray&) = default;
+
+  std::string str() const override;
+  const Type* element_type() const { return element_type_; }
+
+  NodePayloadArray* AsNodePayloadArray() override { return this; }
+  const NodePayloadArray* AsNodePayloadArray() const override { return this; }
 
   size_t ComputeExtraStateHash(size_t hash, SeenTypes* seen) const override;
 

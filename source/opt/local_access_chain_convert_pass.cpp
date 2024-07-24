@@ -1,6 +1,8 @@
 // Copyright (c) 2017 The Khronos Group Inc.
 // Copyright (c) 2017 Valve Corporation
 // Copyright (c) 2017 LunarG Inc.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -430,7 +432,8 @@ void LocalAccessChainConvertPass::InitExtensions() {
        "SPV_NV_bindless_texture", "SPV_EXT_shader_atomic_float_add",
        "SPV_EXT_fragment_shader_interlock",
        "SPV_KHR_compute_shader_derivatives", "SPV_NV_cooperative_matrix",
-       "SPV_KHR_cooperative_matrix", "SPV_KHR_ray_tracing_position_fetch"});
+       "SPV_KHR_cooperative_matrix", "SPV_KHR_ray_tracing_position_fetch",
+       "SPV_AMDX_shader_enqueue"});
 }
 
 bool LocalAccessChainConvertPass::AnyIndexIsOutOfBounds(
