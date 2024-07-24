@@ -123,7 +123,8 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
     case spv::Decoration::ArrayStride:
       if (target->opcode() != spv::Op::OpTypeArray &&
           target->opcode() != spv::Op::OpTypeRuntimeArray &&
-          target->opcode() != spv::Op::OpTypePointer) {
+          target->opcode() != spv::Op::OpTypePointer &&
+          target->opcode() != spv::Op::OpTypeUntypedPointerKHR) {
         return fail(0) << "must be an array or pointer type";
       }
       break;

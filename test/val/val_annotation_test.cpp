@@ -257,6 +257,22 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(DecorationTest, ArrayStrideUntypedPointerKHR) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpDecorate %ptr ArrayStride 4
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 using MemberOnlyDecorations = spvtest::ValidateBase<std::string>;
 
 TEST_P(MemberOnlyDecorations, MemberDecoration) {
