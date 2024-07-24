@@ -48,6 +48,10 @@ Options (in lexicographical order):
   --allow-partial-linkage
                Allow partial linkage by accepting imported symbols to be
                unresolved.
+  --allow-pointer-mismatch
+               Allow pointer function parameters to mismatch the target link
+               target. This is useful to workaround lost correct parameter type
+               information due to LLVM's opaque pointers.
   --create-library
                Link the binaries into a library, keeping all exported symbols.
   -h, --help
@@ -77,15 +81,16 @@ Options (in lexicographical order):
 }  // namespace
 
 // clang-format off
-FLAG_SHORT_bool(  h,                     /* default_value= */ false,               /* required= */ false);
-FLAG_LONG_bool(   help,                  /* default_value= */ false,               /* required= */false);
-FLAG_LONG_bool(   version,               /* default_value= */ false,               /* required= */ false);
-FLAG_LONG_bool(   verify_ids,            /* default_value= */ false,               /* required= */ false);
-FLAG_LONG_bool(   create_library,        /* default_value= */ false,               /* required= */ false);
-FLAG_LONG_bool(   allow_partial_linkage, /* default_value= */ false,               /* required= */ false);
-FLAG_SHORT_string(o,                     /* default_value= */ "",                  /* required= */ false);
-FLAG_LONG_string( target_env,            /* default_value= */ kDefaultEnvironment, /* required= */ false);
-FLAG_LONG_bool(   use_highest_version,   /* default_value= */ false,               /* required= */ false);
+FLAG_SHORT_bool(  h,                      /* default_value= */ false,               /* required= */ false);
+FLAG_LONG_bool(   help,                   /* default_value= */ false,               /* required= */ false);
+FLAG_LONG_bool(   version,                /* default_value= */ false,               /* required= */ false);
+FLAG_LONG_bool(   verify_ids,             /* default_value= */ false,               /* required= */ false);
+FLAG_LONG_bool(   create_library,         /* default_value= */ false,               /* required= */ false);
+FLAG_LONG_bool(   allow_partial_linkage,  /* default_value= */ false,               /* required= */ false);
+FLAG_LONG_bool(   allow_pointer_mismatch, /* default_value= */ false,               /* required= */ false);
+FLAG_SHORT_string(o,                      /* default_value= */ "",                  /* required= */ false);
+FLAG_LONG_string( target_env,             /* default_value= */ kDefaultEnvironment, /* required= */ false);
+FLAG_LONG_bool(   use_highest_version,    /* default_value= */ false,               /* required= */ false);
 // clang-format on
 
 int main(int, const char* argv[]) {
@@ -126,6 +131,7 @@ int main(int, const char* argv[]) {
 
   spvtools::LinkerOptions options;
   options.SetAllowPartialLinkage(flags::allow_partial_linkage.value());
+  options.SetAllowPtrTypeMismatch(flags::allow_pointer_mismatch.value());
   options.SetCreateLibrary(flags::create_library.value());
   options.SetVerifyIds(flags::verify_ids.value());
   options.SetUseHighestVersion(flags::use_highest_version.value());
