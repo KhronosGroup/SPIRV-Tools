@@ -237,6 +237,9 @@ bool FixStorageClass::PropagateType(Instruction* inst, uint32_t type_id,
         }
 
         uint32_t copy_id = GenerateCopy(obj_inst, pointee_type_id, inst);
+        if (copy_id == 0) {
+          return false;
+        }
         inst->SetInOperand(1, {copy_id});
         context()->UpdateDefUse(inst);
       }
