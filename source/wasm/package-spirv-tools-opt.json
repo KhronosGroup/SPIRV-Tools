@@ -1,0 +1,17 @@
+{
+  "name": "spirv-tools-opt",
+  "version": "VERSION",
+  "license": "Apache-2.0",
+  "main": "spirv-tools-opt",
+  "types": "spirv-tools-opt.d.ts",
+  "files": [
+    "*.wasm",
+    "*.js",
+    "*.d.ts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KhronosGroup/SPIRV-Tools"
+  },
+  "homepage": "https://github.com/KhronosGroup/SPIRV-Tools"
+}
