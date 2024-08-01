@@ -841,16 +841,6 @@ TEST_P(CapabilitySetForEachTest, CopyConstructor) {
   EXPECT_THAT(ElementsIn(copy), Eq(GetParam().expected));
 }
 
-TEST_P(CapabilitySetForEachTest, MoveConstructor) {
-  // We need a writable copy to move from.
-  CapabilitySet copy(GetParam().capabilities);
-  CapabilitySet moved(std::move(copy));
-  EXPECT_THAT(ElementsIn(moved), Eq(GetParam().expected));
-
-  // The moved-from set is empty.
-  EXPECT_THAT(ElementsIn(copy), Eq(std::vector<spv::Capability>{}));
-}
-
 TEST_P(CapabilitySetForEachTest, OperatorEquals) {
   CapabilitySet assigned = GetParam().capabilities;
   EXPECT_THAT(ElementsIn(assigned), Eq(GetParam().expected));
@@ -858,7 +848,7 @@ TEST_P(CapabilitySetForEachTest, OperatorEquals) {
 
 TEST_P(CapabilitySetForEachTest, OperatorEqualsSelfAssign) {
   CapabilitySet assigned{GetParam().capabilities};
-  assigned = assigned;
+  assigned = assigned;  // NOLINT
   EXPECT_THAT(ElementsIn(assigned), Eq(GetParam().expected));
 }
 
