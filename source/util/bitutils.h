@@ -97,7 +97,7 @@ template <typename T>
 size_t CountSetBits(T word) {
   static_assert(std::is_integral<T>::value,
                 "CountSetBits requires integer type");
-  size_t count = 0;
+  uint32_t count = 0;
   while (word) {
     word &= word - 1;
     ++count;
