@@ -17,3 +17,17 @@ local_path_override(
     module_name = "effcee",
     path = "external/effcee",
 )
+
+bazel_dep(name = "rules_python",
+          version = "0.34.0")
+
+# https://rules-python.readthedocs.io/en/stable/toolchains.html#library-modules-with-dev-only-python-usage
+python = use_extension(
+    "@rules_python//python/extensions:python.bzl",
+    "python",
+    dev_dependency = True
+)
+
+python.toolchain(python_version = "3.12",
+                 is_default = True,
+                 ignore_root_user_error = True)
