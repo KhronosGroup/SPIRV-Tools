@@ -14,7 +14,7 @@ vars = {
 
   're2_revision': '6dcd83d60f7944926bfd308cc13979fc53dd69ca',
 
-  'spirv_headers_revision': 'f013f08e4455bcc1f0eed8e3dd5e2009682656d9',
+  'spirv_headers_revision': '1b75a4ae0b4289014b4c369301dc925c366f78a6',
 }
 
 deps = {
