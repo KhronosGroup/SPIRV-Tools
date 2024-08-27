@@ -8018,6 +8018,7 @@ TEST_F(AggressiveDCETest, StoringAPointer) {
      %uint_3 = OpConstant %uint 3
     %uint_16 = OpConstant %uint 16
      %uint_4 = OpConstant %uint 4
+%coop_stride = OpConstant %int 42
 %_runtimearr_int = OpTypeRuntimeArray %int
   %_struct_4 = OpTypeStruct %_runtimearr_int
 %_ptr_StorageBuffer__struct_4 = OpTypePointer StorageBuffer %_struct_4
@@ -8047,7 +8048,7 @@ TEST_F(AggressiveDCETest, StoringAPointer) {
          %26 = OpVariable %_ptr_Function__ptr_Function_int Function
          %27 = OpVariable %_ptr_Function__struct_18 Function
          %28 = OpAccessChain %_ptr_StorageBuffer_int %2 %int_0 %uint_0
-         %29 = OpCooperativeMatrixLoadKHR %17 %28 %int_1
+         %29 = OpCooperativeMatrixLoadKHR %17 %28 %int_1 %coop_stride
          %30 = OpCompositeConstruct %_struct_18 %29
                OpStore %27 %30
          %31 = OpAccessChain %_ptr_Function_17 %27 %int_0
@@ -8059,7 +8060,7 @@ TEST_F(AggressiveDCETest, StoringAPointer) {
                OpStore %32 %34
          %35 = OpAccessChain %_ptr_StorageBuffer_int %2 %int_0 %uint_64
          %36 = OpLoad %17 %31
-               OpCooperativeMatrixStoreKHR %35 %36 %int_0
+               OpCooperativeMatrixStoreKHR %35 %36 %int_0 %coop_stride
                OpReturn
                OpFunctionEnd
 )";
