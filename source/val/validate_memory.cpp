@@ -2126,9 +2126,12 @@ spv_result_t ValidateCooperativeMatrixLoadStoreKHR(ValidationState_t& _,
            << " must be a 32-bit integer constant instruction.";
   }
 
-  bool stride_required =
-      (layout == (uint64_t)spv::CooperativeMatrixLayout::RowMajorKHR) ||
-      (layout == (uint64_t)spv::CooperativeMatrixLayout::ColumnMajorKHR);
+  bool stride_required = false;
+  if (_.EvalConstantValUint64(layout_id, &layout)) {
+    stride_required =
+        (layout == (uint64_t)spv::CooperativeMatrixLayout::RowMajorKHR) ||
+        (layout == (uint64_t)spv::CooperativeMatrixLayout::ColumnMajorKHR);
+  }
 
   const auto stride_index =
       (inst->opcode() == spv::Op::OpCooperativeMatrixLoadKHR) ? 4u : 3u;
