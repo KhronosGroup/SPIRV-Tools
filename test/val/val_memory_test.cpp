@@ -2353,6 +2353,7 @@ OpFunctionEnd)";
 std::string GenCoopMatLoadStoreShaderKHR(const std::string& storeMemoryAccess,
                                          const std::string& loadMemoryAccess,
                                          unsigned layout = 0,
+                                         bool useSpecConstantLayout = false,
                                          bool useStoreStride = true,
                                          bool useLoadStride = true) {
   std::string s = R"(
@@ -2412,8 +2413,13 @@ OpDecorate %129 BuiltIn WorkgroupSize
 %34 = OpConstant %6 1
 %38 = OpConstant %6 8
 %uint_0 = OpConstant %6 0
-%layout = OpConstant %6 )" +
-                  std::to_string(layout) + R"(
+)";
+  if (useSpecConstantLayout) {
+    s += "%layout = OpSpecConstant %6 " + std::to_string(layout);
+  } else {
+    s += "%layout = OpConstant %6 " + std::to_string(layout);
+  }
+  s += R"(
 %68 = OpTypeFloat 32
 %69 = OpConstant %6 16
 %70 = OpConstant %6 3
@@ -2595,12 +2601,24 @@ TEST_P(ValidateCoopMatrixStrideMissing, CoopMatKHRLoadStrideMissingFail) {
   std::string spirv = GenCoopMatLoadStoreShaderKHR(
       "MakePointerAvailableKHR|NonPrivatePointerKHR",
       "MakePointerVisibleKHR|NonPrivatePointerKHR", param.layout,
+      false /*useSpecConstantLayout*/,
       param.useStoreStride, param.useLoadStride);
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("MemoryLayout " + std::to_string(param.layout) +
                         " requires a Stride"));
+}
+
+TEST_F(ValidateMemory, CoopMatKHRMemoryLayoutFromSpecConstantSuccess) {
+  std::string spirv = GenCoopMatLoadStoreShaderKHR(
+      "MakePointerAvailableKHR|NonPrivatePointerKHR",
+      "MakePointerVisibleKHR|NonPrivatePointerKHR",
+      (unsigned)spv::CooperativeMatrixLayout::RowMajorKHR,
+      true /*useSpecConstantLayout*/);
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
 
 TEST_F(ValidateMemory, CoopMatKHRStoreMemoryAccessFail) {

@@ -2117,16 +2117,15 @@ spv_result_t ValidateCooperativeMatrixLoadStoreKHR(ValidationState_t& _,
       (inst->opcode() == spv::Op::OpCooperativeMatrixLoadKHR) ? 3u : 2u;
   const auto layout_id = inst->GetOperandAs<uint32_t>(layout_index);
   const auto layout_inst = _.FindDef(layout_id);
-  uint64_t layout;
   if (!layout_inst || !_.IsIntScalarType(layout_inst->type_id()) ||
-      !(spvOpcodeIsConstant(layout_inst->opcode())) ||
-      !_.EvalConstantValUint64(layout_id, &layout)) {
+      !(spvOpcodeIsConstant(layout_inst->opcode()))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "MemoryLayout operand <id> " << _.getIdName(layout_id)
            << " must be a 32-bit integer constant instruction.";
   }
 
   bool stride_required = false;
+  uint64_t layout;
   if (_.EvalConstantValUint64(layout_id, &layout)) {
     stride_required =
         (layout == (uint64_t)spv::CooperativeMatrixLayout::RowMajorKHR) ||
