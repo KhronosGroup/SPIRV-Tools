@@ -2118,7 +2118,7 @@ spv_result_t ValidateCooperativeMatrixLoadStoreKHR(ValidationState_t& _,
   const auto layout_id = inst->GetOperandAs<uint32_t>(layout_index);
   const auto layout_inst = _.FindDef(layout_id);
   if (!layout_inst || !_.IsIntScalarType(layout_inst->type_id()) ||
-      !(spvOpcodeIsConstant(layout_inst->opcode()))) {
+      !spvOpcodeIsConstant(layout_inst->opcode())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "MemoryLayout operand <id> " << _.getIdName(layout_id)
            << " must be a 32-bit integer constant instruction.";

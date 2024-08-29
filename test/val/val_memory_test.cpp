@@ -2601,8 +2601,8 @@ TEST_P(ValidateCoopMatrixStrideMissing, CoopMatKHRLoadStrideMissingFail) {
   std::string spirv = GenCoopMatLoadStoreShaderKHR(
       "MakePointerAvailableKHR|NonPrivatePointerKHR",
       "MakePointerVisibleKHR|NonPrivatePointerKHR", param.layout,
-      false /*useSpecConstantLayout*/,
-      param.useStoreStride, param.useLoadStride);
+      false /*useSpecConstantLayout*/, param.useStoreStride,
+      param.useLoadStride);
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
