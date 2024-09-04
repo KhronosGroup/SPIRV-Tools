@@ -1005,8 +1005,7 @@ bool IsAllowedSampledImageOperand(spv::Op opcode, ValidationState_t& _) {
 
 spv_result_t ValidateSampledImage(ValidationState_t& _,
                                   const Instruction* inst) {
-  auto type_inst = _.FindDef(inst->type_id());
-  if (type_inst->opcode() != spv::Op::OpTypeSampledImage) {
+  if (_.GetIdOpcode(inst->type_id()) != spv::Op::OpTypeSampledImage) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Result Type to be OpTypeSampledImage.";
   }
@@ -1015,11 +1014,6 @@ spv_result_t ValidateSampledImage(ValidationState_t& _,
   if (_.GetIdOpcode(image_type) != spv::Op::OpTypeImage) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Image to be of type OpTypeImage.";
-  }
-
-  if (type_inst->GetOperandAs<uint32_t>(1) != image_type) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected Image to have the same type as Result Type Image";
   }
 
   ImageTypeInfo info;
