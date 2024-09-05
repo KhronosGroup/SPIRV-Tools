@@ -240,6 +240,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   strip_debug_info_pass.cpp
   strip_nonsemantic_info_pass.cpp
   struct_cfg_analysis.cpp
+  struct_packing_pass.cpp
   switch_descriptorset_pass.cpp
   trim_capabilities_pass.cpp
   type_manager.cpp

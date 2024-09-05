@@ -571,6 +571,26 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
              pass_args.c_str());
       return false;
     }
+  } else if (pass_name == "struct-packing") {
+    if (pass_args.size() == 0) {
+      Error(consumer(), nullptr, {},
+            "--struct-packing requires a name:rule argument.");
+      return false;
+    }
+
+    auto separator_pos = pass_args.find(':');
+    if (separator_pos == std::string::npos || separator_pos == 0 ||
+        separator_pos + 1 == pass_args.size()) {
+      Errorf(consumer(), nullptr, {},
+             "Invalid argument for --struct-packing: %s", pass_args.c_str());
+      return false;
+    }
+
+    const std::string struct_name = pass_args.substr(0, separator_pos);
+    const std::string rule_name = pass_args.substr(separator_pos + 1);
+
+    RegisterPass(
+        CreateStructPackingPass(struct_name.c_str(), rule_name.c_str()));
   } else if (pass_name == "switch-descriptorset") {
     if (pass_args.size() == 0) {
       Error(consumer(), nullptr, {},
@@ -1150,6 +1170,14 @@ Optimizer::PassToken CreateFixFuncCallArgumentsPass() {
 Optimizer::PassToken CreateTrimCapabilitiesPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::TrimCapabilitiesPass>());
+}
+
+Optimizer::PassToken CreateStructPackingPass(const char* structToPack,
+                                             const char* packingRule) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::StructPackingPass>(
+          structToPack,
+          opt::StructPackingPass::ParsePackingRuleFromString(packingRule)));
 }
 
 Optimizer::PassToken CreateSwitchDescriptorSetPass(uint32_t from, uint32_t to) {
