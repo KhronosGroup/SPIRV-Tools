@@ -956,6 +956,15 @@ Optimizer::PassToken CreateFixFuncCallArgumentsPass();
 // the unknown capability interacts with one of the trimmed capabilities.
 Optimizer::PassToken CreateTrimCapabilitiesPass();
 
+// Creates a struct-packing pass.
+// This pass re-assigns all offset layout decorators to tightly pack
+// the struct with OpName matching `structToPack` according to the given packing
+// rule. Accepted packing rules are: std140, std140EnhancedLayout, std430,
+// std430EnhancedLayout, hlslCbuffer, hlslCbufferPackOffset, scalar,
+// scalarEnhancedLayout.
+Optimizer::PassToken CreateStructPackingPass(const char* structToPack,
+                                             const char* packingRule);
+
 // Creates a switch-descriptorset pass.
 // This pass changes any DescriptorSet decorations with the value |ds_from| to
 // use the new value |ds_to|.
