@@ -418,6 +418,16 @@ INSTANTIATE_TEST_SUITE_P(
             "OpDecorate %1 CacheControlStoreINTEL 3 StreamingINTEL\n",
         })));
 
+INSTANTIATE_TEST_SUITE_P(
+    HostAccessINTEL, RoundTripInstructionsTest,
+    Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0),
+            ::testing::ValuesIn(std::vector<std::string>{
+                "OpDecorate %1 HostAccessINTEL NoneINTEL \"none\"\n",
+                "OpDecorate %1 HostAccessINTEL ReadINTEL \"read\"\n",
+                "OpDecorate %1 HostAccessINTEL WriteINTEL \"write\"\n",
+                "OpDecorate %1 HostAccessINTEL ReadWriteINTEL \"readwrite\"\n",
+            })));
+
 using MaskSorting = TextToBinaryTest;
 
 TEST_F(MaskSorting, MasksAreSortedFromLSBToMSB) {
