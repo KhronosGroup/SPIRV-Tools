@@ -2997,8 +2997,9 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (_.IsIntArrayType(format_data_type))
           format_data_type = _.GetComponentType(format_data_type);
 
-        if (!_.IsIntScalarType(format_data_type) ||
-            _.GetBitWidth(format_data_type) != 8) {
+        if ((!_.IsIntScalarType(format_data_type) ||
+             _.GetBitWidth(format_data_type) != 8) &&
+            !_.ContainsUntypedPointer(format_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Format data type to be 8-bit int";
