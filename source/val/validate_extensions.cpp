@@ -2701,8 +2701,9 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                     "Generic, CrossWorkgroup, Workgroup or Function";
         }
 
-        if (!_.IsFloatScalarType(p_data_type) ||
-            _.GetBitWidth(p_data_type) != 16) {
+        if ((!_.IsFloatScalarType(p_data_type) ||
+             _.GetBitWidth(p_data_type) != 16) &&
+            !_.ContainsUntypedPointer(p_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P data type to be 16-bit float scalar";
@@ -2763,8 +2764,9 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                     "Generic, CrossWorkgroup, Workgroup or Function";
         }
 
-        if (!_.IsFloatScalarType(p_data_type) ||
-            _.GetBitWidth(p_data_type) != 16) {
+        if ((!_.IsFloatScalarType(p_data_type) ||
+             _.GetBitWidth(p_data_type) != 16) &&
+            !_.ContainsUntypedPointer(p_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P data type to be 16-bit float scalar";
@@ -2855,8 +2857,9 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                     "CrossWorkgroup, Workgroup or Function";
         }
 
-        if (!_.IsFloatScalarType(p_data_type) ||
-            _.GetBitWidth(p_data_type) != 16) {
+        if ((!_.IsFloatScalarType(p_data_type) ||
+             _.GetBitWidth(p_data_type) != 16) &&
+            !_.ContainsUntypedPointer(p_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P data type to be 16-bit float scalar";
