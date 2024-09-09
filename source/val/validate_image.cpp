@@ -1005,7 +1005,8 @@ bool IsAllowedSampledImageOperand(spv::Op opcode, ValidationState_t& _) {
 
 spv_result_t ValidateSampledImage(ValidationState_t& _,
                                   const Instruction* inst) {
-  if (_.GetIdOpcode(inst->type_id()) != spv::Op::OpTypeSampledImage) {
+  auto type_inst = _.FindDef(inst->type_id());
+  if (type_inst->opcode() != spv::Op::OpTypeSampledImage) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Result Type to be OpTypeSampledImage.";
   }
@@ -1022,8 +1023,25 @@ spv_result_t ValidateSampledImage(ValidationState_t& _,
            << "Corrupt image type definition";
   }
 
-  // TODO(atgoo@github.com) Check compatibility of result type and received
-  // image.
+  // Image operands must match except for depth.
+  auto sampled_image_id = type_inst->GetOperandAs<uint32_t>(1);
+  if (sampled_image_id != image_type) {
+    ImageTypeInfo sampled_info;
+    if (!GetImageTypeInfo(_, sampled_image_id, &sampled_info)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Corrupt image type definition";
+    }
+    if (info.sampled_type != sampled_info.sampled_type ||
+        info.dim != sampled_info.dim || info.arrayed != sampled_info.arrayed ||
+        info.multisampled != sampled_info.multisampled ||
+        info.sampled != sampled_info.sampled ||
+        info.format != sampled_info.format ||
+        info.access_qualifier != sampled_info.access_qualifier) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Image operands must match result image operands except for "
+                "depth";
+    }
+  }
 
   if (spvIsVulkanEnv(_.context()->target_env)) {
     if (info.sampled != 1) {
