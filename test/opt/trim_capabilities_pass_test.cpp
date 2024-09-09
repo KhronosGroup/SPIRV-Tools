@@ -63,8 +63,8 @@ TEST_F(TrimCapabilitiesPassTest, CheckKnownAliasTransformations) {
                OpCapability DotProductInput4x8BitKHR
                OpCapability DotProductInput4x8BitPackedKHR
                OpCapability DotProductKHR
-               OpCapability ComputeDerivativeGroupQuadsNV
-               OpCapability ComputeDerivativeGroupLinearNV
+               OpCapability ComputeDerivativeGroupQuadsKHR
+               OpCapability ComputeDerivativeGroupLinearKHR
 ; CHECK: OpCapability Linkage
 ; CHECK-NOT: OpCapability StorageUniform16
 ; CHECK-NOT: OpCapability StorageUniformBufferBlock16
@@ -91,8 +91,8 @@ TEST_F(TrimCapabilitiesPassTest, CheckKnownAliasTransformations) {
 ; CHECK-NOT: OpCapability DotProductInput4x8BitKHR
 ; CHECK-NOT: OpCapability DotProductInput4x8BitPackedKHR
 ; CHECK-NOT: OpCapability DotProductKHR
-; CHECK-NOT: OpCapability ComputeDerivativeGroupQuadsNV
-; CHECK-NOT: OpCapability ComputeDerivativeGroupLinearNV
+; CHECK-NOT: OpCapability ComputeDerivativeGroupQuadsKHR
+; CHECK-NOT: OpCapability ComputeDerivativeGroupLinearKHR
 ; CHECK: OpCapability UniformAndStorageBuffer16BitAccess
 ; CHECK: OpCapability StorageBuffer16BitAccess
 ; CHECK: OpCapability ShaderViewportIndexLayerEXT
@@ -2136,11 +2136,11 @@ TEST_F(TrimCapabilitiesPassTest, Float64_RemainsWhenUsed) {
 TEST_F(TrimCapabilitiesPassTest,
        ComputeDerivativeGroupQuads_ReamainsWithExecMode) {
   const std::string kTest = R"(
-               OpCapability ComputeDerivativeGroupQuadsNV
-               OpCapability ComputeDerivativeGroupLinearNV
-; CHECK-NOT:   OpCapability ComputeDerivativeGroupLinearNV
-; CHECK:       OpCapability ComputeDerivativeGroupQuadsNV
-; CHECK-NOT:   OpCapability ComputeDerivativeGroupLinearNV
+               OpCapability ComputeDerivativeGroupQuadsKHR
+               OpCapability ComputeDerivativeGroupLinearKHR
+; CHECK-NOT:   OpCapability ComputeDerivativeGroupLinearKHR
+; CHECK:       OpCapability ComputeDerivativeGroupQuadsKHR
+; CHECK-NOT:   OpCapability ComputeDerivativeGroupLinearKHR
                OpCapability Shader
 ; CHECK:       OpExtension "SPV_NV_compute_shader_derivatives"
                OpExtension "SPV_NV_compute_shader_derivatives"
@@ -2162,11 +2162,11 @@ TEST_F(TrimCapabilitiesPassTest,
 TEST_F(TrimCapabilitiesPassTest,
        ComputeDerivativeGroupLinear_ReamainsWithExecMode) {
   const std::string kTest = R"(
-               OpCapability ComputeDerivativeGroupLinearNV
-               OpCapability ComputeDerivativeGroupQuadsNV
-; CHECK-NOT:   OpCapability ComputeDerivativeGroupQuadsNV
-; CHECK:       OpCapability ComputeDerivativeGroupLinearNV
-; CHECK-NOT:   OpCapability ComputeDerivativeGroupQuadsNV
+               OpCapability ComputeDerivativeGroupLinearKHR
+               OpCapability ComputeDerivativeGroupQuadsKHR
+; CHECK-NOT:   OpCapability ComputeDerivativeGroupQuadsKHR
+; CHECK:       OpCapability ComputeDerivativeGroupLinearKHR
+; CHECK-NOT:   OpCapability ComputeDerivativeGroupQuadsKHR
                OpCapability Shader
 ; CHECK:       OpExtension "SPV_NV_compute_shader_derivatives"
                OpExtension "SPV_NV_compute_shader_derivatives"
