@@ -1043,9 +1043,6 @@ spv_result_t ValidateSampledImage(ValidationState_t& _,
     }
   }
 
-  // TODO(atgoo@github.com) Check compatibility of result type and received
-  // image.
-
   if (spvIsVulkanEnv(_.context()->target_env)) {
     if (info.sampled != 1) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
