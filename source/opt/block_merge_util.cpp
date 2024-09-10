@@ -115,7 +115,7 @@ bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block) {
   }
 
   Instruction* merge_inst = block->GetMergeInst();
-  const bool pred_is_header = IsHeader(block);
+  const bool pred_is_header = merge_inst != nullptr;
   if (pred_is_header && lab_id != merge_inst->GetSingleWordInOperand(0u)) {
     bool succ_is_header = IsHeader(context, lab_id);
     if (pred_is_header && succ_is_header) {
@@ -136,6 +136,14 @@ bool CanMergeWithSuccessor(IRContext* context, BasicBlock* block) {
         succ_term_op != spv::Op::OpBranchConditional) {
       return false;
     }
+  }
+
+  // If we merge a loop header with the loop merge, the OpLoopMerge instruction
+  // has to be removed. However, the continue block will still have a back-edge,
+  // which becomes illegal. So these blocks cannot be merged.
+  if (succ_is_merge && pred_is_header &&
+      merge_inst->opcode() == spv::Op::OpLoopMerge) {
+    return false;
   }
 
   if (succ_is_merge || IsContinue(context, lab_id)) {

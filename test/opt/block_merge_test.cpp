@@ -1462,6 +1462,47 @@ TEST_F(BlockMergeTest, NoMaximalReconvergenceMeldToMerge) {
   SinglePassRunAndMatch<BlockMergePass>(text, true);
 }
 
+TEST_F(BlockMergeTest, DontMergeLoopHeaderAndMergeBlock) {
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpSource ESSL 310
+OpName %main "main"
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%int_1 = OpConstant %int 1
+%int_n7 = OpConstant %int -7
+%bool = OpTypeBool
+%main = OpFunction %void None %3
+%8 = OpLabel
+OpBranch %9
+%9 = OpLabel
+%10 = OpPhi %int %int_1 %8 %int_n7 %11
+%12 = OpSGreaterThan %bool %10 %int_n7
+OpLoopMerge %13 %11 None
+OpBranchConditional %12 %14 %13
+%14 = OpLabel
+OpBranch %15
+%15 = OpLabel
+OpLoopMerge %16 %17 None
+OpBranch %16
+%17 = OpLabel
+OpBranch %15
+%16 = OpLabel
+OpBranch %11
+%11 = OpLabel
+OpBranch %9
+%13 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_3);
+  SinglePassRunAndCheck<BlockMergePass>(text, text, false);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    More complex control flow
