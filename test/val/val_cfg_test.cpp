@@ -5118,6 +5118,43 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateCFG, StructurallyUnreachableContinuePredecessor) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpSource ESSL 310
+               OpName %main "main"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+      %int_1 = OpConstant %int 1
+     %int_n7 = OpConstant %int -7
+       %bool = OpTypeBool
+       %main = OpFunction %void None %3
+          %8 = OpLabel
+               OpBranch %9
+          %9 = OpLabel
+         %10 = OpPhi %int %int_1 %8 %int_n7 %15
+         %12 = OpSGreaterThan %bool %10 %int_n7
+               OpLoopMerge %13 %15 None
+               OpBranchConditional %12 %14 %13
+         %14 = OpLabel
+               OpBranch %15
+         %15 = OpLabel
+               OpBranch %9
+         %17 = OpLabel
+               OpBranch %15
+         %13 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

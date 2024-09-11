@@ -839,6 +839,9 @@ spv_result_t StructuredControlFlowChecks(
       const auto* continue_target = next_inst.block();
       if (header->id() != continue_id) {
         for (auto pred : *continue_target->predecessors()) {
+          if (!pred->structurally_reachable()) {
+            continue;
+          }
           // Ignore back-edges from within the continue construct.
           bool is_back_edge = false;
           for (auto back_edge : back_edges) {
