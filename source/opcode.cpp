@@ -121,17 +121,18 @@ spv_result_t spvOpcodeTableNameLookup(spv_target_env env,
       // Lack of binary search really hurts here. There isn't an easy filter to
       // apply before checking aliases since we need to handle promotion from
       // vendor to KHR/EXT and KHR/EXT to core. It would require a sure-fire way
-      // of dropping suffices. Fortunately, most lookup are based on token value.
+      // of dropping suffices. Fortunately, most lookup are based on token
+      // value.
       //
       // If this was a binary search we could iterate between the lower and
       // upper bounds.
       if (entry.numAliases > 0) {
-        for (uint32_t aliasIndex = 0; aliasIndex < entry.numAliases; aliasIndex++) {
+        for (uint32_t aliasIndex = 0; aliasIndex < entry.numAliases;
+             aliasIndex++) {
           // Skip Op prefix. Should this be encoded in the table instead?
           const auto alias = entry.aliases[aliasIndex] + 2;
           const size_t aliasLength = strlen(alias);
-          if (nameLength == aliasLength &&
-              !strncmp(name, alias, nameLength)) {
+          if (nameLength == aliasLength && !strncmp(name, alias, nameLength)) {
             *pEntry = &entry;
             return SPV_SUCCESS;
           }
