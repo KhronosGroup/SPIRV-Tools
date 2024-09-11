@@ -577,6 +577,7 @@ typedef enum {
 
   SPV_ENV_UNIVERSAL_1_6,  // SPIR-V 1.6 latest revision, no other restrictions.
   SPV_ENV_VULKAN_1_3,     // Vulkan 1.3 latest revision.
+  SPV_ENV_VULKAN_1_4,     // Vulkan 1.3 latest revision.
 
   SPV_ENV_MAX  // Keep this as the last enum value.
 } spv_target_env;
