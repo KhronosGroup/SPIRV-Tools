@@ -267,6 +267,7 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
 }
 
 bool AggressiveDCEPass::AggressiveDCE(Function* func) {
+  if (func->IsDeclaration()) return false;
   std::list<BasicBlock*> structured_order;
   cfg()->ComputeStructuredOrder(func, &*func->begin(), &structured_order);
   live_local_vars_.clear();

@@ -8070,6 +8070,42 @@ TEST_F(AggressiveDCETest, StoringAPointer) {
   SinglePassRunAndMatch<AggressiveDCEPass>(text, true);
 }
 
+TEST_F(AggressiveDCETest, FunctionDeclaration) {
+  // Ensure the optimizer can handle traversing over a function declaration
+  // 'myfunc' which has no blocks
+
+  const std::string text = R"(OpCapability Linkage
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %PSMain "main" %entryPointParam_PSMain
+OpExecutionMode %PSMain OriginUpperLeft
+OpSource Slang 1
+OpName %myfunc "myfunc"
+OpName %entryPointParam_PSMain "entryPointParam_PSMain"
+OpName %PSMain "PSMain"
+OpDecorate %myfunc LinkageAttributes "_S6myfuncp0pv4f" Import
+OpDecorate %entryPointParam_PSMain Location 0
+%void = OpTypeVoid
+%5 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%8 = OpTypeFunction %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%entryPointParam_PSMain = OpVariable %_ptr_Output_v4float Output
+%myfunc = OpFunction %v4float None %8
+OpFunctionEnd
+%PSMain = OpFunction %void None %5
+%10 = OpLabel
+%11 = OpFunctionCall %v4float %myfunc
+OpStore %entryPointParam_PSMain %11
+OpReturn
+OpFunctionEnd
+)";
+
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SinglePassRunAndCheck<AggressiveDCEPass>(text, text, true, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
