@@ -475,6 +475,8 @@ static_library("spvtools") {
     "source/text.h",
     "source/text_handler.cpp",
     "source/text_handler.h",
+    "source/to_string.cpp",
+    "source/to_string.h",
     "source/util/bit_vector.cpp",
     "source/util/bit_vector.h",
     "source/util/bitutils.h",
@@ -1416,6 +1418,7 @@ if (build_with_chromium && spvtools_build_executables) {
       "test/text_to_binary.type_declaration_test.cpp",
       "test/text_to_binary_test.cpp",
       "test/text_word_get_test.cpp",
+      "test/to_string_test.cpp",
       "test/unit_spirv.cpp",
       "test/unit_spirv.h",
     ]
