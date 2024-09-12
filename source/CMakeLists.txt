@@ -266,6 +266,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/table.h
   ${CMAKE_CURRENT_SOURCE_DIR}/text.h
   ${CMAKE_CURRENT_SOURCE_DIR}/text_handler.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/to_string.h
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate.h
 
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bit_vector.cpp
@@ -294,6 +295,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/table.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/text.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/text_handler.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/to_string.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_adjacency.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_annotation.cpp
