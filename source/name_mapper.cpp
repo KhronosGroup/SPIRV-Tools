@@ -28,20 +28,9 @@
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {
-namespace {
-
-// Converts a uint32_t to its string decimal representation.
-std::string to_string(uint32_t id) {
-  // Use stringstream, since some versions of Android compilers lack
-  // std::to_string.
-  std::stringstream os;
-  os << id;
-  return os.str();
+NameMapper GetTrivialNameMapper() {
+  return [](uint32_t i) { return std::to_string(i); };
 }
-
-}  // anonymous namespace
-
-NameMapper GetTrivialNameMapper() { return to_string; }
 
 FriendlyNameMapper::FriendlyNameMapper(const spv_const_context context,
                                        const uint32_t* code,
@@ -59,7 +48,7 @@ std::string FriendlyNameMapper::NameForId(uint32_t id) {
   if (iter == name_for_id_.end()) {
     // It must have been an invalid module, so just return a trivial mapping.
     // We don't care about uniqueness.
-    return to_string(id);
+    return std::to_string(id);
   } else {
     return iter->second;
   }
@@ -90,7 +79,7 @@ void FriendlyNameMapper::SaveName(uint32_t id,
   if (!inserted.second) {
     const std::string base_name = sanitized_suggested_name + "_";
     for (uint32_t index = 0; !inserted.second; ++index) {
-      name = base_name + to_string(index);
+      name = base_name + std::to_string(index);
       inserted = used_names_.insert(name);
     }
   }
@@ -209,7 +198,7 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
           root = "long";
           break;
         default:
-          root = to_string(bit_width);
+          root = std::to_string(bit_width);
           signedness = "i";
           break;
       }
@@ -230,16 +219,16 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
           SaveName(result_id, "double");
           break;
         default:
-          SaveName(result_id, std::string("fp") + to_string(bit_width));
+          SaveName(result_id, std::string("fp") + std::to_string(bit_width));
           break;
       }
     } break;
     case spv::Op::OpTypeVector:
-      SaveName(result_id, std::string("v") + to_string(inst.words[3]) +
+      SaveName(result_id, std::string("v") + std::to_string(inst.words[3]) +
                               NameForId(inst.words[2]));
       break;
     case spv::Op::OpTypeMatrix:
-      SaveName(result_id, std::string("mat") + to_string(inst.words[3]) +
+      SaveName(result_id, std::string("mat") + std::to_string(inst.words[3]) +
                               NameForId(inst.words[2]));
       break;
     case spv::Op::OpTypeArray:
@@ -292,7 +281,7 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
     case spv::Op::OpTypeStruct:
       // Structs are mapped rather simplisitically. Just indicate that they
       // are a struct and then give the raw Id number.
-      SaveName(result_id, std::string("_struct_") + to_string(result_id));
+      SaveName(result_id, std::string("_struct_") + std::to_string(result_id));
       break;
     case spv::Op::OpConstantTrue:
       SaveName(result_id, "true");
@@ -317,7 +306,7 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
       // We should only do this if a name hasn't already been registered by some
       // previous forward reference.
       if (result_id && name_for_id_.find(result_id) == name_for_id_.end())
-        SaveName(result_id, to_string(result_id));
+        SaveName(result_id, std::to_string(result_id));
       break;
   }
   return SPV_SUCCESS;
@@ -330,7 +319,7 @@ std::string FriendlyNameMapper::NameForEnumOperand(spv_operand_type_t type,
     return desc->name;
   } else {
     // Invalid input.  Just give something.
-    return std::string("StorageClass") + to_string(word);
+    return std::string("StorageClass") + std::to_string(word);
   }
 }
 
