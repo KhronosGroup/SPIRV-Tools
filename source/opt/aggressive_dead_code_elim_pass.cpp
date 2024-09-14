@@ -134,7 +134,12 @@ void AggressiveDCEPass::AddStores(Function* func, uint32_t ptrId) {
         }
         break;
       // If default, assume it stores e.g. frexp, modf, function call
-      case spv::Op::OpStore:
+      case spv::Op::OpStore: {
+        const uint32_t kStoreTargetAddrInIdx = 0;
+        if (user->GetSingleWordInOperand(kStoreTargetAddrInIdx) == ptrId)
+          AddToWorklist(user);
+        break;
+      }
       default:
         AddToWorklist(user);
         break;
@@ -262,6 +267,7 @@ void AggressiveDCEPass::AddBreaksAndContinuesToWorklist(
 }
 
 bool AggressiveDCEPass::AggressiveDCE(Function* func) {
+  if (func->IsDeclaration()) return false;
   std::list<BasicBlock*> structured_order;
   cfg()->ComputeStructuredOrder(func, &*func->begin(), &structured_order);
   live_local_vars_.clear();
@@ -1004,7 +1010,10 @@ void AggressiveDCEPass::InitExtensions() {
       "SPV_NV_bindless_texture",
       "SPV_EXT_shader_atomic_float_add",
       "SPV_EXT_fragment_shader_interlock",
-      "SPV_NV_compute_shader_derivatives"
+      "SPV_NV_compute_shader_derivatives",
+      "SPV_NV_cooperative_matrix",
+      "SPV_KHR_cooperative_matrix",
+      "SPV_KHR_ray_tracing_position_fetch"
   });
   // clang-format on
 }

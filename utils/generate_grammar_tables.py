@@ -31,6 +31,7 @@ SPV_AMD_gpu_shader_half_float
 SPV_AMD_gpu_shader_int16
 SPV_AMD_shader_trinary_minmax
 SPV_KHR_non_semantic_info
+SPV_EXT_relaxed_printf_string_address_space
 """
 
 OUTPUT_LANGUAGE = 'c'
@@ -512,6 +513,10 @@ def generate_enum_operand_kind(enum, synthetic_exts_list):
     name = '{}_{}Entries'.format(PYGEN_VARIABLE_PREFIX, kind)
     entries = ['  {}'.format(generate_enum_operand_kind_entry(e, extension_map))
                for e in entries]
+    if len(entries) == 0:
+        # Insert a dummy entry. Otherwise the array is empty and compilation
+        # will fail in MSVC.
+        entries = ['  {"place holder", 0, 0, nullptr, 0, nullptr, {}, SPV_SPIRV_VERSION_WORD(999,0), 0}']
 
     template = ['static const spv_operand_desc_t {name}[] = {{',
                 '{entries}', '}};']
@@ -540,7 +545,7 @@ def generate_operand_kind_table(enums):
 
     # We have a few operand kinds that require their optional counterpart to
     # exist in the operand info table.
-    optional_enums = ['ImageOperands', 'AccessQualifier', 'MemoryAccess', 'PackedVectorFormat', 'CooperativeMatrixOperands', 'RawAccessChainOperands']
+    optional_enums = ['ImageOperands', 'AccessQualifier', 'MemoryAccess', 'PackedVectorFormat', 'CooperativeMatrixOperands', 'RawAccessChainOperands', 'FPEncoding']
     optional_enums = [e for e in enums if e[0] in optional_enums]
     enums.extend(optional_enums)
 

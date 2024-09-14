@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: '0'
       - name: Build web
-        run: docker-compose -f source/wasm/docker-compose.yml --project-directory . up
+        run: docker compose -f source/wasm/docker-compose.yml --project-directory . up
       - name: Run tests
         run: node test/wasm/test.js

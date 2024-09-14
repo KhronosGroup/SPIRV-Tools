@@ -10647,7 +10647,7 @@ TEST_F(ValidateImage, ImageMSArray_ArrayedTypeDoesNotRequireCapability) {
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
-TEST_F(ValidateImage, SampledImageTypeMismatch) {
+TEST_F(ValidateImage, SampledImageTypeDepthMismatch) {
   const std::string code = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
@@ -10679,10 +10679,197 @@ OpFunctionEnd
 
   const spv_target_env env = SPV_ENV_VULKAN_1_0;
   CompileSuccessfully(code, env);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+TEST_F(ValidateImage, SampledImageTypeArrayedMismatch) {
+  const std::string code = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %im_var DescriptorSet 0
+OpDecorate %im_var Binding 0
+OpDecorate %s_var DescriptorSet 1
+OpDecorate %s_var Binding 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%im1_ty = OpTypeImage %float 2D 0 0 0 1 Unknown
+%im2_ty = OpTypeImage %float 2D 0 1 0 1 Unknown
+%s_ty = OpTypeSampler
+%s_im_ty = OpTypeSampledImage %im2_ty
+%ptr_im = OpTypePointer UniformConstant %im1_ty
+%ptr_s = OpTypePointer UniformConstant %s_ty
+%im_var = OpVariable %ptr_im UniformConstant
+%s_var = OpVariable %ptr_s UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%im_ld = OpLoad %im1_ty %im_var
+%s_ld = OpLoad %s_ty %s_var
+%sampled_image = OpSampledImage %s_im_ty %im_ld %s_ld
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image to have the same type as Result Type Image"));
+      HasSubstr(
+          "Image operands must match result image operands except for depth"));
+}
+
+TEST_F(ValidateImage, SampledImageTypeMultisampledMismatch) {
+  const std::string code = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %im_var DescriptorSet 0
+OpDecorate %im_var Binding 0
+OpDecorate %s_var DescriptorSet 1
+OpDecorate %s_var Binding 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%im1_ty = OpTypeImage %float 2D 0 0 0 1 Unknown
+%im2_ty = OpTypeImage %float 2D 0 0 1 1 Unknown
+%s_ty = OpTypeSampler
+%s_im_ty = OpTypeSampledImage %im2_ty
+%ptr_im = OpTypePointer UniformConstant %im1_ty
+%ptr_s = OpTypePointer UniformConstant %s_ty
+%im_var = OpVariable %ptr_im UniformConstant
+%s_var = OpVariable %ptr_s UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%im_ld = OpLoad %im1_ty %im_var
+%s_ld = OpLoad %s_ty %s_var
+%sampled_image = OpSampledImage %s_im_ty %im_ld %s_ld
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Image operands must match result image operands except for depth"));
+}
+
+TEST_F(ValidateImage, SampledImageTypeSampledMismatch) {
+  const std::string code = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %im_var DescriptorSet 0
+OpDecorate %im_var Binding 0
+OpDecorate %s_var DescriptorSet 1
+OpDecorate %s_var Binding 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%im1_ty = OpTypeImage %float 2D 0 0 0 1 Unknown
+%im2_ty = OpTypeImage %float 2D 0 0 0 0 Unknown
+%s_ty = OpTypeSampler
+%s_im_ty = OpTypeSampledImage %im2_ty
+%ptr_im = OpTypePointer UniformConstant %im1_ty
+%ptr_s = OpTypePointer UniformConstant %s_ty
+%im_var = OpVariable %ptr_im UniformConstant
+%s_var = OpVariable %ptr_s UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%im_ld = OpLoad %im1_ty %im_var
+%s_ld = OpLoad %s_ty %s_var
+%sampled_image = OpSampledImage %s_im_ty %im_ld %s_ld
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_UNIVERSAL_1_0;
+  CompileSuccessfully(code, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Image operands must match result image operands except for depth"));
+}
+
+TEST_F(ValidateImage, SampledImageTypeFormatMismatch) {
+  const std::string code = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %im_var DescriptorSet 0
+OpDecorate %im_var Binding 0
+OpDecorate %s_var DescriptorSet 1
+OpDecorate %s_var Binding 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%im1_ty = OpTypeImage %float 2D 0 0 0 1 Unknown
+%im2_ty = OpTypeImage %float 2D 0 0 0 1 R32f
+%s_ty = OpTypeSampler
+%s_im_ty = OpTypeSampledImage %im2_ty
+%ptr_im = OpTypePointer UniformConstant %im1_ty
+%ptr_s = OpTypePointer UniformConstant %s_ty
+%im_var = OpVariable %ptr_im UniformConstant
+%s_var = OpVariable %ptr_s UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%im_ld = OpLoad %im1_ty %im_var
+%s_ld = OpLoad %s_ty %s_var
+%sampled_image = OpSampledImage %s_im_ty %im_ld %s_ld
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_UNIVERSAL_1_0;
+  CompileSuccessfully(code, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Image operands must match result image operands except for depth"));
+}
+
+TEST_F(ValidateImage, SampledImageTypeAccessQualifierMismatch) {
+  const std::string code = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpMemoryModel Logical OpenCL
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%im1_ty = OpTypeImage %float 2D 0 0 0 0 Unknown ReadWrite
+%im2_ty = OpTypeImage %float 2D 0 0 0 0 Unknown ReadOnly
+%s_ty = OpTypeSampler
+%s_im_ty = OpTypeSampledImage %im2_ty
+%ptr_im = OpTypePointer UniformConstant %im1_ty
+%ptr_s = OpTypePointer UniformConstant %s_ty
+%im_var = OpVariable %ptr_im UniformConstant
+%s_var = OpVariable %ptr_s UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%im_ld = OpLoad %im1_ty %im_var
+%s_ld = OpLoad %s_ty %s_var
+%sampled_image = OpSampledImage %s_im_ty %im_ld %s_ld
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_UNIVERSAL_1_0;
+  CompileSuccessfully(code, env);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Image operands must match result image operands except for depth"));
 }
 
 }  // namespace

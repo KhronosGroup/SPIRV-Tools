@@ -1327,5 +1327,54 @@ INSTANTIATE_TEST_SUITE_P(
                                  {1, 2, 3})},
             })));
 
+// SPV_KHR_untyped_pointers
+INSTANTIATE_TEST_SUITE_P(
+    SPV_KHR_untyped_pointers, ExtensionRoundTripTest,
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_3, SPV_ENV_VULKAN_1_0,
+               SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_2),
+        ValuesIn(std::vector<AssemblyCase>{
+            {"OpExtension \"SPV_KHR_untyped_pointers\"\n",
+             MakeInstruction(spv::Op::OpExtension,
+                             MakeVector("SPV_KHR_untyped_pointers"))},
+            {"OpCapability UntypedPointersKHR\n",
+             MakeInstruction(spv::Op::OpCapability,
+                             {(int)spv::Capability::UntypedPointersKHR})},
+            {"OpCapability UntypedPointersKHR\n",
+             MakeInstruction(spv::Op::OpCapability, {4473})},
+            {"%1 = OpTypeUntypedPointerKHR Workgroup\n",
+             MakeInstruction(spv::Op::OpTypeUntypedPointerKHR,
+                             {1, int(spv::StorageClass::Workgroup)})},
+            {"%2 = OpUntypedVariableKHR %1 Workgroup %3\n",
+             MakeInstruction(spv::Op::OpUntypedVariableKHR,
+                             {1, 2, int(spv::StorageClass::Workgroup), 3})},
+            {"%2 = OpUntypedVariableKHR %1 Workgroup %3 %4\n",
+             MakeInstruction(spv::Op::OpUntypedVariableKHR,
+                             {1, 2, int(spv::StorageClass::Workgroup), 3, 4})},
+            {"%2 = OpUntypedAccessChainKHR %1 %3 %4\n",
+             MakeInstruction(spv::Op::OpUntypedAccessChainKHR, {1, 2, 3, 4})},
+            {"%2 = OpUntypedAccessChainKHR %1 %3 %4 %5 %6 %7\n",
+             MakeInstruction(spv::Op::OpUntypedAccessChainKHR,
+                             {1, 2, 3, 4, 5, 6, 7})},
+            {"%2 = OpUntypedInBoundsAccessChainKHR %1 %3 %4\n",
+             MakeInstruction(spv::Op::OpUntypedInBoundsAccessChainKHR,
+                             {1, 2, 3, 4})},
+            {"%2 = OpUntypedInBoundsAccessChainKHR %1 %3 %4 %5 %6 %7\n",
+             MakeInstruction(spv::Op::OpUntypedInBoundsAccessChainKHR,
+                             {1, 2, 3, 4, 5, 6, 7})},
+            {"%2 = OpUntypedPtrAccessChainKHR %1 %3 %4 %5\n",
+             MakeInstruction(spv::Op::OpUntypedPtrAccessChainKHR,
+                             {1, 2, 3, 4, 5})},
+            {"%2 = OpUntypedPtrAccessChainKHR %1 %3 %4 %5 %6 %7\n",
+             MakeInstruction(spv::Op::OpUntypedPtrAccessChainKHR,
+                             {1, 2, 3, 4, 5, 6, 7})},
+            {"%2 = OpUntypedInBoundsPtrAccessChainKHR %1 %3 %4 %5\n",
+             MakeInstruction(spv::Op::OpUntypedInBoundsPtrAccessChainKHR,
+                             {1, 2, 3, 4, 5})},
+            {"%2 = OpUntypedInBoundsPtrAccessChainKHR %1 %3 %4 %5 %6 %7\n",
+             MakeInstruction(spv::Op::OpUntypedInBoundsPtrAccessChainKHR,
+                             {1, 2, 3, 4, 5, 6, 7})},
+        })));
+
 }  // namespace
 }  // namespace spvtools

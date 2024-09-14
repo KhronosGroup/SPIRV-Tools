@@ -364,6 +364,10 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
     RegisterPass(CreateSpreadVolatileSemanticsPass());
   } else if (pass_name == "descriptor-scalar-replacement") {
     RegisterPass(CreateDescriptorScalarReplacementPass());
+  } else if (pass_name == "descriptor-composite-scalar-replacement") {
+    RegisterPass(CreateDescriptorCompositeScalarReplacementPass());
+  } else if (pass_name == "descriptor-array-scalar-replacement") {
+    RegisterPass(CreateDescriptorArrayScalarReplacementPass());
   } else if (pass_name == "eliminate-dead-code-aggressive") {
     RegisterPass(CreateAggressiveDCEPass(preserve_interface));
   } else if (pass_name == "eliminate-insert-extract") {
@@ -567,6 +571,26 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
              pass_args.c_str());
       return false;
     }
+  } else if (pass_name == "struct-packing") {
+    if (pass_args.size() == 0) {
+      Error(consumer(), nullptr, {},
+            "--struct-packing requires a name:rule argument.");
+      return false;
+    }
+
+    auto separator_pos = pass_args.find(':');
+    if (separator_pos == std::string::npos || separator_pos == 0 ||
+        separator_pos + 1 == pass_args.size()) {
+      Errorf(consumer(), nullptr, {},
+             "Invalid argument for --struct-packing: %s", pass_args.c_str());
+      return false;
+    }
+
+    const std::string struct_name = pass_args.substr(0, separator_pos);
+    const std::string rule_name = pass_args.substr(separator_pos + 1);
+
+    RegisterPass(
+        CreateStructPackingPass(struct_name.c_str(), rule_name.c_str()));
   } else if (pass_name == "switch-descriptorset") {
     if (pass_args.size() == 0) {
       Error(consumer(), nullptr, {},
@@ -1059,7 +1083,20 @@ Optimizer::PassToken CreateSpreadVolatileSemanticsPass() {
 
 Optimizer::PassToken CreateDescriptorScalarReplacementPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::DescriptorScalarReplacement>());
+      MakeUnique<opt::DescriptorScalarReplacement>(
+          /* flatten_composites= */ true, /* flatten_arrays= */ true));
+}
+
+Optimizer::PassToken CreateDescriptorCompositeScalarReplacementPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::DescriptorScalarReplacement>(
+          /* flatten_composites= */ true, /* flatten_arrays= */ false));
+}
+
+Optimizer::PassToken CreateDescriptorArrayScalarReplacementPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::DescriptorScalarReplacement>(
+          /* flatten_composites= */ false, /* flatten_arrays= */ true));
 }
 
 Optimizer::PassToken CreateWrapOpKillPass() {
@@ -1133,6 +1170,14 @@ Optimizer::PassToken CreateFixFuncCallArgumentsPass() {
 Optimizer::PassToken CreateTrimCapabilitiesPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::TrimCapabilitiesPass>());
+}
+
+Optimizer::PassToken CreateStructPackingPass(const char* structToPack,
+                                             const char* packingRule) {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::StructPackingPass>(
+          structToPack,
+          opt::StructPackingPass::ParsePackingRuleFromString(packingRule)));
 }
 
 Optimizer::PassToken CreateSwitchDescriptorSetPass(uint32_t from, uint32_t to) {

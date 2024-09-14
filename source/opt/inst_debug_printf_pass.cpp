@@ -17,6 +17,7 @@
 #include "inst_debug_printf_pass.h"
 
 #include "source/spirv_constant.h"
+#include "source/to_string.h"
 #include "source/util/string_utils.h"
 #include "spirv/unified1/NonSemanticDebugPrintf.h"
 
@@ -396,7 +397,7 @@ uint32_t InstDebugPrintfPass::GetStreamWriteFunctionId(uint32_t param_cnt) {
     context()->AddFunction(std::move(output_func));
 
     std::string name("stream_write_");
-    name += std::to_string(param_cnt);
+    name += spvtools::to_string(param_cnt);
 
     context()->AddDebug2Inst(
         NewGlobalName(param2output_func_id_[param_cnt], name));

@@ -2701,8 +2701,9 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                     "Generic, CrossWorkgroup, Workgroup or Function";
         }
 
-        if (!_.IsFloatScalarType(p_data_type) ||
-            _.GetBitWidth(p_data_type) != 16) {
+        if ((!_.IsFloatScalarType(p_data_type) ||
+             _.GetBitWidth(p_data_type) != 16) &&
+            !_.ContainsUntypedPointer(p_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P data type to be 16-bit float scalar";
@@ -2763,8 +2764,9 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                     "Generic, CrossWorkgroup, Workgroup or Function";
         }
 
-        if (!_.IsFloatScalarType(p_data_type) ||
-            _.GetBitWidth(p_data_type) != 16) {
+        if ((!_.IsFloatScalarType(p_data_type) ||
+             _.GetBitWidth(p_data_type) != 16) &&
+            !_.ContainsUntypedPointer(p_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P data type to be 16-bit float scalar";
@@ -2855,8 +2857,9 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                     "CrossWorkgroup, Workgroup or Function";
         }
 
-        if (!_.IsFloatScalarType(p_data_type) ||
-            _.GetBitWidth(p_data_type) != 16) {
+        if ((!_.IsFloatScalarType(p_data_type) ||
+             _.GetBitWidth(p_data_type) != 16) &&
+            !_.ContainsUntypedPointer(p_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected operand P data type to be 16-bit float scalar";
@@ -2962,14 +2965,41 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                  << "expected operand Format to be a pointer";
         }
 
-        if (format_storage_class != spv::StorageClass::UniformConstant) {
-          return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
-                 << "expected Format storage class to be UniformConstant";
+        if (_.HasExtension(
+                Extension::kSPV_EXT_relaxed_printf_string_address_space)) {
+          if (format_storage_class != spv::StorageClass::UniformConstant &&
+              // Extension SPV_EXT_relaxed_printf_string_address_space allows
+              // format strings in Global, Local, Private and Generic address
+              // spaces
+
+              // Global
+              format_storage_class != spv::StorageClass::CrossWorkgroup &&
+              // Local
+              format_storage_class != spv::StorageClass::Workgroup &&
+              // Private
+              format_storage_class != spv::StorageClass::Function &&
+              // Generic
+              format_storage_class != spv::StorageClass::Generic) {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << ext_inst_name() << ": "
+                   << "expected Format storage class to be UniformConstant, "
+                      "Crossworkgroup, Workgroup, Function, or Generic";
+          }
+        } else {
+          if (format_storage_class != spv::StorageClass::UniformConstant) {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << ext_inst_name() << ": "
+                   << "expected Format storage class to be UniformConstant";
+          }
         }
 
-        if (!_.IsIntScalarType(format_data_type) ||
-            _.GetBitWidth(format_data_type) != 8) {
+        // If pointer points to an array, get the type of an element
+        if (_.IsIntArrayType(format_data_type))
+          format_data_type = _.GetComponentType(format_data_type);
+
+        if ((!_.IsIntScalarType(format_data_type) ||
+             _.GetBitWidth(format_data_type) != 8) &&
+            !_.ContainsUntypedPointer(format_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected Format data type to be 8-bit int";

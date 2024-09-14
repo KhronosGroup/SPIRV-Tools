@@ -578,9 +578,8 @@ TEST_P(ValidateIdWithMessage, OpEntryPointInterfaceIsNotVariableTypeBad) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr(make_message(
-                  "Interfaces passed to OpEntryPoint must be of type "
-                  "OpTypeVariable. Found OpTypePointer.")));
+              HasSubstr("Interfaces passed to OpEntryPoint must be variables. "
+                        "Found OpTypePointer."));
 }
 
 TEST_P(ValidateIdWithMessage, OpEntryPointInterfaceStorageClassBad) {
@@ -1165,6 +1164,160 @@ TEST_P(ValidateIdWithMessage, OpTypePointerBad) {
       getDiagnosticString(),
       HasSubstr(make_message("OpTypePointer Type <id> '2[%uint_0]' is not a "
                              "type.")));
+}
+
+TEST_P(ValidateIdWithMessage, OpTypePointerCanHaveUntypedPointer) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpCapability UntypedPointersKHR
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical OpenCL
+%ptr = OpTypeUntypedPointerKHR Workgroup
+%ptr2 = OpTypePointer Private %ptr
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+}
+
+TEST_P(ValidateIdWithMessage, OpTypeUntypedPointerWorkgroupGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability UntypedPointersKHR
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+%ptr = OpTypeUntypedPointerKHR Workgroup
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+}
+
+TEST_P(ValidateIdWithMessage,
+       OpTypeUntypedPointerWorkgroupMissingExplicitLayout) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%ptr = OpTypeUntypedPointerKHR Workgroup
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Workgroup storage class untyped pointers in Vulkan require "
+                "WorkgroupMemoryExplicitLayoutKHR be declared"));
+}
+
+TEST_P(ValidateIdWithMessage, OpTypeUntypedPointerWorkgroupGoodAll) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+%ptr = OpTypeUntypedPointerKHR Workgroup
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_P(ValidateIdWithMessage, OpTypeUntypedPointerStorageBufferGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_P(ValidateIdWithMessage, OpTypeUntypedPointerUniformGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+%ptr = OpTypeUntypedPointerKHR Uniform
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_P(ValidateIdWithMessage, OpTypeUntypedPointerPushConstantGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+%ptr = OpTypeUntypedPointerKHR PushConstant
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_P(ValidateIdWithMessage, OpTypeUntypedPointerCrossWorkgroupGood) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Linkage
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical OpenCL
+%ptr = OpTypeUntypedPointerKHR CrossWorkgroup
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_P(ValidateIdWithMessage, OpTypeUntypedPointerVulkanInvalidStorageClass) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%ptr = OpTypeUntypedPointerKHR Private
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("In Vulkan, untyped pointers can only be used in an "
+                        "explicitly laid out storage class"));
 }
 
 TEST_P(ValidateIdWithMessage, OpTypeFunctionGood) {
@@ -2270,9 +2423,8 @@ OpFunctionEnd
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr(make_message(
-                  "OpVariable Initializer <id> '8[%8]' is not a constant "
-                  "or module-scope variable")));
+              HasSubstr("Variable Initializer <id> '8[%8]' is not a constant "
+                        "or module-scope variable"));
 }
 
 TEST_P(ValidateIdWithMessage, OpVariableInitializerIsModuleVarGood) {
@@ -6404,9 +6556,10 @@ OpMemoryModel Logical VulkanKHR
 %7 = OpConstant %2 2
 %8 = OpConstant %2 5
 %9 = OpTypeFunction %1
+%12 = OpConstant %2 4
 %10 = OpFunction %1 None %9
 %11 = OpLabel
-OpCopyMemorySized %4 %6 %7 NonPrivatePointerKHR|MakePointerAvailableKHR %7
+OpCopyMemorySized %4 %6 %12 NonPrivatePointerKHR|MakePointerAvailableKHR %7
 OpReturn
 OpFunctionEnd
 )";
@@ -6431,10 +6584,11 @@ OpMemoryModel Logical VulkanKHR
 %6 = OpVariable %5 Uniform
 %7 = OpConstant %2 2
 %8 = OpConstant %2 5
+%12 = OpConstant %2 4
 %9 = OpTypeFunction %1
 %10 = OpFunction %1 None %9
 %11 = OpLabel
-OpCopyMemorySized %4 %6 %7 NonPrivatePointerKHR|MakePointerVisibleKHR %8
+OpCopyMemorySized %4 %6 %12 NonPrivatePointerKHR|MakePointerVisibleKHR %8
 OpReturn
 OpFunctionEnd
 )";
@@ -6460,10 +6614,11 @@ OpMemoryModel Logical VulkanKHR
 %6 = OpVariable %5 Uniform
 %7 = OpConstant %2 2
 %8 = OpConstant %2 5
+%12 = OpConstant %2 4
 %9 = OpTypeFunction %1
 %10 = OpFunction %1 None %9
 %11 = OpLabel
-OpCopyMemorySized %4 %6 %7 NonPrivatePointerKHR|MakePointerAvailableKHR|MakePointerVisibleKHR %7 %8
+OpCopyMemorySized %4 %6 %12 NonPrivatePointerKHR|MakePointerAvailableKHR|MakePointerVisibleKHR %7 %8
 OpReturn
 OpFunctionEnd
 )";
@@ -6489,10 +6644,11 @@ OpMemoryModel Logical VulkanKHR
 %6 = OpVariable %5 Uniform
 %7 = OpConstant %2 2
 %8 = OpConstant %2 5
+%12 = OpConstant %2 4
 %9 = OpTypeFunction %1
 %10 = OpFunction %1 None %9
 %11 = OpLabel
-OpCopyMemorySized %4 %6 %7 MakePointerAvailableKHR %7
+OpCopyMemorySized %4 %6 %12 MakePointerAvailableKHR %7
 OpReturn
 OpFunctionEnd
 )";
@@ -6522,10 +6678,11 @@ OpMemoryModel Logical VulkanKHR
 %6 = OpVariable %5 Uniform
 %7 = OpConstant %2 2
 %8 = OpConstant %2 5
+%12 = OpConstant %2 4
 %9 = OpTypeFunction %1
 %10 = OpFunction %1 None %9
 %11 = OpLabel
-OpCopyMemorySized %4 %6 %7 MakePointerVisibleKHR %8
+OpCopyMemorySized %4 %6 %12 MakePointerVisibleKHR %8
 OpReturn
 OpFunctionEnd
 )";
@@ -6555,10 +6712,11 @@ OpMemoryModel Logical VulkanKHR
 %6 = OpVariable %5 Uniform
 %7 = OpConstant %2 2
 %8 = OpConstant %2 5
+%12 = OpConstant %2 4
 %9 = OpTypeFunction %1
 %10 = OpFunction %1 None %9
 %11 = OpLabel
-OpCopyMemorySized %4 %6 %7 NonPrivatePointerKHR
+OpCopyMemorySized %4 %6 %12 NonPrivatePointerKHR
 OpReturn
 OpFunctionEnd
 )";
@@ -6589,10 +6747,11 @@ OpMemoryModel Logical VulkanKHR
 %6 = OpVariable %5 Input
 %7 = OpConstant %2 2
 %8 = OpConstant %2 5
+%12 = OpConstant %2 4
 %9 = OpTypeFunction %1
 %10 = OpFunction %1 None %9
 %11 = OpLabel
-OpCopyMemorySized %4 %6 %7 NonPrivatePointerKHR
+OpCopyMemorySized %4 %6 %12 NonPrivatePointerKHR
 OpReturn
 OpFunctionEnd
 )";

@@ -181,6 +181,14 @@ Options (in lexicographical order):)",
                must be in OpAccessChain instructions with a literal index for
                the first index.)");
   printf(R"(
+  --descriptor-composite-scalar-replacement
+               Same as descriptor-scalar-replacement, but only impacts composite/structs.
+               For details, see --descriptor-scalar-replacement help.)");
+  printf(R"(
+  --descriptor-array-scalar-replacement
+               Same as descriptor-scalar-replacement, but only impacts arrays.
+               For details, see --descriptor-scalar-replacement help.)");
+  printf(R"(
   --eliminate-dead-branches
                Convert conditional branches with constant condition to the
                indicated unconditional branch. Delete all resulting dead
@@ -506,6 +514,10 @@ Options (in lexicographical order):)",
                DEPRECATED.  Remove all reflection information.  For now, this
                covers reflection information defined by
                SPV_GOOGLE_hlsl_functionality1 and SPV_KHR_non_semantic_info)");
+  printf(R"(
+  --struct-packing=name:rule
+               Re-assign layout offsets to a given struct according to
+               its packing rules.)");
   printf(R"(
   --switch-descriptorset=<from>:<to>
                Switch any DescriptoSet decorations using the value <from> to
