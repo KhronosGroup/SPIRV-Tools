@@ -768,10 +768,10 @@ void DebugInfoManager::ConvertDebugGlobalToLocalVariable(
          local_var->opcode() == spv::Op::OpFunctionParameter);
 
   // Convert |dbg_global_var| to DebugLocalVariable
-  // All of the operands upto the scope operand are the same for the type
+  // All of the operands up to the scope operand are the same for the type
   // instructions. The flag operand needs to move from operand
   // kDebugGlobalVariableOperandFlagsIndex to
-  // kDebugLocalVariableOperandFlagsIndex. No other operands are needed for to
+  // kDebugLocalVariableOperandFlagsIndex. No other operands are needed to
   // define the DebugLocalVariable.
 
   // Modify the opcode.
