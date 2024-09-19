@@ -1980,7 +1980,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                     "CrossWorkgroup, Workgroup or Function";
         }
 
-        if (result_type != p_data_type) {
+        if (!_.ContainsUntypedPointer(p_type) && result_type != p_data_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected data type of the pointer to be equal to Result "
@@ -2042,15 +2042,17 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                     "CrossWorkgroup, Workgroup or Function";
         }
 
-        if (!_.IsIntScalarOrVectorType(p_data_type) ||
-            _.GetBitWidth(p_data_type) != 32) {
+        if ((!_.IsIntScalarOrVectorType(p_data_type) ||
+             _.GetBitWidth(p_data_type) != 32) &&
+            !_.ContainsUntypedPointer(p_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected data type of the pointer to be a 32-bit int "
                     "scalar or vector type";
         }
 
-        if (_.GetDimension(p_data_type) != num_components) {
+        if (!_.ContainsUntypedPointer(p_type) &&
+            _.GetDimension(p_data_type) != num_components) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << ext_inst_name() << ": "
                  << "expected data type of the pointer to have the same number "
