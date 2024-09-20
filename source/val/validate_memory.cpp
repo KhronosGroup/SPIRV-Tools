@@ -463,7 +463,9 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
     const auto initializer_id = inst->GetOperandAs<uint32_t>(initializer_index);
     const auto initializer = _.FindDef(initializer_id);
     const auto is_module_scope_var =
-        initializer && (initializer->opcode() == spv::Op::OpVariable) &&
+        initializer &&
+        (initializer->opcode() == spv::Op::OpVariable ||
+         initializer->opcode() == spv::Op::OpUntypedVariableKHR) &&
         (initializer->GetOperandAs<spv::StorageClass>(storage_class_index) !=
          spv::StorageClass::Function);
     const auto is_constant =
