@@ -1165,6 +1165,23 @@ spv_result_t ValidateStore(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  if (spvIsVulkanEnv(_.context()->target_env) &&
+      !_.options()->before_hlsl_legalization) {
+    const auto isForbiddenType = [](const Instruction* type_inst) {
+      auto opcode = type_inst->opcode();
+      return opcode == spv::Op::OpTypeImage ||
+             opcode == spv::Op::OpTypeSampler ||
+             opcode == spv::Op::OpTypeSampledImage ||
+             opcode == spv::Op::OpTypeAccelerationStructureKHR;
+    };
+    if (_.ContainsType(object_type->id(), isForbiddenType)) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << _.VkErrorID(6924)
+             << "Cannot store to OpTypeImage, OpTypeSampler, "
+                "OpTypeSampledImage, or OpTypeAccelerationStructureKHR objects";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
