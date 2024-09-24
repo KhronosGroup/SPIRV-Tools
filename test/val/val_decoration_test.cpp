@@ -10364,6 +10364,79 @@ OpFunctionEnd
               HasSubstr("member 0 is missing an Offset decoration"));
 }
 
+TEST_F(ValidateDecorations, ComponentMultipleArrays) {
+  const std::string spirv = R"(
+               OpCapability Tessellation
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TessellationEvaluation %main "main" %_ %FOO %FOO0
+               OpExecutionMode %main Triangles
+               OpExecutionMode %main SpacingEqual
+               OpExecutionMode %main VertexOrderCcw
+               OpSource GLSL 460
+               OpSourceExtension "GL_EXT_nonuniform_qualifier"
+               OpName %main "main"
+               OpName %gl_PerVertex "gl_PerVertex"
+               OpMemberName %gl_PerVertex 0 "gl_Position"
+               OpMemberName %gl_PerVertex 1 "gl_PointSize"
+               OpMemberName %gl_PerVertex 2 "gl_ClipDistance"
+               OpMemberName %gl_PerVertex 3 "gl_CullDistance"
+               OpName %_ ""
+               OpName %FOO "FOO"
+               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
+               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance
+               OpDecorate %gl_PerVertex Block
+               OpDecorate %FOO Component 2
+               OpDecorate %FOO Location 1
+               OpDecorate %FOO0 Location 1
+               OpDecorate %FOO0 Component 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1
+%_ptr_Output_gl_PerVertex = OpTypePointer Output %gl_PerVertex
+          %_ = OpVariable %_ptr_Output_gl_PerVertex Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+    %v2float = OpTypeVector %float 2
+     %uint_2 = OpConstant %uint 2
+%_arr_v2float_uint_2 = OpTypeArray %v2float %uint_2
+    %uint_32 = OpConstant %uint 32
+%_arr__arr_v2float_uint_2_uint_32 = OpTypeArray %_arr_v2float_uint_2 %uint_32
+%_ptr_Input__arr__arr_v2float_uint_2_uint_32 = OpTypePointer Input %_arr__arr_v2float_uint_2_uint_32
+        %FOO = OpVariable %_ptr_Input__arr__arr_v2float_uint_2_uint_32 Input
+        %FOO0 = OpVariable %_ptr_Input__arr__arr_v2float_uint_2_uint_32 Input
+%_ptr_Input_v2float = OpTypePointer Input %v2float
+      %int_1 = OpConstant %int 1
+     %uint_0 = OpConstant %uint 0
+%_ptr_Output_float = OpTypePointer Output %float
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %24 = OpAccessChain %_ptr_Input_v2float %FOO %int_0 %int_0
+         %25 = OpLoad %v2float %24
+         %27 = OpAccessChain %_ptr_Input_v2float %FOO0 %int_1 %int_1
+         %28 = OpLoad %v2float %27
+         %29 = OpFAdd %v2float %25 %28
+         %32 = OpAccessChain %_ptr_Output_float %_ %int_0 %uint_0
+         %33 = OpCompositeExtract %float %29 0
+               OpStore %32 %33
+         %34 = OpAccessChain %_ptr_Output_float %_ %int_0 %uint_1
+         %35 = OpCompositeExtract %float %29 1
+               OpStore %34 %35
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
