@@ -1876,7 +1876,7 @@ spv_result_t CheckComponentDecoration(ValidationState_t& vstate,
 
   if (spvIsVulkanEnv(vstate.context()->target_env)) {
     // Strip the array, if present.
-    if (vstate.GetIdOpcode(type_id) == spv::Op::OpTypeArray) {
+    while (vstate.GetIdOpcode(type_id) == spv::Op::OpTypeArray) {
       type_id = vstate.FindDef(type_id)->word(2u);
     }
 
