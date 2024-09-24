@@ -4780,7 +4780,8 @@ TEST_F(ValidateImage, QueryLodWrongExecutionModel) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpImageQueryLod requires Fragment or GLCompute execution model"));
+          "OpImageQueryLod requires Fragment, GLCompute, MeshEXT or TaskEXT "
+          "execution model"));
 }
 
 TEST_F(ValidateImage, QueryLodWrongExecutionModelWithFunc) {
@@ -4801,7 +4802,8 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpImageQueryLod requires Fragment or GLCompute execution model"));
+          "OpImageQueryLod requires Fragment, GLCompute, MeshEXT or TaskEXT "
+          "execution model"));
 }
 
 TEST_F(ValidateImage, QueryLodComputeShaderDerivatives) {
@@ -4813,12 +4815,12 @@ TEST_F(ValidateImage, QueryLodComputeShaderDerivatives) {
 )";
 
   const std::string extra = R"(
-OpCapability ComputeDerivativeGroupLinearNV
-OpExtension "SPV_NV_compute_shader_derivatives"
+OpCapability ComputeDerivativeGroupLinearKHR
+OpExtension "SPV_KHR_compute_shader_derivatives"
 )";
   const std::string mode = R"(
 OpExecutionMode %main LocalSize 8 8 1
-OpExecutionMode %main DerivativeGroupLinearNV
+OpExecutionMode %main DerivativeGroupLinearKHR
 )";
   CompileSuccessfully(
       GenerateShaderCode(body, extra, "GLCompute", mode).c_str());
@@ -4930,8 +4932,8 @@ TEST_F(ValidateImage, QueryLodComputeShaderDerivativesMissingMode) {
 )";
 
   const std::string extra = R"(
-OpCapability ComputeDerivativeGroupLinearNV
-OpExtension "SPV_NV_compute_shader_derivatives"
+OpCapability ComputeDerivativeGroupLinearKHR
+OpExtension "SPV_KHR_compute_shader_derivatives"
 )";
   const std::string mode = R"(
 OpExecutionMode %main LocalSize 8 8 1
@@ -4940,9 +4942,9 @@ OpExecutionMode %main LocalSize 8 8 1
       GenerateShaderCode(body, extra, "GLCompute", mode).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpImageQueryLod requires DerivativeGroupQuadsNV or "
-                        "DerivativeGroupLinearNV execution mode for GLCompute "
-                        "execution model"));
+              HasSubstr("OpImageQueryLod requires DerivativeGroupQuadsKHR or "
+                        "DerivativeGroupLinearKHR execution mode for "
+                        "GLCompute, MeshEXT or TaskEXT execution model"));
 }
 
 TEST_F(ValidateImage, ImplicitLodWrongExecutionModel) {
@@ -4956,8 +4958,8 @@ TEST_F(ValidateImage, ImplicitLodWrongExecutionModel) {
   CompileSuccessfully(GenerateShaderCode(body, "", "Vertex").c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("ImplicitLod instructions require Fragment or "
-                        "GLCompute execution model"));
+              HasSubstr("ImplicitLod instructions require Fragment, "
+                        "GLCompute, MeshEXT or TaskEXT execution model"));
 }
 
 TEST_F(ValidateImage, ImplicitLodComputeShaderDerivatives) {
@@ -4969,12 +4971,12 @@ TEST_F(ValidateImage, ImplicitLodComputeShaderDerivatives) {
 )";
 
   const std::string extra = R"(
-OpCapability ComputeDerivativeGroupLinearNV
-OpExtension "SPV_NV_compute_shader_derivatives"
+OpCapability ComputeDerivativeGroupLinearKHR
+OpExtension "SPV_KHR_compute_shader_derivatives"
 )";
   const std::string mode = R"(
 OpExecutionMode %main LocalSize 8 8 1
-OpExecutionMode %main DerivativeGroupLinearNV
+OpExecutionMode %main DerivativeGroupLinearKHR
 )";
   CompileSuccessfully(
       GenerateShaderCode(body, extra, "GLCompute", mode).c_str());
@@ -4990,8 +4992,8 @@ TEST_F(ValidateImage, ImplicitLodComputeShaderDerivativesMissingMode) {
 )";
 
   const std::string extra = R"(
-OpCapability ComputeDerivativeGroupLinearNV
-OpExtension "SPV_NV_compute_shader_derivatives"
+OpCapability ComputeDerivativeGroupLinearKHR
+OpExtension "SPV_KHR_compute_shader_derivatives"
 )";
   const std::string mode = R"(
 OpExecutionMode %main LocalSize 8 8 1
@@ -5001,9 +5003,9 @@ OpExecutionMode %main LocalSize 8 8 1
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("ImplicitLod instructions require DerivativeGroupQuadsNV or "
-                "DerivativeGroupLinearNV execution mode for GLCompute "
-                "execution model"));
+      HasSubstr("ImplicitLod instructions require DerivativeGroupQuadsKHR or "
+                "DerivativeGroupLinearKHR execution mode for GLCompute, "
+                "MeshEXT or TaskEXT execution model"));
 }
 
 TEST_F(ValidateImage, ReadSubpassDataWrongExecutionModel) {
@@ -6505,8 +6507,9 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("ImplicitLod instructions require "
-                        "DerivativeGroupQuadsNV or DerivativeGroupLinearNV "
-                        "execution mode for GLCompute execution model"));
+                        "DerivativeGroupQuadsKHR or DerivativeGroupLinearKHR "
+                        "execution mode for GLCompute, MeshEXT or TaskEXT "
+                        "execution model"));
 }
 
 TEST_F(ValidateImage, TypeSampledImageNotBufferPost1p6) {
