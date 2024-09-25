@@ -28,6 +28,9 @@ constexpr uint32_t kStoreObjectInOperand = 1;
 constexpr uint32_t kCompositeExtractObjectInOperand = 0;
 constexpr uint32_t kTypePointerStorageClassInIdx = 0;
 constexpr uint32_t kTypePointerPointeeInIdx = 1;
+constexpr uint32_t kExtInstSetInIdx = 0;
+constexpr uint32_t kExtInstOpInIdx = 1;
+constexpr uint32_t kInterpolantInIdx = 2;
 
 bool IsDebugDeclareOrValue(Instruction* di) {
   auto dbg_opcode = di->GetCommonDebugOpcode();
@@ -204,6 +207,20 @@ bool CopyPropagateArrays::HasNoStores(Instruction* ptr_inst) {
       return true;
     } else if (use->opcode() == spv::Op::OpEntryPoint) {
       return true;
+    } else if (use->opcode() == spv::Op::OpExtInst &&
+               use->GetSingleWordInOperand(kExtInstSetInIdx) ==
+                   context()
+                       ->get_feature_mgr()
+                       ->GetExtInstImportId_GLSLstd450()) {
+      // TODO: need to test this by having multiple InterpolateAt* instructions
+      // for same input variable
+      uint32_t ext_inst = use->GetSingleWordInOperand(kExtInstOpInIdx);
+      switch (ext_inst) {
+        case GLSLstd450InterpolateAtCentroid:
+        case GLSLstd450InterpolateAtOffset:
+        case GLSLstd450InterpolateAtSample:
+          return true;
+      }
     }
     // Some other instruction.  Be conservative.
     return false;
@@ -225,6 +242,25 @@ bool CopyPropagateArrays::HasValidReferencesOnly(Instruction* ptr_inst,
           // time to do the multiple traverses can add up.  Consider collecting
           // those loads and doing a single traversal.
           return dominator_analysis->Dominates(store_inst, use);
+        } else if (use->opcode() == spv::Op::OpExtInst &&
+                   use->GetSingleWordInOperand(kExtInstSetInIdx) ==
+                       context()
+                           ->get_feature_mgr()
+                           ->GetExtInstImportId_GLSLstd450()) {
+          // GLSL InterpolateAt* instructions work similarly to loads
+          uint32_t ext_inst = use->GetSingleWordInOperand(kExtInstOpInIdx);
+          switch (ext_inst) {
+            case GLSLstd450InterpolateAtCentroid:
+            case GLSLstd450InterpolateAtOffset:
+            case GLSLstd450InterpolateAtSample:
+              uint32_t interpolant =
+                  use->GetSingleWordInOperand(kInterpolantInIdx);
+              if (interpolant !=
+                  store_inst->GetSingleWordInOperand(kStorePointerInOperand))
+                return false;
+              return dominator_analysis->Dominates(store_inst, use);
+          }
+          return false;
         } else if (use->opcode() == spv::Op::OpAccessChain) {
           return HasValidReferencesOnly(use, store_inst);
         } else if (use->IsDecoration() || use->opcode() == spv::Op::OpName) {
@@ -484,7 +520,9 @@ bool CopyPropagateArrays::IsPointerToArrayType(uint32_t type_id) {
   analysis::Pointer* pointer_type = type_mgr->GetType(type_id)->AsPointer();
   if (pointer_type) {
     return pointer_type->pointee_type()->kind() == analysis::Type::kArray ||
-           pointer_type->pointee_type()->kind() == analysis::Type::kImage;
+           pointer_type->pointee_type()->kind() == analysis::Type::kImage ||
+           pointer_type->pointee_type()->kind() == analysis::Type::kVector;
+    // TODO: maybe matrix as well?
   }
   return false;
 }
@@ -522,6 +560,18 @@ bool CopyPropagateArrays::CanUpdateUses(Instruction* original_ptr_inst,
         }
         return true;
       }
+      case spv::Op::OpExtInst:
+        if (use->GetSingleWordInOperand(kExtInstSetInIdx) ==
+            context()->get_feature_mgr()->GetExtInstImportId_GLSLstd450()) {
+          uint32_t ext_inst = use->GetSingleWordInOperand(kExtInstOpInIdx);
+          switch (ext_inst) {
+            case GLSLstd450InterpolateAtCentroid:
+            case GLSLstd450InterpolateAtOffset:
+            case GLSLstd450InterpolateAtSample:
+              return true;
+          }
+        }
+        return false;
       case spv::Op::OpAccessChain: {
         analysis::Pointer* pointer_type = type->AsPointer();
         const analysis::Type* pointee_type = pointer_type->pointee_type();
@@ -669,6 +719,25 @@ void CopyPropagateArrays::UpdateUses(Instruction* original_ptr_inst,
           UpdateUses(use, use);
         } else {
           context()->AnalyzeUses(use);
+        }
+      } break;
+      case spv::Op::OpExtInst: {
+        if (use->GetSingleWordInOperand(kExtInstSetInIdx) ==
+            context()->get_feature_mgr()->GetExtInstImportId_GLSLstd450()) {
+          uint32_t ext_inst = use->GetSingleWordInOperand(kExtInstOpInIdx);
+          switch (ext_inst) {
+            case GLSLstd450InterpolateAtCentroid:
+            case GLSLstd450InterpolateAtOffset:
+            case GLSLstd450InterpolateAtSample:
+              // Replace the actual use.
+              context()->ForgetUses(use);
+              use->SetOperand(index, {new_ptr_inst->result_id()});
+              context()->AnalyzeUses(use);
+              break;
+            default:
+              assert(false && "Don't know how to rewrite instruction");
+              break;
+          }
         }
       } break;
       case spv::Op::OpAccessChain: {
