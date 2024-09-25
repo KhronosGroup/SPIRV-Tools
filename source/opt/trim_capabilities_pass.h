@@ -74,8 +74,8 @@ class TrimCapabilitiesPass : public Pass {
   // contains unsupported instruction, the pass could yield bad results.
   static constexpr std::array kSupportedCapabilities{
       // clang-format off
-      spv::Capability::ComputeDerivativeGroupLinearNV,
-      spv::Capability::ComputeDerivativeGroupQuadsNV,
+      spv::Capability::ComputeDerivativeGroupLinearKHR,
+      spv::Capability::ComputeDerivativeGroupQuadsKHR,
       spv::Capability::Float16,
       spv::Capability::Float64,
       spv::Capability::FragmentShaderPixelInterlockEXT,

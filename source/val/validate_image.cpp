@@ -2026,11 +2026,13 @@ spv_result_t ValidateImageQueryLod(ValidationState_t& _,
       ->RegisterExecutionModelLimitation(
           [&](spv::ExecutionModel model, std::string* message) {
             if (model != spv::ExecutionModel::Fragment &&
-                model != spv::ExecutionModel::GLCompute) {
+                model != spv::ExecutionModel::GLCompute &&
+                model != spv::ExecutionModel::MeshEXT &&
+                model != spv::ExecutionModel::TaskEXT) {
               if (message) {
                 *message = std::string(
-                    "OpImageQueryLod requires Fragment or GLCompute execution "
-                    "model");
+                    "OpImageQueryLod requires Fragment, GLCompute, MeshEXT or "
+                    "TaskEXT execution model");
               }
               return false;
             }
@@ -2042,16 +2044,20 @@ spv_result_t ValidateImageQueryLod(ValidationState_t& _,
                               std::string* message) {
         const auto* models = state.GetExecutionModels(entry_point->id());
         const auto* modes = state.GetExecutionModes(entry_point->id());
-        if (models->find(spv::ExecutionModel::GLCompute) != models->end() &&
-            modes->find(spv::ExecutionMode::DerivativeGroupLinearNV) ==
-                modes->end() &&
-            modes->find(spv::ExecutionMode::DerivativeGroupQuadsNV) ==
-                modes->end()) {
+        if (models &&
+            (models->find(spv::ExecutionModel::GLCompute) != models->end() ||
+             models->find(spv::ExecutionModel::MeshEXT) != models->end() ||
+             models->find(spv::ExecutionModel::TaskEXT) != models->end()) &&
+            (!modes ||
+             (modes->find(spv::ExecutionMode::DerivativeGroupLinearKHR) ==
+                  modes->end() &&
+              modes->find(spv::ExecutionMode::DerivativeGroupQuadsKHR) ==
+                  modes->end()))) {
           if (message) {
             *message = std::string(
-                "OpImageQueryLod requires DerivativeGroupQuadsNV "
-                "or DerivativeGroupLinearNV execution mode for GLCompute "
-                "execution model");
+                "OpImageQueryLod requires DerivativeGroupQuadsKHR "
+                "or DerivativeGroupLinearKHR execution mode for GLCompute, "
+                "MeshEXT or TaskEXT execution model");
           }
           return false;
         }
@@ -2320,12 +2326,14 @@ spv_result_t ImagePass(ValidationState_t& _, const Instruction* inst) {
         ->RegisterExecutionModelLimitation([opcode](spv::ExecutionModel model,
                                                     std::string* message) {
           if (model != spv::ExecutionModel::Fragment &&
-              model != spv::ExecutionModel::GLCompute) {
+              model != spv::ExecutionModel::GLCompute &&
+              model != spv::ExecutionModel::MeshEXT &&
+              model != spv::ExecutionModel::TaskEXT) {
             if (message) {
               *message =
                   std::string(
-                      "ImplicitLod instructions require Fragment or GLCompute "
-                      "execution model: ") +
+                      "ImplicitLod instructions require Fragment, GLCompute, "
+                      "MeshEXT or TaskEXT execution model: ") +
                   spvOpcodeString(opcode);
             }
             return false;
@@ -2339,19 +2347,22 @@ spv_result_t ImagePass(ValidationState_t& _, const Instruction* inst) {
           const auto* models = state.GetExecutionModels(entry_point->id());
           const auto* modes = state.GetExecutionModes(entry_point->id());
           if (models &&
-              models->find(spv::ExecutionModel::GLCompute) != models->end() &&
+              (models->find(spv::ExecutionModel::GLCompute) != models->end() ||
+               models->find(spv::ExecutionModel::MeshEXT) != models->end() ||
+               models->find(spv::ExecutionModel::TaskEXT) != models->end()) &&
               (!modes ||
-               (modes->find(spv::ExecutionMode::DerivativeGroupLinearNV) ==
+               (modes->find(spv::ExecutionMode::DerivativeGroupLinearKHR) ==
                     modes->end() &&
-                modes->find(spv::ExecutionMode::DerivativeGroupQuadsNV) ==
+                modes->find(spv::ExecutionMode::DerivativeGroupQuadsKHR) ==
                     modes->end()))) {
             if (message) {
-              *message =
-                  std::string(
-                      "ImplicitLod instructions require DerivativeGroupQuadsNV "
-                      "or DerivativeGroupLinearNV execution mode for GLCompute "
-                      "execution model: ") +
-                  spvOpcodeString(opcode);
+              *message = std::string(
+                             "ImplicitLod instructions require "
+                             "DerivativeGroupQuadsKHR "
+                             "or DerivativeGroupLinearKHR execution mode for "
+                             "GLCompute, "
+                             "MeshEXT or TaskEXT execution model: ") +
+                         spvOpcodeString(opcode);
             }
             return false;
           }
