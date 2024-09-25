@@ -81,7 +81,8 @@ spv_result_t DerivativesPass(ValidationState_t& _, const Instruction* inst) {
             const auto* models = state.GetExecutionModels(entry_point->id());
             const auto* modes = state.GetExecutionModes(entry_point->id());
             if (models &&
-                (models->find(spv::ExecutionModel::GLCompute) != models->end() ||
+                (models->find(spv::ExecutionModel::GLCompute) !=
+                     models->end() ||
                  models->find(spv::ExecutionModel::MeshEXT) != models->end() ||
                  models->find(spv::ExecutionModel::TaskEXT) != models->end()) &&
                 (!modes ||
@@ -90,12 +91,13 @@ spv_result_t DerivativesPass(ValidationState_t& _, const Instruction* inst) {
                   modes->find(spv::ExecutionMode::DerivativeGroupQuadsKHR) ==
                       modes->end()))) {
               if (message) {
-                *message = std::string(
-                               "Derivative instructions require "
-                               "DerivativeGroupQuadsKHR "
-                               "or DerivativeGroupLinearKHR execution mode for "
-                               "GLCompute, MeshEXT or TaskEXT execution model: ") +
-                           spvOpcodeString(opcode);
+                *message =
+                    std::string(
+                        "Derivative instructions require "
+                        "DerivativeGroupQuadsKHR "
+                        "or DerivativeGroupLinearKHR execution mode for "
+                        "GLCompute, MeshEXT or TaskEXT execution model: ") +
+                    spvOpcodeString(opcode);
               }
               return false;
             }
