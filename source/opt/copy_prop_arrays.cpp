@@ -75,29 +75,36 @@ Pass::Status CopyPropagateArrays::Process() {
 
     BasicBlock* entry_bb = &*function.begin();
 
-    for (auto var_inst = entry_bb->begin();
-         var_inst->opcode() == spv::Op::OpVariable; ++var_inst) {
-      if (!IsPointerToArrayType(var_inst->type_id())) {
-        continue;
-      }
+    bool load_updated;
+    do {
+      load_updated = false;
+      for (auto var_inst = entry_bb->begin();
+           var_inst->opcode() == spv::Op::OpVariable; ++var_inst) {
+        // Find the only store to the entire memory location, if it exists.
+        Instruction* store_inst = FindStoreInstruction(&*var_inst);
 
-      // Find the only store to the entire memory location, if it exists.
-      Instruction* store_inst = FindStoreInstruction(&*var_inst);
+        if (!store_inst) {
+          continue;
+        }
 
-      if (!store_inst) {
-        continue;
-      }
+        std::unique_ptr<MemoryObject> source_object =
+            FindSourceObjectIfPossible(&*var_inst, store_inst);
 
-      std::unique_ptr<MemoryObject> source_object =
-          FindSourceObjectIfPossible(&*var_inst, store_inst);
+        if (source_object != nullptr) {
+          if (!IsPointerToArrayType(var_inst->type_id()) &&
+              source_object->GetStorageClass() != spv::StorageClass::Input) {
+            continue;
+          }
 
-      if (source_object != nullptr) {
-        if (CanUpdateUses(&*var_inst, source_object->GetPointerTypeId(this))) {
-          modified = true;
-          PropagateObject(&*var_inst, source_object.get(), store_inst);
+          if (CanUpdateUses(&*var_inst,
+                            source_object->GetPointerTypeId(this))) {
+            modified = true;
+            load_updated |=
+                PropagateObject(&*var_inst, source_object.get(), store_inst);
+          }
         }
       }
-    }
+    } while (load_updated);
   }
   return (modified ? Status::SuccessWithChange : Status::SuccessWithoutChange);
 }
@@ -158,7 +165,7 @@ Instruction* CopyPropagateArrays::FindStoreInstruction(
   return store_inst;
 }
 
-void CopyPropagateArrays::PropagateObject(Instruction* var_inst,
+bool CopyPropagateArrays::PropagateObject(Instruction* var_inst,
                                           MemoryObject* source,
                                           Instruction* insertion_point) {
   assert(var_inst->opcode() == spv::Op::OpVariable &&
@@ -166,7 +173,7 @@ void CopyPropagateArrays::PropagateObject(Instruction* var_inst,
 
   Instruction* new_access_chain = BuildNewAccessChain(insertion_point, source);
   context()->KillNamesAndDecorates(var_inst);
-  UpdateUses(var_inst, new_access_chain);
+  return UpdateUses(var_inst, new_access_chain);
 }
 
 Instruction* CopyPropagateArrays::BuildNewAccessChain(
@@ -520,9 +527,7 @@ bool CopyPropagateArrays::IsPointerToArrayType(uint32_t type_id) {
   analysis::Pointer* pointer_type = type_mgr->GetType(type_id)->AsPointer();
   if (pointer_type) {
     return pointer_type->pointee_type()->kind() == analysis::Type::kArray ||
-           pointer_type->pointee_type()->kind() == analysis::Type::kImage ||
-           pointer_type->pointee_type()->kind() == analysis::Type::kVector;
-    // TODO: maybe matrix as well?
+           pointer_type->pointee_type()->kind() == analysis::Type::kImage;
   }
   return false;
 }
@@ -642,7 +647,7 @@ bool CopyPropagateArrays::CanUpdateUses(Instruction* original_ptr_inst,
   });
 }
 
-void CopyPropagateArrays::UpdateUses(Instruction* original_ptr_inst,
+bool CopyPropagateArrays::UpdateUses(Instruction* original_ptr_inst,
                                      Instruction* new_ptr_inst) {
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
   analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
@@ -653,6 +658,8 @@ void CopyPropagateArrays::UpdateUses(Instruction* original_ptr_inst,
                           [&uses](Instruction* use, uint32_t index) {
                             uses.push_back({use, index});
                           });
+
+  bool updated_load = false;
 
   for (auto pair : uses) {
     Instruction* use = pair.first;
@@ -720,6 +727,8 @@ void CopyPropagateArrays::UpdateUses(Instruction* original_ptr_inst,
         } else {
           context()->AnalyzeUses(use);
         }
+
+        updated_load = true;
       } break;
       case spv::Op::OpExtInst: {
         if (use->GetSingleWordInOperand(kExtInstSetInIdx) ==
@@ -843,6 +852,8 @@ void CopyPropagateArrays::UpdateUses(Instruction* original_ptr_inst,
         break;
     }
   }
+
+  return updated_load;
 }
 
 uint32_t CopyPropagateArrays::GetMemberTypeId(
