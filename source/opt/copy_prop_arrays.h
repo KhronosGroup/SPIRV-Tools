@@ -223,6 +223,10 @@ class CopyPropagateArrays : public MemPass {
   // Return true if |type_id| is a pointer type whose pointee type is an array.
   bool IsPointerToArrayType(uint32_t type_id);
 
+  // Return true if |inst| is one of the InterpolateAt* GLSL.std.450 extended
+  // instructions.
+  bool IsInterpolationInstruction(Instruction* inst);
+
   // Returns true if there are not stores using |ptr_inst| or something derived
   // from it.
   bool HasNoStores(Instruction* ptr_inst);

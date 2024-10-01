@@ -214,20 +214,8 @@ bool CopyPropagateArrays::HasNoStores(Instruction* ptr_inst) {
       return true;
     } else if (use->opcode() == spv::Op::OpEntryPoint) {
       return true;
-    } else if (use->opcode() == spv::Op::OpExtInst &&
-               use->GetSingleWordInOperand(kExtInstSetInIdx) ==
-                   context()
-                       ->get_feature_mgr()
-                       ->GetExtInstImportId_GLSLstd450()) {
-      // TODO: need to test this by having multiple InterpolateAt* instructions
-      // for same input variable
-      uint32_t ext_inst = use->GetSingleWordInOperand(kExtInstOpInIdx);
-      switch (ext_inst) {
-        case GLSLstd450InterpolateAtCentroid:
-        case GLSLstd450InterpolateAtOffset:
-        case GLSLstd450InterpolateAtSample:
-          return true;
-      }
+    } else if (IsInterpolationInstruction(use)) {
+      return true;
     }
     // Some other instruction.  Be conservative.
     return false;
@@ -249,25 +237,13 @@ bool CopyPropagateArrays::HasValidReferencesOnly(Instruction* ptr_inst,
           // time to do the multiple traverses can add up.  Consider collecting
           // those loads and doing a single traversal.
           return dominator_analysis->Dominates(store_inst, use);
-        } else if (use->opcode() == spv::Op::OpExtInst &&
-                   use->GetSingleWordInOperand(kExtInstSetInIdx) ==
-                       context()
-                           ->get_feature_mgr()
-                           ->GetExtInstImportId_GLSLstd450()) {
+        } else if (IsInterpolationInstruction(use)) {
           // GLSL InterpolateAt* instructions work similarly to loads
-          uint32_t ext_inst = use->GetSingleWordInOperand(kExtInstOpInIdx);
-          switch (ext_inst) {
-            case GLSLstd450InterpolateAtCentroid:
-            case GLSLstd450InterpolateAtOffset:
-            case GLSLstd450InterpolateAtSample:
-              uint32_t interpolant =
-                  use->GetSingleWordInOperand(kInterpolantInIdx);
-              if (interpolant !=
-                  store_inst->GetSingleWordInOperand(kStorePointerInOperand))
-                return false;
-              return dominator_analysis->Dominates(store_inst, use);
-          }
-          return false;
+          uint32_t interpolant = use->GetSingleWordInOperand(kInterpolantInIdx);
+          if (interpolant !=
+              store_inst->GetSingleWordInOperand(kStorePointerInOperand))
+            return false;
+          return dominator_analysis->Dominates(store_inst, use);
         } else if (use->opcode() == spv::Op::OpAccessChain) {
           return HasValidReferencesOnly(use, store_inst);
         } else if (use->IsDecoration() || use->opcode() == spv::Op::OpName) {
@@ -532,6 +508,23 @@ bool CopyPropagateArrays::IsPointerToArrayType(uint32_t type_id) {
   return false;
 }
 
+bool CopyPropagateArrays::IsInterpolationInstruction(Instruction* inst) {
+  if (inst->opcode() == spv::Op::OpExtInst &&
+      inst->GetSingleWordInOperand(kExtInstSetInIdx) ==
+          context()->get_feature_mgr()->GetExtInstImportId_GLSLstd450()) {
+    // TODO: need to test this by having multiple InterpolateAt* instructions
+    // for same input variable
+    uint32_t ext_inst = inst->GetSingleWordInOperand(kExtInstOpInIdx);
+    switch (ext_inst) {
+      case GLSLstd450InterpolateAtCentroid:
+      case GLSLstd450InterpolateAtOffset:
+      case GLSLstd450InterpolateAtSample:
+        return true;
+    }
+  }
+  return false;
+}
+
 bool CopyPropagateArrays::CanUpdateUses(Instruction* original_ptr_inst,
                                         uint32_t type_id) {
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
@@ -566,15 +559,8 @@ bool CopyPropagateArrays::CanUpdateUses(Instruction* original_ptr_inst,
         return true;
       }
       case spv::Op::OpExtInst:
-        if (use->GetSingleWordInOperand(kExtInstSetInIdx) ==
-            context()->get_feature_mgr()->GetExtInstImportId_GLSLstd450()) {
-          uint32_t ext_inst = use->GetSingleWordInOperand(kExtInstOpInIdx);
-          switch (ext_inst) {
-            case GLSLstd450InterpolateAtCentroid:
-            case GLSLstd450InterpolateAtOffset:
-            case GLSLstd450InterpolateAtSample:
-              return true;
-          }
+        if (IsInterpolationInstruction(use)) {
+          return true;
         }
         return false;
       case spv::Op::OpAccessChain: {
