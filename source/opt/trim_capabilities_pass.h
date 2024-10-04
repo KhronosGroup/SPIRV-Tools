@@ -90,6 +90,7 @@ class TrimCapabilitiesPass : public Pass {
       spv::Capability::ImageMSArray,
       spv::Capability::Int16,
       spv::Capability::Int64,
+      spv::Capability::InterpolationFunction,
       spv::Capability::Linkage,
       spv::Capability::MinLod,
       spv::Capability::PhysicalStorageBufferAddresses,
@@ -159,6 +160,9 @@ class TrimCapabilitiesPass : public Pass {
   void addInstructionRequirementsForOperand(const Operand& operand,
                                             CapabilitySet* capabilities,
                                             ExtensionSet* extensions) const;
+
+  void addInstructionRequirementsForExtInst(Instruction* instruction,
+                                            CapabilitySet* capabilities) const;
 
   // Given an `instruction`, determines the capabilities it requires, and output
   // them in `capabilities`. The returned capabilities form a subset of
