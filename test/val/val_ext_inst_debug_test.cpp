@@ -118,6 +118,7 @@ OpCapability Int64
     ss << "OpExecutionMode %main OriginUpperLeft\n";
   }
 
+  ss << "%main_name = OpString \"main\"\n";
   ss << op_string_instructions;
 
   ss << R"(
@@ -181,6 +182,9 @@ OpCapability Int64
 %u32_1 = OpConstant %u32 1
 %u32_2 = OpConstant %u32 2
 %u32_3 = OpConstant %u32 3
+%u32_4 = OpConstant %u32 4
+%u32_5 = OpConstant %u32 5
+%u32_32 = OpConstant %u32 32
 
 %s32_0 = OpConstant %s32 0
 %s32_1 = OpConstant %s32 1
@@ -373,8 +377,6 @@ TEST_P(ValidateLocalDebugInfoOutOfFunction, OpenCLDebugInfo100DebugScope) {
 %src = OpString "simple.hlsl"
 %code = OpString "void main() {}"
 %void_name = OpString "void"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
 %int_name = OpString "int"
 %foo_name = OpString "foo"
 )";
@@ -384,7 +386,7 @@ TEST_P(ValidateLocalDebugInfoOutOfFunction, OpenCLDebugInfo100DebugScope) {
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %int_info = OpExtInst %void %DbgExt DebugTypeBasic %int_name %u32_0 Signed
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_linkage_name FlagIsPublic 1 %main
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_name FlagIsPublic 1 %main
 %foo_info = OpExtInst %void %DbgExt DebugLocalVariable %foo_name %int_info %dbg_src 1 1 %main_info FlagIsLocal
 %expr = OpExtInst %void %DbgExt DebugExpression
 )";
@@ -412,8 +414,6 @@ TEST_P(ValidateLocalDebugInfoOutOfFunction, VulkanDebugInfo100DebugScope) {
 %src = OpString "simple.hlsl"
 %code = OpString "void main() {}"
 %void_name = OpString "void"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
 %int_name = OpString "int"
 %foo_name = OpString "foo"
 )";
@@ -423,7 +423,7 @@ TEST_P(ValidateLocalDebugInfoOutOfFunction, VulkanDebugInfo100DebugScope) {
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
 %int_info = OpExtInst %void %DbgExt DebugTypeBasic %int_name %u32_0 %u32_1 %u32_0
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction %u32_3 %void
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src %u32_1 %u32_1 %comp_unit %main_linkage_name %u32_3 %u32_1
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src %u32_1 %u32_1 %comp_unit %main_name %u32_3 %u32_1
 %foo_info = OpExtInst %void %DbgExt DebugLocalVariable %foo_name %int_info %dbg_src %u32_1 %u32_1 %main_info %u32_4
 %expr = OpExtInst %void %DbgExt DebugExpression
 )";
@@ -439,13 +439,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-)";
-
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header + GetParam(), body, extension, "Vertex"));
+      src, "", dbg_inst_header + GetParam(), body, extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugScope, DebugNoScope, DebugDeclare, DebugValue "
@@ -465,15 +460,13 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugFunctionForwardReference) {
 %src = OpString "simple.hlsl"
 %code = OpString "void main() {}"
 %void_name = OpString "void"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
 )";
 
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_linkage_name FlagIsPublic 1 %main
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_name FlagIsPublic 1 %main
 )";
 
   const std::string body = R"(
@@ -494,8 +487,6 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugFunctionMissingOpFunction) {
 %src = OpString "simple.hlsl"
 %code = OpString "void main() {}"
 %void_name = OpString "void"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
 )";
 
   const std::string dbg_inst_header = R"(
@@ -503,7 +494,7 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugFunctionMissingOpFunction) {
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_linkage_name FlagIsPublic 1 %dbgNone
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_name FlagIsPublic 1 %dbgNone
 )";
 
   const std::string body = R"(
@@ -528,8 +519,6 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugScopeBeforeOpVariableInFunction) {
 }
 "
 %float_name = OpString "float"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v4f_main_f"
 )";
 
   const std::string size_const = R"(
@@ -542,7 +531,7 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugScopeBeforeOpVariableInFunction) {
 %float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
 %v4float_info = OpExtInst %void %DbgExt DebugTypeVector %float_info 4
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %v4float_info %float_info
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic 13 %main
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %main
 )";
 
   const std::string body = R"(
@@ -801,13 +790,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-)";
-
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, constants, dbg_inst,
-                                                     "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst, "",
+                                                     extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand Source must be a result id of "
@@ -858,12 +842,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicFailName) {
 %float_name = OpString "float"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
-)";
-
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
@@ -875,8 +853,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand Name must be a result id of "
@@ -928,15 +906,13 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicFailSize) {
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
+%f32_32 = OpConstant %f32 32
 )";
 
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
-%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %float_name %u32_3 %u32_0
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_3 %u32_3 %f32_32
 )";
 
   const std::string extension = R"(
@@ -948,8 +924,8 @@ OpExtension "SPV_KHR_non_semantic_info"
       src, constants, dbg_inst_header, "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("expected operand Size must be a result id of "
-                        "OpConstant"));
+              HasSubstr("expected operand Flags must be a result id of 32-bit "
+                        "unsigned OpConstant"));
 }
 
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypePointer) {
@@ -1092,12 +1068,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeQualifier) {
 %float_name = OpString "float"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
-)";
-
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
@@ -1110,8 +1080,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1126,12 +1096,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeQualifierFail) {
 %float_name = OpString "float"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
-)";
-
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
@@ -1144,8 +1108,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -1185,7 +1149,6 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayWithVariableSize) {
 %code = OpString "main() {}"
 %float_name = OpString "float"
 %int_name = OpString "int"
-%main_name = OpString "main"
 %foo_name = OpString "foo"
 )";
 
@@ -1344,7 +1307,6 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailVariableSizeTypeFloat) {
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
 %float_name = OpString "float"
-%main_name = OpString "main"
 %foo_name = OpString "foo"
 )";
 
@@ -1383,12 +1345,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArray) {
 %float_name = OpString "float"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
-)";
-
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
@@ -1401,8 +1357,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1412,15 +1368,11 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayWithVariableSize) {
 %code = OpString "main() {}"
 %float_name = OpString "float"
 %uint_name = OpString "uint"
-%main_name = OpString "main"
 %foo_name = OpString "foo"
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 %u32_6 = OpConstant %u32 6
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -1451,12 +1403,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayFailBaseType) {
 %float_name = OpString "float"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
-)";
-
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
@@ -1469,8 +1415,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand Base Type is not a valid debug "
@@ -1482,12 +1428,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayFailComponentCount) {
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
 %float_name = OpString "float"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -1502,8 +1442,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Component Count must be OpConstant with a 32- or "
@@ -1519,12 +1459,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayFailComponentCountFloat) {
 %float_name = OpString "float"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
-)";
-
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
@@ -1537,8 +1471,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Component Count must be OpConstant with a 32- or "
@@ -1554,12 +1488,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayComponentCountZero) {
 %float_name = OpString "float"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
-)";
-
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
@@ -1572,8 +1500,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1582,15 +1510,11 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayFailVariableSizeTypeFloat) {
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
 %float_name = OpString "float"
-%main_name = OpString "main"
 %foo_name = OpString "foo"
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 %u32_6 = OpConstant %u32 6
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -1742,12 +1666,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeVector) {
 %float_name = OpString "float"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
-)";
-
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
@@ -1760,8 +1678,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1770,12 +1688,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorFail) {
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
 %float_name = OpString "float"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -1790,8 +1702,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand Base Type must be a result id of "
@@ -1803,12 +1715,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorFailComponentZero) {
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
 %float_name = OpString "float"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -1823,8 +1729,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Component Count must be positive "
@@ -1836,12 +1742,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorFailComponentFive) {
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
 %float_name = OpString "float"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -1856,8 +1756,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Component Count must be positive "
@@ -1872,9 +1772,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeMatrix) {
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 %true = OpConstantTrue %bool
 )";
 
@@ -1904,9 +1801,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeMatrixFailVectorTypeType) {
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 %true = OpConstantTrue %bool
 )";
 
@@ -1939,9 +1833,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeMatrixFailVectorCountType) {
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 %true = OpConstantTrue %bool
 )";
 
@@ -1974,9 +1865,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeMatrixFailVectorCountZero) {
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 %true = OpConstantTrue %bool
 )";
 
@@ -2009,9 +1897,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeMatrixFailVectorCountFive) {
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 %true = OpConstantTrue %bool
 )";
 
@@ -2119,12 +2004,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypedef) {
 %foo_name = OpString "foo"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
-)";
-
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
@@ -2137,8 +2016,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -2148,12 +2027,6 @@ TEST_P(ValidateVulkan100DebugInfoDebugTypedef, Fail) {
 %code = OpString "main() {}"
 %float_name = OpString "float"
 %foo_name = OpString "foo"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const auto& param = GetParam();
@@ -2171,8 +2044,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, constants, ss.str(),
-                                                     "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", ss.str(), "",
+                                                     extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second +
@@ -2200,8 +2073,6 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeFunction) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
 %float_name = OpString "float"
 )";
 
@@ -2232,8 +2103,6 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeFunctionFailReturn) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
 %float_name = OpString "float"
 )";
 
@@ -2264,8 +2133,6 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeFunctionFailParam) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
 %float_name = OpString "float"
 )";
 
@@ -2296,15 +2163,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeFunctionAndParams) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
 %float_name = OpString "float"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -2322,8 +2181,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -2331,15 +2190,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeFunctionFailReturn) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
 %float_name = OpString "float"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -2354,8 +2205,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -2366,15 +2217,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeFunctionFailParam) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
 %float_name = OpString "float"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -2389,8 +2232,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -2498,12 +2341,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeEnum) {
 %foo_name = OpString "foo"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
-)";
-
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
@@ -2519,8 +2356,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -2530,12 +2367,6 @@ TEST_P(ValidateVulkan100DebugInfoDebugTypeEnum, Fail) {
 %code = OpString "main() {}"
 %float_name = OpString "float"
 %foo_name = OpString "foo"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const auto& param = GetParam();
@@ -2553,8 +2384,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, constants, ss.str(),
-                                                     "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", ss.str(), "",
+                                                     extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second));
@@ -2604,8 +2435,6 @@ main() {}
 %foo_name = OpString "foo"
 %VS_OUTPUT_pos_name = OpString "pos : SV_POSITION"
 %VS_OUTPUT_linkage_name = OpString "VS_OUTPUT"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v4f_main_f"
 )";
 
   const std::string size_const = R"(
@@ -2621,7 +2450,7 @@ main() {}
 %v4float_info = OpExtInst %void %DbgExt DebugTypeVector %float_info 4
 %VS_OUTPUT_pos_info = OpExtInst %void %DbgExt DebugTypeMember %VS_OUTPUT_pos_name %v4float_info %dbg_src 2 3 %VS_OUTPUT_info %u32_0 %int_128 FlagIsPublic
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %v4float_info %float_info
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic 13 %main
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %main
 %foo_info = OpExtInst %void %DbgExt DebugTypeComposite %foo_name Structure %dbg_src 1 1 %comp_unit %foo_name %u32_0 FlagIsPublic
 %child = OpExtInst %void %DbgExt DebugTypeInheritance %foo_info %VS_OUTPUT_info %int_128 %int_128 FlagIsPublic
 )";
@@ -2650,8 +2479,6 @@ main() {}
 %foo_name = OpString "foo"
 %VS_OUTPUT_pos_name = OpString "pos : SV_POSITION"
 %VS_OUTPUT_linkage_name = OpString "VS_OUTPUT"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v4f_main_f"
 )";
 
   const std::string size_const = R"(
@@ -2672,7 +2499,7 @@ main() {}
 %v4float_info = OpExtInst %void %DbgExt DebugTypeVector %float_info 4
 %VS_OUTPUT_pos_info = OpExtInst %void %DbgExt DebugTypeMember %VS_OUTPUT_pos_name %v4float_info %dbg_src 2 3 %VS_OUTPUT_info %u32_0 %int_128 FlagIsPublic
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %v4float_info %float_info
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic 13 %main
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %main
 %foo_info = OpExtInst %void %DbgExt DebugTypeComposite %foo_name Structure %dbg_src 1 1 %comp_unit %foo_name %u32_0 FlagIsPublic
 %child = OpExtInst %void %DbgExt DebugTypeInheritance %foo_info %VS_OUTPUT_info %int_128 %int_128 FlagIsPublic
 )";
@@ -2849,14 +2676,9 @@ main() {}
 %foo_name = OpString "foo"
 %VS_OUTPUT_pos_name = OpString "pos : SV_POSITION"
 %VS_OUTPUT_linkage_name = OpString "VS_OUTPUT"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v4f_main_f"
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 %u32_128 = OpConstant %u32 128
 )";
 
@@ -2895,14 +2717,9 @@ main() {}
 %foo_name = OpString "foo"
 %VS_OUTPUT_pos_name = OpString "pos : SV_POSITION"
 %VS_OUTPUT_linkage_name = OpString "VS_OUTPUT"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v4f_main_f"
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 %u32_128 = OpConstant %u32 128
 )";
 
@@ -2971,9 +2788,6 @@ main() {}
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 %u32_128 = OpConstant %u32 128
 )";
 
@@ -3033,16 +2847,14 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugFunctionDeclaration) {
 };
 main() {}
 "
-%main_name = OpString "main"
-%main_linkage_name = OpString "v4f_main_f"
 )";
 
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void
-%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic 13 %main)";
+%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %main)";
 
   const std::string extension = R"(
 %DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
@@ -3061,8 +2873,6 @@ TEST_P(ValidateOpenCL100DebugInfoDebugFunction, Fail) {
 };
 main() {}
 "
-%main_name = OpString "main"
-%main_linkage_name = OpString "v4f_main_f"
 )";
 
   const auto& param = GetParam();
@@ -3072,7 +2882,7 @@ main() {}
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void
-%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic
+%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic
 %main_info = OpExtInst %void %DbgExt DebugFunction )"
      << param.first;
 
@@ -3091,25 +2901,25 @@ INSTANTIATE_TEST_SUITE_P(
     AllOpenCL100DebugInfoFail, ValidateOpenCL100DebugInfoDebugFunction,
     ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
         std::make_pair(
-            R"(%u32_0 %main_type_info %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic 13 %main)",
+            R"(%u32_0 %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %main)",
             "Name"),
         std::make_pair(
-            R"(%main_name %dbg_src %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic 13 %main)",
+            R"(%main_name %dbg_src %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %main)",
             "Type"),
         std::make_pair(
-            R"(%main_name %main_type_info %comp_unit 12 1 %comp_unit %main_linkage_name FlagIsPublic 13 %main)",
+            R"(%main_name %main_type_info %comp_unit 12 1 %comp_unit %main_name FlagIsPublic 13 %main)",
             "Source"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src 12 1 %dbg_src %main_linkage_name FlagIsPublic 13 %main)",
+            R"(%main_name %main_type_info %dbg_src 12 1 %dbg_src %main_name FlagIsPublic 13 %main)",
             "Parent"),
         std::make_pair(
             R"(%main_name %main_type_info %dbg_src 12 1 %comp_unit %void FlagIsPublic 13 %main)",
             "Linkage Name"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic 13 %void)",
+            R"(%main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %void)",
             "Function"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic 13 %main %dbg_src)",
+            R"(%main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %main %dbg_src)",
             "Declaration"),
     }));
 
@@ -3121,8 +2931,6 @@ TEST_P(ValidateOpenCL100DebugInfoDebugFunctionDeclaration, Fail) {
 };
 main() {}
 "
-%main_name = OpString "main"
-%main_linkage_name = OpString "v4f_main_f"
 )";
 
   const auto& param = GetParam();
@@ -3151,16 +2959,16 @@ INSTANTIATE_TEST_SUITE_P(
     ValidateOpenCL100DebugInfoDebugFunctionDeclaration,
     ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
         std::make_pair(
-            R"(%u32_0 %main_type_info %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic)",
+            R"(%u32_0 %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic)",
             "Name"),
         std::make_pair(
-            R"(%main_name %dbg_src %dbg_src 12 1 %comp_unit %main_linkage_name FlagIsPublic)",
+            R"(%main_name %dbg_src %dbg_src 12 1 %comp_unit %main_name FlagIsPublic)",
             "Type"),
         std::make_pair(
-            R"(%main_name %main_type_info %comp_unit 12 1 %comp_unit %main_linkage_name FlagIsPublic)",
+            R"(%main_name %main_type_info %comp_unit 12 1 %comp_unit %main_name FlagIsPublic)",
             "Source"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src 12 1 %dbg_src %main_linkage_name FlagIsPublic)",
+            R"(%main_name %main_type_info %dbg_src 12 1 %dbg_src %main_name FlagIsPublic)",
             "Parent"),
         std::make_pair(
             R"(%main_name %main_type_info %dbg_src 12 1 %comp_unit %void FlagIsPublic)",
@@ -3175,13 +2983,9 @@ TEST_F(ValidateVulkan100DebugInfo, DebugFunctionDeclaration) {
 };
 main() {}
 "
-%main_name = OpString "main"
-%main_linkage_name = OpString "v4f_main_f"
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 %u32_12 = OpConstant %u32 12
 %u32_13 = OpConstant %u32 13
 )";
@@ -3190,8 +2994,8 @@ main() {}
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction %u32_3 %void
-%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_linkage_name %u32_3
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_linkage_name %u32_3 %u32_13
+%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3 %u32_13
 )";
 
   const std::string extension = R"(
@@ -3212,13 +3016,9 @@ TEST_P(ValidateVulkan100DebugInfoDebugFunction, Fail) {
 };
 main() {}
 "
-%main_name = OpString "main"
-%main_linkage_name = OpString "v4f_main_f"
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 %u32_12 = OpConstant %u32 12
 %u32_13 = OpConstant %u32 13
 )";
@@ -3230,7 +3030,7 @@ main() {}
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction %u32_3 %void
-%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_linkage_name %u32_3
+%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3
 %main_info = OpExtInst %void %DbgExt DebugFunction )"
      << param.first;
 
@@ -3250,22 +3050,22 @@ INSTANTIATE_TEST_SUITE_P(
     AllVulkan100DebugInfoFail, ValidateVulkan100DebugInfoDebugFunction,
     ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
         std::make_pair(
-            R"(%u32_0 %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_linkage_name %u32_3 %u32_13)",
+            R"(%u32_0 %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3 %u32_13)",
             "Name"),
         std::make_pair(
-            R"(%main_name %dbg_src %dbg_src %u32_12 %u32_1 %comp_unit %main_linkage_name %u32_3 %u32_13)",
+            R"(%main_name %dbg_src %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3 %u32_13)",
             "Type"),
         std::make_pair(
-            R"(%main_name %main_type_info %comp_unit %u32_12 %u32_1 %comp_unit %main_linkage_name %u32_3 %u32_13)",
+            R"(%main_name %main_type_info %comp_unit %u32_12 %u32_1 %comp_unit %main_name %u32_3 %u32_13)",
             "Source"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src %u32_12 %u32_1 %dbg_src %main_linkage_name %u32_3 %u32_13)",
+            R"(%main_name %main_type_info %dbg_src %u32_12 %u32_1 %dbg_src %main_name %u32_3 %u32_13)",
             "Parent"),
         std::make_pair(
             R"(%main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %void %u32_3 %u32_13)",
             "Linkage Name"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_linkage_name %u32_3 %u32_13 %dbg_src)",
+            R"(%main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3 %u32_13 %dbg_src)",
             "Declaration"),
     }));
 
@@ -3277,13 +3077,9 @@ TEST_P(ValidateVulkan100DebugInfoDebugFunctionDeclaration, Fail) {
 };
 main() {}
 "
-%main_name = OpString "main"
-%main_linkage_name = OpString "v4f_main_f"
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 %u32_12 = OpConstant %u32 12
 %u32_13 = OpConstant %u32 13
 )";
@@ -3315,16 +3111,16 @@ INSTANTIATE_TEST_SUITE_P(
     ValidateVulkan100DebugInfoDebugFunctionDeclaration,
     ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
         std::make_pair(
-            R"(%u32_0 %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_linkage_name %u32_3)",
+            R"(%u32_0 %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3)",
             "Name"),
         std::make_pair(
-            R"(%main_name %dbg_src %dbg_src %u32_12 %u32_1 %comp_unit %main_linkage_name %u32_3)",
+            R"(%main_name %dbg_src %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3)",
             "Type"),
         std::make_pair(
-            R"(%main_name %main_type_info %comp_unit %u32_12 %u32_1 %comp_unit %main_linkage_name %u32_3)",
+            R"(%main_name %main_type_info %comp_unit %u32_12 %u32_1 %comp_unit %main_name %u32_3)",
             "Source"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src %u32_12 %u32_1 %dbg_src %main_linkage_name %u32_3)",
+            R"(%main_name %main_type_info %dbg_src %u32_12 %u32_1 %dbg_src %main_name %u32_3)",
             "Parent"),
         std::make_pair(
             R"(%main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %void %u32_3)",
@@ -3335,7 +3131,6 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugLexicalBlock) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
-%main_name = OpString "main"
 )";
 
   const std::string dbg_inst_header = R"(
@@ -3356,7 +3151,6 @@ TEST_P(ValidateOpenCL100DebugInfoDebugLexicalBlock, Fail) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
-%main_name = OpString "main"
 )";
 
   const auto& param = GetParam();
@@ -3441,12 +3235,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLexicalBlock) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
-%main_name = OpString "main"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 )";
 
   const std::string dbg_inst_header = R"(
@@ -3460,8 +3248,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -3469,12 +3257,6 @@ TEST_P(ValidateVulkan100DebugInfoDebugLexicalBlock, Fail) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
-%main_name = OpString "main"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 )";
 
   const auto& param = GetParam();
@@ -3491,8 +3273,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, constants, ss.str(),
-                                                     "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", ss.str(), "",
+                                                     extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second));
@@ -3514,11 +3296,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugScopeFailScope) {
 %code = OpString "void main() {}"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-)";
-
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
@@ -3534,7 +3311,7 @@ OpExtension "SPV_KHR_non_semantic_info"
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, body, extension, "Vertex"));
+      src, "", dbg_inst_header, body, extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("expected operand Scope"));
 }
@@ -3543,11 +3320,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugScopeFailInlinedAt) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "void main() {}"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 )";
 
   const std::string dbg_inst_header = R"(
@@ -3565,7 +3337,7 @@ OpExtension "SPV_KHR_non_semantic_info"
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, body, extension, "Vertex"));
+      src, "", dbg_inst_header, body, extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("expected operand Inlined At"));
 }
@@ -3657,10 +3429,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLocalVariable) {
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 %u32_10 = OpConstant %u32 10
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -3689,10 +3458,7 @@ TEST_P(ValidateVulkan100DebugInfoDebugLocalVariable, Fail) {
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 %u32_10 = OpConstant %u32 10
-%u32_32 = OpConstant %u32 32
 )";
 
   const auto& param = GetParam();
@@ -3887,10 +3653,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugDeclare) {
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 %u32_10 = OpConstant %u32 10
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -3994,10 +3757,7 @@ TEST_P(ValidateVulkan100DebugInfoDebugDeclare, Fail) {
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 %u32_10 = OpConstant %u32 10
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -4189,7 +3949,6 @@ main() {}
 %float_name = OpString "float"
 %ty_name = OpString "Texture"
 %t_name = OpString "T"
-%main_name = OpString "main"
 )";
 
   const std::string size_const = R"(
@@ -4226,7 +3985,6 @@ main() {}
 %float_name = OpString "float"
 %ty_name = OpString "Texture"
 %t_name = OpString "T"
-%main_name = OpString "main"
 )";
 
   const std::string size_const = R"(
@@ -4264,7 +4022,6 @@ main() {}
 %float_name = OpString "float"
 %ty_name = OpString "Texture"
 %t_name = OpString "T"
-%main_name = OpString "main"
 )";
 
   const std::string size_const = R"(
@@ -4308,12 +4065,6 @@ main() {}
 %t_name = OpString "T"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
-)";
-
   const std::string dbg_inst_header = R"(
 %dbg_none = OpExtInst %void %DbgExt DebugInfoNone
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
@@ -4329,8 +4080,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4344,12 +4095,6 @@ main() {}
 %ty_name = OpString "Texture"
 %t_name = OpString "T"
 %foo_name = OpString "foo"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -4368,8 +4113,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4382,13 +4127,6 @@ main() {}
 %float_name = OpString "float"
 %ty_name = OpString "Texture"
 %t_name = OpString "T"
-%main_name = OpString "main"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -4407,8 +4145,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4421,13 +4159,6 @@ main() {}
 %float_name = OpString "float"
 %ty_name = OpString "Texture"
 %t_name = OpString "T"
-%main_name = OpString "main"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -4444,8 +4175,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand Target must be DebugTypeComposite or "
@@ -4461,13 +4192,6 @@ main() {}
 %float_name = OpString "float"
 %ty_name = OpString "Texture"
 %t_name = OpString "T"
-%main_name = OpString "main"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -4485,8 +4209,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -4674,12 +4398,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugGlobalVariable) {
 %foo_name = OpString "foo"
 )";
 
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
-)";
-
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
@@ -4692,8 +4410,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4703,12 +4421,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugGlobalVariableStaticMember) {
 %code = OpString "float foo; void main() {}"
 %float_name = OpString "float"
 %foo_name = OpString "foo"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -4725,8 +4437,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4736,12 +4448,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugGlobalVariableDebugInfoNone) {
 %code = OpString "float foo; void main() {}"
 %float_name = OpString "float"
 %foo_name = OpString "foo"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -4757,8 +4463,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4768,12 +4474,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugGlobalVariableConst) {
 %code = OpString "float foo; void main() {}"
 %float_name = OpString "float"
 %foo_name = OpString "foo"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -4788,8 +4488,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header,
+                                                     "", extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4799,12 +4499,6 @@ TEST_P(ValidateVulkan100DebugInfoDebugGlobalVariable, Fail) {
 %code = OpString "float foo; void main() {}"
 %float_name = OpString "float"
 %foo_name = OpString "foo"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const auto& param = GetParam();
@@ -4822,8 +4516,8 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, constants, ss.str(),
-                                                     "", extension, "Vertex"));
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", ss.str(), "",
+                                                     extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second));
@@ -4857,15 +4551,13 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugInlinedAt) {
 %src = OpString "simple.hlsl"
 %code = OpString "void main() {}"
 %void_name = OpString "void"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
 )";
 
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_linkage_name FlagIsPublic 1 %main
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_name FlagIsPublic 1 %main
 %inlined_at = OpExtInst %void %DbgExt DebugInlinedAt 0 %main_info
 %inlined_at_recursive = OpExtInst %void %DbgExt DebugInlinedAt 0 %main_info %inlined_at
 )";
@@ -4888,15 +4580,13 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugInlinedAtFail) {
 %src = OpString "simple.hlsl"
 %code = OpString "void main() {}"
 %void_name = OpString "void"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
 )";
 
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_linkage_name FlagIsPublic 1 %main
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_name FlagIsPublic 1 %main
 %inlined_at = OpExtInst %void %DbgExt DebugInlinedAt 0 %main_info
 %inlined_at_recursive = OpExtInst %void %DbgExt DebugInlinedAt 0 %inlined_at
 )";
@@ -4920,15 +4610,13 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugInlinedAtFail2) {
 %src = OpString "simple.hlsl"
 %code = OpString "void main() {}"
 %void_name = OpString "void"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
 )";
 
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_linkage_name FlagIsPublic 1 %main
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_name FlagIsPublic 1 %main
 %inlined_at = OpExtInst %void %DbgExt DebugInlinedAt 0 %main_info
 %inlined_at_recursive = OpExtInst %void %DbgExt DebugInlinedAt 0 %main_info %main_info
 )";
@@ -4952,14 +4640,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugInlinedAt) {
 %src = OpString "simple.hlsl"
 %code = OpString "void main() {}"
 %void_name = OpString "void"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -4981,7 +4661,7 @@ OpExtension "SPV_KHR_non_semantic_info"
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, body, extension, "Vertex"));
+      src, "", dbg_inst_header, body, extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4990,14 +4670,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugInlinedAtFail) {
 %src = OpString "simple.hlsl"
 %code = OpString "void main() {}"
 %void_name = OpString "void"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -5019,7 +4691,7 @@ OpExtension "SPV_KHR_non_semantic_info"
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, body, extension, "Vertex"));
+      src, "", dbg_inst_header, body, extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("expected operand Scope"));
 }
@@ -5029,14 +4701,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugInlinedAtFail2) {
 %src = OpString "simple.hlsl"
 %code = OpString "void main() {}"
 %void_name = OpString "void"
-%main_name = OpString "main"
-%main_linkage_name = OpString "v_main"
-)";
-
-  const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -5058,7 +4722,7 @@ OpExtension "SPV_KHR_non_semantic_info"
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, body, extension, "Vertex"));
+      src, "", dbg_inst_header, body, extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("expected operand Inlined"));
 }
@@ -5192,10 +4856,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugValue) {
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 %u32_10 = OpConstant %u32 10
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -5232,10 +4893,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugValueWithVariableIndex) {
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 %u32_10 = OpConstant %u32 10
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
@@ -5272,10 +4930,7 @@ TEST_P(ValidateVulkan100DebugInfoDebugValue, Fail) {
 )";
 
   const std::string constants = R"(
-%u32_4 = OpConstant %u32 4
-%u32_5 = OpConstant %u32 5
 %u32_10 = OpConstant %u32 10
-%u32_32 = OpConstant %u32 32
 )";
 
   const std::string dbg_inst_header = R"(
