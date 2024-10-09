@@ -161,11 +161,17 @@ def main():
     print('\n" Core instructions')
     for inst in core["instructions"]:
         EmitAsStatement(inst['opname'])
+        aliases = inst.get('aliases', [])
+        for alias in aliases:
+            EmitAsStatement(alias)
     print('\n" Core operand enums')
     for operand_kind in core["operand_kinds"]:
         if 'enumerants' in operand_kind:
             for e in operand_kind['enumerants']:
                 EmitAsEnumerant(e['enumerant'])
+                aliases = e.get('aliases', [])
+                for a in aliases:
+                    EmitAsEnumerant(a)
 
     if args.extinst_glsl_grammar is not None:
         print('\n" GLSL.std.450 extended instructions')
