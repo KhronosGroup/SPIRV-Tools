@@ -871,6 +871,7 @@ TEST_F(IRContextTest, AsanErrorTest) {
   opt::Function* fun =
       context->cfg()->block(5)->GetParent();  // Computes the CFG analysis
   opt::DominatorAnalysis* dom = nullptr;
+  // NOLINTNEXTLINE
   dom = context->GetDominatorAnalysis(fun);  // Computes the dominator analysis,
                                              // which depends on the CFG
                                              // analysis
