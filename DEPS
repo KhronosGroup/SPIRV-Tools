@@ -14,7 +14,7 @@ vars = {
 
   're2_revision': '6dcd83d60f7944926bfd308cc13979fc53dd69ca',
 
-  'spirv_headers_revision': 'd92cf88c371424591115a87499009dfad41b669c',
+  'spirv_headers_revision': '07ddb1c0f1ffa929262d4568481a692bb0fb1535',
 }
 
 deps = {
@@ -37,4 +37,3 @@ deps = {
       Var('github') +  '/KhronosGroup/SPIRV-Headers.git@' +
           Var('spirv_headers_revision'),
 }
-
