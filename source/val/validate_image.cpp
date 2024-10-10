@@ -1134,15 +1134,15 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
                                        const Instruction* inst) {
   const auto result_type = _.FindDef(inst->type_id());
   if (result_type->opcode() != spv::Op::OpTypePointer &&
-      result_type->opcode() == spv::Op::OpTypeUntypedPointerKHR) {
+      result_type->opcode() != spv::Op::OpTypeUntypedPointerKHR) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected Result Type to be OpTypePointer";
+           << "Expected Result Type to be a pointer";
   }
 
   const auto storage_class = result_type->GetOperandAs<spv::StorageClass>(1);
   if (storage_class != spv::StorageClass::Image) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected Result Type to be OpTypePointer whose Storage Class "
+           << "Expected Result Type to be a pointer whose Storage Class "
               "operand is Image";
   }
 
@@ -1157,7 +1157,7 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
           _.HasCapability(spv::Capability::AtomicFloat16VectorNV) &&
           _.IsFloat16Vector2Or4Type(ptr_type))) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Expected Result Type to be OpTypePointer whose Type operand "
+             << "Expected Result Type to be a pointer whose Type operand "
                 "must be a scalar numerical type or OpTypeVoid";
     }
   }
