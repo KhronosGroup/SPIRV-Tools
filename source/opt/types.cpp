@@ -92,7 +92,7 @@ bool Type::IsUniqueType() const {
     case kStruct:
     case kArray:
     case kRuntimeArray:
-    case kNodePayloadArray:
+    case kNodePayloadArrayAMDX:
       return false;
     default:
       return true;
@@ -165,6 +165,7 @@ bool Type::operator==(const Type& other) const {
     DeclareKindCase(SampledImage);
     DeclareKindCase(Array);
     DeclareKindCase(RuntimeArray);
+    DeclareKindCase(NodePayloadArrayAMDX);
     DeclareKindCase(Struct);
     DeclareKindCase(Opaque);
     DeclareKindCase(Pointer);
@@ -221,7 +222,7 @@ size_t Type::ComputeHashValue(size_t hash, SeenTypes* seen) const {
     DeclareKindCase(SampledImage);
     DeclareKindCase(Array);
     DeclareKindCase(RuntimeArray);
-    DeclareKindCase(NodePayloadArray);
+    DeclareKindCase(NodePayloadArrayAMDX);
     DeclareKindCase(Struct);
     DeclareKindCase(Opaque);
     DeclareKindCase(Pointer);
@@ -489,29 +490,31 @@ void RuntimeArray::ReplaceElementType(const Type* type) {
   element_type_ = type;
 }
 
-NodePayloadArray::NodePayloadArray(const Type* type)
-    : Type(kNodePayloadArray), element_type_(type) {
+NodePayloadArrayAMDX::NodePayloadArrayAMDX(const Type* type)
+    : Type(kNodePayloadArrayAMDX), element_type_(type) {
   assert(!type->AsVoid());
 }
 
-bool NodePayloadArray::IsSameImpl(const Type* that, IsSameCache* seen) const {
-  const NodePayloadArray* rat = that->AsNodePayloadArray();
+bool NodePayloadArrayAMDX::IsSameImpl(const Type* that,
+                                      IsSameCache* seen) const {
+  const NodePayloadArrayAMDX* rat = that->AsNodePayloadArrayAMDX();
   if (!rat) return false;
   return element_type_->IsSameImpl(rat->element_type_, seen) &&
          HasSameDecorations(that);
 }
 
-std::string NodePayloadArray::str() const {
+std::string NodePayloadArrayAMDX::str() const {
   std::ostringstream oss;
   oss << "[" << element_type_->str() << "]";
   return oss.str();
 }
 
-size_t NodePayloadArray::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
+size_t NodePayloadArrayAMDX::ComputeExtraStateHash(size_t hash,
+                                                   SeenTypes* seen) const {
   return element_type_->ComputeHashValue(hash, seen);
 }
 
-void NodePayloadArray::ReplaceElementType(const Type* type) {
+void NodePayloadArrayAMDX::ReplaceElementType(const Type* type) {
   element_type_ = type;
 }
 

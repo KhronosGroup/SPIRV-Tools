@@ -48,7 +48,7 @@ class Sampler;
 class SampledImage;
 class Array;
 class RuntimeArray;
-class NodePayloadArray;
+class NodePayloadArrayAMDX;
 class Struct;
 class Opaque;
 class Pointer;
@@ -90,7 +90,7 @@ class Type {
     kSampledImage,
     kArray,
     kRuntimeArray,
-    kNodePayloadArray,
+    kNodePayloadArrayAMDX,
     kStruct,
     kOpaque,
     kPointer,
@@ -193,7 +193,7 @@ class Type {
   DeclareCastMethod(SampledImage)
   DeclareCastMethod(Array)
   DeclareCastMethod(RuntimeArray)
-  DeclareCastMethod(NodePayloadArray)
+  DeclareCastMethod(NodePayloadArrayAMDX)
   DeclareCastMethod(Struct)
   DeclareCastMethod(Opaque)
   DeclareCastMethod(Pointer)
@@ -439,16 +439,18 @@ class RuntimeArray : public Type {
   const Type* element_type_;
 };
 
-class NodePayloadArray : public Type {
+class NodePayloadArrayAMDX : public Type {
  public:
-  NodePayloadArray(const Type* element_type);
-  NodePayloadArray(const NodePayloadArray&) = default;
+  NodePayloadArrayAMDX(const Type* element_type);
+  NodePayloadArrayAMDX(const NodePayloadArrayAMDX&) = default;
 
   std::string str() const override;
   const Type* element_type() const { return element_type_; }
 
-  NodePayloadArray* AsNodePayloadArray() override { return this; }
-  const NodePayloadArray* AsNodePayloadArray() const override { return this; }
+  NodePayloadArrayAMDX* AsNodePayloadArrayAMDX() override { return this; }
+  const NodePayloadArrayAMDX* AsNodePayloadArrayAMDX() const override {
+    return this;
+  }
 
   size_t ComputeExtraStateHash(size_t hash, SeenTypes* seen) const override;
 

@@ -1,4 +1,6 @@
 // Copyright (c) 2016 Google Inc.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -174,6 +176,10 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
   types.emplace_back(new CooperativeMatrixKHR(f32, 8, 8, 8, 1002));
   types.emplace_back(new RayQueryKHR());
   types.emplace_back(new HitObjectNV());
+
+  // NodePayloadArrayAMDX (SPV_AMDX_shader_enqueue)
+  types.emplace_back(
+      new NodePayloadArrayAMDX(new Struct(std::vector<const Type*>{s32})));
 
   return types;
 }
