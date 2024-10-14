@@ -3,7 +3,7 @@ use_relative_paths = True
 vars = {
   'github': 'https://github.com',
 
-  'abseil_revision': '03b8d6ea3dc6a0b8c6bcf42503c2053754dab2e4',
+  'abseil_revision': '40cab244558f225cadcb943f84c5209f7ce876b1',
 
   'effcee_revision': '2c97e5689ed8d7ab6ae5820f884f03a601ae124b',
 
@@ -14,7 +14,7 @@ vars = {
 
   're2_revision': '6dcd83d60f7944926bfd308cc13979fc53dd69ca',
 
-  'spirv_headers_revision': 'd92cf88c371424591115a87499009dfad41b669c',
+  'spirv_headers_revision': '50bc4debdc3eec5045edbeb8ce164090e29b91f3',
 }
 
 deps = {
