@@ -497,8 +497,8 @@ spv_result_t FindCaseFallThrough(
         //  * Other case targets
         //  * Blocks in the same case construct
         //
-        // So the only remaining valid branches are the structured exits from the
-        // overall selection construct of the switch.
+        // So the only remaining valid branches are the structured exits from
+        // the overall selection construct of the switch.
         if (switch_construct.IsStructuredExit(_, block)) {
           continue;
         }
