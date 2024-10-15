@@ -859,9 +859,17 @@ void CopyPropagateArrays::AddUsesToWorklist(Instruction* inst) {
   def_use_mgr->ForEachUse(
       inst, [this, def_use_mgr](Instruction* use, uint32_t) {
         if (use->opcode() == spv::Op::OpStore) {
-          Instruction* target_pointer = def_use_mgr->GetDef(
+          Instruction* current_inst = def_use_mgr->GetDef(
               use->GetSingleWordInOperand(kStorePointerInOperand));
-          worklist_.push(target_pointer);
+          while (current_inst->opcode() == spv::Op::OpAccessChain) {
+            current_inst =
+                def_use_mgr->GetDef(current_inst->GetSingleWordInOperand(0));
+          }
+
+          if (current_inst->opcode() != spv::Op::OpVariable) {
+            return;
+          }
+          worklist_.push(current_inst);
         }
       });
 }
