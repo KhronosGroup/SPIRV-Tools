@@ -2098,6 +2098,54 @@ OpFunctionEnd
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
   SinglePassRunAndMatch<CopyPropagateArrays>(before, false);
 }
+
+TEST_F(CopyPropArrayPassTest, StoreToAccessChain) {
+  const std::string before = R"(OpCapability InterpolationFunction
+OpCapability MeshShadingEXT
+OpExtension "SPV_EXT_mesh_shader"
+OpMemoryModel Logical GLSL450
+OpEntryPoint MeshEXT %1 "main" %2 %3
+OpExecutionMode %1 LocalSize 128 1 1
+OpExecutionMode %1 OutputTrianglesEXT
+OpExecutionMode %1 OutputVertices 64
+OpExecutionMode %1 OutputPrimitivesEXT 126
+OpDecorate %3 Flat
+OpDecorate %3 Location 2
+%uint = OpTypeInt 32 0
+%uint_4 = OpConstant %uint 4
+%uint_32 = OpConstant %uint 32
+%_arr_uint_uint_32 = OpTypeArray %uint %uint_32
+%_struct_8 = OpTypeStruct %_arr_uint_uint_32
+%_ptr_TaskPayloadWorkgroupEXT__struct_8 = OpTypePointer TaskPayloadWorkgroupEXT %_struct_8
+%uint_64 = OpConstant %uint 64
+%_arr_uint_uint_64 = OpTypeArray %uint %uint_64
+%_ptr_Output__arr_uint_uint_64 = OpTypePointer Output %_arr_uint_uint_64
+%void = OpTypeVoid
+%14 = OpTypeFunction %void
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Function__arr_uint_uint_32 = OpTypePointer Function %_arr_uint_uint_32
+%_ptr_Output_uint = OpTypePointer Output %uint
+%2 = OpVariable %_ptr_TaskPayloadWorkgroupEXT__struct_8 TaskPayloadWorkgroupEXT
+%3 = OpVariable %_ptr_Output__arr_uint_uint_64 Output
+%1 = OpFunction %void None %14
+%18 = OpLabel
+%19 = OpVariable %_ptr_Function__arr_uint_uint_32 Function
+%20 = OpLoad %_struct_8 %2
+%21 = OpCompositeExtract %_arr_uint_uint_32 %20 0
+; CHECK: %28 = OpAccessChain %_ptr_TaskPayloadWorkgroupEXT__arr_uint_uint_32 %2 %uint_0
+OpStore %19 %21
+; CHECK: %22 = OpAccessChain %_ptr_TaskPayloadWorkgroupEXT_uint %28 %uint_4
+%22 = OpAccessChain %_ptr_Function_uint %19 %uint_4
+%23 = OpLoad %uint %22
+%24 = OpAccessChain %_ptr_Output_uint %3 %uint_4
+OpStore %24 %23
+OpReturn
+OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_4);
+  SinglePassRunAndMatch<CopyPropagateArrays>(before, true);
+}
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
