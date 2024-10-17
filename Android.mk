@@ -129,10 +129,8 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/inline_pass.cpp \
 		source/opt/inline_exhaustive_pass.cpp \
 		source/opt/inline_opaque_pass.cpp \
-		source/opt/inst_debug_printf_pass.cpp \
 		source/opt/instruction.cpp \
 		source/opt/instruction_list.cpp \
-		source/opt/instrument_pass.cpp \
 		source/opt/interface_var_sroa.cpp \
 		source/opt/interp_fixup_pass.cpp \
 		source/opt/invocation_interlock_placement_pass.cpp \
