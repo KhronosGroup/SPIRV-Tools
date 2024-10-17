@@ -388,7 +388,6 @@ config("spvtools_internal_config") {
 
 source_set("spvtools_headers") {
   sources = [
-    "include/spirv-tools/instrument.hpp",
     "include/spirv-tools/libspirv.h",
     "include/spirv-tools/libspirv.hpp",
     "include/spirv-tools/linker.hpp",
@@ -683,14 +682,10 @@ static_library("spvtools_opt") {
     "source/opt/inline_opaque_pass.h",
     "source/opt/inline_pass.cpp",
     "source/opt/inline_pass.h",
-    "source/opt/inst_debug_printf_pass.cpp",
-    "source/opt/inst_debug_printf_pass.h",
     "source/opt/instruction.cpp",
     "source/opt/instruction.h",
     "source/opt/instruction_list.cpp",
     "source/opt/instruction_list.h",
-    "source/opt/instrument_pass.cpp",
-    "source/opt/instrument_pass.h",
     "source/opt/interface_var_sroa.cpp",
     "source/opt/interface_var_sroa.h",
     "source/opt/interp_fixup_pass.cpp",
