@@ -1,4 +1,6 @@
 // Copyright (c) 2017 Google Inc.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -284,6 +286,28 @@ OpMemoryModel Logical GLSL450
 %ptr2 = OpTypeUntypedPointerKHR Workgroup
 )";
 
+  CompileSuccessfully(str.c_str(), SPV_ENV_UNIVERSAL_1_4);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+}
+
+TEST_F(ValidateTypeUnique, DuplicateNodePayloadArrayType) {
+  std::string str = R"(
+OpCapability Shader
+OpCapability ShaderEnqueueAMDX
+OpCapability Linkage
+OpExtension "SPV_AMDX_shader_enqueue"
+OpMemoryModel Logical GLSL450
+%floatt = OpTypeFloat 32
+%struct = OpTypeStruct %floatt
+%npat1 = OpTypeNodePayloadArrayAMDX %struct
+%npat2 = OpTypeNodePayloadArrayAMDX %struct
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
   CompileSuccessfully(str.c_str(), SPV_ENV_UNIVERSAL_1_4);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
 }
