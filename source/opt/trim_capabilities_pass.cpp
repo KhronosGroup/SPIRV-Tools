@@ -339,7 +339,8 @@ Handler_OpImageRead_StorageImageReadWithoutFormat(
   const uint32_t dim = type->GetSingleWordInOperand(kOpTypeImageDimIndex);
   const uint32_t format = type->GetSingleWordInOperand(kOpTypeImageFormatIndex);
 
-  // If the Image Format is Unknown and Dim is SubpassData, StorageImageReadWithoutFormat is required.
+  // If the Image Format is Unknown and Dim is SubpassData,
+  // StorageImageReadWithoutFormat is required.
   const bool is_unknown = spv::ImageFormat(format) == spv::ImageFormat::Unknown;
   const bool requires_capability_for_unknown =
       spv::Dim(dim) != spv::Dim::SubpassData;
