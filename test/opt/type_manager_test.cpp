@@ -175,6 +175,9 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
   types.emplace_back(new RayQueryKHR());
   types.emplace_back(new HitObjectNV());
 
+  types.emplace_back(new TensorLayoutNV(1002, 1000));
+  types.emplace_back(new TensorViewNV(1002, 1003, {1000, 1001}));
+
   return types;
 }
 
@@ -1102,11 +1105,14 @@ OpMemoryModel Logical GLSL450
 %uint = OpTypeInt 32 0
 %1 = OpTypePointer Input %uint
 %2 = OpTypePointer Uniform %uint
+%1000 = OpConstant %uint 0
+%1001 = OpConstant %uint 1
 %1002 = OpConstant %uint 2
 %8 = OpConstant %uint 8
 %24 = OpConstant %uint 24
 %42 = OpConstant %uint 42
 %100 = OpConstant %uint 100
+%1003 = OpConstantFalse %bool
   )";
 
   std::unique_ptr<IRContext> context =

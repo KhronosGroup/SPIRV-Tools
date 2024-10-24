@@ -414,7 +414,9 @@ spv_result_t spvTextEncodeOperand(const spvtools::AssemblyGrammar& grammar,
     case SPV_OPERAND_TYPE_SELECTION_CONTROL:
     case SPV_OPERAND_TYPE_DEBUG_INFO_FLAGS:
     case SPV_OPERAND_TYPE_CLDEBUG100_DEBUG_INFO_FLAGS:
-    case SPV_OPERAND_TYPE_OPTIONAL_COOPERATIVE_MATRIX_OPERANDS: {
+    case SPV_OPERAND_TYPE_OPTIONAL_COOPERATIVE_MATRIX_OPERANDS:
+    case SPV_OPERAND_TYPE_TENSOR_ADDRESSING_OPERANDS:
+    case SPV_OPERAND_TYPE_COOPERATIVE_MATRIX_REDUCE: {
       uint32_t value;
       if (auto error = grammar.parseMaskOperand(type, textValue, &value)) {
         return context->diagnostic(error)

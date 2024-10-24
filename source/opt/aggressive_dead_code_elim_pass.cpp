@@ -43,6 +43,7 @@ constexpr uint32_t kGlobalVariableVariableIndex = 12;
 constexpr uint32_t kExtInstSetInIdx = 0;
 constexpr uint32_t kExtInstOpInIdx = 1;
 constexpr uint32_t kInterpolantInIdx = 2;
+constexpr uint32_t kCooperativeMatrixLoadSourceAddrInIdx = 0;
 
 // Sorting functor to present annotation instructions in an easy-to-process
 // order. The functor orders by opcode first and falls back on unique id
@@ -438,6 +439,11 @@ uint32_t AggressiveDCEPass::GetLoadedVariableFromNonFunctionCalls(
       }
       break;
     }
+    case spv::Op::OpCooperativeMatrixLoadNV:
+    case spv::Op::OpCooperativeMatrixLoadKHR:
+    case spv::Op::OpCooperativeMatrixLoadTensorNV:
+      return GetVariableId(
+          inst->GetSingleWordInOperand(kCooperativeMatrixLoadSourceAddrInIdx));
     default:
       break;
   }
