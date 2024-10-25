@@ -64,10 +64,28 @@ spv_result_t spvOperandTableNameLookup(spv_target_env,
       // We consider the current operand as available as long as
       // it is in the grammar.  It might not be *valid* to use,
       // but that should be checked by the validator, not by parsing.
+      //
+      // Exact match case
       if (nameLength == strlen(entry.name) &&
           !strncmp(entry.name, name, nameLength)) {
         *pEntry = &entry;
         return SPV_SUCCESS;
+      }
+
+      // Check the aliases. Ideally we would have a version of the table sorted
+      // by name and then we could iterate between the lower and upper bounds to
+      // restrict the amount comparisons. Fortunately, name-based lookups are
+      // mostly restricted to the assembler.
+      if (entry.numAliases > 0) {
+        for (uint32_t aliasIndex = 0; aliasIndex < entry.numAliases;
+             aliasIndex++) {
+          const auto alias = entry.aliases[aliasIndex];
+          const size_t aliasLength = strlen(alias);
+          if (nameLength == aliasLength && !strncmp(name, alias, nameLength)) {
+            *pEntry = &entry;
+            return SPV_SUCCESS;
+          }
+        }
       }
     }
   }
@@ -83,7 +101,8 @@ spv_result_t spvOperandTableValueLookup(spv_target_env,
   if (!table) return SPV_ERROR_INVALID_TABLE;
   if (!pEntry) return SPV_ERROR_INVALID_POINTER;
 
-  spv_operand_desc_t needle = {"", value, 0, nullptr, 0, nullptr, {}, ~0u, ~0u};
+  spv_operand_desc_t needle = {"", value,   0,  nullptr, 0,  nullptr,
+                               0,  nullptr, {}, ~0u,     ~0u};
 
   auto comp = [](const spv_operand_desc_t& lhs, const spv_operand_desc_t& rhs) {
     return lhs.value < rhs.value;
@@ -212,6 +231,12 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
       return "cooperative matrix layout";
     case SPV_OPERAND_TYPE_COOPERATIVE_MATRIX_USE:
       return "cooperative matrix use";
+    case SPV_OPERAND_TYPE_TENSOR_CLAMP_MODE:
+      return "tensor clamp mode";
+    case SPV_OPERAND_TYPE_COOPERATIVE_MATRIX_REDUCE:
+      return "cooperative matrix reduce";
+    case SPV_OPERAND_TYPE_TENSOR_ADDRESSING_OPERANDS:
+      return "tensor addressing operands";
     case SPV_OPERAND_TYPE_INITIALIZATION_MODE_QUALIFIER:
       return "initialization mode qualifier";
     case SPV_OPERAND_TYPE_HOST_ACCESS_QUALIFIER:
@@ -370,6 +395,7 @@ bool spvOperandIsConcrete(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_STORE_CACHE_CONTROL:
     case SPV_OPERAND_TYPE_NAMED_MAXIMUM_NUMBER_OF_REGISTERS:
     case SPV_OPERAND_TYPE_FPENCODING:
+    case SPV_OPERAND_TYPE_TENSOR_CLAMP_MODE:
       return true;
     default:
       break;
@@ -390,6 +416,8 @@ bool spvOperandIsConcreteMask(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_CLDEBUG100_DEBUG_INFO_FLAGS:
     case SPV_OPERAND_TYPE_COOPERATIVE_MATRIX_OPERANDS:
     case SPV_OPERAND_TYPE_RAW_ACCESS_CHAIN_OPERANDS:
+    case SPV_OPERAND_TYPE_COOPERATIVE_MATRIX_REDUCE:
+    case SPV_OPERAND_TYPE_TENSOR_ADDRESSING_OPERANDS:
       return true;
     default:
       break;
@@ -578,6 +606,16 @@ std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
       break;
     case spv::Op::OpTypeArray:
       out = [](unsigned index) { return index == 1; };
+      break;
+    case spv::Op::OpCooperativeMatrixPerElementOpNV:
+      out = [](unsigned index) { return index == 3; };
+      break;
+    case spv::Op::OpCooperativeMatrixReduceNV:
+      out = [](unsigned index) { return index == 4; };
+      break;
+    case spv::Op::OpCooperativeMatrixLoadTensorNV:
+      // approximate, due to variable operands
+      out = [](unsigned index) { return index > 6; };
       break;
     default:
       out = [](unsigned) { return false; };

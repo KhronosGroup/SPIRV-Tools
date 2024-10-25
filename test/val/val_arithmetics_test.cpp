@@ -1280,14 +1280,14 @@ TEST_F(ValidateArithmetics, CoopMatMatrixTimesScalarMismatchFail) {
 
 TEST_F(ValidateArithmetics, CoopMatScopeFail) {
   const std::string types = R"(
-%workgroup = OpConstant %u32 2
+%device = OpConstant %u32 1
 
-%mat16x16_wg = OpTypeCooperativeMatrixNV %f16 %workgroup %u32_16 %u32_16
-%f16matwg_16x16_1 = OpConstantComposite %mat16x16_wg %f16_1
+%mat16x16_dv = OpTypeCooperativeMatrixNV %f16 %device %u32_16 %u32_16
+%f16matdv_16x16_1 = OpConstantComposite %mat16x16_dv %f16_1
 )";
 
   const std::string body = R"(
-%val1 = OpCooperativeMatrixMulAddNV %mat16x16 %f16mat_16x4_1 %f16mat_4x16_1 %f16matwg_16x16_1
+%val1 = OpCooperativeMatrixMulAddNV %mat16x16 %f16mat_16x4_1 %f16mat_4x16_1 %f16matdv_16x16_1
 )";
 
   CompileSuccessfully(GenerateCoopMatCode(types, body).c_str());
@@ -1475,7 +1475,10 @@ std::string GenerateCoopMatKHRCode(const std::string& extra_types,
 OpCapability Shader
 OpCapability Float16
 OpCapability CooperativeMatrixKHR
+OpCapability CooperativeMatrixReductionsNV
+OpCapability CooperativeMatrixPerElementOperationsNV
 OpExtension "SPV_KHR_cooperative_matrix"
+OpExtension "SPV_NV_cooperative_matrix2"
 OpExtension "SPV_KHR_vulkan_memory_model"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
@@ -1487,6 +1490,7 @@ OpEntryPoint GLCompute %main "main"
 %u32 = OpTypeInt 32 0
 %s32 = OpTypeInt 32 1
 
+%u32_8 = OpConstant %u32 8
 %u32_16 = OpConstant %u32 16
 %u32_4 = OpConstant %u32 4
 %subgroup = OpConstant %u32 3
@@ -1579,13 +1583,13 @@ TEST_F(ValidateArithmetics, CoopMatMatrixKHRTimesScalarMismatchFail) {
 
 TEST_F(ValidateArithmetics, CoopMatKHRScopeFail) {
   const std::string types = R"(
-%workgroup = OpConstant %u32 2
-%mat16x16_wg = OpTypeCooperativeMatrixKHR %f16 %workgroup %u32_16 %u32_16 %useC
-%f16matwg_16x16_1 = OpConstantComposite %mat16x16_wg %f16_1
+%device = OpConstant %u32 1
+%mat16x16_dv = OpTypeCooperativeMatrixKHR %f16 %device %u32_16 %u32_16 %useC
+%f16matdv_16x16_1 = OpConstantComposite %mat16x16_dv %f16_1
 )";
 
   const std::string body = R"(
-%val1 = OpFAdd %f16matA %f16matwg_16x16_1 %f16mat_A_1
+%val1 = OpFAdd %f16matA %f16matdv_16x16_1 %f16mat_A_1
 )";
 
   CompileSuccessfully(GenerateCoopMatKHRCode(types, body).c_str());
@@ -1610,6 +1614,241 @@ TEST_F(ValidateArithmetics, CoopMatKHRDimFail) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Cooperative matrix 'N' mismatch: CooperativeMatrixMulAddKHR"));
+}
+
+TEST_F(ValidateArithmetics, CoopMat2ReduceSuccess) {
+  const std::string extra_types = R"(
+
+%f16matC8 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_8 %useC
+%f16matC16x8 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_16 %u32_8 %useC
+%f16matC8x16 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_16 %useC
+
+%functy = OpTypeFunction %f16 %f16 %f16
+%reducefunc = OpFunction %f16 None %functy
+%x =  OpFunctionParameter %f16
+%y =  OpFunctionParameter %f16
+%entry2 = OpLabel
+%sum = OpFAdd %f16 %x %y
+OpReturnValue %sum
+OpFunctionEnd
+
+  )";
+  const std::string body = R"(
+%val1 = OpCooperativeMatrixReduceNV %f16matC8 %f16mat_C_1 2x2 %reducefunc
+%val2 = OpCooperativeMatrixReduceNV %f16matC16x8 %f16mat_C_1 Row %reducefunc
+%val3 = OpCooperativeMatrixReduceNV %f16matC8x16 %f16mat_C_1 Column %reducefunc
+%val4 = OpCooperativeMatrixReduceNV %f16matC %f16mat_C_1 Row|Column %reducefunc
+%val5 = OpCooperativeMatrixReduceNV %f16matC8 %f16mat_C_1 Row|Column %reducefunc
+)";
+
+  CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, CoopMat2Reduce2x2DimFail) {
+  const std::string extra_types = R"(
+
+%functy = OpTypeFunction %f16 %f16 %f16
+%reducefunc = OpFunction %f16 None %functy
+%x =  OpFunctionParameter %f16
+%y =  OpFunctionParameter %f16
+%entry2 = OpLabel
+%sum = OpFAdd %f16 %x %y
+OpReturnValue %sum
+OpFunctionEnd
+
+  )";
+  const std::string body = R"(
+%val1 = OpCooperativeMatrixReduceNV %f16matC %f16mat_C_1 2x2 %reducefunc
+)";
+
+  CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("For Reduce2x2, result rows/cols must be half of "
+                        "matrix rows/cols: CooperativeMatrixReduceNV"));
+}
+
+TEST_F(ValidateArithmetics, CoopMat2ReduceRowDimFail) {
+  const std::string extra_types = R"(
+
+%f16matC8x16 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_16 %useC
+
+%functy = OpTypeFunction %f16 %f16 %f16
+%reducefunc = OpFunction %f16 None %functy
+%x =  OpFunctionParameter %f16
+%y =  OpFunctionParameter %f16
+%entry2 = OpLabel
+%sum = OpFAdd %f16 %x %y
+OpReturnValue %sum
+OpFunctionEnd
+
+  )";
+  const std::string body = R"(
+%val1 = OpCooperativeMatrixReduceNV %f16matC8x16 %f16mat_C_1 Row %reducefunc
+)";
+
+  CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("For ReduceRow, result rows must match matrix rows: "
+                        "CooperativeMatrixReduceNV"));
+}
+
+TEST_F(ValidateArithmetics, CoopMat2ReduceColDimFail) {
+  const std::string extra_types = R"(
+
+%f16matC16x8 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_16 %u32_8 %useC
+
+%functy = OpTypeFunction %f16 %f16 %f16
+%reducefunc = OpFunction %f16 None %functy
+%x =  OpFunctionParameter %f16
+%y =  OpFunctionParameter %f16
+%entry2 = OpLabel
+%sum = OpFAdd %f16 %x %y
+OpReturnValue %sum
+OpFunctionEnd
+
+  )";
+  const std::string body = R"(
+%val1 = OpCooperativeMatrixReduceNV %f16matC16x8 %f16mat_C_1 Column %reducefunc
+)";
+
+  CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("For ReduceColumn, result cols must match matrix cols: "
+                        "CooperativeMatrixReduceNV"));
+}
+
+TEST_F(ValidateArithmetics, CoopMat2ReduceMaskFail) {
+  const std::string extra_types = R"(
+
+%f16matC8 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_8 %useC
+
+%functy = OpTypeFunction %f16 %f16 %f16
+%reducefunc = OpFunction %f16 None %functy
+%x =  OpFunctionParameter %f16
+%y =  OpFunctionParameter %f16
+%entry2 = OpLabel
+%sum = OpFAdd %f16 %x %y
+OpReturnValue %sum
+OpFunctionEnd
+
+  )";
+  const std::string body = R"(
+%val1 = OpCooperativeMatrixReduceNV %f16matC8 %f16mat_C_1 Row|Column|2x2 %reducefunc
+)";
+
+  CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Reduce 2x2 must not be used with Row/Column: "
+                        "CooperativeMatrixReduceNV"));
+}
+
+TEST_F(ValidateArithmetics, CoopMat2ReduceFuncTypeFail) {
+  const std::string extra_types = R"(
+
+%functy = OpTypeFunction %f32 %f32 %f32
+%reducefunc = OpFunction %f32 None %functy
+%x =  OpFunctionParameter %f32
+%y =  OpFunctionParameter %f32
+%entry2 = OpLabel
+%sum = OpFAdd %f32 %x %y
+OpReturnValue %sum
+OpFunctionEnd
+
+  )";
+  const std::string body = R"(
+%val1 = OpCooperativeMatrixReduceNV %f16matC %f16mat_C_1 Row|Column %reducefunc
+)";
+
+  CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("CombineFunc return type and parameters must match "
+                        "matrix component type: CooperativeMatrixReduceNV"));
+}
+
+TEST_F(ValidateArithmetics, CoopMat2PerElementOpSuccess) {
+  const std::string extra_types = R"(
+
+%functy = OpTypeFunction %f16 %u32 %u32 %f16
+%functy2 = OpTypeFunction %f16 %u32 %u32 %f16 %u32
+
+%elemfunc = OpFunction %f16 None %functy
+%row =  OpFunctionParameter %u32
+%col =  OpFunctionParameter %u32
+%el =  OpFunctionParameter %f16
+%entry2 = OpLabel
+OpReturnValue %el
+OpFunctionEnd
+
+%elemfunc2 = OpFunction %f16 None %functy2
+%row2 =  OpFunctionParameter %u32
+%col2 =  OpFunctionParameter %u32
+%el2 =  OpFunctionParameter %f16
+%x =  OpFunctionParameter %u32
+%entry3 = OpLabel
+OpReturnValue %el2
+OpFunctionEnd
+
+  )";
+  const std::string body = R"(
+%val1 = OpCooperativeMatrixPerElementOpNV %f16matC %f16mat_C_1 %elemfunc
+%val2 = OpCooperativeMatrixPerElementOpNV %f16matC %f16mat_C_1 %elemfunc2 %f16_1
+)";
+
+  CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, CoopMat2PerElementOpElemTyFail) {
+  const std::string extra_types = R"(
+
+%functy = OpTypeFunction %f32 %u32 %u32 %f32
+
+%elemfunc = OpFunction %f32 None %functy
+%row =  OpFunctionParameter %u32
+%col =  OpFunctionParameter %u32
+%el =  OpFunctionParameter %f32
+%entry2 = OpLabel
+OpReturnValue %el
+OpFunctionEnd
+
+  )";
+  const std::string body = R"(
+%val1 = OpCooperativeMatrixPerElementOpNV %f16matC %f16mat_C_1 %elemfunc
+)";
+
+  CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must match matrix component type"));
+}
+
+TEST_F(ValidateArithmetics, CoopMat2PerElementOpRowTyFail) {
+  const std::string extra_types = R"(
+
+%functy = OpTypeFunction %f16 %f16 %u32 %f16
+
+%elemfunc = OpFunction %f16 None %functy
+%row =  OpFunctionParameter %f16
+%col =  OpFunctionParameter %u32
+%el =  OpFunctionParameter %f16
+%entry2 = OpLabel
+OpReturnValue %el
+OpFunctionEnd
+
+  )";
+  const std::string body = R"(
+%val1 = OpCooperativeMatrixPerElementOpNV %f16matC %f16mat_C_1 %elemfunc
+)";
+
+  CompileSuccessfully(GenerateCoopMatKHRCode(extra_types, body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a 32-bit integer"));
 }
 
 }  // namespace

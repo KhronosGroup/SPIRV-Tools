@@ -60,7 +60,6 @@ add_spvtools_unittest(TARGET opt
        inline_opaque_test.cpp
        inline_test.cpp
        insert_extract_elim_test.cpp
-       inst_debug_printf_test.cpp
        instruction_list_test.cpp
        instruction_test.cpp
        interface_var_sroa_test.cpp

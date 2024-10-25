@@ -7171,6 +7171,639 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
+std::string GenCoopMat2Shader(const std::string& extra_types,
+                              const std::string& main_body,
+                              const std::string& after_main = "",
+                              const std::string& extra_decorations = "") {
+  const std::string prefix = R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability PhysicalStorageBufferAddresses
+OpCapability VulkanMemoryModel
+OpCapability CooperativeMatrixKHR
+OpCapability TensorAddressingNV
+OpCapability CooperativeMatrixTensorAddressingNV
+OpCapability CooperativeMatrixBlockLoadsNV
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_NV_tensor_addressing"
+OpExtension "SPV_NV_cooperative_matrix2"
+OpExtension "SPV_KHR_cooperative_matrix"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+
+OpDecorate %f16_arr ArrayStride 2
+OpDecorate %46 Block
+OpMemberDecorate %46 0 Offset 0
+OpDecorate %48 Binding 0
+OpDecorate %48 DescriptorSet 0
+OpDecorate %psb Restrict
+)" + extra_decorations + R"(
+%void = OpTypeVoid
+%bool = OpTypeBool
+%func = OpTypeFunction %void
+%f16 = OpTypeFloat 16
+%f32 = OpTypeFloat 32
+%u32 = OpTypeInt 32 0
+%s32 = OpTypeInt 32 1
+
+%s32_0 = OpConstant %s32 0
+%f16_0 = OpConstant %f16 0
+%u32_2 = OpConstant %u32 2
+%u32_8 = OpConstant %u32 8
+%use_A = OpConstant %u32 0
+%workgroup = OpConstant %u32 2
+%subgroup = OpConstant %u32 3
+
+%f16_arr = OpTypeRuntimeArray %f16
+%46 = OpTypeStruct %f16_arr
+%47 = OpTypePointer StorageBuffer %46
+%48 = OpVariable %47 StorageBuffer
+%51 = OpTypePointer StorageBuffer %f16_arr
+%psbptr = OpTypePointer PhysicalStorageBuffer %f16_arr
+
+%f16mat = OpTypeCooperativeMatrixKHR %f16 %workgroup %u32_8 %u32_8 %use_A
+%f32mat = OpTypeCooperativeMatrixKHR %f32 %subgroup %u32_8 %u32_8 %use_A
+
+%arr2 = OpTypeArray %u32 %u32_2
+%functy = OpTypeFunction %f16 %psbptr %arr2 %arr2
+)";
+
+  const std::string decode_func =
+      R"(
+%decodefunc = OpFunction %f16 None %functy
+%psb = OpFunctionParameter %psbptr
+%c0 =  OpFunctionParameter %arr2
+%c1 =  OpFunctionParameter %arr2
+%entry2 = OpLabel
+OpReturnValue %f16_0
+OpFunctionEnd
+)";
+
+  const std::string func_begin =
+      R"(
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+
+%array_ptr = OpAccessChain %51 %48 %s32_0
+)";
+
+  const std::string suffix =
+      R"(
+OpReturn
+OpFunctionEnd)";
+
+  return prefix + extra_types + func_begin + main_body + suffix + decode_func +
+         after_main;
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorLayoutAndViewSuccess) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 2
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %hasdim = OpConstantFalse %bool
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1
+      )",
+      R"(
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorLayoutInvalidDimFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 6
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      )",
+      R"(
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be between 1 and 5"));
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorLayoutInvalidClampFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 6
+      %dim = OpConstant %u32 2
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      )",
+      R"(
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must be a valid TensorClampMode"));
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorViewInvalidDimFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %dim = OpConstant %u32 6
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %hasdim = OpConstantFalse %bool
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1
+      )",
+      R"(
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be between 1 and 5"));
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorViewInvalidPermutationFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %dim = OpConstant %u32 3
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %hasdim = OpConstantFalse %bool
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1 %p1
+      )",
+      R"(
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Permutation values don't form a valid permutation"));
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorViewInvalidPermutation2Fail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %dim = OpConstant %u32 3
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %hasdim = OpConstantFalse %bool
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1
+      )",
+      R"(
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Incorrect number of permutation values."));
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorLayoutBlockSizePass) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 3
+      %b = OpConstant %u32 1
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      )",
+      R"(
+      %tl = OpCreateTensorLayoutNV %layout
+      %tl2 = OpTensorLayoutSetBlockSizeNV %layout %tl %b %b %b
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorLayoutBlockSizeFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 3
+      %b = OpConstant %u32 1
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      )",
+      R"(
+      %tl = OpCreateTensorLayoutNV %layout
+      %tl2 = OpTensorLayoutSetBlockSizeNV %layout %tl %b %b %b %b
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("unexpected number of operands"));
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorLayoutDimensionPass) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 3
+      %b = OpConstant %u32 1
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      )",
+      R"(
+      %tl = OpCreateTensorLayoutNV %layout
+      %tl2 = OpTensorLayoutSetDimensionNV %layout %tl %b %b %b
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorLayoutDimensionFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 3
+      %b = OpConstant %u32 1
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      )",
+      R"(
+      %tl = OpCreateTensorLayoutNV %layout
+      %tl2 = OpTensorLayoutSetDimensionNV %layout %tl %b %b %b %b
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("unexpected number of operands"));
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorLayoutStridePass) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 3
+      %b = OpConstant %u32 1
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      )",
+      R"(
+      %tl = OpCreateTensorLayoutNV %layout
+      %tl2 = OpTensorLayoutSetStrideNV %layout %tl %b %b %b
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorLayoutStrideFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 3
+      %b = OpConstant %u32 1
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      )",
+      R"(
+      %tl = OpCreateTensorLayoutNV %layout
+      %tl2 = OpTensorLayoutSetStrideNV %layout %tl %b %b %b %b
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("unexpected number of operands"));
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorLayoutSlicePass) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 3
+      %b = OpConstant %u32 1
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      )",
+      R"(
+      %tl = OpCreateTensorLayoutNV %layout
+      %tl2 = OpTensorLayoutSliceNV %layout %tl %b %b %b %b %b %b
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorLayoutSliceFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 3
+      %b = OpConstant %u32 1
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      )",
+      R"(
+      %tl = OpCreateTensorLayoutNV %layout
+      %tl2 = OpTensorLayoutSliceNV %layout %tl %b %b %b
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("unexpected number of operands"));
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorLayoutSetClampValuePass) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 3
+      %b = OpConstant %u32 1
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      )",
+      R"(
+      %tl = OpCreateTensorLayoutNV %layout
+      %tl2 = OpTensorLayoutSetClampValueNV %layout %tl %b
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorViewDimensionPass) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %dim = OpConstant %u32 3
+      %hasdim = OpConstantFalse %bool
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %p2 = OpConstant %u32 2
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1 %p2
+      %b = OpConstant %u32 1
+      )",
+      R"(
+      %tv = OpCreateTensorViewNV %view
+      %tv2 = OpTensorViewSetDimensionNV %view %tv %b %b %b
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorViewDimensionFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %dim = OpConstant %u32 3
+      %hasdim = OpConstantFalse %bool
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %p2 = OpConstant %u32 2
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1 %p2
+      %b = OpConstant %u32 1
+      )",
+      R"(
+      %tv = OpCreateTensorViewNV %view
+      %tv2 = OpTensorViewSetDimensionNV %view %tv %b %b %b %b
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("unexpected number of operands"));
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorViewStridePass) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %dim = OpConstant %u32 3
+      %hasdim = OpConstantFalse %bool
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %p2 = OpConstant %u32 2
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1 %p2
+      %b = OpConstant %u32 1
+      )",
+      R"(
+      %tv = OpCreateTensorViewNV %view
+      %tv2 = OpTensorViewSetStrideNV %view %tv %b %b %b
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorViewStrideFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %dim = OpConstant %u32 3
+      %hasdim = OpConstantFalse %bool
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %p2 = OpConstant %u32 2
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1 %p2
+      %b = OpConstant %u32 1
+      )",
+      R"(
+      %tv = OpCreateTensorViewNV %view
+      %tv2 = OpTensorViewSetStrideNV %view %tv %b %b %b %b
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("unexpected number of operands"));
+}
+
+TEST_F(ValidateMemory, CoopMat2TensorViewClipPass) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %dim = OpConstant %u32 3
+      %hasdim = OpConstantFalse %bool
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %p2 = OpConstant %u32 2
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1 %p2
+      %b = OpConstant %u32 1
+      )",
+      R"(
+      %tv = OpCreateTensorViewNV %view
+      %tv2 = OpTensorViewSetClipNV %view %tv %b %b %b %b
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadStoreTensorPass) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 2
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %hasdim = OpConstantFalse %bool
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1
+      )",
+      R"(
+      %mat = OpUndef %f16mat
+      %tl = OpCreateTensorLayoutNV %layout
+      %tv = OpCreateTensorViewNV %view
+      %mat2 = OpCooperativeMatrixLoadTensorNV %f16mat %array_ptr %mat %tl None None
+      %mat3 = OpCooperativeMatrixLoadTensorNV %f16mat %array_ptr %mat %tl Aligned 4 None
+      %mat4 = OpCooperativeMatrixLoadTensorNV %f16mat %array_ptr %mat %tl None TensorView %tv
+      %mat5 = OpCooperativeMatrixLoadTensorNV %f16mat %array_ptr %mat %tl None DecodeFunc %decodefunc
+      %mat6 = OpCooperativeMatrixLoadTensorNV %f16mat %array_ptr %mat %tl None TensorView|DecodeFunc %tv %decodefunc
+      %mat7 = OpCooperativeMatrixLoadTensorNV %f16mat %array_ptr %mat %tl Aligned 4 TensorView|DecodeFunc %tv %decodefunc
+      OpCooperativeMatrixStoreTensorNV %array_ptr %mat %tl None None
+      OpCooperativeMatrixStoreTensorNV %array_ptr %mat %tl Aligned 4 None
+      OpCooperativeMatrixStoreTensorNV %array_ptr %mat %tl None TensorView %tv
+      OpCooperativeMatrixStoreTensorNV %array_ptr %mat %tl Aligned 4 TensorView %tv
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorWrongLayoutTypeFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 2
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %hasdim = OpConstantFalse %bool
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1
+      )",
+      R"(
+      %mat = OpUndef %f16mat
+      %tl = OpCreateTensorLayoutNV %layout
+      %tv = OpCreateTensorViewNV %view
+      %mat2 = OpCooperativeMatrixLoadTensorNV %f16mat %array_ptr %mat %tv None None
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("does not have a tensor layout type"));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorWrongObjectTypeFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 2
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %hasdim = OpConstantFalse %bool
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1
+      )",
+      R"(
+      %mat = OpUndef %f32mat
+      %tl = OpCreateTensorLayoutNV %layout
+      %tv = OpCreateTensorViewNV %view
+      %mat2 = OpCooperativeMatrixLoadTensorNV %f16mat %array_ptr %mat %tl None None
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("type does not match Result Type"));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeFuncTypeFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 2
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %hasdim = OpConstantFalse %bool
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1
+      )",
+      R"(
+      %mat = OpUndef %f32mat
+      %tl = OpCreateTensorLayoutNV %layout
+      %tv = OpCreateTensorViewNV %view
+      %mat2 = OpCooperativeMatrixLoadTensorNV %f32mat %array_ptr %mat %tl None DecodeFunc %decodefunc
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("return type must match matrix component type"));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeFuncArrayTypeFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 2
+      %u32_3 = OpConstant %u32 3
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %hasdim = OpConstantFalse %bool
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1
+      %arr3 = OpTypeArray %u32 %u32_3
+      %functy2 = OpTypeFunction %f16 %psbptr %arr3 %arr3
+      )",
+      R"(
+      %mat = OpUndef %f16mat
+      %tl = OpCreateTensorLayoutNV %layout
+      %tv = OpCreateTensorViewNV %view
+      %mat2 = OpCooperativeMatrixLoadTensorNV %f16mat %array_ptr %mat %tl None DecodeFunc %decodefunc2
+      )",
+      R"(
+      %decodefunc2 = OpFunction %f16 None %functy2
+      %psb2 = OpFunctionParameter %psbptr
+      %c02 =  OpFunctionParameter %arr3
+      %c12 =  OpFunctionParameter %arr3
+      %entry3 = OpLabel
+      OpReturnValue %f16_0
+      OpFunctionEnd
+      )",
+      R"(
+      OpDecorate %psb2 Restrict
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("dimension equal to the tensor dimension"));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeFuncPointerTypeFail) {
+  std::string spirv = GenCoopMat2Shader(
+      R"(
+      %clamp = OpConstant %u32 0
+      %dim = OpConstant %u32 2
+      %p0 = OpConstant %u32 0
+      %p1 = OpConstant %u32 1
+      %hasdim = OpConstantFalse %bool
+      %layout = OpTypeTensorLayoutNV %dim %clamp
+      %view = OpTypeTensorViewNV %dim %hasdim %p0 %p1
+      %sbptr = OpTypePointer StorageBuffer %f16_arr
+      %functy2 = OpTypeFunction %f16 %sbptr %arr2 %arr2
+      )",
+      R"(
+      %mat = OpUndef %f16mat
+      %tl = OpCreateTensorLayoutNV %layout
+      %tv = OpCreateTensorViewNV %view
+      %mat2 = OpCooperativeMatrixLoadTensorNV %f16mat %array_ptr %mat %tl None DecodeFunc %decodefunc2
+      )",
+      R"(
+      %decodefunc2 = OpFunction %f16 None %functy2
+      %sb = OpFunctionParameter %sbptr
+      %c02 =  OpFunctionParameter %arr2
+      %c12 =  OpFunctionParameter %arr2
+      %entry3 = OpLabel
+      OpReturnValue %f16_0
+      OpFunctionEnd
+      )");
+
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("first parameter must be pointer to PhysicalStorageBuffer"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

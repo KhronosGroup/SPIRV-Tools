@@ -856,14 +856,17 @@ uint32_t CopyPropagateArrays::GetMemberTypeId(
 void CopyPropagateArrays::AddUsesToWorklist(Instruction* inst) {
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
 
-  def_use_mgr->ForEachUse(
-      inst, [this, def_use_mgr](Instruction* use, uint32_t) {
-        if (use->opcode() == spv::Op::OpStore) {
-          Instruction* target_pointer = def_use_mgr->GetDef(
-              use->GetSingleWordInOperand(kStorePointerInOperand));
-          worklist_.push(target_pointer);
-        }
-      });
+  def_use_mgr->ForEachUse(inst, [this](Instruction* use, uint32_t) {
+    if (use->opcode() == spv::Op::OpStore) {
+      uint32_t var_id;
+      Instruction* target_pointer = GetPtr(use, &var_id);
+      if (target_pointer->opcode() != spv::Op::OpVariable) {
+        return;
+      }
+
+      worklist_.push(target_pointer);
+    }
+  });
 }
 
 void CopyPropagateArrays::MemoryObject::PushIndirection(

@@ -314,6 +314,12 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_RAW_ACCESS_CHAIN_OPERANDS,
   // Optional enum type from SPV_NV_raw_access_chains
   SPV_OPERAND_TYPE_OPTIONAL_RAW_ACCESS_CHAIN_OPERANDS,
+  // Enum type from SPV_NV_tensor_addressing
+  SPV_OPERAND_TYPE_TENSOR_CLAMP_MODE,
+  // Enum type from SPV_NV_cooperative_matrix2
+  SPV_OPERAND_TYPE_COOPERATIVE_MATRIX_REDUCE,
+  // Enum type from SPV_NV_cooperative_matrix2
+  SPV_OPERAND_TYPE_TENSOR_ADDRESSING_OPERANDS,
 
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.
