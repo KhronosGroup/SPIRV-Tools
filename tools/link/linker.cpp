@@ -143,7 +143,7 @@ int main(int, const char* argv[]) {
 
   std::vector<std::vector<uint32_t>> contents(inFiles.size());
   for (size_t i = 0u; i < inFiles.size(); ++i) {
-    if (!ReadBinaryFile<uint32_t>(inFiles[i].c_str(), &contents[i])) return 1;
+    if (!ReadBinaryFile(inFiles[i].c_str(), &contents[i])) return 1;
   }
 
   const spvtools::MessageConsumer consumer = [](spv_message_level_t level,
