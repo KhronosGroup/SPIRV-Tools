@@ -269,6 +269,7 @@ cc_library(
 cc_library(
     name = "tools_io",
     hdrs = ["tools/io.h"],
+    srcs = ["tools/io.cpp"],
     copts = COMMON_COPTS,
 )
 

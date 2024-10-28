@@ -193,7 +193,7 @@ int main(int argc, char** argv) {
   }
 
   std::vector<uint32_t> contents;
-  if (!ReadBinaryFile<uint32_t>(inFile, &contents)) return 1;
+  if (!ReadBinaryFile(inFile, &contents)) return 1;
 
   spvtools::SpirvTools tools(target_env);
   tools.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);

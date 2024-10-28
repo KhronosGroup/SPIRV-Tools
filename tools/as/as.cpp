@@ -101,7 +101,7 @@ int main(int, const char** argv) {
   std::string inFile = flags::positional_arguments[0];
 
   std::vector<char> contents;
-  if (!ReadTextFile<char>(inFile.c_str(), &contents)) return 1;
+  if (!ReadTextFile(inFile.c_str(), &contents)) return 1;
 
   if (target_env == spv_target_env::SPV_ENV_MAX) {
     // Resolve previously undecided environment type
