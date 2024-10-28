@@ -25,7 +25,27 @@
 // file. If |filename| is nullptr or "-", reads from the standard input, but
 // reopened as a binary file. If any error occurs, writes error messages to
 // standard error and returns false.
+//
+// If the given input is detected to be in ascii hex, it is converted to binary
+// automatically.  In that case, the shape of the input data is determined based
+// on the representation of the magic number:
+//
+//  * "[0]x[0]7230203": Every following "0x..." represents a word.
+//  * "[0]x[0]7[,] [0]x23...": Every following "0x..." represents a byte, stored
+//    in big-endian order
+//  * "[0]x[0]3[,] [0]x[0]2...": Every following "0x..." represents a byte,
+//    stored in little-endian order
+//  * "07[, ]23...": Every following "XY" represents a byte, stored in
+//    big-endian order
+//  * "03[, ]02...": Every following "XY" represents a byte, stored in
+//    little-endian order
 bool ReadBinaryFile(const char* filename, std::vector<uint32_t>* data);
+
+// The hex->binary logic of |ReadBinaryFile| applied to a pre-loaded stream of
+// bytes.  Used by tests to avoid having to call |ReadBinaryFile| with temp
+// files.  Returns false in case of parse errors.
+bool ConvertHexToBinary(const std::vector<char>& stream,
+                        std::vector<uint32_t>* data);
 
 // Sets the contents of the file named |filename| in |data|, assuming each
 // element in the file is of type |char|. The file is opened as a text file.  If
