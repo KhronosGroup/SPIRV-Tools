@@ -447,6 +447,7 @@ cc_library(
         "tools_util",
         ":spirv_tools_internal",
         ":test_lib",
+        ":tools_io",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],
