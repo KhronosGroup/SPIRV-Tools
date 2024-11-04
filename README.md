@@ -80,6 +80,8 @@ further notice.
 * Assembler only does basic syntax checking.  No cross validation of
   IDs or types is performed, except to check literal arguments to
   `OpConstant`, `OpSpecConstant`, and `OpSwitch`.
+* Where tools expect binary input, a hex stream may be provided instead.  See
+  `spirv-dis --help`.
 
 See [`docs/syntax.md`](docs/syntax.md) for the assembly language syntax.
 
