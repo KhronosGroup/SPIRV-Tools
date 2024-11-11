@@ -2115,14 +2115,16 @@ spv_result_t ValidateCooperativeMatrixLoadStoreKHR(ValidationState_t& _,
   const auto storage_class =
       pointer_type->GetOperandAs<spv::StorageClass>(storage_class_index);
 
-  if (storage_class != spv::StorageClass::Workgroup &&
-      storage_class != spv::StorageClass::StorageBuffer &&
-      storage_class != spv::StorageClass::PhysicalStorageBuffer) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << _.VkErrorID(8973) << opname
-           << " storage class for pointer type <id> "
-           << _.getIdName(pointer_type_id)
-           << " is not Workgroup, StorageBuffer, or PhysicalStorageBuffer.";
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (storage_class != spv::StorageClass::Workgroup &&
+        storage_class != spv::StorageClass::StorageBuffer &&
+        storage_class != spv::StorageClass::PhysicalStorageBuffer) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << _.VkErrorID(8973) << opname
+             << " storage class for pointer type <id> "
+             << _.getIdName(pointer_type_id)
+             << " is not Workgroup, StorageBuffer, or PhysicalStorageBuffer.";
+    }
   }
 
   if (!untyped) {
