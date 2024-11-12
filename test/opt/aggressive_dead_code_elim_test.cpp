@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+#include "gmock/gmock.h"
 #include "test/opt/assembly_builder.h"
 #include "test/opt/pass_fixture.h"
 #include "test/opt/pass_utils.h"
@@ -25,6 +26,8 @@ namespace opt {
 namespace {
 
 using AggressiveDCETest = PassTest<::testing::Test>;
+
+using ::testing::HasSubstr;
 
 TEST_F(AggressiveDCETest, EliminateExtendedInst) {
   //  #version 140
@@ -8231,6 +8234,67 @@ OpFunctionEnd
 )";
 
   SinglePassRunAndCheck<AggressiveDCEPass>(spirv, spirv, true, false);
+}
+
+TEST_F(AggressiveDCETest, NoEliminateOpSource) {
+  // Should not eliminate OpSource
+
+  const std::string text =
+      R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_var_COLOR %out_var_SV_TARGET
+OpExecutionMode %main OriginUpperLeft
+%4 = OpString "D:\\directxshadercompiler\\tools\\clang\\test\\CodeGenSPIRV\\spirv.debug.opsource.include.hlsl"
+%5 = OpString "D:\\directxshadercompiler\\tools\\clang\\test\\CodeGenSPIRV/spirv.debug.opsource.include-file.hlsli"
+OpSource HLSL 600 %4 "// RUN: %dxc -T ps_6_0 -E main -Zi %s -spirv | FileCheck %s
+#include \"spirv.debug.opsource.include-file.hlsli\"
+
+struct ColorType
+{
+    float4 position : SV_POSITION;
+    float4 color : COLOR;
+};
+
+float4 main(UBER_TYPE(Color) input) : SV_TARGET
+{
+    return input.color;
+}
+"
+OpSource HLSL 600 %5 "#define UBER_TYPE(x) x ## Type
+"
+OpName %in_var_COLOR "in.var.COLOR"
+OpName %out_var_SV_TARGET "out.var.SV_TARGET"
+OpName %main "main"
+OpDecorate %in_var_COLOR Location 0
+OpDecorate %out_var_SV_TARGET Location 0
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%void = OpTypeVoid
+%11 = OpTypeFunction %void
+%in_var_COLOR = OpVariable %_ptr_Input_v4float Input
+%out_var_SV_TARGET = OpVariable %_ptr_Output_v4float Output
+OpLine %4 22 1
+%main = OpFunction %void None %11
+OpNoLine
+%12 = OpLabel
+OpLine %4 22 1
+%13 = OpLoad %v4float %in_var_COLOR
+OpStore %out_var_SV_TARGET %13
+OpLine %4 25 1
+OpReturn
+OpFunctionEnd
+)";
+
+  auto result = SinglePassRunAndDisassemble<AggressiveDCEPass>(
+      text, /* skip_nop = */ true, /* skip_validation = */ false);
+
+  EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
+  const std::string& output = std::get<0>(result);
+  EXPECT_THAT(
+      output,
+      HasSubstr("OpSource HLSL 600 %5 \"#define UBER_TYPE(x) x ## Type"));
 }
 
 }  // namespace
