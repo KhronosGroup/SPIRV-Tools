@@ -102,6 +102,40 @@ TEST_F(ConstantManagerTest, GetDefiningInstructionIdOverflow) {
   EXPECT_EQ(inst, nullptr);
 }
 
+TEST_F(ConstantManagerTest, ConstantCompositeReplicateExtMapping) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability ReplicatedCompositesEXT
+OpExtension "SPV_EXT_replicated_composites"
+OpMemoryModel Logical Simple
+%1 = OpTypeInt 32 1
+%2 = OpTypeVector %1 4
+%3 = OpConstant %1 0
+%4 = OpConstantCompositeReplicateEXT %2 %3
+  )";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_5, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(context, nullptr);
+
+  ConstantManager* const_mgr = context->get_constant_mgr();
+  const Constant* base_constant = const_mgr->FindDeclaredConstant(3);
+  ASSERT_NE(base_constant, nullptr);
+
+  const Constant* composite_constant = const_mgr->FindDeclaredConstant(4);
+  ASSERT_NE(composite_constant, nullptr);
+  EXPECT_NE(composite_constant->type()->AsVector(), nullptr);
+
+  const CompositeConstant* composite =
+      composite_constant->AsCompositeConstant();
+  ASSERT_NE(composite, nullptr);
+  ASSERT_FALSE(composite->GetComponents().empty());
+  for (const Constant* component : composite->GetComponents()) {
+    EXPECT_EQ(component, base_constant);
+  }
+}
+
 }  // namespace
 }  // namespace analysis
 }  // namespace opt
