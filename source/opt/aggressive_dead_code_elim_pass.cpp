@@ -676,6 +676,7 @@ void AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
     auto op = dbg.GetShader100DebugOpcode();
     if (op == NonSemanticShaderDebugInfo100DebugCompilationUnit ||
         op == NonSemanticShaderDebugInfo100DebugEntryPoint ||
+        op == NonSemanticShaderDebugInfo100DebugSource ||
         op == NonSemanticShaderDebugInfo100DebugSourceContinued) {
       AddToWorklist(&dbg);
     }
