@@ -841,6 +841,13 @@ TEST_P(CapabilitySetForEachTest, CopyConstructor) {
   EXPECT_THAT(ElementsIn(copy), Eq(GetParam().expected));
 }
 
+TEST_P(CapabilitySetForEachTest, MoveConstructor) {
+  // We need a writable copy to move from.
+  CapabilitySet copy(GetParam().capabilities);
+  CapabilitySet moved(std::move(copy));
+  EXPECT_THAT(ElementsIn(moved), Eq(GetParam().expected));
+}
+
 TEST_P(CapabilitySetForEachTest, OperatorEquals) {
   CapabilitySet assigned = GetParam().capabilities;
   EXPECT_THAT(ElementsIn(assigned), Eq(GetParam().expected));
