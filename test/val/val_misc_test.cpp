@@ -84,6 +84,27 @@ OpMemoryModel Logical GLSL450
       HasSubstr("Cannot create undefined values with 8- or 16-bit types"));
 }
 
+TEST_F(ValidateMisc, SizeOfValid) {
+  const std::string spirv = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %f "f"
+       %void = OpTypeVoid
+        %i32 = OpTypeInt 32 0
+        %ptr = OpTypePointer CrossWorkgroup %i32
+       %fnTy = OpTypeFunction %void
+          %f = OpFunction %void None %fnTy
+      %entry = OpLabel
+          %s = OpSizeOf %i32 %ptr
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+}
+
 const std::string ShaderClockSpirv = R"(
 OpCapability Shader
 OpCapability Int64
