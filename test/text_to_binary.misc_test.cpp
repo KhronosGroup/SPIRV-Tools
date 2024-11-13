@@ -56,5 +56,38 @@ OpXYZ
   EXPECT_THAT(CompileFailure(assembly), Eq("Invalid Opcode name 'OpXYZ'"));
 }
 
+TEST_F(TextToBinaryMisc, OpAbortKHR) {
+  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
+  const auto assembly = R"(
+OpExtension "SPV_KHR_abort"
+OpCapability AbortKHR
+%msg = OpString "abort message"
+OpAbortKHR %msg
+)";
+
+  spv_binary binary = nullptr;
+  spv_diagnostic diagnostic = nullptr;
+  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context, assembly, strlen(assembly),
+                                         &binary, &diagnostic));
+  EXPECT_NE(nullptr, binary);
+  if (binary) {
+    EXPECT_NE(nullptr, binary->code);
+    EXPECT_NE(0u, binary->wordCount);
+  }
+  if (diagnostic) {
+    spvDiagnosticPrint(diagnostic);
+    ASSERT_TRUE(false);
+  }
+
+  spvContextDestroy(context);
+}
+
+TEST_F(TextToBinaryMisc, OpAbortKHRInvalidIdName) {
+  const auto assembly = R"(
+OpAbortKHR "aaa"
+)";
+  EXPECT_THAT(CompileFailure(assembly), Eq("Expected id to start with %."));
+}
+
 }  // namespace
 }  // namespace spvtools

@@ -156,6 +156,7 @@ bool InstructionRequiresTypeOperand(const Instruction* inst) {
       spv::Op::OpAsmINTEL,
       spv::Op::OpAliasScopeDeclINTEL,
       spv::Op::OpAliasScopeListDeclINTEL,
+      spv::Op::OpAbortKHR,
   };
   const auto opcode = inst->opcode();
   bool debug_instruction = spvOpcodeIsDebug(opcode) || inst->IsDebugInfo();
