@@ -43,7 +43,8 @@ AUTHORS = ['The Khronos Group Inc.',
            'Shiyu Liu',
            'ZHOU He',
            'Nintendo',
-           'Epic Games, Inc.']
+           'Epic Games, Inc.',
+           'NVIDIA Corporation']
 CURRENT_YEAR = 2023
 
 FIRST_YEAR = 2014

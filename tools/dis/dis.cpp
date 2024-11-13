@@ -33,6 +33,10 @@ Usage: %s [options] [<filename>]
 The SPIR-V binary is read from <filename>. If no file is specified,
 or if the filename is "-", then the binary is read from standard input.
 
+A text-based hex stream is also accepted as binary input, which should either
+consist of 32-bit words or 8-bit bytes.  The 0x or x prefix is optional, but
+should be consistently present in the stream.
+
 Options:
 
   -h, --help        Print this help.
@@ -153,7 +157,7 @@ int main(int, const char** argv) {
 
   // Read the input binary.
   std::vector<uint32_t> contents;
-  if (!ReadBinaryFile<uint32_t>(inFile.c_str(), &contents)) return 1;
+  if (!ReadBinaryFile(inFile.c_str(), &contents)) return 1;
 
   // If printing to standard output, then spvBinaryToText should
   // do the printing.  In particular, colour printing on Windows is

@@ -106,7 +106,7 @@ int main(int, const char** argv) {
   std::string inFile = flags::positional_arguments[0];
 
   std::vector<char> contents;
-  if (!ReadTextFile<char>(inFile.c_str(), &contents)) return 1;
+  if (!ReadTextFile(inFile.c_str(), &contents)) return 1;
 
   spv_binary binary;
   spv_diagnostic diagnostic = nullptr;

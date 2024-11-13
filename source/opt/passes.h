@@ -48,7 +48,6 @@
 #include "source/opt/if_conversion.h"
 #include "source/opt/inline_exhaustive_pass.h"
 #include "source/opt/inline_opaque_pass.h"
-#include "source/opt/inst_debug_printf_pass.h"
 #include "source/opt/interface_var_sroa.h"
 #include "source/opt/interp_fixup_pass.h"
 #include "source/opt/invocation_interlock_placement_pass.h"

@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <gtest/gtest-param-test.h>
+#include <gtest/gtest.h>
+
+#include <tuple>
+
 #include "spirv-tools/optimizer.hpp"
 #include "test/opt/pass_fixture.h"
 #include "test/opt/pass_utils.h"
@@ -2358,6 +2363,94 @@ TEST_F(TrimCapabilitiesPassTest,
          %11 = OpLoad %type_image %texture
          %12 = OpImageRead %float4 %11 %int2_00
                OpStore %out_var %12
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       StorageImageWriteWithoutFormat_RemainsWhenRequiredWithWrite) {
+  const std::string kTest = R"(
+               OpCapability StorageImageWriteWithoutFormat
+; CHECK:       OpCapability StorageImageWriteWithoutFormat
+               OpCapability Shader
+               OpCapability StorageImageExtendedFormats
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %id %img
+               OpExecutionMode %main LocalSize 8 8 8
+               OpSource HLSL 670
+               OpName %type_image "type.3d.image"
+               OpName %img "img"
+               OpName %main "main"
+               OpDecorate %id BuiltIn GlobalInvocationId
+               OpDecorate %img DescriptorSet 0
+               OpDecorate %img Binding 0
+      %float = OpTypeFloat 32
+    %float_4 = OpConstant %float 4
+    %float_5 = OpConstant %float 5
+    %v2float = OpTypeVector %float 2
+          %9 = OpConstantComposite %v2float %float_4 %float_5
+ %type_image = OpTypeImage %float 3D 2 0 0 2 Unknown
+    %ptr_img = OpTypePointer UniformConstant %type_image
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+  %ptr_input = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+         %15 = OpTypeFunction %void
+        %img = OpVariable %ptr_img UniformConstant
+         %id = OpVariable %ptr_input Input
+       %main = OpFunction %void None %15
+         %16 = OpLabel
+         %17 = OpLoad %v3uint %id
+         %18 = OpLoad %type_image %img
+               OpImageWrite %18 %17 %9 None
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest,
+       StorageImageWriteWithoutFormat_RemovedWithWriteOnKnownFormat) {
+  const std::string kTest = R"(
+               OpCapability StorageImageWriteWithoutFormat
+; CHECK-NOT:   OpCapability StorageImageWriteWithoutFormat
+               OpCapability Shader
+               OpCapability StorageImageExtendedFormats
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %id %img
+               OpExecutionMode %main LocalSize 8 8 8
+               OpSource HLSL 670
+               OpName %type_image "type.3d.image"
+               OpName %img "img"
+               OpName %main "main"
+               OpDecorate %id BuiltIn GlobalInvocationId
+               OpDecorate %img DescriptorSet 0
+               OpDecorate %img Binding 0
+      %float = OpTypeFloat 32
+    %float_4 = OpConstant %float 4
+    %float_5 = OpConstant %float 5
+    %v2float = OpTypeVector %float 2
+          %9 = OpConstantComposite %v2float %float_4 %float_5
+ %type_image = OpTypeImage %float 3D 2 0 0 2 Rg32f
+    %ptr_img = OpTypePointer UniformConstant %type_image
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+  %ptr_input = OpTypePointer Input %v3uint
+       %void = OpTypeVoid
+         %15 = OpTypeFunction %void
+        %img = OpVariable %ptr_img UniformConstant
+         %id = OpVariable %ptr_input Input
+       %main = OpFunction %void None %15
+         %16 = OpLabel
+         %17 = OpLoad %v3uint %id
+         %18 = OpLoad %type_image %img
+               OpImageWrite %18 %17 %9 None
                OpReturn
                OpFunctionEnd
   )";

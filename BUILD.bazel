@@ -178,7 +178,6 @@ cc_library(
 cc_library(
     name = "spirv_tools_opt",
     hdrs = [
-        "include/spirv-tools/instrument.hpp",
         "include/spirv-tools/optimizer.hpp",
     ],
     copts = COMMON_COPTS,
@@ -196,7 +195,6 @@ cc_library(
         ":gen_vendor_tables_spv_amd_shader_ballot",
     ],
     hdrs = glob(["source/opt/*.h"]) + [
-        "include/spirv-tools/instrument.hpp",
         "include/spirv-tools/optimizer.hpp",
     ],
     copts = COMMON_COPTS,
@@ -271,6 +269,7 @@ cc_library(
 cc_library(
     name = "tools_io",
     hdrs = ["tools/io.h"],
+    srcs = ["tools/io.cpp"],
     copts = COMMON_COPTS,
 )
 
@@ -448,6 +447,7 @@ cc_library(
         "tools_util",
         ":spirv_tools_internal",
         ":test_lib",
+        ":tools_io",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],

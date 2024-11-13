@@ -64,10 +64,8 @@ set(SPIRV_TOOLS_OPT_SOURCES
   inline_exhaustive_pass.h
   inline_opaque_pass.h
   inline_pass.h
-  inst_debug_printf_pass.h
   instruction.h
   instruction_list.h
-  instrument_pass.h
   interface_var_sroa.h
   invocation_interlock_placement_pass.h
   interp_fixup_pass.h
@@ -185,10 +183,8 @@ set(SPIRV_TOOLS_OPT_SOURCES
   inline_exhaustive_pass.cpp
   inline_opaque_pass.cpp
   inline_pass.cpp
-  inst_debug_printf_pass.cpp
   instruction.cpp
   instruction_list.cpp
-  instrument_pass.cpp
   interface_var_sroa.cpp
   invocation_interlock_placement_pass.cpp
   interp_fixup_pass.cpp

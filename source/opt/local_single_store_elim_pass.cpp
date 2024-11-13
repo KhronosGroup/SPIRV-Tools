@@ -147,7 +147,8 @@ void LocalSingleStoreElimPass::InitExtensionAllowList() {
                                 "SPV_NV_cooperative_matrix",
                                 "SPV_KHR_cooperative_matrix",
                                 "SPV_KHR_ray_tracing_position_fetch",
-                                "SPV_AMDX_shader_enqueue"});
+                                "SPV_AMDX_shader_enqueue",
+                                "SPV_KHR_fragment_shading_rate"});
 }
 bool LocalSingleStoreElimPass::ProcessVariable(Instruction* var_inst) {
   std::vector<Instruction*> users;
