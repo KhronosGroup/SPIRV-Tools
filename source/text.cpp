@@ -201,7 +201,7 @@ spv_result_t spvTextEncodeOperand(const spvtools::AssemblyGrammar& grammar,
   }
 
   // Optional literal operands can fail to parse. In that case use
-  // SPV_FAILED_MATCH to avoid emitting a diagostic.  Use the following
+  // SPV_FAILED_MATCH to avoid emitting a diagnostic.  Use the following
   // for those situations.
   spv_result_t error_code_for_literals =
       spvOperandIsOptional(type) ? SPV_FAILED_MATCH : SPV_ERROR_INVALID_TEXT;

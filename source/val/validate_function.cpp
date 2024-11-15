@@ -283,7 +283,7 @@ spv_result_t ValidateFunctionCall(ValidationState_t& _,
         function_type->GetOperandAs<uint32_t>(param_index);
     const auto parameter_type = _.FindDef(parameter_type_id);
     if (!parameter_type || argument_type->id() != parameter_type->id()) {
-      if (!_.options()->before_hlsl_legalization ||
+      if (!parameter_type || !_.options()->before_hlsl_legalization ||
           !DoPointeesLogicallyMatch(argument_type, parameter_type, _)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "OpFunctionCall Argument <id> " << _.getIdName(argument_id)
