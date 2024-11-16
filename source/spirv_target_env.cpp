@@ -15,9 +15,9 @@
 #include "source/spirv_target_env.h"
 
 #include <cassert>
+#include <cctype>
 #include <cstring>
 #include <string>
-#include <utility>
 
 #include "source/spirv_constant.h"
 #include "spirv-tools/libspirv.h"
@@ -128,34 +128,6 @@ uint32_t spvVersionForTargetEnv(spv_target_env env) {
   return SPV_SPIRV_VERSION_WORD(0, 0);
 }
 
-static const std::pair<const char*, spv_target_env> spvTargetEnvNameMap[] = {
-    {"vulkan1.1spv1.4", SPV_ENV_VULKAN_1_1_SPIRV_1_4},
-    {"vulkan1.0", SPV_ENV_VULKAN_1_0},
-    {"vulkan1.1", SPV_ENV_VULKAN_1_1},
-    {"vulkan1.2", SPV_ENV_VULKAN_1_2},
-    {"vulkan1.3", SPV_ENV_VULKAN_1_3},
-    {"spv1.0", SPV_ENV_UNIVERSAL_1_0},
-    {"spv1.1", SPV_ENV_UNIVERSAL_1_1},
-    {"spv1.2", SPV_ENV_UNIVERSAL_1_2},
-    {"spv1.3", SPV_ENV_UNIVERSAL_1_3},
-    {"spv1.4", SPV_ENV_UNIVERSAL_1_4},
-    {"spv1.5", SPV_ENV_UNIVERSAL_1_5},
-    {"spv1.6", SPV_ENV_UNIVERSAL_1_6},
-    {"opencl1.2embedded", SPV_ENV_OPENCL_EMBEDDED_1_2},
-    {"opencl1.2", SPV_ENV_OPENCL_1_2},
-    {"opencl2.0embedded", SPV_ENV_OPENCL_EMBEDDED_2_0},
-    {"opencl2.0", SPV_ENV_OPENCL_2_0},
-    {"opencl2.1embedded", SPV_ENV_OPENCL_EMBEDDED_2_1},
-    {"opencl2.1", SPV_ENV_OPENCL_2_1},
-    {"opencl2.2embedded", SPV_ENV_OPENCL_EMBEDDED_2_2},
-    {"opencl2.2", SPV_ENV_OPENCL_2_2},
-    {"opengl4.0", SPV_ENV_OPENGL_4_0},
-    {"opengl4.1", SPV_ENV_OPENGL_4_1},
-    {"opengl4.2", SPV_ENV_OPENGL_4_2},
-    {"opengl4.3", SPV_ENV_OPENGL_4_3},
-    {"opengl4.5", SPV_ENV_OPENGL_4_5},
-};
-
 bool spvParseTargetEnv(const char* s, spv_target_env* env) {
   auto match = [s](const char* b) {
     return s && (0 == strncmp(s, b, strlen(b)));
@@ -169,6 +141,46 @@ bool spvParseTargetEnv(const char* s, spv_target_env* env) {
     }
   }
   if (env) *env = SPV_ENV_UNIVERSAL_1_0;
+  return false;
+}
+
+bool spvReadEnvironmentFromText(std::vector<char>& text, spv_target_env* env) {
+  // Version is expected to match "; Version: 1.X"
+  // Version string must occur in header, that is, initial lines of comments
+  // Once a non-comment line occurs, the header has ended
+  for (std::size_t i = 0; i < text.size(); ++i) {
+    char c = text[i];
+
+    if (c == ';') {
+      // Try to match against the expected version string
+      constexpr const char* kVersionPrefix = "; Version: 1.";
+      constexpr const auto kPrefixLength = 13;
+      constexpr const auto kMinimumVersionLength = kPrefixLength + 2;
+      if (i + kMinimumVersionLength >= text.size()) return false;
+
+      auto j = 1;
+      for (; j < kPrefixLength; ++j) {
+        if (kVersionPrefix[j] != text[i + j]) break;
+      }
+      // j will match the prefix length if all characters before matched
+      if (j == kPrefixLength) {
+        char minor = text[i + j];
+        if (minor >= '0' && minor <= '6' && !std::isdigit(text[i + j + 1])) {
+          auto offset = minor - '0';
+          *env = spvTargetEnvNameMap[kSpvEnvUniversalStart + offset].second;
+          return true;
+        }
+      }
+
+      // If no match, determine whether the header has ended (in which case,
+      // assumption has failed.)
+      i = j;
+      for (; i < text.size(); ++i) {
+        if (text[i] == '\n') break;
+      }
+    } else if (!std::isspace(c))
+      break;
+  }
   return false;
 }
 
