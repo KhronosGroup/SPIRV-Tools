@@ -52,7 +52,7 @@ std::string spvTargetEnvList(const int pad, const int wrap);
 // true if valid name found, false otherwise.
 bool spvReadEnvironmentFromText(std::vector<char>& text, spv_target_env* env);
 
-static constexpr std::pair<const char*, spv_target_env> spvTargetEnvNameMap[] =
+inline constexpr std::pair<const char*, spv_target_env> spvTargetEnvNameMap[] =
     {
         {"vulkan1.1spv1.4", SPV_ENV_VULKAN_1_1_SPIRV_1_4},
         {"vulkan1.0", SPV_ENV_VULKAN_1_0},
@@ -79,9 +79,7 @@ static constexpr std::pair<const char*, spv_target_env> spvTargetEnvNameMap[] =
         {"opengl4.2", SPV_ENV_OPENGL_4_2},
         {"opengl4.3", SPV_ENV_OPENGL_4_3},
         {"opengl4.5", SPV_ENV_OPENGL_4_5},
-        {"assume", SPV_ENV_MAX},
 };
-static constexpr auto kAssumeIndex = 25;
 // The index in the map of the first SPV_ENV_UNIVERSAL version, assuming that
 // versions are enumerated in order from 1.0
 static constexpr auto kSpvEnvUniversalStart = 5;
