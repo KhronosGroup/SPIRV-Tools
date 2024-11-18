@@ -226,7 +226,9 @@ protected:
  protected:
   // Decorations attached to this type. Each decoration is encoded as a vector
   // of uint32_t numbers. The first uint32_t number is the decoration value,
-  // and the rest are the parameters to the decoration (if exists).
+  // and the rest are the parameters to the decoration (if any exist).
+  // The parameters can be either all literals or all ids depending on the
+  // decoration value.
   std::vector<std::vector<uint32_t>> decorations_;
 
  private:
