@@ -323,6 +323,42 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  if (_.EntryPointHasLocalSizeOrId(entry_point_id)) {
+    const Instruction* local_size_inst =
+        _.EntryPointLocalSizeOrId(entry_point_id);
+    if (local_size_inst) {
+      const auto mode = local_size_inst->GetOperandAs<spv::ExecutionMode>(1);
+      const uint32_t operand_x = local_size_inst->GetOperandAs<uint32_t>(2);
+      const uint32_t operand_y = local_size_inst->GetOperandAs<uint32_t>(3);
+      const uint32_t operand_z = local_size_inst->GetOperandAs<uint32_t>(4);
+      if (mode == spv::ExecutionMode::LocalSize) {
+        if ((operand_x * operand_y * operand_z) == 0) {
+          return _.diag(SPV_ERROR_INVALID_DATA, local_size_inst)
+                 << "Local Size execution mode must not have a product of zero "
+                    "(X "
+                    "= "
+                 << operand_x << ", Y = " << operand_y << ", Z = " << operand_z
+                 << ").";
+        }
+      } else if (mode == spv::ExecutionMode::LocalSizeId) {
+        // can only validate product if static and not spec constant
+        // (This is done for us in EvalConstantValUint64)
+        uint64_t x_size, y_size, z_size;
+        bool static_x = _.EvalConstantValUint64(operand_x, &x_size);
+        bool static_y = _.EvalConstantValUint64(operand_y, &y_size);
+        bool static_z = _.EvalConstantValUint64(operand_z, &z_size);
+        if (static_x && static_y && static_z &&
+            ((x_size * y_size * z_size) == 0)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, local_size_inst)
+                 << "Local Size Id execution mode must not have a product of "
+                    "zero "
+                    "(X = "
+                 << x_size << ", Y = " << y_size << ", Z = " << z_size << ").";
+        }
+      }
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
