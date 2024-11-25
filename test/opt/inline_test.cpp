@@ -3749,13 +3749,13 @@ float4 main(float4 color : COLOR) : SV_TARGET {
       %color = OpFunctionParameter %_ptr_Function_v4float
    %bb_entry = OpLabel
         %140 = OpExtInst %void %1 DebugFunctionDefinition %22 %src_main
-        %141 = OpExtInst %void %1 DebugLine %5 %uint_1 %uint_1 %uint_1 %uint_1
+        %141 = OpExtInst %void %1 DebugLine %15 %uint_1 %uint_1 %uint_1 %uint_1
          %34 = OpExtInst %void %1 DebugScope %22
          %36 = OpExtInst %void %1 DebugDeclare %25 %color %13
          %38 = OpExtInst %void %1 DebugScope %26
-        %142 = OpExtInst %void %1 DebugLine %5 %uint_2 %uint_2 %uint_10 %uint_10
+        %142 = OpExtInst %void %1 DebugLine %15 %uint_2 %uint_2 %uint_10 %uint_10
          %39 = OpLoad %v4float %color
-        %143 = OpExtInst %void %1 DebugLine %5 %uint_2 %uint_2 %uint_3 %uint_3
+        %143 = OpExtInst %void %1 DebugLine %15 %uint_2 %uint_2 %uint_3 %uint_3
                OpReturnValue %39
                OpFunctionEnd
 )";
