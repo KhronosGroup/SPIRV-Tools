@@ -101,7 +101,7 @@ int main(int, const char** argv) {
       target_env = kDefaultTarget;
     }
   } else if (!spvParseTargetEnv(flags::target_env.value().c_str(),
-                               &target_env)) {
+                                &target_env)) {
     fprintf(stderr, "error: Unrecognized target env: %s\n",
             flags::target_env.value().c_str());
     return 1;
