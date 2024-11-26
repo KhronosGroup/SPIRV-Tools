@@ -197,7 +197,7 @@ bool spvReadEnvironmentFromText(const std::vector<char>& text,
       // Try to match against the expected version string
       constexpr const char* kVersionPrefix = "; Version: 1.";
       constexpr const auto kPrefixLength = 13;
-      // Where do we expect to find the minor version digit.
+      // 'minor_digit_pos' is the expected position of the version digit.
       const auto minor_digit_pos = i + kPrefixLength;
       if (minor_digit_pos >= text.size()) return false;
 
@@ -209,14 +209,14 @@ bool spvReadEnvironmentFromText(const std::vector<char>& text,
       // j will match the prefix length if all characters before matched
       if (j == kPrefixLength) {
         // This expects only one digit in the minor number.
-        static_assert(((spv::Version >> 8) && 0xff) < 10);
+        static_assert(((spv::Version >> 8) & 0xff) < 10);
         char minor = text[minor_digit_pos];
         char next_char =
             minor_digit_pos + 1 < text.size() ? text[minor_digit_pos + 1] : 0;
         if (std::isdigit(minor) && !std::isdigit(next_char)) {
           const auto index = minor - '0';
           assert(index >= 0);
-          if (index < ordered_universal_envs.size()) {
+          if (static_cast<size_t>(index) < ordered_universal_envs.size()) {
             *env = ordered_universal_envs[index];
             return true;
           }
