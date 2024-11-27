@@ -1,4 +1,6 @@
 // Copyright (c) 2016 Google Inc.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,6 +48,7 @@ class Sampler;
 class SampledImage;
 class Array;
 class RuntimeArray;
+class NodePayloadArrayAMDX;
 class Struct;
 class Opaque;
 class Pointer;
@@ -89,6 +92,7 @@ class Type {
     kSampledImage,
     kArray,
     kRuntimeArray,
+    kNodePayloadArrayAMDX,
     kStruct,
     kOpaque,
     kPointer,
@@ -193,6 +197,7 @@ class Type {
   DeclareCastMethod(SampledImage)
   DeclareCastMethod(Array)
   DeclareCastMethod(RuntimeArray)
+  DeclareCastMethod(NodePayloadArrayAMDX)
   DeclareCastMethod(Struct)
   DeclareCastMethod(Opaque)
   DeclareCastMethod(Pointer)
@@ -221,7 +226,9 @@ protected:
  protected:
   // Decorations attached to this type. Each decoration is encoded as a vector
   // of uint32_t numbers. The first uint32_t number is the decoration value,
-  // and the rest are the parameters to the decoration (if exists).
+  // and the rest are the parameters to the decoration (if any exist).
+  // The parameters can be either all literals or all ids depending on the
+  // decoration value.
   std::vector<std::vector<uint32_t>> decorations_;
 
  private:
@@ -429,6 +436,29 @@ class RuntimeArray : public Type {
 
   RuntimeArray* AsRuntimeArray() override { return this; }
   const RuntimeArray* AsRuntimeArray() const override { return this; }
+
+  size_t ComputeExtraStateHash(size_t hash, SeenTypes* seen) const override;
+
+  void ReplaceElementType(const Type* element_type);
+
+ private:
+  bool IsSameImpl(const Type* that, IsSameCache*) const override;
+
+  const Type* element_type_;
+};
+
+class NodePayloadArrayAMDX : public Type {
+ public:
+  NodePayloadArrayAMDX(const Type* element_type);
+  NodePayloadArrayAMDX(const NodePayloadArrayAMDX&) = default;
+
+  std::string str() const override;
+  const Type* element_type() const { return element_type_; }
+
+  NodePayloadArrayAMDX* AsNodePayloadArrayAMDX() override { return this; }
+  const NodePayloadArrayAMDX* AsNodePayloadArrayAMDX() const override {
+    return this;
+  }
 
   size_t ComputeExtraStateHash(size_t hash, SeenTypes* seen) const override;
 
