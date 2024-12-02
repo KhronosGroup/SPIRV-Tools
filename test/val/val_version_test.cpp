@@ -339,6 +339,7 @@ INSTANTIATE_TEST_SUITE_P(Vulkan, ValidateVersion,
     std::make_tuple(SPV_ENV_VULKAN_1_3, SPV_ENV_OPENGL_4_3,    vulkan_spirv, false),
     std::make_tuple(SPV_ENV_VULKAN_1_3, SPV_ENV_OPENGL_4_5,    vulkan_spirv, false),
 
+    // Assembling for Vulkan 1.4 produces SPIR-V 1.6
     std::make_tuple(SPV_ENV_VULKAN_1_4, SPV_ENV_UNIVERSAL_1_0, vulkan_spirv, false),
     std::make_tuple(SPV_ENV_VULKAN_1_4, SPV_ENV_UNIVERSAL_1_1, vulkan_spirv, false),
     std::make_tuple(SPV_ENV_VULKAN_1_4, SPV_ENV_UNIVERSAL_1_2, vulkan_spirv, false),
@@ -350,7 +351,8 @@ INSTANTIATE_TEST_SUITE_P(Vulkan, ValidateVersion,
     std::make_tuple(SPV_ENV_VULKAN_1_4, SPV_ENV_VULKAN_1_1,    vulkan_spirv, false),
     std::make_tuple(SPV_ENV_VULKAN_1_4, SPV_ENV_VULKAN_1_1_SPIRV_1_4, vulkan_spirv, false),
     std::make_tuple(SPV_ENV_VULKAN_1_4, SPV_ENV_VULKAN_1_2,    vulkan_spirv, false),
-    std::make_tuple(SPV_ENV_VULKAN_1_4, SPV_ENV_VULKAN_1_3,    vulkan_spirv, false),
+    // Vulkan 1.3 accepts SPIR-V 1.6
+    std::make_tuple(SPV_ENV_VULKAN_1_4, SPV_ENV_VULKAN_1_3,    vulkan_spirv, true),
     std::make_tuple(SPV_ENV_VULKAN_1_4, SPV_ENV_VULKAN_1_4,    vulkan_spirv, true),
     std::make_tuple(SPV_ENV_VULKAN_1_4, SPV_ENV_OPENGL_4_0,    vulkan_spirv, false),
     std::make_tuple(SPV_ENV_VULKAN_1_4, SPV_ENV_OPENGL_4_1,    vulkan_spirv, false),
