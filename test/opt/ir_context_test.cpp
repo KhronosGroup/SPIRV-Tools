@@ -1155,10 +1155,7 @@ struct TargetEnvCompareTestData {
 
 using TargetEnvCompareTest = ::testing::TestWithParam<TargetEnvCompareTestData>;
 
-TEST_P(TargetEnvCompareTest, Case) {
-  // If new environments are added, then we must update the list of tests.
-  ASSERT_EQ(SPV_ENV_VULKAN_1_3 + 1, SPV_ENV_MAX);
-
+TEST_P(TargetEnvCompareTest, IsTargetEnvAtLeast) {
   const auto& tc = GetParam();
 
   std::unique_ptr<Module> module(new Module());
@@ -1422,6 +1419,8 @@ TEST_F(IRContextTest, RemovesMultipleCapabilities) {
             1);
 }
 
+// If new environments are added, then we must update the list of tests.
+static_assert(SPV_ENV_VULKAN_1_4 + 1 == SPV_ENV_MAX);
 INSTANTIATE_TEST_SUITE_P(
     TestCase, TargetEnvCompareTest,
     ::testing::Values(
@@ -1464,6 +1463,7 @@ INSTANTIATE_TEST_SUITE_P(
         TargetEnvCompareTestData{SPV_ENV_VULKAN_1_1, SPV_ENV_UNIVERSAL_1_1},
         TargetEnvCompareTestData{SPV_ENV_VULKAN_1_1, SPV_ENV_UNIVERSAL_1_2},
         TargetEnvCompareTestData{SPV_ENV_VULKAN_1_1, SPV_ENV_UNIVERSAL_1_3},
+        TargetEnvCompareTestData{SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_0},
         TargetEnvCompareTestData{SPV_ENV_UNIVERSAL_1_4, SPV_ENV_VULKAN_1_1},
         TargetEnvCompareTestData{SPV_ENV_UNIVERSAL_1_5, SPV_ENV_VULKAN_1_1},
         TargetEnvCompareTestData{SPV_ENV_UNIVERSAL_1_6, SPV_ENV_VULKAN_1_1},
@@ -1473,6 +1473,7 @@ INSTANTIATE_TEST_SUITE_P(
         TargetEnvCompareTestData{SPV_ENV_VULKAN_1_2, SPV_ENV_UNIVERSAL_1_3},
         TargetEnvCompareTestData{SPV_ENV_VULKAN_1_2, SPV_ENV_UNIVERSAL_1_4},
         TargetEnvCompareTestData{SPV_ENV_VULKAN_1_2, SPV_ENV_UNIVERSAL_1_5},
+        TargetEnvCompareTestData{SPV_ENV_VULKAN_1_2, SPV_ENV_VULKAN_1_1},
         TargetEnvCompareTestData{SPV_ENV_UNIVERSAL_1_6, SPV_ENV_VULKAN_1_2},
         TargetEnvCompareTestData{SPV_ENV_VULKAN_1_3, SPV_ENV_UNIVERSAL_1_0},
         TargetEnvCompareTestData{SPV_ENV_VULKAN_1_3, SPV_ENV_UNIVERSAL_1_1},
@@ -1480,7 +1481,16 @@ INSTANTIATE_TEST_SUITE_P(
         TargetEnvCompareTestData{SPV_ENV_VULKAN_1_3, SPV_ENV_UNIVERSAL_1_3},
         TargetEnvCompareTestData{SPV_ENV_VULKAN_1_3, SPV_ENV_UNIVERSAL_1_4},
         TargetEnvCompareTestData{SPV_ENV_VULKAN_1_3, SPV_ENV_UNIVERSAL_1_5},
-        TargetEnvCompareTestData{SPV_ENV_VULKAN_1_3, SPV_ENV_UNIVERSAL_1_6}));
+        TargetEnvCompareTestData{SPV_ENV_VULKAN_1_3, SPV_ENV_UNIVERSAL_1_6},
+        TargetEnvCompareTestData{SPV_ENV_VULKAN_1_3, SPV_ENV_VULKAN_1_2},
+        TargetEnvCompareTestData{SPV_ENV_VULKAN_1_4, SPV_ENV_UNIVERSAL_1_0},
+        TargetEnvCompareTestData{SPV_ENV_VULKAN_1_4, SPV_ENV_UNIVERSAL_1_1},
+        TargetEnvCompareTestData{SPV_ENV_VULKAN_1_4, SPV_ENV_UNIVERSAL_1_2},
+        TargetEnvCompareTestData{SPV_ENV_VULKAN_1_4, SPV_ENV_UNIVERSAL_1_3},
+        TargetEnvCompareTestData{SPV_ENV_VULKAN_1_4, SPV_ENV_UNIVERSAL_1_4},
+        TargetEnvCompareTestData{SPV_ENV_VULKAN_1_4, SPV_ENV_UNIVERSAL_1_5},
+        TargetEnvCompareTestData{SPV_ENV_VULKAN_1_4, SPV_ENV_UNIVERSAL_1_6},
+        TargetEnvCompareTestData{SPV_ENV_VULKAN_1_4, SPV_ENV_VULKAN_1_3}));
 
 }  // namespace
 }  // namespace opt
