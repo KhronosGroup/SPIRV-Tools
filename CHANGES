@@ -1,16 +1,21 @@
 Revision history for SPIRV-Tools
 
-v2024.4 2024-09-19
+v2024.4 2024-12-04
   - General
     - Add FPEncoding operand type. (#5726)
     - Support SPV_KHR_untyped_pointers (#5736)
     - add support for SPV_INTEL_global_variable_host_access (#5786)
+    - Add support for SPV_KHR_compute_shader_derivative (#5817)
+    - Accept hex representation as binary input (#5870)
+    - Vulkan 1.4 support (#5899)
   - Optimizer
     - Add knowledge of cooperative matrices (#5720)
     - Add struct-packing pass and unit test. (#5778)
   - Validator
     - Validate presence of Stride operand to OpCooperativeMatrix{Load,Store}KHR (#5777)
     - Update sampled image validation (#5789)
+    - Disallow stores according to VUID 06924 (#5368)
+    - Add validation for SPV_NV_tensor_addressing and SPV_NV_cooperative_matrix2 (#5865)
   - Linker
     - allow linking functions with different pointer arguments (#5534)
 
