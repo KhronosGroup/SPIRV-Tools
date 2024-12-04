@@ -79,6 +79,8 @@ const char* spvTargetEnvDescription(spv_target_env env) {
       return "SPIR-V 1.6";
     case SPV_ENV_VULKAN_1_3:
       return "SPIR-V 1.6 (under Vulkan 1.3 semantics)";
+    case SPV_ENV_VULKAN_1_4:
+      return "SPIR-V 1.6 (under Vulkan 1.4 semantics)";
     case SPV_ENV_MAX:
       assert(false && "Invalid target environment value.");
       break;
@@ -122,6 +124,7 @@ uint32_t spvVersionForTargetEnv(spv_target_env env) {
       return SPV_SPIRV_VERSION_WORD(1, 5);
     case SPV_ENV_UNIVERSAL_1_6:
     case SPV_ENV_VULKAN_1_3:
+    case SPV_ENV_VULKAN_1_4:
       return SPV_SPIRV_VERSION_WORD(1, 6);
     case SPV_ENV_MAX:
       assert(false && "Invalid target environment value.");
@@ -147,6 +150,7 @@ inline constexpr std::pair<const char*, spv_target_env> spvTargetEnvNameMap[] =
         {"vulkan1.1", SPV_ENV_VULKAN_1_1},
         {"vulkan1.2", SPV_ENV_VULKAN_1_2},
         {"vulkan1.3", SPV_ENV_VULKAN_1_3},
+        {"vulkan1.4", SPV_ENV_VULKAN_1_4},
         {"spv1.0", SPV_ENV_UNIVERSAL_1_0},
         {"spv1.1", SPV_ENV_UNIVERSAL_1_1},
         {"spv1.2", SPV_ENV_UNIVERSAL_1_2},
@@ -254,7 +258,8 @@ static const VulkanEnv ordered_vulkan_envs[] = {
     {SPV_ENV_VULKAN_1_1, VULKAN_VER(1, 1), SPIRV_VER(1, 3)},
     {SPV_ENV_VULKAN_1_1_SPIRV_1_4, VULKAN_VER(1, 1), SPIRV_VER(1, 4)},
     {SPV_ENV_VULKAN_1_2, VULKAN_VER(1, 2), SPIRV_VER(1, 5)},
-    {SPV_ENV_VULKAN_1_3, VULKAN_VER(1, 3), SPIRV_VER(1, 6)}};
+    {SPV_ENV_VULKAN_1_3, VULKAN_VER(1, 3), SPIRV_VER(1, 6)},
+    {SPV_ENV_VULKAN_1_4, VULKAN_VER(1, 4), SPIRV_VER(1, 6)}};
 
 bool spvParseVulkanEnv(uint32_t vulkan_ver, uint32_t spirv_ver,
                        spv_target_env* env) {
@@ -295,6 +300,7 @@ bool spvIsVulkanEnv(spv_target_env env) {
     case SPV_ENV_VULKAN_1_1_SPIRV_1_4:
     case SPV_ENV_VULKAN_1_2:
     case SPV_ENV_VULKAN_1_3:
+    case SPV_ENV_VULKAN_1_4:
       return true;
     case SPV_ENV_WEBGPU_0:
       assert(false && "Deprecated target environment value.");
@@ -325,6 +331,7 @@ bool spvIsOpenCLEnv(spv_target_env env) {
     case SPV_ENV_VULKAN_1_2:
     case SPV_ENV_UNIVERSAL_1_6:
     case SPV_ENV_VULKAN_1_3:
+    case SPV_ENV_VULKAN_1_4:
       return false;
     case SPV_ENV_OPENCL_1_2:
     case SPV_ENV_OPENCL_EMBEDDED_1_2:
@@ -367,6 +374,7 @@ bool spvIsOpenGLEnv(spv_target_env env) {
     case SPV_ENV_VULKAN_1_2:
     case SPV_ENV_UNIVERSAL_1_6:
     case SPV_ENV_VULKAN_1_3:
+    case SPV_ENV_VULKAN_1_4:
       return false;
     case SPV_ENV_OPENGL_4_0:
     case SPV_ENV_OPENGL_4_1:
@@ -406,6 +414,7 @@ bool spvIsValidEnv(spv_target_env env) {
     case SPV_ENV_VULKAN_1_2:
     case SPV_ENV_UNIVERSAL_1_6:
     case SPV_ENV_VULKAN_1_3:
+    case SPV_ENV_VULKAN_1_4:
     case SPV_ENV_OPENGL_4_0:
     case SPV_ENV_OPENGL_4_1:
     case SPV_ENV_OPENGL_4_2:
@@ -442,7 +451,8 @@ std::string spvLogStringForEnv(spv_target_env env) {
     case SPV_ENV_VULKAN_1_1:
     case SPV_ENV_VULKAN_1_1_SPIRV_1_4:
     case SPV_ENV_VULKAN_1_2:
-    case SPV_ENV_VULKAN_1_3: {
+    case SPV_ENV_VULKAN_1_3:
+    case SPV_ENV_VULKAN_1_4: {
       return "Vulkan";
     }
     case SPV_ENV_UNIVERSAL_1_0:
