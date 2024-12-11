@@ -269,6 +269,9 @@ class BuiltInsValidator {
   // specified. Seeds id_to_at_reference_checks_ with decorated ids if needed.
   spv_result_t ValidateSingleBuiltInAtDefinition(const Decoration& decoration,
                                                  const Instruction& inst);
+  spv_result_t ValidateSingleBuiltInAtDefinitionVulkan(
+      const Decoration& decoration, const Instruction& inst,
+      const spv::BuiltIn label);
 
   // The following section contains functions which are called when id defined
   // by |inst| is decorated with BuiltIn |decoration|.
@@ -3215,27 +3218,44 @@ spv_result_t BuiltInsValidator::ValidateI32Vec4InputAtDefinition(
 
 spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
-  if (spvIsVulkanEnv(_.context()->target_env)) {
-    if (spvIsVulkanEnv(_.context()->target_env) &&
-        !spvOpcodeIsConstant(inst.opcode())) {
+  if (spv_result_t error = ValidateI32Vec(
+          decoration, inst, 3,
+          [this, &inst](const std::string& message) -> spv_result_t {
+            return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                   << _.VkErrorID(4427) << "According to the "
+                   << spvLogStringForEnv(_.context()->target_env)
+                   << " spec BuiltIn WorkgroupSize variable needs to be a "
+                      "3-component 32-bit int vector. "
+                   << message;
+          })) {
+    return error;
+  }
+
+  if (!spvOpcodeIsConstant(inst.opcode())) {
+    if (spvIsVulkanEnv(_.context()->target_env)) {
       return _.diag(SPV_ERROR_INVALID_DATA, &inst)
              << _.VkErrorID(4426)
              << "Vulkan spec requires BuiltIn WorkgroupSize to be a "
                 "constant. "
              << GetIdDesc(inst) << " is not a constant.";
     }
-
-    if (spv_result_t error = ValidateI32Vec(
-            decoration, inst, 3,
-            [this, &inst](const std::string& message) -> spv_result_t {
-              return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-                     << _.VkErrorID(4427) << "According to the "
-                     << spvLogStringForEnv(_.context()->target_env)
-                     << " spec BuiltIn WorkgroupSize variable needs to be a "
-                        "3-component 32-bit int vector. "
-                     << message;
-            })) {
-      return error;
+  } else if (inst.opcode() == spv::Op::OpConstantComposite) {
+    // can only validate product if static and not spec constant
+    if (_.FindDef(inst.word(3))->opcode() == spv::Op::OpConstant &&
+        _.FindDef(inst.word(4))->opcode() == spv::Op::OpConstant &&
+        _.FindDef(inst.word(5))->opcode() == spv::Op::OpConstant) {
+      uint64_t x_size, y_size, z_size;
+      // ValidateI32Vec above confirms there will be 3 words to read
+      bool static_x = _.EvalConstantValUint64(inst.word(3), &x_size);
+      bool static_y = _.EvalConstantValUint64(inst.word(4), &y_size);
+      bool static_z = _.EvalConstantValUint64(inst.word(5), &z_size);
+      if (static_x && static_y && static_z &&
+          ((x_size * y_size * z_size) == 0)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+               << "WorkgroupSize decorations must not have a static "
+                  "product of zero (X = "
+               << x_size << ", Y = " << y_size << ", Z = " << z_size << ").";
+      }
     }
   }
 
@@ -4304,18 +4324,20 @@ spv_result_t BuiltInsValidator::ValidateMeshShadingEXTBuiltinsAtReference(
 spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
   const spv::BuiltIn label = decoration.builtin();
-
-  if (!spvIsVulkanEnv(_.context()->target_env)) {
-    // Early return. All currently implemented rules are based on Vulkan spec.
-    //
-    // TODO: If you are adding validation rules for environments other than
-    // Vulkan (or general rules which are not environment independent), then
-    // you need to modify or remove this condition. Consider also adding early
-    // returns into BuiltIn-specific rules, so that the system doesn't spawn new
-    // rules which don't do anything.
-    return SPV_SUCCESS;
+  // Universial checks
+  if (label == spv::BuiltIn::WorkgroupSize) {
+    return ValidateWorkgroupSizeAtDefinition(decoration, inst);
   }
 
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    return ValidateSingleBuiltInAtDefinitionVulkan(decoration, inst, label);
+  }
+  return SPV_SUCCESS;
+}
+
+spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinitionVulkan(
+    const Decoration& decoration, const Instruction& inst,
+    const spv::BuiltIn label) {
   // If you are adding a new BuiltIn enum, please register it here.
   // If the newly added enum has validation rules associated with it
   // consider leaving a TODO and/or creating an issue.
@@ -4406,9 +4428,6 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinition(
     }
     case spv::BuiltIn::VertexIndex: {
       return ValidateVertexIndexAtDefinition(decoration, inst);
-    }
-    case spv::BuiltIn::WorkgroupSize: {
-      return ValidateWorkgroupSizeAtDefinition(decoration, inst);
     }
     case spv::BuiltIn::VertexId: {
       return ValidateVertexIdAtDefinition(decoration, inst);
