@@ -230,7 +230,7 @@ bool spvReadEnvironmentFromText(const std::vector<char>& text,
       // If no match, determine whether the header has ended (in which case,
       // assumption has failed.)
       // Skip until the next line.
-      i = j;
+      i += j;
       for (; i < text.size(); ++i) {
         if (text[i] == '\n') break;
       }
