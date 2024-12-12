@@ -22,7 +22,7 @@ In order to build and install the Visual Studio Code language server extension, 
 
 Neovim's default config location is typically `~/.config/nvim` so the rest of the instructions assume that but it will need to be changed if your system is different.
 
-Tell neovim that `*.spvasm` files should be treated as spvasm filetype
+Tell neovim that `*.spvasm` files should be treated as `spvasm` filetype
 ```bash
 echo "au BufRead,BufNewFile *.spvasm                set filetype=spvasm" > ~/.config/nvim/ftdetect/spvasm.vim
 ```
@@ -47,7 +47,7 @@ cp spvasm.vim ~/.config/nvim/syntax/spvasm.vim
 
 ### Building the LSP (masOS / Linux)
 
-Run `../vscode/build_lsp.sh`
+Run `build_lsp.sh`
 Copy `spirvls` and `spirv.json` to a location in `$PATH`
 
 ```bash

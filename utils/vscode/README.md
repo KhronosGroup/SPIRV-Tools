@@ -24,15 +24,3 @@ Run `install_vscode.sh`
 ## Installing (Windows)
 
 Run `install_vscode.bat`
-
-## Installing the LSP for use outside of VSCode (masOS / Linux)
-
-Run `install_lsp.sh`
-Copy `spirvls` and `spirv.json` to a location in `$PATH`
-Configure your LSP client as appropiate
-
-## Installing the LSP for use outside of VSCode (Windows)
-
-Run `install_lsp.bat`
-Copy `spirvls` and `spirv.json` to a location in ??
-Configure your LSP client as appropiate
