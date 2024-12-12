@@ -3208,10 +3208,11 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": operand Line End (" << line_end
                    << ") is less than Line Start (" << line_start << ")";
-          } else if (column_end < column_start) {
+          } else if (line_start == line_end && column_end < column_start) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": operand Column End (" << column_end
-                   << ") is less than Column Start (" << column_start << ")";
+                   << ") is less than Column Start (" << column_start
+                   << ") when Line Start equals Line End";
           }
           break;
         }
