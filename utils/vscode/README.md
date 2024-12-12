@@ -9,6 +9,7 @@ The extension supports:
 * Symbol renaming
 * Operand hover information
 * Formatting
+* Completion suggestions for all Opcodes and Ids
 
 ## Dependencies
 
@@ -18,8 +19,20 @@ In order to build and install the Visual Studio Code language server extension, 
 
 ## Installing (macOS / Linux)
 
-Run `install.sh`
+Run `install_vscode.sh`
 
 ## Installing (Windows)
 
-Run `install.bat`
+Run `install_vscode.bat`
+
+## Installing the LSP for use outside of VSCode (masOS / Linux)
+
+Run `install_lsp.sh`
+Copy `spirvls` and `spirv.json` to a location in `$PATH`
+Configure your LSP client as appropiate
+
+## Installing the LSP for use outside of VSCode (Windows)
+
+Run `install_lsp.bat`
+Copy `spirvls` and `spirv.json` to a location in ??
+Configure your LSP client as appropiate
