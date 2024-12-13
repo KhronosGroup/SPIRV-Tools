@@ -21,8 +21,8 @@ set SRC=%cd%\github\SPIRV-Tools
 set BUILD_TYPE=%1
 set VS_VERSION=%2
 
-:: Force usage of python 3.6
-set PATH=C:\python36;"C:\Program Files\cmake-3.23.1-windows-x86_64\bin";%PATH%
+:: Force usage of python 3.6, cmake 3.31.2
+set PATH=C:\python36;c:\cmake-3.31.2\bin;%PATH%
 
 :: #########################################
 :: set up msvc build env
@@ -63,6 +63,7 @@ if "%BUILD_TESTS%" == "NO" (
   set CMAKE_FLAGS=-DSPIRV_SKIP_TESTS=ON %CMAKE_FLAGS%
 ) 
 
+cmake --version
 cmake %CMAKE_FLAGS% ..
 
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
