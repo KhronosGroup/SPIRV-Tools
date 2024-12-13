@@ -51,7 +51,7 @@ if [ $TOOL != "cmake-smoketest" ]; then
 fi
 
 if [ $TOOL = "cmake" ]; then
-  using cmake-3.17.2
+  using cmake-3.31.2
   using ninja-1.10.0
 
   # Possible configurations are:
@@ -116,7 +116,7 @@ if [ $TOOL = "cmake" ]; then
   cd $KOKORO_ARTIFACTS_DIR
   tar czf install.tgz install
 elif [ $TOOL = "cmake-smoketest" ]; then
-  using cmake-3.17.2
+  using cmake-3.31.2
   using ninja-1.10.0
 
   # Get shaderc.
@@ -157,7 +157,7 @@ elif [ $TOOL = "cmake-smoketest" ]; then
   ctest --output-on-failure -j4
   echo $(date): ctest completed.
 elif [ $TOOL = "cmake-android-ndk" ]; then
-  using cmake-3.17.2
+  using cmake-3.31.2
   using ndk-r25c
   using ninja-1.10.0
 
