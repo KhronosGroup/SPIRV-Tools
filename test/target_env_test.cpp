@@ -221,6 +221,7 @@ INSTANTIATE_TEST_SUITE_P(
         {"     \t ; Version: 1.1", true, SPV_ENV_UNIVERSAL_1_1},
         // Previous lines
         {"; SPIR-V\n; Version: 1.1", true, SPV_ENV_UNIVERSAL_1_1},
+        {"; -\n; SPIR-V\n; Version: 1.1", true, SPV_ENV_UNIVERSAL_1_1},
 
         // After a non-header line
         {"OpCapability Shader\n; Version: 1.1", false, kSentinelEnv}}));

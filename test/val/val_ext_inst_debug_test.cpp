@@ -5023,10 +5023,28 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnEndSmaller) {
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, "", dbg_inst_header, body, shader_extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "DebugLine: operand Column End (0) is less than Column Start (1)"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugLine: operand Column End (0) is less than Column "
+                        "Start (1) when Line Start equals Line End"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnEndSmallerMultiline) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() { }"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_1 %u32_2 %u32_1 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 }  // namespace
