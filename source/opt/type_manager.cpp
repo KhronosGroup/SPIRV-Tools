@@ -1,4 +1,6 @@
 // Copyright (c) 2016 Google Inc.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -335,6 +337,17 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
           std::initializer_list<Operand>{{SPV_OPERAND_TYPE_ID, {subtype}}});
       break;
     }
+    case Type::kNodePayloadArrayAMDX: {
+      uint32_t subtype =
+          GetTypeInstruction(type->AsNodePayloadArrayAMDX()->element_type());
+      if (subtype == 0) {
+        return 0;
+      }
+      typeInst = MakeUnique<Instruction>(
+          context(), spv::Op::OpTypeNodePayloadArrayAMDX, 0, id,
+          std::initializer_list<Operand>{{SPV_OPERAND_TYPE_ID, {subtype}}});
+      break;
+    }
     case Type::kStruct: {
       std::vector<Operand> ops;
       const Struct* structTy = type->AsStruct();
@@ -623,6 +636,13 @@ Type* TypeManager::RebuildType(uint32_t type_id, const Type& type) {
           MakeUnique<RuntimeArray>(RebuildType(GetId(ele_ty), *ele_ty));
       break;
     }
+    case Type::kNodePayloadArrayAMDX: {
+      const NodePayloadArrayAMDX* array_ty = type.AsNodePayloadArrayAMDX();
+      const Type* ele_ty = array_ty->element_type();
+      rebuilt_ty =
+          MakeUnique<NodePayloadArrayAMDX>(RebuildType(GetId(ele_ty), *ele_ty));
+      break;
+    }
     case Type::kStruct: {
       const Struct* struct_ty = type.AsStruct();
       std::vector<const Type*> subtypes;
@@ -837,6 +857,14 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
         return type;
       }
       break;
+    case spv::Op::OpTypeNodePayloadArrayAMDX:
+      type = new NodePayloadArrayAMDX(GetType(inst.GetSingleWordInOperand(0)));
+      if (id_to_incomplete_type_.count(inst.GetSingleWordInOperand(0))) {
+        incomplete_types_.emplace_back(inst.result_id(), type);
+        id_to_incomplete_type_[inst.result_id()] = type;
+        return type;
+      }
+      break;
     case spv::Op::OpTypeStruct: {
       std::vector<const Type*> element_types;
       bool incomplete_type = false;
@@ -988,7 +1016,8 @@ void TypeManager::AttachDecoration(const Instruction& inst, Type* type) {
   if (!IsAnnotationInst(opcode)) return;
 
   switch (opcode) {
-    case spv::Op::OpDecorate: {
+    case spv::Op::OpDecorate:
+    case spv::Op::OpDecorateId: {
       const auto count = inst.NumOperands();
       std::vector<uint32_t> data;
       for (uint32_t i = 1; i < count; ++i) {
