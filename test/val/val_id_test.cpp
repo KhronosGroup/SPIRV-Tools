@@ -1,4 +1,6 @@
 // Copyright (c) 2015-2016 The Khronos Group Inc.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -2469,7 +2471,8 @@ OpFunctionEnd
           "be used with non-externally visible shader Storage Classes: "
           "Workgroup, CrossWorkgroup, Private, Function, Input, Output, "
           "RayPayloadKHR, IncomingRayPayloadKHR, HitAttributeKHR, "
-          "CallableDataKHR, IncomingCallableDataKHR, or UniformConstant")));
+          "CallableDataKHR, IncomingCallableDataKHR, NodePayloadAMDX, or "
+          "UniformConstant")));
 }
 
 TEST_P(ValidateIdWithMessage, OpVariableContainsBoolPrivateGood) {
