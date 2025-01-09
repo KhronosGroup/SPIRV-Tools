@@ -440,20 +440,17 @@ also work, but are not verified.
 SPIRV-Tools is regularly tested with the following compilers:
 
 On Linux
-- GCC version 9.3
+- GCC version 9.4
 - Clang version 10.0
 
 On MacOS
-- AppleClang 11.0
+- AppleClang 15.0
 
 On Windows
-- Visual Studio 2017
 - Visual Studio 2019
 - Visual Studio 2022
 
-Note: Visual Studio 2017 has incomplete c++17 support. We might stop
-testing it soon. Other compilers or later versions may work, but they are not
-tested.
+Note: Other compilers or later versions may work, but they are not tested.
 
 ### CMake options
 
