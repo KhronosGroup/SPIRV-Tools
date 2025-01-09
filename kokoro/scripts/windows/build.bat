@@ -27,15 +27,12 @@ set PATH=C:\python312;c:\cmake-3.31.2\bin;%PATH%
 :: #########################################
 :: set up msvc build env
 :: #########################################
-if %VS_VERSION% == 2017 (
-  call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
-  echo "Using VS 2017..."
-
-  :: RE2 does not support VS2017, we we must disable tests.
-  set BUILD_TESTS=NO
-) else if %VS_VERSION% == 2019 (
+if %VS_VERSION% == 2019 (
   call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
   echo "Using VS 2019..."
+) else if %VS_VERSION% == 2022 (
+  call "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall.bat" x64
+  echo "Using VS 2022..."
 )
 
 cd %SRC%
