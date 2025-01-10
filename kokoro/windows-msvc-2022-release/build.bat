@@ -1,4 +1,4 @@
-:: Copyright (c) 2018 Google LLC.
+:: Copyright (c) 2025 Google LLC
 ::
 :: Licensed under the Apache License, Version 2.0 (the "License");
 :: you may not use this file except in compliance with the License.
@@ -20,5 +20,5 @@
 set SCRIPT_DIR=%~dp0
 
 :: Call with correct parameter
-call %SCRIPT_DIR%\..\scripts\windows\build.bat RelWithDebInfo 2017
+call %SCRIPT_DIR%\..\scripts\windows\build.bat RelWithDebInfo 2022
 
