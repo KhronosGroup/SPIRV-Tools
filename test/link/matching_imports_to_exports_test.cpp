@@ -15,6 +15,7 @@
 #include <string>
 
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 #include "test/link/linker_fixture.h"
 
 namespace spvtools {
@@ -902,6 +903,112 @@ OpFunctionEnd
         HasSubstr("Type mismatch on symbol \"foo\" between imported "
                   "variable/function %1 and exported variable/function %11"));
   }
+}
+
+TEST_F(MatchingImportsToExports, LinkOnceODRLinkageVarSingle) {
+  const std::string body1 = R"(
+OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpExtension "SPV_KHR_linkonce_odr"
+OpMemoryModel Physical64 OpenCL
+OpDecorate %1 LinkageAttributes "foo" LinkOnceODR
+%2 = OpTypeFloat 32
+%3 = OpConstant %2 3.1415
+%1 = OpVariable %2 Uniform %3
+)";
+
+  const std::string body2 = R"(
+OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpExtension "SPV_KHR_linkonce_odr"
+OpMemoryModel Physical64 OpenCL
+OpDecorate %1 LinkageAttributes "foo" Import
+%2 = OpTypeFloat 32
+%1 = OpVariable %2 Uniform
+)";
+  spvtest::Binary linked_binary;
+  EXPECT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body2}, &linked_binary))
+      << GetErrorMessage();
+}
+
+TEST_F(MatchingImportsToExports, LinkOnceODRLinkageFunMultiple) {
+  const std::string body1 = R"(
+OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpExtension "SPV_KHR_linkonce_odr"
+OpMemoryModel Physical64 OpenCL
+OpDecorate %1 LinkageAttributes "foo" LinkOnceODR
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2
+%1 = OpFunction %2 Inline %3
+%4 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const std::string body2 = R"(
+OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpExtension "SPV_KHR_linkonce_odr"
+OpMemoryModel Physical64 OpenCL
+OpDecorate %1 LinkageAttributes "foo" Import
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2
+%1 = OpFunction %2 None %3
+OpFunctionEnd
+)";
+  spvtest::Binary linked_binary;
+  EXPECT_EQ(SPV_SUCCESS, AssembleAndLink({body1, body1, body2}, &linked_binary))
+      << GetErrorMessage();
+}
+
+TEST_F(MatchingImportsToExports, LinkOnceODRAndExport) {
+  const std::string body1 = R"(
+OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpExtension "SPV_KHR_linkonce_odr"
+OpMemoryModel Physical64 OpenCL
+OpDecorate %1 LinkageAttributes "foo" LinkOnceODR
+%2 = OpTypeFloat 32
+%3 = OpConstant %2 3.1415
+%1 = OpVariable %2 Uniform %3
+)";
+
+  const std::string body2 = R"(
+OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpExtension "SPV_KHR_linkonce_odr"
+OpMemoryModel Physical64 OpenCL
+OpDecorate %1 LinkageAttributes "foo" Export
+%2 = OpTypeFloat 32
+%3 = OpConstant %2 2.7183
+%1 = OpVariable %2 Uniform %3
+)";
+
+  const std::string body3 = R"(
+OpCapability Linkage
+OpCapability Addresses
+OpCapability Kernel
+OpExtension "SPV_KHR_linkonce_odr"
+OpMemoryModel Physical64 OpenCL
+OpDecorate %1 LinkageAttributes "foo" Import
+%2 = OpTypeFloat 32
+%1 = OpVariable %2 Uniform
+)";
+  spvtest::Binary linked_binary;
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY,
+            AssembleAndLink({body1, body2, body3}, &linked_binary))
+      << GetErrorMessage();
+  EXPECT_THAT(
+      GetErrorMessage(),
+      HasSubstr("Combination of Export and LinkOnceODR is not allowed, found "
+                "for \"foo\""));
 }
 
 }  // namespace
