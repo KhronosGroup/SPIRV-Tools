@@ -20,6 +20,7 @@
 #include <string>
 
 #include "gmock/gmock.h"
+#include "spirv-tools/libspirv.h"
 #include "test/unit_spirv.h"
 #include "test/val/val_fixtures.h"
 
@@ -2149,6 +2150,20 @@ TEST_F(ValidateImage, SampleImplicitLodVulkanOffsetWrongSize) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Image Operand Offset can only be used with "
                         "OpImage*Gather operations"));
+}
+
+TEST_F(ValidateImage, SampleImplicitLodVulkanOffsetMaintenance8) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Offset %s32vec2_01
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, "", "Fragment", "", SPV_ENV_VULKAN_1_0).c_str());
+  spvValidatorOptionsSetAllowOffsetTextureOperand(getValidatorOptions(), true);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodVulkanOffsetWrongBeforeLegalization) {

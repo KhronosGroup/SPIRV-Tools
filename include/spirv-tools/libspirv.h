@@ -732,6 +732,11 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetSkipBlockLayout(
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetAllowLocalSizeId(
     spv_validator_options options, bool val);
 
+// Allow Offset (in addition to ConstOffset) for texture operations.
+// Was added for VK_KHR_maintenance8
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetAllowOffsetTextureOperand(
+    spv_validator_options options, bool val);
+
 // Whether friendly names should be used in validation error messages.
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetFriendlyNames(
     spv_validator_options options, bool val);
