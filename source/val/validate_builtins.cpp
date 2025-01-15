@@ -3218,17 +3218,20 @@ spv_result_t BuiltInsValidator::ValidateI32Vec4InputAtDefinition(
 
 spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtDefinition(
     const Decoration& decoration, const Instruction& inst) {
-  if (spv_result_t error = ValidateI32Vec(
-          decoration, inst, 3,
-          [this, &inst](const std::string& message) -> spv_result_t {
-            return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-                   << _.VkErrorID(4427) << "According to the "
-                   << spvLogStringForEnv(_.context()->target_env)
-                   << " spec BuiltIn WorkgroupSize variable needs to be a "
-                      "3-component 32-bit int vector. "
-                   << message;
-          })) {
-    return error;
+  // Vulkan requires 32-bit int, but Universal has no restrictions
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (spv_result_t error = ValidateI32Vec(
+            decoration, inst, 3,
+            [this, &inst](const std::string& message) -> spv_result_t {
+              return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                     << _.VkErrorID(4427) << "According to the "
+                     << spvLogStringForEnv(_.context()->target_env)
+                     << " spec BuiltIn WorkgroupSize variable needs to be a "
+                        "3-component 32-bit int vector. "
+                     << message;
+            })) {
+      return error;
+    }
   }
 
   if (!spvOpcodeIsConstant(inst.opcode())) {

@@ -318,6 +318,37 @@ OpExecutionModeId %main LocalSizeId %int_1 %int_0 %int_1
           "Local Size Id execution mode must not have a product of zero"));
 }
 
+// https://github.com/KhronosGroup/SPIRV-Tools/issues/5939
+TEST_F(ValidateMode, KernelZeroLocalSize64) {
+  const std::string spirv = R"(
+               OpCapability Kernel
+               OpCapability Addresses
+               OpCapability Int64
+               OpCapability Linkage
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %test "test" %__spirv_BuiltInWorkgroupSize
+               OpExecutionMode %test ContractionOff
+               OpDecorate %__spirv_BuiltInWorkgroupSize Constant
+               OpDecorate %__spirv_BuiltInWorkgroupSize LinkageAttributes "__spirv_BuiltInWorkgroupSize" Import
+               OpDecorate %__spirv_BuiltInWorkgroupSize BuiltIn WorkgroupSize
+       %void = OpTypeVoid
+      %ulong = OpTypeInt 64 0
+    %v3ulong = OpTypeVector %ulong 3
+%_ptr_Input_v3ulong = OpTypePointer Input %v3ulong
+          %8 = OpTypeFunction %void
+%__spirv_BuiltInWorkgroupSize = OpVariable %_ptr_Input_v3ulong Input
+       %test = OpFunction %void None %8
+      %entry = OpLabel
+         %11 = OpLoad %v3ulong %__spirv_BuiltInWorkgroupSize Aligned 1
+         %12 = OpCompositeExtract %ulong %11 0
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateMode, FragmentOriginLowerLeftVulkan) {
   const std::string spirv = R"(
 OpCapability Shader
