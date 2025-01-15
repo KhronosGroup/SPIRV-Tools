@@ -1,4 +1,6 @@
 // Copyright (c) 2015-2016 The Khronos Group Inc.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1185,6 +1187,7 @@ bool ValidationState_t::GetStructMemberTypes(
 }
 
 bool ValidationState_t::IsPointerType(uint32_t id) const {
+  if (!id) return false;
   const Instruction* inst = FindDef(id);
   assert(inst);
   return inst->opcode() == spv::Op::OpTypePointer ||
@@ -1781,6 +1784,7 @@ bool ValidationState_t::IsValidStorageClass(
       case spv::StorageClass::TaskPayloadWorkgroupEXT:
       case spv::StorageClass::HitObjectAttributeNV:
       case spv::StorageClass::TileImageEXT:
+      case spv::StorageClass::NodePayloadAMDX:
         return true;
       default:
         return false;
