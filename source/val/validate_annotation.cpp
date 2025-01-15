@@ -163,6 +163,7 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
     case spv::Decoration::Stream:
     case spv::Decoration::RestrictPointer:
     case spv::Decoration::AliasedPointer:
+    case spv::Decoration::PerPrimitiveEXT:
       if (target->opcode() != spv::Op::OpVariable &&
           target->opcode() != spv::Op::OpUntypedVariableKHR &&
           target->opcode() != spv::Op::OpFunctionParameter &&

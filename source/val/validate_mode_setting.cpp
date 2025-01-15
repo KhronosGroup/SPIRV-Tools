@@ -579,6 +579,15 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
                     "tessellation execution model.";
         }
       }
+      if (spvIsVulkanEnv(_.context()->target_env)) {
+        if (_.HasCapability(spv::Capability::MeshShadingEXT) &&
+            inst->GetOperandAs<uint32_t>(2) == 0) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << _.VkErrorID(7330)
+                 << "In mesh shaders using the MeshEXT Execution Model the "
+                    "OutputVertices Execution Mode must be greater than 0";
+        }
+      }
       break;
     case spv::ExecutionMode::OutputLinesEXT:
     case spv::ExecutionMode::OutputTrianglesEXT:
@@ -592,6 +601,16 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
                << "Execution mode can only be used with the MeshEXT or MeshNV "
                   "execution "
                   "model.";
+      }
+      if (mode == spv::ExecutionMode::OutputPrimitivesEXT &&
+          spvIsVulkanEnv(_.context()->target_env)) {
+        if (_.HasCapability(spv::Capability::MeshShadingEXT) &&
+            inst->GetOperandAs<uint32_t>(2) == 0) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << _.VkErrorID(7331)
+                 << "In mesh shaders using the MeshEXT Execution Model the "
+                    "OutputPrimitivesEXT Execution Mode must be greater than 0";
+        }
       }
       break;
     case spv::ExecutionMode::QuadDerivativesKHR:
