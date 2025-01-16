@@ -3,11 +3,11 @@ use_relative_paths = True
 vars = {
   'github': 'https://github.com',
 
-  'abseil_revision': '7316f5616bad0a794b2a75901cc20b0099718085',
+  'abseil_revision': 'b4e899a95527f62cbaf6169fd7415ac944ef08af',
 
-  'effcee_revision': '2c97e5689ed8d7ab6ae5820f884f03a601ae124b',
+  'effcee_revision': 'e63a164aa0a40a04ddca2c18976819668b5a47a8',
 
-  'googletest_revision': '35d0c365609296fa4730d62057c487e3cfa030ff',
+  'googletest_revision': 'e4ece4881d1fefc1e67d21c7493835815cd13085',
 
   # Use protobufs before they gained the dependency on abseil
   'protobuf_revision': 'v21.12',
