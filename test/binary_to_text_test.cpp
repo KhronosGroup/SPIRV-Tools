@@ -428,6 +428,33 @@ INSTANTIATE_TEST_SUITE_P(
                 "OpDecorate %1 HostAccessINTEL ReadWriteINTEL \"readwrite\"\n",
             })));
 
+// clang-format off
+INSTANTIATE_TEST_SUITE_P(
+    MatrixMultiplyAccumulateOperands, RoundTripInstructionsTest,
+    Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0),
+            ::testing::ValuesIn(std::vector<std::string>{
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 None\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixASignedComponentsINTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixBSignedComponentsINTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixCBFloat16INTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixResultBFloat16INTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixAPackedInt8INTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixBPackedInt8INTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixAPackedInt4INTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixBPackedInt4INTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixATF32INTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixBTF32INTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixCBFloat16INTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixAPackedFloat16INTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixBPackedFloat16INTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixAPackedBFloat16INTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 MatrixBPackedBFloat16INTEL\n",
+                "%2 = OpSubgroupMatrixMultiplyAccumulateINTEL %1 %3 %4 %5 %6 "
+                "MatrixASignedComponentsINTEL|MatrixBSignedComponentsINTEL|MatrixAPackedInt8INTEL|MatrixBPackedInt8INTEL\n",
+            })));
+// clang-format on
+
 using MaskSorting = TextToBinaryTest;
 
 TEST_F(MaskSorting, MasksAreSortedFromLSBToMSB) {
