@@ -1601,7 +1601,6 @@ OpFunctionEnd
   EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
 }
 
-
 TEST_F(ValidateMode, FragmentShaderStencilRefFrontTooManyModesBad) {
   const std::string spirv = R"(
 OpCapability Shader
@@ -2602,10 +2601,9 @@ OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "OpExecutionMode is only valid when the Mode operand is an "
-          "execution mode that takes no Extra Operands, or takes Extra "
-          "Operands that are not id operands"));
+      HasSubstr("OpExecutionMode is only valid when the Mode operand is an "
+                "execution mode that takes no Extra Operands, or takes Extra "
+                "Operands that are not id operands"));
 }
 
 TEST_F(ValidateMode, NodeShaderModeIsApiEntry) {
@@ -2629,10 +2627,9 @@ OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "OpExecutionMode is only valid when the Mode operand is an "
-          "execution mode that takes no Extra Operands, or takes Extra "
-          "Operands that are not id operands"));
+      HasSubstr("OpExecutionMode is only valid when the Mode operand is an "
+                "execution mode that takes no Extra Operands, or takes Extra "
+                "Operands that are not id operands"));
 }
 
 TEST_F(ValidateMode, NodeShaderModeMaxNodeRecursion) {
@@ -2656,10 +2653,9 @@ OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "OpExecutionMode is only valid when the Mode operand is an "
-          "execution mode that takes no Extra Operands, or takes Extra "
-          "Operands that are not id operands"));
+      HasSubstr("OpExecutionMode is only valid when the Mode operand is an "
+                "execution mode that takes no Extra Operands, or takes Extra "
+                "Operands that are not id operands"));
 }
 
 TEST_F(ValidateMode, NodeShaderModeMaxNumWorkgroups) {
@@ -2683,10 +2679,9 @@ OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "OpExecutionMode is only valid when the Mode operand is an "
-          "execution mode that takes no Extra Operands, or takes Extra "
-          "Operands that are not id operands"));
+      HasSubstr("OpExecutionMode is only valid when the Mode operand is an "
+                "execution mode that takes no Extra Operands, or takes Extra "
+                "Operands that are not id operands"));
 }
 
 TEST_F(ValidateMode, NodeShaderModeStaticNumWorkgroups) {
@@ -2710,10 +2705,9 @@ OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "OpExecutionMode is only valid when the Mode operand is an "
-          "execution mode that takes no Extra Operands, or takes Extra "
-          "Operands that are not id operands"));
+      HasSubstr("OpExecutionMode is only valid when the Mode operand is an "
+                "execution mode that takes no Extra Operands, or takes Extra "
+                "Operands that are not id operands"));
 }
 
 TEST_F(ValidateMode, NodeShaderModeSharesInputWith) {
@@ -2737,10 +2731,9 @@ OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "OpExecutionMode is only valid when the Mode operand is an "
-          "execution mode that takes no Extra Operands, or takes Extra "
-          "Operands that are not id operands"));
+      HasSubstr("OpExecutionMode is only valid when the Mode operand is an "
+                "execution mode that takes no Extra Operands, or takes Extra "
+                "Operands that are not id operands"));
 }
 
 }  // namespace
