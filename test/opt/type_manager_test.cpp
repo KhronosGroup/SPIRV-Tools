@@ -178,8 +178,7 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
   types.emplace_back(new HitObjectNV());
 
   // SPV_AMDX_shader_enqueue
-  types.emplace_back(
-      new NodePayloadArrayAMDX(new Struct(std::vector<const Type*>{s32})));
+  types.emplace_back(new NodePayloadArrayAMDX(sts32f32));
 
   types.emplace_back(new TensorLayoutNV(1002, 1000));
   types.emplace_back(new TensorViewNV(1002, 1003, {1000, 1001}));
