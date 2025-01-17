@@ -320,6 +320,9 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_COOPERATIVE_MATRIX_REDUCE,
   // Enum type from SPV_NV_cooperative_matrix2
   SPV_OPERAND_TYPE_TENSOR_ADDRESSING_OPERANDS,
+  // Optional types from SPV_INTEL_subgroup_matrix_multiply_accumulate
+  SPV_OPERAND_TYPE_MATRIX_MULTIPLY_ACCUMULATE_OPERANDS,
+  SPV_OPERAND_TYPE_OPTIONAL_MATRIX_MULTIPLY_ACCUMULATE_OPERANDS,
 
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.
