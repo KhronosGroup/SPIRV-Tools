@@ -1,4 +1,6 @@
 // Copyright (c) 2018 Google LLC.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -1599,7 +1601,6 @@ OpFunctionEnd
   EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
 }
 
-
 TEST_F(ValidateMode, FragmentShaderStencilRefFrontTooManyModesBad) {
   const std::string spirv = R"(
 OpCapability Shader
@@ -2523,6 +2524,216 @@ OpFunctionEnd
       getDiagnosticString(),
       HasSubstr(
           "Execution mode can only be used with the Fragment execution model"));
+}
+
+const std::string kNodeShaderPrelude = R"(
+OpCapability Shader
+OpCapability ShaderEnqueueAMDX
+OpExtension "SPV_AMDX_shader_enqueue"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpEntryPoint GLCompute %other "other"
+)";
+
+const std::string kNodeShaderPostlude = R"(
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%node0 = OpConstantStringAMDX "node0"
+%node1 = OpConstantStringAMDX "node1"
+%node2 = OpConstantStringAMDX "node2"
+%S = OpTypeStruct
+%_payloadarr_S = OpTypeNodePayloadArrayAMDX %S
+%_payloadarr_S_0 = OpTypeNodePayloadArrayAMDX %S
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%other = OpFunction %void None %void_fn
+%entry0 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+TEST_F(ValidateMode, NodeShader) {
+  const std::string spirv = kNodeShaderPrelude + R"(
+OpExecutionModeId %main ShaderIndexAMDX %uint_0
+OpExecutionModeId %main IsApiEntryAMDX %true
+OpExecutionModeId %main MaxNodeRecursionAMDX %uint_1
+OpExecutionModeId %main MaxNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpExecutionModeId %main SharesInputWithAMDX %node0 %uint_0
+OpExecutionModeId %other ShaderIndexAMDX %uint_0
+OpExecutionModeId %other StaticNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpDecorateId %_payloadarr_S PayloadNodeNameAMDX %node1
+OpDecorateId %_payloadarr_S_0 PayloadNodeNameAMDX %node2
+OpDecorateId %_payloadarr_S PayloadNodeBaseIndexAMDX %uint_0
+OpDecorateId %_payloadarr_S PayloadNodeArraySizeAMDX %uint_1
+OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
+)" + kNodeShaderPostlude;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+TEST_F(ValidateMode, NodeShaderModeShaderIndex) {
+  const std::string spirv = kNodeShaderPrelude + R"(
+OpExecutionMode %main ShaderIndexAMDX %uint_0
+OpExecutionModeId %main IsApiEntryAMDX %true
+OpExecutionModeId %main MaxNodeRecursionAMDX %uint_1
+OpExecutionModeId %main MaxNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpExecutionModeId %main SharesInputWithAMDX %node0 %uint_0
+OpExecutionMode %other ShaderIndexAMDX %uint_0
+OpExecutionModeId %other StaticNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpDecorateId %_payloadarr_S PayloadNodeNameAMDX %node1
+OpDecorateId %_payloadarr_S_0 PayloadNodeNameAMDX %node2
+OpDecorateId %_payloadarr_S PayloadNodeBaseIndexAMDX %uint_0
+OpDecorateId %_payloadarr_S PayloadNodeArraySizeAMDX %uint_1
+OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
+)" + kNodeShaderPostlude;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpExecutionMode is only valid when the Mode operand is an "
+                "execution mode that takes no Extra Operands, or takes Extra "
+                "Operands that are not id operands"));
+}
+
+TEST_F(ValidateMode, NodeShaderModeIsApiEntry) {
+  const std::string spirv = kNodeShaderPrelude + R"(
+OpExecutionModeId %main ShaderIndexAMDX %uint_0
+OpExecutionMode %main IsApiEntryAMDX %true
+OpExecutionModeId %main MaxNodeRecursionAMDX %uint_1
+OpExecutionModeId %main MaxNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpExecutionModeId %main SharesInputWithAMDX %node0 %uint_0
+OpExecutionModeId %other ShaderIndexAMDX %uint_0
+OpExecutionModeId %other StaticNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpDecorateId %_payloadarr_S PayloadNodeNameAMDX %node1
+OpDecorateId %_payloadarr_S_0 PayloadNodeNameAMDX %node2
+OpDecorateId %_payloadarr_S PayloadNodeBaseIndexAMDX %uint_0
+OpDecorateId %_payloadarr_S PayloadNodeArraySizeAMDX %uint_1
+OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
+)" + kNodeShaderPostlude;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpExecutionMode is only valid when the Mode operand is an "
+                "execution mode that takes no Extra Operands, or takes Extra "
+                "Operands that are not id operands"));
+}
+
+TEST_F(ValidateMode, NodeShaderModeMaxNodeRecursion) {
+  const std::string spirv = kNodeShaderPrelude + R"(
+OpExecutionModeId %main ShaderIndexAMDX %uint_0
+OpExecutionModeId %main IsApiEntryAMDX %true
+OpExecutionMode %main MaxNodeRecursionAMDX %uint_1
+OpExecutionModeId %main MaxNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpExecutionModeId %main SharesInputWithAMDX %node0 %uint_0
+OpExecutionModeId %other ShaderIndexAMDX %uint_0
+OpExecutionModeId %other StaticNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpDecorateId %_payloadarr_S PayloadNodeNameAMDX %node1
+OpDecorateId %_payloadarr_S_0 PayloadNodeNameAMDX %node2
+OpDecorateId %_payloadarr_S PayloadNodeBaseIndexAMDX %uint_0
+OpDecorateId %_payloadarr_S PayloadNodeArraySizeAMDX %uint_1
+OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
+)" + kNodeShaderPostlude;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpExecutionMode is only valid when the Mode operand is an "
+                "execution mode that takes no Extra Operands, or takes Extra "
+                "Operands that are not id operands"));
+}
+
+TEST_F(ValidateMode, NodeShaderModeMaxNumWorkgroups) {
+  const std::string spirv = kNodeShaderPrelude + R"(
+OpExecutionModeId %main ShaderIndexAMDX %uint_0
+OpExecutionModeId %main IsApiEntryAMDX %true
+OpExecutionModeId %main MaxNodeRecursionAMDX %uint_1
+OpExecutionMode %main MaxNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpExecutionModeId %main SharesInputWithAMDX %node0 %uint_0
+OpExecutionModeId %other ShaderIndexAMDX %uint_0
+OpExecutionModeId %other StaticNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpDecorateId %_payloadarr_S PayloadNodeNameAMDX %node1
+OpDecorateId %_payloadarr_S_0 PayloadNodeNameAMDX %node2
+OpDecorateId %_payloadarr_S PayloadNodeBaseIndexAMDX %uint_0
+OpDecorateId %_payloadarr_S PayloadNodeArraySizeAMDX %uint_1
+OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
+)" + kNodeShaderPostlude;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpExecutionMode is only valid when the Mode operand is an "
+                "execution mode that takes no Extra Operands, or takes Extra "
+                "Operands that are not id operands"));
+}
+
+TEST_F(ValidateMode, NodeShaderModeStaticNumWorkgroups) {
+  const std::string spirv = kNodeShaderPrelude + R"(
+OpExecutionModeId %main ShaderIndexAMDX %uint_0
+OpExecutionModeId %main IsApiEntryAMDX %true
+OpExecutionModeId %main MaxNodeRecursionAMDX %uint_1
+OpExecutionModeId %main MaxNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpExecutionModeId %main SharesInputWithAMDX %node0 %uint_0
+OpExecutionModeId %other ShaderIndexAMDX %uint_0
+OpExecutionMode %other StaticNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpDecorateId %_payloadarr_S PayloadNodeNameAMDX %node1
+OpDecorateId %_payloadarr_S_0 PayloadNodeNameAMDX %node2
+OpDecorateId %_payloadarr_S PayloadNodeBaseIndexAMDX %uint_0
+OpDecorateId %_payloadarr_S PayloadNodeArraySizeAMDX %uint_1
+OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
+)" + kNodeShaderPostlude;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpExecutionMode is only valid when the Mode operand is an "
+                "execution mode that takes no Extra Operands, or takes Extra "
+                "Operands that are not id operands"));
+}
+
+TEST_F(ValidateMode, NodeShaderModeSharesInputWith) {
+  const std::string spirv = kNodeShaderPrelude + R"(
+OpExecutionModeId %main ShaderIndexAMDX %uint_0
+OpExecutionModeId %main IsApiEntryAMDX %true
+OpExecutionModeId %main MaxNodeRecursionAMDX %uint_1
+OpExecutionModeId %main MaxNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpExecutionMode %main SharesInputWithAMDX %node0 %uint_0
+OpExecutionModeId %other ShaderIndexAMDX %uint_0
+OpExecutionModeId %other StaticNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpDecorateId %_payloadarr_S PayloadNodeNameAMDX %node1
+OpDecorateId %_payloadarr_S_0 PayloadNodeNameAMDX %node2
+OpDecorateId %_payloadarr_S PayloadNodeBaseIndexAMDX %uint_0
+OpDecorateId %_payloadarr_S PayloadNodeArraySizeAMDX %uint_1
+OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
+)" + kNodeShaderPostlude;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpExecutionMode is only valid when the Mode operand is an "
+                "execution mode that takes no Extra Operands, or takes Extra "
+                "Operands that are not id operands"));
 }
 
 }  // namespace

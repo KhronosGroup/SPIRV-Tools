@@ -1,4 +1,6 @@
 // Copyright (c) 2018 Google LLC.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 // Copyright (c) 2024 NVIDIA Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,6 +38,7 @@ spv_result_t ValidateUniqueness(ValidationState_t& _, const Instruction* inst) {
 
   const auto opcode = inst->opcode();
   if (opcode != spv::Op::OpTypeArray && opcode != spv::Op::OpTypeRuntimeArray &&
+      opcode != spv::Op::OpTypeNodePayloadArrayAMDX &&
       opcode != spv::Op::OpTypeStruct && opcode != spv::Op::OpTypePointer &&
       opcode != spv::Op::OpTypeUntypedPointerKHR &&
       !_.RegisterUniqueTypeDeclaration(inst)) {

@@ -1,4 +1,6 @@
 // Copyright (c) 2018 Google LLC.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -383,6 +385,12 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
       case spv::ExecutionMode::LocalSizeId:
       case spv::ExecutionMode::FPFastMathDefault:
       case spv::ExecutionMode::MaximumRegistersIdINTEL:
+      case spv::ExecutionMode::IsApiEntryAMDX:
+      case spv::ExecutionMode::MaxNodeRecursionAMDX:
+      case spv::ExecutionMode::MaxNumWorkgroupsAMDX:
+      case spv::ExecutionMode::ShaderIndexAMDX:
+      case spv::ExecutionMode::SharesInputWithAMDX:
+      case spv::ExecutionMode::StaticNumWorkgroupsAMDX:
         valid_mode = true;
         break;
       default:
@@ -404,6 +412,12 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
         case spv::ExecutionMode::SubgroupsPerWorkgroupId:
         case spv::ExecutionMode::LocalSizeHintId:
         case spv::ExecutionMode::LocalSizeId:
+        case spv::ExecutionMode::IsApiEntryAMDX:
+        case spv::ExecutionMode::MaxNodeRecursionAMDX:
+        case spv::ExecutionMode::MaxNumWorkgroupsAMDX:
+        case spv::ExecutionMode::ShaderIndexAMDX:
+        case spv::ExecutionMode::SharesInputWithAMDX:
+        case spv::ExecutionMode::StaticNumWorkgroupsAMDX:
           if (!spvOpcodeIsConstant(operand_inst->opcode())) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
                    << "For OpExecutionModeId all Extra Operand ids must be "
@@ -462,7 +476,13 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
   } else if (mode == spv::ExecutionMode::SubgroupsPerWorkgroupId ||
              mode == spv::ExecutionMode::LocalSizeHintId ||
              mode == spv::ExecutionMode::LocalSizeId ||
-             mode == spv::ExecutionMode::FPFastMathDefault) {
+             mode == spv::ExecutionMode::FPFastMathDefault ||
+             mode == spv::ExecutionMode::IsApiEntryAMDX ||
+             mode == spv::ExecutionMode::MaxNodeRecursionAMDX ||
+             mode == spv::ExecutionMode::MaxNumWorkgroupsAMDX ||
+             mode == spv::ExecutionMode::ShaderIndexAMDX ||
+             mode == spv::ExecutionMode::SharesInputWithAMDX ||
+             mode == spv::ExecutionMode::StaticNumWorkgroupsAMDX) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "OpExecutionMode is only valid when the Mode operand is an "
               "execution mode that takes no Extra Operands, or takes Extra "

@@ -1,4 +1,6 @@
 // Copyright (c) 2018 Google Inc.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -7802,6 +7804,38 @@ TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeFuncPointerTypeFail) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("first parameter must be pointer to PhysicalStorageBuffer"));
+}
+
+TEST_F(ValidateMemory, PtrAccessChainNodePayloadArray) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability ShaderEnqueueAMDX
+OpExtension "SPV_AMDX_shader_enqueue"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %input
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%node0 = OpConstantStringAMDX "node0"
+%node1 = OpConstantStringAMDX "node1"
+%node2 = OpConstantStringAMDX "node2"
+%S = OpTypeStruct %uint
+%_payloadarr_S = OpTypeNodePayloadArrayAMDX %S
+%_ptr_NodePayloadAMDX__payloadarr_S = OpTypePointer NodePayloadAMDX %_payloadarr_S
+%_ptr_NodePayloadAMDX_uint = OpTypePointer NodePayloadAMDX %uint
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%input = OpVariable %_ptr_NodePayloadAMDX__payloadarr_S NodePayloadAMDX
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%x = OpAccessChain %_ptr_NodePayloadAMDX_uint %input %uint_0 %uint_0
+OpReturn
+OpFunctionEnd
+)";
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_4;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(env));
 }
 
 }  // namespace

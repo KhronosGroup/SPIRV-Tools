@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Google LLC.
-// Modifications Copyright (C) 2020 Advanced Micro Devices, Inc. All rights
-// reserved.
+// Modifications Copyright (C) 2020-2024 Advanced Micro Devices, Inc. All
+// rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -496,7 +496,8 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       storage_class != spv::StorageClass::CallableDataKHR &&
       storage_class != spv::StorageClass::IncomingCallableDataKHR &&
       storage_class != spv::StorageClass::TaskPayloadWorkgroupEXT &&
-      storage_class != spv::StorageClass::HitObjectAttributeNV) {
+      storage_class != spv::StorageClass::HitObjectAttributeNV &&
+      storage_class != spv::StorageClass::NodePayloadAMDX) {
     bool storage_input_or_output = storage_class == spv::StorageClass::Input ||
                                    storage_class == spv::StorageClass::Output;
     bool builtin = false;
@@ -524,7 +525,8 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
                   "Classes: Workgroup, CrossWorkgroup, Private, Function, "
                   "Input, Output, RayPayloadKHR, IncomingRayPayloadKHR, "
                   "HitAttributeKHR, CallableDataKHR, "
-                  "IncomingCallableDataKHR, or UniformConstant";
+                  "IncomingCallableDataKHR, NodePayloadAMDX, or "
+                  "UniformConstant";
       }
     }
   }
@@ -1598,7 +1600,8 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
       case spv::Op::OpTypeCooperativeMatrixNV:
       case spv::Op::OpTypeCooperativeMatrixKHR:
       case spv::Op::OpTypeArray:
-      case spv::Op::OpTypeRuntimeArray: {
+      case spv::Op::OpTypeRuntimeArray:
+      case spv::Op::OpTypeNodePayloadArrayAMDX: {
         // In OpTypeMatrix, OpTypeVector, spv::Op::OpTypeCooperativeMatrixNV,
         // OpTypeArray, and OpTypeRuntimeArray, word 2 is the Element Type.
         type_pointee = _.FindDef(type_pointee->word(2));

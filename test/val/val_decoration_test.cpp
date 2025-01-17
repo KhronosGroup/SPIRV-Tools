@@ -1,4 +1,6 @@
 // Copyright (c) 2017 Google Inc.
+// Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
+// reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -10435,6 +10437,160 @@ TEST_F(ValidateDecorations, ComponentMultipleArrays) {
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+const std::string kNodeShaderPrelude = R"(
+OpCapability Shader
+OpCapability ShaderEnqueueAMDX
+OpExtension "SPV_AMDX_shader_enqueue"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpEntryPoint GLCompute %other "other"
+)";
+
+const std::string kNodeShaderPostlude = R"(
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_1 = OpConstant %uint 1
+%node0 = OpConstantStringAMDX "node0"
+%node1 = OpConstantStringAMDX "node1"
+%node2 = OpConstantStringAMDX "node2"
+%S = OpTypeStruct
+%_payloadarr_S = OpTypeNodePayloadArrayAMDX %S
+%_payloadarr_S_0 = OpTypeNodePayloadArrayAMDX %S
+%bool = OpTypeBool
+%true = OpConstantTrue %bool
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+%other = OpFunction %void None %void_fn
+%entry0 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+TEST_F(ValidateDecorations, NodeShader) {
+  const std::string spirv = kNodeShaderPrelude + R"(
+OpExecutionModeId %main ShaderIndexAMDX %uint_0
+OpExecutionModeId %main IsApiEntryAMDX %true
+OpExecutionModeId %main MaxNodeRecursionAMDX %uint_1
+OpExecutionModeId %main MaxNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpExecutionModeId %main SharesInputWithAMDX %node0 %uint_0
+OpExecutionModeId %other ShaderIndexAMDX %uint_0
+OpExecutionModeId %other StaticNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpDecorateId %_payloadarr_S PayloadNodeNameAMDX %node1
+OpDecorateId %_payloadarr_S_0 PayloadNodeNameAMDX %node2
+OpDecorateId %_payloadarr_S PayloadNodeBaseIndexAMDX %uint_0
+OpDecorateId %_payloadarr_S PayloadNodeArraySizeAMDX %uint_1
+OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
+)" + kNodeShaderPostlude;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(env));
+}
+
+TEST_F(ValidateDecorations, NodeShaderDecoratePayloadNodeName) {
+  const std::string spirv = kNodeShaderPrelude + R"(
+OpExecutionModeId %main ShaderIndexAMDX %uint_0
+OpExecutionModeId %main IsApiEntryAMDX %true
+OpExecutionModeId %main MaxNodeRecursionAMDX %uint_1
+OpExecutionModeId %main MaxNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpExecutionModeId %main SharesInputWithAMDX %node0 %uint_0
+OpExecutionModeId %other ShaderIndexAMDX %uint_0
+OpExecutionModeId %other StaticNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpDecorate %_payloadarr_S PayloadNodeNameAMDX %node1
+OpDecorate %_payloadarr_S_0 PayloadNodeNameAMDX %node2
+OpDecorateId %_payloadarr_S PayloadNodeBaseIndexAMDX %uint_0
+OpDecorateId %_payloadarr_S PayloadNodeArraySizeAMDX %uint_1
+OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
+)" + kNodeShaderPostlude;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_ID, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Decorations taking ID parameters may not be used with OpDecorate"));
+}
+
+TEST_F(ValidateDecorations, NodeShaderDecoratePayloadNodeBaseIndex) {
+  const std::string spirv = kNodeShaderPrelude + R"(
+OpExecutionModeId %main ShaderIndexAMDX %uint_0
+OpExecutionModeId %main IsApiEntryAMDX %true
+OpExecutionModeId %main MaxNodeRecursionAMDX %uint_1
+OpExecutionModeId %main MaxNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpExecutionModeId %main SharesInputWithAMDX %node0 %uint_0
+OpExecutionModeId %other ShaderIndexAMDX %uint_0
+OpExecutionModeId %other StaticNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpDecorateId %_payloadarr_S PayloadNodeNameAMDX %node1
+OpDecorateId %_payloadarr_S_0 PayloadNodeNameAMDX %node2
+OpDecorate %_payloadarr_S PayloadNodeBaseIndexAMDX %uint_0
+OpDecorateId %_payloadarr_S PayloadNodeArraySizeAMDX %uint_1
+OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
+)" + kNodeShaderPostlude;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_ID, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Decorations taking ID parameters may not be used with OpDecorate"));
+}
+
+TEST_F(ValidateDecorations, NodeShaderDecoratePayloadNodeArraySize) {
+  const std::string spirv = kNodeShaderPrelude + R"(
+OpExecutionModeId %main ShaderIndexAMDX %uint_0
+OpExecutionModeId %main IsApiEntryAMDX %true
+OpExecutionModeId %main MaxNodeRecursionAMDX %uint_1
+OpExecutionModeId %main MaxNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpExecutionModeId %main SharesInputWithAMDX %node0 %uint_0
+OpExecutionModeId %other ShaderIndexAMDX %uint_0
+OpExecutionModeId %other StaticNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpDecorateId %_payloadarr_S PayloadNodeNameAMDX %node1
+OpDecorateId %_payloadarr_S_0 PayloadNodeNameAMDX %node2
+OpDecorateId %_payloadarr_S PayloadNodeBaseIndexAMDX %uint_0
+OpDecorate %_payloadarr_S PayloadNodeArraySizeAMDX %uint_1
+OpDecorateId %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
+)" + kNodeShaderPostlude;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_ID, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Decorations taking ID parameters may not be used with OpDecorate"));
+}
+
+TEST_F(ValidateDecorations, NodeShaderDecorateNodeSharesPayloadLimitsWith) {
+  const std::string spirv = kNodeShaderPrelude + R"(
+OpExecutionModeId %main ShaderIndexAMDX %uint_0
+OpExecutionModeId %main IsApiEntryAMDX %true
+OpExecutionModeId %main MaxNodeRecursionAMDX %uint_1
+OpExecutionModeId %main MaxNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpExecutionModeId %main SharesInputWithAMDX %node0 %uint_0
+OpExecutionModeId %other ShaderIndexAMDX %uint_0
+OpExecutionModeId %other StaticNumWorkgroupsAMDX %uint_1 %uint_1 %uint_1
+OpDecorateId %_payloadarr_S PayloadNodeNameAMDX %node1
+OpDecorateId %_payloadarr_S_0 PayloadNodeNameAMDX %node2
+OpDecorateId %_payloadarr_S PayloadNodeBaseIndexAMDX %uint_0
+OpDecorateId %_payloadarr_S PayloadNodeArraySizeAMDX %uint_1
+OpDecorate %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
+)" + kNodeShaderPostlude;
+
+  spv_target_env env = SPV_ENV_UNIVERSAL_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_ID, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Decorations taking ID parameters may not be used with OpDecorate"));
 }
 
 }  // namespace
