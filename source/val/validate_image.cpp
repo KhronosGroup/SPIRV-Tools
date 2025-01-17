@@ -462,7 +462,6 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
           opcode != spv::Op::OpImageSparseGather &&
           opcode != spv::Op::OpImageSparseDrefGather) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << _.VkErrorID(4663)
                << "Image Operand Offset can only be used with "
                   "OpImage*Gather operations";
       }

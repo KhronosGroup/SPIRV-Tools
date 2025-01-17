@@ -2146,8 +2146,6 @@ TEST_F(ValidateImage, SampleImplicitLodVulkanOffsetWrongSize) {
       GenerateShaderCode(body, "", "Fragment", "", SPV_ENV_VULKAN_1_0).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-Offset-04663"));
-  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Image Operand Offset can only be used with "
                         "OpImage*Gather operations"));
 }
