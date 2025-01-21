@@ -2264,8 +2264,6 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpImageTexelPointer-04658);
     case 4659:
       return VUID_WRAP(VUID-StandaloneSpirv-OpImageQuerySizeLod-04659);
-    case 4663:
-      return VUID_WRAP(VUID-StandaloneSpirv-Offset-04663);
     case 4664:
       return VUID_WRAP(VUID-StandaloneSpirv-OpImageGather-04664);
     case 4667:
@@ -2466,6 +2464,9 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpEntryPoint-09658);
     case 9659:
       return VUID_WRAP(VUID-StandaloneSpirv-OpEntryPoint-09659);
+    case 10213:
+      // This use to be a standalone, but maintenance8 will set allow_offset_texture_operand now
+      return VUID_WRAP(VUID-RuntimeSpirv-Offset-10213);
     default:
       return "";  // unknown id
   }
