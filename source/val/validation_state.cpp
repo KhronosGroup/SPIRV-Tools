@@ -2464,6 +2464,9 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpEntryPoint-09658);
     case 9659:
       return VUID_WRAP(VUID-StandaloneSpirv-OpEntryPoint-09659);
+    case 10213:
+      // This use to be a standalone, but maintenance8 will set allow_offset_texture_operand now
+      return VUID_WRAP(VUID-RuntimeSpirv-Offset-10213);
     default:
       return "";  // unknown id
   }
