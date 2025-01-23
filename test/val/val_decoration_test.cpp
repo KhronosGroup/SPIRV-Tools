@@ -2076,6 +2076,68 @@ TEST_F(ValidateDecorations, BlockCantAppearWithinABufferblockBad) {
                         "another Block or BufferBlock."));
 }
 
+TEST_F(ValidateDecorations, BlockCannotAppearWithinBlockArray) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpMemberDecorate %outer 0 Offset 0
+OpMemberDecorate %outer 1 Offset 4
+OpMemberDecorate %outer 2 Offset 20
+OpDecorate %outer Block
+OpMemberDecorate %inner 0 Offset 0
+OpDecorate %inner Block
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%int_4 = OpConstant %int 4
+%inner = OpTypeStruct %int
+%array = OpTypeArray %inner %int_4
+%outer = OpTypeStruct %int %array %int
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("rules: A Block or BufferBlock cannot be nested within "
+                        "another Block or BufferBlock."));
+}
+
+TEST_F(ValidateDecorations, BlockCannotAppearWithinBlockMultiArray) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpMemberDecorate %outer 0 Offset 0
+OpMemberDecorate %outer 1 Offset 4
+OpDecorate %outer Block
+OpMemberDecorate %inner 0 Offset 0
+OpDecorate %inner Block
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%int_4 = OpConstant %int 4
+%inner = OpTypeStruct %int
+%array1 = OpTypeArray %inner %int_4
+%array2 = OpTypeArray %array1 %int_4
+%outer = OpTypeStruct %int %array2
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("rules: A Block or BufferBlock cannot be nested within "
+                        "another Block or BufferBlock."));
+}
+
 TEST_F(ValidateDecorations, BlockLayoutForbidsTightScalarVec3PackingBad) {
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/1666
   std::string spirv = R"(
@@ -10591,6 +10653,47 @@ OpDecorate %_payloadarr_S NodeSharesPayloadLimitsWithAMDX %_payloadarr_S_0
       getDiagnosticString(),
       HasSubstr(
           "Decorations taking ID parameters may not be used with OpDecorate"));
+}
+
+TEST_F(ValidateDecorations, BlockArrayWithStride) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %array ArrayStride 4
+%int = OpTypeInt 32 0
+%int_4 = OpConstant %int 4
+%struct = OpTypeStruct %int
+%array = OpTypeArray %struct %int_4
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Array containing a Block or BufferBlock must not be "
+                        "decorated with ArrayStride"));
+}
+
+TEST_F(ValidateDecorations, BufferBlockRuntimeArrayWithStride) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+OpDecorate %struct BufferBlock
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %array ArrayStride 4
+%int = OpTypeInt 32 0
+%struct = OpTypeStruct %int
+%array = OpTypeRuntimeArray %struct
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Array containing a Block or BufferBlock must not be "
+                        "decorated with ArrayStride"));
 }
 
 }  // namespace

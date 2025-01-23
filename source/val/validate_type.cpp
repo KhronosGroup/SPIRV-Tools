@@ -215,6 +215,18 @@ spv_result_t ValidateTypeArray(ValidationState_t& _, const Instruction* inst) {
            << " is a void type.";
   }
 
+  if (_.HasCapability(spv::Capability::Shader)) {
+    if (element_type->opcode() == spv::Op::OpTypeStruct &&
+        (_.HasDecoration(element_type->id(), spv::Decoration::Block) ||
+         _.HasDecoration(element_type->id(), spv::Decoration::BufferBlock))) {
+      if (_.HasDecoration(inst->id(), spv::Decoration::ArrayStride)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "Array containing a Block or BufferBlock must not be "
+                  "decorated with ArrayStride";
+      }
+    }
+  }
+
   if (spvIsVulkanEnv(_.context()->target_env) &&
       element_type->opcode() == spv::Op::OpTypeRuntimeArray) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
@@ -271,6 +283,18 @@ spv_result_t ValidateTypeRuntimeArray(ValidationState_t& _,
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpTypeRuntimeArray Element Type <id> " << _.getIdName(element_id)
            << " is a void type.";
+  }
+
+  if (_.HasCapability(spv::Capability::Shader)) {
+    if (element_type->opcode() == spv::Op::OpTypeStruct &&
+        (_.HasDecoration(element_type->id(), spv::Decoration::Block) ||
+         _.HasDecoration(element_type->id(), spv::Decoration::BufferBlock))) {
+      if (_.HasDecoration(inst->id(), spv::Decoration::ArrayStride)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "Array containing a Block or BufferBlock must not be "
+                  "decorated with ArrayStride";
+      }
+    }
   }
 
   if (spvIsVulkanEnv(_.context()->target_env) &&
@@ -343,13 +367,20 @@ spv_result_t ValidateTypeStruct(ValidationState_t& _, const Instruction* inst) {
   // Struct members start at word 2 of OpTypeStruct instruction.
   for (size_t word_i = 2; word_i < inst->words().size(); ++word_i) {
     auto member = inst->word(word_i);
-    auto memberTypeInstr = _.FindDef(member);
-    if (memberTypeInstr && spv::Op::OpTypeStruct == memberTypeInstr->opcode()) {
-      if (_.HasDecoration(memberTypeInstr->id(), spv::Decoration::Block) ||
-          _.HasDecoration(memberTypeInstr->id(),
-                          spv::Decoration::BufferBlock) ||
-          _.GetHasNestedBlockOrBufferBlockStruct(memberTypeInstr->id()))
-        has_nested_blockOrBufferBlock_struct = true;
+    if (_.ContainsType(
+            member,
+            [&_](const Instruction* type_inst) {
+              if (type_inst->opcode() == spv::Op::OpTypeStruct &&
+                  (_.HasDecoration(type_inst->id(), spv::Decoration::Block) ||
+                   _.HasDecoration(type_inst->id(),
+                                   spv::Decoration::BufferBlock))) {
+                return true;
+              }
+              return false;
+            },
+            /* traverse_all_types = */ false)) {
+      has_nested_blockOrBufferBlock_struct = true;
+      break;
     }
   }
 
