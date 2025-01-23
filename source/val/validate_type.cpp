@@ -367,15 +367,18 @@ spv_result_t ValidateTypeStruct(ValidationState_t& _, const Instruction* inst) {
   // Struct members start at word 2 of OpTypeStruct instruction.
   for (size_t word_i = 2; word_i < inst->words().size(); ++word_i) {
     auto member = inst->word(word_i);
-    if (_.ContainsType(member, [&_](const Instruction* type_inst) {
-          if (type_inst->opcode() == spv::Op::OpTypeStruct &&
-              (_.HasDecoration(type_inst->id(), spv::Decoration::Block) ||
-               _.HasDecoration(type_inst->id(),
-                               spv::Decoration::BufferBlock))) {
-            return true;
-          }
-          return false;
-        })) {
+    if (_.ContainsType(
+            member,
+            [&_](const Instruction* type_inst) {
+              if (type_inst->opcode() == spv::Op::OpTypeStruct &&
+                  (_.HasDecoration(type_inst->id(), spv::Decoration::Block) ||
+                   _.HasDecoration(type_inst->id(),
+                                   spv::Decoration::BufferBlock))) {
+                return true;
+              }
+              return false;
+            },
+            /* traverse_all_types = */ false)) {
       has_nested_blockOrBufferBlock_struct = true;
       break;
     }
