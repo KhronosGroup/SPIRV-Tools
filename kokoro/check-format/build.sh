@@ -20,6 +20,8 @@ set -e
 # Display commands being run.
 set -x
 
+. /bin/using.sh
+
 BUILD_ROOT=$PWD
 SRC=$PWD/github/SPIRV-Tools
 
@@ -28,11 +30,7 @@ SRC=$PWD/github/SPIRV-Tools
 # Marking the root of the repo as safe for ownership changes.
 git config --global --add safe.directory $SRC
 
-# Get clang-format-5.0.0.
-# Once kokoro upgrades the Ubuntu VMs, we can use 'apt-get install clang-format'
-curl -L http://releases.llvm.org/5.0.0/clang+llvm-5.0.0-linux-x86_64-ubuntu14.04.tar.xz -o clang-llvm.tar.xz
-tar xf clang-llvm.tar.xz
-export PATH=$PWD/clang+llvm-5.0.0-linux-x86_64-ubuntu14.04/bin:$PATH
+using clang-13.0.1
 
 cd $SRC
 git clone --depth=1 https://github.com/KhronosGroup/SPIRV-Headers external/spirv-headers
