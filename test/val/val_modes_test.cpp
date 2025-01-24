@@ -1095,7 +1095,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-ExecutionModel-07330"));
+              AnyVUID("VUID-StandaloneSpirv-MeshEXT-07330"));
 }
 
 TEST_F(ValidateModeExecution, VulkanBadMeshEXTOutputOutputPrimitivesEXT) {
@@ -1130,7 +1130,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-ExecutionModel-07331"));
+              AnyVUID("VUID-StandaloneSpirv-MeshEXT-07331"));
 }
 
 TEST_F(ValidateModeExecution, MeshNVOutputVertices) {
