@@ -2439,9 +2439,9 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
     case 7320:
       return VUID_WRAP(VUID-StandaloneSpirv-ExecutionModel-07320);
     case 7330:
-      return VUID_WRAP(VUID-StandaloneSpirv-ExecutionModel-07330);
+      return VUID_WRAP(VUID-StandaloneSpirv-MeshEXT-07330);
     case 7331:
-      return VUID_WRAP(VUID-StandaloneSpirv-ExecutionModel-07331);
+      return VUID_WRAP(VUID-StandaloneSpirv-MeshEXT-07331);
     case 7650:
       return VUID_WRAP(VUID-StandaloneSpirv-Base-07650);
     case 7651:
