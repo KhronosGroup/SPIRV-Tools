@@ -82,10 +82,19 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
                   "OpTypeAccelerationStructureKHR";
       }
 
-      const uint32_t ray_flags = _.GetOperandTypeId(inst, 2);
-      if (!_.IsIntScalarType(ray_flags) || _.GetBitWidth(ray_flags) != 32) {
+      const uint32_t ray_flags = inst->GetOperandAs<uint32_t>(2);
+      bool is_ray_flags_int32 = false;
+      bool is_ray_flags_const = false;
+      uint32_t ray_flags_value = 0;
+      std::tie(is_ray_flags_int32, is_ray_flags_const, ray_flags_value) =
+          _.EvalInt32IfConst(ray_flags);
+      if (!is_ray_flags_int32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray Flags must be a 32-bit int scalar";
+      } else if (is_ray_flags_const) {
+        if (auto error =
+                RayTracingRayFlagsOperandValue(_, inst, ray_flags_value))
+          return error;
       }
 
       const uint32_t cull_mask = _.GetOperandTypeId(inst, 3);
@@ -101,10 +110,20 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
                << "Ray Origin must be a 32-bit float 3-component vector";
       }
 
-      const uint32_t ray_tmin = _.GetOperandTypeId(inst, 5);
-      if (!_.IsFloatScalarType(ray_tmin) || _.GetBitWidth(ray_tmin) != 32) {
+      const uint32_t ray_tmin = inst->GetOperandAs<uint32_t>(5);
+      bool is_ray_tmin_float32 = false;
+      bool is_ray_tmin_const = false;
+      float ray_tmin_value = 0;
+      std::tie(is_ray_tmin_float32, is_ray_tmin_const, ray_tmin_value) =
+          _.EvalFloat32IfConst(ray_tmin);
+      if (!is_ray_tmin_float32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray TMin must be a 32-bit float scalar";
+      } else if (is_ray_tmin_const && ray_tmin_value < 0.0f) {
+        // Don't need to check TMax for being negative because it can't without
+        // being less than TMin
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Ray Tmin is negative (" << ray_tmin_value << ")";
       }
 
       const uint32_t ray_direction = _.GetOperandTypeId(inst, 6);
@@ -115,10 +134,22 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
                << "Ray Direction must be a 32-bit float 3-component vector";
       }
 
-      const uint32_t ray_tmax = _.GetOperandTypeId(inst, 7);
-      if (!_.IsFloatScalarType(ray_tmax) || _.GetBitWidth(ray_tmax) != 32) {
+      const uint32_t ray_tmax = inst->GetOperandAs<uint32_t>(7);
+      bool is_ray_tmax_float32 = false;
+      bool is_ray_tmax_const = false;
+      float ray_tmax_value = 0;
+      std::tie(is_ray_tmax_float32, is_ray_tmax_const, ray_tmax_value) =
+          _.EvalFloat32IfConst(ray_tmax);
+      if (!is_ray_tmax_float32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray TMax must be a 32-bit float scalar";
+      }
+
+      if (is_ray_tmin_const && is_ray_tmax_const &&
+          ray_tmin_value > ray_tmax_value) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Ray Tmin (" << ray_tmin_value
+               << ") is larger than Ray Tmax (" << ray_tmax_value << ")";
       }
       break;
     }
