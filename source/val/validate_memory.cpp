@@ -702,33 +702,6 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
            << "PhysicalStorageBuffer must not be used with OpVariable.";
   }
 
-  auto pointee_base = pointee;
-  while (pointee_base && pointee_base->opcode() == spv::Op::OpTypeArray) {
-    pointee_base = _.FindDef(pointee_base->GetOperandAs<uint32_t>(1u));
-  }
-  if (pointee_base && pointee_base->opcode() == spv::Op::OpTypePointer) {
-    if (pointee_base->GetOperandAs<spv::StorageClass>(1u) ==
-        spv::StorageClass::PhysicalStorageBuffer) {
-      // check for AliasedPointer/RestrictPointer
-      bool foundAliased =
-          _.HasDecoration(inst->id(), spv::Decoration::AliasedPointer);
-      bool foundRestrict =
-          _.HasDecoration(inst->id(), spv::Decoration::RestrictPointer);
-      if (!foundAliased && !foundRestrict) {
-        return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << "OpVariable " << inst->id()
-               << ": expected AliasedPointer or RestrictPointer for "
-               << "PhysicalStorageBuffer pointer.";
-      }
-      if (foundAliased && foundRestrict) {
-        return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << "OpVariable " << inst->id()
-               << ": can't specify both AliasedPointer and "
-               << "RestrictPointer for PhysicalStorageBuffer pointer.";
-      }
-    }
-  }
-
   // Vulkan specific validation rules for OpTypeRuntimeArray
   if (spvIsVulkanEnv(_.context()->target_env)) {
     // OpTypeRuntimeArray should only ever be in a container like OpTypeStruct,

@@ -1532,7 +1532,8 @@ spv_result_t CheckDecorationsCompatibility(ValidationState_t& vstate) {
   // to the same id.
   static const spv::Decoration mutually_exclusive_per_id[][2] = {
       {spv::Decoration::Block, spv::Decoration::BufferBlock},
-      {spv::Decoration::Restrict, spv::Decoration::Aliased}};
+      {spv::Decoration::Restrict, spv::Decoration::Aliased},
+      {spv::Decoration::RestrictPointer, spv::Decoration::AliasedPointer}};
   static const auto num_mutually_exclusive_per_id_pairs =
       sizeof(mutually_exclusive_per_id) / (2 * sizeof(spv::Decoration));
 
