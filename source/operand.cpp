@@ -300,6 +300,10 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
       return "quantization mode";
     case SPV_OPERAND_TYPE_OVERFLOW_MODES:
       return "overflow mode";
+    case SPV_OPERAND_TYPE_COOPERATIVE_VECTOR_MATRIX_LAYOUT:
+      return "cooperative vector matrix layout";
+    case SPV_OPERAND_TYPE_COMPONENT_TYPE:
+      return "component type";
 
     case SPV_OPERAND_TYPE_NONE:
       return "NONE";
@@ -399,6 +403,8 @@ bool spvOperandIsConcrete(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_NAMED_MAXIMUM_NUMBER_OF_REGISTERS:
     case SPV_OPERAND_TYPE_FPENCODING:
     case SPV_OPERAND_TYPE_TENSOR_CLAMP_MODE:
+    case SPV_OPERAND_TYPE_COOPERATIVE_VECTOR_MATRIX_LAYOUT:
+    case SPV_OPERAND_TYPE_COMPONENT_TYPE:
       return true;
     default:
       break;

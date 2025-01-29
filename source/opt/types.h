@@ -64,6 +64,7 @@ class NamedBarrier;
 class AccelerationStructureNV;
 class CooperativeMatrixNV;
 class CooperativeMatrixKHR;
+class CooperativeVectorNV;
 class RayQueryKHR;
 class HitObjectNV;
 class TensorLayoutNV;
@@ -108,6 +109,7 @@ class Type {
     kAccelerationStructureNV,
     kCooperativeMatrixNV,
     kCooperativeMatrixKHR,
+    kCooperativeVectorNV,
     kRayQueryKHR,
     kHitObjectNV,
     kTensorLayoutNV,
@@ -213,6 +215,7 @@ class Type {
   DeclareCastMethod(AccelerationStructureNV)
   DeclareCastMethod(CooperativeMatrixNV)
   DeclareCastMethod(CooperativeMatrixKHR)
+  DeclareCastMethod(CooperativeVectorNV)
   DeclareCastMethod(RayQueryKHR)
   DeclareCastMethod(HitObjectNV)
   DeclareCastMethod(TensorLayoutNV)
@@ -740,6 +743,30 @@ class TensorViewNV : public Type {
   const uint32_t dim_id_;
   const uint32_t has_dimensions_id_;
   std::vector<uint32_t> perm_;
+};
+
+class CooperativeVectorNV : public Type {
+ public:
+  CooperativeVectorNV(const Type* type, const uint32_t components);
+  CooperativeVectorNV(const CooperativeVectorNV&) = default;
+
+  std::string str() const override;
+
+  CooperativeVectorNV* AsCooperativeVectorNV() override { return this; }
+  const CooperativeVectorNV* AsCooperativeVectorNV() const override {
+    return this;
+  }
+
+  size_t ComputeExtraStateHash(size_t hash, SeenTypes* seen) const override;
+
+  const Type* component_type() const { return component_type_; }
+  uint32_t components() const { return components_; }
+
+ private:
+  bool IsSameImpl(const Type* that, IsSameCache*) const override;
+
+  const Type* component_type_;
+  const uint32_t components_;
 };
 
 #define DefineParameterlessType(type, name)                                \
