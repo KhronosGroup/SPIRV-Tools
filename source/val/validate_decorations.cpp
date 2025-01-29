@@ -1476,10 +1476,12 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
       // array which should not have an explicit layout.
       if (data_type->opcode() == spv::Op::OpTypeArray ||
           data_type->opcode() == spv::Op::OpTypeRuntimeArray) {
-        const auto ele_type = vstate.FindDef(data_type->GetOperandAs<uint32_t>(1u));
+        const auto ele_type =
+            vstate.FindDef(data_type->GetOperandAs<uint32_t>(1u));
         if (ele_type->opcode() == spv::Op::OpTypeStruct &&
             (vstate.HasDecoration(ele_type->id(), spv::Decoration::Block) ||
-             vstate.HasDecoration(ele_type->id(), spv::Decoration::BufferBlock))) {
+             vstate.HasDecoration(ele_type->id(),
+                                  spv::Decoration::BufferBlock))) {
           data_type = ele_type;
           data_type_id = ele_type->id();
         }
