@@ -476,6 +476,20 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
                                          0, id, operands);
       break;
     }
+    case Type::kCooperativeVectorNV: {
+      auto coop_vec = type->AsCooperativeVectorNV();
+      uint32_t const component_type =
+          GetTypeInstruction(coop_vec->component_type());
+      if (component_type == 0) {
+        return 0;
+      }
+      typeInst = MakeUnique<Instruction>(
+          context(), spv::Op::OpTypeCooperativeVectorNV, 0, id,
+          std::initializer_list<Operand>{
+              {SPV_OPERAND_TYPE_ID, {component_type}},
+              {SPV_OPERAND_TYPE_ID, {coop_vec->components()}}});
+      break;
+    }
     default:
       assert(false && "Unexpected type");
       break;
@@ -719,6 +733,14 @@ Type* TypeManager::RebuildType(uint32_t type_id, const Type& type) {
       const TensorViewNV* tv_type = type.AsTensorViewNV();
       rebuilt_ty = MakeUnique<TensorViewNV>(
           tv_type->dim_id(), tv_type->has_dimensions_id(), tv_type->perm());
+      break;
+    }
+    case Type::kCooperativeVectorNV: {
+      const CooperativeVectorNV* cv_type = type.AsCooperativeVectorNV();
+      const Type* component_type = cv_type->component_type();
+      rebuilt_ty = MakeUnique<CooperativeVectorNV>(
+          RebuildType(GetId(component_type), *component_type),
+          cv_type->components());
       break;
     }
     default:
@@ -969,6 +991,10 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
           GetType(inst.GetSingleWordInOperand(0)),
           inst.GetSingleWordInOperand(1), inst.GetSingleWordInOperand(2),
           inst.GetSingleWordInOperand(3), inst.GetSingleWordInOperand(4));
+      break;
+    case spv::Op::OpTypeCooperativeVectorNV:
+      type = new CooperativeVectorNV(GetType(inst.GetSingleWordInOperand(0)),
+                                     inst.GetSingleWordInOperand(1));
       break;
     case spv::Op::OpTypeRayQueryKHR:
       type = new RayQueryKHR();

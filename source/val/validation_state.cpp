@@ -883,6 +883,7 @@ uint32_t ValidationState_t::GetComponentType(uint32_t id) const {
 
     case spv::Op::OpTypeCooperativeMatrixNV:
     case spv::Op::OpTypeCooperativeMatrixKHR:
+    case spv::Op::OpTypeCooperativeVectorNV:
       return inst->word(2);
 
     default:
@@ -911,6 +912,7 @@ uint32_t ValidationState_t::GetDimension(uint32_t id) const {
 
     case spv::Op::OpTypeCooperativeMatrixNV:
     case spv::Op::OpTypeCooperativeMatrixKHR:
+    case spv::Op::OpTypeCooperativeVectorNV:
       // Actual dimension isn't known, return 0
       return 0;
 
@@ -1292,6 +1294,27 @@ bool ValidationState_t::IsUnsigned64BitHandle(uint32_t id) const {
            GetBitWidth(id) == 32));
 }
 
+bool ValidationState_t::IsCooperativeVectorNVType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  return inst && inst->opcode() == spv::Op::OpTypeCooperativeVectorNV;
+}
+
+bool ValidationState_t::IsFloatCooperativeVectorNVType(uint32_t id) const {
+  if (!IsCooperativeVectorNVType(id)) return false;
+  return IsFloatScalarType(FindDef(id)->word(2));
+}
+
+bool ValidationState_t::IsIntCooperativeVectorNVType(uint32_t id) const {
+  if (!IsCooperativeVectorNVType(id)) return false;
+  return IsIntScalarType(FindDef(id)->word(2));
+}
+
+bool ValidationState_t::IsUnsignedIntCooperativeVectorNVType(
+    uint32_t id) const {
+  if (!IsCooperativeVectorNVType(id)) return false;
+  return IsUnsignedIntScalarType(FindDef(id)->word(2));
+}
+
 spv_result_t ValidationState_t::CooperativeMatrixShapesMatch(
     const Instruction* inst, uint32_t result_type_id, uint32_t m2,
     bool is_conversion, bool swap_row_col) {
@@ -1370,6 +1393,36 @@ spv_result_t ValidationState_t::CooperativeMatrixShapesMatch(
              << "Expected Use of Matrix type and Result Type to be "
              << "identical";
     }
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidationState_t::CooperativeVectorDimensionsMatch(
+    const Instruction* inst, uint32_t v1, uint32_t v2) {
+  const auto v1_type = FindDef(v1);
+  const auto v2_type = FindDef(v2);
+
+  if (v1_type->opcode() != v2_type->opcode()) {
+    return diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected cooperative vector types";
+  }
+
+  uint32_t v1_components_id = v1_type->GetOperandAs<uint32_t>(2);
+  uint32_t v2_components_id = v2_type->GetOperandAs<uint32_t>(2);
+
+  bool v1_is_int32 = false, v1_is_const_int32 = false, v2_is_int32 = false,
+       v2_is_const_int32 = false;
+  uint32_t v1_value = 0, v2_value = 0;
+
+  std::tie(v1_is_int32, v1_is_const_int32, v1_value) =
+      EvalInt32IfConst(v1_components_id);
+  std::tie(v2_is_int32, v2_is_const_int32, v2_value) =
+      EvalInt32IfConst(v2_components_id);
+
+  if (v1_is_const_int32 && v2_is_const_int32 && v1_value != v2_value) {
+    return diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected number of components to be identical";
   }
 
   return SPV_SUCCESS;
@@ -1667,6 +1720,7 @@ bool ValidationState_t::ContainsType(
     case spv::Op::OpTypeSampledImage:
     case spv::Op::OpTypeCooperativeMatrixNV:
     case spv::Op::OpTypeCooperativeMatrixKHR:
+    case spv::Op::OpTypeCooperativeVectorNV:
       return ContainsType(inst->GetOperandAs<uint32_t>(1u), f,
                           traverse_all_types);
     case spv::Op::OpTypePointer:

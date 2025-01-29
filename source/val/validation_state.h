@@ -662,6 +662,10 @@ class ValidationState_t {
   bool IsIntCooperativeMatrixType(uint32_t id) const;
   bool IsUnsignedIntCooperativeMatrixType(uint32_t id) const;
   bool IsUnsigned64BitHandle(uint32_t id) const;
+  bool IsCooperativeVectorNVType(uint32_t id) const;
+  bool IsFloatCooperativeVectorNVType(uint32_t id) const;
+  bool IsIntCooperativeVectorNVType(uint32_t id) const;
+  bool IsUnsignedIntCooperativeVectorNVType(uint32_t id) const;
 
   // Returns true if |id| is a type id that contains |type| (or integer or
   // floating point type) of |width| bits.
@@ -800,6 +804,9 @@ class ValidationState_t {
                                             uint32_t result_type_id,
                                             uint32_t m2, bool is_conversion,
                                             bool swap_row_col = false);
+
+  spv_result_t CooperativeVectorDimensionsMatch(const Instruction* inst,
+                                                uint32_t v1, uint32_t v2);
 
   // Returns true if |lhs| and |rhs| logically match and, if the decorations of
   // |rhs| are a subset of |lhs|.
