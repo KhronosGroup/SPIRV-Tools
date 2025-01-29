@@ -10696,6 +10696,67 @@ OpDecorate %array ArrayStride 4
                         "decorated with ArrayStride"));
 }
 
+TEST_F(ValidateDecorations, BlockArrayWithoutStride) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%int = OpTypeInt 32 0
+%int_4 = OpConstant %int 4
+%struct = OpTypeStruct %int
+%array = OpTypeArray %struct %int_4
+%ptr = OpTypePointer StorageBuffer %array
+%var = OpVariable %ptr StorageBuffer
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateDecorations, BlockArrayWithoutStrideUntypedAccessChain) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%int = OpTypeInt 32 0
+%int_4 = OpConstant %int 4
+%struct = OpTypeStruct %int
+%array = OpTypeArray %struct %int_4
+%void = OpTypeVoid
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%var = OpUntypedVariableKHR %ptr StorageBuffer %array
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpUntypedAccessChainKHR %ptr %array %var
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
