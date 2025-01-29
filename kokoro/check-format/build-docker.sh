@@ -16,12 +16,11 @@
 # Fail on any error.
 set -e
 
-SCRIPT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )"
-SRC_ROOT="$( cd "${SCRIPT_DIR}/../.." >/dev/null 2>&1 && pwd )"
-TARGET_BRANCH="${KOKORO_GITHUB_PULL_REQUEST_TARGET_BRANCH-main}"
+# This is required to run any git command in the docker since owner will
+# have changed between the clone environment, and the docker container.
+# Marking the root of the repo as safe for ownership changes.
+git config --global --add safe.directory "$PWD"
 
-docker run --rm -i \
-  --volume "${SRC_ROOT}:${SRC_ROOT}" \
-  --workdir "${SRC_ROOT}" \
-  "us-east4-docker.pkg.dev/shaderc-build/radial-docker/ubuntu-24.04-amd64/formatter" \
-  "${SCRIPT_DIR}/build-docker.sh" "${TARGET_BRANCH}"
+echo $(date): Check formatting...
+./utils/check_code_format.sh ${1:-main}
+echo $(date): check completed.
