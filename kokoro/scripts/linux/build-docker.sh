@@ -158,7 +158,7 @@ elif [ $TOOL = "cmake-smoketest" ]; then
   echo $(date): ctest completed.
 elif [ $TOOL = "cmake-android-ndk" ]; then
   using cmake-3.31.2
-  using ndk-r25c
+  using ndk-r27c
   using ninja-1.10.0
 
   clean_dir "$ROOT_DIR/build"
@@ -178,7 +178,7 @@ elif [ $TOOL = "cmake-android-ndk" ]; then
   ninja
   echo $(date): Build completed.
 elif [ $TOOL = "android-ndk-build" ]; then
-  using ndk-r25c
+  using ndk-r27c
 
   clean_dir "$ROOT_DIR/build"
   cd "$ROOT_DIR/build"
