@@ -100,7 +100,7 @@ struct SingleBlock {
 
   // The nesting level for this block.
   uint32_t nest_level = 0;
-  bool nest_level_assigned = false;
+  bool   nest_level_assigned =     false;
 
   // Whether the block was reachable
   bool reachable = false;
