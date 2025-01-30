@@ -30,13 +30,21 @@ using ::testing::Values;
 using ValidateRayTracingReorderNV = spvtest::ValidateBase<bool>;
 
 std::string GenerateReorderThreadCode(const std::string& body = "",
-                                      const std::string& declarations = "") {
+                                      const std::string& declarations = "",
+                                      const std::string& extensions = "",
+                                      const std::string& capabilities = "") {
   std::ostringstream ss;
   ss << R"(
             OpCapability RayTracingKHR
             OpCapability ShaderInvocationReorderNV
+         )";
+  ss << capabilities;
+  ss << R"(
             OpExtension "SPV_KHR_ray_tracing"
             OpExtension "SPV_NV_shader_invocation_reorder"
+          )";
+  ss << extensions;
+  ss << R"(
        %1 = OpExtInstImport "GLSL.std.450"
             OpMemoryModel Logical GLSL450
             OpEntryPoint RayGenerationNV %main "main" %hObj
@@ -589,6 +597,32 @@ TEST_F(ValidateRayTracingReorderNV,
   )";
 
   CompileSuccessfully(GenerateReorderShaderCode(body, declarations).c_str(),
+                      SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+}
+
+TEST_F(ValidateRayTracingReorderNV, ClusterASNV) {
+
+  const std::string cap = R"(
+               OpCapability RayTracingClusterAccelerationStructureNV
+                            )";
+
+  const std::string ext = R"(
+               OpExtension "SPV_NV_cluster_acceleration_structure"
+                           )";
+
+  const std::string declarations = R"(
+        %int = OpTypeInt 32 1
+        %_ptr_Function_int = OpTypePointer Function %int
+  )";
+
+  const std::string body = R"(
+      %id = OpVariable %_ptr_Function_int Function
+      %12 = OpHitObjectGetClusterIdNV %int %hObj
+      OpStore %id %12
+  )";
+
+  CompileSuccessfully(GenerateReorderThreadCode(body, declarations, ext, cap).c_str(),
                       SPV_ENV_VULKAN_1_2);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }

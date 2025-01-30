@@ -32,7 +32,8 @@ using ValidateRayQuery = spvtest::ValidateBase<bool>;
 
 std::string GenerateShaderCode(
     const std::string& body,
-    const std::string& capabilities_and_extensions = "",
+    const std::string& capabilities = "",
+    const std::string& extensions = "",
     const std::string& declarations = "") {
   std::ostringstream ss;
   ss << R"(
@@ -40,10 +41,13 @@ OpCapability Shader
 OpCapability Int64
 OpCapability Float64
 OpCapability RayQueryKHR
+         )";
+  ss << capabilities;
+ss << R"(
 OpExtension "SPV_KHR_ray_query"
 )";
 
-  ss << capabilities_and_extensions;
+  ss << extensions;
 
   ss << R"(
 OpMemoryModel Logical GLSL450
@@ -398,7 +402,7 @@ OpFunctionEnd
 OpRayQueryInitializeKHR %rq_param %as_2 %u32_0 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, "", declaration).c_str());
+  CompileSuccessfully(GenerateShaderCode(body,"", "", declaration).c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -626,6 +630,22 @@ TEST_F(ValidateRayQuery, RayQueryArraySuccess) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateRayQuery, ClusterASNV) {
+  const std::string cap = R"(
+               OpCapability RayTracingClusterAccelerationStructureNV
+                            )";
+
+  const std::string ext = R"(
+               OpExtension "SPV_NV_cluster_acceleration_structure"
+                           )";
+
+  const std::string body = R"(
+               %clusterid = OpRayQueryGetClusterIdNV %s32 %ray_query %s32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, cap, ext).c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
