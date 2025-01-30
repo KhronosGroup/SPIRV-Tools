@@ -4320,12 +4320,11 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexNotConstantBad) {
 OpReturn
 OpFunctionEnd
   )";
-  const std::string expected_err =
-      "The <id> passed to " + instr +
-      " to index into a structure must be an OpConstant.";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("The <id> passed to " + instr));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("into a structure must be an OpConstant"));
 }
 
 // Invalid: Indexing up to a vec4 granularity, but result type expected float.
@@ -4379,7 +4378,7 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexOutOfBoundBad) {
 OpReturn
 OpFunctionEnd
   )";
-  const std::string expected_err = "Index is out of bounds: " + instr +
+  const std::string expected_err = "is out of bounds: " + instr +
                                    " cannot find index 3 into the structure "
                                    "<id> '25[%_struct_25]'. This structure "
                                    "has 3 members. Largest valid index is 2.";

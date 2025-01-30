@@ -5673,7 +5673,7 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Index is out of bounds"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("is out of bounds"));
   EXPECT_THAT(getDiagnosticString(), HasSubstr("cannot find index -224"));
 }
 
@@ -5701,7 +5701,7 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Index is out of bounds"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("is out of bounds"));
   EXPECT_THAT(getDiagnosticString(), HasSubstr("cannot find index -224"));
 }
 
