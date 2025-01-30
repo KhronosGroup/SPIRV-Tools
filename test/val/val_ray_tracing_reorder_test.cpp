@@ -622,8 +622,9 @@ TEST_F(ValidateRayTracingReorderNV, ClusterASNV) {
       OpStore %id %12
   )";
 
-  CompileSuccessfully(GenerateReorderThreadCode(body, declarations, ext, cap).c_str(),
-                      SPV_ENV_VULKAN_1_2);
+  CompileSuccessfully(
+      GenerateReorderThreadCode(body, declarations, ext, cap).c_str(),
+      SPV_ENV_VULKAN_1_2);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 

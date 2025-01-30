@@ -30,11 +30,10 @@ using ::testing::Values;
 
 using ValidateRayQuery = spvtest::ValidateBase<bool>;
 
-std::string GenerateShaderCode(
-    const std::string& body,
-    const std::string& capabilities = "",
-    const std::string& extensions = "",
-    const std::string& declarations = "") {
+std::string GenerateShaderCode(const std::string& body,
+                               const std::string& capabilities = "",
+                               const std::string& extensions = "",
+                               const std::string& declarations = "") {
   std::ostringstream ss;
   ss << R"(
 OpCapability Shader
@@ -43,7 +42,7 @@ OpCapability Float64
 OpCapability RayQueryKHR
          )";
   ss << capabilities;
-ss << R"(
+  ss << R"(
 OpExtension "SPV_KHR_ray_query"
 )";
 
@@ -402,7 +401,7 @@ OpFunctionEnd
 OpRayQueryInitializeKHR %rq_param %as_2 %u32_0 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body,"", "", declaration).c_str());
+  CompileSuccessfully(GenerateShaderCode(body, "", "", declaration).c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
