@@ -90,8 +90,7 @@ OpDecorate %top_level_as Binding 0
 %f32vec3_0 = OpConstantComposite %f32vec3 %f32_0 %f32_0 %f32_0
 %f32vec4_0 = OpConstantComposite %f32vec4 %f32_0 %f32_0 %f32_0 %f32_0
 
-%ptr_rq = OpTypePointer Private %type_rq
-%ray_query = OpVariable %ptr_rq Private
+%ptr_rq = OpTypePointer Function %type_rq
 
 %ptr_as = OpTypePointer UniformConstant %type_as
 %top_level_as = OpVariable %ptr_as UniformConstant
@@ -106,6 +105,8 @@ OpDecorate %top_level_as Binding 0
   ss << R"(
 %main = OpFunction %void None %func
 %main_entry = OpLabel
+
+%ray_query = OpVariable %ptr_rq Function
 )";
 
   ss << body;
@@ -642,8 +643,9 @@ TEST_F(ValidateRayQuery, ClusterASNV) {
                %clusterid = OpRayQueryGetClusterIdNV %s32 %ray_query %s32_0
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, cap, ext).c_str());
-  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+  CompileSuccessfully(GenerateShaderCode(body, cap, ext).c_str(),
+                      SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 }  // namespace
 }  // namespace val
