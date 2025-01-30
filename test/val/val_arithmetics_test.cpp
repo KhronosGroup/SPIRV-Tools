@@ -1851,6 +1851,167 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a 32-bit integer"));
 }
 
+std::string GenerateCoopVecCode(const std::string& extra_types,
+                                const std::string& main_body) {
+  const std::string prefix =
+      R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability CooperativeVectorNV
+OpCapability ReplicatedCompositesEXT
+OpExtension "SPV_NV_cooperative_vector"
+OpExtension "SPV_EXT_replicated_composites"
+%ext_inst = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%bool = OpTypeBool
+%f16 = OpTypeFloat 16
+%f32 = OpTypeFloat 32
+%u32 = OpTypeInt 32 0
+%s32 = OpTypeInt 32 1
+
+%u32_8 = OpConstant %u32 8
+%u32_16 = OpConstant %u32 16
+%u32_4 = OpConstant %u32 4
+%subgroup = OpConstant %u32 3
+
+%f16vec = OpTypeCooperativeVectorNV %f16 %u32_8
+%f16vec4 = OpTypeCooperativeVectorNV %f16 %u32_4
+%u32vec = OpTypeCooperativeVectorNV %u32 %u32_8
+%s32vec = OpTypeCooperativeVectorNV %s32 %u32_8
+
+%f16_1 = OpConstant %f16 1
+%f32_1 = OpConstant %f32 1
+%u32_1 = OpConstant %u32 1
+%s32_1 = OpConstant %s32 1
+
+%f16vec4_1 = OpConstantComposite %f16vec4 %f16_1 %f16_1 %f16_1 %f16_1
+%f16vec_1 = OpConstantComposite %f16vec %f16_1 %f16_1 %f16_1 %f16_1 %f16_1 %f16_1 %f16_1 %f16_1
+%u32vec_1 = OpConstantComposite %u32vec %u32_1 %u32_1 %u32_1 %u32_1 %u32_1 %u32_1 %u32_1 %u32_1
+%s32vec_1 = OpConstantComposite %s32vec %s32_1 %s32_1 %s32_1 %s32_1 %s32_1 %s32_1 %s32_1 %s32_1
+
+%u32_c1 = OpSpecConstant %u32 1
+%u32_c2 = OpSpecConstant %u32 2
+
+%f16vecc = OpTypeCooperativeVectorNV %f16 %u32_c1
+%f16vecc_1 = OpConstantCompositeReplicateEXT %f16vecc %f16_1
+)";
+
+  const std::string func_begin =
+      R"(
+%main = OpFunction %void None %func
+%main_entry = OpLabel)";
+
+  const std::string suffix =
+      R"(
+OpReturn
+OpFunctionEnd)";
+
+  return prefix + extra_types + func_begin + main_body + suffix;
+}
+
+TEST_F(ValidateArithmetics, CoopVecSuccess) {
+  const std::string body = R"(
+%val1 = OpFAdd %f16vec %f16vec_1 %f16vec_1
+%val2 = OpFSub %f16vec %f16vec_1 %f16vec_1
+%val3 = OpFDiv %f16vec %f16vec_1 %f16vec_1
+%val4 = OpFNegate %f16vec %f16vec_1
+%val5 = OpIAdd %u32vec %u32vec_1 %u32vec_1
+%val6 = OpISub %u32vec %u32vec_1 %u32vec_1
+%val7 = OpUDiv %u32vec %u32vec_1 %u32vec_1
+%val8 = OpIAdd %s32vec %s32vec_1 %s32vec_1
+%val9 = OpISub %s32vec %s32vec_1 %s32vec_1
+%val10 = OpSDiv %s32vec %s32vec_1 %s32vec_1
+%val11 = OpSNegate %s32vec %s32vec_1
+%val12 = OpVectorTimesScalar %f16vec %f16vec_1 %f16_1
+%val13 = OpExtInst %f16vec %ext_inst FMin %f16vec_1 %f16vec_1
+%val14 = OpExtInst %f16vec %ext_inst FMax %f16vec_1 %f16vec_1
+%val15 = OpExtInst %f16vec %ext_inst FClamp %f16vec_1 %f16vec_1 %f16vec_1
+%val16 = OpExtInst %f16vec %ext_inst NClamp %f16vec_1 %f16vec_1 %f16vec_1
+%val17 = OpExtInst %f16vec %ext_inst Step %f16vec_1 %f16vec_1
+%val18 = OpExtInst %f16vec %ext_inst Exp %f16vec_1
+%val19 = OpExtInst %f16vec %ext_inst Log %f16vec_1
+%val20 = OpExtInst %f16vec %ext_inst Tanh %f16vec_1
+%val21 = OpExtInst %f16vec %ext_inst Atan %f16vec_1
+%val22 = OpExtInst %f16vec %ext_inst Fma %f16vec_1 %f16vec_1 %f16vec_1
+%val23 = OpExtInst %u32vec %ext_inst UMin %u32vec_1 %u32vec_1
+%val24 = OpExtInst %u32vec %ext_inst UMax %u32vec_1 %u32vec_1
+%val25 = OpExtInst %u32vec %ext_inst UClamp %u32vec_1 %u32vec_1 %u32vec_1
+%val26 = OpExtInst %s32vec %ext_inst SMin %s32vec_1 %s32vec_1
+%val27 = OpExtInst %s32vec %ext_inst SMax %s32vec_1 %s32vec_1
+%val28 = OpExtInst %s32vec %ext_inst SClamp %s32vec_1 %s32vec_1 %s32vec_1
+%val29 = OpShiftRightLogical %u32vec %u32vec_1 %u32vec_1
+%val30 = OpShiftRightArithmetic %u32vec %u32vec_1 %u32vec_1
+%val31 = OpShiftLeftLogical %u32vec %u32vec_1 %u32vec_1
+%val32 = OpBitwiseOr %u32vec %u32vec_1 %u32vec_1
+%val33 = OpBitwiseXor %u32vec %u32vec_1 %u32vec_1
+%val34 = OpBitwiseAnd %u32vec %u32vec_1 %u32vec_1
+%val35 = OpNot %u32vec %u32vec_1
+)";
+
+  CompileSuccessfully(GenerateCoopVecCode("", body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, CoopVecFMulPass) {
+  const std::string body = R"(
+%val1 = OpFMul %f16vec %f16vec_1 %f16vec_1
+)";
+
+  CompileSuccessfully(GenerateCoopVecCode("", body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, CoopVecVectorTimesScalarMismatchFail) {
+  const std::string body = R"(
+%val1 = OpVectorTimesScalar %f16vec %f16vec_1 %f32_1
+)";
+
+  CompileSuccessfully(GenerateCoopVecCode("", body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected scalar operand type to be equal to the component "
+                "type of the vector operand: VectorTimesScalar"));
+}
+
+TEST_F(ValidateArithmetics, CoopVecDimFail) {
+  const std::string body = R"(
+%val1 = OpFMul %f16vec %f16vec_1 %f16vec4_1
+)";
+
+  CompileSuccessfully(GenerateCoopVecCode("", body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected number of components to be identical"));
+}
+
+TEST_F(ValidateArithmetics, CoopVecComponentTypeNotScalarNumeric) {
+  const std::string types = R"(
+%bad = OpTypeCooperativeVectorNV %bool %u32_8
+)";
+
+  CompileSuccessfully(GenerateCoopVecCode(types, "").c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpTypeCooperativeVectorNV Component Type <id> "
+                        "'5[%bool]' is not a scalar numerical type."));
+}
+
+TEST_F(ValidateArithmetics, CoopVecDimNotConstantInt) {
+  const std::string types = R"(
+%bad = OpTypeCooperativeVectorNV %f16 %f32_1
+)";
+
+  CompileSuccessfully(GenerateCoopVecCode(types, "").c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpTypeCooperativeVectorNV component count <id> "
+                        "'19[%float_1]' is not a constant integer type"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
