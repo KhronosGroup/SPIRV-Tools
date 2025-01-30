@@ -1608,9 +1608,10 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
         // index: the index must be an OpConstant.
         int64_t cur_index;
         if (!_.EvalConstantValInt64(cur_word, &cur_index)) {
-          return _.diag(SPV_ERROR_INVALID_ID, cur_word_instr)
-                 << "The <id> passed to " << instr_name
-                 << " to index into a "
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "The <id> passed to " << instr_name << " to index "
+                 << _.getIdName(cur_word)
+                 << " into a "
                     "structure must be an OpConstant.";
         }
 
@@ -1619,10 +1620,10 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
         const int64_t num_struct_members =
             static_cast<int64_t>(type_pointee->words().size() - 2);
         if (cur_index >= num_struct_members || cur_index < 0) {
-          return _.diag(SPV_ERROR_INVALID_ID, cur_word_instr)
-                 << "Index is out of bounds: " << instr_name
-                 << " cannot find index " << cur_index
-                 << " into the structure <id> "
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "Index " << _.getIdName(cur_word)
+                 << " is out of bounds: " << instr_name << " cannot find index "
+                 << cur_index << " into the structure <id> "
                  << _.getIdName(type_pointee->id()) << ". This structure has "
                  << num_struct_members << " members. Largest valid index is "
                  << num_struct_members - 1 << ".";
