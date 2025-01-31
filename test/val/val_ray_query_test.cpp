@@ -30,20 +30,23 @@ using ::testing::Values;
 
 using ValidateRayQuery = spvtest::ValidateBase<bool>;
 
-std::string GenerateShaderCode(
-    const std::string& body,
-    const std::string& capabilities_and_extensions = "",
-    const std::string& declarations = "") {
+std::string GenerateShaderCode(const std::string& body,
+                               const std::string& capabilities = "",
+                               const std::string& extensions = "",
+                               const std::string& declarations = "") {
   std::ostringstream ss;
   ss << R"(
 OpCapability Shader
 OpCapability Int64
 OpCapability Float64
 OpCapability RayQueryKHR
+         )";
+  ss << capabilities;
+  ss << R"(
 OpExtension "SPV_KHR_ray_query"
 )";
 
-  ss << capabilities_and_extensions;
+  ss << extensions;
 
   ss << R"(
 OpMemoryModel Logical GLSL450
@@ -87,8 +90,7 @@ OpDecorate %top_level_as Binding 0
 %f32vec3_0 = OpConstantComposite %f32vec3 %f32_0 %f32_0 %f32_0
 %f32vec4_0 = OpConstantComposite %f32vec4 %f32_0 %f32_0 %f32_0 %f32_0
 
-%ptr_rq = OpTypePointer Private %type_rq
-%ray_query = OpVariable %ptr_rq Private
+%ptr_rq = OpTypePointer Function %type_rq
 
 %ptr_as = OpTypePointer UniformConstant %type_as
 %top_level_as = OpVariable %ptr_as UniformConstant
@@ -103,6 +105,8 @@ OpDecorate %top_level_as Binding 0
   ss << R"(
 %main = OpFunction %void None %func
 %main_entry = OpLabel
+
+%ray_query = OpVariable %ptr_rq Function
 )";
 
   ss << body;
@@ -398,7 +402,7 @@ OpFunctionEnd
 OpRayQueryInitializeKHR %rq_param %as_2 %u32_0 %u32_0 %f32vec3_0 %f32_0 %f32vec3_0 %f32_0
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body, "", declaration).c_str());
+  CompileSuccessfully(GenerateShaderCode(body, "", "", declaration).c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -626,6 +630,23 @@ TEST_F(ValidateRayQuery, RayQueryArraySuccess) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateRayQuery, ClusterASNV) {
+  const std::string cap = R"(
+               OpCapability RayTracingClusterAccelerationStructureNV
+                            )";
+
+  const std::string ext = R"(
+               OpExtension "SPV_NV_cluster_acceleration_structure"
+                           )";
+
+  const std::string body = R"(
+               %clusterid = OpRayQueryGetClusterIdNV %s32 %ray_query %s32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, cap, ext).c_str(),
+                      SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+}
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

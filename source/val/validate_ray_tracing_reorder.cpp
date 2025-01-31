@@ -614,6 +614,18 @@ spv_result_t RayReorderNVPass(ValidationState_t& _, const Instruction* inst) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "bits must be a 32-bit int scalar";
       }
+      break;
+    }
+
+    case spv::Op::OpHitObjectGetClusterIdNV: {
+      RegisterOpcodeForValidModel(_, inst);
+      if (auto error = ValidateHitObjectPointer(_, inst, 2)) return error;
+
+      if (!_.IsIntScalarType(result_type) || _.GetBitWidth(result_type) != 32)
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Expected 32-bit integer type scalar as Result Type: "
+               << spvOpcodeString(opcode);
+      break;
     }
 
     default:

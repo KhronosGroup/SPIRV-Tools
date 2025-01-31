@@ -263,6 +263,18 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
       break;
     }
 
+    case spv::Op::OpRayQueryGetClusterIdNV: {
+      if (auto error = ValidateRayQueryPointer(_, inst, 2)) return error;
+      if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
+
+      if (!_.IsIntScalarType(result_type) || _.GetBitWidth(result_type) != 32) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "expected Result Type to be 32-bit int scalar type";
+      }
+
+      break;
+    }
+
     default:
       break;
   }
