@@ -951,6 +951,19 @@ bool ValidationState_t::IsFloatScalarType(uint32_t id) const {
   return inst && inst->opcode() == spv::Op::OpTypeFloat;
 }
 
+bool ValidationState_t::IsFloatArrayType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  if (!inst) {
+    return false;
+  }
+
+  if (inst->opcode() == spv::Op::OpTypeArray) {
+    return IsFloatScalarType(GetComponentType(id));
+  }
+
+  return false;
+}
+
 bool ValidationState_t::IsFloatVectorType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
   if (!inst) {

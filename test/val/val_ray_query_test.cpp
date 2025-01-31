@@ -86,6 +86,10 @@ OpDecorate %top_level_as Binding 0
 %u32_0 = OpConstant %u32 0
 %u64_0 = OpConstant %u64 0
 
+%u32_2 = OpConstant %u32 2
+%arr2v3 = OpTypeArray %f32vec3 %u32_2
+%arr2f3 = OpTypeArray %f32 %u32_2
+
 %u32vec3_0 = OpConstantComposite %u32vec3 %u32_0 %u32_0 %u32_0
 %f32vec3_0 = OpConstantComposite %f32vec3 %f32_0 %f32_0 %f32_0
 %f32vec4_0 = OpConstantComposite %f32vec4 %f32_0 %f32_0 %f32_0 %f32_0
@@ -105,7 +109,6 @@ OpDecorate %top_level_as Binding 0
   ss << R"(
 %main = OpFunction %void None %func
 %main_entry = OpLabel
-
 %ray_query = OpVariable %ptr_rq Function
 )";
 
@@ -647,6 +650,61 @@ TEST_F(ValidateRayQuery, ClusterASNV) {
                       SPV_ENV_VULKAN_1_2);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
+
+using RayQueryLSSNVCommon = spvtest::ValidateBase<std::string>;
+
+std::string RayQueryLSSNVResultType(std::string opcode, bool valid) {
+  if (opcode.compare("OpRayQueryGetIntersectionLSSPositionsNV") == 0)
+    return valid ? "%arr2v3" : "%f64";
+
+  if (opcode.compare("OpRayQueryGetIntersectionLSSRadiiNV") == 0)
+    return valid ? "%arr2f3" : "%f64";
+
+  if (opcode.compare("OpRayQueryGetIntersectionSphereRadiusNV") == 0 ||
+      opcode.compare("OpRayQueryGetIntersectionLSSHitValueNV") == 0) {
+    return valid ? "%f32" : "%f64";
+  }
+
+  if (opcode.compare("OpRayQueryGetIntersectionSpherePositionNV") == 0) {
+    return valid ? "%f32vec3" : "%f64";
+  }
+
+  if (opcode.compare("OpRayQueryIsSphereHitNV") == 0 ||
+      opcode.compare("OpRayQueryIsLSSHitNV") == 0) {
+    return valid ? "%bool" : "%f64";
+  }
+
+  return "";
+}
+
+TEST_P(RayQueryLSSNVCommon, Success) {
+  const std::string cap = R"(
+               OpCapability RayTracingSpheresGeometryNV
+               OpCapability RayTracingLinearSweptSpheresGeometryNV
+                            )";
+  const std::string ext = R"(
+               OpExtension "SPV_NV_linear_swept_spheres"
+                           )";
+  std::string opcode = GetParam();
+  std::ostringstream ss;
+  ss << "%result = ";
+  ss << " " << opcode << " ";
+  ss << RayQueryLSSNVResultType(opcode, true);
+  ss << " %ray_query ";
+  ss << " %s32_0 ";
+  CompileSuccessfully(GenerateShaderCode(ss.str(), cap, ext).c_str(),
+                      SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+}
+
+INSTANTIATE_TEST_SUITE_P(ValidateRayQueryLSSNVCommon, RayQueryLSSNVCommon,
+                         Values("OpRayQueryGetIntersectionSpherePositionNV",
+                                "OpRayQueryGetIntersectionLSSPositionsNV",
+                                "OpRayQueryGetIntersectionSphereRadiusNV",
+                                "OpRayQueryGetIntersectionLSSRadiiNV",
+                                "OpRayQueryGetIntersectionLSSHitValueNV",
+                                "OpRayQueryIsSphereHitNV",
+                                "OpRayQueryIsLSSHitNV"));
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
