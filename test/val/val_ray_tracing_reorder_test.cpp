@@ -602,7 +602,6 @@ TEST_F(ValidateRayTracingReorderNV,
 }
 
 TEST_F(ValidateRayTracingReorderNV, ClusterASNV) {
-
   const std::string cap = R"(
                OpCapability RayTracingClusterAccelerationStructureNV
                             )";
