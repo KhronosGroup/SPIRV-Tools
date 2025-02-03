@@ -15,13 +15,49 @@
 if (${SPIRV_SKIP_TESTS})
   return()
 endif()
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+fetch_content(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG origin/main
+  FIND_PACKAGE_ARGS NAMES GTest
+)
+find_package(GTest CONFIG REQUIRED)
 
-if (TARGET gmock_main)
-  message(STATUS "Found Google Mock, building tests.")
-else()
-  message(STATUS "Did not find googletest, tests will not be built. "
-    "To enable tests place googletest in '<spirv-dir>/external/googletest'.")
-endif()
+fetch_content(
+  protobuf
+  GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
+  GIT_TAG origin/main
+  OVERRIDE_FIND_PACKAGE
+)
+
+set(ABSL_ENABLE_INSTALL ON)
+fetch_content(
+  absl
+  GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
+  GIT_TAG origin/master
+  OVERRIDE_FIND_PACKAGE
+)
+
+fetch_content(
+  re2
+  GIT_REPOSITORY https://github.com/google/re2.git
+  GIT_TAG origin/main
+  OVERRIDE_FIND_PACKAGE
+)
+
+set(EFFCEE_BUILD_TESTING OFF)
+fetch_content(
+  effcee
+  GIT_REPOSITORY https://github.com/google/effcee.git
+  GIT_TAG origin/main
+  OVERRIDE_FIND_PACKAGE
+)
+
+find_package(re2 CONFIG REQUIRED)
+find_package(effcee CONFIG REQUIRED)
+find_package(protobuf CONFIG REQUIRED)
+
 
 # Add a SPIR-V Tools unit test. Signature:
 #   add_spvtools_unittest(
@@ -60,14 +96,16 @@ function(add_spvtools_unittest)
       target_compile_options(${target} PRIVATE /DGTEST_HAS_COMBINE=1)
     endif()
     target_include_directories(${target} PRIVATE
-      ${SPIRV_HEADER_INCLUDE_DIR}
       ${spirv-tools_SOURCE_DIR}
       ${spirv-tools_SOURCE_DIR}/include
       ${spirv-tools_SOURCE_DIR}/test
       ${spirv-tools_BINARY_DIR}
-      ${gtest_SOURCE_DIR}/include
-      ${gmock_SOURCE_DIR}/include
     )
+    target_link_libraries(${target} PRIVATE
+      SPIRV-Headers
+      googletest
+    )
+
     if (TARGET effcee)
       # If using Effcee for testing, then add its include directory.
       target_include_directories(${target} PRIVATE ${effcee_SOURCE_DIR})

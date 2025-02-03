@@ -113,12 +113,10 @@ macro(spvtools_opencl_tables CONFIG_VERSION)
   list(APPEND EXTINST_CPP_DEPENDS ${GRAMMAR_INC_FILE})
 endmacro(spvtools_opencl_tables)
 
+message("HEADER DIR: ${SPIRV_HEADER_INCLUDE_DIR}")
 macro(spvtools_vendor_tables VENDOR_TABLE SHORT_NAME OPERAND_KIND_PREFIX)
   set(INSTS_FILE "${spirv-tools_BINARY_DIR}/${VENDOR_TABLE}.insts.inc")
   set(GRAMMAR_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/unified1/extinst.${VENDOR_TABLE}.grammar.json")
-  if(NOT EXISTS ${GRAMMAR_FILE})
-    set(GRAMMAR_FILE "${spirv-tools_SOURCE_DIR}/source/extinst.${VENDOR_TABLE}.grammar.json")
-  endif()
   add_custom_command(OUTPUT ${INSTS_FILE}
     COMMAND Python3::Interpreter ${GRAMMAR_PROCESSING_SCRIPT}
       --extinst-vendor-grammar=${GRAMMAR_FILE}
