@@ -30,6 +30,7 @@
 #include "source/val/instruction.h"
 #include "source/val/validate.h"
 #include "source/val/validation_state.h"
+#include "spirv-tools/libspirv.h"
 #include "spirv/unified1/NonSemanticClspvReflection.h"
 
 namespace spvtools {
@@ -281,6 +282,50 @@ spv_result_t ValidateOperandDebugType(
          << ext_inst_name() << ": "
          << "expected operand " << debug_inst_name
          << " is not a valid debug type";
+}
+
+spv_result_t ValidateOperandDebugSource(
+    ValidationState_t& _, const Instruction* inst, uint32_t source_index,
+    uint32_t line_index, uint32_t column_index,
+    spv_ext_inst_type_t ext_inst_type,
+    const std::function<std::string()>& ext_inst_name) {
+  auto* debug_source_inst = _.FindDef(inst->word(source_index));
+  const std::vector<uint32_t>& line_lengths =
+      _.GetDebugSourceLineLength(debug_source_inst->id(), false);
+  if (line_lengths.empty())
+    return SPV_SUCCESS;  // Text not provide in DebugSource
+
+  const bool vulkanDebugInfo =
+      ext_inst_type == SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100;
+  uint32_t line = 0;
+  uint32_t column = 0;
+  // NonSemantic uses OpConstant for all operands
+  if (vulkanDebugInfo) {
+    bool is_int32 = false, is_const_int32 = false;
+    std::tie(is_int32, is_const_int32, line) =
+        _.EvalInt32IfConst(inst->word(line_index));
+    std::tie(is_int32, is_const_int32, column) =
+        _.EvalInt32IfConst(inst->word(column_index));
+  } else {
+    line = inst->word(line_index);
+    column = inst->word(column_index);
+  }
+
+  if (line > line_lengths.size()) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << ext_inst_name() << ": operand Line (" << line
+           << ") is larger then the " << line_lengths.size()
+           << " lines found in the DebugSource text";
+  } else if (line != 0) {
+    const uint32_t line_length = line_lengths[line - 1];
+    if (column > line_length) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << ext_inst_name() << ": operand Column End (" << column
+             << ") is larger then Line " << line << " column length of "
+             << line_length << " found in the DebugSource text";
+    }
+  }
+  return SPV_SUCCESS;
 }
 
 spv_result_t ValidateClspvReflectionKernel(ValidationState_t& _,
@@ -1008,6 +1053,11 @@ spv_result_t ValidateClspvReflectionInstruction(ValidationState_t& _,
 // inside
 void BuildDebugSourceLineLength(ValidationState_t& _, const Instruction* inst,
                                 uint32_t ext_inst_index) {
+  if (ext_inst_index == NonSemanticShaderDebugInfo100DebugSource &&
+      inst->words().size() < 7) {
+    return;  // The optional text was not provided
+  }
+
   const bool use_last_id =
       ext_inst_index == NonSemanticShaderDebugInfo100DebugSourceContinued;
 
@@ -3304,38 +3354,39 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           auto* debug_source_inst = _.FindDef(inst->word(5));
           const std::vector<uint32_t>& line_lengths =
               _.GetDebugSourceLineLength(debug_source_inst->id(), false);
-
-          if (line_end > line_lengths.size()) {
-            return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": operand Line End (" << line_end
-                   << ") is larger then the " << line_lengths.size()
-                   << " lines found in the DebugSource text";
-          }
-          if (line_start == line_end) {
-            const uint32_t columns = line_lengths[line_end - 1];
-            if (column_end > columns) {
+          if (!line_lengths.empty()) {
+            if (line_end > line_lengths.size()) {
               return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << ext_inst_name() << ": operand Column End ("
-                     << column_end << ") is larger then Line " << line_end
-                     << " column length of " << columns
-                     << " found in the DebugSource text";
+                     << ext_inst_name() << ": operand Line End (" << line_end
+                     << ") is larger then the " << line_lengths.size()
+                     << " lines found in the DebugSource text";
             }
-          } else {
-            uint32_t columns = line_lengths[line_start - 1];
-            if (column_start > columns) {
-              return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << ext_inst_name() << ": operand Column Start ("
-                     << column_start << ") is larger then Line " << line_start
-                     << " column length of " << columns
-                     << " found in the DebugSource text";
-            }
-            columns = line_lengths[line_end - 1];
-            if (column_end > columns) {
-              return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << ext_inst_name() << ": operand Column End ("
-                     << column_end << ") is larger then Line " << line_end
-                     << " column length of " << columns
-                     << " found in the DebugSource text";
+            if (line_start == line_end) {
+              const uint32_t line_length = line_lengths[line_end - 1];
+              if (column_end > line_length) {
+                return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                       << ext_inst_name() << ": operand Column End ("
+                       << column_end << ") is larger then Line " << line_end
+                       << " column length of " << line_length
+                       << " found in the DebugSource text";
+              }
+            } else {
+              uint32_t line_length = line_lengths[line_start - 1];
+              if (column_start > line_length) {
+                return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                       << ext_inst_name() << ": operand Column Start ("
+                       << column_start << ") is larger then Line " << line_start
+                       << " column length of " << line_length
+                       << " found in the DebugSource text";
+              }
+              line_length = line_lengths[line_end - 1];
+              if (column_end > line_length) {
+                return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                       << ext_inst_name() << ": operand Column End ("
+                       << column_end << ") is larger then Line " << line_end
+                       << " column length of " << line_length
+                       << " found in the DebugSource text";
+              }
             }
           }
 
@@ -3519,6 +3570,10 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 7);
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
+          if (auto error = ValidateOperandDebugSource(
+                  _, inst, 7, 8, 9, ext_inst_type, ext_inst_name))
+            return error;
+
           auto validate_parent =
               ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
@@ -3557,6 +3612,10 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 7);
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
+          if (auto error = ValidateOperandDebugSource(
+                  _, inst, 7, 8, 9, ext_inst_type, ext_inst_name))
+            return error;
+
           auto validate_parent =
               ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
@@ -3580,6 +3639,10 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 7);
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
+          if (auto error = ValidateOperandDebugSource(
+                  _, inst, 7, 8, 9, ext_inst_type, ext_inst_name))
+            return error;
+
           auto validate_parent =
               ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
@@ -3621,6 +3684,10 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 7);
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
+          if (auto error = ValidateOperandDebugSource(
+                  _, inst, 7, 8, 9, ext_inst_type, ext_inst_name))
+            return error;
+
           // NonSemantic.Shader.DebugInfo doesn't have the Parent operand
           if (vulkanDebugInfo) {
             CHECK_OPERAND("Offset", spv::Op::OpConstant, 10);
@@ -3673,6 +3740,10 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 7);
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
+          if (auto error = ValidateOperandDebugSource(
+                  _, inst, 7, 8, 9, ext_inst_type, ext_inst_name))
+            return error;
+
           auto validate_parent =
               ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
@@ -3708,6 +3779,10 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 7);
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
+          if (auto error = ValidateOperandDebugSource(
+                  _, inst, 7, 8, 9, ext_inst_type, ext_inst_name))
+            return error;
+
           auto validate_parent =
               ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
@@ -3719,6 +3794,10 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 5);
           CHECK_CONST_UINT_OPERAND("Line", 6);
           CHECK_CONST_UINT_OPERAND("Column", 7);
+          if (auto error = ValidateOperandDebugSource(
+                  _, inst, 5, 6, 7, ext_inst_type, ext_inst_name))
+            return error;
+
           auto validate_parent =
               ValidateOperandLexicalScope(_, "Parent", inst, 8, ext_inst_name);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
@@ -3744,6 +3823,10 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 7);
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
+          if (auto error = ValidateOperandDebugSource(
+                  _, inst, 7, 8, 9, ext_inst_type, ext_inst_name))
+            return error;
+
           auto validate_parent =
               ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
@@ -3823,6 +3906,9 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 8);
           CHECK_CONST_UINT_OPERAND("Line", 9);
           CHECK_CONST_UINT_OPERAND("Column", 10);
+          if (auto error = ValidateOperandDebugSource(
+                  _, inst, 8, 9, 10, ext_inst_type, ext_inst_name))
+            return error;
           break;
         }
         case CommonDebugInfoDebugGlobalVariable: {
@@ -3833,6 +3919,10 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 7);
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
+          if (auto error = ValidateOperandDebugSource(
+                  _, inst, 7, 8, 9, ext_inst_type, ext_inst_name))
+            return error;
+
           auto validate_scope =
               ValidateOperandLexicalScope(_, "Scope", inst, 10, ext_inst_name);
           if (validate_scope != SPV_SUCCESS) return validate_scope;
