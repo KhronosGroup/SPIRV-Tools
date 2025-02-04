@@ -859,6 +859,11 @@ class ValidationState_t {
            qcom_image_processing_consumers_.end();
   }
 
+  // Get the list of line lengths for a given result ID of a DebugSource
+  // instruction Will create a new vector if DebugSource is not found
+  std::vector<uint32_t>& GetDebugSourceLineLength(uint32_t id,
+                                                  bool use_last_id);
+
  private:
   ValidationState_t(const ValidationState_t&);
 
@@ -1022,6 +1027,11 @@ class ValidationState_t {
   // The IDs of types of pointers to storage images.  This is populated in the
   // TypePass.
   std::unordered_set<uint32_t> pointer_to_storage_image_;
+
+  /// Maps an id of DebugSource to a vector that contains the length of each
+  /// line side of it. (Also will have the DebugSourceContinued source included)
+  std::unordered_map<uint32_t, std::vector<uint32_t>> debug_source_line_length_;
+  uint32_t last_debug_source_id_;
 
   /// Maps ids to friendly names.
   std::unique_ptr<spvtools::FriendlyNameMapper> friendly_mapper_;

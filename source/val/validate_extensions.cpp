@@ -13,6 +13,7 @@
 // limitations under the License.
 
 // Validates correctness of extension SPIR-V instructions.
+#include <cstdint>
 #include <cstdlib>
 #include <sstream>
 #include <string>
@@ -1000,6 +1001,57 @@ spv_result_t ValidateClspvReflectionInstruction(ValidationState_t& _,
   }
 
   return SPV_SUCCESS;
+}
+
+// We build up a vector that is length of the DebugSource lines and get how long
+// they are to make sure anyone using a DebugSource provides valid Line/Columns
+// inside
+void BuildDebugSourceLineLength(ValidationState_t& _, const Instruction* inst,
+                                uint32_t ext_inst_index) {
+  const bool use_last_id =
+      ext_inst_index == NonSemanticShaderDebugInfo100DebugSourceContinued;
+
+  // Validated to be an OpString
+  const uint32_t string_operand =
+      (ext_inst_index == NonSemanticShaderDebugInfo100DebugSource) ? 6 : 5;
+  auto* debug_source_text_insn = _.FindDef(inst->word(string_operand));
+  std::string debug_source_text =
+      debug_source_text_insn->GetOperandAs<std::string>(1);
+
+  std::vector<uint32_t>& line_lengths =
+      _.GetDebugSourceLineLength(inst->id(), use_last_id);
+  uint32_t line_start = 0;
+  // If we have a line like "abc", it really column 1-to-4.
+  // Even an empty line should have a column of 1
+  // Add 1 to length to emulate this later
+  uint32_t length = 1;
+
+  for (uint32_t i = 0; i < debug_source_text.size(); ++i) {
+    if (debug_source_text[i] == '\n') {
+      // Unix-style new line
+      line_lengths.push_back(length);
+      length = 1;
+      line_start = i + 1;
+    } else if (debug_source_text[i] == '\r') {
+      // Handle Windows-style \r\n
+      if (i + 1 < debug_source_text.size() &&
+          debug_source_text[i + 1] == '\n') {
+        line_lengths.push_back(length);
+        ++i;  // Skip '\n'
+      } else {
+        line_lengths.push_back(length);
+      }
+      length = 1;
+      line_start = i + 1;
+    } else {
+      ++length;
+    }
+  }
+
+  // Capture last line if the string does not end in a newline
+  if (line_start < debug_source_text.size()) {
+    line_lengths.push_back(length);
+  }
 }
 
 bool IsConstIntScalarTypeWith32Or64Bits(ValidationState_t& _,
@@ -3232,7 +3284,12 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
               _.EvalInt32IfConst(inst->word(8));
           std::tie(is_int32, is_const_int32, column_end) =
               _.EvalInt32IfConst(inst->word(9));
-          if (line_end < line_start) {
+          if (line_start == 0) {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << ext_inst_name()
+                   << ": operand Line Start (0) is not allowed, source lines "
+                      "start at Line 1";
+          } else if (line_end < line_start) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << ext_inst_name() << ": operand Line End (" << line_end
                    << ") is less than Line Start (" << line_start << ")";
@@ -3242,10 +3299,52 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                    << ") is less than Column Start (" << column_start
                    << ") when Line Start equals Line End";
           }
+
+          // Make sure Line is found in the DebugSource
+          auto* debug_source_inst = _.FindDef(inst->word(5));
+          const std::vector<uint32_t>& line_lengths =
+              _.GetDebugSourceLineLength(debug_source_inst->id(), false);
+
+          if (line_end > line_lengths.size()) {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << ext_inst_name() << ": operand Line End (" << line_end
+                   << ") is larger then the " << line_lengths.size()
+                   << " lines found in the DebugSource text";
+          }
+          if (line_start == line_end) {
+            const uint32_t columns = line_lengths[line_end - 1];
+            if (column_end > columns) {
+              return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                     << ext_inst_name() << ": operand Column End ("
+                     << column_end << ") is larger then Line " << line_end
+                     << " column length of " << columns
+                     << " found in the DebugSource text";
+            }
+          } else {
+            uint32_t columns = line_lengths[line_start - 1];
+            if (column_start > columns) {
+              return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                     << ext_inst_name() << ": operand Column Start ("
+                     << column_start << ") is larger then Line " << line_start
+                     << " column length of " << columns
+                     << " found in the DebugSource text";
+            }
+            columns = line_lengths[line_end - 1];
+            if (column_end > columns) {
+              return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                     << ext_inst_name() << ": operand Column End ("
+                     << column_end << ") is larger then Line " << line_end
+                     << " column length of " << columns
+                     << " found in the DebugSource text";
+            }
+          }
+
           break;
         }
         case NonSemanticShaderDebugInfo100DebugSourceContinued: {
           CHECK_OPERAND("Text", spv::Op::OpString, 5);
+          // OpenCL didn't have a Continued version
+          BuildDebugSourceLineLength(_, inst, ext_inst_index);
           break;
         }
         case NonSemanticShaderDebugInfo100DebugBuildIdentifier: {
@@ -3305,6 +3404,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         case CommonDebugInfoDebugSource: {
           CHECK_OPERAND("File", spv::Op::OpString, 5);
           if (num_words == 7) CHECK_OPERAND("Text", spv::Op::OpString, 6);
+          BuildDebugSourceLineLength(_, inst, ext_inst_index);
           break;
         }
         case CommonDebugInfoDebugTypeBasic: {
