@@ -147,9 +147,19 @@ constexpr auto ordered_universal_envs = std::array<spv_target_env, 7>{
 static_assert(spv::Version == 0x10600);
 inline constexpr std::pair<const char*, spv_target_env> spvTargetEnvNameMap[] =
     {
+        // Do not reorder blindly:
+        //  - we need to allow subset match:
+        //    user: vulkan1.2spv1.5 -> vulkan1.2
+        //  - we also need to prevent opportunistic superset match:
+        //    user: vulkan1.1spv1.4 -> vulkan1.1spv1.4, not vulkan1.1
+        // The subset match is implemented with an strncmp, saving us to
+        // explicitly add all subsets in this map. But this requires any defined
+        // subset to be ordered before the superset in this map:
+        //  - vulkan1.1spv1.4 -> subset
+        //  - vulkan1.1       -> superset
         {"vulkan1.0", SPV_ENV_VULKAN_1_0},
-        {"vulkan1.1", SPV_ENV_VULKAN_1_1},
         {"vulkan1.1spv1.4", SPV_ENV_VULKAN_1_1_SPIRV_1_4},
+        {"vulkan1.1", SPV_ENV_VULKAN_1_1},
         {"vulkan1.2", SPV_ENV_VULKAN_1_2},
         {"vulkan1.3", SPV_ENV_VULKAN_1_3},
         {"vulkan1.4", SPV_ENV_VULKAN_1_4},
