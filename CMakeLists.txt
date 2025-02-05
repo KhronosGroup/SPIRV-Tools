@@ -16,6 +16,30 @@ cmake_minimum_required(VERSION 3.22.1)
 
 project(spirv-tools)
 
+include(FetchContent)
+function(fetch_content content_name)
+    message(STATUS "Fetching  ${content_name}...")
+
+    list(REMOVE_AT ARGV 0)  # remove content_name
+
+    FetchContent_Declare(
+        ${content_name}
+        ${ARGV}
+    )
+
+    FetchContent_MakeAvailable(${content_name})
+endfunction()
+
+# TODO: these should probably be locked to a specific commit?
+fetch_content(
+  SPIRV-Headers
+  GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Headers.git
+  GIT_TAG origin/main
+  OVERRIDE_FIND_PACKAGE
+)
+get_target_property(SPIRV_HEADER_INCLUDE_DIR SPIRV-Headers INTERFACE_INCLUDE_DIRECTORIES)
+
+
 # Avoid a bug in CMake 3.22.1. By default it will set -std=c++11 for
 # targets in test/*, when those tests need -std=c++17.
 # https://github.com/KhronosGroup/SPIRV-Tools/issues/5340
@@ -239,6 +263,7 @@ endif()
 
 # Tests require Python3
 find_host_package(Python3 REQUIRED)
+find_package(SPIRV-Headers CONFIG REQUIRED)
 
 # Check for symbol exports on Linux.
 # At the moment, this check will fail on the OSX build machines for the Android NDK.
@@ -317,7 +342,6 @@ macro(spvtools_pch SRCS PCHPREFIX)
   endif()
 endmacro(spvtools_pch)
 
-add_subdirectory(external)
 
 # Warning about extra semi-colons.
 #
@@ -386,8 +410,8 @@ add_custom_command(
                       -DSPIRV_SHARED_LIBRARIES=${SPIRV_SHARED_LIBRARIES}
                       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/write_pkg_config.cmake
         DEPENDS "CHANGES" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/SPIRV-Tools-shared.pc.in" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/write_pkg_config.cmake")
-add_custom_target(spirv-tools-pkg-config 
-        ALL 
+add_custom_target(spirv-tools-pkg-config
+        ALL
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools-shared.pc ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools.pc)
 
 # Install pkg-config file
