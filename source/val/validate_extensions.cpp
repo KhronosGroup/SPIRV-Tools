@@ -291,7 +291,7 @@ spv_result_t ValidateOperandDebugSource(
     const std::function<std::string()>& ext_inst_name) {
   auto* debug_source_inst = _.FindDef(inst->word(source_index));
   const std::vector<uint32_t>& line_lengths =
-      _.GetDebugSourceLineLength(debug_source_inst->id(), false);
+      _.GetDebugSourceLineLength(debug_source_inst->id());
   if (line_lengths.empty())
     return SPV_SUCCESS;  // Text not provide in DebugSource
 
@@ -1058,9 +1058,6 @@ void BuildDebugSourceLineLength(ValidationState_t& _, const Instruction* inst,
     return;  // The optional text was not provided
   }
 
-  const bool use_last_id =
-      ext_inst_index == NonSemanticShaderDebugInfo100DebugSourceContinued;
-
   // Validated to be an OpString
   const uint32_t string_operand =
       (ext_inst_index == NonSemanticShaderDebugInfo100DebugSource) ? 6 : 5;
@@ -1068,8 +1065,19 @@ void BuildDebugSourceLineLength(ValidationState_t& _, const Instruction* inst,
   std::string debug_source_text =
       debug_source_text_insn->GetOperandAs<std::string>(1);
 
+  // walk back to get DebugSource to update it's line length list
+  uint32_t debug_source_id = inst->id();
+  uint32_t continue_count = 0;
+  while (ext_inst_index == NonSemanticShaderDebugInfo100DebugSourceContinued) {
+    continue_count++;  // might have multiple Continues in a row
+    auto prev_index = inst - &_.ordered_instructions()[0] - continue_count;
+    auto prev_inst = &_.ordered_instructions()[prev_index];
+    debug_source_id = prev_inst->id();
+    ext_inst_index = prev_inst->GetOperandAs<uint32_t>(3);
+  }
+
   std::vector<uint32_t>& line_lengths =
-      _.GetDebugSourceLineLength(inst->id(), use_last_id);
+      _.GetDebugSourceLineLength(debug_source_id);
   uint32_t line_start = 0;
   // If we have a line like "abc", it really column 1-to-4.
   // Even an empty line should have a column of 1
@@ -3353,7 +3361,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           // Make sure Line is found in the DebugSource
           auto* debug_source_inst = _.FindDef(inst->word(5));
           const std::vector<uint32_t>& line_lengths =
-              _.GetDebugSourceLineLength(debug_source_inst->id(), false);
+              _.GetDebugSourceLineLength(debug_source_inst->id());
           if (!line_lengths.empty()) {
             if (line_end > line_lengths.size()) {
               return _.diag(SPV_ERROR_INVALID_DATA, inst)
