@@ -19,6 +19,9 @@
 # This script assumes to be invoked at the project root directory.
 
 BASE_BRANCH=${1:-main}
+CLANG_FORMAT_DIFF=${2:-utils/clang-format-diff.py}
+
+echo "Comparing "$(git rev-parse HEAD)" against $BASE_BRANCH"
 
 FILES_TO_CHECK=$(git diff --name-only ${BASE_BRANCH} | grep -E ".*\.(cpp|cc|c\+\+|cxx|c|h|hpp)$")
 
@@ -27,7 +30,7 @@ if [ -z "${FILES_TO_CHECK}" ]; then
   exit 0
 fi
 
-FORMAT_DIFF=$(git diff -U0 ${BASE_BRANCH} -- ${FILES_TO_CHECK} | python ./utils/clang-format-diff.py -p1 -style=file)
+FORMAT_DIFF=$(git diff -U0 ${BASE_BRANCH} -- ${FILES_TO_CHECK} | python3 ${CLANG_FORMAT_DIFF} -p1 -style=file)
 
 if [ -z "${FORMAT_DIFF}" ]; then
   echo "All source code in PR properly formatted."
