@@ -198,6 +198,10 @@ struct IdInstructions {
         forward_pointer_map_(module->IdBound()) {
     // Map ids from all sections to instructions that define them.
     MapIdsToInstruction(module->ext_inst_imports());
+    MapIdsToInstruction(module->debugs1());
+    MapIdsToInstruction(module->debugs2());
+    MapIdsToInstruction(module->debugs3());
+    MapIdsToInstruction(module->ext_inst_debuginfo());
     MapIdsToInstruction(module->types_values());
     for (const opt::Function& function : *module) {
       function.ForEachInst(

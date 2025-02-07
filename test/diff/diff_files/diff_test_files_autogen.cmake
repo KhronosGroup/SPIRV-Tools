@@ -44,5 +44,6 @@ list(APPEND DIFF_TEST_FILES
 "diff_files/spec_constant_composite_autogen.cpp"
 "diff_files/spec_constant_op_autogen.cpp"
 "diff_files/spec_constant_specid_autogen.cpp"
+"diff_files/string_in_ext_inst_autogen.cpp"
 "diff_files/unrelated_shaders_autogen.cpp"
 )
