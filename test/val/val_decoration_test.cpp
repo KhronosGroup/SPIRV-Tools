@@ -7076,7 +7076,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv, env);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-Component-04924"));
+              AnyVUID("VUID-StandaloneSpirv-Component-10583"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Component decoration specified for type"));
   EXPECT_THAT(getDiagnosticString(), HasSubstr("is not a scalar or vector"));
