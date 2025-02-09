@@ -1916,7 +1916,7 @@ spv_result_t CheckComponentDecoration(ValidationState_t& vstate,
     if (!vstate.IsIntScalarOrVectorType(type_id) &&
         !vstate.IsFloatScalarOrVectorType(type_id)) {
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-             << vstate.VkErrorID(4924)
+             << vstate.VkErrorID(10583)
              << "Component decoration specified for type "
              << vstate.getIdName(type_id) << " that is not a scalar or vector";
     }
