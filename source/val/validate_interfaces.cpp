@@ -221,9 +221,30 @@ uint32_t NumConsumedComponents(ValidationState_t& _, const Instruction* type) {
       num_components *= type->GetOperandAs<uint32_t>(2);
       break;
     case spv::Op::OpTypeMatrix:
-    case spv::Op::OpTypeArray:
-      // Arrays and matrices consume all 4 components of the location.
-      return 4;
+      // Matrices consume all components of the location.
+      // Round up to next multiple of 4.
+      num_components =
+          NumConsumedComponents(_, _.FindDef(type->GetOperandAs<uint32_t>(1)));
+      num_components *= type->GetOperandAs<uint32_t>(2);
+      num_components = ((num_components + 3) / 4) * 4;
+      break;
+    case spv::Op::OpTypeArray: {
+      // Arrays consume all components of the location.
+      // Round up to next multiple of 4.
+      num_components =
+          NumConsumedComponents(_, _.FindDef(type->GetOperandAs<uint32_t>(1)));
+
+      bool is_int = false;
+      bool is_const = false;
+      uint32_t value = 0;
+      // Attempt to evaluate the number of array elements.
+      std::tie(is_int, is_const, value) =
+          _.EvalInt32IfConst(type->GetOperandAs<uint32_t>(2));
+      if (is_int && is_const) num_components *= value;
+
+      num_components = ((num_components + 3) / 4) * 4;
+      return num_components;
+    }
     case spv::Op::OpTypePointer:
       if (_.addressing_model() ==
               spv::AddressingModel::PhysicalStorageBuffer64 &&
