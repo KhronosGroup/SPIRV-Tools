@@ -48,6 +48,29 @@ bool is_interface_variable(const Instruction* inst, bool is_spv_1_4) {
   }
 }
 
+// Special validation for varibles that are between shader stages
+spv_result_t ValidateInputOutputInterfaceVariables(ValidationState_t& _,
+                                                   const Instruction* var) {
+  auto var_pointer = _.FindDef(var->GetOperandAs<uint32_t>(0));
+  uint32_t pointer_id = var_pointer->GetOperandAs<uint32_t>(2);
+
+  const auto isPhysicalStorageBuffer = [](const Instruction* insn) {
+    return insn->opcode() == spv::Op::OpTypePointer &&
+           insn->GetOperandAs<spv::StorageClass>(1) ==
+               spv::StorageClass::PhysicalStorageBuffer;
+  };
+
+  if (_.ContainsType(pointer_id, isPhysicalStorageBuffer)) {
+    return _.diag(SPV_ERROR_INVALID_ID, var)
+           << _.VkErrorID(9557) << "Input/Output interface variable id <"
+           << var->id()
+           << "> contains a PhysicalStorageBuffer pointer, which is not "
+              "allowed. If you want to interface shader stages with a "
+              "PhysicalStorageBuffer, cast to a uint64 or uvec2 instead.";
+  }
+  return SPV_SUCCESS;
+}
+
 // Checks that \c var is listed as an interface in all the entry points that use
 // it.
 spv_result_t check_interface_variable(ValidationState_t& _,
@@ -105,6 +128,12 @@ spv_result_t check_interface_variable(ValidationState_t& _,
                << ">, but is not listed as an interface";
       }
     }
+  }
+
+  if (var->GetOperandAs<spv::StorageClass>(2) == spv::StorageClass::Input ||
+      var->GetOperandAs<spv::StorageClass>(2) == spv::StorageClass::Output) {
+    if (auto error = ValidateInputOutputInterfaceVariables(_, var))
+      return error;
   }
 
   return SPV_SUCCESS;
