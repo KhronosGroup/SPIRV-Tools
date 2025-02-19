@@ -131,6 +131,11 @@ void spvValidatorOptionsSetAllowOffsetTextureOperand(
   options->allow_offset_texture_operand = val;
 }
 
+void spvValidatorOptionsSetAllowNon32BitBases(spv_validator_options options,
+                                              bool val) {
+  options->allow_non_32_bit_bases = val;
+}
+
 void spvValidatorOptionsSetFriendlyNames(spv_validator_options options,
                                          bool val) {
   options->use_friendly_names = val;
