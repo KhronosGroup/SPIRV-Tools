@@ -637,6 +637,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
     }
   } else if (pass_name == "trim-capabilities") {
     RegisterPass(CreateTrimCapabilitiesPass());
+  } else if (pass_name == "split-combined-image-sampler") {
+    RegisterPass(CreateSplitCombinedImageSamplerPass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
@@ -1186,6 +1188,11 @@ Optimizer::PassToken CreateModifyMaximalReconvergencePass(bool add) {
 Optimizer::PassToken CreateOpExtInstWithForwardReferenceFixupPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::OpExtInstWithForwardReferenceFixupPass>());
+}
+
+Optimizer::PassToken CreateSplitCombinedImageSamplerPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::SplitCombinedImageSamplerPass>());
 }
 
 }  // namespace spvtools

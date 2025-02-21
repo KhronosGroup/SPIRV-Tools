@@ -1,0 +1,611 @@
+// Copyright (c) 2018 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#include "source/opt/split_combined_image_sampler_pass.h"
+
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <memory>
+
+#include "source/opt/instruction.h"
+#include "source/opt/ir_builder.h"
+#include "source/opt/ir_context.h"
+#include "source/opt/type_manager.h"
+#include "source/opt/types.h"
+#include "source/util/make_unique.h"
+#include "spirv/unified1/spirv.h"
+
+namespace spvtools {
+namespace opt {
+
+#define CHECK(cond)                                        \
+  {                                                        \
+    if (cond != SPV_SUCCESS) return Pass::Status::Failure; \
+  }
+
+#define CHECK_STATUS(cond)                         \
+  {                                                \
+    if (auto c = cond; c != SPV_SUCCESS) return c; \
+  }
+
+Pass::Status SplitCombinedImageSamplerPass::Process() {
+  def_use_mgr_ = context()->get_def_use_mgr();
+  type_mgr_ = context()->get_type_mgr();
+
+  FindCombinedTextureSamplers();
+  if (combined_types_to_remove_.empty()) {
+    return Ok();
+  }
+
+  // Remap function types first
+  CHECK(RemapFunctions());
+  CHECK(RemapVars());
+  CHECK(RemoveDeadInstructions());
+
+  def_use_mgr_ = nullptr;
+  type_mgr_ = nullptr;
+
+  return Ok();
+}
+
+spvtools::DiagnosticStream SplitCombinedImageSamplerPass::Fail() {
+  return std::move(
+      spvtools::DiagnosticStream({}, consumer(), "", SPV_ERROR_INVALID_BINARY)
+      << "split-combined-image-sampler: ");
+}
+
+void SplitCombinedImageSamplerPass::FindCombinedTextureSamplers() {
+  for (auto& inst : context()->types_values()) {
+    RegisterGlobal(inst.result_id());
+    switch (inst.opcode()) {
+      case spv::Op::OpTypeSampler:
+        // Note: The "if" should be redundant because valid modules can't have
+        // duplicate sampler types.
+        if (!sampler_type_) {
+          sampler_type_ = &inst;
+        }
+        break;
+
+      case spv::Op::OpTypeSampledImage:
+        if (!first_sampled_image_type_) {
+          first_sampled_image_type_ = &inst;
+        }
+        combined_types_.insert(inst.result_id());
+        break;
+
+      case spv::Op::OpTypeArray:
+      case spv::Op::OpTypeRuntimeArray: {
+        auto pointee_id = inst.GetSingleWordInOperand(0);
+        if (combined_types_.find(pointee_id) != combined_types_.end()) {
+          combined_types_.insert(inst.result_id());
+          combined_types_to_remove_.push_back(inst.result_id());
+        }
+      } break;
+
+      case spv::Op::OpTypePointer: {
+        auto sc =
+            static_cast<spv::StorageClass>(inst.GetSingleWordInOperand(0));
+        if (sc == spv::StorageClass::UniformConstant) {
+          auto pointee_id = inst.GetSingleWordInOperand(1);
+          if (combined_types_.find(pointee_id) != combined_types_.end()) {
+            combined_types_.insert(inst.result_id());
+            combined_types_to_remove_.push_back(inst.result_id());
+          }
+        }
+      } break;
+
+      case spv::Op::OpVariable:
+        if (combined_types_.find(inst.type_id()) != combined_types_.end()) {
+          ordered_objs_.push_back(&inst);
+          auto& info = remap_info_[inst.result_id()];
+          info.combined_mem_obj = &inst;
+          info.combined_mem_obj_type = def_use_mgr_->GetDef(inst.type_id());
+        }
+        break;
+
+      default:
+        break;
+    }
+  }
+}
+
+Instruction* SplitCombinedImageSamplerPass::GetSamplerType() {
+  if (!sampler_type_) {
+    analysis::Sampler s;
+    uint32_t sampler_type_id = type_mgr_->GetTypeInstruction(&s);
+    sampler_type_ = def_use_mgr_->GetDef(sampler_type_id);
+    assert(first_sampled_image_type_);
+    sampler_type_->InsertBefore(first_sampled_image_type_);
+    RegisterNewGlobal(sampler_type_->result_id());
+  }
+  return sampler_type_;
+}
+
+spv_result_t SplitCombinedImageSamplerPass::RemapVars() {
+  for (Instruction* mem_obj : ordered_objs_) {
+    CHECK_STATUS(RemapVar(mem_obj));
+  }
+  return SPV_SUCCESS;
+}
+
+std::pair<Instruction*, Instruction*> SplitCombinedImageSamplerPass::SplitType(
+    Instruction& combined_kind_type) {
+  if (auto where = type_remap_.find(combined_kind_type.result_id());
+      where != type_remap_.end()) {
+    auto& type_remap = where->second;
+    return {type_remap.image_kind_type, type_remap.sampler_kind_type};
+  }
+
+  switch (combined_kind_type.opcode()) {
+    case spv::Op::OpTypeSampledImage: {
+      auto* image_type =
+          def_use_mgr_->GetDef(combined_kind_type.GetSingleWordInOperand(0));
+      auto* sampler_type = GetSamplerType();
+      type_remap_[combined_kind_type.result_id()] = {&combined_kind_type,
+                                                     image_type, sampler_type};
+      return {image_type, sampler_type};
+      break;
+    }
+    case spv::Op::OpTypePointer: {
+      auto sc = static_cast<spv::StorageClass>(
+          combined_kind_type.GetSingleWordInOperand(0));
+      if (sc == spv::StorageClass::UniformConstant) {
+        auto* pointee =
+            def_use_mgr_->GetDef(combined_kind_type.GetSingleWordInOperand(1));
+        auto [image_pointee, sampler_pointee] = SplitType(*pointee);
+        if (image_pointee && sampler_pointee) {
+          auto make_pointer = [&](Instruction* pointee) {
+            uint32_t ptr_id = type_mgr_->FindPointerToType(
+                pointee->result_id(), spv::StorageClass::UniformConstant);
+            auto* ptr = def_use_mgr_->GetDef(ptr_id);
+            if (!IsKnownGlobal(ptr_id)) {
+              // The pointer type was created at the end. Put it right after the
+              // pointee.
+              ptr->InsertBefore(pointee);
+              pointee->InsertBefore(ptr);
+              RegisterNewGlobal(ptr_id);
+              def_use_mgr_->AnalyzeInstUse(pointee);
+            }
+            return ptr;
+          };
+          auto* ptr_image = make_pointer(image_pointee);
+          auto* ptr_sampler = make_pointer(sampler_pointee);
+          type_remap_[combined_kind_type.result_id()] = {
+              &combined_kind_type, ptr_image, ptr_sampler};
+          return {ptr_image, ptr_sampler};
+        }
+      }
+      break;
+    }
+    case spv::Op::OpTypeArray: {
+      const auto* array_ty =
+          type_mgr_->GetType(combined_kind_type.result_id())->AsArray();
+      assert(array_ty);
+      const auto* sampled_image_ty = array_ty->element_type()->AsSampledImage();
+      assert(sampled_image_ty);
+
+      const analysis::Type* image_ty = sampled_image_ty->image_type();
+      assert(image_ty);
+      analysis::Array array_image_ty(image_ty, array_ty->length_info());
+      const uint32_t array_image_ty_id =
+          type_mgr_->GetTypeInstruction(&array_image_ty);
+      auto* array_image_ty_inst = def_use_mgr_->GetDef(array_image_ty_id);
+      if (!IsKnownGlobal(array_image_ty_id)) {
+        array_image_ty_inst->InsertBefore(&combined_kind_type);
+        RegisterNewGlobal(array_image_ty_id);
+        def_use_mgr_->AnalyzeInstUse(array_image_ty_inst);
+      }
+
+      analysis::Array sampler_array_ty(
+          type_mgr_->GetType(GetSamplerType()->result_id()),
+          array_ty->length_info());
+      const uint32_t array_sampler_ty_id =
+          type_mgr_->GetTypeInstruction(&sampler_array_ty);
+      auto* array_sampler_ty_inst = def_use_mgr_->GetDef(array_sampler_ty_id);
+      if (!IsKnownGlobal(array_sampler_ty_id)) {
+        array_sampler_ty_inst->InsertBefore(&combined_kind_type);
+        RegisterNewGlobal(array_sampler_ty_id);
+        def_use_mgr_->AnalyzeInstUse(array_sampler_ty_inst);
+      }
+      return {array_image_ty_inst, array_sampler_ty_inst};
+    }
+    case spv::Op::OpTypeRuntimeArray: {
+      // This is like the sized-array case, but there is no length parameter.
+      auto* array_ty =
+          type_mgr_->GetType(combined_kind_type.result_id())->AsRuntimeArray();
+      assert(array_ty);
+      auto* sampled_image_ty = array_ty->element_type()->AsSampledImage();
+      assert(sampled_image_ty);
+
+      const analysis::Type* image_ty = sampled_image_ty->image_type();
+      assert(image_ty);
+      analysis::RuntimeArray array_image_ty(image_ty);
+      const uint32_t array_image_ty_id =
+          type_mgr_->GetTypeInstruction(&array_image_ty);
+      auto* array_image_ty_inst = def_use_mgr_->GetDef(array_image_ty_id);
+      if (!IsKnownGlobal(array_image_ty_id)) {
+        array_image_ty_inst->InsertBefore(&combined_kind_type);
+        RegisterNewGlobal(array_image_ty_id);
+        def_use_mgr_->AnalyzeInstUse(array_image_ty_inst);
+      }
+
+      analysis::RuntimeArray sampler_array_ty(
+          type_mgr_->GetType(GetSamplerType()->result_id()));
+      const uint32_t array_sampler_ty_id =
+          type_mgr_->GetTypeInstruction(&sampler_array_ty);
+      auto* array_sampler_ty_inst = def_use_mgr_->GetDef(array_sampler_ty_id);
+      if (!IsKnownGlobal(array_sampler_ty_id)) {
+        array_sampler_ty_inst->InsertBefore(&combined_kind_type);
+        RegisterNewGlobal(array_sampler_ty_id);
+        def_use_mgr_->AnalyzeInstUse(array_sampler_ty_inst);
+      }
+      return {array_image_ty_inst, array_sampler_ty_inst};
+    }
+    default:
+      break;
+  }
+  return {nullptr, nullptr};
+}
+
+spv_result_t SplitCombinedImageSamplerPass::RemapVar(Instruction* mem_obj) {
+  InstructionBuilder builder(context(), mem_obj, IRContext::kAnalysisDefUse);
+  // Create an image variable, and a sampler variable.
+  auto& info = remap_info_[mem_obj->result_id()];
+
+  // Create the variables.
+  auto [ptr_image_ty, ptr_sampler_ty] = SplitType(*info.combined_mem_obj_type);
+  if (!ptr_image_ty || !ptr_sampler_ty) {
+    return Fail() << "unhandled case: array-of-combined-image-sampler";
+  }
+  Instruction* sampler_var = builder.AddVariable(
+      ptr_sampler_ty->result_id(), SpvStorageClassUniformConstant);
+  Instruction* image_var = builder.AddVariable(ptr_image_ty->result_id(),
+                                               SpvStorageClassUniformConstant);
+  modified_ = true;
+  return RemapUses(mem_obj, image_var, sampler_var);
+}
+
+spv_result_t SplitCombinedImageSamplerPass::RemapUses(
+    Instruction* combined, Instruction* image_part, Instruction* sampler_part) {
+  // The insertion point should be updated before using this builder.
+  // We needed *something* here.
+  InstructionBuilder builder(context(), combined, IRContext::kAnalysisDefUse);
+
+  // SPIR-V has a Data rule:
+  //  > All OpSampledImage instructions, or instructions that load an image or
+  //  > sampler reference, must be in the same block in which their Result <id>
+  //  > are consumed.
+  //
+  // Assuming that rule is honoured, the load is in the same block as the
+  // operation using the sampled image that was loaded. So it's ok to load
+  // the separate image and texture sampler, and also to create the combined
+  // sampled image from them, all in the same basic block.
+
+  struct RemapUse {
+    uint32_t used_id;  // The ID that is being used.
+    Instruction* user;
+    uint32_t index;
+    Instruction* image_part;    // The image part of the replacement.
+    Instruction* sampler_part;  // The sampler part of the replacement.
+  };
+  std::vector<RemapUse> uses;
+  // The instructions that should have their uses reanalyzed.
+  // Anything in the 'uses' worklist will be in the reanalyze set.
+  std::unordered_set<Instruction*> reanalyze_set;
+
+  auto add_remap = [&](Instruction* used_combined, Instruction* image_part,
+                       Instruction* sampler_part) {
+    def_use_mgr_->ForEachUse(
+        used_combined, [&](Instruction* user, uint32_t use_index) {
+          uses.push_back({used_combined->result_id(), user, use_index,
+                          image_part, sampler_part});
+        });
+    reanalyze_set.insert(image_part);
+    reanalyze_set.insert(sampler_part);
+    MarkAsDead(used_combined);
+  };
+
+  add_remap(combined, image_part, sampler_part);
+
+  // Use index-based iteration because we can add to the list as we go along,
+  // and reallocation would invalidate ordinary iterators.
+  for (size_t use_index = 0; use_index < uses.size(); ++use_index) {
+    auto& use = uses[use_index];
+    switch (use.user->opcode()) {
+      case spv::Op::OpCopyObject: {
+        // Append the uses of this OpCopyObject to the work list.
+        add_remap(use.user, image_part, sampler_part);
+        break;
+      }
+      case spv::Op::OpLoad: {
+        if (use.index != 2)
+          return Fail() << "variable used as non-pointer index " << use.index
+                        << " on load" << *use.user;
+        Instruction* load = use.user;
+
+        auto pointee_ty_id = [&](Instruction* ptr_value) {
+          auto* ptr_ty = def_use_mgr_->GetDef(ptr_value->type_id());
+          assert(ptr_ty->opcode() == spv::Op::OpTypePointer);
+          return ptr_ty->GetSingleWordInOperand(1);
+        };
+
+        builder.SetInsertPoint(load);
+        auto* image = builder.AddLoad(pointee_ty_id(use.image_part),
+                                      use.image_part->result_id());
+        auto* sampler = builder.AddLoad(pointee_ty_id(use.sampler_part),
+                                        use.sampler_part->result_id());
+        auto* sampled_image = builder.AddSampledImage(
+            load->type_id(), image->result_id(), sampler->result_id());
+        def_use_mgr_->ForEachUse(load, [&](Instruction* user, uint32_t index) {
+          user->SetOperand(index, {sampled_image->result_id()});
+        });
+        reanalyze_set.insert(image);
+        reanalyze_set.insert(sampler);
+        reanalyze_set.insert(sampled_image);
+        MarkAsDead(load);
+        break;
+      }
+      case spv::Op::OpDecorate: {
+        if (use.index != 0)
+          return Fail() << "variable used as non-target index " << use.index
+                        << " on decoration: " << *use.user;
+        builder.SetInsertPoint(use.user);
+        spv::Decoration deco{use.user->GetSingleWordInOperand(1)};
+        std::vector<uint32_t> literals;
+        for (uint32_t i = 2; i < use.user->NumInOperands(); i++) {
+          literals.push_back(use.user->GetSingleWordInOperand(i));
+        }
+        builder.AddDecoration(use.image_part->result_id(), deco, literals);
+        builder.AddDecoration(use.sampler_part->result_id(), deco, literals);
+        MarkAsDead(use.user);
+        break;
+      }
+      case spv::Op::OpEntryPoint: {
+        // The entry point lists variables in the shader interface, i.e.
+        // module-scope variables referenced by the static call tree rooted
+        // at the entry point. (It can be a proper superset).  Before SPIR-V
+        // 1.4, only Input and Output variables are listed; in 1.4 and later,
+        // module-scope variables in all storage classes are listed.
+        // If a combined image+sampler is listed by the entry point, then
+        // the separated image and sampler variables should be.
+        if (use.index < 3)
+          return Fail() << "variable used in index " << use.index
+                        << " instead of as an interface variable:" << *use.user;
+        // Avoid moving the other IDs around, so we don't have to update their
+        // uses in the def_use_mgr_.
+        use.user->SetOperand(use.index, {use.image_part->result_id()});
+        use.user->InsertOperand(
+            use.user->NumOperands(),
+            {SPV_OPERAND_TYPE_ID, {use.sampler_part->result_id()}});
+        break;
+      }
+      case spv::Op::OpName:
+        // TODO(dneto): Maybe we should synthesize names for the remapped vars.
+        MarkAsDead(use.user);
+        break;
+      case spv::Op::OpFunctionCall: {
+        // Replace each combined arg with two args: the image part, then the
+        // sampler part.
+        // The combined value could have been used twice in the argument list.
+        // Moving things around now will invalidate the 'use' list above.
+        // So don't trust the use index value.
+        auto& call = *use.user;
+        // The insert API only takes absolute arg IDs, not "in" arg IDs.
+        const auto first_arg_operand_index = 3;  // Skip the callee ID
+        for (uint32_t i = first_arg_operand_index; i < call.NumOperands();
+             ++i) {
+          if (use.used_id == call.GetSingleWordOperand(i)) {
+            call.SetOperand(i, {use.sampler_part->result_id()});
+            call.InsertOperand(
+                i, {SPV_OPERAND_TYPE_ID, {use.image_part->result_id()}});
+            ++i;
+          }
+        }
+        break;
+      }
+      case spv::Op::OpAccessChain:
+      case spv::Op::OpInBoundsAccessChain: {
+        auto* original_access_chain = use.user;
+        builder.SetInsertPoint(original_access_chain);
+        // It can only be the base pointer
+        assert(use.index == 2);
+
+        // Replace the original access chain with access chains for the image
+        // part and the sampler part.
+        std::vector<uint32_t> indices;
+        for (uint32_t i = 3; i < original_access_chain->NumOperands(); i++) {
+          indices.push_back(original_access_chain->GetSingleWordOperand(i));
+        }
+
+        auto [result_image_part_ty, result_sampler_part_ty] =
+            SplitType(*def_use_mgr_->GetDef(original_access_chain->type_id()));
+        auto* result_image_part = builder.AddOpcodeAccessChain(
+            use.user->opcode(), result_image_part_ty->result_id(),
+            use.image_part->result_id(), indices);
+        auto* result_sampler_part = builder.AddOpcodeAccessChain(
+            use.user->opcode(), result_sampler_part_ty->result_id(),
+            use.sampler_part->result_id(), indices);
+
+        // Remap uses of the original access chain.
+        add_remap(original_access_chain, result_image_part,
+                  result_sampler_part);
+        break;
+      }
+      default: {
+        auto* combined_ty = def_use_mgr_->GetDef(combined->type_id());
+        if (combined_ty->opcode() == spv::Op::OpTypeSampledImage) {
+          // This operates on the sampled image. We're removing the sampled
+          // image: recreate it.
+          // Example: OpImage, OpImageSampleExplicitLod, etc.
+          builder.SetInsertPoint(use.user);
+          auto* sampled_image = builder.AddSampledImage(
+              combined_ty->result_id(), use.image_part->result_id(),
+              use.sampler_part->result_id());
+          use.user->SetOperand(use.index, {sampled_image->result_id()});
+          def_use_mgr_->AnalyzeInstUse(use.user);
+          break;
+        }
+        return Fail() << "unhandled user: " << *use.user;
+      }
+    }
+  }
+
+  for (auto* inst : reanalyze_set) {
+    def_use_mgr_->AnalyzeInstUse(inst);
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t SplitCombinedImageSamplerPass::RemapFunctions() {
+  // Remap function types. A combined type can appear as a parameter, but not as
+  // the return type.
+  {
+    std::unordered_set<Instruction*> reanalyze_set;
+    for (auto& inst : context()->types_values()) {
+      if (inst.opcode() == spv::Op::OpTypeFunction) {
+        analysis::Function* f_ty =
+            type_mgr_->GetType(inst.result_id())->AsFunction();
+        std::vector<const analysis::Type*> new_params;
+        for (const auto* param_ty : f_ty->param_types()) {
+          const auto param_ty_id = type_mgr_->GetId(param_ty);
+          if (combined_types_.find(param_ty_id) != combined_types_.end()) {
+            auto* param_type = def_use_mgr_->GetDef(param_ty_id);
+            auto [image_type, sampler_type] = SplitType(*param_type);
+            assert(image_type);
+            assert(sampler_type);
+            // The image and sampler types must already exist, so there is no
+            // need to move them to the right spot.
+            new_params.push_back(type_mgr_->GetType(image_type->result_id()));
+            new_params.push_back(type_mgr_->GetType(sampler_type->result_id()));
+          } else {
+            new_params.push_back(param_ty);
+          }
+        }
+        if (new_params.size() != f_ty->param_types().size()) {
+          // Replace this type.
+          analysis::Function new_f_ty(f_ty->return_type(), new_params);
+          const uint32_t new_f_ty_id = type_mgr_->GetTypeInstruction(&new_f_ty);
+          def_use_mgr_->ForEachUse(&inst,
+                                   [&](Instruction* user, uint32_t use_index) {
+                                     user->SetOperand(use_index, {new_f_ty_id});
+                                     reanalyze_set.insert(user);
+                                   });
+          MarkAsDead(&inst);
+
+          reanalyze_set.insert(def_use_mgr_->GetDef(new_f_ty_id));
+          // Reanalyze the non-combined parameter types, and the return type.
+          auto* new_f_ty_inst = def_use_mgr_->GetDef(new_f_ty_id);
+          new_f_ty_inst->ForEachId([&](const uint32_t* param_id_ptr) {
+            reanalyze_set.insert(def_use_mgr_->GetDef(*param_id_ptr));
+          });
+        }
+      }
+    }
+    for (auto* inst : reanalyze_set) {
+      def_use_mgr_->AnalyzeInstDefUse(inst);
+    }
+  }
+
+  // Rewite OpFunctionParameter in function definitions.
+  for (Function& fn : *context()->module()) {
+    std::vector<Instruction*> to_replace;
+    fn.ForEachParam([&](Instruction* param) {
+      auto param_ty_id = param->type_id();
+      if (combined_types_.find(param_ty_id) != combined_types_.end()) {
+        to_replace.push_back(param);
+      }
+    });
+    if (to_replace.empty()) {
+      continue;
+    }
+    auto next_to_replace = to_replace.begin();
+    struct Replacement {
+      Instruction* combined;
+      Instruction* image;
+      Instruction* sampler;
+    };
+    std::vector<Replacement> replacements;
+    Function::RewriteParamFn rewriter =
+        [&](std::unique_ptr<Instruction>&& from_param,
+            std::back_insert_iterator<Function::ParamList>& appender) {
+          auto param = std::move(from_param);
+          if (param.get() == *next_to_replace) {
+            auto* param_inst = param.release();
+            auto* param_type = def_use_mgr_->GetDef(param_inst->type_id());
+            auto [image_type, sampler_type] = SplitType(*param_type);
+            auto image_param = MakeUnique<Instruction>(
+                context(), spv::Op::OpFunctionParameter,
+                image_type->result_id(), context()->TakeNextId(),
+                Instruction::OperandList{});
+            auto sampler_param = MakeUnique<Instruction>(
+                context(), spv::Op::OpFunctionParameter,
+                sampler_type->result_id(), context()->TakeNextId(),
+                Instruction::OperandList{});
+            def_use_mgr_->AnalyzeInstDef(image_param.get());
+            def_use_mgr_->AnalyzeInstDef(sampler_param.get());
+            replacements.push_back(
+                {param_inst, image_param.get(), sampler_param.get()});
+            appender = std::move(image_param);
+            appender = std::move(sampler_param);
+            ++next_to_replace;
+          } else {
+            appender = std::move(param);
+          }
+        };
+    fn.RewriteParams(rewriter);
+
+    for (auto& replacement : replacements) {
+      CHECK_STATUS(RemapUses(replacement.combined, replacement.image,
+                             replacement.sampler));
+    }
+  }
+  return SPV_SUCCESS;
+}
+
+void SplitCombinedImageSamplerPass::MarkAsDead(Instruction* inst) {
+  assert(inst);
+  dead_.push_back(inst);
+}
+
+spv_result_t SplitCombinedImageSamplerPass::RemoveDeadInstructions() {
+  auto result = SPV_SUCCESS;
+  for (auto dead_type_id : combined_types_to_remove_) {
+    auto* ty = def_use_mgr_->GetDef(dead_type_id);
+    MarkAsDead(ty);
+    def_use_mgr_->ForEachUse(ty, [&](Instruction* user, uint32_t use_index) {
+      if (user->opcode() == spv::Op::OpName) {
+        MarkAsDead(user);
+      }
+    });
+    CHECK_STATUS(result);
+  }
+  modified_ = modified_ || !dead_.empty();
+  for (Instruction* inst : dead_) {
+    def_use_mgr_->ClearInst(inst);
+  }
+  for (auto* inst : dead_) {
+    if (inst->IsInAList()) {
+      inst->RemoveFromList();
+    }
+    delete inst;
+  }
+  ordered_objs_.clear();
+  dead_.clear();
+  return SPV_SUCCESS;
+}
+
+}  // namespace opt
+}  // namespace spvtools

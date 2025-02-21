@@ -826,6 +826,34 @@ bool Instruction::IsFloatingPointFoldingAllowed() const {
   return !is_nocontract;
 }
 
+Instruction* Instruction::GetVulkanResourcePointee(spv::Op pointee_ty,
+                                                   spv::StorageClass sc) const {
+  if (opcode() != spv::Op::OpTypePointer) {
+    return nullptr;
+  }
+
+  spv::StorageClass storage_class =
+      spv::StorageClass(GetSingleWordInOperand(kPointerTypeStorageClassIndex));
+  if (storage_class != sc) {
+    return nullptr;
+  }
+
+  Instruction* base_type =
+      context()->get_def_use_mgr()->GetDef(GetSingleWordInOperand(1));
+
+  // Unpack the optional layer of arraying.
+  if (base_type->opcode() == spv::Op::OpTypeArray ||
+      base_type->opcode() == spv::Op::OpTypeRuntimeArray) {
+    base_type = context()->get_def_use_mgr()->GetDef(
+        base_type->GetSingleWordInOperand(0));
+  }
+
+  if (base_type->opcode() != pointee_ty) {
+    return nullptr;
+  }
+  return base_type;
+}
+
 std::string Instruction::PrettyPrint(uint32_t options) const {
   // Convert the module to binary.
   std::vector<uint32_t> module_binary;

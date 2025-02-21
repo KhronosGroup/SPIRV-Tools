@@ -469,7 +469,8 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   bool IsVulkanStorageImage() const;
 
   // Returns true if the instruction defines a pointer type that points to a
-  // sampled image.
+  // sampled image.  That is, beneath possible arrayness, it's an OpTypeImage
+  // with Sampled parameter equal to 1.
   bool IsVulkanSampledImage() const;
 
   // Returns true if the instruction defines a pointer type that points to a
@@ -532,6 +533,14 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // instruction that defines |id| in the given context. This includes not
   // handling NaN values.
   bool IsFloatingPointFoldingAllowed() const;
+
+  // Determines if the instruction is a pointer type for a combined
+  // image+sampler, possibly unpacking one level of arrayness.  If so,
+  // returns the OpTypeSampledImage instruction pointee type. Otherwise
+  // returns null.
+  Instruction* GetVulkanResourcePointee(
+      spv::Op pointee_ty,
+      spv::StorageClass sc = spv::StorageClass::UniformConstant) const;
 
   inline bool operator==(const Instruction&) const;
   inline bool operator!=(const Instruction&) const;
