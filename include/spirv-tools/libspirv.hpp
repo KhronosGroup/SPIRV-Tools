@@ -133,8 +133,8 @@ class SPIRV_TOOLS_EXPORT ValidatorOptions {
   }
 
   // Allow base operands of some bit operations to be non-32-bit wide.
-  void SetAllowNon32BitBases(bool val) {
-    spvValidatorOptionsSetAllowNon32BitBases(options_, val);
+  void SetAllowVulkan32BitBitwise(bool val) {
+    spvValidatorOptionsSetAllowVulkan32BitBitwise(options_, val);
   }
 
   // Records whether or not the validator should relax the rules on pointer

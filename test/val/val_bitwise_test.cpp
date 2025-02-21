@@ -433,7 +433,7 @@ TEST_F(ValidateBitwise, OpBitFieldInsertNot32Allow) {
   )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str(), SPV_ENV_VULKAN_1_0);
-  spvValidatorOptionsSetAllowNon32BitBases(getValidatorOptions(), true);
+  spvValidatorOptionsSetAllowVulkan32BitBitwise(getValidatorOptions(), true);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
