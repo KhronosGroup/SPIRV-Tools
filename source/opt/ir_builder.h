@@ -516,7 +516,7 @@ class InstructionBuilder {
 
   Instruction* AddVariable(uint32_t type_id, uint32_t storage_class) {
     std::vector<Operand> operands;
-    operands.push_back({SPV_OPERAND_TYPE_ID, {storage_class}});
+    operands.push_back({SPV_OPERAND_TYPE_STORAGE_CLASS, {storage_class}});
     std::unique_ptr<Instruction> new_inst(
         new Instruction(GetContext(), spv::Op::OpVariable, type_id,
                         GetContext()->TakeNextId(), operands));
