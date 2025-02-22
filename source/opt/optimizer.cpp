@@ -189,7 +189,7 @@ Optimizer& Optimizer::RegisterPerformancePasses(bool preserve_interface) {
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
       .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
-      .RegisterPass(CreateScalarReplacementPass())
+      .RegisterPass(CreateScalarReplacementPass(0))
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
@@ -203,7 +203,7 @@ Optimizer& Optimizer::RegisterPerformancePasses(bool preserve_interface) {
       .RegisterPass(CreateRedundancyEliminationPass())
       .RegisterPass(CreateCombineAccessChainsPass())
       .RegisterPass(CreateSimplificationPass())
-      .RegisterPass(CreateScalarReplacementPass())
+      .RegisterPass(CreateScalarReplacementPass(0))
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
@@ -401,7 +401,7 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
     RegisterPass(CreateLoopUnswitchPass());
   } else if (pass_name == "scalar-replacement") {
     if (pass_args.size() == 0) {
-      RegisterPass(CreateScalarReplacementPass());
+      RegisterPass(CreateScalarReplacementPass(0));
     } else {
       int limit = -1;
       if (pass_args.find_first_not_of("0123456789") == std::string::npos) {
