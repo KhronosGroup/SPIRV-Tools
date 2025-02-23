@@ -22,7 +22,7 @@ namespace val {
 
 spv_result_t ValidateSmallTypeUses(ValidationState_t& _,
                                    const Instruction* inst) {
-  if (!_.HasCapability(spv::Capability::Shader) || inst->type_id() == 0 ||
+  if (inst->type_id() == 0 ||
       !_.ContainsLimitedUseIntOrFloatType(inst->type_id())) {
     return SPV_SUCCESS;
   }

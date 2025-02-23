@@ -333,6 +333,85 @@ INSTANTIATE_TEST_SUITE_P(
            "%inst = OpFunctionCall %void %half_func %ld_half",
            "%inst = OpFunctionCall %void %half_func %float_to_half"));
 
+TEST_F(ValidateSmallTypeUses, F16OpsFail) {
+  const std::string body = R"(
+        OpCapability Addresses
+        OpCapability Kernel
+        OpCapability Float16Buffer
+        OpCapability Linkage
+        OpMemoryModel Physical64 OpenCL
+ %f16 = OpTypeFloat 16
+%func = OpTypeFunction %f16 %f16 %f16
+ %add = OpFunction %f16 None %func
+   %a = OpFunctionParameter %f16
+   %b = OpFunctionParameter %f16
+ %lbl = OpLabel
+ %res = OpFAdd %f16 %a %b
+        OpReturnValue %res
+        OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid use of 8- or 16-bit result"));
+}
+
+TEST_F(ValidateSmallTypeUses, F16OpsSuccess) {
+  const std::string body = R"(
+        OpCapability Addresses
+        OpCapability Kernel
+        OpCapability Float16Buffer
+        OpCapability Float16
+        OpCapability Linkage
+        OpMemoryModel Physical64 OpenCL
+ %f16 = OpTypeFloat 16
+%func = OpTypeFunction %f16 %f16 %f16
+ %add = OpFunction %f16 None %func
+   %a = OpFunctionParameter %f16
+   %b = OpFunctionParameter %f16
+ %lbl = OpLabel
+ %res = OpFAdd %f16 %a %b
+        OpReturnValue %res
+        OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateSmallTypeUses, OpenCLVloadVstoreGood) {
+  // Using vload_half and vstore_half should be allowed
+  // with only Float16Buffer declared.
+  const std::string body = R"(
+        OpCapability Addresses
+        OpCapability Kernel
+        OpCapability Float16Buffer
+        OpCapability Linkage
+        OpCapability Int64
+ %ocl = OpExtInstImport "OpenCL.std"
+        OpMemoryModel Physical64 OpenCL
+%void = OpTypeVoid
+ %u64 = OpTypeInt 64 0
+ %f16 = OpTypeFloat 16
+ %f32 = OpTypeFloat 32
+%pf16 = OpTypePointer CrossWorkgroup %f16
+%func = OpTypeFunction %void %pf16 %pf16
+ %idx = OpConstant %u64 1
+ %add = OpFunction %void None %func
+ %src = OpFunctionParameter %pf16
+ %dst = OpFunctionParameter %pf16
+ %lbl = OpLabel
+   %a = OpExtInst %f32 %ocl vload_half %idx %src
+   %_ = OpExtInst %void %ocl vstore_half %a %idx %dst
+        OpReturn
+        OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
