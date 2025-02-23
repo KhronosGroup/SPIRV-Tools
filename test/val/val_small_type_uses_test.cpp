@@ -333,6 +333,53 @@ INSTANTIATE_TEST_SUITE_P(
            "%inst = OpFunctionCall %void %half_func %ld_half",
            "%inst = OpFunctionCall %void %half_func %float_to_half"));
 
+TEST_F(ValidateSmallTypeUses, F16OpsFail) {
+  const std::string body = R"(
+OpCapability Addresses
+OpCapability Kernel
+OpCapability Float16Buffer
+OpCapability Linkage
+OpMemoryModel Physical64 OpenCL
+%f16 = OpTypeFloat 16
+%func = OpTypeFunction %f16 %f16 %f16
+%add = OpFunction %f16 None %func
+  %a = OpFunctionParameter %f16
+  %b = OpFunctionParameter %f16
+%add_entry = OpLabel
+  %result = OpFAdd %f16 %a %b
+  OpReturnValue %result
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid use of 8- or 16-bit result"));
+}
+
+TEST_F(ValidateSmallTypeUses, F16OpsSuccess) {
+  const std::string body = R"(
+OpCapability Addresses
+OpCapability Kernel
+OpCapability Float16Buffer
+OpCapability Float16
+OpCapability Linkage
+OpMemoryModel Physical64 OpenCL
+%f16 = OpTypeFloat 16
+%func = OpTypeFunction %f16 %f16 %f16
+%add = OpFunction %f16 None %func
+  %a = OpFunctionParameter %f16
+  %b = OpFunctionParameter %f16
+%add_entry = OpLabel
+  %result = OpFAdd %f16 %a %b
+  OpReturnValue %result
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
