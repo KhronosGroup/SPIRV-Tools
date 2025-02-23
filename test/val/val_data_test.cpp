@@ -89,6 +89,13 @@ std::string header_with_float64 = R"(
      OpCapability Float64
      OpMemoryModel Logical GLSL450
 )";
+std::string header_with_kernel_float16 = R"(
+    OpCapability Addresses
+    OpCapability Kernel
+    OpCapability Linkage
+    OpCapability Float16
+    OpMemoryModel Physical32 OpenCL
+)";
 
 std::string invalid_comp_error = "Illegal number of components";
 std::string missing_cap_error = "requires the Vector16 capability";
@@ -338,6 +345,12 @@ TEST_F(ValidateData, float16_buffer_good) {
   std::string str = header_with_float16_buffer + "%2 = OpTypeFloat 16";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateData, float16_kernel_good) {
+  std::string str = header_with_kernel_float16 + "%2 = OpTypeFloat 16";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_OPENCL_1_2));
 }
 
 TEST_F(ValidateData, float16_bad) {
