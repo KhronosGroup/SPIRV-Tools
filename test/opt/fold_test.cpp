@@ -5054,7 +5054,57 @@ INSTANTIATE_TEST_SUITE_P(IntegerRedundantFoldingTest, GeneralInstructionFoldingT
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 0),
-    // Test case 2: Fold n + 0
+    // Test case 2: Fold n | 0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_uint Function\n" +
+            "%3 = OpLoad %uint %n\n" +
+            "%2 = OpBitwiseOr %uint %3 %uint_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3),
+    // Test case 3: Fold n ^ 0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_uint Function\n" +
+            "%3 = OpLoad %uint %n\n" +
+            "%2 = OpBitwiseXor %uint %3 %uint_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3),
+    // Test case 4: Fold n >> 0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_uint Function\n" +
+            "%3 = OpLoad %uint %n\n" +
+            "%2 = OpShiftRightLogical %uint %3 %uint_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3),
+    // Test case 5: Fold n >> 0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_uint Function\n" +
+            "%3 = OpLoad %uint %n\n" +
+            "%2 = OpShiftRightArithmetic %uint %3 %uint_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3),
+    // Test case 6: Fold n << 0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_uint Function\n" +
+            "%3 = OpLoad %uint %n\n" +
+            "%2 = OpShiftLeftLogical %uint %3 %uint_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3),
+    // Test case 7: Fold n + 0
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -5064,7 +5114,37 @@ INSTANTIATE_TEST_SUITE_P(IntegerRedundantFoldingTest, GeneralInstructionFoldingT
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 3),
-    // Test case 3: Fold 0 + n
+    // Test case 8: Fold n - 0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_uint Function\n" +
+            "%3 = OpLoad %uint %n\n" +
+            "%2 = OpISub %uint %3 %uint_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3),
+    // Test case 9: Fold 0 | n
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_uint Function\n" +
+            "%3 = OpLoad %uint %n\n" +
+            "%2 = OpBitwiseOr %uint %uint_0 %3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3),
+    // Test case 10: Fold 0 ^ n
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_uint Function\n" +
+            "%3 = OpLoad %uint %n\n" +
+            "%2 = OpBitwiseXor %uint %uint_0 %3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3),
+    // Test case 11: Fold 0 + n
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -5074,7 +5154,7 @@ INSTANTIATE_TEST_SUITE_P(IntegerRedundantFoldingTest, GeneralInstructionFoldingT
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 3),
-    // Test case 4: Don't fold n + (1,0)
+    // Test case 12: Don't fold n + (1,0)
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -5084,7 +5164,7 @@ INSTANTIATE_TEST_SUITE_P(IntegerRedundantFoldingTest, GeneralInstructionFoldingT
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 0),
-    // Test case 5: Don't fold (1,0) + n
+    // Test case 13: Don't fold (1,0) + n
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -5094,7 +5174,7 @@ INSTANTIATE_TEST_SUITE_P(IntegerRedundantFoldingTest, GeneralInstructionFoldingT
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 0),
-    // Test case 6: Fold n + (0,0)
+    // Test case 14: Fold n + (0,0)
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -5104,7 +5184,7 @@ INSTANTIATE_TEST_SUITE_P(IntegerRedundantFoldingTest, GeneralInstructionFoldingT
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 3),
-    // Test case 7: Fold (0,0) + n
+    // Test case 15: Fold (0,0) + n
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -5114,7 +5194,27 @@ INSTANTIATE_TEST_SUITE_P(IntegerRedundantFoldingTest, GeneralInstructionFoldingT
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 3),
-    // Test case 8: Don't fold because of undefined value. Using 4294967295
+    // Test case 16: Fold n | (0,0)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v2int Function\n" +
+            "%3 = OpLoad %v2int %n\n" +
+            "%2 = OpBitwiseOr %v2int %3 %v2int_0_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3),
+    // Test case 17: Fold (0,0) | n
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%n = OpVariable %_ptr_v2int Function\n" +
+            "%3 = OpLoad %v2int %n\n" +
+            "%2 = OpBitwiseOr %v2int %v2int_0_0 %3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 3),
+    // Test case 18: Don't fold because of undefined value. Using 4294967295
     // means that entry is undefined. We do not expect it to ever happen, so
     // not worth folding.
     InstructionFoldingCase<uint32_t>(
@@ -5126,7 +5226,7 @@ INSTANTIATE_TEST_SUITE_P(IntegerRedundantFoldingTest, GeneralInstructionFoldingT
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 0),
-    // Test case 9: Don't fold because of undefined value. Using 4294967295
+    // Test case 19: Don't fold because of undefined value. Using 4294967295
     // means that entry is undefined. We do not expect it to ever happen, so
     // not worth folding.
     InstructionFoldingCase<uint32_t>(

@@ -2507,24 +2507,17 @@ FoldingRule RedundantFMix() {
   };
 }
 
-// This rule handles addition of zero for integers.
-FoldingRule RedundantIAdd() {
-  return [](IRContext* context, Instruction* inst,
-            const std::vector<const analysis::Constant*>& constants) {
-    assert(inst->opcode() == spv::Op::OpIAdd &&
-           "Wrong opcode. Should be OpIAdd.");
+// Returns a folding rule that folds the instruction to the operand not being
+// checked if the operand that is checked is zero.
+FoldingRule RedundantBinaryOpWithZeroOperand(uint32_t arg) {
+  return [arg](IRContext* context, Instruction* inst,
+               const std::vector<const analysis::Constant*>& constants) {
+    assert(constants.size() == 2);
 
-    uint32_t operand = std::numeric_limits<uint32_t>::max();
-    const analysis::Type* operand_type = nullptr;
-    if (constants[0] && constants[0]->IsZero()) {
-      operand = inst->GetSingleWordInOperand(1);
-      operand_type = constants[0]->type();
-    } else if (constants[1] && constants[1]->IsZero()) {
-      operand = inst->GetSingleWordInOperand(0);
-      operand_type = constants[1]->type();
-    }
+    if (constants[arg] && constants[arg]->IsZero()) {
+      auto operand = inst->GetSingleWordInOperand(1 - arg);
+      auto operand_type = constants[arg]->type();
 
-    if (operand != std::numeric_limits<uint32_t>::max()) {
       const analysis::Type* inst_type =
           context->get_type_mgr()->GetType(inst->type_id());
       if (inst_type->IsSame(operand_type)) {
@@ -2537,6 +2530,38 @@ FoldingRule RedundantIAdd() {
     }
     return false;
   };
+}
+
+// This rule handles any of RedundantBinaryRhs0Ops with a 0 or vector 0 on the
+// right-hand side.
+static const constexpr spv::Op RedundantBinaryRhs0Ops[] = {
+    spv::Op::OpBitwiseOr,
+    spv::Op::OpBitwiseXor,
+    spv::Op::OpShiftRightLogical,
+    spv::Op::OpShiftRightArithmetic,
+    spv::Op::OpShiftLeftLogical,
+    spv::Op::OpIAdd,
+    spv::Op::OpISub};
+FoldingRule RedundantBinaryRhs0(spv::Op op) {
+  assert(std::find(std::begin(RedundantBinaryRhs0Ops),
+                   std::end(RedundantBinaryRhs0Ops),
+                   op) != std::end(RedundantBinaryRhs0Ops) &&
+         "Wrong opcode.");
+  (void)op;
+  return RedundantBinaryOpWithZeroOperand(1);
+}
+
+// This rule handles any of RedundantBinaryLhs0Ops with a 0 or vector 0 on the
+// left-hand side.
+static const constexpr spv::Op RedundantBinaryLhs0Ops[] = {
+    spv::Op::OpBitwiseOr, spv::Op::OpBitwiseXor, spv::Op::OpIAdd};
+FoldingRule RedundantBinaryLhs0(spv::Op op) {
+  assert(std::find(std::begin(RedundantBinaryLhs0Ops),
+                   std::end(RedundantBinaryLhs0Ops),
+                   op) != std::end(RedundantBinaryLhs0Ops) &&
+         "Wrong opcode.");
+  (void)op;
+  return RedundantBinaryOpWithZeroOperand(0);
 }
 
 // This rule look for a dot with a constant vector containing a single 1 and
@@ -2876,6 +2901,11 @@ void FoldingRules::AddFoldingRules() {
   // Note that the order in which rules are added to the list matters. If a rule
   // applies to the instruction, the rest of the rules will not be attempted.
   // Take that into consideration.
+  for (auto op : RedundantBinaryRhs0Ops)
+    rules_[op].push_back(RedundantBinaryRhs0(op));
+  for (auto op : RedundantBinaryLhs0Ops)
+    rules_[op].push_back(RedundantBinaryLhs0(op));
+
   rules_[spv::Op::OpBitcast].push_back(BitCastScalarOrVector());
 
   rules_[spv::Op::OpCompositeConstruct].push_back(
@@ -2921,7 +2951,6 @@ void FoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpFSub].push_back(MergeSubAddArithmetic());
   rules_[spv::Op::OpFSub].push_back(MergeSubSubArithmetic());
 
-  rules_[spv::Op::OpIAdd].push_back(RedundantIAdd());
   rules_[spv::Op::OpIAdd].push_back(MergeAddNegateArithmetic());
   rules_[spv::Op::OpIAdd].push_back(MergeAddAddArithmetic());
   rules_[spv::Op::OpIAdd].push_back(MergeAddSubArithmetic());
