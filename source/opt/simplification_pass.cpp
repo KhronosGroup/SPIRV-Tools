@@ -72,6 +72,40 @@ bool SimplificationPass::SimplifyFunction(Function* function) {
             process_phis.insert(inst);
           }
 
+          auto isRecursivelyConstant0 = [&](auto & operand) {
+            auto op_inst = get_def_use_mgr()->GetDef(operand.AsId());
+            bool sub = false;
+            if (op_inst->opcode() == spv::Op::OpConstant) {
+              sub = op_inst->GetOperand(2).AsLiteralUint64() == 0;  // also works for floating-point numbers (f32::as_bits(0.0) == 0)
+            } else if (op_inst->opcode() == spv::Op::OpConstantComposite) {
+              sub = std::all_of(std::begin(*op_inst), std::end(*op_inst), [&](auto && operand) {
+                auto nested_insn = get_def_use_mgr()->GetDef(operand.AsId());
+                return nested_insn->opcode() == spv::Op::OpConstant && nested_insn->GetOperand(2).AsLiteralUint64() == 0;
+              });
+            }
+            return sub;
+          };
+          if (inst->opcode() == spv::Op::OpBitwiseOr
+           || inst->opcode() == spv::Op::OpBitwiseXor
+           || inst->opcode() == spv::Op::OpShiftRightLogical
+           || inst->opcode() == spv::Op::OpShiftRightArithmetic
+           || inst->opcode() == spv::Op::OpShiftLeftLogical
+           || inst->opcode() == spv::Op::OpIAdd || inst->opcode() == spv::Op::OpFAdd
+           || inst->opcode() == spv::Op::OpISub || inst->opcode() == spv::Op::OpFSub) {
+            if (isRecursivelyConstant0(inst->GetOperand(3))) {
+              inst->RemoveOperand(3);
+              inst->SetOpcode(spv::Op::OpCopyObject);
+            }
+          }
+          if (inst->opcode() == spv::Op::OpBitwiseOr
+           || inst->opcode() == spv::Op::OpBitwiseXor
+           || inst->opcode() == spv::Op::OpIAdd || inst->opcode() == spv::Op::OpFAdd) {
+            if (isRecursivelyConstant0(inst->GetOperand(2))) {
+              inst->RemoveOperand(2);
+              inst->SetOpcode(spv::Op::OpCopyObject);
+            }
+          }
+
           bool is_foldable_copy =
               inst->opcode() == spv::Op::OpCopyObject &&
               context()->get_decoration_mgr()->HaveSubsetOfDecorations(
