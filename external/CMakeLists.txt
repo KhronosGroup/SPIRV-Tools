@@ -33,61 +33,9 @@ else()
   set(SPIRV_HEADER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/spirv-headers)
 endif()
 
-if (IS_DIRECTORY ${SPIRV_HEADER_DIR})
-  # TODO(dneto): We should not be modifying the parent scope.
-  set(SPIRV_HEADER_INCLUDE_DIR ${SPIRV_HEADER_DIR}/include PARENT_SCOPE)
-
-  # Add SPIRV-Headers as a sub-project if it isn't already defined.
-  # Do this so enclosing projects can use SPIRV-Headers_SOURCE_DIR to find
-  # headers to include.
-  if (NOT DEFINED SPIRV-Headers_SOURCE_DIR)
-    add_subdirectory(${SPIRV_HEADER_DIR})
-  endif()
-else()
-  message(FATAL_ERROR
-    "SPIRV-Headers was not found - please checkout a copy at external/spirv-headers.")
-endif()
-
 if (NOT ${SPIRV_SKIP_TESTS})
   # Find gmock if we can. If it's not already configured, then try finding
   # it in external/googletest.
-  if (TARGET gmock)
-    message(STATUS "Google Mock already configured")
-  else()
-    if (NOT GMOCK_DIR)
-      set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/googletest)
-    endif()
-    if(EXISTS ${GMOCK_DIR})
-      if(MSVC)
-        # Our tests use ::testing::Combine.  Work around a compiler
-        # detection problem in googletest, where that template is
-        # accidentally disabled for VS 2017.
-        # See https://github.com/google/googletest/issues/1352
-        add_definitions(-DGTEST_HAS_COMBINE=1)
-      endif()
-      if(WIN32)
-        option(gtest_force_shared_crt
-          "Use shared (DLL) run-time lib even when Google Test is built as static lib."
-          ON)
-      endif()
-      # gtest requires special defines for building as a shared
-      # library, simply always build as static.
-      push_variable(BUILD_SHARED_LIBS 0)
-      add_subdirectory(${GMOCK_DIR} ${CMAKE_CURRENT_BINARY_DIR}/googletest EXCLUDE_FROM_ALL)
-      pop_variable(BUILD_SHARED_LIBS)
-    endif()
-  endif()
-  if (TARGET gmock)
-    set(GTEST_TARGETS
-      gtest
-      gtest_main
-      gmock
-      gmock_main
-    )
-    foreach(target ${GTEST_TARGETS})
-      set_property(TARGET ${target} PROPERTY FOLDER GoogleTest)
-    endforeach()
-  endif()
 
   # Find Effcee and RE2, for testing.
 
