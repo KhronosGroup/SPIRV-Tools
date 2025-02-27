@@ -4433,10 +4433,6 @@ TEST_F(InlineTest, DecorateReturnVariableWithAliasedPointer) {
                OpMemoryModel PhysicalStorageBuffer64 GLSL450
                OpEntryPoint GLCompute %1 "main"
                OpExecutionMode %1 LocalSize 8 8 1
-               OpDecorate %_ptr_PhysicalStorageBuffer__struct_5 ArrayStride 8
-               OpMemberDecorate %_struct_3 0 Offset 0
-               OpMemberDecorate %_struct_3 1 Offset 8
-               OpDecorate %_ptr_PhysicalStorageBuffer_int ArrayStride 4
                OpMemberDecorate %_struct_5 0 Offset 0
                OpMemberDecorate %_struct_5 1 Offset 4
                OpDecorate %6 Aliased
