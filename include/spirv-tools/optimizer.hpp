@@ -655,7 +655,7 @@ Optimizer::PassToken CreateRedundancyEliminationPass();
 // element if those elements are accessed individually.  The parameter is a
 // limit on the number of members in the composite variable that the pass will
 // consider replacing.
-Optimizer::PassToken CreateScalarReplacementPass(uint32_t size_limit = 100);
+Optimizer::PassToken CreateScalarReplacementPass(uint32_t size_limit = 0);
 
 // Create a private to local pass.
 // This pass looks for variables declared in the private storage class that are
