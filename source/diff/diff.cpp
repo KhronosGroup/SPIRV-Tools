@@ -2487,7 +2487,7 @@ void Differ::MatchFunctions() {
 
         // If there are multiple functions with the same name, group them by
         // type, and match only if the types match (and are unique).
-        GroupIdsAndMatch<uint32_t>(src_group, dst_group, 0,
+        GroupIdsAndMatchByMappedId(src_group, dst_group,
                                    &Differ::GroupIdsHelperGetTypeId,
                                    [this](const IdGroup& src_group_by_type_id,
                                           const IdGroup& dst_group_by_type_id) {
@@ -2531,8 +2531,8 @@ void Differ::MatchFunctions() {
   }
 
   // Best effort match functions with matching type.
-  GroupIdsAndMatch<uint32_t>(
-      src_func_ids, dst_func_ids, 0, &Differ::GroupIdsHelperGetTypeId,
+  GroupIdsAndMatchByMappedId(
+      src_func_ids, dst_func_ids, &Differ::GroupIdsHelperGetTypeId,
       [this](const IdGroup& src_group_by_type_id,
              const IdGroup& dst_group_by_type_id) {
         BestEffortMatchFunctions(src_group_by_type_id, dst_group_by_type_id,
