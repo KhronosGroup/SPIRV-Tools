@@ -2454,6 +2454,31 @@ FoldingRule RedundantFDiv() {
     FloatConstantKind kind0 = getFloatConstantKind(constants[0]);
     FloatConstantKind kind1 = getFloatConstantKind(constants[1]);
 
+    if (kind0 == FloatConstantKind::Zero || kind1 == FloatConstantKind::One) {
+      inst->SetOpcode(spv::Op::OpCopyObject);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(0)}}});
+      return true;
+    }
+
+    return false;
+  };
+}
+
+FoldingRule RedundantFMod() {
+  return [](IRContext* context, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == spv::Op::OpFMod &&
+           "Wrong opcode.  Should be OpFMod.");
+    assert(constants.size() == 2);
+
+    if (!inst->IsFloatingPointFoldingAllowed()) {
+      return false;
+    }
+
+    FloatConstantKind kind0 = getFloatConstantKind(constants[0]);
+    FloatConstantKind kind1 = getFloatConstantKind(constants[1]);
+
     if (kind0 == FloatConstantKind::Zero) {
       inst->SetOpcode(spv::Op::OpCopyObject);
       inst->SetInOperands(
@@ -2462,9 +2487,15 @@ FoldingRule RedundantFDiv() {
     }
 
     if (kind1 == FloatConstantKind::One) {
+      auto type = context->get_type_mgr()->GetType(inst->type_id());
+      std::vector<uint32_t> zero_words;
+      zero_words.resize(ElementWidth(type) / 32);
+      auto const_mgr = context->get_constant_mgr();
+      auto zero = const_mgr->GetConstant(type, std::move(zero_words));
+      auto zero_id = const_mgr->GetDefiningInstruction(zero)->result_id();
+
       inst->SetOpcode(spv::Op::OpCopyObject);
-      inst->SetInOperands(
-          {{SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(0)}}});
+      inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {zero_id}}});
       return true;
     }
 
@@ -3022,6 +3053,8 @@ void FoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpFDiv].push_back(MergeDivDivArithmetic());
   rules_[spv::Op::OpFDiv].push_back(MergeDivMulArithmetic());
   rules_[spv::Op::OpFDiv].push_back(MergeDivNegateArithmetic());
+
+  rules_[spv::Op::OpFMod].push_back(RedundantFMod());
 
   rules_[spv::Op::OpFMul].push_back(RedundantFMul());
   rules_[spv::Op::OpFMul].push_back(MergeMulMulArithmetic());
