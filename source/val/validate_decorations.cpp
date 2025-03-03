@@ -2098,7 +2098,7 @@ bool AllowsLayout(ValidationState_t& vstate, const spv::StorageClass sc) {
           spv::Capability::WorkgroupMemoryExplicitLayoutKHR);
     case spv::StorageClass::Function:
     case spv::StorageClass::Private:
-      return vstate.version() < SPV_SPIRV_VERSION_WORD(1, 4);
+      return vstate.version() <= SPV_SPIRV_VERSION_WORD(1, 4);
     case spv::StorageClass::Input:
     case spv::StorageClass::Output:
       // Block is used generally and mesh shaders use Offset.
