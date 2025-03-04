@@ -520,7 +520,6 @@ spv_result_t encodeInstructionStartingWithImmediate(
 ///
 /// @param[in] grammar the grammar to use for compilation
 /// @param[in, out] context the dynamic compilation info
-/// @param[in] type of the operand
 /// @param[out] pInst returned binary Opcode
 ///
 /// @return result code

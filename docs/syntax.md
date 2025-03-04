@@ -234,7 +234,9 @@ OpUnknown(<enumerant>, <WordCount>) <operand 1> ...
 `enumerant` is the opcode enumerant, and `WordCount` is the number of words in
 the instruction. These will be assembled into a single word representing the
 opcode. Operands will be parsed according to the alternate parsing mode
-described in [Arbitrary Integers](#op-unknown).
+described in [Arbitrary Integers](#op-unknown). Named enumerated values cannot
+be handled by this mode and must be represented using the arbitrary integer
+syntax.
 
 It must be used at the beginning of a new instruction, and if there is a result
 ID it must explicitly be passed in as an operand. This is because the physical
