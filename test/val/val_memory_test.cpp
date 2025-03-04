@@ -1818,6 +1818,68 @@ OpFunctionEnd
       HasSubstr("Memory accesses with PhysicalStorageBuffer must use Aligned"));
 }
 
+TEST_F(ValidateMemory, PSBStoreAlignedZero) {
+  const std::string body = R"(
+OpCapability PhysicalStorageBufferAddresses
+OpCapability Shader
+OpExtension "SPV_EXT_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%uint = OpTypeInt 32 0
+%uint_1 = OpConstant %uint 1
+%ptr = OpTypePointer PhysicalStorageBuffer %uint
+%pptr_f = OpTypePointer Function %ptr
+%void = OpTypeVoid
+%voidfn = OpTypeFunction %void
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%val1 = OpVariable %pptr_f Function
+%val2 = OpLoad %ptr %val1
+OpStore %val2 %uint_1 Aligned 0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Memory accesses Aligned operand value 0 is not a power of two"));
+}
+
+TEST_F(ValidateMemory, PSBStoreAlignedNonPoT) {
+  const std::string body = R"(
+OpCapability PhysicalStorageBufferAddresses
+OpCapability Shader
+OpExtension "SPV_EXT_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%uint = OpTypeInt 32 0
+%uint_1 = OpConstant %uint 1
+%ptr = OpTypePointer PhysicalStorageBuffer %uint
+%pptr_f = OpTypePointer Function %ptr
+%void = OpTypeVoid
+%voidfn = OpTypeFunction %void
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%val1 = OpVariable %pptr_f Function
+%val2 = OpLoad %ptr %val1
+OpStore %val2 %uint_1 Aligned 3
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Memory accesses Aligned operand value 3 is not a power of two."));
+}
+
 TEST_F(ValidateMemory, PSBCopyMemoryAlignedSuccess) {
   const std::string body = R"(
 OpCapability PhysicalStorageBufferAddresses
