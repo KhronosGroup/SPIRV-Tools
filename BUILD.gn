@@ -1382,6 +1382,7 @@ if (build_with_chromium && spvtools_build_executables) {
       "test/libspirv_macros_test.cpp",
       "test/name_mapper_test.cpp",
       "test/named_id_test.cpp",
+      "test/op_unknown_test.cpp",
       "test/opcode_make_test.cpp",
       "test/opcode_require_capabilities_test.cpp",
       "test/opcode_split_test.cpp",
