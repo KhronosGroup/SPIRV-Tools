@@ -1014,7 +1014,7 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
         }
         if (num_workgroup_variables_with_block > 1 &&
             num_workgroup_variables_with_block !=
-                num_workgroup_variables_with_aliased) {
+            num_workgroup_variables_with_aliased) {
           return vstate.diag(SPV_ERROR_INVALID_BINARY,
                              vstate.FindDef(entry_point))
                  << "When declaring WorkgroupMemoryExplicitLayoutKHR, "
