@@ -10964,6 +10964,40 @@ OpFunctionEnd
       HasSubstr("Invalid explicit layout decorations on type for operand"));
 }
 
+TEST_F(ValidateDecorations, ExplicitLayoutOnPtrPhysicalStorageBuffer) {
+  const std::string spirv = R"(
+OpCapability PhysicalStorageBufferAddresses
+OpCapability Int64
+OpCapability Shader
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %_ptr_PhysicalStorageBuffer_int ArrayStride 4
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%_ptr_PhysicalStorageBuffer_int = OpTypePointer PhysicalStorageBuffer %int  ; ArrayStride 4
+%Foo = OpTypeStruct %_ptr_PhysicalStorageBuffer_int
+%_ptr_Function_Foo = OpTypePointer Function %Foo
+%int_0 = OpConstant %int 0
+%_ptr_Function__ptr_PhysicalStorageBuffer_int = OpTypePointer Function %_ptr_PhysicalStorageBuffer_int
+%ulong = OpTypeInt 64 0
+%ulong_0 = OpConstant %ulong 0
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%obj = OpVariable %_ptr_Function_Foo Function
+%obj_member = OpAccessChain %_ptr_Function__ptr_PhysicalStorageBuffer_int %obj %int_0
+%nullptr = OpConvertUToPtr %_ptr_PhysicalStorageBuffer_int %ulong_0
+OpStore %obj_member %nullptr
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
