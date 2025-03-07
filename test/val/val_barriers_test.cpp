@@ -535,7 +535,7 @@ OpControlBarrier %workgroup %workgroup %workgroup_memory
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-OpControlBarrier-04649"));
+              AnyVUID("VUID-StandaloneSpirv-OpControlBarrier-10609"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
