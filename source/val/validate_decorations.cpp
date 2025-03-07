@@ -2138,8 +2138,8 @@ bool UsesExplicitLayout(ValidationState_t& vstate, uint32_t type_id,
         allowLayoutDecorations = AllowsLayout(vstate, sc);
       }
       if (!allowLayoutDecorations) {
-        res = std::any_of(iter->second.begin(), iter->second.end(),
-            [](const Decoration& d) {
+        res = std::any_of(
+          iter->second.begin(), iter->second.end(), [](const Decoration& d) {
               return d.dec_type() == spv::Decoration::Block ||
                      d.dec_type() == spv::Decoration::BufferBlock ||
                      d.dec_type() == spv::Decoration::Offset ||
