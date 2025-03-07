@@ -10994,7 +10994,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_5);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 
