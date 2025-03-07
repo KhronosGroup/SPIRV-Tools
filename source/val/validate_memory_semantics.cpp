@@ -203,7 +203,7 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
     if (opcode == spv::Op::OpControlBarrier && value) {
       if (!num_memory_order_set_bits) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << _.VkErrorID(4649) << spvOpcodeString(opcode)
+               << _.VkErrorID(10609) << spvOpcodeString(opcode)
                << ": Vulkan specification requires non-zero Memory Semantics "
                   "to have one of the following bits set: Acquire, Release, "
                   "AcquireRelease or SequentiallyConsistent";
