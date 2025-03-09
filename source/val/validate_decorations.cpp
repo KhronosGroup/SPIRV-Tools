@@ -2132,14 +2132,21 @@ bool UsesExplicitLayout(ValidationState_t& vstate, uint32_t type_id,
     const auto& id_decs = vstate.id_decorations();
     const auto iter = id_decs.find(type_id);
     if (iter != id_decs.end()) {
-      res = std::any_of(iter->second.begin(), iter->second.end(),
-                        [](const Decoration& d) {
-                          return d.dec_type() == spv::Decoration::Block ||
-                                 d.dec_type() == spv::Decoration::BufferBlock ||
-                                 d.dec_type() == spv::Decoration::Offset ||
-                                 d.dec_type() == spv::Decoration::ArrayStride ||
-                                 d.dec_type() == spv::Decoration::MatrixStride;
-                        });
+      bool allowLayoutDecorations = false;
+      if (type_inst->opcode() == spv::Op::OpTypePointer) {
+        const auto sc = type_inst->GetOperandAs<spv::StorageClass>(1);
+        allowLayoutDecorations = AllowsLayout(vstate, sc);
+      }
+      if (!allowLayoutDecorations) {
+        res = std::any_of(
+            iter->second.begin(), iter->second.end(), [](const Decoration& d) {
+              return d.dec_type() == spv::Decoration::Block ||
+                     d.dec_type() == spv::Decoration::BufferBlock ||
+                     d.dec_type() == spv::Decoration::Offset ||
+                     d.dec_type() == spv::Decoration::ArrayStride ||
+                     d.dec_type() == spv::Decoration::MatrixStride;
+            });
+      }
     }
 
     if (!res) {
