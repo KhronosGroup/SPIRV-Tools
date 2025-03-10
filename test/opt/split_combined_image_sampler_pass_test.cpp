@@ -356,7 +356,8 @@ TEST_P(SplitCombinedImageSamplerPassTypeCaseTest, Combined_RemapLoad) {
   EXPECT_EQ(status, Pass::Status::SuccessWithChange) << disasm;
 }
 
-TEST_P(SplitCombinedImageSamplerPassTypeCaseTest, Combined_RemapLoad_RelaxedPrecisionCopied) {
+TEST_P(SplitCombinedImageSamplerPassTypeCaseTest,
+       Combined_RemapLoad_RelaxedPrecisionCopied) {
   // All decorations are copied. In this case, RelaxedPrecision
   const std::string kTest = Preamble() +
                             R"(

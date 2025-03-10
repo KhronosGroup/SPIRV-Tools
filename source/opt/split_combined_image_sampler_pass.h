@@ -55,7 +55,9 @@ class SplitCombinedImageSamplerPass : public Pass {
   // pointer-to-sampled-image-type operand is replaced with a pair of
   // pointer-to-image-type and pointer-to-sampler-type pair.
   spv_result_t RemapFunctions();
+  // Remap resource variables.
   spv_result_t RemapVars();
+  // Remap a single resource variable.
   spv_result_t RemapVar(Instruction* mem_obj);
   // Transitively remaps uses of the combined object with uses of the
   // decomposed image and sampler parts.  The combined object can be sampled
@@ -66,12 +68,6 @@ class SplitCombinedImageSamplerPass : public Pass {
   // Removes instructions queued up for removal during earlier processing
   // stages.
   spv_result_t RemoveDeadInstructions();
-
-  // Returns the pointer-to-image and pointer-to-sampler types corresponding
-  // the pointer-to-sampled-image-type. Creates them if needed, and updates
-  // the def-use-manager.
-  std::pair<Instruction*, Instruction*> GetPtrSamplerAndPtrImageTypes(
-      Instruction& ptr_sample_image_type);
 
   // Cached from the IRContext. Valid while Process() is running.
   analysis::DefUseManager* def_use_mgr_ = nullptr;
