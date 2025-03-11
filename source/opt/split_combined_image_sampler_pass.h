@@ -36,18 +36,8 @@ class SplitCombinedImageSamplerPass : public Pass {
  public:
   virtual ~SplitCombinedImageSamplerPass() override = default;
   const char* name() const override { return "split-combined-image-sampler"; }
+  IRContext::Analysis GetPreservedAnalyses() override;
   Status Process() override;
-
-  IRContext::Analysis GetPreservedAnalyses() override {
-    return IRContext::kAnalysisNone
-           // def use manager is updated
-           //        | IRContext::kAnalysisDefUse
-           // control flow is not changed
-           | IRContext::kAnalysisCFG | IRContext::kAnalysisLoopAnalysis |
-           IRContext::kAnalysisStructuredCFG
-           // type manager is updated
-           | IRContext::kAnalysisTypes;
-  }
 
  private:
   // Records failure for the current module, and returns a stream

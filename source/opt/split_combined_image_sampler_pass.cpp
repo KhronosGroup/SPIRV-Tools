@@ -40,6 +40,18 @@ namespace opt {
     if (auto c = cond; c != SPV_SUCCESS) return c; \
   }
 
+IRContext::Analysis SplitCombinedImageSamplerPass::GetPreservedAnalyses() {
+  return IRContext::kAnalysisNone
+         // def use manager is updated
+         | IRContext::kAnalysisDefUse
+         // control flow is not changed
+         | IRContext::kAnalysisCFG            //
+         | IRContext::kAnalysisLoopAnalysis   //
+         | IRContext::kAnalysisStructuredCFG  //
+         // type manager is updated
+         | IRContext::kAnalysisTypes;
+}
+
 Pass::Status SplitCombinedImageSamplerPass::Process() {
   def_use_mgr_ = context()->get_def_use_mgr();
   type_mgr_ = context()->get_type_mgr();
