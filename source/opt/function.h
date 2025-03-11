@@ -92,7 +92,6 @@ class Function {
     auto appender = std::back_inserter(new_params);
     for (auto& param : params_) {
       replacer(std::move(param), appender);
-      param.reset();
     }
     params_.clear();
     params_ = std::move(new_params);

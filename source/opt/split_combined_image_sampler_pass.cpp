@@ -43,6 +43,7 @@ namespace opt {
 Pass::Status SplitCombinedImageSamplerPass::Process() {
   def_use_mgr_ = context()->get_def_use_mgr();
   type_mgr_ = context()->get_type_mgr();
+  deco_mgr_ = context()->get_decoration_mgr();
 
   FindCombinedTextureSamplers();
   if (combined_types_to_remove_.empty()) {
@@ -56,6 +57,7 @@ Pass::Status SplitCombinedImageSamplerPass::Process() {
 
   def_use_mgr_ = nullptr;
   type_mgr_ = nullptr;
+  deco_mgr_ = nullptr;
 
   return Ok();
 }
@@ -307,10 +309,16 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
 
   auto add_remap = [&](Instruction* used_combined, Instruction* image_part,
                        Instruction* sampler_part) {
+    const uint32_t used_combined_id = used_combined->result_id();
+
+    deco_mgr_->CloneDecorations(used_combined_id, image_part->result_id());
+    deco_mgr_->CloneDecorations(used_combined_id, sampler_part->result_id());
+    deco_mgr_->RemoveDecorationsFrom(used_combined_id);
+
     def_use_mgr_->ForEachUse(
         used_combined, [&](Instruction* user, uint32_t use_index) {
-          uses.push_back({used_combined->result_id(), user, use_index,
-                          image_part, sampler_part});
+          uses.push_back(
+              {used_combined_id, user, use_index, image_part, sampler_part});
         });
     reanalyze_set.insert(image_part);
     reanalyze_set.insert(sampler_part);
@@ -357,21 +365,9 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
         MarkAsDead(load);
         break;
       }
-      case spv::Op::OpDecorate: {
-        if (use.index != 0)
-          return Fail() << "variable used as non-target index " << use.index
-                        << " on decoration: " << *use.user;
-        builder.SetInsertPoint(use.user);
-        spv::Decoration deco{use.user->GetSingleWordInOperand(1)};
-        std::vector<uint32_t> literals;
-        for (uint32_t i = 2; i < use.user->NumInOperands(); i++) {
-          literals.push_back(use.user->GetSingleWordInOperand(i));
-        }
-        builder.AddDecoration(use.image_part->result_id(), deco, literals);
-        builder.AddDecoration(use.sampler_part->result_id(), deco, literals);
-        MarkAsDead(use.user);
+      case spv::Op::OpDecorate:
+        // Decorations were already moved when the remapping was scheduled.
         break;
-      }
       case spv::Op::OpEntryPoint: {
         // The entry point lists variables in the shader interface, i.e.
         // module-scope variables referenced by the static call tree rooted

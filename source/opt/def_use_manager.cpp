@@ -14,8 +14,6 @@
 
 #include "source/opt/def_use_manager.h"
 
-#include <iostream>
-
 namespace spvtools {
 namespace opt {
 namespace analysis {

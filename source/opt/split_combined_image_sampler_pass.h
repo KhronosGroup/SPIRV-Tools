@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "source/diagnostic.h"
+#include "source/opt/decoration_manager.h"
 #include "source/opt/def_use_manager.h"
 #include "source/opt/pass.h"
 #include "source/opt/type_manager.h"
@@ -28,7 +29,7 @@ namespace spvtools {
 namespace opt {
 
 // Replaces each combined-image sampler variable with an image variable
-// and a sampler variable. Similar for functio parameters.
+// and a sampler variable. Similar for function parameters.
 //
 // Copy the descriptor set and binding number. Vulkan allows this, surprisingly.
 class SplitCombinedImageSamplerPass : public Pass {
@@ -36,6 +37,17 @@ class SplitCombinedImageSamplerPass : public Pass {
   virtual ~SplitCombinedImageSamplerPass() override = default;
   const char* name() const override { return "split-combined-image-sampler"; }
   Status Process() override;
+
+  IRContext::Analysis GetPreservedAnalyses() override {
+    return IRContext::kAnalysisNone
+           // def use manager is updated
+           //        | IRContext::kAnalysisDefUse
+           // control flow is not changed
+           | IRContext::kAnalysisCFG | IRContext::kAnalysisLoopAnalysis |
+           IRContext::kAnalysisStructuredCFG
+           // type manager is updated
+           | IRContext::kAnalysisTypes;
+  }
 
  private:
   // Records failure for the current module, and returns a stream
@@ -73,6 +85,8 @@ class SplitCombinedImageSamplerPass : public Pass {
   analysis::DefUseManager* def_use_mgr_ = nullptr;
   // Cached from the IRContext. Valid while Process() is running.
   analysis::TypeManager* type_mgr_ = nullptr;
+  // Cached from the IRContext. Valid while Process() is running.
+  analysis::DecorationManager* deco_mgr_ = nullptr;
 
   // Did processing modify the module?
   bool modified_ = false;

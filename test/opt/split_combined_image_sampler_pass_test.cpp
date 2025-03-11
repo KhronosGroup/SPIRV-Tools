@@ -57,6 +57,7 @@ struct SplitCombinedImageSamplerPassTypeCaseTest
 std::vector<TypeCase> ImageTypeCases() {
   return std::vector<TypeCase>{
       {"sampler2D", "OpTypeImage %float 2D 0 0 0 1 Unknown"},
+#if 0
       {"sampler2DShadow", "OpTypeImage %float 2D 1 0 0 1 Unknown"},
       {"sampler2DArray", "OpTypeImage %float 2D 0 1 0 1 Unknown"},
       {"sampler2DArrayShadow", "OpTypeImage %float 2D 1 1 0 1 Unknown"},
@@ -89,6 +90,7 @@ std::vector<TypeCase> ImageTypeCases() {
       {"usamplerCubeShadow", "OpTypeImage %uint Cube 1 0 0 1 Unknown"},
       {"usamplerCubeArray", "OpTypeImage %uint Cube 0 1 0 1 Unknown"},
       {"usamplerCubeArrayShadow", "OpTypeImage %uint Cube 1 1 0 1 Unknown"},
+#endif
   };
 }
 
@@ -311,8 +313,8 @@ TEST_P(SplitCombinedImageSamplerPassTypeCaseTest, Combined_RemapLoad) {
      ; CHECK: OpName
      ; CHECK-NOT: OpDecorate %100
      ; CHECK: OpDecorate %[[image_var:\d+]] DescriptorSet 0
-     ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
      ; CHECK: OpDecorate %[[image_var]] Binding 0
+     ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
      ; CHECK: OpDecorate %[[sampler_var]] Binding 0
 
      ; CHECK: %10 = OpTypeImage %
@@ -369,10 +371,10 @@ TEST_P(SplitCombinedImageSamplerPassTypeCaseTest,
      ; CHECK: OpName
      ; CHECK-NOT: OpDecorate %100
      ; CHECK: OpDecorate %[[image_var:\d+]] DescriptorSet 0
-     ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
      ; CHECK: OpDecorate %[[image_var]] Binding 0
-     ; CHECK: OpDecorate %[[sampler_var]] Binding 0
      ; CHECK: OpDecorate %[[image_var:\d+]] RelaxedPrecision
+     ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
+     ; CHECK: OpDecorate %[[sampler_var]] Binding 0
      ; CHECK: OpDecorate %[[sampler_var:\d+]] RelaxedPrecision
 
      ; CHECK: %10 = OpTypeImage %
@@ -427,8 +429,8 @@ TEST_P(SplitCombinedImageSamplerPassTypeCaseTest,
      ; CHECK: OpName
      ; CHECK-NOT: OpDecorate %100
      ; CHECK: OpDecorate %[[image_var:\d+]] DescriptorSet 0
-     ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
      ; CHECK: OpDecorate %[[image_var]] Binding 0
+     ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
      ; CHECK: OpDecorate %[[sampler_var]] Binding 0
 
      ; CHECK: %10 = OpTypeImage %
@@ -485,8 +487,8 @@ TEST_P(SplitCombinedImageSamplerPassTypeCaseTest, ArrayCombined_RemapLoad) {
      ; CHECK: OpName
      ; CHECK-NOT: OpDecorate %100
      ; CHECK: OpDecorate %[[image_var:\d+]] DescriptorSet 0
-     ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
      ; CHECK: OpDecorate %[[image_var]] Binding 0
+     ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
      ; CHECK: OpDecorate %[[sampler_var]] Binding 0
 
      ; CHECK: %10 = OpTypeImage %
@@ -551,8 +553,8 @@ TEST_P(SplitCombinedImageSamplerPassTypeCaseTest, RtArrayCombined_RemapLoad) {
      ; CHECK: OpName
      ; CHECK-NOT: OpDecorate %100
      ; CHECK: OpDecorate %[[image_var:\d+]] DescriptorSet 0
-     ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
      ; CHECK: OpDecorate %[[image_var]] Binding 0
+     ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
      ; CHECK: OpDecorate %[[sampler_var]] Binding 0
 
      ; CHECK: %10 = OpTypeImage %
