@@ -35,7 +35,8 @@
 namespace spvtools {
 namespace opt {
 
-inline std::ostream& operator<<(std::ostream& os, const effcee::Result::Status ers) {
+inline std::ostream& operator<<(std::ostream& os,
+                                const effcee::Result::Status ers) {
   switch (ers) {
     case effcee::Result::Status::Ok:
       return os << "effcee::Result::Status::Ok";

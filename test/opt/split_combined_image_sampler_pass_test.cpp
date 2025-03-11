@@ -1069,10 +1069,9 @@ std::string CombinedTypes() {
 )";
 }
 
-
 TEST_F(SplitCombinedImageSamplerPassTest, FunctionBody_ScalarNoChange) {
-  const std::string kTest = Preamble() + NamedITypes() + NamedCombinedTypes() + BasicTypes() +
-                            ITypes() + CombinedTypes() + R"(
+  const std::string kTest = Preamble() + NamedITypes() + NamedCombinedTypes() +
+                            BasicTypes() + ITypes() + CombinedTypes() + R"(
 
       ; CHECK: %f_ty = OpTypeFunction %float %i_ty %s_ty %p_i_ty %p_s_ty
       %f_ty = OpTypeFunction %float %i_ty %s_ty %p_i_ty %p_s_ty
@@ -1100,8 +1099,8 @@ TEST_F(SplitCombinedImageSamplerPassTest, FunctionBody_ScalarNoChange) {
 
 TEST_F(SplitCombinedImageSamplerPassTest,
        FunctionBody_SampledImage_OpImageSample) {
-  const std::string kTest = Preamble() + NamedITypes() + NamedCombinedTypes() + BasicTypes() +
-                            ITypes() + CombinedTypes() + R"(
+  const std::string kTest = Preamble() + NamedITypes() + NamedCombinedTypes() +
+                            BasicTypes() + ITypes() + CombinedTypes() + R"(
 
       ; CHECK: %f_ty = OpTypeFunction %v4float %uint %i_ty %s_ty %float
       %f_ty = OpTypeFunction %v4float %uint %si_ty %float
@@ -1133,8 +1132,8 @@ TEST_F(SplitCombinedImageSamplerPassTest,
 }
 
 TEST_F(SplitCombinedImageSamplerPassTest, FunctionBody_SampledImage_OpImage) {
-  const std::string kTest = Preamble() + NamedITypes() + NamedCombinedTypes() + BasicTypes() +
-                            ITypes() + CombinedTypes() +  R"(
+  const std::string kTest = Preamble() + NamedITypes() + NamedCombinedTypes() +
+                            BasicTypes() + ITypes() + CombinedTypes() + R"(
 
       ; CHECK: %f_ty = OpTypeFunction %void %uint %i_ty %s_ty %float
       %f_ty = OpTypeFunction %void %uint %si_ty %float
@@ -1166,8 +1165,8 @@ TEST_F(SplitCombinedImageSamplerPassTest, FunctionBody_SampledImage_OpImage) {
 }
 
 TEST_F(SplitCombinedImageSamplerPassTest, FunctionBody_PtrSampledImage) {
-  const std::string kTest = Preamble() + NamedITypes() + NamedCombinedTypes() + BasicTypes() +
-                            ITypes() + CombinedTypes() +  R"(
+  const std::string kTest = Preamble() + NamedITypes() + NamedCombinedTypes() +
+                            BasicTypes() + ITypes() + CombinedTypes() + R"(
 
       ; CHECK: %f_ty = OpTypeFunction %v4float %uint %p_i_ty %p_s_ty %float
       %f_ty = OpTypeFunction %v4float %uint %p_si_ty %float
@@ -1200,9 +1199,10 @@ TEST_F(SplitCombinedImageSamplerPassTest, FunctionBody_PtrSampledImage) {
   EXPECT_EQ(status, Pass::Status::SuccessWithChange) << disasm;
 }
 
-TEST_F(SplitCombinedImageSamplerPassTest, FunctionCall_NoImageOrSampler_NoChange) {
-  const std::string kTest = Preamble() + NamedITypes() + NamedCaller() + BasicTypes() +
-                            ITypes() + CombinedTypes() +  R"(
+TEST_F(SplitCombinedImageSamplerPassTest,
+       FunctionCall_NoImageOrSampler_NoChange) {
+  const std::string kTest = Preamble() + NamedITypes() + NamedCaller() +
+                            BasicTypes() + ITypes() + CombinedTypes() + R"(
 
       ; CHECK: %f_ty = OpTypeFunction %void %uint %float
       %f_ty = OpTypeFunction %void %uint %float
@@ -1248,8 +1248,8 @@ TEST_F(SplitCombinedImageSamplerPassTest, FunctionCall_NoImageOrSampler_NoChange
 }
 
 TEST_F(SplitCombinedImageSamplerPassTest, FunctionCall_Image_NoChange) {
-  const std::string kTest = Preamble() + NamedITypes() + NamedCaller() + BasicTypes() +
-                            ITypes() + R"(
+  const std::string kTest = Preamble() + NamedITypes() + NamedCaller() +
+                            BasicTypes() + ITypes() + R"(
 
       ; CHECK: %f_ty = OpTypeFunction %void %i_ty
       %f_ty = OpTypeFunction %void %i_ty
@@ -1291,8 +1291,8 @@ TEST_F(SplitCombinedImageSamplerPassTest, FunctionCall_Image_NoChange) {
 }
 
 TEST_F(SplitCombinedImageSamplerPassTest, FunctionCall_Sampler_NoChange) {
-  const std::string kTest = Preamble() + NamedITypes() + NamedCaller() + BasicTypes() +
-                            ITypes() + R"(
+  const std::string kTest = Preamble() + NamedITypes() + NamedCaller() +
+                            BasicTypes() + ITypes() + R"(
 
       ; CHECK: %f_ty = OpTypeFunction %void %s_ty
       %f_ty = OpTypeFunction %void %s_ty
@@ -1334,8 +1334,8 @@ TEST_F(SplitCombinedImageSamplerPassTest, FunctionCall_Sampler_NoChange) {
 }
 
 TEST_F(SplitCombinedImageSamplerPassTest, FunctionCall_PtrImage_NoChange) {
-  const std::string kTest = Preamble() + NamedITypes() + NamedCaller() + BasicTypes() +
-                            ITypes() + R"(
+  const std::string kTest = Preamble() + NamedITypes() + NamedCaller() +
+                            BasicTypes() + ITypes() + R"(
 
       ; CHECK: %f_ty = OpTypeFunction %void %p_i_ty
       %f_ty = OpTypeFunction %void %p_i_ty
@@ -1377,8 +1377,8 @@ TEST_F(SplitCombinedImageSamplerPassTest, FunctionCall_PtrImage_NoChange) {
 }
 
 TEST_F(SplitCombinedImageSamplerPassTest, FunctionCall_PtrSampler_NoChange) {
-  const std::string kTest = Preamble() + NamedITypes() + NamedCaller() + BasicTypes() +
-                            ITypes() + R"(
+  const std::string kTest = Preamble() + NamedITypes() + NamedCaller() +
+                            BasicTypes() + ITypes() + R"(
 
       ; CHECK: %f_ty = OpTypeFunction %void %p_s_ty
       %f_ty = OpTypeFunction %void %p_s_ty
