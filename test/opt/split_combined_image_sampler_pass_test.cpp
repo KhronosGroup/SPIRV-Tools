@@ -57,7 +57,6 @@ struct SplitCombinedImageSamplerPassTypeCaseTest
 std::vector<TypeCase> ImageTypeCases() {
   return std::vector<TypeCase>{
       {"sampler2D", "OpTypeImage %float 2D 0 0 0 1 Unknown"},
-#if 0
       {"sampler2DShadow", "OpTypeImage %float 2D 1 0 0 1 Unknown"},
       {"sampler2DArray", "OpTypeImage %float 2D 0 1 0 1 Unknown"},
       {"sampler2DArrayShadow", "OpTypeImage %float 2D 1 1 0 1 Unknown"},
@@ -90,7 +89,6 @@ std::vector<TypeCase> ImageTypeCases() {
       {"usamplerCubeShadow", "OpTypeImage %uint Cube 1 0 0 1 Unknown"},
       {"usamplerCubeArray", "OpTypeImage %uint Cube 0 1 0 1 Unknown"},
       {"usamplerCubeArrayShadow", "OpTypeImage %uint Cube 1 1 0 1 Unknown"},
-#endif
   };
 }
 
@@ -313,8 +311,8 @@ TEST_P(SplitCombinedImageSamplerPassTypeCaseTest, Combined_RemapLoad) {
      ; CHECK: OpName
      ; CHECK-NOT: OpDecorate %100
      ; CHECK: OpDecorate %[[image_var:\d+]] DescriptorSet 0
-     ; CHECK: OpDecorate %[[image_var]] Binding 0
      ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
+     ; CHECK: OpDecorate %[[image_var]] Binding 0
      ; CHECK: OpDecorate %[[sampler_var]] Binding 0
 
      ; CHECK: %10 = OpTypeImage %
@@ -371,10 +369,10 @@ TEST_P(SplitCombinedImageSamplerPassTypeCaseTest,
      ; CHECK: OpName
      ; CHECK-NOT: OpDecorate %100
      ; CHECK: OpDecorate %[[image_var:\d+]] DescriptorSet 0
-     ; CHECK: OpDecorate %[[image_var]] Binding 0
-     ; CHECK: OpDecorate %[[image_var:\d+]] RelaxedPrecision
      ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
+     ; CHECK: OpDecorate %[[image_var]] Binding 0
      ; CHECK: OpDecorate %[[sampler_var]] Binding 0
+     ; CHECK: OpDecorate %[[image_var:\d+]] RelaxedPrecision
      ; CHECK: OpDecorate %[[sampler_var:\d+]] RelaxedPrecision
 
      ; CHECK: %10 = OpTypeImage %
@@ -429,8 +427,8 @@ TEST_P(SplitCombinedImageSamplerPassTypeCaseTest,
      ; CHECK: OpName
      ; CHECK-NOT: OpDecorate %100
      ; CHECK: OpDecorate %[[image_var:\d+]] DescriptorSet 0
-     ; CHECK: OpDecorate %[[image_var]] Binding 0
      ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
+     ; CHECK: OpDecorate %[[image_var]] Binding 0
      ; CHECK: OpDecorate %[[sampler_var]] Binding 0
 
      ; CHECK: %10 = OpTypeImage %
@@ -487,8 +485,8 @@ TEST_P(SplitCombinedImageSamplerPassTypeCaseTest, ArrayCombined_RemapLoad) {
      ; CHECK: OpName
      ; CHECK-NOT: OpDecorate %100
      ; CHECK: OpDecorate %[[image_var:\d+]] DescriptorSet 0
-     ; CHECK: OpDecorate %[[image_var]] Binding 0
      ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
+     ; CHECK: OpDecorate %[[image_var]] Binding 0
      ; CHECK: OpDecorate %[[sampler_var]] Binding 0
 
      ; CHECK: %10 = OpTypeImage %
@@ -553,8 +551,8 @@ TEST_P(SplitCombinedImageSamplerPassTypeCaseTest, RtArrayCombined_RemapLoad) {
      ; CHECK: OpName
      ; CHECK-NOT: OpDecorate %100
      ; CHECK: OpDecorate %[[image_var:\d+]] DescriptorSet 0
-     ; CHECK: OpDecorate %[[image_var]] Binding 0
      ; CHECK: OpDecorate %[[sampler_var:\d+]] DescriptorSet 0
+     ; CHECK: OpDecorate %[[image_var]] Binding 0
      ; CHECK: OpDecorate %[[sampler_var]] Binding 0
 
      ; CHECK: %10 = OpTypeImage %
@@ -956,6 +954,32 @@ INSTANTIATE_TEST_SUITE_P(FunctionTypeRemap,
                          ::testing::ValuesIn(FunctionTypeCases()));
 
 // Test array and runtime-array cases for function type replacement.
+
+TEST_F(SplitCombinedImageSamplerPassTest, FunctionType_ReplaceSampledImageArg) {
+  // The original module has a sampled image type, used only as a function
+  // parameter.  We still want to replace it.  But no other sampled-image types
+  // exist. This proves that the pass needs a sampled_image_used_as_param_
+  // state variable.
+  const std::string kTest = Preamble() + +R"(
+       OpName %f_ty "f_ty"
+       OpName %sampler_ty "sampler_ty"
+       OpName %image_ty "image_ty"
+       OpName %sampled_image_ty "sampled_image_ty"
+
+  )" + BasicTypes() + R"(
+
+ %sampler_ty = OpTypeSampler
+   %image_ty = OpTypeImage %float 2D 0 0 0 1 Unknown
+ %sampled_image_ty = OpTypeSampledImage %image_ty
+
+       %f_ty = OpTypeFunction %float %sampled_image_ty %float
+  ; CHECK: %f_ty = OpTypeFunction %float %image_ty %sampler_ty %float
+)" + Main();
+
+  auto [disasm, status] = SinglePassRunAndMatch<SplitCombinedImageSamplerPass>(
+      kTest, /* do_validation= */ true);
+  EXPECT_EQ(status, Pass::Status::SuccessWithChange) << disasm;
+}
 
 TEST_F(SplitCombinedImageSamplerPassTest, FunctionType_ReplaceArrayArg) {
   const std::string kTest = Preamble() + +R"(
