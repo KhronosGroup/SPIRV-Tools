@@ -543,7 +543,6 @@ spv_result_t SplitCombinedImageSamplerPass::RemapFunctions() {
     Function::RewriteParamFn rewriter =
         [&](std::unique_ptr<Instruction>&& param,
             std::back_insert_iterator<Function::ParamList>& appender) {
-
           if (combined_types_.count(param->type_id()) == 0) {
             appender = std::move(param);
             return;
