@@ -295,20 +295,26 @@ spv_result_t SplitCombinedImageSamplerPass::RemapVar(
 
 spv_result_t SplitCombinedImageSamplerPass::RemapUses(
     Instruction* combined, Instruction* image_part, Instruction* sampler_part) {
+  // The instructions to delete.
   std::unordered_set<Instruction*> dead_insts;
   // The insertion point should be updated before using this builder.
   // We needed *something* here.
   InstructionBuilder builder(context(), combined, IRContext::kAnalysisDefUse);
 
-  // SPIR-V has a Data rule:
+  // This code must maintain the SPIR-V "Data rule" about sampled image values:
   //  > All OpSampledImage instructions, or instructions that load an image or
   //  > sampler reference, must be in the same block in which their Result <id>
   //  > are consumed.
   //
-  // Assuming that rule is honoured, the load is in the same block as the
-  // operation using the sampled image that was loaded. So it's ok to load
-  // the separate image and texture sampler, and also to create the combined
-  // sampled image from them, all in the same basic block.
+  // When the code below inserts OpSampledImage instructions, it is always
+  // either:
+  // - in the same block as the previous OpSampledImage instruction it is
+  //   replacing, or
+  // - in the same block as the instruction using sampled image value it is
+  //   replacing.
+  //
+  // Assuming that rule is already honoured by the module, these updates will
+  // continue to honour the rule.
 
   // Represents a single use of a value to be remapped.
   struct RemapUse {
@@ -324,8 +330,9 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
   // Adds remap records for each use of a value to be remapped.
   // Moves decorations from the original value to the new image and sampler
   // values.
-  auto add_remap = [&](Instruction* used_combined, Instruction* image_part,
-                       Instruction* sampler_part) {
+  auto add_remap = [this, &dead_insts, &uses](Instruction* used_combined,
+                                              Instruction* image_part,
+                                              Instruction* sampler_part) {
     const uint32_t used_combined_id = used_combined->result_id();
 
     def_use_mgr_->ForEachUse(
