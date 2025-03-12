@@ -320,17 +320,17 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
   // Adds remap records for each use of a value to be remapped.
   // Moves decorations from the original value to the new image and sampler
   // values.
-  auto add_remap = [this, &dead_insts, &uses](Instruction* used_combined_arg,
+  auto add_remap = [this, &dead_insts, &uses](Instruction* combined_arg,
                                               Instruction* image_part_arg,
                                               Instruction* sampler_part_arg) {
-    const uint32_t used_combined_id = used_combined_arg->result_id();
+    const uint32_t used_combined_id = combined_arg->result_id();
 
     def_use_mgr_->ForEachUse(
-        used_combined_arg, [&](Instruction* user, uint32_t use_index) {
+        combined_arg, [&](Instruction* user, uint32_t use_index) {
           uses.push_back({used_combined_id, user, use_index, image_part_arg,
                           sampler_part_arg});
         });
-    dead_insts.insert(used_combined_arg);
+    dead_insts.insert(combined_arg);
   };
 
   add_remap(combined, image_part, sampler_part);
@@ -474,8 +474,7 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
   }
 
   for (auto* inst : dead_insts) {
-    context()->KillInst(inst);
-    modified_ = true;
+    KillInst(inst);
   }
 
   return SPV_SUCCESS;
@@ -527,76 +526,92 @@ spv_result_t SplitCombinedImageSamplerPass::RemapFunctions() {
       }
     }
     for (auto* inst : dead_insts) {
-      context()->KillInst(inst);
-      modified_ = true;
+      KillInst(inst);
     }
   }
 
   // Rewite OpFunctionParameter in function definitions.
   for (Function& fn : *context()->module()) {
-    std::vector<Instruction*> to_replace;
-    fn.ForEachParam([&](Instruction* param) {
-      auto param_ty_id = param->type_id();
-      if (combined_types_.find(param_ty_id) != combined_types_.end()) {
-        to_replace.push_back(param);
-      }
-    });
-    if (to_replace.empty()) {
-      continue;
-    }
-    auto next_to_replace = to_replace.begin();
+    // Rewrite the function parameters and record their replacements.
     struct Replacement {
       Instruction* combined;
       Instruction* image;
       Instruction* sampler;
     };
     std::vector<Replacement> replacements;
+
     Function::RewriteParamFn rewriter =
-        [this, &replacements, &next_to_replace](
-            std::unique_ptr<Instruction>&& from_param,
+        [&](std::unique_ptr<Instruction>&& param,
             std::back_insert_iterator<Function::ParamList>& appender) {
-          auto param = std::move(from_param);
-          if (param.get() == *next_to_replace) {
-            auto* param_inst = param.release();
-            auto* param_type = def_use_mgr_->GetDef(param_inst->type_id());
-            auto [image_type, sampler_type] = SplitType(*param_type);
-            auto image_param = MakeUnique<Instruction>(
-                context(), spv::Op::OpFunctionParameter,
-                image_type->result_id(), context()->TakeNextId(),
-                Instruction::OperandList{});
-            auto sampler_param = MakeUnique<Instruction>(
-                context(), spv::Op::OpFunctionParameter,
-                sampler_type->result_id(), context()->TakeNextId(),
-                Instruction::OperandList{});
-            def_use_mgr_->AnalyzeInstDefUse(image_param.get());
-            def_use_mgr_->AnalyzeInstDefUse(sampler_param.get());
-            replacements.push_back(
-                {param_inst, image_param.get(), sampler_param.get()});
-            appender = std::move(image_param);
-            appender = std::move(sampler_param);
-            ++next_to_replace;
-          } else {
+
+          if (combined_types_.count(param->type_id()) == 0) {
             appender = std::move(param);
+            return;
           }
+
+          // Replace this parameter with two new parameters.
+          auto* combined_inst = param.release();
+          auto* combined_type = def_use_mgr_->GetDef(combined_inst->type_id());
+          auto [image_type, sampler_type] = SplitType(*combined_type);
+          auto image_param = MakeUnique<Instruction>(
+              context(), spv::Op::OpFunctionParameter, image_type->result_id(),
+              context()->TakeNextId(), Instruction::OperandList{});
+          auto sampler_param = MakeUnique<Instruction>(
+              context(), spv::Op::OpFunctionParameter,
+              sampler_type->result_id(), context()->TakeNextId(),
+              Instruction::OperandList{});
+          replacements.push_back(
+              {combined_inst, image_param.get(), sampler_param.get()});
+          appender = std::move(image_param);
+          appender = std::move(sampler_param);
         };
     fn.RewriteParams(rewriter);
 
-    for (auto& replacement : replacements) {
-      CHECK_STATUS(RemapUses(replacement.combined, replacement.image,
-                             replacement.sampler));
+    for (auto& r : replacements) {
+      modified_ = true;
+      def_use_mgr_->AnalyzeInstDefUse(r.image);
+      def_use_mgr_->AnalyzeInstDefUse(r.sampler);
+      CHECK_STATUS(RemapUses(r.combined, r.image, r.sampler));
     }
   }
   return SPV_SUCCESS;
 }
 
+Instruction* SplitCombinedImageSamplerPass::MakeUniformConstantPointer(
+    Instruction* pointee) {
+  uint32_t ptr_id = type_mgr_->FindPointerToType(
+      pointee->result_id(), spv::StorageClass::UniformConstant);
+  auto* ptr = def_use_mgr_->GetDef(ptr_id);
+  if (!IsKnownGlobal(ptr_id)) {
+    // The pointer type was created at the end. Put it right after the
+    // pointee.
+    ptr->InsertBefore(pointee);
+    pointee->InsertBefore(ptr);
+    RegisterNewGlobal(ptr_id);
+    // FindPointerToType also updated the def-use manager.
+  }
+  return ptr;
+}
+
 spv_result_t SplitCombinedImageSamplerPass::RemoveDeadTypes() {
   for (auto dead_type_id : combined_types_to_remove_) {
     if (auto* ty = def_use_mgr_->GetDef(dead_type_id)) {
-      context()->KillInst(ty);
-      modified_ = true;
+      KillInst(ty);
     }
   }
   return SPV_SUCCESS;
+}
+
+void SplitCombinedImageSamplerPass::KillInst(Instruction* inst) {
+  // IRContext::KillInst will remove associated debug instructions and
+  // decorations. It will delete the object only if it is already in a list.
+  const bool was_in_list = inst->IsInAList();
+  context()->KillInst(inst);
+  if (!was_in_list) {
+    // Avoid leaking
+    delete inst;
+  }
+  modified_ = true;
 }
 
 }  // namespace opt

@@ -78,20 +78,7 @@ class SplitCombinedImageSamplerPass : public Pass {
   // pointee type. If it does not yet exist, the new type instruction is created
   // and placed immediately after the pointee type instruction. Updates def-use
   // and type managers, and the set of known globals.
-  Instruction* MakeUniformConstantPointer(Instruction* pointee) {
-    uint32_t ptr_id = type_mgr_->FindPointerToType(
-        pointee->result_id(), spv::StorageClass::UniformConstant);
-    auto* ptr = def_use_mgr_->GetDef(ptr_id);
-    if (!IsKnownGlobal(ptr_id)) {
-      // The pointer type was created at the end. Put it right after the
-      // pointee.
-      ptr->InsertBefore(pointee);
-      pointee->InsertBefore(ptr);
-      RegisterNewGlobal(ptr_id);
-      // FindPointerToType also updated the def-use manager.
-    }
-    return ptr;
-  }
+  Instruction* MakeUniformConstantPointer(Instruction* pointee);
 
   // Returns the ID of the pointee type for a pointer value instruction.
   uint32_t PointeeTypeId(Instruction* ptr_value) {
@@ -128,6 +115,10 @@ class SplitCombinedImageSamplerPass : public Pass {
     modified_ = true;
     RegisterGlobal(id);
   }
+
+  // Deletes an instruction and associated debug and decoration instructions.
+  // Updates the def-use manager.
+  void KillInst(Instruction* inst);
 
   // Combined types.  The known combined sampled-image type,
   // and recursively pointers or arrays of them.
