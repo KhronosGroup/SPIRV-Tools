@@ -607,7 +607,13 @@ class InstructionBuilder {
 
     std::unique_ptr<Instruction> new_inst(
         new Instruction(GetContext(), spv::Op::OpDecorate, 0, 0, operands));
-    return AddInstruction(std::move(new_inst));
+    // Decorations are annotation instructions.  Add it via the IR context,
+    // so the decoration manager will be updated.
+    // Decorations don't belong to basic blocks, so there is no need
+    // to update the instruction to block mapping.
+    Instruction* result = new_inst.get();
+    GetContext()->AddAnnotationInst(std::move(new_inst));
+    return result;
   }
 
   Instruction* AddNaryExtendedInstruction(
