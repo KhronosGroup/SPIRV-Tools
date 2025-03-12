@@ -649,7 +649,7 @@ std::vector<EntryPointRemapCase> EntryPointInterfaceCases() {
       {SPV_ENV_VULKAN_1_4, " %in_var %out_var %combined_var",
        " %in_var %out_var %[[image_var:\\d+]] %[[sampler_var:\\d+]]"},
   };
-};
+}
 
 TEST_P(SplitCombinedImageSamplerPassEntryPointRemapTest,
        EntryPoint_Combined_UsedInShader) {
@@ -872,7 +872,7 @@ std::vector<FunctionTypeCase> FunctionTypeCases() {
        "%_ptr_UniformConstant_image_ty %_ptr_UniformConstant_sampler_ty "
        "%float"},
   };
-};
+}
 
 TEST_P(SplitCombinedImageSamplerPassFunctionTypeTest,
        ReplaceCombinedImageSamplersOnly) {
