@@ -167,9 +167,6 @@ class SplitCombinedImageSamplerPass : public Pass {
 
   // The combined-image-sampler variables to be replaced.
   std::vector<Instruction*> ordered_vars_;
-
-  // Checks that analyses have been kept consistent. This is expensive.
-  void AssertConsistencyForDebug();
 };
 }  // namespace opt
 }  // namespace spvtools

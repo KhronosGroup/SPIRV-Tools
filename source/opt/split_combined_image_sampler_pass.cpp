@@ -69,20 +69,10 @@ Pass::Status SplitCombinedImageSamplerPass::Process() {
   CHECK(RemapVars());
   CHECK(RemoveDeadTypes());
 
-  AssertConsistencyForDebug();
-
   def_use_mgr_ = nullptr;
   type_mgr_ = nullptr;
 
   return Ok();
-}
-
-void SplitCombinedImageSamplerPass::AssertConsistencyForDebug() {
-#ifndef SPIRV_CHECK_CONTEXT
-  return;
-#endif
-  context()->InvalidateAnalysesExceptFor(GetPreservedAnalyses());
-  assert(context()->IsConsistent());
 }
 
 spvtools::DiagnosticStream SplitCombinedImageSamplerPass::Fail() {
