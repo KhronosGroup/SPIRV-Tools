@@ -320,17 +320,17 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
   // Adds remap records for each use of a value to be remapped.
   // Moves decorations from the original value to the new image and sampler
   // values.
-  auto add_remap = [this, &dead_insts, &uses](Instruction* used_combined,
-                                              Instruction* image_part,
-                                              Instruction* sampler_part) {
-    const uint32_t used_combined_id = used_combined->result_id();
+  auto add_remap = [this, &dead_insts, &uses](Instruction* used_combined_arg,
+                                              Instruction* image_part_arg,
+                                              Instruction* sampler_part_arg) {
+    const uint32_t used_combined_id = used_combined_arg->result_id();
 
     def_use_mgr_->ForEachUse(
-        used_combined, [&](Instruction* user, uint32_t use_index) {
-          uses.push_back(
-              {used_combined_id, user, use_index, image_part, sampler_part});
+        used_combined_arg, [&](Instruction* user, uint32_t use_index) {
+          uses.push_back({used_combined_id, user, use_index, image_part_arg,
+                          sampler_part_arg});
         });
-    dead_insts.insert(used_combined);
+    dead_insts.insert(used_combined_arg);
   };
 
   add_remap(combined, image_part, sampler_part);
