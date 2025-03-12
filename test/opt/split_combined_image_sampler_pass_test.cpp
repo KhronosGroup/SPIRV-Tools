@@ -146,16 +146,6 @@ std::string Main() {
 }
 std::string NoCheck() { return "; CHECK-NOT: nothing to see"; }
 
-std::string Decorations() {
-  return R"(               OpName %im_ty "im_ty"
-               OpName %s_ty "s_ty"
-               OpName %ims_ty "ims_ty"
-               OpName %ims_pty "ims_pty"
-               OpDecorate %100 DescriptorSet 0
-               OpDecorate %100 Binding 0
-)";
-}
-
 std::string Decls(const std::string& image_type_decl) {
   return R"(       %s_ty = OpTypeSampler
       %im_ty = )" +
