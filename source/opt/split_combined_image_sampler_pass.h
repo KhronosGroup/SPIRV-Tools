@@ -131,11 +131,11 @@ class SplitCombinedImageSamplerPass : public Pass {
   std::unordered_map<uint32_t, TypeRemapInfo> type_remap_;
 
   // Returns the image-like and sampler-like types of the same indirection shape
-  // as the given combined-like type.  If combined_kind_type is not a type
-  // or a pointer to one, then returns a pair of null pointer.
-  // Either both components are non-null, or both components are null.
-  // Updates the def-use manager and the type manager if new instructions are
-  // created.
+  // as the given combined-like type.  If combined_kind_type is not a combined
+  // type or a pointer to one, or an array of one or a pointer to an array of
+  // one, then returns a pair of null pointer. Either both components are
+  // non-null, or both components are null. Updates the def-use manager and the
+  // type manager if new instructions are created.
   std::pair<Instruction*, Instruction*> SplitType(
       Instruction& combined_kind_type);
 
