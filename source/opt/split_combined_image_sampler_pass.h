@@ -139,18 +139,8 @@ class SplitCombinedImageSamplerPass : public Pass {
   std::pair<Instruction*, Instruction*> SplitType(
       Instruction& combined_kind_type);
 
-  struct RemapValueInfo {
-    // The original memory object for the combined entity.
-    Instruction* combined_mem_obj = nullptr;
-    // The instruction for the type of the original (combined) memory object.
-    Instruction* combined_mem_obj_type = nullptr;
-  };
-
-  // Maps the ID of a memory object declaration for a combined texture+sampler
-  // to remapping information about that object.
-  std::unordered_map<uint32_t, RemapValueInfo> remap_info_;
-  // The instructions added to remap_info_, in the order they were added.
-  std::vector<Instruction*> ordered_objs_;
+  // The combined-image-sampler variables to be replaced.
+  std::vector<Instruction*> ordered_vars_;
 
   // Checks that analyses have been kept consistent. This is expensive.
   void AssertConsistencyForDebug();

@@ -136,10 +136,7 @@ void SplitCombinedImageSamplerPass::FindCombinedTextureSamplers() {
 
       case spv::Op::OpVariable:
         if (combined_types_.find(inst.type_id()) != combined_types_.end()) {
-          ordered_objs_.push_back(&inst);
-          auto& info = remap_info_[inst.result_id()];
-          info.combined_mem_obj = &inst;
-          info.combined_mem_obj_type = def_use_mgr_->GetDef(inst.type_id());
+          ordered_vars_.push_back(&inst);
         }
         break;
 
@@ -162,8 +159,8 @@ Instruction* SplitCombinedImageSamplerPass::GetSamplerType() {
 }
 
 spv_result_t SplitCombinedImageSamplerPass::RemapVars() {
-  for (Instruction* mem_obj : ordered_objs_) {
-    CHECK_STATUS(RemapVar(mem_obj));
+  for (Instruction* var : ordered_vars_) {
+    CHECK_STATUS(RemapVar(var));
   }
   return SPV_SUCCESS;
 }
@@ -295,11 +292,10 @@ spv_result_t SplitCombinedImageSamplerPass::RemapVar(
     Instruction* combined_var) {
   InstructionBuilder builder(context(), combined_var,
                              IRContext::kAnalysisDefUse);
-  // Create an image variable, and a sampler variable.
-  auto& info = remap_info_[combined_var->result_id()];
 
-  // Create the variables.
-  auto [ptr_image_ty, ptr_sampler_ty] = SplitType(*info.combined_mem_obj_type);
+  // Create an image variable, and a sampler variable.
+  auto* combined_var_type = def_use_mgr_->GetDef(combined_var->type_id());
+  auto [ptr_image_ty, ptr_sampler_ty] = SplitType(*combined_var_type);
   if (!ptr_image_ty || !ptr_sampler_ty) {
     return Fail() << "unhandled case: array-of-combined-image-sampler";
   }
