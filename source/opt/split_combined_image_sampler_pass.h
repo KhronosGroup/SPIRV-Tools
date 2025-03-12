@@ -56,27 +56,28 @@ class SplitCombinedImageSamplerPass : public Pass {
   // Remaps function types and function declarations.  Each
   // pointer-to-sampled-image-type operand is replaced with a pair of
   // pointer-to-image-type and pointer-to-sampler-type pair.
+  // Updates the def-use manager and type manager.
   spv_result_t RemapFunctions();
   // Remap resource variables.
+  // Updates the def-use manager.
   spv_result_t RemapVars();
-  // Remap a single resource variable.
-  spv_result_t RemapVar(Instruction* mem_obj);
+  // Remap a single resource variable for combined var.
+  // Updates the def-use manager and the decorations manager.
+  spv_result_t RemapVar(Instruction* combined_var);
   // Transitively remaps uses of the combined object with uses of the
   // decomposed image and sampler parts.  The combined object can be sampled
   // image value, a pointer to one, an array of one, or a pointer to an array
   // of one. The image and sampler parts have corresponding shapes.
+  // Updates the def-use manager and the decorations manager.
   spv_result_t RemapUses(Instruction* combined, Instruction* image_part,
                          Instruction* sampler_part);
-  // Removes instructions queued up for removal during earlier processing
-  // stages.
-  spv_result_t RemoveDeadInstructions();
+  // Removes types that are no longer referenced.
+  spv_result_t RemoveDeadTypes();
 
   // Cached from the IRContext. Valid while Process() is running.
   analysis::DefUseManager* def_use_mgr_ = nullptr;
   // Cached from the IRContext. Valid while Process() is running.
   analysis::TypeManager* type_mgr_ = nullptr;
-  // Cached from the IRContext. Valid while Process() is running.
-  analysis::DecorationManager* deco_mgr_ = nullptr;
 
   // Did processing modify the module?
   bool modified_ = false;
@@ -108,6 +109,9 @@ class SplitCombinedImageSamplerPass : public Pass {
   // The pre-existing types this pass should remove: pointer to
   // combined type, array of combined type, pointer to array of combined type.
   std::vector<uint32_t> combined_types_to_remove_;
+  // Is an OpTypeSampledImage used as a function parameter? Those should be
+  // transformed.
+  bool sampled_image_used_as_param_ = false;
 
   // Remaps a combined-kind type to corresponding sampler-kind and image-kind
   // of type.
@@ -130,6 +134,8 @@ class SplitCombinedImageSamplerPass : public Pass {
   // as the given combined-like type.  If combined_kind_type is not a type
   // or a pointer to one, then returns a pair of null pointer.
   // Either both components are non-null, or both components are null.
+  // Updates the def-use manager and the type manager if new instructions are
+  // created.
   std::pair<Instruction*, Instruction*> SplitType(
       Instruction& combined_kind_type);
 
@@ -146,10 +152,8 @@ class SplitCombinedImageSamplerPass : public Pass {
   // The instructions added to remap_info_, in the order they were added.
   std::vector<Instruction*> ordered_objs_;
 
-  // The instructions to be removed.
-  std::vector<Instruction*> dead_;
-  // Records in instruction as needing to be removed. Updates dead_.
-  void MarkAsDead(Instruction* inst);
+  // Checks that analyses have been kept consistent. This is expensive.
+  void AssertConsistencyForDebug();
 };
 }  // namespace opt
 }  // namespace spvtools
