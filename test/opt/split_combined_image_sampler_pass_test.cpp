@@ -146,16 +146,6 @@ std::string Main() {
 }
 std::string NoCheck() { return "; CHECK-NOT: nothing to see"; }
 
-std::string Decls(const std::string& image_type_decl) {
-  return R"(       %s_ty = OpTypeSampler
-      %im_ty = )" +
-         image_type_decl + R"(
-     %ims_ty = OpTypeSampledImage %im_ty
-    %ims_pty = OpTypePointer UniformConstant %ims_ty
-        %100 = OpVariable %ims_pty UniformConstant
-)";
-}
-
 TEST_F(SplitCombinedImageSamplerPassTest, SamplerOnly_NoChange) {
   const std::string kTest = Preamble() +
                             R"(               OpDecorate %100 DescriptorSet 0
