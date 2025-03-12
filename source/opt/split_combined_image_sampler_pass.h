@@ -74,6 +74,32 @@ class SplitCombinedImageSamplerPass : public Pass {
   // Removes types that are no longer referenced.
   spv_result_t RemoveDeadTypes();
 
+  // Returns the type instruction for a UniformConstant pointer to the given
+  // pointee type. If it does not yet exist, the new type instruction is created
+  // and placed immediately after the pointee type instruction. Updates def-use
+  // and type managers, and the set of known globals.
+  Instruction* MakeUniformConstantPointer(Instruction* pointee) {
+    uint32_t ptr_id = type_mgr_->FindPointerToType(
+        pointee->result_id(), spv::StorageClass::UniformConstant);
+    auto* ptr = def_use_mgr_->GetDef(ptr_id);
+    if (!IsKnownGlobal(ptr_id)) {
+      // The pointer type was created at the end. Put it right after the
+      // pointee.
+      ptr->InsertBefore(pointee);
+      pointee->InsertBefore(ptr);
+      RegisterNewGlobal(ptr_id);
+      // FindPointerToType also updated the def-use manager.
+    }
+    return ptr;
+  }
+
+  // Returns the ID of the pointee type for a pointer value instruction.
+  uint32_t PointeeTypeId(Instruction* ptr_value) {
+    auto* ptr_ty = def_use_mgr_->GetDef(ptr_value->type_id());
+    assert(ptr_ty->opcode() == spv::Op::OpTypePointer);
+    return ptr_ty->GetSingleWordInOperand(1);
+  }
+
   // Cached from the IRContext. Valid while Process() is running.
   analysis::DefUseManager* def_use_mgr_ = nullptr;
   // Cached from the IRContext. Valid while Process() is running.

@@ -195,22 +195,8 @@ std::pair<Instruction*, Instruction*> SplitCombinedImageSamplerPass::SplitType(
         // assumption that it is being only called on combined types. So code
         // this defensively.
         if (image_pointee && sampler_pointee) {
-          auto make_pointer = [&](Instruction* pointee) {
-            uint32_t ptr_id = type_mgr_->FindPointerToType(
-                pointee->result_id(), spv::StorageClass::UniformConstant);
-            auto* ptr = def_use_mgr_->GetDef(ptr_id);
-            if (!IsKnownGlobal(ptr_id)) {
-              // The pointer type was created at the end. Put it right after the
-              // pointee.
-              ptr->InsertBefore(pointee);
-              pointee->InsertBefore(ptr);
-              RegisterNewGlobal(ptr_id);
-              // FindPointerToType also updated the def-use manager.
-            }
-            return ptr;
-          };
-          auto* ptr_image = make_pointer(image_pointee);
-          auto* ptr_sampler = make_pointer(sampler_pointee);
+          auto* ptr_image = MakeUniformConstantPointer(image_pointee);
+          auto* ptr_sampler = MakeUniformConstantPointer(sampler_pointee);
           type_remap_[combined_kind_type.result_id()] = {
               &combined_kind_type, ptr_image, ptr_sampler};
           return {ptr_image, ptr_sampler};
@@ -367,16 +353,10 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
         Instruction* load = use.user;
 
         // Create loads for the image part and sampler part.
-        auto pointee_ty_id = [this](Instruction* ptr_value) {
-          auto* ptr_ty = def_use_mgr_->GetDef(ptr_value->type_id());
-          assert(ptr_ty->opcode() == spv::Op::OpTypePointer);
-          return ptr_ty->GetSingleWordInOperand(1);
-        };
-
         builder.SetInsertPoint(load);
-        auto* image = builder.AddLoad(pointee_ty_id(use.image_part),
+        auto* image = builder.AddLoad(PointeeTypeId(use.image_part),
                                       use.image_part->result_id());
-        auto* sampler = builder.AddLoad(pointee_ty_id(use.sampler_part),
+        auto* sampler = builder.AddLoad(PointeeTypeId(use.sampler_part),
                                         use.sampler_part->result_id());
         // Create a sampled image from the loads of the two parts.
         auto* sampled_image = builder.AddSampledImage(
