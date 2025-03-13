@@ -318,8 +318,7 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
   std::vector<RemapUse> uses;
 
   // Adds remap records for each use of a value to be remapped.
-  // Moves decorations from the original value to the new image and sampler
-  // values.
+  // Also schedules the original value for deletion.
   auto add_remap = [this, &dead_insts, &uses](Instruction* combined_arg,
                                               Instruction* image_part_arg,
                                               Instruction* sampler_part_arg) {
@@ -348,6 +347,10 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
       case spv::Op::OpLoad: {
         assert(use.index == 2 && "variable used as non-pointer index on load");
         Instruction* load = use.user;
+
+        // Assume the loaded value is a sampled image.
+        assert(def_use_mgr_->GetDef(load->type_id())->opcode() ==
+               spv::Op::OpTypeSampledImage);
 
         // Create loads for the image part and sampler part.
         builder.SetInsertPoint(load);
@@ -381,6 +384,8 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
         }
         builder.AddDecoration(use.image_part->result_id(), deco, literals);
         builder.AddDecoration(use.sampler_part->result_id(), deco, literals);
+        // KillInst will delete names and decorations, so don't schedule a
+        // deletion of this instruction.
         break;
       }
       case spv::Op::OpEntryPoint: {
@@ -402,7 +407,9 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
       }
       case spv::Op::OpName:
         // TODO(dneto): Maybe we should synthesize names for the remapped vars.
-        dead_insts.insert(use.user);
+
+        // KillInst will delete names and decorations, so don't schedule a
+        // deletion of this instruction.
         break;
       case spv::Op::OpFunctionCall: {
         // Replace each combined arg with two args: the image part, then the
