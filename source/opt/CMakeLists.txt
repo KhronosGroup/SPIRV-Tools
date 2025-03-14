@@ -109,6 +109,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   remove_unused_interface_variables_pass.h
   replace_desc_array_access_using_var_index.h
   replace_invalid_opc.h
+  resolve_binding_conflicts_pass.h
   scalar_analysis.h
   scalar_analysis_nodes.h
   scalar_replacement_pass.h
@@ -226,6 +227,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   remove_unused_interface_variables_pass.cpp
   replace_desc_array_access_using_var_index.cpp
   replace_invalid_opc.cpp
+  resolve_binding_conflicts_pass.cpp
   scalar_analysis.cpp
   scalar_analysis_simplification.cpp
   scalar_replacement_pass.cpp
