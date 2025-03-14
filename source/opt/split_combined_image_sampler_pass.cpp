@@ -97,8 +97,8 @@ void SplitCombinedImageSamplerPass::FindCombinedTextureSamplers() {
         }
         combined_types_.insert(inst.result_id());
         def_use_mgr_->WhileEachUser(inst.result_id(), [&](Instruction* i) {
-          sampled_image_used_as_param_ = sampled_image_used_as_param_ ||
-                                         i->opcode() == spv::Op::OpTypeFunction;
+          sampled_image_used_as_param_ |=
+              i->opcode() == spv::Op::OpTypeFunction;
           return !sampled_image_used_as_param_;
         });
         break;
@@ -272,9 +272,8 @@ spv_result_t SplitCombinedImageSamplerPass::RemapVar(
   // Create an image variable, and a sampler variable.
   auto* combined_var_type = def_use_mgr_->GetDef(combined_var->type_id());
   auto [ptr_image_ty, ptr_sampler_ty] = SplitType(*combined_var_type);
-  if (!ptr_image_ty || !ptr_sampler_ty) {
-    return Fail() << "unhandled case: array-of-combined-image-sampler";
-  }
+  assert(ptr_image_ty);
+  assert(ptr_sampler_ty);
   Instruction* sampler_var = builder.AddVariable(
       ptr_sampler_ty->result_id(), SpvStorageClassUniformConstant);
   Instruction* image_var = builder.AddVariable(ptr_image_ty->result_id(),
@@ -488,7 +487,6 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
 }
 
 spv_result_t SplitCombinedImageSamplerPass::RemapFunctions() {
-  CompareAndPrintDifferences(*def_use_mgr_, *def_use_mgr_);
   // Remap function types. A combined type can appear as a parameter, but not as
   // the return type.
   {
