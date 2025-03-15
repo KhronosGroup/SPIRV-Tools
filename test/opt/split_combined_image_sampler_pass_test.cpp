@@ -280,6 +280,56 @@ TEST_F(SplitCombinedImageSamplerPassTest,
   EXPECT_EQ(status, Pass::Status::SuccessWithChange) << disasm;
 }
 
+TEST_F(SplitCombinedImageSamplerPassTest, Combined_SynthesizeVarNames) {
+  // Also tests binding info is copied to both variables.
+  const std::string kTest = Preamble() +
+                            R"(
+               OpName %orig_var "orig_var"
+               OpDecorate %orig_var DescriptorSet 0
+               OpDecorate %orig_var Binding 0
+
+     ; The combined image variable is replaced by an image variable and a sampler variable.
+
+     ; CHECK: OpCapability
+     ; The original name is deleted
+     ; CHECK-NOT: OpName %orig_var "
+     ; CHECK: OpName %orig_var_image "orig_var_image"
+     ; CHECK: OpName %orig_var_sampler "orig_var_sampler"
+     ; CHECK-NOT: OpName %orig_var "
+
+     ; CHECK: OpDecorate %orig_var_image DescriptorSet 0
+     ; CHECK: OpDecorate %orig_var_sampler DescriptorSet 0
+     ; CHECK: OpDecorate %orig_var_image Binding 0
+     ; CHECK: OpDecorate %orig_var_sampler Binding 0
+
+     ; CHECK: %10 = OpTypeImage %
+     ; CHECK: %[[image_ptr_ty:\w+]] = OpTypePointer UniformConstant %10
+     ; CHECK: %[[sampler_ty:\d+]] = OpTypeSampler
+     ; CHECK: %[[sampler_ptr_ty:\w+]] = OpTypePointer UniformConstant %[[sampler_ty]]
+
+
+     ; CHECK-NOT: %orig_var = OpVariable
+     ; CHECK-DAG: %orig_var_sampler = OpVariable %[[sampler_ptr_ty]] UniformConstant
+     ; CHECK-DAG: %orig_var_image = OpVariable %[[image_ptr_ty]] UniformConstant
+     ; CHECK: = OpFunction
+
+)" + BasicTypes() + R"(
+        %10 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %11 = OpTypeSampledImage %10
+%_ptr_UniformConstant_11 = OpTypePointer UniformConstant %11
+
+   %orig_var = OpVariable %_ptr_UniformConstant_11 UniformConstant
+       %main = OpFunction %void None %voidfn
+     %main_0 = OpLabel
+        %101 = OpLoad %11 %orig_var
+               OpReturn
+               OpFunctionEnd
+)";
+  auto [disasm, status] = SinglePassRunAndMatch<SplitCombinedImageSamplerPass>(
+      kTest, /* do_validation= */ true);
+  EXPECT_EQ(status, Pass::Status::SuccessWithChange) << disasm;
+}
+
 TEST_P(SplitCombinedImageSamplerPassTypeCaseTest, Combined_RemapLoad) {
   // Also tests binding info is copied to both variables.
   const std::string kTest = Preamble() +
@@ -313,7 +363,6 @@ TEST_P(SplitCombinedImageSamplerPassTypeCaseTest, Combined_RemapLoad) {
      ; CHECK: %[[s:\d+]] = OpLoad %[[sampler_ty]] %[[sampler_var]]
      ; CHECK: %combined = OpSampledImage %11 %[[im]] %[[s]]
 
-               %bool = OpTypeBool ; location marker
 )" + BasicTypes() +
                             " %10 = " + GetParam().image_type_decl + R"(
          %11 = OpTypeSampledImage %10
@@ -621,28 +670,18 @@ std::vector<EntryPointRemapCase> EntryPointInterfaceCases() {
   return std::vector<EntryPointRemapCase>{
       {SPV_ENV_VULKAN_1_0, " %in_var %out_var", " %in_var %out_var"},
       {SPV_ENV_VULKAN_1_4, " %combined_var",
-       " %[[image_var:\\d+]] %[[sampler_var:\\d+]]"},
+       " %combined_var_image %combined_var_sampler"},
       {SPV_ENV_VULKAN_1_4, " %combined_var %in_var %out_var",
-       " %[[image_var:\\d+]] %in_var %out_var %[[sampler_var:\\d+]]"},
+       " %combined_var_image %in_var %out_var %combined_var_sampler"},
       {SPV_ENV_VULKAN_1_4, " %in_var %combined_var %out_var",
-       " %in_var %[[image_var:\\d+]] %out_var %[[sampler_var:\\d+]]"},
+       " %in_var %combined_var_image %out_var %combined_var_sampler"},
       {SPV_ENV_VULKAN_1_4, " %in_var %out_var %combined_var",
-       " %in_var %out_var %[[image_var:\\d+]] %[[sampler_var:\\d+]]"},
+       " %in_var %out_var %combined_var_image %combined_var_sampler"},
   };
 }
 
 TEST_P(SplitCombinedImageSamplerPassEntryPointRemapTest,
        EntryPoint_Combined_UsedInShader) {
-  const bool combined_var_in_interface =
-      std::string(GetParam().initial_interface).find("%combined_var") !=
-      std::string::npos;
-  // If the combined var is listed in the entry point, then the entry point
-  // interface will give the pattern match definition of the sampler var ID.
-  // Otherwise it's defined at the assignment.
-  const std::string sampler_var_def =
-      combined_var_in_interface ? "%[[sampler_var]]" : "%[[sampler_var:\\d+]]";
-  const std::string image_var_def =
-      combined_var_in_interface ? "%[[image_var]]" : "%[[image_var:\\d+]]";
   const std::string kTest = PreambleFragment(GetParam().initial_interface) +
                             R"(
                OpName %combined "combined"
@@ -669,10 +708,8 @@ TEST_P(SplitCombinedImageSamplerPassEntryPointRemapTest,
      ; CHECK: %[[sampler_ty:\d+]] = OpTypeSampler
      ; CHECK: %[[sampler_ptr_ty:\w+]] = OpTypePointer UniformConstant %[[sampler_ty]]
      ; The combined image variable is replaced by an image variable and a sampler variable.
-     ; CHECK-DAG: )" + sampler_var_def +
-                            R"( = OpVariable %[[sampler_ptr_ty]] UniformConstant
-     ; CHECK-DAG: )" + image_var_def +
-                            R"( = OpVariable %[[image_ptr_ty]] UniformConstant
+     ; CHECK-DAG: %combined_var_sampler = OpVariable %[[sampler_ptr_ty]] UniformConstant
+     ; CHECK-DAG: %combined_var_image = OpVariable %[[image_ptr_ty]] UniformConstant
      ; CHECK: = OpFunction
 
                %bool = OpTypeBool
@@ -772,8 +809,8 @@ TEST_P(SplitCombinedImageSamplerPassEntryPointRemapTest,
   ; CHECK-NOT: %combined_var
   ; CHECK: OpExecutionMode %main OriginUpperLeft
 
-  ; All traces of the variable disappear
-  ; CHECK-NOT: combined_var
+  ; The variable disappears.
+  ; CHECK-NOT: %combined_var =
   ; CHECK: OpFunctionEnd
                  OpName %combined_var "combined_var"
                  OpName %in_var "in_var"

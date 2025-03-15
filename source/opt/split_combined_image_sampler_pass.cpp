@@ -24,6 +24,7 @@
 #include "source/opt/type_manager.h"
 #include "source/opt/types.h"
 #include "source/util/make_unique.h"
+#include "source/util/string_utils.h"
 #include "spirv/unified1/spirv.h"
 
 namespace spvtools {
@@ -404,12 +405,16 @@ spv_result_t SplitCombinedImageSamplerPass::RemapUses(
         def_use_mgr_->AnalyzeInstUse(use.user);
         break;
       }
-      case spv::Op::OpName:
-        // TODO(dneto): Maybe we should synthesize names for the remapped vars.
+      case spv::Op::OpName: {
+        // Synthesize new names from the old.
+        const auto name = use.user->GetOperand(1).AsString();
+        AddOpName(use.image_part->result_id(), name + "_image");
+        AddOpName(use.sampler_part->result_id(), name + "_sampler");
 
         // KillInst will delete names and decorations, so don't schedule a
         // deletion of this instruction.
         break;
+      }
       case spv::Op::OpFunctionCall: {
         // Replace each combined arg with two args: the image part, then the
         // sampler part.
@@ -595,6 +600,20 @@ Instruction* SplitCombinedImageSamplerPass::MakeUniformConstantPointer(
     // FindPointerToType also updated the def-use manager.
   }
   return ptr;
+}
+
+void SplitCombinedImageSamplerPass::AddOpName(uint32_t id,
+                                              const std::string& name) {
+  std::unique_ptr<Instruction> opname{new Instruction{
+      context(),
+      spv::Op::OpName,
+      0u,
+      0u,
+      {{SPV_OPERAND_TYPE_ID, {id}},
+       {SPV_OPERAND_TYPE_LITERAL_STRING,
+        utils::MakeVector<spvtools::opt::Operand::OperandData>(name)}}}};
+
+  context()->AddDebug2Inst(std::move(opname));
 }
 
 spv_result_t SplitCombinedImageSamplerPass::RemoveDeadTypes() {
