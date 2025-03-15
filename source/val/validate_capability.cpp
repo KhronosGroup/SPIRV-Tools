@@ -221,6 +221,7 @@ bool IsSupportOptionalOpenCL_1_2(uint32_t capability) {
   switch (spv::Capability(capability)) {
     case spv::Capability::ImageBasic:
     case spv::Capability::Float64:
+    case spv::Capability::Float16:
       return true;
     default:
       break;
