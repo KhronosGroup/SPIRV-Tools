@@ -203,7 +203,8 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
                 "storage class";
     }
 
-    if (opcode == spv::Op::OpControlBarrier && value && !includes_storage_class) {
+    if (opcode == spv::Op::OpControlBarrier && value &&
+        !includes_storage_class) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << _.VkErrorID(4650) << spvOpcodeString(opcode)
              << ": expected Memory Semantics to include a Vulkan-supported "

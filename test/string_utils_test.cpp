@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "source/util/string_utils.h"
+
 #include <string>
 
 #include "gtest/gtest.h"
-#include "source/util/string_utils.h"
 #include "spirv-tools/libspirv.h"
 
 namespace spvtools {
