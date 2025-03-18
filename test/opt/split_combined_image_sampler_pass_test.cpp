@@ -412,6 +412,7 @@ TEST_P(SplitCombinedImageSamplerPassTypeCaseTest,
      ; The combined image variable is replaced by an image variable and a sampler variable.
 
      ; CHECK-NOT: %100 = OpVariable
+     ; CHECK-NOT: OpVariable _ptr_UniformConstant_11
      ; CHECK-DAG: %[[sampler_var]] = OpVariable %[[sampler_ptr_ty]] UniformConstant
      ; CHECK-DAG: %[[image_var]] = OpVariable %[[image_ptr_ty]] UniformConstant
      ; CHECK: = OpFunction
@@ -474,6 +475,7 @@ TEST_P(SplitCombinedImageSamplerPassTypeCaseTest,
      ; The combined image variable is replaced by an image variable and a sampler variable.
 
      ; CHECK-NOT: %100 = OpVariable
+     ; CHECK-NOT: OpVariable _ptr_UniformConstant_11
      ; CHECK-DAG: %[[sampler_var]] = OpVariable %[[sampler_ptr_ty]] UniformConstant
      ; CHECK-DAG: %[[image_var]] = OpVariable %[[image_ptr_ty]] UniformConstant
      ; CHECK: = OpFunction
