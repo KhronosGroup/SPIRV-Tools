@@ -37,6 +37,13 @@ spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpFRem:
     case spv::Op::OpFMod:
     case spv::Op::OpFNegate: {
+      if (_.IsBfloat16ScalarType(result_type) ||
+          _.IsBfloat16VectorType(result_type)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << spvOpcodeString(opcode)
+               << " doesn't support BFloat16 type.";
+      }
+
       bool supportsCoopMat =
           (opcode != spv::Op::OpFMul && opcode != spv::Op::OpFRem &&
            opcode != spv::Op::OpFMod);
@@ -223,6 +230,14 @@ spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected float scalar type as Result Type: "
                << spvOpcodeString(opcode);
+
+      if (_.IsBfloat16ScalarType(result_type)) {
+        if (!_.HasCapability(spv::Capability::BFloat16DotProductKHR)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "OpDot Result Type <id> " << _.getIdName(result_type)
+                 << "requires BFloat16DotProductKHR be declared.";
+        }
+      }
 
       uint32_t first_vector_num_components = 0;
 
