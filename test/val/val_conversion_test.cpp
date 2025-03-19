@@ -40,10 +40,8 @@ std::string GenerateShaderCode(
       R"(
 OpCapability Shader
 OpCapability Float16
-OpCapability BFloat16TypeKHR
 OpCapability Int64
-OpCapability Float64
-OpExtension "SPV_KHR_bfloat16")";
+OpCapability Float64)";
 
   const std::string after_extension_before_decorations =
       R"(
@@ -58,7 +56,6 @@ OpExecutionMode %main OriginUpperLeft)";
 %bool = OpTypeBool
 %f32 = OpTypeFloat 32
 %f16 = OpTypeFloat 16
-%bf16 = OpTypeFloat 16 BFloat16KHR
 %u32 = OpTypeInt 32 0
 %s32 = OpTypeInt 32 1
 %f64 = OpTypeFloat 64
@@ -601,11 +598,20 @@ TEST_F(ValidateConversion, FConvertSameBitWidth) {
 }
 
 TEST_F(ValidateConversion, FConvertFloat16ToBFloat16) {
+  const std::string extensions = R"(
+OpCapability BFloat16TypeKHR
+OpExtension "SPV_KHR_bfloat16"
+)";
+
+  const std::string types = R"(
+%bf16 = OpTypeFloat 16 BFloat16KHR
+)";
+
   const std::string body = R"(
 %val = OpFConvert %bf16 %f16_1
 )";
 
-  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 

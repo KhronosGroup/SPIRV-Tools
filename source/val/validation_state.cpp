@@ -950,7 +950,8 @@ bool ValidationState_t::IsBfloat16ScalarType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
   if (inst && inst->opcode() == spv::Op::OpTypeFloat) {
     if (inst->words().size() > 3) {
-      if (inst->GetOperandAs<spv::FPEncoding>(2) == spv::FPEncoding::BFloat16KHR) {
+      if (inst->GetOperandAs<spv::FPEncoding>(2) ==
+          spv::FPEncoding::BFloat16KHR) {
         return true;
       }
     }
@@ -970,7 +971,6 @@ bool ValidationState_t::IsBfloat16VectorType(uint32_t id) const {
 
   return false;
 }
-
 
 bool ValidationState_t::IsFloatScalarType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
@@ -1792,7 +1792,7 @@ bool ValidationState_t::ContainsSizedIntOrFloatType(uint32_t id, spv::Op type,
                                                     uint32_t width) const {
   if (type != spv::Op::OpTypeInt && type != spv::Op::OpTypeFloat) return false;
 
-  const auto f = [type, width, this](const Instruction* inst) {
+  const auto f = [type, width](const Instruction* inst) {
     if (inst->opcode() == type) {
       // Bfloat16 is a special type.
       if (type == spv::Op::OpTypeFloat && inst->words().size() > 3)
