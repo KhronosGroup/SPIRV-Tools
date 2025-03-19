@@ -647,16 +647,17 @@ spv_result_t ValidateStorageClass(ValidationState_t& _,
         auto result_type = _.FindDef(interface_var->type_id());
         if (_.ContainsType(result_type->GetOperandAs<uint32_t>(2),
                            [](const Instruction* inst) {
-              if (inst && inst->opcode() == spv::Op::OpTypeFloat) {
-                if (inst->words().size() > 3) {
-                  if (inst->GetOperandAs<spv::FPEncoding>(2) ==
-                      spv::FPEncoding::BFloat16KHR) {
-                    return true;
-                  }
-                }
-              }
-              return false;
-            })) {
+                             if (inst &&
+                                 inst->opcode() == spv::Op::OpTypeFloat) {
+                               if (inst->words().size() > 3) {
+                                 if (inst->GetOperandAs<spv::FPEncoding>(2) ==
+                                     spv::FPEncoding::BFloat16KHR) {
+                                   return true;
+                                 }
+                               }
+                             }
+                             return false;
+                           })) {
           return _.diag(SPV_ERROR_INVALID_ID, interface_var)
                  << _.VkErrorID(10370) << "Bfloat16 OpVariable <id> "
                  << _.getIdName(interface_var->id()) << " must not be declared "

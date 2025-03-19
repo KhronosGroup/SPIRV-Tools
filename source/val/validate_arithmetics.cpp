@@ -40,8 +40,7 @@ spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
       if (_.IsBfloat16ScalarType(result_type) ||
           _.IsBfloat16VectorType(result_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << spvOpcodeString(opcode)
-               << " doesn't support BFloat16 type.";
+               << spvOpcodeString(opcode) << " doesn't support BFloat16 type.";
       }
 
       bool supportsCoopMat =
