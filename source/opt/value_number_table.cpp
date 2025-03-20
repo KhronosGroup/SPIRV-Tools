@@ -46,9 +46,9 @@ uint32_t ValueNumberTable::AssignValueNumber(Instruction* inst) {
   }
 
   auto assign_new_number = [this](Instruction* i) {
-    const auto value = TakeNextValueNumber();
-    id_to_value_[i->result_id()] = value;
-    return value;
+    const auto new_value = TakeNextValueNumber();
+    id_to_value_[i->result_id()] = new_value;
+    return new_value;
   };
 
   // If the instruction has other side effects, then it must
