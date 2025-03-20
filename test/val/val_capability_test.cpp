@@ -2977,7 +2977,8 @@ TEST_F(ValidateCapability, CapShaderLayerSucceedsInNewSpirvVersion) {
   EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
-TEST_F(ValidateCapability, CooperativeMatrixKHRShaderRequiresVulkanMemoryModel) {
+TEST_F(ValidateCapability,
+       CooperativeMatrixKHRShaderRequiresVulkanMemoryModel) {
   const auto spirv = R"(
 OpCapability Shader
 OpCapability CooperativeMatrixKHR

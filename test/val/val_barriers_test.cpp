@@ -1481,7 +1481,8 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(text, SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Memory Semantics must be a constant instruction when "
                         "CooperativeMatrixNV capability is present"));
