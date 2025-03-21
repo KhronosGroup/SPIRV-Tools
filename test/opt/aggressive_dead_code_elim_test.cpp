@@ -7698,8 +7698,7 @@ struct PS_OUTPUT
 } ;
 
 "
-          %6 = OpString "
-PS_OUTPUT MainPs ( )
+          %6 = OpString "PS_OUTPUT MainPs ( )
 {
     PS_OUTPUT ps_output ;
     ps_output . vColor = float4( 1.0, 0.0, 0.0, 0.0 );
