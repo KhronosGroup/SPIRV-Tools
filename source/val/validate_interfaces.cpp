@@ -164,12 +164,10 @@ spv_result_t NumConsumedLocations(ValidationState_t& _, const Instruction* type,
       }
       break;
     case spv::Op::OpTypeMatrix:
-      // Matrices consume locations equivalent to arrays of 4-component vectors.
-      if (_.ContainsSizedIntOrFloatType(type->id(), spv::Op::OpTypeInt, 64) ||
-          _.ContainsSizedIntOrFloatType(type->id(), spv::Op::OpTypeFloat, 64)) {
-        *num_locations = 2;
-      } else {
-        *num_locations = 1;
+      // Matrices consume locations equivalent to arrays.
+      if (auto error = NumConsumedLocations(
+              _, _.FindDef(type->GetOperandAs<uint32_t>(1)), num_locations)) {
+        return error;
       }
       *num_locations *= type->GetOperandAs<uint32_t>(2);
       break;
