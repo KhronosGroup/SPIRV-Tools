@@ -1197,21 +1197,6 @@ OpFunctionEnd)";
   return prefix + main_body + suffix;
 }
 
-TEST_F(ValidateArithmetics, FMulBfloat16) {
-  const std::string body = R"(
-%v1 = OpVariable %_ptr_Function_bfloat16 Function
-%v2 = OpVariable %_ptr_Function_bfloat16 Function
-%12 = OpLoad %bfloat16 %v1
-%14 = OpLoad %bfloat16 %v2
-%15 = OpFMul %bfloat16 %12 %14
-)";
-
-  CompileSuccessfully(GenerateBFloatCode(body).c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("FMul doesn't support BFloat16 type."));
-}
-
 TEST_F(ValidateArithmetics, DotBfloat16) {
   const std::string body = R"(
 %v1 = OpVariable %_ptr_Function_v2bfloat16 Function

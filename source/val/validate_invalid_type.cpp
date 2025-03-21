@@ -37,16 +37,6 @@ spv_result_t InvalidTypePass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpFRem:
     case spv::Op::OpFMod:
     case spv::Op::OpFNegate:
-    // Derivative Instructions
-    case spv::Op::OpDPdx:
-    case spv::Op::OpDPdy:
-    case spv::Op::OpFwidth:
-    case spv::Op::OpDPdxFine:
-    case spv::Op::OpDPdyFine:
-    case spv::Op::OpFwidthFine:
-    case spv::Op::OpDPdxCoarse:
-    case spv::Op::OpDPdyCoarse:
-    case spv::Op::OpFwidthCoarse:
     // Atomic Instructions
     case spv::Op::OpAtomicFAddEXT:
     case spv::Op::OpAtomicFMinEXT:
