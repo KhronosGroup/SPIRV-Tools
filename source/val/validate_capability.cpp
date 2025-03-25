@@ -101,6 +101,9 @@ bool IsSupportGuaranteedVulkan_1_4(uint32_t capability) {
     case spv::Capability::Int8:
     case spv::Capability::StorageBuffer8BitAccess:
     case spv::Capability::FloatControls2:
+    case spv::Capability::SampleRateShading:
+    case spv::Capability::StorageImageExtendedFormats:
+    case spv::Capability::ImageGatherExtended:
       return true;
     default:
       break;
