@@ -121,7 +121,6 @@ using ValidateCapabilityVulkan13 = spvtest::ValidateBase<CapTestParameter>;
 // Always assembles using Vulkan 1.4.
 using ValidateCapabilityVulkan14 = spvtest::ValidateBase<CapTestParameter>;
 
-
 TEST_F(ValidateCapability, Default) {
   const char str[] = R"(
             OpCapability Kernel
