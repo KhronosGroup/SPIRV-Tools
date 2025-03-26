@@ -3543,6 +3543,69 @@ TEST_F(TrimCapabilitiesPassTest,
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
+TEST_F(TrimCapabilitiesPassTest, QuadControlKHR_RemoveIfNotUsed) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability QuadControlKHR
+; CHECK-NOT:   OpCapability QuadControlKHR
+               OpExtension "SPV_KHR_quad_control"
+; CHECK-NOT:   OpExtension "SPV_KHR_quad_control"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %out_var_SV_Target
+               OpExecutionMode %main OriginUpperLeft
+               OpSource HLSL 660
+               OpName %out_var_SV_Target "out.var.SV_Target"
+               OpName %main "main"
+               OpDecorate %out_var_SV_Target Location 0
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+%out_var_SV_Target = OpVariable %_ptr_Output_v4float Output
+       %main = OpFunction %void None %7
+          %8 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimCapabilitiesPassTest, QuadControlKHR_RemainsWithQuadAny) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability QuadControlKHR
+; CHECK:       OpCapability QuadControlKHR
+               OpExtension "SPV_KHR_quad_control"
+; CHECK:       OpExtension "SPV_KHR_quad_control"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %out_var_SV_Target
+               OpExecutionMode %main OriginUpperLeft
+               OpSource HLSL 660
+               OpName %out_var_SV_Target "out.var.SV_Target"
+               OpName %main "main"
+               OpDecorate %out_var_SV_Target Location 0
+       %bool = OpTypeBool
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+       %void = OpTypeVoid
+          %7 = OpTypeFunction %void
+%out_var_SV_Target = OpVariable %_ptr_Output_v4float Output
+       %main = OpFunction %void None %7
+          %8 = OpLabel
+       %true = OpConstantTrue %bool
+         %10 = OpGroupNonUniformQuadAnyKHR %bool %true
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
 INSTANTIATE_TEST_SUITE_P(
     TrimCapabilitiesPassTestSubgroupClustered_Unsigned_I,
     TrimCapabilitiesPassTestSubgroupClustered_Unsigned,
