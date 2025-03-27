@@ -3606,6 +3606,35 @@ TEST_F(TrimCapabilitiesPassTest, QuadControlKHR_RemainsWithQuadAny) {
   EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
+TEST_F(TrimCapabilitiesPassTest, PhysicalStorageBuffer_RecursiveTypes) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability PhysicalStorageBufferAddresses
+; CHECK:       OpCapability PhysicalStorageBufferAddresses
+               OpExtension "SPV_KHR_physical_storage_buffer"
+; CHECK:       OpExtension "SPV_KHR_physical_storage_buffer"
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint Fragment %1 "main"
+               OpExecutionMode %1 OriginUpperLeft
+               OpSource HLSL 600
+               OpMemberDecorate %_struct_2 0 Offset 0
+               OpMemberDecorate %_struct_2 1 Offset 16
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer__struct_2 PhysicalStorageBuffer
+        %int = OpTypeInt 32 1
+  %_struct_2 = OpTypeStruct %int %_ptr_PhysicalStorageBuffer__struct_2
+%_ptr_PhysicalStorageBuffer__struct_2 = OpTypePointer PhysicalStorageBuffer %_struct_2
+       %void = OpTypeVoid
+          %6 = OpTypeFunction %void
+          %1 = OpFunction %void None %6
+          %7 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
 INSTANTIATE_TEST_SUITE_P(
     TrimCapabilitiesPassTestSubgroupClustered_Unsigned_I,
     TrimCapabilitiesPassTestSubgroupClustered_Unsigned,
