@@ -29,6 +29,8 @@ spv_result_t InvalidTypePass(ValidationState_t& _, const Instruction* inst) {
   const spv::Op opcode = inst->opcode();
 
   switch (opcode) {
+    // OpExtInst
+    case spv::Op::OpExtInst:
     // Arithmetic Instructions
     case spv::Op::OpFAdd:
     case spv::Op::OpFSub:
@@ -37,12 +39,35 @@ spv_result_t InvalidTypePass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpFRem:
     case spv::Op::OpFMod:
     case spv::Op::OpFNegate:
+    // Derivative Instructions
+    case spv::Op::OpDPdx:
+    case spv::Op::OpDPdy:
+    case spv::Op::OpFwidth:
+    case spv::Op::OpDPdxFine:
+    case spv::Op::OpDPdyFine:
+    case spv::Op::OpFwidthFine:
+    case spv::Op::OpDPdxCoarse:
+    case spv::Op::OpDPdyCoarse:
+    case spv::Op::OpFwidthCoarse:
     // Atomic Instructions
     case spv::Op::OpAtomicFAddEXT:
     case spv::Op::OpAtomicFMinEXT:
     case spv::Op::OpAtomicFMaxEXT:
     case spv::Op::OpAtomicLoad:
-    case spv::Op::OpAtomicExchange: {
+    case spv::Op::OpAtomicExchange:
+    // Group and Subgroup Instructions
+    case spv::Op::OpGroupNonUniformRotateKHR:
+    case spv::Op::OpGroupNonUniformBroadcast:
+    case spv::Op::OpGroupNonUniformShuffle:
+    case spv::Op::OpGroupNonUniformShuffleXor:
+    case spv::Op::OpGroupNonUniformShuffleUp:
+    case spv::Op::OpGroupNonUniformShuffleDown:
+    case spv::Op::OpGroupNonUniformQuadBroadcast:
+    case spv::Op::OpGroupNonUniformQuadSwap:
+    case spv::Op::OpGroupNonUniformBroadcastFirst:
+    case spv::Op::OpGroupNonUniformFAdd:
+    case spv::Op::OpGroupNonUniformFMul:
+    case spv::Op::OpGroupNonUniformFMin: {
       const uint32_t result_type = inst->type_id();
       if (_.IsBfloat16ScalarType(result_type) ||
           _.IsBfloat16VectorType(result_type)) {
@@ -61,7 +86,6 @@ spv_result_t InvalidTypePass(ValidationState_t& _, const Instruction* inst) {
       }
       break;
     }
-
     // Relational and Logical Instructions
     case spv::Op::OpIsNan:
     case spv::Op::OpIsInf:
@@ -77,26 +101,6 @@ spv_result_t InvalidTypePass(ValidationState_t& _, const Instruction* inst) {
       break;
     }
 
-    // Group and Subgroup Instructions
-    case spv::Op::OpGroupNonUniformRotateKHR:
-    case spv::Op::OpGroupNonUniformBroadcast:
-    case spv::Op::OpGroupNonUniformShuffle:
-    case spv::Op::OpGroupNonUniformShuffleXor:
-    case spv::Op::OpGroupNonUniformShuffleUp:
-    case spv::Op::OpGroupNonUniformShuffleDown:
-    case spv::Op::OpGroupNonUniformQuadBroadcast:
-    case spv::Op::OpGroupNonUniformQuadSwap:
-    case spv::Op::OpGroupNonUniformBroadcastFirst:
-    case spv::Op::OpGroupNonUniformFAdd:
-    case spv::Op::OpGroupNonUniformFMul:
-    case spv::Op::OpGroupNonUniformFMin: {
-      const auto type_id = inst->type_id();
-      if (_.IsBfloat16ScalarType(type_id) || _.IsBfloat16VectorType(type_id)) {
-        return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << spvOpcodeString(opcode) << " doesn't support BFloat16 type.";
-      }
-      break;
-    }
     case spv::Op::OpGroupNonUniformAllEqual: {
       const auto value_type = _.GetOperandTypeId(inst, 3);
       if (_.IsBfloat16ScalarType(value_type) ||
@@ -114,7 +118,7 @@ spv_result_t InvalidTypePass(ValidationState_t& _, const Instruction* inst) {
       uint32_t res_component_type = 0;
       if (_.GetMatrixTypeInfo(result_type, &res_num_rows, &res_num_cols,
                               &res_col_type, &res_component_type)) {
-        if (!_.IsBfloat16ScalarType(res_component_type)) {
+        if (_.IsBfloat16ScalarType(res_component_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << spvOpcodeString(opcode)
                  << " doesn't support BFloat16 type.";
