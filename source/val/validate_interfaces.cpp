@@ -517,6 +517,61 @@ spv_result_t GetLocationsForVariable(
   return SPV_SUCCESS;
 }
 
+bool IsInterpolationDecoration(spv::Decoration dec) {
+  return dec == spv::Decoration::PerVertexKHR || dec == spv::Decoration::Flat ||
+         dec == spv::Decoration::NoPerspective ||
+         dec == spv::Decoration::Sample || dec == spv::Decoration::Centroid;
+}
+
+// Need to check Variables (or struct members) with explicit Locaiton decoration
+// don't mix interpolation decorations
+spv_result_t ValidateLocationInterpolation(
+    ValidationState_t& _, bool is_input, const Instruction* variable,
+    std::unordered_map<uint32_t, std::vector<spv::Decoration>>&
+        interpolation_map) {
+  uint32_t location = 0;
+  bool has_location = false;
+  std::vector<spv::Decoration> interpolation_decs;
+  for (auto& dec : _.id_decorations(variable->id())) {
+    spv::Decoration decoration = dec.dec_type();
+    if (decoration == spv::Decoration::Location) {
+      location = dec.params()[0];
+      has_location = true;
+    } else if (IsInterpolationDecoration(decoration)) {
+      interpolation_decs.push_back(decoration);
+    }
+  }
+
+  // Look for Location in a Block decorated Struct
+  if (!has_location) {
+    auto ptr_type_id = variable->GetOperandAs<uint32_t>(0);
+    auto ptr_type = _.FindDef(ptr_type_id);
+    auto type_id = ptr_type->GetOperandAs<uint32_t>(2);
+    for (auto& dec : _.id_decorations(type_id)) {
+      spv::Decoration decoration = dec.dec_type();
+      if (decoration == spv::Decoration::Location) {
+        location = dec.params()[0];
+        has_location = true;
+      } else if (IsInterpolationDecoration(decoration)) {
+        interpolation_decs.push_back(decoration);
+      }
+    }
+  }
+
+  if (has_location) {
+    auto it = interpolation_map.find(location);
+    if (it == interpolation_map.end()) {
+      interpolation_map[location] = interpolation_decs;
+    } else if (interpolation_map[location] != interpolation_decs) {
+      return _.diag(SPV_ERROR_INVALID_DATA, variable)
+             << _.VkErrorID(10604) << (is_input ? "input" : "output")
+             << " Location " << location
+             << " has conflicting Interpolation decorations";
+    }
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateLocations(ValidationState_t& _,
                                const Instruction* entry_point) {
   // According to Vulkan 14.1 only the following execution models have
@@ -542,6 +597,12 @@ spv_result_t ValidateLocations(ValidationState_t& _,
   std::unordered_set<uint32_t> patch_locations_index0;
   std::unordered_set<uint32_t> patch_locations_index1;
   std::unordered_set<uint32_t> seen;
+
+  std::unordered_map<uint32_t, std::vector<spv::Decoration>>
+      input_interpolation;
+  std::unordered_map<uint32_t, std::vector<spv::Decoration>>
+      output_interpolation;
+
   for (uint32_t i = 3; i < entry_point->operands().size(); ++i) {
     auto interface_id = entry_point->GetOperandAs<uint32_t>(i);
     auto interface_var = _.FindDef(interface_id);
@@ -578,11 +639,16 @@ spv_result_t ValidateLocations(ValidationState_t& _,
       continue;
     }
 
-    auto locations = (storage_class == spv::StorageClass::Input)
-                         ? &input_locations
-                         : &output_locations_index0;
+    bool is_input = storage_class == spv::StorageClass::Input;
+    auto locations = is_input ? &input_locations : &output_locations_index0;
     if (auto error = GetLocationsForVariable(
             _, entry_point, interface_var, locations, &output_locations_index1))
+      return error;
+
+    auto& interpolation_map =
+        is_input ? input_interpolation : output_interpolation;
+    if (auto error = ValidateLocationInterpolation(_, is_input, interface_var,
+                                                   interpolation_map))
       return error;
   }
 

@@ -2022,6 +2022,321 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
+TEST_F(ValidateInterfacesTest, InterpolationOverlapVariableSuccess) {
+  const std::string text = R"(
+     OpCapability Shader
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint Fragment %main "main" %cFlat %cFlat2 %cSmooth
+     OpExecutionMode %main OriginUpperLeft
+     OpDecorate %cFlat Flat
+     OpDecorate %cFlat Location 0
+     OpDecorate %cFlat Component 0
+     OpDecorate %cFlat2 Flat
+     OpDecorate %cFlat2 Location 0
+     OpDecorate %cFlat2 Component 1
+     OpDecorate %cSmooth Centroid
+     OpDecorate %cSmooth Location 1
+     OpDecorate %cSmooth Component 0
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%in_ptr = OpTypePointer Input %float
+%cFlat = OpVariable %in_ptr Input
+%cFlat2 = OpVariable %in_ptr Input
+%cSmooth = OpVariable %in_ptr Input
+%main = OpFunction %void None %4
+%6 = OpLabel
+     OpReturn
+     OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest, InterpolationOverlapVariableBad) {
+  const std::string text = R"(
+     OpCapability Shader
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint Fragment %main "main" %cFlat %cSmooth
+     OpExecutionMode %main OriginUpperLeft
+     OpDecorate %cFlat Flat
+     OpDecorate %cFlat Location 0
+     OpDecorate %cFlat Component 0
+     OpDecorate %cSmooth Centroid
+     OpDecorate %cSmooth Location 0
+     OpDecorate %cSmooth Component 1
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%in_ptr = OpTypePointer Input %float
+%cFlat = OpVariable %in_ptr Input
+%cSmooth = OpVariable %in_ptr Input
+%main = OpFunction %void None %4
+%6 = OpLabel
+     OpReturn
+     OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Input-10604"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("input Location 0 has conflicting Interpolation decorations"));
+}
+
+TEST_F(ValidateInterfacesTest, InterpolationOverlapBlockSuccess) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Flat
+OpMemberDecorate %struct 0 Location 0
+OpMemberDecorate %struct 0 Component 0
+OpMemberDecorate %struct 2 Flat
+OpMemberDecorate %struct 2 Location 0
+OpMemberDecorate %struct 2 Component 1
+OpMemberDecorate %struct 1 Centroid
+OpMemberDecorate %struct 1 Location 1
+OpMemberDecorate %struct 1 Component 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%struct = OpTypeStruct %float %float %float
+%in_ptr = OpTypePointer Input %struct
+%in = OpVariable %in_ptr Input
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest, InterpolationOverlapBlockMixMembers) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Flat
+OpMemberDecorate %struct 0 Location 0
+OpMemberDecorate %struct 0 Component 0
+OpMemberDecorate %struct 1 Centroid
+OpMemberDecorate %struct 1 Location 0
+OpMemberDecorate %struct 1 Component 1
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%struct = OpTypeStruct %float %float
+%in_ptr = OpTypePointer Input %struct
+%in = OpVariable %in_ptr Input
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+  )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest, InterpolationOverlapBlockAndVariableSuccess) {
+  const std::string text = R"(
+  OpCapability Shader
+  OpMemoryModel Logical GLSL450
+  OpEntryPoint Fragment %main "main" %in_s %in_f
+  OpExecutionMode %main OriginUpperLeft
+  OpDecorate %struct Block
+  OpMemberDecorate %struct 0 Flat
+  OpMemberDecorate %struct 0 Location 0
+  OpMemberDecorate %struct 0 Component 0
+  OpDecorate %in_f Flat
+  OpDecorate %in_f Location 0
+  OpDecorate %in_f Component 1
+  %void = OpTypeVoid
+  %float = OpTypeFloat 32
+  %struct = OpTypeStruct %float
+  %s_ptr = OpTypePointer Input %struct
+  %f_ptr = OpTypePointer Input %float
+  %in_s = OpVariable %s_ptr Input
+  %in_f = OpVariable %f_ptr Input
+  %void_fn = OpTypeFunction %void
+  %main = OpFunction %void None %void_fn
+  %entry = OpLabel
+  OpReturn
+  OpFunctionEnd
+      )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest, InterpolationOverlapBlockAndVariableBad) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_s %in_f
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Flat
+OpMemberDecorate %struct 0 Location 0
+OpMemberDecorate %struct 0 Component 0
+OpDecorate %in_f Centroid
+OpDecorate %in_f Location 0
+OpDecorate %in_f Component 1
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%struct = OpTypeStruct %float
+%s_ptr = OpTypePointer Input %struct
+%f_ptr = OpTypePointer Input %float
+%in_s = OpVariable %s_ptr Input
+%in_f = OpVariable %f_ptr Input
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+    )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Input-10604"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("input Location 0 has conflicting Interpolation decorations"));
+}
+
+TEST_F(ValidateInterfacesTest, InterpolationOverlapSingleVariable) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_f
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %in_f Flat
+OpDecorate %in_f Centroid
+OpDecorate %in_f Location 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%f_ptr = OpTypePointer Input %float
+%in_f = OpVariable %f_ptr Input
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+    )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest, InterpolationOverlapVariableWithoutDecoration) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_a %in_b
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %in_a Flat
+OpDecorate %in_a Location 0
+OpDecorate %in_a Component 0
+OpDecorate %in_b Location 0
+OpDecorate %in_b Component 1
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%f_ptr = OpTypePointer Input %float
+%in_a = OpVariable %f_ptr Input
+%in_b = OpVariable %f_ptr Input
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+    )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Input-10604"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("input Location 0 has conflicting Interpolation decorations"));
+}
+
+TEST_F(ValidateInterfacesTest,
+       InterpolationOverlapVariableMultipleDecorationSuccess) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in_a %in_b
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %in_a Flat
+OpDecorate %in_a Centroid
+OpDecorate %in_a Location 0
+OpDecorate %in_a Component 0
+OpDecorate %in_b Flat
+OpDecorate %in_b Centroid
+OpDecorate %in_b Location 0
+OpDecorate %in_b Component 1
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%f_ptr = OpTypePointer Input %float
+%in_a = OpVariable %f_ptr Input
+%in_b = OpVariable %f_ptr Input
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+    )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest,
+       InterpolationOverlapVariableMultipleDecorationBad) {
+  const std::string text = R"(
+  OpCapability Shader
+  OpMemoryModel Logical GLSL450
+  OpEntryPoint Fragment %main "main" %in_a %in_b
+  OpExecutionMode %main OriginUpperLeft
+  OpDecorate %in_a Flat
+  OpDecorate %in_a Centroid
+  OpDecorate %in_a Location 0
+  OpDecorate %in_a Component 0
+  OpDecorate %in_b Flat
+  OpDecorate %in_b Location 0
+  OpDecorate %in_b Component 1
+  %void = OpTypeVoid
+  %float = OpTypeFloat 32
+  %f_ptr = OpTypePointer Input %float
+  %in_a = OpVariable %f_ptr Input
+  %in_b = OpVariable %f_ptr Input
+  %void_fn = OpTypeFunction %void
+  %main = OpFunction %void None %void_fn
+  %entry = OpLabel
+  OpReturn
+  OpFunctionEnd
+      )";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Input-10604"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("input Location 0 has conflicting Interpolation decorations"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
