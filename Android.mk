@@ -76,7 +76,8 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validate_scopes.cpp \
 		source/val/validate_small_type_uses.cpp \
 		source/val/validate_tensor_layout.cpp \
-		source/val/validate_type.cpp
+		source/val/validate_type.cpp\
+		source/val/validate_invalid_type.cpp
 
 SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/aggressive_dead_code_elim_pass.cpp \
