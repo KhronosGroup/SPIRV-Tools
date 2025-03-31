@@ -151,7 +151,7 @@ void LocalSingleStoreElimPass::InitExtensionAllowList() {
                                 "SPV_KHR_fragment_shading_rate",
                                 "SPV_KHR_ray_tracing",
                                 "SPV_KHR_quad_control",
-                                "SPV_GOOGLE_user_type" });
+                                "SPV_GOOGLE_user_type"});
 }
 bool LocalSingleStoreElimPass::ProcessVariable(Instruction* var_inst) {
   std::vector<Instruction*> users;
