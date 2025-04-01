@@ -122,23 +122,24 @@ class PassTest : public TestT {
     auto status = Pass::Status::SuccessWithoutChange;
     std::tie(optimized_bin, status) = SinglePassRunToBinary<PassT>(
         assembly, skip_nop, std::forward<Args>(args)...);
-    if (do_validation) {
-      spv_context spvContext = spvContextCreate(env_);
-      spv_diagnostic diagnostic = nullptr;
-      spv_const_binary_t binary = {optimized_bin.data(), optimized_bin.size()};
-      spv_result_t error = spvValidateWithOptions(
-          spvContext, ValidatorOptions(), &binary, &diagnostic);
-      EXPECT_EQ(error, 0);
-      if (error != 0) spvDiagnosticPrint(diagnostic);
-      spvDiagnosticDestroy(diagnostic);
-      spvContextDestroy(spvContext);
-    }
     std::string optimized_asm;
     SpirvTools tools(env_);
     EXPECT_TRUE(
         tools.Disassemble(optimized_bin, &optimized_asm, disassemble_options_))
         << "Disassembling failed for shader:\n"
         << assembly << std::endl;
+    if (do_validation) {
+      spv_context spvContext = spvContextCreate(env_);
+      spv_diagnostic diagnostic = nullptr;
+      spv_const_binary_t binary = {optimized_bin.data(), optimized_bin.size()};
+      spv_result_t error = spvValidateWithOptions(
+          spvContext, ValidatorOptions(), &binary, &diagnostic);
+      EXPECT_EQ(error, 0) << "validation failed for optimized asm:\n"
+                          << optimized_asm;
+      if (error != 0) spvDiagnosticPrint(diagnostic);
+      spvDiagnosticDestroy(diagnostic);
+      spvContextDestroy(spvContext);
+    }
     return std::make_tuple(optimized_asm, status);
   }
 
@@ -275,6 +276,23 @@ class PassTest : public TestT {
       EXPECT_TRUE(tools.Disassemble(binary, &optimized, disassemble_options_));
       EXPECT_EQ(expected, optimized);
     }
+  }
+
+  // Returns the disassembly of the current module. This is useful for
+  // debugging.
+  std::unique_ptr<opt::IRContext> AssembleModule(const std::string& text) {
+    return spvtools::BuildModule(env_, consumer_, text, assemble_options_);
+  }
+
+  // Returns the disassembly of the current module. This is useful for
+  // debugging.
+  std::string Disassemble(opt::Module* m) {
+    std::vector<uint32_t> binary;
+    m->ToBinary(&binary, /* skip_nop = */ false);
+    std::string disassembly;
+    SpirvTools tools(env_);
+    tools.Disassemble(binary, &disassembly, disassemble_options_);
+    return disassembly;
   }
 
   void SetAssembleOptions(uint32_t assemble_options) {
