@@ -17,7 +17,6 @@
 #include <string>
 #include <vector>
 
-
 #include "gmock/gmock.h"
 #include "source/util/small_vector.h"
 #include "spirv-tools/libspirv.h"
