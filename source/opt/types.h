@@ -267,7 +267,8 @@ class Integer : public Type {
 
 class Float : public Type {
  public:
-  Float(uint32_t w) : Type(kFloat), width_(w) {}
+  Float(uint32_t w, spv::FPEncoding encoding = spv::FPEncoding::Max)
+      : Type(kFloat), width_(w), encoding_(encoding) {}
   Float(const Float&) = default;
 
   std::string str() const override;
@@ -275,6 +276,7 @@ class Float : public Type {
   Float* AsFloat() override { return this; }
   const Float* AsFloat() const override { return this; }
   uint32_t width() const { return width_; }
+  spv::FPEncoding encoding() const { return encoding_; }
 
   size_t ComputeExtraStateHash(size_t hash, SeenTypes* seen) const override;
 
@@ -282,6 +284,7 @@ class Float : public Type {
   bool IsSameImpl(const Type* that, IsSameCache*) const override;
 
   uint32_t width_;  // bit width
+  spv::FPEncoding encoding_; // FPEncoding
 };
 
 class Vector : public Type {
