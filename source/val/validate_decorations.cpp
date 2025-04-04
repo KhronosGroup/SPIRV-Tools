@@ -2282,6 +2282,7 @@ spv_result_t CheckInvalidVulkanExplicitLayout(ValidationState_t& vstate) {
     }
     if (fail_id != 0) {
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+             << vstate.VkErrorID(10684)
              << "Invalid explicit layout decorations on type for operand "
              << vstate.getIdName(fail_id);
     }
