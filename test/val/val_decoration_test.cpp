@@ -10741,6 +10741,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_5);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-10684"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Invalid explicit layout decorations on type for operand"));
@@ -10790,6 +10792,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-10684"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Invalid explicit layout decorations on type for operand"));
@@ -10843,6 +10847,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-10684"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Invalid explicit layout decorations on type for operand"));
@@ -10873,6 +10879,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-10684"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Invalid explicit layout decorations on type for operand"));
@@ -10901,6 +10909,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-10684"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Invalid explicit layout decorations on type for operand"));
@@ -10933,6 +10943,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-10684"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Invalid explicit layout decorations on type for operand"));
@@ -10959,6 +10971,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-10684"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Invalid explicit layout decorations on type for operand"));
