@@ -130,10 +130,12 @@ spv_result_t check_interface_variable(ValidationState_t& _,
     }
   }
 
-  if (var->GetOperandAs<spv::StorageClass>(2) == spv::StorageClass::Input ||
-      var->GetOperandAs<spv::StorageClass>(2) == spv::StorageClass::Output) {
-    if (auto error = ValidateInputOutputInterfaceVariables(_, var))
-      return error;
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (var->GetOperandAs<spv::StorageClass>(2) == spv::StorageClass::Input ||
+        var->GetOperandAs<spv::StorageClass>(2) == spv::StorageClass::Output) {
+      if (auto error = ValidateInputOutputInterfaceVariables(_, var))
+        return error;
+    }
   }
 
   return SPV_SUCCESS;
