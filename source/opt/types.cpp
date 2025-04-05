@@ -309,17 +309,26 @@ size_t Integer::ComputeExtraStateHash(size_t hash, SeenTypes*) const {
 
 bool Float::IsSameImpl(const Type* that, IsSameCache*) const {
   const Float* ft = that->AsFloat();
-  return ft && width_ == ft->width_ && HasSameDecorations(that);
+  return ft && width_ == ft->width_ && encoding_ == ft->encoding_ &&
+         HasSameDecorations(that);
 }
 
 std::string Float::str() const {
   std::ostringstream oss;
-  oss << "float" << width_;
+  switch (encoding_) {
+    case spv::FPEncoding::BFloat16KHR:
+      assert(width_ == 16);
+      oss << "bfloat16";
+      break;
+    default:
+      oss << "float" << width_;
+      break;
+  }
   return oss.str();
 }
 
 size_t Float::ComputeExtraStateHash(size_t hash, SeenTypes*) const {
-  return hash_combine(hash, width_);
+  return hash_combine(hash, width_, encoding_);
 }
 
 Vector::Vector(const Type* type, uint32_t count)

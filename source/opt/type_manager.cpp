@@ -792,9 +792,13 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
       type = new Integer(inst.GetSingleWordInOperand(0),
                          inst.GetSingleWordInOperand(1));
       break;
-    case spv::Op::OpTypeFloat:
-      type = new Float(inst.GetSingleWordInOperand(0));
-      break;
+    case spv::Op::OpTypeFloat: {
+      const spv::FPEncoding encoding =
+          inst.NumInOperands() > 1
+              ? static_cast<spv::FPEncoding>(inst.GetSingleWordInOperand(1))
+              : spv::FPEncoding::Max;
+      type = new Float(inst.GetSingleWordInOperand(0), encoding);
+    } break;
     case spv::Op::OpTypeVector:
       type = new Vector(GetType(inst.GetSingleWordInOperand(0)),
                         inst.GetSingleWordInOperand(1));

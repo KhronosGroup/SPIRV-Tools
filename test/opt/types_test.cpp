@@ -364,6 +364,20 @@ TEST(Types, FloatWidth) {
   }
 }
 
+TEST(Types, FloatFPEncoding) {
+  std::vector<spv::FPEncoding> encodings = {
+      spv::FPEncoding::BFloat16KHR,
+      spv::FPEncoding::Max,
+  };
+  std::vector<std::unique_ptr<Float>> types;
+  for (spv::FPEncoding encoding : encodings) {
+    types.emplace_back(new Float(16, encoding));
+  }
+  for (size_t i = 0; i < encodings.size(); i++) {
+    EXPECT_EQ(encodings[i], types[i]->encoding());
+  }
+}
+
 TEST(Types, VectorElementCount) {
   auto s32 = MakeUnique<Integer>(32, true);
   for (uint32_t c : {2, 3, 4}) {
