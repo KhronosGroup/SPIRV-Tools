@@ -283,8 +283,8 @@ class Float : public Type {
  private:
   bool IsSameImpl(const Type* that, IsSameCache*) const override;
 
-  uint32_t width_;  // bit width
-  spv::FPEncoding encoding_; // FPEncoding
+  uint32_t width_;            // bit width
+  spv::FPEncoding encoding_;  // FPEncoding
 };
 
 class Vector : public Type {

@@ -108,6 +108,7 @@ spv_result_t InvalidTypePass(ValidationState_t& _, const Instruction* inst) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << spvOpcodeString(opcode) << " doesn't support BFloat16 type.";
       }
+      break;
     }
 
     case spv::Op::OpMatrixTimesMatrix: {
