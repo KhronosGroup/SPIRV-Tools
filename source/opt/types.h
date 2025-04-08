@@ -182,9 +182,9 @@ class Type {
   // non-composite type.
   uint64_t NumberOfComponents() const;
 
-// A bunch of methods for casting this type to a given type. Returns this if the
-// cast can be done, nullptr otherwise.
-// clang-format off
+  // A bunch of methods for casting this type to a given type. Returns this if
+  // the cast can be done, nullptr otherwise.
+  // clang-format off
 #define DeclareCastMethod(target)                  \
   virtual target* As##target() { return nullptr; } \
   virtual const target* As##target() const { return nullptr; }
