@@ -284,6 +284,7 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  // TODO - Need to add TileShadingRateQCOM support
   if (spvIsVulkanEnv(_.context()->target_env)) {
     switch (execution_model) {
       case spv::ExecutionModel::GLCompute:
@@ -312,7 +313,7 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
           }
           if (!ok) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << _.VkErrorID(6426)
+                   << _.VkErrorID(10685)
                    << "In the Vulkan environment, GLCompute execution model "
                       "entry points require either the LocalSize or "
                       "LocalSizeId execution mode or an object decorated with "
