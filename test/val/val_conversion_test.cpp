@@ -1218,9 +1218,10 @@ OpCapability Shader
 OpCapability Float16
 OpCapability Int16
 OpCapability CooperativeMatrixKHR
+OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_cooperative_matrix"
 OpExtension "SPV_KHR_vulkan_memory_model"
-OpMemoryModel Logical GLSL450
+OpMemoryModel Logical VulkanKHR
 OpEntryPoint GLCompute %main "main"
 %void = OpTypeVoid
 %func = OpTypeFunction %void
@@ -1285,8 +1286,8 @@ OpEntryPoint GLCompute %main "main"
 OpReturn
 OpFunctionEnd)";
 
-  CompileSuccessfully(body.c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  CompileSuccessfully(body.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateConversion, CoopMatKHRConversionUseMismatchFail) {
@@ -1295,9 +1296,10 @@ OpCapability Shader
 OpCapability Float16
 OpCapability Int16
 OpCapability CooperativeMatrixKHR
+OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_cooperative_matrix"
 OpExtension "SPV_KHR_vulkan_memory_model"
-OpMemoryModel Logical GLSL450
+OpMemoryModel Logical VulkanKHR
 OpEntryPoint GLCompute %main "main"
 %void = OpTypeVoid
 %func = OpTypeFunction %void
@@ -1330,8 +1332,9 @@ OpEntryPoint GLCompute %main "main"
 OpReturn
 OpFunctionEnd)";
 
-  CompileSuccessfully(body.c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  CompileSuccessfully(body.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Expected Use of Matrix type and Result Type to be identical"));
@@ -1343,9 +1346,10 @@ OpCapability Shader
 OpCapability Float16
 OpCapability Int16
 OpCapability CooperativeMatrixKHR
+OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_cooperative_matrix"
 OpExtension "SPV_KHR_vulkan_memory_model"
-OpMemoryModel Logical GLSL450
+OpMemoryModel Logical VulkanKHR
 OpEntryPoint GLCompute %main "main"
 %void = OpTypeVoid
 %func = OpTypeFunction %void
@@ -1378,8 +1382,9 @@ OpEntryPoint GLCompute %main "main"
 OpReturn
 OpFunctionEnd)";
 
-  CompileSuccessfully(body.c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  CompileSuccessfully(body.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Expected scopes of Matrix and Result Type to be identical"));
@@ -2169,10 +2174,11 @@ OpCapability Float16
 OpCapability Int16
 OpCapability CooperativeMatrixConversionsNV
 OpCapability CooperativeMatrixKHR
+OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_cooperative_matrix"
 OpExtension "SPV_NV_cooperative_matrix2"
 OpExtension "SPV_KHR_vulkan_memory_model"
-OpMemoryModel Logical GLSL450
+OpMemoryModel Logical VulkanKHR
 OpEntryPoint GLCompute %main "main"
 %void = OpTypeVoid
 %func = OpTypeFunction %void
@@ -2298,8 +2304,8 @@ OpEntryPoint GLCompute %main "main"
 OpReturn
 OpFunctionEnd)";
 
-  CompileSuccessfully(body.c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  CompileSuccessfully(body.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 TEST_F(ValidateConversion, CoopMat2TransposeShapeFail) {
@@ -2309,10 +2315,11 @@ OpCapability Float16
 OpCapability Int16
 OpCapability CooperativeMatrixConversionsNV
 OpCapability CooperativeMatrixKHR
+OpCapability VulkanMemoryModelKHR
 OpExtension "SPV_KHR_cooperative_matrix"
 OpExtension "SPV_NV_cooperative_matrix2"
 OpExtension "SPV_KHR_vulkan_memory_model"
-OpMemoryModel Logical GLSL450
+OpMemoryModel Logical VulkanKHR
 OpEntryPoint GLCompute %main "main"
 %void = OpTypeVoid
 %func = OpTypeFunction %void
@@ -2341,8 +2348,9 @@ OpEntryPoint GLCompute %main "main"
 OpReturn
 OpFunctionEnd)";
 
-  CompileSuccessfully(body.c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  CompileSuccessfully(body.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected rows of Matrix type and Result Type to be "
                         "swapped with columns"));
@@ -2357,7 +2365,6 @@ OpCapability CooperativeVectorNV
 OpCapability ReplicatedCompositesEXT
 OpExtension "SPV_NV_cooperative_vector"
 OpExtension "SPV_EXT_replicated_composites"
-OpExtension "SPV_KHR_vulkan_memory_model"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
 %void = OpTypeVoid
@@ -2436,7 +2443,6 @@ OpCapability CooperativeVectorNV
 OpCapability ReplicatedCompositesEXT
 OpExtension "SPV_NV_cooperative_vector"
 OpExtension "SPV_EXT_replicated_composites"
-OpExtension "SPV_KHR_vulkan_memory_model"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
 %void = OpTypeVoid

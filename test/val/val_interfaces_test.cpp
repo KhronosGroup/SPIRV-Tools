@@ -1593,6 +1593,74 @@ OpFunctionEnd
                         "assignment at location 0, component 0"));
 }
 
+TEST_F(ValidateInterfacesTest, VulkanLocationMatrix2x2DoubleGood) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Float64
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Location 0
+OpMemberDecorate %struct 1 Location 2
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%double = OpTypeFloat 64
+%int = OpTypeInt 32 0
+%int_2 = OpConstant %int 2
+%double2 = OpTypeVector %double 2
+%mat2x2_double = OpTypeMatrix %double2 2
+%struct = OpTypeStruct %mat2x2_double %int
+%ptr = OpTypePointer Input %struct
+%in = OpVariable %ptr Input
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateInterfacesTest, VulkanLocationMatrix2x2DoubleBad) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Float64
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Location 0
+OpMemberDecorate %struct 1 Location 1
+OpMemberDecorate %struct 1 Component 3
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%double = OpTypeFloat 64
+%int = OpTypeInt 32 0
+%int_2 = OpConstant %int 2
+%double2 = OpTypeVector %double 2
+%mat2x2_double = OpTypeMatrix %double2 2
+%struct = OpTypeStruct %mat2x2_double %int
+%ptr = OpTypePointer Input %struct
+%in = OpVariable %ptr Input
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpEntryPoint-08721"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Entry-point has conflicting input location "
+                        "assignment at location 1, component 3"));
+}
+
 TEST_F(ValidateInterfacesTest, DuplicateInterfaceVariableSuccess) {
   const std::string text = R"(
 OpCapability Shader
