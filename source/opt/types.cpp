@@ -621,24 +621,39 @@ bool Pointer::IsSameImpl(const Type* that, IsSameCache* seen) const {
   if (!p.second) {
     return true;
   }
-  bool same_pointee = pointee_type_->IsSameImpl(pt->pointee_type_, seen);
-  seen->erase(p.first);
-  if (!same_pointee) {
-    return false;
+  if (pointee_type_ != nullptr && pt->pointee_type_ != nullptr) {
+    bool same_pointee = pointee_type_->IsSameImpl(pt->pointee_type_, seen);
+    seen->erase(p.first);
+    if (!same_pointee) {
+      return false;
+    }
+  } else {
+    seen->erase(p.first);
+    // Either both are untyped or it is mixed typed and untyped.
+    if (pointee_type_ != pt->pointee_type_) {
+      return false;
+    }
   }
   return HasSameDecorations(that);
 }
 
 std::string Pointer::str() const {
   std::ostringstream os;
-  os << pointee_type_->str() << " " << static_cast<uint32_t>(storage_class_)
-     << "*";
+  if (pointee_type_) {
+    os << pointee_type_->str();
+  } else {
+    os << "untyped_ptr";
+  }
+  os << " " << static_cast<uint32_t>(storage_class_) << "*";
   return os.str();
 }
 
 size_t Pointer::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
   hash = hash_combine(hash, uint32_t(storage_class_));
-  return pointee_type_->ComputeHashValue(hash, seen);
+  if (pointee_type_) {
+    hash = pointee_type_->ComputeHashValue(hash, seen);
+  }
+  return hash;
 }
 
 void Pointer::SetPointeeType(const Type* type) { pointee_type_ = type; }
