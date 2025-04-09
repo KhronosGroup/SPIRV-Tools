@@ -550,6 +550,8 @@ class Pointer : public Type {
   const Type* pointee_type() const { return pointee_type_; }
   spv::StorageClass storage_class() const { return storage_class_; }
 
+  bool is_untyped() const { return pointee_type_ == nullptr; }
+
   Pointer* AsPointer() override { return this; }
   const Pointer* AsPointer() const override { return this; }
 
