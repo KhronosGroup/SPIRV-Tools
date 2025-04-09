@@ -273,7 +273,7 @@ TEST(TypeManager, TypeStrings) {
       {19, "{float64, sint32, <uint32, 3>}"},
       {20, "opaque('')"},
       {21, "opaque('opaque')"},
-      {2, "{uint32} 2*"},      // Include storage class number
+      {2, "{uint32} 2*"},  // Include storage class number
       {22, "(uint32, uint32) -> void"},
       {23, "event"},
       {24, "device_event"},
