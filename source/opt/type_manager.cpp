@@ -938,8 +938,8 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
 
     } break;
     case spv::Op::OpTypeUntypedPointerKHR: {
-      type = new Pointer(
-          0, static_cast<spv::StorageClass>(inst.GetSingleWordInOperand(0)));
+      type = new Pointer(nullptr, static_cast<spv::StorageClass>(
+                                      inst.GetSingleWordInOperand(0)));
       id_to_incomplete_type_.erase(inst.result_id());
     } break;
     case spv::Op::OpTypeFunction: {

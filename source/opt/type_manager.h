@@ -34,23 +34,17 @@ namespace analysis {
 
 // Hashing functor.
 //
-// Untyped pointers will have an null type.
+// All type pointers must be non-null to reach here.
 struct HashTypePointer {
   size_t operator()(const Type* type) const {
-    if (type) {
-      return type->HashValue();
-    } else {
-      return 0;
-    }
+    assert(type);
+    return type->HashValue();
   }
 };
 struct HashTypeUniquePointer {
   size_t operator()(const std::unique_ptr<Type>& type) const {
-    if (type) {
-      return type->HashValue();
-    } else {
-      return 0;
-    }
+    assert(type);
+    return type->HashValue();
   }
 };
 
