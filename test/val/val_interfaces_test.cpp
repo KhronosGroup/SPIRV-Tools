@@ -2022,6 +2022,36 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
+TEST_F(ValidateInterfacesTest, ValidInstructionType) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability BFloat16TypeKHR
+OpExtension "SPV_KHR_bfloat16"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in %out
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %in Location 0
+OpDecorate %out Location 0
+%void = OpTypeVoid
+%bfloat16 = OpTypeFloat 16 BFloat16KHR
+%in_ptr = OpTypePointer Input %bfloat16
+%out_ptr = OpTypePointer Output %bfloat16
+%in = OpVariable %in_ptr Input
+%out = OpVariable %out_ptr Output
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Bfloat16 OpVariable <id> '2[%2]' must not be declared "
+                        "with a Storage Class of Input or Output.\n"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

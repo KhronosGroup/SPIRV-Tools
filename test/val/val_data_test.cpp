@@ -71,6 +71,15 @@ std::string header_with_int64 = R"(
      OpCapability Int64
      OpMemoryModel Logical GLSL450
 )";
+std::string header_with_bfloat16 = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability BFloat16TypeKHR
+     OpCapability BFloat16DotProductKHR
+     OpCapability BFloat16CooperativeMatrixKHR
+     OpExtension "SPV_KHR_bfloat16"
+     OpMemoryModel Logical GLSL450
+)";
 std::string header_with_float16 = R"(
      OpCapability Shader
      OpCapability Linkage
@@ -334,6 +343,25 @@ TEST_F(ValidateData, float16_good) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateData, bfloat16_good) {
+  std::string str = header_with_bfloat16 + "%2 = OpTypeFloat 16 BFloat16KHR";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateData, cooperative_matrix_bfloat16_good) {
+  std::string str = header_with_bfloat16 + R"(
+%u32 = OpTypeInt 32 0
+%u32_16 = OpConstant %u32 16
+%useA = OpConstant %u32 0
+%subgroup = OpConstant %u32 3
+%bf16 = OpTypeFloat 16 BFloat16KHR
+%bf16matA = OpTypeCooperativeMatrixKHR %bf16 %subgroup %u32_16 %u32_16 %useA
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateData, float16_buffer_good) {
   std::string str = header_with_float16_buffer + "%2 = OpTypeFloat 16";
   CompileSuccessfully(str.c_str());
@@ -347,8 +375,50 @@ TEST_F(ValidateData, float16_bad) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr(missing_float16_cap_error));
 }
 
+TEST_F(ValidateData, bfloat16_bad) {
+  std::string str = header + "%2 = OpTypeFloat 16 BFloat16KHR";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these capabilities: BFloat16TypeKHR"));
+}
+
+TEST_F(ValidateData, dot_bfloat16_bad) {
+  std::string str = R"(
+               OpCapability Shader
+               OpCapability BFloat16TypeKHR
+               OpExtension "SPV_KHR_bfloat16"
+          %1 = OpExtInstImport "GLSL.std.450"
+                OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 450
+               OpName %main "main"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %bfloat16 = OpTypeFloat 16 BFloat16KHR
+%_ptr_Function_bfloat16 = OpTypePointer Function %bfloat16
+    %v2bfloat16 = OpTypeVector %bfloat16 2
+%_ptr_Function_v2bfloat16 = OpTypePointer Function %v2bfloat16
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %v1 = OpVariable %_ptr_Function_v2bfloat16 Function
+         %v2 = OpVariable %_ptr_Function_v2bfloat16 Function
+         %12 = OpLoad %v2bfloat16 %v1
+         %14 = OpLoad %v2bfloat16 %v2
+         %15 = OpDot %bfloat16 %12 %14
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires BFloat16DotProductKHR be declared."));
+}
+
 TEST_F(ValidateData, float64_good) {
   std::string str = header_with_float64 + "%2 = OpTypeFloat 64";
+
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -627,7 +697,8 @@ TEST_F(ValidateData, ext_16bit_storage_caps_allow_free_fp_rounding_mode) {
         OpExtension "SPV_KHR_variable_pointers"
         OpExtension "SPV_KHR_16bit_storage"
         OpMemoryModel Logical GLSL450
-        OpDecorate %_ FPRoundingMode )" + mode + R"(
+        OpDecorate %_ FPRoundingMode )" +
+                        mode + R"(
         %half = OpTypeFloat 16
         %float = OpTypeFloat 32
         %float_1_25 = OpConstant %float 1.25

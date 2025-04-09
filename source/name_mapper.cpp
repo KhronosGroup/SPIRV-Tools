@@ -211,7 +211,12 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
     } break;
     case spv::Op::OpTypeFloat: {
       const auto bit_width = inst.words[2];
-      // TODO: Handle optional fpencoding enum once actually used.
+      if (inst.num_words > 3) {
+        if (spv::FPEncoding(inst.words[3]) == spv::FPEncoding::BFloat16KHR) {
+          SaveName(result_id, "bfloat16");
+          break;
+        }
+      }
       switch (bit_width) {
         case 16:
           SaveName(result_id, "half");

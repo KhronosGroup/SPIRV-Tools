@@ -115,6 +115,15 @@ spv_result_t ValidateTypeFloat(ValidationState_t& _, const Instruction* inst) {
   if (num_bits == 32) {
     return SPV_SUCCESS;
   }
+  auto operands = inst->words();
+  if (operands.size() > 3) {
+    if (operands[3] != 0) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Current FPEncoding only supports BFloat16KHR.";
+    }
+    return SPV_SUCCESS;
+  }
+
   if (num_bits == 16) {
     if (_.features().declare_float16_type) {
       return SPV_SUCCESS;
@@ -641,6 +650,15 @@ spv_result_t ValidateTypeCooperativeMatrix(ValidationState_t& _,
            << "OpTypeCooperativeMatrix Component Type <id> "
            << _.getIdName(component_type_id)
            << " is not a scalar numerical type.";
+  }
+
+  if (_.IsBfloat16ScalarType(component_type_id)) {
+    if (!_.HasCapability(spv::Capability::BFloat16CooperativeMatrixKHR)) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpTypeCooperativeMatrix Component Type <id> "
+             << _.getIdName(component_type_id)
+             << "require BFloat16CooperativeMatrixKHR be declared.";
+    }
   }
 
   const auto scope_index = 2;

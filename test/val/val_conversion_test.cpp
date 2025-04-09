@@ -39,6 +39,7 @@ std::string GenerateShaderCode(
   const std::string capabilities =
       R"(
 OpCapability Shader
+OpCapability Float16
 OpCapability Int64
 OpCapability Float64)";
 
@@ -54,6 +55,7 @@ OpExecutionMode %main OriginUpperLeft)";
 %func = OpTypeFunction %void
 %bool = OpTypeBool
 %f32 = OpTypeFloat 32
+%f16 = OpTypeFloat 16
 %u32 = OpTypeInt 32 0
 %s32 = OpTypeInt 32 1
 %f64 = OpTypeFloat 64
@@ -83,6 +85,8 @@ OpExecutionMode %main OriginUpperLeft)";
 %f32_2 = OpConstant %f32 2
 %f32_3 = OpConstant %f32 3
 %f32_4 = OpConstant %f32 4
+
+%f16_1 = OpConstant %f16 1
 
 %s32_0 = OpConstant %s32 0
 %s32_1 = OpConstant %s32 1
@@ -591,6 +595,24 @@ TEST_F(ValidateConversion, FConvertSameBitWidth) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected input to have different bit width from "
                         "Result Type: FConvert"));
+}
+
+TEST_F(ValidateConversion, FConvertFloat16ToBFloat16) {
+  const std::string extensions = R"(
+OpCapability BFloat16TypeKHR
+OpExtension "SPV_KHR_bfloat16"
+)";
+
+  const std::string types = R"(
+%bf16 = OpTypeFloat 16 BFloat16KHR
+)";
+
+  const std::string body = R"(
+%val = OpFConvert %bf16 %f16_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateConversion, QuantizeToF16Success) {
