@@ -67,6 +67,50 @@ bool IsSupportGuaranteedVulkan_1_2(uint32_t capability) {
   return false;
 }
 
+bool IsSupportGuaranteedVulkan_1_3(uint32_t capability) {
+  if (IsSupportGuaranteedVulkan_1_2(capability)) return true;
+  switch (spv::Capability(capability)) {
+    case spv::Capability::DotProduct:
+    case spv::Capability::DotProductInputAll:
+    case spv::Capability::DotProductInput4x8Bit:
+    case spv::Capability::DotProductInput4x8BitPacked:
+    case spv::Capability::VulkanMemoryModel:
+    case spv::Capability::VulkanMemoryModelDeviceScope:
+    case spv::Capability::PhysicalStorageBufferAddresses:
+    case spv::Capability::DemoteToHelperInvocation:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
+bool IsSupportGuaranteedVulkan_1_4(uint32_t capability) {
+  if (IsSupportGuaranteedVulkan_1_3(capability)) return true;
+  switch (spv::Capability(capability)) {
+    case spv::Capability::UniformBufferArrayDynamicIndexing:
+    case spv::Capability::SampledImageArrayDynamicIndexing:
+    case spv::Capability::StorageBufferArrayDynamicIndexing:
+    case spv::Capability::StorageImageArrayDynamicIndexing:
+    case spv::Capability::Int16:
+    case spv::Capability::StorageBuffer16BitAccess:
+    case spv::Capability::VariablePointers:
+    case spv::Capability::VariablePointersStorageBuffer:
+    case spv::Capability::UniformTexelBufferArrayDynamicIndexing:
+    case spv::Capability::StorageTexelBufferArrayDynamicIndexing:
+    case spv::Capability::Int8:
+    case spv::Capability::StorageBuffer8BitAccess:
+    case spv::Capability::FloatControls2:
+    case spv::Capability::SampleRateShading:
+    case spv::Capability::StorageImageExtendedFormats:
+    case spv::Capability::ImageGatherExtended:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
 bool IsSupportOptionalVulkan_1_0(uint32_t capability) {
   switch (spv::Capability(capability)) {
     case spv::Capability::Geometry:
@@ -170,6 +214,16 @@ bool IsSupportOptionalVulkan_1_2(uint32_t capability) {
       break;
   }
   return false;
+}
+
+// Vulkan 1.3 only added required features.
+bool IsSupportOptionalVulkan_1_3(uint32_t capability) {
+  return IsSupportOptionalVulkan_1_2(capability);
+}
+
+// Vulkan 1.4 only added required features.
+bool IsSupportOptionalVulkan_1_4(uint32_t capability) {
+  return IsSupportOptionalVulkan_1_3(capability);
 }
 
 bool IsSupportGuaranteedOpenCL_1_2(uint32_t capability, bool embedded_profile) {
@@ -339,6 +393,24 @@ spv_result_t CapabilityPass(ValidationState_t& _, const Instruction* inst) {
       return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
              << "Capability " << capability_str()
              << " is not allowed by Vulkan 1.2 specification"
+             << " (or requires extension)";
+    }
+  } else if (env == SPV_ENV_VULKAN_1_3) {
+    if (!IsSupportGuaranteedVulkan_1_3(capability) &&
+        !IsSupportOptionalVulkan_1_3(capability) &&
+        !IsEnabledByExtension(_, capability)) {
+      return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
+             << "Capability " << capability_str()
+             << " is not allowed by Vulkan 1.3 specification"
+             << " (or requires extension)";
+    }
+  } else if (env == SPV_ENV_VULKAN_1_4) {
+    if (!IsSupportGuaranteedVulkan_1_4(capability) &&
+        !IsSupportOptionalVulkan_1_4(capability) &&
+        !IsEnabledByExtension(_, capability)) {
+      return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
+             << "Capability " << capability_str()
+             << " is not allowed by Vulkan 1.4 specification"
              << " (or requires extension)";
     }
   } else if (env == SPV_ENV_OPENCL_1_2 || env == SPV_ENV_OPENCL_EMBEDDED_1_2) {
