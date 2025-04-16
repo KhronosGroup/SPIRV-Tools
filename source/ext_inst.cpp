@@ -20,20 +20,17 @@
 // See https://www.khronos.org/registry/spir-v/specs/1.0/DebugInfo.html
 // TODO(dneto): DebugInfo.h should probably move to SPIRV-Headers.
 #include "DebugInfo.h"
-
-#include "source/latest_version_glsl_std_450_header.h"
-#include "source/latest_version_opencl_std_header.h"
-#include "source/macro.h"
-#include "source/spirv_definition.h"
-
 #include "debuginfo.insts.inc"
 #include "glsl.std.450.insts.inc"
 #include "nonsemantic.clspvreflection.insts.inc"
 #include "nonsemantic.shader.debuginfo.100.insts.inc"
 #include "nonsemantic.vkspreflection.insts.inc"
 #include "opencl.debuginfo.100.insts.inc"
-#include "opencl.std.insts.inc"
-
+#include "opencl.std.100.insts.inc"
+#include "source/latest_version_glsl_std_450_header.h"
+#include "source/latest_version_opencl_std_header.h"
+#include "source/macro.h"
+#include "source/spirv_definition.h"
 #include "spirv-tools/libspirv.h"
 #include "spv-amd-gcn-shader.insts.inc"
 #include "spv-amd-shader-ballot.insts.inc"
@@ -41,8 +38,10 @@
 #include "spv-amd-shader-trinary-minmax.insts.inc"
 
 static const spv_ext_inst_group_t kGroups_1_0[] = {
-    {SPV_EXT_INST_TYPE_GLSL_STD_450, ARRAY_SIZE(glsl_entries), glsl_entries},
-    {SPV_EXT_INST_TYPE_OPENCL_STD, ARRAY_SIZE(opencl_entries), opencl_entries},
+    {SPV_EXT_INST_TYPE_GLSL_STD_450, ARRAY_SIZE(glsl_std_450_entries),
+     glsl_std_450_entries},
+    {SPV_EXT_INST_TYPE_OPENCL_STD, ARRAY_SIZE(opencl_std_100_entries),
+     opencl_std_100_entries},
     {SPV_EXT_INST_TYPE_SPV_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER,
      ARRAY_SIZE(spv_amd_shader_explicit_vertex_parameter_entries),
      spv_amd_shader_explicit_vertex_parameter_entries},

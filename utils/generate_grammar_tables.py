@@ -763,7 +763,7 @@ def prefix_operand_kind_names(prefix, json_dict):
     """
 
     old_to_new = {}
-    for operand_kind in json_dict["operand_kinds"]:
+    for operand_kind in json_dict.get("operand_kinds", []):
         old_name = operand_kind["kind"]
         new_name = prefix + old_name
         operand_kind["kind"] = new_name
@@ -792,24 +792,10 @@ def main():
                         type=str, required=False, default=None,
                         help='input JSON grammar file for OpenCL.DebugInfo.100 '
                         'extended instruction set')
-    parser.add_argument('--extinst-glsl-grammar', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='input JSON grammar file for GLSL extended '
-                        'instruction set')
-    parser.add_argument('--extinst-opencl-grammar', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='input JSON grammar file for OpenCL extended '
-                        'instruction set')
 
     parser.add_argument('--core-insts-output', metavar='<path>',
                         type=str, required=False, default=None,
                         help='output file for core SPIR-V instructions')
-    parser.add_argument('--glsl-insts-output', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='output file for GLSL extended instruction set')
-    parser.add_argument('--opencl-insts-output', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='output file for OpenCL extended instruction set')
     parser.add_argument('--operand-kinds-output', metavar='<path>',
                         type=str, required=False, default=None,
                         help='output file for operand kinds')
@@ -848,24 +834,12 @@ def main():
               'and --extinst-debuginfo-grammar '
               'and --extinst-cldebuginfo100-grammar')
         exit(1)
-    if (args.glsl_insts_output is None) != \
-            (args.extinst_glsl_grammar is None):
-        print('error: --glsl-insts-output and --extinst-glsl-grammar '
-              'should be specified together.')
-        exit(1)
-    if (args.opencl_insts_output is None) != \
-            (args.extinst_opencl_grammar is None):
-        print('error: --opencl-insts-output and --extinst-opencl-grammar '
-              'should be specified together.')
-        exit(1)
     if (args.vendor_insts_output is None) != \
             (args.extinst_vendor_grammar is None):
         print('error: --vendor-insts-output and '
               '--extinst-vendor-grammar should be specified together.')
         exit(1)
     if all([args.core_insts_output is None,
-            args.glsl_insts_output is None,
-            args.opencl_insts_output is None,
             args.vendor_insts_output is None,
             args.extension_enum_output is None,
             args.enum_string_mapping_output is None]):
@@ -907,22 +881,6 @@ def main():
             with open(args.enum_string_mapping_output, 'w') as f:
                 f.write(generate_all_string_enum_mappings(
                     extensions, operand_kinds))
-
-    if args.extinst_glsl_grammar is not None:
-        with open(args.extinst_glsl_grammar) as json_file:
-            grammar = json.loads(json_file.read())
-            make_path_to_file(args.glsl_insts_output)
-            with open(args.glsl_insts_output, 'w') as f:
-                f.write(generate_extended_instruction_table(
-                    grammar, 'glsl'))
-
-    if args.extinst_opencl_grammar is not None:
-        with open(args.extinst_opencl_grammar) as json_file:
-            grammar = json.loads(json_file.read())
-            make_path_to_file(args.opencl_insts_output)
-            with open(args.opencl_insts_output, 'w') as f:
-                f.write(generate_extended_instruction_table(
-                    grammar, 'opencl'))
 
     if args.extinst_vendor_grammar is not None:
         with open(args.extinst_vendor_grammar) as json_file:

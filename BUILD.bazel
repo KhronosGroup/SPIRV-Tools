@@ -8,8 +8,6 @@ load(
     "generate_core_tables",
     "generate_enum_string_mapping",
     "generate_extinst_lang_headers",
-    "generate_glsl_tables",
-    "generate_opencl_tables",
     "generate_vendor_tables",
     "incompatible_with",
 )
@@ -42,9 +40,15 @@ generate_core_tables(version = "unified1")
 
 generate_enum_string_mapping(version = "unified1")
 
-generate_opencl_tables(version = "unified1")
+generate_vendor_tables(
+   extension = "glsl.std.450",
+   target = "spirv_glsl_grammar_unified1"
+)
 
-generate_glsl_tables(version = "unified1")
+generate_vendor_tables(
+   extension = "opencl.std.100",
+   target = "spirv_opencl_grammar_unified1"
+)
 
 generate_vendor_tables(extension = "spv-amd-shader-explicit-vertex-parameter")
 
@@ -143,8 +147,8 @@ cc_library(
         ":gen_extinst_lang_headers_DebugInfo",
         ":gen_extinst_lang_headers_NonSemanticShaderDebugInfo100",
         ":gen_extinst_lang_headers_OpenCLDebugInfo100",
-        ":gen_glsl_tables_unified1",
-        ":gen_opencl_tables_unified1",
+        ":gen_vendor_tables_spirv_glsl_grammar_unified1",
+        ":gen_vendor_tables_spirv_opencl_grammar_unified1",
         ":gen_vendor_tables_debuginfo",
         ":gen_vendor_tables_nonsemantic_clspvreflection",
         ":gen_vendor_tables_nonsemantic_vkspreflection",
