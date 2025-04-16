@@ -66,6 +66,8 @@ OpCapability Shader
 %acquire_release = OpConstant %u32 8
 %acquire_and_release = OpConstant %u32 6
 %sequentially_consistent = OpConstant %u32 16
+%acquire_uniform_workgroup = OpConstant %u32 322
+%release_uniform_workgroup = OpConstant %u32 324
 %acquire_release_uniform_workgroup = OpConstant %u32 328
 
 %f32_ptr = OpTypePointer Workgroup %f32
@@ -261,7 +263,7 @@ TEST_F(ValidateAtomics, AtomicLoadInt64KernelSuccess) {
 TEST_F(ValidateAtomics, AtomicLoadInt32VulkanSuccess) {
   const std::string body = R"(
 %val1 = OpAtomicLoad %u32 %u32_var %device %relaxed
-%val2 = OpAtomicLoad %u32 %u32_var %workgroup %acquire
+%val2 = OpAtomicLoad %u32 %u32_var %workgroup %acquire_uniform_workgroup
 %val3 = OpAtomicLoad %u32 %u32_var %invocation %relaxed
 )";
 
@@ -694,7 +696,7 @@ OpExtension "SPV_EXT_shader_atomic_float_min_max"
 TEST_F(ValidateAtomics, AtomicLoadFloatVulkan) {
   const std::string body = R"(
 %val1 = OpAtomicLoad %f32 %f32_var %device %relaxed
-%val2 = OpAtomicLoad %f32 %f32_var %workgroup %acquire
+%val2 = OpAtomicLoad %f32 %f32_var %workgroup %acquire_uniform_workgroup
 )";
 
   CompileSuccessfully(GenerateShaderComputeCode(body), SPV_ENV_VULKAN_1_0);
@@ -737,7 +739,7 @@ TEST_F(ValidateAtomics, AtomicExchangeFloatVulkan) {
 TEST_F(ValidateAtomics, AtomicLoadInt64WithCapabilityVulkanSuccess) {
   const std::string body = R"(
   %val1 = OpAtomicLoad %u64 %u64_var %device %relaxed
-  %val2 = OpAtomicLoad %u64 %u64_var %workgroup %acquire
+  %val2 = OpAtomicLoad %u64 %u64_var %workgroup %acquire_uniform_workgroup
   %val3 = OpAtomicLoad %u64 %u64_var %invocation %relaxed
   )";
 
@@ -803,7 +805,7 @@ OpAtomicStore %f32_var_function %device %relaxed %f32_1
 // reenable once fixed.
 TEST_F(ValidateAtomics, DISABLED_AtomicLoadVulkanSubgroup) {
   const std::string body = R"(
-%val1 = OpAtomicLoad %u32 %u32_var %subgroup %acquire
+%val1 = OpAtomicLoad %u32 %u32_var %subgroup %acquire_uniform_workgroup
 )";
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
@@ -815,52 +817,39 @@ TEST_F(ValidateAtomics, DISABLED_AtomicLoadVulkanSubgroup) {
 
 TEST_F(ValidateAtomics, AtomicLoadVulkanRelease) {
   const std::string body = R"(
-%val1 = OpAtomicLoad %u32 %u32_var %workgroup %release
+%val1 = OpAtomicLoad %u32 %u32_var %workgroup %release_uniform_workgroup
 )";
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-OpAtomicLoad-04731"));
+              AnyVUID("VUID-StandaloneSpirv-MemorySemantics-10868"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Vulkan spec disallows OpAtomicLoad with Memory Semantics "
-                "Release, AcquireRelease and SequentiallyConsistent"));
+      HasSubstr(
+          "AtomicLoad: MemorySemantics must not use Release or AcquireRelease "
+          "memory order with AtomicLoad"));
 }
 
 TEST_F(ValidateAtomics, AtomicLoadVulkanAcquireRelease) {
   const std::string body = R"(
-%val1 = OpAtomicLoad %u32 %u32_var %workgroup %acquire_release
+%val1 = OpAtomicLoad %u32 %u32_var %workgroup %acquire_release_uniform_workgroup
 )";
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-OpAtomicLoad-04731"));
+              AnyVUID("VUID-StandaloneSpirv-MemorySemantics-10868"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Vulkan spec disallows OpAtomicLoad with Memory Semantics "
-                "Release, AcquireRelease and SequentiallyConsistent"));
-}
-
-TEST_F(ValidateAtomics, AtomicLoadVulkanSequentiallyConsistent) {
-  const std::string body = R"(
-%val1 = OpAtomicLoad %u32 %u32_var %workgroup %sequentially_consistent
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-OpAtomicLoad-04731"));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Vulkan spec disallows OpAtomicLoad with Memory Semantics "
-                "Release, AcquireRelease and SequentiallyConsistent"));
+      HasSubstr(
+          "AtomicLoad: MemorySemantics must not use Release or AcquireRelease "
+          "memory order with AtomicLoad"));
 }
 
 TEST_F(ValidateAtomics, AtomicLoadVulkanInvocationSemantics) {
   const std::string body = R"(
-%val1 = OpAtomicLoad %u32 %u32_var %invocation %acquire
+%val1 = OpAtomicLoad %u32 %u32_var %invocation %acquire_uniform_workgroup
 )";
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
@@ -870,7 +859,7 @@ TEST_F(ValidateAtomics, AtomicLoadVulkanInvocationSemantics) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("AtomicLoad: Vulkan specification requires Memory Semantics to "
-                "be None if used with Invocation Memory Scope"));
+                "be Relaxed if used with Invocation Memory Scope"));
 }
 
 TEST_F(ValidateAtomics, AtomicLoadShaderFloat) {
@@ -1067,7 +1056,7 @@ OpAtomicStore %u32_var %subgroup %sequentially_consistent %u32_1
 
 TEST_F(ValidateAtomics, AtomicStoreVulkanSuccess) {
   const std::string body = R"(
-OpAtomicStore %u32_var %device %release %u32_1
+OpAtomicStore %u32_var %device %release_uniform_workgroup %u32_1
 OpAtomicStore %u32_var %invocation %relaxed %u32_1
 )";
 
@@ -1077,52 +1066,39 @@ OpAtomicStore %u32_var %invocation %relaxed %u32_1
 
 TEST_F(ValidateAtomics, AtomicStoreVulkanAcquire) {
   const std::string body = R"(
-OpAtomicStore %u32_var %device %acquire %u32_1
+OpAtomicStore %u32_var %device %acquire_uniform_workgroup %u32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-OpAtomicStore-04730"));
+              AnyVUID("VUID-StandaloneSpirv-MemorySemantics-10867"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Vulkan spec disallows OpAtomicStore with Memory Semantics "
-                "Acquire, AcquireRelease and SequentiallyConsistent"));
+      HasSubstr(
+          "AtomicStore: MemorySemantics must not use Acquire or AcquireRelease "
+          "memory order with AtomicStore"));
 }
 
 TEST_F(ValidateAtomics, AtomicStoreVulkanAcquireRelease) {
   const std::string body = R"(
-OpAtomicStore %u32_var %device %acquire_release %u32_1
+OpAtomicStore %u32_var %device %acquire_release_uniform_workgroup %u32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-OpAtomicStore-04730"));
+              AnyVUID("VUID-StandaloneSpirv-MemorySemantics-10867"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Vulkan spec disallows OpAtomicStore with Memory Semantics "
-                "Acquire, AcquireRelease and SequentiallyConsistent"));
-}
-
-TEST_F(ValidateAtomics, AtomicStoreVulkanSequentiallyConsistent) {
-  const std::string body = R"(
-OpAtomicStore %u32_var %device %sequentially_consistent %u32_1
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
-  EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-OpAtomicStore-04730"));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Vulkan spec disallows OpAtomicStore with Memory Semantics "
-                "Acquire, AcquireRelease and SequentiallyConsistent"));
+      HasSubstr(
+          "AtomicStore: MemorySemantics must not use Acquire or AcquireRelease "
+          "memory order with AtomicStore"));
 }
 
 TEST_F(ValidateAtomics, AtomicStoreVulkanInvocationSemantics) {
   const std::string body = R"(
-OpAtomicStore %u32_var %invocation %acquire %u32_1
+OpAtomicStore %u32_var %invocation %release_uniform_workgroup %u32_1
 )";
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
@@ -1132,7 +1108,7 @@ OpAtomicStore %u32_var %invocation %acquire %u32_1
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("AtomicStore: Vulkan specification requires Memory Semantics "
-                "to be None if used with Invocation Memory Scope"));
+                "to be Relaxed if used with Invocation Memory Scope"));
 }
 
 TEST_F(ValidateAtomics, AtomicStoreWrongPointerType) {
@@ -1337,7 +1313,7 @@ OpAtomicStore %f32_var %device %relaxed %f32_1
 TEST_F(ValidateAtomics, AtomicExchangeVulkanInvocationSemantics) {
   const std::string body = R"(
 OpAtomicStore %u32_var %invocation %relaxed %u32_1
-%val2 = OpAtomicExchange %u32 %u32_var %invocation %acquire %u32_0
+%val2 = OpAtomicExchange %u32 %u32_var %invocation %acquire_uniform_workgroup %u32_0
 )";
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
@@ -1346,8 +1322,9 @@ OpAtomicStore %u32_var %invocation %relaxed %u32_1
               AnyVUID("VUID-StandaloneSpirv-None-04641"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("AtomicExchange: Vulkan specification requires Memory "
-                "Semantics to be None if used with Invocation Memory Scope"));
+      HasSubstr(
+          "AtomicExchange: Vulkan specification requires Memory Semantics to "
+          "be Relaxed if used with Invocation Memory Scope"));
 }
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeShaderSuccess) {
@@ -1469,9 +1446,10 @@ OpAtomicStore %u32_var %device %relaxed %u32_1
 
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicCompareExchange: Memory Semantics Release and "
-                        "AcquireRelease cannot be used for operand Unequal"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("AtomicCompareExchange Unequal Memory Semantics must not use "
+                "Release or AcquireRelease memory order"));
 }
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeWrongValueType) {
@@ -1526,7 +1504,7 @@ OpAtomicStore %f32_var %device %relaxed %f32_1
 TEST_F(ValidateAtomics, AtomicCompareExchangeVulkanInvocationSemanticsEqual) {
   const std::string body = R"(
 OpAtomicStore %u32_var %device %relaxed %u32_1
-%val2 = OpAtomicCompareExchange %u32 %u32_var %invocation %release %relaxed %u32_0 %u32_0
+%val2 = OpAtomicCompareExchange %u32 %u32_var %invocation %release_uniform_workgroup %relaxed %u32_0 %u32_0
 )";
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
@@ -1535,14 +1513,15 @@ OpAtomicStore %u32_var %device %relaxed %u32_1
               AnyVUID("VUID-StandaloneSpirv-None-04641"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("AtomicCompareExchange: Vulkan specification requires Memory "
-                "Semantics to be None if used with Invocation Memory Scope"));
+      HasSubstr(
+          "AtomicCompareExchange: Vulkan specification requires Memory "
+          "Semantics to be Relaxed if used with Invocation Memory Scope"));
 }
 
 TEST_F(ValidateAtomics, AtomicCompareExchangeVulkanInvocationSemanticsUnequal) {
   const std::string body = R"(
 OpAtomicStore %u32_var %device %relaxed %u32_1
-%val2 = OpAtomicCompareExchange %u32 %u32_var %invocation %relaxed %acquire %u32_0 %u32_0
+%val2 = OpAtomicCompareExchange %u32 %u32_var %invocation %acquire_uniform_workgroup %acquire_uniform_workgroup %u32_0 %u32_0
 )";
 
   CompileSuccessfully(GenerateShaderCode(body), SPV_ENV_VULKAN_1_0);
@@ -1551,8 +1530,9 @@ OpAtomicStore %u32_var %device %relaxed %u32_1
               AnyVUID("VUID-StandaloneSpirv-None-04641"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("AtomicCompareExchange: Vulkan specification requires Memory "
-                "Semantics to be None if used with Invocation Memory Scope"));
+      HasSubstr(
+          "AtomicCompareExchange: Vulkan specification requires Memory "
+          "Semantics to be Relaxed if used with Invocation Memory Scope"));
 }
 
 TEST_F(ValidateAtomics, AtomicArithmeticsSuccess) {
@@ -1666,9 +1646,10 @@ OpAtomicFlagClear %u32_var %device %acquire
 
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Memory Semantics Acquire and AcquireRelease cannot be "
-                        "used with AtomicFlagClear"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("AtomicFlagClear: MemorySemantics must not use Acquire or "
+                "AcquireRelease memory order with AtomicFlagClear"));
 }
 
 TEST_F(ValidateAtomics, AtomicFlagClearNotPointer) {
@@ -1743,9 +1724,8 @@ OpAtomicStore %u32_var %device %relaxed %u32_1
   CompileSuccessfully(GenerateKernelCode(body));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("AtomicIIncrement: Memory Semantics can have at most "
-                        "one of the following bits set: Acquire, Release, "
-                        "AcquireRelease or SequentiallyConsistent"));
+              HasSubstr("AtomicIIncrement: Memory Semantics must have at most "
+                        "one non-relaxed memory order bit set"));
 }
 
 TEST_F(ValidateAtomics, AtomicUniformMemorySemanticsShader) {
@@ -1792,357 +1772,6 @@ OpAtomicStore %u32_var %device %relaxed %u32_1
 
   CompileSuccessfully(GenerateKernelCode(body, "OpCapability AtomicStorage\n"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
-}
-
-TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicLoad) {
-  const std::string body = R"(
-%ld = OpAtomicLoad %u32 %u32_var %workgroup %sequentially_consistent
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicStore) {
-  const std::string body = R"(
-OpAtomicStore %u32_var %workgroup %sequentially_consistent %u32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics,
-       VulkanMemoryModelBanSequentiallyConsistentAtomicExchange) {
-  const std::string body = R"(
-%ex = OpAtomicExchange %u32 %u32_var %workgroup %sequentially_consistent %u32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics,
-       VulkanMemoryModelBanSequentiallyConsistentAtomicCompareExchangeEqual) {
-  const std::string body = R"(
-%ex = OpAtomicCompareExchange %u32 %u32_var %workgroup %sequentially_consistent %relaxed %u32_0 %u32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics,
-       VulkanMemoryModelBanSequentiallyConsistentAtomicCompareExchangeUnequal) {
-  const std::string body = R"(
-%ex = OpAtomicCompareExchange %u32 %u32_var %workgroup %relaxed %sequentially_consistent %u32_0 %u32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics,
-       VulkanMemoryModelBanSequentiallyConsistentAtomicIIncrement) {
-  const std::string body = R"(
-%inc = OpAtomicIIncrement %u32 %u32_var %workgroup %sequentially_consistent
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics,
-       VulkanMemoryModelBanSequentiallyConsistentAtomicIDecrement) {
-  const std::string body = R"(
-%dec = OpAtomicIDecrement %u32 %u32_var %workgroup %sequentially_consistent
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicIAdd) {
-  const std::string body = R"(
-%add = OpAtomicIAdd %u32 %u32_var %workgroup %sequentially_consistent %u32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicISub) {
-  const std::string body = R"(
-%sub = OpAtomicISub %u32 %u32_var %workgroup %sequentially_consistent %u32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicSMin) {
-  const std::string body = R"(
-%min = OpAtomicSMin %u32 %u32_var %workgroup %sequentially_consistent %u32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicUMin) {
-  const std::string body = R"(
-%min = OpAtomicUMin %u32 %u32_var %workgroup %sequentially_consistent %u32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicFMinEXT) {
-  const std::string body = R"(
-%max = OpAtomicFMinEXT %f32 %f32_var %workgroup %sequentially_consistent %f32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpCapability AtomicFloat32MinMaxEXT
-OpExtension "SPV_KHR_vulkan_memory_model"
-OpExtension "SPV_EXT_shader_atomic_float_min_max"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicSMax) {
-  const std::string body = R"(
-%max = OpAtomicSMax %u32 %u32_var %workgroup %sequentially_consistent %u32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicUMax) {
-  const std::string body = R"(
-%max = OpAtomicUMax %u32 %u32_var %workgroup %sequentially_consistent %u32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicFMaxEXT) {
-  const std::string body = R"(
-%max = OpAtomicFMaxEXT %f32 %f32_var %workgroup %sequentially_consistent %f32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpCapability AtomicFloat32MinMaxEXT
-OpExtension "SPV_KHR_vulkan_memory_model"
-OpExtension "SPV_EXT_shader_atomic_float_min_max"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicAnd) {
-  const std::string body = R"(
-%and = OpAtomicAnd %u32 %u32_var %workgroup %sequentially_consistent %u32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicOr) {
-  const std::string body = R"(
-%or = OpAtomicOr %u32 %u32_var %workgroup %sequentially_consistent %u32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
-}
-
-TEST_F(ValidateAtomics, VulkanMemoryModelBanSequentiallyConsistentAtomicXor) {
-  const std::string body = R"(
-%xor = OpAtomicXor %u32 %u32_var %workgroup %sequentially_consistent %u32_0
-)";
-
-  const std::string extra = R"(
-OpCapability VulkanMemoryModelKHR
-OpExtension "SPV_KHR_vulkan_memory_model"
-)";
-
-  CompileSuccessfully(GenerateShaderCode(body, extra, "", "VulkanKHR"),
-                      SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
-            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("SequentiallyConsistent memory semantics cannot be "
-                        "used with the VulkanKHR memory model."));
 }
 
 TEST_F(ValidateAtomics, OutputMemoryKHRRequiresVulkanMemoryModelKHR) {
@@ -2236,7 +1865,7 @@ OpEntryPoint Fragment %1 "func"
 OpExecutionMode %1 OriginUpperLeft
 %2 = OpTypeVoid
 %3 = OpTypeInt 32 0
-%semantics = OpConstant %3 8448
+%semantics = OpConstant %3 8192
 %5 = OpTypeFunction %2
 %workgroup = OpConstant %3 2
 %ptr = OpTypePointer Workgroup %3
@@ -2253,8 +1882,8 @@ OpFunctionEnd
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("AtomicStore: MakeAvailableKHR Memory Semantics also requires "
-                "either Release or AcquireRelease Memory Semantics"));
+      HasSubstr("AtomicStore: Memory Semantics with MakeAvailable bit set must "
+                "use Release or AcquireRelease memory order"));
 }
 
 TEST_F(ValidateAtomics, MakeVisibleKHRRequiresAcquireSemantics) {
@@ -2267,7 +1896,7 @@ OpEntryPoint Fragment %1 "func"
 OpExecutionMode %1 OriginUpperLeft
 %2 = OpTypeVoid
 %3 = OpTypeInt 32 0
-%semantics = OpConstant %3 16640
+%semantics = OpConstant %3 16384
 %5 = OpTypeFunction %2
 %workgroup = OpConstant %3 2
 %ptr = OpTypePointer Workgroup %3
@@ -2284,8 +1913,9 @@ OpFunctionEnd
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("AtomicLoad: MakeVisibleKHR Memory Semantics also requires "
-                "either Acquire or AcquireRelease Memory Semantics"));
+      HasSubstr(
+          "AtomicLoad: Memory Semantics with MakeVisible bit set must use "
+          "Acquire or AcquireRelease memory order"));
 }
 
 TEST_F(ValidateAtomics, MakeAvailableKHRRequiresStorageSemantics) {
@@ -2315,8 +1945,11 @@ OpFunctionEnd
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "AtomicStore: expected Memory Semantics to include a storage class"));
+      HasSubstr("AtomicStore: Memory Semantics with a non-relaxed memory order "
+                "(Acquire, Release, or AcquireRelease) must have at least one "
+                "Vulkan-supported storage class semantics bit set "
+                "(UniformMemory, WorkgroupMemory, ImageMemory, or "
+                "OutputMemory)"));
 }
 
 TEST_F(ValidateAtomics, MakeVisibleKHRRequiresStorageSemantics) {
@@ -2346,8 +1979,11 @@ OpFunctionEnd
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "AtomicLoad: expected Memory Semantics to include a storage class"));
+      HasSubstr("AtomicLoad: Memory Semantics with a non-relaxed memory order "
+                "(Acquire, Release, or AcquireRelease) must have at least one "
+                "Vulkan-supported storage class semantics bit set "
+                "(UniformMemory, WorkgroupMemory, ImageMemory, or "
+                "OutputMemory)"));
 }
 
 TEST_F(ValidateAtomics, VulkanMemoryModelAllowsQueueFamilyKHR) {
@@ -2374,8 +2010,8 @@ TEST_F(ValidateAtomics, NonVulkanMemoryModelDisallowsQueueFamilyKHR) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("AtomicAnd: Memory Scope QueueFamilyKHR requires "
-                        "capability VulkanMemoryModelKHR\n  %42 = OpAtomicAnd "
-                        "%uint %29 %uint_5 %uint_0_1 %uint_1\n"));
+                        "capability VulkanMemoryModelKHR\n  %44 = OpAtomicAnd "
+                        "%uint %31 %uint_5 %uint_0_1 %uint_1\n"));
 }
 
 TEST_F(ValidateAtomics, SemanticsSpecConstantShader) {
@@ -2588,10 +2224,13 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Volatile mask setting must match for Equal and "
-                        "Unequal memory semantics"));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("AtomicCompareExchange Unequal Memory Semantics must have "
+                "Volatile bit set if and only if this bit is also set in the "
+                "corresponding Equal Memory Semantics"));
 }
 
 TEST_F(ValidateAtomics, CompareExchangeVolatileMismatchCooperativeMatrix) {
