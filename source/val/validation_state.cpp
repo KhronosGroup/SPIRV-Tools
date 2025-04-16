@@ -2341,10 +2341,6 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-None-04644);
     case 4645:
       return VUID_WRAP(VUID-StandaloneSpirv-None-04645);
-    case 10609:
-      return VUID_WRAP(VUID-StandaloneSpirv-OpControlBarrier-10609);
-    case 4650:
-      return VUID_WRAP(VUID-StandaloneSpirv-OpControlBarrier-04650);
     case 4651:
       return VUID_WRAP(VUID-StandaloneSpirv-OpVariable-04651);
     case 4652:
@@ -2411,14 +2407,37 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-PhysicalStorageBuffer64-04710);
     case 4711:
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeForwardPointer-04711);
-    case 4730:
-      return VUID_WRAP(VUID-StandaloneSpirv-OpAtomicStore-04730);
-    case 4731:
-      return VUID_WRAP(VUID-StandaloneSpirv-OpAtomicLoad-04731);
-    case 4732:
-      return VUID_WRAP(VUID-StandaloneSpirv-OpMemoryBarrier-04732);
-    case 4733:
-      return VUID_WRAP(VUID-StandaloneSpirv-OpMemoryBarrier-04733);
+
+    // TODO: Will be replaced with the actual VUIDs after the spec update
+    case 10001:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10001);
+    case 10002:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10002);
+    case 10003:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10003);
+    case 10004:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10004);
+    case 10005:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10005);
+    case 10006:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10006);
+    case 10007:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10007);
+    case 10008:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10008);
+    case 10009:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10009);
+    case 10010:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10010);
+    case 10011:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10011);
+    case 10012:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10012);
+    case 10013:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10013);
+    case 10014:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10014);
+
     case 4734:
       return VUID_WRAP(VUID-StandaloneSpirv-OpVariable-04734);
     case 4744:
