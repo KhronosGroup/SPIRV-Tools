@@ -49,9 +49,9 @@ spv_context spvContextCreate(spv_target_env env) {
       return nullptr;
   }
 
-  spv_opcode_table opcode_table;
-  spv_operand_table operand_table;
-  spv_ext_inst_table ext_inst_table;
+  spv_opcode_table opcode_table = nullptr;
+  spv_operand_table operand_table = nullptr;
+  spv_ext_inst_table ext_inst_table = nullptr;
 
   spvOpcodeTableGet(&opcode_table, env);
   spvOperandTableGet(&operand_table, env);
