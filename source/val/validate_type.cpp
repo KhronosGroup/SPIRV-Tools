@@ -112,6 +112,7 @@ spv_result_t ValidateTypeFloat(ValidationState_t& _, const Instruction* inst) {
   // Int8, Int16, and Int64 capabilities allow using 8-bit, 16-bit, and 64-bit
   // integers, respectively.
   auto num_bits = inst->GetOperandAs<const uint32_t>(1);
+  const bool has_encoding = inst->operands().size() > 2;
   if (num_bits == 32) {
     return SPV_SUCCESS;
   }
@@ -125,7 +126,9 @@ spv_result_t ValidateTypeFloat(ValidationState_t& _, const Instruction* inst) {
   }
 
   if (num_bits == 16) {
-    if (_.features().declare_float16_type) {
+    // An absence of FP encoding implies IEEE 754. The Float16 and Float16Buffer
+    // capabilities only enable IEEE 754 binary 16
+    if (has_encoding || _.features().declare_float16_type) {
       return SPV_SUCCESS;
     }
     return _.diag(SPV_ERROR_INVALID_DATA, inst)

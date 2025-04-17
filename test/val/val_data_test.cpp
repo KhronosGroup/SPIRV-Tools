@@ -416,6 +416,12 @@ TEST_F(ValidateData, dot_bfloat16_bad) {
               HasSubstr("requires BFloat16DotProductKHR be declared."));
 }
 
+TEST_F(ValidateData, bfloat16_without_float16_capability_good) {
+  std::string str = header_with_bfloat16 + "%2 = OpTypeFloat 16 BFloat16KHR";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateData, float64_good) {
   std::string str = header_with_float64 + "%2 = OpTypeFloat 64";
 
