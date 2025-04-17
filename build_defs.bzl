@@ -78,8 +78,7 @@ def generate_core_tables(version):
         " --extinst-debuginfo-grammar=$(location {debuginfo_grammar})" +
         " --extinst-cldebuginfo100-grammar=$(location {cldebuginfo_grammar})" +
         " --core-insts-output=$(location {core_insts_output})" +
-        " --operand-kinds-output=$(location {operand_kinds_output})" +
-        " --output-language=c++"
+        " --operand-kinds-output=$(location {operand_kinds_output})"
     ).format(**_merge_dicts([grammars, outs]))
 
     native.genrule(
@@ -113,8 +112,7 @@ def generate_enum_string_mapping(version):
         " --extinst-debuginfo-grammar=$(location {debuginfo_grammar})" +
         " --extinst-cldebuginfo100-grammar=$(location {cldebuginfo_grammar})" +
         " --extension-enum-output=$(location {extension_enum_ouput})" +
-        " --enum-string-mapping-output=$(location {enum_string_mapping_output})" +
-        " --output-language=c++"
+        " --enum-string-mapping-output=$(location {enum_string_mapping_output})"
     ).format(**_merge_dicts([grammars, outs]))
 
     native.genrule(
@@ -169,8 +167,7 @@ def generate_glsl_tables(version):
     cmd = (
         "$(location :generate_grammar_tables)" +
         " --extinst-glsl-grammar=$(location {gsls_grammar})" +
-        " --glsl-insts-output=$(location {gsls_insts_outs})" +
-        " --output-language=c++"
+        " --glsl-insts-output=$(location {gsls_insts_outs})"
     ).format(**_merge_dicts([grammars, outs]))
 
     native.genrule(

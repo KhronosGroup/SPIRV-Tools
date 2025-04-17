@@ -228,8 +228,7 @@ $(1)/opencl.std.insts.inc \
 		                --core-insts-output=$(1)/core.insts-unified1.inc \
 		                --glsl-insts-output=$(1)/glsl.std.450.insts.inc \
 		                --opencl-insts-output=$(1)/opencl.std.insts.inc \
-		                --operand-kinds-output=$(1)/operand.kinds-unified1.inc \
-										--output-language=c++
+		                --operand-kinds-output=$(1)/operand.kinds-unified1.inc
 		@echo "[$(TARGET_ARCH_ABI)] Grammar (from unified1)  : instructions & operands <= grammar JSON files"
 $(LOCAL_PATH)/source/opcode.cpp: $(1)/core.insts-unified1.inc
 $(LOCAL_PATH)/source/operand.cpp: $(1)/operand.kinds-unified1.inc
@@ -304,8 +303,7 @@ $(1)/extension_enum.inc $(1)/enum_string_mapping.inc: \
 		                --extinst-debuginfo-grammar=$(SPV_DEBUGINFO_GRAMMAR) \
 		                --extinst-cldebuginfo100-grammar=$(SPV_CLDEBUGINFO100_GRAMMAR) \
 		                --extension-enum-output=$(1)/extension_enum.inc \
-		                --enum-string-mapping-output=$(1)/enum_string_mapping.inc \
-										--output-language=c++
+		                --enum-string-mapping-output=$(1)/enum_string_mapping.inc
 		@echo "[$(TARGET_ARCH_ABI)] Generate enum<->string mapping <= grammar JSON files"
 # Generated header extension_enum.inc is transitively included by table.h, which is
 # used pervasively.  Capture the pervasive dependency.
