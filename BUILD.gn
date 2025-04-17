@@ -68,9 +68,7 @@ template("spvtools_core_tables") {
       "--extinst-cldebuginfo100-grammar",
       rebase_path(cldebuginfo100_insts_file, root_build_dir),
       "--operand-kinds-output",
-      rebase_path(operand_kinds_file, root_build_dir),
-      "--output-language",
-      "c++"
+      rebase_path(operand_kinds_file, root_build_dir)
     ]
   }
 }
@@ -102,9 +100,7 @@ template("spvtools_core_enums") {
       "--extension-enum-output",
       rebase_path(extension_enum_file, root_build_dir),
       "--enum-string-mapping-output",
-      rebase_path(extension_map_file, root_build_dir),
-      "--output-language",
-      "c++"
+      rebase_path(extension_map_file, root_build_dir)
     ]
     inputs = [
       core_json_file,
@@ -145,9 +141,7 @@ template("spvtools_glsl_tables") {
       "--extinst-glsl-grammar",
       rebase_path(glsl_json_file, root_build_dir),
       "--glsl-insts-output",
-      rebase_path(glsl_insts_file, root_build_dir),
-      "--output-language",
-      "c++"
+      rebase_path(glsl_insts_file, root_build_dir)
     ]
     inputs = [
       core_json_file,

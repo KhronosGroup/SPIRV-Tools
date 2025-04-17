@@ -8,8 +8,6 @@ load(
     "generate_core_tables",
     "generate_enum_string_mapping",
     "generate_extinst_lang_headers",
-    "generate_glsl_tables",
-    "generate_opencl_tables",
     "generate_vendor_tables",
     "incompatible_with",
 )
@@ -42,9 +40,9 @@ generate_core_tables(version = "unified1")
 
 generate_enum_string_mapping(version = "unified1")
 
-generate_opencl_tables(version = "unified1")
+generate_vendor_tables(extension = "glsl.std.450")
 
-generate_glsl_tables(version = "unified1")
+generate_vendor_tables(extension = "opencl.std.100")
 
 generate_vendor_tables(extension = "spv-amd-shader-explicit-vertex-parameter")
 

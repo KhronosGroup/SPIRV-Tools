@@ -34,8 +34,6 @@ SPV_KHR_non_semantic_info
 SPV_EXT_relaxed_printf_string_address_space
 """
 
-OUTPUT_LANGUAGE = 'c'
-
 def make_path_to_file(f):
     """Makes all ancestor directories to the given file, if they don't yet
     exist.
@@ -113,10 +111,7 @@ def compose_capability_list(caps):
     Returns:
       a string containing the braced list of SpvCapability* or spv::Capability:: enums named by caps.
     """
-    base_string = 'SpvCapability'
-    global OUTPUT_LANGUAGE
-    if OUTPUT_LANGUAGE == 'c++':
-        base_string = 'spv::Capability::'
+    base_string = 'spv::Capability::'
 
     return '{' + ', '.join([(base_string + '{}').format(c) for c in caps]) + '}'
 
@@ -139,10 +134,7 @@ def generate_capability_arrays(caps):
       - caps: a sequence of sequence of capability names
     """
     caps = sorted(set([tuple(c) for c in caps if c]))
-    cap_str = 'SpvCapability'
-    global OUTPUT_LANGUAGE
-    if OUTPUT_LANGUAGE == 'c++':
-        cap_str = 'spv::Capability'
+    cap_str = 'spv::Capability'
     arrays = [
         'static const ' + cap_str + ' {}[] = {};'.format(
             get_capability_array_name(c), compose_capability_list(c))
@@ -302,11 +294,7 @@ class InstInitializer(object):
             self.operands.pop()
 
     def __str__(self):
-        global OUTPUT_LANGUAGE
-        base_str = 'SpvOp'
-        if OUTPUT_LANGUAGE == 'c++':
-            base_str = 'spv::Op::Op'
-
+        base_str = 'spv::Op::Op'
         template = ['{{"{opname}"', base_str + '{opname}',
                     '{num_aliases}', '{aliases_mask}',
                     '{num_caps}', '{caps_mask}',
@@ -709,12 +697,8 @@ def generate_capability_to_string_mapping(operand_kinds):
 
     We take care to avoid emitting duplicate values.
     """
-    cap_str = 'SpvCapability'
-    cap_join = ''
-    global OUTPUT_LANGUAGE
-    if OUTPUT_LANGUAGE == 'c++':
-        cap_str = 'spv::Capability'
-        cap_join = '::'
+    cap_str = 'spv::Capability'
+    cap_join = '::'
 
     function = 'const char* CapabilityToString(' + cap_str + ' capability) {\n'
     function += '  switch (capability) {\n'
@@ -779,7 +763,7 @@ def prefix_operand_kind_names(prefix, json_dict):
     """
 
     old_to_new = {}
-    for operand_kind in json_dict["operand_kinds"]:
+    for operand_kind in json_dict.get("operand_kinds", []):
         old_name = operand_kind["kind"]
         new_name = prefix + old_name
         operand_kind["kind"] = new_name
@@ -808,28 +792,10 @@ def main():
                         type=str, required=False, default=None,
                         help='input JSON grammar file for OpenCL.DebugInfo.100 '
                         'extended instruction set')
-    parser.add_argument('--extinst-glsl-grammar', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='input JSON grammar file for GLSL extended '
-                        'instruction set')
-    parser.add_argument('--extinst-opencl-grammar', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='input JSON grammar file for OpenCL extended '
-                        'instruction set')
-    parser.add_argument('--output-language',
-                        type=str, required=False, default='c',
-                        choices=['c','c++'],
-                        help='specify output language type')
 
     parser.add_argument('--core-insts-output', metavar='<path>',
                         type=str, required=False, default=None,
                         help='output file for core SPIR-V instructions')
-    parser.add_argument('--glsl-insts-output', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='output file for GLSL extended instruction set')
-    parser.add_argument('--opencl-insts-output', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='output file for OpenCL extended instruction set')
     parser.add_argument('--operand-kinds-output', metavar='<path>',
                         type=str, required=False, default=None,
                         help='output file for operand kinds')
@@ -851,9 +817,6 @@ def main():
                         help='prefix for operand kinds (to disambiguate operand type enums)')
     args = parser.parse_args()
 
-    global OUTPUT_LANGUAGE
-    OUTPUT_LANGUAGE = args.output_language
-
     # The GN build system needs this because it doesn't handle quoting
     # empty string arguments well.
     if args.vendor_operand_kind_prefix == "...nil...":
@@ -871,24 +834,12 @@ def main():
               'and --extinst-debuginfo-grammar '
               'and --extinst-cldebuginfo100-grammar')
         exit(1)
-    if (args.glsl_insts_output is None) != \
-            (args.extinst_glsl_grammar is None):
-        print('error: --glsl-insts-output and --extinst-glsl-grammar '
-              'should be specified together.')
-        exit(1)
-    if (args.opencl_insts_output is None) != \
-            (args.extinst_opencl_grammar is None):
-        print('error: --opencl-insts-output and --extinst-opencl-grammar '
-              'should be specified together.')
-        exit(1)
     if (args.vendor_insts_output is None) != \
             (args.extinst_vendor_grammar is None):
         print('error: --vendor-insts-output and '
               '--extinst-vendor-grammar should be specified together.')
         exit(1)
     if all([args.core_insts_output is None,
-            args.glsl_insts_output is None,
-            args.opencl_insts_output is None,
             args.vendor_insts_output is None,
             args.extension_enum_output is None,
             args.enum_string_mapping_output is None]):
@@ -930,22 +881,6 @@ def main():
             with open(args.enum_string_mapping_output, 'w') as f:
                 f.write(generate_all_string_enum_mappings(
                     extensions, operand_kinds))
-
-    if args.extinst_glsl_grammar is not None:
-        with open(args.extinst_glsl_grammar) as json_file:
-            grammar = json.loads(json_file.read())
-            make_path_to_file(args.glsl_insts_output)
-            with open(args.glsl_insts_output, 'w') as f:
-                f.write(generate_extended_instruction_table(
-                    grammar, 'glsl'))
-
-    if args.extinst_opencl_grammar is not None:
-        with open(args.extinst_opencl_grammar) as json_file:
-            grammar = json.loads(json_file.read())
-            make_path_to_file(args.opencl_insts_output)
-            with open(args.opencl_insts_output, 'w') as f:
-                f.write(generate_extended_instruction_table(
-                    grammar, 'opencl'))
 
     if args.extinst_vendor_grammar is not None:
         with open(args.extinst_vendor_grammar) as json_file:
