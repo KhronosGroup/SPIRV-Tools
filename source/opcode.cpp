@@ -391,6 +391,7 @@ int32_t spvOpcodeGeneratesType(spv::Op op) {
     case spv::Op::OpTypeNodePayloadArrayAMDX:
     case spv::Op::OpTypeTensorLayoutNV:
     case spv::Op::OpTypeTensorViewNV:
+    case spv::Op::OpTypeTaskSequenceINTEL:
       return true;
     default:
       // In particular, OpTypeForwardPointer does not generate a type,
