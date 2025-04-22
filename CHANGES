@@ -1,5 +1,35 @@
 Revision history for SPIRV-Tools
 
+v2025.2 2025-04-22
+  - General
+    - Add SPV_KHR_bfloat16 support (#6057)
+  - Optimizer
+    - Fold bitwise operator and arithmetic with 0 (#6013)
+    - Support scalar replacement of large structs (#6019)
+    - Support optimization of OpCopyLogical (#6016)
+    - add pass to split combined image samplers (#6035)
+    - value numbering: preserve loads of image, sampler, sampled image (#6059)
+    - Delete decoration for OpPhi when unrolling (#6064)
+    - Add QuadControlKHR to trim pass and allow lists (#6068)
+    - In copy propagate arrays, debug instructions are not stores. (#6078)
+    - Minimal opt support for SPV_KHR_untyped_pointers (#6087)
+  - Validator
+    - Add validation for invalid layout decoration usage (#6012, #6020)
+    - Add Vulkan Aligned PowerOfTwo check (#6027)
+    - Validate PhysicalStorageBuffer Stage Interface (#6000)
+    - Update location/component conflict validation (#5993)
+    - add resolve-binding-conflicts pass (#6044)
+    - Check that layouts match runtime array requirement (#6048)
+    - Validation for relaxed control barrier with storage class semantics (#5984)
+    - Validate version requirement for Vulkan Memory Model (#6042)
+    - Add support for pointer types in vector when using extension SPV_INTEL_masked_gather_scatter (#6041)
+    - Restrict VUID 09557 to Vulkan environments (#6080)
+    - Add Vulkan 1.3 and 1.4 capability checks (#6063)
+  - Assembler
+    - Add OpUnknown pseudo-instruction (#6024)
+  - Diff
+    - Try to pair functions by their complete type. (#6021)
+
 v2025.1 2025-02-28
   - General
     - diff: Fix crash in OpString matching (#5988)
