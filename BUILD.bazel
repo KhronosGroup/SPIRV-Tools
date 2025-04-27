@@ -5,7 +5,7 @@ load(
     "DEBUGINFO_GRAMMAR_JSON_FILE",
     "SHDEBUGINFO100_GRAMMAR_JSON_FILE",
     "TEST_COPTS",
-    "generate_core_tables",
+    "generate_compressed_tables",
     "generate_enum_string_mapping",
     "generate_extinst_lang_headers",
     "generate_vendor_tables",
@@ -27,8 +27,27 @@ exports_files([
 ])
 
 py_binary(
+    # Generates tables for extensions and extended instruction sets.
+    # TODO(crbug.com/266223071) Replace this with ggt.py
     name = "generate_grammar_tables",
     srcs = ["utils/generate_grammar_tables.py"],
+)
+
+py_binary(
+    # The script that generates compressed grammar tables for
+    # instructions and operands.
+    # TODO(crbug.com/266223071) Eventually this will fully replace
+    # utils/generate_grammar_tables.py.
+    name = "ggt",
+    main = "utils/ggt.py", # The file found by $(location :ggt)
+    srcs = [
+        "utils/ggt.py",
+        "utils/Table/__init__.py",
+        "utils/Table/Context.py",
+        "utils/Table/IndexRange.py",
+        "utils/Table/Operand.py",
+        "utils/Table/StringList.py",
+    ],
 )
 
 py_binary(
@@ -36,7 +55,7 @@ py_binary(
     srcs = ["utils/generate_language_headers.py"],
 )
 
-generate_core_tables(version = "unified1")
+generate_compressed_tables()
 
 generate_enum_string_mapping(version = "unified1")
 
@@ -142,7 +161,7 @@ cc_library(
         "source/val/*.cpp",
     ]) + [
         ":build_version_inc",
-        ":gen_core_tables_unified1",
+        ":gen_compressed_tables",
         ":gen_enum_string_mapping",
         ":gen_extinst_lang_headers_DebugInfo",
         ":gen_extinst_lang_headers_NonSemanticShaderDebugInfo100",

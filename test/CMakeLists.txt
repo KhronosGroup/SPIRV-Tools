@@ -117,11 +117,12 @@ set(TEST_SOURCES
   named_id_test.cpp
   name_mapper_test.cpp
   op_unknown_test.cpp
+  opcode_lookup_test.cpp
   opcode_make_test.cpp
   opcode_require_capabilities_test.cpp
   opcode_split_test.cpp
-  opcode_table_get_test.cpp
   operand_capabilities_test.cpp
+  operand_lookup_test.cpp
   operand_test.cpp
   operand_pattern_test.cpp
   parse_number_test.cpp

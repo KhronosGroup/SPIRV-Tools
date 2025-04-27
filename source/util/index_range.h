@@ -16,6 +16,7 @@
 #define SOURCE_UTIL_INDEX_RANGE_H_
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 
 #include "source/util/span.h"
@@ -53,8 +54,6 @@ class IndexRange {
     using span_type = spvtools::utils::Span<E>;
     return base ? span_type(base + first_, count_) : span_type();
   }
-  // This specialization lets us pass in a null pointer, which yields
-  // an empty span.
   template <typename E = int>
   spvtools::utils::Span<E> apply(std::nullptr_t) const {
     using span_type = spvtools::utils::Span<E>;

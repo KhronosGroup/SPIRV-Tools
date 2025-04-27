@@ -14,6 +14,8 @@
 # limitations under the License.
 """Generates various info tables from SPIR-V JSON grammar."""
 
+# NOTE: This is being replaced by ggt.py
+
 import errno
 import json
 import os.path
@@ -793,12 +795,6 @@ def main():
                         help='input JSON grammar file for OpenCL.DebugInfo.100 '
                         'extended instruction set')
 
-    parser.add_argument('--core-insts-output', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='output file for core SPIR-V instructions')
-    parser.add_argument('--operand-kinds-output', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='output file for operand kinds')
     parser.add_argument('--extension-enum-output', metavar='<path>',
                         type=str, required=False, default=None,
                         help='output file for extension enumeration')
@@ -822,25 +818,12 @@ def main():
     if args.vendor_operand_kind_prefix == "...nil...":
         args.vendor_operand_kind_prefix = ""
 
-    if (args.core_insts_output is None) != \
-            (args.operand_kinds_output is None):
-        print('error: --core-insts-output and --operand-kinds-output '
-              'should be specified together.')
-        exit(1)
-    if args.operand_kinds_output and not (args.spirv_core_grammar and
-         args.extinst_debuginfo_grammar and
-         args.extinst_cldebuginfo100_grammar):
-        print('error: --operand-kinds-output requires --spirv-core-grammar '
-              'and --extinst-debuginfo-grammar '
-              'and --extinst-cldebuginfo100-grammar')
-        exit(1)
     if (args.vendor_insts_output is None) != \
             (args.extinst_vendor_grammar is None):
         print('error: --vendor-insts-output and '
               '--extinst-vendor-grammar should be specified together.')
         exit(1)
-    if all([args.core_insts_output is None,
-            args.vendor_insts_output is None,
+    if all([args.vendor_insts_output is None,
             args.extension_enum_output is None,
             args.enum_string_mapping_output is None]):
         print('error: at least one output should be specified.')
@@ -864,14 +847,6 @@ def main():
                     operand_kinds.extend(cldebuginfo100_grammar['operand_kinds'])
                     extensions = get_extension_list(instructions, operand_kinds)
                     operand_kinds = precondition_operand_kinds(operand_kinds)
-        if args.core_insts_output is not None:
-            make_path_to_file(args.core_insts_output)
-            make_path_to_file(args.operand_kinds_output)
-            with open(args.core_insts_output, 'w') as f:
-                f.write(generate_instruction_table(
-                    core_grammar['instructions']))
-            with open(args.operand_kinds_output, 'w') as f:
-                f.write(generate_operand_kind_table(operand_kinds))
         if args.extension_enum_output is not None:
             make_path_to_file(args.extension_enum_output)
             with open(args.extension_enum_output, 'w') as f:

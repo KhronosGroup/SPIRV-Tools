@@ -26,6 +26,7 @@
 #include "source/latest_version_glsl_std_450_header.h"
 #include "source/latest_version_opencl_std_header.h"
 #include "source/spirv_constant.h"
+#include "source/table2.h"
 #include "source/val/instruction.h"
 #include "source/val/validate.h"
 #include "source/val/validation_state.h"
@@ -93,17 +94,17 @@ spv_result_t ValidateOperandForDebugInfo(
     const std::function<std::string()>& ext_inst_name) {
   auto* operand = _.FindDef(inst->word(word_index));
   if (operand->opcode() != expected_opcode) {
-    spv_opcode_desc desc = nullptr;
-    if (_.grammar().lookupOpcode(expected_opcode, &desc) != SPV_SUCCESS ||
+    spvtools::InstructionDesc* desc = nullptr;
+    if (spvtools::LookupOpcodeForEnv(_.context()->target_env, expected_opcode,
+                                     &desc) != SPV_SUCCESS ||
         !desc) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << ext_inst_name() << ": "
              << "expected operand " << operand_name << " is invalid";
     }
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << ext_inst_name() << ": "
-           << "expected operand " << operand_name << " must be a result id of "
-           << "Op" << desc->name;
+           << ext_inst_name() << ": " << "expected operand " << operand_name
+           << " must be a result id of " << "Op" << desc->name().data();
   }
   return SPV_SUCCESS;
 }

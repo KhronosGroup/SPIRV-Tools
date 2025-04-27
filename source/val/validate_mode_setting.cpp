@@ -18,6 +18,7 @@
 
 #include "source/opcode.h"
 #include "source/spirv_target_env.h"
+#include "source/table2.h"
 #include "source/val/instruction.h"
 #include "source/val/validate.h"
 #include "source/val/validation_state.h"
@@ -284,7 +285,6 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  // TODO - Need to add TileShadingRateQCOM support
   if (spvIsVulkanEnv(_.context()->target_env)) {
     switch (execution_model) {
       case spv::ExecutionModel::GLCompute:
@@ -313,7 +313,7 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
           }
           if (!ok) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << _.VkErrorID(10685)
+                   << _.VkErrorID(6426)
                    << "In the Vulkan environment, GLCompute execution model "
                       "entry points require either the LocalSize or "
                       "LocalSizeId execution mode or an object decorated with "
@@ -926,12 +926,12 @@ spv_result_t ValidateDuplicateExecutionModes(ValidationState_t& _) {
   std::set<PerEntryKey> seen_per_entry;
   std::set<PerOperandKey> seen_per_operand;
 
-  const auto lookupMode = [&_](spv::ExecutionMode mode) -> std::string {
-    spv_operand_desc desc = nullptr;
-    if (_.grammar().lookupOperand(SPV_OPERAND_TYPE_EXECUTION_MODE,
-                                  static_cast<uint32_t>(mode),
-                                  &desc) == SPV_SUCCESS) {
-      return std::string(desc->name);
+  const auto lookupMode = [](spv::ExecutionMode mode) -> std::string {
+    spvtools::OperandDesc* desc = nullptr;
+    if (spvtools::LookupOperand(SPV_OPERAND_TYPE_EXECUTION_MODE,
+                                static_cast<uint32_t>(mode),
+                                &desc) == SPV_SUCCESS) {
+      return std::string(desc->name().data());
     }
     return "Unknown";
   };
