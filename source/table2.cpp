@@ -1,6 +1,5 @@
 // Copyright (c) 2025 Google LLC
 //
-//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -264,10 +263,29 @@ spv_result_t LookupOperand(spv_operand_type_t type, const char* name,
   return SPV_ERROR_INVALID_LOOKUP;
 }
 
-namespace to_be_used {
-void functions_to_be_used() {
-  (void)ExtensionToIndexRange(spvtools::kSPV_AMD_shader_ballot);
+const char* ExtensionToString(Extension extension) {
+  return getChars(ExtensionToIndexRange(extension));
 }
-}  // namespace to_be_used
+
+bool GetExtensionFromString(const char* name, Extension* extension) {
+  // The comparison function knows to use 'name' string to compare against
+  // when the value is kSentinel.
+  const auto kSentinel = uint32_t(-1);
+  const NameValue needle{{}, kSentinel};
+  auto less = [&](const NameValue& lhs, const NameValue& rhs) {
+    const char* lhs_chars = lhs.value == kSentinel ? name : getChars(lhs.name);
+    const char* rhs_chars = rhs.value == kSentinel ? name : getChars(rhs.name);
+    return std::strcmp(lhs_chars, rhs_chars) < 0;
+  };
+
+  auto where = std::lower_bound(kExtensionNames.begin(), kExtensionNames.end(),
+                                needle, less);
+  if (where != kExtensionNames.end() &&
+      std::strcmp(getChars(where->name), name) == 0) {
+    *extension = static_cast<Extension>(where->value);
+    return true;
+  }
+  return false;
+}
 
 }  // namespace spvtools

@@ -40,27 +40,6 @@ add_custom_command(OUTPUT ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_
     COMMENT "Generate core tables")
 add_custom_target(spirv-tools-tables DEPENDS ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_FILE})
 
-macro(spvtools_enum_string_mapping CONFIG_VERSION)
-  set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
-  set(GRAMMAR_EXTENSION_ENUM_INC_FILE "${spirv-tools_BINARY_DIR}/extension_enum.inc")
-  set(GRAMMAR_ENUM_STRING_MAPPING_INC_FILE "${spirv-tools_BINARY_DIR}/enum_string_mapping.inc")
-  add_custom_command(OUTPUT ${GRAMMAR_EXTENSION_ENUM_INC_FILE}
-     ${GRAMMAR_ENUM_STRING_MAPPING_INC_FILE}
-    COMMAND Python3::Interpreter ${GRAMMAR_PROCESSING_SCRIPT}
-      --spirv-core-grammar=${GRAMMAR_JSON_FILE}
-      --extinst-debuginfo-grammar=${DEBUGINFO_GRAMMAR_JSON_FILE}
-      --extinst-cldebuginfo100-grammar=${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
-      --extension-enum-output=${GRAMMAR_EXTENSION_ENUM_INC_FILE}
-      --enum-string-mapping-output=${GRAMMAR_ENUM_STRING_MAPPING_INC_FILE}
-    DEPENDS ${GRAMMAR_PROCESSING_SCRIPT}
-            ${GRAMMAR_JSON_FILE}
-            ${DEBUGINFO_GRAMMAR_JSON_FILE}
-            ${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
-    COMMENT "Generate enum-string mapping for SPIR-V ${CONFIG_VERSION}.")
-  list(APPEND EXTENSION_H_DEPENDS ${GRAMMAR_EXTENSION_ENUM_INC_FILE})
-  list(APPEND ENUM_STRING_MAPPING_CPP_DEPENDS ${GRAMMAR_ENUM_STRING_MAPPING_INC_FILE})
-endmacro(spvtools_enum_string_mapping)
-
 macro(spvtools_vimsyntax CONFIG_VERSION CLVERSION)
   set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
   set(GLSL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/extinst.glsl.std.450.grammar.json")
@@ -109,7 +88,6 @@ macro(spvtools_extinst_lang_headers NAME GRAMMAR_FILE)
   list(APPEND EXTINST_CPP_DEPENDS spirv-tools-header-${NAME})
 endmacro(spvtools_extinst_lang_headers)
 
-spvtools_enum_string_mapping("unified1")
 spvtools_vendor_tables("glsl.std.450" "glsl" "")
 spvtools_vendor_tables("opencl.std.100" "opencl" "")
 spvtools_vendor_tables("spv-amd-shader-explicit-vertex-parameter" "spv-amd-sevp" "")
@@ -147,11 +125,8 @@ list(APPEND OPCODE_CPP_DEPENDS ${GENERATOR_INC_FILE})
 # multiple targets depend on the same custom command.
 add_custom_target(core_tables
 	DEPENDS ${OPCODE_CPP_DEPENDS}
-	        ${OPERAND_CPP_DEPENDS}
-		${CORE_TABLES_BODY_INC_FILE}
+	        ${CORE_TABLES_BODY_INC_FILE}
 		${CORE_TABLES_HEADER_INC_FILE})
-add_custom_target(enum_string_mapping
-  DEPENDS ${EXTENSION_H_DEPENDS} ${ENUM_STRING_MAPPING_CPP_DEPENDS})
 add_custom_target(extinst_tables
   DEPENDS ${EXTINST_CPP_DEPENDS})
 
@@ -178,7 +153,11 @@ add_custom_target(spirv-tools-build-version
    DEPENDS ${SPIRV_TOOLS_BUILD_VERSION_INC})
 set_property(TARGET spirv-tools-build-version PROPERTY FOLDER "SPIRV-Tools build")
 
-list(APPEND PCH_DEPENDS ${ENUM_STRING_MAPPING_CPP_DEPENDS} ${OPCODE_CPP_DEPENDS} ${OPERAND_CPP_DEPENDS} ${EXTENSION_H_DEPENDS} ${EXTINST_CPP_DEPENDS} ${SPIRV_TOOLS_BUILD_VERSION_INC})
+list(APPEND PCH_DEPENDS
+	${CORE_TABLES_HEADER_INC_FILE}
+	${OPCODE_CPP_DEPENDS}
+	${EXTINST_CPP_DEPENDS}
+	${SPIRV_TOOLS_BUILD_VERSION_INC})
 set_source_files_properties(
   ${CMAKE_CURRENT_SOURCE_DIR}/pch_source.cpp
   PROPERTIES OBJECT_DEPENDS "${PCH_DEPENDS}")
@@ -209,7 +188,6 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/diagnostic.h
   ${CMAKE_CURRENT_SOURCE_DIR}/disassemble.h
   ${CMAKE_CURRENT_SOURCE_DIR}/enum_set.h
-  ${CMAKE_CURRENT_SOURCE_DIR}/enum_string_mapping.h
   ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.h
   ${CMAKE_CURRENT_SOURCE_DIR}/extensions.h
   ${CMAKE_CURRENT_SOURCE_DIR}/instruction.h
@@ -244,7 +222,6 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/binary.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/diagnostic.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/disassemble.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/enum_string_mapping.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ext_inst.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/extensions.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/libspirv.cpp
@@ -349,7 +326,7 @@ function(spirv_tools_default_target_options target)
   )
   set_property(TARGET ${target} PROPERTY FOLDER "SPIRV-Tools libraries")
   spvtools_check_symbol_exports(${target})
-  add_dependencies(${target} spirv-tools-build-version core_tables enum_string_mapping extinst_tables)
+  add_dependencies(${target} spirv-tools-build-version core_tables extinst_tables)
 endfunction()
 
 # Always build ${SPIRV_TOOLS}-shared. This is expected distro packages, and

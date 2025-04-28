@@ -154,7 +154,7 @@ def to_safe_identifier(s: str) -> str:
     and prepending 'k'.
     The result should be safe to use as a C identifier.
     """
-    return 'k' + re.sub(r'[^a-zA-Z]', '_', s)
+    return 'k' + re.sub(r'[^a-zA-Z0-9]', '_', s)
 
 
 class Grammar():
@@ -167,7 +167,7 @@ class Grammar():
     """
     def __init__(self, extensions: List[str], operand_kinds:List[dict], printing_classes: List[str]) -> None:
         self.context = Context()
-        self.extensions = extensions
+        self.extensions = sorted(extensions)
         self.operand_kinds = sorted(operand_kinds, key = lambda ok: convert_operand_kind(ok))
         self.printing_classes = sorted([to_safe_identifier(x) for x in printing_classes])
 
@@ -178,7 +178,7 @@ class Grammar():
 
         # The self.header_decls content goes into core_tables_header.inc to be
         # included in a .h file.
-        self.header_decls: List[str] = self.PrintingClassDecls()
+        self.header_decls: List[str] = []
         # The self.body_decls content goes into core_tables_body.inc to be included
         # in a .cpp file.  It includes definitions of static variables and
         # hidden functions.
@@ -189,8 +189,8 @@ class Grammar():
         if len(self.extensions) == 0:
             raise Exception("extensions should be a non-empty list")
 
-        # Preload the string table
-        self.context.AddStringList('extension', extensions)
+        self.ComputePrintingClassDecls()
+        self.ComputeExtensionDecls()
 
         # These operand kinds need to have their optional counterpart to also
         # be represented in the lookup tables, with the same content.
@@ -218,20 +218,39 @@ constexpr inline IndexRange IR(uint32_t first, uint32_t count) {
 }
 """
 
-    def PrintingClassDecls(self) -> str:
+    def ComputePrintingClassDecls(self) -> str:
         parts: List[str] = []
-        parts.append("enum class PrintingClass : int {");
+        parts.append("enum class PrintingClass : uint32_t {");
         parts.extend(["  {},".format(x) for x in self.printing_classes])
         parts.append("};\n")
-        return parts
+        self.header_decls.extend(parts)
 
-    def ExtensionEnumList(self) -> str:
-        """
-        Returns the spvtools::Extension enum values, as a string.
-        This is kept separate because it will be included in 'source/extensions.h'
-        which has an otherwise narrow interface.
-        """
-        return ',\n'.join(['k' + e for e in self.extensions])
+    def ComputeExtensionDecls(self) -> None:
+        parts: List[str] = []
+        parts.append("enum Extension : uint32_t {");
+        parts.extend(["  {},".format(to_safe_identifier(x)) for x in self.extensions])
+        parts.append("};\n")
+        self.header_decls.extend(parts)
+
+        parts = []
+        parts.append("// Returns the name of an extension, as an index into kStrings")
+        parts.append("IndexRange ExtensionToIndexRange(Extension extension) {\n  switch(extension) {")
+        for e in self.extensions:
+            parts.append('    case Extension::k{}: return {};'.format(e,self.context.AddString(e)))
+        parts.append("    default: break;");
+        parts.append('  }\n  return {};\n}\n');
+        self.body_decls.extend(parts)
+
+        parts = []
+        parts.append("""// Extension names and values, ordered by name
+// The fields in order are:
+//   name, indexing into kStrings
+//   enum value""")
+        parts.append("std::array<NameValue, {}> kExtensionNames{{{{".format(len(self.extensions)))
+        for e in self.extensions:
+            parts.append('  {{{}, static_cast<uint32_t>({})}},'.format(self.context.AddString(e), to_safe_identifier(e)))
+        parts.append("}};\n")
+        self.body_decls.extend(parts)
 
     def ComputeOperandTables(self) -> None:
         """
@@ -263,7 +282,6 @@ constexpr inline IndexRange IR(uint32_t first, uint32_t count) {
          - kOperandNamesRangeByKind: a mapping from operand kind to the index
            range into kOperandNames.
            This has mappings for both concrete and corresponding optional operand kinds.
-
         """
 
         self.header_ignore_decls.append(
@@ -617,16 +635,6 @@ struct InstructionDesc {
             name = self.context.GetString(ir)
             parts.append('  {}, // {}'.format(name, i))
         parts.append('};\n');
-        self.body_decls.extend(parts);
-
-        parts: List[str] = []
-        parts.append("// Returns the name of an extension, as an index into kStrings")
-        parts.append("IndexRange ExtensionToIndexRange(Extension extension) {\n  switch(extension) {")
-        for e in self.extensions:
-            parts.append('    case Extension::k{}: return {};'.format(e,self.context.AddString(e)))
-        parts.append("    default: break;");
-        parts.append('  }\n  return {};\n}\n');
-
         self.body_decls.extend(parts)
 
 

@@ -16,7 +16,6 @@
 
 #include <string>
 
-#include "source/enum_string_mapping.h"
 #include "source/table2.h"
 
 namespace spvtools {

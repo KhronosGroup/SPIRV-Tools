@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "source/enum_set.h"
-#include "source/enum_string_mapping.h"
 #include "source/extensions.h"
 #include "source/opcode.h"
 #include "source/operand.h"

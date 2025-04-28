@@ -124,40 +124,6 @@ def generate_compressed_tables():
         visibility = ["//visibility:private"],
     )
 
-def generate_enum_string_mapping(version):
-    if not version:
-        fail("Must specify version", "version")
-
-    grammars = dict(
-        core_grammar = "@spirv_headers//:spirv_core_grammar_{}".format(version),
-        debuginfo_grammar = DEBUGINFO_GRAMMAR_JSON_FILE,
-        cldebuginfo_grammar = CLDEBUGINFO100_GRAMMAR_JSON_FILE,
-    )
-
-    outs = dict(
-        extension_enum_ouput = "extension_enum.inc",
-        enum_string_mapping_output = "enum_string_mapping.inc",
-    )
-
-    cmd = (
-        "$(location :generate_grammar_tables)" +
-        " --spirv-core-grammar=$(location {core_grammar})" +
-        " --extinst-debuginfo-grammar=$(location {debuginfo_grammar})" +
-        " --extinst-cldebuginfo100-grammar=$(location {cldebuginfo_grammar})" +
-        " --extension-enum-output=$(location {extension_enum_ouput})" +
-        " --enum-string-mapping-output=$(location {enum_string_mapping_output})"
-    ).format(**_merge_dicts([grammars, outs]))
-
-    native.genrule(
-        name = "gen_enum_string_mapping",
-        srcs = grammars.values(),
-        outs = outs.values(),
-        cmd = cmd,
-        cmd_bat = cmd,
-        tools = [":generate_grammar_tables"],
-        visibility = ["//visibility:private"],
-    )
-
 def generate_vendor_tables(extension, target = "", operand_kind_prefix = ""):
     if not extension:
         fail("Must specify extension", "extension")
