@@ -201,8 +201,6 @@ SPVTOOLS_OPT_SRC_FILES := \
 # Locations of grammar files.
 #
 SPV_COREUNIFIED1_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/spirv.core.grammar.json
-SPV_GLSL_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.glsl.std.450.grammar.json
-SPV_OPENCL_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.opencl.std.100.grammar.json
 SPV_DEBUGINFO_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.debuginfo.grammar.json
 SPV_CLDEBUGINFO100_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.opencl.debuginfo.100.grammar.json
 SPV_VKDEBUGINFO100_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.nonsemantic.shader.debuginfo.100.grammar.json
@@ -210,8 +208,6 @@ SPV_VKDEBUGINFO100_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extin
 define gen_spvtools_grammar_tables
 $(call generate-file-dir,$(1)/core.insts-unified1.inc)
 $(1)/core.insts-unified1.inc $(1)/operand.kinds-unified1.inc \
-$(1)/glsl.std.450.insts.inc \
-$(1)/opencl.std.insts.inc \
 : \
         $(LOCAL_PATH)/utils/generate_grammar_tables.py \
         $(SPV_COREUNIFIED1_GRAMMAR) \
@@ -221,20 +217,16 @@ $(1)/opencl.std.insts.inc \
         $(SPV_CLDEBUGINFO100_GRAMMAR)
 		@$(HOST_PYTHON) $(LOCAL_PATH)/utils/generate_grammar_tables.py \
 		                --spirv-core-grammar=$(SPV_COREUNIFIED1_GRAMMAR) \
-		                --extinst-glsl-grammar=$(SPV_GLSL_GRAMMAR) \
-		                --extinst-opencl-grammar=$(SPV_OPENCL_GRAMMAR) \
 		                --extinst-debuginfo-grammar=$(SPV_DEBUGINFO_GRAMMAR) \
 		                --extinst-cldebuginfo100-grammar=$(SPV_CLDEBUGINFO100_GRAMMAR) \
 		                --core-insts-output=$(1)/core.insts-unified1.inc \
-		                --glsl-insts-output=$(1)/glsl.std.450.insts.inc \
-		                --opencl-insts-output=$(1)/opencl.std.insts.inc \
 		                --operand-kinds-output=$(1)/operand.kinds-unified1.inc
 		@echo "[$(TARGET_ARCH_ABI)] Grammar (from unified1)  : instructions & operands <= grammar JSON files"
 $(LOCAL_PATH)/source/opcode.cpp: $(1)/core.insts-unified1.inc
 $(LOCAL_PATH)/source/operand.cpp: $(1)/operand.kinds-unified1.inc
 $(LOCAL_PATH)/source/ext_inst.cpp: \
 	$(1)/glsl.std.450.insts.inc \
-	$(1)/opencl.std.insts.inc \
+	$(1)/opencl.std.100.insts.inc \
 	$(1)/debuginfo.insts.inc \
 	$(1)/opencl.debuginfo.100.insts.inc \
 	$(1)/nonsemantic.shader.debuginfo.100.insts.inc \
@@ -279,10 +271,12 @@ $(1)/$(2).insts.inc : \
 		    --extinst-vendor-grammar=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.$(2).grammar.json \
 		    --vendor-insts-output=$(1)/$(2).insts.inc \
 		    --vendor-operand-kind-prefix=$(3)
-		@echo "[$(TARGET_ARCH_ABI)] Vendor extended instruction set: $(2) tables <= grammar"
+		@echo "[$(TARGET_ARCH_ABI)] Extended instruction set: $(2) tables <= grammar"
 $(LOCAL_PATH)/source/ext_inst.cpp: $(1)/$(2).insts.inc
 endef
-# Vendor and debug extended instruction sets, with grammars from SPIRV-Tools source tree.
+# Vendor and debug extended instruction sets, with grammars from SPIRV-Headers source tree.
+$(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),glsl.std.450,""))
+$(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),opencl.std.100,""))
 $(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),debuginfo,""))
 $(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),opencl.debuginfo.100,"CLDEBUG100_"))
 $(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),nonsemantic.shader.debuginfo.100,"SHDEBUG100_"))

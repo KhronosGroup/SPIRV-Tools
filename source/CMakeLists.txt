@@ -41,7 +41,7 @@ macro(spvtools_core_tables CONFIG_VERSION)
             ${GRAMMAR_JSON_FILE}
             ${DEBUGINFO_GRAMMAR_JSON_FILE}
             ${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
-    COMMENT "Generate info tables for SPIR-V v${CONFIG_VERSION} core instructions and operands.")
+    COMMENT "Generate info tables for SPIR-V ${CONFIG_VERSION} core instructions and operands.")
   list(APPEND OPCODE_CPP_DEPENDS ${GRAMMAR_INSTS_INC_FILE})
   list(APPEND OPERAND_CPP_DEPENDS ${GRAMMAR_KINDS_INC_FILE})
 endmacro(spvtools_core_tables)
@@ -62,7 +62,7 @@ macro(spvtools_enum_string_mapping CONFIG_VERSION)
             ${GRAMMAR_JSON_FILE}
             ${DEBUGINFO_GRAMMAR_JSON_FILE}
             ${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
-    COMMENT "Generate enum-string mapping for SPIR-V v${CONFIG_VERSION}.")
+    COMMENT "Generate enum-string mapping for SPIR-V ${CONFIG_VERSION}.")
   list(APPEND EXTENSION_H_DEPENDS ${GRAMMAR_EXTENSION_ENUM_INC_FILE})
   list(APPEND ENUM_STRING_MAPPING_CPP_DEPENDS ${GRAMMAR_ENUM_STRING_MAPPING_INC_FILE})
 endmacro(spvtools_enum_string_mapping)
@@ -83,32 +83,6 @@ macro(spvtools_vimsyntax CONFIG_VERSION CLVERSION)
             ${GLSL_GRAMMAR_JSON_FILE} ${OPENCL_GRAMMAR_JSON_FILE} ${DEBUGINFO_GRAMMAR_JSON_FILE}
     COMMENT "Generate spvasm.vim: Vim syntax file for SPIR-V assembly.")
 endmacro(spvtools_vimsyntax)
-
-macro(spvtools_glsl_tables CONFIG_VERSION)
-  set(CORE_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
-  set(GLSL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/extinst.glsl.std.450.grammar.json")
-  set(GRAMMAR_INC_FILE "${spirv-tools_BINARY_DIR}/glsl.std.450.insts.inc")
-  add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
-    COMMAND Python3::Interpreter ${GRAMMAR_PROCESSING_SCRIPT}
-      --extinst-glsl-grammar=${GLSL_GRAMMAR_JSON_FILE}
-      --glsl-insts-output=${GRAMMAR_INC_FILE}
-    DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${CORE_GRAMMAR_JSON_FILE} ${GLSL_GRAMMAR_JSON_FILE}
-    COMMENT "Generate info tables for GLSL extended instructions and operands v${CONFIG_VERSION}.")
-  list(APPEND EXTINST_CPP_DEPENDS ${GRAMMAR_INC_FILE})
-endmacro(spvtools_glsl_tables)
-
-macro(spvtools_opencl_tables CONFIG_VERSION)
-  set(CORE_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
-  set(OPENCL_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/extinst.opencl.std.100.grammar.json")
-  set(GRAMMAR_INC_FILE "${spirv-tools_BINARY_DIR}/opencl.std.insts.inc")
-  add_custom_command(OUTPUT ${GRAMMAR_INC_FILE}
-    COMMAND Python3::Interpreter ${GRAMMAR_PROCESSING_SCRIPT}
-      --extinst-opencl-grammar=${OPENCL_GRAMMAR_JSON_FILE}
-      --opencl-insts-output=${GRAMMAR_INC_FILE}
-    DEPENDS ${GRAMMAR_PROCESSING_SCRIPT} ${CORE_GRAMMAR_JSON_FILE} ${OPENCL_GRAMMAR_JSON_FILE}
-    COMMENT "Generate info tables for OpenCL extended instructions and operands v${CONFIG_VERSION}.")
-  list(APPEND EXTINST_CPP_DEPENDS ${GRAMMAR_INC_FILE})
-endmacro(spvtools_opencl_tables)
 
 macro(spvtools_vendor_tables VENDOR_TABLE SHORT_NAME OPERAND_KIND_PREFIX)
   set(INSTS_FILE "${spirv-tools_BINARY_DIR}/${VENDOR_TABLE}.insts.inc")
@@ -143,8 +117,8 @@ endmacro(spvtools_extinst_lang_headers)
 
 spvtools_core_tables("unified1")
 spvtools_enum_string_mapping("unified1")
-spvtools_opencl_tables("unified1")
-spvtools_glsl_tables("unified1")
+spvtools_vendor_tables("glsl.std.450" "glsl" "")
+spvtools_vendor_tables("opencl.std.100" "opencl" "")
 spvtools_vendor_tables("spv-amd-shader-explicit-vertex-parameter" "spv-amd-sevp" "")
 spvtools_vendor_tables("spv-amd-shader-trinary-minmax" "spv-amd-stm" "")
 spvtools_vendor_tables("spv-amd-gcn-shader" "spv-amd-gs" "")

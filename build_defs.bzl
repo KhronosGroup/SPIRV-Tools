@@ -125,69 +125,20 @@ def generate_enum_string_mapping(version):
         visibility = ["//visibility:private"],
     )
 
-def generate_opencl_tables(version):
-    if not version:
-        fail("Must specify version", "version")
-
-    grammars = dict(
-        opencl_grammar = "@spirv_headers//:spirv_opencl_grammar_{}".format(version),
-    )
-
-    outs = dict(
-        opencl_insts_output = "opencl.std.insts.inc",
-    )
-
-    cmd = (
-        "$(location :generate_grammar_tables)" +
-        " --extinst-opencl-grammar=$(location {opencl_grammar})" +
-        " --opencl-insts-output=$(location {opencl_insts_output})"
-    ).format(**_merge_dicts([grammars, outs]))
-
-    native.genrule(
-        name = "gen_opencl_tables_" + version,
-        srcs = grammars.values(),
-        outs = outs.values(),
-        cmd = cmd,
-        cmd_bat = cmd,
-        tools = [":generate_grammar_tables"],
-        visibility = ["//visibility:private"],
-    )
-
-def generate_glsl_tables(version):
-    if not version:
-        fail("Must specify version", "version")
-
-    grammars = dict(
-        gsls_grammar = "@spirv_headers//:spirv_glsl_grammar_{}".format(version),
-    )
-    outs = dict(
-        gsls_insts_outs = "glsl.std.450.insts.inc",
-    )
-
-    cmd = (
-        "$(location :generate_grammar_tables)" +
-        " --extinst-glsl-grammar=$(location {gsls_grammar})" +
-        " --glsl-insts-output=$(location {gsls_insts_outs})"
-    ).format(**_merge_dicts([grammars, outs]))
-
-    native.genrule(
-        name = "gen_glsl_tables_" + version,
-        srcs = grammars.values(),
-        outs = outs.values(),
-        cmd = cmd,
-        cmd_bat = cmd,
-        tools = [":generate_grammar_tables"],
-        visibility = ["//visibility:private"],
-    )
-
-def generate_vendor_tables(extension, operand_kind_prefix = ""):
+def generate_vendor_tables(extension, target = "", operand_kind_prefix = ""):
     if not extension:
         fail("Must specify extension", "extension")
 
-    extension_rule = extension.replace("-", "_").replace(".", "_")
-    grammars = dict(
-        vendor_grammar = "@spirv_headers//:spirv_ext_inst_{}_grammar_unified1".format(extension_rule),
-    )
+    if target == "":
+        extension_rule = extension.replace("-", "_").replace(".", "_")
+        grammars = dict(
+            vendor_grammar = "@spirv_headers//:spirv_ext_inst_{}_grammar_unified1".format(extension_rule),
+        )
+    else:
+        grammars = dict(
+            vendor_grammar = "@spirv_headers//:{}".format(target),
+        )
+        extension_rule = target
     outs = dict(
         vendor_insts_output = "{}.insts.inc".format(extension),
     )
