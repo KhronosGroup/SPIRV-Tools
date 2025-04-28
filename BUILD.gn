@@ -42,7 +42,8 @@ action("spvtools_core_tables") {
       "${spirv_headers}/include/spirv/unified1/extinst.debuginfo.grammar.json"
   cldebuginfo100_insts_file = "${spirv_headers}/include/spirv/unified1/extinst.opencl.debuginfo.100.grammar.json"
 
-  core_tables_file = "${target_gen_dir}/core_tables.inc"
+  core_tables_body_file = "${target_gen_dir}/core_tables_body.inc"
+  core_tables_header_file = "${target_gen_dir}/core_tables_header.inc"
 
   sources = [
     cldebuginfo100_insts_file,
@@ -50,7 +51,8 @@ action("spvtools_core_tables") {
     debuginfo_insts_file,
   ]
   outputs = [
-    core_tables_file,
+    core_tables_body_file,
+    core_tables_header_file,
   ]
   args = [
     "--spirv-core-grammar",
@@ -59,8 +61,10 @@ action("spvtools_core_tables") {
     rebase_path(debuginfo_insts_file, root_build_dir),
     "--extinst-cldebuginfo100-grammar",
     rebase_path(cldebuginfo100_insts_file, root_build_dir),
-    "--core-tables-output",
-    rebase_path(core_tables_file, root_build_dir)
+    "--core-tables-body-output",
+    rebase_path(core_tables_body_file, root_build_dir),
+    "--core-tables-header-output",
+    rebase_path(core_tables_header_file, root_build_dir)
   ]
 }
 

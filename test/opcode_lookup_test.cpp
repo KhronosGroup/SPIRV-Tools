@@ -174,5 +174,59 @@ TEST(OpcodeLookupExtInstTest, Operands) {
                         SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER}));
 }
 
+// Test printingClass
+
+struct OpcodePrintingClassCase {
+  std::string name;
+  PrintingClass expected;
+};
+
+std::ostream& operator<<(std::ostream& os,
+                         const OpcodePrintingClassCase& opcc) {
+  os << "OPCC('" << opcc.name << "', " << static_cast<int>(opcc.expected)
+     << ")";
+  return os;
+}
+
+using OpcodePrintingClassTest =
+    ::testing::TestWithParam<OpcodePrintingClassCase>;
+
+TEST_P(OpcodePrintingClassTest, OpcodeLookup_ByName) {
+  InstructionDesc* desc = nullptr;
+  auto status = LookupOpcode(GetParam().name.data(), &desc);
+  EXPECT_EQ(status, SPV_SUCCESS);
+  ASSERT_NE(desc, nullptr);
+  EXPECT_EQ(desc->printingClass, GetParam().expected);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Samples, OpcodePrintingClassTest,
+    ValuesIn(std::vector<OpcodePrintingClassCase>{
+        {"ConstantFunctionPointerINTEL", PrintingClass::k_exclude},
+        {"Nop", PrintingClass::kMiscellaneous},
+        {"SourceContinued", PrintingClass::kDebug},
+        {"Decorate", PrintingClass::kAnnotation},
+        {"Extension", PrintingClass::kExtension},
+        {"MemoryModel", PrintingClass::kMode_Setting},
+        {"Variable", PrintingClass::kMemory},
+        {"CooperativeMatrixPerElementOpNV", PrintingClass::kFunction},
+        {"SampledImage", PrintingClass::kImage},
+        {"ConvertFToU", PrintingClass::kConversion},
+        {"VectorExtractDynamic", PrintingClass::kComposite},
+        {"IAdd", PrintingClass::kArithmetic},
+        {"ShiftRightLogical", PrintingClass::kBit},
+        {"Any", PrintingClass::kRelational_and_Logical},
+        {"DPdx", PrintingClass::kDerivative},
+        {"Branch", PrintingClass::kControl_Flow},
+        {"AtomicLoad", PrintingClass::kAtomic},
+        {"ControlBarrier", PrintingClass::kBarrier},
+        {"GroupAll", PrintingClass::kGroup},
+        {"EnqueueMarker", PrintingClass::kDevice_Side_Enqueue},
+        {"ReadPipe", PrintingClass::kPipe},
+        {"GroupNonUniformElect", PrintingClass::kNon_Uniform},
+        // Skipping "Reserved" because it's probably an
+        // unstable class.
+    }));
+
 }  // namespace
 }  // namespace spvtools

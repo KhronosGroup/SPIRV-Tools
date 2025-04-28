@@ -207,8 +207,9 @@ SPV_CLDEBUGINFO100_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extin
 SPV_VKDEBUGINFO100_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.nonsemantic.shader.debuginfo.100.grammar.json
 
 define gen_spvtools_grammar_tables
-$(call generate-file-dir,$(1)/core_tables.inc)
-$(1)/core_tables.inc \
+$(call generate-file-dir,$(1)/core_tables_body.inc)
+$(1)/core_tables_body.inc \
+$(1)/core_tables_header.inc \
 : \
         $(LOCAL_PATH)/utils/generate_grammar_tables.py \
         $(SPV_COREUNIFIED1_GRAMMAR) \
@@ -218,9 +219,13 @@ $(1)/core_tables.inc \
 		                --spirv-core-grammar=$(SPV_COREUNIFIED1_GRAMMAR) \
 		                --extinst-debuginfo-grammar=$(SPV_DEBUGINFO_GRAMMAR) \
 		                --extinst-cldebuginfo100-grammar=$(SPV_CLDEBUGINFO100_GRAMMAR) \
-		                --core-tables-output=$(1)/core_tables.inc
-		@echo "[$(TARGET_ARCH_ABI)] Grammar (from unified1)  : instructions & operands <= grammar JSON files"
-$(LOCAL_PATH)/source/table2.cpp: $(1)/core_tables.inc
+		                --core-tables-body-output=$(1)/core_tables_body.inc \
+		                --core-tables-header-output=$(1)/core_tables_header.inc
+		@echo "[$(TARGET_ARCH_ABI)] Grammar from unified1)  : instructions & operands <= grammar JSON files"
+# Make all source files depend on the generated core tables
+$(foreach F,$(SPVTOOLS_SRC_FILES) $(SPVTOOLS_OPT_SRC_FILES),$(LOCAL_PATH)/$F ) \
+  : $(1)/core_tables_body.inc \
+    $(1)/core_tables_header.inc
 $(LOCAL_PATH)/source/ext_inst.cpp: \
 	$(1)/glsl.std.450.insts.inc \
 	$(1)/opencl.std.100.insts.inc \

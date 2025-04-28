@@ -101,7 +101,8 @@ def generate_compressed_tables():
     )
 
     outs = dict(
-        core_tables_output = "core_tables.inc",
+        core_tables_header_output = "core_tables_header.inc",
+        core_tables_body_output = "core_tables_body.inc",
     )
 
     cmd = (
@@ -109,7 +110,8 @@ def generate_compressed_tables():
         " --spirv-core-grammar=$(location {core_grammar})" +
         " --extinst-debuginfo-grammar=$(location {debuginfo_grammar})" +
         " --extinst-cldebuginfo100-grammar=$(location {cldebuginfo_grammar})" +
-        " --core-tables-output=$(location {core_tables_output})"
+        " --core-tables-body-output=$(location {core_tables_body_output})" +
+        " --core-tables-header-output=$(location {core_tables_header_output})"
     ).format(**_merge_dicts([grammars, outs]))
 
     native.genrule(
