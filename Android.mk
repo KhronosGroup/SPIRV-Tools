@@ -220,8 +220,7 @@ $(1)/core_tables.inc \
 		                --extinst-cldebuginfo100-grammar=$(SPV_CLDEBUGINFO100_GRAMMAR) \
 		                --core-tables-output=$(1)/core_tables.inc
 		@echo "[$(TARGET_ARCH_ABI)] Grammar (from unified1)  : instructions & operands <= grammar JSON files"
-$(LOCAL_PATH)/source/opcode.cpp: $(1)/core_tables.inc
-$(LOCAL_PATH)/source/operand.cpp: $(1)/core_tables.inc
+$(LOCAL_PATH)/source/table2.cpp: $(1)/core_tables.inc
 $(LOCAL_PATH)/source/ext_inst.cpp: \
 	$(1)/glsl.std.450.insts.inc \
 	$(1)/opencl.std.100.insts.inc \
