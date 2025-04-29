@@ -168,7 +168,7 @@ elif [ $TOOL = "cmake-dxc-smoketest" ]; then
   cd $DXC_DIR/external
 
   # Get DXC dependencies. Link the appropriate SPIRV-Tools.
-  git clone https://github.com/microsoft/DirectX-Headers.git
+  git submodule update --init DirectX-Headers
   rm -rf SPIRV-Tools
   ln -s $ROOT_DIR SPIRV-Tools
   git clone https://github.com/KhronosGroup/SPIRV-Headers.git SPIRV-Headers
