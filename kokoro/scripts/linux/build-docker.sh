@@ -188,7 +188,7 @@ elif [ $TOOL = "cmake-dxc-smoketest" ]; then
   ninja ClangSPIRVTests
 
   echo $(date): Testing ClangSPIRVTests...
-  build/tools/clang/unittests/SPIRV/ClangSPIRVTests
+  tools/clang/unittests/SPIRV/ClangSPIRVTests
 
   echo $(date): Testing check-clang-codegenspirv...
   ninja check-clang-codegenspirv
