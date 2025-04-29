@@ -22,7 +22,7 @@
 #    - 'clang-format-diff.py' is in the utils directory, or env var
 #       points to it.CLANG_FORMAT_DIFF
 
-BASE_BRANCH=${1:-main}
+BASE_BRANCH=$(git merge-base main HEAD)
 
 CLANG_FORMAT=${CLANG_FORMAT:-clang-format}
 if [ ! -f "$CLANG_FORMAT" ]; then
