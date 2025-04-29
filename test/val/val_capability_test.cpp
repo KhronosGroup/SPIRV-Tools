@@ -2628,6 +2628,26 @@ OpDecorate %intt BuiltIn PointSize
       HasSubstr("Capability DrawParameters is not allowed by Vulkan 1.0"));
 }
 
+using OpenCLFloat16CapabilityBase = spvtest::ValidateBase<spv_target_env>;
+
+TEST_P(OpenCLFloat16CapabilityBase, OpenCLFloat16Capability) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability Linkage
+OpCapability Float16
+OpMemoryModel Physical64 OpenCL
+%f16    = OpTypeFloat 16
+)";
+  CompileSuccessfully(spirv, GetParam());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(GetParam()));
+}
+
+INSTANTIATE_TEST_SUITE_P(OpenCLFloat16Capability, OpenCLFloat16CapabilityBase,
+                         ValuesIn(std::vector<spv_target_env>{
+                             SPV_ENV_OPENCL_1_2, SPV_ENV_OPENCL_2_0,
+                             SPV_ENV_OPENCL_2_1, SPV_ENV_OPENCL_2_2}));
+
 TEST_F(ValidateCapability, NonOpenCL12FullCapability) {
   const std::string spirv = R"(
 OpCapability Kernel
