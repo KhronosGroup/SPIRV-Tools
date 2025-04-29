@@ -45,7 +45,7 @@ function clean_dir() {
   mkdir "$dir"
 }
 
-if [ $TOOL != "cmake-shaderc-smoketest" && $TOOL != "cmake-dxc-smoketest" ]; then
+if [ $TOOL != "cmake-shaderc-smoketest" ] && [ $TOOL != "cmake-dxc-smoketest" ]; then
   # Get source for dependencies, as specified in the DEPS file
   /usr/bin/python3 utils/git-sync-deps --treeless
 fi
