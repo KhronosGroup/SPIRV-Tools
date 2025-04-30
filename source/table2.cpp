@@ -139,8 +139,7 @@ utils::Span<const spvtools::Extension> InstructionDesc::extensions() const {
 
 spv_result_t LookupOpcode(spv::Op opcode, InstructionDesc** desc) {
   // Metaphor: Look for the needle in the haystack.
-  // The operand value is the first member.
-  const InstructionDesc needle{opcode};
+  const InstructionDesc needle(opcode);
   auto where = std::lower_bound(
       kInstructionDesc.begin(), kInstructionDesc.end(), needle,
       [&](const InstructionDesc& lhs, const InstructionDesc& rhs) {
