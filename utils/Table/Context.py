@@ -78,7 +78,7 @@ class Context():
         self.string_total_len: int = 0  # Sum of  lengths of all strings in string_buffer
         self.string_buffer: list[str] = []
         self.strings: dict[str, IndexRange] = {}
-        self.ir_to_string: dict[IndexRange, str] = {} # Invers of self.strings
+        self.ir_to_string: dict[IndexRange, str] = {} # Inverse of self.strings
 
         self.range_buffer: dict[str,list[IndexRange]] = {}
         # We need StringList here because it's hashable, and so it

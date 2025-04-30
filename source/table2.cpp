@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
-#include <iostream>
 
 #include "source/extensions.h"
 #include "source/latest_version_spirv_header.h"
@@ -97,7 +96,7 @@ IndexRange ExtensionToIndexRange(Extension extension);
 
 #include "core_tables.inc"
 
-// Reeturns a pointer to the null-terminated C-style string in the global
+// Returns a pointer to the null-terminated C-style string in the global
 // strings table, as referenced by 'ir'.  Assumes the given range is valid.
 const char* getChars(IndexRange ir) {
   assert(ir.first() < sizeof(kStrings));
