@@ -27,6 +27,7 @@
 #include "source/binary.h"
 #include "source/latest_version_spirv_header.h"
 #include "source/parsed_operand.h"
+#include "source/table2.h"
 #include "source/to_string.h"
 #include "spirv-tools/libspirv.h"
 
@@ -327,9 +328,9 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
 
 std::string FriendlyNameMapper::NameForEnumOperand(spv_operand_type_t type,
                                                    uint32_t word) {
-  spv_operand_desc desc = nullptr;
-  if (SPV_SUCCESS == grammar_.lookupOperand(type, word, &desc)) {
-    return desc->name;
+  spvtools::OperandDesc* desc = nullptr;
+  if (SPV_SUCCESS == spvtools::LookupOperand(type, word, &desc)) {
+    return desc->name().data();
   } else {
     // Invalid input.  Just give something.
     return std::string("StorageClass") + to_string(word);

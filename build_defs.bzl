@@ -47,6 +47,7 @@ def incompatible_with(incompatible_constraints):
         for constraint in incompatible_constraints
     }]))
 
+SPIRV_CORE_GRAMMAR_JSON_FILE = "@spirv_headers//:spirv_core_grammar_unified1"
 DEBUGINFO_GRAMMAR_JSON_FILE = "@spirv_headers//:spirv_ext_inst_debuginfo_grammar_unified1"
 CLDEBUGINFO100_GRAMMAR_JSON_FILE = "@spirv_headers//:spirv_ext_inst_opencl_debuginfo_100_grammar_unified1"
 SHDEBUGINFO100_GRAMMAR_JSON_FILE = "@spirv_headers//:spirv_ext_inst_nonsemantic_shader_debuginfo_100_grammar_unified1"
@@ -57,6 +58,7 @@ def _merge_dicts(dicts):
         merged.update(d)
     return merged
 
+# TODO(b/413743565): Remove after legacy grammars removed.
 def generate_core_tables(version):
     if not version:
         fail("Must specify version", "version")
@@ -88,6 +90,35 @@ def generate_core_tables(version):
         cmd = cmd,
         cmd_bat = cmd,
         tools = [":generate_grammar_tables"],
+        visibility = ["//visibility:private"],
+    )
+
+def generate_compressed_tables():
+    grammars = dict(
+        core_grammar = SPIRV_CORE_GRAMMAR_JSON_FILE,
+        debuginfo_grammar = DEBUGINFO_GRAMMAR_JSON_FILE,
+        cldebuginfo_grammar = CLDEBUGINFO100_GRAMMAR_JSON_FILE,
+    )
+
+    outs = dict(
+        core_tables_output = "core_tables.inc",
+    )
+
+    cmd = (
+        "$(location :ggt)" +
+        " --spirv-core-grammar=$(location {core_grammar})" +
+        " --extinst-debuginfo-grammar=$(location {debuginfo_grammar})" +
+        " --extinst-cldebuginfo100-grammar=$(location {cldebuginfo_grammar})" +
+        " --core-tables-output=$(location {core_tables_output})"
+    ).format(**_merge_dicts([grammars, outs]))
+
+    native.genrule(
+        name = "gen_compressed_tables",
+        srcs = grammars.values(),
+        outs = outs.values(),
+        cmd = cmd,
+        cmd_bat = cmd,
+        tools = [":ggt"],
         visibility = ["//visibility:private"],
     )
 

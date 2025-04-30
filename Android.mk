@@ -25,6 +25,7 @@ SPVTOOLS_SRC_FILES := \
 		source/spirv_target_env.cpp \
 		source/spirv_validator_options.cpp \
 		source/table.cpp \
+		source/table2.cpp \
 		source/text.cpp \
 		source/text_handler.cpp \
 		source/to_string.cpp \
@@ -206,24 +207,20 @@ SPV_CLDEBUGINFO100_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extin
 SPV_VKDEBUGINFO100_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.nonsemantic.shader.debuginfo.100.grammar.json
 
 define gen_spvtools_grammar_tables
-$(call generate-file-dir,$(1)/core.insts-unified1.inc)
-$(1)/core.insts-unified1.inc $(1)/operand.kinds-unified1.inc \
+$(call generate-file-dir,$(1)/core_tables.inc)
+$(1)/core_tables.inc \
 : \
         $(LOCAL_PATH)/utils/generate_grammar_tables.py \
         $(SPV_COREUNIFIED1_GRAMMAR) \
-        $(SPV_GLSL_GRAMMAR) \
-        $(SPV_OpenCL_GRAMMAR) \
         $(SPV_DEBUGINFO_GRAMMAR) \
         $(SPV_CLDEBUGINFO100_GRAMMAR)
-		@$(HOST_PYTHON) $(LOCAL_PATH)/utils/generate_grammar_tables.py \
+		@$(HOST_PYTHON) $(LOCAL_PATH)/utils/ggt.py \
 		                --spirv-core-grammar=$(SPV_COREUNIFIED1_GRAMMAR) \
 		                --extinst-debuginfo-grammar=$(SPV_DEBUGINFO_GRAMMAR) \
 		                --extinst-cldebuginfo100-grammar=$(SPV_CLDEBUGINFO100_GRAMMAR) \
-		                --core-insts-output=$(1)/core.insts-unified1.inc \
-		                --operand-kinds-output=$(1)/operand.kinds-unified1.inc
+		                --core-tables-output=$(1)/core_tables.inc
 		@echo "[$(TARGET_ARCH_ABI)] Grammar (from unified1)  : instructions & operands <= grammar JSON files"
-$(LOCAL_PATH)/source/opcode.cpp: $(1)/core.insts-unified1.inc
-$(LOCAL_PATH)/source/operand.cpp: $(1)/operand.kinds-unified1.inc
+$(LOCAL_PATH)/source/table2.cpp: $(1)/core_tables.inc
 $(LOCAL_PATH)/source/ext_inst.cpp: \
 	$(1)/glsl.std.450.insts.inc \
 	$(1)/opencl.std.100.insts.inc \

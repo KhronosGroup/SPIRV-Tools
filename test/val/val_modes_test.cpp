@@ -64,7 +64,7 @@ OpEntryPoint GLCompute %main "main"
   CompileSuccessfully(spirv, env);
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-None-10685"));
+              AnyVUID("VUID-StandaloneSpirv-LocalSize-06426"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
