@@ -21,6 +21,7 @@ import json
 import os.path
 import re
 import sys
+from typing import Dict, List, Tuple
 
 # Find modules relative to the directory containing this script.
 # This is needed for hermetic Bazel builds, where the Table files are bundled
@@ -45,7 +46,7 @@ SPV_EXT_relaxed_printf_string_address_space
 
 MODE='new'
 
-def convert_min_required_version(version: str | None) -> str:
+def convert_min_required_version(version): # (version: str | None) -> str
     """Converts the minimal required SPIR-V version encoded in the grammar to
     the symbol in SPIRV-Tools."""
     if version is None:
@@ -55,7 +56,7 @@ def convert_min_required_version(version: str | None) -> str:
     return 'SPV_SPIRV_VERSION_WORD({})'.format(version.replace('.', ','))
 
 
-def convert_max_required_version(version: str | None) -> str:
+def convert_max_required_version(version): # (version: str | None) -> str
     """Converts the maximum required SPIR-V version encoded in the grammar to
     the symbol in SPIRV-Tools."""
     if version is None:
@@ -130,7 +131,7 @@ def ctype(kind: str, quantifier: str) -> str:
         re.sub(r'([a-z])([A-Z])', r'\1_\2', kind).upper())
 
 
-def convert_operand_kind(obj: dict[str, str]) -> str:
+def convert_operand_kind(obj: Dict[str, str]) -> str:
     """Returns the corresponding operand type used in spirv-tools for the given
     operand kind and quantifier used in the JSON grammar.
 
@@ -155,12 +156,12 @@ class Grammar():
     and enum tables.
     Assumes an index range is emitted by printing an IndexRange object.
     """
-    def __init__(self, extensions: list[str], operand_kinds:list[dict]) -> None:
+    def __init__(self, extensions: List[str], operand_kinds:List[dict]) -> None:
         self.context = Context()
         self.extensions = extensions
         self.operand_kinds = sorted(operand_kinds, key = lambda ok: convert_operand_kind(ok))
-        self.header_decls: list[str] = [self.IndexRangeDecls()]
-        self.body_decls: list[str] = []
+        self.header_decls: List[str] = [self.IndexRangeDecls()]
+        self.body_decls: List[str] = []
 
         if len(self.operand_kinds) == 0:
             raise Exception("operand_kinds should be a non-empty list")
@@ -272,7 +273,7 @@ struct OperandDesc {
 };
 """)
 
-        def ShouldEmit(operand_kind_json: dict[str,any]):
+        def ShouldEmit(operand_kind_json: Dict[str,any]):
             """ Returns true if we should emit a table for the given
             operand kind.
             """
@@ -280,13 +281,13 @@ struct OperandDesc {
             return category in ['ValueEnum', 'BitEnum']
 
         # Populate kOperandNames
-        operand_names: list[tuple[IndexRange,int]] = []
-        name_range_for_kind: dict[str,IndexRange] = {}
+        operand_names: List[Tuple[IndexRange,int]] = []
+        name_range_for_kind: Dict[str,IndexRange] = {}
         for operand_kind_json in self.operand_kinds:
             kind_key: str = convert_operand_kind(operand_kind_json)
             if ShouldEmit(operand_kind_json):
                 operands = [Operand(o) for o in operand_kind_json['enumerants']]
-                tuples: list[tuple[str,int,str]] = []
+                tuples: List[Tuple[str,int,str]] = []
                 for o in operands:
                     tuples.append((o.enumerant, o.value, kind_key))
                     for a in o.aliases:
@@ -297,13 +298,13 @@ struct OperandDesc {
                 operand_names.extend(ir_tuples)
             else:
                 pass
-        operand_name_strings: list[str] = []
+        operand_name_strings: List[str] = []
         for i in range(0, len(operand_names)):
             ir, value, kind_key = operand_names[i]
             operand_name_strings.append('{{{}, {}}}, // {} {} in {}'.format(
                 str(ir),value,i,self.context.GetString(ir),kind_key))
 
-        parts: list[str] = []
+        parts: List[str] = []
         parts.append("""// Operand names and values, ordered by (operand kind, name)
 // The fields in order are:
 //   name, either the primary name or an alias, indexing into kStrings
@@ -332,13 +333,13 @@ struct OperandDesc {
         self.body_decls.extend(parts)
 
         # Populate kOperandsByValue
-        operands_by_value: list[str] = []
-        operands_by_value_by_kind: dict[str,IndexRange] = {}
+        operands_by_value: List[str] = []
+        operands_by_value_by_kind: Dict[str,IndexRange] = {}
         for operand_kind_json in self.operand_kinds:
             kind_key: str = convert_operand_kind(operand_kind_json)
             if ShouldEmit(operand_kind_json):
                 operands = [Operand(o) for o in operand_kind_json['enumerants']]
-                operand_descs: list[str] = []
+                operand_descs: List[str] = []
                 for o in sorted(operands, key = lambda o: o.value):
                     suboperands = [convert_operand_kind(p) for p in o.parameters]
                     desc = [
@@ -433,19 +434,19 @@ struct InstructionDesc {
 """)
 
         # Create the sorted list of opcode strings, without the 'Op' prefix.
-        opcode_name_entries: list[str] = []
-        name_value_pairs: list[tuple[str,int]] = []
+        opcode_name_entries: List[str] = []
+        name_value_pairs: List[Tuple[str,int]] = []
         for i in insts:
             name_value_pairs.append((i['opname'][2:], i['opcode']))
             for a in i.get('aliases',[]):
                 name_value_pairs.append((a[2:], i['opcode']))
         name_value_pairs = sorted(name_value_pairs)
-        inst_name_strings: list[str] = []
+        inst_name_strings: List[str] = []
         for i in range(0, len(name_value_pairs)):
             name, value = name_value_pairs[i]
             ir = self.context.AddString(name)
             inst_name_strings.append('{{{}, {}}}, // {} {}'.format(str(ir),value,i,name))
-        parts: list[str] = []
+        parts: List[str] = []
         parts.append("""// Opcode strings (without the 'Op' prefix) and opcode values, ordered by name.
 // The fields in order are:
 //   name, either the primary name or an alias, indexing into kStrings
@@ -456,9 +457,9 @@ struct InstructionDesc {
         self.body_decls.extend(parts)
 
         # Create the array of InstructionDesc
-        lines: list[str] = []
+        lines: List[str] = []
         for inst in insts:
-            parts: list[str] = []
+            parts: List[str] = []
 
             opname: str = inst['opname']
 
@@ -530,7 +531,7 @@ struct InstructionDesc {
             """
             return '"{}\\0"'.format(json.dumps(s).strip('"'))
 
-        parts: list[str] = []
+        parts: List[str] = []
         parts.append("// Array of characters, referenced by IndexRanges elsewhere.")
         parts.append("// Each IndexRange denotes a string.")
         parts.append('static const char kStrings[] =');
@@ -538,7 +539,7 @@ struct InstructionDesc {
         parts.append(';\n');
         self.body_decls.extend(parts);
 
-        parts: list[str] = []
+        parts: List[str] = []
         parts.append("""// Array of IndexRanges, where each represents a string by referencing
 // the kStrings table.
 // This array contains all sequences of alias strings used in the grammar.
@@ -588,7 +589,7 @@ struct InstructionDesc {
         parts.append('};\n');
         self.body_decls.extend(parts);
 
-        parts: list[str] = []
+        parts: List[str] = []
         parts.append("// Returns the name of an extension, as an index into kStrings")
         parts.append("IndexRange ExtensionToIndexRange(Extension extension) {\n  switch(extension) {")
         for e in self.extensions:

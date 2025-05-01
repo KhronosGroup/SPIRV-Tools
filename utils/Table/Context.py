@@ -15,6 +15,7 @@
 
 #from typing import *
 from enum import IntEnum
+from typing import Dict, List
 from . IndexRange import *
 from . StringList import *
 
@@ -55,7 +56,7 @@ class Context():
 
             It is a two-level mapping of Python type:
 
-                dict[str,dict[StringList,IndexRange]]
+                Dict[str,dict[StringList,IndexRange]]
 
             where
 
@@ -76,14 +77,14 @@ class Context():
     """
     def __init__(self) -> None:
         self.string_total_len: int = 0  # Sum of  lengths of all strings in string_buffer
-        self.string_buffer: list[str] = []
-        self.strings: dict[str, IndexRange] = {}
-        self.ir_to_string: dict[IndexRange, str] = {} # Inverse of self.strings
+        self.string_buffer: List[str] = []
+        self.strings: Dict[str, IndexRange] = {}
+        self.ir_to_string: Dict[IndexRange, str] = {} # Inverse of self.strings
 
-        self.range_buffer: dict[str,list[IndexRange]] = {}
+        self.range_buffer: Dict[str,List[IndexRange]] = {}
         # We need StringList here because it's hashable, and so it
         # can be used as the key for a dict.
-        self.ranges: dict[str,dict[StringList,IndexRange]] = {}
+        self.ranges: Dict[str,Dict[StringList,IndexRange]] = {}
 
     def GetString(self, ir: IndexRange) -> str:
         if ir in self.ir_to_string:
@@ -106,7 +107,7 @@ class Context():
         self.string_buffer.append(s)
         return ir
 
-    def AddStringList(self, kind: str, words: list[str]) -> IndexRange:
+    def AddStringList(self, kind: str, words: List[str]) -> IndexRange:
         """
         Ensures a list of strings is recorded in range_buffer[kind], and
         returns its location in the range_buffer[kind].
@@ -115,7 +116,7 @@ class Context():
         """
         l = StringList(words)
 
-        entry: dict[StringList, IndexRange] = self.ranges.get(kind, {})
+        entry: Dict[StringList, IndexRange] = self.ranges.get(kind, {})
         if kind not in self.ranges:
             self.ranges[kind] = entry
             self.range_buffer[kind] = []
