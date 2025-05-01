@@ -148,6 +148,15 @@ def convert_operand_kind(obj: Dict[str, str]) -> str:
     return ctype(kind, quantifier)
 
 
+def to_safe_identifier(s: str) -> str:
+    """
+    Returns a new string with all non-letters converted to underscores,
+    and prepending 'k'.
+    The result should be safe to use as a C identifier.
+    """
+    return 'k' + re.sub(r'[^a-zA-Z]', '_', s)
+
+
 class Grammar():
     """
     Accumulates string and enum tables.
@@ -156,11 +165,23 @@ class Grammar():
     and enum tables.
     Assumes an index range is emitted by printing an IndexRange object.
     """
-    def __init__(self, extensions: List[str], operand_kinds:List[dict]) -> None:
+    def __init__(self, extensions: List[str], operand_kinds:List[dict], printing_classes: List[str]) -> None:
         self.context = Context()
         self.extensions = extensions
         self.operand_kinds = sorted(operand_kinds, key = lambda ok: convert_operand_kind(ok))
-        self.header_decls: List[str] = [self.IndexRangeDecls()]
+        self.printing_classes = sorted([to_safe_identifier(x) for x in printing_classes])
+
+        # The self.header_ignore_decls are only used to debug the flow.
+        # They are copied into the C++ source code where they are more likely
+        # to be seen by humans.
+        self.header_ignore_decls: List[str] = [self.IndexRangeDecls()]
+
+        # The self.header_decls content goes into core_tables_header.inc to be
+        # included in a .h file.
+        self.header_decls: List[str] = self.PrintingClassDecls()
+        # The self.body_decls content goes into core_tables_body.inc to be included
+        # in a .cpp file.  It includes definitions of static variables and
+        # hidden functions.
         self.body_decls: List[str] = []
 
         if len(self.operand_kinds) == 0:
@@ -197,6 +218,13 @@ constexpr inline IndexRange IR(uint32_t first, uint32_t count) {
 }
 """
 
+    def PrintingClassDecls(self) -> str:
+        parts: List[str] = []
+        parts.append("enum class PrintingClass : int {");
+        parts.extend(["  {},".format(x) for x in self.printing_classes])
+        parts.append("};\n")
+        return parts
+
     def ExtensionEnumList(self) -> str:
         """
         Returns the spvtools::Extension enum values, as a string.
@@ -210,7 +238,7 @@ constexpr inline IndexRange IR(uint32_t first, uint32_t count) {
         Returns the string for the C definitions of the operand kind tables.
 
         An operand kind such as ImageOperands also has an associated
-        operand kind that is an 'optional' variant. 
+        operand kind that is an 'optional' variant.
         These are represented as two distinct operand kinds in spv_operand_type_t.
         For example, ImageOperands maps to both SPV_OPERAND_TYPE_IMAGE, and also
         to SPV_OPERAND_TYPE_OPTIONAL_IMAGE.
@@ -238,7 +266,7 @@ constexpr inline IndexRange IR(uint32_t first, uint32_t count) {
 
         """
 
-        self.header_decls.append(
+        self.header_ignore_decls.append(
 """
 struct NameValue {
   // Location of the null-terminated name in the global string table.
@@ -397,12 +425,12 @@ struct OperandDesc {
     def ComputeInstructionTables(self, insts) -> None:
         """
         Creates declarations for instruction tables.
-        Populates self.header_decls, self.body_decls.
+        Populates self.header_ignore_decls, self.body_decls.
 
         Params:
             insts: an array of instructions objects using the JSON schema
         """
-        self.header_decls.append(
+        self.header_ignore_decls.append(
 """
 // Describes an Instruction
 struct InstructionDesc {
@@ -423,6 +451,7 @@ struct InstructionDesc {
   // extension lists means only available in extensions.
   uint32_t minVersion;
   uint32_t lastVersion;
+  PrintingClass printingClass; // Section of SPIR-V spec. e.g. kComposite, kImage
   utils::Span<spv_operand_type_t> operands() const;
   utils::Span<char> name() const;
   utils::Span<IndexRange> aliases() const;
@@ -489,6 +518,7 @@ struct InstructionDesc {
                 self.context.AddStringList('extension', inst.get('extensions',[])),
                 convert_min_required_version(inst.get('version', None)),
                 convert_max_required_version(inst.get('lastVersion', None)),
+                'PrintingClass::' + to_safe_identifier(inst.get('class','@exclude'))
             ])
 
             lines.append('{{{}}},'.format(', '.join([str(x) for x in parts])))
@@ -728,9 +758,14 @@ def main():
                         help='input JSON grammar file for OpenCL extended '
                         'instruction set')
 
-    parser.add_argument('--core-tables-output', metavar='<path>',
+    parser.add_argument('--core-tables-body-output', metavar='<path>',
                         type=str, required=False, default=None,
-                        help='output file for core SPIR-V grammar tables')
+                        help='output file for core SPIR-V grammar tables to be included in .cpp')
+    parser.add_argument('--core-tables-header-output', metavar='<path>',
+                        type=str, required=False, default=None,
+                        help='output file for core SPIR-V grammar tables to be included in .h')
+
+    # TODO: remove unused options
     parser.add_argument('--core-insts-output', metavar='<path>',
                         type=str, required=False, default=None,
                         help='output file for core SPIR-V instructions')
@@ -795,7 +830,8 @@ def main():
               '--extinst-vendor-grammar should be specified together.')
         exit(1)
     if all([args.core_insts_output is None,
-            args.core_tables_output is None,
+            args.core_tables_body_output is None,
+            args.core_tables_header_output is None,
             args.glsl_insts_output is None,
             args.opencl_insts_output is None,
             args.vendor_insts_output is None,
@@ -825,16 +861,22 @@ def main():
                     extensions = get_extension_list(instructions, operand_kinds)
                     operand_kinds = precondition_operand_kinds(operand_kinds)
 
-        g = Grammar(extensions, operand_kinds)
+                    printing_class: List[str] = [e['tag'] for e in core_grammar['instruction_printing_class']]
+
+        g = Grammar(extensions, operand_kinds, printing_class)
 
         g.ComputeOperandTables()
         g.ComputeInstructionTables(core_grammar['instructions'])
         g.ComputeLeafTables()
 
-        if args.core_tables_output is not None:
-            make_path_to_file(args.core_tables_output)
-            with open(args.core_tables_output, 'w') as f:
+        if args.core_tables_body_output is not None:
+            make_path_to_file(args.core_tables_body_output)
+            with open(args.core_tables_body_output, 'w') as f:
                 f.write('\n'.join(g.body_decls))
+        if args.core_tables_header_output is not None:
+            make_path_to_file(args.core_tables_header_output)
+            with open(args.core_tables_header_output, 'w') as f:
+                f.write('\n'.join(g.header_decls))
 
 
 if __name__ == '__main__':

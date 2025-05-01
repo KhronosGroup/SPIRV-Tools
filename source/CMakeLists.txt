@@ -24,19 +24,21 @@ set(DEBUGINFO_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/unified1/exti
 set(CLDEBUGINFO100_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/unified1/extinst.opencl.debuginfo.100.grammar.json")
 set(VKDEBUGINFO100_GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/unified1/extinst.nonsemantic.shader.debuginfo.100.grammar.json")
 
-set(CORE_TABLES_INC_FILE ${spirv-tools_BINARY_DIR}/core_tables.inc)
-add_custom_command(OUTPUT ${CORE_TABLES_INC_FILE}
+set(CORE_TABLES_BODY_INC_FILE ${spirv-tools_BINARY_DIR}/core_tables_body.inc)
+set(CORE_TABLES_HEADER_INC_FILE ${spirv-tools_BINARY_DIR}/core_tables_header.inc)
+add_custom_command(OUTPUT ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_FILE}
     COMMAND Python3::Interpreter ${GGT_SCRIPT}
       --spirv-core-grammar=${SPIRV_CORE_GRAMMAR_JSON_FILE}
       --extinst-debuginfo-grammar=${DEBUGINFO_GRAMMAR_JSON_FILE}
       --extinst-cldebuginfo100-grammar=${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
-      --core-tables-output=${CORE_TABLES_INC_FILE}
+      --core-tables-body-output=${CORE_TABLES_BODY_INC_FILE}
+      --core-tables-header-output=${CORE_TABLES_HEADER_INC_FILE}
     DEPENDS ${GGT_SCRIPT}
             ${SPIRV_CORE_GRAMMAR_JSON_FILE}
             ${DEBUGINFO_GRAMMAR_JSON_FILE}
             ${CLDEBUGINFO100_GRAMMAR_JSON_FILE}
     COMMENT "Generate core tables")
-add_custom_target(spirv-tools-tables DEPENDS ${CORE_TABLES_INC_FILE})
+add_custom_target(spirv-tools-tables DEPENDS ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_FILE})
 
 macro(spvtools_enum_string_mapping CONFIG_VERSION)
   set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
@@ -144,7 +146,10 @@ list(APPEND OPCODE_CPP_DEPENDS ${GENERATOR_INC_FILE})
 # We need to wrap the .inc files with a custom target to avoid problems when
 # multiple targets depend on the same custom command.
 add_custom_target(core_tables
-  DEPENDS ${OPCODE_CPP_DEPENDS} ${OPERAND_CPP_DEPENDS} ${CORE_TABLES_INC_FILE})
+	DEPENDS ${OPCODE_CPP_DEPENDS}
+	        ${OPERAND_CPP_DEPENDS}
+		${CORE_TABLES_BODY_INC_FILE}
+		${CORE_TABLES_HEADER_INC_FILE})
 add_custom_target(enum_string_mapping
   DEPENDS ${EXTENSION_H_DEPENDS} ${ENUM_STRING_MAPPING_CPP_DEPENDS})
 add_custom_target(extinst_tables
