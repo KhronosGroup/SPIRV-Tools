@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
+from typing import List
 
 class Operand():
     def __init__(self, json: dict) -> None:
@@ -42,25 +42,25 @@ class Operand():
             raise Exception("operand needs a value integer or string")
 
     @property
-    def capabilities(self) -> list[str]:
+    def capabilities(self) -> List[str]:
         return self._obj.get('capabilities',[])
 
     @property
-    def extensions(self) -> list[str]:
+    def extensions(self) -> List[str]:
         return self._obj.get('extensions',[])
 
     @property
-    def aliases(self) -> list[str]:
+    def aliases(self) -> List[str]:
         return self._obj.get('aliases',[])
 
     @property
-    def parameters(self) -> list[dict]:
+    def parameters(self) -> List[dict]:
         return self._obj.get('parameters',[])
 
     @property
-    def version(self) -> str | None:
+    def version(self): #   -> str | None  # Invald in Python 3.8
         return self._obj.get('version',None)
 
     @property
-    def lastVersion(self) -> str | None:
+    def lastVersion(self): #  -> str | None # Invalid in Python 3.8
         return self._obj.get('lastVersion',None)
