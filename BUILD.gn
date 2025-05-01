@@ -33,38 +33,35 @@ if (defined(is_fuchsia_tree) && is_fuchsia_tree) {
 spirv_headers = spirv_tools_spirv_headers_dir
 spirv_is_winuwp = is_win && target_os == "winuwp"
 
-template("spvtools_core_tables") {
-  # Generate a compressed table describing SPIR-V core spec instructions and operands.
-  action("spvtools_core_tables_" + target_name) {
-    script = "utils/ggt.py"
+action("spvtools_core_tables") {
+  script = "utils/ggt.py"
 
-    core_json_file =
-        "${spirv_headers}/include/spirv/unified1/spirv.core.grammar.json"
-    debuginfo_insts_file =
-        "${spirv_headers}/include/spirv/unified1/extinst.debuginfo.grammar.json"
-    cldebuginfo100_insts_file = "${spirv_headers}/include/spirv/unified1/extinst.opencl.debuginfo.100.grammar.json"
+  core_json_file =
+      "${spirv_headers}/include/spirv/unified1/spirv.core.grammar.json"
+  debuginfo_insts_file =
+      "${spirv_headers}/include/spirv/unified1/extinst.debuginfo.grammar.json"
+  cldebuginfo100_insts_file = "${spirv_headers}/include/spirv/unified1/extinst.opencl.debuginfo.100.grammar.json"
 
-    core_tables_file = "${target_gen_dir}/core_tables.inc"
+  core_tables_file = "${target_gen_dir}/core_tables.inc"
 
-    sources = [
-      cldebuginfo100_insts_file,
-      core_json_file,
-      debuginfo_insts_file,
-    ]
-    outputs = [
-      core_tables_file,
-    ]
-    args = [
-      "--spirv-core-grammar",
-      rebase_path(core_json_file, root_build_dir),
-      "--extinst-debuginfo-grammar",
-      rebase_path(debuginfo_insts_file, root_build_dir),
-      "--extinst-cldebuginfo100-grammar",
-      rebase_path(cldebuginfo100_insts_file, root_build_dir),
-      "--core-tables-output",
-      rebase_path(core_tables_file, root_build_dir)
-    ]
-  }
+  sources = [
+    cldebuginfo100_insts_file,
+    core_json_file,
+    debuginfo_insts_file,
+  ]
+  outputs = [
+    core_tables_file,
+  ]
+  args = [
+    "--spirv-core-grammar",
+    rebase_path(core_json_file, root_build_dir),
+    "--extinst-debuginfo-grammar",
+    rebase_path(debuginfo_insts_file, root_build_dir),
+    "--extinst-cldebuginfo100-grammar",
+    rebase_path(cldebuginfo100_insts_file, root_build_dir),
+    "--core-tables-output",
+    rebase_path(core_tables_file, root_build_dir)
+  ]
 }
 
 template("spvtools_core_enums") {
@@ -105,84 +102,6 @@ template("spvtools_core_enums") {
       extension_enum_file,
       extension_map_file,
     ]
-  }
-}
-
-template("spvtools_glsl_tables") {
-  assert(defined(invoker.version), "Need version in $target_name generation.")
-
-  action("spvtools_glsl_tables_" + target_name) {
-    script = "utils/generate_grammar_tables.py"
-
-    version = invoker.version
-
-    core_json_file =
-        "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
-    glsl_json_file = "${spirv_headers}/include/spirv/${version}/extinst.glsl.std.450.grammar.json"
-    debuginfo_insts_file =
-        "${spirv_headers}/include/spirv/unified1/extinst.debuginfo.grammar.json"
-    cldebuginfo100_insts_file = "${spirv_headers}/include/spirv/unified1/extinst.opencl.debuginfo.100.grammar.json"
-
-    glsl_insts_file = "${target_gen_dir}/glsl.std.450.insts.inc"
-
-    args = [
-      "--spirv-core-grammar",
-      rebase_path(core_json_file, root_build_dir),
-      "--extinst-debuginfo-grammar",
-      rebase_path(debuginfo_insts_file, root_build_dir),
-      "--extinst-cldebuginfo100-grammar",
-      rebase_path(cldebuginfo100_insts_file, root_build_dir),
-      "--extinst-glsl-grammar",
-      rebase_path(glsl_json_file, root_build_dir),
-      "--glsl-insts-output",
-      rebase_path(glsl_insts_file, root_build_dir)
-    ]
-    inputs = [
-      core_json_file,
-      glsl_json_file,
-      debuginfo_insts_file,
-      cldebuginfo100_insts_file,
-    ]
-    outputs = [ glsl_insts_file ]
-  }
-}
-
-template("spvtools_opencl_tables") {
-  assert(defined(invoker.version), "Need version in $target_name generation.")
-
-  action("spvtools_opencl_tables_" + target_name) {
-    script = "utils/generate_grammar_tables.py"
-
-    version = invoker.version
-
-    core_json_file =
-        "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
-    opencl_json_file = "${spirv_headers}/include/spirv/${version}/extinst.opencl.std.100.grammar.json"
-    debuginfo_insts_file =
-        "${spirv_headers}/include/spirv/unified1/extinst.debuginfo.grammar.json"
-    cldebuginfo100_insts_file = "${spirv_headers}/include/spirv/unified1/extinst.opencl.debuginfo.100.grammar.json"
-
-    opencl_insts_file = "${target_gen_dir}/opencl.std.insts.inc"
-
-    args = [
-      "--spirv-core-grammar",
-      rebase_path(core_json_file, root_build_dir),
-      "--extinst-debuginfo-grammar",
-      rebase_path(debuginfo_insts_file, root_build_dir),
-      "--extinst-cldebuginfo100-grammar",
-      rebase_path(cldebuginfo100_insts_file, root_build_dir),
-      "--extinst-opencl-grammar",
-      rebase_path(opencl_json_file, root_build_dir),
-      "--opencl-insts-output",
-      rebase_path(opencl_insts_file, root_build_dir),
-    ]
-    inputs = [
-      core_json_file,
-      opencl_json_file,
-      debuginfo_insts_file,
-      cldebuginfo100_insts_file,
-    ]
-    outputs = [ opencl_insts_file ]
   }
 }
 
@@ -260,16 +179,8 @@ action("spvtools_build_version") {
   ]
 }
 
-spvtools_core_tables("unified1") {
-}
 spvtools_core_enums("unified1") {
   version = "unified1"
-}
-spvtools_glsl_tables("glsl1-0") {
-  version = "1.0"
-}
-spvtools_opencl_tables("opencl1-0") {
-  version = "1.0"
 }
 spvtools_language_header("debuginfo") {
   name = "DebugInfo"
@@ -286,6 +197,14 @@ spvtools_language_header("vkdebuginfo100") {
 }
 
 spvtools_vendor_tables = [
+  [
+    "glsl.std.450",
+    "...nil...",
+  ],
+  [
+    "opencl.std.100",
+    "...nil...",
+  ],
   [
     "spv-amd-shader-explicit-vertex-parameter",
     "...nil...",
@@ -394,13 +313,11 @@ group("spvtools_language_headers") {
 
 static_library("spvtools") {
   deps = [
-    ":spvtools_core_tables_unified1",
+    ":spvtools_core_tables",
     ":spvtools_generators_inc",
-    ":spvtools_glsl_tables_glsl1-0",
     ":spvtools_language_header_cldebuginfo100",
     ":spvtools_language_header_debuginfo",
     ":spvtools_language_header_vkdebuginfo100",
-    ":spvtools_opencl_tables_opencl1-0",
   ]
   foreach(table_def, spvtools_vendor_tables) {
     target_name = table_def[0]
@@ -457,6 +374,8 @@ static_library("spvtools") {
     "source/spirv_validator_options.h",
     "source/table.cpp",
     "source/table.h",
+    "source/table2.cpp",
+    "source/table2.h",
     "source/text.cpp",
     "source/text.h",
     "source/text_handler.cpp",
