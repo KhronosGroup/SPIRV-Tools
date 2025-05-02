@@ -199,44 +199,49 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/wrap_opkill.cpp
 
 # Locations of grammar files.
-#
-SPV_COREUNIFIED1_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/spirv.core.grammar.json
-SPV_DEBUGINFO_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.debuginfo.grammar.json
-SPV_CLDEBUGINFO100_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.opencl.debuginfo.100.grammar.json
-SPV_VKDEBUGINFO100_GRAMMAR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.nonsemantic.shader.debuginfo.100.grammar.json
+GRAMMAR_DIR=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1
 
 define gen_spvtools_grammar_tables
+# $1 is the output directory, which is unique per ABI.
+# Rules for creating grammar tables. They are statically compiled
+# into the SPIRV-Tools code.
 $(call generate-file-dir,$(1)/core_tables_body.inc)
 $(1)/core_tables_body.inc \
 $(1)/core_tables_header.inc \
 : \
-        $(LOCAL_PATH)/utils/generate_grammar_tables.py \
-        $(SPV_COREUNIFIED1_GRAMMAR) \
-        $(SPV_DEBUGINFO_GRAMMAR) \
-        $(SPV_CLDEBUGINFO100_GRAMMAR)
-		@$(HOST_PYTHON) $(LOCAL_PATH)/utils/ggt.py \
-		                --spirv-core-grammar=$(SPV_COREUNIFIED1_GRAMMAR) \
-		                --extinst-debuginfo-grammar=$(SPV_DEBUGINFO_GRAMMAR) \
-		                --extinst-cldebuginfo100-grammar=$(SPV_CLDEBUGINFO100_GRAMMAR) \
-		                --core-tables-body-output=$(1)/core_tables_body.inc \
-		                --core-tables-header-output=$(1)/core_tables_header.inc
-		@echo "[$(TARGET_ARCH_ABI)] Grammar from unified1)  : instructions & operands <= grammar JSON files"
+        $(LOCAL_PATH)/utils/ggt.py \
+	$(GRAMMAR_DIR)/extinst.debuginfo.grammar.json \
+	$(GRAMMAR_DIR)/extinst.glsl.std.450.grammar.json \
+	$(GRAMMAR_DIR)/extinst.nonsemantic.clspvreflection.grammar.json \
+	$(GRAMMAR_DIR)/extinst.nonsemantic.shader.debuginfo.100.grammar.json \
+	$(GRAMMAR_DIR)/extinst.nonsemantic.vkspreflection.grammar.json \
+	$(GRAMMAR_DIR)/extinst.opencl.debuginfo.100.grammar.json \
+	$(GRAMMAR_DIR)/extinst.opencl.std.100.grammar.json \
+	$(GRAMMAR_DIR)/extinst.spv-amd-gcn-shader.grammar.json \
+	$(GRAMMAR_DIR)/extinst.spv-amd-shader-ballot.grammar.json \
+	$(GRAMMAR_DIR)/extinst.spv-amd-shader-explicit-vertex-parameter.grammar.json \
+	$(GRAMMAR_DIR)/extinst.spv-amd-shader-trinary-minmax.grammar.json \
+	$(GRAMMAR_DIR)/spirv.core.grammar.json
+	@$(HOST_PYTHON) $(LOCAL_PATH)/utils/ggt.py \
+		--core-tables-body-output=$(1)/core_tables_body.inc \
+		--core-tables-header-output=$(1)/core_tables_header.inc \
+		--spirv-core-grammar=$(GRAMMAR_DIR)/spirv.core.grammar.json \
+		--extinst=,$(GRAMMAR_DIR)/extinst.debuginfo.grammar.json \
+		--extinst=,$(GRAMMAR_DIR)/extinst.glsl.std.450.grammar.json \
+		--extinst=,$(GRAMMAR_DIR)/extinst.nonsemantic.clspvreflection.grammar.json \
+		--extinst=SHDEBUG100_,$(GRAMMAR_DIR)/extinst.nonsemantic.shader.debuginfo.100.grammar.json \
+		--extinst=,$(GRAMMAR_DIR)/extinst.nonsemantic.vkspreflection.grammar.json \
+		--extinst=CLDEBUG100_,$(GRAMMAR_DIR)/extinst.opencl.debuginfo.100.grammar.json \
+		--extinst=,$(GRAMMAR_DIR)/extinst.opencl.std.100.grammar.json \
+		--extinst=,$(GRAMMAR_DIR)/extinst.spv-amd-gcn-shader.grammar.json \
+		--extinst=,$(GRAMMAR_DIR)/extinst.spv-amd-shader-ballot.grammar.json \
+		--extinst=,$(GRAMMAR_DIR)/extinst.spv-amd-shader-explicit-vertex-parameter.grammar.json \
+		--extinst=,$(GRAMMAR_DIR)/extinst.spv-amd-shader-trinary-minmax.grammar.json
+	@echo "[$(TARGET_ARCH_ABI)] Grammar tables <= grammar JSON files"
 # Make all source files depend on the generated core tables
 $(foreach F,$(SPVTOOLS_SRC_FILES) $(SPVTOOLS_OPT_SRC_FILES),$(LOCAL_PATH)/$F ) \
   : $(1)/core_tables_body.inc \
     $(1)/core_tables_header.inc
-$(LOCAL_PATH)/source/ext_inst.cpp: \
-	$(1)/glsl.std.450.insts.inc \
-	$(1)/opencl.std.100.insts.inc \
-	$(1)/debuginfo.insts.inc \
-	$(1)/opencl.debuginfo.100.insts.inc \
-	$(1)/nonsemantic.shader.debuginfo.100.insts.inc \
-	$(1)/spv-amd-gcn-shader.insts.inc \
-	$(1)/spv-amd-shader-ballot.insts.inc \
-	$(1)/spv-amd-shader-explicit-vertex-parameter.insts.inc \
-	$(1)/spv-amd-shader-trinary-minmax.insts.inc
-$(LOCAL_PATH)/source/opt/amd_ext_to_khr.cpp: \
-	$(1)/spv-amd-shader-ballot.insts.inc
 endef
 $(eval $(call gen_spvtools_grammar_tables,$(SPVTOOLS_OUT_PATH)))
 
@@ -257,36 +262,13 @@ $(1)/$(2).h : \
 $(foreach F,$(SPVTOOLS_SRC_FILES) $(SPVTOOLS_OPT_SRC_FILES),$(LOCAL_PATH)/$F ) \
 	: $(1)/$(2).h
 endef
-# We generate language-specific headers for DebugInfo and OpenCL.DebugInfo.100
-$(eval $(call gen_spvtools_lang_headers,$(SPVTOOLS_OUT_PATH),DebugInfo,$(SPV_DEBUGINFO_GRAMMAR)))
-$(eval $(call gen_spvtools_lang_headers,$(SPVTOOLS_OUT_PATH),OpenCLDebugInfo100,$(SPV_CLDEBUGINFO100_GRAMMAR)))
-$(eval $(call gen_spvtools_lang_headers,$(SPVTOOLS_OUT_PATH),NonSemanticShaderDebugInfo100,$(SPV_VKDEBUGINFO100_GRAMMAR)))
 
 
-define gen_spvtools_vendor_tables
-$(call generate-file-dir,$(1)/$(2).insts.inc)
-$(1)/$(2).insts.inc : \
-        $(LOCAL_PATH)/utils/generate_grammar_tables.py \
-        $(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.$(2).grammar.json
-		@$(HOST_PYTHON) $(LOCAL_PATH)/utils/generate_grammar_tables.py \
-		    --extinst-vendor-grammar=$(SPVHEADERS_LOCAL_PATH)/include/spirv/unified1/extinst.$(2).grammar.json \
-		    --vendor-insts-output=$(1)/$(2).insts.inc \
-		    --vendor-operand-kind-prefix=$(3)
-		@echo "[$(TARGET_ARCH_ABI)] Extended instruction set: $(2) tables <= grammar"
-$(LOCAL_PATH)/source/ext_inst.cpp: $(1)/$(2).insts.inc
-endef
-# Vendor and debug extended instruction sets, with grammars from SPIRV-Headers source tree.
-$(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),glsl.std.450,""))
-$(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),opencl.std.100,""))
-$(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),debuginfo,""))
-$(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),opencl.debuginfo.100,"CLDEBUG100_"))
-$(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),nonsemantic.shader.debuginfo.100,"SHDEBUG100_"))
-$(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),spv-amd-gcn-shader,""))
-$(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),spv-amd-shader-ballot,""))
-$(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),spv-amd-shader-explicit-vertex-parameter,""))
-$(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),spv-amd-shader-trinary-minmax,""))
-$(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),nonsemantic.clspvreflection,""))
-$(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),nonsemantic.vkspreflection,""))
+# Generate C++ headers for some extended instruction sets.
+$(eval $(call gen_spvtools_lang_headers,$(SPVTOOLS_OUT_PATH),DebugInfo,$(GRAMMAR_DIR)/extinst.debuginfo.grammar.json))
+$(eval $(call gen_spvtools_lang_headers,$(SPVTOOLS_OUT_PATH),OpenCLDebugInfo100,$(GRAMMAR_DIR)/extinst.opencl.debuginfo.100.grammar.json))
+$(eval $(call gen_spvtools_lang_headers,$(SPVTOOLS_OUT_PATH),NonSemanticShaderDebugInfo100,$(GRAMMAR_DIR)/extinst.nonsemantic.shader.debuginfo.100.grammar.json))
+
 
 define gen_spvtools_build_version_inc
 $(call generate-file-dir,$(1)/dummy_filename)

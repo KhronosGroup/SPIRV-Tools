@@ -21,7 +21,7 @@ import json
 import os.path
 import re
 import sys
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 
 # Find modules relative to the directory containing this script.
 # This is needed for hermetic Bazel builds, where the Table files are bundled
@@ -36,15 +36,53 @@ from Table.Operand import Operand
 # core or KHR grammar files.  Get this list from the SPIR-V registry web page.
 # NOTE: Only put things on this list if it is not in those grammar files.
 EXTENSIONS_FROM_SPIRV_REGISTRY_AND_NOT_FROM_GRAMMARS = """
-SPV_AMD_gcn_shader
 SPV_AMD_gpu_shader_half_float
 SPV_AMD_gpu_shader_int16
-SPV_AMD_shader_trinary_minmax
 SPV_KHR_non_semantic_info
 SPV_EXT_relaxed_printf_string_address_space
 """
 
-MODE='new'
+class ExtInst():
+    """
+    An extended instruction set.
+
+    Properties:
+       prefix: the string prefix for operand enums. Often an empty string.
+       file: the location of the JSON grammar file
+       name: the name, can be used as an identifier
+       enum_name: the enum name, e.g. SPV_EXT_INST_OPENCL_STD
+       grammar: the JSON object for the grammar, loaded from the file.
+    """
+    def __init__(self,spec: str):
+        matches = re.fullmatch('^([^,]*),(.*)',spec)
+        if matches is None:
+            raise Exception("Invalid prefix and path: {}".format(spec))
+        self.prefix = matches[1]
+        if self.prefix is None:
+            self.prefix = ""
+        self.file = matches[2]
+        matches = re.match('.*extinst\\.(.*)\\.grammar.json', self.file)
+        if matches is None:
+            raise Exception("Invalid grammar file name: {}".format(self.file))
+        self.name = matches[1].replace('-','_').replace('.','_')
+
+        self.enum_name = 'SPV_EXT_INST_TYPE_{}'.format(self.name).upper()
+        if self.enum_name == "SPV_EXT_INST_TYPE_OPENCL_STD_100":
+            # Live with an old decision, by adjusting this name.
+            self.enum_name = "SPV_EXT_INST_TYPE_OPENCL_STD"
+
+        self.load()
+
+    def load(self):
+        """
+        Populates self.grammar from the file.
+        Applies the self.prefix to operand enums
+        """
+        with open(self.file) as json_file:
+            self.grammar = json.loads(json_file.read())
+            if len(self.prefix) > 0:
+                prefix_operand_kind_names(self.prefix, self.grammar)
+
 
 def convert_min_required_version(version): # (version: str | None) -> str
     """Converts the minimal required SPIR-V version encoded in the grammar to
@@ -439,7 +477,6 @@ struct OperandDesc {
         parts.append("  }\n  return IR(0,0);\n}\n")
         self.body_decls.extend(parts)
 
-
     def ComputeInstructionTables(self, insts) -> None:
         """
         Creates declarations for instruction tables.
@@ -448,8 +485,7 @@ struct OperandDesc {
         Params:
             insts: an array of instructions objects using the JSON schema
         """
-        self.header_ignore_decls.append(
-"""
+        self.header_ignore_decls.append("""
 // Describes an Instruction
 struct InstructionDesc {
   const spv::Op value;
@@ -558,6 +594,118 @@ struct InstructionDesc {
         parts.append("}};\n");
         self.body_decls.extend(parts)
 
+
+    def ComputeExtendedInstructions(self, extinsts) -> None:
+        """
+        Generates tables for extended instructions
+
+        Args:
+            self
+            extinsts: a list of extinst objects
+        """
+
+        """
+            ExtInstDesc {
+             value:         uint32_t
+             name:          IndexRange
+             operands:      IndexRange
+             capabilities:  IndexRange
+            }
+
+        The definitions are:
+         - kExtInstByValue: a 1-dimensional array of all operand descriptions
+           sorted first by extended instruction enum, then by operand value.
+
+         - ExtInstByValueRangeForKind: a function mapping from extinst enum to
+           the index range into kExtInstByValue.
+
+         - kExtInstNames: a 1-dimensional array of all extinst name-value pairs,
+           sorted first by extinst enum, then by operand name.
+           Each entry is represented by an index range into the string table.
+
+         - kExtInstNamesRangeByKind: a mapping from operand kind to the index
+           range into kOperandNames.
+           This has mappings for both concrete and corresponding optional operand kinds.
+        """
+
+        # Create kExtInstByValue
+        by_value: List[List[Any]] = []
+        by_value_by_kind: Dict[str,IndexRange] = {}
+        for e in extinsts:
+            insts_in_set = []
+            for inst in sorted(e.grammar['instructions'], key = lambda inst: inst['opcode']):
+                operands = [convert_operand_kind(o) for o in inst.get('operands',[])]
+                inst_parts = [
+                    inst['opcode'],
+                    self.context.AddStringList('operand', operands),
+                    self.context.AddString(inst['opname']),
+                    self.context.AddStringList('capability', inst.get('capabilities',[])),
+                ]
+                inst_parts = [str(x) for x in inst_parts]
+                insts_in_set.append('    {{{}}}, // {} in {}'.format(
+                        ','.join(inst_parts), inst['opname'], e.name))
+            by_value_by_kind[e.enum_name] = IndexRange(len(by_value), len(insts_in_set))
+            by_value.extend(insts_in_set)
+
+        parts: List[str] = []
+        parts.append("""// Extended instruction descriptions, ordered by (extinst enum, opcode value).
+// The fields in order are:
+//   enum value
+//   operands, an IndexRange into kOperandSpans
+//   name, a character-counting IndexRange into kStrings
+//   capabilities, an IndexRange into kCapabilitySpans""")
+        parts.append("static const std::array<ExtInstDesc, {}> kExtInstByValue{{{{".format(len(by_value)))
+        parts.extend(by_value)
+        parts.append('}};\n')
+        self.body_decls.extend(parts)
+
+        # Create kExtInstByValueRangeForKind
+        parts = []
+        parts.append("""// Maps an extended instruction enum to possible names for operands of that kind.
+// The result is an IndexRange into kOperandNames, and the names
+// are sorted by name within that span.
+// An optional variant of a kind maps to the details for the corresponding
+// concrete operand kind.""")
+        parts = ["IndexRange ExtInstByValueRangeForKind(spv_ext_inst_type_t type) {\n  switch(type) {"]
+        for name, ir in by_value_by_kind.items():
+            parts.append("    case {}: return {};".format(name, ir))
+        parts.append("    default: break;");
+        parts.append("  }\n  return IR(0,0);\n}\n")
+        self.body_decls.extend(parts)
+
+        # Create kExtInstNames
+        parts = []
+        by_name: List[List[Any]] = []
+        by_name_by_kind: Dict[str,IndexRange] = {}
+        for e in extinsts:
+            # Sort by name within a set
+            insts_by_name = sorted(e.grammar['instructions'], key = lambda i: i['opname'])
+            insts_in_set = []
+            for inst in insts_by_name:
+                insts_in_set.append(
+                        '    {{{}, {}}}, // {} in {}'.format(
+                                str(self.context.AddString(inst['opname'])),
+                                inst['opcode'],
+                                inst['opname'],
+                                e.name))
+            by_name_by_kind[e.enum_name] = IndexRange(len(by_name), len(insts_in_set))
+            by_name.extend(insts_in_set)
+        parts.append("static const std::array<NameValue, {}> kExtInstNames{{{{".format(len(by_name)))
+        parts.extend(by_name)
+        parts.append('}};\n')
+        self.body_decls.extend(parts)
+
+        # Create kExtInstNameRangeByKind
+        parts = []
+        parts.append("""// Maps an extended instruction kind to possible names for instructions of that kind.
+// The result is an IndexRange into kExtInstNames, and the names
+// are sorted by name within that span.""")
+        parts = ["IndexRange ExtInstNameRangeForKind(spv_ext_inst_type_t type) {\n  switch(type) {"]
+        for name, ir in by_name_by_kind.items():
+            parts.append("    case {}: return {};".format(name, str(ir)))
+        parts.append("    default: break;");
+        parts.append("  }\n  return IR(0,0);\n}\n")
+        self.body_decls.extend(parts)
 
     def ComputeLeafTables(self) -> None:
         """
@@ -749,22 +897,10 @@ def main():
                         type=str, required=False,
                         help='input JSON grammar file for core SPIR-V '
                         'instructions')
-    parser.add_argument('--extinst-debuginfo-grammar', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='input JSON grammar file for DebugInfo extended '
-                        'instruction set')
-    parser.add_argument('--extinst-cldebuginfo100-grammar', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='input JSON grammar file for OpenCL.DebugInfo.100 '
-                        'extended instruction set')
-    parser.add_argument('--extinst-glsl-grammar', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='input JSON grammar file for GLSL extended '
-                        'instruction set')
-    parser.add_argument('--extinst-opencl-grammar', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='input JSON grammar file for OpenCL extended '
-                        'instruction set')
+    parser.add_argument('--extinst', metavar='<path>',
+                        type=str, action='append', required=False, default=None,
+                        help='extended instruction info: an enum prefix, then a comma, then'
+                        ' the file location of the JSON grammar')
 
     parser.add_argument('--core-tables-body-output', metavar='<path>',
                         type=str, required=False, default=None,
@@ -773,118 +909,53 @@ def main():
                         type=str, required=False, default=None,
                         help='output file for core SPIR-V grammar tables to be included in .h')
 
-    # TODO: remove unused options
-    parser.add_argument('--core-insts-output', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='output file for core SPIR-V instructions')
-    parser.add_argument('--glsl-insts-output', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='output file for GLSL extended instruction set')
-    parser.add_argument('--opencl-insts-output', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='output file for OpenCL extended instruction set')
-    parser.add_argument('--operand-kinds-output', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='output file for operand kinds')
-    parser.add_argument('--extension-enum-output', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='output file for extension enumeration')
-    parser.add_argument('--enum-string-mapping-output', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='output file for enum-string mappings')
-    parser.add_argument('--extinst-vendor-grammar', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='input JSON grammar file for vendor extended '
-                        'instruction set'),
-    parser.add_argument('--vendor-insts-output', metavar='<path>',
-                        type=str, required=False, default=None,
-                        help='output file for vendor extended instruction set')
-    parser.add_argument('--vendor-operand-kind-prefix', metavar='<string>',
-                        type=str, required=False, default=None,
-                        help='prefix for operand kinds (to disambiguate operand type enums)')
     args = parser.parse_args()
 
-
-    # The GN build system needs this because it doesn't handle quoting
-    # empty string arguments well.
-    if args.vendor_operand_kind_prefix == "...nil...":
-        args.vendor_operand_kind_prefix = ""
-
-    if (args.core_insts_output is None) != \
-            (args.operand_kinds_output is None):
-        print('error: --core-insts-output and --operand-kinds-output '
-              'should be specified together.')
+    if args.spirv_core_grammar is None:
+        print('error: missing --spirv-core-grammar ')
         exit(1)
-    if args.operand_kinds_output and not (args.spirv_core_grammar and
-         args.extinst_debuginfo_grammar and
-         args.extinst_cldebuginfo100_grammar):
-        print('error: --operand-kinds-output requires --spirv-core-grammar '
-              'and --extinst-debuginfo-grammar '
-              'and --extinst-cldebuginfo100-grammar')
+    if (args.core_tables_body_output is None) and (args.core_tables_header_output is None):
+        print('error: need at least one of --core-tables-body-output --core-tables-header-output ')
         exit(1)
-    if (args.glsl_insts_output is None) != \
-            (args.extinst_glsl_grammar is None):
-        print('error: --glsl-insts-output and --extinst-glsl-grammar '
-              'should be specified together.')
-        exit(1)
-    if (args.opencl_insts_output is None) != \
-            (args.extinst_opencl_grammar is None):
-        print('error: --opencl-insts-output and --extinst-opencl-grammar '
-              'should be specified together.')
-        exit(1)
-    if (args.vendor_insts_output is None) != \
-            (args.extinst_vendor_grammar is None):
-        print('error: --vendor-insts-output and '
-              '--extinst-vendor-grammar should be specified together.')
-        exit(1)
-    if all([args.core_insts_output is None,
-            args.core_tables_body_output is None,
-            args.core_tables_header_output is None,
-            args.glsl_insts_output is None,
-            args.opencl_insts_output is None,
-            args.vendor_insts_output is None,
-            args.extension_enum_output is None,
-            args.enum_string_mapping_output is None]):
-        print('error: at least one output should be specified.')
+    if len(args.extinst) < 1:
+        print('error: missing --extinst ')
         exit(1)
 
-    if args.spirv_core_grammar is not None:
-        # Populate instructions, extensions, operand_kinds list of json objects
-        with open(args.spirv_core_grammar) as json_file:
-            core_grammar = json.loads(json_file.read())
-            with open(args.extinst_debuginfo_grammar) as debuginfo_json_file:
-                debuginfo_grammar = json.loads(debuginfo_json_file.read())
-                with open(args.extinst_cldebuginfo100_grammar) as cldebuginfo100_json_file:
-                    cldebuginfo100_grammar = json.loads(cldebuginfo100_json_file.read())
-                    prefix_operand_kind_names("CLDEBUG100_", cldebuginfo100_grammar)
-                    instructions = []
-                    instructions.extend(core_grammar['instructions'])
-                    instructions.extend(debuginfo_grammar['instructions'])
-                    instructions.extend(cldebuginfo100_grammar['instructions'])
-                    operand_kinds = []
-                    operand_kinds.extend(core_grammar['operand_kinds'])
-                    operand_kinds.extend(debuginfo_grammar['operand_kinds'])
-                    operand_kinds.extend(cldebuginfo100_grammar['operand_kinds'])
+    # Load the JSON grammar files.
+    extinsts = sorted([ExtInst(e) for e in args.extinst], key = lambda e: e.name)
+    with open(args.spirv_core_grammar) as json_file:
+        core_grammar = json.loads(json_file.read())
+        printing_class: List[str] = [e['tag'] for e in core_grammar['instruction_printing_class']]
 
-                    extensions = get_extension_list(instructions, operand_kinds)
-                    operand_kinds = precondition_operand_kinds(operand_kinds)
+    # Collect all operand kinds and instructions, so we can generate
+    # extension lists, capability lists, and alias lists.
+    # Make a copy to avoid polluting the instruction list.
+    instructions = [x for x in core_grammar['instructions']]
+    operand_kinds = [x for x in core_grammar['operand_kinds']]
+    for e in extinsts:
+        instructions.extend(e.grammar.get('instructions',[]))
+        operand_kinds.extend(e.grammar.get('operand_kinds',[]))
 
-                    printing_class: List[str] = [e['tag'] for e in core_grammar['instruction_printing_class']]
+    extensions = get_extension_list(instructions, operand_kinds)
+    # TODO(dneto): I think preconditioning is no longer necessary now that
+    # aliases are explicitly represented.
+    operand_kinds = precondition_operand_kinds(operand_kinds)
 
-        g = Grammar(extensions, operand_kinds, printing_class)
+    g = Grammar(extensions, operand_kinds, printing_class)
+    g.ComputeOperandTables()
+    g.ComputeInstructionTables(core_grammar['instructions'])
+    g.ComputeExtendedInstructions(extinsts)
+    g.ComputeLeafTables()
 
-        g.ComputeOperandTables()
-        g.ComputeInstructionTables(core_grammar['instructions'])
-        g.ComputeLeafTables()
-
-        if args.core_tables_body_output is not None:
-            make_path_to_file(args.core_tables_body_output)
-            with open(args.core_tables_body_output, 'w') as f:
-                f.write('\n'.join(g.body_decls))
-        if args.core_tables_header_output is not None:
-            make_path_to_file(args.core_tables_header_output)
-            with open(args.core_tables_header_output, 'w') as f:
-                f.write('\n'.join(g.header_decls))
+    if args.core_tables_body_output is not None:
+        make_path_to_file(args.core_tables_body_output)
+        with open(args.core_tables_body_output, 'w') as f:
+            f.write('\n'.join(g.body_decls))
+    if args.core_tables_header_output is not None:
+        make_path_to_file(args.core_tables_header_output)
+        with open(args.core_tables_header_output, 'w') as f:
+            f.write('\n'.join(g.header_decls))
+    exit(0)
 
 
 if __name__ == '__main__':

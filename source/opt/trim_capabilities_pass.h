@@ -131,32 +131,9 @@ class TrimCapabilitiesPass : public Pass {
  private:
   // Inserts every capability listed by `descriptor` this pass supports into
   // `output`.
-  // TODO(b/413723831): After extended instruction sets are converted to use
-  // descriptors, change this back into a template to collapse all three
-  // implementations.
-  void addSupportedCapabilitiesToSet(
-      const spv_ext_inst_desc_t* const descriptor,
-      CapabilitySet* output) const {
-    const uint32_t capabilityCount = descriptor->numCapabilities;
-    for (uint32_t i = 0; i < capabilityCount; ++i) {
-      const auto capability = descriptor->capabilities[i];
-      if (supportedCapabilities_.contains(capability)) {
-        output->insert(capability);
-      }
-    }
-  }
-  void addSupportedCapabilitiesToSet(
-      const spvtools::InstructionDesc* const descriptor,
-      CapabilitySet* output) const {
-    for (auto capability : descriptor->capabilities()) {
-      if (supportedCapabilities_.contains(capability)) {
-        output->insert(capability);
-      }
-    }
-  }
-  void addSupportedCapabilitiesToSet(
-      const spvtools::OperandDesc* const descriptor,
-      CapabilitySet* output) const {
+  template <typename Descriptor>
+  void addSupportedCapabilitiesToSet(const Descriptor* const descriptor,
+                                     CapabilitySet* output) const {
     for (auto capability : descriptor->capabilities()) {
       if (supportedCapabilities_.contains(capability)) {
         output->insert(capability);

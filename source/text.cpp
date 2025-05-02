@@ -242,14 +242,14 @@ spv_result_t spvTextEncodeOperand(const spvtools::AssemblyGrammar& grammar,
     case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
       // The assembler accepts the symbolic name for an extended instruction,
       // and emits its corresponding number.
-      spv_ext_inst_desc extInst;
-      if (grammar.lookupExtInst(pInst->extInstType, textValue, &extInst) ==
+      const spvtools::ExtInstDesc* desc = nullptr;
+      if (spvtools::LookupExtInst(pInst->extInstType, textValue, &desc) ==
           SPV_SUCCESS) {
         // if we know about this extended instruction, push the numeric value
-        spvInstructionAddWord(pInst, extInst->ext_inst);
+        spvInstructionAddWord(pInst, desc->value);
 
         // Prepare to parse the operands for the extended instructions.
-        spvPushOperandTypes(extInst->operandTypes, pExpectedOperands);
+        spvPushOperandTypes(desc->operands(), pExpectedOperands);
       } else {
         // if we don't know this extended instruction and the set isn't
         // non-semantic, we cannot process further
@@ -861,10 +861,6 @@ spv_result_t GetNumericIds(const spvtools::AssemblyGrammar& grammar,
 
   if (!text->str) return context.diagnostic() << "Missing assembly text.";
 
-  if (!grammar.isValid()) {
-    return SPV_ERROR_INVALID_TABLE;
-  }
-
   // Skip past whitespace and comments.
   context.advance();
 
@@ -910,10 +906,6 @@ spv_result_t spvTextToBinaryInternal(const spvtools::AssemblyGrammar& grammar,
   spvtools::AssemblyContext context(text, consumer, std::move(ids_to_preserve));
 
   if (!text->str) return context.diagnostic() << "Missing assembly text.";
-
-  if (!grammar.isValid()) {
-    return SPV_ERROR_INVALID_TABLE;
-  }
   if (!pBinary) return SPV_ERROR_INVALID_POINTER;
 
   std::vector<spv_instruction_t> instructions;
