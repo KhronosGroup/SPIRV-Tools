@@ -1039,6 +1039,7 @@ void AggressiveDCEPass::InitExtensions() {
       "SPV_KHR_ray_tracing_position_fetch",
       "SPV_KHR_fragment_shading_rate",
       "SPV_KHR_quad_control",
+      "SPV_NV_shader_invocation_reorder"
   });
   // clang-format on
 }
