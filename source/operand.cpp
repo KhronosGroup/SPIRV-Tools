@@ -247,7 +247,7 @@ void spvPushOperandTypesForMask(const spv_operand_type_t type,
   for (uint32_t candidate_bit = (1u << 31u); candidate_bit;
        candidate_bit >>= 1) {
     if (candidate_bit & mask) {
-      spvtools::OperandDesc* entry = nullptr;
+      const spvtools::OperandDesc* entry = nullptr;
       if (SPV_SUCCESS == spvtools::LookupOperand(type, candidate_bit, &entry)) {
         spvPushOperandTypes(entry->operands(), pattern);
       }

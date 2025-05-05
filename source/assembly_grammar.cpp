@@ -60,7 +60,7 @@ spv_result_t spvTextParseMaskOperand(const spv_operand_type_t type,
   do {
     end = std::find(begin, text_end, separator);
 
-    spvtools::OperandDesc* entry = nullptr;
+    const spvtools::OperandDesc* entry = nullptr;
     if (auto error =
             spvtools::LookupOperand(type, begin, end - begin, &entry)) {
       return error;
@@ -175,7 +175,7 @@ CapabilitySet AssemblyGrammar::filterCapsAgainstTargetEnv(
   CapabilitySet cap_set;
   const auto version = spvVersionForTargetEnv(target_env_);
   for (uint32_t i = 0; i < count; ++i) {
-    spvtools::OperandDesc* entry = nullptr;
+    const spvtools::OperandDesc* entry = nullptr;
     if (SPV_SUCCESS ==
         spvtools::LookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
                                 static_cast<uint32_t>(cap_array[i]), &entry)) {
@@ -193,7 +193,7 @@ CapabilitySet AssemblyGrammar::filterCapsAgainstTargetEnv(
 
 const char* AssemblyGrammar::lookupOperandName(spv_operand_type_t type,
                                                uint32_t operand) const {
-  spvtools::OperandDesc* desc = nullptr;
+  const spvtools::OperandDesc* desc = nullptr;
   if (spvtools::LookupOperand(type, operand, &desc) != SPV_SUCCESS || !desc) {
     return "Unknown";
   }

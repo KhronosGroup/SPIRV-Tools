@@ -789,7 +789,7 @@ class ValidationState_t {
 
   // Returns the string name for |decoration|.
   std::string SpvDecorationString(uint32_t decoration) {
-    spvtools::OperandDesc* desc = nullptr;
+    const spvtools::OperandDesc* desc = nullptr;
     if (spvtools::LookupOperand(SPV_OPERAND_TYPE_DECORATION, decoration,
                                 &desc) != SPV_SUCCESS) {
       return std::string("Unknown");

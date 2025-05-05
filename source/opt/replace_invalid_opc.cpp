@@ -209,7 +209,7 @@ uint32_t ReplaceInvalidOpcodePass::GetSpecialConstant(uint32_t type_id) {
 }
 
 std::string ReplaceInvalidOpcodePass::BuildWarningMessage(spv::Op opcode) {
-  spvtools::InstructionDesc* opcode_desc = nullptr;
+  const spvtools::InstructionDesc* opcode_desc = nullptr;
   spvtools::LookupOpcode(opcode, &opcode_desc);
   std::string message = "Removing ";
   message += opcode_desc->name().data();

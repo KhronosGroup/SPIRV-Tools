@@ -136,22 +136,23 @@ utils::Span<const spvtools::Extension> InstructionDesc::extensions() const {
   return extensions_range.apply(kExtensionSpans);
 }
 
-spv_result_t LookupOpcode(spv::Op opcode, InstructionDesc** desc) {
+spv_result_t LookupOpcode(spv::Op opcode, const InstructionDesc** desc) {
   // Metaphor: Look for the needle in the haystack.
   const InstructionDesc needle(opcode);
+  const auto& descs = getInstructionDesc();
   auto where = std::lower_bound(
-      kInstructionDesc.begin(), kInstructionDesc.end(), needle,
+      descs.begin(), descs.end(), needle,
       [&](const InstructionDesc& lhs, const InstructionDesc& rhs) {
         return uint32_t(lhs.opcode) < uint32_t(rhs.opcode);
       });
-  if (where != kInstructionDesc.end() && where->opcode == opcode) {
+  if (where != descs.end() && where->opcode == opcode) {
     *desc = &*where;
     return SPV_SUCCESS;
   }
   return SPV_ERROR_INVALID_LOOKUP;
 }
 
-spv_result_t LookupOpcode(const char* name, InstructionDesc** desc) {
+spv_result_t LookupOpcode(const char* name, const InstructionDesc** desc) {
   // The comparison function knows to use 'name' string to compare against
   // when the value is kSentinel.
   const auto kSentinel = uint32_t(-1);
@@ -162,10 +163,9 @@ spv_result_t LookupOpcode(const char* name, InstructionDesc** desc) {
     return std::strcmp(lhs_chars, rhs_chars) < 0;
   };
 
-  auto where = std::lower_bound(kInstructionNames.begin(),
-                                kInstructionNames.end(), needle, less);
-  if (where != kInstructionNames.end() &&
-      std::strcmp(getChars(where->name), name) == 0) {
+  const auto& names = getInstructionNames();
+  auto where = std::lower_bound(names.begin(), names.end(), needle, less);
+  if (where != names.end() && std::strcmp(getChars(where->name), name) == 0) {
     return LookupOpcode(static_cast<spv::Op>(where->value), desc);
   }
   return SPV_ERROR_INVALID_LOOKUP;
@@ -174,13 +174,13 @@ spv_result_t LookupOpcode(const char* name, InstructionDesc** desc) {
 namespace {
 template <typename KEY_TYPE>
 spv_result_t LookupOpcodeForEnvInternal(spv_target_env env, KEY_TYPE key,
-                                        InstructionDesc** desc) {
-  InstructionDesc* desc_proxy;
+                                        const InstructionDesc** desc) {
+  const InstructionDesc* desc_proxy;
   auto status = LookupOpcode(key, &desc_proxy);
   if (status != SPV_SUCCESS) {
     return status;
   }
-  auto& entry = *desc_proxy;
+  const auto& entry = *desc_proxy;
   const auto version = spvVersionForTargetEnv(env);
   if ((version >= entry.minVersion && version <= entry.lastVersion) ||
       entry.extensions_range.count() > 0 ||
@@ -193,23 +193,23 @@ spv_result_t LookupOpcodeForEnvInternal(spv_target_env env, KEY_TYPE key,
 }  // namespace
 
 spv_result_t LookupOpcodeForEnv(spv_target_env env, const char* name,
-                                InstructionDesc** desc) {
+                                const InstructionDesc** desc) {
   return LookupOpcodeForEnvInternal(env, name, desc);
 }
 
 spv_result_t LookupOpcodeForEnv(spv_target_env env, spv::Op opcode,
-                                InstructionDesc** desc) {
+                                const InstructionDesc** desc) {
   return LookupOpcodeForEnvInternal(env, opcode, desc);
 }
 
 spv_result_t LookupOperand(spv_operand_type_t type, uint32_t value,
-                           OperandDesc** desc) {
+                           const OperandDesc** desc) {
   auto ir = OperandByValueRangeForKind(type);
   if (ir.empty()) {
     return SPV_ERROR_INVALID_LOOKUP;
   }
 
-  auto span = ir.apply(kOperandsByValue.data());
+  auto span = ir.apply(getOperandsByValue().data());
 
   // Metaphor: Look for the needle in the haystack.
   // The operand value is the first member.
@@ -227,13 +227,13 @@ spv_result_t LookupOperand(spv_operand_type_t type, uint32_t value,
 }
 
 spv_result_t LookupOperand(spv_operand_type_t type, const char* name,
-                           size_t name_len, OperandDesc** desc) {
+                           size_t name_len, const OperandDesc** desc) {
   auto ir = OperandNameRangeForKind(type);
   if (ir.empty()) {
     return SPV_ERROR_INVALID_LOOKUP;
   }
 
-  auto span = ir.apply(kOperandNames.data());
+  auto span = ir.apply(getOperandNames().data());
 
   // The comparison function knows to use (name, name_len) as the
   // string to compare against when the value is kSentinel.
@@ -278,9 +278,10 @@ bool GetExtensionFromString(const char* name, Extension* extension) {
     return std::strcmp(lhs_chars, rhs_chars) < 0;
   };
 
-  auto where = std::lower_bound(kExtensionNames.begin(), kExtensionNames.end(),
+  const auto& extension_names = getExtensionNames();
+  auto where = std::lower_bound(extension_names.begin(), extension_names.end(),
                                 needle, less);
-  if (where != kExtensionNames.end() &&
+  if (where != extension_names.end() &&
       std::strcmp(getChars(where->name), name) == 0) {
     *extension = static_cast<Extension>(where->value);
     return true;

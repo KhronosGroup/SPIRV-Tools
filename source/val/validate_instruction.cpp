@@ -38,7 +38,7 @@ namespace {
 std::string ToString(const CapabilitySet& capabilities) {
   std::stringstream ss;
   for (auto capability : capabilities) {
-    spvtools::OperandDesc* desc = nullptr;
+    const spvtools::OperandDesc* desc = nullptr;
     if (SPV_SUCCESS == spvtools::LookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
                                                uint32_t(capability), &desc))
       ss << desc->name().data() << " ";
@@ -71,7 +71,7 @@ CapabilitySet EnablingCapabilitiesForOp(const ValidationState_t& state,
       break;
   }
   // Look it up in the grammar
-  spvtools::InstructionDesc* opcode_desc = nullptr;
+  const spvtools::InstructionDesc* opcode_desc = nullptr;
   if (SPV_SUCCESS ==
       LookupOpcodeForEnv(state.context()->target_env, opcode, &opcode_desc)) {
     return state.grammar().filterCapsAgainstTargetEnv(
@@ -168,7 +168,7 @@ spv_result_t CheckRequiredCapabilities(ValidationState_t& state,
   }
 
   CapabilitySet enabling_capabilities;
-  spvtools::OperandDesc* operand_desc = nullptr;
+  const spvtools::OperandDesc* operand_desc = nullptr;
   const auto lookup_result =
       spvtools::LookupOperand(operand.type, word, &operand_desc);
   if (lookup_result == SPV_SUCCESS) {
@@ -224,7 +224,7 @@ spv_result_t ReservedCheck(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpImageSparseSampleProjExplicitLod:
     case spv::Op::OpImageSparseSampleProjDrefImplicitLod:
     case spv::Op::OpImageSparseSampleProjDrefExplicitLod: {
-      spvtools::InstructionDesc* inst_desc = nullptr;
+      const spvtools::InstructionDesc* inst_desc = nullptr;
       spvtools::LookupOpcode(opcode, &inst_desc);
       return _.diag(SPV_ERROR_INVALID_BINARY, inst)
              << "Invalid Opcode name 'Op" << inst_desc->name().data() << "'";
@@ -277,7 +277,7 @@ spv_result_t CapabilityCheck(ValidationState_t& _, const Instruction* inst) {
 // dependencies for the opcode.
 spv_result_t VersionCheck(ValidationState_t& _, const Instruction* inst) {
   const auto opcode = inst->opcode();
-  spvtools::InstructionDesc* inst_desc;
+  const spvtools::InstructionDesc* inst_desc = nullptr;
   const spv_result_t r = spvtools::LookupOpcode(opcode, &inst_desc);
   assert(r == SPV_SUCCESS);
   (void)r;

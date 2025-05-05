@@ -328,7 +328,7 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
 
 std::string FriendlyNameMapper::NameForEnumOperand(spv_operand_type_t type,
                                                    uint32_t word) {
-  spvtools::OperandDesc* desc = nullptr;
+  const spvtools::OperandDesc* desc = nullptr;
   if (SPV_SUCCESS == spvtools::LookupOperand(type, word, &desc)) {
     return desc->name().data();
   } else {

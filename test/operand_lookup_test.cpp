@@ -45,7 +45,7 @@ std::ostream& operator<<(std::ostream& os, const OperandLookupCase& olc) {
 using OperandLookupTest = ::testing::TestWithParam<OperandLookupCase>;
 
 TEST_P(OperandLookupTest, OperandLookup_ByName) {
-  OperandDesc* desc = nullptr;
+  const OperandDesc* desc = nullptr;
   auto status = LookupOperand(GetParam().type, GetParam().name.data(),
                               GetParam().name_length, &desc);
   if (GetParam().expect_pass) {
@@ -59,7 +59,7 @@ TEST_P(OperandLookupTest, OperandLookup_ByName) {
 }
 
 TEST_P(OperandLookupTest, OperandLookup_ByValue_Success) {
-  OperandDesc* desc = nullptr;
+  const OperandDesc* desc = nullptr;
   if (GetParam().expect_pass) {
     const auto value = GetParam().value;
     auto status = LookupOperand(GetParam().type, GetParam().value, &desc);
@@ -105,7 +105,7 @@ TEST(OperandLookupSingleTest, OperandLookup_ByValue_Fails) {
   std::array<uint32_t, 3> bad_values = {{99999, 37737, 110101}};
   for (auto type : types) {
     for (auto bad_value : bad_values) {
-      OperandDesc* desc = nullptr;
+      const OperandDesc* desc = nullptr;
       auto status = LookupOperand(type, bad_value, &desc);
       EXPECT_NE(status, SPV_SUCCESS);
       ASSERT_EQ(desc, nullptr);
@@ -115,7 +115,7 @@ TEST(OperandLookupSingleTest, OperandLookup_ByValue_Fails) {
 
 TEST(OperandLookupOperands, Sample) {
   // Check the operand list for a valid operand lookup.
-  OperandDesc* desc = nullptr;
+  const OperandDesc* desc = nullptr;
   auto status = LookupOperand(SPV_OPERAND_TYPE_IMAGE, "Grad", 4, &desc);
   EXPECT_EQ(status, SPV_SUCCESS);
   ASSERT_NE(desc, nullptr);

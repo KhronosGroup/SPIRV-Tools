@@ -886,7 +886,7 @@ void InstructionDisassembler::EmitOperand(std::ostream& stream,
       }
     } break;
     case SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER: {
-      spvtools::InstructionDesc* opcodeEntry = nullptr;
+      const spvtools::InstructionDesc* opcodeEntry = nullptr;
       if (LookupOpcode(spv::Op(word), &opcodeEntry))
         assert(false && "should have caught this earlier");
       SetRed(stream);
@@ -949,7 +949,7 @@ void InstructionDisassembler::EmitOperand(std::ostream& stream,
     case SPV_OPERAND_TYPE_QUANTIZATION_MODES:
     case SPV_OPERAND_TYPE_FPENCODING:
     case SPV_OPERAND_TYPE_OVERFLOW_MODES: {
-      spvtools::OperandDesc* entry = nullptr;
+      const spvtools::OperandDesc* entry = nullptr;
       if (spvtools::LookupOperand(operand.type, word, &entry))
         assert(false && "should have caught this earlier");
       stream << entry->name().data();
@@ -969,7 +969,7 @@ void InstructionDisassembler::EmitOperand(std::ostream& stream,
       if (spvOperandIsConcreteMask(operand.type)) {
         EmitMaskOperand(stream, operand.type, word);
       } else if (spvOperandIsConcrete(operand.type)) {
-        spvtools::OperandDesc* entry = nullptr;
+        const spvtools::OperandDesc* entry = nullptr;
         if (spvtools::LookupOperand(operand.type, word, &entry))
           assert(false && "should have caught this earlier");
         stream << entry->name().data();
@@ -992,7 +992,7 @@ void InstructionDisassembler::EmitMaskOperand(std::ostream& stream,
   for (mask = 1; remaining_word; mask <<= 1) {
     if (remaining_word & mask) {
       remaining_word ^= mask;
-      spvtools::OperandDesc* entry = nullptr;
+      const spvtools::OperandDesc* entry = nullptr;
       if (spvtools::LookupOperand(type, mask, &entry))
         assert(false && "should have caught this earlier");
       if (num_emitted) stream << "|";
@@ -1003,7 +1003,7 @@ void InstructionDisassembler::EmitMaskOperand(std::ostream& stream,
   if (!num_emitted) {
     // An operand value of 0 was provided, so represent it by the name
     // of the 0 value. In many cases, that's "None".
-    spvtools::OperandDesc* entry = nullptr;
+    const spvtools::OperandDesc* entry = nullptr;
     if (SPV_SUCCESS == spvtools::LookupOperand(type, 0, &entry))
       stream << entry->name().data();
   }

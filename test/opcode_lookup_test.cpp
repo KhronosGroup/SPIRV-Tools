@@ -41,7 +41,7 @@ std::ostream& operator<<(std::ostream& os, const OpcodeLookupCase& olc) {
 using OpcodeLookupTest = ::testing::TestWithParam<OpcodeLookupCase>;
 
 TEST_P(OpcodeLookupTest, OpcodeLookup_ByName) {
-  InstructionDesc* desc = nullptr;
+  const InstructionDesc* desc = nullptr;
   auto status = LookupOpcode(GetParam().name.data(), &desc);
   if (GetParam().expect_pass) {
     EXPECT_EQ(status, SPV_SUCCESS);
@@ -54,7 +54,7 @@ TEST_P(OpcodeLookupTest, OpcodeLookup_ByName) {
 }
 
 TEST_P(OpcodeLookupTest, OpcodeLookup_ByOpcode_Success) {
-  InstructionDesc* desc = nullptr;
+  const InstructionDesc* desc = nullptr;
   if (GetParam().expect_pass) {
     spv::Op opcode = static_cast<spv::Op>(GetParam().opcode);
     auto status = LookupOpcode(opcode, &desc);
@@ -80,7 +80,7 @@ TEST(OpcodeLookupSingleTest, OpcodeLookup_ByOpcode_Fails) {
   // This list may need adjusting over time.
   std::array<uint32_t, 3> bad_opcodes = {{99999, 37737, 110101}};
   for (auto bad_opcode : bad_opcodes) {
-    InstructionDesc* desc = nullptr;
+    const InstructionDesc* desc = nullptr;
     spv::Op opcode = static_cast<spv::Op>(bad_opcode);
     auto status = LookupOpcode(opcode, &desc);
     EXPECT_NE(status, SPV_SUCCESS);
@@ -105,7 +105,7 @@ std::ostream& operator<<(std::ostream& os, const OpcodeLookupEnvCase& olec) {
 using OpcodeLookupEnvTest = ::testing::TestWithParam<OpcodeLookupEnvCase>;
 
 TEST_P(OpcodeLookupEnvTest, OpcodeLookupForEnv_ByName) {
-  InstructionDesc* desc = nullptr;
+  const InstructionDesc* desc = nullptr;
   auto status =
       LookupOpcodeForEnv(GetParam().env, GetParam().name.data(), &desc);
   if (GetParam().expect_pass) {
@@ -119,7 +119,7 @@ TEST_P(OpcodeLookupEnvTest, OpcodeLookupForEnv_ByName) {
 }
 
 TEST_P(OpcodeLookupEnvTest, OpcodeLookupForEnv_ByOpcode) {
-  InstructionDesc* desc = nullptr;
+  const InstructionDesc* desc = nullptr;
   spv::Op opcode = static_cast<spv::Op>(GetParam().opcode);
   auto status = LookupOpcodeForEnv(GetParam().env, opcode, &desc);
   if (GetParam().expect_pass) {
@@ -157,7 +157,7 @@ TEST(OpcodeLookupExtInstTest, Operands) {
   // extended instruction enum, such as 'cos'.
   // See https://github.com/KhronosGroup/SPIRV-Tools/issues/233
   // Test the exact sequence of operand types extracted for OpExtInst.
-  InstructionDesc* desc = nullptr;
+  const InstructionDesc* desc = nullptr;
   auto status = LookupOpcode("ExtInst", &desc);
   EXPECT_EQ(status, SPV_SUCCESS);
   ASSERT_NE(desc, nullptr);
@@ -192,7 +192,7 @@ using OpcodePrintingClassTest =
     ::testing::TestWithParam<OpcodePrintingClassCase>;
 
 TEST_P(OpcodePrintingClassTest, OpcodeLookup_ByName) {
-  InstructionDesc* desc = nullptr;
+  const InstructionDesc* desc = nullptr;
   auto status = LookupOpcode(GetParam().name.data(), &desc);
   EXPECT_EQ(status, SPV_SUCCESS);
   ASSERT_NE(desc, nullptr);

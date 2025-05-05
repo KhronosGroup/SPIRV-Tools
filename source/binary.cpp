@@ -318,7 +318,7 @@ spv_result_t Parser::parseInstruction() {
     return diagnostic() << "Invalid instruction word count: "
                         << inst_word_count;
   }
-  spvtools::InstructionDesc* opcode_desc = nullptr;
+  const spvtools::InstructionDesc* opcode_desc = nullptr;
   if (spvtools::LookupOpcode(static_cast<spv::Op>(inst.opcode), &opcode_desc))
     return diagnostic() << "Invalid opcode: " << inst.opcode;
 
@@ -522,7 +522,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
         return diagnostic()
                << "Invalid " << spvOperandTypeStr(type) << ": " << word;
       }
-      spvtools::InstructionDesc* opcode_entry = nullptr;
+      const spvtools::InstructionDesc* opcode_entry = nullptr;
       if (spvtools::LookupOpcode(spv::Op(word), &opcode_entry)) {
         return diagnostic(SPV_ERROR_INTERNAL)
                << "OpSpecConstant opcode table out of sync";
@@ -688,7 +688,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       if (type == SPV_OPERAND_TYPE_OPTIONAL_FPENCODING)
         parsed_operand.type = SPV_OPERAND_TYPE_FPENCODING;
 
-      spvtools::OperandDesc* entry = nullptr;
+      const spvtools::OperandDesc* entry = nullptr;
       if (spvtools::LookupOperand(type, word, &entry)) {
         return diagnostic()
                << "Invalid " << spvOperandTypeStr(parsed_operand.type)
@@ -699,7 +699,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     } break;
 
     case SPV_OPERAND_TYPE_SOURCE_LANGUAGE: {
-      spvtools::OperandDesc* entry = nullptr;
+      const spvtools::OperandDesc* entry = nullptr;
       if (spvtools::LookupOperand(type, word, &entry)) {
         return diagnostic()
                << "Invalid " << spvOperandTypeStr(parsed_operand.type)
@@ -754,7 +754,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       uint32_t remaining_word = word;
       for (uint32_t mask = (1u << 31); remaining_word; mask >>= 1) {
         if (remaining_word & mask) {
-          spvtools::OperandDesc* entry = nullptr;
+          const spvtools::OperandDesc* entry = nullptr;
           if (spvtools::LookupOperand(type, mask, &entry)) {
             return diagnostic()
                    << "Invalid " << spvOperandTypeStr(parsed_operand.type)
@@ -767,7 +767,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       }
       if (word == 0) {
         // An all-zeroes mask *might* also be valid.
-        spvtools::OperandDesc* entry = nullptr;
+        const spvtools::OperandDesc* entry = nullptr;
         if (SPV_SUCCESS == spvtools::LookupOperand(type, 0, &entry)) {
           // Prepare for its operands, if any.
           spvPushOperandTypes(entry->operands(), expected_operands);
