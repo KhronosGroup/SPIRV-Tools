@@ -11,7 +11,6 @@ SPVTOOLS_SRC_FILES := \
 		source/diagnostic.cpp \
 		source/disassemble.cpp \
 		source/ext_inst.cpp \
-		source/enum_string_mapping.cpp \
 		source/extensions.cpp \
 		source/libspirv.cpp \
 		source/name_mapper.cpp \
@@ -288,26 +287,6 @@ $(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),spv-amd-shader-exp
 $(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),spv-amd-shader-trinary-minmax,""))
 $(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),nonsemantic.clspvreflection,""))
 $(eval $(call gen_spvtools_vendor_tables,$(SPVTOOLS_OUT_PATH),nonsemantic.vkspreflection,""))
-
-define gen_spvtools_enum_string_mapping
-$(call generate-file-dir,$(1)/extension_enum.inc.inc)
-$(1)/extension_enum.inc $(1)/enum_string_mapping.inc: \
-        $(LOCAL_PATH)/utils/generate_grammar_tables.py \
-        $(SPV_COREUNIFIED1_GRAMMAR)
-		@$(HOST_PYTHON) $(LOCAL_PATH)/utils/generate_grammar_tables.py \
-		                --spirv-core-grammar=$(SPV_COREUNIFIED1_GRAMMAR) \
-		                --extinst-debuginfo-grammar=$(SPV_DEBUGINFO_GRAMMAR) \
-		                --extinst-cldebuginfo100-grammar=$(SPV_CLDEBUGINFO100_GRAMMAR) \
-		                --extension-enum-output=$(1)/extension_enum.inc \
-		                --enum-string-mapping-output=$(1)/enum_string_mapping.inc
-		@echo "[$(TARGET_ARCH_ABI)] Generate enum<->string mapping <= grammar JSON files"
-# Generated header extension_enum.inc is transitively included by table.h, which is
-# used pervasively.  Capture the pervasive dependency.
-$(foreach F,$(SPVTOOLS_SRC_FILES) $(SPVTOOLS_OPT_SRC_FILES),$(LOCAL_PATH)/$F ) \
-  : $(1)/extension_enum.inc
-$(LOCAL_PATH)/source/enum_string_mapping.cpp: $(1)/enum_string_mapping.inc
-endef
-$(eval $(call gen_spvtools_enum_string_mapping,$(SPVTOOLS_OUT_PATH)))
 
 define gen_spvtools_build_version_inc
 $(call generate-file-dir,$(1)/dummy_filename)

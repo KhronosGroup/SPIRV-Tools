@@ -6,7 +6,6 @@ load(
     "SHDEBUGINFO100_GRAMMAR_JSON_FILE",
     "TEST_COPTS",
     "generate_compressed_tables",
-    "generate_enum_string_mapping",
     "generate_extinst_lang_headers",
     "generate_vendor_tables",
     "incompatible_with",
@@ -56,8 +55,6 @@ py_binary(
 )
 
 generate_compressed_tables()
-
-generate_enum_string_mapping(version = "unified1")
 
 generate_vendor_tables(
    extension = "glsl.std.450",
@@ -162,7 +159,6 @@ cc_library(
     ]) + [
         ":build_version_inc",
         ":gen_compressed_tables",
-        ":gen_enum_string_mapping",
         ":gen_extinst_lang_headers_DebugInfo",
         ":gen_extinst_lang_headers_NonSemanticShaderDebugInfo100",
         ":gen_extinst_lang_headers_OpenCLDebugInfo100",

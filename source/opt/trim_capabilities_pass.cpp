@@ -26,7 +26,6 @@
 #include <vector>
 
 #include "source/enum_set.h"
-#include "source/enum_string_mapping.h"
 #include "source/ext_inst.h"
 #include "source/opt/ir_context.h"
 #include "source/opt/reflect.h"

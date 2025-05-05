@@ -68,47 +68,6 @@ action("spvtools_core_tables") {
   ]
 }
 
-template("spvtools_core_enums") {
-  assert(defined(invoker.version), "Need version in $target_name generation.")
-
-  action("spvtools_core_enums_" + target_name) {
-    script = "utils/generate_grammar_tables.py"
-
-    version = invoker.version
-
-    core_json_file =
-        "${spirv_headers}/include/spirv/$version/spirv.core.grammar.json"
-    debuginfo_insts_file =
-        "${spirv_headers}/include/spirv/unified1/extinst.debuginfo.grammar.json"
-    cldebuginfo100_insts_file = "${spirv_headers}/include/spirv/unified1/extinst.opencl.debuginfo.100.grammar.json"
-
-    extension_enum_file = "${target_gen_dir}/extension_enum.inc"
-    extension_map_file = "${target_gen_dir}/enum_string_mapping.inc"
-
-    args = [
-      "--spirv-core-grammar",
-      rebase_path(core_json_file, root_build_dir),
-      "--extinst-debuginfo-grammar",
-      rebase_path(debuginfo_insts_file, root_build_dir),
-      "--extinst-cldebuginfo100-grammar",
-      rebase_path(cldebuginfo100_insts_file, root_build_dir),
-      "--extension-enum-output",
-      rebase_path(extension_enum_file, root_build_dir),
-      "--enum-string-mapping-output",
-      rebase_path(extension_map_file, root_build_dir)
-    ]
-    inputs = [
-      core_json_file,
-      debuginfo_insts_file,
-      cldebuginfo100_insts_file,
-    ]
-    outputs = [
-      extension_enum_file,
-      extension_map_file,
-    ]
-  }
-}
-
 template("spvtools_language_header") {
   assert(defined(invoker.name), "Need name in $target_name generation.")
 
@@ -183,9 +142,6 @@ action("spvtools_build_version") {
   ]
 }
 
-spvtools_core_enums("unified1") {
-  version = "unified1"
-}
 spvtools_language_header("debuginfo") {
   name = "DebugInfo"
   grammar_file =
@@ -340,8 +296,6 @@ static_library("spvtools") {
     "source/disassemble.cpp",
     "source/disassemble.h",
     "source/enum_set.h",
-    "source/enum_string_mapping.cpp",
-    "source/enum_string_mapping.h",
     "source/ext_inst.cpp",
     "source/ext_inst.h",
     "source/extensions.cpp",
@@ -406,7 +360,6 @@ static_library("spvtools") {
   ]
 
   public_deps = [
-    ":spvtools_core_enums_unified1",
     ":spvtools_headers",
     "${spirv_headers}:spv_headers",
   ]

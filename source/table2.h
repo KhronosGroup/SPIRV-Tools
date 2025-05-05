@@ -16,7 +16,6 @@
 #ifndef SOURCE_TABLE2_H_
 #define SOURCE_TABLE2_H_
 
-#include "source/extensions.h"
 #include "source/latest_version_spirv_header.h"
 #include "source/util/index_range.h"
 #include "spirv-tools/libspirv.hpp"
@@ -71,7 +70,7 @@
 // Note: Currently alias lists never have more than one element.
 // The data structures and code do not assume this.
 
-// TODO(dneto): convert the tables for extended instructions, and extensions.
+// TODO(dneto): convert the tables for extended instructions
 // Currently (as defined in table.h):
 //    An spv_ext_inst_group_t has:
 //      - array of spv_ext_inst_desc_t
@@ -213,6 +212,12 @@ spv_result_t LookupOperand(spv_operand_type_t type, const char* name,
                            size_t name_len, OperandDesc** desc);
 spv_result_t LookupOperand(spv_operand_type_t type, uint32_t operand,
                            OperandDesc** desc);
+
+// Finds Extension enum corresponding to |str|. Returns false if not found.
+bool GetExtensionFromString(const char* str, Extension* extension);
+
+// Returns text string corresponding to |extension|.
+const char* ExtensionToString(Extension extension);
 
 }  // namespace spvtools
 #endif  // SOURCE_TABLE2_H_
