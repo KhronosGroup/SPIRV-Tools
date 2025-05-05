@@ -88,7 +88,7 @@ void spvInstructionCopy(const uint32_t* words, const spv::Op opcode,
 }
 
 const char* spvOpcodeString(const uint32_t opcode) {
-  spvtools::InstructionDesc* desc = nullptr;
+  const spvtools::InstructionDesc* desc = nullptr;
   if (SPV_SUCCESS !=
       spvtools::LookupOpcode(static_cast<spv::Op>(opcode), &desc)) {
     assert(0 && "Unreachable!");

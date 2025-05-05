@@ -292,8 +292,8 @@ spv_result_t MergeModules(const MessageConsumer& consumer,
     const uint32_t module_addressing_model =
         memory_model_inst->GetSingleWordOperand(0u);
     if (module_addressing_model != linked_addressing_model) {
-      spvtools::OperandDesc* linked_desc = nullptr;
-      spvtools::OperandDesc* module_desc = nullptr;
+      const spvtools::OperandDesc* linked_desc = nullptr;
+      const spvtools::OperandDesc* module_desc = nullptr;
       spvtools::LookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
                               linked_addressing_model, &linked_desc);
       spvtools::LookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
@@ -308,8 +308,8 @@ spv_result_t MergeModules(const MessageConsumer& consumer,
     const uint32_t module_memory_model =
         memory_model_inst->GetSingleWordOperand(1u);
     if (module_memory_model != linked_memory_model) {
-      spvtools::OperandDesc* linked_desc = nullptr;
-      spvtools::OperandDesc* module_desc = nullptr;
+      const spvtools::OperandDesc* linked_desc = nullptr;
+      const spvtools::OperandDesc* module_desc = nullptr;
       spvtools::LookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL,
                               linked_memory_model, &linked_desc);
       spvtools::LookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL,
@@ -335,7 +335,7 @@ spv_result_t MergeModules(const MessageConsumer& consumer,
             return v.first == model && v.second == name;
           });
       if (i != entry_points.end()) {
-        spvtools::OperandDesc* desc = nullptr;
+        const spvtools::OperandDesc* desc = nullptr;
         spvtools::LookupOperand(SPV_OPERAND_TYPE_EXECUTION_MODEL, model, &desc);
         return DiagnosticStream(position, consumer, "", SPV_ERROR_INTERNAL)
                << "The entry point \"" << name << "\", with execution model "

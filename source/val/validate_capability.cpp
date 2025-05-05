@@ -287,7 +287,7 @@ bool IsSupportOptionalOpenCL_1_2(uint32_t capability) {
 
 // Checks if |capability| was enabled by extension.
 bool IsEnabledByExtension(ValidationState_t& _, uint32_t capability) {
-  spvtools::OperandDesc* operand_desc = nullptr;
+  const spvtools::OperandDesc* operand_desc = nullptr;
   spvtools::LookupOperand(SPV_OPERAND_TYPE_CAPABILITY, capability,
                           &operand_desc);
 
@@ -355,7 +355,7 @@ spv_result_t CapabilityPass(ValidationState_t& _, const Instruction* inst) {
 
   const uint32_t capability = inst->word(operand.offset);
   const auto capability_str = [capability]() {
-    spvtools::OperandDesc* desc = nullptr;
+    const spvtools::OperandDesc* desc = nullptr;
     if (spvtools::LookupOperand(SPV_OPERAND_TYPE_CAPABILITY, capability,
                                 &desc) != SPV_SUCCESS ||
         !desc) {

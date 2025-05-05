@@ -93,7 +93,7 @@ spv_result_t ValidateOperandForDebugInfo(
     const std::function<std::string()>& ext_inst_name) {
   auto* operand = _.FindDef(inst->word(word_index));
   if (operand->opcode() != expected_opcode) {
-    spvtools::InstructionDesc* desc = nullptr;
+    const spvtools::InstructionDesc* desc = nullptr;
     if (spvtools::LookupOpcodeForEnv(_.context()->target_env, expected_opcode,
                                      &desc) != SPV_SUCCESS ||
         !desc) {

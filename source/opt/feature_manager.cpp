@@ -54,7 +54,7 @@ void FeatureManager::AddCapability(spv::Capability cap) {
 
   capabilities_.insert(cap);
 
-  spvtools::OperandDesc* desc = nullptr;
+  const spvtools::OperandDesc* desc = nullptr;
   if (SPV_SUCCESS == spvtools::LookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
                                              uint32_t(cap), &desc)) {
     for (auto capability :

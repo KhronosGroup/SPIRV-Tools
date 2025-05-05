@@ -449,7 +449,7 @@ constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 14> kOpcodeHandlers{{
 namespace {
 ExtensionSet getExtensionsRelatedTo(const CapabilitySet& capabilities) {
   ExtensionSet output;
-  spvtools::OperandDesc* desc = nullptr;
+  const spvtools::OperandDesc* desc = nullptr;
   for (auto capability : capabilities) {
     if (SPV_SUCCESS !=
         spvtools::LookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
@@ -512,7 +512,7 @@ void TrimCapabilitiesPass::addInstructionRequirementsForOpcode(
     return;
   }
 
-  spvtools::InstructionDesc* desc;
+  const spvtools::InstructionDesc* desc;
   auto result = spvtools::LookupOpcode(opcode, &desc);
   if (result != SPV_SUCCESS) {
     return;
@@ -550,7 +550,7 @@ void TrimCapabilitiesPass::addInstructionRequirementsForOperand(
 
   // case 1: Operand is a single value, can directly lookup.
   if (!spvOperandIsConcreteMask(operand.type)) {
-    spvtools::OperandDesc* desc = nullptr;
+    const spvtools::OperandDesc* desc = nullptr;
     auto result =
         spvtools::LookupOperand(operand.type, operand.words[0], &desc);
     if (result != SPV_SUCCESS) {
@@ -568,7 +568,7 @@ void TrimCapabilitiesPass::addInstructionRequirementsForOperand(
       continue;
     }
 
-    spvtools::OperandDesc* desc = nullptr;
+    const spvtools::OperandDesc* desc = nullptr;
     auto result = spvtools::LookupOperand(operand.type, mask, &desc);
     if (result != SPV_SUCCESS) {
       continue;
@@ -647,7 +647,7 @@ void TrimCapabilitiesPass::addInstructionRequirements(
 void TrimCapabilitiesPass::AddExtensionsForOperand(
     const spv_operand_type_t type, const uint32_t value,
     ExtensionSet* extensions) const {
-  spvtools::OperandDesc* desc = nullptr;
+  const spvtools::OperandDesc* desc = nullptr;
   spv_result_t result = spvtools::LookupOperand(type, value, &desc);
   if (result != SPV_SUCCESS) {
     return;

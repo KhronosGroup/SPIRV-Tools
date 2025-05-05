@@ -31,7 +31,7 @@ using OpcodeTableCapabilitiesTest =
     ::testing::TestWithParam<ExpectedOpCodeCapabilities>;
 
 TEST_P(OpcodeTableCapabilitiesTest, TableEntryMatchesExpectedCapabilities) {
-  spvtools::InstructionDesc* desc = nullptr;
+  const spvtools::InstructionDesc* desc = nullptr;
   ASSERT_EQ(SPV_SUCCESS, spvtools::LookupOpcode(GetParam().opcode, &desc));
   auto caps = desc->capabilities();
   EXPECT_EQ(ElementsIn(GetParam().capabilities),

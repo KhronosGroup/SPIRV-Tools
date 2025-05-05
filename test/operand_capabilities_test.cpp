@@ -81,7 +81,7 @@ TEST_P(EnumCapabilityTest, Sample) {
   const auto env = std::get<0>(GetParam());
   const auto context = spvContextCreate(env);
   const AssemblyGrammar grammar(context);
-  spvtools::OperandDesc* entry = nullptr;
+  const spvtools::OperandDesc* entry = nullptr;
 
   ASSERT_EQ(SPV_SUCCESS,
             spvtools::LookupOperand(std::get<1>(GetParam()).type,

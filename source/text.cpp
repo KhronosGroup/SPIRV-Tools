@@ -285,7 +285,7 @@ spv_result_t spvTextEncodeOperand(const spvtools::AssemblyGrammar& grammar,
         return context->diagnostic() << "Invalid " << spvOperandTypeStr(type)
                                      << " '" << textValue << "'.";
       }
-      spvtools::InstructionDesc* opcodeEntry = nullptr;
+      const spvtools::InstructionDesc* opcodeEntry = nullptr;
       if (LookupOpcodeForEnv(grammar.target_env(), opcode, &opcodeEntry)) {
         return context->diagnostic(SPV_ERROR_INTERNAL)
                << "OpSpecConstant opcode table out of sync";
@@ -348,7 +348,7 @@ spv_result_t spvTextEncodeOperand(const spvtools::AssemblyGrammar& grammar,
             context->getTypeOfTypeGeneratingValue(pInst->resultTypeId);
         if (!spvtools::isScalarFloating(expected_type) &&
             !spvtools::isScalarIntegral(expected_type)) {
-          spvtools::InstructionDesc* opcodeEntry = nullptr;
+          const spvtools::InstructionDesc* opcodeEntry = nullptr;
           const char* opcode_name = "opcode";
           if (SPV_SUCCESS == LookupOpcode(pInst->opcode, &opcodeEntry)) {
             opcode_name =
@@ -458,7 +458,7 @@ spv_result_t spvTextEncodeOperand(const spvtools::AssemblyGrammar& grammar,
     default: {
       // NOTE: All non literal operands are handled here using the operand
       // table.
-      spvtools::OperandDesc* entry = nullptr;
+      const spvtools::OperandDesc* entry = nullptr;
       if (spvtools::LookupOperand(type, textValue, strlen(textValue), &entry)) {
         return context->diagnostic() << "Invalid " << spvOperandTypeStr(type)
                                      << " '" << textValue << "'.";
@@ -708,7 +708,7 @@ spv_result_t spvTextEncodeOpcode(const spvtools::AssemblyGrammar& grammar,
   // NOTE: The table contains Opcode names without the "Op" prefix.
   const char* pInstName = opcodeName.data() + 2;
 
-  spvtools::InstructionDesc* opcodeEntry = nullptr;
+  const spvtools::InstructionDesc* opcodeEntry = nullptr;
   error = LookupOpcodeForEnv(grammar.target_env(), pInstName, &opcodeEntry);
   if (error) {
     return context->diagnostic(error)
