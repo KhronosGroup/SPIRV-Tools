@@ -368,7 +368,7 @@ void ValidationState_t::RegisterCapability(spv::Capability cap) {
   if (module_capabilities_.contains(cap)) return;
 
   module_capabilities_.insert(cap);
-  const spvtools::OperandDesc* desc = nullptr;
+  spvtools::OperandDesc* desc = nullptr;
   if (SPV_SUCCESS == spvtools::LookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
                                              uint32_t(cap), &desc)) {
     for (auto capability : CapabilitySet(desc->capabilities_range.count(),
@@ -1883,6 +1883,7 @@ bool ValidationState_t::IsValidStorageClass(
       case spv::StorageClass::HitObjectAttributeNV:
       case spv::StorageClass::TileImageEXT:
       case spv::StorageClass::NodePayloadAMDX:
+      case spv::StorageClass::TileAttachmentQCOM:
         return true;
       default:
         return false;
