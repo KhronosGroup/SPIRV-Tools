@@ -110,8 +110,8 @@ struct OperandDesc {
   utils::Span<const spv::Capability> capabilities() const;
   utils::Span<const spvtools::Extension> extensions() const;
 
-  OperandDesc(uint32_t v, IndexRange o, IndexRange n, IndexRange a,
-              IndexRange c, IndexRange e, uint32_t mv, uint32_t lv)
+  constexpr OperandDesc(uint32_t v, IndexRange o, IndexRange n, IndexRange a,
+                        IndexRange c, IndexRange e, uint32_t mv, uint32_t lv)
       : value(v),
         operands_range(o),
         name_range(n),
@@ -121,7 +121,7 @@ struct OperandDesc {
         minVersion(mv),
         lastVersion(lv) {}
 
-  OperandDesc(uint32_t v) : value(v) {}
+  constexpr OperandDesc(uint32_t v) : value(v) {}
 
   OperandDesc(const OperandDesc&) = delete;
   OperandDesc(OperandDesc&&) = delete;
@@ -158,9 +158,10 @@ struct InstructionDesc {
   utils::Span<const spv::Capability> capabilities() const;
   utils::Span<const spvtools::Extension> extensions() const;
 
-  InstructionDesc(spv::Op oc, bool hr, bool ht, IndexRange o, IndexRange n,
-                  IndexRange a, IndexRange c, IndexRange e, uint32_t mv,
-                  uint32_t lv, PrintingClass pc)
+  constexpr InstructionDesc(spv::Op oc, bool hr, bool ht, IndexRange o,
+                            IndexRange n, IndexRange a, IndexRange c,
+                            IndexRange e, uint32_t mv, uint32_t lv,
+                            PrintingClass pc)
       : opcode(oc),
         hasResult(hr),
         hasType(ht),
@@ -173,7 +174,7 @@ struct InstructionDesc {
         lastVersion(lv),
         printingClass(pc) {}
 
-  InstructionDesc(spv::Op oc) : opcode(oc) {}
+  constexpr InstructionDesc(spv::Op oc) : opcode(oc) {}
 
   InstructionDesc(const InstructionDesc&) = delete;
   InstructionDesc(InstructionDesc&&) = delete;
