@@ -49,6 +49,11 @@ action("spvtools_core_tables") {
     cldebuginfo100_insts_file,
     core_json_file,
     debuginfo_insts_file,
+    "utils/Table/__init__.py",
+    "utils/Table/Context.py",
+    "utils/Table/IndexRange.py",
+    "utils/Table/Operand.py",
+    "utils/Table/StringList.py",
   ]
   outputs = [
     core_tables_body_file,
