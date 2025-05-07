@@ -80,15 +80,25 @@ struct NameValue {
 //      Array of operand types, referenced by IndexRanges elsewhere.
 //      Contains all sequences of operand types used in the grammar.
 
-// Maps an operand kind to a NameValue entries for that kind.
+// Maps an operand kind to NameValue entries for that kind.
 // The result is an IndexRange into kOperandNames, and are sorted
-// are sorted by string name within that span.
+// by string name within that span.
 IndexRange OperandNameRangeForKind(spv_operand_type_t type);
 
 // Maps an operand kind to possible operands for that kind.
 // The result is an IndexRange into kOperandsByValue, and the operands
 // are sorted by value within that span.
 IndexRange OperandByValueRangeForKind(spv_operand_type_t type);
+
+// Maps an extended instruction set kind to NameValue entries for that kind.
+// The result is an IndexRange into kExtIntNames, and are sorted
+// by string name within that span.
+IndexRange ExtInstNameRangeForKind(spv_ext_inst_type_t type);
+
+// Maps an extended instruction set kind to possible operands for that kind.
+// The result is an IndexRange into kExtInstByValue, and the instructions
+// are sorted by opcode value within that span.
+IndexRange ExtInstByValueRangeForKind(spv_ext_inst_type_t type);
 
 // Returns the name of an extension, as an index into kStrings
 IndexRange ExtensionToIndexRange(Extension extension);
@@ -134,6 +144,16 @@ utils::Span<const spv::Capability> InstructionDesc::capabilities() const {
 }
 utils::Span<const spvtools::Extension> InstructionDesc::extensions() const {
   return extensions_range.apply(kExtensionSpans);
+}
+
+utils::Span<const spv_operand_type_t> ExtInstDesc::operands() const {
+  return operands_range.apply(kOperandSpans);
+}
+utils::Span<const char> ExtInstDesc::name() const {
+  return name_range.apply(kStrings);
+}
+utils::Span<const spv::Capability> ExtInstDesc::capabilities() const {
+  return capabilities_range.apply(kCapabilitySpans);
 }
 
 spv_result_t LookupOpcode(spv::Op opcode, const InstructionDesc** desc) {
@@ -259,6 +279,58 @@ spv_result_t LookupOperand(spv_operand_type_t type, const char* name,
   if (where != span.end() && where->name.count() - 1 == name_len &&
       std::strncmp(getChars(where->name), name, name_len) == 0) {
     return LookupOperand(type, where->value, desc);
+  }
+  return SPV_ERROR_INVALID_LOOKUP;
+}
+
+spv_result_t LookupExtInst(spv_ext_inst_type_t type, const char* name,
+                           const ExtInstDesc** desc) {
+  auto ir = ExtInstNameRangeForKind(type);
+  if (ir.empty()) {
+    return SPV_ERROR_INVALID_LOOKUP;
+  }
+
+  auto span = ir.apply(kExtInstNames.data());
+
+  // The comparison function knows to use 'name' string to compare against
+  // when the value is kSentinel.
+  const auto kSentinel = uint32_t(-1);
+  const NameValue needle{{}, kSentinel};
+  auto less = [&](const NameValue& lhs, const NameValue& rhs) {
+    const char* lhs_chars = lhs.value == kSentinel ? name : getChars(lhs.name);
+    const char* rhs_chars = rhs.value == kSentinel ? name : getChars(rhs.name);
+    return std::strcmp(lhs_chars, rhs_chars) < 0;
+  };
+
+  auto where = std::lower_bound(span.begin(), span.end(), needle, less);
+  if (where != span.end() && std::strcmp(getChars(where->name), name) == 0) {
+    return LookupExtInst(type, where->value, desc);
+  }
+  return SPV_ERROR_INVALID_LOOKUP;
+}
+
+// Finds the extended instruction description by opcode value.
+// On success, returns SPV_SUCCESS and updates *desc.
+spv_result_t LookupExtInst(spv_ext_inst_type_t type, uint32_t value,
+                           const ExtInstDesc** desc) {
+  auto ir = ExtInstByValueRangeForKind(type);
+  if (ir.empty()) {
+    return SPV_ERROR_INVALID_LOOKUP;
+  }
+
+  auto span = ir.apply(kExtInstByValue.data());
+
+  // Metaphor: Look for the needle in the haystack.
+  // The operand value is the first member.
+  const ExtInstDesc needle(value);
+  auto where =
+      std::lower_bound(span.begin(), span.end(), needle,
+                       [&](const ExtInstDesc& lhs, const ExtInstDesc& rhs) {
+                         return lhs.value < rhs.value;
+                       });
+  if (where != span.end() && where->value == value) {
+    *desc = &*where;
+    return SPV_SUCCESS;
   }
   return SPV_ERROR_INVALID_LOOKUP;
 }

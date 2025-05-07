@@ -204,6 +204,24 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_COMPONENT_TYPE:
       return "component type";
 
+    case SPV_OPERAND_TYPE_KERNEL_PROPERTY_FLAGS:
+      return "kernel property flags";
+    case SPV_OPERAND_TYPE_SHDEBUG100_BUILD_IDENTIFIER_FLAGS:
+      return "NonSemantic.Shader.DebugInfo.100 debug build identifier flags";
+    case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_BASE_TYPE_ATTRIBUTE_ENCODING:
+      return "NonSemantic.Shader.DebugInfo.100 debug base type attribute "
+             "encoding";
+    case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_COMPOSITE_TYPE:
+      return "NonSemantic.Shader.DebugInfo.100 debug composite type";
+    case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_IMPORTED_ENTITY:
+      return "NonSemantic.Shader.DebugInfo.100 debug imported entity";
+    case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_INFO_FLAGS:
+      return "NonSemantic.Shader.DebugInfo.100 debug info flags";
+    case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_OPERATION:
+      return "NonSemantic.Shader.DebugInfo.100 debug operation";
+    case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_TYPE_QUALIFIER:
+      return "NonSemantic.Shader.DebugInfo.100 debug type qualifier";
+
     case SPV_OPERAND_TYPE_NONE:
       return "NONE";
     default:
@@ -317,6 +335,14 @@ bool spvOperandIsConcrete(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_TENSOR_CLAMP_MODE:
     case SPV_OPERAND_TYPE_COOPERATIVE_VECTOR_MATRIX_LAYOUT:
     case SPV_OPERAND_TYPE_COMPONENT_TYPE:
+    case SPV_OPERAND_TYPE_KERNEL_PROPERTY_FLAGS:
+    case SPV_OPERAND_TYPE_SHDEBUG100_BUILD_IDENTIFIER_FLAGS:
+    case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_BASE_TYPE_ATTRIBUTE_ENCODING:
+    case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_COMPOSITE_TYPE:
+    case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_IMPORTED_ENTITY:
+    case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_INFO_FLAGS:
+    case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_OPERATION:
+    case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_TYPE_QUALIFIER:
       return true;
     default:
       break;

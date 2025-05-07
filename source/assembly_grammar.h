@@ -29,11 +29,7 @@ namespace spvtools {
 class AssemblyGrammar {
  public:
   explicit AssemblyGrammar(const spv_const_context context)
-      : target_env_(context->target_env),
-        extInstTable_(context->ext_inst_table) {}
-
-  // Returns true if the internal tables have been initialized with valid data.
-  bool isValid() const;
+      : target_env_(context->target_env) {}
 
   // Returns the SPIR-V target environment.
   spv_target_env target_env() const { return target_env_; }
@@ -80,18 +76,6 @@ class AssemblyGrammar {
   spv_result_t parseMaskOperand(const spv_operand_type_t type,
                                 const char* textValue, uint32_t* pValue) const;
 
-  // Writes the extended operand with the given type and text to the *extInst
-  // parameter.
-  // Returns SPV_SUCCESS if the value could be found.
-  spv_result_t lookupExtInst(spv_ext_inst_type_t type, const char* textValue,
-                             spv_ext_inst_desc* extInst) const;
-
-  // Writes the extended operand with the given type and first encoded word
-  // to the *extInst parameter.
-  // Returns SPV_SUCCESS if the value could be found.
-  spv_result_t lookupExtInst(spv_ext_inst_type_t type, uint32_t firstWord,
-                             spv_ext_inst_desc* extInst) const;
-
   // Inserts the operands expected after the given typed mask onto the end
   // of the given pattern.
   //
@@ -108,7 +92,6 @@ class AssemblyGrammar {
 
  private:
   const spv_target_env target_env_;
-  const spv_ext_inst_table extInstTable_;
 };
 
 }  // namespace spvtools
