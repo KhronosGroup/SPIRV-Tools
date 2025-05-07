@@ -309,12 +309,13 @@ constexpr inline IndexRange IR(uint32_t first, uint32_t count) {
            the index range into kOperandByValue.
            This has mappings for both concrete and corresponding optional operand kinds.
 
-         - kOperandNames: a 1-dimensional array of all operand name-value pairs,
-           sorted first by operand kinds, then by operand name.
+         - kOperandNames: a 1-dimensional array of all operand NameIndex
+           entries, sorted first by operand kinds, then by operand name.
+           The name part is represented by an index range into the string table.
+           The index part is the index of this name's entry into the by-value array.
            This can have more entries than the by-value array, because names
            can have string aliases. For example,the MemorySemantics value 0
            is named both "Relaxed" and "None".
-           Each entry is represented by an index range into the string table.
            Only non-optional operand kinds are represented here.
 
          - kOperandNamesRangeByKind: a mapping from operand kind to the index
@@ -324,6 +325,12 @@ constexpr inline IndexRange IR(uint32_t first, uint32_t count) {
 
         self.header_ignore_decls.append(
 """
+struct NameIndex {
+  // Location of the null-terminated name in the global string table.
+  IndexRange name;
+  // Index of this name's entry in in the associated by-value table.
+  uint32_t index;
+};
 struct NameValue {
   // Location of the null-terminated name in the global string table.
   IndexRange name;
@@ -364,61 +371,12 @@ struct OperandDesc {
             category = operand_kind_json.get('category')
             return category in ['ValueEnum', 'BitEnum']
 
-        # Populate kOperandNames
-        operand_names: List[Tuple[IndexRange,int]] = []
-        name_range_for_kind: Dict[str,IndexRange] = {}
-        for operand_kind_json in self.operand_kinds:
-            kind_key: str = convert_operand_kind(operand_kind_json)
-            if ShouldEmit(operand_kind_json):
-                operands = [Operand(o) for o in operand_kind_json['enumerants']]
-                tuples: List[Tuple[str,int,str]] = []
-                for o in operands:
-                    tuples.append((o.enumerant, o.value, kind_key))
-                    for a in o.aliases:
-                        tuples.append((a, o.value, kind_key))
-                tuples = sorted(tuples, key = lambda t: t[0])
-                ir_tuples = [(self.context.AddString(t[0]),t[1],t[2]) for t in tuples]
-                name_range_for_kind[kind_key] = IndexRange(len(operand_names), len(ir_tuples))
-                operand_names.extend(ir_tuples)
-            else:
-                pass
-        operand_name_strings: List[str] = []
-        for i in range(0, len(operand_names)):
-            ir, value, kind_key = operand_names[i]
-            operand_name_strings.append('{{{}, {}}}, // {} {} in {}'.format(
-                str(ir),value,i,self.context.GetString(ir),kind_key))
-
-        parts: List[str] = []
-        parts.append("""// Operand names and values, ordered by (operand kind, name)
-// The fields in order are:
-//   name, either the primary name or an alias, indexing into kStrings
-//   enum value""")
-        parts.append("static const std::array<NameValue, {}> kOperandNames{{{{".format(len(operand_name_strings)))
-        parts.extend(['  ' + str(x) for x in operand_name_strings])
-        parts.append("}};\n")
-        self.body_decls.extend(parts)
-
-        parts.append("""// Maps an operand kind to possible names for operands of that kind.
-// The result is an IndexRange into kOperandNames, and the names
-// are sorted by name within that span.
-// An optional variant of a kind maps to the details for the corresponding
-// concrete operand kind.""")
-        parts = ["IndexRange OperandNameRangeForKind(spv_operand_type_t type) {\n  switch(type) {"]
-        for kind_key, ir in name_range_for_kind.items():
-            parts.append("    case {}: return {};".format(
-                kind_key,
-                str(name_range_for_kind[kind_key])))
-        for kind in self.operand_kinds_needing_optional_variant:
-            parts.append("    case {}: return {};".format(
-                ctype(kind, '?'),
-                str(name_range_for_kind[ctype(kind,'')])))
-        parts.append("    default: break;");
-        parts.append("  }\n  return IR(0,0);\n}\n")
-        self.body_decls.extend(parts)
-
         # Populate kOperandsByValue
         operands_by_value: List[str] = []
         operands_by_value_by_kind: Dict[str,IndexRange] = {}
+        # Maps the operand kind and value to the index into kOperandsByValue
+        index_by_kind_and_value: Dict[Tuple(str,int),int] = {}
+        index = 0
         for operand_kind_json in self.operand_kinds:
             kind_key: str = convert_operand_kind(operand_kind_json)
             if ShouldEmit(operand_kind_json):
@@ -437,6 +395,8 @@ struct OperandDesc {
                         convert_max_required_version(o.lastVersion),
                     ]
                     operand_descs.append('{' + ','.join([str(d) for d in desc]) + '}}, // {}'.format(kind_key))
+                    index_by_kind_and_value[(kind_key,o.value)] = index
+                    index += 1
                 operands_by_value_by_kind[kind_key] = IndexRange(len(operands_by_value), len(operand_descs))
                 operands_by_value.extend(operand_descs)
             else:
@@ -477,6 +437,60 @@ struct OperandDesc {
         parts.append("  }\n  return IR(0,0);\n}\n")
         self.body_decls.extend(parts)
 
+        # Populate kOperandNames
+        operand_names: List[Tuple[IndexRange,int]] = []
+        name_range_for_kind: Dict[str,IndexRange] = {}
+        for operand_kind_json in self.operand_kinds:
+            kind_key: str = convert_operand_kind(operand_kind_json)
+            if ShouldEmit(operand_kind_json):
+                operands = [Operand(o) for o in operand_kind_json['enumerants']]
+                tuples: List[Tuple[str,int,str]] = []
+                for o in operands:
+                    tuples.append((o.enumerant, o.value, kind_key))
+                    for a in o.aliases:
+                        tuples.append((a, o.value, kind_key))
+                tuples = sorted(tuples, key = lambda t: t[0])
+                ir_tuples = [(self.context.AddString(t[0]),t[1],t[2]) for t in tuples]
+                name_range_for_kind[kind_key] = IndexRange(len(operand_names), len(ir_tuples))
+                operand_names.extend(ir_tuples)
+            else:
+                pass
+        operand_name_strings: List[str] = []
+        for i in range(0, len(operand_names)):
+            ir, value, kind_key = operand_names[i]
+            index = index_by_kind_and_value[(kind_key,value)]
+            operand_name_strings.append('{{{}, {}}}, // {} {} in {}'.format(
+                str(ir),index,i,self.context.GetString(ir),kind_key))
+
+        parts: List[str] = []
+        parts.append("""// Operand names and index into kOperandsByValue, ordered by (operand kind, name)
+// The fields in order are:
+//   name, either the primary name or an alias, indexing into kStrings
+//   index into the kOperandsByValue array""")
+        parts.append("static const std::array<NameIndex, {}> kOperandNames{{{{".format(len(operand_name_strings)))
+        parts.extend(['  ' + str(x) for x in operand_name_strings])
+        parts.append("}};\n")
+        self.body_decls.extend(parts)
+
+        parts.append("""// Maps an operand kind to possible names for operands of that kind.
+// The result is an IndexRange into kOperandNames, and the names
+// are sorted by name within that span.
+// An optional variant of a kind maps to the details for the corresponding
+// concrete operand kind.""")
+        parts = ["IndexRange OperandNameRangeForKind(spv_operand_type_t type) {\n  switch(type) {"]
+        for kind_key, ir in name_range_for_kind.items():
+            parts.append("    case {}: return {};".format(
+                kind_key,
+                str(name_range_for_kind[kind_key])))
+        for kind in self.operand_kinds_needing_optional_variant:
+            parts.append("    case {}: return {};".format(
+                ctype(kind, '?'),
+                str(name_range_for_kind[ctype(kind,'')])))
+        parts.append("    default: break;");
+        parts.append("  }\n  return IR(0,0);\n}\n")
+        self.body_decls.extend(parts)
+
+
     def ComputeInstructionTables(self, insts) -> None:
         """
         Creates declarations for instruction tables.
@@ -516,32 +530,12 @@ struct InstructionDesc {
 };
 """)
 
-        # Create the sorted list of opcode strings, without the 'Op' prefix.
-        opcode_name_entries: List[str] = []
-        name_value_pairs: List[Tuple[str,int]] = []
-        for i in insts:
-            name_value_pairs.append((i['opname'][2:], i['opcode']))
-            for a in i.get('aliases',[]):
-                name_value_pairs.append((a[2:], i['opcode']))
-        name_value_pairs = sorted(name_value_pairs)
-        inst_name_strings: List[str] = []
-        for i in range(0, len(name_value_pairs)):
-            name, value = name_value_pairs[i]
-            ir = self.context.AddString(name)
-            inst_name_strings.append('{{{}, {}}}, // {} {}'.format(str(ir),value,i,name))
-        parts: List[str] = []
-        parts.append("""// Opcode strings (without the 'Op' prefix) and opcode values, ordered by name.
-// The fields in order are:
-//   name, either the primary name or an alias, indexing into kStrings
-//   opcode value""")
-        parts.append("static const std::array<NameValue, {}> kInstructionNames{{{{".format(len(inst_name_strings)))
-        parts.extend(['  ' + str(x) for x in inst_name_strings])
-        parts.append("}};\n")
-        self.body_decls.extend(parts)
-
         # Create the array of InstructionDesc
         lines: List[str] = []
-        for inst in insts:
+        # Maps the opcode name (without "Op" prefix) to its index in the table.
+        index_by_opcode: Dict[int,int] = {}
+        # Sort by opcode, so lookup can use binary search
+        for inst in sorted(insts, key = lambda inst: int(inst['opcode'])):
             parts: List[str] = []
 
             opname: str = inst['opname']
@@ -575,6 +569,7 @@ struct InstructionDesc {
                 'PrintingClass::' + to_safe_identifier(inst.get('class','@exclude'))
             ])
 
+            index_by_opcode[int(inst['opcode'])] = len(lines)
             lines.append('{{{}}},'.format(', '.join([str(x) for x in parts])))
         parts = []
         parts.append("""// Instruction descriptions, ordered by opcode.
@@ -592,6 +587,30 @@ struct InstructionDesc {
         parts.append("static const std::array<InstructionDesc, {}> kInstructionDesc{{{{".format(len(lines)));
         parts.extend(['  ' + l for l in lines])
         parts.append("}};\n");
+        self.body_decls.extend(parts)
+
+        # Create kInstructionNames.
+        opcode_name_entries: List[str] = []
+        name_value_pairs: List[Tuple[str,int]] = []
+        for i in insts:
+            name_value_pairs.append((i['opname'][2:], i['opcode']))
+            for a in i.get('aliases',[]):
+                name_value_pairs.append((a[2:], i['opcode']))
+        name_value_pairs = sorted(name_value_pairs)
+        inst_name_strings: List[str] = []
+        for i in range(0, len(name_value_pairs)):
+            name, value = name_value_pairs[i]
+            ir = self.context.AddString(name)
+            index = index_by_opcode[value]
+            inst_name_strings.append('{{{}, {}}}, // {} {}'.format(str(ir),index,i,name))
+        parts: List[str] = []
+        parts.append("""// Opcode strings (without the 'Op' prefix) and opcode values, ordered by name.
+// The fields in order are:
+//   name, either the primary name or an alias, indexing into kStrings
+//   index into kInstructionDesc""")
+        parts.append("static const std::array<NameIndex, {}> kInstructionNames{{{{".format(len(inst_name_strings)))
+        parts.extend(['  ' + str(x) for x in inst_name_strings])
+        parts.append("}};\n")
         self.body_decls.extend(parts)
 
 
@@ -619,9 +638,11 @@ struct InstructionDesc {
          - ExtInstByValueRangeForKind: a function mapping from extinst enum to
            the index range into kExtInstByValue.
 
-         - kExtInstNames: a 1-dimensional array of all extinst name-value pairs,
+         - kExtInstNames: a 1-dimensional array of all extinst name-index pairs,
            sorted first by extinst enum, then by operand name.
-           Each entry is represented by an index range into the string table.
+           The name part is represented by an index range into the string table.
+           The index part is the index of this name's entry in the kExtInstByValue
+           array.
 
          - kExtInstNamesRangeByKind: a mapping from operand kind to the index
            range into kOperandNames.
@@ -631,6 +652,8 @@ struct InstructionDesc {
         # Create kExtInstByValue
         by_value: List[List[Any]] = []
         by_value_by_kind: Dict[str,IndexRange] = {}
+        index_by_kind_and_opcode: Dict[Tuple[str,int],int] = {}
+        index = 0
         for e in extinsts:
             insts_in_set = []
             for inst in sorted(e.grammar['instructions'], key = lambda inst: inst['opcode']):
@@ -644,6 +667,8 @@ struct InstructionDesc {
                 inst_parts = [str(x) for x in inst_parts]
                 insts_in_set.append('    {{{}}}, // {} in {}'.format(
                         ','.join(inst_parts), inst['opname'], e.name))
+                index_by_kind_and_opcode[(e.enum_name,int(inst['opcode']))] = index
+                index += 1
             by_value_by_kind[e.enum_name] = IndexRange(len(by_value), len(insts_in_set))
             by_value.extend(insts_in_set)
 
@@ -682,15 +707,20 @@ struct InstructionDesc {
             insts_by_name = sorted(e.grammar['instructions'], key = lambda i: i['opname'])
             insts_in_set = []
             for inst in insts_by_name:
+                index = index_by_kind_and_opcode[(e.enum_name,int(inst['opcode']))]
                 insts_in_set.append(
                         '    {{{}, {}}}, // {} in {}'.format(
                                 str(self.context.AddString(inst['opname'])),
-                                inst['opcode'],
+                                index,
                                 inst['opname'],
                                 e.name))
             by_name_by_kind[e.enum_name] = IndexRange(len(by_name), len(insts_in_set))
             by_name.extend(insts_in_set)
-        parts.append("static const std::array<NameValue, {}> kExtInstNames{{{{".format(len(by_name)))
+        parts.append("""// Extended instruction opcode names sorted by extended instruction kind, then opcode name.
+// The fields in order are:
+//   name
+//   index into kExtInstByValue""")
+        parts.append("static const std::array<NameIndex, {}> kExtInstNames{{{{".format(len(by_name)))
         parts.extend(by_name)
         parts.append('}};\n')
         self.body_decls.extend(parts)
