@@ -40,6 +40,7 @@
 //
 //    An OperandDesc describes an operand.
 //    An InstructionDesc desribes an instruction.
+//    An ExtInstDesc describes an extended intruction.
 //
 //    Both OperandDesc and InstructionDesc have members:
 //      - a name string
@@ -51,13 +52,18 @@
 //      - a lastVersion
 //
 //    An OperandDesc also has:
-//      -  a uint32_t value.
+//      - a uint32_t value.
 //
 //    An InstructionDesc also has:
-//      -  a spv::Op opcode
-//      -  a bool hasResult
-//      -  a bool hasType
-//      -  a printing class
+//      - a spv::Op opcode
+//      - a bool hasResult
+//      - a bool hasType
+//      - a printing class
+//
+//    An ExtInstDesc has:
+//      - a name
+//      - array of spv::Capability      (as an enum)
+//      - array of spv_operand_type_t   (as an enum)
 //
 // The arrays are represented by spans into a global static array, with one
 // array for each of:
@@ -110,8 +116,8 @@ struct OperandDesc {
   utils::Span<const spv::Capability> capabilities() const;
   utils::Span<const spvtools::Extension> extensions() const;
 
-  OperandDesc(uint32_t v, IndexRange o, IndexRange n, IndexRange a,
-              IndexRange c, IndexRange e, uint32_t mv, uint32_t lv)
+  constexpr OperandDesc(uint32_t v, IndexRange o, IndexRange n, IndexRange a,
+                        IndexRange c, IndexRange e, uint32_t mv, uint32_t lv)
       : value(v),
         operands_range(o),
         name_range(n),
@@ -121,7 +127,7 @@ struct OperandDesc {
         minVersion(mv),
         lastVersion(lv) {}
 
-  OperandDesc(uint32_t v) : value(v) {}
+  constexpr OperandDesc(uint32_t v) : value(v) {}
 
   OperandDesc(const OperandDesc&) = delete;
   OperandDesc(OperandDesc&&) = delete;
@@ -158,9 +164,10 @@ struct InstructionDesc {
   utils::Span<const spv::Capability> capabilities() const;
   utils::Span<const spvtools::Extension> extensions() const;
 
-  InstructionDesc(spv::Op oc, bool hr, bool ht, IndexRange o, IndexRange n,
-                  IndexRange a, IndexRange c, IndexRange e, uint32_t mv,
-                  uint32_t lv, PrintingClass pc)
+  constexpr InstructionDesc(spv::Op oc, bool hr, bool ht, IndexRange o,
+                            IndexRange n, IndexRange a, IndexRange c,
+                            IndexRange e, uint32_t mv, uint32_t lv,
+                            PrintingClass pc)
       : opcode(oc),
         hasResult(hr),
         hasType(ht),
@@ -173,10 +180,31 @@ struct InstructionDesc {
         lastVersion(lv),
         printingClass(pc) {}
 
-  InstructionDesc(spv::Op oc) : opcode(oc) {}
+  constexpr InstructionDesc(spv::Op oc) : opcode(oc) {}
 
   InstructionDesc(const InstructionDesc&) = delete;
   InstructionDesc(InstructionDesc&&) = delete;
+};
+
+// Describes an extended instruction
+struct ExtInstDesc {
+  const uint32_t value;
+  const IndexRange operands_range;      // Indexes kOperandSpans
+  const IndexRange name_range;          // Indexes kStrings
+  const IndexRange capabilities_range;  // Indexes kCapbilitySpans
+  // Returns the span of elements in the global grammar tables corresponding
+  // to the privately-stored index ranges
+  utils::Span<const spv_operand_type_t> operands() const;
+  utils::Span<const char> name() const;
+  utils::Span<const spv::Capability> capabilities() const;
+
+  constexpr ExtInstDesc(uint32_t v, IndexRange o, IndexRange n, IndexRange c)
+      : value(v), operands_range(o), name_range(n), capabilities_range(c) {}
+
+  constexpr ExtInstDesc(uint32_t v) : value(v) {}
+
+  ExtInstDesc(const ExtInstDesc&) = delete;
+  ExtInstDesc(ExtInstDesc&&) = delete;
 };
 
 // Finds the instruction description by opcode name. The name should not
@@ -212,6 +240,15 @@ spv_result_t LookupOperand(spv_operand_type_t type, const char* name,
                            size_t name_len, const OperandDesc** desc);
 spv_result_t LookupOperand(spv_operand_type_t type, uint32_t operand,
                            const OperandDesc** desc);
+
+// Finds the extended instruction description by opcode name.
+// On success, returns SPV_SUCCESS and updates *desc.
+spv_result_t LookupExtInst(spv_ext_inst_type_t type, const char* name,
+                           const ExtInstDesc** desc);
+// Finds the extended instruction description by opcode value.
+// On success, returns SPV_SUCCESS and updates *desc.
+spv_result_t LookupExtInst(spv_ext_inst_type_t type, uint32_t value,
+                           const ExtInstDesc** desc);
 
 // Finds Extension enum corresponding to |str|. Returns false if not found.
 bool GetExtensionFromString(const char* str, Extension* extension);

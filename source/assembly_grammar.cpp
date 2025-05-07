@@ -168,8 +168,6 @@ const size_t kNumOpSpecConstantOpcodes =
 
 }  // namespace
 
-bool AssemblyGrammar::isValid() const { return extInstTable_; }
-
 CapabilitySet AssemblyGrammar::filterCapsAgainstTargetEnv(
     const spv::Capability* cap_array, uint32_t count) const {
   CapabilitySet cap_set;
@@ -228,17 +226,6 @@ spv_result_t AssemblyGrammar::parseMaskOperand(const spv_operand_type_t type,
                                                const char* textValue,
                                                uint32_t* pValue) const {
   return spvTextParseMaskOperand(type, textValue, pValue);
-}
-spv_result_t AssemblyGrammar::lookupExtInst(spv_ext_inst_type_t type,
-                                            const char* textValue,
-                                            spv_ext_inst_desc* extInst) const {
-  return spvExtInstTableNameLookup(extInstTable_, type, textValue, extInst);
-}
-
-spv_result_t AssemblyGrammar::lookupExtInst(spv_ext_inst_type_t type,
-                                            uint32_t firstWord,
-                                            spv_ext_inst_desc* extInst) const {
-  return spvExtInstTableValueLookup(extInstTable_, type, firstWord, extInst);
 }
 
 void AssemblyGrammar::pushOperandTypesForMask(

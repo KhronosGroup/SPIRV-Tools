@@ -598,9 +598,8 @@ void TrimCapabilitiesPass::addInstructionRequirementsForExtInst(
   spv_ext_inst_type_t instructionSet =
       spvExtInstImportTypeGet(extInstSet.AsString().c_str());
 
-  spv_ext_inst_desc desc = {};
-  auto result =
-      context()->grammar().lookupExtInst(instructionSet, extInstruction, &desc);
+  const ExtInstDesc* desc = nullptr;
+  auto result = LookupExtInst(instructionSet, extInstruction, &desc);
   if (result != SPV_SUCCESS) {
     return;
   }

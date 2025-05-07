@@ -50,12 +50,6 @@ bool spvOperandIsOptional(spv_operand_type_t type);
 bool spvOperandIsVariable(spv_operand_type_t type);
 
 // Append a list of operand types to the end of the pattern vector.
-// The types parameter specifies the source array of types, ending with
-// SPV_OPERAND_TYPE_NONE.
-void spvPushOperandTypes(const spv_operand_type_t* types,
-                         spv_operand_pattern_t* pattern);
-
-// Append a list of operand types to the end of the pattern vector.
 // The types parameter specifies the source span of types.
 void spvPushOperandTypes(
     const spvtools::utils::Span<const spv_operand_type_t>& types,

@@ -496,11 +496,12 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
       assert(spvIsExtendedInstruction(opcode));
       assert(inst->ext_inst_type != SPV_EXT_INST_TYPE_NONE);
-      spv_ext_inst_desc ext_inst;
-      if (grammar_.lookupExtInst(inst->ext_inst_type, word, &ext_inst) ==
+
+      const spvtools::ExtInstDesc* desc = nullptr;
+      if (spvtools::LookupExtInst(inst->ext_inst_type, word, &desc) ==
           SPV_SUCCESS) {
         // if we know about this ext inst, push the expected operands
-        spvPushOperandTypes(ext_inst->operandTypes, expected_operands);
+        spvPushOperandTypes(desc->operands(), expected_operands);
       } else {
         // if we don't know this extended instruction and the set isn't
         // non-semantic, we cannot process further

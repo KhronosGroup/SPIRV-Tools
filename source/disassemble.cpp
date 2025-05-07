@@ -31,7 +31,6 @@
 #include <unordered_map>
 #include <utility>
 
-#include "source/assembly_grammar.h"
 #include "source/binary.h"
 #include "source/diagnostic.h"
 #include "source/ext_inst.h"
@@ -116,8 +115,7 @@ struct ControlFlowGraph {
 // representation.
 class Disassembler {
  public:
-  Disassembler(const AssemblyGrammar& grammar, uint32_t options,
-               NameMapper name_mapper)
+  Disassembler(uint32_t options, NameMapper name_mapper)
       : print_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options)),
         nested_indent_(
             spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_NESTED_INDENT, options)),
@@ -125,7 +123,7 @@ class Disassembler {
             spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_REORDER_BLOCKS, options)),
         text_(),
         out_(print_ ? out_stream() : out_stream(text_)),
-        instruction_disassembler_(grammar, out_.get(), options, name_mapper),
+        instruction_disassembler_(out_.get(), options, name_mapper),
         header_(!spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER, options)),
         byte_offset_(0) {}
 
@@ -625,12 +623,10 @@ constexpr uint32_t kCommentColumn = 50;
 }  // namespace
 
 namespace disassemble {
-InstructionDisassembler::InstructionDisassembler(const AssemblyGrammar& grammar,
-                                                 std::ostream& stream,
+InstructionDisassembler::InstructionDisassembler(std::ostream& stream,
                                                  uint32_t options,
                                                  NameMapper name_mapper)
-    : grammar_(grammar),
-      stream_(stream),
+    : stream_(stream),
       print_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options)),
       color_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_COLOR, options)),
       indent_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_INDENT, options)
@@ -871,11 +867,10 @@ void InstructionDisassembler::EmitOperand(std::ostream& stream,
       stream << "%" << name_mapper_(word);
       break;
     case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
-      spv_ext_inst_desc ext_inst;
       SetRed(stream);
-      if (grammar_.lookupExtInst(inst.ext_inst_type, word, &ext_inst) ==
-          SPV_SUCCESS) {
-        stream << ext_inst->name;
+      const ExtInstDesc* desc = nullptr;
+      if (LookupExtInst(inst.ext_inst_type, word, &desc) == SPV_SUCCESS) {
+        stream << desc->name().data();
       } else {
         if (!spvExtInstIsNonSemantic(inst.ext_inst_type)) {
           assert(false && "should have caught this earlier");
@@ -1043,11 +1038,6 @@ std::string spvInstructionBinaryToText(const spv_target_env env,
                                        const size_t wordCount,
                                        const uint32_t options) {
   spv_context context = spvContextCreate(env);
-  const AssemblyGrammar grammar(context);
-  if (!grammar.isValid()) {
-    spvContextDestroy(context);
-    return "";
-  }
 
   // Generate friendly names for Ids if requested.
   std::unique_ptr<FriendlyNameMapper> friendly_mapper;
@@ -1058,7 +1048,7 @@ std::string spvInstructionBinaryToText(const spv_target_env env,
   }
 
   // Now disassemble!
-  Disassembler disassembler(grammar, options, name_mapper);
+  Disassembler disassembler(options, name_mapper);
   WrappedDisassembler wrapped(&disassembler, instCode, instWordCount);
   spvBinaryParse(context, &wrapped, code, wordCount, DisassembleTargetHeader,
                  DisassembleTargetInstruction, nullptr);
@@ -1087,9 +1077,6 @@ spv_result_t spvBinaryToText(const spv_const_context context,
     spvtools::UseDiagnosticAsMessageConsumer(&hijack_context, pDiagnostic);
   }
 
-  const spvtools::AssemblyGrammar grammar(&hijack_context);
-  if (!grammar.isValid()) return SPV_ERROR_INVALID_TABLE;
-
   // Generate friendly names for Ids if requested.
   std::unique_ptr<spvtools::FriendlyNameMapper> friendly_mapper;
   spvtools::NameMapper name_mapper = spvtools::GetTrivialNameMapper();
@@ -1100,7 +1087,7 @@ spv_result_t spvBinaryToText(const spv_const_context context,
   }
 
   // Now disassemble!
-  spvtools::Disassembler disassembler(grammar, options, name_mapper);
+  spvtools::Disassembler disassembler(options, name_mapper);
   if (auto error =
           spvBinaryParse(&hijack_context, &disassembler, code, wordCount,
                          spvtools::DisassembleHeader,

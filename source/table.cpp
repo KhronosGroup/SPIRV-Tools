@@ -49,12 +49,7 @@ spv_context spvContextCreate(spv_target_env env) {
       return nullptr;
   }
 
-  spv_ext_inst_table ext_inst_table = nullptr;
-
-  spvExtInstTableGet(&ext_inst_table, env);
-
-  return new spv_context_t{env, ext_inst_table,
-                           nullptr /* a null default consumer */};
+  return new spv_context_t{env, nullptr /* a null default consumer */};
 }
 
 void spvContextDestroy(spv_context context) { delete context; }
