@@ -246,13 +246,10 @@ constexpr inline IndexRange IR(uint32_t first, uint32_t count) {
 // The fields in order are:
 //   name, indexing into kStrings
 //   enum value""")
-        parts.append("const std::array<NameValue,{}>& getExtensionNames() {{".format(len(self.extensions)))
-        parts.append("  static const std::array<NameValue,{}> kExtensionNames{{{{".format(len(self.extensions)))
+        parts.append("static const std::array<NameValue,{}> kExtensionNames{{{{".format(len(self.extensions)))
         for e in self.extensions:
             parts.append('    {{{}, static_cast<uint32_t>({})}},'.format(self.context.AddString(e), to_safe_identifier(e)))
-        parts.append("  }};")
-        parts.append("  return kExtensionNames;")
-        parts.append("}\n")
+        parts.append("}};\n")
         self.body_decls.extend(parts)
 
     def ComputeOperandTables(self) -> None:
@@ -358,12 +355,9 @@ struct OperandDesc {
 // The fields in order are:
 //   name, either the primary name or an alias, indexing into kStrings
 //   enum value""")
-        parts.append("const std::array<NameValue, {}>& getOperandNames() {{".format(len(operand_name_strings)))
-        parts.append("  static const std::array<NameValue, {}> kOperandNames{{{{".format(len(operand_name_strings)))
-        parts.extend(['    ' + str(x) for x in operand_name_strings])
-        parts.append("  }};")
-        parts.append("  return kOperandNames;")
-        parts.append("}\n")
+        parts.append("static const std::array<NameValue, {}> kOperandNames{{{{".format(len(operand_name_strings)))
+        parts.extend(['  ' + str(x) for x in operand_name_strings])
+        parts.append("}};\n")
         self.body_decls.extend(parts)
 
         parts.append("""// Maps an operand kind to possible names for operands of that kind.
@@ -421,12 +415,9 @@ struct OperandDesc {
 //   extensions, as an IndexRange into kExtensionSpans
 //   version, first version of SPIR-V that has it
 //   lastVersion, last version of SPIR-V that has it""")
-        parts.append("const std::array<OperandDesc, {}>& getOperandsByValue() {{".format(len(operands_by_value)))
-        parts.append("  static const std::array<OperandDesc, {}> kOperandsByValue{{{{".format(len(operands_by_value)))
-        parts.extend(['    ' + str(x) for x in operands_by_value])
-        parts.append("  }};\n")
-        parts.append("  return kOperandsByValue;\n")
-        parts.append("}\n")
+        parts.append("static const std::array<OperandDesc, {}> kOperandsByValue{{{{".format(len(operands_by_value)))
+        parts.extend(['  ' + str(x) for x in operands_by_value])
+        parts.append("}};\n")
         self.body_decls.extend(parts)
 
         parts = []
@@ -507,12 +498,9 @@ struct InstructionDesc {
 // The fields in order are:
 //   name, either the primary name or an alias, indexing into kStrings
 //   opcode value""")
-        parts.append("const std::array<NameValue, {}>& getInstructionNames() {{".format(len(inst_name_strings)))
-        parts.append("  static const std::array<NameValue, {}> kInstructionNames{{{{".format(len(inst_name_strings)))
-        parts.extend(['    ' + str(x) for x in inst_name_strings])
-        parts.append("  }};\n")
-        parts.append("  return kInstructionNames;\n")
-        parts.append("}\n")
+        parts.append("static const std::array<NameValue, {}> kInstructionNames{{{{".format(len(inst_name_strings)))
+        parts.extend(['  ' + str(x) for x in inst_name_strings])
+        parts.append("}};\n")
         self.body_decls.extend(parts)
 
         # Create the array of InstructionDesc
@@ -565,12 +553,9 @@ struct InstructionDesc {
 //   extensions, as an IndexRange into kExtensionSpans
 //   version, first version of SPIR-V that has it
 //   lastVersion, last version of SPIR-V that has it""")
-        parts.append("const std::array<InstructionDesc, {}>& getInstructionDesc() {{".format(len(lines)));
-        parts.append("  static const std::array<InstructionDesc, {}> kInstructionDesc{{{{".format(len(lines)));
+        parts.append("static const std::array<InstructionDesc, {}> kInstructionDesc{{{{".format(len(lines)));
         parts.extend(['  ' + l for l in lines])
-        parts.append("  }};\n");
-        parts.append("  return kInstructionDesc;");
-        parts.append("}\n");
+        parts.append("}};\n");
         self.body_decls.extend(parts)
 
 

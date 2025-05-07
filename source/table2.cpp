@@ -139,13 +139,12 @@ utils::Span<const spvtools::Extension> InstructionDesc::extensions() const {
 spv_result_t LookupOpcode(spv::Op opcode, const InstructionDesc** desc) {
   // Metaphor: Look for the needle in the haystack.
   const InstructionDesc needle(opcode);
-  const auto& descs = getInstructionDesc();
   auto where = std::lower_bound(
-      descs.begin(), descs.end(), needle,
+      kInstructionDesc.begin(), kInstructionDesc.end(), needle,
       [&](const InstructionDesc& lhs, const InstructionDesc& rhs) {
         return uint32_t(lhs.opcode) < uint32_t(rhs.opcode);
       });
-  if (where != descs.end() && where->opcode == opcode) {
+  if (where != kInstructionDesc.end() && where->opcode == opcode) {
     *desc = &*where;
     return SPV_SUCCESS;
   }
@@ -163,9 +162,10 @@ spv_result_t LookupOpcode(const char* name, const InstructionDesc** desc) {
     return std::strcmp(lhs_chars, rhs_chars) < 0;
   };
 
-  const auto& names = getInstructionNames();
-  auto where = std::lower_bound(names.begin(), names.end(), needle, less);
-  if (where != names.end() && std::strcmp(getChars(where->name), name) == 0) {
+  auto where = std::lower_bound(kInstructionNames.begin(),
+                                kInstructionNames.end(), needle, less);
+  if (where != kInstructionNames.end() &&
+      std::strcmp(getChars(where->name), name) == 0) {
     return LookupOpcode(static_cast<spv::Op>(where->value), desc);
   }
   return SPV_ERROR_INVALID_LOOKUP;
@@ -209,7 +209,7 @@ spv_result_t LookupOperand(spv_operand_type_t type, uint32_t value,
     return SPV_ERROR_INVALID_LOOKUP;
   }
 
-  auto span = ir.apply(getOperandsByValue().data());
+  auto span = ir.apply(kOperandsByValue.data());
 
   // Metaphor: Look for the needle in the haystack.
   // The operand value is the first member.
@@ -233,7 +233,7 @@ spv_result_t LookupOperand(spv_operand_type_t type, const char* name,
     return SPV_ERROR_INVALID_LOOKUP;
   }
 
-  auto span = ir.apply(getOperandNames().data());
+  auto span = ir.apply(kOperandNames.data());
 
   // The comparison function knows to use (name, name_len) as the
   // string to compare against when the value is kSentinel.
@@ -278,10 +278,9 @@ bool GetExtensionFromString(const char* name, Extension* extension) {
     return std::strcmp(lhs_chars, rhs_chars) < 0;
   };
 
-  const auto& extension_names = getExtensionNames();
-  auto where = std::lower_bound(extension_names.begin(), extension_names.end(),
+  auto where = std::lower_bound(kExtensionNames.begin(), kExtensionNames.end(),
                                 needle, less);
-  if (where != extension_names.end() &&
+  if (where != kExtensionNames.end() &&
       std::strcmp(getChars(where->name), name) == 0) {
     *extension = static_cast<Extension>(where->value);
     return true;
