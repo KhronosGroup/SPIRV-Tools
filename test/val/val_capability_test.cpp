@@ -2375,7 +2375,7 @@ spv_result_t spvCoreOperandTableNameLookup(spv_target_env env,
                                            const size_t nameLength) {
   if (!name) return SPV_ERROR_INVALID_POINTER;
 
-  spvtools::OperandDesc* entry = nullptr;
+  const spvtools::OperandDesc* entry = nullptr;
   if (SPV_SUCCESS == spvtools::LookupOperand(type, name, nameLength, &entry)) {
     // Check for min version only.
     if (spvVersionForTargetEnv(env) >= entry->minVersion) {
