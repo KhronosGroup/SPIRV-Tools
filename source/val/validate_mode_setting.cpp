@@ -318,7 +318,9 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
           }
           if (!ok) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << _.VkErrorID(6426)
+                   << (_.HasCapability(spv::Capability::TileShadingQCOM)
+                           ? _.VkErrorID(10685)
+                           : _.VkErrorID(6426))
                    << "In the Vulkan environment, GLCompute execution model "
                       "entry points require either the "
                    << (_.HasCapability(spv::Capability::TileShadingQCOM)
