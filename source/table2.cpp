@@ -34,6 +34,13 @@ constexpr inline IndexRange IR(uint32_t first, uint32_t count) {
   return IndexRange{first, count};
 }
 
+struct NameIndex {
+  // Location of the null-terminated name in the global string table kStrings.
+  IndexRange name;
+  // Index of this name's entry in the corresponding by-value table.
+  uint32_t index;
+};
+
 struct NameValue {
   // Location of the null-terminated name in the global string table kStrings.
   IndexRange name;
@@ -43,15 +50,17 @@ struct NameValue {
 
 // The generated include file contains variables:
 //
-//   std::array<NameValue,...> kOperandNames:
-//      Operand names and values, ordered by (operand kind, name)
+//   std::array<NameIndex,...> kOperandNames:
+//      Operand names and index, ordered by (operand kind, name)
+//      The index part is the named entry's index in kOperandsByValue array.
 //      Aliases are included as their own entries.
 //
 //   std::array<OperandDesc, ...> kOperandsByValue:
 //      Operand descriptions, ordered by (operand kind, operand enum value).
 //
-//   std::array<NameValue,...> kInstructionNames:
-//      Instruction names and opcode values, ordered by (name, value)
+//   std::array<NameIndex,...> kInstructionNames:
+//      Instruction names and index, ordered by (name, value)
+//      The index part is the named entry's index in kInstructionDesc array.
 //      Aliases are included as their own entries.
 //
 //   std::array<InstructionDesc, ...> kInstructionDesc
@@ -175,10 +184,10 @@ spv_result_t LookupOpcode(const char* name, const InstructionDesc** desc) {
   // The comparison function knows to use 'name' string to compare against
   // when the value is kSentinel.
   const auto kSentinel = uint32_t(-1);
-  const NameValue needle{{}, kSentinel};
-  auto less = [&](const NameValue& lhs, const NameValue& rhs) {
-    const char* lhs_chars = lhs.value == kSentinel ? name : getChars(lhs.name);
-    const char* rhs_chars = rhs.value == kSentinel ? name : getChars(rhs.name);
+  const NameIndex needle{{}, kSentinel};
+  auto less = [&](const NameIndex& lhs, const NameIndex& rhs) {
+    const char* lhs_chars = lhs.index == kSentinel ? name : getChars(lhs.name);
+    const char* rhs_chars = rhs.index == kSentinel ? name : getChars(rhs.name);
     return std::strcmp(lhs_chars, rhs_chars) < 0;
   };
 
@@ -186,7 +195,8 @@ spv_result_t LookupOpcode(const char* name, const InstructionDesc** desc) {
                                 kInstructionNames.end(), needle, less);
   if (where != kInstructionNames.end() &&
       std::strcmp(getChars(where->name), name) == 0) {
-    return LookupOpcode(static_cast<spv::Op>(where->value), desc);
+    *desc = &kInstructionDesc[where->index];
+    return SPV_SUCCESS;
   }
   return SPV_ERROR_INVALID_LOOKUP;
 }
@@ -258,27 +268,28 @@ spv_result_t LookupOperand(spv_operand_type_t type, const char* name,
   // The comparison function knows to use (name, name_len) as the
   // string to compare against when the value is kSentinel.
   const auto kSentinel = uint32_t(-1);
-  const NameValue needle{{}, kSentinel};
+  const NameIndex needle{{}, kSentinel};
   // The strings in the global string table are null-terminated, and the count
   // reflects that.  So always deduct 1 from its length.
-  auto less = [&](const NameValue& lhs, const NameValue& rhs) {
-    const char* lhs_chars = lhs.value == kSentinel ? name : getChars(lhs.name);
-    const char* rhs_chars = rhs.value == kSentinel ? name : getChars(rhs.name);
+  auto less = [&](const NameIndex& lhs, const NameIndex& rhs) {
+    const char* lhs_chars = lhs.index == kSentinel ? name : getChars(lhs.name);
+    const char* rhs_chars = rhs.index == kSentinel ? name : getChars(rhs.name);
     const auto content_cmp = std::strncmp(lhs_chars, rhs_chars, name_len);
     if (content_cmp != 0) {
       return content_cmp < 0;
     }
     const auto lhs_len =
-        lhs.value == kSentinel ? name_len : lhs.name.count() - 1;
+        lhs.index == kSentinel ? name_len : lhs.name.count() - 1;
     const auto rhs_len =
-        rhs.value == kSentinel ? name_len : rhs.name.count() - 1;
+        rhs.index == kSentinel ? name_len : rhs.name.count() - 1;
     return lhs_len < rhs_len;
   };
 
   auto where = std::lower_bound(span.begin(), span.end(), needle, less);
   if (where != span.end() && where->name.count() - 1 == name_len &&
       std::strncmp(getChars(where->name), name, name_len) == 0) {
-    return LookupOperand(type, where->value, desc);
+    *desc = &kOperandsByValue[where->index];
+    return SPV_SUCCESS;
   }
   return SPV_ERROR_INVALID_LOOKUP;
 }
@@ -295,16 +306,17 @@ spv_result_t LookupExtInst(spv_ext_inst_type_t type, const char* name,
   // The comparison function knows to use 'name' string to compare against
   // when the value is kSentinel.
   const auto kSentinel = uint32_t(-1);
-  const NameValue needle{{}, kSentinel};
-  auto less = [&](const NameValue& lhs, const NameValue& rhs) {
-    const char* lhs_chars = lhs.value == kSentinel ? name : getChars(lhs.name);
-    const char* rhs_chars = rhs.value == kSentinel ? name : getChars(rhs.name);
+  const NameIndex needle{{}, kSentinel};
+  auto less = [&](const NameIndex& lhs, const NameIndex& rhs) {
+    const char* lhs_chars = lhs.index == kSentinel ? name : getChars(lhs.name);
+    const char* rhs_chars = rhs.index == kSentinel ? name : getChars(rhs.name);
     return std::strcmp(lhs_chars, rhs_chars) < 0;
   };
 
   auto where = std::lower_bound(span.begin(), span.end(), needle, less);
   if (where != span.end() && std::strcmp(getChars(where->name), name) == 0) {
-    return LookupExtInst(type, where->value, desc);
+    *desc = &kExtInstByValue[where->index];
+    return SPV_SUCCESS;
   }
   return SPV_ERROR_INVALID_LOOKUP;
 }
