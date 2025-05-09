@@ -943,13 +943,13 @@ def main():
 
     if args.spirv_core_grammar is None:
         print('error: missing --spirv-core-grammar ')
-        exit(1)
+        sys.exit(1)
     if (args.core_tables_body_output is None) and (args.core_tables_header_output is None):
         print('error: need at least one of --core-tables-body-output --core-tables-header-output ')
-        exit(1)
+        sys.exit(1)
     if len(args.extinst) < 1:
         print('error: missing --extinst ')
-        exit(1)
+        sys.exit(1)
 
     # Load the JSON grammar files.
     extinsts = sorted([ExtInst(e) for e in args.extinst], key = lambda e: e.name)
@@ -985,7 +985,7 @@ def main():
         make_path_to_file(args.core_tables_header_output)
         with open(args.core_tables_header_output, 'w') as f:
             f.write('\n'.join(g.header_decls))
-    exit(0)
+    sys.exit(0)
 
 
 if __name__ == '__main__':
