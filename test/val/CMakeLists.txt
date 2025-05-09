@@ -100,6 +100,7 @@ add_spvtools_unittest(TARGET val_rstuvw
        val_ssa_test.cpp
        val_state_test.cpp
        val_storage_test.cpp
+       val_tensor_test.cpp
        val_type_unique_test.cpp
        val_validation_state_test.cpp
        val_version_test.cpp

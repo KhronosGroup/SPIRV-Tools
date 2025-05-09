@@ -240,7 +240,8 @@ class Grammar():
                 'CooperativeMatrixOperands',
                 'MatrixMultiplyAccumulateOperands',
                 'RawAccessChainOperands',
-                'FPEncoding']
+                'FPEncoding',
+                'TensorOperands']
 
     def dump(self) -> None:
         self.context.dump()
