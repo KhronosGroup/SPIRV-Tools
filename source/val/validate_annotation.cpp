@@ -102,6 +102,25 @@ bool IsNotMemberDecoration(spv::Decoration dec) {
   return false;
 }
 
+bool IsScalarSpecConstant(ValidationState_t& _, const Instruction* target) {
+  switch (target->opcode()) {
+    case spv::Op::OpSpecConstantTrue:
+    case spv::Op::OpSpecConstantFalse:
+    case spv::Op::OpSpecConstant:
+      return true;
+    case spv::Op::OpSpecConstantOp:
+      if (target->operands().size() > 0) {
+        auto type_inst = _.FindDef(target->GetOperandAs<uint32_t>(0));
+        if (spvOpcodeIsScalarType(type_inst->opcode())) {
+          return true;
+        }
+      }
+      return false;
+    default:
+      return false;
+  }
+}
+
 spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
                                       const Instruction* inst,
                                       const Instruction* target) {
@@ -114,7 +133,7 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
   };
   switch (dec) {
     case spv::Decoration::SpecId:
-      if (!spvOpcodeIsScalarSpecConstant(target->opcode())) {
+      if (!IsScalarSpecConstant(_, target)) {
         return fail(0) << "must be a scalar specialization constant";
       }
       break;

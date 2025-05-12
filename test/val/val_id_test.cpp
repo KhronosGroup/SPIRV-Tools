@@ -5982,7 +5982,7 @@ OpFunctionEnd
                              "constant")));
 }
 
-TEST_P(ValidateIdWithMessage, SpecIdTargetOpSpecConstantOpBad) {
+TEST_P(ValidateIdWithMessage, SpecIdTargetOpSpecConstantOpGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
 OpDecorate %1 SpecId 200
 %void = OpTypeVoid
@@ -5993,7 +5993,27 @@ OpDecorate %1 SpecId 200
 %1 = OpSpecConstantOp %int IAdd %3 %4
 %main = OpFunction %void None %2
 %6 = OpLabel
-OpReturnValue %3
+OpReturn
+OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_P(ValidateIdWithMessage, SpecIdTargetOpSpecConstantOpBad) {
+  std::string spirv = kGLSL450MemoryModel + R"(
+OpDecorate %1 SpecId 200
+%void = OpTypeVoid
+%2 = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%ivec2 = OpTypeVector %int 2
+%3 = OpConstant %int 1
+%4 = OpConstant %int 2
+%5 = OpConstantComposite %ivec2 %3 %3
+%1 = OpSpecConstantOp %ivec2 CompositeInsert %5 %4
+%main = OpFunction %void None %2
+%6 = OpLabel
+OpReturn
 OpFunctionEnd
   )";
   CompileSuccessfully(spirv.c_str());

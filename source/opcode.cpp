@@ -154,17 +154,6 @@ bool spvOpcodeIsConstantOrUndef(const spv::Op opcode) {
   return opcode == spv::Op::OpUndef || spvOpcodeIsConstant(opcode);
 }
 
-bool spvOpcodeIsScalarSpecConstant(const spv::Op opcode) {
-  switch (opcode) {
-    case spv::Op::OpSpecConstantTrue:
-    case spv::Op::OpSpecConstantFalse:
-    case spv::Op::OpSpecConstant:
-      return true;
-    default:
-      return false;
-  }
-}
-
 int32_t spvOpcodeIsComposite(const spv::Op opcode) {
   switch (opcode) {
     case spv::Op::OpTypeVector:
