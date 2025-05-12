@@ -231,6 +231,12 @@ class BasicBlock {
   // debuggers.
   void Dump() const;
 
+  // Return the user data for this basic block.
+  void* GetUserData() { return user_data_; }
+
+  // Set the user data for this basic block.
+  void SetUserData(void* data) { user_data_ = data; }
+
  private:
   // The enclosing function.
   Function* function_;
@@ -238,13 +244,15 @@ class BasicBlock {
   std::unique_ptr<Instruction> label_;
   // Instructions inside this basic block, but not the OpLabel.
   InstructionList insts_;
+  // User data pointer, lifetime is managed by the user.
+  void* user_data_;
 };
 
 // Pretty-prints |block| to |str|. Returns |str|.
 std::ostream& operator<<(std::ostream& str, const BasicBlock& block);
 
 inline BasicBlock::BasicBlock(std::unique_ptr<Instruction> label)
-    : function_(nullptr), label_(std::move(label)) {}
+    : function_(nullptr), label_(std::move(label)), user_data_(nullptr) {}
 
 inline void BasicBlock::AddInstruction(std::unique_ptr<Instruction> i) {
   insts_.push_back(std::move(i));
