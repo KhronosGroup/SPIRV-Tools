@@ -26,17 +26,8 @@ exports_files([
 ])
 
 py_binary(
-    # Generates tables for extensions and extended instruction sets.
-    # TODO(crbug.com/266223071) Replace this with ggt.py
-    name = "generate_grammar_tables",
-    srcs = ["utils/generate_grammar_tables.py"],
-)
-
-py_binary(
     # The script that generates compressed grammar tables for
     # instructions and operands.
-    # TODO(crbug.com/266223071) Eventually this will fully replace
-    # utils/generate_grammar_tables.py.
     name = "ggt",
     main = "utils/ggt.py", # The file found by $(location :ggt)
     srcs = [

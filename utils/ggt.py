@@ -14,8 +14,6 @@
 # limitations under the License.
 """Generates compressed grammar tables from SPIR-V JSON grammar."""
 
-# Note: This will eventually replace generate_grammar_tables.py
-
 import errno
 import json
 import os.path
