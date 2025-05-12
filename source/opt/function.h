@@ -124,6 +124,7 @@ class Function {
   BasicBlock* tail() { return blocks_.back().get(); }
   const BasicBlock* tail() const { return blocks_.back().get(); }
 
+  size_t size() const { return blocks_.size(); }
   iterator begin() { return iterator(&blocks_, blocks_.begin()); }
   iterator end() { return iterator(&blocks_, blocks_.end()); }
   const_iterator begin() const { return cbegin(); }
@@ -174,6 +175,11 @@ class Function {
   // header in order.
   void ForEachDebugInstructionsInHeader(
       const std::function<void(Instruction*)>& f);
+
+  BasicBlock* GetBlock(unsigned int i) {
+    if (i < blocks_.size()) return blocks_[i].get();
+    return nullptr;
+  }
 
   BasicBlock* InsertBasicBlockAfter(std::unique_ptr<BasicBlock>&& new_block,
                                     BasicBlock* position);
