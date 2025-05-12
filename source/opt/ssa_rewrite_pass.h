@@ -120,10 +120,25 @@ class SSARewriter {
     std::vector<uint32_t> users_;
   };
 
-  // Type used to keep track of store operations in each basic block.
-  typedef std::unordered_map<BasicBlock*,
-                             std::unordered_map<uint32_t, uint32_t>>
-      BlockDefsMap;
+  // Struct that holds block-specific SSA rewrite metadata.
+  // Accessing this data is a hot path for large shaders, so a pointer to it is
+  // stored directly in each block's user data.
+  struct BlockUserData {
+    // Map holding the value of every SSA-target variable at every basic block
+    // where the variable is stored. |block|->defs[var_id] = val_id
+    // means that there is a store or Phi instruction for variable |var_id| at
+    // basic block |block| with value |val_id|.
+    std::unordered_map<uint32_t, uint32_t> defs;
+    // Whether the block has been sealed.
+    bool sealed = false;
+  };
+
+  // Gets the BlockUserData associated with basic block |bb|.
+  BlockUserData& GetUserData(BasicBlock* bb) {
+    BlockUserData* data = static_cast<BlockUserData*>(bb->GetUserData());
+    assert(data);
+    return *data;
+  }
 
   // Generates all the SSA rewriting decisions for basic block |bb|.  This
   // populates the Phi candidate table (|phi_candidate_|) and the load
@@ -135,7 +150,7 @@ class SSARewriter {
   void SealBlock(BasicBlock* bb);
 
   // Returns true if |bb| has been sealed.
-  bool IsBlockSealed(BasicBlock* bb) { return sealed_blocks_.count(bb) != 0; }
+  bool IsBlockSealed(BasicBlock* bb) { return GetUserData(bb).sealed; }
 
   // Returns the Phi candidate with result ID |id| if it exists in the table
   // |phi_candidates_|. If no such Phi candidate exists, it returns nullptr.
@@ -186,20 +201,20 @@ class SSARewriter {
   // Registers a definition for variable |var_id| in basic block |bb| with
   // value |val_id|.
   void WriteVariable(uint32_t var_id, BasicBlock* bb, uint32_t val_id) {
-    defs_at_block_[bb][var_id] = val_id;
+    GetUserData(bb).defs[var_id] = val_id;
     if (auto* pc = GetPhiCandidate(val_id)) {
       pc->AddUser(bb->id());
     }
   }
 
-  // Returns the value of |var_id| at |bb| if |defs_at_block_| contains it.
+  // Returns the value of |var_id| at |bb| if |bb|->|defs| contains it.
   // Otherwise, returns 0.
   uint32_t GetValueAtBlock(uint32_t var_id, BasicBlock* bb);
 
   // Processes the store operation |inst| in basic block |bb|. This extracts
   // the variable ID being stored into, determines whether the variable is an
   // SSA-target variable, and, if it is, it stores its value in the
-  // |defs_at_block_| map.
+  // |bb|->|defs| map.
   void ProcessStore(Instruction* inst, BasicBlock* bb);
 
   // Processes the load operation |inst| in basic block |bb|. This extracts
@@ -259,12 +274,6 @@ class SSARewriter {
   // Prints the load replacement table to std::cerr.
   void PrintReplacementTable() const;
 
-  // Map holding the value of every SSA-target variable at every basic block
-  // where the variable is stored. defs_at_block_[block][var_id] = val_id
-  // means that there is a store or Phi instruction for variable |var_id| at
-  // basic block |block| with value |val_id|.
-  BlockDefsMap defs_at_block_;
-
   // Map, indexed by Phi ID, holding all the Phi candidates created during SSA
   // rewriting.  |phi_candidates_[id]| returns the Phi candidate whose result
   // is |id|.
@@ -284,9 +293,6 @@ class SSARewriter {
   // After all the rewriting decisions are made, a final scan through the IR
   // is done to replace all uses of the original load ID with the value ID.
   std::unordered_map<uint32_t, uint32_t> load_replacement_;
-
-  // Set of blocks that have been sealed already.
-  std::unordered_set<BasicBlock*> sealed_blocks_;
 
   // Memory pass requesting the SSA rewriter.
   MemPass* pass_;

@@ -242,13 +242,10 @@ uint32_t SSARewriter::AddPhiOperands(PhiCandidate* phi_candidate) {
 
 uint32_t SSARewriter::GetValueAtBlock(uint32_t var_id, BasicBlock* bb) {
   assert(bb != nullptr);
-  const auto& bb_it = defs_at_block_.find(bb);
-  if (bb_it != defs_at_block_.end()) {
-    const auto& current_defs = bb_it->second;
-    const auto& var_it = current_defs.find(var_id);
-    if (var_it != current_defs.end()) {
-      return var_it->second;
-    }
+  auto& defs = GetUserData(bb).defs;
+  const auto& var_it = defs.find(var_id);
+  if (var_it != defs.end()) {
+    return var_it->second;
   }
   return 0;
 }
@@ -290,10 +287,10 @@ uint32_t SSARewriter::GetReachingDef(uint32_t var_id, BasicBlock* bb) {
 }
 
 void SSARewriter::SealBlock(BasicBlock* bb) {
-  auto result = sealed_blocks_.insert(bb);
-  (void)result;
-  assert(result.second == true &&
+  BlockUserData& data = GetUserData(bb);
+  assert(data.sealed == false &&
          "Tried to seal the same basic block more than once.");
+  data.sealed = true;
 }
 
 void SSARewriter::ProcessStore(Instruction* inst, BasicBlock* bb) {
@@ -653,6 +650,11 @@ Pass::Status SSARewriter::RewriteFunctionIntoSSA(Function* fp) {
             << fp->PrettyPrint(0) << "\n\n\n";
 #endif
 
+  std::vector<BlockUserData> user_data(fp->size());
+  for (unsigned int i = 0; i < user_data.size(); i++) {
+    fp->GetBlock(i)->SetUserData(&user_data[i]);
+  }
+
   // Collect variables that can be converted into SSA IDs.
   pass_->CollectTargetVars(fp);
 
@@ -679,6 +681,12 @@ Pass::Status SSARewriter::RewriteFunctionIntoSSA(Function* fp) {
 #if SSA_REWRITE_DEBUGGING_LEVEL > 0
   std::cerr << "\n\n\nFunction after SSA rewrite:\n"
             << fp->PrettyPrint(0) << "\n";
+#endif
+
+#if SSA_REWRITE_DEBUGGING_LEVEL > 1 || !defined(NDEBUG)
+  for (auto& bb : (*fp)) {
+    bb.SetUserData(nullptr);
+  }
 #endif
 
   return modified ? Pass::Status::SuccessWithChange
