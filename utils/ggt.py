@@ -867,36 +867,6 @@ def get_extension_list(instructions, operand_kinds):
     return sorted(set(extensions))
 
 
-def precondition_operand_kinds(operand_kinds):
-    """For operand kinds that have the same number, make sure they all have the
-    same extension list."""
-
-    # Map operand kind and value to list of the union of extensions
-    # for same-valued enumerants.
-    exts = {}
-    for kind_entry in operand_kinds:
-        kind = kind_entry.get('kind')
-        for enum_entry in kind_entry.get('enumerants', []):
-            value = enum_entry.get('value')
-            key = kind + '.' + str(value)
-            if key in exts:
-                exts[key].extend(enum_entry.get('extensions', []))
-            else:
-                exts[key] = enum_entry.get('extensions', [])
-            exts[key] = sorted(set(exts[key]))
-
-    # Now make each entry the same list.
-    for kind_entry in operand_kinds:
-        kind = kind_entry.get('kind')
-        for enum_entry in kind_entry.get('enumerants', []):
-            value = enum_entry.get('value')
-            key = kind + '.' + str(value)
-            if len(exts[key]) > 0:
-                enum_entry['extensions'] = exts[key]
-
-    return operand_kinds
-
-
 def prefix_operand_kind_names(prefix, json_dict):
     """Modifies json_dict, by prefixing all the operand kind names
     with the given prefix.  Also modifies their uses in the instructions
@@ -965,9 +935,6 @@ def main():
         operand_kinds.extend(e.grammar.get('operand_kinds',[]))
 
     extensions = get_extension_list(instructions, operand_kinds)
-    # TODO(dneto): I think preconditioning is no longer necessary now that
-    # aliases are explicitly represented.
-    operand_kinds = precondition_operand_kinds(operand_kinds)
 
     g = Grammar(extensions, operand_kinds, printing_class)
     g.ComputeOperandTables()
