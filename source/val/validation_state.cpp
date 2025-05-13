@@ -1066,7 +1066,7 @@ bool ValidationState_t::IsIntArrayType(uint32_t id, uint64_t length) const {
     const auto len = FindDef(len_id);
     uint64_t len_value = 0;
     if (!len || !spvOpcodeIsConstant(len->opcode()) ||
-        !EvalConstantValUint64(len_id, &len_value) || length != len_value) {
+        (EvalConstantValUint64(len_id, &len_value) && (length != len_value))) {
       return false;
     }
   }

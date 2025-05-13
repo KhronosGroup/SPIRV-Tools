@@ -911,7 +911,7 @@ spv_result_t ValidateTypeTensorARM(ValidationState_t& _,
   }
   // Rank must be greater than 0
   uint64_t rank_value = 0;
-  if (!_.EvalConstantValUint64(rank_id, &rank_value) || rank_value == 0) {
+  if (_.EvalConstantValUint64(rank_id, &rank_value) && rank_value == 0) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpTypeTensorARM Rank <id> " << _.getIdName(rank_id)
            << " must define a value greater than 0.";
@@ -942,7 +942,7 @@ spv_result_t ValidateTypeTensorARM(ValidationState_t& _,
   for (size_t i = 2; i < shape->operands().size(); i++) {
     const auto s_id = shape->GetOperandAs<uint32_t>(i);
     uint64_t s_val = 0;
-    if (!_.EvalConstantValUint64(s_id, &s_val) || s_val == 0) {
+    if (_.EvalConstantValUint64(s_id, &s_val) && s_val == 0) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "OpTypeTensorARM Shape constituent " << i - 2
              << " is not greater than 0.";

@@ -208,10 +208,8 @@ spv_result_t ValidateTensorQuerySize(ValidationState_t& _,
   // Check Dimension operand
   auto op_dim = inst->word(4);
   auto inst_dim = _.FindDef(op_dim);
-  uint64_t dim;
   if (!spvOpcodeIsConstant(inst_dim->opcode()) ||
-      !_.IsIntScalarType(inst_dim->type_id()) ||
-      !_.EvalConstantValUint64(op_dim, &dim)) {
+      !_.IsIntScalarType(inst_dim->type_id())) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Dimension must come from a constant instruction of scalar "
               "integer type.";
@@ -220,8 +218,9 @@ spv_result_t ValidateTensorQuerySize(ValidationState_t& _,
   auto inst_tensor_type = _.FindDef(inst_tensor->type_id());
   auto op_tensor_rank = inst_tensor_type->word(3);
   uint64_t tensor_rank = 0;
-  if (!_.EvalConstantValUint64(op_tensor_rank, &tensor_rank) ||
-      dim >= tensor_rank) {
+  uint64_t dim;
+  if (_.EvalConstantValUint64(op_tensor_rank, &tensor_rank) &&
+      _.EvalConstantValUint64(op_dim, &dim) && (dim >= tensor_rank)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Dimension (" << dim << ") must be less than the Rank of Tensor ("
            << tensor_rank << ").";

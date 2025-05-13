@@ -34,9 +34,10 @@ spv_result_t ValidateConstantBool(ValidationState_t& _,
 }
 
 bool isCompositeType(const Instruction* inst) {
+  bool is_tensor = inst->opcode() == spv::Op::OpTypeTensorARM;
+  bool tensor_is_shaped = inst->words().size() == 5;
   return spvOpcodeIsComposite(inst->opcode()) ||
-         (inst->opcode() == spv::Op::OpTypeTensorARM &&
-          inst->words().size() == 5);
+         (is_tensor && tensor_is_shaped);
 }
 
 spv_result_t ValidateConstantComposite(ValidationState_t& _,
@@ -307,18 +308,12 @@ spv_result_t ValidateConstantComposite(ValidationState_t& _,
       }
 
       uint64_t rank = 0;
-      if (!_.EvalConstantValUint64(inst_rank->id(), &rank)) {
-        return _.diag(SPV_ERROR_INVALID_ID, result_type)
-               << "Rank value is not defined.";
-      }
-      uint64_t outermost_shape = 0;
-      if (!_.EvalConstantValUint64(inst_shape->GetOperandAs<uint32_t>(2),
-                                   &outermost_shape)) {
-        return _.diag(SPV_ERROR_INVALID_ID, result_type)
-               << "Shape along outermost dimension is not defined.";
-      }
+      _.EvalConstantValUint64(inst_rank->id(), &rank);
 
-      if (outermost_shape != constituent_count) {
+      uint64_t outermost_shape = 0;
+      if (_.EvalConstantValUint64(inst_shape->GetOperandAs<uint32_t>(2),
+                                  &outermost_shape) &&
+          (outermost_shape != constituent_count)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << opcode_name
                << " Constituent count does not match "
@@ -346,6 +341,12 @@ spv_result_t ValidateConstantComposite(ValidationState_t& _,
           return _.diag(SPV_ERROR_INVALID_ID, constituent)
                  << "Type of Constituent " << constituent_index - 2
                  << " is not defined.";
+        }
+
+        if (rank == 0) {
+          // The rank of the returned tensor constant is not known.
+          // Skip rank-dependent validation.
+          continue;
         }
 
         if (rank == 1) {
@@ -376,9 +377,9 @@ spv_result_t ValidateConstantComposite(ValidationState_t& _,
           auto inst_constituent_rank =
               _.FindDef(constituent_type->GetOperandAs<uint32_t>(2));
           uint64_t constituent_rank;
-          if (!inst_constituent_rank ||
-              !_.EvalConstantValUint64(inst_constituent_rank->id(),
-                                       &constituent_rank) ||
+          if (inst_constituent_rank &&
+              _.EvalConstantValUint64(inst_constituent_rank->id(),
+                                      &constituent_rank) &&
               (constituent_rank != rank - 1)) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
                    << opcode_name << " Constituent <id> "
@@ -402,12 +403,12 @@ spv_result_t ValidateConstantComposite(ValidationState_t& _,
                constituent_shape_index++) {
             size_t shape_index = constituent_shape_index + 1;
             uint64_t constituent_shape = 0, shape = 1;
-            if (!_.EvalConstantValUint64(
+            if (_.EvalConstantValUint64(
                     inst_constituent_shape->GetOperandAs<uint32_t>(
                         constituent_shape_index),
-                    &constituent_shape) ||
-                !_.EvalConstantValUint64(
-                    inst_shape->GetOperandAs<uint32_t>(shape_index), &shape) ||
+                    &constituent_shape) &&
+                _.EvalConstantValUint64(
+                    inst_shape->GetOperandAs<uint32_t>(shape_index), &shape) &&
                 (constituent_shape != shape)) {
               return _.diag(SPV_ERROR_INVALID_ID, inst)
                      << opcode_name << " Constituent <id> "

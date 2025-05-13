@@ -47,6 +47,7 @@ std::string GenerateModule(const std::string& body) {
              %fnty = OpTypeFunction %void
         %uint_vec4 = OpTypeVector %uint 4
            %uint_0 = OpConstant %uint 0
+      %uint_0_spec = OpSpecConstant %uint 0
            %uint_1 = OpConstant %uint 1
            %uint_2 = OpConstant %uint 2
            %uint_3 = OpConstant %uint 3
@@ -61,6 +62,7 @@ std::string GenerateModule(const std::string& body) {
         %uint_arr4 = OpTypeArray %uint %uint_4
        %float_arr4 = OpTypeArray %float %uint_4
 %uint_arr4_1_1_1_1 = OpConstantComposite %uint_arr4 %uint_1 %uint_1 %uint_1 %uint_1
+%uint_arr4_0_0_0_0_spec = OpSpecConstantComposite %uint_arr4 %uint_0_spec %uint_0_spec %uint_0_spec %uint_0_spec
     %uint_arr2_1_1 = OpConstantComposite %uint_arr2 %uint_1 %uint_1
 %float_arr4_1_1_1_1 = OpConstantComposite %float_arr4 %float_1 %float_1 %float_1 %float_1
 %uint_arr4_1_1_0_1 = OpConstantComposite %uint_arr4 %uint_1 %uint_1 %uint_0 %uint_1
@@ -125,6 +127,15 @@ TEST_F(ValidateTensor, InvalidTypeDuplicateElementTypeTensorType) {
 TEST_F(ValidateTensor, ValidTypeElementTypeAndRank) {
   const std::string src = R"(
     %test_type = OpTypeTensorARM %uint %uint_1
+)";
+  std::string spvasm = GenerateModule(src);
+  CompileSuccessfully(spvasm, SPVENV);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPVENV));
+}
+
+TEST_F(ValidateTensor, ValidTypeElementTypeAndRankUsingSpecConstant) {
+  const std::string src = R"(
+    %test_type = OpTypeTensorARM %uint %uint_0_spec
 )";
   std::string spvasm = GenerateModule(src);
   CompileSuccessfully(spvasm, SPVENV);
@@ -209,6 +220,15 @@ TEST_F(ValidateTensor, InvalidTypeRank0) {
 TEST_F(ValidateTensor, ValidTypeElementTypeAndRankAndShape) {
   const std::string src = R"(
     %test_type = OpTypeTensorARM %uint %uint_4 %uint_arr4_1_1_1_1
+)";
+  std::string spvasm = GenerateModule(src);
+  CompileSuccessfully(spvasm, SPVENV);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPVENV));
+}
+
+TEST_F(ValidateTensor, ValidTypeElementTypeAndRankAndShapeUsingSpecConstant) {
+  const std::string src = R"(
+    %test_type = OpTypeTensorARM %uint %uint_0_spec %uint_arr4_0_0_0_0_spec
 )";
   std::string spvasm = GenerateModule(src);
   CompileSuccessfully(spvasm, SPVENV);
@@ -337,6 +357,17 @@ TEST_F(ValidateTensor, ValidTensorConstantRank1) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPVENV));
 }
 
+TEST_F(ValidateTensor, ValidTensorConstantRank1SpecConstant) {
+  const std::string src = R"(
+   %uint_arr1_4 = OpSpecConstantComposite %uint_arr1 %uint_0_spec
+    %ts_uint_r1 = OpTypeTensorARM %uint %uint_0_spec %uint_arr1_4
+           %cst = OpSpecConstantComposite %ts_uint_r1 %uint_0_spec %uint_0_spec %uint_0_spec %uint_0_spec
+)";
+  std::string spvasm = GenerateModule(src);
+  CompileSuccessfully(spvasm, SPVENV);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPVENV));
+}
+
 TEST_F(ValidateTensor, InvalidTensorConstantRank1NotEnoughConstituents) {
   const std::string src = R"(
    %uint_arr1_4 = OpConstantComposite %uint_arr1 %uint_4
@@ -417,6 +448,20 @@ TEST_F(ValidateTensor, ValidTensorConstantRank4) {
            %cst_r2 = OpConstantComposite %ts_uint_r2 %cst_r1 %cst_r1
            %cst_r3 = OpConstantComposite %ts_uint_r3 %cst_r2 %cst_r2
            %cst_r4 = OpConstantComposite %ts_uint_r4 %cst_r3 %cst_r3
+)";
+  std::string spvasm = GenerateModule(src);
+  CompileSuccessfully(spvasm, SPVENV);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPVENV));
+}
+
+TEST_F(ValidateTensor, ValidTensorConstantRank2SpecConstantConstituent) {
+  const std::string src = R"(
+      %uint_arr1_2 = OpSpecConstantComposite %uint_arr1 %uint_0_spec
+    %uint_arr2_2_2 = OpSpecConstantComposite %uint_arr2 %uint_0_spec %uint_0_spec
+       %ts_uint_r1 = OpTypeTensorARM %uint %uint_0_spec %uint_arr1_2
+       %ts_uint_r2 = OpTypeTensorARM %uint %uint_2 %uint_arr2_2_2
+           %cst_r1 = OpSpecConstantComposite %ts_uint_r1 %uint_0_spec %uint_0_spec
+           %cst_r2 = OpSpecConstantComposite %ts_uint_r2 %cst_r1 %cst_r1
 )";
   std::string spvasm = GenerateModule(src);
   CompileSuccessfully(spvasm, SPVENV);
@@ -1033,6 +1078,23 @@ TEST_F(ValidateTensor, ValidTensorQuerySize) {
          %label1 = OpLabel
          %tensor = OpLoad %tensor_uint_4 %tensor_var
            %size = OpTensorQuerySizeARM %uint %tensor %uint_1
+                   OpReturn
+                   OpFunctionEnd
+)";
+  std::string spvasm = GenerateModule(src);
+  CompileSuccessfully(spvasm, SPVENV);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPVENV));
+}
+
+TEST_F(ValidateTensor, ValidTensorQuerySizeSpecConstant) {
+  const std::string src = R"(
+%tensor_uint_4_spec = OpTypeTensorARM %uint %uint_0_spec
+%tensor_uint_4_spec_ptr_UniformConstant = OpTypePointer UniformConstant %tensor_uint_4_spec
+%tensor_var_spec = OpVariable %tensor_uint_4_spec_ptr_UniformConstant UniformConstant
+             %fn = OpFunction %void None %fnty
+         %label1 = OpLabel
+         %tensor = OpLoad %tensor_uint_4_spec %tensor_var_spec
+           %size = OpTensorQuerySizeARM %uint %tensor %uint_0_spec
                    OpReturn
                    OpFunctionEnd
 )";
