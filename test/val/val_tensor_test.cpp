@@ -108,7 +108,7 @@ TEST_F(ValidateTensor, InvalidTypeTensorElementTypeNotScalar) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex("OpTypeTensorARM Element Type <id> "
-                           "'[[:digit:]]\\[%void\\]' is not a scalar type.*"));
+                           "'[0-9]\\[%void\\]' is not a scalar type.*"));
 }
 
 TEST_F(ValidateTensor, InvalidTypeDuplicateElementTypeTensorType) {
@@ -174,7 +174,7 @@ TEST_F(ValidateTensor, InvalidTypeRankNotConstant) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex(
-                  "OpTypeTensorARM Rank <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' "
+                  "OpTypeTensorARM Rank <id> '[0-9]+\\[%[0-9]+\\]' "
                   "is not a constant instruction.*"));
 }
 
@@ -187,7 +187,7 @@ TEST_F(ValidateTensor, InvalidTypeRankConstantButNotIntegerType) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRegex("OpTypeTensorARM Rank <id> '[[:digit:]]+\\[%float_1\\]' "
+      MatchesRegex("OpTypeTensorARM Rank <id> '[0-9]+\\[%float_1\\]' "
                    "does not have a scalar integer type.*"));
 }
 
@@ -200,7 +200,7 @@ TEST_F(ValidateTensor, InvalidTypeRankConstantIntegerTypeButNotScalar) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex(
-                  "OpTypeTensorARM Rank <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' "
+                  "OpTypeTensorARM Rank <id> '[0-9]+\\[%[0-9]+\\]' "
                   "does not have a scalar integer type.*"));
 }
 
@@ -213,7 +213,7 @@ TEST_F(ValidateTensor, InvalidTypeRank0) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRegex("OpTypeTensorARM Rank <id> '[[:digit:]]+\\[%uint_0\\]' must "
+      MatchesRegex("OpTypeTensorARM Rank <id> '[0-9]+\\[%uint_0\\]' must "
                    "define a value greater than 0.*"));
 }
 
@@ -245,7 +245,7 @@ TEST_F(ValidateTensor, InvalidTypeShapeNotConstant) {
   EXPECT_THAT(
       getDiagnosticString(),
       MatchesRegex(
-          "OpTypeTensorARM Shape <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' is not "
+          "OpTypeTensorARM Shape <id> '[0-9]+\\[%[0-9]+\\]' is not "
           "a constant instruction.*"));
 }
 
@@ -259,7 +259,7 @@ TEST_F(ValidateTensor, InvalidTypeShapeConstantButNotArrayOfInteger) {
   EXPECT_THAT(
       getDiagnosticString(),
       MatchesRegex(
-          "OpTypeTensorARM Shape <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' is not "
+          "OpTypeTensorARM Shape <id> '[0-9]+\\[%[0-9]+\\]' is not "
           "an array of integer type whose Length is equal to Rank.*"));
 }
 
@@ -273,7 +273,7 @@ TEST_F(ValidateTensor, InvalidTypeShapeConstantArrayOfIntegerWrongLength) {
   EXPECT_THAT(
       getDiagnosticString(),
       MatchesRegex(
-          "OpTypeTensorARM Shape <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' is not "
+          "OpTypeTensorARM Shape <id> '[0-9]+\\[%[0-9]+\\]' is not "
           "an array of integer type whose Length is equal to Rank.*"));
 }
 
@@ -327,7 +327,7 @@ TEST_F(ValidateTensor, InvalidNullTensorConstantRankedButNotShaped) {
   EXPECT_THAT(
       getDiagnosticString(),
       MatchesRegex(
-          "OpConstantNull Result Type <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' "
+          "OpConstantNull Result Type <id> '[0-9]+\\[%[0-9]+\\]' "
           "cannot have a null value.*"));
 }
 
@@ -342,7 +342,7 @@ TEST_F(ValidateTensor, InvalidNullTensorConstantNotRanked) {
   EXPECT_THAT(
       getDiagnosticString(),
       MatchesRegex(
-          "OpConstantNull Result Type <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' "
+          "OpConstantNull Result Type <id> '[0-9]+\\[%[0-9]+\\]' "
           "cannot have a null value.*"));
 }
 
@@ -380,7 +380,7 @@ TEST_F(ValidateTensor, InvalidTensorConstantRank1NotEnoughConstituents) {
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex(
                   "OpConstantComposite Constituent count does not match the "
-                  "shape of Result Type <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' "
+                  "shape of Result Type <id> '[0-9]+\\[%[0-9]+\\]' "
                   "along its outermost dimension, expected 4 but got 3.*"));
 }
 
@@ -396,7 +396,7 @@ TEST_F(ValidateTensor, InvalidTensorConstantRank1TooManyConstituents) {
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex(
                   "OpConstantComposite Constituent count does not match the "
-                  "shape of Result Type <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' "
+                  "shape of Result Type <id> '[0-9]+\\[%[0-9]+\\]' "
                   "along its outermost dimension, expected 4 but got 5.*"));
 }
 
@@ -414,7 +414,7 @@ TEST_F(ValidateTensor,
       getDiagnosticString(),
       MatchesRegex(
           "OpConstantComposite Constituent <id> "
-          "'[[:digit:]]+\\[%[[:digit:]]+\\]' is not a constant or undef.*"));
+          "'[0-9]+\\[%[0-9]+\\]' is not a constant or undef.*"));
 }
 
 TEST_F(ValidateTensor, InvalidTensorConstantRank1WrongConstituentType) {
@@ -429,9 +429,9 @@ TEST_F(ValidateTensor, InvalidTensorConstantRank1WrongConstituentType) {
   EXPECT_THAT(
       getDiagnosticString(),
       MatchesRegex(
-          "OpConstantComposite Constituent <id> '[[:digit:]]+\\[%float_1\\]' "
+          "OpConstantComposite Constituent <id> '[0-9]+\\[%float_1\\]' "
           "type does not match the element type of the tensor "
-          "\\('[[:digit:]]+\\[%[[:digit:]]+\\]'\\).*"));
+          "\\('[0-9]+\\[%[0-9]+\\]'\\).*"));
 }
 
 TEST_F(ValidateTensor, ValidTensorConstantRank4) {
@@ -483,7 +483,7 @@ TEST_F(ValidateTensor, InvalidTensorConstantRank2ConstituentNotATensor) {
   EXPECT_THAT(
       getDiagnosticString(),
       MatchesRegex("OpConstantComposite Constituent <id> "
-                   "'[[:digit:]]+\\[%uint_1\\]' must be an OpTypeTensorARM.*"));
+                   "'[0-9]+\\[%uint_1\\]' must be an OpTypeTensorARM.*"));
 }
 
 TEST_F(ValidateTensor,
@@ -503,8 +503,8 @@ TEST_F(ValidateTensor,
       getDiagnosticString(),
       MatchesRegex(
           "OpConstantComposite Constituent <id> "
-          "'[[:digit:]]+\\[%[[:digit:]]+\\]' must have the same Element Type "
-          "as Result Type <id> '[[:digit:]]+\\[%[[:digit:]]+\\]'.*"));
+          "'[0-9]+\\[%[0-9]+\\]' must have the same Element Type "
+          "as Result Type <id> '[0-9]+\\[%[0-9]+\\]'.*"));
 }
 
 TEST_F(ValidateTensor, InvalidTensorConstantRank2ConstituentTensorWrongRank) {
@@ -523,9 +523,9 @@ TEST_F(ValidateTensor, InvalidTensorConstantRank2ConstituentTensorWrongRank) {
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex(
                   "OpConstantComposite Constituent <id> "
-                  "'[[:digit:]]+\\[%[[:digit:]]+\\]' must have a Rank that is "
+                  "'[0-9]+\\[%[0-9]+\\]' must have a Rank that is "
                   "1 less than the Rank of Result Type <id> "
-                  "'[[:digit:]]+\\[%[[:digit:]]+\\]', expected 1 but got 2.*"));
+                  "'[0-9]+\\[%[0-9]+\\]', expected 1 but got 2.*"));
 }
 
 TEST_F(ValidateTensor, InvalidTensorConstantRank2ConstituentTensorWrongShape) {
@@ -544,8 +544,8 @@ TEST_F(ValidateTensor, InvalidTensorConstantRank2ConstituentTensorWrongShape) {
       getDiagnosticString(),
       MatchesRegex(
           "OpConstantComposite Constituent <id> "
-          "'[[:digit:]]+\\[%[[:digit:]]+\\]' must have a Shape that matches "
-          "that of Result Type <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' along "
+          "'[0-9]+\\[%[0-9]+\\]' must have a Shape that matches "
+          "that of Result Type <id> '[0-9]+\\[%[0-9]+\\]' along "
           "all inner dimensions of Result Type, expected 2 for dimension 0 of "
           "Constituent but got 3.*"));
 }
