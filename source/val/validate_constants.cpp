@@ -319,9 +319,8 @@ spv_result_t ValidateConstantComposite(ValidationState_t& _,
                << " Constituent count does not match "
                   "the shape of Result Type <id> "
                << _.getIdName(result_type->id())
-               << " along its outermost dimension, "
-               << "expected " << outermost_shape << " but got "
-               << constituent_count << ".";
+               << " along its outermost dimension, " << "expected "
+               << outermost_shape << " but got " << constituent_count << ".";
       }
 
       for (size_t constituent_index = 2;
