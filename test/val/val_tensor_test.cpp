@@ -27,7 +27,6 @@ MATCHER_P(MatchesRE2Regex, r, "") {
   RE2::Options options;
   options.set_dot_nl(true);
   RE2 re(r, options);
-  printf("Attempting to match '%s'", arg.c_str());
   return RE2::FullMatch(arg, re);
 }
 
