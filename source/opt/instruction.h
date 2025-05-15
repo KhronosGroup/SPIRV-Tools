@@ -310,9 +310,11 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   inline void SetInOperands(OperandList&& new_operands);
   // Sets the result type id.
   inline void SetResultType(uint32_t ty_id);
+  inline void ForceResultType(uint32_t ty_id);
   inline bool HasResultType() const { return has_type_id_; }
   // Sets the result id
   inline void SetResultId(uint32_t res_id);
+  inline void ForceResultId(uint32_t res_id);
   inline bool HasResultId() const { return has_result_id_; }
   // Sets DebugScope.
   inline void SetDebugScope(const DebugScope& scope);
@@ -721,6 +723,12 @@ inline void Instruction::SetResultId(uint32_t res_id) {
   operands_[ridx].words = {res_id};
 }
 
+inline void Instruction::ForceResultId(uint32_t res_id) {
+  SetResultId(res_id);
+  auto ridx = has_type_id_ ? 1 : 0;
+  operands_[ridx].type = SPV_OPERAND_TYPE_RESULT_ID;
+}
+
 inline void Instruction::SetDebugScope(const DebugScope& scope) {
   dbg_scope_ = scope;
   for (auto& i : dbg_line_insts_) {
@@ -740,6 +748,11 @@ inline void Instruction::SetResultType(uint32_t ty_id) {
   assert(ty_id != 0);
 
   operands_.front().words = {ty_id};
+}
+
+inline void Instruction::ForceResultType(uint32_t ty_id) {
+  SetResultType(ty_id);
+  operands_.front().type = SPV_OPERAND_TYPE_TYPE_ID;
 }
 
 inline bool Instruction::IsNop() const {

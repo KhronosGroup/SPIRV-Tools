@@ -29,11 +29,36 @@ namespace opt {
 
 Pass::Status RemoveDuplicatesPass::Process() {
   bool modified = RemoveDuplicateCapabilities();
+  modified |= RemoveDuplicateExtensions();
   modified |= RemoveDuplicatesExtInstImports();
   modified |= RemoveDuplicateTypes();
   modified |= RemoveDuplicateDecorations();
 
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+}
+
+bool RemoveDuplicatesPass::RemoveDuplicateExtensions() const {
+  bool modified = false;
+
+  if (context()->extensions().empty()) {
+    return modified;
+  }
+
+  std::unordered_set<std::string> extensions;
+  for (auto* i = &*context()->extension_begin(); i;) {
+    auto res = extensions.insert(i->GetOperand(0u).AsString());
+
+    if (res.second) {
+      // Never seen before, keep it.
+      i = i->NextNode();
+    } else {
+      // It's a duplicate, remove it.
+      i = context()->KillInst(i);
+      modified = true;
+    }
+  }
+
+  return modified;
 }
 
 bool RemoveDuplicatesPass::RemoveDuplicateCapabilities() const {
