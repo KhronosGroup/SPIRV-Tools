@@ -665,7 +665,6 @@ cc_library(
         ":val_test_lib",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
-        "@re2//:re2",
     ],
 ) for f in glob(
     ["test/val/val_*_test.cpp"],

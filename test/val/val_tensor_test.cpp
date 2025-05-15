@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "gmock/gmock.h"
-#include "re2/re2.h"
 #include "test/unit_spirv.h"
 #include "test/val/val_fixtures.h"
 
@@ -22,13 +21,7 @@ namespace val {
 namespace {
 
 using ::testing::HasSubstr;
-
-MATCHER_P(MatchesRE2Regex, r, "") {
-  RE2::Options options;
-  options.set_dot_nl(true);
-  RE2 re(r, options);
-  return RE2::FullMatch(arg, re);
-}
+using ::testing::MatchesRegex;
 
 using ValidateTensor = spvtest::ValidateBase<std::string>;
 
@@ -113,10 +106,9 @@ TEST_F(ValidateTensor, InvalidTypeTensorElementTypeNotScalar) {
   std::string spvasm = GenerateModule(src);
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRE2Regex("OpTypeTensorARM Element Type <id> "
-                      "'[[:digit:]]\\[%void\\]' is not a scalar type.*"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("OpTypeTensorARM Element Type <id> "
+                           "'.\\[%void\\]' is not a scalar type.*"));
 }
 
 TEST_F(ValidateTensor, InvalidTypeDuplicateElementTypeTensorType) {
@@ -181,9 +173,8 @@ TEST_F(ValidateTensor, InvalidTypeRankNotConstant) {
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRE2Regex(
-                  "OpTypeTensorARM Rank <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' "
-                  "is not a constant instruction.*"));
+              MatchesRegex("OpTypeTensorARM Rank <id> '.+\\[%.+\\]' "
+                           "is not a constant instruction.*"));
 }
 
 TEST_F(ValidateTensor, InvalidTypeRankConstantButNotIntegerType) {
@@ -193,10 +184,9 @@ TEST_F(ValidateTensor, InvalidTypeRankConstantButNotIntegerType) {
   std::string spvasm = GenerateModule(src);
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRE2Regex("OpTypeTensorARM Rank <id> '[[:digit:]]+\\[%float_1\\]' "
-                      "does not have a scalar integer type.*"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("OpTypeTensorARM Rank <id> '.+\\[%float_1\\]' "
+                           "does not have a scalar integer type.*"));
 }
 
 TEST_F(ValidateTensor, InvalidTypeRankConstantIntegerTypeButNotScalar) {
@@ -207,9 +197,8 @@ TEST_F(ValidateTensor, InvalidTypeRankConstantIntegerTypeButNotScalar) {
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRE2Regex(
-                  "OpTypeTensorARM Rank <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' "
-                  "does not have a scalar integer type.*"));
+              MatchesRegex("OpTypeTensorARM Rank <id> '.+\\[%.+\\]' "
+                           "does not have a scalar integer type.*"));
 }
 
 TEST_F(ValidateTensor, InvalidTypeRank0) {
@@ -220,9 +209,8 @@ TEST_F(ValidateTensor, InvalidTypeRank0) {
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRE2Regex(
-                  "OpTypeTensorARM Rank <id> '[[:digit:]]+\\[%uint_0\\]' must "
-                  "define a value greater than 0.*"));
+              MatchesRegex("OpTypeTensorARM Rank <id> '.+\\[%uint_0\\]' must "
+                           "define a value greater than 0.*"));
 }
 
 TEST_F(ValidateTensor, ValidTypeElementTypeAndRankAndShape) {
@@ -250,11 +238,9 @@ TEST_F(ValidateTensor, InvalidTypeShapeNotConstant) {
   std::string spvasm = GenerateModule(src);
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRE2Regex(
-          "OpTypeTensorARM Shape <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' is not "
-          "a constant instruction.*"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("OpTypeTensorARM Shape <id> '.+\\[%.+\\]' is not "
+                           "a constant instruction.*"));
 }
 
 TEST_F(ValidateTensor, InvalidTypeShapeConstantButNotArrayOfInteger) {
@@ -266,9 +252,8 @@ TEST_F(ValidateTensor, InvalidTypeShapeConstantButNotArrayOfInteger) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRE2Regex(
-          "OpTypeTensorARM Shape <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' is not "
-          "an array of integer type whose Length is equal to Rank.*"));
+      MatchesRegex("OpTypeTensorARM Shape <id> '.+\\[%.+\\]' is not "
+                   "an array of integer type whose Length is equal to Rank.*"));
 }
 
 TEST_F(ValidateTensor, InvalidTypeShapeConstantArrayOfIntegerWrongLength) {
@@ -280,9 +265,8 @@ TEST_F(ValidateTensor, InvalidTypeShapeConstantArrayOfIntegerWrongLength) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRE2Regex(
-          "OpTypeTensorARM Shape <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' is not "
-          "an array of integer type whose Length is equal to Rank.*"));
+      MatchesRegex("OpTypeTensorARM Shape <id> '.+\\[%.+\\]' is not "
+                   "an array of integer type whose Length is equal to Rank.*"));
 }
 
 TEST_F(ValidateTensor,
@@ -295,7 +279,7 @@ TEST_F(ValidateTensor,
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRE2Regex(
+      MatchesRegex(
           "OpTypeTensorARM Shape constituent 2 is not greater than 0.*"));
 }
 
@@ -332,11 +316,9 @@ TEST_F(ValidateTensor, InvalidNullTensorConstantRankedButNotShaped) {
   std::string spvasm = GenerateModule(src);
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRE2Regex(
-          "OpConstantNull Result Type <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' "
-          "cannot have a null value.*"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("OpConstantNull Result Type <id> '.+\\[%.+\\]' "
+                           "cannot have a null value.*"));
 }
 
 TEST_F(ValidateTensor, InvalidNullTensorConstantNotRanked) {
@@ -347,11 +329,9 @@ TEST_F(ValidateTensor, InvalidNullTensorConstantNotRanked) {
   std::string spvasm = GenerateModule(src);
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRE2Regex(
-          "OpConstantNull Result Type <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' "
-          "cannot have a null value.*"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("OpConstantNull Result Type <id> '.+\\[%.+\\]' "
+                           "cannot have a null value.*"));
 }
 
 TEST_F(ValidateTensor, ValidTensorConstantRank1) {
@@ -385,11 +365,11 @@ TEST_F(ValidateTensor, InvalidTensorConstantRank1NotEnoughConstituents) {
   std::string spvasm = GenerateModule(src);
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
-  EXPECT_THAT(getDiagnosticString(),
-              MatchesRE2Regex(
-                  "OpConstantComposite Constituent count does not match the "
-                  "shape of Result Type <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' "
-                  "along its outermost dimension, expected 4 but got 3.*"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      MatchesRegex("OpConstantComposite Constituent count does not match the "
+                   "shape of Result Type <id> '.+\\[%.+\\]' "
+                   "along its outermost dimension, expected 4 but got 3.*"));
 }
 
 TEST_F(ValidateTensor, InvalidTensorConstantRank1TooManyConstituents) {
@@ -401,11 +381,11 @@ TEST_F(ValidateTensor, InvalidTensorConstantRank1TooManyConstituents) {
   std::string spvasm = GenerateModule(src);
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
-  EXPECT_THAT(getDiagnosticString(),
-              MatchesRE2Regex(
-                  "OpConstantComposite Constituent count does not match the "
-                  "shape of Result Type <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' "
-                  "along its outermost dimension, expected 4 but got 5.*"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      MatchesRegex("OpConstantComposite Constituent count does not match the "
+                   "shape of Result Type <id> '.+\\[%.+\\]' "
+                   "along its outermost dimension, expected 4 but got 5.*"));
 }
 
 TEST_F(ValidateTensor,
@@ -418,11 +398,9 @@ TEST_F(ValidateTensor,
   std::string spvasm = GenerateModule(src);
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRE2Regex(
-          "OpConstantComposite Constituent <id> "
-          "'[[:digit:]]+\\[%[[:digit:]]+\\]' is not a constant or undef.*"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("OpConstantComposite Constituent <id> "
+                           "'.+\\[%.+\\]' is not a constant or undef.*"));
 }
 
 TEST_F(ValidateTensor, InvalidTensorConstantRank1WrongConstituentType) {
@@ -436,10 +414,9 @@ TEST_F(ValidateTensor, InvalidTensorConstantRank1WrongConstituentType) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRE2Regex(
-          "OpConstantComposite Constituent <id> '[[:digit:]]+\\[%float_1\\]' "
-          "type does not match the element type of the tensor "
-          "\\('[[:digit:]]+\\[%[[:digit:]]+\\]'\\).*"));
+      MatchesRegex("OpConstantComposite Constituent <id> '.+\\[%float_1\\]' "
+                   "type does not match the element type of the tensor "
+                   "\\('.+\\[%.+\\]'\\).*"));
 }
 
 TEST_F(ValidateTensor, ValidTensorConstantRank4) {
@@ -489,9 +466,8 @@ TEST_F(ValidateTensor, InvalidTensorConstantRank2ConstituentNotATensor) {
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRE2Regex(
-                  "OpConstantComposite Constituent <id> "
-                  "'[[:digit:]]+\\[%uint_1\\]' must be an OpTypeTensorARM.*"));
+              MatchesRegex("OpConstantComposite Constituent <id> "
+                           "'.+\\[%uint_1\\]' must be an OpTypeTensorARM.*"));
 }
 
 TEST_F(ValidateTensor,
@@ -507,12 +483,10 @@ TEST_F(ValidateTensor,
   std::string spvasm = GenerateModule(src);
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      MatchesRE2Regex(
-          "OpConstantComposite Constituent <id> "
-          "'[[:digit:]]+\\[%[[:digit:]]+\\]' must have the same Element Type "
-          "as Result Type <id> '[[:digit:]]+\\[%[[:digit:]]+\\]'.*"));
+  EXPECT_THAT(getDiagnosticString(),
+              MatchesRegex("OpConstantComposite Constituent <id> "
+                           "'.+\\[%.+\\]' must have the same Element Type "
+                           "as Result Type <id> '.+\\[%.+\\]'.*"));
 }
 
 TEST_F(ValidateTensor, InvalidTensorConstantRank2ConstituentTensorWrongRank) {
@@ -529,11 +503,10 @@ TEST_F(ValidateTensor, InvalidTensorConstantRank2ConstituentTensorWrongRank) {
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
-              MatchesRE2Regex(
-                  "OpConstantComposite Constituent <id> "
-                  "'[[:digit:]]+\\[%[[:digit:]]+\\]' must have a Rank that is "
-                  "1 less than the Rank of Result Type <id> "
-                  "'[[:digit:]]+\\[%[[:digit:]]+\\]', expected 1 but got 2.*"));
+              MatchesRegex("OpConstantComposite Constituent <id> "
+                           "'.+\\[%.+\\]' must have a Rank that is "
+                           "1 less than the Rank of Result Type <id> "
+                           "'.+\\[%.+\\]', expected 1 but got 2.*"));
 }
 
 TEST_F(ValidateTensor, InvalidTensorConstantRank2ConstituentTensorWrongShape) {
@@ -550,10 +523,10 @@ TEST_F(ValidateTensor, InvalidTensorConstantRank2ConstituentTensorWrongShape) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPVENV));
   EXPECT_THAT(
       getDiagnosticString(),
-      MatchesRE2Regex(
+      MatchesRegex(
           "OpConstantComposite Constituent <id> "
-          "'[[:digit:]]+\\[%[[:digit:]]+\\]' must have a Shape that matches "
-          "that of Result Type <id> '[[:digit:]]+\\[%[[:digit:]]+\\]' along "
+          "'.+\\[%.+\\]' must have a Shape that matches "
+          "that of Result Type <id> '.+\\[%.+\\]' along "
           "all inner dimensions of Result Type, expected 2 for dimension 0 of "
           "Constituent but got 3.*"));
 }
