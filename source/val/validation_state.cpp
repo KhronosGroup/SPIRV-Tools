@@ -42,14 +42,17 @@ ModuleLayoutSection InstructionLayoutSection(
 
   switch (op) {
     case spv::Op::OpCapability:
+    case spv::Op::OpConditionalCapabilityINTEL:
       return kLayoutCapabilities;
     case spv::Op::OpExtension:
+    case spv::Op::OpConditionalExtensionINTEL:
       return kLayoutExtensions;
     case spv::Op::OpExtInstImport:
       return kLayoutExtInstImport;
     case spv::Op::OpMemoryModel:
       return kLayoutMemoryModel;
     case spv::Op::OpEntryPoint:
+    case spv::Op::OpConditionalEntryPointINTEL:
       return kLayoutEntryPoint;
     case spv::Op::OpExecutionMode:
     case spv::Op::OpExecutionModeId:
@@ -1505,8 +1508,7 @@ spv_result_t ValidationState_t::CooperativeMatrixShapesMatch(
 
   if (m1_is_const_int32 && m2_is_const_int32 && m1_value != m2_value) {
     return diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected scopes of Matrix and Result Type to be "
-           << "identical";
+           << "Expected scopes of Matrix and Result Type to be " << "identical";
   }
 
   std::tie(m1_is_int32, m1_is_const_int32, m1_value) =
