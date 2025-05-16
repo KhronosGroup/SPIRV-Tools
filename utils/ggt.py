@@ -30,6 +30,9 @@ from Table.Context import Context
 from Table.IndexRange import IndexRange
 from Table.Operand import Operand
 
+class GrammarError(Exception):
+    pass
+
 # Extensions to recognize, but which don't necessarily come from the SPIR-V
 # core or KHR grammar files.  Get this list from the SPIR-V registry web page.
 # NOTE: Only put things on this list if it is not in those grammar files.
@@ -429,9 +432,16 @@ struct OperandDesc {
                 kind_key,
                 str(operands_by_value_by_kind[kind_key])))
         for kind in self.operand_kinds_needing_optional_variant:
-            parts.append("    case {}: return {};".format(
-                ctype(kind, '?'),
-                str(operands_by_value_by_kind[ctype(kind,'')])))
+            non_optional_kind = ctype(kind,'')
+            if non_optional_kind in operands_by_value_by_kind:
+                parts.append("    case {}: return {};".format(
+                    ctype(kind, '?'),
+                    str(operands_by_value_by_kind[ctype(kind,'')])))
+            else:
+                raise GrammarError(
+                        "error: unknown operand type {}, from JSON grammar operand '{}':".format(non_optional_kind, kind) +
+                        " consider updating spv_operand_type_t in spirv-tools/libspirv.h")
+            
         parts.append("    default: break;");
         parts.append("  }\n  return IR(0,0);\n}\n")
         self.body_decls.extend(parts)
@@ -955,4 +965,8 @@ def main():
 
 
 if __name__ == '__main__':
-  main()
+  try:
+    main()
+  except GrammarError as ge:
+    print(ge)
+    sys.exit(1)
