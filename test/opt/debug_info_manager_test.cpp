@@ -767,8 +767,6 @@ void main(float in_var_color : COLOR) {
         %101 = OpExtInst %void %1 DebugScope %22
                OpLine %5 13 7
                OpStore %100 %31
-               OpNoLine
-        %102 = OpExtInst %void %1 DebugNoScope
          %36 = OpExtInst %void %1 DebugDeclare %25 %100 %13
                OpReturn
                OpFunctionEnd
@@ -783,9 +781,7 @@ void main(float in_var_color : COLOR) {
             OpenCLDebugInfo100DebugDeclare);
 
   auto* dbg_info_mgr = context->get_debug_info_mgr();
-  Instruction* store = dbg_decl->PreviousNode();
-  auto* dbg_value =
-      dbg_info_mgr->AddDebugValueForDecl(dbg_decl, 100, dbg_decl, store);
+  auto* dbg_value = dbg_info_mgr->AddDebugValueForDecl(dbg_decl, 100, dbg_decl);
 
   EXPECT_EQ(dbg_value->GetOpenCL100DebugOpcode(), OpenCLDebugInfo100DebugValue);
   EXPECT_EQ(dbg_value->dbg_line_inst()->GetSingleWordInOperand(

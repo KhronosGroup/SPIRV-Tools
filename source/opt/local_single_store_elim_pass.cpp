@@ -192,7 +192,7 @@ bool LocalSingleStoreElimPass::RewriteDebugDeclares(Instruction* store_inst,
                                                     uint32_t var_id) {
   uint32_t value_id = store_inst->GetSingleWordInOperand(1);
   bool modified = context()->get_debug_info_mgr()->AddDebugValueForVariable(
-      store_inst, var_id, value_id, store_inst);
+      var_id, value_id, store_inst);
   modified |= context()->get_debug_info_mgr()->KillDebugDeclares(var_id);
   return modified;
 }
