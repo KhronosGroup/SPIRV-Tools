@@ -2978,7 +2978,9 @@ TEST_F(LocalSSAElimTest, DebugValueForReferenceVariableInBB) {
 
 ; CHECK:      OpExtInst %void [[ext]] DebugScope [[dbg_main]]
 ; CHECK:      OpStore %f %float_0
+; CHECK-NEXT: OpExtInst %void [[ext]] DebugScope [[dbg_bb]]
 ; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_x]] %float_0
+; CHECK-NEXT: OpExtInst %void [[ext]] DebugScope [[dbg_main]]
 ; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_f]] %float_0
 ; CHECK-NEXT: OpStore %i %int_0
 ; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_i]] %int_0
@@ -5434,6 +5436,7 @@ float4 main([[vk::location(0)]] float2 inUV : TEXCOORD0) : SV_TARGET
        %1614 = OpLabel
 ;CHECK:      %1614 = OpLabel
 ;CHECK-NEXT: [[phi:%\w+]] = OpPhi 
+;CHECK-NEXT: {{%\w+}} = OpExtInst %void {{%\w+}} DebugScope %179
 ;CHECK-NEXT: {{%\w+}} = OpExtInst %void {{%\w+}} DebugValue %233
        %2335 = OpExtInst %void %2 DebugScope %179
        %1795 = OpExtInst %void %2 DebugLine %64 %uint_149 %uint_149 %uint_16 %uint_16
