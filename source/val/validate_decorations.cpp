@@ -2269,7 +2269,7 @@ spv_result_t CheckInvalidVulkanExplicitLayout(ValidationState_t& vstate) {
           // For untyped pointers, check the type of the data operand for an
           // invalid layout.
           const auto sc = ptr_type->GetOperandAs<spv::StorageClass>(1);
-          const auto data_type_id = vstate.GetOperandTypeId(&inst, 2);
+          const auto data_type_id = vstate.GetOperandTypeId(&inst, 1);
           if (!AllowsLayout(vstate, sc) &&
               UsesExplicitLayout(vstate, data_type_id, cache)) {
             fail_id = inst.GetOperandAs<uint32_t>(2);
