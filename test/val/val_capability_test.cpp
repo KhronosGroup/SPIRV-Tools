@@ -3214,7 +3214,8 @@ std::string MinimalShaderModuleWithCapability(std::string cap) {
                               : "";
   return std::string("OpCapability ") + cap + extra_cap + R"(
 OpCapability Shader
-OpMemoryModel Logical )" + mem_model + R"(
+OpMemoryModel Logical )" +
+         mem_model + R"(
 OpEntryPoint Vertex %main "main"
 %void = OpTypeVoid
 %void_fn = OpTypeFunction %void
@@ -3381,6 +3382,23 @@ OpMemoryModel Logical GLSL450
       HasSubstr(
           "If the Shader and CooperativeMatrixKHR capabilities are declared, "
           "the VulkanMemoryModel capability must also be declared"));
+}
+
+TEST_F(ValidateCapability, TileShadingQCOM) {
+  const auto spirv = R"(
+OpCapability Shader
+OpCapability TileShadingQCOM
+OpExtension "SPV_QCOM_tile_shading"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %func "main"
+)" + std::string(kVoidFVoid);
+
+  spv_target_env env = SPV_ENV_VULKAN_1_4;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The TileShadingQCOM capability must not be enabled "
+                        "in any stage other than compute or fragment"));
 }
 
 }  // namespace

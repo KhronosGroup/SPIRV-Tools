@@ -1904,6 +1904,7 @@ bool ValidationState_t::IsValidStorageClass(
       case spv::StorageClass::HitObjectAttributeNV:
       case spv::StorageClass::TileImageEXT:
       case spv::StorageClass::NodePayloadAMDX:
+      case spv::StorageClass::TileAttachmentQCOM:
         return true;
       default:
         return false;
@@ -2594,6 +2595,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Component-10583);
     case 10684:
       return VUID_WRAP(VUID-StandaloneSpirv-None-10684);
+    case 10685:
+      return VUID_WRAP(VUID-StandaloneSpirv-None-10685);
     default:
       return "";  // unknown id
   }
