@@ -434,6 +434,40 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
 }
 
+TEST_F(UpgradeMemoryModelTest, VariablePointerLoad) {
+  const std::string text = R"(
+; CHECK: OpCapability VulkanMemoryModel
+OpCapability Shader
+OpCapability Linkage
+OpCapability VariablePointersStorageBuffer
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+OpDecorate %_runtimearr_uint ArrayStride 4
+OpMemberDecorate %_struct_4 0 Offset 0
+OpDecorate %_struct_4 Block
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+%_struct_4 = OpTypeStruct %_runtimearr_uint
+%_ptr_StorageBuffer__struct_4 = OpTypePointer StorageBuffer %_struct_4
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Function__ptr_StorageBuffer__struct_4 = OpTypePointer Function %_ptr_StorageBuffer__struct_4
+%functy = OpTypeFunction %uint %_ptr_Function__ptr_StorageBuffer__struct_4 %_ptr_Function_uint
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+%func = OpFunction %uint None %functy
+%param_buf = OpFunctionParameter %_ptr_Function__ptr_StorageBuffer__struct_4
+%param_offset = OpFunctionParameter %_ptr_Function_uint
+%bb_entry = OpLabel
+%buf = OpLoad %_ptr_StorageBuffer__struct_4 %param_buf
+%offset = OpLoad %uint %param_offset
+%31 = OpAccessChain %_ptr_StorageBuffer_uint %buf %uint_0 %offset
+%data = OpLoad %uint %31
+OpReturnValue %data
+OpFunctionEnd
+)";
+  SinglePassRunAndMatch<opt::UpgradeMemoryModel>(text, true);
+}
+
 TEST_F(UpgradeMemoryModelTest, CoherentStructElement) {
   const std::string text = R"(
 ; CHECK-NOT: OpMemberDecorate

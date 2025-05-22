@@ -366,6 +366,21 @@ std::pair<bool, bool> UpgradeMemoryModel::TraceInstruction(
         indices.push_back(inst->GetSingleWordInOperand(i));
       }
       break;
+    case spv::Op::OpLoad:
+      if (context()->get_type_mgr()->GetType(inst->type_id())->AsPointer()) {
+        analysis::Integer int_ty(32, false);
+        uint32_t int_id =
+            context()->get_type_mgr()->GetTypeInstruction(&int_ty);
+        const analysis::Constant* constant =
+            context()->get_constant_mgr()->GetConstant(
+                context()->get_type_mgr()->GetType(int_id), {0u});
+        uint32_t constant_id = context()
+                                   ->get_constant_mgr()
+                                   ->GetDefiningInstruction(constant)
+                                   ->result_id();
+
+        indices.push_back(constant_id);
+      }
     default:
       break;
   }
