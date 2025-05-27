@@ -213,8 +213,12 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
                 ->GetExtInstImportId_OpenCL100DebugInfo()) {
           // Emit DebugScope |scope| to |binary|.
           auto dbg_inst = ext_inst_debuginfo_.begin();
-          scope.ToBinary(dbg_inst->type_id(), context()->TakeNextId(),
-                         dbg_inst->GetSingleWordOperand(2), binary);
+          // The dbg_inst may have been cleared to a Nop, in which case
+          // ignore it.
+          if (!dbg_inst->IsNop()) {
+            scope.ToBinary(dbg_inst->type_id(), context()->TakeNextId(),
+                           dbg_inst->GetSingleWordOperand(2), binary);
+          }
         }
         last_scope = scope;
       }
