@@ -590,7 +590,7 @@ class BuiltInsValidator {
   spv_result_t ValidateBool(
       const Decoration& decoration, const Instruction& inst,
       const std::function<spv_result_t(const std::string& message)>& diag);
-  spv_result_t ValidateBoolOrArrayedBool(
+  spv_result_t ValidateBlockBoolOrArrayedBool(
       const Decoration& decoration, const Instruction& inst,
       const std::function<spv_result_t(const std::string& message)>& diag);
   spv_result_t ValidateI(
@@ -823,7 +823,7 @@ spv_result_t BuiltInsValidator::ValidateBool(
   return SPV_SUCCESS;
 }
 
-spv_result_t BuiltInsValidator::ValidateBoolOrArrayedBool(
+spv_result_t BuiltInsValidator::ValidateBlockBoolOrArrayedBool(
     const Decoration& decoration, const Instruction& inst,
     const std::function<spv_result_t(const std::string& message)>& diag) {
   uint32_t underlying_type = 0;
@@ -834,6 +834,10 @@ spv_result_t BuiltInsValidator::ValidateBoolOrArrayedBool(
   // Strip the array, if present.
   if (_.GetIdOpcode(underlying_type) == spv::Op::OpTypeArray) {
     underlying_type = _.FindDef(underlying_type)->word(2u);
+  } else if (!_.HasDecoration(inst.id(), spv::Decoration::Block)) {
+    // If not in array, and bool is in a struct, must be in a Block struct
+    return diag(GetDefinitionDesc(decoration, inst) +
+                " Scalar boolean must be in a Block.");
   }
 
   if (!_.IsBoolScalarType(underlying_type)) {
@@ -4362,7 +4366,7 @@ spv_result_t BuiltInsValidator::ValidateMeshShadingEXTBuiltinsAtDefinition(
         }
         break;
       case spv::BuiltIn::CullPrimitiveEXT:
-        if (spv_result_t error = ValidateBoolOrArrayedBool(
+        if (spv_result_t error = ValidateBlockBoolOrArrayedBool(
                 decoration, inst,
                 [this, &inst, &decoration,
                  &vuid](const std::string& message) -> spv_result_t {
