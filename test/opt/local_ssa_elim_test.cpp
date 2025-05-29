@@ -5456,6 +5456,50 @@ float4 main([[vk::location(0)]] float2 inUV : TEXCOORD0) : SV_TARGET
   SinglePassRunAndMatch<SSARewritePass>(text, true);
 }
 
+TEST_F(LocalSSAElimTest, StoreWithLoadedPtr) {
+  const std::string text =
+      R"(OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %2 "pointer_branch_buffer" %3
+OpExecutionMode %2 LocalSize 8 8 1
+OpDecorate %3 DescriptorSet 0
+OpDecorate %3 Binding 0
+%bool = OpTypeBool
+%uint = OpTypeInt 32 0
+%uint_2 = OpConstant %uint 2
+%void = OpTypeVoid
+%8 = OpTypeFunction %void
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+%_ptr_Function__ptr_StorageBuffer_uint = OpTypePointer Function %_ptr_StorageBuffer_uint
+%3 = OpVariable %_ptr_StorageBuffer_uint StorageBuffer
+%11 = OpUndef %bool
+%2 = OpFunction %void None %8
+%12 = OpLabel
+%13 = OpVariable %_ptr_Function__ptr_StorageBuffer_uint Function
+OpSelectionMerge %14 None
+OpBranchConditional %11 %15 %16
+%15 = OpLabel
+OpBranch %14
+%16 = OpLabel
+OpStore %13 %3
+OpBranch %14
+%14 = OpLabel
+; CHECK: [[phi:%\w+]] = OpPhi %_ptr_StorageBuffer_uint
+; CHECK-NEXT: [[ld:%\w+]] = OpLoad %uint %20
+; CHECK-NEXT: OpIAdd %uint [[ld]] %uint_2
+%17 = OpLoad %_ptr_StorageBuffer_uint %13
+%18 = OpLoad %uint %17
+%19 = OpIAdd %uint %18 %uint_2
+OpReturn
+OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_6);
+  SinglePassRunAndMatch<SSARewritePass>(text, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    No optimization in the presence of
