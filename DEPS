@@ -3,18 +3,18 @@ use_relative_paths = True
 vars = {
   'github': 'https://github.com',
 
-  'abseil_revision': '41a1f434d40bc6089acaf026b00c5f8f917e8706',
+  'abseil_revision': '3006ff8b41cf0c4eaedb202bb4993febf71e4911',
 
   'effcee_revision': '8ce15c424e61a94ee27b5be0ec0ed036b158e6e3',
 
-  'googletest_revision': '571930618fa96eabcd05b573285edbee9fc13bae',
+  'googletest_revision': '7da55820cc32dedd6c1b048f2d4e13fdde5e8237',
 
   # Use protobufs before they gained the dependency on abseil
   'protobuf_revision': 'v21.12',
 
   're2_revision': 'c84a140c93352cdabbfb547c531be34515b12228',
 
-  'spirv_headers_revision': 'c9aad99f9276817f18f72a4696239237c83cb775',
+  'spirv_headers_revision': '9a46274d2ef215d3c258ed4d1863bff4514fa316',
 }
 
 deps = {
