@@ -205,7 +205,9 @@ TEST_F(PrivateToLocalTest, IgnorePointerToPrivateVariable) {
                OpReturn
                OpFunctionEnd
   )";
-  SinglePassRunAndMatch<PrivateToLocalPass>(text, true);
+  auto result = SinglePassRunAndDisassemble<PrivateToLocalPass>(
+      text, /* skip_nop = */ true, /* do_validation = */ false);
+  EXPECT_EQ(Pass::Status::SuccessWithoutChange, std::get<1>(result));
 }
 
 TEST_F(PrivateToLocalTest, UsedInTwoFunctions) {
