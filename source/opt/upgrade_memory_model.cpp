@@ -160,14 +160,38 @@ void UpgradeMemoryModel::UpgradeMemoryAndImages() {
       }
 
       switch (inst->opcode()) {
-        case spv::Op::OpLoad:
+        case spv::Op::OpLoad: {
+          Instruction* src_pointer = context()->get_def_use_mgr()->GetDef(
+              inst->GetSingleWordInOperand(0u));
+          analysis::Type* src_type =
+              context()->get_type_mgr()->GetType(src_pointer->type_id());
+          auto storage_class = src_type->AsPointer()->storage_class();
+          if (storage_class == spv::StorageClass::Function ||
+              storage_class == spv::StorageClass::Private) {
+            // If the buffer from function variable or private variable, flag
+            // NonPrivatePointer is unnecessary.
+            is_coherent = false;
+          }
           UpgradeFlags(inst, 1u, is_coherent, is_volatile, kVisibility,
                        kMemory);
           break;
-        case spv::Op::OpStore:
+        }
+        case spv::Op::OpStore: {
+          Instruction* src_pointer = context()->get_def_use_mgr()->GetDef(
+              inst->GetSingleWordInOperand(0u));
+          analysis::Type* src_type =
+              context()->get_type_mgr()->GetType(src_pointer->type_id());
+          auto storage_class = src_type->AsPointer()->storage_class();
+          if (storage_class == spv::StorageClass::Function ||
+              storage_class == spv::StorageClass::Private) {
+            // If the buffer from function variable or private variable, flag
+            // NonPrivatePointer is unnecessary.
+            is_coherent = false;
+          }
           UpgradeFlags(inst, 2u, is_coherent, is_volatile, kAvailability,
                        kMemory);
           break;
+        }
         case spv::Op::OpCopyMemory:
         case spv::Op::OpCopyMemorySized:
           start_operand = inst->opcode() == spv::Op::OpCopyMemory ? 2u : 3u;
