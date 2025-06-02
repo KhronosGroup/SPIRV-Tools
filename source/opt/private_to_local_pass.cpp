@@ -153,7 +153,8 @@ uint32_t PrivateToLocalPass::GetNewType(uint32_t old_type_id) {
   return new_type_id;
 }
 
-bool PrivateToLocalPass::IsValidUse(const Instruction* inst, uint32_t private_variable_id) const {
+bool PrivateToLocalPass::IsValidUse(const Instruction* inst,
+                                    uint32_t private_variable_id) const {
   // The cases in this switch have to match the cases in |UpdateUse|.
   // If we don't know how to update it, it is not valid.
   if (inst->GetCommonDebugOpcode() == CommonDebugInfoDebugGlobalVariable) {
