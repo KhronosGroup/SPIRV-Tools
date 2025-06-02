@@ -166,10 +166,9 @@ void UpgradeMemoryModel::UpgradeMemoryAndImages() {
           analysis::Type* src_type =
               context()->get_type_mgr()->GetType(src_pointer->type_id());
           auto storage_class = src_type->AsPointer()->storage_class();
-          if (storage_class == spv::StorageClass::Function ||
-              storage_class == spv::StorageClass::Private) {
-            // If the buffer from function variable or private variable, flag
-            // NonPrivatePointer is unnecessary.
+          if (storage_class == spv::StorageClass::Function) {
+            // If the buffer from function variable, flag NonPrivatePointer is
+            // unnecessary.
             is_coherent = false;
           }
           UpgradeFlags(inst, 1u, is_coherent, is_volatile, kVisibility,
@@ -182,10 +181,9 @@ void UpgradeMemoryModel::UpgradeMemoryAndImages() {
           analysis::Type* src_type =
               context()->get_type_mgr()->GetType(src_pointer->type_id());
           auto storage_class = src_type->AsPointer()->storage_class();
-          if (storage_class == spv::StorageClass::Function ||
-              storage_class == spv::StorageClass::Private) {
-            // If the buffer from function variable or private variable, flag
-            // NonPrivatePointer is unnecessary.
+          if (storage_class == spv::StorageClass::Function) {
+            // If the buffer from function variable, flag NonPrivatePointer is
+            // unnecessary.
             is_coherent = false;
           }
           UpgradeFlags(inst, 2u, is_coherent, is_volatile, kAvailability,
