@@ -464,7 +464,9 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << _.VkErrorID(10213)
                << "Image Operand Offset can only be used with "
-                  "OpImage*Gather operations";
+                  "OpImage*Gather operations. This is allowed if you enable "
+                  "the maintenance8 feature (or use "
+                  "--allow-offset-texture-operand from command line)";
       }
     }
   }

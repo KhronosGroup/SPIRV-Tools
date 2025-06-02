@@ -398,11 +398,29 @@ bool IsAlignedTo(uint32_t offset, uint32_t alignment) {
   return 0 == (offset % alignment);
 }
 
+std::string getStroageClassString(spv::StorageClass sc) {
+  switch (sc) {
+    case spv::StorageClass::Uniform:
+      return "Uniform";
+    case spv::StorageClass::UniformConstant:
+      return "UniformConstant";
+    case spv::StorageClass::PushConstant:
+      return "PushConstant";
+    case spv::StorageClass::Workgroup:
+      return "Workgroup";
+    case spv::StorageClass::PhysicalStorageBuffer:
+      return "PhysicalStorageBuffer";
+    default:
+      // Only other valid storage class in these checks
+      return "StorageBuffer";
+  }
+}
+
 // Returns SPV_SUCCESS if the given struct satisfies standard layout rules for
 // Block or BufferBlocks in Vulkan.  Otherwise emits a diagnostic and returns
 // something other than SPV_SUCCESS.  Matrices inherit the specified column
 // or row major-ness.
-spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
+spv_result_t checkLayout(uint32_t struct_id, spv::StorageClass storage_class,
                          const char* decoration_str, bool blockRules,
                          bool scalar_block_layout, uint32_t incoming_offset,
                          MemberConstraints& constraints,
@@ -418,20 +436,49 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
   // is more permissive than relaxed layout.
   const bool relaxed_block_layout = vstate.IsRelaxedBlockLayout();
 
-  auto fail = [&vstate, struct_id, storage_class_str, decoration_str,
-               blockRules, relaxed_block_layout,
+  auto fail = [&vstate, struct_id, storage_class, decoration_str, blockRules,
+               relaxed_block_layout,
                scalar_block_layout](uint32_t member_idx) -> DiagnosticStream {
-    DiagnosticStream ds =
-        std::move(vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(struct_id))
-                  << "Structure id " << struct_id << " decorated as "
-                  << decoration_str << " for variable in " << storage_class_str
-                  << " storage class must follow "
-                  << (scalar_block_layout
-                          ? "scalar "
-                          : (relaxed_block_layout ? "relaxed " : "standard "))
-                  << (blockRules ? "uniform buffer" : "storage buffer")
-                  << " layout rules: member " << member_idx << " ");
+    DiagnosticStream ds = std::move(
+        vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(struct_id))
+        << "Structure id " << struct_id << " decorated as " << decoration_str
+        << " for variable in " << getStroageClassString(storage_class)
+        << " storage class must follow "
+        << (scalar_block_layout
+                ? "scalar "
+                : (relaxed_block_layout ? "relaxed " : "standard "))
+        << (blockRules ? "uniform buffer" : "storage buffer")
+        << " layout rules: member " << member_idx << " ");
     return ds;
+  };
+
+  // People often use spirv-val from Vulkan Validation Layers, it ends up
+  // mapping the various block layout rules from the enabled feature. This
+  // offers a hint to help the user understand possbily why things are not
+  // working when the shader itself "seems" valid, but just was a lack of adding
+  // a supported feature
+  auto extra = [scalar_block_layout, storage_class, relaxed_block_layout,
+                blockRules]() {
+    if (!scalar_block_layout) {
+      if (storage_class == spv::StorageClass::Workgroup) {
+        return "\nThis might be valid if you enable the "
+               "workgroupMemoryExplicitLayoutScalarBlockLayout feature (or use "
+               "--workgroup-scalar-block-layout from the command line) ";
+      } else if (!relaxed_block_layout) {
+        return "\nThis might be valid if you enable the "
+               "VK_KHR_relaxed_block_layout extension (or use "
+               "--relax-block-layout from the command line) ";
+      } else if (blockRules) {
+        return "\nThis might be valid if you enable the "
+               "uniformBufferStandardLayout (or use "
+               "--uniform-buffer-standard-layout from the command line) ";
+      } else {
+        return "\nThis might be valid if you enable the "
+               "scalarBlockLayoutfeature (or use --scalar-block-layout from "
+               "the command line) ";
+      }
+    }
+    return "";
   };
 
   // If we are checking the layout of untyped pointers or physical storage
@@ -507,7 +554,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
     const auto size = getSize(id, constraint, constraints, vstate);
     // Check offset.
     if (offset == 0xffffffff)
-      return fail(memberIdx) << "is missing an Offset decoration";
+      return fail(memberIdx) << "is missing an Offset decoration" << extra();
 
     if (opcode == spv::Op::OpTypeRuntimeArray &&
         ordered_member_idx != member_offsets.size() - 1) {
@@ -524,42 +571,44 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       const auto componentId = inst->words()[2];
       const auto scalar_alignment = getScalarAlignment(componentId, vstate);
       if (!IsAlignedTo(offset, scalar_alignment)) {
-        return fail(memberIdx)
-               << "at offset " << offset
-               << " is not aligned to scalar element size " << scalar_alignment;
+        return fail(memberIdx) << "at offset " << offset
+                               << " is not aligned to scalar element size "
+                               << scalar_alignment << extra();
       }
     } else {
       // Without relaxed block layout, the offset must be divisible by the
       // alignment requirement.
       if (!IsAlignedTo(offset, alignment)) {
-        return fail(memberIdx)
-               << "at offset " << offset << " is not aligned to " << alignment;
+        return fail(memberIdx) << "at offset " << offset
+                               << " is not aligned to " << alignment << extra();
       }
     }
     if (offset < nextValidOffset)
       return fail(memberIdx) << "at offset " << offset
                              << " overlaps previous member ending at offset "
-                             << nextValidOffset - 1;
+                             << nextValidOffset - 1 << extra();
     if (!scalar_block_layout && relaxed_block_layout) {
       // Check improper straddle of vectors.
       if (spv::Op::OpTypeVector == opcode &&
           hasImproperStraddle(id, offset, constraint, constraints, vstate))
         return fail(memberIdx)
-               << "is an improperly straddling vector at offset " << offset;
+               << "is an improperly straddling vector at offset " << offset
+               << extra();
     }
     // Check struct members recursively.
     spv_result_t recursive_status = SPV_SUCCESS;
     if (spv::Op::OpTypeStruct == opcode &&
         SPV_SUCCESS != (recursive_status = checkLayout(
-                            id, storage_class_str, decoration_str, blockRules,
+                            id, storage_class, decoration_str, blockRules,
                             scalar_block_layout, offset, constraints, vstate)))
       return recursive_status;
     // Check matrix stride.
     if (spv::Op::OpTypeMatrix == opcode) {
       const auto stride = constraint.matrix_stride;
       if (!IsAlignedTo(stride, alignment)) {
-        return fail(memberIdx) << "is a matrix with stride " << stride
-                               << " not satisfying alignment to " << alignment;
+        return fail(memberIdx)
+               << "is a matrix with stride " << stride
+               << " not satisfying alignment to " << alignment << extra();
       }
     }
 
@@ -576,12 +625,13 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
         if (spv::Decoration::ArrayStride == decoration.dec_type()) {
           array_stride = decoration.params()[0];
           if (array_stride == 0) {
-            return fail(memberIdx) << "contains an array with stride 0";
+            return fail(memberIdx)
+                   << "contains an array with stride 0" << extra();
           }
           if (!IsAlignedTo(array_stride, array_alignment))
             return fail(memberIdx)
                    << "contains an array with stride " << decoration.params()[0]
-                   << " not satisfying alignment to " << alignment;
+                   << " not satisfying alignment to " << alignment << extra();
         }
       }
 
@@ -608,7 +658,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
 
           if (SPV_SUCCESS !=
               (recursive_status = checkLayout(
-                   typeId, storage_class_str, decoration_str, blockRules,
+                   typeId, storage_class, decoration_str, blockRules,
                    scalar_block_layout, next_offset, constraints, vstate)))
             return recursive_status;
 
@@ -620,7 +670,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
         if (!IsAlignedTo(stride, alignment)) {
           return fail(memberIdx)
                  << "is a matrix with stride " << stride
-                 << " not satisfying alignment to " << alignment;
+                 << " not satisfying alignment to " << alignment << extra();
         }
       }
 
@@ -636,7 +686,7 @@ spv_result_t checkLayout(uint32_t struct_id, const char* storage_class_str,
       if (element_size > array_stride) {
         return fail(memberIdx)
                << "contains an array with stride " << array_stride
-               << ", but with an element size of " << element_size;
+               << ", but with an element size of " << element_size << extra();
       }
     }
     nextValidOffset = offset + size;
@@ -1207,8 +1257,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
           if (!entry_points.empty() &&
               !hasDecoration(var_id, spv::Decoration::Binding, vstate)) {
             return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
-                   << (uniform ? "Uniform" : "Storage Buffer") << " id '"
-                   << var_id << "' is missing Binding decoration.\n"
+                   << getStroageClassString(storageClass) << " id '" << var_id
+                   << "' is missing Binding decoration.\n"
                    << "From ARB_gl_spirv extension:\n"
                    << "Uniform and shader storage block variables must "
                    << "also be decorated with a *Binding*.";
@@ -1243,12 +1293,6 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
           ComputeMemberConstraintsForStruct(&constraints, id,
                                             LayoutConstraints(), vstate);
         }
-        // Prepare for messages
-        const char* sc_str =
-            uniform
-                ? "Uniform"
-                : (push_constant ? "PushConstant"
-                                 : (workgroup ? "Workgroup" : "StorageBuffer"));
 
         if (spvIsVulkanEnv(vstate.context()->target_env)) {
           const bool block = hasDecoration(id, spv::Decoration::Block, vstate);
@@ -1294,7 +1338,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                 !hasDecoration(var_id, spv::Decoration::DescriptorSet,
                                vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
-                     << vstate.VkErrorID(6677) << sc_str << " id '" << var_id
+                     << vstate.VkErrorID(6677)
+                     << getStroageClassString(storageClass) << " id '" << var_id
                      << "' is missing DescriptorSet decoration.\n"
                      << "From Vulkan spec:\n"
                      << "These variables must have DescriptorSet and Binding "
@@ -1303,7 +1348,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
             if (!entry_points.empty() &&
                 !hasDecoration(var_id, spv::Decoration::Binding, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
-                     << vstate.VkErrorID(6677) << sc_str << " id '" << var_id
+                     << vstate.VkErrorID(6677)
+                     << getStroageClassString(storageClass) << " id '" << var_id
                      << "' is missing Binding decoration.\n"
                      << "From Vulkan spec:\n"
                      << "These variables must have DescriptorSet and Binding "
@@ -1386,14 +1432,14 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
               if (spvIsVulkanEnv(vstate.context()->target_env)) {
                 if (blockRules &&
                     (SPV_SUCCESS !=
-                     (recursive_status = checkLayout(id, sc_str, deco_str, true,
-                                                     scalar_block_layout, 0,
-                                                     constraints, vstate)))) {
+                     (recursive_status = checkLayout(
+                          id, storageClass, deco_str, true, scalar_block_layout,
+                          0, constraints, vstate)))) {
                   return recursive_status;
                 } else if (bufferRules &&
                            (SPV_SUCCESS != (recursive_status = checkLayout(
-                                                id, sc_str, deco_str, false,
-                                                scalar_block_layout, 0,
+                                                id, storageClass, deco_str,
+                                                false, scalar_block_layout, 0,
                                                 constraints, vstate)))) {
                   return recursive_status;
                 }
@@ -1413,9 +1459,9 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
         ComputeMemberConstraintsForStruct(&constraints, pointee_type_id,
                                           LayoutConstraints(), vstate);
       }
-      if (auto res = checkLayout(pointee_type_id, "PhysicalStorageBuffer",
-                                 "Block", !buffer, scalar_block_layout, 0,
-                                 constraints, vstate)) {
+      if (auto res = checkLayout(
+              pointee_type_id, spv::StorageClass::PhysicalStorageBuffer,
+              "Block", !buffer, scalar_block_layout, 0, constraints, vstate)) {
         return res;
       }
     } else if (vstate.HasCapability(spv::Capability::UntypedPointersKHR) &&
@@ -1464,14 +1510,6 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
       const auto sc =
           vstate.FindDef(ptr_ty_id)->GetOperandAs<spv::StorageClass>(1);
 
-      const char* sc_str =
-          sc == spv::StorageClass::Uniform
-              ? "Uniform"
-              : (sc == spv::StorageClass::PushConstant
-                     ? "PushConstant"
-                     : (sc == spv::StorageClass::Workgroup ? "Workgroup"
-                                                           : "StorageBuffer"));
-
       auto data_type = vstate.FindDef(data_type_id);
       scalar_block_layout =
           sc == spv::StorageClass::Workgroup
@@ -1511,7 +1549,7 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
               ? (sc == spv::StorageClass::Uniform ? "BufferBlock" : "Block")
               : "Block";
       if (auto result =
-              checkLayout(data_type_id, sc_str, deco_str, !bufferRules,
+              checkLayout(data_type_id, sc, deco_str, !bufferRules,
                           scalar_block_layout, 0, constraints, vstate)) {
         return result;
       }
