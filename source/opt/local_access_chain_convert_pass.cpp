@@ -466,6 +466,7 @@ void LocalAccessChainConvertPass::InitExtensions() {
       "SPV_KHR_quad_control",
       "SPV_NV_shader_invocation_reorder",
       "SPV_NV_cluster_acceleration_structure",
+      "SPV_NV_linear_swept_spheres",
   });
 }
 
