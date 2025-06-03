@@ -765,10 +765,10 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
           !_.IsLocalSizeIdAllowed()) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "LocalSizeId mode is not allowed by the current environment."
-               << (is_vulkan_env ? " This is allowed if you enable the "
-                                   "maintenance4 feature (or use "
-                                   "--allow-localsizeid from command line)"
-                                 : "");
+               << (is_vulkan_env
+                       ? _.MissingFeature("maintenance4 feature",
+                                          "--allow-localsizeid", false)
+                       : "");
       }
 
       if (!std::all_of(

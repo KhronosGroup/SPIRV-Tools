@@ -398,7 +398,7 @@ bool IsAlignedTo(uint32_t offset, uint32_t alignment) {
   return 0 == (offset % alignment);
 }
 
-std::string getStroageClassString(spv::StorageClass sc) {
+std::string getStorageClassString(spv::StorageClass sc) {
   switch (sc) {
     case spv::StorageClass::Uniform:
       return "Uniform";
@@ -442,7 +442,7 @@ spv_result_t checkLayout(uint32_t struct_id, spv::StorageClass storage_class,
     DiagnosticStream ds = std::move(
         vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(struct_id))
         << "Structure id " << struct_id << " decorated as " << decoration_str
-        << " for variable in " << getStroageClassString(storage_class)
+        << " for variable in " << getStorageClassString(storage_class)
         << " storage class must follow "
         << (scalar_block_layout
                 ? "scalar "
@@ -457,28 +457,25 @@ spv_result_t checkLayout(uint32_t struct_id, spv::StorageClass storage_class,
   // offers a hint to help the user understand possbily why things are not
   // working when the shader itself "seems" valid, but just was a lack of adding
   // a supported feature
-  auto extra = [scalar_block_layout, storage_class, relaxed_block_layout,
-                blockRules]() {
+  auto extra = [&vstate, scalar_block_layout, storage_class,
+                relaxed_block_layout, blockRules]() {
     if (!scalar_block_layout) {
       if (storage_class == spv::StorageClass::Workgroup) {
-        return "\nThis might be valid if you enable the "
-               "workgroupMemoryExplicitLayoutScalarBlockLayout feature (or use "
-               "--workgroup-scalar-block-layout from the command line) ";
+        return vstate.MissingFeature(
+            "workgroupMemoryExplicitLayoutScalarBlockLayout feature",
+            "--workgroup-scalar-block-layout", true);
       } else if (!relaxed_block_layout) {
-        return "\nThis might be valid if you enable the "
-               "VK_KHR_relaxed_block_layout extension (or use "
-               "--relax-block-layout from the command line) ";
+        return vstate.MissingFeature("VK_KHR_relaxed_block_layout extension",
+                                     "--relax-block-layout", true);
       } else if (blockRules) {
-        return "\nThis might be valid if you enable the "
-               "uniformBufferStandardLayout (or use "
-               "--uniform-buffer-standard-layout from the command line) ";
+        return vstate.MissingFeature("uniformBufferStandardLayout feature",
+                                     "--uniform-buffer-standard-layout", true);
       } else {
-        return "\nThis might be valid if you enable the "
-               "scalarBlockLayoutfeature (or use --scalar-block-layout from "
-               "the command line) ";
+        return vstate.MissingFeature("scalarBlockLayoutfeature feature",
+                                     "--scalar-block-layout", true);
       }
     }
-    return "";
+    return std::string("");
   };
 
   // If we are checking the layout of untyped pointers or physical storage
@@ -1257,7 +1254,7 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
           if (!entry_points.empty() &&
               !hasDecoration(var_id, spv::Decoration::Binding, vstate)) {
             return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
-                   << getStroageClassString(storageClass) << " id '" << var_id
+                   << getStorageClassString(storageClass) << " id '" << var_id
                    << "' is missing Binding decoration.\n"
                    << "From ARB_gl_spirv extension:\n"
                    << "Uniform and shader storage block variables must "
@@ -1339,7 +1336,7 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                                vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
                      << vstate.VkErrorID(6677)
-                     << getStroageClassString(storageClass) << " id '" << var_id
+                     << getStorageClassString(storageClass) << " id '" << var_id
                      << "' is missing DescriptorSet decoration.\n"
                      << "From Vulkan spec:\n"
                      << "These variables must have DescriptorSet and Binding "
@@ -1349,7 +1346,7 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                 !hasDecoration(var_id, spv::Decoration::Binding, vstate)) {
               return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
                      << vstate.VkErrorID(6677)
-                     << getStroageClassString(storageClass) << " id '" << var_id
+                     << getStorageClassString(storageClass) << " id '" << var_id
                      << "' is missing Binding decoration.\n"
                      << "From Vulkan spec:\n"
                      << "These variables must have DescriptorSet and Binding "
