@@ -914,6 +914,10 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
       context()->AnalyzeUses(&dbg);
       continue;
     }
+    // Save debug build identifier even if no other instructions refer to it.
+    if (dbg.GetShader100DebugOpcode() ==
+        NonSemanticShaderDebugInfo100DebugBuildIdentifier)
+      continue;
     to_kill_.push_back(&dbg);
     modified = true;
   }
