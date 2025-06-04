@@ -620,18 +620,18 @@ class HexFloat {
   // even if they are not going to be executed. Eg:
   // constant_number < 0? 0: constant_number
   // These convert the negative left-shifts into right shifts.
-  template <int N>
+  template <int_type N>
   struct negatable_left_shift {
     static uint_type val(uint_type val) {
       if (N > 0) {
-        return static_cast<uint_type>(val << N);
+        return static_cast<uint_type>(static_cast<uint64_t>(val) << N);
       } else {
-        return static_cast<uint_type>(val >> N);
+        return static_cast<uint_type>(static_cast<uint64_t>(val) >> N);
       }
     }
   };
 
-  template <int N>
+  template <int_type N>
   struct negatable_right_shift {
     static uint_type val(uint_type val) {
       if (N > 0) {
@@ -647,31 +647,31 @@ class HexFloat {
   // even if they are not going to be executed. Eg:
   // constant_number < 0? 0: constant_number
   // These convert the negative left-shifts into right shifts.
-  template <int N, typename enable = void>
+  template <int_type N, typename enable = void>
   struct negatable_left_shift {
     static uint_type val(uint_type val) {
-      return static_cast<uint_type>(val >> -N);
+      return static_cast<uint_type>(static_cast<uint64_t>(val) >> -N);
     }
   };
 
-  template <int N>
+  template <int_type N>
   struct negatable_left_shift<N, typename std::enable_if<N >= 0>::type> {
     static uint_type val(uint_type val) {
-      return static_cast<uint_type>(val << N);
+      return static_cast<uint_type>(static_cast<uint64_t>(val) << N);
     }
   };
 
-  template <int N, typename enable = void>
+  template <int_type N, typename enable = void>
   struct negatable_right_shift {
     static uint_type val(uint_type val) {
-      return static_cast<uint_type>(val << -N);
+      return static_cast<uint_type>(static_cast<uint64_t>(val) << -N);
     }
   };
 
-  template <int N>
+  template <int_type N>
   struct negatable_right_shift<N, typename std::enable_if<N >= 0>::type> {
     static uint_type val(uint_type val) {
-      return static_cast<uint_type>(val >> N);
+      return static_cast<uint_type>(static_cast<uint64_t>(val) >> N);
     }
   };
 #endif
