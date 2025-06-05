@@ -853,13 +853,15 @@ void Parser::recordNumberType(size_t inst_offset,
       info.type = SPV_NUMBER_FLOATING;
       info.bit_width = peekAt(inst_offset + 2);
       if (inst->num_words >= 4) {
-        const char* encoding = grammar_.lookupOperandName(
-            SPV_OPERAND_TYPE_FPENCODING, peekAt(inst_offset + 3));
-        if (0 == strcmp(encoding, "Float8E4M3EXT"))
-          info.encoding = SPV_FP_ENCODING_E4M3;
-        else if (0 == strcmp(encoding, "Float8E5M2EXT"))
-          info.encoding = SPV_FP_ENCODING_E5M2;
-        // TODO Bfloat16
+        const spvtools::OperandDesc* desc;
+        spv_result_t status = spvtools::LookupOperand(
+            SPV_OPERAND_TYPE_FPENCODING, peekAt(inst_offset + 3), &desc);
+        if (status == SPV_SUCCESS) {
+          info.encoding = spvFPEncodingFromOperandFPEncoding(
+              static_cast<spv::FPEncoding>(desc->value));
+        } else {
+          info.encoding = SPV_FP_ENCODING_UNKNOWN;
+        }
       }
     }
     // The *result* Id of a type generating instruction is the type Id.

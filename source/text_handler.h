@@ -23,7 +23,6 @@
 #include <unordered_map>
 #include <utility>
 
-#include "source/assembly_grammar.h"
 #include "source/diagnostic.h"
 #include "source/instruction.h"
 #include "source/text.h"
@@ -228,8 +227,7 @@ class AssemblyContext {
   // pInst is expected to be completely filled in by the time this instruction
   // is called.
   // Returns SPV_SUCCESS on success, or SPV_ERROR_INVALID_VALUE on error.
-  spv_result_t recordTypeDefinition(const spvtools::AssemblyGrammar& grammar,
-                                    const spv_instruction_t* pInst);
+  spv_result_t recordTypeDefinition(const spv_instruction_t* pInst);
 
   // Tracks the relationship between the value and its type.
   spv_result_t recordTypeIdForValue(uint32_t value, uint32_t type);

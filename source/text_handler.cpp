@@ -319,7 +319,7 @@ spv_result_t AssemblyContext::binaryEncodeString(const char* value,
 }
 
 spv_result_t AssemblyContext::recordTypeDefinition(
-    const spvtools::AssemblyGrammar& grammar, const spv_instruction_t* pInst) {
+    const spv_instruction_t* pInst) {
   uint32_t value = pInst->words[1];
   if (types_.find(value) != types_.end()) {
     return diagnostic() << "Value " << value
@@ -336,16 +336,15 @@ spv_result_t AssemblyContext::recordTypeDefinition(
       return diagnostic() << "Invalid OpTypeFloat instruction";
     spv_fp_encoding_t enc = SPV_FP_ENCODING_UNKNOWN;
     if (pInst->words.size() >= 4) {
-      const char* encoding = grammar.lookupOperandName(
-          SPV_OPERAND_TYPE_FPENCODING, pInst->words[3]);
-      if (0 == strcmp(encoding, "Float8E4M3EXT"))
-        enc = SPV_FP_ENCODING_E4M3;
-      else if (0 == strcmp(encoding, "Float8E5M2EXT"))
-        enc = SPV_FP_ENCODING_E5M2;
-      else if (0 == strcmp(encoding, "BFloat16KHR"))
-        enc = SPV_FP_ENCODING_BFLOAT16;
-      else
+      const spvtools::OperandDesc* desc;
+      spv_result_t status = spvtools::LookupOperand(SPV_OPERAND_TYPE_FPENCODING,
+                                                    pInst->words[3], &desc);
+      if (status == SPV_SUCCESS) {
+        enc = spvFPEncodingFromOperandFPEncoding(
+            static_cast<spv::FPEncoding>(desc->value));
+      } else {
         return diagnostic() << "Invalid OpTypeFloat encoding";
+      }
     }
     types_[value] = {pInst->words[2], false, IdTypeClass::kScalarFloatType,
                      enc};

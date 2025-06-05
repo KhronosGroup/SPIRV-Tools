@@ -135,19 +135,23 @@ spv_result_t ValidateTypeFloat(ValidationState_t& _, const Instruction* inst) {
              << "Using a 8-bit floating point "
              << "type requires the Float8EXT capability.";
     }
-    if (inst->words().size() < 4) {
+    if (!has_encoding) {
       // we don't support fp8 without encoding
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "8-bit floating point type requires an encoding.";
     }
-    const char* encoding = _.grammar().lookupOperandName(
-        SPV_OPERAND_TYPE_FPENCODING, inst->words()[3]);
-    const std::set<std::string> known_encodings{"Float8E4M3EXT",
-                                                "Float8E5M2EXT"};
-    if (known_encodings.find(encoding) == known_encodings.end())
+    const spvtools::OperandDesc* desc;
+    const std::set<spv::FPEncoding> known_encodings{
+        spv::FPEncoding::Float8E4M3EXT, spv::FPEncoding::Float8E5M2EXT};
+    spv_result_t status = spvtools::LookupOperand(SPV_OPERAND_TYPE_FPENCODING,
+                                                  inst->words()[3], &desc);
+    if ((status != SPV_SUCCESS) ||
+        (known_encodings.find(static_cast<spv::FPEncoding>(desc->value)) ==
+         known_encodings.end())) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Unsupported 8-bit floating point encoding: " << encoding
-             << ".";
+             << "Unsupported 8-bit floating point encoding ("
+             << desc->name().data() << ").";
+    }
 
     return SPV_SUCCESS;
   }
