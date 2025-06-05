@@ -557,6 +557,7 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
               "Operands that are not id operands.";
   }
 
+  const bool is_vulkan_env = (spvIsVulkanEnv(_.context()->target_env));
   const auto* models = _.GetExecutionModels(entry_point_id);
   switch (mode) {
     case spv::ExecutionMode::Invocations:
@@ -667,7 +668,7 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
                     "tessellation execution model.";
         }
       }
-      if (spvIsVulkanEnv(_.context()->target_env)) {
+      if (is_vulkan_env) {
         if (_.HasCapability(spv::Capability::MeshShadingEXT) &&
             inst->GetOperandAs<uint32_t>(2) == 0) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -690,8 +691,7 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
                   "execution "
                   "model.";
       }
-      if (mode == spv::ExecutionMode::OutputPrimitivesEXT &&
-          spvIsVulkanEnv(_.context()->target_env)) {
+      if (mode == spv::ExecutionMode::OutputPrimitivesEXT && is_vulkan_env) {
         if (_.HasCapability(spv::Capability::MeshShadingEXT) &&
             inst->GetOperandAs<uint32_t>(2) == 0) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -761,9 +761,15 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
       break;
     case spv::ExecutionMode::LocalSize:
     case spv::ExecutionMode::LocalSizeId:
-      if (mode == spv::ExecutionMode::LocalSizeId && !_.IsLocalSizeIdAllowed())
+      if (mode == spv::ExecutionMode::LocalSizeId &&
+          !_.IsLocalSizeIdAllowed()) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "LocalSizeId mode is not allowed by the current environment.";
+               << "LocalSizeId mode is not allowed by the current environment."
+               << (is_vulkan_env
+                       ? _.MissingFeature("maintenance4 feature",
+                                          "--allow-localsizeid", false)
+                       : "");
+      }
 
       if (!std::all_of(
               models->begin(), models->end(),
@@ -812,7 +818,7 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
     }
   }
 
-  if (spvIsVulkanEnv(_.context()->target_env)) {
+  if (is_vulkan_env) {
     if (mode == spv::ExecutionMode::OriginLowerLeft) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << _.VkErrorID(4653)
