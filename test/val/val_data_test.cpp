@@ -80,6 +80,35 @@ std::string header_with_bfloat16 = R"(
      OpExtension "SPV_KHR_bfloat16"
      OpMemoryModel Logical GLSL450
 )";
+std::string header_with_float8 = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability Float8EXT
+     OpCapability Float8CooperativeMatrixEXT
+     OpExtension "SPV_EXT_float8"
+     OpMemoryModel Logical GLSL450
+)";
+std::string header_with_float8_and_bfloat16 = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability Float8EXT
+     OpCapability Float8CooperativeMatrixEXT
+     OpCapability BFloat16TypeKHR
+     OpExtension "SPV_EXT_float8"
+     OpExtension "SPV_KHR_bfloat16"
+     OpMemoryModel Logical GLSL450
+)";
+std::string header_with_float8_no_coop_matrix = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability Float8EXT
+     OpCapability CooperativeMatrixKHR
+     OpCapability VulkanMemoryModel
+     OpExtension "SPV_EXT_float8"
+     OpExtension "SPV_KHR_cooperative_matrix"
+     OpExtension "SPV_KHR_vulkan_memory_model"
+     OpMemoryModel Logical VulkanKHR
+)";
 std::string header_with_float16 = R"(
      OpCapability Shader
      OpCapability Linkage
@@ -343,6 +372,15 @@ TEST_F(ValidateData, float16_good) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateData, float8_good) {
+  std::string str = header_with_float8 +
+                    R"(%2 = OpTypeFloat 8 Float8E4M3EXT
+%3 = OpTypeFloat 8 Float8E5M2EXT
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateData, bfloat16_good) {
   std::string str = header_with_bfloat16 + "%2 = OpTypeFloat 16 BFloat16KHR";
   CompileSuccessfully(str.c_str());
@@ -360,6 +398,23 @@ TEST_F(ValidateData, cooperative_matrix_bfloat16_good) {
 )";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateData, cooperative_matrix_float8_no_capability_bad) {
+  std::string str = header_with_float8_no_coop_matrix + R"(
+%u32 = OpTypeInt 32 0
+%u32_16 = OpConstant %u32 16
+%useA = OpConstant %u32 0
+%subgroup = OpConstant %u32 3
+%fp8e4m3 = OpTypeFloat 8 Float8E4M3EXT
+%fp8e5m2 = OpTypeFloat 8 Float8E5M2EXT
+%fp8e4m3_matA = OpTypeCooperativeMatrixKHR %fp8e4m3 %subgroup %u32_16 %u32_16 %useA
+%fp8e5m2_matA = OpTypeCooperativeMatrixKHR %fp8e5m2 %subgroup %u32_16 %u32_16 %useA
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("require Float8CooperativeMatrixEXT be declared"));
 }
 
 TEST_F(ValidateData, float16_buffer_good) {
@@ -381,6 +436,34 @@ TEST_F(ValidateData, bfloat16_bad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("requires one of these capabilities: BFloat16TypeKHR"));
+}
+
+TEST_F(ValidateData, float8_bad) {
+  std::string str = header +
+                    R"(%2 = OpTypeFloat 8 Float8E4M3EXT
+%3 = OpTypeFloat 8 Float8E5M2EXT
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these capabilities: Float8EXT"));
+}
+
+TEST_F(ValidateData, float8_no_encoding_bad) {
+  std::string str = header_with_float8 + "%2 = OpTypeFloat 8";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("8-bit floating point type requires an encoding"));
+}
+
+TEST_F(ValidateData, float8_bad_encoding) {
+  std::string str =
+      header_with_float8_and_bfloat16 + "%2 = OpTypeFloat 8 BFloat16KHR";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Unsupported 8-bit floating point encoding"));
 }
 
 TEST_F(ValidateData, dot_bfloat16_bad) {

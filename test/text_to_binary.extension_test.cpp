@@ -1463,5 +1463,37 @@ INSTANTIATE_TEST_SUITE_P(
              MakeInstruction(spv::Op::OpTensorQuerySizeARM, {1, 2, 3, 4})},
         })));
 
+// SPV_EXT_float8
+INSTANTIATE_TEST_SUITE_P(
+    SPV_EXT_float8, ExtensionRoundTripTest,
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_6, SPV_ENV_VULKAN_1_0,
+               SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_2, SPV_ENV_VULKAN_1_3,
+               SPV_ENV_OPENCL_2_1),
+        ValuesIn(std::vector<AssemblyCase>{
+            {"OpExtension \"SPV_EXT_float8\"\n",
+             MakeInstruction(spv::Op::OpExtension,
+                             MakeVector("SPV_EXT_float8"))},
+            {"OpCapability Float8EXT\n",
+             MakeInstruction(spv::Op::OpCapability,
+                             {(uint32_t)spv::Capability::Float8EXT})},
+            {"OpCapability Float8CooperativeMatrixEXT\n",
+             MakeInstruction(
+                 spv::Op::OpCapability,
+                 {(uint32_t)spv::Capability::Float8CooperativeMatrixEXT})},
+            {"%1 = OpTypeFloat 8 Float8E4M3EXT\n",
+             MakeInstruction(spv::Op::OpTypeFloat,
+                             {1, 8, (uint32_t)spv::FPEncoding::Float8E4M3EXT})},
+            {"%1 = OpTypeFloat 8 Float8E5M2EXT\n",
+             MakeInstruction(spv::Op::OpTypeFloat,
+                             {1, 8, (uint32_t)spv::FPEncoding::Float8E5M2EXT})},
+            {"OpDecorate %1 SaturatedToLargestFloat8NormalConversionEXT\n",
+             MakeInstruction(
+                 spv::Op::OpDecorate,
+                 {1,
+                  uint32_t(spv::Decoration::
+                               SaturatedToLargestFloat8NormalConversionEXT)})},
+        })));
+
 }  // namespace
 }  // namespace spvtools

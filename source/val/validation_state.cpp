@@ -399,6 +399,9 @@ void ValidationState_t::RegisterCapability(spv::Capability cap) {
     case spv::Capability::Float16Buffer:
       features_.declare_float16_type = true;
       break;
+    case spv::Capability::Float8EXT:
+      features_.declare_float8_type = true;
+      break;
     case spv::Capability::StorageUniformBufferBlock16:
     case spv::Capability::StorageUniform16:
     case spv::Capability::StoragePushConstant16:
@@ -979,6 +982,37 @@ bool ValidationState_t::IsBfloat16VectorType(uint32_t id) const {
   }
 
   return false;
+}
+
+bool ValidationState_t::IsFP8ScalarType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  if (inst && inst->opcode() == spv::Op::OpTypeFloat) {
+    if (inst->words().size() > 3) {
+      auto encoding = inst->GetOperandAs<spv::FPEncoding>(2);
+      if ((encoding == spv::FPEncoding::Float8E4M3EXT) ||
+          (encoding == spv::FPEncoding::Float8E5M2EXT)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool ValidationState_t::IsFP8VectorType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  if (!inst) {
+    return false;
+  }
+
+  if (inst->opcode() == spv::Op::OpTypeVector) {
+    return IsFP8ScalarType(GetComponentType(id));
+  }
+
+  return false;
+}
+
+bool ValidationState_t::IsFP8ScalarOrVectorType(uint32_t id) const {
+  return IsFP8ScalarType(id) || IsFP8VectorType(id);
 }
 
 bool ValidationState_t::IsFloatScalarType(uint32_t id) const {
