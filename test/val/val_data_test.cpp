@@ -374,7 +374,7 @@ TEST_F(ValidateData, float16_good) {
 
 TEST_F(ValidateData, float8_good) {
   std::string str = header_with_float8 +
-R"(%2 = OpTypeFloat 8 Float8E4M3EXT
+                    R"(%2 = OpTypeFloat 8 Float8E4M3EXT
 %3 = OpTypeFloat 8 Float8E5M2EXT
 )";
   CompileSuccessfully(str.c_str());
@@ -413,7 +413,8 @@ TEST_F(ValidateData, cooperative_matrix_float8_no_capability_bad) {
 )";
   CompileSuccessfully(str.c_str(), SPV_ENV_UNIVERSAL_1_3);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("require Float8CooperativeMatrixEXT be declared"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("require Float8CooperativeMatrixEXT be declared"));
 }
 
 TEST_F(ValidateData, float16_buffer_good) {
@@ -439,7 +440,7 @@ TEST_F(ValidateData, bfloat16_bad) {
 
 TEST_F(ValidateData, float8_bad) {
   std::string str = header +
-R"(%2 = OpTypeFloat 8 Float8E4M3EXT
+                    R"(%2 = OpTypeFloat 8 Float8E4M3EXT
 %3 = OpTypeFloat 8 Float8E5M2EXT
 )";
   CompileSuccessfully(str.c_str());
@@ -457,7 +458,8 @@ TEST_F(ValidateData, float8_no_encoding_bad) {
 }
 
 TEST_F(ValidateData, float8_bad_encoding) {
-  std::string str = header_with_float8_and_bfloat16 + "%2 = OpTypeFloat 8 BFloat16KHR";
+  std::string str =
+      header_with_float8_and_bfloat16 + "%2 = OpTypeFloat 8 BFloat16KHR";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
