@@ -300,6 +300,7 @@ For some kinds of development, you may need the latest sources from the third-pa
     git clone https://github.com/google/effcee.git              spirv-tools/external/effcee
     git clone https://github.com/google/re2.git                 spirv-tools/external/re2
     git clone https://github.com/abseil/abseil-cpp.git          spirv-tools/external/abseil_cpp
+    git clone https://github.com/microsoft/mimalloc.git         spirv-tools/external/mimalloc
 
 #### Dependency on Effcee
 
@@ -311,6 +312,13 @@ Effcee itself depends on [RE2][re2], and RE2 depends on [Abseil][abseil-cpp].
 * Otherwise, SPIRV-Tools expects Effcee sources to appear in `external/effcee`,
   RE2 sources to appear in `external/re2`, and Abseil sources to appear in 
   `external/abseil_cpp`.
+
+#### Dependency on mimalloc
+
+SPIRV-Tools may be configured to use the [mimalloc][mimalloc] library to improve memory
+allocation performance. In order to avoid unexpectedly changing allocation behavior of
+applications that link SPIRV-Tools libraries statically, this option has no effect on
+the static libraries.
 
 ### Source code organization
 
@@ -325,6 +333,7 @@ Effcee itself depends on [RE2][re2], and RE2 depends on [Abseil][abseil-cpp].
 * `external/abseil_cpp`: Location of [Abseil][abseil-cpp] sources, if Abseil is
    not already configured by an enclosing project.
   (The RE2 project already requires Abseil.)
+* `external/mimalloc`: Intended location for [mimalloc][mimalloc] sources, not provided
 * `include/`: API clients should add this directory to the include search path
 * `external/spirv-headers`: Intended location for
   [SPIR-V headers][spirv-headers], not provided
@@ -801,6 +810,7 @@ limitations under the License.
 [effcee]: https://github.com/google/effcee
 [re2]: https://github.com/google/re2
 [abseil-cpp]: https://github.com/abseil/abseil-cpp
+[mimalloc]: https://github.com/microsoft/mimalloc
 [CMake]: https://cmake.org/
 [cpp-style-guide]: https://google.github.io/styleguide/cppguide.html
 [clang-sanitizers]: http://clang.llvm.org/docs/UsersManual.html#controlling-code-generation
