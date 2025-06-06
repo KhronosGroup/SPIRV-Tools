@@ -159,7 +159,7 @@ EncodeNumberStatus ParseAndEncodeFloatingPointNumber(
 
   const auto bit_width = AssumedBitWidth(type);
   switch (DeduceEncoding(type)) {
-    case SPV_FP_ENCODING_E4M3: {
+    case SPV_FP_ENCODING_FLOAT8_E4M3: {
       HexFloat<FloatProxy<Float8_E4M3>> hVal(0);
       if (!ParseNumber(text, &hVal)) {
         ErrorMsgStream(error_msg) << "Invalid E4M3 float literal: " << text;
@@ -172,7 +172,7 @@ EncodeNumberStatus ParseAndEncodeFloatingPointNumber(
       emit(static_cast<uint32_t>(hVal.value().getAsFloat().get_value()));
       return EncodeNumberStatus::kSuccess;
     } break;
-    case SPV_FP_ENCODING_E5M2: {
+    case SPV_FP_ENCODING_FLOAT8_E5M2: {
       HexFloat<FloatProxy<Float8_E5M2>> hVal(0);
       if (!ParseNumber(text, &hVal)) {
         ErrorMsgStream(error_msg) << "Invalid E5M2 float literal: " << text;

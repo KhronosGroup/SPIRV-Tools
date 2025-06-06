@@ -51,11 +51,11 @@ void EmitNumericLiteral(std::ostream* out, const spv_parsed_instruction_t& inst,
           case SPV_FP_ENCODING_IEEE754_BINARY32:
             *out << spvtools::utils::FloatProxy<float>(word);
             break;
-          case SPV_FP_ENCODING_E4M3:
+          case SPV_FP_ENCODING_FLOAT8_E4M3:
             *out << spvtools::utils::FloatProxy<spvtools::utils::Float8_E4M3>(
                 uint8_t(word & 0xFF));
             break;
-          case SPV_FP_ENCODING_E5M2:
+          case SPV_FP_ENCODING_FLOAT8_E5M2:
             *out << spvtools::utils::FloatProxy<spvtools::utils::Float8_E5M2>(
                 uint8_t(word & 0xFF));
             break;

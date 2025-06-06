@@ -901,7 +901,7 @@ TEST(ParseAndEncodeFloat16, Sample) {
 TEST(ParseAndEncodeFloat8_E4M3, Sample) {
   EncodeNumberStatus rc = EncodeNumberStatus::kSuccess;
   std::string err_msg;
-  NumberType type = {8, SPV_NUMBER_FLOATING, SPV_FP_ENCODING_E4M3};
+  NumberType type = {8, SPV_NUMBER_FLOATING, SPV_FP_ENCODING_FLOAT8_E4M3};
 
   // Invalid
   rc = ParseAndEncodeFloatingPointNumber("", type, AssertEmitFunc, &err_msg);
@@ -958,7 +958,7 @@ TEST(ParseAndEncodeFloat8_E4M3, Sample) {
 TEST(ParseAndEncodeFloat8_E5M2, Sample) {
   EncodeNumberStatus rc = EncodeNumberStatus::kSuccess;
   std::string err_msg;
-  NumberType type = {8, SPV_NUMBER_FLOATING, SPV_FP_ENCODING_E5M2};
+  NumberType type = {8, SPV_NUMBER_FLOATING, SPV_FP_ENCODING_FLOAT8_E5M2};
 
   // Invalid
   rc = ParseAndEncodeFloatingPointNumber("", type, AssertEmitFunc, &err_msg);

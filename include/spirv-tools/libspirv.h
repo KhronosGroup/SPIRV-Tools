@@ -398,8 +398,8 @@ typedef enum spv_fp_encoding_t {
   SPV_FP_ENCODING_IEEE754_BINARY32,  // single float
   SPV_FP_ENCODING_IEEE754_BINARY64,  // double float
   SPV_FP_ENCODING_BFLOAT16,
-  SPV_FP_ENCODING_E4M3,
-  SPV_FP_ENCODING_E5M2,
+  SPV_FP_ENCODING_FLOAT8_E4M3,
+  SPV_FP_ENCODING_FLOAT8_E5M2,
 } spv_fp_encoding_t;
 
 typedef enum spv_text_to_binary_options_t {
