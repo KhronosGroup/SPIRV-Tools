@@ -15,6 +15,8 @@ vars = {
   're2_revision': 'c84a140c93352cdabbfb547c531be34515b12228',
 
   'spirv_headers_revision': 'fd96661925488574fe247a779babe5d380b63635',
+
+  'mimalloc_revision': '51c09e7b6a0ac5feeba998710f00c7dd7aa67bbf',
 }
 
 deps = {
@@ -36,5 +38,8 @@ deps = {
   'external/spirv-headers':
       Var('github') +  '/KhronosGroup/SPIRV-Headers.git@' +
           Var('spirv_headers_revision'),
+
+  'external/mimalloc':
+      Var('github') + '/microsoft/mimalloc.git@' + Var('mimalloc_revision'),
 }
 
