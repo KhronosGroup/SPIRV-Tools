@@ -1949,6 +1949,14 @@ bool ValidationState_t::IsValidStorageClass(
   return true;
 }
 
+std::string ValidationState_t::MissingFeature(const std::string& feature,
+                                              const std::string& cmdline,
+                                              bool hint) const {
+  return "\nThis is " + (hint ? std::string("may be ") : "") +
+         "allowed if you enable the " + feature + " (or use the " + cmdline +
+         " command line flag)";
+}
+
 #define VUID_WRAP(vuid) "[" #vuid "] "
 
 // Currently no 2 VUID share the same id, so no need for |reference|

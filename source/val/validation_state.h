@@ -844,6 +844,12 @@ class ValidationState_t {
   // Validates the storage class for the target environment.
   bool IsValidStorageClass(spv::StorageClass storage_class) const;
 
+  // Helps formulate a mesesage to user that setting one of the validator
+  // options might make their SPIR-V actually valid The |hint| option is because
+  // some checks are intertwined with each other, so hard to give confirmation
+  std::string MissingFeature(const std::string& feature,
+                             const std::string& cmdline, bool hint) const;
+
   // Takes a Vulkan Valid Usage ID (VUID) as |id| and optional |reference| and
   // will return a non-empty string only if ID is known and targeting Vulkan.
   // VUIDs are found in the Vulkan-Docs repo in the form "[[VUID-ref-ref-id]]"
