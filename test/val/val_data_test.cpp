@@ -400,6 +400,21 @@ TEST_F(ValidateData, cooperative_matrix_bfloat16_good) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateData, cooperative_matrix_float8_good) {
+  std::string str = header_with_float8 + R"(
+%u32 = OpTypeInt 32 0
+%u32_16 = OpConstant %u32 16
+%useA = OpConstant %u32 0
+%subgroup = OpConstant %u32 3
+%fp8e4m3 = OpTypeFloat 8 Float8E4M3EXT
+%fp8e5m2 = OpTypeFloat 8 Float8E5M2EXT
+%fp8e4m3_matA = OpTypeCooperativeMatrixKHR %fp8e4m3 %subgroup %u32_16 %u32_16 %useA
+%fp8e5m2_matA = OpTypeCooperativeMatrixKHR %fp8e5m2 %subgroup %u32_16 %u32_16 %useA
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateData, cooperative_matrix_float8_no_capability_bad) {
   std::string str = header_with_float8_no_coop_matrix + R"(
 %u32 = OpTypeInt 32 0
