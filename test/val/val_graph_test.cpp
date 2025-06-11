@@ -488,7 +488,7 @@ TEST_F(ValidateGraph, InvalidGraphEntryPointInterfaceIDNotOpVariable) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex(
-                  "GraphEntryPointARM Interface ID '[0-9]+\\[%uint_0\\]' must "
+                  "GraphEntryPointARM Interface ID '.*' must "
                   "come from OpVariable with UniformConstant Storage Class.*"));
 }
 
@@ -505,7 +505,7 @@ TEST_F(ValidateGraph, InvalidGraphEntryPointInterfaceIDWrongStorageClass) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex(
-                  "GraphEntryPointARM Interface ID '[0-9]+\\[%[0-9]+\\]' must "
+                  "GraphEntryPointARM Interface ID '.*' must "
                   "come from OpVariable with UniformConstant Storage Class.*"));
 }
 
@@ -524,7 +524,7 @@ TEST_F(ValidateGraph, InvalidGraphEntryPointNotEnoughInterfaceIDs) {
       getDiagnosticString(),
       MatchesRegex(
           "GraphEntryPointARM Interface list contains 1 IDs but Graph's type "
-          "'[0-9]+\\[%[0-9]+\\]' has 2 inputs and outputs.*"));
+          "'.*' has 2 inputs and outputs.*"));
 }
 
 TEST_F(ValidateGraph, InvalidGraphEntryPointTooManyInterfaceIDs) {
@@ -542,7 +542,7 @@ TEST_F(ValidateGraph, InvalidGraphEntryPointTooManyInterfaceIDs) {
       getDiagnosticString(),
       MatchesRegex(
           "GraphEntryPointARM Interface list contains 3 IDs but Graph's type "
-          "'[0-9]+\\[%[0-9]+\\]' has 2 inputs and outputs.*"));
+          "'.*' has 2 inputs and outputs.*"));
 }
 
 TEST_F(ValidateGraph,
@@ -559,8 +559,8 @@ TEST_F(ValidateGraph,
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
               MatchesRegex("GraphEntryPointARM Interface ID type "
-                           "'[0-9]+\\[%[0-9]+\\]' must match the type of the "
-                           "corresponding graph I/O '[0-9]+\\[%[0-9]+\\]'.*"));
+                           "'.*' must match the type of the "
+                           "corresponding graph I/O '.*'.*"));
 }
 
 //

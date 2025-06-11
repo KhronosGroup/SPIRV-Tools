@@ -71,7 +71,12 @@ uint32_t GraphTypeInstNumOutputs(const Instruction* inst) {
 
 uint32_t GraphTypeInstGetOutputAtIndex(const Instruction* inst,
                                        uint64_t index) {
-  return inst->word(3 + GraphTypeInstNumInputs(inst) + index);
+  return inst->word(3 + GraphTypeInstNumInputs(inst) +
+                    static_cast<uint32_t>(index));
+}
+
+uint32_t GraphTypeInstGetInputAtIndex(const Instruction* inst, uint64_t index) {
+  return inst->word(3 + static_cast<uint32_t>(index));
 }
 
 spv_result_t ValidateGraphType(ValidationState_t& _, const Instruction* inst) {
@@ -270,7 +275,7 @@ spv_result_t ValidateGraphInput(ValidationState_t& _, const Instruction* inst) {
     return SPV_SUCCESS;
   }
 
-  auto graph_type_inst = _.FindDef(graph_inst->type_id());
+  auto const graph_type_inst = _.FindDef(graph_inst->type_id());
   size_t graph_type_num_inputs = graph_type_inst->word(2);
 
   // Check InputIndex is in range
@@ -284,7 +289,8 @@ spv_result_t ValidateGraphInput(ValidationState_t& _, const Instruction* inst) {
            << input_index << ": " << disassembly;
   }
 
-  uint32_t graph_type_input_type = graph_type_inst->word(3 + input_index);
+  uint32_t graph_type_input_type =
+      GraphTypeInstGetInputAtIndex(graph_type_inst, input_index);
 
   if (has_element_index) {
     // Check ElementIndex is allowed
