@@ -22,8 +22,8 @@ namespace spvtools {
 namespace val {
 namespace {
 
-using ::testing::HasSubstr;
 using ::testing::ContainsRegex;
+using ::testing::HasSubstr;
 
 using ValidateGraph = spvtest::ValidateBase<std::string>;
 
@@ -559,8 +559,8 @@ TEST_F(ValidateGraph,
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
               ContainsRegex("GraphEntryPointARM Interface ID type "
-                           "'.*' must match the type of the "
-                           "corresponding graph I/O '.*'.*"));
+                            "'.*' must match the type of the "
+                            "corresponding graph I/O '.*'.*"));
 }
 
 //
@@ -809,8 +809,8 @@ TEST_F(ValidateGraph, InvalidGraphInputElementIndexOutOfRange) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
               ContainsRegex("OpGraphInputARM ElementIndex out of range. The "
-                           "type of the graph input being accessed '.*' is an "
-                           "array of 3 elements but ElementIndex is 3.*"));
+                            "type of the graph input being accessed '.*' is an "
+                            "array of 3 elements but ElementIndex is 3.*"));
 }
 
 TEST_F(ValidateGraph, InvalidGraphInputIndexOutOfRange) {
@@ -830,8 +830,8 @@ TEST_F(ValidateGraph, InvalidGraphInputIndexOutOfRange) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
               ContainsRegex("Type '.*' for graph '.*' "
-                           "has 2 inputs but found an OpGraphInputARM "
-                           "instruction with an InputIndex that is 2.*"));
+                            "has 2 inputs but found an OpGraphInputARM "
+                            "instruction with an InputIndex that is 2.*"));
 }
 
 TEST_F(ValidateGraph, InvalidGraphFirstInputTypeDoesNotMatchGraphType) {
@@ -850,8 +850,8 @@ TEST_F(ValidateGraph, InvalidGraphFirstInputTypeDoesNotMatchGraphType) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
               ContainsRegex("Result Type '.*' of graph input instruction "
-                           "'.*' does not match the type "
-                           "'.*' of input 0 in the graph type.*"));
+                            "'.*' does not match the type "
+                            "'.*' of input 0 in the graph type.*"));
 }
 
 TEST_F(ValidateGraph, InvalidGraphLastInputTypeDoesNotMatchGraphType) {
@@ -870,8 +870,8 @@ TEST_F(ValidateGraph, InvalidGraphLastInputTypeDoesNotMatchGraphType) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
               ContainsRegex("Result Type '.*' of graph input instruction "
-                           "'.*' does not match the type "
-                           "'.*' of input 1 in the graph type.*"));
+                            "'.*' does not match the type "
+                            "'.*' of input 1 in the graph type.*"));
 }
 
 TEST_F(ValidateGraph, InvalidGraphInputAfterNonGraphInputOrGraph) {
@@ -1154,10 +1154,11 @@ TEST_F(ValidateGraph, InvalidGraphOutputElementIndexOutOfRange) {
 
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
-  EXPECT_THAT(getDiagnosticString(),
-              ContainsRegex("OpGraphSetOutputARM ElementIndex out of range. The "
-                           "type of the graph output being accessed '.*' is an "
-                           "array of 3 elements but ElementIndex is 3.*"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      ContainsRegex("OpGraphSetOutputARM ElementIndex out of range. The "
+                    "type of the graph output being accessed '.*' is an "
+                    "array of 3 elements but ElementIndex is 3.*"));
 }
 
 TEST_F(ValidateGraph, InvalidGraphOutputNotBeforeEndOrOutput) {
@@ -1250,10 +1251,11 @@ TEST_F(ValidateGraph, InvalidGraphNoSetOuputBeforeEnd) {
 
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
-  EXPECT_THAT(getDiagnosticString(),
-              ContainsRegex("GraphEndARM must be preceded by at least one "
-                           "OpGraphSetOutputARM instruction "
-                           "but found '.*' that is a GraphInputARM instead.*"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      ContainsRegex("GraphEndARM must be preceded by at least one "
+                    "OpGraphSetOutputARM instruction "
+                    "but found '.*' that is a GraphInputARM instead.*"));
 }
 
 //
