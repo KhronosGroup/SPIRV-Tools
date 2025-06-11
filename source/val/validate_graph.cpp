@@ -310,8 +310,8 @@ spv_result_t ValidateGraphInput(ValidationState_t& _, const Instruction* inst) {
                  << "OpGraphInputARM ElementIndex out of range. The type of "
                     "the graph input being accessed "
                  << _.getIdName(graph_type_input_type) << " is an array of "
-                 << array_length << " elements but "
-                 << "ElementIndex is " << element_index;
+                 << array_length << " elements but " << "ElementIndex is "
+                 << element_index;
         }
       }
     }
@@ -440,8 +440,8 @@ spv_result_t ValidateGraphSetOutput(ValidationState_t& _,
                  << "OpGraphSetOutputARM ElementIndex out of range. The type "
                     "of the graph output being accessed "
                  << _.getIdName(graph_type_output_type) << " is an array of "
-                 << array_length << " elements but "
-                 << "ElementIndex is " << element_index;
+                 << array_length << " elements but " << "ElementIndex is "
+                 << element_index;
         }
       }
     }
