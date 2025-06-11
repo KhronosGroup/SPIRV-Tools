@@ -771,6 +771,7 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetAllowOffsetTextureOperand(
     spv_validator_options options, bool val);
 
 // Allow base operands of some bit operations to be non-32-bit wide.
+// Was added for VK_KHR_maintenance9
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetAllowVulkan32BitBitwise(
     spv_validator_options options, bool val);
 
