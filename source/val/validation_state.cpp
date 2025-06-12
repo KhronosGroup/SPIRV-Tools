@@ -85,6 +85,9 @@ ModuleLayoutSection InstructionLayoutSection(
       // spv::Op::OpExtInst is only allowed in types section for certain
       // extended instruction sets. This will be checked separately.
       if (current_section == kLayoutTypes) return kLayoutTypes;
+      // SpvOpExtInst is allowed in graph definitions.
+      if (current_section == kLayoutGraphDefinitions)
+        return kLayoutGraphDefinitions;
       return kLayoutFunctionDefinitions;
     case spv::Op::OpLine:
     case spv::Op::OpNoLine:
@@ -99,6 +102,16 @@ ModuleLayoutSection InstructionLayoutSection(
       return kLayoutFunctionDefinitions;
     case spv::Op::OpSamplerImageAddressingModeNV:
       return kLayoutSamplerImageAddressMode;
+    case spv::Op::OpGraphEntryPointARM:
+    case spv::Op::OpGraphARM:
+    case spv::Op::OpGraphInputARM:
+    case spv::Op::OpGraphSetOutputARM:
+    case spv::Op::OpGraphEndARM:
+      return kLayoutGraphDefinitions;
+    case spv::Op::OpCompositeExtract:
+      if (current_section == kLayoutGraphDefinitions)
+        return kLayoutGraphDefinitions;
+      return kLayoutFunctionDefinitions;
     default:
       break;
   }
@@ -174,6 +187,7 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       pointer_size_and_alignment_(0),
       sampler_image_addressing_mode_(0),
       in_function_(false),
+      in_graph_(false),
       num_of_warnings_(0),
       max_num_of_warnings_(max_warnings) {
   assert(opt && "Validator options may not be Null.");
@@ -362,6 +376,8 @@ bool ValidationState_t::in_block() const {
          module_functions_.back().current_block() != nullptr;
 }
 
+bool ValidationState_t::in_graph_body() const { return in_graph_; }
+
 void ValidationState_t::RegisterCapability(spv::Capability cap) {
   // Avoid redundant work.  Otherwise the recursion could induce work
   // quadrdatic in the capability dependency depth. (Ok, not much, but
@@ -530,6 +546,18 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
   current_function().RegisterFunctionEnd();
   in_function_ = false;
   return SPV_SUCCESS;
+}
+
+void ValidationState_t::RegisterGraph(uint32_t id, uint32_t type_id) {
+  assert(in_graph_body() == false);
+  in_graph_ = true;
+  (void)id;
+  (void)type_id;
+}
+
+void ValidationState_t::RegisterGraphEnd() {
+  assert(in_graph_body());
+  in_graph_ = false;
 }
 
 Instruction* ValidationState_t::AddOrderedInstruction(
@@ -878,6 +906,7 @@ uint32_t ValidationState_t::GetComponentType(uint32_t id) const {
       return id;
 
     case spv::Op::OpTypeArray:
+    case spv::Op::OpTypeRuntimeArray:
       return inst->word(2);
 
     case spv::Op::OpTypeVector:
@@ -958,6 +987,23 @@ bool ValidationState_t::IsScalarType(uint32_t id) const {
   return IsIntScalarType(id) || IsFloatScalarType(id) || IsBoolScalarType(id);
 }
 
+bool ValidationState_t::IsArrayType(uint32_t id, uint64_t length) const {
+  const Instruction* inst = FindDef(id);
+  if (!inst || inst->opcode() != spv::Op::OpTypeArray) {
+    return false;
+  }
+  if (length != 0) {
+    const auto len_id = inst->GetOperandAs<uint32_t>(2);
+    const auto len = FindDef(len_id);
+    uint64_t len_value = 0;
+    if (!len || !spvOpcodeIsConstant(len->opcode()) ||
+        (EvalConstantValUint64(len_id, &len_value) && (length != len_value))) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool ValidationState_t::IsBfloat16ScalarType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
   if (inst && inst->opcode() == spv::Op::OpTypeFloat) {
@@ -1021,16 +1067,7 @@ bool ValidationState_t::IsFloatScalarType(uint32_t id) const {
 }
 
 bool ValidationState_t::IsFloatArrayType(uint32_t id) const {
-  const Instruction* inst = FindDef(id);
-  if (!inst) {
-    return false;
-  }
-
-  if (inst->opcode() == spv::Op::OpTypeArray) {
-    return IsFloatScalarType(GetComponentType(id));
-  }
-
-  return false;
+  return IsArrayType(id) && IsFloatScalarType(GetComponentType(id));
 }
 
 bool ValidationState_t::IsFloatVectorType(uint32_t id) const {
@@ -1077,36 +1114,27 @@ bool ValidationState_t::IsFloatScalarOrVectorType(uint32_t id) const {
   return false;
 }
 
-bool ValidationState_t::IsIntScalarType(uint32_t id) const {
+bool ValidationState_t::IsIntScalarType(uint32_t id, uint32_t width) const {
   const Instruction* inst = FindDef(id);
-  return inst && inst->opcode() == spv::Op::OpTypeInt;
+  bool is_int = inst && inst->opcode() == spv::Op::OpTypeInt;
+  if (!is_int) {
+    return false;
+  }
+  if ((width != 0) && (width != inst->word(2))) {
+    return false;
+  }
+  return true;
+}
+
+bool ValidationState_t::IsIntScalarTypeWithSignedness(
+    uint32_t id, uint32_t signedness) const {
+  const Instruction* inst = FindDef(id);
+  return inst && inst->opcode() == spv::Op::OpTypeInt &&
+         inst->word(3) == signedness;
 }
 
 bool ValidationState_t::IsIntArrayType(uint32_t id, uint64_t length) const {
-  const Instruction* inst = FindDef(id);
-  if (!inst) {
-    return false;
-  }
-
-  if (inst->opcode() != spv::Op::OpTypeArray) {
-    return false;
-  }
-
-  if (!IsIntScalarType(GetComponentType(id))) {
-    return false;
-  }
-
-  if (length != 0) {
-    const auto len_id = inst->GetOperandAs<uint32_t>(2);
-    const auto len = FindDef(len_id);
-    uint64_t len_value = 0;
-    if (!len || !spvOpcodeIsConstant(len->opcode()) ||
-        (EvalConstantValUint64(len_id, &len_value) && (length != len_value))) {
-      return false;
-    }
-  }
-
-  return true;
+  return IsArrayType(id, length) && IsIntScalarType(GetComponentType(id));
 }
 
 bool ValidationState_t::IsIntVectorType(uint32_t id) const {
@@ -1140,8 +1168,7 @@ bool ValidationState_t::IsIntScalarOrVectorType(uint32_t id) const {
 }
 
 bool ValidationState_t::IsUnsignedIntScalarType(uint32_t id) const {
-  const Instruction* inst = FindDef(id);
-  return inst && inst->opcode() == spv::Op::OpTypeInt && inst->word(3) == 0;
+  return IsIntScalarTypeWithSignedness(id, 0);
 }
 
 bool ValidationState_t::IsUnsignedIntVectorType(uint32_t id) const {
@@ -1409,6 +1436,11 @@ bool ValidationState_t::IsUnsignedIntCooperativeVectorNVType(
     uint32_t id) const {
   if (!IsCooperativeVectorNVType(id)) return false;
   return IsUnsignedIntScalarType(FindDef(id)->word(2));
+}
+
+bool ValidationState_t::IsTensorType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  return inst && inst->opcode() == spv::Op::OpTypeTensorARM;
 }
 
 spv_result_t ValidationState_t::CooperativeMatrixShapesMatch(
