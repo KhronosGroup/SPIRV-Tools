@@ -294,6 +294,12 @@ if (${SPIRV_TIMER_ENABLED})
     ${CMAKE_CURRENT_SOURCE_DIR}/util/timer.cpp)
 endif()
 
+if (SPIRV_TOOLS_USE_MIMALLOC AND NOT SPIRV_TOOLS_BUILD_STATIC)
+  set(SPIRV_SOURCES
+      ${SPIRV_SOURCES}
+      ${CMAKE_CURRENT_SOURCE_DIR}/mimalloc.cpp)
+endif()
+
 # The software_version.cpp file includes build-version.inc.
 # Rebuild the software_version.cpp object file if it is older than
 # build-version.inc or whenever build-version.inc itself is out of
@@ -330,6 +336,9 @@ endfunction()
 # Always build ${SPIRV_TOOLS}-shared. This is expected distro packages, and
 # unlike the other SPIRV_TOOLS target, defaults to hidden symbol visibility.
 add_library(${SPIRV_TOOLS}-shared SHARED ${SPIRV_SOURCES})
+if (SPIRV_TOOLS_USE_MIMALLOC)
+  target_link_libraries(${SPIRV_TOOLS}-shared PRIVATE mimalloc-static)
+endif()
 spirv_tools_default_target_options(${SPIRV_TOOLS}-shared)
 set_target_properties(${SPIRV_TOOLS}-shared PROPERTIES CXX_VISIBILITY_PRESET hidden)
 target_compile_definitions(${SPIRV_TOOLS}-shared
@@ -354,6 +363,9 @@ if(SPIRV_TOOLS_BUILD_STATIC)
   set(SPIRV_TOOLS_TARGETS ${SPIRV_TOOLS}-static ${SPIRV_TOOLS}-shared)
 else()
   add_library(${SPIRV_TOOLS} ${SPIRV_TOOLS_LIBRARY_TYPE} ${SPIRV_SOURCES})
+  if (SPIRV_TOOLS_USE_MIMALLOC)
+    target_link_libraries(${SPIRV_TOOLS} PRIVATE mimalloc-static)
+  endif()
   spirv_tools_default_target_options(${SPIRV_TOOLS})
   set(SPIRV_TOOLS_TARGETS ${SPIRV_TOOLS} ${SPIRV_TOOLS}-shared)
 endif()
@@ -362,12 +374,15 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   find_library(LIBRT rt)
   if(LIBRT)
     foreach(target ${SPIRV_TOOLS_TARGETS})
-      target_link_libraries(${target} rt)
+      target_link_libraries(${target} PUBLIC rt)
     endforeach()
   endif()
 endif()
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
+  if (SPIRV_TOOLS_USE_MIMALLOC AND NOT SPIRV_TOOLS_BUILD_STATIC)
+    list(APPEND SPIRV_TOOLS_TARGETS mimalloc-static)
+  endif()
   install(TARGETS ${SPIRV_TOOLS_TARGETS} EXPORT ${SPIRV_TOOLS}Targets)
   export(EXPORT ${SPIRV_TOOLS}Targets FILE ${SPIRV_TOOLS}Target.cmake)
 
