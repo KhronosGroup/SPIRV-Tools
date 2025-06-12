@@ -131,6 +131,8 @@ cc_library(
         "source/*.cpp",
         "source/util/*.cpp",
         "source/val/*.cpp",
+    ], exclude = [
+        "source/mimalloc.cpp"
     ]) + [
         ":build_version_inc",
         ":gen_compressed_tables",
