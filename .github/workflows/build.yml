@@ -25,4 +25,4 @@ jobs:
       uses: actions/upload-artifact@main
       with:
         name: libs
-        path: build/./lib
+        path: build/lib
