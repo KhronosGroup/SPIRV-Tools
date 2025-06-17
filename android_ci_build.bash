@@ -1,5 +1,8 @@
 #!/bin/bash
 
+
+python3 utils/git-sync-deps
+
 cmake_build () {
   ANDROID_ABI=$1
   mkdir -p build
