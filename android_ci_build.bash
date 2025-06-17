@@ -1,7 +1,4 @@
 #!/bin/bash
-# set -e
-
-python3 utils/git-sync-deps
 
 cmake_build () {
   ANDROID_ABI=$1
@@ -11,6 +8,12 @@ cmake_build () {
   cmake --build . --config Release --parallel 4
   cmake --install . --prefix .
   $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip $GITHUB_WORKSPACE/build/./lib/libSPIRV-Tools-shared.so
+  $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip $GITHUB_WORKSPACE/build/lib/libSPIRV-Tools.a
+  $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip $GITHUB_WORKSPACE/build/lib/libSPIRV-Tools-reduce.a
+  $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip $GITHUB_WORKSPACE/build/lib/libSPIRV-Tools-opt.a
+  $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip $GITHUB_WORKSPACE/build/lib/libSPIRV-Tools-lint.a
+  $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip $GITHUB_WORKSPACE/build/lib/libSPIRV-Tools-link.a
+  $ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip $GITHUB_WORKSPACE/build/lib/libSPIRV-Tools-diff.a
 }
 
 cmake_build arm64-v8a
