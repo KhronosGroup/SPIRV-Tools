@@ -52,6 +52,7 @@ action("spvtools_core_tables") {
   f8=rebase_path("${grammar_dir}/extinst.spv-amd-shader-ballot.grammar.json", root_build_dir)
   f9=rebase_path("${grammar_dir}/extinst.spv-amd-shader-explicit-vertex-parameter.grammar.json", root_build_dir)
   f10=rebase_path("${grammar_dir}/extinst.spv-amd-shader-trinary-minmax.grammar.json", root_build_dir)
+  f11=rebase_path("${grammar_dir}/extinst.tosa.001000.1.grammar.json", root_build_dir)
 
   sources = [
     "utils/Table/__init__.py",
@@ -70,6 +71,7 @@ action("spvtools_core_tables") {
     "${grammar_dir}/extinst.spv-amd-shader-ballot.grammar.json",
     "${grammar_dir}/extinst.spv-amd-shader-explicit-vertex-parameter.grammar.json",
     "${grammar_dir}/extinst.spv-amd-shader-trinary-minmax.grammar.json",
+    "${grammar_dir}/extinst.tosa.001000.1.grammar.json",
     "${grammar_dir}/spirv.core.grammar.json",
   ]
   outputs = [
@@ -90,6 +92,7 @@ action("spvtools_core_tables") {
     "--extinst=,${f8}",
     "--extinst=,${f9}",
     "--extinst=,${f10}",
+    "--extinst=TOSA_,${f11}",
     "--core-tables-body-output",
     rebase_path(core_tables_body_file, root_build_dir),
     "--core-tables-header-output",
@@ -1191,6 +1194,7 @@ if (build_with_chromium && spvtools_build_executables) {
       "test/ext_inst.debuginfo_test.cpp",
       "test/ext_inst.glsl_test.cpp",
       "test/ext_inst.opencl_test.cpp",
+      "test/ext_inst.tosa_test.cpp",
       "test/fix_word_test.cpp",
       "test/generator_magic_number_test.cpp",
       "test/hex_float_test.cpp",
