@@ -431,6 +431,7 @@ cc_library(
         ":tools_io",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+        "@spirv_headers//:spirv_common_headers",
     ],
 ) for f in glob(
     [
