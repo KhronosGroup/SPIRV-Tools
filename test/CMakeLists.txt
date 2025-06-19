@@ -108,6 +108,7 @@ set(TEST_SOURCES
   ext_inst.glsl_test.cpp
   ext_inst.non_semantic_test.cpp
   ext_inst.opencl_test.cpp
+  ext_inst.tosa_test.cpp
   ext_inst_lookup_test.cpp
   fix_word_test.cpp
   generator_magic_number_test.cpp
