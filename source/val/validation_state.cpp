@@ -2525,8 +2525,6 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpImage-04777);
     case 4780:
       return VUID_WRAP(VUID-StandaloneSpirv-Result-04780);
-    case 4781:
-      return VUID_WRAP(VUID-StandaloneSpirv-Base-04781);
     case 4915:
       return VUID_WRAP(VUID-StandaloneSpirv-Location-04915);
     case 4916:
@@ -2668,10 +2666,37 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeFloat-10370);
     case 10583:
       return VUID_WRAP(VUID-StandaloneSpirv-Component-10583);
+    case 10589:
+      return VUID_WRAP(VUID-CullPrimitiveEXT-CullPrimitiveEXT-10589);
+    case 10590:
+      return VUID_WRAP(VUID-CullPrimitiveEXT-CullPrimitiveEXT-10590);
+    case 10591:
+      return VUID_WRAP(VUID-CullPrimitiveEXT-CullPrimitiveEXT-10591);
+    case 10592:
+      return VUID_WRAP(VUID-Layer-Layer-10592);
+    case 10593:
+      return VUID_WRAP(VUID-Layer-Layer-10593);
+    case 10594:
+      return VUID_WRAP(VUID-Layer-Layer-10594);
+    case 10598:
+      return VUID_WRAP(VUID-PrimitiveShadingRateKHR-PrimitiveShadingRateKHR-10598);
+    case 10599:
+      return VUID_WRAP(VUID-PrimitiveShadingRateKHR-PrimitiveShadingRateKHR-10599);
+    case 10600:
+      return VUID_WRAP(VUID-PrimitiveShadingRateKHR-PrimitiveShadingRateKHR-10600);
+    case 10601:
+      return VUID_WRAP(VUID-ViewportIndex-ViewportIndex-10601);
+    case 10602:
+      return VUID_WRAP(VUID-ViewportIndex-ViewportIndex-10602);
+    case 10603:
+      return VUID_WRAP(VUID-ViewportIndex-ViewportIndex-10603);
     case 10684:
       return VUID_WRAP(VUID-StandaloneSpirv-None-10684);
     case 10685:
       return VUID_WRAP(VUID-StandaloneSpirv-None-10685);
+    case 10824:
+      // This use to be a standalone, but maintenance9 will set allow_vulkan_32_bit_bitwise now
+      return VUID_WRAP(VUID-RuntimeSpirv-None-10824);
     default:
       return "";  // unknown id
   }
