@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "spirv-tools/optimizer.hpp"
+
+#include <sstream>
 #include <string>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "spirv-tools/libspirv.hpp"
-#include "spirv-tools/optimizer.hpp"
 #include "test/opt/pass_fixture.h"
 
 namespace spvtools {
@@ -567,9 +569,32 @@ OpFunctionEnd
                     SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
 
   // Test that the DebugBuildIdentifier is not removed after DCE.
-  bool found = after.find("DebugBuildIdentifier") != std::string::npos;
-  EXPECT_TRUE(found)
+  size_t dbi_pos = after.find("DebugBuildIdentifier");
+  EXPECT_NE(dbi_pos, std::string::npos)
       << "Was expecting the DebugBuildIdentifier to have been kept.";
+  std::string string_id;
+  std::string flags_id;
+  if (dbi_pos != std::string::npos) {
+    std::stringstream ss(after.substr(dbi_pos));
+    std::string temp;
+    char percent;
+    ss >> temp;  // Consume "DebugBuildIdentifier"
+    ss >> percent >> string_id;
+    ss >> percent >> flags_id;
+  }
+
+  EXPECT_FALSE(string_id.empty())
+      << "Could not find string id for DebugBuildIdentifier.";
+  EXPECT_FALSE(flags_id.empty())
+      << "Could not find flags id for DebugBuildIdentifier.";
+
+  bool found =
+      (after.find("%" + string_id + " = OpString") != std::string::npos);
+  EXPECT_TRUE(found)
+      << "Was expecting the DebugBuildIdentifier string to have been kept.";
+  found = (after.find("%" + flags_id + " = OpConstant") != std::string::npos);
+  EXPECT_TRUE(found)
+      << "Was expecting the DebugBuildIdentifier constant to have been kept.";
 }
 
 }  // namespace
