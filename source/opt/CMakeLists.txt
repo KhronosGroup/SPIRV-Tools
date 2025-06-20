@@ -104,6 +104,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   reflect.h
   register_pressure.h
   relax_float_ops_pass.h
+  canonicalize_ids_pass.h
   remove_dontinline_pass.h
   remove_duplicates_pass.h
   remove_unused_interface_variables_pass.h
@@ -222,6 +223,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   redundancy_elimination.cpp
   register_pressure.cpp
   relax_float_ops_pass.cpp
+  canonicalize_ids_pass.cpp
   remove_dontinline_pass.cpp
   remove_duplicates_pass.cpp
   remove_unused_interface_variables_pass.cpp
