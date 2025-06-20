@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "spirv-tools/optimizer.hpp"
+
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
 
 #include "gmock/gmock.h"
 #include "spirv-tools/libspirv.hpp"
-#include "spirv-tools/optimizer.hpp"
 #include "test/opt/pass_fixture.h"
 
 namespace spvtools {
@@ -587,7 +588,8 @@ OpFunctionEnd
   EXPECT_FALSE(flags_id.empty())
       << "Could not find flags id for DebugBuildIdentifier.";
 
-  bool found = (after.find("%" + string_id + " = OpString") != std::string::npos);
+  bool found =
+      (after.find("%" + string_id + " = OpString") != std::string::npos);
   EXPECT_TRUE(found)
       << "Was expecting the DebugBuildIdentifier string to have been kept.";
   found = (after.find("%" + flags_id + " = OpConstant") != std::string::npos);

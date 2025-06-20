@@ -920,10 +920,10 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
       // The debug build identifier refers to other instructions that
       // can potentially be removed, they also need to be kept alive.
       dbg.ForEachInId([this](const uint32_t* id) {
-          Instruction* ref_inst = get_def_use_mgr()->GetDef(*id);
-          if (ref_inst) {
-              live_insts_.Set(ref_inst->unique_id());
-          }
+        Instruction* ref_inst = get_def_use_mgr()->GetDef(*id);
+        if (ref_inst) {
+          live_insts_.Set(ref_inst->unique_id());
+        }
       });
       continue;
     }
