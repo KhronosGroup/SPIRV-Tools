@@ -16,7 +16,7 @@ vars = {
 
   'spirv_headers_revision': '2a611a970fdbc41ac2e3e328802aed9985352dca',
 
-  'mimalloc_revision': '51c09e7b6a0ac5feeba998710f00c7dd7aa67bbf',
+  'mimalloc_revision': '09a27098aa6e9286518bd9c74e6ffa7199c3f04e',
 }
 
 deps = {
