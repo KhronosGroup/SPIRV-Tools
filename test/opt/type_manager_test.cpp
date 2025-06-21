@@ -1248,6 +1248,35 @@ TEST(TypeManager, CircularPointerToStruct) {
   EXPECT_EQ(id, 1201);
 }
 
+TEST(TypeManager, AttachLinkageDecoration) {
+  const std::string text = R"(
+      OpCapability Shader
+      OpCapability Linkage
+      OpMemoryModel Logical GLSL450
+      OpDecorate %1000 LinkageAttributes "_1000" Export
+       %800 = OpTypeInt 32 0
+      %1000 = OpTypeStruct %800
+      %1200 = OpTypeStruct %800
+  )";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_5, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  TypeManager manager(nullptr, context.get());
+
+  constexpr uint32_t source_id = 1000u;
+  constexpr uint32_t target_id = 1200u;
+  std::vector<Instruction*> decorations =
+      context->get_decoration_mgr()->GetDecorationsFor(source_id, true);
+  Type* type = context->get_type_mgr()->GetType(target_id);
+  for (auto dec : decorations) {
+    manager.AttachDecoration(*dec, type);
+  }
+  EXPECT_FALSE(type->decoration_empty());
+  EXPECT_TRUE(
+      type->HasSameDecorations(context->get_type_mgr()->GetType(source_id)));
+}
+
 }  // namespace
 }  // namespace analysis
 }  // namespace opt
