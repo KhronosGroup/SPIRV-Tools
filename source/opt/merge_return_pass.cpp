@@ -828,10 +828,12 @@ BasicBlock* MergeReturnPass::CreateContinueTarget(uint32_t header_label_id) {
 
 bool MergeReturnPass::CreateSingleCaseSwitch(BasicBlock* merge_target) {
   // Insert the switch before any code is run.  We have to split the entry
-  // block to make sure the OpVariable instructions remain in the entry block.
+  // block to make sure the OpVariable instructions and DebugFunctionDefinition
+  // instructions remain in the entry block.
   BasicBlock* start_block = &*function_->begin();
   auto split_pos = start_block->begin();
-  while (split_pos->opcode() == spv::Op::OpVariable) {
+  while ((split_pos->opcode() == spv::Op::OpVariable) ||
+         (split_pos->GetShader100DebugOpcode() == NonSemanticShaderDebugInfo100DebugFunctionDefinition)) {
     ++split_pos;
   }
 
