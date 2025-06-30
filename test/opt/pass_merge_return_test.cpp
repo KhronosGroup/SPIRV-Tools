@@ -2606,6 +2606,8 @@ TEST_F(MergeReturnPassTest, DebugFunctionDefinitionStillInEntryBlock) {
 ; CHECK: OpLabel
 ; CHECK: DebugFunctionDefinition
 ; CHECK: OpSelectionMerge
+; CHECK: OpCompositeExtract
+; CHECK: OpUGreaterThan
         OpCapability Shader
         OpExtension "SPV_KHR_non_semantic_info"
         %2 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
@@ -2640,11 +2642,11 @@ TEST_F(MergeReturnPassTest, DebugFunctionDefinitionStillInEntryBlock) {
         ; Function main
         %main = OpFunction %void None %12
         %13 = OpLabel
-        %19 = OpExtInst %void %2 DebugFunctionDefinition %16 %main
         %20 = OpExtInst %void %2 DebugScope %16
         %29 = OpLoad %v3uint %gl_GlobalInvocationID
         %37 = OpCompositeExtract %uint %29 0
         %39 = OpUGreaterThan %bool %37 %uint_3
+        %19 = OpExtInst %void %2 DebugFunctionDefinition %16 %main
         OpSelectionMerge %21 None
         OpBranchConditional %39 %23 %21
         %21 = OpLabel
