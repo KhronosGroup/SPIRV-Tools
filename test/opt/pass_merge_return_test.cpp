@@ -2599,7 +2599,8 @@ TEST_F(MergeReturnPassTest, OverflowTest1) {
 }
 
 TEST_F(MergeReturnPassTest, DebugFunctionDefinitionStillInEntryBlock) {
-  // Make sure that the DebugFunctionDefinition instruction is still in the entry block
+  // Make sure that the DebugFunctionDefinition instruction is still in the
+  // entry block
   const std::string text =
       R"(
 ; CHECK: OpFunction
