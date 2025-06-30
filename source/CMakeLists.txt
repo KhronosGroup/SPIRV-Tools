@@ -31,6 +31,7 @@ set(EI_amd_ballot "${GRAMMAR_DIR}/extinst.spv-amd-shader-ballot.grammar.json")
 set(EI_ns_debuginfo "${GRAMMAR_DIR}/extinst.nonsemantic.shader.debuginfo.100.grammar.json")
 set(EI_ns_clspvreflect "${GRAMMAR_DIR}/extinst.nonsemantic.clspvreflection.grammar.json")
 set(EI_ns_vkspreflect "${GRAMMAR_DIR}/extinst.nonsemantic.vkspreflection.grammar.json")
+set(EI_tosa_001000_1 "${GRAMMAR_DIR}/extinst.tosa.001000.1.grammar.json")
 
 set(CORE_TABLES_BODY_INC_FILE ${spirv-tools_BINARY_DIR}/core_tables_body.inc)
 set(CORE_TABLES_HEADER_INC_FILE ${spirv-tools_BINARY_DIR}/core_tables_header.inc)
@@ -50,6 +51,7 @@ add_custom_command(OUTPUT ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_
       --extinst=,${EI_debuginfo}
       --extinst=,${EI_ns_clspvreflect}
       --extinst=,${EI_ns_vkspreflect}
+      --extinst=TOSA_,${EI_tosa_001000_1}
     DEPENDS ${GGT_SCRIPT}
             ${SPIRV_CORE_GRAMMAR_JSON_FILE}
 	    ${EI_glsl}
@@ -63,6 +65,7 @@ add_custom_command(OUTPUT ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_
 	    ${EI_debuginfo}
 	    ${EI_ns_clspvreflect}
 	    ${EI_ns_vkspreflect}
+            ${EI_tosa_001000_1}
     COMMENT "Generate grammar tables")
 add_custom_target(spirv-tools-tables DEPENDS ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_FILE})
 
@@ -294,6 +297,12 @@ if (${SPIRV_TIMER_ENABLED})
     ${CMAKE_CURRENT_SOURCE_DIR}/util/timer.cpp)
 endif()
 
+if (SPIRV_TOOLS_USE_MIMALLOC AND NOT SPIRV_TOOLS_BUILD_STATIC)
+  set(SPIRV_SOURCES
+      ${SPIRV_SOURCES}
+      ${CMAKE_CURRENT_SOURCE_DIR}/mimalloc.cpp)
+endif()
+
 # The software_version.cpp file includes build-version.inc.
 # Rebuild the software_version.cpp object file if it is older than
 # build-version.inc or whenever build-version.inc itself is out of
@@ -330,6 +339,9 @@ endfunction()
 # Always build ${SPIRV_TOOLS}-shared. This is expected distro packages, and
 # unlike the other SPIRV_TOOLS target, defaults to hidden symbol visibility.
 add_library(${SPIRV_TOOLS}-shared SHARED ${SPIRV_SOURCES})
+if (SPIRV_TOOLS_USE_MIMALLOC)
+  target_link_libraries(${SPIRV_TOOLS}-shared PRIVATE mimalloc-static)
+endif()
 spirv_tools_default_target_options(${SPIRV_TOOLS}-shared)
 set_target_properties(${SPIRV_TOOLS}-shared PROPERTIES CXX_VISIBILITY_PRESET hidden)
 target_compile_definitions(${SPIRV_TOOLS}-shared
@@ -354,6 +366,9 @@ if(SPIRV_TOOLS_BUILD_STATIC)
   set(SPIRV_TOOLS_TARGETS ${SPIRV_TOOLS}-static ${SPIRV_TOOLS}-shared)
 else()
   add_library(${SPIRV_TOOLS} ${SPIRV_TOOLS_LIBRARY_TYPE} ${SPIRV_SOURCES})
+  if (SPIRV_TOOLS_USE_MIMALLOC)
+    target_link_libraries(${SPIRV_TOOLS} PRIVATE mimalloc-static)
+  endif()
   spirv_tools_default_target_options(${SPIRV_TOOLS})
   set(SPIRV_TOOLS_TARGETS ${SPIRV_TOOLS} ${SPIRV_TOOLS}-shared)
 endif()
@@ -362,12 +377,15 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   find_library(LIBRT rt)
   if(LIBRT)
     foreach(target ${SPIRV_TOOLS_TARGETS})
-      target_link_libraries(${target} rt)
+      target_link_libraries(${target} PUBLIC rt)
     endforeach()
   endif()
 endif()
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
+  if (SPIRV_TOOLS_USE_MIMALLOC AND NOT SPIRV_TOOLS_BUILD_STATIC)
+    list(APPEND SPIRV_TOOLS_TARGETS mimalloc-static)
+  endif()
   install(TARGETS ${SPIRV_TOOLS_TARGETS} EXPORT ${SPIRV_TOOLS}Targets)
   export(EXPORT ${SPIRV_TOOLS}Targets FILE ${SPIRV_TOOLS}Target.cmake)
 

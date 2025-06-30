@@ -1067,7 +1067,11 @@ void TypeManager::AttachDecoration(const Instruction& inst, Type* type) {
       const auto count = inst.NumOperands();
       std::vector<uint32_t> data;
       for (uint32_t i = 1; i < count; ++i) {
-        data.push_back(inst.GetSingleWordOperand(i));
+        // LinkageAttributes has a literal string as an operand, which is a
+        // varible length word. We cannot assume that all operands are single
+        // word.
+        const Operand::OperandData& words = inst.GetOperand(i).words;
+        data.insert(data.end(), words.begin(), words.end());
       }
       type->AddDecoration(std::move(data));
     } break;

@@ -10394,7 +10394,7 @@ TEST_F(ValidateDecorations, ComponentMultipleArrays) {
                OpDecorate %gl_PerVertex Block
                OpDecorate %FOO Component 2
                OpDecorate %FOO Location 1
-               OpDecorate %FOO0 Location 4
+               OpDecorate %FOO0 Location 1
                OpDecorate %FOO0 Component 0
        %void = OpTypeVoid
           %3 = OpTypeFunction %void

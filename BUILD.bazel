@@ -52,6 +52,7 @@ create_grammar_tables_target(
         ExtInst("opencl.std.100", target="spirv_opencl_grammar_unified1"),
         ExtInst("opencl.debuginfo.100", prefix="CLDEBUG100_"),
         ExtInst("nonsemantic.shader.debuginfo.100", prefix="SHDEBUG100_"),
+        ExtInst("tosa.001000.1", target="spirv_ext_inst_tosa_001000_1", prefix="TOSA_"),
     ] + [ExtInst(e) for e in [
             "spv-amd-shader-explicit-vertex-parameter",
             "spv-amd-shader-trinary-minmax",
@@ -130,6 +131,8 @@ cc_library(
         "source/*.cpp",
         "source/util/*.cpp",
         "source/val/*.cpp",
+    ], exclude = [
+        "source/mimalloc.cpp"
     ]) + [
         ":build_version_inc",
         ":gen_compressed_tables",
@@ -431,6 +434,7 @@ cc_library(
         ":tools_io",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+        "@spirv_headers//:spirv_common_headers",
     ],
 ) for f in glob(
     [
