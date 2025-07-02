@@ -37,8 +37,6 @@ fi
 
 cd $ROOT_DIR
 
-git checkout ${BUILD_SHA}
-
 function clean_dir() {
   dir=$1
   if [[ -d "$dir" ]]; then
@@ -93,6 +91,7 @@ if [ $TOOL = "cmake" ]; then
   cd "$ROOT_DIR/build"
 
   # Invoke the build.
+  BUILD_SHA=${KOKORO_GITHUB_COMMIT:-$KOKORO_GITHUB_PULL_REQUEST_COMMIT}
   echo $(date): Starting build...
   cmake -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3 -GNinja -DCMAKE_INSTALL_PREFIX=$KOKORO_ARTIFACTS_DIR/install -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DRE2_BUILD_TESTING=OFF -DSPIRV_BUILD_FUZZER=ON $ADDITIONAL_CMAKE_FLAGS ..
 
