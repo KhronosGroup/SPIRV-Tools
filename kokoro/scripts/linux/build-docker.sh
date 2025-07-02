@@ -15,8 +15,8 @@
 #
 # Linux Build Script.
 
-# Fail on any error or undefined variable.
-set -eu
+# Fail on any error.
+set -e
 # Display commands being run.
 set -x
 
