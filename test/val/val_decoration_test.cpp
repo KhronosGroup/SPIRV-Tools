@@ -6740,7 +6740,7 @@ TEST_F(ValidateDecorations, NonWritablePointerParamButWrongTypeBad) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "Target of NonReadable or NonWritable decoration is invalid: must "
+          "Target of NonWritable decoration is invalid: must "
           "point to a storage image, tensor variable in UniformConstant "
           "storage class, uniform block, or storage "
           "buffer\n  %param_p = OpFunctionParameter %_ptr_Private_float"));
@@ -6769,11 +6769,10 @@ TEST_F(ValidateDecorations, NonWritableVarSampledImageBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Target of NonReadable or NonWritable decoration is invalid: must "
-          "point to a storage image, tensor variable in UniformConstant "
-          "storage class, uniform block, or storage "
-          "buffer\n  %var_imsam"));
+      HasSubstr("Target of NonWritable decoration is invalid: must "
+                "point to a storage image, tensor variable in UniformConstant "
+                "storage class, uniform block, or storage "
+                "buffer\n  %var_imsam"));
 }
 
 TEST_F(ValidateDecorations, NonWritableVarUboGood) {
@@ -6858,11 +6857,24 @@ TEST_F(ValidateDecorations, NonWritableVarWorkgroupBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Target of NonReadable or NonWritable decoration is invalid: must "
-          "point to a storage image, tensor variable in UniformConstant "
-          "storage class, uniform block, or storage "
-          "buffer\n  %var_wg"));
+      HasSubstr("Target of NonWritable decoration is invalid: must "
+                "point to a storage image, tensor variable in UniformConstant "
+                "storage class, uniform block, or storage "
+                "buffer\n  %var_wg"));
+}
+
+TEST_F(ValidateDecorations, NonReadableVarWorkgroupBad) {
+  std::string spirv =
+      ShaderWithNonReadableNonWritableTarget("%var_wg", false, "NonReadable");
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Target of NonReadable decoration is invalid: must "
+                "point to a storage image, tensor variable in UniformConstant "
+                "storage class, uniform block, or storage "
+                "buffer\n  %var_wg"));
 }
 
 TEST_F(ValidateDecorations, NonWritableVarWorkgroupV14Bad) {
@@ -6872,12 +6884,11 @@ TEST_F(ValidateDecorations, NonWritableVarWorkgroupV14Bad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Target of NonReadable or NonWritable decoration is invalid: must "
-          "point to a storage image, tensor variable in UniformConstant "
-          "storage class, uniform block, storage "
-          "buffer, or variable in Private or Function storage class\n  "
-          "%var_wg"));
+      HasSubstr("Target of NonWritable decoration is invalid: must "
+                "point to a storage image, tensor variable in UniformConstant "
+                "storage class, uniform block, storage "
+                "buffer, or variable in Private or Function storage class\n  "
+                "%var_wg"));
 }
 
 TEST_F(ValidateDecorations, NonWritableVarPrivateBad) {
@@ -6887,11 +6898,10 @@ TEST_F(ValidateDecorations, NonWritableVarPrivateBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Target of NonReadable or NonWritable decoration is invalid: must "
-          "point to a storage image, tensor variable in UniformConstant "
-          "storage class, uniform block, or storage "
-          "buffer\n  %var_priv"));
+      HasSubstr("Target of NonWritable decoration is invalid: must "
+                "point to a storage image, tensor variable in UniformConstant "
+                "storage class, uniform block, or storage "
+                "buffer\n  %var_priv"));
 }
 
 TEST_F(ValidateDecorations, NonWritableVarPrivateV13Bad) {
@@ -6901,11 +6911,10 @@ TEST_F(ValidateDecorations, NonWritableVarPrivateV13Bad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Target of NonReadable or NonWritable decoration is invalid: must "
-          "point to a storage image, tensor variable in UniformConstant "
-          "storage class, uniform block, or storage "
-          "buffer\n  %var_priv"));
+      HasSubstr("Target of NonWritable decoration is invalid: must "
+                "point to a storage image, tensor variable in UniformConstant "
+                "storage class, uniform block, or storage "
+                "buffer\n  %var_priv"));
 }
 
 TEST_F(ValidateDecorations, NonWritableVarPrivateV14Good) {
@@ -6923,11 +6932,10 @@ TEST_F(ValidateDecorations, NonWritableVarPrivateV13TargetV14Bad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Target of NonReadable or NonWritable decoration is invalid: must "
-          "point to a storage image, tensor variable in UniformConstant "
-          "storage class, uniform block, or storage "
-          "buffer\n  %var_priv"));
+      HasSubstr("Target of NonWritable decoration is invalid: must "
+                "point to a storage image, tensor variable in UniformConstant "
+                "storage class, uniform block, or storage "
+                "buffer\n  %var_priv"));
 }
 
 TEST_F(ValidateDecorations, NonWritableVarFunctionBad) {
@@ -6937,11 +6945,10 @@ TEST_F(ValidateDecorations, NonWritableVarFunctionBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Target of NonReadable or NonWritable decoration is invalid: must "
-          "point to a storage image, tensor variable in UniformConstant "
-          "storage class, uniform block, or storage "
-          "buffer\n  %var_func"));
+      HasSubstr("Target of NonWritable decoration is invalid: must "
+                "point to a storage image, tensor variable in UniformConstant "
+                "storage class, uniform block, or storage "
+                "buffer\n  %var_func"));
 }
 
 TEST_F(ValidateDecorations, NonWritableArrayGood) {
@@ -7000,11 +7007,10 @@ TEST_F(ValidateDecorations, NonWritableVarFunctionV13Bad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Target of NonReadable or NonWritable decoration is invalid: must "
-          "point to a storage image, tensor variable in UniformConstant "
-          "storage class, uniform block, or storage "
-          "buffer\n  %var_func"));
+      HasSubstr("Target of NonWritable decoration is invalid: must "
+                "point to a storage image, tensor variable in UniformConstant "
+                "storage class, uniform block, or storage "
+                "buffer\n  %var_func"));
 }
 
 TEST_F(ValidateDecorations, NonWritableVarFunctionV14Good) {
@@ -7022,11 +7028,10 @@ TEST_F(ValidateDecorations, NonWritableVarFunctionV13TargetV14Bad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Target of NonReadable or NonWritable decoration is invalid: must "
-          "point to a storage image, tensor variable in UniformConstant "
-          "storage class, uniform block, or storage "
-          "buffer\n  %var_func"));
+      HasSubstr("Target of NonWritable decoration is invalid: must "
+                "point to a storage image, tensor variable in UniformConstant "
+                "storage class, uniform block, or storage "
+                "buffer\n  %var_func"));
 }
 
 TEST_F(ValidateDecorations, BufferBlockV13ValV14Good) {

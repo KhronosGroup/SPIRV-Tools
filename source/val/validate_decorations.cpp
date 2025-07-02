@@ -1776,7 +1776,11 @@ spv_result_t CheckNonReadableWritableDecorations(ValidationState_t& vstate,
                                                  const Instruction& inst,
                                                  const Decoration& decoration) {
   assert(inst.id() && "Parser ensures the target of the decoration has an ID");
-  bool is_non_writable = decoration == spv::Decoration::NonWritable;
+  const bool is_non_writable =
+      decoration.dec_type() == spv::Decoration::NonWritable;
+  const bool is_non_readable =
+      decoration.dec_type() == spv::Decoration::NonReadable;
+  assert(is_non_writable || is_non_readable);
 
   if (decoration.struct_member_index() == Decoration::kInvalidMember) {
     // The target must be a memory object declaration.
@@ -1788,7 +1792,9 @@ spv_result_t CheckNonReadableWritableDecorations(ValidationState_t& vstate,
         opcode != spv::Op::OpFunctionParameter &&
         opcode != spv::Op::OpRawAccessChainNV) {
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-             << "Target of NonReadable or NonWritable decoration must be a "
+             << "Target of "
+             << (is_non_writable ? "NonWritable" : "NonReadable")
+             << " decoration must be a "
                 "memory object "
                 "declaration (a variable or a function parameter)";
     }
@@ -1813,7 +1819,9 @@ spv_result_t CheckNonReadableWritableDecorations(ValidationState_t& vstate,
         opcode == spv::Op::OpRawAccessChainNV) {
     } else {
       return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-             << "Target of NonReadable or NonWritable decoration is invalid: "
+             << "Target of "
+             << (is_non_writable ? "NonWritable" : "NonReadable")
+             << " decoration is invalid: "
                 "must point to a "
                 "storage image, tensor variable in UniformConstant storage "
                 "class, uniform block, "
