@@ -1778,9 +1778,8 @@ spv_result_t CheckNonReadableWritableDecorations(ValidationState_t& vstate,
   assert(inst.id() && "Parser ensures the target of the decoration has an ID");
   const bool is_non_writable =
       decoration.dec_type() == spv::Decoration::NonWritable;
-  const bool is_non_readable =
-      decoration.dec_type() == spv::Decoration::NonReadable;
-  assert(is_non_writable || is_non_readable);
+  assert(is_non_writable ||
+         decoration.dec_type() == spv::Decoration::NonReadable);
 
   if (decoration.struct_member_index() == Decoration::kInvalidMember) {
     // The target must be a memory object declaration.
