@@ -438,6 +438,37 @@ spv_result_t ValidateGraphSetOutput(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+bool InputOutputInstructionsHaveDuplicateIndices(
+    ValidationState_t& _, std::deque<const Instruction*>& inout_insts,
+    const Instruction** first_dup) {
+  std::set<std::pair<uint64_t, uint64_t>> inout_element_indices;
+  for (auto const inst : inout_insts) {
+    const bool is_input = inst->opcode() == spv::Op::OpGraphInputARM;
+    bool has_element_index = inst->operands().size() > (is_input ? 3 : 2);
+    uint64_t inout_index;
+    if (!_.EvalConstantValUint64(inst->GetOperandAs<uint32_t>(is_input ? 2 : 1),
+                                 &inout_index)) {
+      continue;
+    }
+    uint64_t element_index = -1;  // -1 means no ElementIndex
+    if (has_element_index) {
+      if (!_.EvalConstantValUint64(
+              inst->GetOperandAs<uint32_t>(is_input ? 3 : 2), &element_index)) {
+        continue;
+      }
+    }
+    auto inout_element_pair = std::make_pair(inout_index, element_index);
+    auto inout_noelement_pair = std::make_pair(inout_index, -1);
+    if (inout_element_indices.count(inout_element_pair) ||
+        inout_element_indices.count(inout_noelement_pair)) {
+      *first_dup = inst;
+      return true;
+    }
+    inout_element_indices.insert(inout_element_pair);
+  }
+  return false;
+}
+
 spv_result_t ValidateGraphEnd(ValidationState_t& _, const Instruction* inst) {
   size_t end_inst_num = inst->LineNum() - 1;
 
@@ -460,62 +491,26 @@ spv_result_t ValidateGraphEnd(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  const Instruction* first_dup;
+
   // Check that there are no duplicate InputIndex and ElementIndex values
-  std::set<std::pair<uint64_t, uint64_t>> input_element_indices;
-  for (auto const input_inst : graph_inputs) {
-    bool has_element_index = input_inst->words().size() > 4;
-    uint64_t input_index;
-    if (!_.EvalConstantValUint64(input_inst->GetOperandAs<uint32_t>(2),
-                                 &input_index)) {
-      continue;
-    }
-    uint64_t element_index = -1;  // -1 means no ElementIndex
-    if (has_element_index) {
-      if (!_.EvalConstantValUint64(input_inst->GetOperandAs<uint32_t>(3),
-                                   &element_index)) {
-        continue;
-      }
-    }
-    auto input_element_pair = std::make_pair(input_index, element_index);
-    auto input_noelement_pair = std::make_pair(input_index, -1);
-    if (input_element_indices.count(input_element_pair) ||
-        input_element_indices.count(input_noelement_pair)) {
-      return _.diag(SPV_ERROR_INVALID_DATA, input_inst)
-             << "Two OpGraphInputARM instructions with the same InputIndex "
-                "must not be part of the same "
-             << "graph definition unless ElementIndex is present in both with "
-                "different values.";
-    }
-    input_element_indices.insert(input_element_pair);
+  if (InputOutputInstructionsHaveDuplicateIndices(_, graph_inputs,
+                                                  &first_dup)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, first_dup)
+           << "Two OpGraphInputARM instructions with the same InputIndex "
+              "must not be part of the same "
+           << "graph definition unless ElementIndex is present in both with "
+              "different values.";
   }
 
   // Check that there are no duplicate OutputIndex and ElementIndex values
-  std::set<std::pair<uint64_t, uint64_t>> output_element_indices;
-  for (auto const output_inst : graph_outputs) {
-    bool has_element_index = output_inst->words().size() > 3;
-    uint64_t output_index;
-    if (!_.EvalConstantValUint64(output_inst->GetOperandAs<uint32_t>(1),
-                                 &output_index)) {
-      continue;
-    }
-    uint64_t element_index = -1;  // -1 means no ElementIndex
-    if (has_element_index) {
-      if (!_.EvalConstantValUint64(output_inst->GetOperandAs<uint32_t>(2),
-                                   &element_index)) {
-        continue;
-      }
-    }
-    auto output_element_pair = std::make_pair(output_index, element_index);
-    auto output_noelement_pair = std::make_pair(output_index, -1);
-    if (output_element_indices.count(output_element_pair) ||
-        output_element_indices.count(output_noelement_pair)) {
-      return _.diag(SPV_ERROR_INVALID_DATA, output_inst)
-             << "Two OpGraphSetOutputARM instructions with the same "
-                "OutputIndex must not be part of the same "
-             << "graph definition unless ElementIndex is present in both with "
-                "different values.";
-    }
-    output_element_indices.insert(output_element_pair);
+  if (InputOutputInstructionsHaveDuplicateIndices(_, graph_outputs,
+                                                  &first_dup)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, first_dup)
+           << "Two OpGraphSetOutputARM instructions with the same "
+              "OutputIndex must not be part of the same "
+           << "graph definition unless ElementIndex is present in both with "
+              "different values.";
   }
 
   return SPV_SUCCESS;
