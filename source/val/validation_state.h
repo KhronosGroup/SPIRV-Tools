@@ -63,6 +63,16 @@ enum ModuleLayoutSection {
   kLayoutGraphDefinitions          /// < Section 2.4 #13 (SPV_ARM_graph)
 };
 
+/// This enum represents the regions of a graph definition. The relative
+/// ordering of the values is significant.
+enum GraphDefinitionRegion {
+  kGraphDefinitionOutside,
+  kGraphDefinitionBegin,
+  kGraphDefinitionInputs,
+  kGraphDefinitionBody,
+  kGraphDefinitionOutputs,
+};
+
 /// This class manages the state of the SPIR-V validation as it is being parsed.
 class ValidationState_t {
  public:
@@ -215,9 +225,8 @@ class ValidationState_t {
   /// instruction
   bool in_block() const;
 
-  /// Returns true if the called after a graph instruction but before the
-  /// graph end instruction
-  bool in_graph_body() const;
+  /// Returns the region of a graph definition we are in.
+  GraphDefinitionRegion graph_definition_region() const;
 
   struct EntryPointDescription {
     std::string name;
@@ -366,12 +375,8 @@ class ValidationState_t {
   /// Register a function end instruction
   spv_result_t RegisterFunctionEnd();
 
-  /// Registers the graph in the module. Subsequent instructions will be
-  /// called against this graph
-  void RegisterGraph();
-
-  /// Register a graph end instruction
-  void RegisterGraphEnd();
+  /// Sets the region of a graph definition we're in.
+  void SetGraphDefinitionRegion(GraphDefinitionRegion region);
 
   /// Returns true if the capability is enabled in the module.
   bool HasCapability(spv::Capability cap) const {
@@ -1028,9 +1033,12 @@ class ValidationState_t {
   /// bit width of sampler/image type variables. Valid values are 32 and 64
   uint32_t sampler_image_addressing_mode_;
 
-  /// NOTE: See correspoding getter functions
+  /// NOTE: See corresponding getter functions
   bool in_function_;
-  bool in_graph_;
+
+  /// Where in a graph definition we are
+  /// NOTE: See corresponding getter/setter functions
+  GraphDefinitionRegion graph_definition_region_;
 
   /// The state of optional features.  These are determined by capabilities
   /// declared by the module and the environment.

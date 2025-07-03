@@ -187,7 +187,7 @@ ValidationState_t::ValidationState_t(const spv_const_context ctx,
       pointer_size_and_alignment_(0),
       sampler_image_addressing_mode_(0),
       in_function_(false),
-      in_graph_(false),
+      graph_definition_region_(kGraphDefinitionOutside),
       num_of_warnings_(0),
       max_num_of_warnings_(max_warnings) {
   assert(opt && "Validator options may not be Null.");
@@ -376,7 +376,9 @@ bool ValidationState_t::in_block() const {
          module_functions_.back().current_block() != nullptr;
 }
 
-bool ValidationState_t::in_graph_body() const { return in_graph_; }
+GraphDefinitionRegion ValidationState_t::graph_definition_region() const {
+  return graph_definition_region_;
+}
 
 void ValidationState_t::RegisterCapability(spv::Capability cap) {
   // Avoid redundant work.  Otherwise the recursion could induce work
@@ -548,14 +550,11 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
   return SPV_SUCCESS;
 }
 
-void ValidationState_t::RegisterGraph() {
-  assert(!in_graph_body());
-  in_graph_ = true;
-}
-
-void ValidationState_t::RegisterGraphEnd() {
-  assert(in_graph_body());
-  in_graph_ = false;
+void ValidationState_t::SetGraphDefinitionRegion(GraphDefinitionRegion region) {
+  assert((region == kGraphDefinitionOutside &&
+          graph_definition_region_ == kGraphDefinitionOutputs) ||
+         region >= graph_definition_region_);
+  graph_definition_region_ = region;
 }
 
 Instruction* ValidationState_t::AddOrderedInstruction(

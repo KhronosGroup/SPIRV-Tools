@@ -314,7 +314,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     return vstate->diag(SPV_ERROR_INVALID_LAYOUT, nullptr)
            << "Missing OpFunctionEnd at end of module.";
 
-  if (vstate->in_graph_body())
+  if (vstate->graph_definition_region() != kGraphDefinitionOutside)
     return vstate->diag(SPV_ERROR_INVALID_LAYOUT, nullptr)
            << "Missing OpGraphEndARM at end of module.";
 

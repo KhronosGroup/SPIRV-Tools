@@ -355,30 +355,60 @@ spv_result_t GraphScopedInstructions(ValidationState_t& _,
   if (_.IsOpcodeInCurrentLayoutSection(opcode)) {
     switch (opcode) {
       case spv::Op::OpGraphARM: {
-        if (_.in_graph_body()) {
+        if (_.graph_definition_region() > kGraphDefinitionOutside) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-                 << "Cannot define a graph in a graph body";
+                 << "Cannot define a graph in a graph";
         }
-        _.RegisterGraph();
+        _.SetGraphDefinitionRegion(kGraphDefinitionBegin);
+      } break;
+      case spv::Op::OpGraphInputARM: {
+        if ((_.graph_definition_region() != kGraphDefinitionBegin) &&
+            (_.graph_definition_region() != kGraphDefinitionInputs)) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                 << "OpGraphInputARM"
+                 << " must immediately follow an OpGraphARM or OpGraphInputARM "
+                    "instruction.";
+        }
+        _.SetGraphDefinitionRegion(kGraphDefinitionInputs);
+      } break;
+      case spv::Op::OpGraphSetOutputARM: {
+        if ((_.graph_definition_region() != kGraphDefinitionInputs) &&
+            (_.graph_definition_region() != kGraphDefinitionBody) &&
+            (_.graph_definition_region() != kGraphDefinitionOutputs)) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                 << "Op" << spvOpcodeString(opcode)
+                 << " must immediately precede an OpGraphEndARM or "
+                    "OpGraphSetOutputARM instruction.";
+        }
+        _.SetGraphDefinitionRegion(kGraphDefinitionOutputs);
       } break;
       case spv::Op::OpGraphEndARM: {
-        if (!_.in_graph_body()) {
+        if (_.graph_definition_region() != kGraphDefinitionOutputs) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-                 << spvOpcodeString(opcode) << " must be used in a graph body";
+                 << spvOpcodeString(opcode)
+                 << " must be preceded by at least one OpGraphSetOutputARM "
+                    "instruction";
         }
-        _.RegisterGraphEnd();
+        _.SetGraphDefinitionRegion(kGraphDefinitionOutside);
       } break;
       case spv::Op::OpGraphEntryPointARM:
-        if (_.in_graph_body()) {
+        if (_.graph_definition_region() != kGraphDefinitionOutside) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-                 << spvOpcodeString(opcode) << " cannot appear in a graph body";
+                 << spvOpcodeString(opcode)
+                 << " cannot appear in the definition of a graph";
         }
         break;
       default:
-        if (!_.in_graph_body()) {
+        if (_.graph_definition_region() < kGraphDefinitionInputs) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                  << spvOpcodeString(opcode) << " must appear in a graph body";
         }
+        if (_.graph_definition_region() == kGraphDefinitionOutputs) {
+          return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
+                 << spvOpcodeString(opcode)
+                 << " cannot appear after a graph output instruction";
+        }
+        _.SetGraphDefinitionRegion(kGraphDefinitionBody);
         break;
     }
   } else {

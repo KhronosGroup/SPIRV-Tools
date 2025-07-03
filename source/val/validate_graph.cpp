@@ -236,18 +236,8 @@ spv_result_t ValidateGraphInput(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  // Check the instruction is preceded by OpGraphARM or OpGraphInputARM
-  size_t inst_num = inst->LineNum() - 1;
-  auto previous_inst = &_.ordered_instructions()[inst_num - 1];
-  if ((previous_inst->opcode() != spv::Op::OpGraphARM) &&
-      (previous_inst->opcode() != spv::Op::OpGraphInputARM)) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Op" << spvOpcodeString(inst->opcode())
-           << " must immediately follow an OpGraphARM or OpGraphInputARM "
-              "instruction.";
-  }
-
   // Find graph definition
+  size_t inst_num = inst->LineNum() - 1;
   auto graph_inst = &_.ordered_instructions()[inst_num];
   while (--inst_num) {
     graph_inst = &_.ordered_instructions()[inst_num];
@@ -359,20 +349,8 @@ spv_result_t ValidateGraphSetOutput(ValidationState_t& _,
     }
   }
 
-  // Check the instruction is followed by OpGraphEndARM or OpGraphSetOutputARM
-  size_t inst_num = inst->LineNum() - 1;
-  if (_.ordered_instructions().size() > inst_num + 1) {
-    auto next_inst = &_.ordered_instructions()[inst_num + 1];
-    if ((next_inst->opcode() != spv::Op::OpGraphEndARM) &&
-        (next_inst->opcode() != spv::Op::OpGraphSetOutputARM)) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Op" << spvOpcodeString(inst->opcode())
-             << " must immediately precede an OpGraphEndARM or "
-                "OpGraphSetOutputARM instruction.";
-    }
-  }
-
   // Find graph definition
+  size_t inst_num = inst->LineNum() - 1;
   auto graph_inst = &_.ordered_instructions()[inst_num];
   while (--inst_num) {
     graph_inst = &_.ordered_instructions()[inst_num];
@@ -462,20 +440,6 @@ spv_result_t ValidateGraphSetOutput(ValidationState_t& _,
 
 spv_result_t ValidateGraphEnd(ValidationState_t& _, const Instruction* inst) {
   size_t end_inst_num = inst->LineNum() - 1;
-
-  // Check the graph contains at least one output instruction just before the
-  // OpGraphEndARM
-  size_t out_inst_num = end_inst_num - 1;
-  auto out_inst = &_.ordered_instructions()[out_inst_num];
-  if (out_inst->opcode() != spv::Op::OpGraphSetOutputARM) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << spvOpcodeString(inst->opcode())
-           << " must be preceded by at least one OpGraphSetOutputARM "
-              "instruction but "
-              "found "
-           << _.getIdName(out_inst->id()) << " that is a "
-           << spvOpcodeString(out_inst->opcode()) << " instead.";
-  }
 
   // Gather OpGraphInputARM and OpGraphSetOutputARM instructions
   std::deque<const Instruction*> graph_inputs, graph_outputs;

@@ -107,7 +107,7 @@ TEST_F(ValidateGraph, InvalidGraphInGraph) {
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Cannot define a graph in a graph body"));
+              HasSubstr("Cannot define a graph in a graph"));
 }
 
 TEST_F(ValidateGraph, InvalidGraphEndOutsideGraph) {
@@ -119,7 +119,8 @@ TEST_F(ValidateGraph, InvalidGraphEndOutsideGraph) {
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("GraphEndARM must be used in a graph body"));
+              HasSubstr("GraphEndARM must be preceded by at least one "
+                        "OpGraphSetOutputARM instruction"));
 }
 
 TEST_F(ValidateGraph, InvalidGraphEntryPointInsideGraph) {
@@ -133,8 +134,10 @@ TEST_F(ValidateGraph, InvalidGraphEntryPointInsideGraph) {
 
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPVENV));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("GraphEntryPointARM cannot appear in a graph body"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "GraphEntryPointARM cannot appear in the definition of a graph"));
 }
 
 TEST_F(ValidateGraph, InvalidNonGraphInstructionInGraphSection) {
@@ -143,6 +146,7 @@ TEST_F(ValidateGraph, InvalidNonGraphInstructionInGraphSection) {
             %ftype = OpTypeFunction %void %void
             %graph = OpGraphARM %graph_type
                %in = OpGraphInputARM %int8tensor %uint_0
+                     OpGraphSetOutputARM %in %uint_0
                      OpGraphEndARM
                %fn = OpFunction %void None %ftype
 )";
@@ -164,7 +168,8 @@ TEST_F(ValidateGraph, InvalidGraphInputOusideGraph) {
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("GraphInputARM must appear in a graph body"));
+              HasSubstr("OpGraphInputARM must immediately follow an OpGraphARM "
+                        "or OpGraphInputARM instruction."));
 }
 
 TEST_F(ValidateGraph, InvalidGraphSetOutputsOusideGraph) {
@@ -176,7 +181,8 @@ TEST_F(ValidateGraph, InvalidGraphSetOutputsOusideGraph) {
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("GraphSetOutputARM must appear in a graph body"));
+              HasSubstr("OpGraphSetOutputARM must immediately precede an "
+                        "OpGraphEndARM or OpGraphSetOutputARM instruction"));
 }
 
 TEST_F(ValidateGraph, ValidGraphConstantOusideGraph) {
@@ -480,6 +486,8 @@ TEST_F(ValidateGraph, InvalidGraphEntryPointInterfaceIDNotOpVariable) {
 %graph_type = OpTypeGraphARM 1 %int8tensor %int8tensor
               OpGraphEntryPointARM %graph "longname" %uint_0 %uint_0
      %graph = OpGraphARM %graph_type
+        %in = OpGraphInputARM %int8tensor %uint_0
+              OpGraphSetOutputARM %in %uint_0
               OpGraphEndARM
 )";
   std::string spvasm = GenerateModule(src);
@@ -497,6 +505,8 @@ TEST_F(ValidateGraph, InvalidGraphEntryPointInterfaceIDWrongStorageClass) {
 %graph_type = OpTypeGraphARM 1 %int8tensor %int8tensor
               OpGraphEntryPointARM %graph "longname" %var_int8tensor_wrong_storage_class %var_int8tensor_wrong_storage_class
      %graph = OpGraphARM %graph_type
+        %in = OpGraphInputARM %int8tensor %uint_0
+              OpGraphSetOutputARM %in %uint_0
               OpGraphEndARM
 )";
   std::string spvasm = GenerateModule(src);
@@ -514,6 +524,8 @@ TEST_F(ValidateGraph, InvalidGraphEntryPointNotEnoughInterfaceIDs) {
 %graph_type = OpTypeGraphARM 1 %int8tensor %int8tensor
               OpGraphEntryPointARM %graph "longname" %var_int8tensor
      %graph = OpGraphARM %graph_type
+        %in = OpGraphInputARM %int8tensor %uint_0
+              OpGraphSetOutputARM %in %uint_0
               OpGraphEndARM
 )";
   std::string spvasm = GenerateModule(src);
@@ -532,6 +544,8 @@ TEST_F(ValidateGraph, InvalidGraphEntryPointTooManyInterfaceIDs) {
 %graph_type = OpTypeGraphARM 1 %int8tensor %int8tensor
               OpGraphEntryPointARM %graph "longname" %var_int8tensor %var_int8tensor %var_int8tensor
      %graph = OpGraphARM %graph_type
+        %in = OpGraphInputARM %int8tensor %uint_0
+              OpGraphSetOutputARM %in %uint_0
               OpGraphEndARM
 )";
   std::string spvasm = GenerateModule(src);
@@ -551,6 +565,8 @@ TEST_F(ValidateGraph,
 %graph_type = OpTypeGraphARM 1 %int8tensor %int8tensor
               OpGraphEntryPointARM %graph "longname" %var_int8tensor %var_int32tensor
      %graph = OpGraphARM %graph_type
+        %in = OpGraphInputARM %int8tensor %uint_0
+              OpGraphSetOutputARM %in %uint_0
               OpGraphEndARM
 )";
   std::string spvasm = GenerateModule(src);
@@ -570,6 +586,8 @@ TEST_F(ValidateGraph, InvalidGraphResultType) {
   const std::string src = R"(
            OpGraphEntryPointARM %graph "foo"
   %graph = OpGraphARM %uint
+     %in = OpGraphInputARM %int8tensor %uint_0
+           OpGraphSetOutputARM %in %uint_0
            OpGraphEndARM
 )";
   std::string spvasm = GenerateModule(src);
@@ -888,7 +906,7 @@ TEST_F(ValidateGraph, InvalidGraphInputAfterNonGraphInputOrGraph) {
   std::string spvasm = GenerateModule(src);
 
   CompileSuccessfully(spvasm, SPVENV);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
+  EXPECT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpGraphInputARM must immediately follow an OpGraphARM "
                         "or OpGraphInputARM instruction"));
@@ -1175,10 +1193,11 @@ TEST_F(ValidateGraph, InvalidGraphOutputNotBeforeEndOrOutput) {
   std::string spvasm = GenerateModule(src);
 
   CompileSuccessfully(spvasm, SPVENV);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpGraphSetOutputARM must immediately precede an "
-                        "OpGraphEndARM or OpGraphSetOutputARM instruction"));
+  EXPECT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPVENV));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "CompositeExtract cannot appear after a graph output instruction"));
 }
 
 TEST_F(ValidateGraph, InvalidGraphOutputIndexOutOfRange) {
@@ -1250,12 +1269,10 @@ TEST_F(ValidateGraph, InvalidGraphNoSetOuputBeforeEnd) {
   std::string spvasm = GenerateModule(src);
 
   CompileSuccessfully(spvasm, SPVENV);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      ContainsRegex("GraphEndARM must be preceded by at least one "
-                    "OpGraphSetOutputARM instruction "
-                    "but found '.*' that is a GraphInputARM instead.*"));
+  EXPECT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPVENV));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("GraphEndARM must be preceded by at least one "
+                        "OpGraphSetOutputARM instruction"));
 }
 
 //
