@@ -223,7 +223,7 @@ spv_result_t ValidateGraphInput(ValidationState_t& _, const Instruction* inst) {
            << " InputIndex must be a 32-bit integer.";
   }
 
-  bool has_element_index = inst->words().size() > 4;
+  bool has_element_index = inst->operands().size() > 3;
 
   // Check type of ElementIndex
   if (has_element_index) {
@@ -254,7 +254,7 @@ spv_result_t ValidateGraphInput(ValidationState_t& _, const Instruction* inst) {
   }
 
   auto const graph_type_inst = _.FindDef(graph_inst->type_id());
-  size_t graph_type_num_inputs = graph_type_inst->word(2);
+  size_t graph_type_num_inputs = graph_type_inst->GetOperandAs<uint32_t>(1);
 
   // Check InputIndex is in range
   if (input_index >= graph_type_num_inputs) {
@@ -287,8 +287,9 @@ spv_result_t ValidateGraphInput(ValidationState_t& _, const Instruction* inst) {
                                 &element_index)) {
       uint64_t array_length;
       auto graph_type_input_type_inst = _.FindDef(graph_type_input_type);
-      if (_.EvalConstantValUint64(graph_type_input_type_inst->word(3),
-                                  &array_length)) {
+      if (_.EvalConstantValUint64(
+              graph_type_input_type_inst->GetOperandAs<uint32_t>(2),
+              &array_length)) {
         if (element_index >= array_length) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "OpGraphInputARM ElementIndex out of range. The type of "
@@ -336,7 +337,7 @@ spv_result_t ValidateGraphSetOutput(ValidationState_t& _,
            << " OutputIndex must be a 32-bit integer.";
   }
 
-  bool has_element_index = inst->words().size() > 3;
+  bool has_element_index = inst->operands().size() > 2;
 
   // Check type of ElementIndex
   if (has_element_index) {
@@ -398,8 +399,9 @@ spv_result_t ValidateGraphSetOutput(ValidationState_t& _,
                                 &element_index)) {
       uint64_t array_length;
       auto graph_type_output_type_inst = _.FindDef(graph_type_output_type);
-      if (_.EvalConstantValUint64(graph_type_output_type_inst->word(3),
-                                  &array_length)) {
+      if (_.EvalConstantValUint64(
+              graph_type_output_type_inst->GetOperandAs<uint32_t>(2),
+              &array_length)) {
         if (element_index >= array_length) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "OpGraphSetOutputARM ElementIndex out of range. The type "
@@ -413,7 +415,7 @@ spv_result_t ValidateGraphSetOutput(ValidationState_t& _,
   }
 
   // Check Value's type matches with graph type
-  uint32_t value = inst->word(1);
+  uint32_t value = inst->GetOperandAs<uint32_t>(0);
   uint32_t value_type = _.FindDef(value)->type_id();
   if (has_element_index) {
     uint32_t expected_type = _.GetComponentType(graph_type_output_type);
