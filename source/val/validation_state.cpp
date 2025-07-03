@@ -548,11 +548,9 @@ spv_result_t ValidationState_t::RegisterFunctionEnd() {
   return SPV_SUCCESS;
 }
 
-void ValidationState_t::RegisterGraph(uint32_t id, uint32_t type_id) {
-  assert(in_graph_body() == false);
+void ValidationState_t::RegisterGraph() {
+  assert(!in_graph_body());
   in_graph_ = true;
-  (void)id;
-  (void)type_id;
 }
 
 void ValidationState_t::RegisterGraphEnd() {

@@ -359,7 +359,7 @@ spv_result_t GraphScopedInstructions(ValidationState_t& _,
           return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
                  << "Cannot define a graph in a graph body";
         }
-        _.RegisterGraph(inst->id(), inst->type_id());
+        _.RegisterGraph();
       } break;
       case spv::Op::OpGraphEndARM: {
         if (!_.in_graph_body()) {

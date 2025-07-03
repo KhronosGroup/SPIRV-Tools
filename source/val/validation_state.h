@@ -368,7 +368,7 @@ class ValidationState_t {
 
   /// Registers the graph in the module. Subsequent instructions will be
   /// called against this graph
-  void RegisterGraph(uint32_t id, uint32_t type_id);
+  void RegisterGraph();
 
   /// Register a graph end instruction
   void RegisterGraphEnd();
@@ -655,11 +655,10 @@ class ValidationState_t {
   bool GetStructMemberTypes(uint32_t struct_type_id,
                             std::vector<uint32_t>* member_types) const;
 
-  // Returns true iff |id| is a type corresponding to the name of the function.
+  // Returns true if |id| is a type corresponding to the name of the function.
   // Only works for types not for objects.
   bool IsVoidType(uint32_t id) const;
   bool IsScalarType(uint32_t id) const;
-  bool IsArrayType(uint32_t id, uint64_t length = 0) const;
   bool IsBfloat16ScalarType(uint32_t id) const;
   bool IsBfloat16VectorType(uint32_t id) const;
   bool IsFP8ScalarType(uint32_t id) const;
@@ -673,7 +672,6 @@ class ValidationState_t {
   bool IsFloatMatrixType(uint32_t id) const;
   bool IsIntScalarType(uint32_t id, uint32_t width = 0) const;
   bool IsIntScalarTypeWithSignedness(uint32_t id, uint32_t signedness) const;
-  bool IsIntArrayType(uint32_t id, uint64_t length = 0) const;
   bool IsIntVectorType(uint32_t id) const;
   bool IsIntScalarOrVectorType(uint32_t id) const;
   bool IsUnsignedIntScalarType(uint32_t id) const;
@@ -701,6 +699,10 @@ class ValidationState_t {
   bool IsIntCooperativeVectorNVType(uint32_t id) const;
   bool IsUnsignedIntCooperativeVectorNVType(uint32_t id) const;
   bool IsTensorType(uint32_t id) const;
+  // When |length| is not 0, return true only if the array length is equal to
+  // |length| and the array length is not defined by a specialization constant.
+  bool IsArrayType(uint32_t id, uint64_t length = 0) const;
+  bool IsIntArrayType(uint32_t id, uint64_t length = 0) const;
 
   // Returns true if |id| is a type id that contains |type| (or integer or
   // floating point type) of |width| bits.

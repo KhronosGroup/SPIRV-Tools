@@ -57,8 +57,10 @@ bool IsGraphType(ValidationState_t& _, uint32_t id) {
   return true;
 }
 
+const uint32_t kGraphTypeIOStartWord = 3;
+
 uint32_t GraphTypeInstNumIO(const Instruction* inst) {
-  return static_cast<uint32_t>(inst->words().size()) - 3;
+  return static_cast<uint32_t>(inst->words().size()) - kGraphTypeIOStartWord;
 }
 
 uint32_t GraphTypeInstNumInputs(const Instruction* inst) {
@@ -71,12 +73,12 @@ uint32_t GraphTypeInstNumOutputs(const Instruction* inst) {
 
 uint32_t GraphTypeInstGetOutputAtIndex(const Instruction* inst,
                                        uint64_t index) {
-  return inst->word(3 + GraphTypeInstNumInputs(inst) +
+  return inst->word(kGraphTypeIOStartWord + GraphTypeInstNumInputs(inst) +
                     static_cast<uint32_t>(index));
 }
 
 uint32_t GraphTypeInstGetInputAtIndex(const Instruction* inst, uint64_t index) {
-  return inst->word(3 + static_cast<uint32_t>(index));
+  return inst->word(kGraphTypeIOStartWord + static_cast<uint32_t>(index));
 }
 
 spv_result_t ValidateGraphType(ValidationState_t& _, const Instruction* inst) {
@@ -96,7 +98,7 @@ spv_result_t ValidateGraphType(ValidationState_t& _, const Instruction* inst) {
   }
 
   // Check all I/O types are graph interface type
-  for (unsigned i = 3; i < inst->words().size(); i++) {
+  for (unsigned i = kGraphTypeIOStartWord; i < inst->words().size(); i++) {
     auto tid = inst->word(i);
     if (!IsGraphInterfaceType(_, tid)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -117,29 +119,20 @@ spv_result_t ValidateGraphConstant(ValidationState_t& _,
            << " must have a Result Type that is a tensor type.";
   }
 
-  // Check the instruction is not the first in the module
-  size_t inst_num = inst->LineNum() - 1;
-  if (inst_num == 0) {
-    return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-           << spvOpcodeString(inst->opcode())
-           << " cannot be the first instruction.";
-  }
-
   // Check the instruction is not preceded by another OpGraphConstantARM with
   // the same ID
-  std::set<uint32_t> graph_constant_ids;
-  while (inst_num) {
+  const uint32_t cst_id = inst->word(3);
+  size_t inst_num = inst->LineNum() - 1;
+  while (--inst_num) {
     auto prev_inst = &_.ordered_instructions()[inst_num];
     if (prev_inst->opcode() == spv::Op::OpGraphConstantARM) {
-      auto cst_id = prev_inst->word(3);
-      if (graph_constant_ids.count(cst_id)) {
+      const uint32_t prev_cst_id = prev_inst->word(3);
+      if (prev_cst_id == cst_id) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "No two OpGraphConstantARM instructions may have the same "
                   "GraphConstantID";
       }
-      graph_constant_ids.insert(cst_id);
     }
-    inst_num--;
   }
   return SPV_SUCCESS;
 }
@@ -147,7 +140,7 @@ spv_result_t ValidateGraphConstant(ValidationState_t& _,
 spv_result_t ValidateGraphEntryPoint(ValidationState_t& _,
                                      const Instruction* inst) {
   // Graph must be an OpGraphARM
-  uint32_t graph = inst->word(1);
+  uint32_t graph = inst->GetOperandAs<uint32_t>(0);
   auto graph_inst = _.FindDef(graph);
   if (!IsGraph(_, graph)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -155,6 +148,7 @@ spv_result_t ValidateGraphEntryPoint(ValidationState_t& _,
            << " Graph must be a OpGraphARM but found "
            << spvOpcodeString(graph_inst->opcode()) << ".";
   }
+
   // Check number of Interface IDs matches number of I/Os of graph
   auto graph_type_inst = _.FindDef(graph_inst->type_id());
   size_t graph_type_num_io = GraphTypeInstNumIO(graph_type_inst);
@@ -179,7 +173,7 @@ spv_result_t ValidateGraphEntryPoint(ValidationState_t& _,
 
     // Check interface IDs come from OpVariable
     if ((interface_inst->opcode() != spv::Op::OpVariable) ||
-        (static_cast<spv::StorageClass>(interface_inst->word(3)) !=
+        (interface_inst->GetOperandAs<spv::StorageClass>(2) !=
          spv::StorageClass::UniformConstant)) {
       return _.diag(SPV_ERROR_INVALID_DATA, interface_inst)
              << spvOpcodeString(inst->opcode()) << " Interface ID "
@@ -190,11 +184,12 @@ spv_result_t ValidateGraphEntryPoint(ValidationState_t& _,
 
     // Check type of interface variable matches type of the corresponding graph
     // I/O
-    uint32_t corresponding_graph_io_type = graph_type_inst->word(i + 1);
+    uint32_t corresponding_graph_io_type =
+        graph_type_inst->GetOperandAs<uint32_t>(i);
 
     uint32_t interface_ptr_type = interface_inst->type_id();
     auto interface_ptr_inst = _.FindDef(interface_ptr_type);
-    auto interface_pointee_type = interface_ptr_inst->word(3);
+    auto interface_pointee_type = interface_ptr_inst->GetOperandAs<uint32_t>(2);
     if (interface_pointee_type != corresponding_graph_io_type) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << spvOpcodeString(inst->opcode()) << " Interface ID type "
@@ -241,15 +236,8 @@ spv_result_t ValidateGraphInput(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  // Check the instruction is not the first in the module
-  size_t inst_num = inst->LineNum() - 1;
-  if (inst_num == 0) {
-    return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-           << spvOpcodeString(inst->opcode())
-           << " cannot be the first instruction.";
-  }
-
   // Check the instruction is preceded by OpGraphARM or OpGraphInputARM
+  size_t inst_num = inst->LineNum() - 1;
   auto previous_inst = &_.ordered_instructions()[inst_num - 1];
   if ((previous_inst->opcode() != spv::Op::OpGraphARM) &&
       (previous_inst->opcode() != spv::Op::OpGraphInputARM)) {
@@ -371,15 +359,8 @@ spv_result_t ValidateGraphSetOutput(ValidationState_t& _,
     }
   }
 
-  // Check the instruction is not the first in the module
-  size_t inst_num = inst->LineNum() - 1;
-  if (inst_num == 0) {
-    return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-           << spvOpcodeString(inst->opcode())
-           << " cannot be the first instruction.";
-  }
-
   // Check the instruction is followed by OpGraphEndARM or OpGraphSetOutputARM
+  size_t inst_num = inst->LineNum() - 1;
   if (_.ordered_instructions().size() > inst_num + 1) {
     auto next_inst = &_.ordered_instructions()[inst_num + 1];
     if ((next_inst->opcode() != spv::Op::OpGraphEndARM) &&
@@ -408,7 +389,7 @@ spv_result_t ValidateGraphSetOutput(ValidationState_t& _,
     return SPV_SUCCESS;
   }
 
-  // Check that the OutputIndex is valid with respec to the graph type
+  // Check that the OutputIndex is valid with respect to the graph type
   auto graph_type_inst = _.FindDef(graph_inst->type_id());
   size_t graph_type_num_outputs = GraphTypeInstNumOutputs(graph_type_inst);
 
@@ -482,7 +463,7 @@ spv_result_t ValidateGraphSetOutput(ValidationState_t& _,
 spv_result_t ValidateGraphEnd(ValidationState_t& _, const Instruction* inst) {
   size_t end_inst_num = inst->LineNum() - 1;
 
-  // Check the graph contains a single output instruction just before the
+  // Check the graph contains at least one output instruction just before the
   // OpGraphEndARM
   size_t out_inst_num = end_inst_num - 1;
   auto out_inst = &_.ordered_instructions()[out_inst_num];
