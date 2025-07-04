@@ -8477,6 +8477,1100 @@ TEST_F(AggressiveDCETest, KeepCopyLogical) {
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER);
   SinglePassRunAndMatch<AggressiveDCEPass>(before, true);
 }
+TEST_F(AggressiveDCETest, KeepOnlyLiveDebugDeclares) {
+  // DebugDeclare should only be live when one or more operands are live.
+  const std::string before =
+      R"(OpCapability MinLod
+OpCapability StorageImageWriteWithoutFormat
+OpCapability StorageImageReadWithoutFormat
+OpCapability FragmentShaderSampleInterlockEXT
+OpCapability FragmentShaderPixelInterlockEXT
+OpCapability FragmentShaderShadingRateInterlockEXT
+OpCapability ComputeDerivativeGroupQuadsKHR
+OpCapability ComputeDerivativeGroupLinearKHR
+OpCapability RayQueryKHR
+OpCapability GroupNonUniformPartitionedNV
+OpCapability InterpolationFunction
+OpCapability RayTracingKHR
+OpCapability VulkanMemoryModel
+OpCapability VulkanMemoryModel
+OpExtension "SPV_EXT_fragment_shader_interlock"
+OpExtension "SPV_NV_compute_shader_derivatives"
+OpExtension "SPV_KHR_ray_query"
+OpExtension "SPV_NV_shader_subgroup_partitioned"
+OpExtension "SPV_KHR_non_semantic_info"
+OpExtension "SPV_KHR_ray_tracing"
+OpExtension "SPV_KHR_vulkan_memory_model"
+%1 = OpExtInstImport "GLSL.std.450"
+%2 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+OpMemoryModel Logical Vulkan
+OpEntryPoint IntersectionKHR %isAABB "isAABB" %4 %5 %gl_PrimitiveID %7 %8 %9 %10 %11 %12 %SceneConstantBuffer %outBuffer %topObject %vertexBuffer %indexBuffer %aabbBuffer %19
+%20 = OpString "isAABB.hlsl"
+%69 = OpString "bool"
+%74 = OpString "./RTInclude.h"
+%76 = OpString "float"
+%79 = OpString "origin"
+%83 = OpString "direction"
+%85 = OpString "int"
+%88 = OpString "sign"
+%92 = OpString "aabbRay"
+%98 = OpString "RayAABBIntersectionDistance"
+%99 = OpString ""
+%122 = OpString "tzmax"
+%125 = OpString "tzmin"
+%127 = OpString "tymax"
+%130 = OpString "tymin"
+%133 = OpString "tmax"
+%136 = OpString "tmin"
+%139 = OpString "aabb"
+%142 = OpString "ray"
+%145 = OpString "makeAABBRay"
+%149 = OpString "r"
+%158 = OpString "barycentrics"
+%162 = OpString "Attrs"
+%165 = OpString "isAABB"
+%170 = OpString "attrs"
+%178 = OpString "uint"
+%180 = OpString "idx"
+%184 = OpString "dir"
+%188 = OpString "org"
+%191 = OpString "rayTmax"
+%194 = OpString "rayTmin"
+%197 = OpString "objectRayDir"
+%200 = OpString "objectRayOrig"
+%202 = OpString "worldRayDir"
+%204 = OpString "worldRayOrig"
+%207 = OpString "primitiveIndex"
+%211 = OpString "launchDim"
+%215 = OpString "launchIndex"
+%218 = OpString "__dxc_setup"
+%220 = OpString "f96dbe32"
+%221 = OpString " -E lib.no::entry -T lib_6_5 -spirv -O0 -D HLSL6 -fspv-debug=vulkan -fspv-target-env=vulkan1.2 -fvk-use-gl-layout -fspv-print-all -D HLSL6 -Qembed_debug"
+%226 = OpString "type.StructuredBuffer.float"
+%229 = OpString "TemplateParam"
+%232 = OpString "aabbBuffer"
+%237 = OpString "type.StructuredBuffer.v3uint"
+%241 = OpString "indexBuffer"
+%243 = OpString "position"
+%246 = OpString "color"
+%250 = OpString "Vertex"
+%255 = OpString "type.StructuredBuffer.Vertex"
+%259 = OpString "vertexBuffer"
+%261 = OpString "@accelerationStructureNV"
+%262 = OpString "accelerationStructureNV"
+%264 = OpString "topObject"
+%270 = OpString "type.RWStructuredBuffer.v4float"
+%274 = OpString "outBuffer"
+%276 = OpString "diffuseColor"
+%278 = OpString "eye"
+%282 = OpString "up"
+%285 = OpString "fieldOfView"
+%288 = OpString "rayFlags"
+%291 = OpString "type.SceneConstantBuffer"
+%294 = OpString "SceneConstantBuffer"
+OpName %type_SceneConstantBuffer "type.SceneConstantBuffer"
+OpMemberName %type_SceneConstantBuffer 0 "diffuseColor"
+OpMemberName %type_SceneConstantBuffer 1 "eye"
+OpMemberName %type_SceneConstantBuffer 2 "dir"
+OpMemberName %type_SceneConstantBuffer 3 "up"
+OpMemberName %type_SceneConstantBuffer 4 "fieldOfView"
+OpMemberName %type_SceneConstantBuffer 5 "rayFlags"
+OpName %SceneConstantBuffer "SceneConstantBuffer"
+OpName %type_RWStructuredBuffer_v4float "type.RWStructuredBuffer.v4float"
+OpName %outBuffer "outBuffer"
+OpName %accelerationStructureNV "accelerationStructureNV"
+OpName %topObject "topObject"
+OpName %type_StructuredBuffer_Vertex "type.StructuredBuffer.Vertex"
+OpName %Vertex "Vertex"
+OpMemberName %Vertex 0 "position"
+OpMemberName %Vertex 1 "color"
+OpName %vertexBuffer "vertexBuffer"
+OpName %type_StructuredBuffer_v3uint "type.StructuredBuffer.v3uint"
+OpName %indexBuffer "indexBuffer"
+OpName %type_StructuredBuffer_float "type.StructuredBuffer.float"
+OpName %aabbBuffer "aabbBuffer"
+OpName %Attrs "Attrs"
+OpMemberName %Attrs 0 "barycentrics"
+OpName %isAABB "isAABB"
+OpName %aabbRay "aabbRay"
+OpMemberName %aabbRay 0 "origin"
+OpMemberName %aabbRay 1 "direction"
+OpMemberName %aabbRay 2 "sign"
+OpDecorate %4 BuiltIn LaunchIdKHR
+OpDecorate %5 BuiltIn LaunchSizeKHR
+OpDecorate %gl_PrimitiveID BuiltIn PrimitiveId
+OpDecorate %7 BuiltIn WorldRayOriginKHR
+OpDecorate %8 BuiltIn WorldRayDirectionKHR
+OpDecorate %9 BuiltIn ObjectRayOriginKHR
+OpDecorate %10 BuiltIn ObjectRayDirectionKHR
+OpDecorate %11 BuiltIn RayTminKHR
+OpDecorate %12 BuiltIn RayTmaxKHR
+OpDecorate %SceneConstantBuffer DescriptorSet 0
+OpDecorate %SceneConstantBuffer Binding 0
+OpDecorate %outBuffer DescriptorSet 0
+OpDecorate %outBuffer Binding 0
+OpDecorate %topObject DescriptorSet 0
+OpDecorate %topObject Binding 0
+OpDecorate %vertexBuffer DescriptorSet 0
+OpDecorate %vertexBuffer Binding 1
+OpDecorate %indexBuffer DescriptorSet 0
+OpDecorate %indexBuffer Binding 2
+OpDecorate %aabbBuffer DescriptorSet 0
+OpDecorate %aabbBuffer Binding 3
+OpMemberDecorate %type_SceneConstantBuffer 0 Offset 0
+OpMemberDecorate %type_SceneConstantBuffer 1 Offset 16
+OpMemberDecorate %type_SceneConstantBuffer 2 Offset 32
+OpMemberDecorate %type_SceneConstantBuffer 3 Offset 48
+OpMemberDecorate %type_SceneConstantBuffer 4 Offset 60
+OpMemberDecorate %type_SceneConstantBuffer 5 Offset 64
+OpDecorate %type_SceneConstantBuffer Block
+OpDecorate %_runtimearr_v4float ArrayStride 16
+OpMemberDecorate %type_RWStructuredBuffer_v4float 0 Offset 0
+OpDecorate %type_RWStructuredBuffer_v4float Block
+OpMemberDecorate %Vertex 0 Offset 0
+OpMemberDecorate %Vertex 1 Offset 16
+OpDecorate %_runtimearr_Vertex ArrayStride 32
+OpMemberDecorate %type_StructuredBuffer_Vertex 0 Offset 0
+OpMemberDecorate %type_StructuredBuffer_Vertex 0 NonWritable
+OpDecorate %type_StructuredBuffer_Vertex Block
+OpDecorate %_runtimearr_v3uint ArrayStride 16
+OpMemberDecorate %type_StructuredBuffer_v3uint 0 Offset 0
+OpMemberDecorate %type_StructuredBuffer_v3uint 0 NonWritable
+OpDecorate %type_StructuredBuffer_v3uint Block
+OpDecorate %_runtimearr_float ArrayStride 4
+OpMemberDecorate %type_StructuredBuffer_float 0 Offset 0
+OpMemberDecorate %type_StructuredBuffer_float 0 NonWritable
+OpDecorate %type_StructuredBuffer_float Block
+OpDecorate %_arr_v3float_uint_2_0 ArrayStride 16
+%uint = OpTypeInt 32 0
+%uint_6 = OpConstant %uint 6
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%uint_1 = OpConstant %uint 1
+%uint_2 = OpConstant %uint 2
+%uint_3 = OpConstant %uint 3
+%uint_4 = OpConstant %uint 4
+%uint_5 = OpConstant %uint 5
+%uint_0 = OpConstant %uint 0
+%float = OpTypeFloat 32
+%float_0 = OpConstant %float 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%v3float = OpTypeVector %float 3
+%36 = OpConstantComposite %v3float %float_0 %float_0 %float_0
+%bool = OpTypeBool
+%false = OpConstantFalse %bool
+%float_n0x1p_128 = OpConstant %float -0x1p+128
+%float_0x1p_128 = OpConstant %float 0x1p+128
+%true = OpConstantTrue %bool
+%uint_32 = OpConstant %uint 32
+%v4float = OpTypeVector %float 4
+%type_SceneConstantBuffer = OpTypeStruct %v4float %v3float %v3float %v3float %float %int
+%_ptr_Uniform_type_SceneConstantBuffer = OpTypePointer Uniform %type_SceneConstantBuffer
+%_runtimearr_v4float = OpTypeRuntimeArray %v4float
+%type_RWStructuredBuffer_v4float = OpTypeStruct %_runtimearr_v4float
+%_ptr_StorageBuffer_type_RWStructuredBuffer_v4float = OpTypePointer StorageBuffer %type_RWStructuredBuffer_v4float
+%accelerationStructureNV = OpTypeAccelerationStructureKHR
+%_ptr_UniformConstant_accelerationStructureNV = OpTypePointer UniformConstant %accelerationStructureNV
+%Vertex = OpTypeStruct %v3float %v4float
+%_runtimearr_Vertex = OpTypeRuntimeArray %Vertex
+%type_StructuredBuffer_Vertex = OpTypeStruct %_runtimearr_Vertex
+%_ptr_StorageBuffer_type_StructuredBuffer_Vertex = OpTypePointer StorageBuffer %type_StructuredBuffer_Vertex
+%v3uint = OpTypeVector %uint 3
+%_runtimearr_v3uint = OpTypeRuntimeArray %v3uint
+%type_StructuredBuffer_v3uint = OpTypeStruct %_runtimearr_v3uint
+%_ptr_StorageBuffer_type_StructuredBuffer_v3uint = OpTypePointer StorageBuffer %type_StructuredBuffer_v3uint
+%_runtimearr_float = OpTypeRuntimeArray %float
+%type_StructuredBuffer_float = OpTypeStruct %_runtimearr_float
+%_ptr_StorageBuffer_type_StructuredBuffer_float = OpTypePointer StorageBuffer %type_StructuredBuffer_float
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%_ptr_Input_uint = OpTypePointer Input %uint
+%_ptr_Input_v3float = OpTypePointer Input %v3float
+%_ptr_Input_float = OpTypePointer Input %float
+%v2float = OpTypeVector %float 2
+%Attrs = OpTypeStruct %v2float
+%_ptr_HitAttributeKHR_Attrs = OpTypePointer HitAttributeKHR %Attrs
+%void = OpTypeVoid
+%uint_96 = OpConstant %uint 96
+%uint_12 = OpConstant %uint 12
+%uint_192 = OpConstant %uint 192
+%uint_9 = OpConstant %uint 9
+%uint_288 = OpConstant %uint 288
+%uint_8 = OpConstant %uint 8
+%uint_21 = OpConstant %uint 21
+%uint_22 = OpConstant %uint 22
+%uint_72 = OpConstant %uint 72
+%uint_67 = OpConstant %uint 67
+%uint_58 = OpConstant %uint 58
+%uint_53 = OpConstant %uint 53
+%uint_47 = OpConstant %uint 47
+%uint_42 = OpConstant %uint 42
+%uint_36 = OpConstant %uint 36
+%uint_31 = OpConstant %uint 31
+%uint_25 = OpConstant %uint 25
+%uint_23 = OpConstant %uint 23
+%uint_18 = OpConstant %uint 18
+%uint_11 = OpConstant %uint 11
+%uint_89 = OpConstant %uint 89
+%uint_73 = OpConstant %uint 73
+%uint_54 = OpConstant %uint 54
+%uint_10 = OpConstant %uint 10
+%uint_13 = OpConstant %uint 13
+%uint_43 = OpConstant %uint 43
+%uint_28 = OpConstant %uint 28
+%uint_64 = OpConstant %uint 64
+%uint_20 = OpConstant %uint 20
+%uint_37 = OpConstant %uint 37
+%uint_59 = OpConstant %uint 59
+%uint_56 = OpConstant %uint 56
+%uint_55 = OpConstant %uint 55
+%uint_52 = OpConstant %uint 52
+%uint_50 = OpConstant %uint 50
+%uint_16 = OpConstant %uint 16
+%uint_49 = OpConstant %uint 49
+%uint_46 = OpConstant %uint 46
+%uint_45 = OpConstant %uint 45
+%uint_44 = OpConstant %uint 44
+%uint_41 = OpConstant %uint 41
+%uint_40 = OpConstant %uint 40
+%uint_39 = OpConstant %uint 39
+%uint_38 = OpConstant %uint 38
+%uint_33 = OpConstant %uint 33
+%uint_128 = OpConstant %uint 128
+%uint_26 = OpConstant %uint 26
+%uint_256 = OpConstant %uint 256
+%uint_30 = OpConstant %uint 30
+%uint_29 = OpConstant %uint 29
+%uint_7 = OpConstant %uint 7
+%uint_384 = OpConstant %uint 384
+%uint_480 = OpConstant %uint 480
+%uint_512 = OpConstant %uint 512
+%uint_544 = OpConstant %uint 544
+%296 = OpTypeFunction %void
+%uint_62 = OpConstant %uint 62
+%v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Function_v3float = OpTypePointer Function %v3float
+%_ptr_Function_float = OpTypePointer Function %float
+%_arr_int_uint_3 = OpTypeArray %int %uint_3
+%aabbRay = OpTypeStruct %v3float %v3float %_arr_int_uint_3
+%_ptr_Function_aabbRay = OpTypePointer Function %aabbRay
+%_arr_v3float_uint_2 = OpTypeArray %v3float %uint_2
+%_ptr_Function__arr_v3float_uint_2 = OpTypePointer Function %_arr_v3float_uint_2
+%_ptr_Function_Attrs = OpTypePointer Function %Attrs
+%uint_24 = OpConstant %uint 24
+%uint_19 = OpConstant %uint 19
+%uint_27 = OpConstant %uint 27
+%uint_15 = OpConstant %uint 15
+%uint_14 = OpConstant %uint 14
+%uint_35 = OpConstant %uint 35
+%_ptr_StorageBuffer_float = OpTypePointer StorageBuffer %float
+%uint_79 = OpConstant %uint 79
+%uint_80 = OpConstant %uint 80
+%uint_98 = OpConstant %uint 98
+%uint_104 = OpConstant %uint 104
+%uint_87 = OpConstant %uint 87
+%uint_105 = OpConstant %uint 105
+%uint_119 = OpConstant %uint 119
+%uint_125 = OpConstant %uint 125
+%uint_108 = OpConstant %uint 108
+%uint_126 = OpConstant %uint 126
+%uint_140 = OpConstant %uint 140
+%uint_146 = OpConstant %uint 146
+%uint_129 = OpConstant %uint 129
+%uint_147 = OpConstant %uint 147
+%uint_151 = OpConstant %uint 151
+%_arr_v3float_uint_2_0 = OpTypeArray %v3float %uint_2
+%uint_57 = OpConstant %uint 57
+%uint_34 = OpConstant %uint 34
+%uint_60 = OpConstant %uint 60
+%uint_61 = OpConstant %uint 61
+%507 = OpTypeFunction %aabbRay %_ptr_Function_v3float %_ptr_Function_v3float
+%_ptr_Function__arr_int_uint_3 = OpTypePointer Function %_arr_int_uint_3
+%_ptr_Function_int = OpTypePointer Function %int
+%uint_63 = OpConstant %uint 63
+%uint_48 = OpConstant %uint 48
+%uint_68 = OpConstant %uint 68
+%uint_76 = OpConstant %uint 76
+%uint_86 = OpConstant %uint 86
+%uint_90 = OpConstant %uint 90
+%uint_75 = OpConstant %uint 75
+%uint_99 = OpConstant %uint 99
+%uint_95 = OpConstant %uint 95
+%uint_101 = OpConstant %uint 101
+%614 = OpTypeFunction %bool %_ptr_Function_aabbRay %_ptr_Function__arr_v3float_uint_2 %_ptr_Function_float %_ptr_Function_float
+%v3bool = OpTypeVector %bool 3
+%uint_17 = OpConstant %uint 17
+%uint_69 = OpConstant %uint 69
+%uint_51 = OpConstant %uint 51
+%uint_70 = OpConstant %uint 70
+%uint_74 = OpConstant %uint 74
+%uint_66 = OpConstant %uint 66
+%uint_71 = OpConstant %uint 71
+%SceneConstantBuffer = OpVariable %_ptr_Uniform_type_SceneConstantBuffer Uniform
+%outBuffer = OpVariable %_ptr_StorageBuffer_type_RWStructuredBuffer_v4float StorageBuffer
+%topObject = OpVariable %_ptr_UniformConstant_accelerationStructureNV UniformConstant
+%vertexBuffer = OpVariable %_ptr_StorageBuffer_type_StructuredBuffer_Vertex StorageBuffer
+%indexBuffer = OpVariable %_ptr_StorageBuffer_type_StructuredBuffer_v3uint StorageBuffer
+%aabbBuffer = OpVariable %_ptr_StorageBuffer_type_StructuredBuffer_float StorageBuffer
+%4 = OpVariable %_ptr_Input_v3uint Input
+%5 = OpVariable %_ptr_Input_v3uint Input
+%gl_PrimitiveID = OpVariable %_ptr_Input_uint Input
+%7 = OpVariable %_ptr_Input_v3float Input
+%8 = OpVariable %_ptr_Input_v3float Input
+%9 = OpVariable %_ptr_Input_v3float Input
+%10 = OpVariable %_ptr_Input_v3float Input
+%11 = OpVariable %_ptr_Input_float Input
+%12 = OpVariable %_ptr_Input_float Input
+%19 = OpVariable %_ptr_HitAttributeKHR_Attrs HitAttributeKHR
+%_ptr_Function_bool = OpTypePointer Function %bool
+%228 = OpExtInst %void %2 DebugInfoNone
+%214 = OpExtInst %void %2 DebugExpression
+%71 = OpExtInst %void %2 DebugTypeBasic %69 %uint_32 %uint_2 %uint_0
+%72 = OpExtInst %void %2 DebugSource %20
+%73 = OpExtInst %void %2 DebugCompilationUnit %uint_1 %uint_4 %72 %uint_5
+%75 = OpExtInst %void %2 DebugSource %74
+%77 = OpExtInst %void %2 DebugTypeBasic %76 %uint_32 %uint_3 %uint_0
+%78 = OpExtInst %void %2 DebugTypeVector %77 %uint_3
+%81 = OpExtInst %void %2 DebugTypeMember %79 %78 %75 %uint_4 %uint_12 %uint_0 %uint_96 %uint_3
+%84 = OpExtInst %void %2 DebugTypeMember %83 %78 %75 %uint_5 %uint_12 %uint_96 %uint_96 %uint_3
+%86 = OpExtInst %void %2 DebugTypeBasic %85 %uint_32 %uint_4 %uint_0
+%87 = OpExtInst %void %2 DebugTypeArray %86 %uint_3
+%90 = OpExtInst %void %2 DebugTypeMember %88 %87 %75 %uint_6 %uint_9 %uint_192 %uint_96 %uint_3
+%94 = OpExtInst %void %2 DebugTypeComposite %92 %uint_1 %75 %uint_2 %uint_8 %73 %92 %uint_288 %uint_3 %81 %84 %90
+%96 = OpExtInst %void %2 DebugTypeArray %78 %uint_2
+%97 = OpExtInst %void %2 DebugTypeFunction %uint_3 %71 %94 %96 %77 %77
+%100 = OpExtInst %void %2 DebugFunction %98 %97 %75 %uint_21 %uint_1 %73 %99 %uint_3 %uint_22
+%103 = OpExtInst %void %2 DebugLexicalBlock %75 %uint_22 %uint_1 %100
+%104 = OpExtInst %void %2 DebugLexicalBlock %75 %uint_72 %uint_5 %103
+%106 = OpExtInst %void %2 DebugLexicalBlock %75 %uint_67 %uint_5 %103
+%108 = OpExtInst %void %2 DebugLexicalBlock %75 %uint_58 %uint_5 %103
+%110 = OpExtInst %void %2 DebugLexicalBlock %75 %uint_53 %uint_5 %103
+%112 = OpExtInst %void %2 DebugLexicalBlock %75 %uint_47 %uint_5 %103
+%114 = OpExtInst %void %2 DebugLexicalBlock %75 %uint_42 %uint_5 %103
+%116 = OpExtInst %void %2 DebugLexicalBlock %75 %uint_36 %uint_5 %103
+%118 = OpExtInst %void %2 DebugLexicalBlock %75 %uint_31 %uint_5 %103
+%120 = OpExtInst %void %2 DebugLexicalBlock %75 %uint_25 %uint_5 %103
+%123 = OpExtInst %void %2 DebugLocalVariable %122 %77 %75 %uint_23 %uint_32 %103 %uint_4
+%126 = OpExtInst %void %2 DebugLocalVariable %125 %77 %75 %uint_23 %uint_25 %103 %uint_4
+%128 = OpExtInst %void %2 DebugLocalVariable %127 %77 %75 %uint_23 %uint_18 %103 %uint_4
+%131 = OpExtInst %void %2 DebugLocalVariable %130 %77 %75 %uint_23 %uint_11 %103 %uint_4
+%134 = OpExtInst %void %2 DebugLocalVariable %133 %77 %75 %uint_21 %uint_89 %100 %uint_4 %uint_4
+%137 = OpExtInst %void %2 DebugLocalVariable %136 %77 %75 %uint_21 %uint_73 %100 %uint_4 %uint_3
+)"
+      R"(%140 = OpExtInst %void %2 DebugLocalVariable %139 %96 %75 %uint_21 %uint_54 %100 %uint_4 %uint_2
+%143 = OpExtInst %void %2 DebugLocalVariable %142 %94 %75 %uint_21 %uint_42 %100 %uint_4 %uint_1
+%144 = OpExtInst %void %2 DebugTypeFunction %uint_3 %94 %78 %78
+%146 = OpExtInst %void %2 DebugFunction %145 %144 %75 %uint_9 %uint_1 %73 %99 %uint_3 %uint_10
+%148 = OpExtInst %void %2 DebugLexicalBlock %75 %uint_10 %uint_1 %146
+%150 = OpExtInst %void %2 DebugLocalVariable %149 %94 %75 %uint_13 %uint_13 %148 %uint_4
+%152 = OpExtInst %void %2 DebugLocalVariable %88 %87 %75 %uint_11 %uint_9 %148 %uint_4
+%153 = OpExtInst %void %2 DebugLocalVariable %83 %78 %75 %uint_9 %uint_43 %146 %uint_4 %uint_2
+%155 = OpExtInst %void %2 DebugLocalVariable %79 %78 %75 %uint_9 %uint_28 %146 %uint_4 %uint_1
+%157 = OpExtInst %void %2 DebugTypeVector %77 %uint_2
+%160 = OpExtInst %void %2 DebugTypeMember %158 %157 %72 %uint_20 %uint_10 %uint_0 %uint_64 %uint_3
+%163 = OpExtInst %void %2 DebugTypeComposite %162 %uint_1 %72 %uint_18 %uint_8 %73 %162 %uint_64 %uint_3 %160
+%164 = OpExtInst %void %2 DebugTypeFunction %uint_3 %void
+%166 = OpExtInst %void %2 DebugFunction %165 %164 %72 %uint_36 %uint_1 %73 %99 %uint_3 %uint_37
+%168 = OpExtInst %void %2 DebugLexicalBlock %72 %uint_37 %uint_1 %166
+%169 = OpExtInst %void %2 DebugLexicalBlock %72 %uint_58 %uint_3 %168
+%171 = OpExtInst %void %2 DebugLocalVariable %170 %163 %72 %uint_59 %uint_11 %169 %uint_4
+%173 = OpExtInst %void %2 DebugLocalVariable %133 %77 %72 %uint_56 %uint_9 %168 %uint_4
+%175 = OpExtInst %void %2 DebugLocalVariable %136 %77 %72 %uint_55 %uint_9 %168 %uint_4
+%177 = OpExtInst %void %2 DebugLocalVariable %139 %96 %72 %uint_54 %uint_10 %168 %uint_4
+%179 = OpExtInst %void %2 DebugTypeBasic %178 %uint_32 %uint_6 %uint_0
+%181 = OpExtInst %void %2 DebugLocalVariable %180 %179 %72 %uint_53 %uint_8 %168 %uint_4
+%182 = OpExtInst %void %2 DebugLocalVariable %149 %94 %72 %uint_52 %uint_11 %168 %uint_4
+%185 = OpExtInst %void %2 DebugLocalVariable %184 %78 %72 %uint_50 %uint_16 %168 %uint_4
+%189 = OpExtInst %void %2 DebugLocalVariable %188 %78 %72 %uint_49 %uint_16 %168 %uint_4
+%192 = OpExtInst %void %2 DebugLocalVariable %191 %77 %72 %uint_46 %uint_9 %168 %uint_4
+%195 = OpExtInst %void %2 DebugLocalVariable %194 %77 %72 %uint_45 %uint_9 %168 %uint_4
+%198 = OpExtInst %void %2 DebugLocalVariable %197 %78 %72 %uint_44 %uint_10 %168 %uint_4
+%201 = OpExtInst %void %2 DebugLocalVariable %200 %78 %72 %uint_43 %uint_10 %168 %uint_4
+%203 = OpExtInst %void %2 DebugLocalVariable %202 %78 %72 %uint_42 %uint_10 %168 %uint_4
+%205 = OpExtInst %void %2 DebugLocalVariable %204 %78 %72 %uint_41 %uint_10 %168 %uint_4
+%208 = OpExtInst %void %2 DebugLocalVariable %207 %179 %72 %uint_40 %uint_8 %168 %uint_4
+%210 = OpExtInst %void %2 DebugTypeVector %179 %uint_2
+%212 = OpExtInst %void %2 DebugLocalVariable %211 %210 %72 %uint_39 %uint_9 %168 %uint_4
+%216 = OpExtInst %void %2 DebugLocalVariable %215 %210 %72 %uint_38 %uint_9 %168 %uint_4
+%219 = OpExtInst %void %2 DebugFunction %218 %164 %72 %uint_36 %uint_1 %73 %99 %uint_3 %uint_37
+%223 = OpExtInst %void %2 DebugTypeArray %77 %uint_0
+%224 = OpExtInst %void %2 DebugTypeMember %99 %223 %72 %uint_33 %uint_25 %uint_0 %uint_0 %uint_3
+%227 = OpExtInst %void %2 DebugTypeComposite %226 %uint_0 %72 %uint_0 %uint_0 %73 %226 %uint_0 %uint_3 %224
+%230 = OpExtInst %void %2 DebugTypeTemplateParameter %229 %77 %228 %72 %uint_0 %uint_0
+%231 = OpExtInst %void %2 DebugTypeTemplate %227 %230
+%233 = OpExtInst %void %2 DebugGlobalVariable %232 %231 %72 %uint_33 %uint_25 %73 %232 %aabbBuffer %uint_8
+%234 = OpExtInst %void %2 DebugTypeVector %179 %uint_3
+%235 = OpExtInst %void %2 DebugTypeArray %234 %uint_0
+%236 = OpExtInst %void %2 DebugTypeMember %99 %235 %72 %uint_32 %uint_25 %uint_0 %uint_0 %uint_3
+%238 = OpExtInst %void %2 DebugTypeComposite %237 %uint_0 %72 %uint_0 %uint_0 %73 %237 %uint_0 %uint_3 %236
+%239 = OpExtInst %void %2 DebugTypeTemplateParameter %229 %234 %228 %72 %uint_0 %uint_0
+%240 = OpExtInst %void %2 DebugTypeTemplate %238 %239
+%242 = OpExtInst %void %2 DebugGlobalVariable %241 %240 %72 %uint_32 %uint_25 %73 %241 %indexBuffer %uint_8
+%244 = OpExtInst %void %2 DebugTypeMember %243 %78 %72 %uint_25 %uint_10 %uint_0 %uint_96 %uint_3
+%245 = OpExtInst %void %2 DebugTypeVector %77 %uint_4
+%248 = OpExtInst %void %2 DebugTypeMember %246 %245 %72 %uint_26 %uint_10 %uint_128 %uint_128 %uint_3
+%252 = OpExtInst %void %2 DebugTypeComposite %250 %uint_1 %72 %uint_23 %uint_8 %73 %250 %uint_256 %uint_3 %244 %248
+%253 = OpExtInst %void %2 DebugTypeArray %252 %uint_0
+%254 = OpExtInst %void %2 DebugTypeMember %99 %253 %72 %uint_31 %uint_26 %uint_0 %uint_0 %uint_3
+%256 = OpExtInst %void %2 DebugTypeComposite %255 %uint_0 %72 %uint_0 %uint_0 %73 %255 %uint_0 %uint_3 %254
+%257 = OpExtInst %void %2 DebugTypeTemplateParameter %229 %252 %228 %72 %uint_0 %uint_0
+%258 = OpExtInst %void %2 DebugTypeTemplate %256 %257
+%260 = OpExtInst %void %2 DebugGlobalVariable %259 %258 %72 %uint_31 %uint_26 %73 %259 %vertexBuffer %uint_8
+%263 = OpExtInst %void %2 DebugTypeComposite %261 %uint_1 %72 %uint_0 %uint_0 %73 %262 %228 %uint_3
+%265 = OpExtInst %void %2 DebugGlobalVariable %264 %263 %72 %uint_30 %uint_33 %73 %264 %topObject %uint_8
+%267 = OpExtInst %void %2 DebugTypeArray %245 %uint_0
+%268 = OpExtInst %void %2 DebugTypeMember %99 %267 %72 %uint_29 %uint_28 %uint_0 %uint_0 %uint_3
+%271 = OpExtInst %void %2 DebugTypeComposite %270 %uint_0 %72 %uint_0 %uint_0 %73 %270 %uint_0 %uint_3 %268
+%272 = OpExtInst %void %2 DebugTypeTemplateParameter %229 %245 %228 %72 %uint_0 %uint_0
+%273 = OpExtInst %void %2 DebugTypeTemplate %271 %272
+%275 = OpExtInst %void %2 DebugGlobalVariable %274 %273 %72 %uint_29 %uint_28 %73 %274 %outBuffer %uint_8
+%277 = OpExtInst %void %2 DebugTypeMember %276 %245 %72 %uint_5 %uint_10 %uint_0 %uint_128 %uint_3
+%279 = OpExtInst %void %2 DebugTypeMember %278 %78 %72 %uint_6 %uint_10 %uint_128 %uint_96 %uint_3
+%280 = OpExtInst %void %2 DebugTypeMember %184 %78 %72 %uint_7 %uint_10 %uint_256 %uint_96 %uint_3
+%284 = OpExtInst %void %2 DebugTypeMember %282 %78 %72 %uint_8 %uint_10 %uint_384 %uint_96 %uint_3
+%287 = OpExtInst %void %2 DebugTypeMember %285 %77 %72 %uint_9 %uint_9 %uint_480 %uint_32 %uint_3
+%290 = OpExtInst %void %2 DebugTypeMember %288 %86 %72 %uint_10 %uint_7 %uint_512 %uint_32 %uint_3
+%293 = OpExtInst %void %2 DebugTypeComposite %291 %uint_1 %72 %uint_3 %uint_9 %73 %291 %uint_544 %uint_3 %277 %279 %280 %284 %287 %290
+%295 = OpExtInst %void %2 DebugGlobalVariable %294 %293 %72 %uint_3 %uint_9 %73 %294 %SceneConstantBuffer %uint_8
+%222 = OpExtInst %void %2 DebugEntryPoint %219 %73 %220 %221
+%1788 = OpExtInst %void %2 DebugInlinedAt %uint_36 %219
+%1976 = OpExtInst %void %2 DebugInlinedAt %uint_52 %168 %1788
+%2072 = OpExtInst %void %2 DebugInlinedAt %uint_57 %168 %1788
+%isAABB = OpFunction %void None %296
+%297 = OpLabel
+%2071 = OpVariable %_ptr_Function_bool Function %false
+%2073 = OpVariable %_ptr_Function_bool Function
+%2074 = OpVariable %_ptr_Function_float Function
+%2075 = OpVariable %_ptr_Function_float Function
+%2076 = OpVariable %_ptr_Function_float Function
+%2077 = OpVariable %_ptr_Function_float Function
+%2078 = OpVariable %_ptr_Function_bool Function
+%1975 = OpVariable %_ptr_Function__arr_int_uint_3 Function
+%1977 = OpVariable %_ptr_Function_int Function
+%1978 = OpVariable %_ptr_Function_int Function
+%1979 = OpVariable %_ptr_Function_int Function
+%1980 = OpVariable %_ptr_Function_aabbRay Function
+%1981 = OpVariable %_ptr_Function_aabbRay Function
+%1787 = OpVariable %_ptr_Function_v2uint Function
+%1789 = OpVariable %_ptr_Function_v2uint Function
+%1790 = OpVariable %_ptr_Function_uint Function
+%1791 = OpVariable %_ptr_Function_v3float Function
+%1792 = OpVariable %_ptr_Function_v3float Function
+%1793 = OpVariable %_ptr_Function_v3float Function
+%1794 = OpVariable %_ptr_Function_v3float Function
+%1795 = OpVariable %_ptr_Function_float Function
+%1796 = OpVariable %_ptr_Function_float Function
+%1797 = OpVariable %_ptr_Function_v3float Function
+%1798 = OpVariable %_ptr_Function_v3float Function
+%1799 = OpVariable %_ptr_Function_aabbRay Function
+%1800 = OpVariable %_ptr_Function_v3float Function
+%1801 = OpVariable %_ptr_Function_v3float Function
+%1802 = OpVariable %_ptr_Function_uint Function
+%1803 = OpVariable %_ptr_Function__arr_v3float_uint_2 Function
+%1804 = OpVariable %_ptr_Function_float Function
+%1805 = OpVariable %_ptr_Function_float Function
+%1806 = OpVariable %_ptr_Function_aabbRay Function
+%1807 = OpVariable %_ptr_Function__arr_v3float_uint_2 Function
+%1808 = OpVariable %_ptr_Function_Attrs Function
+%2735 = OpExtInst %void %2 DebugScope %219
+%299 = OpExtInst %void %2 DebugFunctionDefinition %219 %isAABB
+%2736 = OpExtInst %void %2 DebugScope %168 %1788
+%1883 = OpExtInst %void %2 DebugLine %72 %uint_38 %uint_38 %uint_23 %uint_41
+%1811 = OpLoad %v3uint %4
+%1884 = OpExtInst %void %2 DebugLine %72 %uint_38 %uint_38 %uint_23 %uint_43
+%1812 = OpVectorShuffle %v2uint %1811 %1811 0 1
+%1885 = OpExtInst %void %2 DebugLine %72 %uint_38 %uint_38 %uint_3 %uint_43
+OpStore %1787 %1812
+; CHECK-NOT: OpStore %1787 %1812
+%1813 = OpExtInst %void %2 DebugDeclare %216 %1787 %214
+; CHECK-NOT: %1813 = OpExtInst %void %2 DebugDeclare %216 %1787 %214
+%1887 = OpExtInst %void %2 DebugLine %72 %uint_39 %uint_39 %uint_21 %uint_44
+%1814 = OpLoad %v3uint %5
+%1888 = OpExtInst %void %2 DebugLine %72 %uint_39 %uint_39 %uint_21 %uint_46
+%1815 = OpVectorShuffle %v2uint %1814 %1814 0 1
+%1889 = OpExtInst %void %2 DebugLine %72 %uint_39 %uint_39 %uint_3 %uint_46
+OpStore %1789 %1815
+; CHECK-NOT: OpStore %1789 %1815
+%1816 = OpExtInst %void %2 DebugDeclare %212 %1789 %214
+; CHECK-NOT: %1816 = OpExtInst %void %2 DebugDeclare %212 %1789 %214
+%1891 = OpExtInst %void %2 DebugLine %72 %uint_40 %uint_40 %uint_25 %uint_40
+%1817 = OpLoad %uint %gl_PrimitiveID
+%1892 = OpExtInst %void %2 DebugLine %72 %uint_40 %uint_40 %uint_3 %uint_40
+OpStore %1790 %1817
+%1818 = OpExtInst %void %2 DebugDeclare %208 %1790 %214
+; CHECK: OpStore %1790 %1817
+; CHECK-NEXT: %1818 = OpExtInst %void %2 DebugDeclare %208 %1790 %214
+%1894 = OpExtInst %void %2 DebugLine %72 %uint_41 %uint_41 %uint_25 %uint_40
+%1819 = OpLoad %v3float %7
+%1895 = OpExtInst %void %2 DebugLine %72 %uint_41 %uint_41 %uint_3 %uint_40
+OpStore %1791 %1819
+%1820 = OpExtInst %void %2 DebugDeclare %205 %1791 %214
+%1897 = OpExtInst %void %2 DebugLine %72 %uint_42 %uint_42 %uint_24 %uint_42
+%1821 = OpLoad %v3float %8
+%1898 = OpExtInst %void %2 DebugLine %72 %uint_42 %uint_42 %uint_3 %uint_42
+OpStore %1792 %1821
+%1822 = OpExtInst %void %2 DebugDeclare %203 %1792 %214
+%1900 = OpExtInst %void %2 DebugLine %72 %uint_43 %uint_43 %uint_26 %uint_42
+%1823 = OpLoad %v3float %9
+%1901 = OpExtInst %void %2 DebugLine %72 %uint_43 %uint_43 %uint_3 %uint_42
+OpStore %1793 %1823
+%1824 = OpExtInst %void %2 DebugDeclare %201 %1793 %214
+%1903 = OpExtInst %void %2 DebugLine %72 %uint_44 %uint_44 %uint_25 %uint_44
+%1825 = OpLoad %v3float %10
+%1904 = OpExtInst %void %2 DebugLine %72 %uint_44 %uint_44 %uint_3 %uint_44
+OpStore %1794 %1825
+%1826 = OpExtInst %void %2 DebugDeclare %198 %1794 %214
+%1906 = OpExtInst %void %2 DebugLine %72 %uint_45 %uint_45 %uint_19 %uint_27
+%1827 = OpLoad %float %11
+%1907 = OpExtInst %void %2 DebugLine %72 %uint_45 %uint_45 %uint_3 %uint_27
+OpStore %1795 %1827
+%1828 = OpExtInst %void %2 DebugDeclare %195 %1795 %214
+%1909 = OpExtInst %void %2 DebugLine %72 %uint_46 %uint_46 %uint_19 %uint_31
+%1829 = OpLoad %float %12
+%1910 = OpExtInst %void %2 DebugLine %72 %uint_46 %uint_46 %uint_3 %uint_31
+OpStore %1796 %1829
+%1830 = OpExtInst %void %2 DebugDeclare %192 %1796 %214
+%1913 = OpExtInst %void %2 DebugLine %72 %uint_49 %uint_49 %uint_3 %uint_22
+OpStore %1797 %1823
+%1832 = OpExtInst %void %2 DebugDeclare %189 %1797 %214
+%1916 = OpExtInst %void %2 DebugLine %72 %uint_50 %uint_50 %uint_3 %uint_22
+OpStore %1798 %1825
+%1834 = OpExtInst %void %2 DebugDeclare %185 %1798 %214
+%1919 = OpExtInst %void %2 DebugLine %72 %uint_52 %uint_52 %uint_27 %uint_27
+OpStore %1800 %1823
+%1921 = OpExtInst %void %2 DebugLine %72 %uint_52 %uint_52 %uint_42 %uint_42
+OpStore %1801 %1825
+%2737 = OpExtInst %void %2 DebugScope %146 %1976
+%2020 = OpExtInst %void %2 DebugLine %75 %uint_9 %uint_9 %uint_21 %uint_28
+%1983 = OpExtInst %void %2 DebugDeclare %155 %1800 %214
+%2021 = OpExtInst %void %2 DebugLine %75 %uint_9 %uint_9 %uint_36 %uint_43
+%1984 = OpExtInst %void %2 DebugDeclare %153 %1801 %214
+%2738 = OpExtInst %void %2 DebugScope %148 %1976
+%2022 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_22 %uint_32
+%1986 = OpAccessChain %_ptr_Function_float %1801 %int_0
+%1987 = OpLoad %float %1986
+%2024 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_22 %uint_36
+%1988 = OpFOrdLessThan %bool %1987 %float_0
+%2025 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_21 %uint_21
+%2739 = OpExtInst %void %2 DebugNoScope
+OpSelectionMerge %1991 None
+OpBranchConditional %1988 %1989 %1990
+%1989 = OpLabel
+%2740 = OpExtInst %void %2 DebugScope %148 %1976
+%2027 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_21 %uint_45
+OpStore %1977 %int_1
+%2028 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_41 %uint_41
+OpBranch %1991
+%1990 = OpLabel
+%2741 = OpExtInst %void %2 DebugScope %148 %1976
+%2029 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_21 %uint_45
+OpStore %1977 %int_0
+%2030 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_45 %uint_45
+OpBranch %1991
+%1991 = OpLabel
+%2742 = OpExtInst %void %2 DebugScope %148 %1976
+%2031 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_21 %uint_45
+%1992 = OpLoad %int %1977
+%1993 = OpBitcast %int %1992
+%2033 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_49 %uint_59
+%1994 = OpAccessChain %_ptr_Function_float %1801 %int_1
+%1995 = OpLoad %float %1994
+%2035 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_49 %uint_63
+%1996 = OpFOrdLessThan %bool %1995 %float_0
+%2036 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_48 %uint_48
+%2743 = OpExtInst %void %2 DebugNoScope
+OpSelectionMerge %1999 None
+OpBranchConditional %1996 %1997 %1998
+%1997 = OpLabel
+%2744 = OpExtInst %void %2 DebugScope %148 %1976
+%2038 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_48 %uint_72
+OpStore %1978 %int_1
+%2039 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_68 %uint_68
+OpBranch %1999
+%1998 = OpLabel
+%2745 = OpExtInst %void %2 DebugScope %148 %1976
+%2040 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_48 %uint_72
+OpStore %1978 %int_0
+%2041 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_72 %uint_72
+OpBranch %1999
+%1999 = OpLabel
+%2746 = OpExtInst %void %2 DebugScope %148 %1976
+%2042 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_48 %uint_72
+%2000 = OpLoad %int %1978
+%2001 = OpBitcast %int %2000
+%2044 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_76 %uint_86
+%2002 = OpAccessChain %_ptr_Function_float %1801 %int_2
+%2003 = OpLoad %float %2002
+%2046 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_76 %uint_90
+%2004 = OpFOrdLessThan %bool %2003 %float_0
+%2047 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_75 %uint_75
+%2747 = OpExtInst %void %2 DebugNoScope
+OpSelectionMerge %2007 None
+OpBranchConditional %2004 %2005 %2006
+%2005 = OpLabel
+%2748 = OpExtInst %void %2 DebugScope %148 %1976
+%2049 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_75 %uint_99
+OpStore %1979 %int_1
+%2050 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_95 %uint_95
+OpBranch %2007
+%2006 = OpLabel
+%2749 = OpExtInst %void %2 DebugScope %148 %1976
+%2051 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_75 %uint_99
+OpStore %1979 %int_0
+%2052 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_99 %uint_99
+OpBranch %2007
+%2007 = OpLabel
+%2750 = OpExtInst %void %2 DebugScope %148 %1976
+%2053 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_75 %uint_99
+%2008 = OpLoad %int %1979
+%2009 = OpBitcast %int %2008
+%2055 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_19 %uint_101
+%2010 = OpCompositeConstruct %_arr_int_uint_3 %1993 %2001 %2009
+%2056 = OpExtInst %void %2 DebugLine %75 %uint_11 %uint_11 %uint_5 %uint_101
+OpStore %1975 %2010
+%2011 = OpExtInst %void %2 DebugDeclare %152 %1975 %214
+%2058 = OpExtInst %void %2 DebugLine %75 %uint_13 %uint_13 %uint_5 %uint_13
+)"
+      R"(%2012 = OpExtInst %void %2 DebugDeclare %150 %1980 %214
+%2059 = OpExtInst %void %2 DebugLine %75 %uint_14 %uint_14 %uint_16 %uint_16
+%2013 = OpLoad %v3float %1800
+%2060 = OpExtInst %void %2 DebugLine %75 %uint_14 %uint_14 %uint_5 %uint_16
+%2014 = OpAccessChain %_ptr_Function_v3float %1980 %int_0
+OpStore %2014 %2013
+%2062 = OpExtInst %void %2 DebugLine %75 %uint_15 %uint_15 %uint_19 %uint_19
+%2015 = OpLoad %v3float %1801
+%2063 = OpExtInst %void %2 DebugLine %75 %uint_15 %uint_15 %uint_5 %uint_19
+%2016 = OpAccessChain %_ptr_Function_v3float %1980 %int_1
+OpStore %2016 %2015
+%2066 = OpExtInst %void %2 DebugLine %75 %uint_16 %uint_16 %uint_5 %uint_14
+%2018 = OpAccessChain %_ptr_Function__arr_int_uint_3 %1980 %int_2
+OpStore %2018 %2010
+%2068 = OpExtInst %void %2 DebugLine %75 %uint_18 %uint_18 %uint_12 %uint_12
+%2019 = OpLoad %aabbRay %1980
+%2069 = OpExtInst %void %2 DebugLine %75 %uint_18 %uint_18 %uint_5 %uint_12
+OpStore %1981 %2019
+%2751 = OpExtInst %void %2 DebugScope %168 %1788
+%1923 = OpExtInst %void %2 DebugLine %72 %uint_52 %uint_52 %uint_3 %uint_54
+OpStore %1799 %2019
+%1838 = OpExtInst %void %2 DebugDeclare %182 %1799 %214
+%1925 = OpExtInst %void %2 DebugLine %72 %uint_53 %uint_53 %uint_14 %uint_14
+%1839 = OpLoad %uint %1790
+%1926 = OpExtInst %void %2 DebugLine %72 %uint_53 %uint_53 %uint_14 %uint_31
+%1840 = OpIMul %uint %1839 %uint_6
+%1927 = OpExtInst %void %2 DebugLine %72 %uint_53 %uint_53 %uint_3 %uint_31
+OpStore %1802 %1840
+%1841 = OpExtInst %void %2 DebugDeclare %181 %1802 %214
+%1930 = OpExtInst %void %2 DebugLine %72 %uint_54 %uint_54 %uint_24 %uint_38
+%1843 = OpAccessChain %_ptr_StorageBuffer_float %aabbBuffer %int_0 %1840
+%1844 = OpLoad %float %1843
+%1933 = OpExtInst %void %2 DebugLine %72 %uint_54 %uint_54 %uint_52 %uint_58
+%1846 = OpIAdd %uint %1840 %uint_1
+%1934 = OpExtInst %void %2 DebugLine %72 %uint_54 %uint_54 %uint_41 %uint_59
+%1847 = OpAccessChain %_ptr_StorageBuffer_float %aabbBuffer %int_0 %1846
+%1848 = OpLoad %float %1847
+%1937 = OpExtInst %void %2 DebugLine %72 %uint_54 %uint_54 %uint_73 %uint_79
+%1850 = OpIAdd %uint %1840 %uint_2
+%1938 = OpExtInst %void %2 DebugLine %72 %uint_54 %uint_54 %uint_62 %uint_80
+%1851 = OpAccessChain %_ptr_StorageBuffer_float %aabbBuffer %int_0 %1850
+%1852 = OpLoad %float %1851
+%1941 = OpExtInst %void %2 DebugLine %72 %uint_54 %uint_54 %uint_98 %uint_104
+%1854 = OpIAdd %uint %1840 %uint_3
+%1942 = OpExtInst %void %2 DebugLine %72 %uint_54 %uint_54 %uint_87 %uint_105
+%1855 = OpAccessChain %_ptr_StorageBuffer_float %aabbBuffer %int_0 %1854
+%1856 = OpLoad %float %1855
+%1945 = OpExtInst %void %2 DebugLine %72 %uint_54 %uint_54 %uint_119 %uint_125
+%1858 = OpIAdd %uint %1840 %uint_4
+%1946 = OpExtInst %void %2 DebugLine %72 %uint_54 %uint_54 %uint_108 %uint_126
+%1859 = OpAccessChain %_ptr_StorageBuffer_float %aabbBuffer %int_0 %1858
+%1860 = OpLoad %float %1859
+%1949 = OpExtInst %void %2 DebugLine %72 %uint_54 %uint_54 %uint_140 %uint_146
+%1862 = OpIAdd %uint %1840 %uint_5
+%1950 = OpExtInst %void %2 DebugLine %72 %uint_54 %uint_54 %uint_129 %uint_147
+%1863 = OpAccessChain %_ptr_StorageBuffer_float %aabbBuffer %int_0 %1862
+%1864 = OpLoad %float %1863
+%1952 = OpExtInst %void %2 DebugLine %72 %uint_54 %uint_54 %uint_20 %uint_151
+%1865 = OpCompositeConstruct %v3float %1844 %1848 %1852
+%1866 = OpCompositeConstruct %v3float %1856 %1860 %1864
+%1867 = OpCompositeConstruct %_arr_v3float_uint_2_0 %1865 %1866
+%1955 = OpExtInst %void %2 DebugLine %72 %uint_54 %uint_54 %uint_3 %uint_151
+%1868 = OpCompositeExtract %v3float %1867 0
+%1869 = OpCompositeExtract %v3float %1867 1
+%1870 = OpCompositeConstruct %_arr_v3float_uint_2 %1868 %1869
+OpStore %1803 %1870
+%1871 = OpExtInst %void %2 DebugDeclare %177 %1803 %214
+%1960 = OpExtInst %void %2 DebugLine %72 %uint_55 %uint_55 %uint_3 %uint_9
+%1872 = OpExtInst %void %2 DebugDeclare %175 %1804 %214
+%1961 = OpExtInst %void %2 DebugLine %72 %uint_56 %uint_56 %uint_3 %uint_9
+%1873 = OpExtInst %void %2 DebugDeclare %173 %1805 %214
+%1963 = OpExtInst %void %2 DebugLine %72 %uint_57 %uint_57 %uint_34 %uint_34
+OpStore %1806 %2019
+%1965 = OpExtInst %void %2 DebugLine %72 %uint_57 %uint_57 %uint_37 %uint_37
+OpStore %1807 %1870
+%2752 = OpExtInst %void %2 DebugNoLine
+%2753 = OpExtInst %void %2 DebugNoScope
+OpStore %2071 %false
+OpSelectionMerge %2224 None
+OpSwitch %uint_0 %2080
+%2080 = OpLabel
+%2754 = OpExtInst %void %2 DebugScope %100 %2072
+%2226 = OpExtInst %void %2 DebugLine %75 %uint_21 %uint_21 %uint_34 %uint_42
+%2081 = OpExtInst %void %2 DebugDeclare %143 %1806 %214
+%2227 = OpExtInst %void %2 DebugLine %75 %uint_21 %uint_21 %uint_47 %uint_60
+%2082 = OpExtInst %void %2 DebugDeclare %140 %1807 %214
+%2228 = OpExtInst %void %2 DebugLine %75 %uint_21 %uint_21 %uint_63 %uint_73
+%2083 = OpExtInst %void %2 DebugDeclare %137 %1804 %214
+%2229 = OpExtInst %void %2 DebugLine %75 %uint_21 %uint_21 %uint_79 %uint_89
+%2084 = OpExtInst %void %2 DebugDeclare %134 %1805 %214
+%2755 = OpExtInst %void %2 DebugScope %103 %2072
+%2230 = OpExtInst %void %2 DebugLine %75 %uint_23 %uint_23 %uint_5 %uint_11
+%2086 = OpExtInst %void %2 DebugDeclare %131 %2074 %214
+%2231 = OpExtInst %void %2 DebugLine %75 %uint_23 %uint_23 %uint_5 %uint_18
+%2087 = OpExtInst %void %2 DebugDeclare %128 %2075 %214
+%2232 = OpExtInst %void %2 DebugLine %75 %uint_23 %uint_23 %uint_5 %uint_25
+%2088 = OpExtInst %void %2 DebugDeclare %126 %2076 %214
+%2233 = OpExtInst %void %2 DebugLine %75 %uint_23 %uint_23 %uint_5 %uint_32
+%2089 = OpExtInst %void %2 DebugDeclare %123 %2077 %214
+%2234 = OpExtInst %void %2 DebugLine %75 %uint_24 %uint_24 %uint_14 %uint_18
+%2090 = OpAccessChain %_ptr_Function_v3float %1806 %int_1
+%2091 = OpLoad %v3float %2090
+%2236 = OpExtInst %void %2 DebugLine %75 %uint_24 %uint_24 %uint_10 %uint_10
+%2092 = OpFOrdNotEqual %v3bool %2091 %36
+%2237 = OpExtInst %void %2 DebugLine %75 %uint_24 %uint_24 %uint_10 %uint_27
+%2093 = OpAny %bool %2092
+%2238 = OpExtInst %void %2 DebugLine %75 %uint_24 %uint_24 %uint_9 %uint_27
+%2094 = OpLogicalNot %bool %2093
+%2756 = OpExtInst %void %2 DebugNoScope
+OpSelectionMerge %2096 None
+OpBranchConditional %2094 %2095 %2096
+%2095 = OpLabel
+%2757 = OpExtInst %void %2 DebugNoScope
+OpStore %2071 %true
+OpStore %2073 %false
+%2758 = OpExtInst %void %2 DebugScope %120 %2072
+%2241 = OpExtInst %void %2 DebugLine %75 %uint_27 %uint_27 %uint_9 %uint_16
+OpBranch %2224
+%2096 = OpLabel
+%2759 = OpExtInst %void %2 DebugScope %103 %2072
+%2242 = OpExtInst %void %2 DebugLine %75 %uint_30 %uint_30 %uint_9 %uint_23
+%2097 = OpAccessChain %_ptr_Function_v3float %1806 %int_1
+%2098 = OpAccessChain %_ptr_Function_float %2097 %int_0
+%2099 = OpLoad %float %2098
+%2245 = OpExtInst %void %2 DebugLine %75 %uint_30 %uint_30 %uint_9 %uint_28
+%2100 = OpFOrdNotEqual %bool %2099 %float_0
+%2760 = OpExtInst %void %2 DebugNoScope
+OpSelectionMerge %2132 None
+OpBranchConditional %2100 %2101 %2131
+%2101 = OpLabel
+%2761 = OpExtInst %void %2 DebugScope %118 %2072
+%2248 = OpExtInst %void %2 DebugLine %75 %uint_32 %uint_32 %uint_22 %uint_26
+%2102 = OpAccessChain %_ptr_Function__arr_int_uint_3 %1806 %int_2
+%2249 = OpExtInst %void %2 DebugLine %75 %uint_32 %uint_32 %uint_22 %uint_32
+%2103 = OpAccessChain %_ptr_Function_int %2102 %int_0
+%2104 = OpLoad %int %2103
+%2251 = OpExtInst %void %2 DebugLine %75 %uint_32 %uint_32 %uint_17 %uint_35
+%2105 = OpAccessChain %_ptr_Function_v3float %1807 %2104
+%2106 = OpAccessChain %_ptr_Function_float %2105 %int_0
+%2107 = OpLoad %float %2106
+%2254 = OpExtInst %void %2 DebugLine %75 %uint_32 %uint_32 %uint_39 %uint_50
+%2108 = OpAccessChain %_ptr_Function_v3float %1806 %int_0
+%2109 = OpAccessChain %_ptr_Function_float %2108 %int_0
+%2110 = OpLoad %float %2109
+%2257 = OpExtInst %void %2 DebugLine %75 %uint_32 %uint_32 %uint_17 %uint_50
+%2111 = OpFSub %float %2107 %2110
+%2258 = OpExtInst %void %2 DebugLine %75 %uint_32 %uint_32 %uint_55 %uint_69
+%2112 = OpAccessChain %_ptr_Function_v3float %1806 %int_1
+%2113 = OpAccessChain %_ptr_Function_float %2112 %int_0
+%2114 = OpLoad %float %2113
+%2261 = OpExtInst %void %2 DebugLine %75 %uint_32 %uint_32 %uint_16 %uint_69
+%2115 = OpFDiv %float %2111 %2114
+%2262 = OpExtInst %void %2 DebugLine %75 %uint_32 %uint_32 %uint_9 %uint_69
+OpStore %1804 %2115
+%2263 = OpExtInst %void %2 DebugLine %75 %uint_33 %uint_33 %uint_26 %uint_30
+%2116 = OpAccessChain %_ptr_Function__arr_int_uint_3 %1806 %int_2
+%2264 = OpExtInst %void %2 DebugLine %75 %uint_33 %uint_33 %uint_26 %uint_36
+%2117 = OpAccessChain %_ptr_Function_int %2116 %int_0
+%2118 = OpLoad %int %2117
+%2266 = OpExtInst %void %2 DebugLine %75 %uint_33 %uint_33 %uint_22 %uint_36
+%2119 = OpISub %int %int_1 %2118
+%2267 = OpExtInst %void %2 DebugLine %75 %uint_33 %uint_33 %uint_17 %uint_39
+%2120 = OpAccessChain %_ptr_Function_v3float %1807 %2119
+%2121 = OpAccessChain %_ptr_Function_float %2120 %int_0
+%2122 = OpLoad %float %2121
+%2270 = OpExtInst %void %2 DebugLine %75 %uint_33 %uint_33 %uint_43 %uint_54
+%2123 = OpAccessChain %_ptr_Function_v3float %1806 %int_0
+%2124 = OpAccessChain %_ptr_Function_float %2123 %int_0
+%2125 = OpLoad %float %2124
+%2273 = OpExtInst %void %2 DebugLine %75 %uint_33 %uint_33 %uint_17 %uint_54
+%2126 = OpFSub %float %2122 %2125
+%2274 = OpExtInst %void %2 DebugLine %75 %uint_33 %uint_33 %uint_59 %uint_73
+%2127 = OpAccessChain %_ptr_Function_v3float %1806 %int_1
+%2128 = OpAccessChain %_ptr_Function_float %2127 %int_0
+%2129 = OpLoad %float %2128
+%2277 = OpExtInst %void %2 DebugLine %75 %uint_33 %uint_33 %uint_16 %uint_73
+%2130 = OpFDiv %float %2126 %2129
+%2278 = OpExtInst %void %2 DebugLine %75 %uint_33 %uint_33 %uint_9 %uint_73
+OpStore %1805 %2130
+%2762 = OpExtInst %void %2 DebugScope %103 %2072
+%2279 = OpExtInst %void %2 DebugLine %75 %uint_34 %uint_34 %uint_5 %uint_5
+OpBranch %2132
+%2131 = OpLabel
+%2763 = OpExtInst %void %2 DebugScope %116 %2072
+%2280 = OpExtInst %void %2 DebugLine %75 %uint_37 %uint_37 %uint_9 %uint_17
+OpStore %1804 %float_n0x1p_128
+%2281 = OpExtInst %void %2 DebugLine %75 %uint_38 %uint_38 %uint_9 %uint_17
+OpStore %1805 %float_0x1p_128
+%2764 = OpExtInst %void %2 DebugScope %103 %2072
+%2282 = OpExtInst %void %2 DebugLine %75 %uint_39 %uint_39 %uint_5 %uint_5
+OpBranch %2132
+%2132 = OpLabel
+%2765 = OpExtInst %void %2 DebugScope %103 %2072
+%2283 = OpExtInst %void %2 DebugLine %75 %uint_41 %uint_41 %uint_9 %uint_23
+%2133 = OpAccessChain %_ptr_Function_v3float %1806 %int_1
+%2134 = OpAccessChain %_ptr_Function_float %2133 %int_1
+%2135 = OpLoad %float %2134
+%2286 = OpExtInst %void %2 DebugLine %75 %uint_41 %uint_41 %uint_9 %uint_28
+%2136 = OpFOrdNotEqual %bool %2135 %float_0
+%2766 = OpExtInst %void %2 DebugNoScope
+OpSelectionMerge %2168 None
+OpBranchConditional %2136 %2137 %2167
+%2137 = OpLabel
+%2767 = OpExtInst %void %2 DebugScope %114 %2072
+%2289 = OpExtInst %void %2 DebugLine %75 %uint_43 %uint_43 %uint_23 %uint_27
+%2138 = OpAccessChain %_ptr_Function__arr_int_uint_3 %1806 %int_2
+%2290 = OpExtInst %void %2 DebugLine %75 %uint_43 %uint_43 %uint_23 %uint_33
+%2139 = OpAccessChain %_ptr_Function_int %2138 %int_1
+%2140 = OpLoad %int %2139
+%2292 = OpExtInst %void %2 DebugLine %75 %uint_43 %uint_43 %uint_18 %uint_36
+%2141 = OpAccessChain %_ptr_Function_v3float %1807 %2140
+%2142 = OpAccessChain %_ptr_Function_float %2141 %int_1
+%2143 = OpLoad %float %2142
+%2295 = OpExtInst %void %2 DebugLine %75 %uint_43 %uint_43 %uint_40 %uint_51
+%2144 = OpAccessChain %_ptr_Function_v3float %1806 %int_0
+%2145 = OpAccessChain %_ptr_Function_float %2144 %int_1
+%2146 = OpLoad %float %2145
+%2298 = OpExtInst %void %2 DebugLine %75 %uint_43 %uint_43 %uint_18 %uint_51
+%2147 = OpFSub %float %2143 %2146
+%2299 = OpExtInst %void %2 DebugLine %75 %uint_43 %uint_43 %uint_56 %uint_70
+%2148 = OpAccessChain %_ptr_Function_v3float %1806 %int_1
+%2149 = OpAccessChain %_ptr_Function_float %2148 %int_1
+%2150 = OpLoad %float %2149
+%2302 = OpExtInst %void %2 DebugLine %75 %uint_43 %uint_43 %uint_17 %uint_70
+%2151 = OpFDiv %float %2147 %2150
+%2303 = OpExtInst %void %2 DebugLine %75 %uint_43 %uint_43 %uint_9 %uint_70
+OpStore %2074 %2151
+%2304 = OpExtInst %void %2 DebugLine %75 %uint_44 %uint_44 %uint_27 %uint_31
+%2152 = OpAccessChain %_ptr_Function__arr_int_uint_3 %1806 %int_2
+%2305 = OpExtInst %void %2 DebugLine %75 %uint_44 %uint_44 %uint_27 %uint_37
+%2153 = OpAccessChain %_ptr_Function_int %2152 %int_1
+%2154 = OpLoad %int %2153
+%2307 = OpExtInst %void %2 DebugLine %75 %uint_44 %uint_44 %uint_23 %uint_37
+%2155 = OpISub %int %int_1 %2154
+%2308 = OpExtInst %void %2 DebugLine %75 %uint_44 %uint_44 %uint_18 %uint_40
+%2156 = OpAccessChain %_ptr_Function_v3float %1807 %2155
+%2157 = OpAccessChain %_ptr_Function_float %2156 %int_1
+%2158 = OpLoad %float %2157
+%2311 = OpExtInst %void %2 DebugLine %75 %uint_44 %uint_44 %uint_44 %uint_55
+%2159 = OpAccessChain %_ptr_Function_v3float %1806 %int_0
+%2160 = OpAccessChain %_ptr_Function_float %2159 %int_1
+%2161 = OpLoad %float %2160
+%2314 = OpExtInst %void %2 DebugLine %75 %uint_44 %uint_44 %uint_18 %uint_55
+%2162 = OpFSub %float %2158 %2161
+%2315 = OpExtInst %void %2 DebugLine %75 %uint_44 %uint_44 %uint_60 %uint_74
+%2163 = OpAccessChain %_ptr_Function_v3float %1806 %int_1
+%2164 = OpAccessChain %_ptr_Function_float %2163 %int_1
+%2165 = OpLoad %float %2164
+%2318 = OpExtInst %void %2 DebugLine %75 %uint_44 %uint_44 %uint_17 %uint_74
+%2166 = OpFDiv %float %2162 %2165
+%2319 = OpExtInst %void %2 DebugLine %75 %uint_44 %uint_44 %uint_9 %uint_74
+OpStore %2075 %2166
+%2768 = OpExtInst %void %2 DebugScope %103 %2072
+%2320 = OpExtInst %void %2 DebugLine %75 %uint_45 %uint_45 %uint_5 %uint_5
+OpBranch %2168
+%2167 = OpLabel
+%2769 = OpExtInst %void %2 DebugScope %112 %2072
+%2321 = OpExtInst %void %2 DebugLine %75 %uint_48 %uint_48 %uint_9 %uint_18
+OpStore %2074 %float_n0x1p_128
+%2322 = OpExtInst %void %2 DebugLine %75 %uint_49 %uint_49 %uint_9 %uint_18
+OpStore %2075 %float_0x1p_128
+%2770 = OpExtInst %void %2 DebugScope %103 %2072
+%2323 = OpExtInst %void %2 DebugLine %75 %uint_50 %uint_50 %uint_5 %uint_5
+OpBranch %2168
+%2168 = OpLabel
+%2771 = OpExtInst %void %2 DebugScope %103 %2072
+%2324 = OpExtInst %void %2 DebugLine %75 %uint_52 %uint_52 %uint_9 %uint_23
+%2169 = OpAccessChain %_ptr_Function_v3float %1806 %int_1
+%2170 = OpAccessChain %_ptr_Function_float %2169 %int_2
+%2171 = OpLoad %float %2170
+%2327 = OpExtInst %void %2 DebugLine %75 %uint_52 %uint_52 %uint_9 %uint_28
+%2172 = OpFOrdNotEqual %bool %2171 %float_0
+%2772 = OpExtInst %void %2 DebugNoScope
+OpSelectionMerge %2204 None
+OpBranchConditional %2172 %2173 %2203
+%2173 = OpLabel
+%2773 = OpExtInst %void %2 DebugScope %110 %2072
+%2330 = OpExtInst %void %2 DebugLine %75 %uint_54 %uint_54 %uint_23 %uint_27
+%2174 = OpAccessChain %_ptr_Function__arr_int_uint_3 %1806 %int_2
+%2331 = OpExtInst %void %2 DebugLine %75 %uint_54 %uint_54 %uint_23 %uint_33
+%2175 = OpAccessChain %_ptr_Function_int %2174 %int_2
+%2176 = OpLoad %int %2175
+%2333 = OpExtInst %void %2 DebugLine %75 %uint_54 %uint_54 %uint_18 %uint_36
+%2177 = OpAccessChain %_ptr_Function_v3float %1807 %2176
+%2178 = OpAccessChain %_ptr_Function_float %2177 %int_2
+%2179 = OpLoad %float %2178
+%2336 = OpExtInst %void %2 DebugLine %75 %uint_54 %uint_54 %uint_40 %uint_51
+%2180 = OpAccessChain %_ptr_Function_v3float %1806 %int_0
+%2181 = OpAccessChain %_ptr_Function_float %2180 %int_2
+%2182 = OpLoad %float %2181
+%2339 = OpExtInst %void %2 DebugLine %75 %uint_54 %uint_54 %uint_18 %uint_51
+%2183 = OpFSub %float %2179 %2182
+%2340 = OpExtInst %void %2 DebugLine %75 %uint_54 %uint_54 %uint_56 %uint_70
+%2184 = OpAccessChain %_ptr_Function_v3float %1806 %int_1
+%2185 = OpAccessChain %_ptr_Function_float %2184 %int_2
+%2186 = OpLoad %float %2185
+%2343 = OpExtInst %void %2 DebugLine %75 %uint_54 %uint_54 %uint_17 %uint_70
+%2187 = OpFDiv %float %2183 %2186
+%2344 = OpExtInst %void %2 DebugLine %75 %uint_54 %uint_54 %uint_9 %uint_70
+OpStore %2076 %2187
+%2345 = OpExtInst %void %2 DebugLine %75 %uint_55 %uint_55 %uint_27 %uint_31
+%2188 = OpAccessChain %_ptr_Function__arr_int_uint_3 %1806 %int_2
+%2346 = OpExtInst %void %2 DebugLine %75 %uint_55 %uint_55 %uint_27 %uint_37
+%2189 = OpAccessChain %_ptr_Function_int %2188 %int_2
+%2190 = OpLoad %int %2189
+%2348 = OpExtInst %void %2 DebugLine %75 %uint_55 %uint_55 %uint_23 %uint_37
+%2191 = OpISub %int %int_1 %2190
+%2349 = OpExtInst %void %2 DebugLine %75 %uint_55 %uint_55 %uint_18 %uint_40
+%2192 = OpAccessChain %_ptr_Function_v3float %1807 %2191
+%2193 = OpAccessChain %_ptr_Function_float %2192 %int_2
+%2194 = OpLoad %float %2193
+)"
+      R"(%2352 = OpExtInst %void %2 DebugLine %75 %uint_55 %uint_55 %uint_44 %uint_55
+%2195 = OpAccessChain %_ptr_Function_v3float %1806 %int_0
+%2196 = OpAccessChain %_ptr_Function_float %2195 %int_2
+%2197 = OpLoad %float %2196
+%2355 = OpExtInst %void %2 DebugLine %75 %uint_55 %uint_55 %uint_18 %uint_55
+%2198 = OpFSub %float %2194 %2197
+%2356 = OpExtInst %void %2 DebugLine %75 %uint_55 %uint_55 %uint_60 %uint_74
+%2199 = OpAccessChain %_ptr_Function_v3float %1806 %int_1
+%2200 = OpAccessChain %_ptr_Function_float %2199 %int_2
+%2201 = OpLoad %float %2200
+%2359 = OpExtInst %void %2 DebugLine %75 %uint_55 %uint_55 %uint_17 %uint_74
+%2202 = OpFDiv %float %2198 %2201
+%2360 = OpExtInst %void %2 DebugLine %75 %uint_55 %uint_55 %uint_9 %uint_74
+OpStore %2077 %2202
+%2774 = OpExtInst %void %2 DebugScope %103 %2072
+%2361 = OpExtInst %void %2 DebugLine %75 %uint_56 %uint_56 %uint_5 %uint_5
+OpBranch %2204
+%2203 = OpLabel
+%2775 = OpExtInst %void %2 DebugScope %108 %2072
+%2362 = OpExtInst %void %2 DebugLine %75 %uint_59 %uint_59 %uint_9 %uint_18
+OpStore %2076 %float_n0x1p_128
+%2363 = OpExtInst %void %2 DebugLine %75 %uint_60 %uint_60 %uint_9 %uint_18
+OpStore %2077 %float_0x1p_128
+%2776 = OpExtInst %void %2 DebugScope %103 %2072
+%2364 = OpExtInst %void %2 DebugLine %75 %uint_61 %uint_61 %uint_5 %uint_5
+OpBranch %2204
+%2204 = OpLabel
+%2777 = OpExtInst %void %2 DebugScope %103 %2072
+%2365 = OpExtInst %void %2 DebugLine %75 %uint_63 %uint_63 %uint_20 %uint_20
+%2205 = OpLoad %float %1804
+%2366 = OpExtInst %void %2 DebugLine %75 %uint_63 %uint_63 %uint_26 %uint_26
+%2206 = OpLoad %float %2074
+%2367 = OpExtInst %void %2 DebugLine %75 %uint_63 %uint_63 %uint_16 %uint_31
+%2207 = OpExtInst %float %1 NMax %2205 %2206
+%2368 = OpExtInst %void %2 DebugLine %75 %uint_63 %uint_63 %uint_34 %uint_34
+%2208 = OpLoad %float %2076
+%2369 = OpExtInst %void %2 DebugLine %75 %uint_63 %uint_63 %uint_12 %uint_39
+%2209 = OpExtInst %float %1 NMax %2207 %2208
+%2370 = OpExtInst %void %2 DebugLine %75 %uint_63 %uint_63 %uint_5 %uint_39
+OpStore %1804 %2209
+%2371 = OpExtInst %void %2 DebugLine %75 %uint_64 %uint_64 %uint_20 %uint_20
+%2210 = OpLoad %float %1805
+%2372 = OpExtInst %void %2 DebugLine %75 %uint_64 %uint_64 %uint_26 %uint_26
+%2211 = OpLoad %float %2075
+%2373 = OpExtInst %void %2 DebugLine %75 %uint_64 %uint_64 %uint_16 %uint_31
+%2212 = OpExtInst %float %1 NMin %2210 %2211
+%2374 = OpExtInst %void %2 DebugLine %75 %uint_64 %uint_64 %uint_34 %uint_34
+%2213 = OpLoad %float %2077
+%2375 = OpExtInst %void %2 DebugLine %75 %uint_64 %uint_64 %uint_12 %uint_39
+%2214 = OpExtInst %float %1 NMin %2212 %2213
+%2376 = OpExtInst %void %2 DebugLine %75 %uint_64 %uint_64 %uint_5 %uint_39
+OpStore %1805 %2214
+%2378 = OpExtInst %void %2 DebugLine %75 %uint_66 %uint_66 %uint_9 %uint_16
+%2216 = OpFOrdLessThan %bool %2214 %float_0
+%2778 = OpExtInst %void %2 DebugNoScope
+OpSelectionMerge %2218 None
+OpBranchConditional %2216 %2217 %2218
+%2217 = OpLabel
+%2779 = OpExtInst %void %2 DebugNoScope
+OpStore %2071 %true
+OpStore %2073 %false
+%2780 = OpExtInst %void %2 DebugScope %106 %2072
+%2381 = OpExtInst %void %2 DebugLine %75 %uint_68 %uint_68 %uint_9 %uint_16
+OpBranch %2224
+%2218 = OpLabel
+%2781 = OpExtInst %void %2 DebugScope %103 %2072
+%2382 = OpExtInst %void %2 DebugLine %75 %uint_71 %uint_71 %uint_9 %uint_9
+%2219 = OpLoad %float %1804
+%2383 = OpExtInst %void %2 DebugLine %75 %uint_71 %uint_71 %uint_16 %uint_16
+%2220 = OpLoad %float %1805
+%2384 = OpExtInst %void %2 DebugLine %75 %uint_71 %uint_71 %uint_9 %uint_16
+%2221 = OpFOrdGreaterThan %bool %2219 %2220
+%2782 = OpExtInst %void %2 DebugNoScope
+OpSelectionMerge %2223 None
+OpBranchConditional %2221 %2222 %2223
+%2222 = OpLabel
+%2783 = OpExtInst %void %2 DebugNoScope
+OpStore %2071 %true
+OpStore %2073 %false
+%2784 = OpExtInst %void %2 DebugScope %104 %2072
+%2387 = OpExtInst %void %2 DebugLine %75 %uint_73 %uint_73 %uint_9 %uint_16
+OpBranch %2224
+%2223 = OpLabel
+%2785 = OpExtInst %void %2 DebugNoScope
+OpStore %2071 %true
+OpStore %2073 %true
+%2786 = OpExtInst %void %2 DebugScope %103 %2072
+%2388 = OpExtInst %void %2 DebugLine %75 %uint_75 %uint_75 %uint_5 %uint_12
+OpBranch %2224
+%2224 = OpLabel
+%2787 = OpExtInst %void %2 DebugNoScope
+%2225 = OpLoad %bool %2073
+OpStore %2078 %2225
+%2788 = OpExtInst %void %2 DebugNoScope
+%1967 = OpExtInst %void %2 DebugLine %72 %uint_57 %uint_57 %uint_6 %uint_53
+OpSelectionMerge %1882 None
+OpBranchConditional %2225 %1877 %1882
+%1877 = OpLabel
+%2789 = OpExtInst %void %2 DebugScope %169 %1788
+%1969 = OpExtInst %void %2 DebugLine %72 %uint_59 %uint_59 %uint_5 %uint_11
+%1878 = OpExtInst %void %2 DebugDeclare %171 %1808 %214
+%1970 = OpExtInst %void %2 DebugLine %72 %uint_60 %uint_60 %uint_24 %uint_24
+%1879 = OpLoad %Attrs %1808
+%1971 = OpExtInst %void %2 DebugLine %72 %uint_60 %uint_60 %uint_5 %uint_5
+OpStore %19 %1879
+%1972 = OpExtInst %void %2 DebugLine %72 %uint_60 %uint_60 %uint_15 %uint_15
+%1880 = OpLoad %float %1804
+%1973 = OpExtInst %void %2 DebugLine %72 %uint_60 %uint_60 %uint_5 %uint_5
+%1881 = OpReportIntersectionKHR %bool %1880 %uint_0
+%2790 = OpExtInst %void %2 DebugScope %168 %1788
+%1974 = OpExtInst %void %2 DebugLine %72 %uint_61 %uint_61 %uint_3 %uint_3
+OpBranch %1882
+%1882 = OpLabel
+%2791 = OpExtInst %void %2 DebugScope %219
+%302 = OpExtInst %void %2 DebugLine %72 %uint_62 %uint_62 %uint_1 %uint_1
+OpReturn
+%2792 = OpExtInst %void %2 DebugNoScope
+OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_6);
+  SetAssembleOptions(SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
+                        SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
+  SinglePassRunAndMatch<AggressiveDCEPass>(before, true);
+}
 
 }  // namespace
 }  // namespace opt
