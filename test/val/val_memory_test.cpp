@@ -6148,6 +6148,7 @@ TEST_P(ValidateMemoryUntypedAccessChain, GoodTypedPointerBase) {
   const bool ptr = opcode == "OpUntypedPtrAccessChainKHR" ||
                    opcode == "OpUntypedInBoundsPtrAccessChainKHR";
   const std::string extra_param = ptr ? "%int_0" : "";
+  const std::string deco = ptr ? "OpDecorate %ptr_ssbo ArrayStride 4" : "";
 
   const std::string spirv = R"(
 OpCapability Shader
@@ -6158,6 +6159,7 @@ OpExtension "SPV_KHR_storage_buffer_storage_class"
 OpExtension "SPV_KHR_untyped_pointers"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
+)" + deco + R"(
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
@@ -6183,6 +6185,7 @@ TEST_P(ValidateMemoryUntypedAccessChain, GoodUntypedPointerBase) {
   const bool ptr = opcode == "OpUntypedPtrAccessChainKHR" ||
                    opcode == "OpUntypedInBoundsPtrAccessChainKHR";
   const std::string extra_param = ptr ? "%int_0" : "";
+  const std::string deco = ptr ? "OpDecorate %ptr ArrayStride 4" : "";
 
   const std::string spirv = R"(
 OpCapability Shader
@@ -6193,6 +6196,7 @@ OpExtension "SPV_KHR_storage_buffer_storage_class"
 OpExtension "SPV_KHR_untyped_pointers"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
+)" + deco + R"(
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
