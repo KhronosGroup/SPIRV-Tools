@@ -1566,6 +1566,8 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
       return false;
     };
 
+    // Block (and BufferBlock) arrays cannot be reinterpreted via untyped access
+    // chains.
     const bool base_type_block_array =
         base_type->opcode() == spv::Op::OpTypeArray &&
         _.ContainsType(base_type->id(), ContainsBlock,
@@ -1574,6 +1576,9 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
     const auto base_index = untyped_pointer ? 3 : 2;
     const auto base_id = inst->GetOperandAs<uint32_t>(base_index);
     auto base = _.FindDef(base_id);
+    // Strictly speaking this misses trivial access chains and function
+    // parameter chasing, but that would be a significant complication in the
+    // traversal.
     while (base->opcode() == spv::Op::OpCopyObject) {
       base = _.FindDef(base->GetOperandAs<uint32_t>(2));
     }
