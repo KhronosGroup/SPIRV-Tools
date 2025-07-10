@@ -1568,5 +1568,36 @@ INSTANTIATE_TEST_SUITE_P(
 
         })));
 
+// SPV_ARM_graph
+INSTANTIATE_TEST_SUITE_P(
+    SPV_ARM_graph, ExtensionRoundTripTest,
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_6,
+                   SPV_ENV_VULKAN_1_0, SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_2,
+                   SPV_ENV_VULKAN_1_3, SPV_ENV_OPENCL_2_1),
+            ValuesIn(std::vector<AssemblyCase>{
+                {"OpExtension \"SPV_ARM_graph\"\n",
+                 MakeInstruction(spv::Op::OpExtension,
+                                 MakeVector("SPV_ARM_graph"))},
+                {"OpCapability GraphARM\n",
+                 MakeInstruction(spv::Op::OpCapability,
+                                 {(uint32_t)spv::Capability::GraphARM})},
+                {"%1 = OpTypeGraphARM 1 %2 %3\n",
+                 MakeInstruction(spv::Op::OpTypeGraphARM, {1, 1, 2, 3})},
+                {"%2 = OpGraphConstantARM %1 42\n",
+                 MakeInstruction(spv::Op::OpGraphConstantARM, {1, 2, 42})},
+                {"%2 = OpGraphARM %1\n",
+                 MakeInstruction(spv::Op::OpGraphARM, {1, 2})},
+                {"OpGraphEndARM\n",
+                 MakeInstruction(spv::Op::OpGraphEndARM, {})},
+                {"%2 = OpGraphInputARM %1 %3\n",
+                 MakeInstruction(spv::Op::OpGraphInputARM, {1, 2, 3})},
+                {"%2 = OpGraphInputARM %1 %3 %4\n",
+                 MakeInstruction(spv::Op::OpGraphInputARM, {1, 2, 3, 4})},
+                {"OpGraphSetOutputARM %1 %2\n",
+                 MakeInstruction(spv::Op::OpGraphSetOutputARM, {1, 2})},
+                {"OpGraphSetOutputARM %1 %2 %3\n",
+                 MakeInstruction(spv::Op::OpGraphSetOutputARM, {1, 2, 3})},
+            })));
+
 }  // namespace
 }  // namespace spvtools
