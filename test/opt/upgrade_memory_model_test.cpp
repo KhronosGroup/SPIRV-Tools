@@ -637,7 +637,7 @@ TEST_F(UpgradeMemoryModelTest, VariablePointerIndirectSelect) {
   const std::string text = R"(
 ; CHECK-NOT: OpDecorate {{%\w+}} Coherent
 ; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 5
-; CHECK: [[buffer:%\w+]] = OpLoad {{%\w+}} {{%\w+}}
+; CHECK: [[buffer:%\w+]] = OpSelect {{%\w+}} {{%\w+}}
 ; CHECK: [[ld_gep:%\w+]] = OpAccessChain {{%\w+}} [[buffer]] {{%\w+}} {{%\w+}}
 ; CHECK: OpLoad {{%\w+}} [[ld_gep]] MakePointerVisible|NonPrivatePointer [[scope]]
 OpCapability Shader
@@ -660,15 +660,15 @@ OpDecorate %_struct_4 Block
 %_ptr_Function__ptr_StorageBuffer__struct_4 = OpTypePointer Function %_ptr_StorageBuffer__struct_4
 %functy = OpTypeFunction %uint %_ptr_Function__ptr_StorageBuffer__struct_4 %_ptr_Function_uint
 %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
-%null = OpConstantNull %_ptr_Function__ptr_StorageBuffer__struct_4
+%null = OpConstantNull %_ptr_StorageBuffer__struct_4
 %func = OpFunction %uint None %functy
 %param_buf = OpFunctionParameter %_ptr_Function__ptr_StorageBuffer__struct_4
 %param_offset = OpFunctionParameter %_ptr_Function_uint
 %bb_entry = OpLabel
-%select = OpSelect %_ptr_Function__ptr_StorageBuffer__struct_4 %true %param_buf %null
-%buf = OpLoad %_ptr_StorageBuffer__struct_4 %select
+%buf = OpLoad %_ptr_StorageBuffer__struct_4 %param_buf
+%select = OpSelect %_ptr_StorageBuffer__struct_4 %true %buf %null
 %offset = OpLoad %uint %param_offset
-%ld_gep = OpAccessChain %_ptr_StorageBuffer_uint %buf %uint_0 %offset
+%ld_gep = OpAccessChain %_ptr_StorageBuffer_uint %select %uint_0 %offset
 %data = OpLoad %uint %ld_gep
 OpReturnValue %data
 OpFunctionEnd
@@ -720,7 +720,7 @@ TEST_F(UpgradeMemoryModelTest, VariablePointerIndirectPhi) {
   const std::string text = R"(
 ; CHECK-NOT: OpDecorate {{%\w+}} Coherent
 ; CHECK: [[scope:%\w+]] = OpConstant {{%\w+}} 5
-; CHECK: [[buffer:%\w+]] = OpLoad {{%\w+}} {{%\w+}}
+; CHECK: [[buffer:%\w+]] = OpPhi {{%\w+}} {{%\w+}}
 ; CHECK: [[ld_gep:%\w+]] = OpAccessChain {{%\w+}} [[buffer]] {{%\w+}} {{%\w+}}
 ; CHECK: OpLoad {{%\w+}} [[ld_gep]] MakePointerVisible|NonPrivatePointer [[scope]]
 OpCapability Shader
@@ -743,11 +743,12 @@ OpDecorate %_struct_4 Block
 %_ptr_Function__ptr_StorageBuffer__struct_4 = OpTypePointer Function %_ptr_StorageBuffer__struct_4
 %functy = OpTypeFunction %uint %_ptr_Function__ptr_StorageBuffer__struct_4 %_ptr_Function_uint
 %_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
-%null = OpConstantNull %_ptr_Function__ptr_StorageBuffer__struct_4
+%null = OpConstantNull %_ptr_StorageBuffer__struct_4
 %func = OpFunction %uint None %functy
 %param_buf = OpFunctionParameter %_ptr_Function__ptr_StorageBuffer__struct_4
 %param_offset = OpFunctionParameter %_ptr_Function_uint
 %bb_entry = OpLabel
+%buf = OpLoad %_ptr_StorageBuffer__struct_4 %param_buf
 OpSelectionMerge %bb_end None
 OpBranchConditional %true %bb_then %bb_else
 %bb_then = OpLabel
@@ -755,10 +756,9 @@ OpBranch %bb_end
 %bb_else = OpLabel
 OpBranch %bb_end
 %bb_end = OpLabel
-%phi_buf_ptr = OpPhi %_ptr_Function__ptr_StorageBuffer__struct_4 %param_buf %bb_then %null %bb_else
-%buf = OpLoad %_ptr_StorageBuffer__struct_4 %phi_buf_ptr
+%phi_buf_ptr = OpPhi %_ptr_StorageBuffer__struct_4 %buf %bb_then %null %bb_else
 %offset = OpLoad %uint %param_offset
-%ld_gep = OpAccessChain %_ptr_StorageBuffer_uint %buf %uint_0 %offset
+%ld_gep = OpAccessChain %_ptr_StorageBuffer_uint %phi_buf_ptr %uint_0 %offset
 %data = OpLoad %uint %ld_gep
 OpReturnValue %data
 OpFunctionEnd
