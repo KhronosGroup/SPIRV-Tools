@@ -115,10 +115,11 @@ spv_result_t ValidateEntryPoints(ValidationState_t& _) {
   _.ComputeFunctionToEntryPointMapping();
   _.ComputeRecursiveEntryPoints();
 
-  if (_.entry_points().empty() && !_.HasCapability(spv::Capability::Linkage)) {
+  if (_.entry_points().empty() && !_.HasCapability(spv::Capability::Linkage) &&
+      !_.HasCapability(spv::Capability::GraphARM)) {
     return _.diag(SPV_ERROR_INVALID_BINARY, nullptr)
            << "No OpEntryPoint instruction was found. This is only allowed if "
-              "the Linkage capability is being used.";
+              "the Linkage or GraphARM capability is being used.";
   }
 
   for (const auto& entry_point : _.entry_points()) {
@@ -148,6 +149,16 @@ spv_result_t ValidateEntryPoints(ValidationState_t& _) {
     return error;
   }
 
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateGraphEntryPoints(ValidationState_t& _) {
+  if (_.graph_entry_points().empty() &&
+      _.HasCapability(spv::Capability::GraphARM)) {
+    return _.diag(SPV_ERROR_INVALID_BINARY, nullptr)
+           << "No OpGraphEntryPointARM instruction was found but the GraphARM "
+              "capability is declared.";
+  }
   return SPV_SUCCESS;
 }
 
@@ -254,6 +265,10 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
         has_mask_task_ext |= (execution_model == spv::ExecutionModel::TaskEXT ||
                               execution_model == spv::ExecutionModel::MeshEXT);
       }
+      if (inst->opcode() == spv::Op::OpGraphEntryPointARM) {
+        const auto graph = inst->GetOperandAs<uint32_t>(1);
+        vstate->RegisterGraphEntryPoint(graph);
+      }
       if (inst->opcode() == spv::Op::OpFunctionCall) {
         if (!vstate->in_function_body()) {
           return vstate->diag(SPV_ERROR_INVALID_LAYOUT, &instruction)
@@ -298,6 +313,10 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   if (vstate->in_function_body())
     return vstate->diag(SPV_ERROR_INVALID_LAYOUT, nullptr)
            << "Missing OpFunctionEnd at end of module.";
+
+  if (vstate->graph_definition_region() != kGraphDefinitionOutside)
+    return vstate->diag(SPV_ERROR_INVALID_LAYOUT, nullptr)
+           << "Missing OpGraphEndARM at end of module.";
 
   if (vstate->HasCapability(spv::Capability::BindlessTextureNV) &&
       !vstate->has_samplerimage_variable_address_mode_specified())
@@ -368,6 +387,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     if (auto error = MeshShadingPass(*vstate, &instruction)) return error;
     if (auto error = TensorLayoutPass(*vstate, &instruction)) return error;
     if (auto error = TensorPass(*vstate, &instruction)) return error;
+    if (auto error = GraphPass(*vstate, &instruction)) return error;
     if (auto error = InvalidTypePass(*vstate, &instruction)) return error;
   }
 
@@ -377,6 +397,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   if (auto error = ValidateAdjacency(*vstate)) return error;
 
   if (auto error = ValidateEntryPoints(*vstate)) return error;
+  if (auto error = ValidateGraphEntryPoints(*vstate)) return error;
   // CFG checks are performed after the binary has been parsed
   // and the CFGPass has collected information about the control flow
   if (auto error = PerformCfgChecks(*vstate)) return error;
