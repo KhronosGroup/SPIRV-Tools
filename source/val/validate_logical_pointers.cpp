@@ -187,6 +187,8 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
     case spv::Op::OpRayQueryGetWorldRayOriginKHR:
     case spv::Op::OpRayQueryGetIntersectionObjectToWorldKHR:
     case spv::Op::OpRayQueryGetIntersectionWorldToObjectKHR:
+    // SPV_KHR_ray_tracing_position_fetch (spec bugs)
+    case spv::Op::OpRayQueryGetIntersectionTriangleVertexPositionsKHR:
     // SPV_NV_cluster_acceleration_structure (spec bugs)
     case spv::Op::OpRayQueryGetClusterIdNV:
     case spv::Op::OpHitObjectGetClusterIdNV:
@@ -260,6 +262,7 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
     // Core spec bugs
     case spv::Op::OpSelect:
     case spv::Op::OpPhi:
+    case spv::Op::OpVariable:
     // SPV_KHR_untyped_pointers
     case spv::Op::OpUntypedPtrAccessChainKHR:
       if ((_.HasCapability(spv::Capability::VariablePointersStorageBuffer) &&
@@ -342,6 +345,7 @@ spv_result_t ValidateLogicalPointerReturns(ValidationState_t& _,
 }  // namespace
 
 spv_result_t ValidateLogicalPointers(ValidationState_t& _) {
+  // Only the following addressing models have logical pointers.
   if (_.addressing_model() != spv::AddressingModel::Logical &&
       _.addressing_model() != spv::AddressingModel::PhysicalStorageBuffer64) {
     return SPV_SUCCESS;
