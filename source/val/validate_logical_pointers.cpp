@@ -24,8 +24,7 @@ namespace val {
 namespace {
 
 // Returns true if inst is a logical pointer.
-bool IsLogicalPointer(const ValidationState_t& _,
-                               const Instruction* inst) {
+bool IsLogicalPointer(const ValidationState_t& _, const Instruction* inst) {
   if (!_.IsPointerType(inst->type_id())) {
     return false;
   }
@@ -283,6 +282,63 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
 
   return SPV_SUCCESS;
 }
+
+spv_result_t ValidateLogicalPointerReturns(ValidationState_t& _,
+                                           const Instruction* inst)
+{
+  if (!IsLogicalPointer(_, inst)) {
+    return SPV_SUCCESS;
+  }
+
+  const auto type_inst = _.FindDef(inst->type_id());
+  const auto sc = type_inst->GetOperandAs<spv::StorageClass>(1u);
+
+  switch (inst->opcode()) {
+    // Core spec without an variable pointer capability.
+    case spv::Op::OpVariable:
+    case spv::Op::OpAccessChain:
+    case spv::Op::OpInBoundsAccessChain:
+    case spv::Op::OpFunctionParameter:
+    case spv::Op::OpImageTexelPointer:
+    case spv::Op::OpCopyObject:
+    // Core spec bugs
+    case spv::Op::OpUndef:
+    // SPV_KHR_untyped_pointers
+    case spv::Op::OpUntypedAccessChainKHR:
+    case spv::Op::OpUntypedInBoundsAccessChainKHR:
+    case spv::Op::OpUntypedVariableKHR:
+    // SPV_NV_raw_access_chains
+    case spv::Op::OpRawAccessChainNV:
+      return SPV_SUCCESS;
+    // Core spec with variable pointer capability. Check storage classes since
+    // variable pointers can only be in certain storage classes.
+    case spv::Op::OpSelect:
+    case spv::Op::OpPhi:
+    case spv::Op::OpFunctionCall:
+    case spv::Op::OpPtrAccessChain:
+    case spv::Op::OpLoad:
+    case spv::Op::OpConstantNull:
+    case spv::Op::OpFunction:
+    // SPV_KHR_untyped_pointers
+    case spv::Op::OpUntypedPtrAccessChainKHR:
+      if ((_.HasCapability(spv::Capability::VariablePointersStorageBuffer) &&
+           sc == spv::StorageClass ::StorageBuffer) ||
+          (_.HasCapability(spv::Capability::VariablePointers) &&
+           sc == spv::StorageClass::Workgroup)) {
+        return SPV_SUCCESS;
+      }
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Instruction may only return a logical pointer in the "
+                "StorageBuffer or Workgroup storage classes with appropriate "
+                "variable pointers capability";
+    default:
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Instruction may not return a logical pointer";
+  }
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 spv_result_t ValidateLogicalPointers(ValidationState_t& _) {
@@ -311,6 +367,9 @@ spv_result_t ValidateLogicalPointers(ValidationState_t& _) {
     // }
 
     if (auto error = ValidateLogicalPointerOperands(_, &inst)) {
+      return error;
+    }
+    if (auto error = ValidateLogicalPointerReturns(_, &inst)) {
       return error;
     }
   }
