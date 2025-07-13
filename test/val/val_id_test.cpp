@@ -1755,7 +1755,7 @@ TEST_P(ValidateIdWithMessage, OpConstantNullGood) {
  %4 = OpConstantNull %3
  %5 = OpTypeFloat 32
  %6 = OpConstantNull %5
- %7 = OpTypePointer UniformConstant %3
+ %7 = OpTypePointer Workgroup %3
  %8 = OpConstantNull %7
  %9 = OpTypeEvent
 %10 = OpConstantNull %9
@@ -2672,7 +2672,8 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(make_message(
-          "In Logical addressing, variables may not allocate a pointer type")));
+          "In Logical addressing, variables can only allocate a workgroup "
+          "pointer if the VariablePointers capability is declared")));
 }
 
 TEST_P(ValidateIdWithMessage,
@@ -2750,8 +2751,8 @@ OpExtension "SPV_KHR_variable_pointers"
 OpMemoryModel Logical GLSL450
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
-%_ptr_workgroup_int = OpTypePointer Workgroup %int
-%_ptr_function_ptr = OpTypePointer Function %_ptr_workgroup_int
+%_ptr_storagebuffer_int = OpTypePointer StorageBuffer %int
+%_ptr_function_ptr = OpTypePointer Function %_ptr_storagebuffer_int
 %voidfn = OpTypeFunction %void
 %func = OpFunction %void None %voidfn
 %entry = OpLabel

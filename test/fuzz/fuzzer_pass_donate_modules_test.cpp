@@ -569,6 +569,7 @@ TEST(FuzzerPassDonateModulesTest, DonateOpConstantNull) {
   const auto env = SPV_ENV_UNIVERSAL_1_3;
   const auto consumer = nullptr;
   spvtools::ValidatorOptions validator_options;
+  validator_options.SetRelaxLogicalPointer(true);
 
   const auto recipient_context =
       BuildModule(env, consumer, recipient_shader, kFuzzAssembleOption);
