@@ -822,13 +822,12 @@ void Variants::CombineBaseFnCalls(IRContext* linked_context) {
     if (base_type_op != spv::Op::OpTypeVoid) {
       // Add OpConditionalCopyObjectINTEL combining the function calls
       const uint32_t result_id = linked_context->TakeNextId();
-      auto conditional_copy_inst = last_inst->Clone(linked_context);
-      conditional_copy_inst->SetOpcode(spv::Op::OpConditionalCopyObjectINTEL);
-      conditional_copy_inst->ForceResultId(result_id);
-      conditional_copy_inst->ForceResultType(found_call_inst->type_id());
-      conditional_copy_inst->SetInOperands(
+      auto conditional_copy_inst = new Instruction(
+          linked_context, spv::Op::OpConditionalCopyObjectINTEL,
+          found_call_inst->type_id(), result_id,
           {{SPV_OPERAND_TYPE_ID, {base_spec_const_id}},
            {SPV_OPERAND_TYPE_ID, {found_call_inst->result_id()}}});
+
       for (const auto& kv3 : var_call_ids) {
         const auto spec_const_id = kv3.first;
         const auto var_call_id = kv3.second;
