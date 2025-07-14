@@ -46,8 +46,9 @@ using ::testing::internal::ParamGenerator;
     OpAtomicCompareExchangeEqual,   \
     OpAtomicCompareExchangeUnequal
 
-enum Operand { MEMORY_SEMANTICS_OPERANDS, LastMemorySemanticsOperand };
-const std::array<Operand, LastMemorySemanticsOperand> Operands = { MEMORY_SEMANTICS_OPERANDS };
+enum Operand { MEMORY_SEMANTICS_OPERANDS };
+const Operand Operands[] = { MEMORY_SEMANTICS_OPERANDS };
+const size_t OperandsCount = sizeof(Operands) / sizeof(Operand);
 #undef MEMORY_SEMANTICS_OPERANDS
 // clang-format on
 
@@ -79,12 +80,12 @@ struct TestResult {
   const char* error;
 };
 
-template <typename T, std::size_t N, typename... Ts>
-ParamGenerator<T> ValuesInExcept(const std::array<T, N>& items,
+template <typename T, typename... Ts>
+ParamGenerator<T> ValuesInExcept(const T* items, const size_t count,
                                  const Ts... skip) {
   std::vector<T> filtered;
   std::initializer_list<T> excluded = {skip...};
-  std::copy_if(items.begin(), items.end(), std::back_inserter(filtered),
+  std::copy_if(items, items + count, std::back_inserter(filtered),
                [&excluded](const T& value) {
                  return std::all_of(
                      excluded.begin(), excluded.end(),
@@ -265,7 +266,8 @@ INSTANTIATE_TEST_SUITE_P(
             Values(None, Available, Visible, Available | Visible),
             Values(None, Volatile),
             Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-            ValuesInExcept(Operands, OpAtomicLoad, OpAtomicStore),
+            ValuesInExcept(Operands, OperandsCount, OpAtomicLoad,
+                           OpAtomicStore),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "VUID-StandaloneSpirv-MemorySemantics-10870",
@@ -316,7 +318,7 @@ INSTANTIATE_TEST_SUITE_P(
         Values(None, Available, Visible, Available | Visible),
         Values(None, Volatile),
         Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-        ValuesInExcept(Operands, OpMemoryBarrier),
+        ValuesInExcept(Operands, OperandsCount, OpMemoryBarrier),
         Values(TestResult(
             SPV_ERROR_INVALID_DATA,
             "VUID-StandaloneSpirv-MemorySemantics-10871",
@@ -330,7 +332,7 @@ INSTANTIATE_TEST_SUITE_P(
     Combine(Values(None), Values(None), Values(Available, Available | Visible),
             Values(None, Volatile),
             Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-            ValuesInExcept(Operands, OpMemoryBarrier),
+            ValuesInExcept(Operands, OperandsCount, OpMemoryBarrier),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "VUID-StandaloneSpirv-MemorySemantics-10872",
@@ -344,7 +346,7 @@ INSTANTIATE_TEST_SUITE_P(
                    Uniform | Workgroup | Image | Output),
             Values(Available, Available | Visible), Values(None, Volatile),
             Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-            ValuesInExcept(Operands, OpAtomicStore),
+            ValuesInExcept(Operands, OperandsCount, OpAtomicStore),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "VUID-StandaloneSpirv-MemorySemantics-10872",
@@ -355,7 +357,7 @@ INSTANTIATE_TEST_SUITE_P(
     ErrorMakeVisibleWithRelaxedMemoryOrder, VulkanMemorySemantics,
     Combine(Values(None), Values(None), Values(Visible), Values(None, Volatile),
             Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-            ValuesInExcept(Operands, OpMemoryBarrier),
+            ValuesInExcept(Operands, OperandsCount, OpMemoryBarrier),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "VUID-StandaloneSpirv-MemorySemantics-10873",
@@ -369,7 +371,7 @@ INSTANTIATE_TEST_SUITE_P(
                    Uniform | Workgroup | Image | Output),
             Values(Visible, Available | Visible), Values(None, Volatile),
             Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-            ValuesInExcept(Operands, OpAtomicLoad),
+            ValuesInExcept(Operands, OperandsCount, OpAtomicLoad),
             Values(TestResult(
                 SPV_ERROR_INVALID_DATA,
                 "VUID-StandaloneSpirv-MemorySemantics-10873",
@@ -421,7 +423,8 @@ INSTANTIATE_TEST_SUITE_P(
     SuccessAtomicsRelaxed, VulkanMemorySemantics,
     Combine(Values(None), Values(None), Values(None), Values(None, Volatile),
             Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-            ValuesInExcept(Operands, OpMemoryBarrier, OpControlBarrier),
+            ValuesInExcept(Operands, OperandsCount, OpMemoryBarrier,
+                           OpControlBarrier),
             Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -431,8 +434,8 @@ INSTANTIATE_TEST_SUITE_P(
                    Uniform | Workgroup | Image | Output),
             Values(None, Visible), Values(None, Volatile),
             Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-            ValuesInExcept(Operands, OpMemoryBarrier, OpControlBarrier,
-                           OpAtomicStore),
+            ValuesInExcept(Operands, OperandsCount, OpMemoryBarrier,
+                           OpControlBarrier, OpAtomicStore),
             Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -442,8 +445,9 @@ INSTANTIATE_TEST_SUITE_P(
                    Uniform | Workgroup | Image | Output),
             Values(None, Available), Values(None, Volatile),
             Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-            ValuesInExcept(Operands, OpMemoryBarrier, OpControlBarrier,
-                           OpAtomicLoad, OpAtomicCompareExchangeUnequal),
+            ValuesInExcept(Operands, OperandsCount, OpMemoryBarrier,
+                           OpControlBarrier, OpAtomicLoad,
+                           OpAtomicCompareExchangeUnequal),
             Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
@@ -454,8 +458,8 @@ INSTANTIATE_TEST_SUITE_P(
             Values(None, Available, Visible, Available | Visible),
             Values(None, Volatile),
             Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-            ValuesInExcept(Operands, OpMemoryBarrier, OpControlBarrier,
-                           OpAtomicLoad, OpAtomicStore,
+            ValuesInExcept(Operands, OperandsCount, OpMemoryBarrier,
+                           OpControlBarrier, OpAtomicLoad, OpAtomicStore,
                            OpAtomicCompareExchangeUnequal),
             Values(TestResult())));
 
