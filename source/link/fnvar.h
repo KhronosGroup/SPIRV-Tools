@@ -32,6 +32,9 @@
 // The values (except module) are integers and defined in the 'targets registry'
 // as described in the spec.
 //
+// In addition, --fnvar-capabilities generates OpSpecConstantCapabilitiesINTEL
+// for each module with operands corresponding to the module's capabilities.
+//
 // Each line in the targets/architectures CSV file defines one
 // OpSpecConstant<Target/Architecture>INTEL instruction, the columns correspond
 // to the operands of these instructions. One module can have multiple lines, in
