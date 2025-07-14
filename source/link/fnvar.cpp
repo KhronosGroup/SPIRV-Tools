@@ -849,7 +849,6 @@ void Variants::CombineBaseFnCalls(IRContext* linked_context) {
             *id = result_id;
           }
         });
-        last_inst = last_inst->NextNode();
       } while (last_inst != nullptr && *last_inst != *fn_call_bb->tail());
     }
   }

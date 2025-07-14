@@ -281,54 +281,57 @@ TEST_F(FunctionVariants, FAddAsm) {
     %28 = OpFunctionParameter %9
     %7 = OpLabel
     %6 = OpFunctionCall %8 %2 %26 %27 %28
-    OpReturnValue %6
+    %29 = OpFDiv %8 %6 %6
+    %30 = OpFDiv %8 %29 %6
+    OpReturnValue %30
     OpFunctionEnd
   )";
 
   constexpr const char* const foo_asm = R"(
-  	OpCapability Kernel
-  	OpCapability Addresses
-  	OpCapability Linkage
-  	OpCapability AsmINTEL
-  	OpExtension "SPV_INTEL_inline_assembly"
-  	%1 = OpExtInstImport "OpenCL.std"
-  	OpMemoryModel Physical64 OpenCL
-  	OpSource OpenCL_CPP 100000
-  	OpName %10 "a"
-  	OpName %11 "b"
-  	OpName %12 "c"
-  	OpName %13 "foo"
-  	OpName %16 "add"
-  	OpName %2 "entry"
-  	OpDecorate %10 FuncParamAttr NoWrite
-  	OpDecorate %10 FuncParamAttr NoAlias
-  	OpDecorate %11 FuncParamAttr NoWrite
-  	OpDecorate %11 FuncParamAttr NoAlias
-  	OpDecorate %12 FuncParamAttr NoAlias
-  	OpDecorate %13 LinkageAttributes "foo" Export
-  	OpDecorate %9 SideEffectsINTEL
-  	%3 = OpTypeFloat 32
-  	%4 = OpTypePointer Function %3
-  	%5 = OpTypeFunction %3 %4 %4 %4
-  	%6 = OpTypeVoid
-  	%7 = OpTypeFunction %6
-  	%8 = OpAsmTargetINTEL "spirv64-unknown-unknown"
-  	%9 = OpAsmINTEL %6 %7 %8 "nop1" ""
-  	%13 = OpFunction %3 None %5
-  	%10 = OpFunctionParameter %4
-  	%11 = OpFunctionParameter %4
-  	%12 = OpFunctionParameter %4
-  	%2 = OpLabel
-  	%14 = OpLoad %3 %10 Aligned 4
-  	%15 = OpLoad %3 %11 Aligned 4
-  	%16 = OpFAdd %3 %14 %15
-  	OpStore %12 %16 Aligned 4
-  	%17 = OpAsmCallINTEL %6 %9
-  	OpReturnValue %16
+    OpCapability Kernel
+    OpCapability Addresses
+    OpCapability Linkage
+    OpCapability AsmINTEL
+    OpExtension "SPV_INTEL_inline_assembly"
+    %1 = OpExtInstImport "OpenCL.std"
+    OpMemoryModel Physical64 OpenCL
+    OpSource OpenCL_CPP 100000
+    OpName %2 "a"
+    OpName %3 "b"
+    OpName %4 "c"
+    OpName %5 "foo"
+    OpName %6 "add"
+    OpName %7 "entry"
+    OpDecorate %2 FuncParamAttr NoWrite
+    OpDecorate %2 FuncParamAttr NoAlias
+    OpDecorate %3 FuncParamAttr NoWrite
+    OpDecorate %3 FuncParamAttr NoAlias
+    OpDecorate %4 FuncParamAttr NoAlias
+    OpDecorate %5 LinkageAttributes "foo" Export
+    OpDecorate %8 SideEffectsINTEL
+    %9 = OpTypeFloat 32
+    %10 = OpTypePointer Function %9
+    %11 = OpTypeFunction %9 %10 %10 %10
+    %12 = OpTypeVoid
+    %13 = OpTypeFunction %12
+    %14 = OpAsmTargetINTEL "spirv64-unknown-unknown"
+    %8 = OpAsmINTEL %12 %13 %14 "nop1" ""
+    %5 = OpFunction %9 None %11
+    %2 = OpFunctionParameter %10
+    %3 = OpFunctionParameter %10
+    %4 = OpFunctionParameter %10
+    %7 = OpLabel
+    %15 = OpLoad %9 %2 Aligned 4
+    %16 = OpLoad %9 %3 Aligned 4
+    %6 = OpFSub %9 %15 %16
+    OpStore %4 %6 Aligned 4
+    %17 = OpAsmCallINTEL %12 %8
+    OpReturnValue %6
     OpFunctionEnd
 	)";
 
-  // same as foo_asm, just with a different assembly string in OpAsmINTEL
+  // same as foo_asm, just with OpFMul and a different assembly string in
+  // OpAsmINTEL
   constexpr const char* const foo_asm2 = R"(
     OpCapability Kernel
     OpCapability Addresses
@@ -338,37 +341,37 @@ TEST_F(FunctionVariants, FAddAsm) {
     %1 = OpExtInstImport "OpenCL.std"
     OpMemoryModel Physical64 OpenCL
     OpSource OpenCL_CPP 100000
-    OpName %10 "a"
-    OpName %11 "b"
-    OpName %12 "c"
-    OpName %13 "foo"
-    OpName %16 "add"
-    OpName %2 "entry"
-    OpDecorate %10 FuncParamAttr NoWrite
-    OpDecorate %10 FuncParamAttr NoAlias
-    OpDecorate %11 FuncParamAttr NoWrite
-    OpDecorate %11 FuncParamAttr NoAlias
-    OpDecorate %12 FuncParamAttr NoAlias
-    OpDecorate %13 LinkageAttributes "foo" Export
-    OpDecorate %9 SideEffectsINTEL
-    %3 = OpTypeFloat 32
-    %4 = OpTypePointer Function %3
-    %5 = OpTypeFunction %3 %4 %4 %4
-    %6 = OpTypeVoid
-    %7 = OpTypeFunction %6
-    %8 = OpAsmTargetINTEL "spirv64-unknown-unknown"
-    %9 = OpAsmINTEL %6 %7 %8 "nop2" ""
-    %13 = OpFunction %3 None %5
-    %10 = OpFunctionParameter %4
-    %11 = OpFunctionParameter %4
-    %12 = OpFunctionParameter %4
-    %2 = OpLabel
-    %14 = OpLoad %3 %10 Aligned 4
-    %15 = OpLoad %3 %11 Aligned 4
-    %16 = OpFAdd %3 %14 %15
-    OpStore %12 %16 Aligned 4
-    %17 = OpAsmCallINTEL %6 %9
-    OpReturnValue %16
+    OpName %2 "a"
+    OpName %3 "b"
+    OpName %4 "c"
+    OpName %5 "foo"
+    OpName %6 "add"
+    OpName %7 "entry"
+    OpDecorate %2 FuncParamAttr NoWrite
+    OpDecorate %2 FuncParamAttr NoAlias
+    OpDecorate %3 FuncParamAttr NoWrite
+    OpDecorate %3 FuncParamAttr NoAlias
+    OpDecorate %4 FuncParamAttr NoAlias
+    OpDecorate %5 LinkageAttributes "foo" Export
+    OpDecorate %8 SideEffectsINTEL
+    %9 = OpTypeFloat 32
+    %10 = OpTypePointer Function %9
+    %11 = OpTypeFunction %9 %10 %10 %10
+    %12 = OpTypeVoid
+    %13 = OpTypeFunction %12
+    %14 = OpAsmTargetINTEL "spirv64-unknown-unknown"
+    %8 = OpAsmINTEL %12 %13 %14 "nop2" ""
+    %5 = OpFunction %9 None %11
+    %2 = OpFunctionParameter %10
+    %3 = OpFunctionParameter %10
+    %4 = OpFunctionParameter %10
+    %7 = OpLabel
+    %15 = OpLoad %9 %2 Aligned 4
+    %16 = OpLoad %9 %3 Aligned 4
+    %6 = OpFMul %9 %15 %16
+    OpStore %4 %6 Aligned 4
+    %17 = OpAsmCallINTEL %12 %8
+    OpReturnValue %6
     OpFunctionEnd
   )";
 
@@ -422,16 +425,13 @@ TEST_F(FunctionVariants, FAddAsm) {
     "%46 = OpSpecConstantTargetINTEL %bool 4",
     "%47 = OpSpecConstantCapabilitiesINTEL %bool Addresses Linkage Kernel Int64 Int8",
     "%48 = OpSpecConstantOp %bool LogicalAnd %47 %46",
-    "%41 = OpTypeFunction %void",
-    "%32 = OpAsmTargetINTEL \"spirv64-unknown-unknown\"",
-    "%31 = OpAsmINTEL %void %41 %32 \"nop1\" \"",
+    "%31 = OpAsmINTEL %void %41 %32 \"nop1\" \"\"",
     "%49 = OpSpecConstantArchitectureINTEL %bool 1 1 170 1",
     "%50 = OpSpecConstantTargetINTEL %bool 4 9 10",
     "%51 = OpSpecConstantCapabilitiesINTEL %bool Addresses Linkage Kernel AsmINTEL",
     "%52 = OpSpecConstantOp %bool LogicalAnd %51 %49",
     "%foo_asm_spv = OpSpecConstantOp %bool LogicalAnd %52 %50",
-    "%34 = OpAsmTargetINTEL \"spirv64-unknown-unknown\"",
-    "%33 = OpAsmINTEL %void %41 %34 \"nop2\" \"",
+    "%33 = OpAsmINTEL %void %41 %34 \"nop2\" \"\"",
     "%53 = OpSpecConstantArchitectureINTEL %bool 1 7 174 1",
     "%54 = OpSpecConstantArchitectureINTEL %bool 1 7 178 3",
     "%55 = OpSpecConstantArchitectureINTEL %bool 1 8 170 1",
@@ -458,12 +458,15 @@ TEST_F(FunctionVariants, FAddAsm) {
     "%35 = OpFunctionCall %float %foo_0 %74 %75 %76",
     "%36 = OpFunctionCall %float %foo_1 %74 %75 %76",
     "%77 = OpConditionalCopyObjectINTEL %float %foo_spv %call %foo_asm_spv %35 %foo_asm2_spv %36",
+    "%78 = OpFDiv %float %77 %77",
+    "%79 = OpFDiv %float %78 %77",
+    "OpReturnValue %79",
     "%foo_0 = OpFunction %float None %44",
-    "%add_0 = OpFAdd %float %78 %79",
-    "%80 = OpAsmCallINTEL %void %31",
+    "%add_0 = OpFSub %float %80 %81",
+    "%82 = OpAsmCallINTEL %void %31",
     "%foo_1 = OpFunction %float None %44",
-    "%add_1 = OpFAdd %float %81 %82",
-    "%83 = OpAsmCallINTEL %void %33",
+    "%add_1 = OpFMul %float %83 %84",
+    "%85 = OpAsmCallINTEL %void %33",
   };
   // clang-format on
 
