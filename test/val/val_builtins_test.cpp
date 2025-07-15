@@ -99,6 +99,10 @@ CodeGenerator GetInMainCodeGenerator(const char* const built_in,
   generator.before_types_ += built_in;
   generator.before_types_ += "\n";
 
+  if (strncmp(built_in, "TessLevel", 9) == 0) {
+    generator.before_types_ += "OpMemberDecorate %built_in_type 0 Patch\n";
+  }
+
   std::ostringstream after_types;
 
   after_types << "%built_in_type = OpTypeStruct " << data_type << "\n";
@@ -258,6 +262,10 @@ CodeGenerator GetInFunctionCodeGenerator(const char* const built_in,
   generator.before_types_ += built_in;
   generator.before_types_ += "\n";
 
+  if (strncmp(built_in, "TessLevel", 9) == 0) {
+    generator.before_types_ += "OpMemberDecorate %built_in_type 0 Patch\n";
+  }
+
   std::ostringstream after_types;
   after_types << "%built_in_type = OpTypeStruct " << data_type << "\n";
   if (InitializerRequired(storage_class)) {
@@ -395,6 +403,11 @@ CodeGenerator GetVariableCodeGenerator(const char* const built_in,
   generator.before_types_ = "OpDecorate %built_in_var BuiltIn ";
   generator.before_types_ += built_in;
   generator.before_types_ += "\n";
+
+  if (strncmp(built_in, "TessLevel", 9) == 0) {
+    generator.before_types_ += "OpDecorate %built_in_var Patch\n";
+  }
+
   if ((0 == std::strcmp(storage_class, "Input")) &&
       (0 == std::strcmp(execution_model, "Fragment"))) {
     // ensure any needed input types that might require Flat
@@ -6548,6 +6561,50 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinPrimitiveIdFragmentWithRayTracing) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-PrimitiveId-PrimitiveId-04333"));
+}
+
+TEST_F(ValidateBuiltIns, TessellationMissingPatch) {
+  const std::string spirv = R"(
+               OpCapability Tessellation
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TessellationControl %main "main" %gl_TessLevelInner %gl_TessLevelOuter
+               OpExecutionMode %main OutputVertices 3
+               OpDecorate %gl_TessLevelInner BuiltIn TessLevelInner
+               OpDecorate %gl_TessLevelOuter BuiltIn TessLevelOuter
+               OpDecorate %gl_TessLevelOuter Patch
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+%_ptr_Output__arr_float_uint_2 = OpTypePointer Output %_arr_float_uint_2
+%gl_TessLevelInner = OpVariable %_ptr_Output__arr_float_uint_2 Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+    %float_1 = OpConstant %float 1
+%_ptr_Output_float = OpTypePointer Output %float
+     %uint_4 = OpConstant %uint 4
+%_arr_float_uint_4 = OpTypeArray %float %uint_4
+%_ptr_Output__arr_float_uint_4 = OpTypePointer Output %_arr_float_uint_4
+%gl_TessLevelOuter = OpVariable %_ptr_Output__arr_float_uint_4 Output
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %17 = OpAccessChain %_ptr_Output_float %gl_TessLevelInner %int_0
+               OpStore %17 %float_1
+         %22 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_0
+               OpStore %22 %float_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("BuiltIn TessLevelInner variable needs to also have a "
+                        "Patch decoration"));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-TessLevelInner-10880"));
 }
 
 }  // namespace
