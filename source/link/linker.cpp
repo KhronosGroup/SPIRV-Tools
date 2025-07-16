@@ -32,10 +32,7 @@
 #include "source/opt/build_module.h"
 #include "source/opt/compact_ids_pass.h"
 #include "source/opt/decoration_manager.h"
-#include "source/opt/function.h"
-#include "source/opt/instruction.h"
 #include "source/opt/ir_builder.h"
-#include "source/opt/ir_context.h"
 #include "source/opt/pass_manager.h"
 #include "source/opt/remove_duplicates_pass.h"
 #include "source/opt/remove_unused_interface_variables_pass.h"
@@ -44,7 +41,6 @@
 #include "source/table2.h"
 #include "source/util/make_unique.h"
 #include "source/util/string_utils.h"
-#include "spirv-tools/libspirv.h"
 #include "spirv-tools/libspirv.hpp"
 
 namespace spvtools {
