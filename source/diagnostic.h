@@ -15,8 +15,6 @@
 #ifndef SOURCE_DIAGNOSTIC_H_
 #define SOURCE_DIAGNOSTIC_H_
 
-#include <assert.h>
-
 #include <sstream>
 #include <string>
 
