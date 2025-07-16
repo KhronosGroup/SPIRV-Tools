@@ -75,7 +75,10 @@ void FeatureManager::RemoveCapability(spv::Capability cap) {
 
 void FeatureManager::AddCapabilities(Module* module) {
   for (Instruction& inst : module->capabilities()) {
-    AddCapability(static_cast<spv::Capability>(inst.GetSingleWordInOperand(0)));
+    const uint32_t i_cap =
+        inst.opcode() == spv::Op::OpConditionalCapabilityINTEL ? 1 : 0;
+    AddCapability(
+        static_cast<spv::Capability>(inst.GetSingleWordInOperand(i_cap)));
   }
 }
 
