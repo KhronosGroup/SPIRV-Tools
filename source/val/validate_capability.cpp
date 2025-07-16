@@ -354,7 +354,9 @@ spv_result_t CapabilityPass(ValidationState_t& _, const Instruction* inst) {
   assert(!((inst->opcode() == spv::Op::OpConditionalCapabilityINTEL) ^
            (inst->operands().size() == 2)));
 
-  const spv_parsed_operand_t& operand = inst->operand(0);
+  const uint32_t i_cap =
+      inst->opcode() == spv::Op::OpConditionalCapabilityINTEL ? 1 : 0;
+  const spv_parsed_operand_t& operand = inst->operand(i_cap);
 
   assert(operand.num_words == 1);
   assert(operand.offset < inst->words().size());
