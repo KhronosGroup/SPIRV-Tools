@@ -260,9 +260,9 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
           if (visited_entry_points.size() > 0) {
             for (const Instruction* check_inst : visited_entry_points) {
               const auto check_execution_model =
-                  check_inst->GetOperandAs<spv::ExecutionModel>(0);
+                  check_inst->GetOperandAs<spv::ExecutionModel>(i_model);
               const std::string check_name =
-                  check_inst->GetOperandAs<std::string>(2);
+                  check_inst->GetOperandAs<std::string>(i_name);
 
               if (desc_name == check_name &&
                   execution_model == check_execution_model) {
