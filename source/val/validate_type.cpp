@@ -140,7 +140,7 @@ spv_result_t ValidateTypeFloat(ValidationState_t& _, const Instruction* inst) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "8-bit floating point type requires an encoding.";
     }
-    const spvtools::OperandDesc* desc;
+    const spvtools::OperandDesc* desc = nullptr;
     const std::set<spv::FPEncoding> known_encodings{
         spv::FPEncoding::Float8E4M3EXT, spv::FPEncoding::Float8E5M2EXT};
     spv_result_t status = spvtools::LookupOperand(SPV_OPERAND_TYPE_FPENCODING,
