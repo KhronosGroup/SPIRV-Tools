@@ -1914,9 +1914,9 @@ spv_result_t ValidatePtrAccessChain(ValidationState_t& _,
   uint64_t element_val = 0;
   if (_.EvalConstantValUint64(element->id(), &element_val)) {
     if (element_val != 0) {
-      const auto interp_type = untyped_pointer
-                              ? _.FindDef(inst->GetOperandAs<uint32_t>(2))
-                              : _.FindDef(base_type->GetOperandAs<uint32_t>(2));
+      const auto interp_type =
+          untyped_pointer ? _.FindDef(inst->GetOperandAs<uint32_t>(2))
+                          : _.FindDef(base_type->GetOperandAs<uint32_t>(2));
       if (interp_type->opcode() == spv::Op::OpTypeStruct &&
           (_.HasDecoration(interp_type->id(), spv::Decoration::Block) ||
            _.HasDecoration(interp_type->id(), spv::Decoration::BufferBlock))) {

@@ -10313,7 +10313,8 @@ OpDecorate %ptr ArrayStride 16
 %test_val = OpConstantNull %test_type
 %ptr = OpTypeUntypedPointerKHR )" +
                             sc + R"(
-%var = OpUntypedVariableKHR %ptr )" + sc + R"( %struct
+%var = OpUntypedVariableKHR %ptr )" +
+                            sc + R"( %struct
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
