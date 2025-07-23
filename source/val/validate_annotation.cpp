@@ -333,6 +333,14 @@ spv_result_t ValidateDecorate(ValidationState_t& _, const Instruction* inst) {
 }
 
 spv_result_t ValidateDecorateId(ValidationState_t& _, const Instruction* inst) {
+  const auto target_id = inst->GetOperandAs<uint32_t>(0);
+  const auto target = _.FindDef(target_id);
+  if (target && spv::Op::OpDecorationGroup == target->opcode()) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpMemberDecorate Target <id> " << _.getIdName(target_id)
+           << " must not be an OpDecorationGroup instruction.";
+  }
+
   const auto decoration = inst->GetOperandAs<spv::Decoration>(1);
   if (!DecorationTakesIdParameters(decoration)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
@@ -388,8 +396,7 @@ spv_result_t ValidateDecorationGroup(ValidationState_t& _,
     if (use->opcode() != spv::Op::OpDecorate &&
         use->opcode() != spv::Op::OpGroupDecorate &&
         use->opcode() != spv::Op::OpGroupMemberDecorate &&
-        use->opcode() != spv::Op::OpName &&
-        use->opcode() != spv::Op::OpDecorateId && !use->IsNonSemantic()) {
+        use->opcode() != spv::Op::OpName && !use->IsNonSemantic()) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "Result id of OpDecorationGroup can only "
              << "be targeted by OpName, OpGroupDecorate, "

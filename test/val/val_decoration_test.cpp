@@ -5445,6 +5445,67 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+// OpDecorateId
+
+TEST_F(ValidateDecorations, DecorateIdGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %subgroupscope "subgroupscope"
+OpName %int0 "int0"
+OpName %fn "fn"
+OpDecorateId %int0 UniformId %subgroupscope
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 1
+%subgroupscope = OpConstant %int 3
+%int0 = OpConstantNull %int
+%fn = OpTypeFunction %void
+%main = OpFunction %void None %fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, DecorateIdGroupBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %subgroupscope "subgroupscope"
+OpName %int0 "int0"
+OpName %fn "fn"
+OpName %group "group"
+OpDecorateId %group UniformId %subgroupscope
+%group = OpDecorationGroup
+OpGroupDecorate %group %int0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 1
+%subgroupscope = OpConstant %int 3
+%int0 = OpConstantNull %int
+%fn = OpTypeFunction %void
+%main = OpFunction %void None %fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must not be an OpDecorationGroup instruction.\n"
+                        "  OpDecorateId %group UniformId %subgroupscope"));
+}
+
 // Uniform and UniformId decorations
 
 TEST_F(ValidateDecorations, UniformDecorationGood) {
