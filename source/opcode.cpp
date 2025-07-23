@@ -120,6 +120,9 @@ int32_t spvOpcodeIsSpecConstant(const spv::Op opcode) {
     case spv::Op::OpSpecConstantComposite:
     case spv::Op::OpSpecConstantCompositeReplicateEXT:
     case spv::Op::OpSpecConstantOp:
+    case spv::Op::OpSpecConstantArchitectureINTEL:
+    case spv::Op::OpSpecConstantTargetINTEL:
+    case spv::Op::OpSpecConstantCapabilitiesINTEL:
       return true;
     default:
       return false;
@@ -144,6 +147,9 @@ int32_t spvOpcodeIsConstant(const spv::Op opcode) {
     case spv::Op::OpSpecConstantCompositeReplicateEXT:
     case spv::Op::OpSpecConstantOp:
     case spv::Op::OpSpecConstantStringAMDX:
+    case spv::Op::OpSpecConstantArchitectureINTEL:
+    case spv::Op::OpSpecConstantTargetINTEL:
+    case spv::Op::OpSpecConstantCapabilitiesINTEL:
       return true;
     default:
       return false;
