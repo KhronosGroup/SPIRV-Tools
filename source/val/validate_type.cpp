@@ -433,10 +433,9 @@ spv_result_t ValidateTypeStruct(ValidationState_t& _, const Instruction* inst) {
              << "Structure <id> " << _.getIdName(member_type_id)
              << " contains members with BuiltIn decoration. Therefore this "
              << "structure may not be contained as a member of another "
-             << "structure "
-             << "type. Structure <id> " << _.getIdName(struct_id)
-             << " contains structure <id> " << _.getIdName(member_type_id)
-             << ".";
+             << "structure " << "type. Structure <id> "
+             << _.getIdName(struct_id) << " contains structure <id> "
+             << _.getIdName(member_type_id) << ".";
     }
 
     if (spvIsVulkanEnv(_.context()->target_env) &&
@@ -617,6 +616,7 @@ spv_result_t ValidateTypeFunction(ValidationState_t& _,
   for (auto& pair : inst->uses()) {
     const auto* use = pair.first;
     if (use->opcode() != spv::Op::OpFunction &&
+        use->opcode() != spv::Op::OpAsmINTEL &&
         !spvOpcodeIsDebug(use->opcode()) && !use->IsNonSemantic() &&
         !spvOpcodeIsDecoration(use->opcode())) {
       return _.diag(SPV_ERROR_INVALID_ID, use)
