@@ -348,6 +348,20 @@ spv_result_t ValidateDecorateId(ValidationState_t& _, const Instruction* inst) {
               "OpDecorateId";
   }
 
+  for (uint32_t i = 2; i < inst->operands().size(); ++i) {
+    const auto param_id = inst->GetOperandAs<uint32_t>(i);
+    const auto param = _.FindDef(param_id);
+
+    // Both target and param are elements of ordered_instructions we can
+    // determine their relative positions in the SPIR-V module by comparing
+    // pointers.
+    if (target <= param) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "Parameter <ID> " << _.getIdName(param_id)
+             << " must appear earlier in the binary than the target";
+    }
+  }
+
   // No member decorations take id parameters, so we don't bother checking if
   // we are using a member only decoration here.
 
