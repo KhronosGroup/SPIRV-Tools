@@ -8582,6 +8582,136 @@ OpCooperativeVectorReduceSumAccumulateNV %array_ptr %offset %f16c
               HasSubstr("OpCooperativeVectorReduceSumAccumulateNV V type <id> "
                         "'28[%v4half]' is not a cooperative vector type."));
 }
+
+TEST_F(ValidateMemory, CoopMatMatrixBFloatFAdd) {
+  const std::string body =
+      R"(
+               OpCapability Shader
+               OpCapability Float16
+               OpCapability BFloat16TypeKHR
+               OpCapability BFloat16CooperativeMatrixKHR
+               OpCapability VulkanMemoryModel
+               OpCapability CooperativeMatrixKHR
+               OpExtension "SPV_KHR_bfloat16"
+               OpExtension "SPV_KHR_vulkan_memory_model"
+               OpExtension "SPV_KHR_cooperative_matrix"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %main "main" %_ %__0 %__1
+               OpExecutionMode %main LocalSize 32 1 1
+               OpDecorate %_arr_bfloat16_uint_64 ArrayStride 2
+               OpDecorate %A Block
+               OpMemberDecorate %A 0 Offset 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_arr_bfloat16_uint_64_0 ArrayStride 2
+               OpDecorate %B Block
+               OpMemberDecorate %B 0 Offset 0
+               OpDecorate %__0 Binding 1
+               OpDecorate %__0 DescriptorSet 0
+               OpDecorate %_arr_bfloat16_uint_64_1 ArrayStride 2
+               OpDecorate %R Block
+               OpMemberDecorate %R 0 Offset 0
+               OpDecorate %__1 Binding 2
+               OpDecorate %__1 DescriptorSet 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+   %bfloat16 = OpTypeFloat 16 BFloat16KHR
+       %uint = OpTypeInt 32 0
+     %uint_3 = OpConstant %uint 3
+     %uint_8 = OpConstant %uint 8
+     %uint_0 = OpConstant %uint 0
+         %12 = OpTypeCooperativeMatrixKHR %bfloat16 %uint_3 %uint_8 %uint_8 %uint_0
+%_ptr_Function_12 = OpTypePointer Function %12
+    %uint_64 = OpConstant %uint 64
+%_arr_bfloat16_uint_64 = OpTypeArray %bfloat16 %uint_64
+          %A = OpTypeStruct %_arr_bfloat16_uint_64
+%_ptr_StorageBuffer_A = OpTypePointer StorageBuffer %A
+          %_ = OpVariable %_ptr_StorageBuffer_A StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_bfloat16 = OpTypePointer StorageBuffer %bfloat16
+%_arr_bfloat16_uint_64_0 = OpTypeArray %bfloat16 %uint_64
+          %B = OpTypeStruct %_arr_bfloat16_uint_64_0
+%_ptr_StorageBuffer_B = OpTypePointer StorageBuffer %B
+        %__0 = OpVariable %_ptr_StorageBuffer_B StorageBuffer
+     %v3uint = OpTypeVector %uint 3
+    %uint_32 = OpConstant %uint 32
+     %uint_1 = OpConstant %uint 1
+         %35 = OpConstantComposite %v3uint %uint_32 %uint_1 %uint_1
+%_arr_bfloat16_uint_64_1 = OpTypeArray %bfloat16 %uint_64
+          %R = OpTypeStruct %_arr_bfloat16_uint_64_1
+%_ptr_StorageBuffer_R = OpTypePointer StorageBuffer %R
+        %__1 = OpVariable %_ptr_StorageBuffer_R StorageBuffer
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+       %matX = OpVariable %_ptr_Function_12 Function
+       %matY = OpVariable %_ptr_Function_12 Function
+         %23 = OpAccessChain %_ptr_StorageBuffer_bfloat16 %_ %int_0 %uint_0
+         %24 = OpCooperativeMatrixLoadKHR %12 %23 %int_0 %uint_8 None
+               OpStore %matX %24
+         %30 = OpAccessChain %_ptr_StorageBuffer_bfloat16 %__0 %int_0 %uint_0
+         %31 = OpCooperativeMatrixLoadKHR %12 %30 %int_0 %uint_8 None
+               OpStore %matY %31
+         %32 = OpLoad %12 %matX
+         %33 = OpLoad %12 %matY
+         %34 = OpFAdd %12 %32 %33
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FAdd doesn't support BFloat16 type"));
+}
+
+TEST_F(ValidateMemory, CoopMatMatrixFloat8FAdd) {
+  const std::string body =
+      R"(
+               OpCapability Shader
+               OpCapability Float8EXT
+               OpCapability Float8CooperativeMatrixEXT
+               OpCapability VulkanMemoryModel
+               OpCapability CooperativeMatrixKHR
+               OpExtension "SPV_EXT_float8"
+               OpExtension "SPV_KHR_cooperative_matrix"
+               OpExtension "SPV_KHR_vulkan_memory_model"
+               OpMemoryModel Logical Vulkan
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 32 1 1
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+    %fp8e4m3 = OpTypeFloat 8 Float8E4M3EXT
+       %uint = OpTypeInt 32 0
+     %uint_3 = OpConstant %uint 3
+    %uint_16 = OpConstant %uint 16
+     %uint_0 = OpConstant %uint 0
+         %12 = OpTypeCooperativeMatrixKHR %fp8e4m3 %uint_3 %uint_16 %uint_16 %uint_0
+%_ptr_Function_12 = OpTypePointer Function %12
+     %v3uint = OpTypeVector %uint 3
+    %uint_32 = OpConstant %uint 32
+     %uint_1 = OpConstant %uint 1
+%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_32 %uint_1 %uint_1
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+       %matR = OpVariable %_ptr_Function_12 Function
+       %matX = OpVariable %_ptr_Function_12 Function
+       %matY = OpVariable %_ptr_Function_12 Function
+         %16 = OpLoad %12 %matX
+         %18 = OpLoad %12 %matY
+         %19 = OpFAdd %12 %16 %18
+               OpStore %matR %19
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FAdd doesn't support FP8 E4M3/E5M2 types"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

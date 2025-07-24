@@ -145,6 +145,8 @@ int32_t spvOpcodeIsConstant(const spv::Op opcode) {
     case spv::Op::OpSpecConstantOp:
     case spv::Op::OpSpecConstantStringAMDX:
     case spv::Op::OpGraphConstantARM:
+    case spv::Op::OpAsmTargetINTEL:
+    case spv::Op::OpAsmINTEL:
       return true;
     default:
       return false;

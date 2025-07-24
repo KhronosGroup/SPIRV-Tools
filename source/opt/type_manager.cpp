@@ -495,6 +495,36 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
               {SPV_OPERAND_TYPE_ID, {coop_vec->components()}}});
       break;
     }
+    case Type::kTensorARM: {
+      auto tensor_type = type->AsTensorARM();
+      uint32_t const element_type =
+          GetTypeInstruction(tensor_type->element_type());
+      if (element_type == 0) {
+        return 0;
+      }
+      if (tensor_type->rank_id() != 0) {
+        if (tensor_type->shape_id() != 0) {
+          typeInst = MakeUnique<Instruction>(
+              context(), spv::Op::OpTypeTensorARM, 0, id,
+              std::initializer_list<Operand>{
+                  {SPV_OPERAND_TYPE_ID, {element_type}},
+                  {SPV_OPERAND_TYPE_ID, {tensor_type->rank_id()}},
+                  {SPV_OPERAND_TYPE_ID, {tensor_type->shape_id()}}});
+        } else {
+          typeInst = MakeUnique<Instruction>(
+              context(), spv::Op::OpTypeTensorARM, 0, id,
+              std::initializer_list<Operand>{
+                  {SPV_OPERAND_TYPE_ID, {element_type}},
+                  {SPV_OPERAND_TYPE_ID, {tensor_type->rank_id()}}});
+        }
+      } else {
+        typeInst =
+            MakeUnique<Instruction>(context(), spv::Op::OpTypeTensorARM, 0, id,
+                                    std::initializer_list<Operand>{
+                                        {SPV_OPERAND_TYPE_ID, {element_type}}});
+      }
+      break;
+    }
     default:
       assert(false && "Unexpected type");
       break;
@@ -752,6 +782,14 @@ Type* TypeManager::RebuildType(uint32_t type_id, const Type& type) {
       rebuilt_ty = MakeUnique<CooperativeVectorNV>(
           RebuildType(GetId(component_type), *component_type),
           cv_type->components());
+      break;
+    }
+    case Type::kTensorARM: {
+      const TensorARM* tensor_type = type.AsTensorARM();
+      const Type* element_type = tensor_type->element_type();
+      rebuilt_ty = MakeUnique<TensorARM>(
+          RebuildType(GetId(element_type), *element_type),
+          tensor_type->rank_id(), tensor_type->shape_id());
       break;
     }
     default:
@@ -1034,6 +1072,23 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
       }
       type = new TensorViewNV(inst.GetSingleWordInOperand(0),
                               inst.GetSingleWordInOperand(1), perm);
+      break;
+    }
+    case spv::Op::OpTypeTensorARM: {
+      switch (inst.NumInOperands()) {
+        case 1:
+          type = new TensorARM(GetType(inst.GetSingleWordInOperand(0)));
+          break;
+        case 2:
+          type = new TensorARM(GetType(inst.GetSingleWordInOperand(0)),
+                               inst.GetSingleWordInOperand(1));
+          break;
+        case 3:
+          type = new TensorARM(GetType(inst.GetSingleWordInOperand(0)),
+                               inst.GetSingleWordInOperand(1),
+                               inst.GetSingleWordInOperand(2));
+          break;
+      }
       break;
     }
     default:

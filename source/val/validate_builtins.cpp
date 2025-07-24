@@ -2383,6 +2383,19 @@ spv_result_t BuiltInsValidator::ValidatePrimitiveIdAtReference(
           referenced_from_inst, std::placeholders::_1));
     }
 
+    if (!_.HasCapability(spv::Capability::MeshShadingEXT) &&
+        !_.HasCapability(spv::Capability::MeshShadingNV) &&
+        !_.HasCapability(spv::Capability::Geometry) &&
+        !_.HasCapability(spv::Capability::Tessellation)) {
+      id_to_at_reference_checks_[referenced_from_inst.id()].push_back(std::bind(
+          &BuiltInsValidator::ValidateNotCalledWithExecutionModel, this, 4333,
+          "Vulkan spec doesn't allow BuiltIn PrimitiveId to be used for "
+          "variables in the Fragment execution model unless it declares "
+          "Geometry, Tessellation, or MeshShader capabilities.",
+          spv::ExecutionModel::Fragment, decoration, built_in_inst,
+          referenced_from_inst, std::placeholders::_1));
+    }
+
     for (const spv::ExecutionModel execution_model : execution_models_) {
       switch (execution_model) {
         case spv::ExecutionModel::Fragment:
@@ -2679,6 +2692,13 @@ spv_result_t BuiltInsValidator::ValidateTessLevelOuterAtDefinition(
             })) {
       return error;
     }
+
+    if (!_.HasDecoration(inst.id(), spv::Decoration::Patch)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+             << _.VkErrorID(10880)
+             << "BuiltIn TessLevelOuter variable needs to also have a Patch "
+                "decoration.";
+    }
   }
 
   // Seed at reference checks with this built-in.
@@ -2693,12 +2713,19 @@ spv_result_t BuiltInsValidator::ValidateTessLevelInnerAtDefinition(
             [this, &inst](const std::string& message) -> spv_result_t {
               return _.diag(SPV_ERROR_INVALID_DATA, &inst)
                      << _.VkErrorID(4397)
-                     << "According to the Vulkan spec BuiltIn TessLevelOuter "
+                     << "According to the Vulkan spec BuiltIn TessLevelInner "
                         "variable needs to be a 2-component 32-bit float "
                         "array. "
                      << message;
             })) {
       return error;
+    }
+
+    if (!_.HasDecoration(inst.id(), spv::Decoration::Patch)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+             << _.VkErrorID(10880)
+             << "BuiltIn TessLevelInner variable needs to also have a Patch "
+                "decoration.";
     }
   }
 

@@ -666,9 +666,12 @@ class ValidationState_t {
   bool IsScalarType(uint32_t id) const;
   bool IsBfloat16ScalarType(uint32_t id) const;
   bool IsBfloat16VectorType(uint32_t id) const;
+  bool IsBfloat16CoopMatType(uint32_t id) const;
+  bool IsBfloat16Type(uint32_t id) const;
   bool IsFP8ScalarType(uint32_t id) const;
   bool IsFP8VectorType(uint32_t id) const;
-  bool IsFP8ScalarOrVectorType(uint32_t id) const;
+  bool IsFP8CoopMatType(uint32_t id) const;
+  bool IsFP8Type(uint32_t id) const;
   bool IsFloatScalarType(uint32_t id) const;
   bool IsFloatArrayType(uint32_t id) const;
   bool IsFloatVectorType(uint32_t id) const;
