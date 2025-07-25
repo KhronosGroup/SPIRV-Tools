@@ -694,6 +694,35 @@ class BuiltInsValidator {
   // instruction.
   void Update(const Instruction& inst);
 
+  bool IsBulitinInEntryPoint(const Instruction& inst, uint32_t entry_point) {
+    auto getUnderlyingTypeId = [&](const Instruction* ifxVar) {
+      auto pointerTypeInst = _.FindDef(ifxVar->type_id());
+      auto typeInst = _.FindDef(pointerTypeInst->GetOperandAs<uint32_t>(2));
+      while (typeInst->opcode() == spv::Op::OpTypeArray) {
+        typeInst = _.FindDef(typeInst->GetOperandAs<uint32_t>(1));
+      };
+      return typeInst->id();
+    };
+
+    const auto* models = _.GetExecutionModels(entry_point);
+    if (models->find(spv::ExecutionModel::MeshEXT) != models->end() ||
+        models->find(spv::ExecutionModel::MeshNV) != models->end()) {
+      for (const auto& desc : _.entry_point_descriptions(entry_point)) {
+        for (auto interface : desc.interfaces) {
+          if (inst.opcode() == spv::Op::OpTypeStruct) {
+            auto varInst = _.FindDef(interface);
+            if (inst.id() == getUnderlyingTypeId(varInst)) {
+              return true;
+            }
+          } else if (inst.id() == interface) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   // Check if "inst" is an interface variable or type of a interface varibale
   // of any mesh entry point. Populate entry_point_interface_id with all
   // entry points and interface variables that refer to the "inst"
@@ -732,21 +761,6 @@ class BuiltInsValidator {
     return !entry_point_interface_id.empty();
   }
 
-  bool HasInterfaceVariableForMeshEntryPoint(spv::BuiltIn builtin,
-                                             uint32_t entry_point) {
-    const auto& entry_points = mesh_builtin_entry_point_.find(builtin);
-    if (entry_points == mesh_builtin_entry_point_.end()) return false;
-
-    return std::any_of(
-        entry_points->second.begin(), entry_points->second.end(),
-        [entry_point](const uint32_t& ep) { return entry_point == ep; });
-  }
-  void RegisterMeshEntryPointForBuiltin(spv::BuiltIn builtin,
-                                        uint32_t entry_point) {
-    auto& entry_points = mesh_builtin_entry_point_[builtin];
-    entry_points.insert(entry_point);
-  }
-
   ValidationState_t& _;
 
   // Mapping id -> list of rules which validate instruction referencing the
@@ -768,9 +782,9 @@ class BuiltInsValidator {
   // Execution models with which the current function can be called.
   std::set<spv::ExecutionModel> execution_models_;
 
-  // Mesh Builtins which are part of interface variables corresponding to an
-  // entry point
-  std::map<spv::BuiltIn, std::set<uint32_t>> mesh_builtin_entry_point_;
+  // For Builtin that can only be declared once in an entry point, keep track if
+  // the entry point has it already
+  std::set<uint32_t> cull_primitive_entry_points_;
 };
 
 void BuiltInsValidator::Update(const Instruction& inst) {
@@ -2879,7 +2893,6 @@ spv_result_t BuiltInsValidator::ValidateVertexIndexAtReference(
 
 typedef struct {
   uint32_t array_type;
-  uint32_t interface;
   uint32_t array_size;
   uint32_t block_array_size;
   uint32_t perprim_deco;
@@ -2887,11 +2900,11 @@ typedef struct {
 
 // clang-format off
 std::unordered_map<spv::BuiltIn, MeshBuiltinVUIDs> MeshBuiltinVUIDMap = {{
-    {spv::BuiltIn::CullPrimitiveEXT,        {7036, 10591, 10589, 10590, 7038}},
-    {spv::BuiltIn::PrimitiveId,             {10595, 0, 10596, 10597, 7040}},
-    {spv::BuiltIn::Layer,                   {10592, 0, 10593, 10594, 7039}},
-    {spv::BuiltIn::ViewportIndex,           {10601, 0, 10602, 10603, 7060}},
-    {spv::BuiltIn::PrimitiveShadingRateKHR, {10598, 0, 10599, 10600, 7059}},
+    {spv::BuiltIn::CullPrimitiveEXT,        {7036, 10589, 10590, 7038}},
+    {spv::BuiltIn::PrimitiveId,             {10595, 10596, 10597, 7040}},
+    {spv::BuiltIn::Layer,                   {10592, 10593, 10594, 7039}},
+    {spv::BuiltIn::ViewportIndex,           {10601, 10602, 10603, 7060}},
+    {spv::BuiltIn::PrimitiveShadingRateKHR, {10598, 10599, 10600, 7059}},
 }};
 // clang-format on
 
@@ -2903,63 +2916,24 @@ spv_result_t BuiltInsValidator::ValidateMeshBuiltinInterfaceRules(
       bool is_block = false;
       const spv::BuiltIn builtin = decoration.builtin();
       const MeshBuiltinVUIDs& vuids = MeshBuiltinVUIDMap[builtin];
-      // Validate the type of the builtin and if it's part of a block or an
-      // array
       if (spv_result_t error = ValidateBlockTypeOrArrayedType(
               decoration, inst, is_block, scalar_type,
-              [this, &inst, &decoration,
+              [this, &inst, &builtin, &scalar_type,
                &vuids](const std::string& message) -> spv_result_t {
                 return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-                       << _.VkErrorID(vuids.array_type) << "According to the "
-                       << spvLogStringForEnv(_.context()->target_env)
-                       << " spec BuiltIn "
+                       << _.VkErrorID(vuids.array_type)
+                       << "According to the Vulkan specspec BuiltIn "
                        << _.grammar().lookupOperandName(
-                              SPV_OPERAND_TYPE_BUILT_IN,
-                              (uint32_t)decoration.builtin())
-                       << " variable needs to be a either a boolean or an "
-                          "array of booleans. "
-                       << message;
+                              SPV_OPERAND_TYPE_BUILT_IN, (uint32_t)builtin)
+                       << " variable needs to be a either a "
+                       << spvOpcodeString(scalar_type)
+                       << " or an "
+                          "array of "
+                       << spvOpcodeString(scalar_type) << ". " << message;
               })) {
         return error;
       }
 
-      // Validate that the builtin is part of the mesh interface
-      std::map<uint32_t, uint32_t> entry_interface_id_map;
-      bool found = isMeshInterfaceVar(inst, entry_interface_id_map);
-      if (!found) {
-        return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-               << _.VkErrorID(vuids.interface) << "Declaration of builtin type"
-               << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
-                                                (uint32_t)builtin)
-               << " not found as interface variable of any meshEXT entry "
-                  "point. ";
-      }
-      for (const auto& id : entry_interface_id_map) {
-        uint32_t entry_point_id = id.first;
-        uint32_t interface_var_id = id.second;
-        if (!HasInterfaceVariableForMeshEntryPoint(builtin, entry_point_id)) {
-          RegisterMeshEntryPointForBuiltin(decoration.builtin(),
-                                           entry_point_id);
-        } else {
-          return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-                 << _.VkErrorID(vuids.interface)
-                 << "There must be only one declaration of the "
-                 << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
-                                                  (uint32_t)builtin)
-                 << " associated with a entry point's interface. "
-                 << GetIdDesc(*_.FindDef(interface_var_id));
-        }
-        if (GetArrayLength(interface_var_id) !=
-            _.GetOutputPrimitivesEXT(entry_point_id)) {
-          return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-                 << _.VkErrorID(is_block ? vuids.block_array_size
-                                         : vuids.array_size)
-                 << " The size of the array decorated with "
-                 << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
-                                                  (uint32_t)builtin)
-                 << " must match the value specified by OutputPrimitivesEXT. ";
-        }
-      }
       if (!_.HasDecoration(inst.id(), spv::Decoration::PerPrimitiveEXT)) {
         return _.diag(SPV_ERROR_INVALID_DATA, &inst)
                << _.VkErrorID(vuids.perprim_deco)
@@ -2969,6 +2943,33 @@ spv_result_t BuiltInsValidator::ValidateMeshBuiltinInterfaceRules(
                                                 (uint32_t)builtin)
                << " within the MeshEXT Execution Model must also be "
                << "decorated with the PerPrimitiveEXT decoration. ";
+      }
+
+      // These builtin have the ability to be an array with MeshEXT
+      // When an array, we need to make sure the array size lines up
+      std::map<uint32_t, uint32_t> entry_interface_id_map;
+      bool found = isMeshInterfaceVar(inst, entry_interface_id_map);
+      if (found) {
+        for (const auto& id : entry_interface_id_map) {
+          uint32_t entry_point_id = id.first;
+          uint32_t interface_var_id = id.second;
+
+          const uint64_t interface_size = GetArrayLength(interface_var_id);
+          const uint32_t output_prim_size =
+              _.GetOutputPrimitivesEXT(entry_point_id);
+          if (interface_size != output_prim_size) {
+            return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                   << _.VkErrorID(is_block ? vuids.block_array_size
+                                           : vuids.array_size)
+                   << " The size of the array decorated with "
+                   << _.grammar().lookupOperandName(SPV_OPERAND_TYPE_BUILT_IN,
+                                                    (uint32_t)builtin)
+                   << " (" << interface_size
+                   << ") must match the value specified by OutputPrimitivesEXT "
+                      "("
+                   << output_prim_size << "). ";
+          }
+        }
       }
     }
   } else {
@@ -4566,6 +4567,23 @@ spv_result_t BuiltInsValidator::ValidateMeshShadingEXTBuiltinsAtDefinition(
                 decoration, inst, spv::Op::OpTypeBool, inst)) {
           return error;
         }
+
+        for (const uint32_t entry_point : _.entry_points()) {
+          if (IsBulitinInEntryPoint(inst, entry_point)) {
+            if (cull_primitive_entry_points_.find(entry_point) !=
+                cull_primitive_entry_points_.end()) {
+              return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                     << _.VkErrorID(10591)
+                     << "There must be only one declaration of the "
+                        "CullPrimitiveEXT associated in entry point's "
+                        "interface. "
+                     << GetIdDesc(*_.FindDef(entry_point));
+            } else {
+              cull_primitive_entry_points_.insert(entry_point);
+            }
+          }
+        }
+
         break;
       }
       default:
