@@ -84,7 +84,8 @@ class IRContext {
     kAnalysisTypes = 1 << 15,
     kAnalysisDebugInfo = 1 << 16,
     kAnalysisLiveness = 1 << 17,
-    kAnalysisEnd = 1 << 18
+    kAnalysisIdToGraphMapping = 1 << 18,
+    kAnalysisEnd = 1 << 19
   };
 
   using ProcessFunction = std::function<bool(Function*)>;
@@ -651,6 +652,23 @@ class IRContext {
     return GetFunction(inst->result_id());
   }
 
+  // Returns the graph whose id is |id|, if one exists.  Returns |nullptr|
+  // otherwise.
+  Graph* GetGraph(uint32_t id) {
+    if (!AreAnalysesValid(kAnalysisIdToGraphMapping)) {
+      BuildIdToGraphMapping();
+    }
+    auto entry = id_to_graph_.find(id);
+    return (entry != id_to_graph_.end()) ? entry->second : nullptr;
+  }
+
+  Graph* GetGraph(Instruction* inst) {
+    if (inst->opcode() != spv::Op::OpGraphARM) {
+      return nullptr;
+    }
+    return GetGraph(inst->result_id());
+  }
+
   // Add to |todo| all ids of functions called directly from |func|.
   void AddCalls(const Function* func, std::queue<uint32_t>* todo);
 
@@ -727,6 +745,15 @@ class IRContext {
       id_to_func_[fn.result_id()] = &fn;
     }
     valid_analyses_ = valid_analyses_ | kAnalysisIdToFuncMapping;
+  }
+
+  // Builds the instruction-graph map for the whole module.
+  void BuildIdToGraphMapping() {
+    id_to_graph_.clear();
+    for (auto& g : module_->graphs()) {
+      id_to_graph_[g->DefInst().result_id()] = g.get();
+    }
+    valid_analyses_ = valid_analyses_ | kAnalysisIdToGraphMapping;
   }
 
   void BuildDecorationManager() {
@@ -881,6 +908,13 @@ class IRContext {
   // NOTE: Do not traverse this map. Ever. Use the function and basic block
   // iterators to traverse instructions.
   std::unordered_map<uint32_t, Function*> id_to_func_;
+
+  // A map from ids to the graph they define. This mapping is
+  // built on-demand when GetGraph() is called.
+  //
+  // NOTE: Do not traverse this map. Ever. Use the graph iterators to
+  // traverse instructions.
+  std::unordered_map<uint32_t, Graph*> id_to_graph_;
 
   // A bitset indicating which analyzes are currently valid.
   Analysis valid_analyses_;
