@@ -26,8 +26,6 @@
 #include <vector>
 
 #include "gmock/gmock.h"
-#include "source/spirv_target_env.h"
-#include "test/unit_spirv.h"
 #include "test/val/val_code_generator.h"
 #include "test/val/val_fixtures.h"
 
@@ -3617,6 +3615,7 @@ OpDecorate %gl_ViewportIndex PerPrimitiveNV
   entry_point.name = "main_d_r";
   entry_point.execution_model = "MeshNV";
   entry_point.interfaces = "%gl_PrimitiveID %gl_Layer %gl_ViewportIndex";
+  entry_point.body = "%ref_load = OpLoad %_arr_float_uint_81 %gl_PrimitiveID";
   generator.entry_points_.push_back(std::move(entry_point));
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_1);
@@ -4668,6 +4667,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinPrimtiveIDWithPerPrimitiveEXT) {
 %gl_PrimitiveID = OpVariable %_ptr_Output__arr_int_int_1 Output
 %MainMesh = OpFunction %void None %9
  %25 = OpLabel
+%ref_load = OpLoad %_arr_int_int_1 %gl_PrimitiveID
        OpSetMeshOutputsEXT %uint_3 %uint_1
        OpReturn
        OpFunctionEnd
@@ -4714,6 +4714,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinViewportIndexWithPerPrimitiveEXT) {
 %gl_ViewportIndex = OpVariable %_ptr_Output__arr_int_int_1 Output
 %MainMesh = OpFunction %void None %9
 %25 = OpLabel
+%ref_load = OpLoad %_arr_int_int_1 %gl_ViewportIndex
      OpSetMeshOutputsEXT %uint_3 %uint_1
      OpReturn
      OpFunctionEnd
@@ -5259,6 +5260,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinCullPrimitiveEXTBlockArraySize) {
   %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_16 Output
   %main = OpFunction %void None %3
    %5 = OpLabel
+ %ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_16 %gl_MeshPrimitivesEXT
         OpReturn
         OpFunctionEnd
 )";
@@ -5301,6 +5303,7 @@ TEST_F(ValidateBuiltIns, VulkanBuiltinCullPrimitiveEXTMissingBlock) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -5346,6 +5349,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinCullPrimitiveEXTType) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -5556,6 +5560,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinCullPrimitiveEXTInterfaceVariable) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_2 Output
  %main = OpFunction %void None %21
    %23 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_2 %gl_MeshPrimitivesEXT
    %24 = OpLoad %uint %gl_LocalInvocationIndex
          OpSetMeshOutputsEXT %uint_2 %uint_2
    %25 = OpAccessChain %_ptr_Output_bool %5 %24
@@ -5645,6 +5650,7 @@ TEST_F(ValidateBuiltIns, BadBuiltinCullPrimitiveEXTWithPerPrimitiveEXT) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+ %ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -5689,6 +5695,7 @@ TEST_F(ValidateBuiltIns, BadBuiltinPrimitiveShadingRateWithPerPrimitiveEXT) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -5850,6 +5857,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinLayerArrayTypeMeshEXT) {
 %gl_Layer = OpVariable %_ptr_Output__arr_gl_Layer_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_Layer_uint_32 %gl_Layer
       OpReturn
       OpFunctionEnd
 )";
@@ -5892,6 +5900,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinLayerInBlockMeshEXTType) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+ %ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -5929,6 +5938,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinLayerArrayOfIntSizeMeshEXT) {
 %gl_Layer = OpVariable %_ptr_Output__arr_gl_Layer_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_Layer_uint_32 %gl_Layer
       OpReturn
       OpFunctionEnd
 )";
@@ -5971,6 +5981,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinLayerInBlockArraySizeMeshEXT) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -6014,6 +6025,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinLayerWithPerPrimitiveEXT) {
 %gl_Layer = OpVariable %_ptr_Output__arr_int_int_1 Output
 %MainMesh = OpFunction %void None %9
     %25 = OpLabel
+%ref_load = OpLoad %_arr_int_int_1 %gl_Layer
           OpSetMeshOutputsEXT %uint_3 %uint_1
           OpReturn
           OpFunctionEnd
@@ -6099,6 +6111,7 @@ TEST_F(ValidateBuiltIns,
 %gl_PrimitiveShadingRateEXT = OpVariable %_ptr_Output__arr_gl_PrimitiveShadingRateEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_PrimitiveShadingRateEXT_uint_32 %gl_PrimitiveShadingRateEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -6139,6 +6152,7 @@ TEST_F(ValidateBuiltIns,
 %gl_PrimitiveShadingRateEXT = OpVariable %_ptr_Output__arr_gl_PrimitiveShadingRateEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+ %ref_load = OpLoad %_arr_gl_PrimitiveShadingRateEXT_uint_32 %gl_PrimitiveShadingRateEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -6186,6 +6200,7 @@ TEST_F(ValidateBuiltIns,
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
 %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
     OpReturn
     OpFunctionEnd
 )";
@@ -6233,6 +6248,7 @@ TEST_F(ValidateBuiltIns,
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
 %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
     OpReturn
     OpFunctionEnd
 )";
@@ -6276,6 +6292,7 @@ TEST_F(ValidateBuiltIns,
 %gl_PrimitiveShadingRateEXT = OpVariable %_ptr_Output__arr_gl_PrimitiveShadingRateEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_PrimitiveShadingRateEXT_uint_32 %gl_PrimitiveShadingRateEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -6398,6 +6415,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinViewportIndexInBlockTypeMeshEXT) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
 %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
     OpReturn
     OpFunctionEnd
 )";
@@ -6437,6 +6455,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinViewportIndexAsArrayTypeMeshEXT) {
 %gl_ViewportIndex = OpVariable %_ptr_Output__arr_gl_ViewportIndex_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_ViewportIndex_uint_32 %gl_ViewportIndex
       OpReturn
       OpFunctionEnd
 )";
@@ -6480,6 +6499,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinViewportIndexInBlockArraySizeMeshEXT) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
 %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
     OpReturn
     OpFunctionEnd
 )";
@@ -6519,6 +6539,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinViewportIndexAsArrayOfIntSizeMeshEXT) {
 %gl_ViewportIndex = OpVariable %_ptr_Output__arr_gl_ViewportIndex_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_ViewportIndex_uint_32 %gl_ViewportIndex
       OpReturn
       OpFunctionEnd
 )";
@@ -6605,6 +6626,50 @@ TEST_F(ValidateBuiltIns, TessellationMissingPatch) {
                         "Patch decoration"));
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-StandaloneSpirv-TessLevelInner-10880"));
+}
+
+// From dEQP-VK.mesh_shader.ext.builtin.primitive_id_spirv
+TEST_F(ValidateBuiltIns, PrimitiveIdInFragmentWithMeshCapability) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability MeshShadingEXT
+               OpExtension "SPV_EXT_mesh_shader"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %9 %gl_PrimitiveID
+               OpExecutionMode %4 OriginUpperLeft
+               OpDecorate %9 Location 0
+               OpDecorate %gl_PrimitiveID Flat
+               OpDecorate %gl_PrimitiveID BuiltIn PrimitiveId
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %9 = OpVariable %_ptr_Output_v4float Output
+        %int = OpTypeInt 32 1
+%_ptr_Input_int = OpTypePointer Input %int
+%gl_PrimitiveID = OpVariable %_ptr_Input_int Input
+%int_1629198956 = OpConstant %int 1629198956
+       %bool = OpTypeBool
+    %float_0 = OpConstant %float 0
+    %float_1 = OpConstant %float 1
+         %19 = OpConstantComposite %v4float %float_0 %float_0 %float_1 %float_1
+         %20 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_1
+     %v4bool = OpTypeVector %bool 4
+          %4 = OpFunction %void None %3
+          %5 = OpLabel
+         %13 = OpLoad %int %gl_PrimitiveID
+         %16 = OpIEqual %bool %13 %int_1629198956
+         %22 = OpCompositeConstruct %v4bool %16 %16 %16 %16
+         %23 = OpSelect %v4float %22 %19 %20
+               OpStore %9 %23
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
 }  // namespace
