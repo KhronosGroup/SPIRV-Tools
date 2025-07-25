@@ -7,9 +7,11 @@ on:
     branches:
       - 'main'
   pull_request:
+    types: [opened, synchronize, reopened, unlabeled]
 
 jobs:
   build:
+    if: github.event.action != 'unlabeled' || github.event.label.name == 'kokoro:run'
     timeout-minutes: 120
     strategy:
       matrix:
