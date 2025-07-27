@@ -620,13 +620,19 @@ spv_result_t ValidateTypeFunction(ValidationState_t& _,
   }
 
   // The only valid uses of OpTypeFunction are in an OpFunction, debugging, or
-  // decoration instruction.
+  // decoration instruction, or in OpTypePointer when FunctionPointersINTEL
+  // capability is enabled.
   for (auto& pair : inst->uses()) {
     const auto* use = pair.first;
     if (use->opcode() != spv::Op::OpFunction &&
         use->opcode() != spv::Op::OpAsmINTEL &&
         !spvOpcodeIsDebug(use->opcode()) && !use->IsNonSemantic() &&
         !spvOpcodeIsDecoration(use->opcode())) {
+      // Check if this is OpTypePointer with FunctionPointersINTEL capability
+      if (use->opcode() == spv::Op::OpTypePointer &&
+          _.HasCapability(spv::Capability::FunctionPointersINTEL)) {
+        continue; // Allow OpTypePointer to use function types with this capability
+      }
       return _.diag(SPV_ERROR_INVALID_ID, use)
              << "Invalid use of function type result id "
              << _.getIdName(inst->id()) << ".";
