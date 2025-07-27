@@ -878,6 +878,7 @@ uint32_t ValidationState_t::GetComponentType(uint32_t id) const {
       return id;
 
     case spv::Op::OpTypeArray:
+    case spv::Op::OpTypeRuntimeArray:
       return inst->word(2);
 
     case spv::Op::OpTypeVector:
