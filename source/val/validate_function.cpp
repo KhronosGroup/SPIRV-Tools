@@ -223,51 +223,52 @@ spv_result_t ValidateFunctionCall(ValidationState_t& _,
           !_.options()->relax_logical_pointer) {
         spv::StorageClass sc =
             parameter_type->GetOperandAs<spv::StorageClass>(1u);
-        // Validate which storage classes can be pointer operands.
-        switch (sc) {
-          case spv::StorageClass::UniformConstant:
-          case spv::StorageClass::Function:
-          case spv::StorageClass::Private:
-          case spv::StorageClass::Workgroup:
-          case spv::StorageClass::AtomicCounter:
-          // This is a physical pointer.
-          case spv::StorageClass::PhysicalStorageBuffer:
-          // SPV_EXT_tile_image
-          case spv::StorageClass::TileImageEXT:
-          // SPV_KHR_ray_tracing
-          case spv::StorageClass::ShaderRecordBufferKHR:
-            // These are always allowed.
-            break;
-          case spv::StorageClass::StorageBuffer:
-            if (!_.features().variable_pointers) {
+        if (sc != spv::StorageClass::PhysicalStorageBuffer) {
+          // Validate which storage classes can be pointer operands.
+          switch (sc) {
+            case spv::StorageClass::UniformConstant:
+            case spv::StorageClass::Function:
+            case spv::StorageClass::Private:
+            case spv::StorageClass::Workgroup:
+            case spv::StorageClass::AtomicCounter:
+            // SPV_EXT_tile_image
+            case spv::StorageClass::TileImageEXT:
+            // SPV_KHR_ray_tracing
+            case spv::StorageClass::ShaderRecordBufferKHR:
+              // These are always allowed.
+              break;
+            case spv::StorageClass::StorageBuffer:
+              if (!_.features().variable_pointers) {
+                return _.diag(SPV_ERROR_INVALID_ID, inst)
+                       << "StorageBuffer pointer operand "
+                       << _.getIdName(argument_id)
+                       << " requires a variable pointers capability";
+              }
+              break;
+            default:
               return _.diag(SPV_ERROR_INVALID_ID, inst)
-                     << "StorageBuffer pointer operand "
-                     << _.getIdName(argument_id)
-                     << " requires a variable pointers capability";
-            }
-            break;
-          default:
-            return _.diag(SPV_ERROR_INVALID_ID, inst)
-                   << "Invalid storage class for pointer operand "
-                   << _.getIdName(argument_id);
-        }
+                     << "Invalid storage class for pointer operand "
+                     << _.getIdName(argument_id);
+          }
 
-        // Validate memory object declaration requirements.
-        if (argument->opcode() != spv::Op::OpVariable &&
-            argument->opcode() != spv::Op::OpUntypedVariableKHR &&
-            argument->opcode() != spv::Op::OpFunctionParameter) {
-          const bool ssbo_vptr =
-              _.HasCapability(spv::Capability::VariablePointersStorageBuffer) &&
-              sc == spv::StorageClass::StorageBuffer;
-          const bool wg_vptr =
-              _.HasCapability(spv::Capability::VariablePointers) &&
-              sc == spv::StorageClass::Workgroup;
-          const bool uc_ptr = sc == spv::StorageClass::UniformConstant;
-          if (!_.options()->before_hlsl_legalization && !ssbo_vptr &&
-              !wg_vptr && !uc_ptr) {
-            return _.diag(SPV_ERROR_INVALID_ID, inst)
-                   << "Pointer operand " << _.getIdName(argument_id)
-                   << " must be a memory object declaration";
+          // Validate memory object declaration requirements.
+          if (argument->opcode() != spv::Op::OpVariable &&
+              argument->opcode() != spv::Op::OpUntypedVariableKHR &&
+              argument->opcode() != spv::Op::OpFunctionParameter) {
+            const bool ssbo_vptr =
+                _.HasCapability(
+                    spv::Capability::VariablePointersStorageBuffer) &&
+                sc == spv::StorageClass::StorageBuffer;
+            const bool wg_vptr =
+                _.HasCapability(spv::Capability::VariablePointers) &&
+                sc == spv::StorageClass::Workgroup;
+            const bool uc_ptr = sc == spv::StorageClass::UniformConstant;
+            if (!_.options()->before_hlsl_legalization && !ssbo_vptr &&
+                !wg_vptr && !uc_ptr) {
+              return _.diag(SPV_ERROR_INVALID_ID, inst)
+                     << "Pointer operand " << _.getIdName(argument_id)
+                     << " must be a memory object declaration";
+            }
           }
         }
       }
