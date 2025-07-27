@@ -79,6 +79,10 @@ spv_result_t ValidateTypeInt(ValidationState_t& _, const Instruction* inst) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Using a 64-bit integer type requires the Int64 capability.";
     } else {
+      // Check for SPV_INTEL_arbitrary_precision_integers extension
+      if (_.HasCapability(spv::Capability::ArbitraryPrecisionIntegersINTEL)) {
+        return SPV_SUCCESS;
+      }
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Invalid number of bits (" << num_bits
              << ") used for OpTypeInt.";
