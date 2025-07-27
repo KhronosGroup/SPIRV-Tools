@@ -216,7 +216,8 @@ spv_result_t ValidateFunctionCall(ValidationState_t& _,
       }
     }
 
-    if (_.addressing_model() == spv::AddressingModel::Logical) {
+    if (_.addressing_model() == spv::AddressingModel::Logical ||
+        _.addressing_model() == spv::AddressingModel::PhysicalStorageBuffer64) {
       if ((parameter_type->opcode() == spv::Op::OpTypePointer ||
            parameter_type->opcode() == spv::Op::OpTypeUntypedPointerKHR) &&
           !_.options()->relax_logical_pointer) {
@@ -229,6 +230,12 @@ spv_result_t ValidateFunctionCall(ValidationState_t& _,
           case spv::StorageClass::Private:
           case spv::StorageClass::Workgroup:
           case spv::StorageClass::AtomicCounter:
+          // This is a physical pointer.
+          case spv::StorageClass::PhysicalStorageBuffer:
+          // SPV_EXT_tile_image
+          case spv::StorageClass::TileImageEXT:
+          // SPV_KHR_ray_tracing
+          case spv::StorageClass::ShaderRecordBufferKHR:
             // These are always allowed.
             break;
           case spv::StorageClass::StorageBuffer:
