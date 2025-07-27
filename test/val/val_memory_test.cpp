@@ -3826,7 +3826,7 @@ OpFunctionEnd
     EXPECT_EQ(SPV_ERROR_INVALID_ID,
               ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
     EXPECT_THAT(getDiagnosticString(),
-                HasSubstr("Instruction cannot for logical addressing model be "
+                HasSubstr("Instruction on logical pointers cannot be "
                           "used without a variable pointers capability"));
   }
 }
@@ -5959,8 +5959,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("is out of bounds"));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("cannot find index -224"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Index at word 4 may not have a negative value"));
 }
 
 TEST_F(ValidateMemory, AccessChainNegativeStructIndex64) {
@@ -5987,8 +5987,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("is out of bounds"));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("cannot find index -224"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Index at word 4 may not have a negative value"));
 }
 
 TEST_F(ValidateMemory, UntypedVariableFunctionOutsideFunction) {

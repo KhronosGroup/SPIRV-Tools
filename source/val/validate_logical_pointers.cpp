@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "source/opcode.h"
 #include "source/val/validate.h"
@@ -68,7 +69,7 @@ bool IsVariablePointer(const ValidationState_t& _,
         const auto param_inst_num = inst - &_.ordered_instructions()[0];
         uint32_t param_index = 0;
         uint32_t inst_index = 1;
-        while (_.ordered_instructions()[param_inst_num - inst_index].opcode() ==
+        while (_.ordered_instructions()[param_inst_num - inst_index].opcode() !=
                spv::Op::OpFunction) {
           if (_.ordered_instructions()[param_inst_num - inst_index].opcode() ==
               spv::Op::OpFunctionParameter) {
@@ -342,6 +343,228 @@ spv_result_t ValidateLogicalPointerReturns(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t CheckMatrixElementTyped(ValidationState_t& _,
+                                     const Instruction* inst)
+{
+  std::vector<const Instruction*> stack;
+  std::unordered_set<const Instruction*> seen;
+  stack.push_back(inst);
+  while (!stack.empty()) {
+    const Instruction* trace_inst = stack.back();
+    stack.pop_back();
+
+    if (!seen.insert(trace_inst).second) {
+      continue;
+    }
+
+    switch (trace_inst->opcode()) {
+      case spv::Op::OpAccessChain:
+      case spv::Op::OpInBoundsAccessChain:
+      case spv::Op::OpPtrAccessChain: {
+        // Get the type of the base operand.
+        uint32_t start_index =
+            trace_inst->opcode() == spv::Op::OpPtrAccessChain ? 4 : 3;
+        const auto access_type_id = _.GetOperandTypeId(trace_inst, 2);
+        auto access_type = _.FindDef(access_type_id);
+        access_type = _.FindDef(access_type->GetOperandAs<uint32_t>(2));
+        // If the base operand is a matrix, then it was definitely pointing to a
+        // sub-component.
+        if (access_type->opcode() == spv::Op::OpTypeMatrix) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Variable pointer must not point to a column or a "
+                    "component of a column of a matrix. Occurs due to:\n"
+                 << _.Disassemble(*trace_inst);
+        }
+
+        // Otherwise, step through the indices to see if we pass a matrix.
+        for (uint32_t i = start_index; i < trace_inst->operands().size(); ++i) {
+          const auto index = trace_inst->GetOperandAs<uint32_t>(i);
+          if (access_type->opcode() == spv::Op::OpTypeStruct) {
+            uint64_t val = 0;
+            _.EvalConstantValUint64(index, &val);
+            access_type =
+                _.FindDef(access_type->GetOperandAs<uint32_t>(1 + val));
+          } else {
+            access_type = _.FindDef(_.GetComponentType(access_type->id()));
+          }
+
+          if (access_type->opcode() == spv::Op::OpTypeMatrix) {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << "Variable pointer must not point to a column or a "
+                      "component of a column of a matrix. Occurs due to:\n"
+                   << _.Disassemble(*trace_inst);
+          }
+          stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(2)));
+        }
+        break;
+      }
+      case spv::Op::OpPhi:
+        for (uint32_t i = 2; i < trace_inst->operands().size(); i += 2) {
+          stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(i)));
+        }
+        break;
+      case spv::Op::OpSelect:
+        stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(3)));
+        stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(4)));
+        break;
+      case spv::Op::OpFunctionParameter: {
+        // Jump to function calls
+        auto func = trace_inst->function();
+        auto func_inst = _.FindDef(func->id());
+
+        const auto param_inst_num = trace_inst - &_.ordered_instructions()[0];
+        uint32_t param_index = 0;
+        uint32_t inst_index = 1;
+        while (_.ordered_instructions()[param_inst_num - inst_index].opcode() !=
+               spv::Op::OpFunction) {
+          if (_.ordered_instructions()[param_inst_num - inst_index].opcode() ==
+              spv::Op::OpFunctionParameter) {
+            param_index++;
+          }
+          ++inst_index;
+        }
+
+        for (const auto& use_pair : func_inst->uses()) {
+          const auto use_inst = use_pair.first;
+          if (use_inst->opcode() == spv::Op::OpFunctionCall) {
+            const auto arg_id =
+                use_inst->GetOperandAs<uint32_t>(3 + param_index);
+            const auto arg_inst = _.FindDef(arg_id);
+            stack.push_back(arg_inst);
+          }
+        }
+        break;
+      }
+      case spv::Op::OpFunctionCall: {
+        // Jump to return values.
+        const auto* func = _.function(trace_inst->GetOperandAs<uint32_t>(2));
+        for (auto* bb : func->ordered_blocks()) {
+          const auto* terminator = bb->terminator();
+          if (terminator->opcode() == spv::Op::OpReturnValue) {
+            stack.push_back(terminator);
+          }
+        }
+        break;
+      }
+      case spv::Op::OpReturnValue:
+        stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(0)));
+        break;
+      case spv::Op::OpCopyObject:
+        stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(2)));
+        break;
+      case spv::Op::OpLoad:
+        stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(2)));
+        break;
+      case spv::Op::OpStore:
+        stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(0)));
+        break;
+      case spv::Op::OpVariable: {
+        const auto sc = trace_inst->GetOperandAs<spv::StorageClass>(2);
+        if (sc == spv::StorageClass::Function ||
+            sc == spv::StorageClass::Private) {
+          // Add the initializer
+          if (trace_inst->operands().size() > 3) {
+            stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(3)));
+          }
+          // Jump to stores
+          std::vector<std::pair<const Instruction*, uint32_t>> store_stack(
+              trace_inst->uses());
+          std::unordered_set<const Instruction*> store_seen;
+          while (!store_stack.empty()) {
+            const auto& use = store_stack.back();
+            store_stack.pop_back();
+
+            if (!store_seen.insert(use.first).second) {
+              continue;
+            }
+
+            // If the use is a store pointer, trace the store object.
+            // Note: use.second is a word index.
+            if (use.first->opcode() == spv::Op::OpStore && use.second == 1) {
+              stack.push_back(_.FindDef(use.first->GetOperandAs<uint32_t>(1)));
+            } else {
+              // Most likely a gep so keep tracing.
+              for (auto& next_use : use.first->uses()) {
+                store_stack.push_back(next_use);
+              }
+            }
+          }
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateVariablePointers(ValidationState_t& _,
+                                      std::unordered_map<uint32_t, bool>& variable_pointers,
+                                      const Instruction* inst) {
+  // Variable pointers cannot be operands to array length.
+  if (inst->opcode() == spv::Op::OpArrayLength ||
+      inst->opcode() == spv::Op::OpUntypedArrayLengthKHR) {
+    const auto ptr_index = inst->opcode() == spv::Op::OpArrayLength ? 2 : 3;
+    const auto ptr_id = inst->GetOperandAs<uint32_t>(ptr_index);
+    const auto ptr_inst = _.FindDef(ptr_id);
+    if (IsVariablePointer(_, variable_pointers, ptr_inst)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Pointer operand must not be a variable pointer";
+    }
+    return SPV_SUCCESS;
+  }
+
+  if (!IsLogicalPointer(_, inst)) {
+    return SPV_SUCCESS;
+  }
+
+  if (!IsVariablePointer(_, variable_pointers, inst)) {
+    return SPV_SUCCESS;
+  }
+
+  // Variable pointers must not:
+  // * point to array of Block- or BufferBlock-decorated structs
+  // * point to an object that is or contains a matrix
+  // * point to a column, or component in a column, of a matrix
+  auto type_inst = _.FindDef(inst->type_id());
+  if (type_inst->opcode() == spv::Op::OpTypePointer) {
+    const auto pointee_type = _.FindDef(type_inst->GetOperandAs<uint32_t>(2));
+    if (pointee_type->opcode() == spv::Op::OpTypeArray ||
+        pointee_type->opcode() == spv::Op::OpTypeRuntimeArray) {
+      const auto element_type =
+          _.FindDef(pointee_type->GetOperandAs<uint32_t>(1));
+      if (element_type->opcode() == spv::Op::OpTypeStruct &&
+          (_.HasDecoration(element_type->id(), spv::Decoration::Block) ||
+           _.HasDecoration(element_type->id(), spv::Decoration::BufferBlock))) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Variable pointer must not point to an array of Block- or "
+                  "BufferBlock-decorated structs";
+      }
+    } else if (_.ContainsType(
+                   pointee_type->id(),
+                   [](const Instruction* inst) {
+                     return inst->opcode() == spv::Op::OpTypeMatrix;
+                   },
+                   /* traverse_all_types = */ false)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Variable pointer must not point to an object that is or "
+                "contains a matrix";
+    } else if (_.IsFloatScalarOrVectorType(pointee_type->id())) {
+      // Pointing to a column or component in a column is trickier to detect.
+      // Trace backwards and check encountered access chains to determine if
+      // this pointer is pointing into a matrix.
+      if (auto error = CheckMatrixElementTyped(_, inst)) {
+        return error;
+      }
+    }
+  } else {
+  }
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 spv_result_t ValidateLogicalPointers(ValidationState_t& _) {
@@ -374,6 +597,9 @@ spv_result_t ValidateLogicalPointers(ValidationState_t& _) {
       return error;
     }
     if (auto error = ValidateLogicalPointerReturns(_, &inst)) {
+      return error;
+    }
+    if (auto error = ValidateVariablePointers(_, variable_pointers, &inst)) {
       return error;
     }
   }
