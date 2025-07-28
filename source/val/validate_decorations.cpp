@@ -471,7 +471,7 @@ spv_result_t checkLayout(uint32_t struct_id, spv::StorageClass storage_class,
         return vstate.MissingFeature("uniformBufferStandardLayout feature",
                                      "--uniform-buffer-standard-layout", true);
       } else {
-        return vstate.MissingFeature("scalarBlockLayoutfeature feature",
+        return vstate.MissingFeature("scalarBlockLayout feature",
                                      "--scalar-block-layout", true);
       }
     }
