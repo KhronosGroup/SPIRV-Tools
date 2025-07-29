@@ -343,9 +343,117 @@ spv_result_t ValidateLogicalPointerReturns(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-spv_result_t CheckMatrixElementTyped(ValidationState_t& _,
-                                     const Instruction* inst)
-{
+spv_result_t CheckMatrixElementTyped(ValidationState_t& _, const Instruction* inst) {
+  switch (inst->opcode()) {
+    case spv::Op::OpAccessChain:
+    case spv::Op::OpInBoundsAccessChain:
+    case spv::Op::OpPtrAccessChain: {
+      // Get the type of the base operand.
+      uint32_t start_index =
+          inst->opcode() == spv::Op::OpPtrAccessChain ? 4 : 3;
+      const auto access_type_id = _.GetOperandTypeId(inst, 2);
+      auto access_type = _.FindDef(access_type_id);
+      access_type = _.FindDef(access_type->GetOperandAs<uint32_t>(2));
+
+      // If the base operand is a matrix, then it was definitely pointing to a
+      // sub-component.
+      if (access_type->opcode() == spv::Op::OpTypeMatrix) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Variable pointer must not point to a column or a "
+                  "component of a column of a matrix. Occurs due to:\n"
+               << _.Disassemble(*inst);
+      }
+
+      // Otherwise, step through the indices to see if we pass a matrix.
+      for (uint32_t i = start_index; i < inst->operands().size(); ++i) {
+        const auto index = inst->GetOperandAs<uint32_t>(i);
+        if (access_type->opcode() == spv::Op::OpTypeStruct) {
+          uint64_t val = 0;
+          _.EvalConstantValUint64(index, &val);
+          access_type =
+              _.FindDef(access_type->GetOperandAs<uint32_t>(1 + val));
+        } else {
+          access_type = _.FindDef(_.GetComponentType(access_type->id()));
+        }
+
+        if (access_type->opcode() == spv::Op::OpTypeMatrix) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Variable pointer must not point to a column or a "
+                    "component of a column of a matrix. Occurs due to:\n"
+                 << _.Disassemble(*inst);
+        }
+      }
+      break;
+    }
+    default:
+      break;
+  }
+  return SPV_SUCCESS;
+}
+
+spv_result_t CheckUntyped(ValidationState_t& _, const Instruction* inst) {
+  switch (inst->opcode()) {
+    case spv::Op::OpUntypedAccessChainKHR:
+    case spv::Op::OpUntypedInBoundsAccessChainKHR:
+    case spv::Op::OpUntypedPtrAccessChainKHR: {
+      // Get the type of the base operand.
+      uint32_t start_index =
+          inst->opcode() == spv::Op::OpUntypedPtrAccessChainKHR ? 5 : 4;
+      const auto access_type_id = inst->GetOperandAs<uint32_t>(2);
+      auto access_type = _.FindDef(access_type_id);
+
+      // If the base operand is an array of Block- or BufferBlock-decorated
+      // structs.
+      if (access_type->opcode() == spv::Op::OpTypeArray ||
+          access_type->opcode() == spv::Op::OpTypeRuntimeArray) {
+        auto element_type = _.FindDef(access_type->GetOperandAs<uint32_t>(1));
+        if (element_type->opcode() == spv::Op::OpTypeStruct &&
+            (_.HasDecoration(element_type->id(), spv::Decoration::Block) ||
+             _.HasDecoration(element_type->id(),
+                             spv::Decoration::BufferBlock))) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Variable pointer must not point to an array of Block- or "
+                    "BufferBlock-decorated structs";
+        }
+      }
+
+      // If the base operand is a matrix, then it was definitely pointing to a
+      // sub-component.
+      if (access_type->opcode() == spv::Op::OpTypeMatrix) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Variable pointer must not point to a column or a "
+                  "component of a column of a matrix.";
+      }
+
+      // Otherwise, step through the indices to see if we pass a matrix.
+      for (uint32_t i = start_index; i < inst->operands().size(); ++i) {
+        const auto index = inst->GetOperandAs<uint32_t>(i);
+        if (access_type->opcode() == spv::Op::OpTypeStruct) {
+          uint64_t val = 0;
+          _.EvalConstantValUint64(index, &val);
+          access_type =
+              _.FindDef(access_type->GetOperandAs<uint32_t>(1 + val));
+        } else {
+          access_type = _.FindDef(_.GetComponentType(access_type->id()));
+        }
+
+        if (access_type->opcode() == spv::Op::OpTypeMatrix) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Variable pointer must not point to a column or a "
+                    "component of a column of a matrix.";
+        }
+      }
+      break;
+    }
+    default:
+      break;
+  }
+  return SPV_SUCCESS;
+}
+
+spv_result_t TraceVariablePointers(
+    ValidationState_t& _, const Instruction* inst,
+    const std::function<spv_result_t(ValidationState_t&, const Instruction*)>& checker) {
   std::vector<const Instruction*> stack;
   std::unordered_set<const Instruction*> seen;
   stack.push_back(inst);
@@ -357,45 +465,19 @@ spv_result_t CheckMatrixElementTyped(ValidationState_t& _,
       continue;
     }
 
+    if (auto error = checker(_, trace_inst)) {
+      return error;
+    }
+
+    const auto untyped = spvOpcodeGeneratesUntypedPointer(trace_inst->opcode());
     switch (trace_inst->opcode()) {
       case spv::Op::OpAccessChain:
       case spv::Op::OpInBoundsAccessChain:
-      case spv::Op::OpPtrAccessChain: {
-        // Get the type of the base operand.
-        uint32_t start_index =
-            trace_inst->opcode() == spv::Op::OpPtrAccessChain ? 4 : 3;
-        const auto access_type_id = _.GetOperandTypeId(trace_inst, 2);
-        auto access_type = _.FindDef(access_type_id);
-        access_type = _.FindDef(access_type->GetOperandAs<uint32_t>(2));
-        // If the base operand is a matrix, then it was definitely pointing to a
-        // sub-component.
-        if (access_type->opcode() == spv::Op::OpTypeMatrix) {
-          return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << "Variable pointer must not point to a column or a "
-                    "component of a column of a matrix. Occurs due to:\n"
-                 << _.Disassemble(*trace_inst);
-        }
-
-        // Otherwise, step through the indices to see if we pass a matrix.
-        for (uint32_t i = start_index; i < trace_inst->operands().size(); ++i) {
-          const auto index = trace_inst->GetOperandAs<uint32_t>(i);
-          if (access_type->opcode() == spv::Op::OpTypeStruct) {
-            uint64_t val = 0;
-            _.EvalConstantValUint64(index, &val);
-            access_type =
-                _.FindDef(access_type->GetOperandAs<uint32_t>(1 + val));
-          } else {
-            access_type = _.FindDef(_.GetComponentType(access_type->id()));
-          }
-
-          if (access_type->opcode() == spv::Op::OpTypeMatrix) {
-            return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << "Variable pointer must not point to a column or a "
-                      "component of a column of a matrix. Occurs due to:\n"
-                   << _.Disassemble(*trace_inst);
-          }
-          stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(2)));
-        }
+      case spv::Op::OpPtrAccessChain:
+      case spv::Op::OpUntypedAccessChainKHR:
+      case spv::Op::OpUntypedInBoundsAccessChainKHR:
+      case spv::Op::OpUntypedPtrAccessChainKHR: {
+        stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(2)));
         break;
       }
       case spv::Op::OpPhi:
@@ -458,13 +540,16 @@ spv_result_t CheckMatrixElementTyped(ValidationState_t& _,
       case spv::Op::OpStore:
         stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(0)));
         break;
-      case spv::Op::OpVariable: {
+      case spv::Op::OpVariable:
+      case spv::Op::OpUntypedVariableKHR: {
         const auto sc = trace_inst->GetOperandAs<spv::StorageClass>(2);
         if (sc == spv::StorageClass::Function ||
             sc == spv::StorageClass::Private) {
           // Add the initializer
-          if (trace_inst->operands().size() > 3) {
-            stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(3)));
+          const uint32_t init_operand = untyped ? 4 : 3;
+          if (trace_inst->operands().size() > init_operand) {
+            stack.push_back(
+                _.FindDef(trace_inst->GetOperandAs<uint32_t>(init_operand)));
           }
           // Jump to stores
           std::vector<std::pair<const Instruction*, uint32_t>> store_stack(
@@ -524,6 +609,37 @@ spv_result_t ValidateVariablePointers(ValidationState_t& _,
     return SPV_SUCCESS;
   }
 
+  if (!_.HasCapability(spv::Capability::VariablePointers) &&
+      (inst->opcode() == spv::Op::OpSelect ||
+       inst->opcode() == spv::Op::OpPhi)) {
+    std::unordered_set<const Instruction*> sources;
+    const auto checker = [&sources](ValidationState_t& _,
+                                    const Instruction* inst) -> spv_result_t {
+      switch (inst->opcode()) {
+        case spv::Op::OpVariable:
+        case spv::Op::OpUntypedVariableKHR:
+          if (inst->GetOperandAs<spv::StorageClass>(2) ==
+                  spv::StorageClass::StorageBuffer ||
+              inst->GetOperandAs<spv::StorageClass>(2) ==
+                  spv::StorageClass::Workgroup) {
+            sources.insert(inst);
+          }
+          if (sources.size() > 1) {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << "Variable pointers must point into the same structure "
+                      "(or OpConstantNull)";
+          }
+          break;
+        default:
+          break;
+      }
+      return SPV_SUCCESS;
+    };
+    if (auto error = TraceVariablePointers(_, inst, checker)) {
+      return error;
+    }
+  }
+
   // Variable pointers must not:
   // * point to array of Block- or BufferBlock-decorated structs
   // * point to an object that is or contains a matrix
@@ -555,11 +671,14 @@ spv_result_t ValidateVariablePointers(ValidationState_t& _,
       // Pointing to a column or component in a column is trickier to detect.
       // Trace backwards and check encountered access chains to determine if
       // this pointer is pointing into a matrix.
-      if (auto error = CheckMatrixElementTyped(_, inst)) {
+      if (auto error = TraceVariablePointers(_, inst, CheckMatrixElementTyped)) {
         return error;
       }
     }
   } else {
+    if (auto error = TraceVariablePointers(_, inst, CheckUntyped)) {
+      return error;
+    }
   }
 
   return SPV_SUCCESS;

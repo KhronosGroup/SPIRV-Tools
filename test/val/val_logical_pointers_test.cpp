@@ -928,6 +928,871 @@ OpFunctionEnd
 
 INSTANTIATE_TEST_SUITE_P(ValidateLogicalPointersMatrixTraceTyped,
                          MatrixTraceTypedTest, ValuesIn(traces));
+
+using MatrixTraceUntypedTest = spvtest::ValidateBase<MatrixTrace>;
+
+TEST_P(MatrixTraceUntypedTest, PhiLoopOp1) {
+  const auto trace_type = GetParam();
+  std::string gep;
+  switch (trace_type) {
+    case MatrixTrace::kColumn:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
+      break;
+    case MatrixTrace::kComponent:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      break;
+    default:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
+      break;
+  }
+
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%index = OpUndef %int
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%array = OpTypeArray %mat2x2 %int_2
+%struct = OpTypeStruct %array %float
+%ptr_wg = OpTypeUntypedPointerKHR Workgroup
+%null = OpConstantNull %ptr_wg
+%var = OpUntypedVariableKHR %ptr_wg Workgroup %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = )" + gep + R"(
+OpBranch %loop
+%loop = OpLabel
+%phi = OpPhi %ptr_wg %gep %entry %copy %continue
+OpLoopMerge %merge %continue None
+OpBranchConditional %bool_cond %merge %continue
+%continue = OpLabel
+%copy = OpCopyObject %ptr_wg %phi
+OpBranch %loop
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const auto expected = trace_type == MatrixTrace::kNotAMatrix
+                            ? SPV_SUCCESS
+                            : SPV_ERROR_INVALID_DATA;
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(expected, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  if (expected) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("Variable pointer must not point to a column or a "
+                          "component of a column of a matrix"));
+  }
+}
+TEST_P(MatrixTraceUntypedTest, PhiLoopOp2) {
+  const auto trace_type = GetParam();
+  std::string gep;
+  switch (trace_type) {
+    case MatrixTrace::kColumn:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
+      break;
+    case MatrixTrace::kComponent:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      break;
+    default:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
+      break;
+  }
+
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%index = OpUndef %int
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%array = OpTypeArray %mat2x2 %int_2
+%struct = OpTypeStruct %array %float
+%ptr_wg = OpTypeUntypedPointerKHR Workgroup
+%null = OpConstantNull %ptr_wg
+%var = OpUntypedVariableKHR %ptr_wg Workgroup %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = )" + gep + R"(
+OpBranch %loop
+%loop = OpLabel
+%phi = OpPhi %ptr_wg %copy %continue %gep %entry
+OpLoopMerge %merge %continue None
+OpBranchConditional %bool_cond %merge %continue
+%continue = OpLabel
+%copy = OpCopyObject %ptr_wg %phi
+OpBranch %loop
+%merge = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const auto expected = trace_type == MatrixTrace::kNotAMatrix
+                            ? SPV_SUCCESS
+                            : SPV_ERROR_INVALID_DATA;
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(expected, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  if (expected) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("Variable pointer must not point to a column or a "
+                          "component of a column of a matrix"));
+  }
+}
+
+TEST_P(MatrixTraceUntypedTest, SelectOp1) {
+  const auto trace_type = GetParam();
+  std::string gep;
+  switch (trace_type) {
+    case MatrixTrace::kColumn:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
+      break;
+    case MatrixTrace::kComponent:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      break;
+    default:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
+      break;
+  }
+
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%index = OpUndef %int
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%array = OpTypeArray %mat2x2 %int_2
+%struct = OpTypeStruct %array %float
+%ptr_wg = OpTypeUntypedPointerKHR Workgroup
+%null = OpConstantNull %ptr_wg
+%var = OpUntypedVariableKHR %ptr_wg Workgroup %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = )" + gep + R"(
+%copy = OpCopyObject %ptr_wg %gep
+%sel = OpSelect %ptr_wg %bool_cond %copy %null
+OpReturn
+OpFunctionEnd
+)";
+
+  const auto expected = trace_type == MatrixTrace::kNotAMatrix
+                            ? SPV_SUCCESS
+                            : SPV_ERROR_INVALID_DATA;
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(expected, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  if (expected) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("Variable pointer must not point to a column or a "
+                          "component of a column of a matrix"));
+  }
+}
+
+TEST_P(MatrixTraceUntypedTest, SelectOp2) {
+  const auto trace_type = GetParam();
+  std::string gep;
+  switch (trace_type) {
+    case MatrixTrace::kColumn:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
+      break;
+    case MatrixTrace::kComponent:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      break;
+    default:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
+      break;
+  }
+
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%index = OpUndef %int
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%array = OpTypeArray %mat2x2 %int_2
+%struct = OpTypeStruct %array %float
+%ptr_wg = OpTypeUntypedPointerKHR Workgroup
+%null = OpConstantNull %ptr_wg
+%var = OpUntypedVariableKHR %ptr_wg Workgroup %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = )" + gep + R"(
+%copy = OpCopyObject %ptr_wg %gep
+%sel = OpSelect %ptr_wg %bool_cond %null %copy
+OpReturn
+OpFunctionEnd
+)";
+
+  const auto expected = trace_type == MatrixTrace::kNotAMatrix
+                            ? SPV_SUCCESS
+                            : SPV_ERROR_INVALID_DATA;
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(expected, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  if (expected) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("Variable pointer must not point to a column or a "
+                          "component of a column of a matrix"));
+  }
+}
+
+TEST_P(MatrixTraceUntypedTest, FunctionVariable) {
+  const auto trace_type = GetParam();
+  std::string gep;
+  switch (trace_type) {
+    case MatrixTrace::kColumn:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %mat2x2 %var_mat2x2 %index";
+      break;
+    case MatrixTrace::kComponent:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %mat2x2 %var_mat2x2 %index %index";
+      break;
+    default:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %float %var_float";
+      break;
+  }
+
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%index = OpUndef %int
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%array = OpTypeArray %mat2x2 %int_2
+%struct = OpTypeStruct %array %float
+%ptr_wg = OpTypeUntypedPointerKHR Workgroup
+%ptr_func_wg = OpTypePointer Function %ptr_wg
+%var_mat2x2 = OpUntypedVariableKHR %ptr_wg Workgroup %mat2x2
+%var_float = OpUntypedVariableKHR %ptr_wg Workgroup %float
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%func_var = OpVariable %ptr_func_wg Function
+%gep = )" + gep + R"(
+OpStore %func_var %gep
+%ld = OpLoad %ptr_wg %func_var
+OpReturn
+OpFunctionEnd
+)";
+
+  const auto expected = trace_type == MatrixTrace::kNotAMatrix
+                            ? SPV_SUCCESS
+                            : SPV_ERROR_INVALID_DATA;
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(expected, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  if (expected) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("Variable pointer must not point to a column or a "
+                          "component of a column of a matrix"));
+  }
+}
+
+TEST_P(MatrixTraceUntypedTest, PrivateVariable) {
+  const auto trace_type = GetParam();
+  std::string gep;
+  switch (trace_type) {
+    case MatrixTrace::kColumn:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %mat2x2 %var_mat2x2 %index";
+      break;
+    case MatrixTrace::kComponent:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %mat2x2 %var_mat2x2 %index %index";
+      break;
+    default:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %float %var_float";
+      break;
+  }
+
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%index = OpUndef %int
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%array = OpTypeArray %mat2x2 %int_2
+%struct = OpTypeStruct %array %float
+%ptr_wg = OpTypeUntypedPointerKHR Workgroup
+%ptr_priv_wg = OpTypePointer Private %ptr_wg
+%var_mat2x2 = OpUntypedVariableKHR %ptr_wg Workgroup %mat2x2
+%var_float = OpUntypedVariableKHR %ptr_wg Workgroup %float
+%priv_var = OpVariable %ptr_priv_wg Private
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = )" + gep + R"(
+OpStore %priv_var %gep
+%ld = OpLoad %ptr_wg %priv_var
+OpReturn
+OpFunctionEnd
+)";
+
+  const auto expected = trace_type == MatrixTrace::kNotAMatrix
+                            ? SPV_SUCCESS
+                            : SPV_ERROR_INVALID_DATA;
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(expected, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  if (expected) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("Variable pointer must not point to a column or a "
+                          "component of a column of a matrix"));
+  }
+}
+
+TEST_P(MatrixTraceUntypedTest, FunctionVariableAggregate) {
+  const auto trace_type = GetParam();
+  std::string gep;
+  switch (trace_type) {
+    case MatrixTrace::kColumn:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %mat2x2 %var_mat2x2 %index";
+      break;
+    case MatrixTrace::kComponent:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %mat2x2 %var_mat2x2 %index %index";
+      break;
+    default:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %float %var_float";
+      break;
+  }
+
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%index = OpUndef %int
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%array = OpTypeArray %mat2x2 %int_2
+%struct = OpTypeStruct %array %float
+%ptr_wg = OpTypeUntypedPointerKHR Workgroup
+%func_array = OpTypeArray %ptr_wg %int_1
+%func_struct = OpTypeStruct %func_array
+%ptr_func_wg_struct = OpTypePointer Function %func_struct
+%ptr_func_wg = OpTypePointer Function %ptr_wg
+%var_mat2x2 = OpUntypedVariableKHR %ptr_wg Workgroup %mat2x2
+%var_float = OpUntypedVariableKHR %ptr_wg Workgroup %float
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%func_var = OpVariable %ptr_func_wg_struct Function
+%gep = )" + gep + R"(
+%store_gep = OpAccessChain %ptr_func_wg %func_var %int_0 %index
+%store_gep_copy = OpCopyObject %ptr_func_wg %store_gep
+OpStore %store_gep_copy %gep
+%ld_gep = OpAccessChain %ptr_func_wg %func_var %int_0 %index
+%ld = OpLoad %ptr_wg %ld_gep
+OpReturn
+OpFunctionEnd
+)";
+
+  const auto expected = trace_type == MatrixTrace::kNotAMatrix
+                            ? SPV_SUCCESS
+                            : SPV_ERROR_INVALID_DATA;
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(expected, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  if (expected) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("Variable pointer must not point to a column or a "
+                          "component of a column of a matrix"));
+  }
+}
+
+TEST_P(MatrixTraceUntypedTest, FunctionCallParam1) {
+  const auto trace_type = GetParam();
+  std::string gep;
+  switch (trace_type) {
+    case MatrixTrace::kColumn:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
+      break;
+    case MatrixTrace::kComponent:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      break;
+    default:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
+      break;
+  }
+
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%index = OpUndef %int
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%array = OpTypeArray %mat2x2 %int_2
+%struct = OpTypeStruct %array %float
+%ptr_wg = OpTypeUntypedPointerKHR Workgroup
+%null = OpConstantNull %ptr_wg
+%var = OpUntypedVariableKHR %ptr_wg Workgroup %struct
+%void_fn = OpTypeFunction %void
+%foo_fn = OpTypeFunction %void %ptr_wg %bool
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = )" + gep + R"(
+%copy = OpCopyObject %ptr_wg %gep
+%call = OpFunctionCall %void %foo %copy %bool_cond
+OpReturn
+OpFunctionEnd
+%foo = OpFunction %void None %foo_fn
+%ptr_param = OpFunctionParameter %ptr_wg
+%bool_param = OpFunctionParameter %bool
+%foo_entry = OpLabel
+%sel = OpSelect %ptr_wg %bool_param %ptr_param %null
+OpReturn
+OpFunctionEnd
+)";
+
+  const auto expected = trace_type == MatrixTrace::kNotAMatrix
+                            ? SPV_SUCCESS
+                            : SPV_ERROR_INVALID_DATA;
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(expected, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  if (expected) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("Variable pointer must not point to a column or a "
+                          "component of a column of a matrix"));
+  }
+}
+
+TEST_P(MatrixTraceUntypedTest, FunctionCallParam2) {
+  const auto trace_type = GetParam();
+  std::string gep;
+  switch (trace_type) {
+    case MatrixTrace::kColumn:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
+      break;
+    case MatrixTrace::kComponent:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      break;
+    default:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
+      break;
+  }
+
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%index = OpUndef %int
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%array = OpTypeArray %mat2x2 %int_2
+%struct = OpTypeStruct %array %float
+%ptr_wg = OpTypeUntypedPointerKHR Workgroup
+%null = OpConstantNull %ptr_wg
+%var = OpUntypedVariableKHR %ptr_wg Workgroup %struct
+%void_fn = OpTypeFunction %void
+%foo_fn = OpTypeFunction %void %bool %ptr_wg
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = )" + gep + R"(
+%copy = OpCopyObject %ptr_wg %gep
+%call = OpFunctionCall %void %foo %bool_cond %copy
+OpReturn
+OpFunctionEnd
+%foo = OpFunction %void None %foo_fn
+%bool_param = OpFunctionParameter %bool
+%ptr_param = OpFunctionParameter %ptr_wg
+%foo_entry = OpLabel
+%sel = OpSelect %ptr_wg %bool_param %ptr_param %null
+OpReturn
+OpFunctionEnd
+)";
+
+  const auto expected = trace_type == MatrixTrace::kNotAMatrix
+                            ? SPV_SUCCESS
+                            : SPV_ERROR_INVALID_DATA;
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(expected, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  if (expected) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("Variable pointer must not point to a column or a "
+                          "component of a column of a matrix"));
+  }
+}
+
+TEST_P(MatrixTraceUntypedTest, FunctionCall) {
+  const auto trace_type = GetParam();
+  std::string gep;
+  switch (trace_type) {
+    case MatrixTrace::kColumn:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
+      break;
+    case MatrixTrace::kComponent:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      break;
+    default:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
+      break;
+  }
+
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%index = OpUndef %int
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%array = OpTypeArray %mat2x2 %int_2
+%struct = OpTypeStruct %array %float
+%ptr_wg = OpTypeUntypedPointerKHR Workgroup
+%null = OpConstantNull %ptr_wg
+%var = OpUntypedVariableKHR %ptr_wg Workgroup %struct
+%void_fn = OpTypeFunction %void
+%foo_ty = OpTypeFunction %ptr_wg
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%call = OpFunctionCall %ptr_wg %foo
+OpReturn
+OpFunctionEnd
+%foo = OpFunction %ptr_wg None %foo_ty
+%foo_entry = OpLabel
+%gep = )" + gep + R"(
+OpReturnValue %gep
+OpFunctionEnd
+)";
+
+  const auto expected = trace_type == MatrixTrace::kNotAMatrix
+                            ? SPV_SUCCESS
+                            : SPV_ERROR_INVALID_DATA;
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(expected, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  if (expected) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("Variable pointer must not point to a column or a "
+                          "component of a column of a matrix"));
+  }
+}
+
+TEST_P(MatrixTraceUntypedTest, FunctionCallMultiReturn1) {
+  const auto trace_type = GetParam();
+  std::string gep;
+  switch (trace_type) {
+    case MatrixTrace::kColumn:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
+      break;
+    case MatrixTrace::kComponent:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      break;
+    default:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
+      break;
+  }
+
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%index = OpUndef %int
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%array = OpTypeArray %mat2x2 %int_2
+%struct = OpTypeStruct %array %float
+%ptr_wg = OpTypeUntypedPointerKHR Workgroup
+%null = OpConstantNull %ptr_wg
+%var = OpUntypedVariableKHR %ptr_wg Workgroup %struct
+%void_fn = OpTypeFunction %void
+%foo_ty = OpTypeFunction %ptr_wg
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%call = OpFunctionCall %ptr_wg %foo
+OpReturn
+OpFunctionEnd
+%foo = OpFunction %ptr_wg None %foo_ty
+%foo_entry = OpLabel
+%gep = )" + gep + R"(
+OpSelectionMerge %merge None
+OpBranchConditional %bool_cond %then %merge
+%then = OpLabel
+OpReturnValue %gep
+%merge = OpLabel
+OpReturnValue %null
+OpFunctionEnd
+)";
+
+  const auto expected = trace_type == MatrixTrace::kNotAMatrix
+                            ? SPV_SUCCESS
+                            : SPV_ERROR_INVALID_DATA;
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(expected, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  if (expected) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("Variable pointer must not point to a column or a "
+                          "component of a column of a matrix"));
+  }
+}
+
+TEST_P(MatrixTraceUntypedTest, FunctionCallMultiReturn2) {
+  const auto trace_type = GetParam();
+  std::string gep;
+  switch (trace_type) {
+    case MatrixTrace::kColumn:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
+      break;
+    case MatrixTrace::kComponent:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      break;
+    default:
+      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
+      break;
+  }
+
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%index = OpUndef %int
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%array = OpTypeArray %mat2x2 %int_2
+%struct = OpTypeStruct %array %float
+%ptr_wg = OpTypeUntypedPointerKHR Workgroup
+%null = OpConstantNull %ptr_wg
+%var = OpUntypedVariableKHR %ptr_wg Workgroup %struct
+%void_fn = OpTypeFunction %void
+%foo_ty = OpTypeFunction %ptr_wg
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%call = OpFunctionCall %ptr_wg %foo
+OpReturn
+OpFunctionEnd
+%foo = OpFunction %ptr_wg None %foo_ty
+%foo_entry = OpLabel
+%gep = )" + gep + R"(
+OpSelectionMerge %merge None
+OpBranchConditional %bool_cond %then %merge
+%then = OpLabel
+OpReturnValue %null
+%merge = OpLabel
+OpReturnValue %gep
+OpFunctionEnd
+)";
+
+  const auto expected = trace_type == MatrixTrace::kNotAMatrix
+                            ? SPV_SUCCESS
+                            : SPV_ERROR_INVALID_DATA;
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(expected, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  if (expected) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("Variable pointer must not point to a column or a "
+                          "component of a column of a matrix"));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(ValidateLogicalPointersMatrixTraceUntyped,
+                         MatrixTraceUntypedTest, ValuesIn(traces));
+
+TEST_F(ValidateLogicalPointersTest, SelectDifferentBuffersTyped) {
+  const std::string spirv = R"(
+OpCapability VariablePointersStorageBuffer
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%struct = OpTypeStruct %int
+%ptr_struct = OpTypePointer StorageBuffer %struct
+%v1 = OpVariable %ptr_struct StorageBuffer
+%v2 = OpVariable %ptr_struct StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%select = OpSelect %ptr_struct %bool_cond %v1 %v2
+OpReturn
+OpFunctionEnd
+)";
+
+      CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variable pointers must point into the same structure "
+                        "(or OpConstantNull)"));
+}
+
+TEST_F(ValidateLogicalPointersTest, SelectDifferentBuffersUntyped) {
+  const std::string spirv = R"(
+OpCapability VariablePointersStorageBuffer
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%struct = OpTypeStruct %int
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%v1 = OpUntypedVariableKHR %ptr StorageBuffer %struct
+%v2 = OpUntypedVariableKHR %ptr StorageBuffer %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%select = OpSelect %ptr %bool_cond %v1 %v2
+OpReturn
+OpFunctionEnd
+)";
+
+      CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variable pointers must point into the same structure "
+                        "(or OpConstantNull)"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
