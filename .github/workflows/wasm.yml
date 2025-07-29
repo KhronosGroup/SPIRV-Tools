@@ -2,10 +2,16 @@ name: Wasm Build
 permissions:
   contents: read
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    types: [opened, synchronize, reopened, unlabeled]
 
 jobs:
   build:
+    if: github.event.action != 'unlabeled' || github.event.label.name == 'kokoro:run'
     runs-on: ubuntu-latest
 
     steps:
