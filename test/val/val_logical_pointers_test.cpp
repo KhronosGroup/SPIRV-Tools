@@ -939,7 +939,9 @@ TEST_P(MatrixTraceUntypedTest, PhiLoopOp1) {
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
       break;
     case MatrixTrace::kComponent:
-      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      gep =
+          "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index "
+          "%index";
       break;
     default:
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
@@ -1006,7 +1008,9 @@ TEST_P(MatrixTraceUntypedTest, PhiLoopOp2) {
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
       break;
     case MatrixTrace::kComponent:
-      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      gep =
+          "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index "
+          "%index";
       break;
     default:
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
@@ -1074,7 +1078,9 @@ TEST_P(MatrixTraceUntypedTest, SelectOp1) {
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
       break;
     case MatrixTrace::kComponent:
-      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      gep =
+          "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index "
+          "%index";
       break;
     default:
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
@@ -1135,7 +1141,9 @@ TEST_P(MatrixTraceUntypedTest, SelectOp2) {
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
       break;
     case MatrixTrace::kComponent:
-      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      gep =
+          "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index "
+          "%index";
       break;
     default:
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
@@ -1391,7 +1399,9 @@ TEST_P(MatrixTraceUntypedTest, FunctionCallParam1) {
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
       break;
     case MatrixTrace::kComponent:
-      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      gep =
+          "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index "
+          "%index";
       break;
     default:
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
@@ -1460,7 +1470,9 @@ TEST_P(MatrixTraceUntypedTest, FunctionCallParam2) {
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
       break;
     case MatrixTrace::kComponent:
-      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      gep =
+          "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index "
+          "%index";
       break;
     default:
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
@@ -1529,7 +1541,9 @@ TEST_P(MatrixTraceUntypedTest, FunctionCall) {
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
       break;
     case MatrixTrace::kComponent:
-      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      gep =
+          "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index "
+          "%index";
       break;
     default:
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
@@ -1594,7 +1608,9 @@ TEST_P(MatrixTraceUntypedTest, FunctionCallMultiReturn1) {
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
       break;
     case MatrixTrace::kComponent:
-      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      gep =
+          "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index "
+          "%index";
       break;
     default:
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
@@ -1664,7 +1680,9 @@ TEST_P(MatrixTraceUntypedTest, FunctionCallMultiReturn2) {
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index";
       break;
     case MatrixTrace::kComponent:
-      gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index %index";
+      gep =
+          "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_0 %index %index "
+          "%index";
       break;
     default:
       gep = "OpUntypedAccessChainKHR %ptr_wg %struct %var %int_1";
@@ -1726,6 +1744,70 @@ OpFunctionEnd
   }
 }
 
+TEST_P(MatrixTraceUntypedTest, MixedTypes) {
+  const auto trace_type = GetParam();
+  std::string gep;
+  switch (trace_type) {
+    case MatrixTrace::kColumn:
+      gep = "OpAccessChain %ptr_wg_v2float %var %int_0 %index %index";
+      break;
+    case MatrixTrace::kComponent:
+      gep = "OpAccessChain %ptr_wg_float %var %int_0 %index %index %index";
+      break;
+    default:
+      gep = "OpAccessChain %ptr_wg_float %var %int_1";
+      break;
+  }
+
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%index = OpUndef %int
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%array = OpTypeArray %mat2x2 %int_2
+%struct = OpTypeStruct %array %float
+%ptr_wg = OpTypeUntypedPointerKHR Workgroup
+%ptr_wg_struct = OpTypePointer Workgroup %struct
+%ptr_wg_v2float = OpTypePointer Workgroup %v2float
+%ptr_wg_float = OpTypePointer Workgroup %float
+%null = OpConstantNull %ptr_wg
+%var = OpVariable %ptr_wg_struct Workgroup
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = )" + gep + R"(
+%copy = OpUntypedAccessChainKHR %ptr_wg %struct %gep
+%sel = OpSelect %ptr_wg %bool_cond %copy %null
+OpReturn
+OpFunctionEnd
+)";
+
+  const auto expected = trace_type == MatrixTrace::kNotAMatrix
+                            ? SPV_SUCCESS
+                            : SPV_ERROR_INVALID_DATA;
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(expected, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  if (expected) {
+    EXPECT_THAT(getDiagnosticString(),
+                HasSubstr("Variable pointer must not point to a column or a "
+                          "component of a column of a matrix"));
+  }
+}
+
 INSTANTIATE_TEST_SUITE_P(ValidateLogicalPointersMatrixTraceUntyped,
                          MatrixTraceUntypedTest, ValuesIn(traces));
 
@@ -1752,7 +1834,7 @@ OpReturn
 OpFunctionEnd
 )";
 
-      CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
@@ -1785,12 +1867,299 @@ OpReturn
 OpFunctionEnd
 )";
 
-      CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Variable pointers must point into the same structure "
                         "(or OpConstantNull)"));
+}
+
+TEST_F(ValidateLogicalPointersTest, PhiDifferentBuffersTyped) {
+  const std::string spirv = R"(
+OpCapability VariablePointersStorageBuffer
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%struct = OpTypeStruct %int
+%ptr_struct = OpTypePointer StorageBuffer %struct
+%v1 = OpVariable %ptr_struct StorageBuffer
+%v2 = OpVariable %ptr_struct StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpSelectionMerge %merge None
+OpBranchConditional %bool_cond %then %merge
+%then = OpLabel
+OpBranch %merge
+%merge = OpLabel
+%phi = OpPhi %ptr_struct %v1 %entry %v2 %then
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variable pointers must point into the same structure "
+                        "(or OpConstantNull)"));
+}
+
+TEST_F(ValidateLogicalPointersTest, PhiDifferentBuffersUntyped) {
+  const std::string spirv = R"(
+OpCapability VariablePointersStorageBuffer
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%int = OpTypeInt 32 0
+%struct = OpTypeStruct %int
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%v1 = OpUntypedVariableKHR %ptr StorageBuffer %struct
+%v2 = OpUntypedVariableKHR %ptr StorageBuffer %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpSelectionMerge %merge None
+OpBranchConditional %bool_cond %then %merge
+%then = OpLabel
+OpBranch %merge
+%merge = OpLabel
+%phi = OpPhi %ptr %v1 %entry %v2 %then
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variable pointers must point into the same structure "
+                        "(or OpConstantNull)"));
+}
+
+TEST_F(ValidateLogicalPointersTest, BlockArrayTyped) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%struct = OpTypeStruct %int
+%array = OpTypeArray %struct %int_4
+%ptr_array = OpTypePointer StorageBuffer %array
+%ptr_int = OpTypePointer StorageBuffer %int
+%var = OpVariable %ptr_array StorageBuffer
+%null = OpConstantNull %ptr_array
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%select = OpSelect %ptr_array %bool_cond %null %var
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variable pointer must not point to an array of Block- "
+                        "or BufferBlock-decorated structs"));
+}
+
+TEST_F(ValidateLogicalPointersTest, BlockArrayUntyped) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%bool = OpTypeBool
+%bool_cond = OpUndef %bool
+%struct = OpTypeStruct %int
+%array = OpTypeArray %struct %int_4
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%var = OpUntypedVariableKHR %ptr StorageBuffer %array
+%null = OpConstantNull %ptr
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%select = OpSelect %ptr %bool_cond %null %var
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variable pointer must not point to an array of Block- "
+                        "or BufferBlock-decorated structs"));
+}
+
+TEST_F(ValidateLogicalPointersTest, UntypedMatrixLoad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%struct = OpTypeStruct %mat2x2
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%var = OpUntypedVariableKHR %ptr StorageBuffer %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%ld = OpLoad %struct %var
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateLogicalPointersTest, UntypedMatrixLoadVariablePointer) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%struct = OpTypeStruct %mat2x2
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%var = OpUntypedVariableKHR %ptr StorageBuffer %struct
+%null = OpConstantNull %ptr
+%bool = OpTypeBool
+%cond = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%sel = OpSelect %ptr %cond %var %null
+%ld = OpLoad %struct %sel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variable pointer must not point to an object that is "
+                        "or contains a matrix"));
+}
+
+TEST_F(ValidateLogicalPointersTest, UntypedMatrixStore) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%zero = OpConstantNull %mat2x2
+%struct = OpTypeStruct %mat2x2
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%var = OpUntypedVariableKHR %ptr StorageBuffer %struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpStore %var %zero
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateLogicalPointersTest, UntypedMatrixStoreVariablePointer) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%zero = OpConstantNull %mat2x2
+%struct = OpTypeStruct %mat2x2
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%var = OpUntypedVariableKHR %ptr StorageBuffer %struct
+%null = OpConstantNull %ptr
+%bool = OpTypeBool
+%cond = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%sel = OpSelect %ptr %cond %var %null
+OpStore %sel %zero
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variable pointer must not point to an object that is "
+                        "or contains a matrix"));
 }
 
 }  // namespace
