@@ -111,10 +111,6 @@ bool IsVariablePointer(const ValidationState_t& _,
 
 spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
                                             const Instruction* inst) {
-  if (inst->type_id() == 0) {
-    return SPV_SUCCESS;
-  }
-
   bool has_pointer_operand = false;
   spv::StorageClass sc = spv::StorageClass::Function;
   for (uint32_t i = 0; i < inst->operands().size(); ++i) {
@@ -155,7 +151,11 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
     // Core spec bugs
     case spv::Op::OpDecorate:
     case spv::Op::OpDecorateId:
+    case spv::Op::OpGroupDecorate:
     case spv::Op::OpEntryPoint:
+    case spv::Op::OpName:
+    case spv::Op::OpMemberName:
+    case spv::Op::OpDecorateString:
     // SPV_KHR_untyped_pointers
     case spv::Op::OpUntypedArrayLengthKHR:
     case spv::Op::OpUntypedAccessChainKHR:
@@ -166,7 +166,11 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
     case spv::Op::OpCooperativeMatrixLoadNV:
     case spv::Op::OpCooperativeMatrixStoreKHR:
     case spv::Op::OpCooperativeMatrixStoreNV:
+    // SPV_KHR_ray_tracing (spec bugs)
+    case spv::Op::OpTraceRayKHR:
+    case spv::Op::OpExecuteCallableKHR:
     // SPV_KHR_ray_query (spec bugs)
+    case spv::Op::OpRayQueryConfirmIntersectionKHR:
     case spv::Op::OpRayQueryInitializeKHR:
     case spv::Op::OpRayQueryTerminateKHR:
     case spv::Op::OpRayQueryGenerateIntersectionKHR:
@@ -253,6 +257,8 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
     case spv::Op::OpCooperativeVectorMatrixMulAddNV:
     case spv::Op::OpCooperativeVectorOuterProductAccumulateNV:
     case spv::Op::OpCooperativeVectorReduceSumAccumulateNV:
+    // SPV_EXT_mesh_shader (spec bugs)
+    case spv::Op::OpEmitMeshTasksEXT:
       return SPV_SUCCESS;
     // The following cases require a variable pointer capability. Since all
     // instructions are for variable pointers, the storage class and capability
