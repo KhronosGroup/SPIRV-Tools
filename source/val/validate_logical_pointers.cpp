@@ -312,6 +312,8 @@ spv_result_t ValidateLogicalPointerReturns(ValidationState_t& _,
     case spv::Op::OpFunctionParameter:
     case spv::Op::OpImageTexelPointer:
     case spv::Op::OpCopyObject:
+    // Core spec bugs
+    case spv::Op::OpUndef:
     // SPV_KHR_untyped_pointers
     case spv::Op::OpUntypedAccessChainKHR:
     case spv::Op::OpUntypedInBoundsAccessChainKHR:
@@ -379,8 +381,7 @@ spv_result_t CheckMatrixElementTyped(ValidationState_t& _,
       if (access_type->opcode() == spv::Op::OpTypeMatrix) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Variable pointer must not point to a column or a "
-                  "component of a column of a matrix. Occurs due to:\n"
-               << _.Disassemble(*inst);
+                  "component of a column of a matrix";
       }
 
       // Otherwise, step through the indices to see if we pass a matrix.
@@ -397,8 +398,7 @@ spv_result_t CheckMatrixElementTyped(ValidationState_t& _,
         if (access_type->opcode() == spv::Op::OpTypeMatrix) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Variable pointer must not point to a column or a "
-                    "component of a column of a matrix. Occurs due to:\n"
-                 << _.Disassemble(*inst);
+                    "component of a column of a matrix";
         }
       }
       break;
