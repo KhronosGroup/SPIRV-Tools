@@ -2625,7 +2625,7 @@ TEST_F(ValidateCFG, VarPtrShaderWithPhiPtr) {
 TEST_F(ValidateCFG, VarPtrStgBufShaderWithPhiStgBufPtr) {
   const std::string text = R"(
                OpCapability Shader
-               OpCapability VariablePointersStorageBuffer
+               OpCapability VariablePointers
                OpExtension "SPV_KHR_variable_pointers"
                OpMemoryModel Logical GLSL450
                OpEntryPoint GLCompute %1 "main"
