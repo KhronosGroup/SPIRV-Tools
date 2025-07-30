@@ -2162,6 +2162,221 @@ OpFunctionEnd
                         "or contains a matrix"));
 }
 
+TEST_F(ValidateLogicalPointersTest, LogicalPointerOperandFailure) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Kernel
+OpCapability Addresses
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%v2int = OpTypeVector %int 2
+%ptr_v2int = OpTypePointer StorageBuffer %v2int
+%var = OpVariable %ptr_v2int StorageBuffer
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpInBoundsPtrAccessChain %ptr_v2int %var %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Instruction may not have a logical pointer operand"));
+}
+
+TEST_F(ValidateLogicalPointersTest,
+       LogicalPointerOperandVariablePointerStorageBuffer) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability Addresses
+OpMemoryModel Logical GLSL450
+OpDecorate %ptr_int ArrayStride 4
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%array = OpTypeArray %int %int_4
+%ptr_array = OpTypePointer StorageBuffer %array
+%ptr_int = OpTypePointer StorageBuffer %int
+%var = OpVariable %ptr_array StorageBuffer
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpAccessChain %ptr_int %var %int_0
+%ptr_gep = OpPtrAccessChain %ptr_int %gep %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Instruction may only have a logical pointer operand in the "
+                "StorageBuffer or "
+                "Workgroup storage classes with appropriate variable pointers "
+                "capability"));
+}
+
+TEST_F(ValidateLogicalPointersTest,
+       LogicalPointerOperandVariablePointerWorkgroup) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%array = OpTypeArray %int %int_4
+%ptr_array = OpTypePointer Workgroup %array
+%ptr_int = OpTypePointer Workgroup %int
+%var = OpVariable %ptr_array Workgroup
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%foo = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpAccessChain %ptr_int %var %int_0
+%ptr_gep = OpPtrAccessChain %ptr_int %gep %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Instruction may only have a logical pointer operand in the "
+                "StorageBuffer or "
+                "Workgroup storage classes with appropriate variable pointers "
+                "capability"));
+}
+
+TEST_F(ValidateLogicalPointersTest,
+       LogicalPointerReturnVariablePointerStorageBuffer) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%int = OpTypeInt 32 0
+%ptr = OpTypePointer StorageBuffer %int
+%null = OpConstantNull %ptr
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Instruction may only return a logical pointer in the "
+                "StorageBuffer or "
+                "Workgroup storage classes with appropriate variable pointers "
+                "capability"));
+}
+
+TEST_F(ValidateLogicalPointersTest,
+       LogicalPointerReturnVariablePointerWorkgroup) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+%int = OpTypeInt 32 0
+%ptr = OpTypePointer Workgroup %int
+%null = OpConstantNull %ptr
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Instruction may only return a logical pointer in the "
+                "StorageBuffer or "
+                "Workgroup storage classes with appropriate variable pointers "
+                "capability"));
+}
+
+TEST_F(ValidateLogicalPointersTest, ArrayLengthInvalidVariablePointer) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%array = OpTypeRuntimeArray %int
+%struct = OpTypeStruct %array
+%ptr = OpTypePointer StorageBuffer %struct
+%var = OpVariable %ptr StorageBuffer
+%null = OpConstantNull %ptr
+%bool = OpTypeBool
+%cond = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%sel = OpSelect %ptr %cond %null %var
+%len = OpArrayLength %int %sel 0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Pointer operand must not be a variable pointer"));
+}
+
+TEST_F(ValidateLogicalPointersTest, ArrayLengthUntypedInvalidVariablePointer) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%array = OpTypeRuntimeArray %int
+%struct = OpTypeStruct %array
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%var = OpUntypedVariableKHR %ptr StorageBuffer %struct
+%null = OpConstantNull %ptr
+%bool = OpTypeBool
+%cond = OpUndef %bool
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%sel = OpSelect %ptr %cond %null %var
+%len = OpUntypedArrayLengthKHR %int %struct %sel 0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Pointer operand must not be a variable pointer"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
