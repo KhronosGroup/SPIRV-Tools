@@ -936,9 +936,9 @@ spv_result_t BuiltInsValidator::ValidateBlockTypeOrArrayedType(
       }
       break;
     case spv::Op::OpTypeInt:
-      if (!_.IsSignedIntScalarType(underlying_type)) {
+      if (!_.IsIntScalarType(underlying_type)) {
         return diag(GetDefinitionDesc(decoration, inst) +
-                    " is not a signed integer scalar.");
+                    " is not an integer scalar.");
       }
       break;
     default:

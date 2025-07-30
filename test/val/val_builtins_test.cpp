@@ -6672,6 +6672,67 @@ TEST_F(ValidateBuiltIns, PrimitiveIdInFragmentWithMeshCapability) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
+// https://github.com/KhronosGroup/SPIRV-Tools/issues/6237
+TEST_F(ValidateBuiltIns, MeshBuiltinUnsignedInt) {
+  const std::string spirv = R"(
+               OpCapability FragmentShadingRateKHR
+               OpCapability MeshShadingEXT
+               OpExtension "SPV_EXT_mesh_shader"
+               OpExtension "SPV_KHR_fragment_shading_rate"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint MeshEXT %main "main" %gl_MeshPrimitivesEXT
+               OpExecutionModeId %main LocalSizeId %uint_1 %uint_1 %uint_1
+               OpExecutionMode %main OutputVertices 81
+               OpExecutionMode %main OutputPrimitivesEXT 32
+               OpExecutionMode %main OutputTrianglesEXT
+               OpDecorate %gl_MeshPerPrimitiveEXT Block
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 0 BuiltIn PrimitiveId
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 0 PerPrimitiveEXT
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 1 BuiltIn Layer
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 1 PerPrimitiveEXT
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 2 BuiltIn ViewportIndex
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 2 PerPrimitiveEXT
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 3 BuiltIn CullPrimitiveEXT
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 3 PerPrimitiveEXT
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 4 BuiltIn PrimitiveShadingRateKHR
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 4 PerPrimitiveEXT
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+       %bool = OpTypeBool
+      %int_0 = OpConstant %int 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+    %uint_81 = OpConstant %uint 81
+    %uint_32 = OpConstant %uint 32
+%gl_MeshPerPrimitiveEXT = OpTypeStruct %uint %uint %uint %bool %uint
+%_arr_gl_MeshPerPrimitiveEXT_uint_32 = OpTypeArray %gl_MeshPerPrimitiveEXT %uint_32
+%_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 = OpTypePointer Output %_arr_gl_MeshPerPrimitiveEXT_uint_32
+%gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
+%_ptr_Output_uint = OpTypePointer Output %uint
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+               OpSetMeshOutputsEXT %uint_81 %uint_32
+         %20 = OpAccessChain %_ptr_Output_uint %gl_MeshPrimitivesEXT %int_0 %uint_0
+               OpStore %20 %uint_1
+         %22 = OpAccessChain %_ptr_Output_uint %gl_MeshPrimitivesEXT %int_0 %uint_1
+               OpStore %22 %uint_2
+         %24 = OpAccessChain %_ptr_Output_uint %gl_MeshPrimitivesEXT %int_0 %uint_2
+               OpStore %24 %uint_3
+         %26 = OpAccessChain %_ptr_Output_uint %gl_MeshPrimitivesEXT %int_0 %uint_4
+               OpStore %26 %uint_4
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
