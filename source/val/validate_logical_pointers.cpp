@@ -40,6 +40,8 @@ bool IsLogicalPointer(const ValidationState_t& _, const Instruction* inst) {
   return true;
 }
 
+// Returns true if inst is a variable pointer.
+// Caches the result in variable_pointers.
 bool IsVariablePointer(const ValidationState_t& _,
                        std::unordered_map<uint32_t, bool>& variable_pointers,
                        const Instruction* inst) {
@@ -288,8 +290,7 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
 }
 
 spv_result_t ValidateLogicalPointerReturns(ValidationState_t& _,
-                                           const Instruction* inst)
-{
+                                           const Instruction* inst) {
   if (!IsLogicalPointer(_, inst)) {
     return SPV_SUCCESS;
   }
@@ -305,8 +306,6 @@ spv_result_t ValidateLogicalPointerReturns(ValidationState_t& _,
     case spv::Op::OpFunctionParameter:
     case spv::Op::OpImageTexelPointer:
     case spv::Op::OpCopyObject:
-    // Core spec bugs
-    case spv::Op::OpUndef:
     // SPV_KHR_untyped_pointers
     case spv::Op::OpUntypedAccessChainKHR:
     case spv::Op::OpUntypedInBoundsAccessChainKHR:
@@ -343,7 +342,21 @@ spv_result_t ValidateLogicalPointerReturns(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-spv_result_t CheckMatrixElementTyped(ValidationState_t& _, const Instruction* inst) {
+spv_result_t IsBlockArray(ValidationState_t& _, const Instruction* type) {
+  if (type->opcode() == spv::Op::OpTypeArray ||
+      type->opcode() == spv::Op::OpTypeRuntimeArray) {
+    const auto element_type = _.FindDef(type->GetOperandAs<uint32_t>(1));
+    if (element_type->opcode() == spv::Op::OpTypeStruct &&
+        (_.HasDecoration(element_type->id(), spv::Decoration::Block) ||
+         _.HasDecoration(element_type->id(), spv::Decoration::BufferBlock))) {
+      return SPV_ERROR_INVALID_DATA;
+    }
+  }
+  return SPV_SUCCESS;
+}
+
+spv_result_t CheckMatrixElementTyped(ValidationState_t& _,
+                                     const Instruction* inst) {
   switch (inst->opcode()) {
     case spv::Op::OpAccessChain:
     case spv::Op::OpInBoundsAccessChain:
@@ -370,8 +383,7 @@ spv_result_t CheckMatrixElementTyped(ValidationState_t& _, const Instruction* in
         if (access_type->opcode() == spv::Op::OpTypeStruct) {
           uint64_t val = 0;
           _.EvalConstantValUint64(index, &val);
-          access_type =
-              _.FindDef(access_type->GetOperandAs<uint32_t>(1 + val));
+          access_type = _.FindDef(access_type->GetOperandAs<uint32_t>(1 + val));
         } else {
           access_type = _.FindDef(_.GetComponentType(access_type->id()));
         }
@@ -391,30 +403,29 @@ spv_result_t CheckMatrixElementTyped(ValidationState_t& _, const Instruction* in
   return SPV_SUCCESS;
 }
 
-spv_result_t CheckUntyped(ValidationState_t& _, const Instruction* inst) {
+spv_result_t CheckMatrixElementUntyped(ValidationState_t& _,
+                                       const Instruction* inst) {
   switch (inst->opcode()) {
+    case spv::Op::OpAccessChain:
+    case spv::Op::OpInBoundsAccessChain:
+    case spv::Op::OpPtrAccessChain:
     case spv::Op::OpUntypedAccessChainKHR:
     case spv::Op::OpUntypedInBoundsAccessChainKHR:
     case spv::Op::OpUntypedPtrAccessChainKHR: {
-      // Get the type of the base operand.
-      uint32_t start_index =
-          inst->opcode() == spv::Op::OpUntypedPtrAccessChainKHR ? 5 : 4;
-      const auto access_type_id = inst->GetOperandAs<uint32_t>(2);
-      auto access_type = _.FindDef(access_type_id);
-
-      // If the base operand is an array of Block- or BufferBlock-decorated
-      // structs.
-      if (access_type->opcode() == spv::Op::OpTypeArray ||
-          access_type->opcode() == spv::Op::OpTypeRuntimeArray) {
-        auto element_type = _.FindDef(access_type->GetOperandAs<uint32_t>(1));
-        if (element_type->opcode() == spv::Op::OpTypeStruct &&
-            (_.HasDecoration(element_type->id(), spv::Decoration::Block) ||
-             _.HasDecoration(element_type->id(),
-                             spv::Decoration::BufferBlock))) {
-          return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << "Variable pointer must not point to an array of Block- or "
-                    "BufferBlock-decorated structs";
-        }
+      const bool untyped = spvOpcodeGeneratesUntypedPointer(inst->opcode());
+      uint32_t start_index;
+      Instruction* access_type = nullptr;
+      if (untyped) {
+        // Get the type of the base operand.
+        start_index =
+            inst->opcode() == spv::Op::OpUntypedPtrAccessChainKHR ? 5 : 4;
+        const auto access_type_id = inst->GetOperandAs<uint32_t>(2);
+        access_type = _.FindDef(access_type_id);
+      } else {
+        start_index = inst->opcode() == spv::Op::OpPtrAccessChain ? 4 : 3;
+        const auto access_type_id = _.GetOperandTypeId(inst, 2);
+        access_type = _.FindDef(access_type_id);
+        access_type = _.FindDef(access_type->GetOperandAs<uint32_t>(2));
       }
 
       // If the base operand is a matrix, then it was definitely pointing to a
@@ -431,8 +442,7 @@ spv_result_t CheckUntyped(ValidationState_t& _, const Instruction* inst) {
         if (access_type->opcode() == spv::Op::OpTypeStruct) {
           uint64_t val = 0;
           _.EvalConstantValUint64(index, &val);
-          access_type =
-              _.FindDef(access_type->GetOperandAs<uint32_t>(1 + val));
+          access_type = _.FindDef(access_type->GetOperandAs<uint32_t>(1 + val));
         } else {
           access_type = _.FindDef(_.GetComponentType(access_type->id()));
         }
@@ -451,9 +461,12 @@ spv_result_t CheckUntyped(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+// Traces the variable pointer inst backwards.
+// checker is called on each visited instruction.
 spv_result_t TraceVariablePointers(
     ValidationState_t& _, const Instruction* inst,
-    const std::function<spv_result_t(ValidationState_t&, const Instruction*)>& checker) {
+    const std::function<spv_result_t(ValidationState_t&, const Instruction*)>&
+        checker) {
   std::vector<const Instruction*> stack;
   std::unordered_set<const Instruction*> seen;
   stack.push_back(inst);
@@ -474,12 +487,13 @@ spv_result_t TraceVariablePointers(
       case spv::Op::OpAccessChain:
       case spv::Op::OpInBoundsAccessChain:
       case spv::Op::OpPtrAccessChain:
-      case spv::Op::OpUntypedAccessChainKHR:
-      case spv::Op::OpUntypedInBoundsAccessChainKHR:
-      case spv::Op::OpUntypedPtrAccessChainKHR: {
         stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(2)));
         break;
-      }
+      case spv::Op::OpUntypedAccessChainKHR:
+      case spv::Op::OpUntypedInBoundsAccessChainKHR:
+      case spv::Op::OpUntypedPtrAccessChainKHR:
+        stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(3)));
+        break;
       case spv::Op::OpPhi:
         for (uint32_t i = 2; i < trace_inst->operands().size(); i += 2) {
           stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(i)));
@@ -585,9 +599,150 @@ spv_result_t TraceVariablePointers(
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateVariablePointers(ValidationState_t& _,
-                                      std::unordered_map<uint32_t, bool>& variable_pointers,
-                                      const Instruction* inst) {
+// Traces the variable pointer inst backwards, but only unmodified pointers.
+// checker is called on each visited instruction.
+spv_result_t TraceUnmodifiedVariablePointers(
+    ValidationState_t& _, const Instruction* inst,
+    const std::function<spv_result_t(ValidationState_t&, const Instruction*)>&
+        checker) {
+  std::vector<const Instruction*> stack;
+  std::unordered_set<const Instruction*> seen;
+  stack.push_back(inst);
+  while (!stack.empty()) {
+    const Instruction* trace_inst = stack.back();
+    stack.pop_back();
+
+    if (!seen.insert(trace_inst).second) {
+      continue;
+    }
+
+    if (auto error = checker(_, trace_inst)) {
+      return error;
+    }
+
+    const auto untyped = spvOpcodeGeneratesUntypedPointer(trace_inst->opcode());
+    switch (trace_inst->opcode()) {
+      case spv::Op::OpAccessChain:
+      case spv::Op::OpInBoundsAccessChain:
+        if (trace_inst->operands().size() == 2) {
+          stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(2)));
+        }
+        break;
+      case spv::Op::OpUntypedAccessChainKHR:
+      case spv::Op::OpUntypedInBoundsAccessChainKHR:
+      case spv::Op::OpUntypedPtrAccessChainKHR:
+        if (trace_inst->operands().size() == 3) {
+          stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(3)));
+        }
+        break;
+      case spv::Op::OpPhi:
+        for (uint32_t i = 2; i < trace_inst->operands().size(); i += 2) {
+          stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(i)));
+        }
+        break;
+      case spv::Op::OpSelect:
+        stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(3)));
+        stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(4)));
+        break;
+      case spv::Op::OpFunctionParameter: {
+        // Jump to function calls
+        auto func = trace_inst->function();
+        auto func_inst = _.FindDef(func->id());
+
+        const auto param_inst_num = trace_inst - &_.ordered_instructions()[0];
+        uint32_t param_index = 0;
+        uint32_t inst_index = 1;
+        while (_.ordered_instructions()[param_inst_num - inst_index].opcode() !=
+               spv::Op::OpFunction) {
+          if (_.ordered_instructions()[param_inst_num - inst_index].opcode() ==
+              spv::Op::OpFunctionParameter) {
+            param_index++;
+          }
+          ++inst_index;
+        }
+
+        for (const auto& use_pair : func_inst->uses()) {
+          const auto use_inst = use_pair.first;
+          if (use_inst->opcode() == spv::Op::OpFunctionCall) {
+            const auto arg_id =
+                use_inst->GetOperandAs<uint32_t>(3 + param_index);
+            const auto arg_inst = _.FindDef(arg_id);
+            stack.push_back(arg_inst);
+          }
+        }
+        break;
+      }
+      case spv::Op::OpFunctionCall: {
+        // Jump to return values.
+        const auto* func = _.function(trace_inst->GetOperandAs<uint32_t>(2));
+        for (auto* bb : func->ordered_blocks()) {
+          const auto* terminator = bb->terminator();
+          if (terminator->opcode() == spv::Op::OpReturnValue) {
+            stack.push_back(terminator);
+          }
+        }
+        break;
+      }
+      case spv::Op::OpReturnValue:
+        stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(0)));
+        break;
+      case spv::Op::OpCopyObject:
+        stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(2)));
+        break;
+      case spv::Op::OpLoad:
+        stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(2)));
+        break;
+      case spv::Op::OpStore:
+        stack.push_back(_.FindDef(trace_inst->GetOperandAs<uint32_t>(0)));
+        break;
+      case spv::Op::OpVariable:
+      case spv::Op::OpUntypedVariableKHR: {
+        const auto sc = trace_inst->GetOperandAs<spv::StorageClass>(2);
+        if (sc == spv::StorageClass::Function ||
+            sc == spv::StorageClass::Private) {
+          // Add the initializer
+          const uint32_t init_operand = untyped ? 4 : 3;
+          if (trace_inst->operands().size() > init_operand) {
+            stack.push_back(
+                _.FindDef(trace_inst->GetOperandAs<uint32_t>(init_operand)));
+          }
+          // Jump to stores
+          std::vector<std::pair<const Instruction*, uint32_t>> store_stack(
+              trace_inst->uses());
+          std::unordered_set<const Instruction*> store_seen;
+          while (!store_stack.empty()) {
+            const auto& use = store_stack.back();
+            store_stack.pop_back();
+
+            if (!store_seen.insert(use.first).second) {
+              continue;
+            }
+
+            // If the use is a store pointer, trace the store object.
+            // Note: use.second is a word index.
+            if (use.first->opcode() == spv::Op::OpStore && use.second == 1) {
+              stack.push_back(_.FindDef(use.first->GetOperandAs<uint32_t>(1)));
+            } else {
+              // Most likely a gep so keep tracing.
+              for (auto& next_use : use.first->uses()) {
+                store_stack.push_back(next_use);
+              }
+            }
+          }
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateVariablePointers(
+    ValidationState_t& _, std::unordered_map<uint32_t, bool>& variable_pointers,
+    const Instruction* inst) {
   // Variable pointers cannot be operands to array length.
   if (inst->opcode() == spv::Op::OpArrayLength ||
       inst->opcode() == spv::Op::OpUntypedArrayLengthKHR) {
@@ -601,20 +756,64 @@ spv_result_t ValidateVariablePointers(ValidationState_t& _,
     return SPV_SUCCESS;
   }
 
-  if (!IsLogicalPointer(_, inst)) {
+  // Check untyped loads and stores of variable pointers for matrix types.
+  // Neither instruction would be a variable pointer in a such a case.
+  if (inst->opcode() == spv::Op::OpLoad) {
+    const auto pointer = _.FindDef(inst->GetOperandAs<uint32_t>(2));
+    const auto pointer_type = _.FindDef(pointer->type_id());
+    if (pointer_type->opcode() == spv::Op::OpTypeUntypedPointerKHR &&
+        IsVariablePointer(_, variable_pointers, pointer)) {
+      const auto data_type = _.FindDef(inst->type_id());
+      if (_.ContainsType(
+              data_type->id(),
+              [](const Instruction* inst) {
+                return inst->opcode() == spv::Op::OpTypeMatrix;
+              },
+              /* traverse_all_types = */ false)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Variable pointer must not point to an object that is or "
+                  "contains a matrix";
+      }
+    }
+  } else if (inst->opcode() == spv::Op::OpStore) {
+    const auto pointer = _.FindDef(inst->GetOperandAs<uint32_t>(0));
+    const auto pointer_type = _.FindDef(pointer->type_id());
+    if (pointer_type->opcode() == spv::Op::OpTypeUntypedPointerKHR &&
+        IsVariablePointer(_, variable_pointers, pointer)) {
+      const auto data_type_id = _.GetOperandTypeId(inst, 1);
+      const auto data_type = _.FindDef(data_type_id);
+      if (_.ContainsType(
+              data_type->id(),
+              [](const Instruction* inst) {
+                return inst->opcode() == spv::Op::OpTypeMatrix;
+              },
+              /* traverse_all_types = */ false)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Variable pointer must not point to an object that is or "
+                  "contains a matrix";
+      }
+    }
+  }
+
+  if (!IsLogicalPointer(_, inst) ||
+      !IsVariablePointer(_, variable_pointers, inst)) {
     return SPV_SUCCESS;
   }
 
-  if (!IsVariablePointer(_, variable_pointers, inst)) {
-    return SPV_SUCCESS;
-  }
+  const auto result_type = _.FindDef(inst->type_id());
+  const auto untyped =
+      result_type->opcode() == spv::Op::OpTypeUntypedPointerKHR;
 
+  // Pointers must be selected from the same buffer unless the VariablePointers
+  // capability is declared.
   if (!_.HasCapability(spv::Capability::VariablePointers) &&
       (inst->opcode() == spv::Op::OpSelect ||
        inst->opcode() == spv::Op::OpPhi)) {
     std::unordered_set<const Instruction*> sources;
-    const auto checker = [&sources](ValidationState_t& _,
-                                    const Instruction* inst) -> spv_result_t {
+    const auto check_inst = inst;
+    const auto checker = [&sources, &check_inst](
+                             ValidationState_t& _,
+                             const Instruction* inst) -> spv_result_t {
       switch (inst->opcode()) {
         case spv::Op::OpVariable:
         case spv::Op::OpUntypedVariableKHR:
@@ -625,7 +824,7 @@ spv_result_t ValidateVariablePointers(ValidationState_t& _,
             sources.insert(inst);
           }
           if (sources.size() > 1) {
-            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+            return _.diag(SPV_ERROR_INVALID_DATA, check_inst)
                    << "Variable pointers must point into the same structure "
                       "(or OpConstantNull)";
           }
@@ -644,20 +843,54 @@ spv_result_t ValidateVariablePointers(ValidationState_t& _,
   // * point to array of Block- or BufferBlock-decorated structs
   // * point to an object that is or contains a matrix
   // * point to a column, or component in a column, of a matrix
-  auto type_inst = _.FindDef(inst->type_id());
-  if (type_inst->opcode() == spv::Op::OpTypePointer) {
-    const auto pointee_type = _.FindDef(type_inst->GetOperandAs<uint32_t>(2));
-    if (pointee_type->opcode() == spv::Op::OpTypeArray ||
-        pointee_type->opcode() == spv::Op::OpTypeRuntimeArray) {
-      const auto element_type =
-          _.FindDef(pointee_type->GetOperandAs<uint32_t>(1));
-      if (element_type->opcode() == spv::Op::OpTypeStruct &&
-          (_.HasDecoration(element_type->id(), spv::Decoration::Block) ||
-           _.HasDecoration(element_type->id(), spv::Decoration::BufferBlock))) {
-        return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "Variable pointer must not point to an array of Block- or "
-                  "BufferBlock-decorated structs";
+  if (untyped) {
+    if (auto error =
+            TraceVariablePointers(_, inst, CheckMatrixElementUntyped)) {
+      return error;
+    }
+
+    // Block arrays can only really appear as the top most type so only look at
+    // unmodified pointers to determine if one is used.
+    const auto num_operands = inst->operands().size();
+    if (!(num_operands == 3 &&
+          (inst->opcode() == spv::Op::OpUntypedAccessChainKHR ||
+           inst->opcode() == spv::Op::OpUntypedInBoundsAccessChainKHR ||
+           inst->opcode() == spv::Op::OpUntypedPtrAccessChainKHR))) {
+      const auto check_inst = inst;
+      const auto checker = [&check_inst](
+                               ValidationState_t& _,
+                               const Instruction* inst) -> spv_result_t {
+        bool fail = false;
+        if (inst->opcode() == spv::Op::OpUntypedVariableKHR) {
+          if (inst->operands().size() > 3) {
+            const auto type = _.FindDef(inst->GetOperandAs<uint32_t>(3));
+            fail = IsBlockArray(_, type);
+          }
+        } else if (inst->opcode() == spv::Op::OpVariable) {
+          const auto result_type = _.FindDef(inst->type_id());
+          const auto pointee_type =
+              _.FindDef(result_type->GetOperandAs<uint32_t>(2));
+          fail = IsBlockArray(_, pointee_type);
+        }
+
+        if (fail) {
+          return _.diag(SPV_ERROR_INVALID_DATA, check_inst)
+                 << "Variable pointer must not point to an array of Block- or "
+                    "BufferBlock-decorated structs";
+        }
+        return SPV_SUCCESS;
+      };
+
+      if (auto error = TraceUnmodifiedVariablePointers(_, inst, checker)) {
+        return error;
       }
+    }
+  } else {
+    const auto pointee_type = _.FindDef(result_type->GetOperandAs<uint32_t>(2));
+    if (IsBlockArray(_, pointee_type)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Variable pointer must not point to an array of Block- or "
+                "BufferBlock-decorated structs";
     } else if (_.ContainsType(
                    pointee_type->id(),
                    [](const Instruction* inst) {
@@ -671,13 +904,10 @@ spv_result_t ValidateVariablePointers(ValidationState_t& _,
       // Pointing to a column or component in a column is trickier to detect.
       // Trace backwards and check encountered access chains to determine if
       // this pointer is pointing into a matrix.
-      if (auto error = TraceVariablePointers(_, inst, CheckMatrixElementTyped)) {
+      if (auto error =
+              TraceVariablePointers(_, inst, CheckMatrixElementTyped)) {
         return error;
       }
-    }
-  } else {
-    if (auto error = TraceVariablePointers(_, inst, CheckUntyped)) {
-      return error;
     }
   }
 
@@ -708,10 +938,6 @@ spv_result_t ValidateLogicalPointers(ValidationState_t& _) {
   }
 
   for (auto& inst : _.ordered_instructions()) {
-    // if (IsVariablePointer(_, variable_pointers, &inst)) {
-    //   std::cerr << "Variable pointer: " << _.Disassemble(inst) << "\n";
-    // }
-
     if (auto error = ValidateLogicalPointerOperands(_, &inst)) {
       return error;
     }
