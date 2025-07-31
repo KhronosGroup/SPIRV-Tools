@@ -389,7 +389,8 @@ spv_result_t CheckMatrixElementTyped(ValidationState_t& _,
         if (access_type->opcode() == spv::Op::OpTypeStruct) {
           uint64_t val = 0;
           _.EvalConstantValUint64(index, &val);
-          access_type = _.FindDef(access_type->GetOperandAs<uint32_t>(1 + val));
+          access_type = _.FindDef(access_type->GetOperandAs<uint32_t>(
+              1 + static_cast<uint32_t>(val)));
         } else {
           access_type = _.FindDef(_.GetComponentType(access_type->id()));
         }
@@ -447,7 +448,8 @@ spv_result_t CheckMatrixElementUntyped(ValidationState_t& _,
         if (access_type->opcode() == spv::Op::OpTypeStruct) {
           uint64_t val = 0;
           _.EvalConstantValUint64(index, &val);
-          access_type = _.FindDef(access_type->GetOperandAs<uint32_t>(1 + val));
+          access_type = _.FindDef(access_type->GetOperandAs<uint32_t>(
+              1 + static_cast<uint32_t>(val)));
         } else {
           access_type = _.FindDef(_.GetComponentType(access_type->id()));
         }
@@ -771,8 +773,8 @@ spv_result_t ValidateVariablePointers(
       const auto data_type = _.FindDef(inst->type_id());
       if (_.ContainsType(
               data_type->id(),
-              [](const Instruction* inst) {
-                return inst->opcode() == spv::Op::OpTypeMatrix;
+              [](const Instruction* type_inst) {
+                return type_inst->opcode() == spv::Op::OpTypeMatrix;
               },
               /* traverse_all_types = */ false)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -789,8 +791,8 @@ spv_result_t ValidateVariablePointers(
       const auto data_type = _.FindDef(data_type_id);
       if (_.ContainsType(
               data_type->id(),
-              [](const Instruction* inst) {
-                return inst->opcode() == spv::Op::OpTypeMatrix;
+              [](const Instruction* type_inst) {
+                return type_inst->opcode() == spv::Op::OpTypeMatrix;
               },
               /* traverse_all_types = */ false)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -815,21 +817,20 @@ spv_result_t ValidateVariablePointers(
       (inst->opcode() == spv::Op::OpSelect ||
        inst->opcode() == spv::Op::OpPhi)) {
     std::unordered_set<const Instruction*> sources;
-    const auto check_inst = inst;
-    const auto checker = [&sources, &check_inst](
-                             ValidationState_t& _,
-                             const Instruction* inst) -> spv_result_t {
-      switch (inst->opcode()) {
+    const auto checker = [&sources, &inst](
+                             ValidationState_t& vstate,
+                             const Instruction* check_inst) -> spv_result_t {
+      switch (check_inst->opcode()) {
         case spv::Op::OpVariable:
         case spv::Op::OpUntypedVariableKHR:
-          if (inst->GetOperandAs<spv::StorageClass>(2) ==
+          if (check_inst->GetOperandAs<spv::StorageClass>(2) ==
                   spv::StorageClass::StorageBuffer ||
-              inst->GetOperandAs<spv::StorageClass>(2) ==
+              check_inst->GetOperandAs<spv::StorageClass>(2) ==
                   spv::StorageClass::Workgroup) {
-            sources.insert(inst);
+            sources.insert(check_inst);
           }
           if (sources.size() > 1) {
-            return _.diag(SPV_ERROR_INVALID_DATA, check_inst)
+            return vstate.diag(SPV_ERROR_INVALID_DATA, inst)
                    << "Variable pointers must point into the same structure "
                       "(or OpConstantNull)";
           }
@@ -861,25 +862,24 @@ spv_result_t ValidateVariablePointers(
           (inst->opcode() == spv::Op::OpUntypedAccessChainKHR ||
            inst->opcode() == spv::Op::OpUntypedInBoundsAccessChainKHR ||
            inst->opcode() == spv::Op::OpUntypedPtrAccessChainKHR))) {
-      const auto check_inst = inst;
-      const auto checker = [&check_inst](
-                               ValidationState_t& _,
-                               const Instruction* inst) -> spv_result_t {
+      const auto checker = [&inst](
+                               ValidationState_t& vstate,
+                               const Instruction* check_inst) -> spv_result_t {
         bool fail = false;
-        if (inst->opcode() == spv::Op::OpUntypedVariableKHR) {
-          if (inst->operands().size() > 3) {
-            const auto type = _.FindDef(inst->GetOperandAs<uint32_t>(3));
-            fail = IsBlockArray(_, type);
+        if (check_inst->opcode() == spv::Op::OpUntypedVariableKHR) {
+          if (check_inst->operands().size() > 3) {
+            const auto type = vstate.FindDef(check_inst->GetOperandAs<uint32_t>(3));
+            fail = IsBlockArray(vstate, type);
           }
-        } else if (inst->opcode() == spv::Op::OpVariable) {
-          const auto result_type = _.FindDef(inst->type_id());
+        } else if (check_inst->opcode() == spv::Op::OpVariable) {
+          const auto res_type = vstate.FindDef(check_inst->type_id());
           const auto pointee_type =
-              _.FindDef(result_type->GetOperandAs<uint32_t>(2));
-          fail = IsBlockArray(_, pointee_type);
+              vstate.FindDef(res_type->GetOperandAs<uint32_t>(2));
+          fail = IsBlockArray(vstate, pointee_type);
         }
 
         if (fail) {
-          return _.diag(SPV_ERROR_INVALID_DATA, check_inst)
+          return vstate.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Variable pointer must not point to an array of Block- or "
                     "BufferBlock-decorated structs";
         }
@@ -898,8 +898,8 @@ spv_result_t ValidateVariablePointers(
                 "BufferBlock-decorated structs";
     } else if (_.ContainsType(
                    pointee_type->id(),
-                   [](const Instruction* inst) {
-                     return inst->opcode() == spv::Op::OpTypeMatrix;
+                   [](const Instruction* type_inst) {
+                     return type_inst->opcode() == spv::Op::OpTypeMatrix;
                    },
                    /* traverse_all_types = */ false)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
