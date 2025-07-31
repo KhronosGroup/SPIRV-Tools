@@ -154,7 +154,6 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
     case spv::Op::OpGroupDecorate:
     case spv::Op::OpEntryPoint:
     case spv::Op::OpName:
-    case spv::Op::OpMemberName:
     case spv::Op::OpDecorateString:
     // SPV_KHR_untyped_pointers
     case spv::Op::OpUntypedArrayLengthKHR:
