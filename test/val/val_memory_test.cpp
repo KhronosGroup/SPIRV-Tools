@@ -8573,6 +8573,34 @@ OpFunctionEnd
           "allocate pointers must be in Function or Private storage classes"));
 }
 
+TEST_F(ValidateMemory, AccessChainNegativeSignedIndex) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%int_n1 = OpConstant %int -1
+%int_4 = OpConstant %int 4
+%array = OpTypeArray %int %int_4
+%ptr_array = OpTypePointer Workgroup %array
+%ptr_int = OpTypePointer Workgroup %int
+%var = OpVariable %ptr_array Workgroup
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpAccessChain %ptr_int %var %int_n1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Index at word 4 may not have a negative value"));
+}
+
 std::string GenCoopMat2Shader(const std::string& extra_types,
                               const std::string& main_body,
                               const std::string& after_main = "",

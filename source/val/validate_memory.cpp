@@ -1744,7 +1744,7 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
              spv::AddressingModel::PhysicalStorageBuffer64) &&
         result_type_storage_class !=
             static_cast<uint32_t>(spv::StorageClass::PhysicalStorageBuffer)) {
-      if (index_type->GetOperandAs<uint32_t>(2)) {
+      if (index_type->GetOperandAs<uint32_t>(2) == 1) {
         int64_t val = 0;
         if (_.EvalConstantValInt64(cur_word, &val)) {
           if (val < 0) {
