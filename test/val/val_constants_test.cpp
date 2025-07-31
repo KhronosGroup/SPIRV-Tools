@@ -50,10 +50,10 @@ using ValidateConstant = spvtest::ValidateBase<bool>;
   "%true = OpConstantTrue %bool "               \
   "%null = OpConstantNull %_ptr_uint "
 
-#define kShaderPreamble    \
-  "OpCapability Shader\n"  \
-  "OpCapability Linkage\n" \
-  "OpCapability VariablePointers\n" \
+#define kShaderPreamble                         \
+  "OpCapability Shader\n"                       \
+  "OpCapability Linkage\n"                      \
+  "OpCapability VariablePointers\n"             \
   "OpExtension \"SPV_KHR_variable_pointers\"\n" \
   "OpMemoryModel Logical Simple\n"
 

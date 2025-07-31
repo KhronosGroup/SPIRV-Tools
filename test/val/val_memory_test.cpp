@@ -7858,9 +7858,10 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("In Logical addressing, variables can only allocate a storage "
-                "buffer pointer if the VariablePointersStorageBuffer capability "
-                "is declared"));
+      HasSubstr(
+          "In Logical addressing, variables can only allocate a storage "
+          "buffer pointer if the VariablePointersStorageBuffer capability "
+          "is declared"));
 }
 
 TEST_F(ValidateMemory, VariableStorageBufferPointerUntyped) {
@@ -7887,9 +7888,10 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("In Logical addressing, variables can only allocate a storage "
-                "buffer pointer if the VariablePointersStorageBuffer capability "
-                "is declared"));
+      HasSubstr(
+          "In Logical addressing, variables can only allocate a storage "
+          "buffer pointer if the VariablePointersStorageBuffer capability "
+          "is declared"));
 }
 
 TEST_F(ValidateMemory, VariableWorkgroupPointer) {
