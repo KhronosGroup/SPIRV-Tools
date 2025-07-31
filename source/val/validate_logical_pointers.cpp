@@ -198,6 +198,9 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
     // SPV_NV_cluster_acceleration_structure (spec bugs)
     case spv::Op::OpRayQueryGetClusterIdNV:
     case spv::Op::OpHitObjectGetClusterIdNV:
+    // SPV_NV_ray_tracing_motion_blur (spec bugs)
+    case spv::Op::OpTraceMotionNV:
+    case spv::Op::OpTraceRayMotionNV:
     // SPV_NV_linear_swept_spheres (spec bugs)
     case spv::Op::OpRayQueryGetIntersectionSpherePositionNV:
     case spv::Op::OpRayQueryGetIntersectionSphereRadiusNV:
@@ -258,6 +261,11 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
     case spv::Op::OpCooperativeVectorReduceSumAccumulateNV:
     // SPV_EXT_mesh_shader (spec bugs)
     case spv::Op::OpEmitMeshTasksEXT:
+    // SPV_AMD_shader_enqueue (spec bugs)
+    case spv::Op::OpEnqueueNodePayloadsAMDX:
+    case spv::Op::OpNodePayloadArrayLengthAMDX:
+    case spv::Op::OpIsNodePayloadValidAMDX:
+    case spv::Op::OpFinishWritingNodePayloadAMDX:
       return SPV_SUCCESS;
     // The following cases require a variable pointer capability. Since all
     // instructions are for variable pointers, the storage class and capability
@@ -319,6 +327,8 @@ spv_result_t ValidateLogicalPointerReturns(ValidationState_t& _,
     case spv::Op::OpUntypedVariableKHR:
     // SPV_NV_raw_access_chains
     case spv::Op::OpRawAccessChainNV:
+    // SPV_AMD_shader_enqueue (spec bugs)
+    case spv::Op::OpAllocateNodePayloadsAMDX:
       return SPV_SUCCESS;
     // Core spec with variable pointer capability. Check storage classes since
     // variable pointers can only be in certain storage classes.
@@ -868,7 +878,8 @@ spv_result_t ValidateVariablePointers(
         bool fail = false;
         if (check_inst->opcode() == spv::Op::OpUntypedVariableKHR) {
           if (check_inst->operands().size() > 3) {
-            const auto type = vstate.FindDef(check_inst->GetOperandAs<uint32_t>(3));
+            const auto type =
+                vstate.FindDef(check_inst->GetOperandAs<uint32_t>(3));
             fail = IsBlockArray(vstate, type);
           }
         } else if (check_inst->opcode() == spv::Op::OpVariable) {
