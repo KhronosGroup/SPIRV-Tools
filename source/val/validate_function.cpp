@@ -170,6 +170,33 @@ spv_result_t ValidateFunctionCall(ValidationState_t& _,
            << "s type does not match Function <id> "
            << _.getIdName(return_type->id()) << "s return type.";
   }
+  if (_.addressing_model() == spv::AddressingModel::Logical ||
+      _.addressing_model() == spv::AddressingModel::PhysicalStorageBuffer64) {
+    if (return_type->opcode() == spv::Op::OpTypePointer ||
+        return_type->opcode() == spv::Op::OpTypeUntypedPointerKHR) {
+      const auto sc = return_type->GetOperandAs<spv::StorageClass>(1);
+      if (sc != spv::StorageClass::PhysicalStorageBuffer) {
+        if (!_.HasCapability(spv::Capability::VariablePointersStorageBuffer) &&
+            sc == spv::StorageClass::StorageBuffer) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "In Logical addressing, functions may only return a "
+                    "storage buffer pointer if the "
+                    "VariablePointersStorageBuffer capability is declared";
+        } else if (!_.HasCapability(spv::Capability::VariablePointers) &&
+                   sc == spv::StorageClass::Workgroup) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "In Logical addressing, functions may only return a "
+                    "workgroup pointer if the VariablePointers capability is "
+                    "declared";
+        } else if (sc != spv::StorageClass::StorageBuffer &&
+                   sc != spv::StorageClass::Workgroup) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "In Logical addressing, functions may not return a pointer "
+                    "in this storage class";
+        }
+      }
+    }
+  }
 
   const auto function_type_id = function->GetOperandAs<uint32_t>(3);
   const auto function_type = _.FindDef(function_type_id);
