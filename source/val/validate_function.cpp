@@ -170,8 +170,9 @@ spv_result_t ValidateFunctionCall(ValidationState_t& _,
            << "s type does not match Function <id> "
            << _.getIdName(return_type->id()) << "s return type.";
   }
-  if (_.addressing_model() == spv::AddressingModel::Logical ||
-      _.addressing_model() == spv::AddressingModel::PhysicalStorageBuffer64) {
+  if (!_.options()->relax_logical_pointer &&
+      (_.addressing_model() == spv::AddressingModel::Logical ||
+       _.addressing_model() == spv::AddressingModel::PhysicalStorageBuffer64)) {
     if (return_type->opcode() == spv::Op::OpTypePointer ||
         return_type->opcode() == spv::Op::OpTypeUntypedPointerKHR) {
       const auto sc = return_type->GetOperandAs<spv::StorageClass>(1);

@@ -2337,9 +2337,8 @@ OpFunctionEnd
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Pointer operand must not be a variable pointer"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Pointer operand must not be a variable pointer"));
 }
 
 TEST_F(ValidateLogicalPointersTest, ArrayLengthUntypedInvalidVariablePointer) {
@@ -2372,9 +2371,8 @@ OpFunctionEnd
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Pointer operand must not be a variable pointer"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Pointer operand must not be a variable pointer"));
 }
 
 }  // namespace
