@@ -3826,7 +3826,7 @@ OpFunctionEnd
     EXPECT_EQ(SPV_ERROR_INVALID_ID,
               ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
     EXPECT_THAT(getDiagnosticString(),
-                HasSubstr("Instruction cannot for logical addressing model be "
+                HasSubstr("Instruction on logical pointers cannot be "
                           "used without a variable pointers capability"));
   }
 }
@@ -5959,8 +5959,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("is out of bounds"));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("cannot find index -224"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Index at word 4 may not have a negative value"));
 }
 
 TEST_F(ValidateMemory, AccessChainNegativeStructIndex64) {
@@ -5987,8 +5987,8 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("is out of bounds"));
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("cannot find index -224"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Index at word 4 may not have a negative value"));
 }
 
 TEST_F(ValidateMemory, UntypedVariableFunctionOutsideFunction) {
@@ -6176,6 +6176,8 @@ OpReturn
 OpFunctionEnd
 )";
 
+  getValidatorOptions()->relax_logical_pointer =
+      opcode == "OpUntypedInBoundsPtrAccessChainKHR";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -6213,6 +6215,8 @@ OpReturn
 OpFunctionEnd
 )";
 
+  getValidatorOptions()->relax_logical_pointer =
+      opcode == "OpUntypedInBoundsPtrAccessChainKHR";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -6250,6 +6254,8 @@ OpReturn
 OpFunctionEnd
 )";
 
+  getValidatorOptions()->relax_logical_pointer =
+      opcode == "OpUntypedInBoundsPtrAccessChainKHR";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -6289,6 +6295,8 @@ OpReturn
 OpFunctionEnd
 )";
 
+  getValidatorOptions()->relax_logical_pointer =
+      opcode == "OpUntypedInBoundsPtrAccessChainKHR";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -6327,6 +6335,8 @@ OpReturn
 OpFunctionEnd
 )";
 
+  getValidatorOptions()->relax_logical_pointer =
+      opcode == "OpUntypedInBoundsPtrAccessChainKHR";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -6365,6 +6375,8 @@ OpReturn
 OpFunctionEnd
 )";
 
+  getValidatorOptions()->relax_logical_pointer =
+      opcode == "OpUntypedInBoundsPtrAccessChainKHR";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -6403,6 +6415,8 @@ OpReturn
 OpFunctionEnd
 )";
 
+  getValidatorOptions()->relax_logical_pointer =
+      opcode == "OpUntypedInBoundsPtrAccessChainKHR";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -6442,6 +6456,8 @@ OpReturn
 OpFunctionEnd
 )";
 
+  getValidatorOptions()->relax_logical_pointer =
+      opcode == "OpUntypedInBoundsPtrAccessChainKHR";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
@@ -6483,6 +6499,8 @@ OpReturn
 OpFunctionEnd
 )";
 
+  getValidatorOptions()->relax_logical_pointer =
+      opcode == "OpUntypedInBoundsPtrAccessChainKHR";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -6522,6 +6540,8 @@ OpReturn
 OpFunctionEnd
 )";
 
+  getValidatorOptions()->relax_logical_pointer =
+      opcode == "OpUntypedInBoundsPtrAccessChainKHR";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -7761,6 +7781,258 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Both Base Type and Base must be Block or BufferBlock "
                         "arrays or neither can be"));
+}
+
+TEST_F(ValidateMemory, VariableFunctionPointer) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%ptr = OpTypePointer Function %int
+%ptr_ptr = OpTypePointer Function %ptr
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%var = OpVariable %ptr_ptr Function
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("In Logical addressing, variables can only allocate a pointer "
+                "to the StorageBuffer or Workgroup storage classes"));
+}
+
+TEST_F(ValidateMemory, VariableFunctionPointerUntyped) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%ptr = OpTypeUntypedPointerKHR Function
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%var = OpUntypedVariableKHR %ptr Function %ptr
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("In Logical addressing, variables can only allocate a pointer "
+                "to the StorageBuffer or Workgroup storage classes"));
+}
+
+TEST_F(ValidateMemory, VariableStorageBufferPointer) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%ptr = OpTypePointer StorageBuffer %int
+%ptr_ptr = OpTypePointer Function %ptr
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%var = OpVariable %ptr_ptr Function
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "In Logical addressing, variables can only allocate a storage "
+          "buffer pointer if the VariablePointersStorageBuffer capability "
+          "is declared"));
+}
+
+TEST_F(ValidateMemory, VariableStorageBufferPointerUntyped) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%ptr_s = OpTypeUntypedPointerKHR StorageBuffer
+%ptr_f = OpTypeUntypedPointerKHR Function
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%var = OpUntypedVariableKHR %ptr_f Function %ptr_s
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "In Logical addressing, variables can only allocate a storage "
+          "buffer pointer if the VariablePointersStorageBuffer capability "
+          "is declared"));
+}
+
+TEST_F(ValidateMemory, VariableWorkgroupPointer) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%ptr = OpTypePointer Workgroup %int
+%ptr_ptr = OpTypePointer Function %ptr
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%var = OpVariable %ptr_ptr Function
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "In Logical addressing, variables can only allocate a workgroup "
+          "pointer if the VariablePointers capability is declared"));
+}
+
+TEST_F(ValidateMemory, VariableWorkgroupPointerUntyped) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%ptr_w = OpTypeUntypedPointerKHR Workgroup
+%ptr_f = OpTypeUntypedPointerKHR Function
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%var = OpUntypedVariableKHR %ptr_f Function %ptr_w
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "In Logical addressing, variables can only allocate a workgroup "
+          "pointer if the VariablePointers capability is declared"));
+}
+
+TEST_F(ValidateMemory, VariablePointerBadStorageClass) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%ptr = OpTypePointer Workgroup %int
+%ptr_ptr = OpTypePointer Workgroup %ptr
+%var = OpVariable %ptr_ptr Workgroup
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "In Logical addressing with variable pointers, variables that "
+          "allocate pointers must be in Function or Private storage classes"));
+}
+
+TEST_F(ValidateMemory, VariablePointerBadStorageClassUntyped) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability VariablePointers
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%ptr_w = OpTypeUntypedPointerKHR Workgroup
+%var = OpUntypedVariableKHR %ptr_w Workgroup %ptr_w
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "In Logical addressing with variable pointers, variables that "
+          "allocate pointers must be in Function or Private storage classes"));
+}
+
+TEST_F(ValidateMemory, AccessChainNegativeSignedIndex) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%int_n1 = OpConstant %int -1
+%int_4 = OpConstant %int 4
+%array = OpTypeArray %int %int_4
+%ptr_array = OpTypePointer Workgroup %array
+%ptr_int = OpTypePointer Workgroup %int
+%var = OpVariable %ptr_array Workgroup
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpAccessChain %ptr_int %var %int_n1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Index at word 4 may not have a negative value"));
 }
 
 std::string GenCoopMat2Shader(const std::string& extra_types,
