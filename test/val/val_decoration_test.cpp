@@ -1863,6 +1863,8 @@ TEST_F(ValidateDecorations, BlockStandardUniformBufferLayout) {
                OpMemberDecorate %Output 6 MatrixStride 16
                OpMemberDecorate %Output 7 Offset 128
                OpDecorate %Output Block
+               OpDecorate %dataOutput DescriptorSet 0
+               OpDecorate %dataOutput Binding 0
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
       %float = OpTypeFloat 32
@@ -2549,6 +2551,10 @@ TEST_F(ValidateDecorations, BufferBlock16bitStandardStorageBufferLayout) {
              OpMemberDecorate %SSBO16 0 Offset 0
              OpDecorate %SSBO32 BufferBlock
              OpDecorate %SSBO16 BufferBlock
+             OpDecorate %varSSBO32 DescriptorSet 0
+             OpDecorate %varSSBO32 Binding 0
+             OpDecorate %varSSBO16 DescriptorSet 0
+             OpDecorate %varSSBO16 Binding 1
      %void = OpTypeVoid
     %voidf = OpTypeFunction %void
       %u32 = OpTypeInt 32 0
@@ -3476,6 +3482,7 @@ TEST_F(ValidateDecorations, VulkanStorageBufferMissingDescriptorSetBad) {
             OpExecutionMode %1 OriginUpperLeft
 
             OpDecorate %struct Block
+            OpMemberDecorate %struct 0 Offset 0
             OpDecorate %var Binding 0
 
     %void = OpTypeVoid
@@ -3518,6 +3525,7 @@ TEST_F(ValidateDecorations, VulkanStorageBufferMissingBindingBad) {
             OpExecutionMode %1 OriginUpperLeft
 
             OpDecorate %struct Block
+            OpMemberDecorate %struct 0 Offset 0
             OpDecorate %var DescriptorSet 0
 
     %void = OpTypeVoid
@@ -3560,6 +3568,7 @@ TEST_F(ValidateDecorations,
             OpExecutionMode %1 OriginUpperLeft
 
             OpDecorate %struct Block
+            OpMemberDecorate %struct 0 Offset 0
             OpDecorate %var Binding 0
 
     %void = OpTypeVoid
@@ -3596,35 +3605,6 @@ TEST_F(ValidateDecorations,
                 "From Vulkan spec:\n"
                 "These variables must have DescriptorSet and Binding "
                 "decorations specified"));
-}
-
-TEST_F(ValidateDecorations,
-       VulkanStorageBufferMissingDescriptorAndBindingUnusedGood) {
-  std::string spirv = R"(
-            OpCapability Shader
-            OpExtension "SPV_KHR_storage_buffer_storage_class"
-            OpMemoryModel Logical GLSL450
-            OpEntryPoint Fragment %1 "main"
-            OpExecutionMode %1 OriginUpperLeft
-            OpDecorate %struct Block
-            OpMemberDecorate %struct 0 Offset 0
-
-    %void = OpTypeVoid
-  %voidfn = OpTypeFunction %void
-   %float = OpTypeFloat 32
-  %struct = OpTypeStruct %float
-     %ptr = OpTypePointer StorageBuffer %struct
-     %var = OpVariable %ptr StorageBuffer
-
-       %1 = OpFunction %void None %voidfn
-   %label = OpLabel
-            OpReturn
-            OpFunctionEnd
-)";
-
-  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_SUCCESS,
-            ValidateAndRetrieveValidationState(SPV_ENV_VULKAN_1_1));
 }
 
 TEST_F(ValidateDecorations, UniformMissingDescriptorSetGood) {
@@ -3903,6 +3883,8 @@ TEST_F(ValidateDecorations, BufferBlockStandardStorageBufferLayout) {
                OpMemberDecorate %Output 6 MatrixStride 16
                OpMemberDecorate %Output 7 Offset 96
                OpDecorate %Output BufferBlock
+               OpDecorate %dataOutput DescriptorSet 0
+               OpDecorate %dataOutput Binding 0
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
       %float = OpTypeFloat 32
@@ -4036,6 +4018,8 @@ TEST_F(ValidateDecorations,
                OpMemberDecorate %Output 6 MatrixStride 16
                OpMemberDecorate %Output 7 Offset 128
                OpDecorate %Output Block
+               OpDecorate %dataOutput DescriptorSet 0
+               OpDecorate %dataOutput Binding 0
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
       %float = OpTypeFloat 32
@@ -4104,6 +4088,8 @@ TEST_F(ValidateDecorations,
                OpMemberDecorate %Output 6 MatrixStride 16
                OpMemberDecorate %Output 7 Offset 128
                OpDecorate %Output Block
+               OpDecorate %dataOutput DescriptorSet 0
+               OpDecorate %dataOutput Binding 0
        %void = OpTypeVoid
           %3 = OpTypeFunction %void
       %float = OpTypeFloat 32
@@ -7595,6 +7581,8 @@ OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 1 1 1
 OpDecorate %struct Block
 OpMemberDecorate %struct 0 Offset 0
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
 %void = OpTypeVoid
 %uint = OpTypeInt 32 0
 %struct = OpTypeStruct %uint
@@ -7708,6 +7696,8 @@ OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 1 1 1
 OpDecorate %struct Block
 OpMemberDecorate %struct 0 Offset 0
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
 %void = OpTypeVoid
 %uint = OpTypeInt 32 0
 %struct = OpTypeStruct %uint
@@ -7732,6 +7722,8 @@ OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 1 1 1
 OpDecorate %struct BufferBlock
 OpMemberDecorate %struct 0 Offset 0
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
 %void = OpTypeVoid
 %uint = OpTypeInt 32 0
 %struct = OpTypeStruct %uint
