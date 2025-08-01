@@ -2898,16 +2898,6 @@ typedef struct {
   uint32_t perprim_deco;
 } MeshBuiltinVUIDs;
 
-// clang-format off
-std::unordered_map<spv::BuiltIn, MeshBuiltinVUIDs> MeshBuiltinVUIDMap = {{
-    {spv::BuiltIn::CullPrimitiveEXT,        {7036, 10589, 10590, 7038}},
-    {spv::BuiltIn::PrimitiveId,             {10595, 10596, 10597, 7040}},
-    {spv::BuiltIn::Layer,                   {10592, 10593, 10594, 7039}},
-    {spv::BuiltIn::ViewportIndex,           {10601, 10602, 10603, 7060}},
-    {spv::BuiltIn::PrimitiveShadingRateKHR, {10598, 10599, 10600, 7059}},
-}};
-// clang-format on
-
 spv_result_t BuiltInsValidator::ValidateMeshBuiltinInterfaceRules(
     const Decoration& decoration, const Instruction& inst, spv::Op scalar_type,
     const Instruction& referenced_from_inst) {
@@ -2915,7 +2905,17 @@ spv_result_t BuiltInsValidator::ValidateMeshBuiltinInterfaceRules(
     if (execution_models_.count(spv::ExecutionModel::MeshEXT)) {
       bool is_block = false;
       const spv::BuiltIn builtin = decoration.builtin();
-      const MeshBuiltinVUIDs& vuids = MeshBuiltinVUIDMap[builtin];
+
+      static const std::unordered_map<spv::BuiltIn, MeshBuiltinVUIDs>
+          mesh_vuid_map = {{
+              {spv::BuiltIn::CullPrimitiveEXT, {7036, 10589, 10590, 7038}},
+              {spv::BuiltIn::PrimitiveId, {10595, 10596, 10597, 7040}},
+              {spv::BuiltIn::Layer, {10592, 10593, 10594, 7039}},
+              {spv::BuiltIn::ViewportIndex, {10601, 10602, 10603, 7060}},
+              {spv::BuiltIn::PrimitiveShadingRateKHR,
+               {10598, 10599, 10600, 7059}},
+          }};
+      const MeshBuiltinVUIDs& vuids = mesh_vuid_map.at(builtin);
       if (spv_result_t error = ValidateBlockTypeOrArrayedType(
               decoration, inst, is_block, scalar_type,
               [this, &inst, &builtin, &scalar_type,
