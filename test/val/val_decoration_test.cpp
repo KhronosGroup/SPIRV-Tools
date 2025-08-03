@@ -5445,6 +5445,97 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+// OpDecorateId
+
+TEST_F(ValidateDecorations, DecorateIdGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %subgroupscope "subgroupscope"
+OpName %int0 "int0"
+OpName %fn "fn"
+OpDecorateId %int0 UniformId %subgroupscope
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 1
+%subgroupscope = OpConstant %int 3
+%int0 = OpConstantNull %int
+%fn = OpTypeFunction %void
+%main = OpFunction %void None %fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateDecorations, DecorateIdGroupBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %subgroupscope "subgroupscope"
+OpName %int0 "int0"
+OpName %fn "fn"
+OpName %group "group"
+OpDecorateId %group UniformId %subgroupscope
+%group = OpDecorationGroup
+OpGroupDecorate %group %int0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 1
+%subgroupscope = OpConstant %int 3
+%int0 = OpConstantNull %int
+%fn = OpTypeFunction %void
+%main = OpFunction %void None %fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must not be an OpDecorationGroup instruction.\n"
+                        "  OpDecorateId %group UniformId %subgroupscope"));
+}
+
+TEST_F(ValidateDecorations, DecorateIdOutOfOrderBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %subgroupscope "subgroupscope"
+OpName %int0 "int0"
+OpName %fn "fn"
+OpDecorateId %int0 UniformId %subgroupscope
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 1
+%int0 = OpConstantNull %int
+%subgroupscope = OpConstant %int 3
+%fn = OpTypeFunction %void
+%main = OpFunction %void None %fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("[%subgroupscope]' must appear earlier in the"
+                        " binary than the target\n"
+                        "  OpDecorateId %int0 UniformId %subgroupscope"));
+}
+
 // Uniform and UniformId decorations
 
 TEST_F(ValidateDecorations, UniformDecorationGood) {
@@ -5486,6 +5577,7 @@ OpName %subgroupscope "subgroupscope"
 OpName %call "call"
 OpName %myfunc "myfunc"
 OpName %int0 "int0"
+OpName %int1 "int1"
 OpName %float0 "float0"
 OpName %fn "fn"
 )") + inst +
@@ -5493,10 +5585,11 @@ OpName %fn "fn"
 %void = OpTypeVoid
 %float = OpTypeFloat 32
 %int = OpTypeInt 32 1
-%int0 = OpConstantNull %int
+%int1 = OpConstant %int 1
 %int_99 = OpConstant %int 99
 %subgroupscope = OpConstant %int 3
 %float0 = OpConstantNull %float
+%int0 = OpConstantNull %int
 %fn = OpTypeFunction %void
 %myfunc = OpFunction %void None %fn
 %myfuncentry = OpLabel
@@ -5613,7 +5706,7 @@ TEST_F(ValidateDecorations,
 
 TEST_F(ValidateDecorations, UniformDecorationWithScopeIdV14VulkanEnv) {
   const std::string spirv =
-      ShaderWithUniformLikeDecoration("OpDecorateId %int0 UniformId %int0");
+      ShaderWithUniformLikeDecoration("OpDecorateId %int0 UniformId %int1");
 
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1_SPIRV_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA,
@@ -10304,6 +10397,7 @@ OpMemberDecorate %struct 0 Offset 0
 OpMemberDecorate %struct 1 Offset 4
 )" + set + R"(OpMemberDecorate %test_type 0 Offset 0
 OpMemberDecorate %test_type 1 Offset 1
+OpDecorate %ptr ArrayStride 16
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
@@ -10312,7 +10406,8 @@ OpMemberDecorate %test_type 1 Offset 1
 %test_val = OpConstantNull %test_type
 %ptr = OpTypeUntypedPointerKHR )" +
                             sc + R"(
-%var = OpUntypedVariableKHR %ptr )" + sc + R"( %struct
+%var = OpUntypedVariableKHR %ptr )" +
+                            sc + R"( %struct
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
@@ -10355,6 +10450,7 @@ OpDecorate %struct Block
 OpMemberDecorate %struct 0 Offset 0
 OpMemberDecorate %struct 1 Offset 4
 )" + set + R"(OpDecorate %test_type ArrayStride 4
+OpDecorate %ptr ArrayStride 16
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
@@ -10365,7 +10461,8 @@ OpMemberDecorate %struct 1 Offset 4
 %struct = OpTypeStruct %int %int
 %ptr = OpTypeUntypedPointerKHR )" +
                             sc + R"(
-%var = OpUntypedVariableKHR %ptr )" + sc + R"( %struct
+%var = OpUntypedVariableKHR %ptr )" +
+                            sc + R"( %struct
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
@@ -10519,8 +10616,8 @@ const std::string kNodeShaderPostlude = R"(
 %node1 = OpConstantStringAMDX "node1"
 %node2 = OpConstantStringAMDX "node2"
 %S = OpTypeStruct
-%_payloadarr_S = OpTypeNodePayloadArrayAMDX %S
 %_payloadarr_S_0 = OpTypeNodePayloadArrayAMDX %S
+%_payloadarr_S = OpTypeNodePayloadArrayAMDX %S
 %bool = OpTypeBool
 %true = OpConstantTrue %bool
 %void = OpTypeVoid

@@ -984,6 +984,24 @@ bool ValidationState_t::IsBfloat16VectorType(uint32_t id) const {
   return false;
 }
 
+bool ValidationState_t::IsBfloat16CoopMatType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  if (!inst) {
+    return false;
+  }
+
+  if (inst->opcode() == spv::Op::OpTypeCooperativeMatrixKHR) {
+    return IsBfloat16ScalarType(inst->word(2));
+  }
+
+  return false;
+}
+
+bool ValidationState_t::IsBfloat16Type(uint32_t id) const {
+  return IsBfloat16ScalarType(id) || IsBfloat16VectorType(id) ||
+         IsBfloat16CoopMatType(id);
+}
+
 bool ValidationState_t::IsFP8ScalarType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
   if (inst && inst->opcode() == spv::Op::OpTypeFloat) {
@@ -1011,8 +1029,21 @@ bool ValidationState_t::IsFP8VectorType(uint32_t id) const {
   return false;
 }
 
-bool ValidationState_t::IsFP8ScalarOrVectorType(uint32_t id) const {
-  return IsFP8ScalarType(id) || IsFP8VectorType(id);
+bool ValidationState_t::IsFP8CoopMatType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  if (!inst) {
+    return false;
+  }
+
+  if (inst->opcode() == spv::Op::OpTypeCooperativeMatrixKHR) {
+    return IsFP8ScalarType(inst->word(2));
+  }
+
+  return false;
+}
+
+bool ValidationState_t::IsFP8Type(uint32_t id) const {
+  return IsFP8ScalarType(id) || IsFP8VectorType(id) || IsFP8CoopMatType(id);
 }
 
 bool ValidationState_t::IsFloatScalarType(uint32_t id) const {
@@ -2219,6 +2250,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-Position-Position-04321);
     case 4330:
       return VUID_WRAP(VUID-PrimitiveId-PrimitiveId-04330);
+    case 4333:
+      return VUID_WRAP(VUID-PrimitiveId-PrimitiveId-04333);
     case 4334:
       return VUID_WRAP(VUID-PrimitiveId-PrimitiveId-04334);
     case 4336:
@@ -2665,6 +2698,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
     case 10824:
       // This use to be a standalone, but maintenance9 will set allow_vulkan_32_bit_bitwise now
       return VUID_WRAP(VUID-RuntimeSpirv-None-10824);
+    case 10880:
+      return VUID_WRAP(VUID-StandaloneSpirv-TessLevelInner-10880);
     default:
       return "";  // unknown id
   }

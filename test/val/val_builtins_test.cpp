@@ -26,8 +26,6 @@
 #include <vector>
 
 #include "gmock/gmock.h"
-#include "source/spirv_target_env.h"
-#include "test/unit_spirv.h"
 #include "test/val/val_code_generator.h"
 #include "test/val/val_fixtures.h"
 
@@ -98,6 +96,10 @@ CodeGenerator GetInMainCodeGenerator(const char* const built_in,
                                OpMemberDecorate %built_in_type 0 BuiltIn )";
   generator.before_types_ += built_in;
   generator.before_types_ += "\n";
+
+  if (strncmp(built_in, "TessLevel", 9) == 0) {
+    generator.before_types_ += "OpMemberDecorate %built_in_type 0 Patch\n";
+  }
 
   std::ostringstream after_types;
 
@@ -258,6 +260,10 @@ CodeGenerator GetInFunctionCodeGenerator(const char* const built_in,
   generator.before_types_ += built_in;
   generator.before_types_ += "\n";
 
+  if (strncmp(built_in, "TessLevel", 9) == 0) {
+    generator.before_types_ += "OpMemberDecorate %built_in_type 0 Patch\n";
+  }
+
   std::ostringstream after_types;
   after_types << "%built_in_type = OpTypeStruct " << data_type << "\n";
   if (InitializerRequired(storage_class)) {
@@ -395,6 +401,11 @@ CodeGenerator GetVariableCodeGenerator(const char* const built_in,
   generator.before_types_ = "OpDecorate %built_in_var BuiltIn ";
   generator.before_types_ += built_in;
   generator.before_types_ += "\n";
+
+  if (strncmp(built_in, "TessLevel", 9) == 0) {
+    generator.before_types_ += "OpDecorate %built_in_var Patch\n";
+  }
+
   if ((0 == std::strcmp(storage_class, "Input")) &&
       (0 == std::strcmp(execution_model, "Fragment"))) {
     // ensure any needed input types that might require Flat
@@ -3604,6 +3615,7 @@ OpDecorate %gl_ViewportIndex PerPrimitiveNV
   entry_point.name = "main_d_r";
   entry_point.execution_model = "MeshNV";
   entry_point.interfaces = "%gl_PrimitiveID %gl_Layer %gl_ViewportIndex";
+  entry_point.body = "%ref_load = OpLoad %_arr_float_uint_81 %gl_PrimitiveID";
   generator.entry_points_.push_back(std::move(entry_point));
 
   CompileSuccessfully(generator.Build(), SPV_ENV_VULKAN_1_1);
@@ -4655,6 +4667,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinPrimtiveIDWithPerPrimitiveEXT) {
 %gl_PrimitiveID = OpVariable %_ptr_Output__arr_int_int_1 Output
 %MainMesh = OpFunction %void None %9
  %25 = OpLabel
+%ref_load = OpLoad %_arr_int_int_1 %gl_PrimitiveID
        OpSetMeshOutputsEXT %uint_3 %uint_1
        OpReturn
        OpFunctionEnd
@@ -4701,6 +4714,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinViewportIndexWithPerPrimitiveEXT) {
 %gl_ViewportIndex = OpVariable %_ptr_Output__arr_int_int_1 Output
 %MainMesh = OpFunction %void None %9
 %25 = OpLabel
+%ref_load = OpLoad %_arr_int_int_1 %gl_ViewportIndex
      OpSetMeshOutputsEXT %uint_3 %uint_1
      OpReturn
      OpFunctionEnd
@@ -5246,6 +5260,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinCullPrimitiveEXTBlockArraySize) {
   %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_16 Output
   %main = OpFunction %void None %3
    %5 = OpLabel
+ %ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_16 %gl_MeshPrimitivesEXT
         OpReturn
         OpFunctionEnd
 )";
@@ -5288,6 +5303,7 @@ TEST_F(ValidateBuiltIns, VulkanBuiltinCullPrimitiveEXTMissingBlock) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -5333,6 +5349,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinCullPrimitiveEXTType) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -5543,6 +5560,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinCullPrimitiveEXTInterfaceVariable) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_2 Output
  %main = OpFunction %void None %21
    %23 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_2 %gl_MeshPrimitivesEXT
    %24 = OpLoad %uint %gl_LocalInvocationIndex
          OpSetMeshOutputsEXT %uint_2 %uint_2
    %25 = OpAccessChain %_ptr_Output_bool %5 %24
@@ -5632,6 +5650,7 @@ TEST_F(ValidateBuiltIns, BadBuiltinCullPrimitiveEXTWithPerPrimitiveEXT) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+ %ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -5676,6 +5695,7 @@ TEST_F(ValidateBuiltIns, BadBuiltinPrimitiveShadingRateWithPerPrimitiveEXT) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -5837,6 +5857,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinLayerArrayTypeMeshEXT) {
 %gl_Layer = OpVariable %_ptr_Output__arr_gl_Layer_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_Layer_uint_32 %gl_Layer
       OpReturn
       OpFunctionEnd
 )";
@@ -5879,6 +5900,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinLayerInBlockMeshEXTType) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+ %ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -5916,6 +5938,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinLayerArrayOfIntSizeMeshEXT) {
 %gl_Layer = OpVariable %_ptr_Output__arr_gl_Layer_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_Layer_uint_32 %gl_Layer
       OpReturn
       OpFunctionEnd
 )";
@@ -5958,6 +5981,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinLayerInBlockArraySizeMeshEXT) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -6001,6 +6025,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinLayerWithPerPrimitiveEXT) {
 %gl_Layer = OpVariable %_ptr_Output__arr_int_int_1 Output
 %MainMesh = OpFunction %void None %9
     %25 = OpLabel
+%ref_load = OpLoad %_arr_int_int_1 %gl_Layer
           OpSetMeshOutputsEXT %uint_3 %uint_1
           OpReturn
           OpFunctionEnd
@@ -6086,6 +6111,7 @@ TEST_F(ValidateBuiltIns,
 %gl_PrimitiveShadingRateEXT = OpVariable %_ptr_Output__arr_gl_PrimitiveShadingRateEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_PrimitiveShadingRateEXT_uint_32 %gl_PrimitiveShadingRateEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -6126,6 +6152,7 @@ TEST_F(ValidateBuiltIns,
 %gl_PrimitiveShadingRateEXT = OpVariable %_ptr_Output__arr_gl_PrimitiveShadingRateEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+ %ref_load = OpLoad %_arr_gl_PrimitiveShadingRateEXT_uint_32 %gl_PrimitiveShadingRateEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -6173,6 +6200,7 @@ TEST_F(ValidateBuiltIns,
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
 %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
     OpReturn
     OpFunctionEnd
 )";
@@ -6220,6 +6248,7 @@ TEST_F(ValidateBuiltIns,
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
 %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
     OpReturn
     OpFunctionEnd
 )";
@@ -6263,6 +6292,7 @@ TEST_F(ValidateBuiltIns,
 %gl_PrimitiveShadingRateEXT = OpVariable %_ptr_Output__arr_gl_PrimitiveShadingRateEXT_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_PrimitiveShadingRateEXT_uint_32 %gl_PrimitiveShadingRateEXT
       OpReturn
       OpFunctionEnd
 )";
@@ -6385,6 +6415,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinViewportIndexInBlockTypeMeshEXT) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
 %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
     OpReturn
     OpFunctionEnd
 )";
@@ -6424,6 +6455,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinViewportIndexAsArrayTypeMeshEXT) {
 %gl_ViewportIndex = OpVariable %_ptr_Output__arr_gl_ViewportIndex_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_ViewportIndex_uint_32 %gl_ViewportIndex
       OpReturn
       OpFunctionEnd
 )";
@@ -6467,6 +6499,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinViewportIndexInBlockArraySizeMeshEXT) {
 %gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
 %main = OpFunction %void None %3
 %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_MeshPerPrimitiveEXT_uint_32 %gl_MeshPrimitivesEXT
     OpReturn
     OpFunctionEnd
 )";
@@ -6506,6 +6539,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinViewportIndexAsArrayOfIntSizeMeshEXT) {
 %gl_ViewportIndex = OpVariable %_ptr_Output__arr_gl_ViewportIndex_uint_32 Output
 %main = OpFunction %void None %3
  %5 = OpLabel
+%ref_load = OpLoad %_arr_gl_ViewportIndex_uint_32 %gl_ViewportIndex
       OpReturn
       OpFunctionEnd
 )";
@@ -6514,6 +6548,189 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinViewportIndexAsArrayOfIntSizeMeshEXT) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-ViewportIndex-ViewportIndex-10602"));
+}
+
+TEST_F(ValidateBuiltIns, BadVulkanBuiltinPrimitiveIdFragmentWithRayTracing) {
+  const std::string text = R"(
+          OpCapability Shader
+          OpCapability RayTracingKHR
+          OpExtension "SPV_KHR_ray_tracing"
+          OpMemoryModel Logical GLSL450
+          OpEntryPoint Fragment %main "main" %outVar %gl_PrimitiveID
+          OpExecutionMode %main OriginUpperLeft
+          OpDecorate %outVar Location 0
+          OpDecorate %gl_PrimitiveID BuiltIn PrimitiveId
+          OpDecorate %gl_PrimitiveID Flat
+  %void = OpTypeVoid
+     %4 = OpTypeFunction %void
+   %int = OpTypeInt 32 1
+ %v4int = OpTypeVector %int 4
+%ptrOut = OpTypePointer Output %v4int
+%outVar = OpVariable %ptrOut Output
+ %ptrIn = OpTypePointer Input %int
+%gl_PrimitiveID = OpVariable %ptrIn Input
+  %main = OpFunction %void None %4
+     %6 = OpLabel
+    %13 = OpLoad %int %gl_PrimitiveID
+    %14 = OpCompositeConstruct %v4int %13 %13 %13 %13
+          OpStore %outVar %14
+          OpReturn
+          OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-PrimitiveId-PrimitiveId-04333"));
+}
+
+TEST_F(ValidateBuiltIns, TessellationMissingPatch) {
+  const std::string spirv = R"(
+               OpCapability Tessellation
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TessellationControl %main "main" %gl_TessLevelInner %gl_TessLevelOuter
+               OpExecutionMode %main OutputVertices 3
+               OpDecorate %gl_TessLevelInner BuiltIn TessLevelInner
+               OpDecorate %gl_TessLevelOuter BuiltIn TessLevelOuter
+               OpDecorate %gl_TessLevelOuter Patch
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+       %uint = OpTypeInt 32 0
+     %uint_2 = OpConstant %uint 2
+%_arr_float_uint_2 = OpTypeArray %float %uint_2
+%_ptr_Output__arr_float_uint_2 = OpTypePointer Output %_arr_float_uint_2
+%gl_TessLevelInner = OpVariable %_ptr_Output__arr_float_uint_2 Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+    %float_1 = OpConstant %float 1
+%_ptr_Output_float = OpTypePointer Output %float
+     %uint_4 = OpConstant %uint 4
+%_arr_float_uint_4 = OpTypeArray %float %uint_4
+%_ptr_Output__arr_float_uint_4 = OpTypePointer Output %_arr_float_uint_4
+%gl_TessLevelOuter = OpVariable %_ptr_Output__arr_float_uint_4 Output
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %17 = OpAccessChain %_ptr_Output_float %gl_TessLevelInner %int_0
+               OpStore %17 %float_1
+         %22 = OpAccessChain %_ptr_Output_float %gl_TessLevelOuter %int_0
+               OpStore %22 %float_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("BuiltIn TessLevelInner variable needs to also have a "
+                        "Patch decoration"));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-TessLevelInner-10880"));
+}
+
+// From dEQP-VK.mesh_shader.ext.builtin.primitive_id_spirv
+TEST_F(ValidateBuiltIns, PrimitiveIdInFragmentWithMeshCapability) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability MeshShadingEXT
+               OpExtension "SPV_EXT_mesh_shader"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %9 %gl_PrimitiveID
+               OpExecutionMode %4 OriginUpperLeft
+               OpDecorate %9 Location 0
+               OpDecorate %gl_PrimitiveID Flat
+               OpDecorate %gl_PrimitiveID BuiltIn PrimitiveId
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+          %9 = OpVariable %_ptr_Output_v4float Output
+        %int = OpTypeInt 32 1
+%_ptr_Input_int = OpTypePointer Input %int
+%gl_PrimitiveID = OpVariable %_ptr_Input_int Input
+%int_1629198956 = OpConstant %int 1629198956
+       %bool = OpTypeBool
+    %float_0 = OpConstant %float 0
+    %float_1 = OpConstant %float 1
+         %19 = OpConstantComposite %v4float %float_0 %float_0 %float_1 %float_1
+         %20 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_1
+     %v4bool = OpTypeVector %bool 4
+          %4 = OpFunction %void None %3
+          %5 = OpLabel
+         %13 = OpLoad %int %gl_PrimitiveID
+         %16 = OpIEqual %bool %13 %int_1629198956
+         %22 = OpCompositeConstruct %v4bool %16 %16 %16 %16
+         %23 = OpSelect %v4float %22 %19 %20
+               OpStore %9 %23
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+// https://github.com/KhronosGroup/SPIRV-Tools/issues/6237
+TEST_F(ValidateBuiltIns, MeshBuiltinUnsignedInt) {
+  const std::string spirv = R"(
+               OpCapability FragmentShadingRateKHR
+               OpCapability MeshShadingEXT
+               OpExtension "SPV_EXT_mesh_shader"
+               OpExtension "SPV_KHR_fragment_shading_rate"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint MeshEXT %main "main" %gl_MeshPrimitivesEXT
+               OpExecutionModeId %main LocalSizeId %uint_1 %uint_1 %uint_1
+               OpExecutionMode %main OutputVertices 81
+               OpExecutionMode %main OutputPrimitivesEXT 32
+               OpExecutionMode %main OutputTrianglesEXT
+               OpDecorate %gl_MeshPerPrimitiveEXT Block
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 0 BuiltIn PrimitiveId
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 0 PerPrimitiveEXT
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 1 BuiltIn Layer
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 1 PerPrimitiveEXT
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 2 BuiltIn ViewportIndex
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 2 PerPrimitiveEXT
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 3 BuiltIn CullPrimitiveEXT
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 3 PerPrimitiveEXT
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 4 BuiltIn PrimitiveShadingRateKHR
+               OpMemberDecorate %gl_MeshPerPrimitiveEXT 4 PerPrimitiveEXT
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+       %bool = OpTypeBool
+      %int_0 = OpConstant %int 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+    %uint_81 = OpConstant %uint 81
+    %uint_32 = OpConstant %uint 32
+%gl_MeshPerPrimitiveEXT = OpTypeStruct %uint %uint %uint %bool %uint
+%_arr_gl_MeshPerPrimitiveEXT_uint_32 = OpTypeArray %gl_MeshPerPrimitiveEXT %uint_32
+%_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 = OpTypePointer Output %_arr_gl_MeshPerPrimitiveEXT_uint_32
+%gl_MeshPrimitivesEXT = OpVariable %_ptr_Output__arr_gl_MeshPerPrimitiveEXT_uint_32 Output
+%_ptr_Output_uint = OpTypePointer Output %uint
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+               OpSetMeshOutputsEXT %uint_81 %uint_32
+         %20 = OpAccessChain %_ptr_Output_uint %gl_MeshPrimitivesEXT %int_0 %uint_0
+               OpStore %20 %uint_1
+         %22 = OpAccessChain %_ptr_Output_uint %gl_MeshPrimitivesEXT %int_0 %uint_1
+               OpStore %22 %uint_2
+         %24 = OpAccessChain %_ptr_Output_uint %gl_MeshPrimitivesEXT %int_0 %uint_2
+               OpStore %24 %uint_3
+         %26 = OpAccessChain %_ptr_Output_uint %gl_MeshPrimitivesEXT %int_0 %uint_4
+               OpStore %26 %uint_4
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
 }  // namespace
