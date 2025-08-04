@@ -67,7 +67,10 @@ add_custom_command(OUTPUT ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_
 	    ${EI_ns_vkspreflect}
             ${EI_tosa_001000_1}
     COMMENT "Generate grammar tables")
-add_custom_target(spirv-tools-tables DEPENDS ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_FILE})
+add_custom_target(generate_core_tables_body_inc DEPENDS ${CORE_TABLES_BODY_INC_FILE})
+
+add_custom_target(spirv-tools-tables DEPENDS ${CORE_TABLES_HEADER_INC_FILE})
+add_dependencies(spirv-tools-tables generate_core_tables_body_inc)
 
 macro(spvtools_vimsyntax CONFIG_VERSION CLVERSION)
   set(GRAMMAR_JSON_FILE "${SPIRV_HEADER_INCLUDE_DIR}/spirv/${CONFIG_VERSION}/spirv.core.grammar.json")
@@ -125,8 +128,8 @@ list(APPEND OPCODE_CPP_DEPENDS ${GENERATOR_INC_FILE})
 # multiple targets depend on the same custom command.
 add_custom_target(core_tables
 	DEPENDS ${OPCODE_CPP_DEPENDS}
-	        ${CORE_TABLES_BODY_INC_FILE}
 		${CORE_TABLES_HEADER_INC_FILE})
+add_dependencies(core_tables generate_core_tables_body_inc)
 add_custom_target(extinst_tables
   DEPENDS ${EXTINST_CPP_DEPENDS})
 
