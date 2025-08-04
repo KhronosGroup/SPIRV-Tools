@@ -1198,6 +1198,12 @@ spv_result_t CheckDecorationsOfVariables(ValidationState_t& vstate) {
       // storage classes are decorated with DescriptorSet and Binding
       // (VUID-06677).
       if (uniform_constant || storage_buffer || uniform) {
+        // Skip validation if the variable is not used and we're looking
+        // at a module coming from HLSL that has not been legalized yet.
+        if (vstate.options()->before_hlsl_legalization &&
+            vstate.EntryPointReferences(var_id).empty()) {
+          continue;
+        }
         if (!hasDecoration(var_id, spv::Decoration::DescriptorSet, vstate)) {
           return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(var_id))
                  << vstate.VkErrorID(6677) << sc_str << " id '" << var_id
