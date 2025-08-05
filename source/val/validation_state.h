@@ -50,6 +50,7 @@ enum ModuleLayoutSection {
   kLayoutExtInstImport,            /// < Section 2.4 #3
   kLayoutMemoryModel,              /// < Section 2.4 #4
   kLayoutSamplerImageAddressMode,  /// < Section 2.4 #5
+                                   /// (SPV_NV_bindless_texture)
   kLayoutEntryPoint,               /// < Section 2.4 #6
   kLayoutExecutionMode,            /// < Section 2.4 #7
   kLayoutDebug1,                   /// < Section 2.4 #8 > 1
@@ -58,7 +59,18 @@ enum ModuleLayoutSection {
   kLayoutAnnotations,              /// < Section 2.4 #9
   kLayoutTypes,                    /// < Section 2.4 #10
   kLayoutFunctionDeclarations,     /// < Section 2.4 #11
-  kLayoutFunctionDefinitions       /// < Section 2.4 #12
+  kLayoutFunctionDefinitions,      /// < Section 2.4 #12
+  kLayoutGraphDefinitions          /// < Section 2.4 #13 (SPV_ARM_graph)
+};
+
+/// This enum represents the regions of a graph definition. The relative
+/// ordering of the values is significant.
+enum GraphDefinitionRegion {
+  kGraphDefinitionOutside,
+  kGraphDefinitionBegin,
+  kGraphDefinitionInputs,
+  kGraphDefinitionBody,
+  kGraphDefinitionOutputs,
 };
 
 /// This class manages the state of the SPIR-V validation as it is being parsed.
@@ -213,6 +225,9 @@ class ValidationState_t {
   /// instruction
   bool in_block() const;
 
+  /// Returns the region of a graph definition we are in.
+  GraphDefinitionRegion graph_definition_region() const;
+
   struct EntryPointDescription {
     std::string name;
     std::vector<uint32_t> interfaces;
@@ -313,6 +328,16 @@ class ValidationState_t {
   /// ComputeFunctionToEntryPointMapping.
   void ComputeRecursiveEntryPoints();
 
+  /// Registers |id| as a graph entry point.
+  void RegisterGraphEntryPoint(const uint32_t id) {
+    graph_entry_points_.push_back(id);
+  }
+
+  /// Returns a list of graph entry point graph ids
+  const std::vector<uint32_t>& graph_entry_points() const {
+    return graph_entry_points_;
+  }
+
   /// Returns all the entry points that can call |func|.
   const std::vector<uint32_t>& FunctionEntryPoints(uint32_t func) const;
 
@@ -349,6 +374,9 @@ class ValidationState_t {
 
   /// Register a function end instruction
   spv_result_t RegisterFunctionEnd();
+
+  /// Sets the region of a graph definition we're in.
+  void SetGraphDefinitionRegion(GraphDefinitionRegion region);
 
   /// Returns true if the capability is enabled in the module.
   bool HasCapability(spv::Capability cap) const {
@@ -632,7 +660,7 @@ class ValidationState_t {
   bool GetStructMemberTypes(uint32_t struct_type_id,
                             std::vector<uint32_t>* member_types) const;
 
-  // Returns true iff |id| is a type corresponding to the name of the function.
+  // Returns true if |id| is a type corresponding to the name of the function.
   // Only works for types not for objects.
   bool IsVoidType(uint32_t id) const;
   bool IsScalarType(uint32_t id) const;
@@ -650,8 +678,8 @@ class ValidationState_t {
   bool IsFloat16Vector2Or4Type(uint32_t id) const;
   bool IsFloatScalarOrVectorType(uint32_t id) const;
   bool IsFloatMatrixType(uint32_t id) const;
-  bool IsIntScalarType(uint32_t id) const;
-  bool IsIntArrayType(uint32_t id, uint64_t length = 0) const;
+  bool IsIntScalarType(uint32_t id, uint32_t width = 0) const;
+  bool IsIntScalarTypeWithSignedness(uint32_t id, uint32_t signedness) const;
   bool IsIntVectorType(uint32_t id) const;
   bool IsIntScalarOrVectorType(uint32_t id) const;
   bool IsUnsignedIntScalarType(uint32_t id) const;
@@ -678,6 +706,11 @@ class ValidationState_t {
   bool IsFloatCooperativeVectorNVType(uint32_t id) const;
   bool IsIntCooperativeVectorNVType(uint32_t id) const;
   bool IsUnsignedIntCooperativeVectorNVType(uint32_t id) const;
+  bool IsTensorType(uint32_t id) const;
+  // When |length| is not 0, return true only if the array length is equal to
+  // |length| and the array length is not defined by a specialization constant.
+  bool IsArrayType(uint32_t id, uint64_t length = 0) const;
+  bool IsIntArrayType(uint32_t id, uint64_t length = 0) const;
 
   // Returns true if |id| is a type id that contains |type| (or integer or
   // floating point type) of |width| bits.
@@ -958,6 +991,9 @@ class ValidationState_t {
   /// graph that recurses.
   std::set<uint32_t> recursive_entry_points_;
 
+  /// IDs that are graph entry points, ie, arguments to OpGraphEntryPointARM.
+  std::vector<uint32_t> graph_entry_points_;
+
   /// Functions IDs that are target of OpFunctionCall.
   std::unordered_set<uint32_t> function_call_targets_;
 
@@ -1000,8 +1036,12 @@ class ValidationState_t {
   /// bit width of sampler/image type variables. Valid values are 32 and 64
   uint32_t sampler_image_addressing_mode_;
 
-  /// NOTE: See correspoding getter functions
+  /// NOTE: See corresponding getter functions
   bool in_function_;
+
+  /// Where in a graph definition we are
+  /// NOTE: See corresponding getter/setter functions
+  GraphDefinitionRegion graph_definition_region_;
 
   /// The state of optional features.  These are determined by capabilities
   /// declared by the module and the environment.

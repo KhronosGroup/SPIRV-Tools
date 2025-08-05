@@ -109,11 +109,6 @@ spv_result_t ValidateFunctionParameter(ValidationState_t& _,
   // NOTE: Find OpFunction & ensure OpFunctionParameter is not out of place.
   size_t param_index = 0;
   size_t inst_num = inst->LineNum() - 1;
-  if (inst_num == 0) {
-    return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-           << "Function parameter cannot be the first instruction.";
-  }
-
   auto func_inst = &_.ordered_instructions()[inst_num];
   while (--inst_num) {
     func_inst = &_.ordered_instructions()[inst_num];

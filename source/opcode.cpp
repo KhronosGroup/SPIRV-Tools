@@ -144,6 +144,7 @@ int32_t spvOpcodeIsConstant(const spv::Op opcode) {
     case spv::Op::OpSpecConstantCompositeReplicateEXT:
     case spv::Op::OpSpecConstantOp:
     case spv::Op::OpSpecConstantStringAMDX:
+    case spv::Op::OpGraphConstantARM:
     case spv::Op::OpAsmTargetINTEL:
     case spv::Op::OpAsmINTEL:
       return true;
@@ -266,6 +267,7 @@ int32_t spvOpcodeGeneratesType(spv::Op op) {
     case spv::Op::OpTypeTensorViewNV:
     case spv::Op::OpTypeTensorARM:
     case spv::Op::OpTypeTaskSequenceINTEL:
+    case spv::Op::OpTypeGraphARM:
       return true;
     default:
       // In particular, OpTypeForwardPointer does not generate a type,
