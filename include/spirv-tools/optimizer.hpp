@@ -1032,6 +1032,9 @@ Optimizer::PassToken CreateResolveBindingConflictsPass();
 // --strip-debug because this pass will use OpName to canonicalize IDs. i.e. Run
 // --strip-debug after this pass.
 Optimizer::PassToken CreateCanonicalizeIdsPass();
+
+// MALI-specific pass
+Optimizer::PassToken CreateRemoveClipCullDistPass();
 }  // namespace spvtools
 
 #endif  // INCLUDE_SPIRV_TOOLS_OPTIMIZER_HPP_

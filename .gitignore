@@ -3,6 +3,7 @@
 *.pyc
 compile_commands.json
 /build*/
+host_build/
 /buildtools/
 /external/abseil_cpp/
 /external/googletest

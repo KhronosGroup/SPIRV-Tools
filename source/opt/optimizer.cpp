@@ -643,6 +643,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
     RegisterPass(CreateResolveBindingConflictsPass());
   } else if (pass_name == "canonicalize-ids") {
     RegisterPass(CreateCanonicalizeIdsPass());
+  } else if (pass_name == "remove-clip-cull-dist") {
+    RegisterPass(CreateRemoveClipCullDistPass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
@@ -1207,6 +1209,11 @@ Optimizer::PassToken CreateResolveBindingConflictsPass() {
 Optimizer::PassToken CreateCanonicalizeIdsPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::CanonicalizeIdsPass>());
+}
+
+Optimizer::PassToken CreateRemoveClipCullDistPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::LowerClipCullDistancePass>());
 }
 
 }  // namespace spvtools

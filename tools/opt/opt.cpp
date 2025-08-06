@@ -587,6 +587,10 @@ Options (in lexicographical order):)",
                inlining on these functions.
                )");
   printf(R"(
+  --remove-clip-cull-dist
+               MALI-only.
+               )");
+  printf(R"(
   --unify-const
                Remove the duplicated constants.)");
   printf(R"(

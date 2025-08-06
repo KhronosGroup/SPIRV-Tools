@@ -70,6 +70,7 @@
 #include "source/opt/reduce_load_size.h"
 #include "source/opt/redundancy_elimination.h"
 #include "source/opt/relax_float_ops_pass.h"
+#include "source/opt/remove_clip_cull_dist_pass.h"
 #include "source/opt/remove_dontinline_pass.h"
 #include "source/opt/remove_duplicates_pass.h"
 #include "source/opt/remove_unused_interface_variables_pass.h"
