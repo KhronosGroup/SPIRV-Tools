@@ -40,6 +40,14 @@ std::string GenerateModule(const std::string& src) {
                      OpExtension "SPV_ARM_graph"
                      OpExtension "SPV_ARM_tensors"
                      OpMemoryModel Logical Vulkan
+                     OpDecorate %var_int8tensor DescriptorSet 0
+                     OpDecorate %var_int8tensor Binding 0
+                     OpDecorate %var_int32tensor DescriptorSet 0
+                     OpDecorate %var_int32tensor Binding 1
+                     OpDecorate %var_int8tensor_array3 DescriptorSet 0
+                     OpDecorate %var_int8tensor_array3 Binding 2
+                     OpDecorate %var_int8tensor_runtime_array DescriptorSet 0
+                     OpDecorate %var_int8tensor_runtime_array Binding 3
              %void = OpTypeVoid
              %uint = OpTypeInt 32 0
              %int8 = OpTypeInt 8 1
