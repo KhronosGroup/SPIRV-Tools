@@ -525,6 +525,19 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
       }
       break;
     }
+    case Type::kGraphARM: {
+      auto const gty = type->AsGraphARM();
+      std::vector<Operand> ops;
+      ops.push_back(
+          Operand(SPV_OPERAND_TYPE_LITERAL_INTEGER, {gty->num_inputs()}));
+      for (auto iotype : gty->io_types()) {
+        uint32_t iotype_id = GetTypeInstruction(iotype);
+        ops.push_back(Operand(SPV_OPERAND_TYPE_ID, {iotype_id}));
+      }
+      typeInst = MakeUnique<Instruction>(context(), spv::Op::OpTypeGraphARM, 0,
+                                         id, ops);
+      break;
+    }
     default:
       assert(false && "Unexpected type");
       break;
@@ -790,6 +803,15 @@ Type* TypeManager::RebuildType(uint32_t type_id, const Type& type) {
       rebuilt_ty = MakeUnique<TensorARM>(
           RebuildType(GetId(element_type), *element_type),
           tensor_type->rank_id(), tensor_type->shape_id());
+      break;
+    }
+    case Type::kGraphARM: {
+      const GraphARM* graph_type = type.AsGraphARM();
+      std::vector<const Type*> io_types;
+      for (auto ioty : graph_type->io_types()) {
+        io_types.push_back(RebuildType(GetId(ioty), *ioty));
+      }
+      rebuilt_ty = MakeUnique<GraphARM>(graph_type->num_inputs(), io_types);
       break;
     }
     default:
@@ -1089,6 +1111,14 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
                                inst.GetSingleWordInOperand(2));
           break;
       }
+      break;
+    }
+    case spv::Op::OpTypeGraphARM: {
+      std::vector<const Type*> io_types;
+      for (unsigned i = 1; i < inst.NumInOperands(); i++) {
+        io_types.push_back(GetType(inst.GetSingleWordInOperand(i)));
+      }
+      type = new GraphARM(inst.GetSingleWordInOperand(0), io_types);
       break;
     }
     default:
