@@ -1035,6 +1035,12 @@ bool Instruction::IsOpcodeSafeToDelete() const {
     return true;
   }
 
+  if (IsNonSemanticInstruction() &&
+      (GetShader100DebugOpcode() == NonSemanticShaderDebugInfo100DebugDeclare ||
+       GetShader100DebugOpcode() == NonSemanticShaderDebugInfo100DebugValue)) {
+    return true;
+  }
+
   switch (opcode()) {
     case spv::Op::OpDPdx:
     case spv::Op::OpDPdy:
