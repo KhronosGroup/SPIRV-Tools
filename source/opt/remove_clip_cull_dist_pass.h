@@ -39,6 +39,12 @@ class LowerClipCullDistancePass : public MemPass {
     uint32_t position_member_index = 0; // The member index if Position is in a struct.
     Instruction* clip_dist_var = nullptr;
     Instruction* cull_dist_var = nullptr;
+    Instruction* clip_dist_mem_var = nullptr;
+    uint32_t clip_dist_mem_idx = 0;
+    Instruction* clip_dist_mem_decoration = nullptr;
+    Instruction* cull_dist_mem_var = nullptr;
+    uint32_t cull_dist_mem_idx = 0;
+    Instruction* cull_dist_mem_decoration = nullptr;
   };
 
   enum PassStatus {
@@ -70,7 +76,7 @@ class LowerClipCullDistancePass : public MemPass {
                                            const BuiltinVariableInfo& builtins,
                                            spv::ExecutionModel exec_model);
 
-  void Cleanup(const std::vector<Instruction*>& dead_vars);
+  bool Cleanup();
 
   uint32_t GetConstFloatId(float value);
   uint32_t GetConstUintId(uint32_t value);

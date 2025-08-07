@@ -17,8 +17,8 @@
 #include "source/opt/ir_builder.h"
 #include "source/util/hex_float.h"
 
-#define LOG(fmt, ...) consumer()(SPV_MSG_INFO, __FUNCTION__, {__LINE__}, fmt, ## __VA_ARGS__);
-#define LOGE(fmt, ...) consumer()(SPV_MSG_ERROR, __FUNCTION__, {__LINE__}, fmt, ## __VA_ARGS__);
+#define LOG(fmt, ...) consumer()(SPV_MSG_INFO, __FUNCTION__, {__LINE__}, "lower-clip-cull-dist: " fmt, ## __VA_ARGS__);
+#define LOGE(fmt, ...) consumer()(SPV_MSG_ERROR, __FUNCTION__, {__LINE__}, "lower-clip-cull-dist: " fmt, ## __VA_ARGS__);
 
 namespace spvtools {
 namespace opt {
@@ -41,21 +41,22 @@ Pass::Status LowerClipCullDistancePass::Process() {
           spv::Capability::VariablePointers) ||
       context()->get_feature_mgr()->HasCapability(
           spv::Capability::VariablePointersStorageBuffer)) {
-    LOGE("lower-clip-cull-dist: This pass does not support VariablePointers capabilities.");
+    LOGE("This pass does not support VariablePointers capabilities.");
     return Status::Failure;
   }
 
-  bool needs_cleanup = false;
   std::unordered_set<Instruction*> dead_builtins;
 
   for (auto& entry_point : get_module()->entry_points()) {
     LowerClipCullDistancePass::PassStatus status = ProcessEntryPoint(&entry_point, &dead_builtins);
-    needs_cleanup = status == CLEANUP_ONLY || status == EMULATED;
+    if (status == EMULATED) {
+      LOG("Clip/CullDistance was emulated for this pass");
+    }
   }
 
+  bool needs_cleanup = Cleanup();
   if (needs_cleanup) {
-    Cleanup(std::vector<Instruction*>(dead_builtins.begin(),
-                                      dead_builtins.end()));
+    LOG("Clip/CullDistance cleanup was performed");
   }
 
   return needs_cleanup ? Status::SuccessWithChange : Status::SuccessWithoutChange;
@@ -80,7 +81,7 @@ LowerClipCullDistancePass::PassStatus LowerClipCullDistancePass::ProcessEntryPoi
 
   BuiltinVariableInfo builtins;
   result = FindBuiltinVariables(entry_point, &builtins);
-  if (result != EMULATED) {
+  if (result == NO_CHANGES) {
     return result;
   }
 
@@ -95,14 +96,27 @@ LowerClipCullDistancePass::PassStatus LowerClipCullDistancePass::ProcessEntryPoi
     dead_builtins->insert(builtins.cull_dist_var);
   }
 
-  if (stores_to_process.empty()) {
-    return CLEANUP_ONLY;
-  }
-
   result = CLEANUP_ONLY;
-  for (Instruction* store : stores_to_process) {
-    InjectClippingCode(store, builtins, exec_model);
-    result = EMULATED;
+  // for (Instruction* store : stores_to_process) {
+  //   // InjectClippingCode(store, builtins, exec_model);
+  //   // result = EMULATED;
+  // }
+  
+  if (builtins.clip_dist_var) {
+    LOG("Killing dead ClipDistance OpDecorate instruction");
+    context()->KillNamesAndDecorates(builtins.clip_dist_var);
+  }
+  if (builtins.cull_dist_var) {
+    LOG("Killing dead CullDistance OpDecorate instruction");
+    context()->KillNamesAndDecorates(builtins.cull_dist_var);
+  }
+  if (builtins.clip_dist_mem_decoration) {
+    LOG("Killing dead ClipDistance OpMemberDecorate instruction");
+    context()->KillInst(builtins.clip_dist_mem_decoration);
+  }
+  if (builtins.cull_dist_mem_decoration) {
+    LOG("Killing dead CullDistance OpMemberDecorate instruction");
+    context()->KillInst(builtins.cull_dist_mem_decoration);
   }
 
   return result;
@@ -126,8 +140,10 @@ LowerClipCullDistancePass::PassStatus LowerClipCullDistancePass::FindBuiltinVari
           spv::BuiltIn builtin = static_cast<spv::BuiltIn>(
               decoration.GetSingleWordInOperand(kBuiltInDecorationInIdx));
           if (builtin == spv::BuiltIn::ClipDistance) {
+            LOG("Found OpDecorate ... ClipDistance");
             info->clip_dist_var = var;
           } else if (builtin == spv::BuiltIn::CullDistance) {
+            LOG("Found OpDecorate ... CullDistance");
             info->cull_dist_var = var;
           }
         });
@@ -140,26 +156,40 @@ LowerClipCullDistancePass::PassStatus LowerClipCullDistancePass::FindBuiltinVari
       deco_mgr->ForEachDecoration(
           pointee_type_inst->result_id(), uint32_t(spv::Decoration::BuiltIn),
           [&](const Instruction& decoration) {
-            if (decoration.opcode() != spv::Op::OpMemberDecorate) return;
-            spv::BuiltIn builtin = static_cast<spv::BuiltIn>(
-                decoration.GetSingleWordInOperand(kMemberBuiltInDecorationInIdx));
-            if (builtin == spv::BuiltIn::Position) {
-              info->position_var = var;
-              info->position_member_index =
-                  decoration.GetSingleWordInOperand(kMemberIndexInIdx);
+            // TODO: find OpMemberDecorate of clip/cull distance too
+            if (decoration.opcode() == spv::Op::OpMemberDecorate) {
+              spv::BuiltIn builtin = static_cast<spv::BuiltIn>(
+                  decoration.GetSingleWordInOperand(kMemberBuiltInDecorationInIdx));
+              if (builtin == spv::BuiltIn::Position) {
+                info->position_var = var;
+                info->position_member_index =
+                    decoration.GetSingleWordInOperand(kMemberIndexInIdx);
+                LOG("Found OpMemberDecorate Position");
+              } else if (builtin == spv::BuiltIn::ClipDistance) {
+                LOG("Found OpMemberDecorate ClipDistance");
+                info->clip_dist_mem_var = var;
+                info->clip_dist_mem_idx = decoration.GetSingleWordInOperand(kMemberIndexInIdx);
+                info->clip_dist_mem_decoration = (Instruction*) &decoration;
+              } else if (builtin == spv::BuiltIn::CullDistance) {
+                LOG("Found OpMemberDecorate CullDistance");
+                info->cull_dist_mem_var = var;
+                info->cull_dist_mem_idx = decoration.GetSingleWordInOperand(kMemberIndexInIdx);
+                info->cull_dist_mem_decoration = (Instruction*) &decoration;
+              }
             }
           });
     }
   }
 
-  if (info->clip_dist_var == nullptr && info->cull_dist_var == nullptr) {
+  if (info->clip_dist_var == nullptr && info->cull_dist_var == nullptr 
+    && info->clip_dist_mem_var == nullptr && info->cull_dist_mem_var == nullptr) {
     return NO_CHANGES;  // Nothing to do.
   }
 
   if (info->position_var == nullptr) {
-    LOGE("lower-clip-cull-dist: Shader uses ClipDistance or CullDistance but does not declare a Position built-in. "
+    LOGE("Shader uses ClipDistance or CullDistance but does not declare a Position built-in. "
          "Emulation is not possible.");
-    return CLEANUP_ONLY;  // Fatal error.
+    return CLEANUP_ONLY;
   }
 
   return EMULATED;
@@ -208,7 +238,7 @@ void LowerClipCullDistancePass::InjectClippingCode(
   } else if (value_type->AsVector()) {
     InjectVectorCheck(store_inst, builtins, exec_model);
   } else {
-    LOGE("lower-clip-cull-dist: Unsupported aggregate type for ClipDistance/CullDistance. Run scalar-replacement first.");
+    LOGE("Unsupported aggregate type for ClipDistance/CullDistance. Run scalar-replacement first.");
   }
 }
 
@@ -375,67 +405,44 @@ Instruction* LowerClipCullDistancePass::FindPositionPointerForStore(
   //   }
   // }
 
-  LOG("lower-clip-cull-dist: ClipDistance/CullDistance emulation not supported in GeometryShader");
+  LOG("ClipDistance/CullDistance emulation not supported in GeometryShader");
   return nullptr;
 }
 
-void LowerClipCullDistancePass::Cleanup(
-    const std::vector<Instruction*>& dead_vars) {
-  for (Instruction* var : dead_vars) {
-    context()->KillNamesAndDecorates(var);
+bool LowerClipCullDistancePass::Cleanup() {
+  bool changed = false;
 
-    // TODO: Transform the output param into a plain local param so the DCE can eliminate it
-    //       but requires modifying the type as well.
-    // %_arr_float_uint_4 = OpTypeArray %float %uint_4
-    // %_ptr_Output__arr_float_uint_4 = OpTypePointer Output %_arr_float_uint_4
-    // %clip_distances = OpVariable %_ptr_Output__arr_float_uint_4 Output
+  // std::vector<Instruction*> dead_decorates;
 
-    // for (auto& entry_point : context()->module()->entry_points()) {
-    //   std::vector<Operand> new_operands;
-    //   for (uint32_t i = 0; i < entry_point.NumInOperands(); ++i) {
-    //     if (i >= kEntryPointInterfaceInIdx &&
-    //         entry_point.GetSingleWordInOperand(i) == var->result_id()) {
-    //       continue;
-    //     }
-    //     new_operands.push_back(entry_point.GetInOperand(i));
-    //   }
-    //   if (new_operands.size() < entry_point.NumInOperands()) {
-    //     entry_point.SetInOperands(std::move(new_operands));
-    //     context()->get_def_use_mgr()->AnalyzeInstUse(&entry_point);
-    //   }
-    // }
-    // context()->ForgetUses(var);
-    // var->SetInOperand(0, {static_cast<uint32_t>(spv::StorageClass::Private)});
-    // context()->KillInst(var);
-    // context()->AnalyzeUses(var);
+  // for (const auto& var : context()->module()->types_values()) {
+  //   if (var.opcode() != spv::Op::OpVariable) continue;
+  //   context()->get_decoration_mgr()->ForEachDecoration(
+  //       var.result_id(), uint32_t(spv::Decoration::BuiltIn),
+  //       [&](const Instruction& decoration) {
+  //         if (decoration.opcode() != spv::Op::OpMemberDecorate) return;
+  //         spv::BuiltIn builtin = static_cast<spv::BuiltIn>(
+  //             decoration.GetSingleWordInOperand(3));
+  //         if (builtin == spv::BuiltIn::ClipDistance) {
+  //           dead_decorates.push_back(&decoration);
+  //           context()->KillInst(var);
+  //           context()->get_decoration_mgr()->RemoveDecoration(&decoration);
+  //         }
+  //         if (builtin == spv::BuiltIn::CullDistance) {
+  //           dead_decorates.push_back(&decoration);
+  //         }
+  //       });
+  // }
+
+  if (context()->RemoveCapability(spv::Capability::ClipDistance)) {
+    LOG("Killing OpCapability ClipDistance");
+    changed = true;
+  }
+  if (context()->RemoveCapability(spv::Capability::CullDistance)) {
+    LOG("Killing OpCapability CullDistance");
+    changed = true;
   }
 
-  bool clip_dist_needed = false;
-  bool cull_dist_needed = false;
-
-  for (const auto& var : context()->module()->types_values()) {
-    if (var.opcode() != spv::Op::OpVariable) continue;
-    context()->get_decoration_mgr()->ForEachDecoration(
-        var.result_id(), uint32_t(spv::Decoration::BuiltIn),
-        [&](const Instruction& decoration) {
-          if (decoration.opcode() != spv::Op::OpDecorate) return;
-          spv::BuiltIn builtin = static_cast<spv::BuiltIn>(
-              decoration.GetSingleWordInOperand(kBuiltInDecorationInIdx));
-          if (builtin == spv::BuiltIn::ClipDistance) {
-            clip_dist_needed = true;
-          }
-          if (builtin == spv::BuiltIn::CullDistance) {
-            cull_dist_needed = true;
-          }
-        });
-  }
-
-  if (!clip_dist_needed) {
-    context()->RemoveCapability(spv::Capability::ClipDistance);
-  }
-  if (!cull_dist_needed) {
-    context()->RemoveCapability(spv::Capability::CullDistance);
-  }
+  return changed;
 }
 
 uint32_t LowerClipCullDistancePass::GetConstFloatId(float value) {
