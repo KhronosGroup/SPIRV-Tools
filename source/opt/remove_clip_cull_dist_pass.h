@@ -39,6 +39,8 @@ class LowerClipCullDistancePass : public MemPass {
     uint32_t position_member_index = 0; // The member index if Position is in a struct.
     Instruction* clip_dist_var = nullptr;
     Instruction* cull_dist_var = nullptr;
+    Instruction* clip_dist_decoration = nullptr;
+    Instruction* cull_dist_decoration = nullptr;
     Instruction* clip_dist_mem_var = nullptr;
     uint32_t clip_dist_mem_idx = 0;
     Instruction* clip_dist_mem_decoration = nullptr;
@@ -61,6 +63,7 @@ class LowerClipCullDistancePass : public MemPass {
   PassStatus FindBuiltinVariables(Instruction* entry_point, BuiltinVariableInfo* info);
   void FindRelevantStores(Instruction* builtin_var,
                           std::vector<Instruction*>* stores);
+  void FindAllUses(Instruction* builtin_var, std::vector<Instruction*>* stores);
 
   // Phase 2: Transformation.
   void InjectClippingCode(Instruction* store_inst,
@@ -77,6 +80,7 @@ class LowerClipCullDistancePass : public MemPass {
                                            spv::ExecutionModel exec_model);
 
   bool Cleanup();
+  void CleanupVariable(Instruction* entry_point, Instruction* var);
 
   uint32_t GetConstFloatId(float value);
   uint32_t GetConstUintId(uint32_t value);

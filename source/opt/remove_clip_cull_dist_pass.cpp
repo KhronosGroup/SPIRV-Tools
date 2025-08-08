@@ -46,11 +46,11 @@ Pass::Status LowerClipCullDistancePass::Process() {
   }
 
   std::unordered_set<Instruction*> dead_builtins;
-
+  bool changed = false;
   for (auto& entry_point : get_module()->entry_points()) {
     LowerClipCullDistancePass::PassStatus status = ProcessEntryPoint(&entry_point, &dead_builtins);
-    if (status == EMULATED) {
-      LOG("Clip/CullDistance was emulated for this pass");
+    if (status == EMULATED || status == CLEANUP_ONLY) {
+      changed = true;
     }
   }
 
@@ -59,7 +59,7 @@ Pass::Status LowerClipCullDistancePass::Process() {
     LOG("Clip/CullDistance cleanup was performed");
   }
 
-  return needs_cleanup ? Status::SuccessWithChange : Status::SuccessWithoutChange;
+  return changed || needs_cleanup ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 LowerClipCullDistancePass::PassStatus LowerClipCullDistancePass::ProcessEntryPoint(
@@ -74,6 +74,7 @@ LowerClipCullDistancePass::PassStatus LowerClipCullDistancePass::ProcessEntryPoi
     case spv::ExecutionModel::TessellationEvaluation:
     case spv::ExecutionModel::Geometry:
     case spv::ExecutionModel::TessellationControl:
+    case spv::ExecutionModel::Fragment:
       break;
     default:
       return result;
@@ -104,11 +105,11 @@ LowerClipCullDistancePass::PassStatus LowerClipCullDistancePass::ProcessEntryPoi
   
   if (builtins.clip_dist_var) {
     LOG("Killing dead ClipDistance OpDecorate instruction");
-    context()->KillNamesAndDecorates(builtins.clip_dist_var);
+    CleanupVariable(entry_point, builtins.clip_dist_var);
   }
   if (builtins.cull_dist_var) {
     LOG("Killing dead CullDistance OpDecorate instruction");
-    context()->KillNamesAndDecorates(builtins.cull_dist_var);
+    CleanupVariable(entry_point, builtins.cull_dist_var);
   }
   if (builtins.clip_dist_mem_decoration) {
     LOG("Killing dead ClipDistance OpMemberDecorate instruction");
@@ -119,7 +120,30 @@ LowerClipCullDistancePass::PassStatus LowerClipCullDistancePass::ProcessEntryPoi
     context()->KillInst(builtins.cull_dist_mem_decoration);
   }
 
-  return result;
+  return CLEANUP_ONLY;
+}
+
+void LowerClipCullDistancePass::CleanupVariable(Instruction* entry_point, Instruction* var) {
+  std::vector<Instruction*> users;
+  FindAllUses(var, &users);
+  for (Instruction* store : users) {
+    context()->KillInst(store);
+  }
+
+  std::vector<Operand> new_operands;
+  for (uint32_t i = 0; i < entry_point->NumInOperands(); ++i) {
+    if (i >= kEntryPointInterfaceInIdx &&
+        entry_point->GetSingleWordInOperand(i) == var->result_id()) {
+      continue;
+    }
+    new_operands.push_back(entry_point->GetInOperand(i));
+  }
+  if (new_operands.size() < entry_point->NumInOperands()) {
+    entry_point->SetInOperands(std::move(new_operands));
+    context()->get_def_use_mgr()->AnalyzeInstUse(entry_point);
+  }
+
+  context()->KillInst(var);
 }
 
 LowerClipCullDistancePass::PassStatus LowerClipCullDistancePass::FindBuiltinVariables(
@@ -142,9 +166,11 @@ LowerClipCullDistancePass::PassStatus LowerClipCullDistancePass::FindBuiltinVari
           if (builtin == spv::BuiltIn::ClipDistance) {
             LOG("Found OpDecorate ... ClipDistance");
             info->clip_dist_var = var;
+            info->clip_dist_decoration = (Instruction*) &decoration;
           } else if (builtin == spv::BuiltIn::CullDistance) {
             LOG("Found OpDecorate ... CullDistance");
             info->cull_dist_var = var;
+            info->cull_dist_decoration = (Instruction*) &decoration;
           }
         });
 
@@ -216,6 +242,39 @@ void LowerClipCullDistancePass::FindRelevantStores(
         case spv::Op::OpAccessChain:
         case spv::Op::OpInBoundsAccessChain:
         case spv::Op::OpCopyObject:
+          worklist.push(user);
+          break;
+        default:
+          break;
+      }
+    });
+  }
+}
+
+void LowerClipCullDistancePass::FindAllUses(
+    Instruction* builtin_var, std::vector<Instruction*>* stores) {
+  std::unordered_set<Instruction*> visited;
+  std::queue<Instruction*> worklist;
+  worklist.push(builtin_var);
+  visited.insert(builtin_var);
+
+  while (!worklist.empty()) {
+    Instruction* current = worklist.front();
+    worklist.pop();
+
+    get_def_use_mgr()->ForEachUser(current, [&](Instruction* user) {
+      if (visited.count(user)) return;
+      visited.insert(user);
+      switch (user->opcode()) {
+        case spv::Op::OpStore:
+          stores->push_back(user);
+          break;
+        case spv::Op::OpAccessChain:
+        case spv::Op::OpInBoundsAccessChain:
+        case spv::Op::OpCopyObject:
+        case spv::Op::OpCompositeConstruct:
+        case spv::Op::OpLoad:
+          stores->push_back(user);
           worklist.push(user);
           break;
         default:
