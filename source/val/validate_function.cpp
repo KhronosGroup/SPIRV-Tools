@@ -72,7 +72,7 @@ spv_result_t ValidateFunction(ValidationState_t& _, const Instruction* inst) {
            << _.getIdName(return_id) << ".";
   }
 
-  const std::vector<spv::Op> acceptable = {
+  std::vector<spv::Op> acceptable = {
       spv::Op::OpGroupDecorate,
       spv::Op::OpDecorate,
       spv::Op::OpEnqueueKernel,
@@ -90,6 +90,8 @@ spv_result_t ValidateFunction(ValidationState_t& _, const Instruction* inst) {
       spv::Op::OpCooperativeMatrixPerElementOpNV,
       spv::Op::OpCooperativeMatrixReduceNV,
       spv::Op::OpCooperativeMatrixLoadTensorNV};
+  if (_.HasCapability(spv::Capability::FunctionPointersINTEL))
+    acceptable.push_back(spv::Op::OpConstantFunctionPointerINTEL);
   for (auto& pair : inst->uses()) {
     const auto* use = pair.first;
     if (std::find(acceptable.begin(), acceptable.end(), use->opcode()) ==
