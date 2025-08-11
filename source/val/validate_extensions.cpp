@@ -101,8 +101,9 @@ spv_result_t ValidateOperandForDebugInfo(
              << "expected operand " << operand_name << " is invalid";
     }
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << ext_inst_name() << ": " << "expected operand " << operand_name
-           << " must be a result id of " << "Op" << desc->name().data();
+           << ext_inst_name() << ": "
+           << "expected operand " << operand_name << " must be a result id of "
+           << "Op" << desc->name().data();
   }
   return SPV_SUCCESS;
 }
@@ -197,8 +198,9 @@ spv_result_t ValidateDebugInfoOperand(
            << "expected operand " << debug_inst_name << " is invalid";
   }
   return _.diag(SPV_ERROR_INVALID_DATA, inst)
-         << ext_inst_name() << ": " << "expected operand " << debug_inst_name
-         << " must be a result id of " << desc->name().data();
+         << ext_inst_name() << ": "
+         << "expected operand " << debug_inst_name << " must be a result id of "
+         << desc->name().data();
 }
 
 #define CHECK_DEBUG_OPERAND(NAME, debug_opcode, index)                         \
@@ -1052,7 +1054,9 @@ bool IsDebugVariableWithIntScalarType(ValidationState_t& _,
 spv_result_t ValidateExtension(ValidationState_t& _, const Instruction* inst) {
   std::string extension = GetExtensionString(&(inst->c_inst()));
   if (_.version() < SPV_SPIRV_VERSION_WORD(1, 3)) {
-    if (extension == ExtensionToString(kSPV_KHR_vulkan_memory_model)) {
+    if (extension == ExtensionToString(kSPV_KHR_vulkan_memory_model) ||
+        extension ==
+            ExtensionToString(kSPV_QCOM_cooperative_matrix_conversion)) {
       return _.diag(SPV_ERROR_WRONG_VERSION, inst)
              << extension << " extension requires SPIR-V version 1.3 or later.";
     }
@@ -1064,7 +1068,9 @@ spv_result_t ValidateExtension(ValidationState_t& _, const Instruction* inst) {
         extension == ExtensionToString(kSPV_NV_shader_invocation_reorder) ||
         extension ==
             ExtensionToString(kSPV_NV_cluster_acceleration_structure) ||
-        extension == ExtensionToString(kSPV_NV_linear_swept_spheres)) {
+        extension == ExtensionToString(kSPV_NV_linear_swept_spheres) ||
+        extension == ExtensionToString(kSPV_QCOM_image_processing) ||
+        extension == ExtensionToString(kSPV_QCOM_image_processing2)) {
       return _.diag(SPV_ERROR_WRONG_VERSION, inst)
              << extension << " extension requires SPIR-V version 1.4 or later.";
     }
