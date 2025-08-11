@@ -731,8 +731,7 @@ spv_result_t VerifyLimits(const MessageConsumer& consumer,
   if (max_id_bound >= SPV_LIMIT_RESULT_ID_BOUND)
     DiagnosticStream({0u, 0u, 4u}, consumer, "", SPV_WARNING)
         << "The minimum limit of IDs, " << (SPV_LIMIT_RESULT_ID_BOUND - 1)
-        << ", was exceeded:" << " " << max_id_bound
-        << " is the current ID bound.\n"
+        << ", was exceeded: " << max_id_bound << " is the current ID bound.\n"
         << "The resulting module might not be supported by all "
            "implementations.";
 
@@ -743,7 +742,7 @@ spv_result_t VerifyLimits(const MessageConsumer& consumer,
   if (num_global_values >= SPV_LIMIT_GLOBAL_VARIABLES_MAX)
     DiagnosticStream(position, consumer, "", SPV_WARNING)
         << "The minimum limit of global values, "
-        << (SPV_LIMIT_GLOBAL_VARIABLES_MAX - 1) << ", was exceeded;" << " "
+        << (SPV_LIMIT_GLOBAL_VARIABLES_MAX - 1) << ", was exceeded; "
         << num_global_values << " global values were found.\n"
         << "The resulting module might not be supported by all "
            "implementations.";
