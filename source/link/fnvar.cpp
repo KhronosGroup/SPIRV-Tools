@@ -302,6 +302,18 @@ uint32_t CombineVariants(const std::vector<Variant>& variants,
   return spec_const_comb_id;
 }
 
+bool strToInt(std::string s, uint32_t* x) {
+  for (const char& c : s) {
+    if (c < '0' || c > '9') {
+      return false;
+    }
+  }
+  if (!(std::stringstream(s) >> *x)) {
+    return false;
+  }
+  return true;
+}
+
 }  // anonymous namespace
 
 bool Variants::ProcessFnVar(const LinkerOptions& options,
@@ -386,21 +398,21 @@ bool Variants::ProcessFnVar(const LinkerOptions& options,
       if (row_name == name) {
         uint32_t category, family, op, architecture;
 
-        if (!(std::stringstream(arch_row[1]) >> category)) {
+        if (!strToInt(arch_row[1], &category)) {
           _err << "Error converting " << arch_row[1]
                << " to architecture category.";
           return false;
         }
-        if (!(std::stringstream(arch_row[2]) >> family)) {
+        if (!strToInt(arch_row[2], &family)) {
           _err << "Error converting " << arch_row[2]
                << " to architecture family.";
           return false;
         }
-        if (!(std::stringstream(arch_row[3]) >> op)) {
+        if (!strToInt(arch_row[3], &op)) {
           _err << "Error converting " << arch_row[3] << " to architecture op.";
           return false;
         }
-        if (!(std::stringstream(arch_row[4]) >> architecture)) {
+        if (!strToInt(arch_row[4], &architecture)) {
           _err << "Error converting " << arch_row[4] << " to architecture.";
           return false;
         }
@@ -415,7 +427,7 @@ bool Variants::ProcessFnVar(const LinkerOptions& options,
         uint32_t target;
         std::vector<uint32_t> features;
 
-        if (!(std::stringstream(tgt_row[1]) >> target)) {
+        if (!strToInt(tgt_row[1], &target)) {
           _err << "Error converting " << tgt_row[1] << " to target.";
           return false;
         }
@@ -426,8 +438,10 @@ bool Variants::ProcessFnVar(const LinkerOptions& options,
         std::string feat;
         while (std::getline(feat_stream, feat, FEAT_SEP)) {
           uint32_t ufeat;
-          if (!(std::stringstream(feat) >> ufeat)) {
-            _err << "Error converting " << tgt_row[2] << " to target features.";
+          // if (!(std::stringstream(feat) >> ufeat)) {
+          if (!strToInt(feat, &ufeat)) {
+            _err << "Error converting " << feat << " in " << tgt_row[2]
+                 << " to target feature.";
             return false;
           }
           features.push_back(ufeat);

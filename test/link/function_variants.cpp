@@ -472,8 +472,8 @@ TEST_F(FunctionVariants, FAddAsm) {
 
   const std::string targets_csv =
       "module,target,features\n"
-      "foo.spv,4,\n"
-      "foo_asm.spv,4,9/10\n"
+      "foo.spv,04,\n"           // test leading zeros
+      "foo_asm.spv,4,9/0010\n"  // test leading zeros
       "foo_asm2.spv,5,2/4/5\n"
       "foo_asm2.spv,6,2/4/5\n";
   const std::string architectures_csv =
@@ -508,6 +508,73 @@ TEST_F(FunctionVariants, FAddAsm) {
   for (const auto& expected : expected_lines) {
     EXPECT_THAT(linked_asm, testing::HasSubstr(expected));
   }
+}
+
+TEST_F(FunctionVariants, InvalidNumber1) {
+  const std::string targets_csv =
+      "module,target,features\n"
+      "foo.spv,-4,9/10\n";
+  const std::string architectures_csv = "";
+  const std::vector<std::string> sources = {""};
+  const std::vector<std::string> in_files = {"foo.spv"};
+
+  LinkerOptions options;
+  options.SetInFiles(in_files);
+  options.SetFnVarTargetsCsv(targets_csv);
+  options.SetFnVarArchitecturesCsv(architectures_csv);
+  options.SetFnVarCapabilities(true);
+  options.SetCreateLibrary(true);
+  options.SetVerifyIds(true);
+
+  spvtest::Binary linked_binary;
+  spv_result_t res = AssembleAndLink(sources, &linked_binary, options);
+  EXPECT_EQ(SPV_ERROR_FNVAR, res) << GetErrorMessage();
+  EXPECT_THAT(GetErrorMessage(), "ERROR: 0: Error converting -4 to target.");
+}
+
+TEST_F(FunctionVariants, InvalidNumber2) {
+  const std::string targets_csv =
+      "module,target,features\n"
+      "foo.spv,4,9/-10\n";
+  const std::string architectures_csv = "";
+  const std::vector<std::string> sources = {""};
+  const std::vector<std::string> in_files = {"foo.spv"};
+
+  LinkerOptions options;
+  options.SetInFiles(in_files);
+  options.SetFnVarTargetsCsv(targets_csv);
+  options.SetFnVarArchitecturesCsv(architectures_csv);
+  options.SetFnVarCapabilities(true);
+  options.SetCreateLibrary(true);
+  options.SetVerifyIds(true);
+
+  spvtest::Binary linked_binary;
+  spv_result_t res = AssembleAndLink(sources, &linked_binary, options);
+  EXPECT_EQ(SPV_ERROR_FNVAR, res) << GetErrorMessage();
+  EXPECT_THAT(GetErrorMessage(),
+              "ERROR: 0: Error converting -10 in 9/-10 to target feature.");
+}
+
+TEST_F(FunctionVariants, InvalidNumber3) {
+  const std::string targets_csv =
+      "module,target,features\n"
+      "foo.spv,4.0,9/10\n";
+  const std::string architectures_csv = "";
+  const std::vector<std::string> sources = {""};
+  const std::vector<std::string> in_files = {"foo.spv"};
+
+  LinkerOptions options;
+  options.SetInFiles(in_files);
+  options.SetFnVarTargetsCsv(targets_csv);
+  options.SetFnVarArchitecturesCsv(architectures_csv);
+  options.SetFnVarCapabilities(true);
+  options.SetCreateLibrary(true);
+  options.SetVerifyIds(true);
+
+  spvtest::Binary linked_binary;
+  spv_result_t res = AssembleAndLink(sources, &linked_binary, options);
+  EXPECT_EQ(SPV_ERROR_FNVAR, res) << GetErrorMessage();
+  EXPECT_THAT(GetErrorMessage(), "ERROR: 0: Error converting 4.0 to target.");
 }
 
 }  // namespace
