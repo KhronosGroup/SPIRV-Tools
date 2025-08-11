@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 add_library(SPIRV-Tools-link ${SPIRV_TOOLS_LIBRARY_TYPE}
-  linker.cpp
   fnvar.cpp
+  linker.cpp
 )
 
 spvtools_default_compile_options(SPIRV-Tools-link)
