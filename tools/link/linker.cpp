@@ -178,7 +178,7 @@ int main(int, const char* argv[]) {
     options.SetFnVarArchitecturesCsv(csv_text);
   }
 
-  options.SetFnVarCapabilities(flags::fnvar_capabilities.value());
+  options.SetHasFnVarCapabilities(flags::fnvar_capabilities.value());
 
   std::vector<std::vector<uint32_t>> contents(inFiles.size());
   for (size_t i = 0u; i < inFiles.size(); ++i) {

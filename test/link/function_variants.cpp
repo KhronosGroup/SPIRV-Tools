@@ -215,7 +215,7 @@ TEST_F(FunctionVariants, Dot4) {
   options.SetInFiles(in_files);
   options.SetFnVarTargetsCsv(targets_csv);
   options.SetFnVarArchitecturesCsv(architectures_csv);
-  options.SetFnVarCapabilities(true);
+  options.SetHasFnVarCapabilities(true);
   options.SetCreateLibrary(true);
   options.SetVerifyIds(true);
 
@@ -492,7 +492,7 @@ TEST_F(FunctionVariants, FAddAsm) {
   options.SetInFiles(in_files);
   options.SetFnVarTargetsCsv(targets_csv);
   options.SetFnVarArchitecturesCsv(architectures_csv);
-  options.SetFnVarCapabilities(true);
+  options.SetHasFnVarCapabilities(true);
   options.SetCreateLibrary(true);
   options.SetVerifyIds(true);
 
@@ -522,7 +522,7 @@ TEST_F(FunctionVariants, InvalidNumber1) {
   options.SetInFiles(in_files);
   options.SetFnVarTargetsCsv(targets_csv);
   options.SetFnVarArchitecturesCsv(architectures_csv);
-  options.SetFnVarCapabilities(true);
+  options.SetHasFnVarCapabilities(true);
   options.SetCreateLibrary(true);
   options.SetVerifyIds(true);
 
@@ -544,7 +544,7 @@ TEST_F(FunctionVariants, InvalidNumber2) {
   options.SetInFiles(in_files);
   options.SetFnVarTargetsCsv(targets_csv);
   options.SetFnVarArchitecturesCsv(architectures_csv);
-  options.SetFnVarCapabilities(true);
+  options.SetHasFnVarCapabilities(true);
   options.SetCreateLibrary(true);
   options.SetVerifyIds(true);
 
@@ -567,7 +567,7 @@ TEST_F(FunctionVariants, InvalidNumber3) {
   options.SetInFiles(in_files);
   options.SetFnVarTargetsCsv(targets_csv);
   options.SetFnVarArchitecturesCsv(architectures_csv);
-  options.SetFnVarCapabilities(true);
+  options.SetHasFnVarCapabilities(true);
   options.SetCreateLibrary(true);
   options.SetVerifyIds(true);
 

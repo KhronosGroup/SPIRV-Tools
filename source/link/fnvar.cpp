@@ -451,7 +451,7 @@ bool Variants::ProcessFnVar(const LinkerOptions& options,
       }
     }
 
-    if (options.GetFnVarCapabilities()) {
+    if (options.GetHasFnVarCapabilities()) {
       variant.InferCapabilities();
     }
 

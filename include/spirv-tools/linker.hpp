@@ -79,9 +79,9 @@ class SPIRV_TOOLS_EXPORT LinkerOptions {
     fnvar_architectures_csv_ = fnvar_architectures_csv;
   }
 
-  bool GetFnVarCapabilities() const { return fnvar_capabilities_; }
-  void SetFnVarCapabilities(bool fnvar_capabilities) {
-    fnvar_capabilities_ = fnvar_capabilities;
+  bool GetHasFnVarCapabilities() const { return has_fnvar_capabilities_; }
+  void SetHasFnVarCapabilities(bool fnvar_capabilities) {
+    has_fnvar_capabilities_ = fnvar_capabilities;
   }
 
   std::vector<std::string> GetInFiles() const { return in_files_; }
@@ -95,7 +95,7 @@ class SPIRV_TOOLS_EXPORT LinkerOptions {
   bool allow_ptr_type_mismatch_{false};
   std::string fnvar_targets_csv_{""};
   std::string fnvar_architectures_csv_{""};
-  bool fnvar_capabilities_ = false;
+  bool has_fnvar_capabilities_ = false;
   std::vector<std::string> in_files_{{}};
 };
 
