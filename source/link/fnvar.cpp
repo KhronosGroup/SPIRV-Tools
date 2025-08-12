@@ -25,8 +25,20 @@ using opt::Instruction;
 using opt::analysis::Type;
 
 namespace {
+// Helper functions
 
-bool ParseCsv(std::string source, std::vector<std::string> required_cols,
+// Parses a CSV source string for the purpose of this extension.
+//
+// Required columns must be known in advance and supplied as the required_cols
+// argument -- this is used for error checking. Values are assumed to be
+// separated by CSV_SEP. The input source string is assumed to be the output of
+// io::ReadTextFile and no other validation, apart from the CSV parsing, is
+// performed.
+//
+// Returns true on success, false on error (with error message stored in
+// err_msg).
+bool ParseCsv(const std::string& source,
+              const std::vector<std::string>& required_cols,
               std::stringstream& err_msg,
               std::vector<std::vector<std::string>>& result) {
   std::stringstream fn_variants_csv_stream(source);
