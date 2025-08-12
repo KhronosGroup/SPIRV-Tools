@@ -14,6 +14,8 @@
 
 #include "fnvar.h"
 
+#include <initializer_list>
+#include <memory>
 #include <sstream>
 
 #include "source/opt/instruction.h"
@@ -100,16 +102,18 @@ bool ParseCsv(const std::string& source,
 // Annotate ID with ConditionalINTEL decoration
 void DecorateConditional(IRContext* context, uint32_t id_to_decorate,
                          uint32_t spec_const_id) {
-  auto decor_instr = Instruction(context, spv::Op::OpDecorate);
-  decor_instr.AddOperand({SPV_OPERAND_TYPE_ID, {id_to_decorate}});
-  decor_instr.AddOperand({SPV_OPERAND_TYPE_DECORATION,
-                          {uint32_t(spv::Decoration::ConditionalINTEL)}});
-  decor_instr.AddOperand({SPV_OPERAND_TYPE_ID, {spec_const_id}});
-  context->module()->AddAnnotationInst(
-      std::unique_ptr<Instruction>(decor_instr.Clone(context)));
+  auto decor_instr =
+      std::make_unique<Instruction>(context, spv::Op::OpDecorate);
+  decor_instr->AddOperand({SPV_OPERAND_TYPE_ID, {id_to_decorate}});
+  decor_instr->AddOperand({SPV_OPERAND_TYPE_DECORATION,
+                           {uint32_t(spv::Decoration::ConditionalINTEL)}});
+  decor_instr->AddOperand({SPV_OPERAND_TYPE_ID, {spec_const_id}});
+  context->module()->AddAnnotationInst(std::move(decor_instr));
 }
 
-// Find entry point corresponding to a function
+// Finds entry point corresponding to a function
+//
+// Returns null if not found, otherwise returns pointer to the EP Instruction.
 Instruction* FindEntryPoint(const Instruction& fn_inst) {
   auto* mod = fn_inst.context()->module();
   for (auto& entry_point : mod->entry_points()) {
@@ -122,7 +126,7 @@ Instruction* FindEntryPoint(const Instruction& fn_inst) {
   return nullptr;
 }
 
-// If the function has an entry point, convert it to a conditional one
+// If the function has an entry point, converts it to a conditional one
 void ConvertEPToConditional(Module* module, const Function& fn,
                             uint32_t spec_const_id) {
   for (const auto& ep_inst : module->entry_points()) {
@@ -144,11 +148,16 @@ void ConvertEPToConditional(Module* module, const Function& fn,
   }
 }
 
+// Finds ID of a bool type (returns 0 if not found)
 uint32_t FindIdOfBoolType(const Module* const mod) {
   return mod->context()->get_type_mgr()->GetBoolTypeId();
 }
 
-uint32_t CombineIds(IRContext* const context, std::vector<uint32_t> ids,
+// Combines IDs using OpSpecConstantOp with the operation defined by cmp_op.
+//
+// Returns the ID of the final result. If there are no IDs, returns 0. If there
+// is one ID, does not generate any instructions and returns the ID.
+uint32_t CombineIds(IRContext* const context, const std::vector<uint32_t>& ids,
                     spv::Op cmp_op) {
   if (ids.empty()) {
     return 0;
@@ -158,20 +167,19 @@ uint32_t CombineIds(IRContext* const context, std::vector<uint32_t> ids,
     uint32_t bool_id = FindIdOfBoolType(context->module());
     assert(bool_id != 0);
 
-    uint32_t prev_spec_const_id = *ids.begin();
+    uint32_t prev_spec_const_id = ids[0];
 
     for (size_t i = 1; i < ids.size(); ++i) {
       const uint32_t id = ids[i];
       const uint32_t spec_const_op_id = context->TakeNextId();
 
-      const auto inst = Instruction(
+      auto inst = std::make_unique<Instruction>(
           context, spv::Op::OpSpecConstantOp, bool_id, spec_const_op_id,
           std::initializer_list<opt::Operand>{
               {SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER, {(uint32_t)(cmp_op)}},
               {SPV_OPERAND_TYPE_ID, {prev_spec_const_id}},
               {SPV_OPERAND_TYPE_ID, {id}}});
-      context->module()->AddType(
-          std::unique_ptr<Instruction>(inst.Clone(context)));
+      context->module()->AddType(std::move(inst));
 
       prev_spec_const_id = spec_const_op_id;
     }
@@ -192,9 +200,9 @@ bool CanBeFnVarCombined(const Instruction* inst) {
   }
 
   if ((opcode == spv::Op::OpCapability) &&
-      ((inst->GetOperand(0).words[0] ==
+      ((inst->GetSingleWordOperand(0) ==
         static_cast<uint32_t>(spv::Capability::FunctionVariantsINTEL)) ||
-       (inst->GetOperand(0).words[0] ==
+       (inst->GetSingleWordOperand(0) ==
         static_cast<uint32_t>(spv::Capability::SpecConditionalINTEL)))) {
     // Always enabled
     return false;
@@ -209,6 +217,11 @@ bool CanBeFnVarCombined(const Instruction* inst) {
   return true;
 }
 
+// Calculates hash of an instruction.
+//
+// Applicable only to instructions that can be combined (ie. with
+// CanBeFnVarCombined being true) and from those, hash can be only computed for
+// selected instructions. Computing hash from other instruction is unsupported.
 size_t HashInst(const Instruction* inst) {
   if (CanBeFnVarCombined(inst)) {
     if (spvOpcodeGeneratesType(inst->opcode())) {
@@ -224,7 +237,7 @@ size_t HashInst(const Instruction* inst) {
     }
 
     if (inst->opcode() == spv::Op::OpCapability) {
-      const auto cap = inst->GetOperand(0).words[0];
+      const auto cap = inst->GetSingleWordOperand(0);
       return std::hash<uint32_t>()(cap);
     }
 
@@ -490,14 +503,14 @@ void VariantDefs::GenerateHeader(IRContext* linked_context) {
   linked_context->AddExtension(std::string(FNVAR_EXT_NAME));
 
   // Specifies used registry version
-  auto inst = Instruction(linked_context, spv::Op::OpModuleProcessed);
+  auto inst =
+      std::make_unique<Instruction>(linked_context, spv::Op::OpModuleProcessed);
   std::stringstream line;
   line << "SPV_INTEL_function_variants registry version "
        << FNVAR_REGISTRY_VERSION;
-  inst.AddOperand(
+  inst->AddOperand(
       {SPV_OPERAND_TYPE_LITERAL_STRING, utils::MakeVector(line.str())});
-  linked_context->AddDebug3Inst(
-      std::unique_ptr<Instruction>(inst.Clone(linked_context)));
+  linked_context->AddDebug3Inst(std::move(inst));
 }
 
 void VariantDefs::CombineVariantInstructions(IRContext* linked_context) {
@@ -513,10 +526,10 @@ void VariantDefs::EnsureBoolType() {
     uint32_t bool_id = FindIdOfBoolType(module);
     if (bool_id == 0) {
       bool_id = context->TakeNextId();
-      auto variant_bool =
-          Instruction(context, spv::Op::OpTypeBool, 0, bool_id, {});
-      module->AddType(
-          std::unique_ptr<Instruction>(variant_bool.Clone(context)));
+      auto variant_bool = std::make_unique<Instruction>(
+          context, spv::Op::OpTypeBool, 0, bool_id,
+          std::initializer_list<opt::Operand>{});
+      module->AddType(std::move(variant_bool));
     }
   }
 }
@@ -556,10 +569,10 @@ bool VariantDefs::GenerateFnVarConstants() {
     if (bool_id == 0) {
       // add a bool type if not present already
       bool_id = context->TakeNextId();
-      auto variant_bool =
-          Instruction(context, spv::Op::OpTypeBool, 0, bool_id, {});
-      module->AddType(
-          std::unique_ptr<Instruction>(variant_bool.Clone(context)));
+      auto variant_bool = std::make_unique<Instruction>(
+          context, spv::Op::OpTypeBool, 0, bool_id,
+          std::initializer_list<opt::Operand>{});
+      module->AddType(std::move(variant_bool));
     }
 
     // Spec constant architecture and target
@@ -569,7 +582,7 @@ bool VariantDefs::GenerateFnVarConstants() {
       const uint32_t spec_const_arch_id = context->TakeNextId();
       spec_const_arch_ids.push_back(spec_const_arch_id);
 
-      const auto inst = Instruction(
+      auto inst = std::make_unique<Instruction>(
           context, spv::Op::OpSpecConstantArchitectureINTEL, bool_id,
           spec_const_arch_id,
           std::initializer_list<opt::Operand>{
@@ -580,7 +593,7 @@ bool VariantDefs::GenerateFnVarConstants() {
               {SPV_OPERAND_TYPE_LITERAL_INTEGER, {arch_def.op}},
               {SPV_OPERAND_TYPE_LITERAL_INTEGER, {arch_def.architecture}},
           });
-      module->AddType(std::unique_ptr<Instruction>(inst.Clone(context)));
+      module->AddType(std::move(inst));
     }
 
     std::vector<uint32_t> spec_const_tgt_ids;
@@ -588,16 +601,16 @@ bool VariantDefs::GenerateFnVarConstants() {
       const uint32_t spec_const_tgt_id = context->TakeNextId();
       spec_const_tgt_ids.push_back(spec_const_tgt_id);
 
-      auto inst =
-          Instruction(context, spv::Op::OpSpecConstantTargetINTEL, bool_id,
-                      spec_const_tgt_id,
-                      std::initializer_list<opt::Operand>{
-                          {SPV_OPERAND_TYPE_LITERAL_INTEGER, {tgt_def.target}},
-                      });
+      auto inst = std::make_unique<Instruction>(
+          context, spv::Op::OpSpecConstantTargetINTEL, bool_id,
+          spec_const_tgt_id,
+          std::initializer_list<opt::Operand>{
+              {SPV_OPERAND_TYPE_LITERAL_INTEGER, {tgt_def.target}},
+          });
       for (const auto& feat : tgt_def.features) {
-        inst.AddOperand({SPV_OPERAND_TYPE_LITERAL_INTEGER, {feat}});
+        inst->AddOperand({SPV_OPERAND_TYPE_LITERAL_INTEGER, {feat}});
       }
-      module->AddType(std::unique_ptr<Instruction>(inst.Clone(context)));
+      module->AddType(std::move(inst));
     }
 
     std::vector<uint32_t> spec_const_ids;
@@ -607,12 +620,13 @@ bool VariantDefs::GenerateFnVarConstants() {
     const auto variant_capabilities = variant_def.GetCapabilities();
     if (!variant_capabilities.empty()) {
       const uint32_t spec_const_cap_id = context->TakeNextId();
-      auto inst = Instruction(context, spv::Op::OpSpecConstantCapabilitiesINTEL,
-                              bool_id, spec_const_cap_id, {});
+      auto inst = std::make_unique<Instruction>(
+          context, spv::Op::OpSpecConstantCapabilitiesINTEL, bool_id,
+          spec_const_cap_id, std::initializer_list<opt::Operand>{});
       for (const auto& cap : variant_capabilities) {
-        inst.AddOperand({SPV_OPERAND_TYPE_CAPABILITY, {uint32_t(cap)}});
+        inst->AddOperand({SPV_OPERAND_TYPE_CAPABILITY, {uint32_t(cap)}});
       }
-      module->AddType(std::unique_ptr<Instruction>(inst.Clone(context)));
+      module->AddType(std::move(inst));
       spec_const_ids.push_back(spec_const_cap_id);
     }
 
@@ -660,22 +674,21 @@ bool VariantDefs::GenerateFnVarConstants() {
     if (combined_spec_const_id == 0) {
       // If the variant module has no constraints, use SpecConstantTrue
       combined_spec_const_id = context->TakeNextId();
-      const auto inst = Instruction(context, spv::Op::OpSpecConstantTrue,
-                                    bool_id, combined_spec_const_id,
-                                    std::initializer_list<opt::Operand>{});
-      context->module()->AddType(
-          std::unique_ptr<Instruction>(inst.Clone(context)));
+      auto inst = std::make_unique<Instruction>(
+          context, spv::Op::OpSpecConstantTrue, bool_id, combined_spec_const_id,
+          std::initializer_list<opt::Operand>{});
+      context->module()->AddType(std::move(inst));
     }
     assert(combined_spec_const_id != 0);
 
     // Add a name the combined boolean ID so we can look it up after the IDs are
     // shifted
-    auto inst = Instruction(context, spv::Op::OpName);
-    inst.AddOperand({SPV_OPERAND_TYPE_ID, {combined_spec_const_id}});
+    auto inst = std::make_unique<Instruction>(context, spv::Op::OpName);
+    inst->AddOperand({SPV_OPERAND_TYPE_ID, {combined_spec_const_id}});
     std::vector<uint32_t> str_words;
     utils::AppendToVector(variant_def.GetName(), &str_words);
-    inst.AddOperand({SPV_OPERAND_TYPE_LITERAL_STRING, {str_words}});
-    module->AddDebug2Inst(std::unique_ptr<Instruction>(inst.Clone(context)));
+    inst->AddOperand({SPV_OPERAND_TYPE_LITERAL_STRING, {str_words}});
+    module->AddDebug2Inst(std::move(inst));
 
     // Annotate all instructions in the types section (eg. constants) with
     // ConditionalINTEL, unless they can be shared between variant_defs_ (eg.
@@ -903,14 +916,13 @@ void VariantDefs::CombineBaseFnCalls(IRContext* linked_context) {
     assert(bool_id != 0);
 
     const uint32_t base_not_id = linked_context->TakeNextId();
-    const auto spec_const_op_inst = Instruction(
+    auto spec_const_op_inst = std::make_unique<Instruction>(
         linked_context, spv::Op::OpSpecConstantOp, bool_id, base_not_id,
         std::initializer_list<opt::Operand>{
             {SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER,
              {(uint32_t)(spv::Op::OpLogicalNot)}},
             {SPV_OPERAND_TYPE_ID, {base_or_id}}});
-    linked_context->module()->AddType(
-        std::unique_ptr<Instruction>(spec_const_op_inst.Clone(linked_context)));
+    linked_context->module()->AddType(std::move(spec_const_op_inst));
 
     // Update any ConditionalINTEL annotations, names and entry points
     // referencing the old spec const ID to use the new one
@@ -923,7 +935,7 @@ void VariantDefs::CombineBaseFnCalls(IRContext* linked_context) {
                    spv::Op::OpLogicalAnd);
 
     for (auto& annot_inst : linked_context->module()->annotations()) {
-      if ((annot_inst.GetOperand(1).words[0] ==
+      if ((annot_inst.GetSingleWordOperand(1) ==
            uint32_t(spv::Decoration::ConditionalINTEL)) &&
           (annot_inst.GetOperand(2).AsId() == old_base_spec_const_id)) {
         annot_inst.SetOperand(2, {base_spec_const_id});
@@ -978,7 +990,7 @@ void VariantDefs::CombineInstructions(IRContext* linked_context) {
               DecorateConditional(linked_context, inst->result_id(),
                                   spec_const_comb_id);
             } else if (inst->opcode() == spv::Op::OpCapability) {
-              const uint32_t cap = inst->GetOperand(0).words[0];
+              const uint32_t cap = inst->GetSingleWordOperand(0);
               inst->SetOpcode(spv::Op::OpConditionalCapabilityINTEL);
               inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {spec_const_comb_id}},
                                    {SPV_OPERAND_TYPE_CAPABILITY, {cap}}});
