@@ -97,7 +97,7 @@ using BaseFnCalls =
     std::map<uint32_t,
              std::vector<std::pair<std::string, const opt::Function*>>>;
 
-const std::string FNVAR_EXT_NAME = "SPV_INTEL_function_variants";
+constexpr char FNVAR_EXT_NAME[] = "SPV_INTEL_function_variants";
 constexpr uint32_t FNVAR_REGISTRY_VERSION = 0;
 constexpr char FEAT_SEP = '/';
 

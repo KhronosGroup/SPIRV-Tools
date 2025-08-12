@@ -474,7 +474,7 @@ bool Variants::ProcessVariants() {
 void Variants::GenerateHeader(IRContext* linked_context) {
   linked_context->AddCapability(spv::Capability::SpecConditionalINTEL);
   linked_context->AddCapability(spv::Capability::FunctionVariantsINTEL);
-  linked_context->AddExtension(FNVAR_EXT_NAME);
+  linked_context->AddExtension(std::string(FNVAR_EXT_NAME));
 
   // Specifies used registry version
   auto inst = Instruction(linked_context, spv::Op::OpModuleProcessed);
