@@ -89,7 +89,10 @@ spv_result_t ValidateFunction(ValidationState_t& _, const Instruction* inst) {
       spv::Op::OpName,
       spv::Op::OpCooperativeMatrixPerElementOpNV,
       spv::Op::OpCooperativeMatrixReduceNV,
-      spv::Op::OpCooperativeMatrixLoadTensorNV};
+      spv::Op::OpCooperativeMatrixLoadTensorNV,
+      spv::Op::OpConditionalEntryPointINTEL,
+  };
+
   for (auto& pair : inst->uses()) {
     const auto* use = pair.first;
     if (std::find(acceptable.begin(), acceptable.end(), use->opcode()) ==

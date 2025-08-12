@@ -528,6 +528,9 @@ std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
     case spv::Op::OpMemberDecorateStringGOOGLE:
     case spv::Op::OpBranch:
     case spv::Op::OpLoopMerge:
+    case spv::Op::OpConditionalEntryPointINTEL:
+    case spv::Op::OpConditionalCapabilityINTEL:
+    case spv::Op::OpConditionalExtensionINTEL:
       out = [](unsigned) { return true; };
       break;
     case spv::Op::OpGroupDecorate:
