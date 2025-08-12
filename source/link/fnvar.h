@@ -124,17 +124,22 @@ class Variant {
 
   void AddArchDef(uint32_t category, uint32_t family, uint32_t op,
                   uint32_t architecture) {
-    this->arch_defs.push_back({.category = category,
-                               .family = family,
-                               .op = op,
-                               .architecture = architecture});
+    FnVarArchDef arch_def;
+    arch_def.category = category;
+    arch_def.family = family;
+    arch_def.op = op;
+    arch_def.architecture = architecture;
+    this->arch_defs.push_back(arch_def);
   }
   const std::vector<FnVarArchDef>& GetArchDefs() const {
     return this->arch_defs;
   }
 
   void AddTgtDef(uint32_t target, std::vector<uint32_t> features) {
-    this->tgt_defs.push_back({.target = target, .features = features});
+    FnVarTgtDef tgt_def;
+    tgt_def.target = target;
+    tgt_def.features = features;
+    this->tgt_defs.push_back(tgt_def);
   }
   const std::vector<FnVarTgtDef>& GetTgtDefs() const { return this->tgt_defs; }
 
