@@ -858,16 +858,16 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
   const bool make_multitarget = !options.GetFnVarArchitecturesCsv().empty() ||
                                 !options.GetFnVarTargetsCsv().empty();
 
-  Variants variants;
+  VariantDefs variant_defs;
 
   if (make_multitarget) {
-    if (!variants.ProcessFnVar(options, modules)) {
+    if (!variant_defs.ProcessFnVar(options, modules)) {
       return DiagnosticStream(position, consumer, "", SPV_ERROR_FNVAR)
-             << variants.GetErr();
+             << variant_defs.GetErr();
     }
-    if (!variants.ProcessVariants()) {
+    if (!variant_defs.ProcessVariantDefs()) {
       return DiagnosticStream(position, consumer, "", SPV_ERROR_FNVAR)
-             << variants.GetErr();
+             << variant_defs.GetErr();
     }
   }
 
@@ -885,7 +885,7 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
   linked_context.module()->SetHeader(header);
 
   if (make_multitarget) {
-    variants.GenerateHeader(&linked_context);
+    variant_defs.GenerateHeader(&linked_context);
   }
 
   // Phase 3: Merge all the binaries into a single one.
@@ -905,7 +905,7 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
   if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
 
   if (make_multitarget) {
-    variants.CombineVariantInstructions(&linked_context);
+    variant_defs.CombineVariantInstructions(&linked_context);
   }
 
   // Phase 5: Find the import/export pairs

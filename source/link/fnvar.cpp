@@ -275,18 +275,19 @@ uint32_t FindSpecConstByName(const Module* mod, std::string name) {
   return 0;
 }
 
-uint32_t CombineVariants(const std::vector<Variant>& variants,
-                         const std::vector<size_t> var_ids, IRContext* context,
-                         std::map<std::vector<size_t>, uint32_t>& cache) {
-  assert(var_ids.size() <= variants.size());
+uint32_t CombineVariantDefs(const std::vector<VariantDef>& variant_defs,
+                            const std::vector<size_t> var_ids,
+                            IRContext* context,
+                            std::map<std::vector<size_t>, uint32_t>& cache) {
+  assert(var_ids.size() <= variant_defs.size());
   uint32_t spec_const_comb_id = 0;
-  if (var_ids.size() != variants.size()) {
+  if (var_ids.size() != variant_defs.size()) {
     // if not used by all variants
     if (cache.find(var_ids) == cache.end()) {
       // cache variant combinations
       std::vector<uint32_t> spec_const_ids;
       for (const auto& var_id : var_ids) {
-        const auto var_name = variants[var_id].GetName();
+        const auto var_name = variant_defs[var_id].GetName();
         const auto var_spec_id =
             FindSpecConstByName(context->module(), var_name);
         spec_const_ids.push_back(var_spec_id);
@@ -316,9 +317,9 @@ bool strToInt(std::string s, uint32_t* x) {
 
 }  // anonymous namespace
 
-bool Variants::ProcessFnVar(const LinkerOptions& options,
-                            const std::vector<Module*>& modules) {
-  assert(_variants.empty());
+bool VariantDefs::ProcessFnVar(const LinkerOptions& options,
+                               const std::vector<Module*>& modules) {
+  assert(variant_defs_.empty());
   assert(modules.size() == options.GetInFiles().size());
 
   for (size_t i = 0; i < modules.size(); ++i) {
@@ -329,7 +330,7 @@ bool Variants::ProcessFnVar(const LinkerOptions& options,
       // In principle, it can be done but it's complicated due to having to
       // combine the existing conditionals with the new ones. For example,
       // conditional capabilities would need to become "doubly-conditional".
-      _err << "Creating multitarget modules from multitarget modules is not "
+      err_ << "Creating multitarget modules from multitarget modules is not "
               "supported. Offending file: "
            << options.GetInFiles()[i];
       return false;
@@ -341,7 +342,7 @@ bool Variants::ProcessFnVar(const LinkerOptions& options,
 
   if (!options.GetFnVarTargetsCsv().empty()) {
     const std::vector<std::string> tgt_cols = {"module", "target", "features"};
-    if (!ParseCsv(options.GetFnVarTargetsCsv(), tgt_cols, _err, target_rows)) {
+    if (!ParseCsv(options.GetFnVarTargetsCsv(), tgt_cols, err_, target_rows)) {
       return false;
     }
   }
@@ -349,7 +350,7 @@ bool Variants::ProcessFnVar(const LinkerOptions& options,
   if (!options.GetFnVarArchitecturesCsv().empty()) {
     const std::vector<std::string> arch_cols = {"module", "category", "family",
                                                 "op", "architecture"};
-    if (!ParseCsv(options.GetFnVarArchitecturesCsv(), arch_cols, _err,
+    if (!ParseCsv(options.GetFnVarArchitecturesCsv(), arch_cols, err_,
                   architecture_rows)) {
       return false;
     }
@@ -365,7 +366,7 @@ bool Variants::ProcessFnVar(const LinkerOptions& options,
       }
     }
     if (!found) {
-      _err << "Module '" << tgt_vals[0]
+      err_ << "Module '" << tgt_vals[0]
            << "' found in targets CSV not passed to the CLI.";
       return false;
     }
@@ -379,19 +380,19 @@ bool Variants::ProcessFnVar(const LinkerOptions& options,
       }
     }
     if (!found) {
-      _err << "Module '" << arch_vals[0]
+      err_ << "Module '" << arch_vals[0]
            << "' found in architectures CSV not passed to the CLI.";
       return false;
     }
   }
 
-  // create per-module variants
+  // create per-module variant defs
 
   for (size_t i = 0; i < modules.size(); ++i) {
     // first module passed to the CLI is considered the base module
     bool is_base = i == 0;
     const auto name = options.GetInFiles()[i];
-    auto variant = Variant(is_base, name, modules[i]);
+    auto variant_def = VariantDef(is_base, name, modules[i]);
 
     for (const auto& arch_row : architecture_rows) {
       const auto row_name = arch_row[0];
@@ -399,25 +400,25 @@ bool Variants::ProcessFnVar(const LinkerOptions& options,
         uint32_t category, family, op, architecture;
 
         if (!strToInt(arch_row[1], &category)) {
-          _err << "Error converting " << arch_row[1]
+          err_ << "Error converting " << arch_row[1]
                << " to architecture category.";
           return false;
         }
         if (!strToInt(arch_row[2], &family)) {
-          _err << "Error converting " << arch_row[2]
+          err_ << "Error converting " << arch_row[2]
                << " to architecture family.";
           return false;
         }
         if (!strToInt(arch_row[3], &op)) {
-          _err << "Error converting " << arch_row[3] << " to architecture op.";
+          err_ << "Error converting " << arch_row[3] << " to architecture op.";
           return false;
         }
         if (!strToInt(arch_row[4], &architecture)) {
-          _err << "Error converting " << arch_row[4] << " to architecture.";
+          err_ << "Error converting " << arch_row[4] << " to architecture.";
           return false;
         }
 
-        variant.AddArchDef(category, family, op, architecture);
+        variant_def.AddArchDef(category, family, op, architecture);
       }
     }
 
@@ -428,7 +429,7 @@ bool Variants::ProcessFnVar(const LinkerOptions& options,
         std::vector<uint32_t> features;
 
         if (!strToInt(tgt_row[1], &target)) {
-          _err << "Error converting " << tgt_row[1] << " to target.";
+          err_ << "Error converting " << tgt_row[1] << " to target.";
           return false;
         }
 
@@ -440,28 +441,28 @@ bool Variants::ProcessFnVar(const LinkerOptions& options,
           uint32_t ufeat;
           // if (!(std::stringstream(feat) >> ufeat)) {
           if (!strToInt(feat, &ufeat)) {
-            _err << "Error converting " << feat << " in " << tgt_row[2]
+            err_ << "Error converting " << feat << " in " << tgt_row[2]
                  << " to target feature.";
             return false;
           }
           features.push_back(ufeat);
         }
 
-        variant.AddTgtDef(target, features);
+        variant_def.AddTgtDef(target, features);
       }
     }
 
     if (options.GetHasFnVarCapabilities()) {
-      variant.InferCapabilities();
+      variant_def.InferCapabilities();
     }
 
-    _variants.push_back(variant);
+    variant_defs_.push_back(variant_def);
   }
 
   return true;
 }
 
-bool Variants::ProcessVariants() {
+bool VariantDefs::ProcessVariantDefs() {
   EnsureBoolType();
   CollectVarInsts();
   if (!GenerateFnVarConstants()) {
@@ -471,7 +472,7 @@ bool Variants::ProcessVariants() {
   return true;
 }
 
-void Variants::GenerateHeader(IRContext* linked_context) {
+void VariantDefs::GenerateHeader(IRContext* linked_context) {
   linked_context->AddCapability(spv::Capability::SpecConditionalINTEL);
   linked_context->AddCapability(spv::Capability::FunctionVariantsINTEL);
   linked_context->AddExtension(std::string(FNVAR_EXT_NAME));
@@ -487,14 +488,14 @@ void Variants::GenerateHeader(IRContext* linked_context) {
       std::unique_ptr<Instruction>(inst.Clone(linked_context)));
 }
 
-void Variants::CombineVariantInstructions(IRContext* linked_context) {
+void VariantDefs::CombineVariantInstructions(IRContext* linked_context) {
   CombineBaseFnCalls(linked_context);
   CombineInstructions(linked_context);
 }
 
-void Variants::EnsureBoolType() {
-  for (auto& variant : _variants) {
-    Module* module = variant.GetModule();
+void VariantDefs::EnsureBoolType() {
+  for (auto& variant_def : variant_defs_) {
+    Module* module = variant_def.GetModule();
     IRContext* context = module->context();
 
     uint32_t bool_id = FindIdOfBoolType(module);
@@ -508,35 +509,35 @@ void Variants::EnsureBoolType() {
   }
 }
 
-void Variants::CollectVarInsts() {
-  for (size_t i = 0; i < _variants.size(); ++i) {
-    const auto variant = _variants[i];
-    const auto* var_mod = variant.GetModule();
+void VariantDefs::CollectVarInsts() {
+  for (size_t i = 0; i < variant_defs_.size(); ++i) {
+    const auto variant_def = variant_defs_[i];
+    const auto* var_mod = variant_def.GetModule();
 
     var_mod->ForEachInst([this, &i](const Instruction* inst) {
       if (CanBeFnVarCombined(inst)) {
         const size_t inst_hash = HashInst(inst);
-        if (_fnvar_usage.find(inst_hash) == _fnvar_usage.end()) {
-          _fnvar_usage.insert({inst_hash, {i}});
+        if (fnvar_usage_.find(inst_hash) == fnvar_usage_.end()) {
+          fnvar_usage_.insert({inst_hash, {i}});
         } else {
-          assert(_fnvar_usage[inst_hash].size() < _variants.size());
-          _fnvar_usage[inst_hash].push_back(i);
+          assert(fnvar_usage_[inst_hash].size() < variant_defs_.size());
+          fnvar_usage_[inst_hash].push_back(i);
         }
       }
     });
   }
 }
 
-bool Variants::GenerateFnVarConstants() {
-  assert(_variants.size() > 0);
-  assert(_variants[0].IsBase());
+bool VariantDefs::GenerateFnVarConstants() {
+  assert(variant_defs_.size() > 0);
+  assert(variant_defs_[0].IsBase());
 
-  if (_variants.size() == 1) {
+  if (variant_defs_.size() == 1) {
     return true;
   }
 
-  for (auto& variant : _variants) {
-    Module* module = variant.GetModule();
+  for (auto& variant_def : variant_defs_) {
+    Module* module = variant_def.GetModule();
     IRContext* context = module->context();
 
     uint32_t bool_id = FindIdOfBoolType(module);
@@ -552,7 +553,7 @@ bool Variants::GenerateFnVarConstants() {
     // Spec constant architecture and target
 
     std::vector<uint32_t> spec_const_arch_ids;
-    for (const auto& arch_def : variant.GetArchDefs()) {
+    for (const auto& arch_def : variant_def.GetArchDefs()) {
       const uint32_t spec_const_arch_id = context->TakeNextId();
       spec_const_arch_ids.push_back(spec_const_arch_id);
 
@@ -571,7 +572,7 @@ bool Variants::GenerateFnVarConstants() {
     }
 
     std::vector<uint32_t> spec_const_tgt_ids;
-    for (const auto& tgt_def : variant.GetTgtDefs()) {
+    for (const auto& tgt_def : variant_def.GetTgtDefs()) {
       const uint32_t spec_const_tgt_id = context->TakeNextId();
       spec_const_tgt_ids.push_back(spec_const_tgt_id);
 
@@ -591,7 +592,7 @@ bool Variants::GenerateFnVarConstants() {
 
     // Spec constant capabilities
 
-    const auto variant_capabilities = variant.GetCapabilities();
+    const auto variant_capabilities = variant_def.GetCapabilities();
     if (!variant_capabilities.empty()) {
       const uint32_t spec_const_cap_id = context->TakeNextId();
       auto inst = Instruction(context, spv::Op::OpSpecConstantCapabilitiesINTEL,
@@ -612,7 +613,7 @@ bool Variants::GenerateFnVarConstants() {
     std::map<std::pair<uint32_t, uint32_t>, std::vector<uint32_t>> arch_map_and;
 
     for (size_t i = 0; i < spec_const_arch_ids.size(); ++i) {
-      const auto& arch_def = variant.GetArchDefs()[i];
+      const auto& arch_def = variant_def.GetArchDefs()[i];
       const auto id = spec_const_arch_ids[i];
       const auto key = std::make_pair(arch_def.category, arch_def.family);
       if (arch_map_and.find(key) == arch_map_and.end()) {
@@ -660,12 +661,12 @@ bool Variants::GenerateFnVarConstants() {
     auto inst = Instruction(context, spv::Op::OpName);
     inst.AddOperand({SPV_OPERAND_TYPE_ID, {combined_spec_const_id}});
     std::vector<uint32_t> str_words;
-    utils::AppendToVector(variant.GetName(), &str_words);
+    utils::AppendToVector(variant_def.GetName(), &str_words);
     inst.AddOperand({SPV_OPERAND_TYPE_LITERAL_STRING, {str_words}});
     module->AddDebug2Inst(std::unique_ptr<Instruction>(inst.Clone(context)));
 
     // Annotate all instructions in the types section (eg. constants) with
-    // ConditionalINTEL, unless they can be shared between _variants (eg.
+    // ConditionalINTEL, unless they can be shared between variant_defs_ (eg.
     // types). Spec constants are excluded because they might have been
     // generated by this extension.
     for (const auto& type_inst : module->types_values()) {
@@ -679,32 +680,32 @@ bool Variants::GenerateFnVarConstants() {
 
   // Annotate functions with ConditionalINTEL
 
-  for (const auto& base_fn : *_variants[0].GetModule()) {
+  for (const auto& base_fn : *variant_defs_[0].GetModule()) {
     // For each function of the base module, find matching variant functions in
     // other modules
 
     auto base_fn_name = GetFnName(base_fn.DefInst());
     if (base_fn_name.empty()) {
-      _err << "Could not find name of a function " << base_fn.result_id()
-           << " in a base module " << _variants[0].GetName()
-           << ". To be usable by SPV_INTEL_function__variants, a function "
+      err_ << "Could not find name of a function " << base_fn.result_id()
+           << " in a base module " << variant_defs_[0].GetName()
+           << ". To be usable by SPV_INTEL_function_variants, a function "
               "must either have an entry point or an export "
               "LinkAttribute decoration.";
       return false;
     }
 
     bool base_fn_needs_conditional = false;
-    for (size_t i = 1; i < _variants.size(); ++i) {
-      const auto& variant = _variants[i];
-      auto* variant_module = variant.GetModule();
+    for (size_t i = 1; i < variant_defs_.size(); ++i) {
+      const auto& variant_def = variant_defs_[i];
+      auto* variant_module = variant_def.GetModule();
       auto* variant_context = variant_module->context();
 
       for (const auto& var_fn : *variant_module) {
         auto var_fn_name = GetFnName(var_fn.DefInst());
         if (var_fn_name.empty()) {
-          _err << "Could not find name of a function " << var_fn.result_id()
-               << " in a base module " << variant.GetName()
-               << ". To be usable by SPV_INTEL_function__variants, a function "
+          err_ << "Could not find name of a function " << var_fn.result_id()
+               << " in a base module " << variant_def.GetName()
+               << ". To be usable by SPV_INTEL_function_variants, a function "
                   "must either have an entry point or an export "
                   "LinkAttribute decoration.";
           return false;
@@ -717,7 +718,7 @@ bool Variants::GenerateFnVarConstants() {
         // each function in a variant module gets a ConditionalINTEL decoration
 
         uint32_t spec_const_id =
-            FindSpecConstByName(variant_module, variant.GetName());
+            FindSpecConstByName(variant_module, variant_def.GetName());
         assert(spec_const_id != 0);
         DecorateConditional(variant_context, var_fn.result_id(), spec_const_id);
         ConvertEPToConditional(variant_module, var_fn, spec_const_id);
@@ -726,11 +727,12 @@ bool Variants::GenerateFnVarConstants() {
 
     if (base_fn_needs_conditional) {
       // only a base function that has a variant in another module gets a
-      // ConditionalINTEL decoration, the others are common for all _variants
-      auto* base_module = _variants[0].GetModule();
+      // ConditionalINTEL decoration, the others are common for all
+      // variant_defs_
+      auto* base_module = variant_defs_[0].GetModule();
       auto* base_context = base_module->context();
       uint32_t spec_const_id =
-          FindSpecConstByName(base_module, _variants[0].GetName());
+          FindSpecConstByName(base_module, variant_defs_[0].GetName());
       assert(spec_const_id != 0);
       DecorateConditional(base_context, base_fn.result_id(), spec_const_id);
       ConvertEPToConditional(base_module, base_fn, spec_const_id);
@@ -740,9 +742,9 @@ bool Variants::GenerateFnVarConstants() {
   return true;
 }
 
-void Variants::CollectBaseFnCalls() {
-  auto* base_mod = _variants[0].GetModule();
-  assert(_variants[0].IsBase());
+void VariantDefs::CollectBaseFnCalls() {
+  auto* base_mod = variant_defs_[0].GetModule();
+  assert(variant_defs_[0].IsBase());
   const auto* base_def_use_mgr = base_mod->context()->get_def_use_mgr();
 
   base_mod->ForEachInst([this, &base_def_use_mgr](const Instruction* inst) {
@@ -755,28 +757,28 @@ void Variants::CollectBaseFnCalls() {
       assert(!called_fn_name.empty());
 
       std::vector<std::pair<std::string, const opt::Function*>> called_fns;
-      for (size_t i = 1; i < _variants.size(); ++i) {
+      for (size_t i = 1; i < variant_defs_.size(); ++i) {
         // ... then see in which variant the called function was defined
-        const auto& variant = _variants[i];
-        assert(!variant.IsBase());
+        const auto& variant_def = variant_defs_[i];
+        assert(!variant_def.IsBase());
 
-        for (const auto& fn : *variant.GetModule()) {
+        for (const auto& fn : *variant_def.GetModule()) {
           const auto fn_name = GetFnName(fn.DefInst());
           if (fn_name == called_fn_name) {
-            called_fns.push_back(std::make_pair(variant.GetName(), &fn));
+            called_fns.push_back(std::make_pair(variant_def.GetName(), &fn));
           }
         }
       }
 
       if (!called_fns.empty()) {
-        _base_fn_calls[inst->result_id()] = called_fns;
+        base_fn_calls_[inst->result_id()] = called_fns;
       }
     }
   });
 }
 
-void Variants::CombineBaseFnCalls(IRContext* linked_context) {
-  for (auto kv : _base_fn_calls) {
+void VariantDefs::CombineBaseFnCalls(IRContext* linked_context) {
+  for (auto kv : base_fn_calls_) {
     const uint32_t call_id = kv.first;
     const auto called_fns = kv.second;
 
@@ -799,8 +801,8 @@ void Variants::CombineBaseFnCalls(IRContext* linked_context) {
       return;
     }
 
-    const auto base_spec_const_id =
-        FindSpecConstByName(_variants[0].GetModule(), _variants[0].GetName());
+    const auto base_spec_const_id = FindSpecConstByName(
+        variant_defs_[0].GetModule(), variant_defs_[0].GetName());
     const auto base_type_op = found_call_inst->context()
                                   ->get_def_use_mgr()
                                   ->GetDef(found_call_inst->type_id())
@@ -868,16 +870,16 @@ void Variants::CombineBaseFnCalls(IRContext* linked_context) {
   }
 
   // Combine spec consts for the base module (base module is activated if all
-  // variants are false AND the base module constraints are satisfied)
+  // variant defs are inactive AND the base module constraints are satisfied)
 
   std::vector<uint32_t> var_spec_const_ids;
-  for (const auto& variant : _variants) {
-    if (variant.IsBase()) {
+  for (const auto& variant_def : variant_defs_) {
+    if (variant_def.IsBase()) {
       continue;
     }
 
     const auto id =
-        FindSpecConstByName(linked_context->module(), variant.GetName());
+        FindSpecConstByName(linked_context->module(), variant_def.GetName());
     assert(id != 0);
     var_spec_const_ids.push_back(id);
   }
@@ -901,8 +903,8 @@ void Variants::CombineBaseFnCalls(IRContext* linked_context) {
     // Update any ConditionalINTEL annotations, names and entry points
     // referencing the old spec const ID to use the new one
 
-    const uint32_t old_base_spec_const_id =
-        FindSpecConstByName(linked_context->module(), _variants[0].GetName());
+    const uint32_t old_base_spec_const_id = FindSpecConstByName(
+        linked_context->module(), variant_defs_[0].GetName());
     assert(old_base_spec_const_id != 0);
     const uint32_t base_spec_const_id =
         CombineIds(linked_context, {old_base_spec_const_id, base_not_id},
@@ -944,7 +946,7 @@ void Variants::CombineBaseFnCalls(IRContext* linked_context) {
   }
 }
 
-void Variants::CombineInstructions(IRContext* linked_context) {
+void VariantDefs::CombineInstructions(IRContext* linked_context) {
   // cache for existing variant ID combinations
   std::map<std::vector<size_t>, uint32_t> spec_const_comb_ids;
 
@@ -955,10 +957,10 @@ void Variants::CombineInstructions(IRContext* linked_context) {
         }
 
         const size_t inst_hash = HashInst(inst);
-        if (_fnvar_usage.find(inst_hash) != _fnvar_usage.end()) {
-          const std::vector<size_t> var_ids = _fnvar_usage[inst_hash];
-          const uint32_t spec_const_comb_id = CombineVariants(
-              _variants, var_ids, linked_context, spec_const_comb_ids);
+        if (fnvar_usage_.find(inst_hash) != fnvar_usage_.end()) {
+          const std::vector<size_t> var_ids = fnvar_usage_[inst_hash];
+          const uint32_t spec_const_comb_id = CombineVariantDefs(
+              variant_defs_, var_ids, linked_context, spec_const_comb_ids);
           if (spec_const_comb_id != 0) {
             if (inst->HasResultId()) {
               DecorateConditional(linked_context, inst->result_id(),

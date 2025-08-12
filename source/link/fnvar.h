@@ -108,14 +108,18 @@ struct FnVarArchDef {
   uint32_t architecture;
 };
 
-struct FnVarTgtDef {
+struct FnVarTargetDef {
   uint32_t target;
   std::vector<uint32_t> features;
 };
 
-class Variant {
+// Definition of a variant
+//
+// Stores architecture and target definitions inferred from lines in the CSV
+// files for a single module (as well as a pointer to the Module).
+class VariantDef {
  public:
-  Variant(bool isbase, std::string nm, Module* mod)
+  VariantDef(bool isbase, std::string nm, Module* mod)
       : is_base(isbase), name(nm), module(mod) {}
 
   bool IsBase() const { return this->is_base; }
@@ -136,12 +140,14 @@ class Variant {
   }
 
   void AddTgtDef(uint32_t target, std::vector<uint32_t> features) {
-    FnVarTgtDef tgt_def;
+    FnVarTargetDef tgt_def;
     tgt_def.target = target;
     tgt_def.features = features;
     this->tgt_defs.push_back(tgt_def);
   }
-  const std::vector<FnVarTgtDef>& GetTgtDefs() const { return this->tgt_defs; }
+  const std::vector<FnVarTargetDef>& GetTgtDefs() const {
+    return this->tgt_defs;
+  }
 
   void InferCapabilities() {
     for (const auto& cap_inst : module->capabilities()) {
@@ -156,57 +162,81 @@ class Variant {
   bool is_base;
   std::string name;
   Module* module;
-  std::vector<FnVarTgtDef> tgt_defs;
+  std::vector<FnVarTargetDef> tgt_defs;
   std::vector<FnVarArchDef> arch_defs;
   std::set<spv::Capability> capabilities;
 };
 
-class Variants {
+// Collection of VariantDef instances
+//
+// Apart from being a wrapper around a vector of VariantDef instances, it
+// defines the main API for generating SPV_INTEL_function_variants instructions
+// based on the CSV files.
+class VariantDefs {
  public:
-  std::string GetErr() { return _err.str(); }
+  // Returns last error message.
+  std::string GetErr() { return err_.str(); }
 
-  // Process CSV files passed to the CLI and populate _variants
+  // Processes CSV files passed to the CLI and populate _variants.
+  //
+  // Returns true on success, false on error.
   bool ProcessFnVar(const LinkerOptions& options,
                     const std::vector<Module*>& modules);
 
-  // Wrapper method
-  bool ProcessVariants();
+  // Analyses each variant def module and generates those instructions that are
+  // module-specific, ie., not requiring knowledge from other modules.
+  //
+  // Returns true on success, false on error.
+  bool ProcessVariantDefs();
 
-  // Generate instructions required for this extension
+  // Generates basic instructions required for this extension to work.
   void GenerateHeader(IRContext* linked_context);
 
-  // Calls private functions below
+  // Generates instructions from this extension that result from combining
+  // several variant def modules.
   void CombineVariantInstructions(IRContext* linked_context);
 
  private:
-  // Add a boolean type to every module if there is none (used for spec consts)
+  // Adds a boolean type to every module if there is none.
+  //
+  // These are necessary for spec constants.
   void EnsureBoolType();
 
-  // Collect which combinable instructions are defined in which modules
+  // Collects which combinable instructions are defined in which modules
   void CollectVarInsts();
 
-  // Generate OpSpecConstant<Target/Architecture/Capabilities>INTEL and combine
-  // them as necessary. Also converts entry points to conditional ones and
-  // decorates module-specific instructions with ConditionalINTEL.
+  // Generates OpSpecConstant<Target/Architecture/Capabilities>INTEL and
+  // combines them as necessary. Also converts entry points to conditional ones
+  // and decorates module-specific instructions with ConditionalINTEL.
+  //
+  // Returns true on success, false on error.
   bool GenerateFnVarConstants();
 
-  // Determine which functions in the base module are called by which function
-  // variants
+  // Determines which functions in the base module are called by which function
+  // variants.
   void CollectBaseFnCalls();
 
-  // Combine OpFunctionCall instructions collected with CollectBaseFnCalls()
-  // using conditional copy
+  // Combines OpFunctionCall instructions collected with CollectBaseFnCalls()
+  // using conditional copy.
   void CombineBaseFnCalls(IRContext* linked_context);
 
-  // Decorate instructionsi shared between modules with ConditionalINTEL or
-  // generate conditional capabilities and extensions, depending on which
-  // variants are used by each
+  // Decorates instructions shared between modules with ConditionalINTEL or
+  // generates conditional capabilities and extensions, depending on which
+  // variants are used by each.
   void CombineInstructions(IRContext* linked_context);
 
-  std::stringstream _err;
-  std::vector<Variant> _variants;
-  BaseFnCalls _base_fn_calls;
-  FnVarUsage _fnvar_usage;
+  // Accumulates all errors encountered during processing.
+  std::stringstream err_;
+
+  // Collection of VariantDef instances
+  std::vector<VariantDef> variant_defs_;
+
+  // Used for combining OpFunctionCall instructions
+  BaseFnCalls base_fn_calls_;
+
+  // Used for determining which function variant uses which (applicable)
+  // instruction
+  FnVarUsage fnvar_usage_;
 };
 
 }  // namespace spvtools
