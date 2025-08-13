@@ -269,7 +269,7 @@ TEST(TypeManager, TypeStrings) {
     %ts  = OpTypeTensorARM %u32
     %tsr = OpTypeTensorARM %u32 %id4
     %tss = OpTypeTensorARM %u32 %id4 %ts_shape
-    %g_noin = OpTypeGraphARM 0 %tsr
+    %g_noin = OpTypeGraphARM 0 %ts
     %g_onein = OpTypeGraphARM 1 %tsr %tsr
     %g_shaped = OpTypeGraphARM 1 %tss %tss
   )";
@@ -316,7 +316,7 @@ TEST(TypeManager, TypeStrings) {
       {44, "tensor<uint32, id(0), id(0)>"},
       {45, "tensor<uint32, id(6), id(0)>"},
       {46, "tensor<uint32, id(6), id(43)>"},
-      {47, "graph<0,tensor<uint32, id(6), id(0)>>"},
+      {47, "graph<0,tensor<uint32, id(0), id(0)>>"},
       {48,
        "graph<1,tensor<uint32, id(6), id(0)>,tensor<uint32, id(6), id(0)>>"},
       {49,
