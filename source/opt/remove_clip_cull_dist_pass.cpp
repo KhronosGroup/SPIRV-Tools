@@ -111,14 +111,16 @@ LowerClipCullDistancePass::PassStatus LowerClipCullDistancePass::ProcessEntryPoi
     LOG("Killing dead CullDistance OpDecorate instruction");
     CleanupVariable(entry_point, builtins.cull_dist_var);
   }
-  if (builtins.clip_dist_mem_decoration) {
-    LOG("Killing dead ClipDistance OpMemberDecorate instruction");
-    context()->KillInst(builtins.clip_dist_mem_decoration);
-  }
-  if (builtins.cull_dist_mem_decoration) {
-    LOG("Killing dead CullDistance OpMemberDecorate instruction");
-    context()->KillInst(builtins.cull_dist_mem_decoration);
-  }
+
+  // TODO: this causes spirv-val failure that crashes in vvl for some reason
+  // if (builtins.clip_dist_mem_decoration) {
+  //   LOG("Killing dead ClipDistance OpMemberDecorate instruction");
+  //   context()->KillInst(builtins.clip_dist_mem_decoration);
+  // }
+  // if (builtins.cull_dist_mem_decoration) {
+  //   LOG("Killing dead CullDistance OpMemberDecorate instruction");
+  //   context()->KillInst(builtins.cull_dist_mem_decoration);
+  // }
 
   return CLEANUP_ONLY;
 }
@@ -213,8 +215,7 @@ LowerClipCullDistancePass::PassStatus LowerClipCullDistancePass::FindBuiltinVari
   }
 
   if (info->position_var == nullptr) {
-    LOGE("Shader uses ClipDistance or CullDistance but does not declare a Position built-in. "
-         "Emulation is not possible.");
+    LOG("Shader uses ClipDistance or CullDistance but does not declare a Position built-in.");
     return CLEANUP_ONLY;
   }
 
