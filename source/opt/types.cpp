@@ -136,6 +136,7 @@ std::unique_ptr<Type> Type::Clone() const {
     DeclareKindCase(RayQueryKHR);
     DeclareKindCase(HitObjectNV);
     DeclareKindCase(TensorARM);
+    DeclareKindCase(GraphARM);
 #undef DeclareKindCase
     default:
       assert(false && "Unhandled type");
@@ -189,6 +190,7 @@ bool Type::operator==(const Type& other) const {
     DeclareKindCase(TensorLayoutNV);
     DeclareKindCase(TensorViewNV);
     DeclareKindCase(TensorARM);
+    DeclareKindCase(GraphARM);
 #undef DeclareKindCase
     default:
       assert(false && "Unhandled type");
@@ -250,6 +252,7 @@ size_t Type::ComputeHashValue(size_t hash, SeenTypes* seen) const {
     DeclareKindCase(TensorLayoutNV);
     DeclareKindCase(TensorViewNV);
     DeclareKindCase(TensorARM);
+    DeclareKindCase(GraphARM);
 #undef DeclareKindCase
     default:
       assert(false && "Unhandled type");
@@ -930,6 +933,61 @@ bool TensorARM::IsSameImpl(const Type* that, IsSameCache* seen) const {
   return element_type_->IsSameImpl(tt->element_type_, seen) &&
          rank_id_ == tt->rank_id_ && shape_id_ == tt->shape_id_ &&
          HasSameDecorations(that);
+}
+
+GraphARM::GraphARM(const uint32_t num_inputs,
+                   const std::vector<const Type*>& io_types)
+    : Type(kGraphARM), num_inputs_(num_inputs), io_types_(io_types) {
+  assert(io_types.size() > 0);
+}
+
+std::string GraphARM::str() const {
+  std::ostringstream oss;
+  oss << "graph<" << num_inputs_;
+  for (auto ioty : io_types_) {
+    oss << "," << ioty->str();
+  }
+  oss << ">";
+  return oss.str();
+}
+
+bool GraphARM::is_shaped() const {
+  // A graph is considered to be shaped if all its interface tensors are shaped
+  for (auto ioty : io_types_) {
+    auto tensor_type = ioty->AsTensorARM();
+    assert(tensor_type);
+    if (!tensor_type->is_shaped()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+size_t GraphARM::ComputeExtraStateHash(size_t hash, SeenTypes* seen) const {
+  hash = hash_combine(hash, num_inputs_);
+  for (auto ioty : io_types_) {
+    hash = ioty->ComputeHashValue(hash, seen);
+  }
+  return hash;
+}
+
+bool GraphARM::IsSameImpl(const Type* that, IsSameCache* seen) const {
+  const GraphARM* og = that->AsGraphARM();
+  if (!og) {
+    return false;
+  }
+  if (num_inputs_ != og->num_inputs_) {
+    return false;
+  }
+  if (io_types_.size() != og->io_types_.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < io_types_.size(); i++) {
+    if (!io_types_[i]->IsSameImpl(og->io_types_[i], seen)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace analysis
