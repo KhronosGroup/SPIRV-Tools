@@ -6581,7 +6581,7 @@ TEST_F(ValidateBuiltIns, BadVulkanBuiltinPrimitiveIdFragmentWithRayTracing) {
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-PrimitiveId-PrimitiveId-04333"));
+              AnyVUID("VUID-PrimitiveId-Fragment-04333"));
 }
 
 TEST_F(ValidateBuiltIns, TessellationMissingPatch) {
