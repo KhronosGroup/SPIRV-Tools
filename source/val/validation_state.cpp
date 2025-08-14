@@ -2282,7 +2282,7 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
     case 4330:
       return VUID_WRAP(VUID-PrimitiveId-PrimitiveId-04330);
     case 4333:
-      return VUID_WRAP(VUID-PrimitiveId-PrimitiveId-04333);
+      return VUID_WRAP(VUID-PrimitiveId-Fragment-04333);
     case 4334:
       return VUID_WRAP(VUID-PrimitiveId-PrimitiveId-04334);
     case 4336:
