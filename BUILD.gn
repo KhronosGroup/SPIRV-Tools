@@ -657,7 +657,11 @@ static_library("spvtools_opt") {
 }
 
 static_library("spvtools_link") {
-  sources = [ "source/link/linker.cpp" ]
+  sources = [
+    "source/link/fnvar.cpp",
+    "source/link/fnvar.h",
+    "source/link/linker.cpp",
+  ]
   deps = [
     ":spvtools",
     ":spvtools_opt",
