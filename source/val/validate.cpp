@@ -348,7 +348,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   if (auto error = ValidateForwardDecls(*vstate)) return error;
 
   // Calculate reachability after all the blocks are parsed, but early that it
-  // can be relied on in subsequent pases.
+  // can be relied on in subsequent passes.
   ReachabilityPass(*vstate);
 
   // ID usage needs be handled in its own iteration of the instructions,
