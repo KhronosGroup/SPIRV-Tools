@@ -202,7 +202,7 @@ cc_library(
 cc_library(
     name = "spirv_tools_link",
     srcs = glob(["source/link/*.cpp"]),
-    hdrs = ["include/spirv-tools/linker.hpp"],
+    hdrs = ["include/spirv-tools/linker.hpp", "source/link/fnvar.h"],
     copts = COMMON_COPTS,
     linkstatic = 1,
     visibility = ["//visibility:public"],
