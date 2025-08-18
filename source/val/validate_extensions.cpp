@@ -1066,7 +1066,9 @@ spv_result_t ValidateExtension(ValidationState_t& _, const Instruction* inst) {
         extension == ExtensionToString(kSPV_NV_shader_invocation_reorder) ||
         extension ==
             ExtensionToString(kSPV_NV_cluster_acceleration_structure) ||
-        extension == ExtensionToString(kSPV_NV_linear_swept_spheres)) {
+        extension == ExtensionToString(kSPV_NV_linear_swept_spheres) ||
+        extension == ExtensionToString(kSPV_QCOM_image_processing) ||
+        extension == ExtensionToString(kSPV_QCOM_image_processing2)) {
       return _.diag(SPV_ERROR_WRONG_VERSION, inst)
              << extension << " extension requires SPIR-V version 1.4 or later.";
     }
