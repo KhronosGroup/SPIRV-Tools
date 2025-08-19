@@ -348,6 +348,7 @@ static_library("spvtools_val") {
     "source/val/validate_execution_limitations.cpp",
     "source/val/validate_extensions.cpp",
     "source/val/validate_function.cpp",
+    "source/val/validate_graph.cpp",
     "source/val/validate_id.cpp",
     "source/val/validate_image.cpp",
     "source/val/validate_instruction.cpp",
@@ -656,7 +657,11 @@ static_library("spvtools_opt") {
 }
 
 static_library("spvtools_link") {
-  sources = [ "source/link/linker.cpp" ]
+  sources = [
+    "source/link/linker.cpp",
+    "source/link/fnvar.cpp",
+    "source/link/fnvar.h"
+  ]
   deps = [
     ":spvtools",
     ":spvtools_opt",

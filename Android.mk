@@ -56,6 +56,7 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validate_extensions.cpp \
 		source/val/validate_execution_limitations.cpp \
 		source/val/validate_function.cpp \
+		source/val/validate_graph.cpp \
 		source/val/validate_id.cpp \
 		source/val/validate_image.cpp \
 		source/val/validate_interfaces.cpp \

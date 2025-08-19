@@ -184,8 +184,16 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
 
   // Tensors
   types.emplace_back(new TensorARM(f32));
+  auto* tensor_f32 = types.back().get();
   types.emplace_back(new TensorARM(f32, 4));
+  auto* tensor_f32_ranked = types.back().get();
   types.emplace_back(new TensorARM(f32, 4, 44));
+  auto* tensor_f32_shaped = types.back().get();
+
+  // Graph
+  types.emplace_back(new GraphARM(0, {tensor_f32}));
+  types.emplace_back(new GraphARM(1, {tensor_f32_ranked, tensor_f32_ranked}));
+  types.emplace_back(new GraphARM(1, {tensor_f32_shaped, tensor_f32_shaped}));
 
   types.emplace_back(new TensorLayoutNV(1002, 1000));
   types.emplace_back(new TensorViewNV(1002, 1003, {1000, 1001}));
@@ -261,6 +269,9 @@ TEST(TypeManager, TypeStrings) {
     %ts  = OpTypeTensorARM %u32
     %tsr = OpTypeTensorARM %u32 %id4
     %tss = OpTypeTensorARM %u32 %id4 %ts_shape
+    %g_noin = OpTypeGraphARM 0 %ts
+    %g_onein = OpTypeGraphARM 1 %tsr %tsr
+    %g_shaped = OpTypeGraphARM 1 %tss %tss
   )";
 
   std::vector<std::pair<uint32_t, std::string>> type_id_strs = {
@@ -305,6 +316,11 @@ TEST(TypeManager, TypeStrings) {
       {44, "tensor<uint32, id(0), id(0)>"},
       {45, "tensor<uint32, id(6), id(0)>"},
       {46, "tensor<uint32, id(6), id(43)>"},
+      {47, "graph<0,tensor<uint32, id(0), id(0)>>"},
+      {48,
+       "graph<1,tensor<uint32, id(6), id(0)>,tensor<uint32, id(6), id(0)>>"},
+      {49,
+       "graph<1,tensor<uint32, id(6), id(43)>,tensor<uint32, id(6), id(43)>>"},
   };
 
   std::unique_ptr<IRContext> context =
@@ -1124,9 +1140,12 @@ TEST(TypeManager, GetTypeInstructionAllTypes) {
 ; CHECK: OpTypeCooperativeMatrixKHR [[f32]] [[uint8]] [[uint8]] [[uint8]] [[uint2]]
 ; CHECK: OpTypeRayQueryKHR
 ; CHECK: OpTypeHitObjectNV
-; CHECK: OpTypeTensorARM [[f32]]
-; CHECK: OpTypeTensorARM [[f32]] [[uint4]]
-; CHECK: OpTypeTensorARM [[f32]] [[uint4]] [[uint_arr4_44]]
+; CHECK: [[tensor_f32:%\w+]] = OpTypeTensorARM [[f32]]
+; CHECK: [[tensor_f32_ranked:%\w+]] = OpTypeTensorARM [[f32]] [[uint4]]
+; CHECK: [[tensor_f32_shaped:%\w+]] = OpTypeTensorARM [[f32]] [[uint4]] [[uint_arr4_44]]
+; CHECK: OpTypeGraphARM 0 [[tensor_f32]]
+; CHECK: OpTypeGraphARM 1 [[tensor_f32_ranked]] [[tensor_f32_ranked]]
+; CHECK: OpTypeGraphARM 1 [[tensor_f32_shaped]] [[tensor_f32_shaped]]
 OpCapability Shader
 OpCapability Int64
 OpCapability Linkage

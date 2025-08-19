@@ -528,6 +528,9 @@ std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
     case spv::Op::OpMemberDecorateStringGOOGLE:
     case spv::Op::OpBranch:
     case spv::Op::OpLoopMerge:
+    case spv::Op::OpConditionalEntryPointINTEL:
+    case spv::Op::OpConditionalCapabilityINTEL:
+    case spv::Op::OpConditionalExtensionINTEL:
       out = [](unsigned) { return true; };
       break;
     case spv::Op::OpGroupDecorate:
@@ -577,6 +580,9 @@ std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
     case spv::Op::OpCooperativeMatrixLoadTensorNV:
       // approximate, due to variable operands
       out = [](unsigned index) { return index > 6; };
+      break;
+    case spv::Op::OpGraphEntryPointARM:
+      out = [](unsigned index) { return index == 0; };
       break;
     default:
       out = [](unsigned) { return false; };

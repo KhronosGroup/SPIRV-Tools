@@ -612,7 +612,9 @@ void TrimCapabilitiesPass::addInstructionRequirements(
     ExtensionSet* extensions) const {
   // Ignoring OpCapability and OpExtension instructions.
   if (instruction->opcode() == spv::Op::OpCapability ||
-      instruction->opcode() == spv::Op::OpExtension) {
+      instruction->opcode() == spv::Op::OpConditionalCapabilityINTEL ||
+      instruction->opcode() == spv::Op::OpExtension ||
+      instruction->opcode() == spv::Op::OpConditionalExtensionINTEL) {
     return;
   }
 
@@ -631,7 +633,7 @@ void TrimCapabilitiesPass::addInstructionRequirements(
   }
 
   // Last case: some complex logic needs to be run to determine capabilities.
-  auto[begin, end] = opcodeHandlers_.equal_range(instruction->opcode());
+  auto [begin, end] = opcodeHandlers_.equal_range(instruction->opcode());
   for (auto it = begin; it != end; it++) {
     const OpcodeHandler handler = it->second;
     auto result = handler(instruction);
@@ -754,7 +756,7 @@ Pass::Status TrimCapabilitiesPass::Process() {
     return Status::SuccessWithoutChange;
   }
 
-  auto[required_capabilities, required_extensions] =
+  auto [required_capabilities, required_extensions] =
       DetermineRequiredCapabilitiesAndExtensions();
 
   Pass::Status capStatus = TrimUnrequiredCapabilities(required_capabilities);

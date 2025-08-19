@@ -700,22 +700,29 @@ void UpgradeMemoryModel::UpgradeBarriers() {
       roots.push(e.GetSingleWordInOperand(1u));
       if (context()->ProcessCallTreeFromRoots(CollectBarriers, &roots)) {
         for (auto barrier : barriers) {
-          // Add OutputMemoryKHR to the semantics of the barriers.
+          // Add OutputMemoryKHR to the semantics of the non-relaxed barriers.
           uint32_t semantics_id = barrier->GetSingleWordInOperand(2u);
           Instruction* semantics_inst =
               context()->get_def_use_mgr()->GetDef(semantics_id);
           analysis::Type* semantics_type =
               context()->get_type_mgr()->GetType(semantics_inst->type_id());
           uint64_t semantics_value = GetIndexValue(semantics_inst);
-          const analysis::Constant* constant =
-              context()->get_constant_mgr()->GetConstant(
-                  semantics_type,
-                  {static_cast<uint32_t>(semantics_value) |
-                   uint32_t(spv::MemorySemanticsMask::OutputMemoryKHR)});
-          barrier->SetInOperand(2u, {context()
-                                         ->get_constant_mgr()
-                                         ->GetDefiningInstruction(constant)
-                                         ->result_id()});
+          const uint64_t memory_order_mask =
+              uint64_t(spv::MemorySemanticsMask::Acquire |
+                       spv::MemorySemanticsMask::Release |
+                       spv::MemorySemanticsMask::AcquireRelease |
+                       spv::MemorySemanticsMask::SequentiallyConsistent);
+          if (semantics_value & memory_order_mask) {
+            const analysis::Constant* constant =
+                context()->get_constant_mgr()->GetConstant(
+                    semantics_type,
+                    {static_cast<uint32_t>(semantics_value) |
+                     uint32_t(spv::MemorySemanticsMask::OutputMemoryKHR)});
+            barrier->SetInOperand(2u, {context()
+                                           ->get_constant_mgr()
+                                           ->GetDefiningInstruction(constant)
+                                           ->result_id()});
+          }
         }
       }
       barriers.clear();
