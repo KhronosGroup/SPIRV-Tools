@@ -17,8 +17,16 @@
 #include "source/opt/ir_builder.h"
 #include "source/util/hex_float.h"
 
-#define LOG(fmt, ...) consumer()(SPV_MSG_INFO, __FUNCTION__, {__LINE__}, "lower-clip-cull-dist: " fmt, ## __VA_ARGS__);
-#define LOGE(fmt, ...) consumer()(SPV_MSG_ERROR, __FUNCTION__, {__LINE__}, "lower-clip-cull-dist: " fmt, ## __VA_ARGS__);
+#define LOG_(level, fmt, ...) \
+  do { \
+    char buffer[256]; \
+    snprintf(buffer, sizeof(buffer), \
+      "LowerClipDistancePass: " fmt, ##__VA_ARGS__); \
+    consumer()(level, __FUNCTION__, {__LINE__, 0, 0}, buffer); \
+  } while (0)
+
+#define LOG(fmt, ...) LOG_(SPV_MSG_INFO, fmt, ## __VA_ARGS__)
+#define LOGE(fmt, ...) LOG_(SPV_MSG_ERROR, fmt, ## __VA_ARGS__)
 
 namespace spvtools {
 namespace opt {

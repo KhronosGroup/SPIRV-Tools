@@ -645,6 +645,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
     RegisterPass(CreateCanonicalizeIdsPass());
   } else if (pass_name == "remove-clip-cull-dist") {
     RegisterPass(CreateRemoveClipCullDistPass());
+  } else if (pass_name == "fix-mali-spec-constant-composite") {
+    RegisterPass(CreateFixMaliSpecConstantCompositePass());
   } else {
     Errorf(consumer(), nullptr, {},
            "Unknown flag '--%s'. Use --help for a list of valid flags",
@@ -1214,6 +1216,11 @@ Optimizer::PassToken CreateCanonicalizeIdsPass() {
 Optimizer::PassToken CreateRemoveClipCullDistPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::LowerClipCullDistancePass>());
+}
+
+Optimizer::PassToken CreateFixMaliSpecConstantCompositePass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::FixMaliSpecConstantCompositePass>());
 }
 
 }  // namespace spvtools

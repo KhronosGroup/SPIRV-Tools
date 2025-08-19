@@ -52,6 +52,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   eliminate_dead_output_stores_pass.h
   empty_pass.h
   feature_manager.h
+  fix_mali_spec_constant_composite_pass.h
   fix_storage_class.h
   flatten_decoration_pass.h
   fold.h
@@ -175,6 +176,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   eliminate_dead_members_pass.cpp
   eliminate_dead_output_stores_pass.cpp
   feature_manager.cpp
+  fix_mali_spec_constant_composite_pass.cpp
   fix_storage_class.cpp
   flatten_decoration_pass.cpp
   fold.cpp
