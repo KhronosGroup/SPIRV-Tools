@@ -591,6 +591,10 @@ Options (in lexicographical order):)",
                MALI-only.
                )");
   printf(R"(
+  --fix-mali-spec-constant-composite
+               MALI-only.
+               )");
+  printf(R"(
   --unify-const
                Remove the duplicated constants.)");
   printf(R"(

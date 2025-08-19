@@ -121,6 +121,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/eliminate_dead_output_stores_pass.cpp \
 		source/opt/feature_manager.cpp \
 		source/opt/fix_func_call_arguments.cpp \
+		source/opt/fix_mali_spec_constant_composite_pass.cpp \
 		source/opt/fix_storage_class.cpp \
 		source/opt/flatten_decoration_pass.cpp \
 		source/opt/fold.cpp \
