@@ -25,6 +25,7 @@
     consumer()(level, __FUNCTION__, {__LINE__, 0, 0}, buffer); \
   } while (0)
 
+#define LOGD(fmt, ...) LOG_(SPV_MSG_DEBUG, fmt, ## __VA_ARGS__)
 #define LOG(fmt, ...) LOG_(SPV_MSG_INFO, fmt, ## __VA_ARGS__)
 #define LOGE(fmt, ...) LOG_(SPV_MSG_ERROR, fmt, ## __VA_ARGS__)
 
@@ -56,30 +57,28 @@ Pass::Status FixMaliSpecConstantCompositePass::Process() {
       if (component_type_inst->opcode() != spv::Op::OpTypeBool) {
         continue;
       }
-      // Check that all operands are OpSpecConstantTrue | OpSpecConstantFalse | OpSpecConstant
-      bool op_spec_constant = true;
+      // Check to see if _any_ of the operands are OpSpecConstantTrue | OpSpecConstantFalse | OpSpecConstant
+      bool op_spec_constant = false;
       for (auto i = 0u; i < var->NumInOperands(); i++) {
         const auto operand_id = var->GetSingleWordInOperand(i);
         const Instruction* operand_inst = get_def_use_mgr()->GetDef(operand_id);
-        if (operand_inst->opcode() != spv::Op::OpSpecConstantTrue &&
-            operand_inst->opcode() != spv::Op::OpSpecConstantFalse &&
-            operand_inst->opcode() != spv::Op::OpSpecConstant) {
-          op_spec_constant = false;
+        if (IsSpecConstantInst(operand_inst->opcode())) {
+          op_spec_constant = true;
           break;
         }
       }
       if (op_spec_constant) {
-        LOG("Found OpConstantComposite %%v4bool with all specialized-const operands:");
-        LOG("%s", var->PrettyPrint().c_str());
-        LOG("    .type: %s", component_type_inst->PrettyPrint().c_str());
-        LOG("    .type: %s", type_inst->PrettyPrint().c_str());
+        LOG("Found OpConstantComposite %%v4bool with all specialized-const operands. "
+            "Converting to OpSpecConstantComposite to avoid Mali shader compiler bug");
+        LOGD("%s", var->PrettyPrint().c_str());
+        LOGD("    .type: %s", component_type_inst->PrettyPrint().c_str());
+        LOGD("    .type: %s", type_inst->PrettyPrint().c_str());
         for (auto i = 0u; i < var->NumInOperands(); i++) {
           const auto operand_id = var->GetSingleWordInOperand(i);
           const Instruction* operand_inst = get_def_use_mgr()->GetDef(operand_id);
-          LOG("    .arg%d: %s", i, operand_inst->PrettyPrint().c_str());
+          LOGD("    .arg%d: %s", i, operand_inst->PrettyPrint().c_str());
         }
         // Change the op-type of var from OpConstantComposite to OpSpecConstantComposite
-        LOG("Converting this instruction to OpSpecConstantComposite to avoid Mali shader compiler bug");
         var->SetOpcode(spv::Op::OpSpecConstantComposite);
         changed = true;
       }
