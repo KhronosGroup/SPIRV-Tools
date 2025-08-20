@@ -664,6 +664,69 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
       break;
     }
 
+    case spv::Op::OpBitCastArrayQCOM: {
+      const auto result_type_inst = _.FindDef(inst->type_id());
+      const auto source = _.FindDef(inst->GetOperandAs<uint32_t>(2u));
+      const auto source_type_inst = _.FindDef(source->type_id());
+
+      // Are the input and the result arrays?
+      if (result_type_inst->opcode() != spv::Op::OpTypeArray ||
+          source_type_inst->opcode() != spv::Op::OpTypeArray) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Opcode " << spvOpcodeString(inst->opcode())
+               << " requires OpTypeArray operands for the input and the "
+                  "result.";
+      }
+
+      const auto source_elt_type = _.GetComponentType(source_type_inst->id());
+      const auto result_elt_type = _.GetComponentType(result_type_inst->id());
+
+      if (!_.IsIntNOrFP32OrFP16<32>(source_elt_type)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Opcode " << spvOpcodeString(inst->opcode())
+               << " requires the source element type be one of 32-bit "
+                  "OpTypeInt "
+                  "(signed/unsigned), 32-bit OpTypeFloat and 16-bit "
+                  "OpTypeFloat";
+      }
+
+      if (!_.IsIntNOrFP32OrFP16<32>(result_elt_type)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Opcode " << spvOpcodeString(inst->opcode())
+               << " requires the result element type be one of 32-bit "
+                  "OpTypeInt "
+                  "(signed/unsigned), 32-bit OpTypeFloat and 16-bit "
+                  "OpTypeFloat";
+      }
+
+      unsigned src_arr_len_id = source_type_inst->GetOperandAs<unsigned>(2u);
+      unsigned res_arr_len_id = result_type_inst->GetOperandAs<unsigned>(2u);
+
+      // Are the input and result element types compatible?
+      unsigned src_arr_len = -1u, res_arr_len = -1u;
+      bool src_arr_len_status =
+          _.GetConstantValueAs<unsigned>(src_arr_len_id, src_arr_len);
+      bool res_arr_len_status =
+          _.GetConstantValueAs<unsigned>(res_arr_len_id, res_arr_len);
+
+      bool is_src_arr_len_spec_const =
+          spvOpcodeIsSpecConstant(_.FindDef(src_arr_len_id)->opcode());
+      bool is_res_arr_len_spec_const =
+          spvOpcodeIsSpecConstant(_.FindDef(res_arr_len_id)->opcode());
+
+      unsigned source_bitlen = _.GetBitWidth(source_elt_type) * src_arr_len;
+      unsigned result_bitlen = _.GetBitWidth(result_elt_type) * res_arr_len;
+      if (!is_src_arr_len_spec_const && !is_res_arr_len_spec_const &&
+          (!src_arr_len_status || !res_arr_len_status ||
+           source_bitlen != result_bitlen)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Opcode " << spvOpcodeString(inst->opcode())
+               << " requires source and result types be compatible for "
+                  "conversion.";
+      }
+      break;
+    }
+
     default:
       break;
   }

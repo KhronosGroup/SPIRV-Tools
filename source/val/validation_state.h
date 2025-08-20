@@ -711,6 +711,25 @@ class ValidationState_t {
   // |length| and the array length is not defined by a specialization constant.
   bool IsArrayType(uint32_t id, uint64_t length = 0) const;
   bool IsIntArrayType(uint32_t id, uint64_t length = 0) const;
+  template <unsigned int N>
+  bool IsIntNOrFP32OrFP16(unsigned int type_id) {
+    return this->ContainsType(
+        type_id,
+        [](const Instruction* inst) {
+          if (inst->opcode() == spv::Op::OpTypeInt) {
+            return inst->GetOperandAs<uint32_t>(1) == N;
+          } else if (inst->opcode() == spv::Op::OpTypeFloat) {
+            if (inst->operands().size() > 2) {
+              // Not IEEE
+              return false;
+            }
+            auto width = inst->GetOperandAs<uint32_t>(1);
+            return width == 32 || width == 16;
+          }
+          return false;
+        },
+        /* traverse_all_types = */ false);
+  }
 
   // Returns true if |id| is a type id that contains |type| (or integer or
   // floating point type) of |width| bits.
@@ -750,6 +769,17 @@ class ValidationState_t {
   // Provides information on pointer type. Returns false iff not pointer type.
   bool GetPointerTypeInfo(uint32_t id, uint32_t* data_type,
                           spv::StorageClass* storage_class) const;
+
+  // Returns the value assocated with id via 'value' if id is an OpConstant
+  template <typename T>
+  bool GetConstantValueAs(unsigned int id, T& value) {
+    const auto inst = FindDef(id);
+    uint64_t ui64_val = 0u;
+    bool status = (inst && spvOpcodeIsConstant(inst->opcode()) &&
+                   EvalConstantValUint64(id, &ui64_val));
+    if (status == true) value = static_cast<T>(ui64_val);
+    return status;
+  }
 
   // Is the ID the type of a pointer to a uniform block: Block-decorated struct
   // in uniform storage class? The result is only valid after internal method
