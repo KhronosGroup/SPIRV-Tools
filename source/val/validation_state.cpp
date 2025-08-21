@@ -1370,6 +1370,33 @@ bool ValidationState_t::GetPointerTypeInfo(
   return true;
 }
 
+uint32_t ValidationState_t::GetLargestScalarType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  uint32_t size = 0;
+
+  switch (inst->opcode()) {
+    case spv::Op::OpTypePointer:
+      assert(inst->GetOperandAs<spv::StorageClass>(1) ==
+             spv::StorageClass::PhysicalStorageBuffer);
+      // all pointers to another PSB is 64-bit
+      size = std::max(size, 8u);
+      break;
+    case spv::Op::OpTypeStruct:
+      for (uint32_t i = 1; i < inst->operands().size(); ++i) {
+        const uint32_t member_size =
+            GetLargestScalarType(inst->GetOperandAs<uint32_t>(i));
+        size = std::max(size, member_size);
+      }
+      break;
+    default:
+      const uint32_t bytes = GetBitWidth(id) / 8;
+      size = std::max(size, bytes);
+      break;
+  }
+
+  return size;
+}
+
 bool ValidationState_t::IsAccelerationStructureType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
   return inst && inst->opcode() == spv::Op::OpTypeAccelerationStructureKHR;
@@ -2569,6 +2596,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Flat-06202);
     case 6214:
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeImage-06214);
+    case 6314:
+      return VUID_WRAP(VUID-StandaloneSpirv-PhysicalStorageBuffer64-06314);
     case 6491:
       return VUID_WRAP(VUID-StandaloneSpirv-DescriptorSet-06491);
     case 6671:
