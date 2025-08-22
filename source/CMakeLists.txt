@@ -351,6 +351,9 @@ target_compile_definitions(${SPIRV_TOOLS}-shared
 
 if(SPIRV_TOOLS_BUILD_STATIC)
   add_library(${SPIRV_TOOLS}-static STATIC ${SPIRV_SOURCES})
+  if (SPIRV_TOOLS_USE_MIMALLOC AND SPIRV_TOOLS_USE_MIMALLOC_IN_STATIC_BUILD)
+    target_link_libraries(${SPIRV_TOOLS}-shared PRIVATE mimalloc-static)
+  endif()
   spirv_tools_default_target_options(${SPIRV_TOOLS}-static)
   # The static target does not have the '-static' suffix.
   set_target_properties(${SPIRV_TOOLS}-static PROPERTIES OUTPUT_NAME "${SPIRV_TOOLS}")
@@ -383,7 +386,7 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 endif()
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
-  if (SPIRV_TOOLS_USE_MIMALLOC AND NOT SPIRV_TOOLS_BUILD_STATIC)
+  if (SPIRV_TOOLS_USE_MIMALLOC AND (NOT SPIRV_TOOLS_BUILD_STATIC OR SPIRV_TOOLS_USE_MIMALLOC_IN_STATIC_BUILD))
     list(APPEND SPIRV_TOOLS_TARGETS mimalloc-static)
   endif()
   install(TARGETS ${SPIRV_TOOLS_TARGETS} EXPORT ${SPIRV_TOOLS}Targets)
