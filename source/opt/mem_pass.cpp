@@ -103,6 +103,7 @@ Instruction* MemPass::GetPtr(uint32_t ptrId, uint32_t* varId) {
   switch (ptrInst->opcode()) {
     case spv::Op::OpVariable:
     case spv::Op::OpFunctionParameter:
+    case spv::Op::OpUndef:
       varInst = ptrInst;
       break;
     case spv::Op::OpAccessChain:
