@@ -435,6 +435,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       }
       if (spvIsVulkanEnv(_.context()->target_env)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << _.VkErrorID(11167)
                << "Vulkan requires that data type be specified";
       }
     }

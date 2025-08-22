@@ -5730,6 +5730,8 @@ OpFunctionEnd
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpUntypedVariableKHR-11167"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Vulkan requires that data type be specified"));
 }
 
