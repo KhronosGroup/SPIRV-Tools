@@ -903,6 +903,8 @@ uint32_t ValidationState_t::GetComponentType(uint32_t id) const {
     case spv::Op::OpTypeFloat:
     case spv::Op::OpTypeInt:
     case spv::Op::OpTypeBool:
+    case spv::Op::OpTypePointer:
+    case spv::Op::OpTypeUntypedPointerKHR:
       return id;
 
     case spv::Op::OpTypeArray:
@@ -968,11 +970,20 @@ uint32_t ValidationState_t::GetBitWidth(uint32_t id) const {
   const Instruction* inst = FindDef(component_type_id);
   assert(inst);
 
-  if (inst->opcode() == spv::Op::OpTypeFloat ||
-      inst->opcode() == spv::Op::OpTypeInt)
-    return inst->word(2);
-
-  if (inst->opcode() == spv::Op::OpTypeBool) return 1;
+  switch (inst->opcode()) {
+    case spv::Op::OpTypeFloat:
+    case spv::Op::OpTypeInt:
+      return inst->word(2);
+    case spv::Op::OpTypeBool:
+      return 1;
+    case spv::Op::OpTypePointer:
+    case spv::Op::OpTypeUntypedPointerKHR:
+      assert(inst->GetOperandAs<spv::StorageClass>(1) ==
+             spv::StorageClass::PhysicalStorageBuffer);
+      return 64;  // all pointers to another PSB is 64-bit
+    default:
+      break;
+  }
 
   assert(0);
   return 0;
@@ -1375,12 +1386,6 @@ uint32_t ValidationState_t::GetLargestScalarType(uint32_t id) const {
   uint32_t size = 0;
 
   switch (inst->opcode()) {
-    case spv::Op::OpTypePointer:
-      assert(inst->GetOperandAs<spv::StorageClass>(1) ==
-             spv::StorageClass::PhysicalStorageBuffer);
-      // all pointers to another PSB is 64-bit
-      size = std::max(size, 8u);
-      break;
     case spv::Op::OpTypeStruct:
       for (uint32_t i = 1; i < inst->operands().size(); ++i) {
         const uint32_t member_size =

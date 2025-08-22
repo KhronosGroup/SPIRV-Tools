@@ -2044,7 +2044,7 @@ OpFunctionEnd
       HasSubstr("PhysicalStorageBuffer must not be used with OpVariable"));
 }
 
-TEST_F(ValidateMemory, PSBStoreAlignedOneWithUint32) {
+TEST_F(ValidateMemory, PSBStoreAlignedOneWithUvec4) {
   const std::string body = R"(
                OpCapability Shader
                OpCapability PhysicalStorageBufferAddresses
@@ -2089,6 +2089,52 @@ TEST_F(ValidateMemory, PSBStoreAlignedOneWithUint32) {
               AnyVUID("VUID-StandaloneSpirv-PhysicalStorageBuffer64-06314"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Memory accesses Aligned operand value 1 is too small, "
+                        "the largest scalar type is 4 bytes"));
+}
+
+TEST_F(ValidateMemory, PSBStoreAlignedOneWithUint32) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpCapability PhysicalStorageBufferAddresses
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorate %B Block
+               OpMemberDecorate %B 0 Offset 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_ DescriptorSet 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_B PhysicalStorageBuffer
+       %SSBO = OpTypeStruct %_ptr_PhysicalStorageBuffer_B
+       %uint = OpTypeInt 32 0
+          %B = OpTypeStruct %uint
+%_ptr_PhysicalStorageBuffer_B = OpTypePointer PhysicalStorageBuffer %B
+%_ptr_StorageBuffer_SSBO = OpTypePointer StorageBuffer %SSBO
+          %_ = OpVariable %_ptr_StorageBuffer_SSBO StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_B = OpTypePointer StorageBuffer %_ptr_PhysicalStorageBuffer_B
+     %uint_0 = OpConstant %uint 0
+%_ptr_PhysicalStorageBuffer_uint = OpTypePointer PhysicalStorageBuffer %uint
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %16 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_B %_ %int_0
+         %17 = OpLoad %_ptr_PhysicalStorageBuffer_B %16
+         %20 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %17 %int_0
+               OpStore %20 %uint_0 Aligned 2
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-PhysicalStorageBuffer64-06314"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Memory accesses Aligned operand value 2 is too small, "
                         "the largest scalar type is 4 bytes"));
 }
 

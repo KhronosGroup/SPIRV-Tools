@@ -733,6 +733,8 @@ class ValidationState_t {
 
   // Will walk the type to find the largest scalar value size.
   // Returns value is in bytes.
+  // This is designed to pass in the %type from a PSB pointer
+  //   %ptr = OpTypePointer PhysicalStorageBuffer %type
   uint32_t GetLargestScalarType(uint32_t id) const;
 
   // Returns true if |id| is a type id that contains |type| (or integer or
