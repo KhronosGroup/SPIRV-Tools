@@ -1890,7 +1890,6 @@ OpMemoryModel PhysicalStorageBuffer64 GLSL450
 OpEntryPoint Fragment %main "main"
 OpExecutionMode %main OriginUpperLeft
 OpDecorate %val1 AliasedPointer
-%int = OpTypeInt 32 0
 %uint64 = OpTypeInt 64 0
 %u64_1 = OpConstant %uint64 1
 %ptr = OpTypePointer PhysicalStorageBuffer %uint64
@@ -1902,8 +1901,8 @@ OpDecorate %val1 AliasedPointer
 %val1 = OpVariable %pptr_f Function
 %val2 = OpLoad %ptr %val1
 %val3 = OpLoad %ptr %val1
-OpCopyMemory %val2 %val3 Aligned 4
-OpCopyMemory %val3 %val2 Aligned 4 Aligned 4
+OpCopyMemory %val2 %val3 Aligned 8
+OpCopyMemory %val3 %val2 Aligned 8 Aligned 8
 OpReturn
 OpFunctionEnd
 )";
@@ -1922,7 +1921,6 @@ OpMemoryModel PhysicalStorageBuffer64 GLSL450
 OpEntryPoint Fragment %main "main"
 OpExecutionMode %main OriginUpperLeft
 OpDecorate %val1 AliasedPointer
-%int = OpTypeInt 32 0
 %uint64 = OpTypeInt 64 0
 %u64_1 = OpConstant %uint64 1
 %ptr = OpTypePointer PhysicalStorageBuffer %uint64
@@ -1934,7 +1932,7 @@ OpDecorate %val1 AliasedPointer
 %val1 = OpVariable %pptr_f Function
 %val2 = OpLoad %ptr %val1
 %val3 = OpLoad %ptr %val1
-OpCopyMemory %val2 %val3 Volatile Aligned 4
+OpCopyMemory %val2 %val3 Volatile Aligned 8
 OpReturn
 OpFunctionEnd
 )";
@@ -1958,7 +1956,6 @@ OpMemoryModel PhysicalStorageBuffer64 GLSL450
 OpEntryPoint Fragment %main "main"
 OpExecutionMode %main OriginUpperLeft
 OpDecorate %val1 AliasedPointer
-%int = OpTypeInt 32 0
 %uint64 = OpTypeInt 64 0
 %u64_1 = OpConstant %uint64 1
 %ptr = OpTypePointer PhysicalStorageBuffer %uint64
@@ -1970,7 +1967,7 @@ OpDecorate %val1 AliasedPointer
 %val1 = OpVariable %pptr_f Function
 %val2 = OpLoad %ptr %val1
 %val3 = OpLoad %ptr %val1
-OpCopyMemory %val2 %val3 Aligned 4 Volatile
+OpCopyMemory %val2 %val3 Aligned 8 Volatile
 OpReturn
 OpFunctionEnd
 )";
@@ -1994,7 +1991,6 @@ OpMemoryModel PhysicalStorageBuffer64 GLSL450
 OpEntryPoint Fragment %main "main"
 OpExecutionMode %main OriginUpperLeft
 OpDecorate %val1 AliasedPointer
-%int = OpTypeInt 32 0
 %uint64 = OpTypeInt 64 0
 %u64_1 = OpConstant %uint64 1
 %ptr = OpTypePointer PhysicalStorageBuffer %uint64
@@ -2046,6 +2042,427 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("PhysicalStorageBuffer must not be used with OpVariable"));
+}
+
+TEST_F(ValidateMemory, PSBStoreAlignedOneWithUvec4) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpCapability PhysicalStorageBufferAddresses
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorate %Ptr Block
+               OpMemberDecorate %Ptr 0 Offset 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_ DescriptorSet 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_Ptr PhysicalStorageBuffer
+       %SSBO = OpTypeStruct %_ptr_PhysicalStorageBuffer_Ptr
+       %uint = OpTypeInt 32 0
+     %v4uint = OpTypeVector %uint 4
+        %Ptr = OpTypeStruct %v4uint
+%_ptr_PhysicalStorageBuffer_Ptr = OpTypePointer PhysicalStorageBuffer %Ptr
+%_ptr_StorageBuffer_SSBO = OpTypePointer StorageBuffer %SSBO
+          %_ = OpVariable %_ptr_StorageBuffer_SSBO StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_Ptr = OpTypePointer StorageBuffer %_ptr_PhysicalStorageBuffer_Ptr
+     %uint_0 = OpConstant %uint 0
+         %20 = OpConstantComposite %v4uint %uint_0 %uint_0 %uint_0 %uint_0
+%_ptr_PhysicalStorageBuffer_v4uint = OpTypePointer PhysicalStorageBuffer %v4uint
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %17 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_Ptr %_ %int_0
+         %18 = OpLoad %_ptr_PhysicalStorageBuffer_Ptr %17
+         %22 = OpAccessChain %_ptr_PhysicalStorageBuffer_v4uint %18 %int_0
+               OpStore %22 %20 Aligned 1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-PhysicalStorageBuffer64-06314"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Memory accesses Aligned operand value 1 is too small, "
+                        "the largest scalar type is 4 bytes"));
+}
+
+TEST_F(ValidateMemory, PSBStoreAlignedOneWithUint32) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpCapability PhysicalStorageBufferAddresses
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorate %B Block
+               OpMemberDecorate %B 0 Offset 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_ DescriptorSet 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_B PhysicalStorageBuffer
+       %SSBO = OpTypeStruct %_ptr_PhysicalStorageBuffer_B
+       %uint = OpTypeInt 32 0
+          %B = OpTypeStruct %uint
+%_ptr_PhysicalStorageBuffer_B = OpTypePointer PhysicalStorageBuffer %B
+%_ptr_StorageBuffer_SSBO = OpTypePointer StorageBuffer %SSBO
+          %_ = OpVariable %_ptr_StorageBuffer_SSBO StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_B = OpTypePointer StorageBuffer %_ptr_PhysicalStorageBuffer_B
+     %uint_0 = OpConstant %uint 0
+%_ptr_PhysicalStorageBuffer_uint = OpTypePointer PhysicalStorageBuffer %uint
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %16 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_B %_ %int_0
+         %17 = OpLoad %_ptr_PhysicalStorageBuffer_B %16
+         %20 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %17 %int_0
+               OpStore %20 %uint_0 Aligned 2
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-PhysicalStorageBuffer64-06314"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Memory accesses Aligned operand value 2 is too small, "
+                        "the largest scalar type is 4 bytes"));
+}
+
+// https://github.com/KhronosGroup/glslang/issues/4024
+TEST_F(ValidateMemory, PSBStoreAlignedPointerNot8) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpCapability PhysicalStorageBufferAddresses
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorate %B Block
+               OpMemberDecorate %B 0 Offset 0
+               OpDecorate %A Block
+               OpMemberDecorate %A 0 Offset 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_ DescriptorSet 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_B PhysicalStorageBuffer
+       %SSBO = OpTypeStruct %_ptr_PhysicalStorageBuffer_B
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_A PhysicalStorageBuffer
+          %B = OpTypeStruct %_ptr_PhysicalStorageBuffer_A
+       %uint = OpTypeInt 32 0
+          %A = OpTypeStruct %uint
+%_ptr_PhysicalStorageBuffer_A = OpTypePointer PhysicalStorageBuffer %A
+%_ptr_PhysicalStorageBuffer_B = OpTypePointer PhysicalStorageBuffer %B
+%_ptr_StorageBuffer_SSBO = OpTypePointer StorageBuffer %SSBO
+          %_ = OpVariable %_ptr_StorageBuffer_SSBO StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_B = OpTypePointer StorageBuffer %_ptr_PhysicalStorageBuffer_B
+%_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer_A = OpTypePointer PhysicalStorageBuffer %_ptr_PhysicalStorageBuffer_A
+     %uint_0 = OpConstant %uint 0
+%_ptr_PhysicalStorageBuffer_uint = OpTypePointer PhysicalStorageBuffer %uint
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %18 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_B %_ %int_0
+         %19 = OpLoad %_ptr_PhysicalStorageBuffer_B %18
+         %21 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer_A %19 %int_0
+         %22 = OpLoad %_ptr_PhysicalStorageBuffer_A %21 Aligned 4
+         %25 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %22 %int_0
+               OpStore %25 %uint_0 Aligned 4
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-PhysicalStorageBuffer64-06314"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Memory accesses Aligned operand value 4 is too small, "
+                        "the largest scalar type is 8 bytes"));
+}
+
+// https://godbolt.org/z/sbGv6a7os
+TEST_F(ValidateMemory, PSBStoreAlignedStructCopyWithDeepDouble) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpCapability Float64
+               OpCapability PhysicalStorageBufferAddresses
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpMemberDecorate %A 0 Offset 0
+               OpMemberDecorate %A 1 Offset 8
+               OpMemberDecorate %B 0 Offset 0
+               OpMemberDecorate %B 1 Offset 16
+               OpMemberDecorate %C 0 Offset 0
+               OpMemberDecorate %C 1 Offset 32
+               OpDecorate %Ptr Block
+               OpMemberDecorate %Ptr 0 Offset 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_ DescriptorSet 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_Ptr PhysicalStorageBuffer
+       %SSBO = OpTypeStruct %_ptr_PhysicalStorageBuffer_Ptr
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+       %uint = OpTypeInt 32 0
+     %double = OpTypeFloat 64
+          %A = OpTypeStruct %uint %double
+          %B = OpTypeStruct %v3float %A
+          %C = OpTypeStruct %B %uint
+        %Ptr = OpTypeStruct %C
+%_ptr_PhysicalStorageBuffer_Ptr = OpTypePointer PhysicalStorageBuffer %Ptr
+%_ptr_StorageBuffer_SSBO = OpTypePointer StorageBuffer %SSBO
+          %_ = OpVariable %_ptr_StorageBuffer_SSBO StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_Ptr = OpTypePointer StorageBuffer %_ptr_PhysicalStorageBuffer_Ptr
+        %A_0 = OpTypeStruct %uint %double
+        %B_0 = OpTypeStruct %v3float %A_0
+        %C_0 = OpTypeStruct %B_0 %uint
+%_ptr_Function_C_0 = OpTypePointer Function %C_0
+%_ptr_PhysicalStorageBuffer_C = OpTypePointer PhysicalStorageBuffer %C
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+       %newC = OpVariable %_ptr_Function_C_0 Function
+         %22 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_Ptr %_ %int_0
+         %23 = OpLoad %_ptr_PhysicalStorageBuffer_Ptr %22
+         %29 = OpLoad %C_0 %newC
+         %31 = OpAccessChain %_ptr_PhysicalStorageBuffer_C %23 %int_0
+         %32 = OpCopyLogical %C %29
+               OpStore %31 %32 Aligned 4
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-PhysicalStorageBuffer64-06314"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Memory accesses Aligned operand value 4 is too small, "
+                        "the largest scalar type is 8 bytes"));
+}
+
+TEST_F(ValidateMemory, PSBStoreAlignedPtrAccessChain) {
+  const std::string body = R"(
+               OpCapability PhysicalStorageBufferAddresses
+               OpCapability Int64
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+               OpExtension "SPV_KHR_physical_storage_buffer"
+          %2 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %computeMain "main" %globalParams
+               OpExecutionMode %computeMain LocalSize 1 1 1
+               OpDecorate %_ptr_PhysicalStorageBuffer_ulong ArrayStride 8
+               OpDecorate %GlobalParams_std140 Block
+               OpMemberDecorate %GlobalParams_std140 0 Offset 0
+               OpDecorate %globalParams Binding 0
+               OpDecorate %globalParams DescriptorSet 0
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+         %12 = OpTypeFunction %void
+      %ulong = OpTypeInt 64 0
+%_ptr_PhysicalStorageBuffer_ulong = OpTypePointer PhysicalStorageBuffer %ulong
+%GlobalParams_std140 = OpTypeStruct %_ptr_PhysicalStorageBuffer_ulong
+%_ptr_Uniform_GlobalParams_std140 = OpTypePointer Uniform %GlobalParams_std140
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Uniform__ptr_PhysicalStorageBuffer_ulong = OpTypePointer Uniform %_ptr_PhysicalStorageBuffer_ulong
+    %ulong_1 = OpConstant %ulong 1
+%globalParams = OpVariable %_ptr_Uniform_GlobalParams_std140 Uniform
+%computeMain = OpFunction %void None %12
+         %13 = OpLabel
+         %36 = OpInBoundsAccessChain %_ptr_Uniform__ptr_PhysicalStorageBuffer_ulong %globalParams %int_0
+         %37 = OpLoad %_ptr_PhysicalStorageBuffer_ulong %36
+         %38 = OpPtrAccessChain %_ptr_PhysicalStorageBuffer_ulong %37 %int_0
+               OpStore %38 %ulong_1 Aligned 4
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-PhysicalStorageBuffer64-06314"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Memory accesses Aligned operand value 4 is too small, "
+                        "the largest scalar type is 8 bytes"));
+}
+
+TEST_F(ValidateMemory, PSBStoreAlignedUntypedStorageBuffer) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability PhysicalStorageBufferAddresses
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorate %B Block
+               OpMemberDecorate %B 0 Offset 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_ DescriptorSet 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_B PhysicalStorageBuffer
+       %SSBO = OpTypeStruct %_ptr_PhysicalStorageBuffer_B
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+     %uint_0 = OpConstant %uint 0
+          %B = OpTypeStruct %uint
+%_ptr_PhysicalStorageBuffer_B = OpTypePointer PhysicalStorageBuffer %B
+%_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_B = OpTypePointer StorageBuffer %_ptr_PhysicalStorageBuffer_B
+%untyped_ptr = OpTypeUntypedPointerKHR StorageBuffer
+          %_ = OpUntypedVariableKHR %untyped_ptr StorageBuffer %SSBO
+%_ptr_PhysicalStorageBuffer_uint = OpTypePointer PhysicalStorageBuffer %uint
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %16 = OpUntypedAccessChainKHR %untyped_ptr %SSBO %_ %int_0
+         %17 = OpLoad %_ptr_PhysicalStorageBuffer_B %16
+         %20 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %17 %int_0
+               OpStore %20 %uint_0 Aligned 2
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-PhysicalStorageBuffer64-06314"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Memory accesses Aligned operand value 2 is too small, "
+                        "the largest scalar type is 4 bytes"));
+}
+
+TEST_F(ValidateMemory, PSBStoreAlignedUntypedPhysicalStorageBuffer) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability PhysicalStorageBufferAddresses
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorate %B Block
+               OpMemberDecorate %B 0 Offset 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_ DescriptorSet 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_B PhysicalStorageBuffer
+       %SSBO = OpTypeStruct %_ptr_PhysicalStorageBuffer_B
+       %uint = OpTypeInt 32 0
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+     %uint_0 = OpConstant %uint 0
+          %B = OpTypeStruct %uint
+%_ptr_PhysicalStorageBuffer_B = OpTypePointer PhysicalStorageBuffer %B
+%_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_B = OpTypePointer StorageBuffer %_ptr_PhysicalStorageBuffer_B
+%untyped_ptr = OpTypeUntypedPointerKHR StorageBuffer
+          %_ = OpUntypedVariableKHR %untyped_ptr StorageBuffer %SSBO
+%_ptr_PhysicalStorageBuffer_uint = OpTypePointer PhysicalStorageBuffer %uint
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %16 = OpUntypedAccessChainKHR %untyped_ptr %SSBO %_ %int_0
+         %17 = OpLoad %_ptr_PhysicalStorageBuffer_B %16
+         %20 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %17 %int_0
+               OpStore %20 %uint_0 Aligned 2
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-PhysicalStorageBuffer64-06314"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Memory accesses Aligned operand value 2 is too small, "
+                        "the largest scalar type is 4 bytes"));
+}
+
+TEST_F(ValidateMemory, PSBStoreAlignedVariousTypeSuccess) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpCapability Float64
+               OpCapability Int8
+               OpCapability StorageBuffer8BitAccess
+               OpCapability PhysicalStorageBufferAddresses
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorate %Ptr Block
+               OpMemberDecorate %Ptr 0 Offset 0
+               OpMemberDecorate %Ptr 1 Offset 4
+               OpMemberDecorate %Ptr 2 Offset 8
+               OpDecorate %_ Binding 0
+               OpDecorate %_ DescriptorSet 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_Ptr PhysicalStorageBuffer
+       %SSBO = OpTypeStruct %_ptr_PhysicalStorageBuffer_Ptr
+      %uchar = OpTypeInt 8 0
+       %uint = OpTypeInt 32 0
+     %double = OpTypeFloat 64
+        %Ptr = OpTypeStruct %uchar %uint %double
+%_ptr_PhysicalStorageBuffer_Ptr = OpTypePointer PhysicalStorageBuffer %Ptr
+%_ptr_StorageBuffer_SSBO = OpTypePointer StorageBuffer %SSBO
+          %_ = OpVariable %_ptr_StorageBuffer_SSBO StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_Ptr = OpTypePointer StorageBuffer %_ptr_PhysicalStorageBuffer_Ptr
+    %uchar_0 = OpConstant %uchar 0
+%_ptr_PhysicalStorageBuffer_uchar = OpTypePointer PhysicalStorageBuffer %uchar
+      %int_1 = OpConstant %int 1
+     %uint_0 = OpConstant %uint 0
+%_ptr_PhysicalStorageBuffer_uint = OpTypePointer PhysicalStorageBuffer %uint
+      %int_2 = OpConstant %int 2
+   %double_0 = OpConstant %double 0
+%_ptr_PhysicalStorageBuffer_double = OpTypePointer PhysicalStorageBuffer %double
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %18 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_Ptr %_ %int_0
+         %19 = OpLoad %_ptr_PhysicalStorageBuffer_Ptr %18
+         %22 = OpAccessChain %_ptr_PhysicalStorageBuffer_uchar %19 %int_0
+               OpStore %22 %uchar_0 Aligned 1
+         %23 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_Ptr %_ %int_0
+         %24 = OpLoad %_ptr_PhysicalStorageBuffer_Ptr %23
+         %28 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %24 %int_1
+               OpStore %28 %uint_0 Aligned 4
+         %29 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer_Ptr %_ %int_0
+         %30 = OpLoad %_ptr_PhysicalStorageBuffer_Ptr %29
+         %34 = OpAccessChain %_ptr_PhysicalStorageBuffer_double %30 %int_2
+               OpStore %34 %double_0 Aligned 8
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 
 std::string GenCoopMatLoadStoreShader(const std::string& storeMemoryAccess,
