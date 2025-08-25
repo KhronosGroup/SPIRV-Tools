@@ -731,6 +731,12 @@ class ValidationState_t {
         /* traverse_all_types = */ false);
   }
 
+  // Will walk the type to find the largest scalar value size.
+  // Returns value is in bytes.
+  // This is designed to pass in the %type from a PSB pointer
+  //   %ptr = OpTypePointer PhysicalStorageBuffer %type
+  uint32_t GetLargestScalarType(uint32_t id) const;
+
   // Returns true if |id| is a type id that contains |type| (or integer or
   // floating point type) of |width| bits.
   bool ContainsSizedIntOrFloatType(uint32_t id, spv::Op type,
