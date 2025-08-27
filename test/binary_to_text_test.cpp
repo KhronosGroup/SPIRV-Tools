@@ -493,7 +493,7 @@ TEST_F(OperandTypeTest, OptionalTypedLiteralNumber) {
   EXPECT_EQ(input, EncodeAndDecodeSuccessfully(input));
 }
 
-using IndentTest = spvtest::TextToBinaryTest;
+using IndentTest = TextToBinaryTest;
 
 TEST_F(IndentTest, Sample) {
   const std::string input = R"(
@@ -1973,7 +1973,7 @@ OpFunctionEnd
               expected);
 }
 
-using FriendlyNameDisassemblyTest = spvtest::TextToBinaryTest;
+using FriendlyNameDisassemblyTest = TextToBinaryTest;
 
 TEST_F(FriendlyNameDisassemblyTest, Sample) {
   const std::string input = R"(
@@ -2623,6 +2623,668 @@ TEST_F(TextToBinaryTest, NestedWithComments) {
               SPV_BINARY_TO_TEXT_OPTION_NESTED_INDENT,
           SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS),
       expected);
+}
+
+using StyleTest = TextToBinaryTest;
+
+TEST_F(StyleTest, Stylized) {
+  const std::string input = R"(
+OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %4 "main" %204
+OpExecutionMode %4 OriginUpperLeft
+OpSource GLSL 450
+OpName %4 "main"
+OpName %16 "ff(vf2;f1;"
+OpName %14 "g"
+OpName %15 "f"
+OpName %19 "vg"
+OpName %20 "Block140"
+OpMemberName %20 0 "a"
+OpMemberName %20 1 "b"
+OpName %22 "b140"
+OpName %35 "sv"
+OpName %39 "s"
+OpName %46 "f"
+OpName %51 "g"
+OpName %57 "x"
+OpName %69 "param"
+OpName %75 "i"
+OpName %80 "vc"
+OpName %88 "j"
+OpName %95 "size"
+OpName %174 "v"
+OpName %187 "i"
+OpName %204 "o_color"
+OpMemberDecorate %20 0 Offset 0
+OpMemberDecorate %20 1 Offset 16
+OpDecorate %20 Block
+OpDecorate %22 DescriptorSet 1
+OpDecorate %22 Binding 0
+OpDecorate %39 DescriptorSet 0
+OpDecorate %39 Binding 1
+OpDecorate %95 SpecId 20
+OpDecorate %204 Location 2
+%2 = OpTypeVoid
+%3 = OpTypeFunction %2
+%6 = OpTypeFloat 32
+%300 = OpTypeFloat 64
+%301 = OpTypeFloat 16
+%7 = OpTypeVector %6 2
+%8 = OpTypePointer Function %7
+%9 = OpTypeVector %6 4
+%10 = OpTypeInt 32 0
+%11 = OpConstant %10 2
+%12 = OpTypeArray %9 %11
+%13 = OpTypeFunction %12 %8 %6
+%18 = OpTypePointer Private %9
+%19 = OpVariable %18 Private
+%20 = OpTypeStruct %6 %9
+%21 = OpTypePointer Uniform %20
+%22 = OpVariable %21 Uniform
+%23 = OpTypeInt 32 1
+%24 = OpConstant %23 1
+%25 = OpTypePointer Uniform %9
+%28 = OpConstant %6 0
+%29 = OpConstantComposite %9 %28 %28 %28 %28
+%34 = OpTypePointer Function %9
+%36 = OpTypeImage %6 2D 0 0 0 1 Unknown
+%302 = OpTypeSampler
+%37 = OpTypeSampledImage %36
+%38 = OpTypePointer UniformConstant %37
+%39 = OpVariable %38 UniformConstant
+%41 = OpConstantComposite %7 %28 %28
+%45 = OpTypePointer Function %6
+%47 = OpConstant %23 0
+%48 = OpTypePointer Uniform %6
+%53 = OpConstant %6 1
+%55 = OpTypeBool
+%56 = OpTypePointer Function %55
+%58 = OpConstant %10 0
+%59 = OpTypePointer Private %6
+%74 = OpTypePointer Function %23
+%87 = OpTypePointer Function %10
+%95 = OpSpecConstant %10 2
+%100 = OpConstant %10 1
+%109 = OpConstantComposite %9 %53 %53 %53 %53
+%127 = OpConstant %23 10
+%139 = OpConstant %6 2
+%143 = OpConstant %6 3
+%158 = OpConstant %6 4
+%177 = OpConstant %6 0.5
+%195 = OpConstant %23 100
+%202 = OpTypeVector %10 4
+%203 = OpTypePointer Output %202
+%204 = OpVariable %203 Output
+%4 = OpFunction %2 None %3
+%5 = OpLabel
+%35 = OpVariable %34 Function
+%46 = OpVariable %45 Function
+%51 = OpVariable %45 Function
+%57 = OpVariable %56 Function
+%69 = OpVariable %8 Function
+%75 = OpVariable %74 Function
+%80 = OpVariable %34 Function
+%88 = OpVariable %87 Function
+%174 = OpVariable %45 Function
+%187 = OpVariable %74 Function
+%26 = OpAccessChain %25 %22 %24
+%27 = OpLoad %9 %26
+OpStore %19 %27
+%40 = OpLoad %37 %39
+%42 = OpImageSampleImplicitLod %9 %40 %41
+%43 = OpLoad %9 %19
+%44 = OpFAdd %9 %42 %43
+OpStore %35 %44
+%49 = OpAccessChain %48 %22 %47
+%50 = OpLoad %6 %49
+OpStore %46 %50
+%52 = OpLoad %6 %46
+%54 = OpFAdd %6 %52 %53
+OpStore %51 %54
+%60 = OpAccessChain %59 %19 %58
+%61 = OpLoad %6 %60
+%62 = OpFOrdGreaterThan %55 %61 %28
+OpSelectionMerge %64 None
+OpBranchConditional %62 %63 %64
+%64 = OpLabel
+%73 = OpPhi %55 %62 %5 %72 %63
+OpStore %57 %73
+OpStore %75 %47
+OpBranch %76
+%197 = OpLabel
+OpBranch %190
+%63 = OpLabel
+%65 = OpLoad %6 %46
+%66 = OpLoad %6 %51
+%67 = OpCompositeConstruct %7 %65 %66
+%68 = OpLoad %6 %51
+OpStore %69 %67
+%70 = OpFunctionCall %12 %16 %69 %68
+%71 = OpCompositeExtract %6 %70 0 0
+%72 = OpFOrdGreaterThan %55 %71 %28
+OpBranch %64
+%77 = OpLabel
+%81 = OpLoad %9 %19
+OpStore %80 %81
+%82 = OpAccessChain %45 %80 %58
+%83 = OpLoad %6 %82
+%84 = OpFOrdGreaterThan %55 %83 %28
+OpSelectionMerge %86 None
+OpBranchConditional %84 %85 %113
+%85 = OpLabel
+OpStore %88 %58
+OpBranch %89
+%89 = OpLabel
+OpLoopMerge %91 %92 None
+OpBranch %93
+%93 = OpLabel
+%94 = OpLoad %10 %88
+%96 = OpULessThan %55 %94 %95
+OpBranchConditional %96 %90 %91
+%105 = OpLabel
+OpBranch %92
+%198 = OpLabel
+OpBranch %191
+%163 = OpLabel
+OpBranch %136
+%104 = OpLabel
+OpBranch %91
+%76 = OpLabel
+OpLoopMerge %78 %79 None
+OpBranch %77
+%92 = OpLabel
+%107 = OpLoad %10 %88
+%108 = OpIAdd %10 %107 %24
+OpStore %88 %108
+OpBranch %89
+%91 = OpLabel
+%110 = OpLoad %9 %80
+%111 = OpFAdd %9 %110 %109
+OpStore %80 %111
+OpBranch %79
+%113 = OpLabel
+%114 = OpLoad %9 %80
+%115 = OpFSub %9 %114 %109
+OpStore %80 %115
+OpBranch %86
+%132 = OpLabel
+%137 = OpLoad %6 %51
+%138 = OpFAdd %6 %137 %53
+OpStore %51 %138
+OpBranch %133
+%86 = OpLabel
+%116 = OpAccessChain %45 %80 %100
+%117 = OpLoad %6 %116
+%118 = OpFOrdGreaterThan %55 %117 %28
+OpSelectionMerge %120 None
+OpBranchConditional %118 %119 %120
+%119 = OpLabel
+OpBranch %78
+%120 = OpLabel
+%122 = OpAccessChain %45 %80 %11
+%123 = OpLoad %6 %122
+%124 = OpFAdd %6 %123 %53
+%125 = OpAccessChain %45 %80 %11
+OpStore %125 %124
+OpBranch %79
+%79 = OpLabel
+%126 = OpLoad %23 %75
+%128 = OpSLessThan %55 %126 %127
+OpBranchConditional %128 %76 %78
+%78 = OpLabel
+%129 = OpAccessChain %48 %22 %47
+%130 = OpLoad %6 %129
+%131 = OpConvertFToS %23 %130
+OpSelectionMerge %136 None
+OpSwitch %131 %135 0 %132 1 %132 2 %132 3 %133 4 %134
+%90 = OpLabel
+%97 = OpLoad %9 %19
+%98 = OpLoad %9 %80
+%99 = OpFAdd %9 %98 %97
+OpStore %80 %99
+%101 = OpAccessChain %45 %80 %100
+%102 = OpLoad %6 %101
+%103 = OpFOrdLessThan %55 %102 %28
+OpSelectionMerge %105 None
+OpBranchConditional %103 %104 %105
+%161 = OpLabel
+OpLoopMerge %163 %164 None
+OpBranch %165
+%165 = OpLabel
+%166 = OpLoad %6 %51
+%167 = OpFOrdLessThan %55 %166 %139
+OpBranchConditional %167 %162 %163
+%164 = OpLabel
+OpBranch %161
+%162 = OpLabel
+%168 = OpLoad %6 %46
+%169 = OpFOrdLessThan %55 %168 %53
+OpSelectionMerge %171 None
+OpBranchConditional %169 %170 %171
+%135 = OpLabel
+%159 = OpLoad %6 %51
+%160 = OpFAdd %6 %159 %158
+OpStore %51 %160
+OpBranch %161
+%133 = OpLabel
+%140 = OpLoad %6 %51
+%141 = OpFAdd %6 %140 %139
+OpStore %51 %141
+OpBranch %136
+%134 = OpLabel
+%144 = OpLoad %6 %51
+%145 = OpFAdd %6 %144 %143
+OpStore %51 %145
+OpBranch %146
+%146 = OpLabel
+OpLoopMerge %148 %149 None
+OpBranch %150
+%150 = OpLabel
+%151 = OpLoad %6 %51
+%152 = OpFOrdLessThan %55 %151 %139
+OpBranchConditional %152 %147 %148
+%147 = OpLabel
+%153 = OpLoad %6 %46
+%154 = OpFOrdLessThan %55 %153 %53
+OpSelectionMerge %156 None
+OpBranchConditional %154 %155 %156
+%155 = OpLabel
+OpBranch %148
+%156 = OpLabel
+OpBranch %149
+%149 = OpLabel
+OpBranch %146
+%148 = OpLabel
+OpBranch %135
+%136 = OpLabel
+OpStore %174 %53
+%175 = OpAccessChain %45 %35 %58
+%176 = OpLoad %6 %175
+%178 = OpFOrdLessThanEqual %55 %176 %177
+OpSelectionMerge %180 None
+OpBranchConditional %178 %179 %181
+%179 = OpLabel
+OpStore %174 %28
+OpBranch %180
+%185 = OpLabel
+OpStore %174 %139
+OpBranch %186
+%181 = OpLabel
+%182 = OpAccessChain %45 %35 %58
+%183 = OpLoad %6 %182
+%184 = OpFOrdGreaterThanEqual %55 %183 %177
+OpSelectionMerge %186 None
+OpBranchConditional %184 %185 %186
+%170 = OpLabel
+OpBranch %163
+%171 = OpLabel
+OpBranch %164
+%186 = OpLabel
+OpBranch %180
+%188 = OpLabel
+OpLoopMerge %190 %191 None
+OpBranch %189
+%189 = OpLabel
+%192 = OpLoad %9 %19
+%193 = OpFAdd %9 %192 %109
+OpStore %19 %193
+%194 = OpLoad %23 %187
+%196 = OpSGreaterThan %55 %194 %195
+OpSelectionMerge %198 None
+OpBranchConditional %196 %197 %198
+%180 = OpLabel
+OpStore %187 %47
+OpBranch %188
+%191 = OpLabel
+%200 = OpLoad %23 %187
+%201 = OpIAdd %23 %200 %24
+OpStore %187 %201
+OpBranch %188
+%190 = OpLabel
+OpReturn
+OpFunctionEnd
+%16 = OpFunction %12 None %13
+%14 = OpFunctionParameter %8
+%15 = OpFunctionParameter %6
+%17 = OpLabel
+%30 = OpCompositeConstruct %9 %15 %15 %15 %15
+%31 = OpCompositeConstruct %12 %29 %30
+OpReturnValue %31
+OpFunctionEnd
+)";
+  const std::string expected =
+      // clang-format off
+      "OpCapability Shader\n"
+      "%1 = OpExtInstImport \"\xES\xFGLSL.std.450\xE\xF\"\n"
+      "OpMemoryModel Logical GLSL450\n"
+      "OpEntryPoint Fragment %4 \"\xES\xFmain\xE\xF\" \xEup\xF%204\xE\xF\n"
+      "OpExecutionMode %4 OriginUpperLeft\n"
+      "OpSource GLSL \xEL\xF" "450\xE\xF\n"
+      "OpName %4 \"\xES\xFmain\xE\xF\"\n"
+      "OpName \xE" "f\xF%16\xE\xF \"\xES\xF" "ff(vf2;f1;\xE\xF\"\n"
+      "OpName \xE" "f\xF%14\xE\xF \"\xES\xFg\xE\xF\"\n"
+      "OpName \xE" "f\xF%15\xE\xF \"\xES\xF" "f\xE\xF\"\n"
+      "OpName \xE" "fp\xF%19\xE\xF \"\xES\xFvg\xE\xF\"\n"
+      "OpName \xEt\xF%20\xE\xF \"\xES\xF" "Block140\xE\xF\"\n"
+      "OpMemberName \xEt\xF%20\xE\xF \xEL\xF" "0\xE\xF \"\xES\xF" "a\xE\xF\"\n"
+      "OpMemberName \xEt\xF%20\xE\xF \xEL\xF" "1\xE\xF \"\xES\xF" "b\xE\xF\"\n"
+      "OpName \xEp\xF%22\xE\xF \"\xES\xF" "b140\xE\xF\"\n"
+      "OpName \xE" "fp\xF%35\xE\xF \"\xES\xFsv\xE\xF\"\n"
+      "OpName \xEmp\xF%39\xE\xF \"\xES\xFs\xE\xF\"\n"
+      "OpName \xE" "fp\xF%46\xE\xF \"\xES\xF" "f\xE\xF\"\n"
+      "OpName \xE" "fp\xF%51\xE\xF \"\xES\xFg\xE\xF\"\n"
+      "OpName \xE" "bp\xF%57\xE\xF \"\xES\xFx\xE\xF\"\n"
+      "OpName \xE" "fp\xF%69\xE\xF \"\xES\xFparam\xE\xF\"\n"
+      "OpName \xEip\xF%75\xE\xF \"\xES\xFi\xE\xF\"\n"
+      "OpName \xE" "fp\xF%80\xE\xF \"\xES\xFvc\xE\xF\"\n"
+      "OpName \xEup\xF%88\xE\xF \"\xES\xFj\xE\xF\"\n"
+      "OpName \xEuc\xF%95\xE\xF \"\xES\xFsize\xE\xF\"\n"
+      "OpName \xE" "fp\xF%174\xE\xF \"\xES\xFv\xE\xF\"\n"
+      "OpName \xEip\xF%187\xE\xF \"\xES\xFi\xE\xF\"\n"
+      "OpName \xEup\xF%204\xE\xF \"\xES\xFo_color\xE\xF\"\n"
+      "OpMemberDecorate \xEt\xF%20\xE\xF \xEL\xF" "0\xE\xF Offset \xEL\xF" "0\xE\xF\n"
+      "OpMemberDecorate \xEt\xF%20\xE\xF \xEL\xF" "1\xE\xF Offset \xEL\xF" "16\xE\xF\n"
+      "OpDecorate \xEt\xF%20\xE\xF Block\n"
+      "OpDecorate \xEp\xF%22\xE\xF DescriptorSet \xEL\xF" "1\xE\xF\n"
+      "OpDecorate \xEp\xF%22\xE\xF Binding \xEL\xF" "0\xE\xF\n"
+      "OpDecorate \xEmp\xF%39\xE\xF DescriptorSet \xEL\xF" "0\xE\xF\n"
+      "OpDecorate \xEmp\xF%39\xE\xF Binding \xEL\xF" "1\xE\xF\n"
+      "OpDecorate \xEuc\xF%95\xE\xF SpecId \xEL\xF" "20\xE\xF\n"
+      "OpDecorate \xEup\xF%204\xE\xF Location \xEL\xF" "2\xE\xF\n"
+      "\xEt\xF%2\xE\xF = OpTypeVoid\n"
+      "\xEt\xF%3\xE\xF = OpTypeFunction \xEt\xF%2\xE\xF\n"
+      "\xE" "ft\xF%6\xE\xF = OpTypeFloat \xEL\xF" "32\xE\xF\n"
+      "\xE" "dt\xF%300\xE\xF = OpTypeFloat \xEL\xF" "64\xE\xF\n"
+      "\xEht\xF%301\xE\xF = OpTypeFloat \xEL\xF" "16\xE\xF\n"
+      "\xE" "ft\xF%7\xE\xF = OpTypeVector \xE" "ft\xF%6\xE\xF \xEL\xF" "2\xE\xF\n"
+      "\xE" "fT\xF%8\xE\xF = OpTypePointer Function \xE" "ft\xF%7\xE\xF\n"
+      "\xE" "ft\xF%9\xE\xF = OpTypeVector \xE" "ft\xF%6\xE\xF \xEL\xF" "4\xE\xF\n"
+      "\xEut\xF%10\xE\xF = OpTypeInt \xEL\xF" "32\xE\xF \xEL\xF" "0\xE\xF\n"
+      "\xEuc\xF%11\xE\xF = OpConstant \xEut\xF%10\xE\xF \xEL\xF" "2\xE\xF\n"
+      "\xE" "ft\xF%12\xE\xF = OpTypeArray \xE" "ft\xF%9\xE\xF \xEuc\xF%11\xE\xF\n"
+      "\xEt\xF%13\xE\xF = OpTypeFunction \xE" "ft\xF%12\xE\xF \xE" "fT\xF%8\xE\xF \xE" "ft\xF%6\xE\xF\n"
+      "\xE" "fT\xF%18\xE\xF = OpTypePointer Private \xE" "ft\xF%9\xE\xF\n"
+      "\xE" "fp\xF%19\xE\xF = OpVariable \xE" "fT\xF%18\xE\xF Private\n"
+      "\xEt\xF%20\xE\xF = OpTypeStruct \xE" "ft\xF%6\xE\xF \xE" "ft\xF%9\xE\xF\n"
+      "\xET\xF%21\xE\xF = OpTypePointer Uniform \xEt\xF%20\xE\xF\n"
+      "\xEp\xF%22\xE\xF = OpVariable \xET\xF%21\xE\xF Uniform\n"
+      "\xEit\xF%23\xE\xF = OpTypeInt \xEL\xF" "32\xE\xF \xEL\xF" "1\xE\xF\n"
+      "\xEic\xF%24\xE\xF = OpConstant \xEit\xF%23\xE\xF \xEL\xF" "1\xE\xF\n"
+      "\xE" "fT\xF%25\xE\xF = OpTypePointer Uniform \xE" "ft\xF%9\xE\xF\n"
+      "\xE" "fc\xF%28\xE\xF = OpConstant \xE" "ft\xF%6\xE\xF \xEL\xF" "0\xE\xF\n"
+      "\xE" "fc\xF%29\xE\xF = OpConstantComposite \xE" "ft\xF%9\xE\xF \xE" "fc\xF%28\xE\xF \xE" "fc\xF%28\xE\xF \xE" "fc\xF%28\xE\xF \xE" "fc\xF%28\xE\xF\n"
+      "\xE" "fT\xF%34\xE\xF = OpTypePointer Function \xE" "ft\xF%9\xE\xF\n"
+      "\xEmt\xF%36\xE\xF = OpTypeImage \xE" "ft\xF%6\xE\xF 2D \xEL\xF" "0\xE\xF \xEL\xF" "0\xE\xF \xEL\xF" "0\xE\xF \xEL\xF" "1\xE\xF Unknown\n"
+      "\xEst\xF%302\xE\xF = OpTypeSampler\n"
+      "\xEm\xF%37\xE\xF = OpTypeSampledImage \xEmt\xF%36\xE\xF\n"
+      "\xEmT\xF%38\xE\xF = OpTypePointer UniformConstant \xEm\xF%37\xE\xF\n"
+      "\xEmp\xF%39\xE\xF = OpVariable \xEmT\xF%38\xE\xF UniformConstant\n"
+      "\xE" "fc\xF%41\xE\xF = OpConstantComposite \xE" "ft\xF%7\xE\xF \xE" "fc\xF%28\xE\xF \xE" "fc\xF%28\xE\xF\n"
+      "\xE" "fT\xF%45\xE\xF = OpTypePointer Function \xE" "ft\xF%6\xE\xF\n"
+      "\xEic\xF%47\xE\xF = OpConstant \xEit\xF%23\xE\xF \xEL\xF" "0\xE\xF\n"
+      "\xE" "fT\xF%48\xE\xF = OpTypePointer Uniform \xE" "ft\xF%6\xE\xF\n"
+      "\xE" "fc\xF%53\xE\xF = OpConstant \xE" "ft\xF%6\xE\xF \xEL\xF" "1\xE\xF\n"
+      "\xE" "bt\xF%55\xE\xF = OpTypeBool\n"
+      "\xE" "bT\xF%56\xE\xF = OpTypePointer Function \xE" "bt\xF%55\xE\xF\n"
+      "\xEuc\xF%58\xE\xF = OpConstant \xEut\xF%10\xE\xF \xEL\xF" "0\xE\xF\n"
+      "\xE" "fT\xF%59\xE\xF = OpTypePointer Private \xE" "ft\xF%6\xE\xF\n"
+      "\xEiT\xF%74\xE\xF = OpTypePointer Function \xEit\xF%23\xE\xF\n"
+      "\xEuT\xF%87\xE\xF = OpTypePointer Function \xEut\xF%10\xE\xF\n"
+      "\xEuc\xF%95\xE\xF = OpSpecConstant \xEut\xF%10\xE\xF \xEL\xF" "2\xE\xF\n"
+      "\xEuc\xF%100\xE\xF = OpConstant \xEut\xF%10\xE\xF \xEL\xF" "1\xE\xF\n"
+      "\xE" "fc\xF%109\xE\xF = OpConstantComposite \xE" "ft\xF%9\xE\xF \xE" "fc\xF%53\xE\xF \xE" "fc\xF%53\xE\xF \xE" "fc\xF%53\xE\xF \xE" "fc\xF%53\xE\xF\n"
+      "\xEic\xF%127\xE\xF = OpConstant \xEit\xF%23\xE\xF \xEL\xF" "10\xE\xF\n"
+      "\xE" "fc\xF%139\xE\xF = OpConstant \xE" "ft\xF%6\xE\xF \xEL\xF" "2\xE\xF\n"
+      "\xE" "fc\xF%143\xE\xF = OpConstant \xE" "ft\xF%6\xE\xF \xEL\xF" "3\xE\xF\n"
+      "\xE" "fc\xF%158\xE\xF = OpConstant \xE" "ft\xF%6\xE\xF \xEL\xF" "4\xE\xF\n"
+      "\xE" "fc\xF%177\xE\xF = OpConstant \xE" "ft\xF%6\xE\xF \xEL\xF" "0.5\xE\xF\n"
+      "\xEic\xF%195\xE\xF = OpConstant \xEit\xF%23\xE\xF \xEL\xF" "100\xE\xF\n"
+      "\xEut\xF%202\xE\xF = OpTypeVector \xEut\xF%10\xE\xF \xEL\xF" "4\xE\xF\n"
+      "\xEuT\xF%203\xE\xF = OpTypePointer Output \xEut\xF%202\xE\xF\n"
+      "\xEup\xF%204\xE\xF = OpVariable \xEuT\xF%203\xE\xF Output\n"
+      "%4 = OpFunction \xEt\xF%2\xE\xF None \xEt\xF%3\xE\xF\n"
+      "\xEl\xF%5\xE\xF = OpLabel\n"
+      "\xE" "fp\xF%35\xE\xF = OpVariable \xE" "fT\xF%34\xE\xF Function\n"
+      "\xE" "fp\xF%46\xE\xF = OpVariable \xE" "fT\xF%45\xE\xF Function\n"
+      "\xE" "fp\xF%51\xE\xF = OpVariable \xE" "fT\xF%45\xE\xF Function\n"
+      "\xE" "bp\xF%57\xE\xF = OpVariable \xE" "bT\xF%56\xE\xF Function\n"
+      "\xE" "fp\xF%69\xE\xF = OpVariable \xE" "fT\xF%8\xE\xF Function\n"
+      "\xEip\xF%75\xE\xF = OpVariable \xEiT\xF%74\xE\xF Function\n"
+      "\xE" "fp\xF%80\xE\xF = OpVariable \xE" "fT\xF%34\xE\xF Function\n"
+      "\xEup\xF%88\xE\xF = OpVariable \xEuT\xF%87\xE\xF Function\n"
+      "\xE" "fp\xF%174\xE\xF = OpVariable \xE" "fT\xF%45\xE\xF Function\n"
+      "\xEip\xF%187\xE\xF = OpVariable \xEiT\xF%74\xE\xF Function\n"
+      "\xE" "fp\xF%26\xE\xF = OpAccessChain \xE" "fT\xF%25\xE\xF \xEp\xF%22\xE\xF \xEic\xF%24\xE\xF\n"
+      "\xE" "f\xF%27\xE\xF = OpLoad \xE" "ft\xF%9\xE\xF \xE" "fp\xF%26\xE\xF\n"
+      "OpStore \xE" "fp\xF%19\xE\xF \xE" "f\xF%27\xE\xF\n"
+      "\xEm\xF%40\xE\xF = OpLoad \xEm\xF%37\xE\xF \xEmp\xF%39\xE\xF\n"
+      "\xE" "f\xF%42\xE\xF = OpImageSampleImplicitLod \xE" "ft\xF%9\xE\xF \xEm\xF%40\xE\xF \xE" "fc\xF%41\xE\xF\n"
+      "\xE" "f\xF%43\xE\xF = OpLoad \xE" "ft\xF%9\xE\xF \xE" "fp\xF%19\xE\xF\n"
+      "\xE" "f\xF%44\xE\xF = OpFAdd \xE" "ft\xF%9\xE\xF \xE" "f\xF%42\xE\xF \xE" "f\xF%43\xE\xF\n"
+      "OpStore \xE" "fp\xF%35\xE\xF \xE" "f\xF%44\xE\xF\n"
+      "\xE" "fp\xF%49\xE\xF = OpAccessChain \xE" "fT\xF%48\xE\xF \xEp\xF%22\xE\xF \xEic\xF%47\xE\xF\n"
+      "\xE" "f\xF%50\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%49\xE\xF\n"
+      "OpStore \xE" "fp\xF%46\xE\xF \xE" "f\xF%50\xE\xF\n"
+      "\xE" "f\xF%52\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%46\xE\xF\n"
+      "\xE" "f\xF%54\xE\xF = OpFAdd \xE" "ft\xF%6\xE\xF \xE" "f\xF%52\xE\xF \xE" "fc\xF%53\xE\xF\n"
+      "OpStore \xE" "fp\xF%51\xE\xF \xE" "f\xF%54\xE\xF\n"
+      "\xE" "fp\xF%60\xE\xF = OpAccessChain \xE" "fT\xF%59\xE\xF \xE" "fp\xF%19\xE\xF \xEuc\xF%58\xE\xF\n"
+      "\xE" "f\xF%61\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%60\xE\xF\n"
+      "\xE" "b\xF%62\xE\xF = OpFOrdGreaterThan \xE" "bt\xF%55\xE\xF \xE" "f\xF%61\xE\xF \xE" "fc\xF%28\xE\xF\n"
+      "OpSelectionMerge \xEl\xF%64\xE\xF None\n"
+      "OpBranchConditional \xE" "b\xF%62\xE\xF \xEl\xF%63\xE\xF \xEl\xF%64\xE\xF\n"
+      "\xEl\xF%64\xE\xF = OpLabel\n"
+      "\xE" "b\xF%73\xE\xF = OpPhi \xE" "bt\xF%55\xE\xF \xE" "b\xF%62\xE\xF \xEl\xF%5\xE\xF \xE" "b\xF%72\xE\xF \xEl\xF%63\xE\xF\n"
+      "OpStore \xE" "bp\xF%57\xE\xF \xE" "b\xF%73\xE\xF\n"
+      "OpStore \xEip\xF%75\xE\xF \xEic\xF%47\xE\xF\n"
+      "OpBranch \xEl\xF%76\xE\xF\n"
+      "\xEl\xF%197\xE\xF = OpLabel\n"
+      "OpBranch \xEl\xF%190\xE\xF\n"
+      "\xEl\xF%63\xE\xF = OpLabel\n"
+      "\xE" "f\xF%65\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%46\xE\xF\n"
+      "\xE" "f\xF%66\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%51\xE\xF\n"
+      "\xE" "f\xF%67\xE\xF = OpCompositeConstruct \xE" "ft\xF%7\xE\xF \xE" "f\xF%65\xE\xF \xE" "f\xF%66\xE\xF\n"
+      "\xE" "f\xF%68\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%51\xE\xF\n"
+      "OpStore \xE" "fp\xF%69\xE\xF \xE" "f\xF%67\xE\xF\n"
+      "\xE" "f\xF%70\xE\xF = OpFunctionCall \xE" "ft\xF%12\xE\xF \xE" "f\xF%16\xE\xF \xE" "fp\xF%69\xE\xF \xE" "f\xF%68\xE\xF\n"
+      "\xE" "f\xF%71\xE\xF = OpCompositeExtract \xE" "ft\xF%6\xE\xF \xE" "f\xF%70\xE\xF \xEL\xF" "0\xE\xF \xEL\xF" "0\xE\xF\n"
+      "\xE" "b\xF%72\xE\xF = OpFOrdGreaterThan \xE" "bt\xF%55\xE\xF \xE" "f\xF%71\xE\xF \xE" "fc\xF%28\xE\xF\n"
+      "OpBranch \xEl\xF%64\xE\xF\n"
+      "\xEl\xF%77\xE\xF = OpLabel\n"
+      "\xE" "f\xF%81\xE\xF = OpLoad \xE" "ft\xF%9\xE\xF \xE" "fp\xF%19\xE\xF\n"
+      "OpStore \xE" "fp\xF%80\xE\xF \xE" "f\xF%81\xE\xF\n"
+      "\xE" "fp\xF%82\xE\xF = OpAccessChain \xE" "fT\xF%45\xE\xF \xE" "fp\xF%80\xE\xF \xEuc\xF%58\xE\xF\n"
+      "\xE" "f\xF%83\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%82\xE\xF\n"
+      "\xE" "b\xF%84\xE\xF = OpFOrdGreaterThan \xE" "bt\xF%55\xE\xF \xE" "f\xF%83\xE\xF \xE" "fc\xF%28\xE\xF\n"
+      "OpSelectionMerge \xEl\xF%86\xE\xF None\n"
+      "OpBranchConditional \xE" "b\xF%84\xE\xF \xEl\xF%85\xE\xF \xEl\xF%113\xE\xF\n"
+      "\xEl\xF%85\xE\xF = OpLabel\n"
+      "OpStore \xEup\xF%88\xE\xF \xEuc\xF%58\xE\xF\n"
+      "OpBranch \xEl\xF%89\xE\xF\n"
+      "\xEl\xF%89\xE\xF = OpLabel\n"
+      "OpLoopMerge \xEl\xF%91\xE\xF \xEl\xF%92\xE\xF None\n"
+      "OpBranch \xEl\xF%93\xE\xF\n"
+      "\xEl\xF%93\xE\xF = OpLabel\n"
+      "\xEu\xF%94\xE\xF = OpLoad \xEut\xF%10\xE\xF \xEup\xF%88\xE\xF\n"
+      "\xE" "b\xF%96\xE\xF = OpULessThan \xE" "bt\xF%55\xE\xF \xEu\xF%94\xE\xF \xEuc\xF%95\xE\xF\n"
+      "OpBranchConditional \xE" "b\xF%96\xE\xF \xEl\xF%90\xE\xF \xEl\xF%91\xE\xF\n"
+      "\xEl\xF%105\xE\xF = OpLabel\n"
+      "OpBranch \xEl\xF%92\xE\xF\n"
+      "\xEl\xF%198\xE\xF = OpLabel\n"
+      "OpBranch \xEl\xF%191\xE\xF\n"
+      "\xEl\xF%163\xE\xF = OpLabel\n"
+      "OpBranch \xEl\xF%136\xE\xF\n"
+      "\xEl\xF%104\xE\xF = OpLabel\n"
+      "OpBranch \xEl\xF%91\xE\xF\n"
+      "\xEl\xF%76\xE\xF = OpLabel\n"
+      "OpLoopMerge \xEl\xF%78\xE\xF \xEl\xF%79\xE\xF None\n"
+      "OpBranch \xEl\xF%77\xE\xF\n"
+      "\xEl\xF%92\xE\xF = OpLabel\n"
+      "\xEu\xF%107\xE\xF = OpLoad \xEut\xF%10\xE\xF \xEup\xF%88\xE\xF\n"
+      "\xEu\xF%108\xE\xF = OpIAdd \xEut\xF%10\xE\xF \xEu\xF%107\xE\xF \xEic\xF%24\xE\xF\n"
+      "OpStore \xEup\xF%88\xE\xF \xEu\xF%108\xE\xF\n"
+      "OpBranch \xEl\xF%89\xE\xF\n"
+      "\xEl\xF%91\xE\xF = OpLabel\n"
+      "\xE" "f\xF%110\xE\xF = OpLoad \xE" "ft\xF%9\xE\xF \xE" "fp\xF%80\xE\xF\n"
+      "\xE" "f\xF%111\xE\xF = OpFAdd \xE" "ft\xF%9\xE\xF \xE" "f\xF%110\xE\xF \xE" "fc\xF%109\xE\xF\n"
+      "OpStore \xE" "fp\xF%80\xE\xF \xE" "f\xF%111\xE\xF\n"
+      "OpBranch \xEl\xF%79\xE\xF\n"
+      "\xEl\xF%113\xE\xF = OpLabel\n"
+      "\xE" "f\xF%114\xE\xF = OpLoad \xE" "ft\xF%9\xE\xF \xE" "fp\xF%80\xE\xF\n"
+      "\xE" "f\xF%115\xE\xF = OpFSub \xE" "ft\xF%9\xE\xF \xE" "f\xF%114\xE\xF \xE" "fc\xF%109\xE\xF\n"
+      "OpStore \xE" "fp\xF%80\xE\xF \xE" "f\xF%115\xE\xF\n"
+      "OpBranch \xEl\xF%86\xE\xF\n"
+      "\xEl\xF%132\xE\xF = OpLabel\n"
+      "\xE" "f\xF%137\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%51\xE\xF\n"
+      "\xE" "f\xF%138\xE\xF = OpFAdd \xE" "ft\xF%6\xE\xF \xE" "f\xF%137\xE\xF \xE" "fc\xF%53\xE\xF\n"
+      "OpStore \xE" "fp\xF%51\xE\xF \xE" "f\xF%138\xE\xF\n"
+      "OpBranch \xEl\xF%133\xE\xF\n"
+      "\xEl\xF%86\xE\xF = OpLabel\n"
+      "\xE" "fp\xF%116\xE\xF = OpAccessChain \xE" "fT\xF%45\xE\xF \xE" "fp\xF%80\xE\xF \xEuc\xF%100\xE\xF\n"
+      "\xE" "f\xF%117\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%116\xE\xF\n"
+      "\xE" "b\xF%118\xE\xF = OpFOrdGreaterThan \xE" "bt\xF%55\xE\xF \xE" "f\xF%117\xE\xF \xE" "fc\xF%28\xE\xF\n"
+      "OpSelectionMerge \xEl\xF%120\xE\xF None\n"
+      "OpBranchConditional \xE" "b\xF%118\xE\xF \xEl\xF%119\xE\xF \xEl\xF%120\xE\xF\n"
+      "\xEl\xF%119\xE\xF = OpLabel\n"
+      "OpBranch \xEl\xF%78\xE\xF\n"
+      "\xEl\xF%120\xE\xF = OpLabel\n"
+      "\xE" "fp\xF%122\xE\xF = OpAccessChain \xE" "fT\xF%45\xE\xF \xE" "fp\xF%80\xE\xF \xEuc\xF%11\xE\xF\n"
+      "\xE" "f\xF%123\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%122\xE\xF\n"
+      "\xE" "f\xF%124\xE\xF = OpFAdd \xE" "ft\xF%6\xE\xF \xE" "f\xF%123\xE\xF \xE" "fc\xF%53\xE\xF\n"
+      "\xE" "fp\xF%125\xE\xF = OpAccessChain \xE" "fT\xF%45\xE\xF \xE" "fp\xF%80\xE\xF \xEuc\xF%11\xE\xF\n"
+      "OpStore \xE" "fp\xF%125\xE\xF \xE" "f\xF%124\xE\xF\n"
+      "OpBranch \xEl\xF%79\xE\xF\n"
+      "\xEl\xF%79\xE\xF = OpLabel\n"
+      "\xEi\xF%126\xE\xF = OpLoad \xEit\xF%23\xE\xF \xEip\xF%75\xE\xF\n"
+      "\xE" "b\xF%128\xE\xF = OpSLessThan \xE" "bt\xF%55\xE\xF \xEi\xF%126\xE\xF \xEic\xF%127\xE\xF\n"
+      "OpBranchConditional \xE" "b\xF%128\xE\xF \xEl\xF%76\xE\xF \xEl\xF%78\xE\xF\n"
+      "\xEl\xF%78\xE\xF = OpLabel\n"
+      "\xE" "fp\xF%129\xE\xF = OpAccessChain \xE" "fT\xF%48\xE\xF \xEp\xF%22\xE\xF \xEic\xF%47\xE\xF\n"
+      "\xE" "f\xF%130\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%129\xE\xF\n"
+      "\xEi\xF%131\xE\xF = OpConvertFToS \xEit\xF%23\xE\xF \xE" "f\xF%130\xE\xF\n"
+      "OpSelectionMerge \xEl\xF%136\xE\xF None\n"
+      "OpSwitch \xEi\xF%131\xE\xF \xEl\xF%135\xE\xF \xEL\xF" "0\xE\xF \xEl\xF%132\xE\xF \xEL\xF" "1\xE\xF \xEl\xF%132\xE\xF \xEL\xF" "2\xE\xF \xEl\xF%132\xE\xF \xEL\xF" "3\xE\xF \xEl\xF%133\xE\xF \xEL\xF" "4\xE\xF \xEl\xF%134\xE\xF\n"
+      "\xEl\xF%90\xE\xF = OpLabel\n"
+      "\xE" "f\xF%97\xE\xF = OpLoad \xE" "ft\xF%9\xE\xF \xE" "fp\xF%19\xE\xF\n"
+      "\xE" "f\xF%98\xE\xF = OpLoad \xE" "ft\xF%9\xE\xF \xE" "fp\xF%80\xE\xF\n"
+      "\xE" "f\xF%99\xE\xF = OpFAdd \xE" "ft\xF%9\xE\xF \xE" "f\xF%98\xE\xF \xE" "f\xF%97\xE\xF\n"
+      "OpStore \xE" "fp\xF%80\xE\xF \xE" "f\xF%99\xE\xF\n"
+      "\xE" "fp\xF%101\xE\xF = OpAccessChain \xE" "fT\xF%45\xE\xF \xE" "fp\xF%80\xE\xF \xEuc\xF%100\xE\xF\n"
+      "\xE" "f\xF%102\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%101\xE\xF\n"
+      "\xE" "b\xF%103\xE\xF = OpFOrdLessThan \xE" "bt\xF%55\xE\xF \xE" "f\xF%102\xE\xF \xE" "fc\xF%28\xE\xF\n"
+      "OpSelectionMerge \xEl\xF%105\xE\xF None\n"
+      "OpBranchConditional \xE" "b\xF%103\xE\xF \xEl\xF%104\xE\xF \xEl\xF%105\xE\xF\n"
+      "\xEl\xF%161\xE\xF = OpLabel\n"
+      "OpLoopMerge \xEl\xF%163\xE\xF \xEl\xF%164\xE\xF None\n"
+      "OpBranch \xEl\xF%165\xE\xF\n"
+      "\xEl\xF%165\xE\xF = OpLabel\n"
+      "\xE" "f\xF%166\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%51\xE\xF\n"
+      "\xE" "b\xF%167\xE\xF = OpFOrdLessThan \xE" "bt\xF%55\xE\xF \xE" "f\xF%166\xE\xF \xE" "fc\xF%139\xE\xF\n"
+      "OpBranchConditional \xE" "b\xF%167\xE\xF \xEl\xF%162\xE\xF \xEl\xF%163\xE\xF\n"
+      "\xEl\xF%164\xE\xF = OpLabel\n"
+      "OpBranch \xEl\xF%161\xE\xF\n"
+      "\xEl\xF%162\xE\xF = OpLabel\n"
+      "\xE" "f\xF%168\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%46\xE\xF\n"
+      "\xE" "b\xF%169\xE\xF = OpFOrdLessThan \xE" "bt\xF%55\xE\xF \xE" "f\xF%168\xE\xF \xE" "fc\xF%53\xE\xF\n"
+      "OpSelectionMerge \xEl\xF%171\xE\xF None\n"
+      "OpBranchConditional \xE" "b\xF%169\xE\xF \xEl\xF%170\xE\xF \xEl\xF%171\xE\xF\n"
+      "\xEl\xF%135\xE\xF = OpLabel\n"
+      "\xE" "f\xF%159\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%51\xE\xF\n"
+      "\xE" "f\xF%160\xE\xF = OpFAdd \xE" "ft\xF%6\xE\xF \xE" "f\xF%159\xE\xF \xE" "fc\xF%158\xE\xF\n"
+      "OpStore \xE" "fp\xF%51\xE\xF \xE" "f\xF%160\xE\xF\n"
+      "OpBranch \xEl\xF%161\xE\xF\n"
+      "\xEl\xF%133\xE\xF = OpLabel\n"
+      "\xE" "f\xF%140\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%51\xE\xF\n"
+      "\xE" "f\xF%141\xE\xF = OpFAdd \xE" "ft\xF%6\xE\xF \xE" "f\xF%140\xE\xF \xE" "fc\xF%139\xE\xF\n"
+      "OpStore \xE" "fp\xF%51\xE\xF \xE" "f\xF%141\xE\xF\n"
+      "OpBranch \xEl\xF%136\xE\xF\n"
+      "\xEl\xF%134\xE\xF = OpLabel\n"
+      "\xE" "f\xF%144\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%51\xE\xF\n"
+      "\xE" "f\xF%145\xE\xF = OpFAdd \xE" "ft\xF%6\xE\xF \xE" "f\xF%144\xE\xF \xE" "fc\xF%143\xE\xF\n"
+      "OpStore \xE" "fp\xF%51\xE\xF \xE" "f\xF%145\xE\xF\n"
+      "OpBranch \xEl\xF%146\xE\xF\n"
+      "\xEl\xF%146\xE\xF = OpLabel\n"
+      "OpLoopMerge \xEl\xF%148\xE\xF \xEl\xF%149\xE\xF None\n"
+      "OpBranch \xEl\xF%150\xE\xF\n"
+      "\xEl\xF%150\xE\xF = OpLabel\n"
+      "\xE" "f\xF%151\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%51\xE\xF\n"
+      "\xE" "b\xF%152\xE\xF = OpFOrdLessThan \xE" "bt\xF%55\xE\xF \xE" "f\xF%151\xE\xF \xE" "fc\xF%139\xE\xF\n"
+      "OpBranchConditional \xE" "b\xF%152\xE\xF \xEl\xF%147\xE\xF \xEl\xF%148\xE\xF\n"
+      "\xEl\xF%147\xE\xF = OpLabel\n"
+      "\xE" "f\xF%153\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%46\xE\xF\n"
+      "\xE" "b\xF%154\xE\xF = OpFOrdLessThan \xE" "bt\xF%55\xE\xF \xE" "f\xF%153\xE\xF \xE" "fc\xF%53\xE\xF\n"
+      "OpSelectionMerge \xEl\xF%156\xE\xF None\n"
+      "OpBranchConditional \xE" "b\xF%154\xE\xF \xEl\xF%155\xE\xF \xEl\xF%156\xE\xF\n"
+      "\xEl\xF%155\xE\xF = OpLabel\n"
+      "OpBranch \xEl\xF%148\xE\xF\n"
+      "\xEl\xF%156\xE\xF = OpLabel\n"
+      "OpBranch \xEl\xF%149\xE\xF\n"
+      "\xEl\xF%149\xE\xF = OpLabel\n"
+      "OpBranch \xEl\xF%146\xE\xF\n"
+      "\xEl\xF%148\xE\xF = OpLabel\n"
+      "OpBranch \xEl\xF%135\xE\xF\n"
+      "\xEl\xF%136\xE\xF = OpLabel\n"
+      "OpStore \xE" "fp\xF%174\xE\xF \xE" "fc\xF%53\xE\xF\n"
+      "\xE" "fp\xF%175\xE\xF = OpAccessChain \xE" "fT\xF%45\xE\xF \xE" "fp\xF%35\xE\xF \xEuc\xF%58\xE\xF\n"
+      "\xE" "f\xF%176\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%175\xE\xF\n"
+      "\xE" "b\xF%178\xE\xF = OpFOrdLessThanEqual \xE" "bt\xF%55\xE\xF \xE" "f\xF%176\xE\xF \xE" "fc\xF%177\xE\xF\n"
+      "OpSelectionMerge \xEl\xF%180\xE\xF None\n"
+      "OpBranchConditional \xE" "b\xF%178\xE\xF \xEl\xF%179\xE\xF \xEl\xF%181\xE\xF\n"
+      "\xEl\xF%179\xE\xF = OpLabel\n"
+      "OpStore \xE" "fp\xF%174\xE\xF \xE" "fc\xF%28\xE\xF\n"
+      "OpBranch \xEl\xF%180\xE\xF\n"
+      "\xEl\xF%185\xE\xF = OpLabel\n"
+      "OpStore \xE" "fp\xF%174\xE\xF \xE" "fc\xF%139\xE\xF\n"
+      "OpBranch \xEl\xF%186\xE\xF\n"
+      "\xEl\xF%181\xE\xF = OpLabel\n"
+      "\xE" "fp\xF%182\xE\xF = OpAccessChain \xE" "fT\xF%45\xE\xF \xE" "fp\xF%35\xE\xF \xEuc\xF%58\xE\xF\n"
+      "\xE" "f\xF%183\xE\xF = OpLoad \xE" "ft\xF%6\xE\xF \xE" "fp\xF%182\xE\xF\n"
+      "\xE" "b\xF%184\xE\xF = OpFOrdGreaterThanEqual \xE" "bt\xF%55\xE\xF \xE" "f\xF%183\xE\xF \xE" "fc\xF%177\xE\xF\n"
+      "OpSelectionMerge \xEl\xF%186\xE\xF None\n"
+      "OpBranchConditional \xE" "b\xF%184\xE\xF \xEl\xF%185\xE\xF \xEl\xF%186\xE\xF\n"
+      "\xEl\xF%170\xE\xF = OpLabel\n"
+      "OpBranch \xEl\xF%163\xE\xF\n"
+      "\xEl\xF%171\xE\xF = OpLabel\n"
+      "OpBranch \xEl\xF%164\xE\xF\n"
+      "\xEl\xF%186\xE\xF = OpLabel\n"
+      "OpBranch \xEl\xF%180\xE\xF\n"
+      "\xEl\xF%188\xE\xF = OpLabel\n"
+      "OpLoopMerge \xEl\xF%190\xE\xF \xEl\xF%191\xE\xF None\n"
+      "OpBranch \xEl\xF%189\xE\xF\n"
+      "\xEl\xF%189\xE\xF = OpLabel\n"
+      "\xE" "f\xF%192\xE\xF = OpLoad \xE" "ft\xF%9\xE\xF \xE" "fp\xF%19\xE\xF\n"
+      "\xE" "f\xF%193\xE\xF = OpFAdd \xE" "ft\xF%9\xE\xF \xE" "f\xF%192\xE\xF \xE" "fc\xF%109\xE\xF\n"
+      "OpStore \xE" "fp\xF%19\xE\xF \xE" "f\xF%193\xE\xF\n"
+      "\xEi\xF%194\xE\xF = OpLoad \xEit\xF%23\xE\xF \xEip\xF%187\xE\xF\n"
+      "\xE" "b\xF%196\xE\xF = OpSGreaterThan \xE" "bt\xF%55\xE\xF \xEi\xF%194\xE\xF \xEic\xF%195\xE\xF\n"
+      "OpSelectionMerge \xEl\xF%198\xE\xF None\n"
+      "OpBranchConditional \xE" "b\xF%196\xE\xF \xEl\xF%197\xE\xF \xEl\xF%198\xE\xF\n"
+      "\xEl\xF%180\xE\xF = OpLabel\n"
+      "OpStore \xEip\xF%187\xE\xF \xEic\xF%47\xE\xF\n"
+      "OpBranch \xEl\xF%188\xE\xF\n"
+      "\xEl\xF%191\xE\xF = OpLabel\n"
+      "\xEi\xF%200\xE\xF = OpLoad \xEit\xF%23\xE\xF \xEip\xF%187\xE\xF\n"
+      "\xEi\xF%201\xE\xF = OpIAdd \xEit\xF%23\xE\xF \xEi\xF%200\xE\xF \xEic\xF%24\xE\xF\n"
+      "OpStore \xEip\xF%187\xE\xF \xEi\xF%201\xE\xF\n"
+      "OpBranch \xEl\xF%188\xE\xF\n"
+      "\xEl\xF%190\xE\xF = OpLabel\n"
+      "OpReturn\n"
+      "OpFunctionEnd\n"
+      "\xE" "f\xF%16\xE\xF = OpFunction \xE" "ft\xF%12\xE\xF None \xEt\xF%13\xE\xF\n"
+      "\xE" "f\xF%14\xE\xF = OpFunctionParameter \xE" "fT\xF%8\xE\xF\n"
+      "\xE" "f\xF%15\xE\xF = OpFunctionParameter \xE" "ft\xF%6\xE\xF\n"
+      "\xEl\xF%17\xE\xF = OpLabel\n"
+      "\xE" "f\xF%30\xE\xF = OpCompositeConstruct \xE" "ft\xF%9\xE\xF \xE" "f\xF%15\xE\xF \xE" "f\xF%15\xE\xF \xE" "f\xF%15\xE\xF \xE" "f\xF%15\xE\xF\n"
+      "\xE" "f\xF%31\xE\xF = OpCompositeConstruct \xE" "ft\xF%12\xE\xF \xE" "fc\xF%29\xE\xF \xE" "f\xF%30\xE\xF\n"
+      "OpReturnValue \xE" "f\xF%31\xE\xF\n"
+      "OpFunctionEnd\n";
+  // clang-format on
+  EXPECT_THAT(EncodeAndDecodeSuccessfully(
+                  input, SPV_BINARY_TO_TEXT_OPTION_STYLE,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS),
+              expected);
 }
 
 // Test version string.

@@ -17,14 +17,18 @@
 #include <unistd.h>
 #endif
 
+#include <cassert>
 #include <cstdio>
 #include <cstring>
 #include <string>
 #include <vector>
 
+#include "source/print.h"
 #include "spirv-tools/libspirv.h"
 #include "tools/io.h"
 #include "tools/util/flags.h"
+
+namespace print = spvtools::print;
 
 static const std::string kHelpText = R"(%s - Disassemble a SPIR-V binary module
 
@@ -52,6 +56,9 @@ Options:
                     The default when output goes to something other than a
                     terminal (e.g. a file, a pipe, or a shell redirection).
 
+  --style           Overriding --color, use a more information-packed color scheme.
+  --no-style        Override --style and disable it.
+
   --no-indent       Don't indent instructions.
 
   --no-header       Don't output the header as leading comments.
@@ -73,10 +80,12 @@ Options:
 // clang-format off
 FLAG_SHORT_bool  (h,              /* default_value= */ false, /* required= */ false);
 FLAG_SHORT_string(o,              /* default_value= */ "-",   /* required= */ false);
-FLAG_LONG_bool   (help,           /* default_value= */ false, /* required= */false);
+FLAG_LONG_bool   (help,           /* default_value= */ false, /* required= */ false);
 FLAG_LONG_bool   (version,        /* default_value= */ false, /* required= */ false);
 FLAG_LONG_bool   (color,          /* default_value= */ false, /* required= */ false);
 FLAG_LONG_bool   (no_color,       /* default_value= */ false, /* required= */ false);
+FLAG_LONG_bool   (style,          /* default_value= */ false, /* required= */ false);
+FLAG_LONG_bool   (no_style,       /* default_value= */ false, /* required= */ false);
 FLAG_LONG_bool   (no_indent,      /* default_value= */ false, /* required= */ false);
 FLAG_LONG_bool   (no_header,      /* default_value= */ false, /* required= */ false);
 FLAG_LONG_bool   (raw_id,         /* default_value= */ false, /* required= */ false);
@@ -87,6 +96,150 @@ FLAG_LONG_bool   (comment,        /* default_value= */ false, /* required= */ fa
 // clang-format on
 
 static const auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_5;
+
+void PrintStylized(spv_text text) {
+  constexpr print::Color kColorFloat64 = print::Color::Orange;
+  constexpr print::Color kColorFloat32 = print::Color::Yellow;
+  constexpr print::Color kColorFloat16OrLess = print::Color::Green;
+  constexpr print::Color kColorInt = print::Color::Blue;
+  constexpr print::Color kColorUint = print::Color::Cyan;
+  constexpr print::Color kColorBool = print::Color::Magenta;
+  constexpr print::Color kColorImage = print::Color::Purple;
+  constexpr print::Color kColorSampler = print::Color::Brown;
+  constexpr print::Color kColorStringLiteral = print::Color::Green;
+  constexpr print::Color kColorNumericLiteral = print::Color::Red;
+
+  constexpr print::Style kStylePointer = print::Style::Bold;
+  constexpr print::Style kStyleConstant = print::Style::Italic;
+  constexpr print::Style kStyleType = print::Style::Underline;
+  constexpr print::Style kStyleTypePointer = print::Style::BoldUnderline;
+  constexpr print::Style kStyleLabel = print::Style::Faint;
+
+  // First, print the legend, so the reader can make sense of the colors.
+  std::cout << "; Legend:\n";
+  std::cout << ";   Base types: ";
+  print::SetColor(std::cout, true, kColorFloat64) << "float64";
+  print::SetColor(std::cout, true, print::Color::Reset) << " ";
+  print::SetColor(std::cout, true, kColorFloat32) << "float32";
+  print::SetColor(std::cout, true, print::Color::Reset) << " ";
+  print::SetColor(std::cout, true, kColorFloat16OrLess) << "float16-";
+  print::SetColor(std::cout, true, print::Color::Reset) << " ";
+  print::SetColor(std::cout, true, kColorInt) << "int";
+  print::SetColor(std::cout, true, print::Color::Reset) << " ";
+  print::SetColor(std::cout, true, kColorUint) << "uint";
+  print::SetColor(std::cout, true, print::Color::Reset) << " ";
+  print::SetColor(std::cout, true, kColorBool) << "bool";
+  print::SetColor(std::cout, true, print::Color::Reset) << " ";
+  print::SetColor(std::cout, true, kColorImage) << "image";
+  print::SetColor(std::cout, true, print::Color::Reset) << " ";
+  print::SetColor(std::cout, true, kColorSampler) << "sampler";
+  print::SetColor(std::cout, true, print::Color::Reset) << " ";
+  print::SetColor(std::cout, true, kColorStringLiteral) << "string-literal";
+  print::SetColor(std::cout, true, print::Color::Reset) << " ";
+  print::SetColor(std::cout, true, kColorNumericLiteral) << "numeric-literal";
+  print::SetColor(std::cout, true, print::Color::Reset);
+  std::cout << "\n";
+  std::cout << ";   Kinds: ";
+  print::SetColor(std::cout, true, print::Color::Reset, kStylePointer)
+      << "pointer";
+  print::SetColor(std::cout, true, print::Color::Reset) << " ";
+  print::SetColor(std::cout, true, print::Color::Reset, kStyleConstant)
+      << "constant";
+  print::SetColor(std::cout, true, print::Color::Reset) << " ";
+  print::SetColor(std::cout, true, print::Color::Reset, kStyleType) << "type";
+  print::SetColor(std::cout, true, print::Color::Reset) << " ";
+  print::SetColor(std::cout, true, print::Color::Reset, kStyleTypePointer)
+      << "type-pointer";
+  print::SetColor(std::cout, true, print::Color::Reset) << " ";
+  print::SetColor(std::cout, true, print::Color::Reset, kStyleLabel) << "label";
+  print::SetColor(std::cout, true, print::Color::Reset);
+  std::cout << "\n";
+
+  // Then go over the SPIR-V and output it piecemeal, replacing the style
+  // markers with print colors.
+  const char* str = text->str;
+  const char* end = str + text->length;
+
+  while (true) {
+    // Find the next style begin delimiter.
+    const char* style_begin = strchr(str, SPV_BINARY_TO_TEXT_STYLE_BEGIN);
+
+    // If none are found, output the rest of the SPIR-V and finish.
+    if (style_begin == nullptr) {
+      std::cout.write(str, end - str);
+      break;
+    }
+
+    // If a style is found, output the SPIR-V so far first.
+    std::cout.write(str, style_begin - str);
+
+    // Look at the style markers until the style end delimiter is seen.
+    str = ++style_begin;
+    print::Color color = print::Color::Reset;
+    print::Style style = print::Style::Reset;
+
+    bool is_style_end = false;
+    do {
+      switch (*str) {
+        case SPV_BINARY_TO_TEXT_STYLE_END:
+          is_style_end = true;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_FLOAT64:
+          color = kColorFloat64;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_FLOAT32:
+          color = kColorFloat32;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_FLOAT16_OR_LESS:
+          color = kColorFloat16OrLess;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_INT:
+          color = kColorInt;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_UINT:
+          color = kColorUint;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_BOOL:
+          color = kColorBool;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_IMAGE:
+          color = kColorImage;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_SAMPLER:
+          color = kColorSampler;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_STRING_LITERAL:
+          color = kColorStringLiteral;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_NUMERIC_LITERAL:
+          color = kColorNumericLiteral;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_POINTER:
+          style = kStylePointer;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_CONSTANT:
+          style = kStyleConstant;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_TYPE:
+          style = kStyleType;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_TYPE_POINTER:
+          style = kStyleTypePointer;
+          break;
+        case SPV_BINARY_TO_TEXT_STYLE_LABEL:
+          style = kStyleLabel;
+          break;
+        default:
+          // Unexpected marker
+          assert(false);
+      }
+      ++str;
+    } while (!is_style_end);
+
+    // Apply the style and continue until the next one.
+    print::SetColor(std::cout, true, color, style);
+  }
+}
 
 int main(int, const char** argv) {
   if (!flags::Parse(argv)) {
@@ -122,6 +275,7 @@ int main(int, const char** argv) {
 #endif
 
   uint32_t options = SPV_BINARY_TO_TEXT_OPTION_NONE;
+  bool print_to_stdout = false;
 
   if (!flags::no_indent.value()) options |= SPV_BINARY_TO_TEXT_OPTION_INDENT;
 
@@ -142,7 +296,12 @@ int main(int, const char** argv) {
   if (flags::comment.value()) options |= SPV_BINARY_TO_TEXT_OPTION_COMMENT;
 
   if (flags::o.value() == "-") {
-    // Print to standard output.
+    // If printing to standard output, then spvBinaryToText should
+    // do the printing.  In particular, colour printing on Windows is
+    // controlled by modifying console objects synchronously while
+    // outputting to the stream rather than by injecting escape codes
+    // into the output stream.
+    print_to_stdout = true;
     options |= SPV_BINARY_TO_TEXT_OPTION_PRINT;
     if (color_is_possible && !flags::no_color.value()) {
       bool output_is_tty = true;
@@ -153,22 +312,26 @@ int main(int, const char** argv) {
         options |= SPV_BINARY_TO_TEXT_OPTION_COLOR;
       }
     }
+
+    if (flags::style.value() && !flags::no_style.value()) {
+      // If stylizing the output, the responsibility of coloring and printing is
+      // on the caller.  In that case, remove the COLOR and PRINT options.
+      options |= SPV_BINARY_TO_TEXT_OPTION_STYLE;
+      options &= ~SPV_BINARY_TO_TEXT_OPTION_PRINT;
+      options &= ~SPV_BINARY_TO_TEXT_OPTION_COLOR;
+    }
   }
 
   // Read the input binary.
   std::vector<uint32_t> contents;
   if (!ReadBinaryFile(inFile.c_str(), &contents)) return 1;
 
-  // If printing to standard output, then spvBinaryToText should
-  // do the printing.  In particular, colour printing on Windows is
-  // controlled by modifying console objects synchronously while
-  // outputting to the stream rather than by injecting escape codes
-  // into the output stream.
   // If the printing option is off, then save the text in memory, so
-  // it can be emitted later in this function.
-  const bool print_to_stdout = SPV_BINARY_TO_TEXT_OPTION_PRINT & options;
+  // it can be emitted later in this function. If stylized, also save the text
+  // in memory since it needs to be post-processed before printing.
+  const bool isStylized = (options & SPV_BINARY_TO_TEXT_OPTION_STYLE) != 0;
   spv_text text = nullptr;
-  spv_text* textOrNull = print_to_stdout ? nullptr : &text;
+  spv_text* textOrNull = print_to_stdout && !isStylized ? nullptr : &text;
   spv_diagnostic diagnostic = nullptr;
   spv_context context = spvContextCreate(kDefaultEnvironment);
   spv_result_t error =
@@ -186,6 +349,11 @@ int main(int, const char** argv) {
       spvTextDestroy(text);
       return 1;
     }
+  } else if (isStylized) {
+    PrintStylized(text);
+  } else {
+    // Output is already printed to stdout
+    assert(textOrNull == nullptr);
   }
   spvTextDestroy(text);
 

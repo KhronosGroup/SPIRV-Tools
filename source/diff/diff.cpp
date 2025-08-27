@@ -554,13 +554,13 @@ class Differ {
   opt::Instruction ToMappedSrcIds(const opt::Instruction& dst_inst);
 
   void OutputRed() {
-    if (options_.color_output) out_ << spvtools::clr::red{true};
+    if (options_.color_output) print::SetColor(out_, true, print::Color::Red);
   }
   void OutputGreen() {
-    if (options_.color_output) out_ << spvtools::clr::green{true};
+    if (options_.color_output) print::SetColor(out_, true, print::Color::Green);
   }
   void OutputResetColor() {
-    if (options_.color_output) out_ << spvtools::clr::reset{true};
+    if (options_.color_output) print::SetColor(out_, true, print::Color::Reset);
   }
 
   opt::IRContext* src_context_;
@@ -2807,7 +2807,7 @@ spv_result_t Differ::Output() {
 
   NameMapper name_mapper = GetTrivialNameMapper();
   disassemble::InstructionDisassembler dis(out_, disassembly_options,
-                                           name_mapper);
+                                           name_mapper, {}, {});
 
   if (!options_.no_header) {
     // Output the header

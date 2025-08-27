@@ -37,39 +37,33 @@ class out_stream {
   std::stringstream* pStream;
 };
 
-namespace clr {
-// Resets console color.
-struct reset {
-  operator const char*();
-  bool isPrint;
+namespace print {
+enum class Color {
+  Reset,
+  Black,
+  Red,
+  Green,
+  Blue,
+  Yellow,
+  Cyan,
+  Magenta,
+  Brown,
+  Purple,
+  Orange,
 };
-// Sets console color to grey.
-struct grey {
-  operator const char*();
-  bool isPrint;
-};
-// Sets console color to red.
-struct red {
-  operator const char*();
-  bool isPrint;
-};
-// Sets console color to green.
-struct green {
-  operator const char*();
-  bool isPrint;
-};
-// Sets console color to yellow.
-struct yellow {
-  operator const char*();
-  bool isPrint;
-};
-// Sets console color to blue.
-struct blue {
-  operator const char*();
-  bool isPrint;
-};
-}  // namespace clr
 
+enum class Style {
+  Reset,
+  Bold,
+  Faint,
+  Underline,
+  Italic,
+  BoldUnderline,
+};
+
+std::ostream& SetColor(std::ostream& stream, bool isPrintToConsole, Color color,
+                       Style style = Style::Reset);
+}  // namespace print
 }  // namespace spvtools
 
 #endif  // SOURCE_PRINT_H_
