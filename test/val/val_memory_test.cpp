@@ -9452,6 +9452,48 @@ TEST_F(ValidateMemory, CoopMatMatrixFloat8FAdd) {
               HasSubstr("FAdd doesn't support FP8 E4M3/E5M2 types"));
 }
 
+TEST_F(ValidateMemory, PhysicalStorageBufferArray) {
+  const std::string body =
+      R"(
+              OpCapability Shader
+              OpCapability Int64
+              OpCapability PhysicalStorageBufferAddresses
+              OpExtension "SPV_KHR_storage_buffer_storage_class"
+              OpExtension "SPV_KHR_physical_storage_buffer"
+              OpMemoryModel PhysicalStorageBuffer64 GLSL450
+              OpEntryPoint GLCompute %18 "main"
+              OpExecutionMode %18 LocalSize 1 1 1
+              OpSource OpenCL_C 120
+              OpMemberDecorate %S 0 Offset 0
+              OpMemberDecorate %S 1 Offset 256
+              OpDecorate %array ArrayStride 16
+      %uint = OpTypeInt 32 0
+      %void = OpTypeVoid
+     %ulong = OpTypeInt 64 0
+     %float = OpTypeFloat 32
+   %v4float = OpTypeVector %float 4
+        %17 = OpTypeFunction %void
+   %ulong_0 = OpConstant %ulong 0
+    %uint_3 = OpConstant %uint 3
+     %array = OpTypeArray %v4float %uint_3
+         %S = OpTypeStruct %array %uint
+     %ptr_S = OpTypePointer PhysicalStorageBuffer %S
+   %float_0 = OpConstant %float 0
+ %v4float_0 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+        %23 = OpConstantComposite %array %v4float_0 %v4float_0 %v4float_0
+        %24 = OpConstantComposite %S %23 %uint_3
+        %18 = OpFunction %void None %17
+        %19 = OpLabel
+        %58 = OpConvertUToPtr %ptr_S %ulong_0
+              OpStore %58 %24 Aligned 4
+              OpReturn
+              OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
