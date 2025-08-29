@@ -38,6 +38,7 @@ namespace opt {
 
 namespace {
 constexpr uint32_t kOpTypeFloatSizeIndex = 0;
+constexpr uint32_t kOpEntryPointExecutionModelIndex = 0;
 constexpr uint32_t kOpTypePointerStorageClassIndex = 0;
 constexpr uint32_t kTypeArrayTypeIndex = 0;
 constexpr uint32_t kOpTypeScalarBitWidthIndex = 0;
@@ -166,6 +167,30 @@ static std::optional<spv::Capability> Handler_OpTypeFloat_Float64(
   const uint32_t size =
       instruction->GetSingleWordInOperand(kOpTypeFloatSizeIndex);
   return size == 64 ? std::optional(spv::Capability::Float64) : std::nullopt;
+}
+
+static std::optional<spv::Capability> Handler_OpEntryPoint_Geometry(
+    const Instruction* instruction) {
+  assert(instruction->opcode() == spv::Op::OpEntryPoint &&
+         "This handler only support OpEntryPoint opcodes.");
+
+  auto execution_model = spv::ExecutionModel(
+      instruction->GetSingleWordInOperand(kOpEntryPointExecutionModelIndex));
+  return execution_model == spv::ExecutionModel::Geometry
+             ? std::optional(spv::Capability::Geometry)
+             : std::nullopt;
+}
+
+static std::optional<spv::Capability>
+Handler_OpConditionalEntryPointINTEL_Geometry(const Instruction* instruction) {
+  assert(instruction->opcode() == spv::Op::OpConditionalEntryPointINTEL &&
+         "This handler only support OpConditionalEntryPointINTEL opcodes.");
+
+  auto execution_model =
+      spv::ExecutionModel(instruction->GetSingleWordInOperand(1));
+  return execution_model == spv::ExecutionModel::Geometry
+             ? std::optional(spv::Capability::Geometry)
+             : std::nullopt;
 }
 
 static std::optional<spv::Capability>
@@ -425,22 +450,24 @@ Handler_OpImageSparseRead_StorageImageReadWithoutFormat(
 }
 
 // Opcode of interest to determine capabilities requirements.
-constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 14> kOpcodeHandlers{{
+constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 16> kOpcodeHandlers{{
     // clang-format off
-    {spv::Op::OpImageRead,         Handler_OpImageRead_StorageImageReadWithoutFormat},
-    {spv::Op::OpImageWrite,        Handler_OpImageWrite_StorageImageWriteWithoutFormat},
-    {spv::Op::OpImageSparseRead,   Handler_OpImageSparseRead_StorageImageReadWithoutFormat},
-    {spv::Op::OpTypeFloat,         Handler_OpTypeFloat_Float16 },
-    {spv::Op::OpTypeFloat,         Handler_OpTypeFloat_Float64 },
-    {spv::Op::OpTypeImage,         Handler_OpTypeImage_ImageMSArray},
-    {spv::Op::OpTypeInt,           Handler_OpTypeInt_Int16 },
-    {spv::Op::OpTypeInt,           Handler_OpTypeInt_Int64 },
-    {spv::Op::OpTypePointer,       Handler_OpTypePointer_StorageInputOutput16},
-    {spv::Op::OpTypePointer,       Handler_OpTypePointer_StoragePushConstant16},
-    {spv::Op::OpTypePointer,       Handler_OpTypePointer_StorageUniform16},
-    {spv::Op::OpTypePointer,       Handler_OpTypePointer_StorageUniform16},
-    {spv::Op::OpTypePointer,       Handler_OpTypePointer_StorageUniformBufferBlock16},
-    {spv::Op::OpTypePointer,       Handler_OpTypePointer_StorageBuffer16BitAccess},
+    {spv::Op::OpImageRead,                   Handler_OpImageRead_StorageImageReadWithoutFormat},
+    {spv::Op::OpImageWrite,                  Handler_OpImageWrite_StorageImageWriteWithoutFormat},
+    {spv::Op::OpImageSparseRead,             Handler_OpImageSparseRead_StorageImageReadWithoutFormat},
+    {spv::Op::OpTypeFloat,                   Handler_OpTypeFloat_Float16 },
+    {spv::Op::OpTypeFloat,                   Handler_OpTypeFloat_Float64 },
+    {spv::Op::OpTypeImage,                   Handler_OpTypeImage_ImageMSArray},
+    {spv::Op::OpTypeInt,                     Handler_OpTypeInt_Int16 },
+    {spv::Op::OpTypeInt,                     Handler_OpTypeInt_Int64 },
+    {spv::Op::OpTypePointer,                 Handler_OpTypePointer_StorageInputOutput16},
+    {spv::Op::OpTypePointer,                 Handler_OpTypePointer_StoragePushConstant16},
+    {spv::Op::OpTypePointer,                 Handler_OpTypePointer_StorageUniform16},
+    {spv::Op::OpTypePointer,                 Handler_OpTypePointer_StorageUniform16},
+    {spv::Op::OpTypePointer,                 Handler_OpTypePointer_StorageUniformBufferBlock16},
+    {spv::Op::OpTypePointer,                 Handler_OpTypePointer_StorageBuffer16BitAccess},
+    {spv::Op::OpEntryPoint,                  Handler_OpEntryPoint_Geometry },
+    {spv::Op::OpConditionalEntryPointINTEL,  Handler_OpConditionalEntryPointINTEL_Geometry },
     // clang-format on
 }};
 
