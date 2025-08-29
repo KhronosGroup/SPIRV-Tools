@@ -1383,23 +1383,24 @@ bool ValidationState_t::GetPointerTypeInfo(
 
 uint32_t ValidationState_t::GetLargestScalarType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
-  uint32_t size = 0;
 
   switch (inst->opcode()) {
-    case spv::Op::OpTypeStruct:
+    case spv::Op::OpTypeStruct: {
+      uint32_t size = 0;
       for (uint32_t i = 1; i < inst->operands().size(); ++i) {
         const uint32_t member_size =
             GetLargestScalarType(inst->GetOperandAs<uint32_t>(i));
         size = std::max(size, member_size);
       }
-      break;
+      return size;
+    }
+    case spv::Op::OpTypeArray:
+      return GetLargestScalarType(inst->GetOperandAs<uint32_t>(1));
+    case spv::Op::OpTypeVector:
+      return GetLargestScalarType(inst->GetOperandAs<uint32_t>(1));
     default:
-      const uint32_t bytes = GetBitWidth(id) / 8;
-      size = std::max(size, bytes);
-      break;
+      return GetBitWidth(id) / 8;
   }
-
-  return size;
 }
 
 bool ValidationState_t::IsAccelerationStructureType(uint32_t id) const {
