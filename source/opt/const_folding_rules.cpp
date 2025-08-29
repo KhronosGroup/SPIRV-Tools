@@ -1433,14 +1433,19 @@ const analysis::Constant* FoldMin(const analysis::Type* result_type,
                                   const analysis::Constant* b,
                                   analysis::ConstantManager*) {
   if (const analysis::Integer* int_type = result_type->AsInteger()) {
-    if (int_type->width() == 32) {
+    if (int_type->width() <= 32) {
+      assert((a->AsIntConstant() != nullptr || a->AsNullConstant() != nullptr)
+        && "Must be an integer or null constant.");
+      assert((b->AsIntConstant() != nullptr || b->AsNullConstant() != nullptr)
+        && "Must be an integer or null constant.");
+
       if (int_type->IsSigned()) {
-        int32_t va = a->GetS32();
-        int32_t vb = b->GetS32();
+        int32_t va = (a->AsIntConstant() != nullptr) ? a->AsIntConstant()->GetS32BitValue() : 0;
+        int32_t vb = (b->AsIntConstant() != nullptr) ? b->AsIntConstant()->GetS32BitValue() : 0;
         return (va < vb ? a : b);
       } else {
-        uint32_t va = a->GetU32();
-        uint32_t vb = b->GetU32();
+        uint32_t va = (a->AsIntConstant() != nullptr) ? a->AsIntConstant()->GetU32BitValue() : 0;
+        uint32_t vb = (b->AsIntConstant() != nullptr) ? b->AsIntConstant()->GetU32BitValue() : 0;
         return (va < vb ? a : b);
       }
     } else if (int_type->width() == 64) {
@@ -1453,7 +1458,7 @@ const analysis::Constant* FoldMin(const analysis::Type* result_type,
         uint64_t vb = b->GetU64();
         return (va < vb ? a : b);
       }
-    }
+    } 
   } else if (const analysis::Float* float_type = result_type->AsFloat()) {
     if (float_type->width() == 32) {
       float va = a->GetFloat();
@@ -1473,14 +1478,19 @@ const analysis::Constant* FoldMax(const analysis::Type* result_type,
                                   const analysis::Constant* b,
                                   analysis::ConstantManager*) {
   if (const analysis::Integer* int_type = result_type->AsInteger()) {
-    if (int_type->width() == 32) {
+    if (int_type->width() <= 32) {
+      assert((a->AsIntConstant() != nullptr || a->AsNullConstant() != nullptr)
+        && "Must be an integer or null constant.");
+      assert((b->AsIntConstant() != nullptr || b->AsNullConstant() != nullptr)
+        && "Must be an integer or null constant.");
+
       if (int_type->IsSigned()) {
-        int32_t va = a->GetS32();
-        int32_t vb = b->GetS32();
+        int32_t va = (a->AsIntConstant() != nullptr) ? a->AsIntConstant()->GetS32BitValue() : 0;
+        int32_t vb = (b->AsIntConstant() != nullptr) ? b->AsIntConstant()->GetS32BitValue() : 0;
         return (va > vb ? a : b);
       } else {
-        uint32_t va = a->GetU32();
-        uint32_t vb = b->GetU32();
+        uint32_t va = (a->AsIntConstant() != nullptr) ? a->AsIntConstant()->GetU32BitValue() : 0;
+        uint32_t vb = (b->AsIntConstant() != nullptr) ? b->AsIntConstant()->GetU32BitValue() : 0;
         return (va > vb ? a : b);
       }
     } else if (int_type->width() == 64) {
