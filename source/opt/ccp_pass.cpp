@@ -360,6 +360,14 @@ void CCPPass::Initialize() {
     }
   }
 
+  // Mark the extended instruction imports as `kVarying` to suppress errors.
+  // We may skip constant propagation for certain extended instructions
+  // (e.g. `cos` for 16 bit integers) but we don't want to leave their status
+  // as `kNotInteresting`.
+  for (const auto& inst : get_module()->ext_inst_imports()) {
+    values_[inst.result_id()] = kVaryingSSAId;
+  }
+
   original_id_bound_ = context()->module()->IdBound();
 }
 
