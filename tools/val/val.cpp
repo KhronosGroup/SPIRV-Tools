@@ -15,6 +15,7 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <iostream>
 #include <vector>
 
@@ -77,6 +78,47 @@ Options:
                                    Use validation rules from the specified environment.
 )",
       argv0, argv0, target_env_list.c_str());
+}
+
+bool process_single_file(const char* filename, spv_target_env& target_env,
+                         spvtools::ValidatorOptions& options) {
+  std::vector<uint32_t> contents;
+  if (!ReadBinaryFile(filename, &contents)) return false;
+
+  spvtools::SpirvTools tools(target_env);
+
+  // Use a lambda expression here so filename can be captured. Messages use a
+  // fairly standard notation of `filename:line`.
+  auto CLIMessageConsumerWithFilename =
+      [filename](spv_message_level_t level, const char*,
+                 const spv_position_t& position, const char* message) {
+        const char* pretty_filename = filename;
+        if (!filename || 0 == strcmp(filename, "-")) {
+          pretty_filename = "stdin";
+        }
+
+        switch (level) {
+          case SPV_MSG_FATAL:
+          case SPV_MSG_INTERNAL_ERROR:
+          case SPV_MSG_ERROR:
+            std::cerr << "error: " << pretty_filename << ":" << position.index
+                      << ": " << message << std::endl;
+            break;
+          case SPV_MSG_WARNING:
+            std::cout << "warning: " << pretty_filename << ":" << position.index
+                      << ": " << message << std::endl;
+            break;
+          case SPV_MSG_INFO:
+            std::cout << "info: " << pretty_filename << ":" << position.index
+                      << ": " << message << std::endl;
+            break;
+          default:
+            break;
+        }
+      };
+  tools.SetMessageConsumer(CLIMessageConsumerWithFilename);
+
+  return tools.Validate(contents.data(), contents.size(), options);
 }
 
 int main(int argc, char** argv) {
@@ -201,13 +243,27 @@ int main(int argc, char** argv) {
     return return_code;
   }
 
-  std::vector<uint32_t> contents;
-  if (!ReadBinaryFile(inFile, &contents)) return 1;
+  if (inFile &&
+      std::filesystem::is_directory(std::filesystem::status(inFile))) {
+    const std::filesystem::path dir(inFile);
+    bool succeed = true;
+    for (auto const& entry :
+         std::filesystem::recursive_directory_iterator(dir)) {
+      if (!entry.is_regular_file()) {
+        continue;
+      }
 
-  spvtools::SpirvTools tools(target_env);
-  tools.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
+      std::filesystem::path filepath = entry.path();
 
-  bool succeed = tools.Validate(contents.data(), contents.size(), options);
+      if (filepath.extension() != ".spv") continue;
 
-  return !succeed;
+      if (!process_single_file(filepath.c_str(), target_env, options)) {
+        succeed = false;
+      }
+    }
+
+    return !succeed;
+  }
+
+  return !process_single_file(inFile, target_env, options);
 }
