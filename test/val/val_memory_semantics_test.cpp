@@ -481,28 +481,8 @@ INSTANTIATE_TEST_SUITE_P(
             Values(OpControlBarrier, OpMemoryBarrier), Values(TestResult())));
 
 INSTANTIATE_TEST_SUITE_P(
-    ErrorMemoryOrderTooWeakRelaxed, VulkanUnequalMemorySemantics,
+    ErrorMemoryOrderTooWeak, VulkanUnequalMemorySemantics,
     Combine(Values(None), Values(None), Values(None),
-            Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-            Values(Acquire),
-            Values(Uniform, Workgroup, Image, Output,
-                   Uniform | Workgroup | Image | Output),
-            Values(None, Visible),
-            Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-            Values(true, false), Values(None, Volatile),
-            Values(TestResult(
-                SPV_ERROR_INVALID_DATA,
-                "VUID-StandaloneSpirv-UnequalMemorySemantics-10876",
-                "AtomicCompareExchange Unequal Memory Semantics must not use a "
-                "stronger memory order than the corresponding Equal Memory "
-                "Semantics"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    ErrorMemoryOrderTooWeakRelease, VulkanUnequalMemorySemantics,
-    Combine(Values(Release),
-            Values(Uniform, Workgroup, Image, Output,
-                   Uniform | Workgroup | Image | Output),
-            Values(None, Available),
             Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
             Values(Acquire),
             Values(Uniform, Workgroup, Image, Output,
@@ -520,27 +500,12 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     ErrorMissingStorageClassSemanticsFlags, VulkanUnequalMemorySemantics,
     Combine(
-        Values(Acquire, AcqRel, AcqRel | Available),
-        Values(Uniform | Workgroup), Values(None, Visible),
+        Values(Acquire, Acquire | Visible, Release, Release | Available, AcqRel,
+               AcqRel | Visible, AcqRel | Available,
+               AcqRel | Available | Visible),
+        Values(Uniform | Workgroup), Values(None),
         Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-        Values(Acquire), Values(Uniform | Image, Output), Values(None),
-        Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-        Values(true, false), Values(None, Volatile),
-        Values(TestResult(
-            SPV_ERROR_INVALID_DATA,
-            "VUID-StandaloneSpirv-UnequalMemorySemantics-10877",
-            "AtomicCompareExchange Unequal Memory Semantics must not have any "
-            "Vulkan-supported storage class semantics bit set (UniformMemory, "
-            "WorkgroupMemory, ImageMemory, or OutputMemory) unless this bit is "
-            "also set in the corresponding Equal Memory Semantics"))));
-
-INSTANTIATE_TEST_SUITE_P(
-    ErrorMissingStorageClassSemanticsFlagsVisible, VulkanUnequalMemorySemantics,
-    Combine(
-        Values(Acquire, AcqRel, AcqRel | Available),
-        Values(Uniform | Workgroup), Values(Visible),
-        Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
-        Values(Acquire), Values(Uniform | Image, Output), Values(Visible),
+        Values(Acquire), Values(Uniform | Image, Output), Values(None, Visible),
         Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
         Values(true, false), Values(None, Volatile),
         Values(TestResult(
@@ -553,7 +518,8 @@ INSTANTIATE_TEST_SUITE_P(
 
 INSTANTIATE_TEST_SUITE_P(
     ErrorMissingMakeVisibleFlag, VulkanUnequalMemorySemantics,
-    Combine(Values(Acquire, AcqRel, AcqRel | Available),
+    Combine(Values(Acquire, Release, Release | Available, AcqRel,
+                   AcqRel | Available),
             Values(Uniform | Workgroup | Image | Output), Values(None),
             Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
             Values(Acquire),
@@ -609,8 +575,10 @@ INSTANTIATE_TEST_SUITE_P(
     ErrorMismatchingVolatileFlagsNonRelaxedAndAcquire,
     VulkanUnequalMemorySemantics,
     Combine(
-        Values(Acquire, AcqRel, AcqRel | Available),
-        Values(Uniform | Workgroup | Image | Output), Values(None, Visible),
+        Values(Acquire, Acquire | Visible, Release, Release | Available, AcqRel,
+               AcqRel | Visible, AcqRel | Available,
+               AcqRel | Available | Visible),
+        Values(Uniform | Workgroup | Image | Output), Values(None),
         Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
         Values(Acquire),
         Values(Uniform, Workgroup, Image, Output,
@@ -646,8 +614,10 @@ INSTANTIATE_TEST_SUITE_P(
 
 INSTANTIATE_TEST_SUITE_P(
     SuccessNonRelaxedAndAcquire, VulkanUnequalMemorySemantics,
-    Combine(Values(Acquire, AcqRel, AcqRel | Available),
-            Values(Uniform | Workgroup | Image | Output), Values(None, Visible),
+    Combine(Values(Acquire, Acquire | Visible, Release, Release | Available,
+                   AcqRel, AcqRel | Visible, AcqRel | Available,
+                   AcqRel | Available | Visible),
+            Values(Uniform | Workgroup | Image | Output), Values(None),
             Values(None, Subgroup | CrossWorkgroup | AtomicCounter),
             Values(Acquire),
             Values(Uniform, Workgroup, Image, Output,
