@@ -16,6 +16,8 @@
 
 // Validates correctness of composite SPIR-V instructions.
 
+#include <climits>
+
 #include "source/opcode.h"
 #include "source/spirv_target_env.h"
 #include "source/val/instruction.h"
