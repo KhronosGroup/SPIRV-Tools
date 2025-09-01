@@ -1085,7 +1085,8 @@ spv_result_t ValidateExtInstImport(ValidationState_t& _,
     const std::string name = inst->GetOperandAs<std::string>(name_id);
     if (name.find("NonSemantic.") == 0) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "NonSemantic extended instruction sets cannot be declared "
+             << "In SPIR-V 1.5 or earlier, NonSemantic extended instruction "
+                "sets cannot be declared "
                 "without SPV_KHR_non_semantic_info.";
     }
   }

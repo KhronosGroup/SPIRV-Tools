@@ -848,32 +848,35 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
           if (storage_class == spv::StorageClass::TaskPayloadWorkgroupEXT) {
             if (has_task_payload) {
               return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
-                     << "There can be at most one OpVariable with storage "
+                     << "In SPIR-V 1.4 or later, there can be at most one "
+                        "OpVariable with storage "
                         "class TaskPayloadWorkgroupEXT associated with "
                         "an OpEntryPoint";
             }
             has_task_payload = true;
           }
-        }
-        if (vstate.version() >= SPV_SPIRV_VERSION_WORD(1, 4)) {
+
           // Starting in 1.4, OpEntryPoint must list all global variables
           // it statically uses and those interfaces must be unique.
           if (storage_class == spv::StorageClass::Function) {
             return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
-                   << "OpEntryPoint interfaces should only list global "
+                   << "In SPIR-V 1.4 or later, OpEntryPoint interfaces should "
+                      "only list global "
                       "variables";
           }
 
           if (!seen_vars.insert(var_instr).second) {
             return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
-                   << "Non-unique OpEntryPoint interface "
+                   << "In SPIR-V 1.4 or later, non-unique OpEntryPoint "
+                      "interface "
                    << vstate.getIdName(interface) << " is disallowed";
           }
         } else {
           if (storage_class != spv::StorageClass::Input &&
               storage_class != spv::StorageClass::Output) {
             return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
-                   << "OpEntryPoint interfaces must be OpVariables with "
+                   << "In SPIR-V 1.3 or earlier, OpEntryPoint interfaces must "
+                      "be OpVariables with "
                       "Storage Class of Input(1) or Output(3). Found Storage "
                       "Class "
                    << uint32_t(storage_class) << " for Entry Point id "
