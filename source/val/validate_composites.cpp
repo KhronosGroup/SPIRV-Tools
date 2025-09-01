@@ -640,7 +640,7 @@ spv_result_t ValidateCompositeConstructCoopMatQCOM(ValidationState_t& _,
 
   // Is the scope Subgrouop ?
   {
-    unsigned scope = -1u;
+    unsigned scope = UINT_MAX;
     unsigned scope_id = result_type_inst->GetOperandAs<unsigned>(2u);
     bool status = _.GetConstantValueAs<unsigned>(scope_id, scope);
     bool is_scope_spec_const =
@@ -653,7 +653,7 @@ spv_result_t ValidateCompositeConstructCoopMatQCOM(ValidationState_t& _,
     }
   }
 
-  unsigned ar_len = -1u;
+  unsigned ar_len = UINT_MAX;
   unsigned src_arr_len_id = source_type_inst->GetOperandAs<unsigned>(2u);
   bool ar_len_status = _.GetConstantValueAs<unsigned>(src_arr_len_id, ar_len);
   bool is_src_arr_len_spec_const =
@@ -676,7 +676,7 @@ spv_result_t ValidateCompositeConstructCoopMatQCOM(ValidationState_t& _,
   unsigned res_col_id = result_type_inst->GetOperandAs<unsigned>(4u);
   unsigned res_use_id = result_type_inst->GetOperandAs<unsigned>(5u);
 
-  unsigned cm_use = -1u;
+  unsigned cm_use = UINT_MAX;
   bool cm_use_status = _.GetConstantValueAs<unsigned>(res_use_id, cm_use);
 
   switch (static_cast<spv::CooperativeMatrixUse>(cm_use)) {
@@ -691,7 +691,7 @@ spv_result_t ValidateCompositeConstructCoopMatQCOM(ValidationState_t& _,
       }
 
       // result coopmat column length check
-      unsigned n_cols = -1u;
+      unsigned n_cols = UINT_MAX;
       bool status = _.GetConstantValueAs<unsigned>(res_col_id, n_cols);
       bool is_res_col_spec_const =
           spvOpcodeIsSpecConstant(_.FindDef(res_col_id)->opcode());
@@ -738,7 +738,7 @@ spv_result_t ValidateCompositeConstructCoopMatQCOM(ValidationState_t& _,
       }
 
       // result coopmat row length check
-      unsigned n_rows = -1u;
+      unsigned n_rows = UINT_MAX;
       bool status = _.GetConstantValueAs<unsigned>(res_row_id, n_rows);
       bool is_res_row_spec_const =
           spvOpcodeIsSpecConstant(_.FindDef(res_row_id)->opcode());
@@ -785,7 +785,7 @@ spv_result_t ValidateCompositeConstructCoopMatQCOM(ValidationState_t& _,
       }
 
       // source array length check
-      unsigned n_cols = -1u;
+      unsigned n_cols = UINT_MAX;
       bool status = _.GetConstantValueAs<unsigned>(res_col_id, n_cols);
       bool is_res_col_spec_const =
           spvOpcodeIsSpecConstant(_.FindDef(res_col_id)->opcode());
@@ -848,7 +848,7 @@ spv_result_t ValidateCompositeExtractCoopMatQCOM(ValidationState_t& _,
 
   // Is the scope Subgrouop ?
   {
-    unsigned scope = -1u;
+    unsigned scope = UINT_MAX;
     unsigned scope_id = source_type_inst->GetOperandAs<unsigned>(2u);
     bool status = _.GetConstantValueAs<unsigned>(scope_id, scope);
     bool is_scope_spec_const =
@@ -861,7 +861,7 @@ spv_result_t ValidateCompositeExtractCoopMatQCOM(ValidationState_t& _,
     }
   }
 
-  unsigned ar_len = -1u;
+  unsigned ar_len = UINT_MAX;
   unsigned res_arr_len_id = result_type_inst->GetOperandAs<unsigned>(2u);
   bool ar_len_status = _.GetConstantValueAs<unsigned>(res_arr_len_id, ar_len);
   bool is_res_arr_len_spec_const =
@@ -874,7 +874,7 @@ spv_result_t ValidateCompositeExtractCoopMatQCOM(ValidationState_t& _,
   unsigned src_col_id = source_type_inst->GetOperandAs<unsigned>(4u);
   unsigned src_use_id = source_type_inst->GetOperandAs<unsigned>(5u);
 
-  unsigned cm_use = -1u;
+  unsigned cm_use = UINT_MAX;
   bool cm_use_status = _.GetConstantValueAs<unsigned>(src_use_id, cm_use);
 
   switch (static_cast<spv::CooperativeMatrixUse>(cm_use)) {
@@ -889,7 +889,7 @@ spv_result_t ValidateCompositeExtractCoopMatQCOM(ValidationState_t& _,
       }
 
       // source coopmat column length check
-      unsigned n_cols = -1u;
+      unsigned n_cols = UINT_MAX;
       bool status = _.GetConstantValueAs<unsigned>(src_col_id, n_cols);
       bool is_src_col_spec_const =
           spvOpcodeIsSpecConstant(_.FindDef(src_col_id)->opcode());
@@ -937,7 +937,7 @@ spv_result_t ValidateCompositeExtractCoopMatQCOM(ValidationState_t& _,
       }
 
       // source coopmat row length check
-      unsigned n_rows = -1u;
+      unsigned n_rows = UINT_MAX;
       bool status = _.GetConstantValueAs<unsigned>(src_row_id, n_rows);
       bool is_src_row_spec_const =
           spvOpcodeIsSpecConstant(_.FindDef(src_row_id)->opcode());
@@ -985,7 +985,7 @@ spv_result_t ValidateCompositeExtractCoopMatQCOM(ValidationState_t& _,
       }
 
       // result type check
-      unsigned n_cols = -1u;
+      unsigned n_cols = UINT_MAX;
       bool status = _.GetConstantValueAs<unsigned>(src_col_id, n_cols);
       bool is_src_col_spec_const =
           spvOpcodeIsSpecConstant(_.FindDef(src_col_id)->opcode());
