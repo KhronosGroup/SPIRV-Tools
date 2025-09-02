@@ -47,7 +47,8 @@ TEST_F(TextToBinaryTest, ArmMotionEngineInstructionMIN_SAD) {
       Eq(Concatenate({MakeInstruction(spv::Op::OpExtInstImport, {1},
                                       MakeVector("Arm.MotionEngine.100")),
                       MakeInstruction(spv::Op::OpExtInst,
-                                      {2, 3, 1, ArmMotionEngineMIN_SAD, 4, 5, 6, 7, 8, 9, 10, 11, 12})})))
+                                      {2, 3, 1, ArmMotionEngineMIN_SAD, 4, 5, 6,
+                                       7, 8, 9, 10, 11, 12})})))
       << src;
   // Now check the round trip through the disassembler.
   EXPECT_THAT(EncodeAndDecodeSuccessfully(src), src) << src;
@@ -64,7 +65,8 @@ TEST_F(TextToBinaryTest, ArmMotionEngineInstructionMIN_SAD_COST) {
       Eq(Concatenate({MakeInstruction(spv::Op::OpExtInstImport, {1},
                                       MakeVector("Arm.MotionEngine.100")),
                       MakeInstruction(spv::Op::OpExtInst,
-                                      {2, 3, 1, ArmMotionEngineMIN_SAD_COST, 4, 5, 6, 7, 8, 9, 10, 11, 12})})))
+                                      {2, 3, 1, ArmMotionEngineMIN_SAD_COST, 4,
+                                       5, 6, 7, 8, 9, 10, 11, 12})})))
       << src;
   // Now check the round trip through the disassembler.
   EXPECT_THAT(EncodeAndDecodeSuccessfully(src), src) << src;
@@ -78,10 +80,11 @@ TEST_F(TextToBinaryTest, ArmMotionEngineInstructionRAW_SAD) {
   // First make sure it assembles correctly.
   EXPECT_THAT(
       CompiledInstructions(src),
-      Eq(Concatenate({MakeInstruction(spv::Op::OpExtInstImport, {1},
-                                      MakeVector("Arm.MotionEngine.100")),
-                      MakeInstruction(spv::Op::OpExtInst,
-                                      {2, 3, 1, ArmMotionEngineRAW_SAD, 4, 5, 6, 7, 8, 9, 10, 11})})))
+      Eq(Concatenate(
+          {MakeInstruction(spv::Op::OpExtInstImport, {1},
+                           MakeVector("Arm.MotionEngine.100")),
+           MakeInstruction(spv::Op::OpExtInst, {2, 3, 1, ArmMotionEngineRAW_SAD,
+                                                4, 5, 6, 7, 8, 9, 10, 11})})))
       << src;
   // Now check the round trip through the disassembler.
   EXPECT_THAT(EncodeAndDecodeSuccessfully(src), src) << src;
