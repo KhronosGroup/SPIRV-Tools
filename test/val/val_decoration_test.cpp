@@ -21,6 +21,7 @@
 
 #include "gmock/gmock.h"
 #include "source/val/decoration.h"
+#include "spirv-tools/libspirv.h"
 #include "test/unit_spirv.h"
 #include "test/val/val_code_generator.h"
 #include "test/val/val_fixtures.h"
@@ -9538,9 +9539,9 @@ OpFunctionEnd
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Non-unique OpEntryPoint interface '2[%var]' is disallowed"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("In SPIR-V 1.4 or later, non-unique OpEntryPoint "
+                        "interface '2[%var]' is disallowed"));
 }
 
 TEST_F(ValidateDecorations, PhysicalStorageBufferMissingOffset) {
