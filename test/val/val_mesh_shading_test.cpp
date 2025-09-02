@@ -488,7 +488,7 @@ TEST_F(ValidateMeshShading, BadMultipleTaskPayloadWorkgroupEXT) {
   CompileSuccessfully(body, SPV_ENV_UNIVERSAL_1_5);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("In SPIR-V 1.4 or later, there can be at most one "
+              HasSubstr("There can be at most one "
                         "OpVariable with storage "
                         "class TaskPayloadWorkgroupEXT associated with "
                         "an OpEntryPoint"));

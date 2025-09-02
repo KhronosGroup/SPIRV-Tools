@@ -848,7 +848,7 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
           if (storage_class == spv::StorageClass::TaskPayloadWorkgroupEXT) {
             if (has_task_payload) {
               return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
-                     << "In SPIR-V 1.4 or later, there can be at most one "
+                     << "There can be at most one "
                         "OpVariable with storage "
                         "class TaskPayloadWorkgroupEXT associated with "
                         "an OpEntryPoint";
