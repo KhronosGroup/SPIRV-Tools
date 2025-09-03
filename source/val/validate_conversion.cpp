@@ -715,7 +715,7 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
       unsigned res_arr_len_id = result_type_inst->GetOperandAs<unsigned>(2u);
 
       // Are the input and result element types compatible?
-      unsigned src_arr_len = -1u, res_arr_len = -1u;
+      unsigned src_arr_len = UINT_MAX, res_arr_len = UINT_MAX;
       bool src_arr_len_status =
           _.GetConstantValueAs<unsigned>(src_arr_len_id, src_arr_len);
       bool res_arr_len_status =
