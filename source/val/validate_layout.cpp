@@ -372,7 +372,8 @@ spv_result_t GraphScopedInstructions(ValidationState_t& _,
         _.SetGraphDefinitionRegion(kGraphDefinitionInputs);
       } break;
       case spv::Op::OpGraphSetOutputARM: {
-        if ((_.graph_definition_region() != kGraphDefinitionInputs) &&
+        if ((_.graph_definition_region() != kGraphDefinitionBegin) &&
+            (_.graph_definition_region() != kGraphDefinitionInputs) &&
             (_.graph_definition_region() != kGraphDefinitionBody) &&
             (_.graph_definition_region() != kGraphDefinitionOutputs)) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
@@ -399,9 +400,10 @@ spv_result_t GraphScopedInstructions(ValidationState_t& _,
         }
         break;
       default:
-        if (_.graph_definition_region() < kGraphDefinitionInputs) {
+        if (_.graph_definition_region() == kGraphDefinitionOutside) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-                 << spvOpcodeString(opcode) << " must appear in a graph body";
+                 << "Op" << spvOpcodeString(opcode)
+                 << " must appear in a graph body";
         }
         if (_.graph_definition_region() == kGraphDefinitionOutputs) {
           return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
@@ -413,7 +415,7 @@ spv_result_t GraphScopedInstructions(ValidationState_t& _,
     }
   } else {
     return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-           << spvOpcodeString(opcode)
+           << "Op" << spvOpcodeString(opcode)
            << " cannot appear in the graph definitions section";
   }
   return SPV_SUCCESS;

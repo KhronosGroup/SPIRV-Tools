@@ -60,6 +60,7 @@ std::string GenerateModule(const std::string& src) {
            %uint_4 = OpConstant %uint 4
           %float_1 = OpConstant %float 1.0
        %int8tensor = OpTypeTensorARM %int8 %uint_4
+     %int8r3tensor = OpTypeTensorARM %int8 %uint_3
       %int32tensor = OpTypeTensorARM %int32 %uint_4
 %int8tensor_array3 = OpTypeArray %int8tensor %uint_3
 %int32tensor_array3 = OpTypeArray %int32tensor %uint_3
@@ -207,6 +208,61 @@ TEST_F(ValidateGraph, ValidGraphConstantOusideGraph) {
 
   CompileSuccessfully(spvasm, SPVENV);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPVENV));
+}
+
+TEST_F(ValidateGraph, ValidGraphWithNoInputsNoBody) {
+  const std::string src = R"(
+              %cst = OpGraphConstantARM %int8tensor 1
+       %graph_type = OpTypeGraphARM 0 %int8tensor
+                     OpGraphEntryPointARM %graph "longname" %var_int8tensor
+            %graph = OpGraphARM %graph_type
+                     OpGraphSetOutputARM %cst %uint_0
+                     OpGraphEndARM
+)";
+  std::string spvasm = GenerateModule(src);
+
+  CompileSuccessfully(spvasm, SPVENV);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPVENV));
+}
+
+TEST_F(ValidateGraph, InvalidGraphWithDisallowedBodyInstructions) {
+  const std::string src = R"(
+       %graph_type = OpTypeGraphARM 1 %int8tensor %int8tensor
+                     OpGraphEntryPointARM %graph "longname" %var_int8tensor %var_int8tensor
+            %graph = OpGraphARM %graph_type
+               %in = OpGraphInputARM %int8tensor %uint_0
+              %val = OpCompositeExtract %int8r3tensor %in 0
+              %out = OpCompositeInsert %int8tensor %val %in 0
+                     OpGraphSetOutputARM %out %uint_0
+                     OpGraphEndARM
+)";
+  std::string spvasm = GenerateModule(src);
+
+  CompileSuccessfully(spvasm, SPVENV);
+  EXPECT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPVENV));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpCompositeInsert cannot appear in the graph definitions section"));
+}
+
+TEST_F(ValidateGraph, InvalidInstructionOutsideGraphAfterGraph) {
+  const std::string src = R"(
+%graph_type = OpTypeGraphARM 1 %int8tensor %int8tensor
+       %cst = OpGraphConstantARM %int8tensor 1
+              OpGraphEntryPointARM %graph "longname" %var_int8tensor %var_int8tensor
+     %graph = OpGraphARM %graph_type
+        %in = OpGraphInputARM %int8tensor %uint_0
+              OpGraphSetOutputARM %in %uint_0
+              OpGraphEndARM
+       %val = OpCompositeExtract %int8r3tensor %cst 0
+)";
+  std::string spvasm = GenerateModule(src);
+
+  CompileSuccessfully(spvasm, SPVENV);
+  EXPECT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions(SPVENV));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCompositeExtract must appear in a graph body"));
 }
 
 //
