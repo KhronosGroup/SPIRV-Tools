@@ -211,6 +211,7 @@ TEST_P(IntegerInstructionFoldingTest, Case) {
 #define UINT_0_ID 109
 #define INT_NULL_ID 110
 #define UINT_NULL_ID 111
+#define HALF_3_ID 112
 const std::string& Header() {
   static const std::string header = R"(OpCapability Shader
 OpCapability Float16
@@ -405,8 +406,11 @@ OpName %main "main"
 %v2double_2_0p5 = OpConstantComposite %v2double %double_2 %double_0p5
 %v2double_null = OpConstantNull %v2double
 %108 = OpConstant %half 0
+%half_0p5 = OpConstant %half 0.5
 %half_1 = OpConstant %half 1
 %half_2 = OpConstant %half 2
+%112 = OpConstant %half 3
+%half_null = OpConstantNull %half
 %half_0_1 = OpConstantComposite %v2half %108 %half_1
 %106 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
 %v4float_0_0_0_0 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
@@ -1683,7 +1687,7 @@ TEST_P(FloatVectorInstructionFoldingTest, Case) {
 // clang-format off
 INSTANTIATE_TEST_SUITE_P(TestCase, FloatVectorInstructionFoldingTest,
 ::testing::Values(
-   // Test case 0: FMix {2.0, 2.0}, {2.0, 3.0} {0.2,0.5}
+   // Test case 0: FMix {2.0, 3.0}, {0.0, 0.0} {0.2,0.5}
    InstructionFoldingCase<std::vector<float>>(
        Header() + "%main = OpFunction %void None %void_func\n" +
            "%main_lab = OpLabel\n" +
@@ -4928,6 +4932,38 @@ INSTANTIATE_TEST_SUITE_P(FloatRedundantFoldingTest, GeneralInstructionFoldingTes
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
             "%2 = OpMatrixTimesScalar %float_coop_matrix %undef_float_coop_matrix %float_3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0),
+    // Test case 32: Don't fold FMix half (1.0, 2.0, 0.5)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %half %1 FMix %half_1 %half_2 %half_0p5\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0),
+    // Test case 33: Fold FMix half (3.0, 2.0, 0.0)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %half %1 FMix %112 %half_2 %108\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, HALF_3_ID),
+    // Test case 34: Fold FMix half (3.0, 2.0, null)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %half %1 FMix %112 %half_2 %half_null\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, HALF_3_ID),
+    // Test case 35: Don't fold FMix half (1.0, 2.0, 1.0)
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %half %1 FMix %half_1 %half_2 %half_1\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 0)

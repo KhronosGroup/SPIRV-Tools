@@ -1395,9 +1395,12 @@ ConstantFoldingRule FoldFMix() {
     if (base_type->AsFloat()->width() == 32) {
       one = const_mgr->GetConstant(base_type,
                                    utils::FloatProxy<float>(1.0f).GetWords());
-    } else {
+    } else if (base_type->AsFloat()->width() == 64) {
       one = const_mgr->GetConstant(base_type,
                                    utils::FloatProxy<double>(1.0).GetWords());
+    } else {
+      // We won't support folding half types.
+      return nullptr;
     }
 
     if (is_vector) {
