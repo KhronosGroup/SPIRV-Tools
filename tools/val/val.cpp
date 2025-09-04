@@ -28,12 +28,15 @@
 void print_usage(char* argv0) {
   std::string target_env_list = spvTargetEnvList(36, 105);
   printf(
-      R"(%s - Validate a SPIR-V binary file.
+      R"(%s - Validate a SPIR-V binary file(s).
 
 USAGE: %s [options] [<filename>]
 
 The SPIR-V binary is read from <filename>. If no file is specified,
 or if the filename is "-", then the binary is read from standard input.
+The <filename> parameter may also specify a directory; in this case,
+the tool will recursively process all regular files with the .spv
+extension within that directory.
 
 NOTE: The validator is a work in progress.
 
