@@ -30,11 +30,11 @@ void print_usage(char* argv0) {
   printf(
       R"(%s - Validate a SPIR-V binary file(s).
 
-USAGE: %s [options] [<filename>]
+USAGE: %s [options] [<path>]
 
-The SPIR-V binary is read from <filename>. If no file is specified,
-or if the filename is "-", then the binary is read from standard input.
-The <filename> parameter may also specify a directory; in this case,
+The SPIR-V binary is read from <path>. If no path is specified,
+or if the path is "-", then the binary is read from standard input.
+The <path> parameter may also specify a directory; in this case,
 the tool will recursively process all regular files with the .spv
 extension within that directory.
 
