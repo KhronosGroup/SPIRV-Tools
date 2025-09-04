@@ -2023,25 +2023,30 @@ OpExtension "SPV_KHR_ray_query"
 TEST_F(ValidateConversion, BitcastUntypedPointerInput) {
   const std::string spirv = R"(
 OpCapability Shader
+OpCapability Int64
 OpCapability VariablePointers
 OpCapability UntypedPointersKHR
 OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpCapability PhysicalStorageBufferAddresses
 OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
 OpExtension "SPV_KHR_variable_pointers"
 OpExtension "SPV_KHR_untyped_pointers"
-OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute %main "main" %var
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint GLCompute %main "main"
 OpDecorate %struct Block
 OpMemberDecorate %struct 0 Offset 0
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
+%long = OpTypeInt 64 0
+%long_0 = OpConstant %long 0
 %struct = OpTypeStruct %int
-%ptr = OpTypeUntypedPointerKHR Workgroup
-%var = OpUntypedVariableKHR %ptr Workgroup %struct
+%ptr = OpTypeUntypedPointerKHR PhysicalStorageBuffer
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
-%cast = OpBitcast %int %var
+%ptr_cast = OpBitcast %ptr %long_0
+%cast = OpBitcast %long %ptr_cast
 OpReturn
 OpFunctionEnd
 )";
@@ -2053,23 +2058,27 @@ OpFunctionEnd
 TEST_F(ValidateConversion, BitcastUntypedPointerOutput) {
   const std::string spirv = R"(
 OpCapability Shader
+OpCapability Int64
 OpCapability VariablePointers
 OpCapability UntypedPointersKHR
 OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpCapability PhysicalStorageBufferAddresses
 OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
 OpExtension "SPV_KHR_variable_pointers"
 OpExtension "SPV_KHR_untyped_pointers"
-OpMemoryModel Logical GLSL450
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
 OpEntryPoint GLCompute %main "main"
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %int_0 = OpConstant %int 0
-%ptr = OpTypeUntypedPointerKHR Workgroup
-%var = OpUntypedVariableKHR %ptr Workgroup %int
+%long = OpTypeInt 64 0
+%long_0 = OpConstant %long 0
+%ptr = OpTypeUntypedPointerKHR PhysicalStorageBuffer
 %void_fn = OpTypeFunction %void
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
-%cast = OpBitcast %ptr %int_0
+%cast = OpBitcast %ptr %long_0
 OpReturn
 OpFunctionEnd
 )";
