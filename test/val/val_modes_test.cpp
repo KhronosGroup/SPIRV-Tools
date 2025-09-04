@@ -183,6 +183,61 @@ OpDecorate %var BuiltIn WorkgroupSize
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateMode, GLComputeZeroWorkgroupSizeDerivativeGroupQuads) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability ComputeDerivativeGroupQuadsKHR
+OpExtension "SPV_KHR_compute_shader_derivatives"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main DerivativeGroupQuadsKHR
+OpDecorate %int3_1 BuiltIn WorkgroupSize
+%int = OpTypeInt 32 0
+%int3 = OpTypeVector %int 3
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int3_1 = OpConstantComposite %int3 %int_1 %int_2 %int_1
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-DerivativeGroupQuadsKHR-10151"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("WorkgroupSize decorations has a static dimensions of (X = 1, "
+                "Y = 2) but Entry Point id 1 has an DerivativeGroupQuadsKHR "
+                "execution mode, so both dimensions must be a multiple of 2"));
+}
+
+TEST_F(ValidateMode, GLComputeZeroWorkgroupSizeDerivativeGroupLinear) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability ComputeDerivativeGroupLinearKHR
+OpExtension "SPV_KHR_compute_shader_derivatives"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main DerivativeGroupLinearKHR
+OpDecorate %int3_1 BuiltIn WorkgroupSize
+%int = OpTypeInt 32 0
+%uvec3 = OpTypeVector %int 3
+%int_3 = OpConstant %int 3
+%int_2 = OpConstant %int 2
+%int3_1 = OpConstantComposite %uvec3 %int_3 %int_3 %int_2
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-DerivativeGroupLinearKHR-10152"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "WorkgroupSize decorations has a static dimensions of (X = 3, Y = 3, "
+          "Z = 2) but Entry Point id 1 has an DerivativeGroupLinearKHR "
+          "execution mode, so the product (18) must be a multiple of 4"));
+}
+
 TEST_F(ValidateMode, GLComputeVulkanLocalSize) {
   const std::string spirv = R"(
 OpCapability Shader
@@ -226,6 +281,65 @@ OpExecutionMode %main LocalSize 1 1 0
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Local Size execution mode must not have a product of zero"));
+}
+
+TEST_F(ValidateMode, GLComputeLocalSizeDerivativeGroupQuads) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability ComputeDerivativeGroupQuadsKHR
+OpExtension "SPV_KHR_compute_shader_derivatives"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpExecutionMode %main DerivativeGroupQuadsKHR
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-DerivativeGroupQuadsKHR-10151"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Local Size execution mode dimensions is (X = 1, Y = 1) but "
+                "Entry Point id 1 also has an DerivativeGroupQuadsKHR "
+                "execution mode, so both dimensions must be a multiple of 2"));
+}
+
+TEST_F(ValidateMode, GLComputeLocalSizeDerivativeGroupLinear) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability ComputeDerivativeGroupLinearKHR
+OpExtension "SPV_KHR_compute_shader_derivatives"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main DerivativeGroupLinearKHR
+OpExecutionMode %main LocalSize 3 3 3
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-DerivativeGroupLinearKHR-10152"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Local Size execution mode dimensions is (X = 3, Y = 3, Z = 3) "
+                "but Entry Point id 1 also has an DerivativeGroupLinearKHR "
+                "execution mode, so the product (27) must be a multiple of 4"));
+}
+
+TEST_F(ValidateMode, GLComputeLocalSizeDerivativeGroupQuadsCapabiltyOnly) {
+  // Declares capability but doesn't have OpExecutionMode
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability ComputeDerivativeGroupQuadsKHR
+OpExtension "SPV_KHR_compute_shader_derivatives"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
 TEST_F(ValidateMode, GLComputeVulkanLocalSizeIdBad) {
@@ -278,8 +392,7 @@ OpExecutionModeId %main LocalSizeId %int_1 %int_0 %int_1
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Local Size Id execution mode must not have a product of zero"));
+      HasSubstr("LocalSizeId execution mode must not have a product of zero"));
 }
 
 TEST_F(ValidateMode, GLComputeZeroSpecLocalSizeId) {
@@ -316,8 +429,7 @@ OpExecutionModeId %main LocalSizeId %int_1 %int_0 %int_1
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Local Size Id execution mode must not have a product of zero"));
+      HasSubstr("LocalSizeId execution mode must not have a product of zero"));
 }
 
 // https://github.com/KhronosGroup/SPIRV-Tools/issues/5939
@@ -349,6 +461,55 @@ TEST_F(ValidateMode, KernelZeroLocalSize64) {
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateMode, GLComputeLocalSizeIdDerivativeGroupQuads) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability ComputeDerivativeGroupQuadsKHR
+OpExtension "SPV_KHR_compute_shader_derivatives"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionModeId %main LocalSizeId %int_2 %int_1 %int_2
+OpExecutionMode %main DerivativeGroupQuadsKHR
+%int = OpTypeInt 32 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-DerivativeGroupQuadsKHR-10151"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("LocalSizeId execution mode dimensions is (X = 2, Y = 1) but "
+                "Entry Point id 1 also has an DerivativeGroupQuadsKHR "
+                "execution mode, so both dimensions must be a multiple of 2"));
+}
+
+TEST_F(ValidateMode, GLComputeLocalSizeIdDerivativeGroupLinear) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability ComputeDerivativeGroupLinearKHR
+OpExtension "SPV_KHR_compute_shader_derivatives"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionModeId %main LocalSizeId %int_1 %int_1 %int_1
+OpExecutionMode %main DerivativeGroupLinearKHR
+%int = OpTypeInt 32 0
+%int_1 = OpConstant %int 1
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-DerivativeGroupLinearKHR-10152"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("LocalSizeId execution mode dimensions is (X = 1, Y = 1, Z = "
+                "1) but Entry Point id 1 also has an DerivativeGroupLinearKHR "
+                "execution mode, so the product (1) must be a multiple of 4"));
 }
 
 TEST_F(ValidateMode, FragmentOriginLowerLeftVulkan) {
