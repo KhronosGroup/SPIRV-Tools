@@ -1488,6 +1488,9 @@ bool FactorAddMulsOpnds(uint32_t factor0_0, uint32_t factor0_1,
       IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
   Instruction* new_add_inst = ir_builder.AddBinaryOp(
       inst->type_id(), inst->opcode(), factor0_1, factor1_1);
+  if (!new_add_inst) {
+    return false;
+  }
   inst->SetOpcode(inst->opcode() == spv::Op::OpFAdd ? spv::Op::OpFMul
                                                     : spv::Op::OpIMul);
   inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {factor0_0}},
