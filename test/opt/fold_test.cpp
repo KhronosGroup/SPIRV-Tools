@@ -257,6 +257,7 @@ OpName %main "main"
 %v2float = OpTypeVector %float 2
 %v2double = OpTypeVector %double 2
 %v2half = OpTypeVector %half 2
+%v4half = OpTypeVector %half 4
 %v2bool = OpTypeVector %bool 2
 %m2x2int = OpTypeMatrix %v2int 2
 %mat4v2float = OpTypeMatrix %v2float 4
@@ -276,6 +277,7 @@ OpName %main "main"
 %_ptr_v4int = OpTypePointer Function %v4int
 %_ptr_v4float = OpTypePointer Function %v4float
 %_ptr_v4double = OpTypePointer Function %v4double
+%_ptr_v4half = OpTypePointer Function %v4half
 %_ptr_struct_v2int_int_int = OpTypePointer Function %struct_v2int_int_int
 %_ptr_v2float = OpTypePointer Function %v2float
 %_ptr_v2double = OpTypePointer Function %v2double
@@ -412,6 +414,7 @@ OpName %main "main"
 %112 = OpConstant %half 3
 %half_null = OpConstantNull %half
 %half_0_1 = OpConstantComposite %v2half %108 %half_1
+%v4half_0_1_0_0 = OpConstantComposite %v4half %108 %half_1 %108 %108
 %106 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
 %v4float_0_0_0_0 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
 %v4float_0_0_0_1 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_1
@@ -8315,7 +8318,22 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "OpReturn\n" +
             "OpFunctionEnd",
         5, false),
-    // Test case 7: Extracting the undefined literal value from a vector
+    // Test case 7: Don't fold: Using fmix feeding extract with half type in
+    // the a position.
+    InstructionFoldingCase<bool>(
+        Header() +
+            "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%m = OpVariable %_ptr_v4half Function\n" +
+            "%n = OpVariable %_ptr_v4half Function\n" +
+            "%2 = OpLoad %v4half %m\n" +
+            "%3 = OpLoad %v4half %n\n" +
+            "%4 = OpExtInst %v4half %1 FMix %2 %3 %v4half_0_1_0_0\n" +
+            "%5 = OpCompositeExtract %half %4 0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        5, false),
+    // Test case 8: Extracting the undefined literal value from a vector
     // shuffle.
     InstructionFoldingCase<bool>(
         Header() +
@@ -8330,7 +8348,7 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "OpReturn\n" +
             "OpFunctionEnd",
         4, true),
-    // Test case 8: Inserting every element of a vector turns into a composite construct.
+    // Test case 9: Inserting every element of a vector turns into a composite construct.
     InstructionFoldingCase<bool>(
         Header() +
             "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
@@ -8349,7 +8367,7 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "OpReturn\n" +
             "OpFunctionEnd",
         5, true),
-    // Test case 9: Inserting every element of a vector turns into a composite construct in a different order.
+    // Test case 10: Inserting every element of a vector turns into a composite construct in a different order.
     InstructionFoldingCase<bool>(
         Header() +
             "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
@@ -8368,7 +8386,7 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "OpReturn\n" +
             "OpFunctionEnd",
         5, true),
-    // Test case 10: Check multiple inserts to the same position are handled correctly.
+    // Test case 11: Check multiple inserts to the same position are handled correctly.
     InstructionFoldingCase<bool>(
         Header() +
             "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
@@ -8388,7 +8406,7 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "OpReturn\n" +
             "OpFunctionEnd",
         6, true),
-    // Test case 11: The last indexes are 0 and 1, but they have different first indexes.  This should not be folded.
+    // Test case 12: The last indexes are 0 and 1, but they have different first indexes.  This should not be folded.
     InstructionFoldingCase<bool>(
         Header() +
             "%main = OpFunction %void None %void_func\n" +
@@ -8398,7 +8416,7 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "OpReturn\n" +
             "OpFunctionEnd",
         3, false),
-    // Test case 12: Don't fold when there is a partial insertion.
+    // Test case 13: Don't fold when there is a partial insertion.
     InstructionFoldingCase<bool>(
         Header() +
             "%main = OpFunction %void None %void_func\n" +
@@ -8409,7 +8427,7 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "OpReturn\n" +
             "OpFunctionEnd",
         4, false),
-    // Test case 13: Insert into a column of a matrix
+    // Test case 14: Insert into a column of a matrix
     InstructionFoldingCase<bool>(
         Header() +
             "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
@@ -8428,7 +8446,7 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "OpReturn\n" +
             "OpFunctionEnd",
         3, true),
-    // Test case 14: Insert all elements of the matrix.
+    // Test case 15: Insert all elements of the matrix.
     InstructionFoldingCase<bool>(
         Header() +
             "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
@@ -8451,7 +8469,7 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "OpReturn\n" +
             "OpFunctionEnd",
         5, true),
-    // Test case 15: Replace construct with extract when reconstructing a member
+    // Test case 16: Replace construct with extract when reconstructing a member
     // of another object.
     InstructionFoldingCase<bool>(
         Header() +
@@ -8468,7 +8486,7 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "OpReturn\n" +
             "OpFunctionEnd",
         5, true),
-    // Test case 16: Don't fold when type cannot be deduced to a constant.
+    // Test case 17: Don't fold when type cannot be deduced to a constant.
     InstructionFoldingCase<bool>(
         Header() +
             "%main = OpFunction %void None %void_func\n" +
@@ -8477,7 +8495,7 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "OpReturn\n" +
             "OpFunctionEnd",
         4, false),
-    // Test case 17: Don't fold when index into composite is out of bounds.
+    // Test case 18: Don't fold when index into composite is out of bounds.
     InstructionFoldingCase<bool>(
 	Header() +
             "%main = OpFunction %void None %void_func\n" +
@@ -8486,7 +8504,7 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
 	    "OpReturn\n" +
 	    "OpFunctionEnd",
 	4, false),
-    // Test case 18: Fold when every element of an array is inserted.
+    // Test case 19: Fold when every element of an array is inserted.
     InstructionFoldingCase<bool>(
         Header() +
             "; CHECK: [[int:%\\w+]] = OpTypeInt 32 1\n" +
@@ -8503,7 +8521,7 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
             "OpReturn\n" +
             "OpFunctionEnd",
         5, true),
-    // Test case 19: Don't fold for isomorphic structs
+    // Test case 20: Don't fold for isomorphic structs
     InstructionFoldingCase<bool>(
         Header() +
             "%structA = OpTypeStruct %ulong\n" +
