@@ -432,7 +432,7 @@ typedef enum spv_binary_to_text_options_t {
 
 // The default id bound is to the minimum value for the id limit
 // in the spir-v specification under the section "Universal Limits".
-const uint32_t kDefaultMaxIdBound = 0x3FFFFF;
+#define kDefaultMaxIdBound 0x3FFFFF
 
 // Structures
 
