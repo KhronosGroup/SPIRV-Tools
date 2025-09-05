@@ -17,6 +17,7 @@
 // Validates correctness of built-in variables.
 
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <list>
 #include <map>
@@ -3554,12 +3555,47 @@ spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtDefinition(
       bool static_x = _.EvalConstantValUint64(inst.word(3), &x_size);
       bool static_y = _.EvalConstantValUint64(inst.word(4), &y_size);
       bool static_z = _.EvalConstantValUint64(inst.word(5), &z_size);
-      if (static_x && static_y && static_z &&
-          ((x_size * y_size * z_size) == 0)) {
-        return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-               << "WorkgroupSize decorations must not have a static "
-                  "product of zero (X = "
-               << x_size << ", Y = " << y_size << ", Z = " << z_size << ").";
+      if (static_x && static_y && static_z) {
+        const uint64_t product_size = x_size * y_size * z_size;
+        if (product_size == 0) {
+          return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                 << "WorkgroupSize decorations must not have a static "
+                    "product of zero (X = "
+                 << x_size << ", Y = " << y_size << ", Z = " << z_size << ").";
+        }
+
+        // If there is a known static workgroup size, all entrypoints with
+        // explicit derivative execution modes can be validated. These are only
+        // found in execution models that support explicit workgroup sizes
+        for (const uint32_t entry_point : _.entry_points()) {
+          const auto* modes = _.GetExecutionModes(entry_point);
+          if (!modes) continue;
+          if (modes->count(spv::ExecutionMode::DerivativeGroupQuadsKHR)) {
+            if (x_size % 2 != 0 || y_size % 2 != 0) {
+              return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                     << _.VkErrorID(10151)
+                     << "WorkgroupSize decorations has a static dimensions of "
+                        "(X = "
+                     << x_size << ", Y = " << y_size << ") but Entry Point id "
+                     << entry_point
+                     << " has an DerivativeGroupQuadsKHR execution mode, so "
+                        "both dimensions must be a multiple of 2";
+            }
+          }
+          if (modes->count(spv::ExecutionMode::DerivativeGroupLinearKHR)) {
+            if (product_size % 4 != 0) {
+              return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                     << _.VkErrorID(10152)
+                     << "WorkgroupSize decorations has a static dimensions of "
+                        "(X = "
+                     << x_size << ", Y = " << y_size << ", Z = " << z_size
+                     << ") but Entry Point id " << entry_point
+                     << " has an DerivativeGroupLinearKHR execution mode, so "
+                        "the product ("
+                     << product_size << ") must be a multiple of 4";
+            }
+          }
+        }
       }
     }
   }
