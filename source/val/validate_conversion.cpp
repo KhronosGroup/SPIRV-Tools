@@ -14,6 +14,8 @@
 
 // Validates correctness of conversion instructions.
 
+#include <climits>
+
 #include "source/opcode.h"
 #include "source/spirv_constant.h"
 #include "source/spirv_target_env.h"
@@ -572,26 +574,38 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
         if (result_is_pointer && !input_is_pointer && !input_is_int_scalar &&
             !(input_is_int_vector && input_has_int32))
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << "Expected input to be a pointer, int scalar or 32-bit int "
+                 << "In SPIR-V 1.5 or later (or with "
+                    "SPV_KHR_physical_storage_buffer), expected input to be a "
+                    "pointer, "
+                    "int scalar or 32-bit int "
                     "vector if Result Type is pointer: "
                  << spvOpcodeString(opcode);
 
         if (input_is_pointer && !result_is_pointer && !result_is_int_scalar &&
             !(result_is_int_vector && result_has_int32))
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << "Pointer can only be converted to another pointer, int "
+                 << "In SPIR-V 1.5 or later (or with "
+                    "SPV_KHR_physical_storage_buffer), pointer can only be "
+                    "converted to "
+                    "another pointer, int "
                     "scalar or 32-bit int vector: "
                  << spvOpcodeString(opcode);
       } else {
         if (result_is_pointer && !input_is_pointer && !input_is_int_scalar)
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << "Expected input to be a pointer or int scalar if Result "
+                 << "In SPIR-V 1.4 or earlier (and without "
+                    "SPV_KHR_physical_storage_buffer), expected input to be a "
+                    "pointer "
+                    "or int scalar if Result "
                     "Type is pointer: "
                  << spvOpcodeString(opcode);
 
         if (input_is_pointer && !result_is_pointer && !result_is_int_scalar)
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << "Pointer can only be converted to another pointer or int "
+                 << "In SPIR-V 1.4 or earlier (and without "
+                    "SPV_KHR_physical_storage_buffer), pointer can only be "
+                    "converted "
+                    "to another pointer or int "
                     "scalar: "
                  << spvOpcodeString(opcode);
       }
@@ -703,7 +717,7 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
       unsigned res_arr_len_id = result_type_inst->GetOperandAs<unsigned>(2u);
 
       // Are the input and result element types compatible?
-      unsigned src_arr_len = -1u, res_arr_len = -1u;
+      unsigned src_arr_len = UINT_MAX, res_arr_len = UINT_MAX;
       bool src_arr_len_status =
           _.GetConstantValueAs<unsigned>(src_arr_len_id, src_arr_len);
       bool res_arr_len_status =

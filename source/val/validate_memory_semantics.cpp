@@ -219,10 +219,12 @@ spv_result_t ValidateMemorySemantics(ValidationState_t& _,
 
     const auto equal_mask_seq_cst =
         uint32_t(spv::MemorySemanticsMask::SequentiallyConsistent);
-    const auto equal_mask_acquire =
-        uint32_t(spv::MemorySemanticsMask::SequentiallyConsistent |
-                 spv::MemorySemanticsMask::AcquireRelease |
-                 spv::MemorySemanticsMask::Acquire);
+    const auto equal_mask_acquire = uint32_t(
+        // Allow EqualMemorySemantics Release with UnequalMemorySemantics
+        // Acquire, since the C standard doesn't clearly forbid it.
+        spv::MemorySemanticsMask::SequentiallyConsistent |
+        spv::MemorySemanticsMask::AcquireRelease |
+        spv::MemorySemanticsMask::Release | spv::MemorySemanticsMask::Acquire);
 
     if (((value & uint32_t(spv::MemorySemanticsMask::SequentiallyConsistent)) &&
          !(equal_value & equal_mask_seq_cst)) ||

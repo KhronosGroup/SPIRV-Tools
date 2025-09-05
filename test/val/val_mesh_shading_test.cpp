@@ -488,7 +488,8 @@ TEST_F(ValidateMeshShading, BadMultipleTaskPayloadWorkgroupEXT) {
   CompileSuccessfully(body, SPV_ENV_UNIVERSAL_1_5);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("There can be at most one OpVariable with storage "
+              HasSubstr("There can be at most one "
+                        "OpVariable with storage "
                         "class TaskPayloadWorkgroupEXT associated with "
                         "an OpEntryPoint"));
 }
