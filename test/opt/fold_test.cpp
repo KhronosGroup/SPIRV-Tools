@@ -1444,7 +1444,7 @@ INSTANTIATE_TEST_SUITE_P(TestCase, UIntVectorInstructionFoldingTest,
           "%2 = OpSNegate %v2uint %v2uint_0x3f800000_0xbf800000\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
-      2, {static_cast<uint32_t>(-0x3f800000), static_cast<uint32_t>(-0xbf800000)}),
+      2, {static_cast<uint32_t>(-0x3f800000), static_cast<uint32_t>(-0xbf800000ll)}),
     // Test case 6: fold vector components of uint (including integer overflow)
     InstructionFoldingCase<std::vector<uint32_t>>(
       Header() + "%main = OpFunction %void None %void_func\n" +
