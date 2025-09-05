@@ -287,31 +287,29 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
+  bool has_workgroup_size = false;
+  bool has_local_size_id = false;
+  for (auto& i : _.ordered_instructions()) {
+    if (i.opcode() == spv::Op::OpFunction) break;
+    if (i.opcode() == spv::Op::OpDecorate && i.operands().size() > 2) {
+      if (i.GetOperandAs<spv::Decoration>(1) == spv::Decoration::BuiltIn &&
+          i.GetOperandAs<spv::BuiltIn>(2) == spv::BuiltIn::WorkgroupSize) {
+        has_workgroup_size = true;
+      }
+    }
+    if (i.opcode() == spv::Op::OpExecutionModeId) {
+      if (i.GetOperandAs<spv::ExecutionMode>(1) ==
+          spv::ExecutionMode::LocalSizeId) {
+        has_local_size_id = true;
+      }
+    }
+  }
+
   if (spvIsVulkanEnv(_.context()->target_env)) {
     switch (execution_model) {
       case spv::ExecutionModel::GLCompute:
         if (!has_mode(spv::ExecutionMode::LocalSize)) {
-          bool ok = false;
-          for (auto& i : _.ordered_instructions()) {
-            if (i.opcode() == spv::Op::OpDecorate) {
-              if (i.operands().size() > 2) {
-                if (i.GetOperandAs<spv::Decoration>(1) ==
-                        spv::Decoration::BuiltIn &&
-                    i.GetOperandAs<spv::BuiltIn>(2) ==
-                        spv::BuiltIn::WorkgroupSize) {
-                  ok = true;
-                  break;
-                }
-              }
-            }
-            if (i.opcode() == spv::Op::OpExecutionModeId) {
-              const auto mode = i.GetOperandAs<spv::ExecutionMode>(1);
-              if (mode == spv::ExecutionMode::LocalSizeId) {
-                ok = true;
-                break;
-              }
-            }
-          }
+          bool ok = has_workgroup_size || has_local_size_id;
           if (!ok && _.HasCapability(spv::Capability::TileShadingQCOM)) {
             ok = has_mode(spv::ExecutionMode::TileShadingRateQCOM);
           }
@@ -382,7 +380,9 @@ spv_result_t ValidateEntryPoint(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  if (_.EntryPointHasLocalSizeOrId(entry_point_id)) {
+  // WorkgroupSize decoration takes precedence over any LocalSize or LocalSizeId
+  // execution mode, so the values can be ignored
+  if (_.EntryPointHasLocalSizeOrId(entry_point_id) && !has_workgroup_size) {
     const Instruction* local_size_inst =
         _.EntryPointLocalSizeOrId(entry_point_id);
     if (local_size_inst) {

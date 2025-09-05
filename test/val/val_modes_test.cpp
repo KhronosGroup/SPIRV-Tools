@@ -183,7 +183,7 @@ OpDecorate %var BuiltIn WorkgroupSize
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateMode, GLComputeZeroWorkgroupSizeDerivativeGroupQuads) {
+TEST_F(ValidateMode, GLComputeWorkgroupSizeDerivativeGroupQuads) {
   const std::string spirv = R"(
 OpCapability Shader
 OpCapability ComputeDerivativeGroupQuadsKHR
@@ -210,7 +210,7 @@ OpDecorate %int3_1 BuiltIn WorkgroupSize
                 "execution mode, so both dimensions must be a multiple of 2"));
 }
 
-TEST_F(ValidateMode, GLComputeZeroWorkgroupSizeDerivativeGroupLinear) {
+TEST_F(ValidateMode, GLComputeWorkgroupSizeDerivativeGroupLinear) {
   const std::string spirv = R"(
 OpCapability Shader
 OpCapability ComputeDerivativeGroupLinearKHR
@@ -236,6 +236,28 @@ OpDecorate %int3_1 BuiltIn WorkgroupSize
           "WorkgroupSize decorations has a static dimensions of (X = 3, Y = 3, "
           "Z = 2) but Entry Point id 1 has an DerivativeGroupLinearKHR "
           "execution mode, so the product (18) must be a multiple of 4"));
+}
+
+TEST_F(ValidateMode, GLComputeWorkgroupSizeDerivativeGroupQuadsOverride) {
+  // "If an object is decorated with the WorkgroupSize decoration, this takes
+  // precedence over any LocalSize or LocalSizeId execution mode."
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability ComputeDerivativeGroupQuadsKHR
+OpExtension "SPV_KHR_compute_shader_derivatives"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main DerivativeGroupQuadsKHR
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %int3_1 BuiltIn WorkgroupSize
+%int = OpTypeInt 32 0
+%int3 = OpTypeVector %int 3
+%int_2 = OpConstant %int 2
+%int3_1 = OpConstantComposite %int3 %int_2 %int_2 %int_2
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_THAT(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
 
 TEST_F(ValidateMode, GLComputeVulkanLocalSize) {
