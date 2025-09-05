@@ -44,8 +44,34 @@ namespace disassemble {
 // binary for an instruction to its assembly representation.
 class InstructionDisassembler {
  public:
+  enum class IdBaseType {
+    Other,
+    Float64,
+    Float32,
+    Float16OrLess,
+    Int,
+    Uint,
+    Bool,
+    Image,
+    Sampler,
+  };
+
+  enum class IdKind {
+    Other,
+    Pointer,
+    Constant,
+    Type,
+    TypePointer,
+    Label,
+  };
+
+  using IdBaseTypeMap = std::unordered_map<uint32_t, IdBaseType>;
+  using IdKindMap = std::unordered_map<uint32_t, IdKind>;
+
   InstructionDisassembler(std::ostream& stream, uint32_t options,
-                          NameMapper name_mapper);
+                          NameMapper name_mapper,
+                          IdBaseTypeMap&& id_base_type_map,
+                          IdKindMap&& id_kind_map);
 
   // Emits the assembly header for the module.
   void EmitHeaderSpirv();
@@ -86,6 +112,11 @@ class InstructionDisassembler {
   void SetRed(std::ostream& stream) const;
   void SetGreen(std::ostream& stream) const;
 
+  bool BeginStyle(std::ostream& stream, uint32_t id) const;
+  void BeginStringLiteralStyle(std::ostream& stream) const;
+  void BeginNumericLiteralStyle(std::ostream& stream) const;
+  void EndStyle(std::ostream& stream) const;
+
   void EmitInstructionImpl(const spv_parsed_instruction_t& inst,
                            size_t inst_byte_offset, uint32_t block_indent,
                            bool is_in_block);
@@ -105,7 +136,8 @@ class InstructionDisassembler {
 
   std::ostream& stream_;
   const bool print_;  // Should we also print to the standard output stream?
-  const bool color_;  // Should we print in colour?
+  const bool style_;  // Should we style the output?
+  const bool color_;  // Should we print in colour (if not styling)?
   const int indent_;  // How much to indent. 0 means don't indent
   const bool nested_indent_;     // Whether indentation should indicate nesting
   const int comment_;            // Should we comment the source
@@ -118,6 +150,9 @@ class InstructionDisassembler {
   std::unordered_map<uint32_t, std::ostringstream> id_comments_;
   // Align the comments in consecutive lines for more readability.
   uint32_t last_instruction_comment_alignment_;
+
+  IdBaseTypeMap id_base_type_map_;
+  IdKindMap id_kind_map_;
 };
 
 }  // namespace disassemble

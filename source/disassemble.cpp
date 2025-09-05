@@ -115,7 +115,10 @@ struct ControlFlowGraph {
 // representation.
 class Disassembler {
  public:
-  Disassembler(uint32_t options, NameMapper name_mapper)
+  Disassembler(
+      uint32_t options, NameMapper name_mapper,
+      disassemble::InstructionDisassembler::IdBaseTypeMap&& id_base_type_map,
+      disassemble::InstructionDisassembler::IdKindMap&& id_kind_map)
       : print_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options)),
         nested_indent_(
             spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_NESTED_INDENT, options)),
@@ -123,7 +126,9 @@ class Disassembler {
             spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_REORDER_BLOCKS, options)),
         text_(),
         out_(print_ ? out_stream() : out_stream(text_)),
-        instruction_disassembler_(out_.get(), options, name_mapper),
+        instruction_disassembler_(out_.get(), options, name_mapper,
+                                  std::move(id_base_type_map),
+                                  std::move(id_kind_map)),
         header_(!spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER, options)),
         byte_offset_(0) {}
 
@@ -597,16 +602,25 @@ spv_result_t DisassembleTargetInstruction(
   return SPV_SUCCESS;
 }
 
-uint32_t GetLineLengthWithoutColor(const std::string line) {
-  // Currently, every added color is in the form \x1b...m, so instead of doing a
-  // lot of string comparisons with spvtools::clr::* strings, we just ignore
-  // those ranges.
+void SkipLineUntil(const std::string& line, size_t& index, char end) {
+  assert(line[index] != end);
+  // Go over the next characters in the line until `end` is met.
+  do {
+    ++index;
+  } while (index < line.size() && line[index] != end);
+}
+
+uint32_t GetLineLengthWithoutColor(const std::string& line) {
+  // Currently, every added color is either in the form \x1b...m, or \x0e..\x0f,
+  // so we just ignore those ranges.
   uint32_t length = 0;
   for (size_t i = 0; i < line.size(); ++i) {
     if (line[i] == '\x1b') {
-      do {
-        ++i;
-      } while (i < line.size() && line[i] != 'm');
+      SkipLineUntil(line, i, 'm');
+      continue;
+    }
+    if (line[i] == '\x0e') {
+      SkipLineUntil(line, i, '\x0f');
       continue;
     }
 
@@ -623,12 +637,14 @@ constexpr uint32_t kCommentColumn = 50;
 }  // namespace
 
 namespace disassemble {
-InstructionDisassembler::InstructionDisassembler(std::ostream& stream,
-                                                 uint32_t options,
-                                                 NameMapper name_mapper)
+InstructionDisassembler::InstructionDisassembler(
+    std::ostream& stream, uint32_t options, NameMapper name_mapper,
+    IdBaseTypeMap&& id_base_type_map, IdKindMap&& id_kind_map)
     : stream_(stream),
       print_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_PRINT, options)),
-      color_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_COLOR, options)),
+      style_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_STYLE, options)),
+      color_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_COLOR, options) &&
+             !style_),
       indent_(spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_INDENT, options)
                   ? kStandardIndent
                   : 0),
@@ -638,7 +654,9 @@ InstructionDisassembler::InstructionDisassembler(std::ostream& stream,
       show_byte_offset_(
           spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_SHOW_BYTE_OFFSET, options)),
       name_mapper_(std::move(name_mapper)),
-      last_instruction_comment_alignment_(0) {}
+      last_instruction_comment_alignment_(0),
+      id_base_type_map_(std::move(id_base_type_map)),
+      id_kind_map_(std::move(id_kind_map)) {}
 
 void InstructionDisassembler::EmitHeaderSpirv() { stream_ << "; SPIR-V\n"; }
 
@@ -697,8 +715,10 @@ void InstructionDisassembler::EmitInstructionImpl(
     SetBlue(line);
     const std::string id_name = name_mapper_(inst.result_id);
     if (indent_)
-      line << std::setw(std::max(0, indent_ - 3 - int(id_name.size())));
+      line << std::setw(std::max(0, indent_ - 4 - int(id_name.size()))) << "";
+    const bool end_style = BeginStyle(line, inst.result_id);
     line << "%" << id_name;
+    if (end_style) EndStyle(line);
     ResetColor(line);
     line << " = ";
   } else {
@@ -862,12 +882,16 @@ void InstructionDisassembler::EmitOperand(std::ostream& stream,
     case SPV_OPERAND_TYPE_ID:
     case SPV_OPERAND_TYPE_TYPE_ID:
     case SPV_OPERAND_TYPE_SCOPE_ID:
-    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID:
+    case SPV_OPERAND_TYPE_MEMORY_SEMANTICS_ID: {
       SetYellow(stream);
+      const bool end_style = BeginStyle(stream, word);
       stream << "%" << name_mapper_(word);
+      if (end_style) EndStyle(stream);
       break;
+    }
     case SPV_OPERAND_TYPE_EXTENSION_INSTRUCTION_NUMBER: {
       SetRed(stream);
+      BeginNumericLiteralStyle(stream);
       const ExtInstDesc* desc = nullptr;
       if (LookupExtInst(inst.ext_inst_type, word, &desc) == SPV_SUCCESS) {
         stream << desc->name().data();
@@ -879,30 +903,36 @@ void InstructionDisassembler::EmitOperand(std::ostream& stream,
           stream << word;
         }
       }
+      EndStyle(stream);
     } break;
     case SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER: {
       const spvtools::InstructionDesc* opcodeEntry = nullptr;
       if (LookupOpcode(spv::Op(word), &opcodeEntry))
         assert(false && "should have caught this earlier");
       SetRed(stream);
+      BeginNumericLiteralStyle(stream);
       stream << opcodeEntry->name().data();
+      EndStyle(stream);
     } break;
     case SPV_OPERAND_TYPE_LITERAL_INTEGER:
     case SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER:
     case SPV_OPERAND_TYPE_LITERAL_FLOAT: {
       SetRed(stream);
+      BeginNumericLiteralStyle(stream);
       EmitNumericLiteral(&stream, inst, operand);
-      ResetColor(stream);
+      EndStyle(stream);
     } break;
     case SPV_OPERAND_TYPE_LITERAL_STRING: {
       stream << "\"";
       SetGreen(stream);
+      BeginStringLiteralStyle(stream);
 
       std::string str = spvDecodeLiteralStringOperand(inst, operand_index);
       for (char const& c : str) {
         if (c == '"' || c == '\\') stream << '\\';
         stream << c;
       }
+      EndStyle(stream);
       ResetColor(stream);
       stream << '"';
     } break;
@@ -1006,22 +1036,23 @@ void InstructionDisassembler::EmitMaskOperand(std::ostream& stream,
 }
 
 void InstructionDisassembler::ResetColor(std::ostream& stream) const {
-  if (color_) stream << spvtools::clr::reset{print_};
+  if (color_) print::SetColor(stream, print_, print::Color::Reset);
 }
 void InstructionDisassembler::SetGrey(std::ostream& stream) const {
-  if (color_) stream << spvtools::clr::grey{print_};
+  if (color_)
+    print::SetColor(stream, print_, print::Color::Black, print::Style::Bold);
 }
 void InstructionDisassembler::SetBlue(std::ostream& stream) const {
-  if (color_) stream << spvtools::clr::blue{print_};
+  if (color_) print::SetColor(stream, print_, print::Color::Blue);
 }
 void InstructionDisassembler::SetYellow(std::ostream& stream) const {
-  if (color_) stream << spvtools::clr::yellow{print_};
+  if (color_) print::SetColor(stream, print_, print::Color::Yellow);
 }
 void InstructionDisassembler::SetRed(std::ostream& stream) const {
-  if (color_) stream << spvtools::clr::red{print_};
+  if (color_) print::SetColor(stream, print_, print::Color::Red);
 }
 void InstructionDisassembler::SetGreen(std::ostream& stream) const {
-  if (color_) stream << spvtools::clr::green{print_};
+  if (color_) print::SetColor(stream, print_, print::Color::Green);
 }
 
 void InstructionDisassembler::ResetColor() { ResetColor(stream_); }
@@ -1030,6 +1061,226 @@ void InstructionDisassembler::SetBlue() { SetBlue(stream_); }
 void InstructionDisassembler::SetYellow() { SetYellow(stream_); }
 void InstructionDisassembler::SetRed() { SetRed(stream_); }
 void InstructionDisassembler::SetGreen() { SetGreen(stream_); }
+
+bool InstructionDisassembler::BeginStyle(std::ostream& stream,
+                                         uint32_t id) const {
+  if (!style_) return false;
+
+  const IdBaseType base_type = id_base_type_map_.count(id) > 0
+                                   ? id_base_type_map_.at(id)
+                                   : IdBaseType::Other;
+  const IdKind kind =
+      id_kind_map_.count(id) > 0 ? id_kind_map_.at(id) : IdKind::Other;
+
+  if (base_type == IdBaseType::Other && kind == IdKind::Other) {
+    return false;
+  }
+
+  stream << (char)SPV_BINARY_TO_TEXT_STYLE_BEGIN;
+
+  switch (base_type) {
+    case IdBaseType::Other:
+      break;
+    case IdBaseType::Float64:
+      stream << (char)SPV_BINARY_TO_TEXT_STYLE_FLOAT64;
+      break;
+    case IdBaseType::Float32:
+      stream << (char)SPV_BINARY_TO_TEXT_STYLE_FLOAT32;
+      break;
+    case IdBaseType::Float16OrLess:
+      stream << (char)SPV_BINARY_TO_TEXT_STYLE_FLOAT16_OR_LESS;
+      break;
+    case IdBaseType::Int:
+      stream << (char)SPV_BINARY_TO_TEXT_STYLE_INT;
+      break;
+    case IdBaseType::Uint:
+      stream << (char)SPV_BINARY_TO_TEXT_STYLE_UINT;
+      break;
+    case IdBaseType::Bool:
+      stream << (char)SPV_BINARY_TO_TEXT_STYLE_BOOL;
+      break;
+    case IdBaseType::Image:
+      stream << (char)SPV_BINARY_TO_TEXT_STYLE_IMAGE;
+      break;
+    case IdBaseType::Sampler:
+      stream << (char)SPV_BINARY_TO_TEXT_STYLE_SAMPLER;
+      break;
+  }
+
+  switch (kind) {
+    case IdKind::Other:
+      break;
+    case IdKind::Pointer:
+      stream << (char)SPV_BINARY_TO_TEXT_STYLE_POINTER;
+      break;
+    case IdKind::Constant:
+      stream << (char)SPV_BINARY_TO_TEXT_STYLE_CONSTANT;
+      break;
+    case IdKind::Type:
+      stream << (char)SPV_BINARY_TO_TEXT_STYLE_TYPE;
+      break;
+    case IdKind::TypePointer:
+      stream << (char)SPV_BINARY_TO_TEXT_STYLE_TYPE_POINTER;
+      break;
+    case IdKind::Label:
+      stream << (char)SPV_BINARY_TO_TEXT_STYLE_LABEL;
+      break;
+  }
+
+  stream << (char)SPV_BINARY_TO_TEXT_STYLE_END;
+
+  return true;
+}
+
+void InstructionDisassembler::BeginStringLiteralStyle(
+    std::ostream& stream) const {
+  if (!style_) return;
+
+  stream << (char)SPV_BINARY_TO_TEXT_STYLE_BEGIN
+         << (char)SPV_BINARY_TO_TEXT_STYLE_STRING_LITERAL
+         << (char)SPV_BINARY_TO_TEXT_STYLE_END;
+}
+
+void InstructionDisassembler::BeginNumericLiteralStyle(
+    std::ostream& stream) const {
+  if (!style_) return;
+
+  stream << (char)SPV_BINARY_TO_TEXT_STYLE_BEGIN
+         << (char)SPV_BINARY_TO_TEXT_STYLE_NUMERIC_LITERAL
+         << (char)SPV_BINARY_TO_TEXT_STYLE_END;
+}
+
+void InstructionDisassembler::EndStyle(std::ostream& stream) const {
+  if (!style_) return;
+
+  stream << (char)SPV_BINARY_TO_TEXT_STYLE_BEGIN
+         << (char)SPV_BINARY_TO_TEXT_STYLE_END;
+}
+
+struct PreprocessData {
+  InstructionDisassembler::IdBaseTypeMap id_base_type_map;
+  InstructionDisassembler::IdKindMap id_kind_map;
+};
+
+spv_result_t PreprocessInstruction(void* user_data,
+                                   const spv_parsed_instruction_t* inst) {
+  if (inst->result_id == 0) {
+    return SPV_SUCCESS;
+  }
+
+  assert(user_data);
+  auto data = static_cast<PreprocessData*>(user_data);
+  auto opcode = static_cast<spv::Op>(inst->opcode);
+
+  uint32_t propagateTypeFromId = 0;
+  for (uint16_t i = 0; i < inst->num_operands; i++) {
+    const spv_operand_type_t type = inst->operands[i].type;
+    if (type == SPV_OPERAND_TYPE_TYPE_ID) {
+      propagateTypeFromId = inst->words[i + 1];
+      break;
+    }
+  }
+
+  switch (opcode) {
+    case spv::Op::OpTypeFloat: {
+      const auto bit_width = inst->words[2];
+      if (bit_width == 64) {
+        data->id_base_type_map[inst->result_id] =
+            InstructionDisassembler::IdBaseType::Float64;
+      } else if (bit_width == 32) {
+        data->id_base_type_map[inst->result_id] =
+            InstructionDisassembler::IdBaseType::Float32;
+      } else if (bit_width <= 16) {
+        data->id_base_type_map[inst->result_id] =
+            InstructionDisassembler::IdBaseType::Float16OrLess;
+      }
+      break;
+    }
+    case spv::Op::OpTypeInt: {
+      const auto signedness = inst->words[3];
+      if (signedness == 0) {
+        data->id_base_type_map[inst->result_id] =
+            InstructionDisassembler::IdBaseType::Uint;
+      } else {
+        data->id_base_type_map[inst->result_id] =
+            InstructionDisassembler::IdBaseType::Int;
+      }
+      break;
+    }
+    case spv::Op::OpTypeBool:
+      data->id_base_type_map[inst->result_id] =
+          InstructionDisassembler::IdBaseType::Bool;
+      break;
+    case spv::Op::OpTypeImage:
+    case spv::Op::OpTypeSampledImage:
+      data->id_base_type_map[inst->result_id] =
+          InstructionDisassembler::IdBaseType::Image;
+      break;
+    case spv::Op::OpTypeSampler:
+      data->id_base_type_map[inst->result_id] =
+          InstructionDisassembler::IdBaseType::Sampler;
+      break;
+    case spv::Op::OpTypePointer:
+      assert(propagateTypeFromId == 0);
+      propagateTypeFromId = inst->words[3];
+      break;
+    case spv::Op::OpTypeVector:
+    case spv::Op::OpTypeMatrix:
+    case spv::Op::OpTypeArray:
+    case spv::Op::OpTypeRuntimeArray:
+    case spv::Op::OpTypeCooperativeMatrixNV:
+    case spv::Op::OpTypeCooperativeMatrixKHR:
+    case spv::Op::OpTypeCooperativeVectorNV:
+      assert(propagateTypeFromId == 0);
+      propagateTypeFromId = inst->words[2];
+    default:
+      break;
+  }
+
+  if (propagateTypeFromId &&
+      data->id_base_type_map.count(propagateTypeFromId) > 0) {
+    data->id_base_type_map[inst->result_id] =
+        data->id_base_type_map[propagateTypeFromId];
+  }
+
+  if (spvOpcodeIsConstant(opcode)) {
+    data->id_kind_map[inst->result_id] =
+        InstructionDisassembler::IdKind::Constant;
+  } else if (spvOpcodeIsAccessChain(opcode) || opcode == spv::Op::OpVariable) {
+    data->id_kind_map[inst->result_id] =
+        InstructionDisassembler::IdKind::Pointer;
+  } else {
+    switch (opcode) {
+      case spv::Op::OpTypeVoid:
+      case spv::Op::OpTypeFunction:
+      case spv::Op::OpTypeFloat:
+      case spv::Op::OpTypeInt:
+      case spv::Op::OpTypeBool:
+      case spv::Op::OpTypeVector:
+      case spv::Op::OpTypeMatrix:
+      case spv::Op::OpTypeImage:
+      case spv::Op::OpTypeSampler:
+      case spv::Op::OpTypeArray:
+      case spv::Op::OpTypeRuntimeArray:
+      case spv::Op::OpTypeStruct:
+        data->id_kind_map[inst->result_id] =
+            InstructionDisassembler::IdKind::Type;
+        break;
+      case spv::Op::OpTypePointer:
+        data->id_kind_map[inst->result_id] =
+            InstructionDisassembler::IdKind::TypePointer;
+        break;
+      case spv::Op::OpLabel:
+        data->id_kind_map[inst->result_id] =
+            InstructionDisassembler::IdKind::Label;
+        break;
+      default:
+        break;
+    }
+  }
+
+  return SPV_SUCCESS;
+}
 }  // namespace disassemble
 
 std::string spvInstructionBinaryToText(const spv_target_env env,
@@ -1049,7 +1300,7 @@ std::string spvInstructionBinaryToText(const spv_target_env env,
   }
 
   // Now disassemble!
-  Disassembler disassembler(options, name_mapper);
+  Disassembler disassembler(options, name_mapper, {}, {});
   WrappedDisassembler wrapped(&disassembler, instCode, instWordCount);
   spvBinaryParse(context, &wrapped, code, wordCount, DisassembleTargetHeader,
                  DisassembleTargetInstruction, nullptr);
@@ -1087,8 +1338,23 @@ spv_result_t spvBinaryToText(const spv_const_context context,
     name_mapper = friendly_mapper->GetNameMapper();
   }
 
+  // When styling is enabled, we need information on id types and other
+  // properties (that come later) when processing decorations (that come
+  // earlier). Simplest way is to do a prepass on the SPIR-V, and collect this
+  // information.
+  spvtools::disassemble::PreprocessData preprocess_data;
+  if (spvIsInBitfield(SPV_BINARY_TO_TEXT_OPTION_STYLE, options)) {
+    if (auto error = spvBinaryParse(
+            &hijack_context, &preprocess_data, code, wordCount, nullptr,
+            spvtools::disassemble::PreprocessInstruction, pDiagnostic)) {
+      return error;
+    }
+  }
+
   // Now disassemble!
-  spvtools::Disassembler disassembler(options, name_mapper);
+  spvtools::Disassembler disassembler(
+      options, name_mapper, std::move(preprocess_data.id_base_type_map),
+      std::move(preprocess_data.id_kind_map));
   if (auto error =
           spvBinaryParse(&hijack_context, &disassembler, code, wordCount,
                          spvtools::DisassembleHeader,

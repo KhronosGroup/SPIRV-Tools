@@ -276,6 +276,7 @@ cc_binary(
 cc_binary(
     name = "spirv-dis",
     srcs = [
+        "source/print.h",
         "tools/dis/dis.cpp",
     ],
     copts = COMMON_COPTS,

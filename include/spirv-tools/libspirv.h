@@ -425,8 +425,69 @@ typedef enum spv_binary_to_text_options_t {
   // Reorder blocks to match the structured control flow of SPIR-V to increase
   // readability.
   SPV_BINARY_TO_TEXT_OPTION_REORDER_BLOCKS = SPV_BIT(9),
+  // Add style annotations to the disassembly, which can be post-processed by
+  // the caller as needed. The style markers begin with character 0x0E ('\e')
+  // and end in 0x0F ('\f'). In between, there are 0 or more characters that
+  // indicate the style, defined by spv_binary_to_text_style.
+  //
+  // For example:
+  //
+  //   \efp\f: Begin styling a float-y pointer type
+  //   \ec\f: Begin styling a constant value (of a non-numeric type)
+  //   \e\f: End of style
+  //
+  // The application could for instance turn `\ehp\f%16\e\f` into a yellow
+  // underlined %16, while `\ebc\f%9\e\f` is an italic cyan %9.
+  //
+  // This option overrides SPV_BINARY_TO_TEXT_OPTION_COLOR.
+  SPV_BINARY_TO_TEXT_OPTION_STYLE = SPV_BIT(10),
   SPV_FORCE_32_BIT_ENUM(spv_binary_to_text_options_t)
 } spv_binary_to_text_options_t;
+
+typedef enum spv_binary_to_text_style_t {
+  // Delimiters:
+  SPV_BINARY_TO_TEXT_STYLE_BEGIN = '\x0e',
+  SPV_BINARY_TO_TEXT_STYLE_END = '\x0f',
+
+  // Base Types:
+  // An id whose base type is 64-bit float
+  SPV_BINARY_TO_TEXT_STYLE_FLOAT64 = 'd',
+  // An id whose base type is 32-bit float
+  SPV_BINARY_TO_TEXT_STYLE_FLOAT32 = 'f',
+  // An id whose base type is 16-bit (or less) float
+  SPV_BINARY_TO_TEXT_STYLE_FLOAT16_OR_LESS = 'h',
+  // An id whose base type is signed integer
+  SPV_BINARY_TO_TEXT_STYLE_INT = 'i',
+  // An id whose base type is unsigned integer
+  SPV_BINARY_TO_TEXT_STYLE_UINT = 'u',
+  // An id whose base type is boolean
+  SPV_BINARY_TO_TEXT_STYLE_BOOL = 'b',
+  // An id whose base type is OpTypeImage
+  SPV_BINARY_TO_TEXT_STYLE_IMAGE = 'm',
+  // An id whose base type is OpTypeSampler
+  SPV_BINARY_TO_TEXT_STYLE_SAMPLER = 's',
+  // A string literal
+  SPV_BINARY_TO_TEXT_STYLE_STRING_LITERAL = 'S',
+  // A numeric literal
+  SPV_BINARY_TO_TEXT_STYLE_NUMERIC_LITERAL = 'L',
+
+  // Kind:
+  // An id that is a pointer (OpVariable, OpAccessChain)
+  SPV_BINARY_TO_TEXT_STYLE_POINTER = 'p',
+  // An id that is a constant (OpConstant*)
+  SPV_BINARY_TO_TEXT_STYLE_CONSTANT = 'c',
+  // An id that is a type (OpType*)
+  SPV_BINARY_TO_TEXT_STYLE_TYPE = 't',
+  // An id that is a type pointer (OpTypePointer)
+  SPV_BINARY_TO_TEXT_STYLE_TYPE_POINTER = 'T',
+  // An id that is a label (OpLabel)
+  SPV_BINARY_TO_TEXT_STYLE_LABEL = 'l',
+
+  // Note: Only zero or one character in each group is emitted, and the
+  // characters are emitted in the above specified order group (i.e. Base Type
+  // is placed first).
+  // Lack of any characters indicates return to the default style.
+} spv_binary_to_text_style;
 
 // Constants
 
