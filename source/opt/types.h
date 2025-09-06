@@ -69,6 +69,8 @@ class RayQueryKHR;
 class HitObjectNV;
 class TensorLayoutNV;
 class TensorViewNV;
+class TensorARM;
+class GraphARM;
 
 // Abstract class for a SPIR-V type. It has a bunch of As<sublcass>() methods,
 // which is used as a way to probe the actual <subclass>.
@@ -114,6 +116,8 @@ class Type {
     kHitObjectNV,
     kTensorLayoutNV,
     kTensorViewNV,
+    kTensorARM,
+    kGraphARM,
     kLast
   };
 
@@ -182,9 +186,9 @@ class Type {
   // non-composite type.
   uint64_t NumberOfComponents() const;
 
-// A bunch of methods for casting this type to a given type. Returns this if the
-// cast can be done, nullptr otherwise.
-// clang-format off
+  // A bunch of methods for casting this type to a given type. Returns this if
+  // the cast can be done, nullptr otherwise.
+  // clang-format off
 #define DeclareCastMethod(target)                  \
   virtual target* As##target() { return nullptr; } \
   virtual const target* As##target() const { return nullptr; }
@@ -220,6 +224,8 @@ class Type {
   DeclareCastMethod(HitObjectNV)
   DeclareCastMethod(TensorLayoutNV)
   DeclareCastMethod(TensorViewNV)
+  DeclareCastMethod(TensorARM)
+  DeclareCastMethod(GraphARM)
 #undef DeclareCastMethod
 
 protected:
@@ -267,7 +273,8 @@ class Integer : public Type {
 
 class Float : public Type {
  public:
-  Float(uint32_t w) : Type(kFloat), width_(w) {}
+  Float(uint32_t w, spv::FPEncoding encoding = spv::FPEncoding::Max)
+      : Type(kFloat), width_(w), encoding_(encoding) {}
   Float(const Float&) = default;
 
   std::string str() const override;
@@ -275,13 +282,15 @@ class Float : public Type {
   Float* AsFloat() override { return this; }
   const Float* AsFloat() const override { return this; }
   uint32_t width() const { return width_; }
+  spv::FPEncoding encoding() const { return encoding_; }
 
   size_t ComputeExtraStateHash(size_t hash, SeenTypes* seen) const override;
 
  private:
   bool IsSameImpl(const Type* that, IsSameCache*) const override;
 
-  uint32_t width_;  // bit width
+  uint32_t width_;            // bit width
+  spv::FPEncoding encoding_;  // FPEncoding
 };
 
 class Vector : public Type {
@@ -547,6 +556,8 @@ class Pointer : public Type {
   const Type* pointee_type() const { return pointee_type_; }
   spv::StorageClass storage_class() const { return storage_class_; }
 
+  bool is_untyped() const { return pointee_type_ == nullptr; }
+
   Pointer* AsPointer() override { return this; }
   const Pointer* AsPointer() const override { return this; }
 
@@ -767,6 +778,56 @@ class CooperativeVectorNV : public Type {
 
   const Type* component_type_;
   const uint32_t components_;
+};
+
+class TensorARM : public Type {
+ public:
+  TensorARM(const Type* elty, const uint32_t rank = 0,
+            const uint32_t shape = 0);
+  TensorARM(const TensorARM&) = default;
+
+  std::string str() const override;
+
+  TensorARM* AsTensorARM() override { return this; }
+  const TensorARM* AsTensorARM() const override { return this; }
+
+  size_t ComputeExtraStateHash(size_t hash, SeenTypes* seen) const override;
+
+  const Type* element_type() const { return element_type_; }
+  uint32_t rank_id() const { return rank_id_; }
+  uint32_t shape_id() const { return shape_id_; }
+  bool is_ranked() const { return rank_id_ != 0; }
+  bool is_shaped() const { return shape_id_ != 0; }
+
+ private:
+  bool IsSameImpl(const Type* that, IsSameCache*) const override;
+
+  const Type* element_type_;
+  const uint32_t rank_id_;
+  const uint32_t shape_id_;
+};
+
+class GraphARM : public Type {
+ public:
+  GraphARM(const uint32_t num_inputs, const std::vector<const Type*>& io_types);
+  GraphARM(const GraphARM&) = default;
+
+  std::string str() const override;
+
+  GraphARM* AsGraphARM() override { return this; }
+  const GraphARM* AsGraphARM() const override { return this; }
+
+  uint32_t num_inputs() const { return num_inputs_; }
+  const std::vector<const Type*>& io_types() const { return io_types_; }
+  bool is_shaped() const;
+
+  size_t ComputeExtraStateHash(size_t hash, SeenTypes* seen) const override;
+
+ private:
+  bool IsSameImpl(const Type* that, IsSameCache*) const override;
+
+  const uint32_t num_inputs_;
+  const std::vector<const Type*> io_types_;
 };
 
 #define DefineParameterlessType(type, name)                                \

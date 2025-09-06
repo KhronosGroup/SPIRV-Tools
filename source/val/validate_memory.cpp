@@ -590,7 +590,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       if (pointee && !IsAllowedTypeOrArrayOfSame(
                          _, pointee,
                          {spv::Op::OpTypeImage, spv::Op::OpTypeSampler,
-                          spv::Op::OpTypeSampledImage,
+                          spv::Op::OpTypeSampledImage, spv::Op::OpTypeTensorARM,
                           spv::Op::OpTypeAccelerationStructureKHR})) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << _.VkErrorID(4655) << "UniformConstant OpVariable <id> "
@@ -934,6 +934,65 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
                << "Allocating a variable containing a 8-bit element in "
                << sc_name << " storage class requires an additional capability";
       }
+    }
+  }
+
+  if (_.HasCapability(spv::Capability::TileShadingQCOM) &&
+      storage_class == spv::StorageClass::TileAttachmentQCOM) {
+    if (result_type->opcode() == spv::Op::OpTypePointer) {
+      const auto pointee_type =
+          _.FindDef(result_type->GetOperandAs<uint32_t>(2));
+      if (pointee_type && pointee_type->opcode() == spv::Op::OpTypeImage) {
+        spv::Dim dim = static_cast<spv::Dim>(pointee_type->word(3));
+        if (dim != spv::Dim::Dim2D) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Any OpTypeImage variable in the TileAttachmentQCOM "
+                    "Storage Class must "
+                    "have 2D as its dimension";
+        }
+        unsigned sampled = pointee_type->word(7);
+        if (sampled != 1 && sampled != 2) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Any OpyTpeImage variable in the TileAttachmentQCOM "
+                    "Storage Class must "
+                    "have 1 or 2 as Image 'Sampled' parameter";
+        }
+        for (const auto& pair_o : inst->uses()) {
+          const auto* use_inst_o = pair_o.first;
+          if (use_inst_o->opcode() == spv::Op::OpLoad) {
+            for (const auto& pair_i : use_inst_o->uses()) {
+              const auto* use_inst_i = pair_i.first;
+              switch (use_inst_i->opcode()) {
+                case spv::Op::OpImageQueryFormat:
+                case spv::Op::OpImageQueryOrder:
+                case spv::Op::OpImageQuerySizeLod:
+                case spv::Op::OpImageQuerySize:
+                case spv::Op::OpImageQueryLod:
+                case spv::Op::OpImageQueryLevels:
+                case spv::Op::OpImageQuerySamples:
+                  return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                         << "Any variable in the TileAttachmentQCOM Storage "
+                            "Class must "
+                            "not be consumed by an OpImageQuery* instruction";
+                default:
+                  break;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (!(_.HasDecoration(inst->id(), spv::Decoration::DescriptorSet) &&
+          _.HasDecoration(inst->id(), spv::Decoration::Binding))) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "Any variable in the TileAttachmentQCOM Storage Class must "
+                "be decorated with DescriptorSet and Binding";
+    }
+    if (_.HasDecoration(inst->id(), spv::Decoration::Component)) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "Any variable in the TileAttachmentQCOM Storage Class must "
+                "not be decorated with Component decoration";
     }
   }
 
@@ -1496,6 +1555,60 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "Base type must be a non-pointer type";
     }
+
+    const auto ContainsBlock = [&_](const Instruction* type_inst) {
+      if (type_inst->opcode() == spv::Op::OpTypeStruct) {
+        if (_.HasDecoration(type_inst->id(), spv::Decoration::Block) ||
+            _.HasDecoration(type_inst->id(), spv::Decoration::BufferBlock)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // Block (and BufferBlock) arrays cannot be reinterpreted via untyped access
+    // chains.
+    const bool base_type_block_array =
+        base_type->opcode() == spv::Op::OpTypeArray &&
+        _.ContainsType(base_type->id(), ContainsBlock,
+                       /* traverse_all_types = */ false);
+
+    const auto base_index = untyped_pointer ? 3 : 2;
+    const auto base_id = inst->GetOperandAs<uint32_t>(base_index);
+    auto base = _.FindDef(base_id);
+    // Strictly speaking this misses trivial access chains and function
+    // parameter chasing, but that would be a significant complication in the
+    // traversal.
+    while (base->opcode() == spv::Op::OpCopyObject) {
+      base = _.FindDef(base->GetOperandAs<uint32_t>(2));
+    }
+    const Instruction* base_data_type = nullptr;
+    if (base->opcode() == spv::Op::OpVariable) {
+      const auto ptr_type = _.FindDef(base->type_id());
+      base_data_type = _.FindDef(ptr_type->GetOperandAs<uint32_t>(2));
+    } else if (base->opcode() == spv::Op::OpUntypedVariableKHR) {
+      if (base->operands().size() > 3) {
+        base_data_type = _.FindDef(base->GetOperandAs<uint32_t>(3));
+      }
+    }
+
+    if (base_data_type) {
+      const bool base_block_array =
+          base_data_type->opcode() == spv::Op::OpTypeArray &&
+          _.ContainsType(base_data_type->id(), ContainsBlock,
+                         /* traverse_all_types = */ false);
+
+      if (base_type_block_array != base_block_array) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "Both Base Type and Base must be Block or BufferBlock arrays "
+                  "or neither can be";
+      } else if (base_type_block_array && base_block_array &&
+                 base_type->id() != base_data_type->id()) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "If Base or Base Type is a Block or BufferBlock array, the "
+                  "other must also be the same array";
+      }
+    }
   }
 
   // Base must be a pointer, pointing to the base of a composite object.
@@ -1786,13 +1899,33 @@ spv_result_t ValidatePtrAccessChain(ValidationState_t& _,
 
   const bool untyped_pointer = spvOpcodeGeneratesUntypedPointer(inst->opcode());
 
-  const auto base_id = inst->GetOperandAs<uint32_t>(2);
-  const auto base = _.FindDef(base_id);
-  const auto base_type = untyped_pointer
-                             ? _.FindDef(inst->GetOperandAs<uint32_t>(2))
-                             : _.FindDef(base->type_id());
+  const auto base_idx = untyped_pointer ? 3 : 2;
+  const auto base = _.FindDef(inst->GetOperandAs<uint32_t>(base_idx));
+  const auto base_type = _.FindDef(base->type_id());
   const auto base_type_storage_class =
       base_type->GetOperandAs<spv::StorageClass>(1);
+
+  const auto element_idx = untyped_pointer ? 4 : 3;
+  const auto element = _.FindDef(inst->GetOperandAs<uint32_t>(element_idx));
+  const auto element_type = _.FindDef(element->type_id());
+  if (!element_type || element_type->opcode() != spv::Op::OpTypeInt) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst) << "Element must be an integer";
+  }
+  uint64_t element_val = 0;
+  if (_.EvalConstantValUint64(element->id(), &element_val)) {
+    if (element_val != 0) {
+      const auto interp_type =
+          untyped_pointer ? _.FindDef(inst->GetOperandAs<uint32_t>(2))
+                          : _.FindDef(base_type->GetOperandAs<uint32_t>(2));
+      if (interp_type->opcode() == spv::Op::OpTypeStruct &&
+          (_.HasDecoration(interp_type->id(), spv::Decoration::Block) ||
+           _.HasDecoration(interp_type->id(), spv::Decoration::BufferBlock))) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Element must be 0 if the interpretation type is a Block- or "
+                  "BufferBlock-decorated structure";
+      }
+    }
+  }
 
   if (_.HasCapability(spv::Capability::Shader) &&
       (base_type_storage_class == spv::StorageClass::Uniform ||

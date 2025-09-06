@@ -24,12 +24,21 @@ add_subdirectory(emacs)
 #     LIBS   lib_target1 lib_target2
 #   )
 function(add_spvtools_tool)
+  if (SPIRV_TOOLS_USE_MIMALLOC)
+    list(APPEND SRCS mimalloc.cpp)
+  endif()
+
   set(one_value_args TARGET)
   set(multi_value_args SRCS LIBS)
   cmake_parse_arguments(
     ARG "" "${one_value_args}" "${multi_value_args}" ${ARGN})
 
   add_executable(${ARG_TARGET} ${ARG_SRCS})
+
+  if (SPIRV_TOOLS_USE_MIMALLOC)
+    target_link_libraries(${ARG_TARGET} PRIVATE mimalloc-static)
+  endif()
+
   spvtools_default_compile_options(${ARG_TARGET})
   target_link_libraries(${ARG_TARGET} PRIVATE ${ARG_LIBS})
   target_include_directories(${ARG_TARGET} PRIVATE
@@ -68,7 +77,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
   target_include_directories(spirv-cfg PRIVATE ${spirv-tools_SOURCE_DIR}
                                                ${SPIRV_HEADER_INCLUDE_DIR})
   set(SPIRV_INSTALL_TARGETS spirv-as spirv-dis spirv-val spirv-opt
-                            spirv-cfg spirv-link spirv-lint)
+                            spirv-cfg spirv-link spirv-lint spirv-diff)
 
   if(NOT (${CMAKE_SYSTEM_NAME} STREQUAL "Android"))
     add_spvtools_tool(TARGET spirv-objdump

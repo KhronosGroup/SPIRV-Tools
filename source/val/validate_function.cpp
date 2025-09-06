@@ -14,8 +14,8 @@
 
 #include <algorithm>
 
-#include "source/enum_string_mapping.h"
 #include "source/opcode.h"
+#include "source/table2.h"
 #include "source/val/instruction.h"
 #include "source/val/validate.h"
 #include "source/val/validation_state.h"
@@ -89,7 +89,10 @@ spv_result_t ValidateFunction(ValidationState_t& _, const Instruction* inst) {
       spv::Op::OpName,
       spv::Op::OpCooperativeMatrixPerElementOpNV,
       spv::Op::OpCooperativeMatrixReduceNV,
-      spv::Op::OpCooperativeMatrixLoadTensorNV};
+      spv::Op::OpCooperativeMatrixLoadTensorNV,
+      spv::Op::OpConditionalEntryPointINTEL,
+  };
+
   for (auto& pair : inst->uses()) {
     const auto* use = pair.first;
     if (std::find(acceptable.begin(), acceptable.end(), use->opcode()) ==
@@ -109,11 +112,6 @@ spv_result_t ValidateFunctionParameter(ValidationState_t& _,
   // NOTE: Find OpFunction & ensure OpFunctionParameter is not out of place.
   size_t param_index = 0;
   size_t inst_num = inst->LineNum() - 1;
-  if (inst_num == 0) {
-    return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)
-           << "Function parameter cannot be the first instruction.";
-  }
-
   auto func_inst = &_.ordered_instructions()[inst_num];
   while (--inst_num) {
     func_inst = &_.ordered_instructions()[inst_num];

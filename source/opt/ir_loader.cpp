@@ -181,9 +181,11 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
   } else {
     if (function_ == nullptr) {  // Outside function definition
       SPIRV_ASSERT(consumer_, block_ == nullptr);
-      if (opcode == spv::Op::OpCapability) {
+      if (opcode == spv::Op::OpCapability ||
+          opcode == spv::Op::OpConditionalCapabilityINTEL) {
         module_->AddCapability(std::move(spv_inst));
-      } else if (opcode == spv::Op::OpExtension) {
+      } else if (opcode == spv::Op::OpExtension ||
+                 opcode == spv::Op::OpConditionalExtensionINTEL) {
         module_->AddExtension(std::move(spv_inst));
       } else if (opcode == spv::Op::OpExtInstImport) {
         module_->AddExtInstImport(std::move(spv_inst));
@@ -207,6 +209,7 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
       } else if (IsTypeInst(opcode)) {
         module_->AddType(std::move(spv_inst));
       } else if (IsConstantInst(opcode) || opcode == spv::Op::OpVariable ||
+                 opcode == spv::Op::OpUntypedVariableKHR ||
                  opcode == spv::Op::OpUndef) {
         module_->AddGlobalValue(std::move(spv_inst));
       } else if (spvIsExtendedInstruction(opcode) &&

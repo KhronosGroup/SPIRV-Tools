@@ -20,13 +20,13 @@
 #include <vector>
 
 #include "source/enum_set.h"
-#include "source/enum_string_mapping.h"
 #include "source/extensions.h"
 #include "source/opcode.h"
 #include "source/operand.h"
 #include "source/spirv_constant.h"
 #include "source/spirv_target_env.h"
 #include "source/spirv_validator_options.h"
+#include "source/table2.h"
 #include "source/util/string_utils.h"
 #include "source/val/validate.h"
 #include "source/val/validation_state.h"
@@ -35,14 +35,13 @@ namespace spvtools {
 namespace val {
 namespace {
 
-std::string ToString(const CapabilitySet& capabilities,
-                     const AssemblyGrammar& grammar) {
+std::string ToString(const CapabilitySet& capabilities) {
   std::stringstream ss;
   for (auto capability : capabilities) {
-    spv_operand_desc desc;
-    if (SPV_SUCCESS == grammar.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
-                                             uint32_t(capability), &desc))
-      ss << desc->name << " ";
+    const spvtools::OperandDesc* desc = nullptr;
+    if (SPV_SUCCESS == spvtools::LookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
+                                               uint32_t(capability), &desc))
+      ss << desc->name().data() << " ";
     else
       ss << uint32_t(capability) << " ";
   }
@@ -72,10 +71,11 @@ CapabilitySet EnablingCapabilitiesForOp(const ValidationState_t& state,
       break;
   }
   // Look it up in the grammar
-  spv_opcode_desc opcode_desc = {};
-  if (SPV_SUCCESS == state.grammar().lookupOpcode(opcode, &opcode_desc)) {
+  const spvtools::InstructionDesc* opcode_desc = nullptr;
+  if (SPV_SUCCESS ==
+      LookupOpcodeForEnv(state.context()->target_env, opcode, &opcode_desc)) {
     return state.grammar().filterCapsAgainstTargetEnv(
-        opcode_desc->capabilities, opcode_desc->numCapabilities);
+        opcode_desc->capabilities());
   }
   return CapabilitySet();
 }
@@ -86,7 +86,7 @@ CapabilitySet EnablingCapabilitiesForOp(const ValidationState_t& state,
 // return an error code.
 spv_result_t OperandVersionExtensionCheck(
     ValidationState_t& _, const Instruction* inst, size_t which_operand,
-    const spv_operand_desc_t& operand_desc, uint32_t word) {
+    const spvtools::OperandDesc& operand_desc, uint32_t word) {
   const uint32_t module_version = _.version();
   const uint32_t operand_min_version = operand_desc.minVersion;
   const uint32_t operand_last_version = operand_desc.lastVersion;
@@ -103,27 +103,29 @@ spv_result_t OperandVersionExtensionCheck(
     return _.diag(SPV_ERROR_WRONG_VERSION, inst)
            << spvtools::utils::CardinalToOrdinal(which_operand)
            << " operand of " << spvOpcodeString(inst->opcode()) << ": operand "
-           << operand_desc.name << "(" << word << ") requires SPIR-V version "
+           << operand_desc.name().data() << "(" << word
+           << ") requires SPIR-V version "
            << SPV_SPIRV_VERSION_MAJOR_PART(operand_last_version) << "."
            << SPV_SPIRV_VERSION_MINOR_PART(operand_last_version)
            << " or earlier";
   }
 
-  if (!reserved && operand_desc.numExtensions == 0) {
+  if (!reserved && operand_desc.extensions_range.empty()) {
     return _.diag(SPV_ERROR_WRONG_VERSION, inst)
            << spvtools::utils::CardinalToOrdinal(which_operand)
            << " operand of " << spvOpcodeString(inst->opcode()) << ": operand "
-           << operand_desc.name << "(" << word << ") requires SPIR-V version "
+           << operand_desc.name().data() << "(" << word
+           << ") requires SPIR-V version "
            << SPV_SPIRV_VERSION_MAJOR_PART(operand_min_version) << "."
            << SPV_SPIRV_VERSION_MINOR_PART(operand_min_version) << " or later";
   } else {
-    ExtensionSet required_extensions(operand_desc.numExtensions,
-                                     operand_desc.extensions);
+    ExtensionSet required_extensions(operand_desc.extensions_range.count(),
+                                     operand_desc.extensions().data());
     if (!_.HasAnyOfExtensions(required_extensions)) {
       return _.diag(SPV_ERROR_MISSING_EXTENSION, inst)
              << spvtools::utils::CardinalToOrdinal(which_operand)
              << " operand of " << spvOpcodeString(inst->opcode())
-             << ": operand " << operand_desc.name << "(" << word
+             << ": operand " << operand_desc.name().data() << "(" << word
              << ") requires one of these extensions: "
              << ExtensionSetToString(required_extensions);
     }
@@ -166,9 +168,9 @@ spv_result_t CheckRequiredCapabilities(ValidationState_t& state,
   }
 
   CapabilitySet enabling_capabilities;
-  spv_operand_desc operand_desc = nullptr;
+  const spvtools::OperandDesc* operand_desc = nullptr;
   const auto lookup_result =
-      state.grammar().lookupOperand(operand.type, word, &operand_desc);
+      spvtools::LookupOperand(operand.type, word, &operand_desc);
   if (lookup_result == SPV_SUCCESS) {
     // Allow FPRoundingMode decoration if requested.
     if (operand.type == SPV_OPERAND_TYPE_DECORATION &&
@@ -186,14 +188,15 @@ spv_result_t CheckRequiredCapabilities(ValidationState_t& state,
       }
     } else {
       enabling_capabilities = state.grammar().filterCapsAgainstTargetEnv(
-          operand_desc->capabilities, operand_desc->numCapabilities);
+          operand_desc->capabilities());
     }
 
     // When encountering an OpCapability instruction, the instruction pass
     // registers a capability with the module *before* checking capabilities.
     // So in the case of an OpCapability instruction, don't bother checking
     // enablement by another capability.
-    if (inst->opcode() != spv::Op::OpCapability) {
+    if (inst->opcode() != spv::Op::OpCapability &&
+        inst->opcode() != spv::Op::OpConditionalCapabilityINTEL) {
       const bool enabled_by_cap =
           state.HasAnyOfCapabilities(enabling_capabilities);
       if (!enabling_capabilities.empty() && !enabled_by_cap) {
@@ -201,7 +204,7 @@ spv_result_t CheckRequiredCapabilities(ValidationState_t& state,
                << "Operand " << which_operand << " of "
                << spvOpcodeString(inst->opcode())
                << " requires one of these capabilities: "
-               << ToString(enabling_capabilities, state.grammar());
+               << ToString(enabling_capabilities);
       }
     }
     return OperandVersionExtensionCheck(state, inst, which_operand,
@@ -222,10 +225,10 @@ spv_result_t ReservedCheck(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpImageSparseSampleProjExplicitLod:
     case spv::Op::OpImageSparseSampleProjDrefImplicitLod:
     case spv::Op::OpImageSparseSampleProjDrefExplicitLod: {
-      spv_opcode_desc inst_desc;
-      _.grammar().lookupOpcode(opcode, &inst_desc);
+      const spvtools::InstructionDesc* inst_desc = nullptr;
+      spvtools::LookupOpcode(opcode, &inst_desc);
       return _.diag(SPV_ERROR_INVALID_BINARY, inst)
-             << "Invalid Opcode name 'Op" << inst_desc->name << "'";
+             << "Invalid Opcode name 'Op" << inst_desc->name().data() << "'";
     }
     default:
       break;
@@ -242,8 +245,7 @@ spv_result_t CapabilityCheck(ValidationState_t& _, const Instruction* inst) {
   if (!_.HasAnyOfCapabilities(opcode_caps)) {
     return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
            << "Opcode " << spvOpcodeString(opcode)
-           << " requires one of these capabilities: "
-           << ToString(opcode_caps, _.grammar());
+           << " requires one of these capabilities: " << ToString(opcode_caps);
   }
   for (size_t i = 0; i < inst->operands().size(); ++i) {
     const auto& operand = inst->operand(i);
@@ -276,8 +278,8 @@ spv_result_t CapabilityCheck(ValidationState_t& _, const Instruction* inst) {
 // dependencies for the opcode.
 spv_result_t VersionCheck(ValidationState_t& _, const Instruction* inst) {
   const auto opcode = inst->opcode();
-  spv_opcode_desc inst_desc;
-  const spv_result_t r = _.grammar().lookupOpcode(opcode, &inst_desc);
+  const spvtools::InstructionDesc* inst_desc = nullptr;
+  const spv_result_t r = spvtools::LookupOpcode(opcode, &inst_desc);
   assert(r == SPV_SUCCESS);
   (void)r;
 
@@ -297,13 +299,14 @@ spv_result_t VersionCheck(ValidationState_t& _, const Instruction* inst) {
   const bool capability_check_is_sufficient =
       inst->opcode() != spv::Op::OpTerminateInvocation;
 
-  if (capability_check_is_sufficient && (inst_desc->numCapabilities > 0u)) {
+  if (capability_check_is_sufficient && !inst_desc->capabilities().empty()) {
     // We already checked that the direct capability dependency has been
     // satisfied. We don't need to check any further.
     return SPV_SUCCESS;
   }
 
-  ExtensionSet exts(inst_desc->numExtensions, inst_desc->extensions);
+  ExtensionSet exts(inst_desc->extensions().begin(),
+                    inst_desc->extensions().end());
   if (exts.empty()) {
     // If no extensions can enable this instruction, then emit error
     // messages only concerning core SPIR-V versions if errors happen.
@@ -459,10 +462,13 @@ spv_result_t CheckIfKnownExtension(ValidationState_t& _,
 
 spv_result_t InstructionPass(ValidationState_t& _, const Instruction* inst) {
   const spv::Op opcode = inst->opcode();
-  if (opcode == spv::Op::OpExtension) {
+  if (opcode == spv::Op::OpExtension ||
+      opcode == spv::Op::OpConditionalExtensionINTEL) {
     CheckIfKnownExtension(_, inst);
   } else if (opcode == spv::Op::OpCapability) {
     _.RegisterCapability(inst->GetOperandAs<spv::Capability>(0));
+  } else if (opcode == spv::Op::OpConditionalCapabilityINTEL) {
+    _.RegisterCapability(inst->GetOperandAs<spv::Capability>(1));
   } else if (opcode == spv::Op::OpMemoryModel) {
     if (_.has_memory_model_specified()) {
       return _.diag(SPV_ERROR_INVALID_LAYOUT, inst)

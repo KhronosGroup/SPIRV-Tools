@@ -15,9 +15,10 @@
 #include "spirv-tools/linker.hpp"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <iostream>
+#include <functional>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -26,19 +27,18 @@
 #include <utility>
 #include <vector>
 
-#include "source/assembly_grammar.h"
+#include "fnvar.h"
 #include "source/diagnostic.h"
 #include "source/opt/build_module.h"
 #include "source/opt/compact_ids_pass.h"
 #include "source/opt/decoration_manager.h"
 #include "source/opt/ir_builder.h"
-#include "source/opt/ir_loader.h"
 #include "source/opt/pass_manager.h"
 #include "source/opt/remove_duplicates_pass.h"
 #include "source/opt/remove_unused_interface_variables_pass.h"
 #include "source/opt/type_manager.h"
 #include "source/spirv_constant.h"
-#include "source/spirv_target_env.h"
+#include "source/table2.h"
 #include "source/util/make_unique.h"
 #include "source/util/string_utils.h"
 #include "spirv-tools/libspirv.hpp"
@@ -103,7 +103,6 @@ spv_result_t GenerateHeader(const MessageConsumer& consumer,
 // |linked_context| should not be null.
 spv_result_t MergeModules(const MessageConsumer& consumer,
                           const std::vector<Module*>& in_modules,
-                          const AssemblyGrammar& grammar,
                           IRContext* linked_context);
 
 // Compute all pairs of import and export and return it in |linkings_to_do|.
@@ -246,7 +245,6 @@ spv_result_t GenerateHeader(const MessageConsumer& consumer,
 
 spv_result_t MergeModules(const MessageConsumer& consumer,
                           const std::vector<Module*>& input_modules,
-                          const AssemblyGrammar& grammar,
                           IRContext* linked_context) {
   spv_position_t position = {};
 
@@ -294,29 +292,33 @@ spv_result_t MergeModules(const MessageConsumer& consumer,
     const uint32_t module_addressing_model =
         memory_model_inst->GetSingleWordOperand(0u);
     if (module_addressing_model != linked_addressing_model) {
-      spv_operand_desc linked_desc = nullptr, module_desc = nullptr;
-      grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
-                            linked_addressing_model, &linked_desc);
-      grammar.lookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
-                            module_addressing_model, &module_desc);
+      const spvtools::OperandDesc* linked_desc = nullptr;
+      const spvtools::OperandDesc* module_desc = nullptr;
+      spvtools::LookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
+                              linked_addressing_model, &linked_desc);
+      spvtools::LookupOperand(SPV_OPERAND_TYPE_ADDRESSING_MODEL,
+                              module_addressing_model, &module_desc);
       return DiagnosticStream(position, consumer, "", SPV_ERROR_INTERNAL)
-             << "Conflicting addressing models: " << linked_desc->name
+             << "Conflicting addressing models: " << linked_desc->name().data()
              << " (input modules 1 through " << i << ") vs "
-             << module_desc->name << " (input module " << (i + 1) << ").";
+             << module_desc->name().data() << " (input module " << (i + 1)
+             << ").";
     }
 
     const uint32_t module_memory_model =
         memory_model_inst->GetSingleWordOperand(1u);
     if (module_memory_model != linked_memory_model) {
-      spv_operand_desc linked_desc = nullptr, module_desc = nullptr;
-      grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL, linked_memory_model,
-                            &linked_desc);
-      grammar.lookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL, module_memory_model,
-                            &module_desc);
+      const spvtools::OperandDesc* linked_desc = nullptr;
+      const spvtools::OperandDesc* module_desc = nullptr;
+      spvtools::LookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL,
+                              linked_memory_model, &linked_desc);
+      spvtools::LookupOperand(SPV_OPERAND_TYPE_MEMORY_MODEL,
+                              module_memory_model, &module_desc);
       return DiagnosticStream(position, consumer, "", SPV_ERROR_INTERNAL)
-             << "Conflicting memory models: " << linked_desc->name
+             << "Conflicting memory models: " << linked_desc->name().data()
              << " (input modules 1 through " << i << ") vs "
-             << module_desc->name << " (input module " << (i + 1) << ").";
+             << module_desc->name().data() << " (input module " << (i + 1)
+             << ").";
     }
   }
   linked_module->SetMemoryModel(std::unique_ptr<Instruction>(
@@ -326,18 +328,21 @@ spv_result_t MergeModules(const MessageConsumer& consumer,
   for (const auto& module : input_modules)
     for (const auto& inst : module->entry_points()) {
       const uint32_t model = inst.GetSingleWordInOperand(0);
-      const std::string name = inst.GetInOperand(2).AsString();
+      const std::string name =
+          inst.opcode() == spv::Op::OpConditionalEntryPointINTEL
+              ? inst.GetOperand(3).AsString()
+              : inst.GetOperand(2).AsString();
       const auto i = std::find_if(
           entry_points.begin(), entry_points.end(),
           [model, name](const std::pair<uint32_t, std::string>& v) {
             return v.first == model && v.second == name;
           });
       if (i != entry_points.end()) {
-        spv_operand_desc desc = nullptr;
-        grammar.lookupOperand(SPV_OPERAND_TYPE_EXECUTION_MODEL, model, &desc);
+        const spvtools::OperandDesc* desc = nullptr;
+        spvtools::LookupOperand(SPV_OPERAND_TYPE_EXECUTION_MODEL, model, &desc);
         return DiagnosticStream(position, consumer, "", SPV_ERROR_INTERNAL)
                << "The entry point \"" << name << "\", with execution model "
-               << desc->name << ", was already defined.";
+               << desc->name().data() << ", was already defined.";
       }
       linked_module->AddEntryPoint(
           std::unique_ptr<Instruction>(inst.Clone(linked_context)));
@@ -726,8 +731,7 @@ spv_result_t VerifyLimits(const MessageConsumer& consumer,
   if (max_id_bound >= SPV_LIMIT_RESULT_ID_BOUND)
     DiagnosticStream({0u, 0u, 4u}, consumer, "", SPV_WARNING)
         << "The minimum limit of IDs, " << (SPV_LIMIT_RESULT_ID_BOUND - 1)
-        << ", was exceeded:"
-        << " " << max_id_bound << " is the current ID bound.\n"
+        << ", was exceeded: " << max_id_bound << " is the current ID bound.\n"
         << "The resulting module might not be supported by all "
            "implementations.";
 
@@ -738,8 +742,8 @@ spv_result_t VerifyLimits(const MessageConsumer& consumer,
   if (num_global_values >= SPV_LIMIT_GLOBAL_VARIABLES_MAX)
     DiagnosticStream(position, consumer, "", SPV_WARNING)
         << "The minimum limit of global values, "
-        << (SPV_LIMIT_GLOBAL_VARIABLES_MAX - 1) << ", was exceeded;"
-        << " " << num_global_values << " global values were found.\n"
+        << (SPV_LIMIT_GLOBAL_VARIABLES_MAX - 1) << ", was exceeded; "
+        << num_global_values << " global values were found.\n"
         << "The resulting module might not be supported by all "
            "implementations.";
 
@@ -851,6 +855,22 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
     ir_contexts.push_back(std::move(ir_context));
   }
 
+  const bool make_multitarget = !options.GetFnVarArchitecturesCsv().empty() ||
+                                !options.GetFnVarTargetsCsv().empty();
+
+  VariantDefs variant_defs;
+
+  if (make_multitarget) {
+    if (!variant_defs.ProcessFnVar(options, modules)) {
+      return DiagnosticStream(position, consumer, "", SPV_ERROR_FNVAR)
+             << variant_defs.GetErr();
+    }
+    if (!variant_defs.ProcessVariantDefs()) {
+      return DiagnosticStream(position, consumer, "", SPV_ERROR_FNVAR)
+             << variant_defs.GetErr();
+    }
+  }
+
   // Phase 1: Shift the IDs used in each binary so that they occupy a disjoint
   //          range from the other binaries, and compute the new ID bound.
   uint32_t max_id_bound = 0u;
@@ -864,9 +884,12 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
   IRContext linked_context(c_context->target_env, consumer);
   linked_context.module()->SetHeader(header);
 
+  if (make_multitarget) {
+    variant_defs.GenerateHeader(&linked_context);
+  }
+
   // Phase 3: Merge all the binaries into a single one.
-  AssemblyGrammar grammar(c_context);
-  res = MergeModules(consumer, modules, grammar, &linked_context);
+  res = MergeModules(consumer, modules, &linked_context);
   if (res != SPV_SUCCESS) return res;
 
   if (options.GetVerifyIds()) {
@@ -880,6 +903,10 @@ spv_result_t Link(const Context& context, const uint32_t* const* binaries,
   manager.AddPass<RemoveDuplicatesPass>();
   opt::Pass::Status pass_res = manager.Run(&linked_context);
   if (pass_res == opt::Pass::Status::Failure) return SPV_ERROR_INVALID_DATA;
+
+  if (make_multitarget) {
+    variant_defs.CombineVariantInstructions(&linked_context);
+  }
 
   // Phase 5: Find the import/export pairs
   LinkageTable linkings_to_do;
