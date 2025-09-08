@@ -182,7 +182,8 @@ class ReplaceDescArrayAccessUsingVarIndex : public Pass {
   // |case_block_ids| and |default_block_id| as incoming blocks. The size of
   // |phi_operands| must be exactly 1 larger than the size of |case_block_ids|.
   // The last element of |phi_operands| will be used for |default_block_id|. It
-  // adds the phi instruction to the beginning of |parent_block|.
+  // adds the phi instruction to the beginning of |parent_block|. Returns 0 if
+  // it fails to create the Phi instruction.
   uint32_t CreatePhiInstruction(BasicBlock* parent_block,
                                 const std::vector<uint32_t>& phi_operands,
                                 const std::vector<uint32_t>& case_block_ids,
