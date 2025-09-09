@@ -425,7 +425,7 @@ Handler_OpImageSparseRead_StorageImageReadWithoutFormat(
 }
 
 // Opcode of interest to determine capabilities requirements.
-constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 16> kOpcodeHandlers{{
+constexpr std::array<std::pair<spv::Op, OpcodeHandler>, 14> kOpcodeHandlers{{
     // clang-format off
     {spv::Op::OpImageRead,                   Handler_OpImageRead_StorageImageReadWithoutFormat},
     {spv::Op::OpImageWrite,                  Handler_OpImageWrite_StorageImageWriteWithoutFormat},
