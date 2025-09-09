@@ -434,7 +434,7 @@ CodeGenerator GetVariableCodeGenerator(const char* const built_in,
   }
   // Any kind of reference would do.
   entry_point.body = R"(
-%val = OpBitcast %u32 %built_in_var
+%val = OpCopyObject %built_in_ptr %built_in_var
 )";
 
   std::ostringstream execution_modes;
@@ -2646,7 +2646,7 @@ CodeGenerator GetArrayedVariableCodeGenerator(const char* const built_in,
   entry_point.interfaces = "%built_in_var";
   // Any kind of reference would do.
   entry_point.body = R"(
-%val = OpBitcast %u32 %built_in_var
+%val = OpCopyObject %built_in_ptr %built_in_var
 )";
 
   std::ostringstream execution_modes;
