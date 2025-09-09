@@ -598,7 +598,7 @@ spv_result_t SplitCombinedImageSamplerPass::RemapFunctions() {
     fn.RewriteParams(rewriter);
 
     if (error) {
-      return SPV_ERROR_OUT_OF_MEMORY;
+      return SPV_ERROR_INTERNAL;
     }
 
     for (auto& r : replacements) {
