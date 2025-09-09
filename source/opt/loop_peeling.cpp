@@ -171,11 +171,13 @@ void LoopPeeling::InsertCanonicalInductionVariable(
   // Create the increment.
   // Note that we do "1 + 1" here, one of the operand should the phi
   // value but we don't have it yet. The operand will be set latter.
+  // TODO(1841): Handle id overflow.
   Instruction* iv_inc = builder.AddIAdd(
       uint_1_cst->type_id(), uint_1_cst->result_id(), uint_1_cst->result_id());
 
   builder.SetInsertPoint(&*GetClonedLoop()->GetHeaderBlock()->begin());
 
+  // TODO(1841): Handle id overflow.
   canonical_induction_variable_ = builder.AddPhi(
       uint_1_cst->type_id(),
       {builder.GetIntConstant<uint32_t>(0, int_type_->IsSigned())->result_id(),
@@ -427,8 +429,10 @@ void LoopPeeling::PeelBefore(uint32_t peel_factor) {
   Instruction* factor =
       builder.GetIntConstant(peel_factor, int_type_->IsSigned());
 
+  // TODO(1841): Handle id overflow.
   Instruction* has_remaining_iteration = builder.AddLessThan(
       factor->result_id(), loop_iteration_count_->result_id());
+  // TODO(1841): Handle id overflow.
   Instruction* max_iteration = builder.AddSelect(
       factor->type_id(), has_remaining_iteration->result_id(),
       factor->result_id(), loop_iteration_count_->result_id());
@@ -440,6 +444,7 @@ void LoopPeeling::PeelBefore(uint32_t peel_factor) {
     return InstructionBuilder(context_, insert_before_point,
                               IRContext::kAnalysisDefUse |
                                   IRContext::kAnalysisInstrToBlockMapping)
+        // TODO(1841): Handle id overflow.
         .AddLessThan(canonical_induction_variable_->result_id(),
                      max_iteration->result_id())
         ->result_id();
@@ -489,6 +494,7 @@ void LoopPeeling::PeelAfter(uint32_t peel_factor) {
   Instruction* factor =
       builder.GetIntConstant(peel_factor, int_type_->IsSigned());
 
+  // TODO(1841): Handle id overflow.
   Instruction* has_remaining_iteration = builder.AddLessThan(
       factor->result_id(), loop_iteration_count_->result_id());
 
@@ -501,8 +507,10 @@ void LoopPeeling::PeelAfter(uint32_t peel_factor) {
         IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
     // Build the following check: canonical_induction_variable_ + factor <
     // iteration_count
+    // TODO(1841): Handle id overflow.
     return cond_builder
         .AddLessThan(cond_builder
+                         // TODO(1841): Handle id overflow.
                          .AddIAdd(canonical_induction_variable_->type_id(),
                                   canonical_induction_variable_->result_id(),
                                   factor->result_id())
