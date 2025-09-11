@@ -17,6 +17,7 @@
 // Validates correctness of built-in variables.
 
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <list>
 #include <map>
@@ -695,28 +696,24 @@ class BuiltInsValidator {
   void Update(const Instruction& inst);
 
   bool IsBulitinInEntryPoint(const Instruction& inst, uint32_t entry_point) {
-    auto getUnderlyingTypeId = [&](const Instruction* ifxVar) {
-      auto pointerTypeInst = _.FindDef(ifxVar->type_id());
-      auto typeInst = _.FindDef(pointerTypeInst->GetOperandAs<uint32_t>(2));
-      while (typeInst->opcode() == spv::Op::OpTypeArray) {
-        typeInst = _.FindDef(typeInst->GetOperandAs<uint32_t>(1));
+    auto get_underlying_type_id = [&](const Instruction* ifx_var) {
+      auto pointer_type_inst = _.FindDef(ifx_var->type_id());
+      auto type_inst = _.FindDef(pointer_type_inst->GetOperandAs<uint32_t>(2));
+      while (type_inst->opcode() == spv::Op::OpTypeArray) {
+        type_inst = _.FindDef(type_inst->GetOperandAs<uint32_t>(1));
       };
-      return typeInst->id();
+      return type_inst->id();
     };
 
-    const auto* models = _.GetExecutionModels(entry_point);
-    if (models->find(spv::ExecutionModel::MeshEXT) != models->end() ||
-        models->find(spv::ExecutionModel::MeshNV) != models->end()) {
-      for (const auto& desc : _.entry_point_descriptions(entry_point)) {
-        for (auto interface : desc.interfaces) {
-          if (inst.opcode() == spv::Op::OpTypeStruct) {
-            auto varInst = _.FindDef(interface);
-            if (inst.id() == getUnderlyingTypeId(varInst)) {
-              return true;
-            }
-          } else if (inst.id() == interface) {
+    for (const auto& desc : _.entry_point_descriptions(entry_point)) {
+      for (auto interface : desc.interfaces) {
+        if (inst.opcode() == spv::Op::OpTypeStruct) {
+          auto varInst = _.FindDef(interface);
+          if (inst.id() == get_underlying_type_id(varInst)) {
             return true;
           }
+        } else if (inst.id() == interface) {
+          return true;
         }
       }
     }
@@ -726,16 +723,16 @@ class BuiltInsValidator {
   // Check if "inst" is an interface variable or type of a interface varibale
   // of any mesh entry point. Populate entry_point_interface_id with all
   // entry points and interface variables that refer to the "inst"
-  bool isMeshInterfaceVar(
+  bool IsMeshInterfaceVar(
       const Instruction& inst,
       std::map<uint32_t, uint32_t>& entry_point_interface_id) {
-    auto getUnderlyingTypeId = [&](const Instruction* ifxVar) {
-      auto pointerTypeInst = _.FindDef(ifxVar->type_id());
-      auto typeInst = _.FindDef(pointerTypeInst->GetOperandAs<uint32_t>(2));
-      while (typeInst->opcode() == spv::Op::OpTypeArray) {
-        typeInst = _.FindDef(typeInst->GetOperandAs<uint32_t>(1));
+    auto get_underlying_type_id = [&](const Instruction* ifx_var) {
+      auto pointer_type_inst = _.FindDef(ifx_var->type_id());
+      auto type_inst = _.FindDef(pointer_type_inst->GetOperandAs<uint32_t>(2));
+      while (type_inst->opcode() == spv::Op::OpTypeArray) {
+        type_inst = _.FindDef(type_inst->GetOperandAs<uint32_t>(1));
       };
-      return typeInst->id();
+      return type_inst->id();
     };
 
     for (const uint32_t entry_point : _.entry_points()) {
@@ -746,7 +743,7 @@ class BuiltInsValidator {
           for (auto interface : desc.interfaces) {
             if (inst.opcode() == spv::Op::OpTypeStruct) {
               auto varInst = _.FindDef(interface);
-              if (inst.id() == getUnderlyingTypeId(varInst)) {
+              if (inst.id() == get_underlying_type_id(varInst)) {
                 entry_point_interface_id[entry_point] = interface;
                 break;
               }
@@ -2948,7 +2945,7 @@ spv_result_t BuiltInsValidator::ValidateMeshBuiltinInterfaceRules(
       // These builtin have the ability to be an array with MeshEXT
       // When an array, we need to make sure the array size lines up
       std::map<uint32_t, uint32_t> entry_interface_id_map;
-      bool found = isMeshInterfaceVar(inst, entry_interface_id_map);
+      bool found = IsMeshInterfaceVar(inst, entry_interface_id_map);
       if (found) {
         for (const auto& id : entry_interface_id_map) {
           uint32_t entry_point_id = id.first;
@@ -3554,12 +3551,47 @@ spv_result_t BuiltInsValidator::ValidateWorkgroupSizeAtDefinition(
       bool static_x = _.EvalConstantValUint64(inst.word(3), &x_size);
       bool static_y = _.EvalConstantValUint64(inst.word(4), &y_size);
       bool static_z = _.EvalConstantValUint64(inst.word(5), &z_size);
-      if (static_x && static_y && static_z &&
-          ((x_size * y_size * z_size) == 0)) {
-        return _.diag(SPV_ERROR_INVALID_DATA, &inst)
-               << "WorkgroupSize decorations must not have a static "
-                  "product of zero (X = "
-               << x_size << ", Y = " << y_size << ", Z = " << z_size << ").";
+      if (static_x && static_y && static_z) {
+        const uint64_t product_size = x_size * y_size * z_size;
+        if (product_size == 0) {
+          return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                 << "WorkgroupSize decorations must not have a static "
+                    "product of zero (X = "
+                 << x_size << ", Y = " << y_size << ", Z = " << z_size << ").";
+        }
+
+        // If there is a known static workgroup size, all entrypoints with
+        // explicit derivative execution modes can be validated. These are only
+        // found in execution models that support explicit workgroup sizes
+        for (const uint32_t entry_point : _.entry_points()) {
+          const auto* modes = _.GetExecutionModes(entry_point);
+          if (!modes) continue;
+          if (modes->count(spv::ExecutionMode::DerivativeGroupQuadsKHR)) {
+            if (x_size % 2 != 0 || y_size % 2 != 0) {
+              return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                     << _.VkErrorID(10151)
+                     << "WorkgroupSize decorations has a static dimensions of "
+                        "(X = "
+                     << x_size << ", Y = " << y_size << ") but Entry Point id "
+                     << entry_point
+                     << " has an DerivativeGroupQuadsKHR execution mode, so "
+                        "both dimensions must be a multiple of 2";
+            }
+          }
+          if (modes->count(spv::ExecutionMode::DerivativeGroupLinearKHR)) {
+            if (product_size % 4 != 0) {
+              return _.diag(SPV_ERROR_INVALID_DATA, &inst)
+                     << _.VkErrorID(10152)
+                     << "WorkgroupSize decorations has a static dimensions of "
+                        "(X = "
+                     << x_size << ", Y = " << y_size << ", Z = " << z_size
+                     << ") but Entry Point id " << entry_point
+                     << " has an DerivativeGroupLinearKHR execution mode, so "
+                        "the product ("
+                     << product_size << ") must be a multiple of 4";
+            }
+          }
+        }
       }
     }
   }
@@ -4569,6 +4601,12 @@ spv_result_t BuiltInsValidator::ValidateMeshShadingEXTBuiltinsAtDefinition(
         }
 
         for (const uint32_t entry_point : _.entry_points()) {
+          auto* models = _.GetExecutionModels(entry_point);
+          if (models->find(spv::ExecutionModel::MeshEXT) == models->end() &&
+              models->find(spv::ExecutionModel::MeshNV) == models->end()) {
+            continue;
+          }
+
           if (IsBulitinInEntryPoint(inst, entry_point)) {
             if (cull_primitive_entry_points_.find(entry_point) !=
                 cull_primitive_entry_points_.end()) {
@@ -4590,18 +4628,26 @@ spv_result_t BuiltInsValidator::ValidateMeshShadingEXTBuiltinsAtDefinition(
         assert(0 && "Unexpected mesh EXT builtin");
     }
     for (const uint32_t entry_point : _.entry_points()) {
+      // execution modes and builtin are both global, so only check these
+      // buildit definitions if we know the entrypoint is Mesh
+      auto* models = _.GetExecutionModels(entry_point);
+      if (models->find(spv::ExecutionModel::MeshEXT) == models->end() &&
+          models->find(spv::ExecutionModel::MeshNV) == models->end()) {
+        continue;
+      }
+
       const auto* modes = _.GetExecutionModes(entry_point);
-      uint64_t maxOutputPrimitives = _.GetOutputPrimitivesEXT(entry_point);
+      uint64_t max_output_primitives = _.GetOutputPrimitivesEXT(entry_point);
       uint32_t underlying_type = 0;
       if (spv_result_t error =
               GetUnderlyingType(_, decoration, inst, &underlying_type)) {
         return error;
       }
 
-      uint64_t primitiveArrayDim = 0;
+      uint64_t primitive_array_dim = 0;
       if (_.GetIdOpcode(underlying_type) == spv::Op::OpTypeArray) {
         underlying_type = _.FindDef(underlying_type)->word(3u);
-        if (!_.EvalConstantValUint64(underlying_type, &primitiveArrayDim)) {
+        if (!_.EvalConstantValUint64(underlying_type, &primitive_array_dim)) {
           assert(0 && "Array type definition is corrupt");
         }
       }
@@ -4614,7 +4660,8 @@ spv_result_t BuiltInsValidator::ValidateMeshShadingEXTBuiltinsAtDefinition(
                       "with "
                       "the OutputPoints Execution Mode. ";
           }
-          if (primitiveArrayDim && primitiveArrayDim != maxOutputPrimitives) {
+          if (primitive_array_dim &&
+              primitive_array_dim != max_output_primitives) {
             return _.diag(SPV_ERROR_INVALID_DATA, &inst)
                    << _.VkErrorID(7046)
                    << "The size of the array decorated with "
@@ -4630,7 +4677,8 @@ spv_result_t BuiltInsValidator::ValidateMeshShadingEXTBuiltinsAtDefinition(
                       "with "
                       "the OutputLinesEXT Execution Mode. ";
           }
-          if (primitiveArrayDim && primitiveArrayDim != maxOutputPrimitives) {
+          if (primitive_array_dim &&
+              primitive_array_dim != max_output_primitives) {
             return _.diag(SPV_ERROR_INVALID_DATA, &inst)
                    << _.VkErrorID(7052)
                    << "The size of the array decorated with "
@@ -4646,7 +4694,8 @@ spv_result_t BuiltInsValidator::ValidateMeshShadingEXTBuiltinsAtDefinition(
                       "with "
                       "the OutputTrianglesEXT Execution Mode. ";
           }
-          if (primitiveArrayDim && primitiveArrayDim != maxOutputPrimitives) {
+          if (primitive_array_dim &&
+              primitive_array_dim != max_output_primitives) {
             return _.diag(SPV_ERROR_INVALID_DATA, &inst)
                    << _.VkErrorID(7058)
                    << "The size of the array decorated with "
@@ -4887,6 +4936,7 @@ spv_result_t BuiltInsValidator::ValidateSingleBuiltInAtDefinitionVulkan(
     case spv::BuiltIn::CullMaskKHR: {
       return ValidateRayTracingBuiltinsAtDefinition(decoration, inst);
     }
+    // These are only for Mesh, not Task execution model
     case spv::BuiltIn::CullPrimitiveEXT:
     case spv::BuiltIn::PrimitivePointIndicesEXT:
     case spv::BuiltIn::PrimitiveLineIndicesEXT:

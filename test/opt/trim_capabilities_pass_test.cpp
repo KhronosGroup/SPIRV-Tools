@@ -3777,6 +3777,25 @@ TEST_F(TrimCapabilitiesPassTest, Geometry_RemovedIntel) {
 }
 #endif
 
+TEST_F(TrimCapabilitiesPassTest, CheckNop) {
+  const std::string kTest = R"(
+               OpCapability Shader
+; CHECK: OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main"
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+          %1 = OpFunction %void None %3
+          %6 = OpLabel
+               OpNop
+               OpReturn
+               OpFunctionEnd;
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimCapabilitiesPass>(kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
+}
+
 INSTANTIATE_TEST_SUITE_P(
     TrimCapabilitiesPassTestSubgroupClustered_Unsigned_I,
     TrimCapabilitiesPassTestSubgroupClustered_Unsigned,
