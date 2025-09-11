@@ -289,7 +289,7 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
         MakeSClampInst(*type_mgr, old_value, min_value, max_value, &inst);
     if (clamp_inst == nullptr) {
       Fail();
-      return SPV_ERROR_INVALID_ID;
+      return SPV_ERROR_INTERNAL;
     }
     return replace_index(operand_index, clamp_inst);
   };
@@ -412,6 +412,9 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
         }
         index_inst = WidenInteger(index_type->IsSigned(), maxval_width,
                                   index_inst, &inst);
+        if (index_inst == nullptr) {
+          return Fail();
+        }
       }
 
       // Finally, clamp the index.
@@ -521,7 +524,7 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
       case spv::Op::OpTypeVector:  // Use component count
       {
         const uint32_t count = pointee_type->GetSingleWordOperand(2);
-        clamp_to_literal_count(idx, count);
+        if (clamp_to_literal_count(idx, count) != SPV_SUCCESS) return;
         pointee_type = GetDef(pointee_type->GetSingleWordOperand(1));
       } break;
 
@@ -529,7 +532,7 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
         // The array length can be a spec constant, so go through the general
         // case.
         Instruction* array_len = GetDef(pointee_type->GetSingleWordOperand(2));
-        clamp_to_count(idx, array_len);
+        if (clamp_to_count(idx, array_len) != SPV_SUCCESS) return;
         pointee_type = GetDef(pointee_type->GetSingleWordOperand(1));
       } break;
 
@@ -573,7 +576,7 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
         if (!array_len) {  // We've already signaled an error.
           return;
         }
-        clamp_to_count(idx, array_len);
+        if (clamp_to_count(idx, array_len) != SPV_SUCCESS) return;
         if (module_status_.failed) return;
         pointee_type = GetDef(pointee_type->GetSingleWordOperand(1));
       } break;
@@ -658,6 +661,9 @@ Instruction* GraphicsRobustAccessPass::MakeUMinInst(
   // the function so we force a deterministic ordering in case both of them need
   // to take a new ID.
   const uint32_t glsl_insts_id = GetGlslInsts();
+  if (glsl_insts_id == 0) {
+    return nullptr;
+  }
   uint32_t smin_id = context()->TakeNextId();
   if (smin_id == 0) {
     return nullptr;
@@ -685,6 +691,9 @@ Instruction* GraphicsRobustAccessPass::MakeSClampInst(
   // the function so we force a deterministic ordering in case both of them need
   // to take a new ID.
   const uint32_t glsl_insts_id = GetGlslInsts();
+  if (glsl_insts_id == 0) {
+    return nullptr;
+  }
   uint32_t clamp_id = context()->TakeNextId();
   if (clamp_id == 0) {
     return nullptr;
@@ -805,6 +814,7 @@ Instruction* GraphicsRobustAccessPass::MakeRuntimeArrayLengthInst(
           // Create the instruction and insert it.
           const auto new_access_chain_id = context()->TakeNextId();
           if (new_access_chain_id == 0) {
+            Fail();
             return nullptr;
           }
           auto* new_access_chain =
@@ -837,6 +847,7 @@ Instruction* GraphicsRobustAccessPass::MakeRuntimeArrayLengthInst(
   // but after the generation of the pointer to the struct.
   const auto array_len_id = context()->TakeNextId();
   if (array_len_id == 0) {
+    Fail();
     return nullptr;
   }
   analysis::Integer uint_type_for_query(32, false);
