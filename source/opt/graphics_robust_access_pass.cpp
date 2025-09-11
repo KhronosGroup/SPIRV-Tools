@@ -1092,6 +1092,9 @@ spv_result_t GraphicsRobustAccessPass::ClampCoordinateForImageTexelPointer(
   auto* clamp_coord = MakeSClampInst(
       *type_mgr, coord, constant_mgr->GetDefiningInstruction(coordinate_0),
       query_max_including_faces, image_texel_pointer);
+  if (clamp_coord == nullptr) {
+    return Fail();
+  }
   image_texel_pointer->SetInOperand(1, {clamp_coord->result_id()});
 
   // Clamp the sample index
@@ -1118,6 +1121,9 @@ spv_result_t GraphicsRobustAccessPass::ClampCoordinateForImageTexelPointer(
     auto* clamp_samples = MakeSClampInst(
         *type_mgr, samples, constant_mgr->GetDefiningInstruction(coordinate_0),
         max_samples, image_texel_pointer);
+    if (clamp_samples == nullptr) {
+      return Fail();
+    }
     image_texel_pointer->SetInOperand(2, {clamp_samples->result_id()});
 
   } else {
