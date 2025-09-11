@@ -477,6 +477,9 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
       // Compute count - 1.
       // It doesn't matter if 1 is signed or unsigned.
       auto* one = GetValueForType(1, wider_type);
+      if (!one) {
+        return Fail();
+      }
       auto* count_minus_1 =
           InsertInst(&inst, spv::Op::OpISub, type_mgr->GetId(wider_type),
                      context()->TakeNextId(),
@@ -486,16 +489,23 @@ void GraphicsRobustAccessPass::ClampIndicesForAccessChain(
         return Fail();
       }
       auto* zero = GetValueForType(0, wider_type);
+      if (!zero) {
+        return Fail();
+      }
       // Make sure we clamp to an upper bound that is at most the signed max
       // for the target type.
       const uint64_t max_signed_value =
           ((uint64_t(1) << (target_width - 1)) - 1);
+      Instruction* max_signed_inst =
+          GetValueForType(max_signed_value, wider_type);
+      if (!max_signed_inst) {
+        return Fail();
+      }
       // Use unsigned-min to ensure that the result is always non-negative.
       // That ensures we satisfy the invariant for SClamp, where the "min"
       // argument we give it (zero), is no larger than the third argument.
       auto* upper_bound =
-          MakeUMinInst(*type_mgr, count_minus_1,
-                       GetValueForType(max_signed_value, wider_type), &inst);
+          MakeUMinInst(*type_mgr, count_minus_1, max_signed_inst, &inst);
       if (upper_bound == nullptr) {
         return Fail();
       }
