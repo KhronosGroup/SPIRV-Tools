@@ -259,6 +259,7 @@ OpName %main "main"
 %v2half = OpTypeVector %half 2
 %v4half = OpTypeVector %half 4
 %v2bool = OpTypeVector %bool 2
+%v2ushort = OpTypeVector %ushort 2
 %m2x2int = OpTypeMatrix %v2int 2
 %mat4v2float = OpTypeMatrix %v2float 4
 %mat2v4float = OpTypeMatrix %v4float 2
@@ -267,6 +268,7 @@ OpName %main "main"
 %struct_v2int_int_int = OpTypeStruct %v2int %int %int
 %_ptr_int = OpTypePointer Function %int
 %_ptr_uint = OpTypePointer Function %uint
+%_ptr_ushort = OpTypePointer Function %ushort
 %_ptr_bool = OpTypePointer Function %bool
 %_ptr_float = OpTypePointer Function %float
 %_ptr_double = OpTypePointer Function %double
@@ -335,6 +337,7 @@ OpName %main "main"
 %uint_42 = OpConstant %uint 42
 %uint_2147483649 = OpConstant %uint 2147483649
 %uint_max = OpConstant %uint 4294967295
+%uint_0x0000ffff = OpConstant %uint 65535
 %ulong_0 = OpConstant %ulong 0
 %ulong_1 = OpConstant %ulong 1
 %ulong_2 = OpConstant %ulong 2
@@ -440,6 +443,7 @@ OpName %main "main"
 %v4float_n1_2_1_3 = OpConstantComposite %v4float %float_n1 %float_2 %float_1 %float_3
 %uint_0x3f800000 = OpConstant %uint 0x3f800000
 %uint_0xbf800000 = OpConstant %uint 0xbf800000
+%v2uint_1_0x0000ffff = OpConstantComposite %v2uint %uint_1 %uint_0x0000ffff
 %v2uint_0x3f800000_0xbf800000 = OpConstantComposite %v2uint %uint_0x3f800000 %uint_0xbf800000
 %long_0xbf8000003f800000 = OpConstant %long 0xbf8000003f800000
 %int_0x3FF00000 = OpConstant %int 0x3FF00000
@@ -1190,7 +1194,15 @@ INSTANTIATE_TEST_SUITE_P(TestCase, IntegerInstructionFoldingTest,
           "%2 = OpUConvert %ushort %int_n24\n" +
           "OpReturn\n" +
           "OpFunctionEnd",
-      2, 65512)
+      2, 65512),
+   // Test case 83: Fold BitReverse of 1
+  InstructionFoldingCase<uint32_t>(
+    Header() + "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%2 = OpBitReverse %uint %uint_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+    2, 0x80000000)
 ));
 // clang-format on
 
@@ -1471,7 +1483,16 @@ INSTANTIATE_TEST_SUITE_P(TestCase, UIntVectorInstructionFoldingTest,
             "%2 = OpUConvert %v2uint %v2short_2_n5\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, {2,65531})
+        2, {2,65531}),
+    // Test case 7: fold bitreverse of a vector of uint
+    InstructionFoldingCase<std::vector<uint32_t>>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%n = OpVariable %_ptr_int Function\n" +
+          "%load = OpLoad %int %n\n" +
+          "%2 = OpBitReverse %v2uint %v2uint_1_0x0000ffff\n" +
+          "OpReturn\n" + "OpFunctionEnd",
+      2, {2147483648, 0xffff0000})
 ));
 // clang-format on
 
