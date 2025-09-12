@@ -122,26 +122,27 @@ class PassTest : public TestT {
     const uint32_t optimized_id_bound = context()->module()->id_bound();
 
     // Second run (if needed) to test for id overflow.
-    if (std::get<1>(result) == Pass::Status::SuccessWithChange &&
-        original_id_bound < optimized_id_bound) {
-      auto null_message_consumer = [](spv_message_level_t, const char*,
-                                      const spv_position_t&, const char*) {};
-      std::unique_ptr<IRContext> context2 =
+    if (std::get<1>(result) == Pass::Status::SuccessWithChange) {
+      for( uint32_t new_bound = original_id_bound; new_bound < optimized_id_bound; ++new_bound) {
+        auto null_message_consumer = [](spv_message_level_t, const char*,
+            const spv_position_t&, const char*) {};
+        std::unique_ptr<IRContext> context2 =
           BuildModule(env_, null_message_consumer, assembly, assemble_options_);
-      EXPECT_NE(nullptr, context2)
+        EXPECT_NE(nullptr, context2)
           << "Assembling failed for shader (2nd run):\n"
           << assembly << std::endl;
-      if (context2) {
-        auto pass2 = std::apply(
-            [&](const auto&... an_arg) { return MakeUnique<PassT>(an_arg...); },
-            copied_args);
-        pass2->SetMessageConsumer(null_message_consumer);
+        if (context2) {
+          auto pass2 = std::apply(
+              [&](const auto&... an_arg) { return MakeUnique<PassT>(an_arg...); },
+              copied_args);
+          pass2->SetMessageConsumer(null_message_consumer);
 
-        const uint32_t new_bound = (original_id_bound + optimized_id_bound) / 2;
-        context2->set_max_id_bound(new_bound);
+          //const uint32_t new_bound = (original_id_bound + optimized_id_bound) / 2;
+          context2->set_max_id_bound(new_bound);
 
-        // We don't care about the status, just that it doesn't crash.
-        (void)RunPassAndGetBinary(pass2.get(), context2.get(), skip_nop);
+          // We don't care about the status, just that it doesn't crash.
+          (void)RunPassAndGetBinary(pass2.get(), context2.get(), skip_nop);
+        }
       }
     }
     return result;
