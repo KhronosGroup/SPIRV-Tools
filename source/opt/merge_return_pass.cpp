@@ -58,7 +58,9 @@ Pass::Status MergeReturnPass::Process() {
         failed = true;
       }
     } else {
-      MergeReturnBlocks(function, return_blocks);
+      if (!MergeReturnBlocks(function, return_blocks)) {
+        failed = true;
+      }
     }
     return true;
   };
@@ -171,10 +173,14 @@ bool MergeReturnPass::ProcessStructured(
   return true;
 }
 
-void MergeReturnPass::CreateReturnBlock() {
+bool MergeReturnPass::CreateReturnBlock() {
   // Create a label for the new return block
+  uint32_t label_id = TakeNextId();
+  if (label_id == 0) {
+    return false;
+  }
   std::unique_ptr<Instruction> return_label(
-      new Instruction(context(), spv::Op::OpLabel, 0u, TakeNextId(), {}));
+      new Instruction(context(), spv::Op::OpLabel, 0u, label_id, {}));
 
   // Create the new basic block
   std::unique_ptr<BasicBlock> return_block(
@@ -186,14 +192,18 @@ void MergeReturnPass::CreateReturnBlock() {
                              final_return_block_);
   assert(final_return_block_->GetParent() == function_ &&
          "The function should have been set when the block was created.");
+  return true;
 }
 
-void MergeReturnPass::CreateReturn(BasicBlock* block) {
+bool MergeReturnPass::CreateReturn(BasicBlock* block) {
   AddReturnValue();
 
   if (return_value_) {
     // Load and return the final return value
     uint32_t loadId = TakeNextId();
+    if (loadId == 0) {
+      return false;
+    }
     block->AddInstruction(MakeUnique<Instruction>(
         context(), spv::Op::OpLoad, function_->type_id(), loadId,
         std::initializer_list<Operand>{
@@ -216,6 +226,7 @@ void MergeReturnPass::CreateReturn(BasicBlock* block) {
     context()->AnalyzeDefUse(block->terminator());
     context()->set_instr_block(block->terminator(), block);
   }
+  return true;
 }
 
 void MergeReturnPass::ProcessStructuredBlock(BasicBlock* block) {
@@ -665,14 +676,16 @@ std::vector<BasicBlock*> MergeReturnPass::CollectReturnBlocks(
   return return_blocks;
 }
 
-void MergeReturnPass::MergeReturnBlocks(
+bool MergeReturnPass::MergeReturnBlocks(
     Function* function, const std::vector<BasicBlock*>& return_blocks) {
   if (return_blocks.size() <= 1) {
     // No work to do.
-    return;
+    return true;
   }
 
-  CreateReturnBlock();
+  if (!CreateReturnBlock()) {
+    return false;
+  }
   uint32_t return_id = final_return_block_->id();
   auto ret_block_iter = --function->end();
   // Create the PHI for the merged block (if necessary).
@@ -689,6 +702,9 @@ void MergeReturnPass::MergeReturnBlocks(
   if (!phi_ops.empty()) {
     // Need a PHI node to select the correct return value.
     uint32_t phi_result_id = TakeNextId();
+    if (phi_result_id == 0) {
+      return false;
+    }
     uint32_t phi_type_id = function->type_id();
     std::unique_ptr<Instruction> phi_inst(new Instruction(
         context(), spv::Op::OpPhi, phi_type_id, phi_result_id, phi_ops));
@@ -720,6 +736,7 @@ void MergeReturnPass::MergeReturnBlocks(
   }
 
   get_def_use_mgr()->AnalyzeInstDefUse(ret_block_iter->GetLabelInst());
+  return true;
 }
 
 void MergeReturnPass::AddNewPhiNodes() {
@@ -783,8 +800,12 @@ void MergeReturnPass::InsertAfterElement(BasicBlock* element,
 }
 
 bool MergeReturnPass::AddSingleCaseSwitchAroundFunction() {
-  CreateReturnBlock();
-  CreateReturn(final_return_block_);
+  if (!CreateReturnBlock()) {
+    return false;
+  }
+  if (!CreateReturn(final_return_block_)) {
+    return false;
+  }
 
   if (context()->AreAnalysesValid(IRContext::kAnalysisCFG)) {
     cfg()->RegisterBlock(final_return_block_);
