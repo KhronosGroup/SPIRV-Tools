@@ -118,6 +118,7 @@ class LCSSARewriter {
       }
       InstructionBuilder builder(base_->context_, &*bb->begin(),
                                  IRContext::kAnalysisInstrToBlockMapping);
+      // TODO(1841): Handle id overflow.
       Instruction* incoming_phi =
           builder.AddPhi(def_insn_.type_id(), incomings);
 
@@ -137,6 +138,7 @@ class LCSSARewriter {
       }
       InstructionBuilder builder(base_->context_, &*bb->begin(),
                                  IRContext::kAnalysisInstrToBlockMapping);
+      // TODO(1841): Handle id overflow.
       Instruction* incoming_phi =
           builder.AddPhi(def_insn_.type_id(), incomings);
 
@@ -399,6 +401,7 @@ void LoopUtils::CreateLoopDedicatedExits() {
           }
 
           // Build the new phi instruction dedicated exit block.
+          // TODO(1841): Handle id overflow.
           Instruction* exit_phi = builder.AddPhi(phi->type_id(), exit_phi_op);
           // Build the new incoming branch.
           new_phi_op.push_back(exit_phi->result_id());

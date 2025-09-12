@@ -377,6 +377,7 @@ void MergeReturnPass::CreatePhiNodesForInst(BasicBlock* merge_block,
       InstructionBuilder builder(
           context(), &*merge_block->begin(),
           IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+      // TODO(1841): Handle id overflow.
       new_phi = builder.AddPhi(inst.type_id(), phi_operands);
     }
     uint32_t result_of_phi = new_phi->result_id();
@@ -519,6 +520,7 @@ bool MergeReturnPass::BreakFromConstruct(
   analysis::Bool bool_type;
   uint32_t bool_id = context()->get_type_mgr()->GetId(&bool_type);
   assert(bool_id != 0);
+  // TODO(1841): Handle id overflow.
   uint32_t load_id =
       builder.AddLoad(bool_id, return_flag_->result_id())->result_id();
 

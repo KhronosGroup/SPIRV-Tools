@@ -181,6 +181,7 @@ bool LoopPeeling::InsertCanonicalInductionVariable(
   // Create the increment.
   // Note that we do "1 + 1" here, one of the operand should the phi
   // value but we don't have it yet. The operand will be set latter.
+  // TODO(1841): Handle id overflow.
   Instruction* iv_inc = builder.AddIAdd(
       uint_1_cst->type_id(), uint_1_cst->result_id(), uint_1_cst->result_id());
   if (!iv_inc) return false;
@@ -458,6 +459,7 @@ bool LoopPeeling::PeelBefore(uint32_t peel_factor) {
       builder.GetIntConstant(peel_factor, int_type_->IsSigned());
   if (!factor) return false;
 
+  // TODO(1841): Handle id overflow.
   Instruction* has_remaining_iteration = builder.AddLessThan(
       factor->result_id(), loop_iteration_count_->result_id());
   if (!has_remaining_iteration) return false;
@@ -534,6 +536,7 @@ bool LoopPeeling::PeelAfter(uint32_t peel_factor) {
       builder.GetIntConstant(peel_factor, int_type_->IsSigned());
   if (!factor) return false;
 
+  // TODO(1841): Handle id overflow.
   Instruction* has_remaining_iteration = builder.AddLessThan(
       factor->result_id(), loop_iteration_count_->result_id());
   if (!has_remaining_iteration) return false;

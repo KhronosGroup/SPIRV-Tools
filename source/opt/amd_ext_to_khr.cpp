@@ -232,6 +232,7 @@ bool ReplaceSwizzleInvocations(IRContext* ctx, Instruction* inst,
       ctx->get_def_use_mgr()->GetDef(var_inst->type_id());
   uint32_t uint_type_id = var_ptr_type->GetSingleWordInOperand(1);
 
+  // TODO(1841): Handle id overflow.
   Instruction* id = ir_builder.AddLoad(uint_type_id, var_id);
 
   uint32_t quad_mask = ir_builder.GetUintConstantId(3);
@@ -264,9 +265,11 @@ bool ReplaceSwizzleInvocations(IRContext* ctx, Instruction* inst,
       {uint_max_id, uint_max_id, uint_max_id, uint_max_id});
   Instruction* ballot_value =
       const_mgr->GetDefiningInstruction(ballot_value_const);
+  // TODO(1841): Handle id overflow.
   Instruction* is_active = ir_builder.AddNaryOp(
       type_mgr->GetBoolTypeId(), spv::Op::OpGroupNonUniformBallotBitExtract,
       {subgroup_scope, ballot_value->result_id(), target_inv->result_id()});
+  // TODO(1841): Handle id overflow.
   Instruction* shuffle =
       ir_builder.AddNaryOp(inst->type_id(), spv::Op::OpGroupNonUniformShuffle,
                            {subgroup_scope, data_id, target_inv->result_id()});
@@ -358,6 +361,7 @@ bool ReplaceSwizzleInvocationsMasked(
       ctx->get_def_use_mgr()->GetDef(var_inst->type_id());
   uint32_t uint_type_id = var_ptr_type->GetSingleWordInOperand(1);
 
+  // TODO(1841): Handle id overflow.
   Instruction* id = ir_builder.AddLoad(uint_type_id, var_id);
 
   // Do the bitwise operations.
@@ -381,9 +385,11 @@ bool ReplaceSwizzleInvocationsMasked(
       {uint_max_id, uint_max_id, uint_max_id, uint_max_id});
   Instruction* ballot_value =
       const_mgr->GetDefiningInstruction(ballot_value_const);
+  // TODO(1841): Handle id overflow.
   Instruction* is_active = ir_builder.AddNaryOp(
       type_mgr->GetBoolTypeId(), spv::Op::OpGroupNonUniformBallotBitExtract,
       {subgroup_scope, ballot_value->result_id(), target_inv->result_id()});
+  // TODO(1841): Handle id overflow.
   Instruction* shuffle =
       ir_builder.AddNaryOp(inst->type_id(), spv::Op::OpGroupNonUniformShuffle,
                            {subgroup_scope, data_id, target_inv->result_id()});
@@ -435,6 +441,7 @@ bool ReplaceWriteInvocation(IRContext* ctx, Instruction* inst,
   InstructionBuilder ir_builder(
       ctx, inst,
       IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+  // TODO(1841): Handle id overflow.
   Instruction* t =
       ir_builder.AddLoad(var_ptr_type->GetSingleWordInOperand(1), var_id);
   analysis::Bool bool_type;
@@ -598,8 +605,11 @@ bool ReplaceCubeFaceCoord(IRContext* ctx, Instruction* inst,
       const_mgr->GetDefiningInstruction(vec_const)->result_id();
 
   // Extract the input values.
+  // TODO(1841): Handle id overflow.
   Instruction* x = ir_builder.AddCompositeExtract(float_type_id, input_id, {0});
+  // TODO(1841): Handle id overflow.
   Instruction* y = ir_builder.AddCompositeExtract(float_type_id, input_id, {1});
+  // TODO(1-841): Handle id overflow.
   Instruction* z = ir_builder.AddCompositeExtract(float_type_id, input_id, {2});
 
   // Negate the input values.
@@ -650,21 +660,27 @@ bool ReplaceCubeFaceCoord(IRContext* ctx, Instruction* inst,
                              not_is_z_max->result_id(), y_gr_x->result_id());
 
   // Select the correct value for cubesc.
+  // TODO(1841): Handle id overflow.
   Instruction* cubesc_case_1 = ir_builder.AddSelect(
       float_type_id, is_z_neg->result_id(), nx->result_id(), x->result_id());
+  // TODO(1841): Handle id overflow.
   Instruction* cubesc_case_2 = ir_builder.AddSelect(
       float_type_id, is_x_neg->result_id(), z->result_id(), nz->result_id());
   Instruction* sel =
+      // TODO(1841): Handle id overflow.
       ir_builder.AddSelect(float_type_id, is_y_max->result_id(), x->result_id(),
                            cubesc_case_2->result_id());
   Instruction* cubesc =
+      // TODO(1841): Handle id overflow.
       ir_builder.AddSelect(float_type_id, is_z_max->result_id(),
                            cubesc_case_1->result_id(), sel->result_id());
 
   // Select the correct value for cubetc.
+  // TODO(1841): Handle id overflow.
   Instruction* cubetc_case_1 = ir_builder.AddSelect(
       float_type_id, is_y_neg->result_id(), nz->result_id(), z->result_id());
   Instruction* cubetc =
+      // TODO(1841): Handle id overflow.
       ir_builder.AddSelect(float_type_id, is_y_max->result_id(),
                            cubetc_case_1->result_id(), ny->result_id());
 
@@ -746,8 +762,11 @@ bool ReplaceCubeFaceIndex(IRContext* ctx, Instruction* inst,
   uint32_t f5_const_id = const_mgr->GetFloatConstId(5.0);
 
   // Extract the input values.
+  // TODO(1841): Handle id overflow.
   Instruction* x = ir_builder.AddCompositeExtract(float_type_id, input_id, {0});
+  // TODO(1841): Handle id overflow.
   Instruction* y = ir_builder.AddCompositeExtract(float_type_id, input_id, {1});
+  // TODO(1-841): Handle id overflow.
   Instruction* z = ir_builder.AddCompositeExtract(float_type_id, input_id, {2});
 
   // Get the absolute values of the inputs.
@@ -778,15 +797,19 @@ bool ReplaceCubeFaceIndex(IRContext* ctx, Instruction* inst,
                              ay->result_id(), ax->result_id());
 
   // Get the value for each case.
+  // TODO(1841): Handle id overflow.
   Instruction* case_z = ir_builder.AddSelect(
       float_type_id, is_z_neg->result_id(), f5_const_id, f4_const_id);
+  // TODO(1841): Handle id overflow.
   Instruction* case_y = ir_builder.AddSelect(
       float_type_id, is_y_neg->result_id(), f3_const_id, f2_const_id);
+  // TODO(1841): Handle id overflow.
   Instruction* case_x = ir_builder.AddSelect(
       float_type_id, is_x_neg->result_id(), f1_const_id, f0_const_id);
 
   // Select the correct case.
   Instruction* sel =
+      // TODO(1841): Handle id overflow.
       ir_builder.AddSelect(float_type_id, y_gr_x->result_id(),
                            case_y->result_id(), case_x->result_id());
 
