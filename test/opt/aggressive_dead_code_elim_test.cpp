@@ -8648,6 +8648,7 @@ OpExecutionMode %main LocalSize 1 1 1
 %17 = OpString "int"
 %25 = OpString "main"
 %26 = OpString ""
+; CHECK: [[VarName:%\w+]] = OpString "some_real_obvious_name"
 %30 = OpString "some_real_obvious_name"
 %33 = OpString "__dxc_setup"
 %35 = OpString "cb000c74"
@@ -8684,6 +8685,10 @@ OpDecorate %b Binding 0
 %b = OpVariable %_ptr_UniformConstant_type_buffer_image UniformConstant
 %int_1 = OpConstant %int 1
 %int_2 = OpConstant %int 2
+; CHECK: [[undef:%\w+]] = OpUndef %int
+; ADCE will create another undef and use the new one.
+; CHECK: [[undef:%\w+]] = OpUndef %int
+%198 = OpUndef %int
 %38 = OpExtInst %void %1 DebugInfoNone
 %16 = OpExtInst %void %1 DebugExpression
 %18 = OpExtInst %void %1 DebugTypeBasic %17 %uint_32 %uint_4 %uint_0
@@ -8694,7 +8699,7 @@ OpDecorate %b Binding 0
 %27 = OpExtInst %void %1 DebugFunction %25 %21 %22 %uint_4 %uint_1 %23 %26 %uint_3 %uint_4
 %28 = OpExtInst %void %1 DebugLexicalBlock %22 %uint_4 %uint_13 %27
 %31 = OpExtInst %void %1 DebugLocalVariable %30 %20 %22 %uint_5 %uint_7 %28 %uint_4
-; CHECK: %31 = OpExtInst %void %1 DebugLocalVariable %30 %20 %22 %uint_5 %uint_7 %28 %uint_4
+; CHECK: [[var:%\w+]] = OpExtInst %void {{%\w+}} DebugLocalVariable [[VarName]] 
 %34 = OpExtInst %void %1 DebugFunction %33 %21 %22 %uint_4 %uint_1 %23 %26 %uint_3 %uint_4
 %41 = OpExtInst %void %1 DebugTypeComposite %39 %uint_0 %22 %uint_0 %uint_0 %23 %40 %38 %uint_3
 %43 = OpExtInst %void %1 DebugTypeTemplateParameter %42 %18 %38 %22 %uint_0 %uint_0
@@ -8708,13 +8713,12 @@ OpDecorate %b Binding 0
 %52 = OpExtInst %void %1 DebugFunctionDefinition %34 %main
 %304 = OpExtInst %void %1 DebugScope %28 %133
 %199 = OpExtInst %void %1 DebugLine %22 %uint_5 %uint_5 %uint_3 %uint_52
-%198 = OpUndef %int
 %245 = OpExtInst %void %1 DebugValue %31 %198 %16 %int_0
 %242 = OpExtInst %void %1 DebugValue %31 %198 %16 %int_1
 %239 = OpExtInst %void %1 DebugValue %31 %198 %16 %int_2
-; CHECK: %245 = OpExtInst %void %1 DebugValue %31 %198 %16 %int_0
-; CHECK-NOT: %242 = OpExtInst %void %1 DebugValue %31 %198 %16 %int_1
-; CHECK-NOT: %239 = OpExtInst %void %1 DebugValue %31 %198 %16 %int_2
+; CHECK: {{%\w+}} = OpExtInst %void {{%\w+}} DebugValue [[var]] [[undef]] {{%\w+}} %int_0
+; CHECK-NOT: {{%\w+}} = OpExtInst %void {{%\w+}} DebugValue
+; CHECK-NOT: {{%\w+}} = OpExtInst %void {{%\w+}} DebugValue
 %160 = OpExtInst %void %1 DebugLine %22 %uint_6 %uint_6 %uint_3 %uint_10
 %147 = OpLoad %type_buffer_image %b
 OpImageWrite %147 %uint_0 %int_0 None
@@ -8730,6 +8734,61 @@ OpFunctionEnd
   SetDisassembleOptions(SPV_BINARY_TO_TEXT_OPTION_NO_HEADER |
                         SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES);
   SinglePassRunAndMatch<AggressiveDCEPass>(before, false);
+}
+
+TEST_F(AggressiveDCETest, UndefIsOutsideFunction) {
+  const std::string spirv = R"(
+  ; CHECK: OpUndef
+  ; CHECK: OpFunction %void
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %2 "main"
+               OpExecutionMode %2 LocalSize 1 1 1
+          %3 = OpString ""
+          %4 = OpString "int"
+          %5 = OpString "x"
+          %6 = OpString "Val.set"
+          %7 = OpString "Val"
+          %8 = OpString "this"
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+    %uint_11 = OpConstant %uint 11
+     %uint_5 = OpConstant %uint 5
+   %uint_100 = OpConstant %uint 100
+         %14 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+     %uint_0 = OpConstant %uint 0
+    %uint_15 = OpConstant %uint 15
+     %uint_6 = OpConstant %uint 6
+    %uint_32 = OpConstant %uint 32
+     %uint_4 = OpConstant %uint 4
+%uint_131072 = OpConstant %uint 131072
+     %uint_1 = OpConstant %uint 1
+    %uint_10 = OpConstant %uint 10
+     %uint_8 = OpConstant %uint 8
+         %26 = OpExtInst %void %1 DebugOperation %uint_0
+         %27 = OpExtInst %void %1 DebugSource %3 %3
+         %28 = OpExtInst %void %1 DebugCompilationUnit %uint_100 %uint_5 %27 %uint_11
+         %29 = OpExtInst %void %1 DebugTypeBasic %4 %uint_32 %uint_4 %uint_131072
+         %30 = OpExtInst %void %1 DebugTypeFunction %uint_0 %void
+         %31 = OpExtInst %void %1 DebugFunction %6 %30 %27 %uint_6 %uint_10 %28 %6 %uint_0 %uint_6
+         %32 = OpExtInst %void %1 DebugTypeMember %5 %29 %27 %uint_1 %uint_8 %uint_0 %uint_32 %uint_0
+         %33 = OpExtInst %void %1 DebugTypeComposite %7 %uint_1 %27 %uint_1 %uint_8 %28 %7 %uint_32 %uint_131072 %32
+         %34 = OpExtInst %void %1 DebugLocalVariable %8 %33 %27 %uint_6 %uint_10 %31 %uint_0 %uint_1
+         %35 = OpExtInst %void %1 DebugExpression %26
+          %2 = OpFunction %void None %14
+         %36 = OpLabel
+         %37 = OpVariable %_ptr_Function_int Function
+         %38 = OpExtInst %void %1 DebugValue %34 %37 %35 %uint_0
+               OpReturn
+               OpFunctionEnd
+
+)";
+
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 }  // namespace
 }  // namespace opt

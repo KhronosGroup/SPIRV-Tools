@@ -306,16 +306,14 @@ void AggressiveDCEPass::ProcessDebugInformation(
         auto def = get_def_use_mgr()->GetDef(id);
         if (!live_insts_.Set(def->unique_id())) {
           AddToWorklist(inst);
+          uint32_t undef_id = Type2Undef(def->type_id());
+          inst->SetInOperand(kDebugValueValue, {undef_id});
           context()->get_def_use_mgr()->UpdateDefUse(inst);
-          worklist_.push(def);
-          def->SetOpcode(spv::Op::OpUndef);
-          def->SetInOperands({});
           id = inst->GetSingleWordInOperand(kDebugValueLocalVariable);
           auto localVar = get_def_use_mgr()->GetDef(id);
           AddToWorklist(localVar);
           context()->get_def_use_mgr()->UpdateDefUse(localVar);
           AddOperandsToWorkList(localVar);
-          context()->get_def_use_mgr()->UpdateDefUse(def);
           id = inst->GetSingleWordInOperand(kDebugValueExpression);
           auto expression = get_def_use_mgr()->GetDef(id);
           AddToWorklist(expression);
