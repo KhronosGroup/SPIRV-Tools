@@ -109,7 +109,8 @@ class IRContext {
         id_to_name_(nullptr),
         max_id_bound_(kDefaultMaxIdBound),
         preserve_bindings_(false),
-        preserve_spec_constants_(false) {
+        preserve_spec_constants_(false),
+        id_overflow_(false) {
     SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
   }
@@ -127,7 +128,8 @@ class IRContext {
         id_to_name_(nullptr),
         max_id_bound_(kDefaultMaxIdBound),
         preserve_bindings_(false),
-        preserve_spec_constants_(false) {
+        preserve_spec_constants_(false),
+        id_overflow_(false) {
     SetContextMessageConsumer(syntax_context_, consumer_);
     module_->SetContext(this);
     InitializeCombinators();
@@ -563,6 +565,7 @@ class IRContext {
   inline uint32_t TakeNextId() {
     uint32_t next_id = module()->TakeNextIdBound();
     if (next_id == 0) {
+      id_overflow_ = true;
       if (consumer()) {
         std::string message = "ID overflow. Try running compact-ids.";
         consumer()(SPV_MSG_ERROR, "", {0, 0, 0}, message.c_str());
@@ -582,6 +585,13 @@ class IRContext {
     }
     return next_id;
   }
+
+  // Returns true if an ID overflow has occurred since the last time the flag
+  // was cleared.
+  bool id_overflow() const { return id_overflow_; }
+
+  // Clears the ID overflow flag.
+  void clear_id_overflow() { id_overflow_ = false; }
 
   FeatureManager* get_feature_mgr() {
     if (!feature_mgr_.get()) {
@@ -930,6 +940,9 @@ class IRContext {
   // Whether all specialization constants within |module_|
   // should be preserved.
   bool preserve_spec_constants_;
+
+  // Set to true if TakeNextId() fails.
+  bool id_overflow_;
 };
 
 inline IRContext::Analysis operator|(IRContext::Analysis lhs,

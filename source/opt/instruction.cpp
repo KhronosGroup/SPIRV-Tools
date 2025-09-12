@@ -770,7 +770,7 @@ bool Instruction::IsFoldableByFoldScalar() const {
   // Even if the type of the instruction is foldable, its operands may not be
   // foldable (e.g., comparisons of 64bit types).  Check that all operand types
   // are foldable before accepting the instruction.
-  return WhileEachInOperand([&folder, this](const uint32_t* op_id) {
+  return WhileEachInId([&folder, this](const uint32_t* op_id) {
     Instruction* def_inst = context()->get_def_use_mgr()->GetDef(*op_id);
     Instruction* def_inst_type =
         context()->get_def_use_mgr()->GetDef(def_inst->type_id());
@@ -792,7 +792,7 @@ bool Instruction::IsFoldableByFoldVector() const {
   // Even if the type of the instruction is foldable, its operands may not be
   // foldable (e.g., comparisons of 64bit types).  Check that all operand types
   // are foldable before accepting the instruction.
-  return WhileEachInOperand([&folder, this](const uint32_t* op_id) {
+  return WhileEachInId([&folder, this](const uint32_t* op_id) {
     Instruction* def_inst = context()->get_def_use_mgr()->GetDef(*op_id);
     Instruction* def_inst_type =
         context()->get_def_use_mgr()->GetDef(def_inst->type_id());
