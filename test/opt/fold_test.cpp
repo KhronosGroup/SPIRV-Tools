@@ -252,6 +252,7 @@ OpName %main "main"
 %v4long = OpTypeVector %long 4
 %v4float = OpTypeVector %float 4
 %v4double = OpTypeVector %double 4
+%v4uint = OpTypeVector %uint 4
 %v2uint = OpTypeVector %uint 2
 %v2ulong = OpTypeVector %ulong 2
 %v2float = OpTypeVector %float 2
@@ -259,7 +260,6 @@ OpName %main "main"
 %v2half = OpTypeVector %half 2
 %v4half = OpTypeVector %half 4
 %v2bool = OpTypeVector %bool 2
-%v2ushort = OpTypeVector %ushort 2
 %m2x2int = OpTypeMatrix %v2int 2
 %mat4v2float = OpTypeMatrix %v2float 4
 %mat2v4float = OpTypeMatrix %v4float 2
@@ -443,8 +443,9 @@ OpName %main "main"
 %v4float_n1_2_1_3 = OpConstantComposite %v4float %float_n1 %float_2 %float_1 %float_3
 %uint_0x3f800000 = OpConstant %uint 0x3f800000
 %uint_0xbf800000 = OpConstant %uint 0xbf800000
-%v2uint_1_0x0000ffff = OpConstantComposite %v2uint %uint_1 %uint_0x0000ffff
 %v2uint_0x3f800000_0xbf800000 = OpConstantComposite %v2uint %uint_0x3f800000 %uint_0xbf800000
+%v4uint_1_0x0000ffff_uint_0_uint_max = OpConstantComposite %v4uint %uint_1 %uint_0x0000ffff %uint_0 %uint_max
+%v2uint_1_null = OpConstantComposite %v2uint %uint_1 %111
 %long_0xbf8000003f800000 = OpConstant %long 0xbf8000003f800000
 %int_0x3FF00000 = OpConstant %int 0x3FF00000
 %int_0x00000000 = OpConstant %int 0x00000000
@@ -1202,7 +1203,30 @@ INSTANTIATE_TEST_SUITE_P(TestCase, IntegerInstructionFoldingTest,
         "%2 = OpBitReverse %uint %uint_1\n" +
         "OpReturn\n" +
         "OpFunctionEnd",
-    2, 0x80000000)
+    2, 0x80000000),
+   // Test case 84: Fold BitReverse of 0
+  InstructionFoldingCase<uint32_t>(
+    Header() + "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%2 = OpBitReverse %uint %uint_0\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+    2, 0),
+    // Test case 85: Fold BitReverse of uint max
+    InstructionFoldingCase<uint32_t>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%2 = OpBitReverse %uint %uint_max\n" +
+          "OpReturn\n" +
+          "OpFunctionEnd",
+      2, 0xffffffff),
+    // Test case 86: Fold BitReverse of 0x0000FFFF
+  InstructionFoldingCase<uint32_t>(
+    Header() + "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%2 = OpBitReverse %uint %uint_0x0000ffff\n" +
+        "OpReturn\n" + "OpFunctionEnd",
+    2, 0xffff0000)
 ));
 // clang-format on
 
@@ -1413,6 +1437,11 @@ TEST_P(UIntVectorInstructionFoldingTest, Case) {
   Instruction* inst;
   std::tie(context, inst) =
       FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+  // if inst is null, the instruction was not folded.
+  if (inst == nullptr) {
+    EXPECT_EQ(tc.expected_result.size(), 0);
+    return;
+  }
   CheckForExpectedVectorConstant(
       inst, tc.expected_result,
       [](const analysis::Constant* c) { return c->GetU32(); });
@@ -1490,9 +1519,18 @@ INSTANTIATE_TEST_SUITE_P(TestCase, UIntVectorInstructionFoldingTest,
           "%main_lab = OpLabel\n" +
           "%n = OpVariable %_ptr_int Function\n" +
           "%load = OpLoad %int %n\n" +
-          "%2 = OpBitReverse %v2uint %v2uint_1_0x0000ffff\n" +
+          "%2 = OpBitReverse %v4uint %v4uint_1_0x0000ffff_uint_0_uint_max\n" +
           "OpReturn\n" + "OpFunctionEnd",
-      2, {2147483648, 0xffff0000})
+      2, {0x80000000, 0xffff0000, 0, 0xffffffff}),
+    // Test case 49: Don't fold bitreverse if any component is a null constant
+    InstructionFoldingCase<std::vector<uint32_t>>(
+      Header() + "%main = OpFunction %void None %void_func\n" +
+          "%main_lab = OpLabel\n" +
+          "%n = OpVariable %_ptr_int Function\n" +
+          "%load = OpLoad %int %n\n" +
+          "%2 = OpBitReverse %v2uint %v2uint_1_null\n" +
+          "OpReturn\n" + "OpFunctionEnd",
+      2, {})
 ));
 // clang-format on
 
@@ -4346,6 +4384,14 @@ INSTANTIATE_TEST_SUITE_P(IntegerArithmeticTestCases, GeneralInstructionFoldingTe
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
             "%2 = OpMatrixTimesScalar %uint_coop_matrix %undef_uint_coop_matrix %uint_3\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0),
+    // Test case 48: Don't fold BitReverse of OpConstNull uint
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpBitReverse %uint %111\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 0)

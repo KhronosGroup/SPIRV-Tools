@@ -2247,7 +2247,7 @@ FoldingRule BitReverseScalarOrVector() {
 
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
-    assert(HasFloatingPoint(type) == false &&
+    assert(!HasFloatingPoint(type) &&
            "BitReverse cannot be applied to floating point types.");
     assert((type->AsInteger() || type->AsVector()) &&
            "BitReverse can only be applied to integer scalars or vectors.");
@@ -2258,6 +2258,18 @@ FoldingRule BitReverseScalarOrVector() {
     std::vector<uint32_t> words =
         GetWordsFromNumericScalarOrVectorConstant(const_mgr, constants[0]);
     if (words.size() == 0) return false;
+
+    if (constants[0]->AsNullConstant() ||
+        (constants[0]->AsVectorConstant() &&
+         std::any_of(constants[0]->AsVectorConstant()->GetComponents().begin(),
+                     constants[0]->AsVectorConstant()->GetComponents().end(),
+                     [](const analysis::Constant* c) {
+                       return c->AsNullConstant() != nullptr;
+                     }))) {
+      // We won't fold if the constant is null constant or any component is a
+      // null constant
+      return false;
+    }
 
     for (uint32_t& word : words) {
       // Reverse the bits in each word.
