@@ -279,6 +279,7 @@ BasicBlock* CFG::SplitLoopHeader(BasicBlock* bb) {
           context, &*bb->begin(),
           IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
 
+      // TODO(1841): Handle id overflow.
       Instruction* new_phi = builder.AddPhi(phi->type_id(), preheader_phi_ops);
 
       // Add the OpPhi to the header bb.
