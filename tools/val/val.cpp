@@ -260,7 +260,8 @@ int main(int argc, char** argv) {
 
       if (filepath.extension() != ".spv") continue;
 
-      if (!process_single_file(filepath.c_str(), target_env, options)) {
+      if (!process_single_file(filepath.u8string().c_str(), target_env,
+                               options)) {
         succeed = false;
       }
     }
