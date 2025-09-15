@@ -240,21 +240,25 @@ bool ReplaceSwizzleInvocations(IRContext* ctx, Instruction* inst,
   // This gives the offset in the group of 4 of this invocation.
   Instruction* quad_idx = ir_builder.AddBinaryOp(
       uint_type_id, spv::Op::OpBitwiseAnd, id->result_id(), quad_mask);
+  if (quad_idx == nullptr) return false;
 
   // Get the invocation id of the first invocation in the group of 4.
   Instruction* quad_ldr =
       ir_builder.AddBinaryOp(uint_type_id, spv::Op::OpBitwiseXor,
                              id->result_id(), quad_idx->result_id());
+  if (quad_ldr == nullptr) return false;
 
   // Get the offset of the target invocation from the offset vector.
   Instruction* my_offset =
       ir_builder.AddBinaryOp(uint_type_id, spv::Op::OpVectorExtractDynamic,
                              offset_id, quad_idx->result_id());
+  if (my_offset == nullptr) return false;
 
   // Determine the index of the invocation to read from.
   Instruction* target_inv =
       ir_builder.AddBinaryOp(uint_type_id, spv::Op::OpIAdd,
                              quad_ldr->result_id(), my_offset->result_id());
+  if (target_inv == nullptr) return false;
 
   // Do the group operations
   uint32_t uint_max_id = ir_builder.GetUintConstantId(0xFFFFFFFF);
@@ -368,13 +372,17 @@ bool ReplaceSwizzleInvocationsMasked(
   uint32_t mask_extended = ir_builder.GetUintConstantId(0xFFFFFFE0);
   Instruction* and_mask = ir_builder.AddBinaryOp(
       uint_type_id, spv::Op::OpBitwiseOr, uint_x, mask_extended);
+  if (and_mask == nullptr) return false;
   Instruction* and_result =
       ir_builder.AddBinaryOp(uint_type_id, spv::Op::OpBitwiseAnd,
                              id->result_id(), and_mask->result_id());
+  if (and_result == nullptr) return false;
   Instruction* or_result = ir_builder.AddBinaryOp(
       uint_type_id, spv::Op::OpBitwiseOr, and_result->result_id(), uint_y);
+  if (or_result == nullptr) return false;
   Instruction* target_inv = ir_builder.AddBinaryOp(
       uint_type_id, spv::Op::OpBitwiseXor, or_result->result_id(), uint_z);
+  if (target_inv == nullptr) return false;
 
   // Do the group operations
   uint32_t uint_max_id = ir_builder.GetUintConstantId(0xFFFFFFFF);
@@ -449,6 +457,7 @@ bool ReplaceWriteInvocation(IRContext* ctx, Instruction* inst,
   Instruction* cmp =
       ir_builder.AddBinaryOp(bool_type_id, spv::Op::OpIEqual, t->result_id(),
                              inst->GetSingleWordInOperand(4));
+  if (cmp == nullptr) return false;
 
   // Build a select.
   inst->SetOpcode(spv::Op::OpSelect);
@@ -524,6 +533,7 @@ bool ReplaceMbcnt(IRContext* context, Instruction* inst,
   Instruction* t =
       ir_builder.AddBinaryOp(mask_inst->type_id(), spv::Op::OpBitwiseAnd,
                              bitcast->result_id(), mask_id);
+  if (t == nullptr) return false;
 
   inst->SetOpcode(spv::Op::OpBitCount);
   inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {t->result_id()}}});
@@ -631,10 +641,13 @@ bool ReplaceCubeFaceCoord(IRContext* ctx, Instruction* inst,
   // Find which values are negative.  Used in later computations.
   Instruction* is_z_neg = ir_builder.AddBinaryOp(
       bool_id, spv::Op::OpFOrdLessThan, z->result_id(), f0_const_id);
+  if (is_z_neg == nullptr) return false;
   Instruction* is_y_neg = ir_builder.AddBinaryOp(
       bool_id, spv::Op::OpFOrdLessThan, y->result_id(), f0_const_id);
+  if (is_y_neg == nullptr) return false;
   Instruction* is_x_neg = ir_builder.AddBinaryOp(
       bool_id, spv::Op::OpFOrdLessThan, x->result_id(), f0_const_id);
+  if (is_x_neg == nullptr) return false;
 
   // Compute cubema
   Instruction* amax_x_y = ir_builder.AddNaryExtendedInstruction(
@@ -645,19 +658,23 @@ bool ReplaceCubeFaceCoord(IRContext* ctx, Instruction* inst,
       {az->result_id(), amax_x_y->result_id()});
   Instruction* cubema = ir_builder.AddBinaryOp(float_type_id, spv::Op::OpFMul,
                                                f2_const_id, amax->result_id());
+  if (cubema == nullptr) return false;
 
   // Do the comparisons needed for computing cubesc and cubetc.
   Instruction* is_z_max =
       ir_builder.AddBinaryOp(bool_id, spv::Op::OpFOrdGreaterThanEqual,
                              az->result_id(), amax_x_y->result_id());
+  if (is_z_max == nullptr) return false;
   Instruction* not_is_z_max = ir_builder.AddUnaryOp(
       bool_id, spv::Op::OpLogicalNot, is_z_max->result_id());
   Instruction* y_gr_x =
       ir_builder.AddBinaryOp(bool_id, spv::Op::OpFOrdGreaterThanEqual,
                              ay->result_id(), ax->result_id());
+  if (y_gr_x == nullptr) return false;
   Instruction* is_y_max =
       ir_builder.AddBinaryOp(bool_id, spv::Op::OpLogicalAnd,
                              not_is_z_max->result_id(), y_gr_x->result_id());
+  if (is_y_max == nullptr) return false;
 
   // Select the correct value for cubesc.
   // TODO(1841): Handle id overflow.
@@ -691,6 +708,7 @@ bool ReplaceCubeFaceCoord(IRContext* ctx, Instruction* inst,
       v2_float_type_id, {cubema->result_id(), cubema->result_id()});
   Instruction* div = ir_builder.AddBinaryOp(
       v2_float_type_id, spv::Op::OpFDiv, cube->result_id(), denom->result_id());
+  if (div == nullptr) return false;
 
   // Get the final result by adding 0.5 to |div|.
   inst->SetOpcode(spv::Op::OpFAdd);
@@ -780,10 +798,13 @@ bool ReplaceCubeFaceIndex(IRContext* ctx, Instruction* inst,
   // Find which values are negative.  Used in later computations.
   Instruction* is_z_neg = ir_builder.AddBinaryOp(
       bool_id, spv::Op::OpFOrdLessThan, z->result_id(), f0_const_id);
+  if (is_z_neg == nullptr) return false;
   Instruction* is_y_neg = ir_builder.AddBinaryOp(
       bool_id, spv::Op::OpFOrdLessThan, y->result_id(), f0_const_id);
+  if (is_y_neg == nullptr) return false;
   Instruction* is_x_neg = ir_builder.AddBinaryOp(
       bool_id, spv::Op::OpFOrdLessThan, x->result_id(), f0_const_id);
+  if (is_x_neg == nullptr) return false;
 
   // Find the max value.
   Instruction* amax_x_y = ir_builder.AddNaryExtendedInstruction(
@@ -792,9 +813,11 @@ bool ReplaceCubeFaceIndex(IRContext* ctx, Instruction* inst,
   Instruction* is_z_max =
       ir_builder.AddBinaryOp(bool_id, spv::Op::OpFOrdGreaterThanEqual,
                              az->result_id(), amax_x_y->result_id());
+  if (is_z_max == nullptr) return false;
   Instruction* y_gr_x =
       ir_builder.AddBinaryOp(bool_id, spv::Op::OpFOrdGreaterThanEqual,
                              ay->result_id(), ax->result_id());
+  if (y_gr_x == nullptr) return false;
 
   // Get the value for each case.
   // TODO(1841): Handle id overflow.
