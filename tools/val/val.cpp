@@ -84,7 +84,8 @@ Options:
 }
 
 bool process_single_file(const char* filename, spv_target_env& target_env,
-                         spvtools::ValidatorOptions& options) {
+                         spvtools::ValidatorOptions& options,
+                         bool use_default_msg_consumer) {
   std::vector<uint32_t> contents;
   if (!ReadBinaryFile(filename, &contents)) return false;
 
@@ -119,7 +120,12 @@ bool process_single_file(const char* filename, spv_target_env& target_env,
             break;
         }
       };
-  tools.SetMessageConsumer(CLIMessageConsumerWithFilename);
+
+  if (use_default_msg_consumer) {
+    tools.SetMessageConsumer(spvtools::utils::CLIMessageConsumer);
+  } else {
+    tools.SetMessageConsumer(CLIMessageConsumerWithFilename);
+  }
 
   return tools.Validate(contents.data(), contents.size(), options);
 }
@@ -260,8 +266,8 @@ int main(int argc, char** argv) {
 
       if (filepath.extension() != ".spv") continue;
 
-      if (!process_single_file(filepath.u8string().c_str(), target_env,
-                               options)) {
+      if (!process_single_file(filepath.u8string().c_str(), target_env, options,
+                               false)) {
         succeed = false;
       }
     }
@@ -269,5 +275,5 @@ int main(int argc, char** argv) {
     return !succeed;
   }
 
-  return !process_single_file(inFile, target_env, options);
+  return !process_single_file(inFile, target_env, options, true);
 }
