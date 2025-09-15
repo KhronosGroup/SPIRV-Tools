@@ -2465,6 +2465,141 @@ TEST_F(ValidateMemory, PSBStoreAlignedVariousTypeSuccess) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 
+// https://github.com/KhronosGroup/SPIRV-Tools/issues/6322
+TEST_F(ValidateMemory, PSBStoreAlignedUntypedBitcaseSuccess) {
+  const std::string body = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability VulkanMemoryModel
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpCapability Int8
+OpCapability PhysicalStorageBufferAddresses
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64 Vulkan
+OpEntryPoint GLCompute %main "main" %id
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %id BuiltIn GlobalInvocationId
+OpDecorate %untyped_phys_ptr ArrayStride 1
+OpDecorate %data_buffer Block
+OpMemberDecorate %data_buffer 0 Offset 0
+OpDecorate %phys_ptrs_struct Block
+OpMemberDecorate %phys_ptrs_struct 0 Offset 0
+OpMemberDecorate %phys_ptrs_struct 1 Offset 8
+OpDecorate %all_data_var DescriptorSet 0
+OpDecorate %all_data_var Binding 0
+
+%uint32 = OpTypeInt 32 0
+%void = OpTypeVoid
+%uint8 = OpTypeInt 8 0
+%vec3_uint32 = OpTypeVector %uint32 3
+%void_func = OpTypeFunction %void
+%c_uint32_0 = OpConstant %uint32 0
+%c_uint32_1 = OpConstant %uint32 1
+%c_uint32_32 = OpConstant %uint32 32
+
+%uint32_input_ptr = OpTypePointer Input %uint32
+%vec3_uint32_input_ptr = OpTypePointer Input %vec3_uint32
+%data_buffer = OpTypeStruct %uint8
+%untyped_phys_ptr = OpTypeUntypedPointerKHR PhysicalStorageBuffer
+%uint8_phys_ptr = OpTypePointer PhysicalStorageBuffer %uint8
+%data_buffer_phys_ptr = OpTypePointer PhysicalStorageBuffer %data_buffer
+%data_buffer_phys_ptr_ptr = OpTypePointer StorageBuffer %data_buffer_phys_ptr
+%phys_ptrs_struct = OpTypeStruct %data_buffer_phys_ptr %data_buffer_phys_ptr
+%phys_ptrs_struct_ptr = OpTypePointer StorageBuffer %phys_ptrs_struct
+%all_data_var = OpVariable %phys_ptrs_struct_ptr StorageBuffer
+%id = OpVariable %vec3_uint32_input_ptr Input
+%main = OpFunction %void None %void_func
+%label_main = OpLabel
+%input_ptr = OpAccessChain %data_buffer_phys_ptr_ptr %all_data_var %c_uint32_0
+%input = OpLoad %data_buffer_phys_ptr %input_ptr
+%input_loc = OpAccessChain %uint8_phys_ptr %input %c_uint32_0
+%output_ptr = OpAccessChain %data_buffer_phys_ptr_ptr %all_data_var %c_uint32_1
+%output = OpLoad %data_buffer_phys_ptr %output_ptr
+%output_loc = OpUntypedAccessChainKHR %untyped_phys_ptr %data_buffer %output %c_uint32_0
+%bitcasted = OpBitcast %untyped_phys_ptr %input_loc
+%bitcasted_val = OpLoad %uint8 %bitcasted Aligned 1
+OpStore %output_loc %bitcasted_val Aligned 1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+// https://github.com/KhronosGroup/SPIRV-Tools/issues/6322
+TEST_F(ValidateMemory, PSBStoreAlignedUntypedBitcase) {
+  const std::string body = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability VulkanMemoryModel
+OpCapability VulkanMemoryModelDeviceScopeKHR
+OpCapability Int16
+OpCapability PhysicalStorageBufferAddresses
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64 Vulkan
+OpEntryPoint GLCompute %main "main" %id
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %id BuiltIn GlobalInvocationId
+OpDecorate %untyped_phys_ptr ArrayStride 1
+OpDecorate %data_buffer Block
+OpMemberDecorate %data_buffer 0 Offset 0
+OpDecorate %phys_ptrs_struct Block
+OpMemberDecorate %phys_ptrs_struct 0 Offset 0
+OpMemberDecorate %phys_ptrs_struct 1 Offset 8
+OpDecorate %all_data_var DescriptorSet 0
+OpDecorate %all_data_var Binding 0
+
+%uint32 = OpTypeInt 32 0
+%void = OpTypeVoid
+%uint16 = OpTypeInt 16 0
+%vec3_uint32 = OpTypeVector %uint32 3
+%void_func = OpTypeFunction %void
+%c_uint32_0 = OpConstant %uint32 0
+%c_uint32_1 = OpConstant %uint32 1
+%c_uint32_32 = OpConstant %uint32 32
+
+%uint32_input_ptr = OpTypePointer Input %uint32
+%vec3_uint32_input_ptr = OpTypePointer Input %vec3_uint32
+%data_buffer = OpTypeStruct %uint16
+%untyped_phys_ptr = OpTypeUntypedPointerKHR PhysicalStorageBuffer
+%uint16_phys_ptr = OpTypePointer PhysicalStorageBuffer %uint16
+%data_buffer_phys_ptr = OpTypePointer PhysicalStorageBuffer %data_buffer
+%data_buffer_phys_ptr_ptr = OpTypePointer StorageBuffer %data_buffer_phys_ptr
+%phys_ptrs_struct = OpTypeStruct %data_buffer_phys_ptr %data_buffer_phys_ptr
+%phys_ptrs_struct_ptr = OpTypePointer StorageBuffer %phys_ptrs_struct
+%all_data_var = OpVariable %phys_ptrs_struct_ptr StorageBuffer
+%id = OpVariable %vec3_uint32_input_ptr Input
+%main = OpFunction %void None %void_func
+%label_main = OpLabel
+%input_ptr = OpAccessChain %data_buffer_phys_ptr_ptr %all_data_var %c_uint32_0
+%input = OpLoad %data_buffer_phys_ptr %input_ptr
+%input_loc = OpAccessChain %uint16_phys_ptr %input %c_uint32_0
+%output_ptr = OpAccessChain %data_buffer_phys_ptr_ptr %all_data_var %c_uint32_1
+%output = OpLoad %data_buffer_phys_ptr %output_ptr
+%output_loc = OpUntypedAccessChainKHR %untyped_phys_ptr %data_buffer %output %c_uint32_0
+%bitcasted = OpBitcast %untyped_phys_ptr %input_loc
+%bitcasted_val = OpLoad %uint16 %bitcasted Aligned 1
+OpStore %output_loc %bitcasted_val Aligned 1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_1);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-PhysicalStorageBuffer64-06314"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Memory accesses Aligned operand value 1 is too small, "
+                        "the largest scalar type is 2 bytes"));
+}
+
 std::string GenCoopMatLoadStoreShader(const std::string& storeMemoryAccess,
                                       const std::string& loadMemoryAccess) {
   std::string s = R"(
