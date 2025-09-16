@@ -182,6 +182,13 @@ std::vector<uint32_t> GetWordsFromNumericScalarOrVectorConstant(
       words.insert(words.end(), comp_in_words.begin(), comp_in_words.end());
     }
     return words;
+  } else if (c->AsNullConstant()) {
+    uint32_t num_elements = 1;
+    if (const auto* vec_type = c->type()->AsVector()) {
+      num_elements = vec_type->element_count();
+    }
+    // 16, 32 or 64 bit elements are all rounded up to 1 word.
+    return std::vector<uint32_t>(num_elements, 0);
   }
   return {};
 }
@@ -2258,18 +2265,6 @@ FoldingRule BitReverseScalarOrVector() {
     std::vector<uint32_t> words =
         GetWordsFromNumericScalarOrVectorConstant(const_mgr, constants[0]);
     if (words.size() == 0) return false;
-
-    if (constants[0]->AsNullConstant() ||
-        (constants[0]->AsVectorConstant() &&
-         std::any_of(constants[0]->AsVectorConstant()->GetComponents().begin(),
-                     constants[0]->AsVectorConstant()->GetComponents().end(),
-                     [](const analysis::Constant* c) {
-                       return c->AsNullConstant() != nullptr;
-                     }))) {
-      // We won't fold if the constant is null constant or any component is a
-      // null constant
-      return false;
-    }
 
     for (uint32_t& word : words) {
       // Reverse the bits in each word.
