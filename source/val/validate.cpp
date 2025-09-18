@@ -430,6 +430,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     if (auto error = ValidateQCOMImageProcessingTextureUsages(*vstate, &inst))
       return error;
   }
+  if (auto error = ValidateLogicalPointers(*vstate)) return error;
 
   return SPV_SUCCESS;
 }
