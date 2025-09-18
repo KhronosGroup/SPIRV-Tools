@@ -2009,6 +2009,15 @@ bool ValidationState_t::ContainsUntypedPointer(uint32_t id) const {
   return false;
 }
 
+std::vector<uint32_t>& ValidationState_t::GetDebugSourceLineLength(
+    uint32_t id) {
+  auto it = debug_source_line_length_.find(id);
+  if (it == debug_source_line_length_.end()) {
+    return debug_source_line_length_[id];
+  }
+  return it->second;
+}
+
 bool ValidationState_t::IsValidStorageClass(
     spv::StorageClass storage_class) const {
   if (spvIsVulkanEnv(context()->target_env)) {
