@@ -181,7 +181,6 @@ bool LoopPeeling::InsertCanonicalInductionVariable(
   // Create the increment.
   // Note that we do "1 + 1" here, one of the operand should the phi
   // value but we don't have it yet. The operand will be set latter.
-  // TODO(1841): Handle id overflow.
   Instruction* iv_inc = builder.AddIAdd(
       uint_1_cst->type_id(), uint_1_cst->result_id(), uint_1_cst->result_id());
   if (!iv_inc) return false;
@@ -459,7 +458,6 @@ bool LoopPeeling::PeelBefore(uint32_t peel_factor) {
       builder.GetIntConstant(peel_factor, int_type_->IsSigned());
   if (!factor) return false;
 
-  // TODO(1841): Handle id overflow.
   Instruction* has_remaining_iteration = builder.AddLessThan(
       factor->result_id(), loop_iteration_count_->result_id());
   if (!has_remaining_iteration) return false;
@@ -536,7 +534,6 @@ bool LoopPeeling::PeelAfter(uint32_t peel_factor) {
       builder.GetIntConstant(peel_factor, int_type_->IsSigned());
   if (!factor) return false;
 
-  // TODO(1841): Handle id overflow.
   Instruction* has_remaining_iteration = builder.AddLessThan(
       factor->result_id(), loop_iteration_count_->result_id());
   if (!has_remaining_iteration) return false;
@@ -567,11 +564,15 @@ bool LoopPeeling::PeelAfter(uint32_t peel_factor) {
   // factor < loop_iteration_count_.
 
   // The original loop's pre-header was the cloned loop merge block.
-  GetClonedLoop()->SetMergeBlock(
-      CreateBlockBefore(GetOriginalLoop()->GetPreHeaderBlock()));
-  if (!GetClonedLoop()->GetMergeBlock()) {
+  BasicBlock* pre_header = GetOriginalLoop()->GetPreHeaderBlock();
+  if (!pre_header) {
     return false;
   }
+  BasicBlock* new_merge_block = CreateBlockBefore(pre_header);
+  if (!new_merge_block) {
+    return false;
+  }
+  GetClonedLoop()->SetMergeBlock(new_merge_block);
   // Use the second loop preheader as if merge block.
 
   // Prevent the first loop if only the peeled loop needs it.
@@ -668,7 +669,9 @@ Pass::Status LoopPeelingPass::ProcessFunction(Function* f) {
     auto try_peel = [&loop_size, &modified, this](
                         Loop* loop_to_peel) -> std::pair<Pass::Status, Loop*> {
       if (!loop_to_peel->IsLCSSA()) {
-        LoopUtils(context(), loop_to_peel).MakeLoopClosedSSA();
+        if (!LoopUtils(context(), loop_to_peel).MakeLoopClosedSSA()) {
+          return {Pass::Status::Failure, nullptr};
+        }
       }
 
       Pass::Status status;
