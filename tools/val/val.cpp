@@ -266,6 +266,13 @@ int main(int argc, char** argv) {
 
       if (filepath.extension() != ".spv") continue;
 
+      // Copy the string, because in C++20 the result type of
+      // std::filesystem::path::u8string changes type from std::string to
+      // std::u8string, and the pointer type ends up incompatible. Normalize
+      // to std::string first via copying.
+      const auto filepath_u8str = filepath.u8string();
+      const std::string filepath_str(filepath_u8str.begin(),
+                                     filepath_u8str.end());
       if (!process_single_file(filepath.u8string().c_str(), target_env, options,
                                false)) {
         succeed = false;
