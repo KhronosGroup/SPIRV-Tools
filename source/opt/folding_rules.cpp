@@ -176,18 +176,56 @@ std::vector<uint32_t> GetWordsFromNumericScalarOrVectorConstant(
     return GetWordsFromScalarIntConstant(int_constant);
   } else if (const auto* vec_constant = c->AsVectorConstant()) {
     std::vector<uint32_t> words;
+    // Retrieve all the components as 32bit words.
     for (const auto* comp : vec_constant->GetComponents()) {
       auto comp_in_words =
           GetWordsFromNumericScalarOrVectorConstant(const_mgr, comp);
       words.insert(words.end(), comp_in_words.begin(), comp_in_words.end());
     }
-    return words;
+
+    if (ElementWidth(c->type()) >= 32) {
+      return words;
+    }
+    // Check the element width and concactenate if the width is less than 32.
+    if (ElementWidth(c->type()) == 8) {
+      assert(words.size() <= 4);
+      // Each 32-bit word will comprise 4 8-bit integers.
+      // reverse the order when compacting.
+      uint32_t compacted_word = 0;
+      for (int32_t i = static_cast<int32_t>(words.size()) - 1; i >= 0; --i) {
+        compacted_word <<= 8;
+        compacted_word |= words[i];
+      }
+      return {compacted_word};
+    } else if (ElementWidth(c->type()) == 16) {
+      assert(words.size() <= 4);
+      std::vector<uint32_t> compacted_words;
+      // Each 32-bit word will comprise 2 16-bit integers.
+      // reverse the order pair-wise when compacting.
+      for (uint32_t i = 0; i < words.size(); i += 2) {
+        uint32_t word1 = words[i];
+        uint32_t word2 = (i + 1 < words.size()) ? words[i + 1] : 0;
+        uint32_t compacted_word = (word2 << 16) | word1;
+        compacted_words.push_back(compacted_word);
+      }
+      return compacted_words;
+    }
+    assert(false && "Unhandled element width");
   } else if (c->AsNullConstant()) {
     uint32_t num_elements = 1;
+
     if (const auto* vec_type = c->type()->AsVector()) {
       num_elements = vec_type->element_count();
     }
-    // 16, 32 or 64 bit elements are all rounded up to 1 word.
+
+    // We need to check the element width to determine how many 32-bit words are
+    // needed.
+    uint32_t element_width = ElementWidth(c->type());
+    if (element_width < 32) {
+      num_elements = (num_elements + 1) / 2;
+    } else if (element_width == 64) {
+      num_elements = num_elements * 2;
+    }
     return std::vector<uint32_t>(num_elements, 0);
   }
   return {};
