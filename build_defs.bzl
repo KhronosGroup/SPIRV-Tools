@@ -60,7 +60,6 @@ def _merge_dicts(dicts):
         merged.update(d)
     return merged
 
-
 def ExtInst(name, target = "", prefix = ""):
     """
     Returns a dictionary specifying the info needed to
@@ -77,7 +76,6 @@ def ExtInst(name, target = "", prefix = ""):
     corresponding values.
     """
     return {"name": name, "target": target, "prefix": prefix}
-
 
 def _extinst_grammar_target(e):
     """

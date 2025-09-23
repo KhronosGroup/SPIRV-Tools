@@ -273,7 +273,7 @@ int main(int argc, char** argv) {
       const auto filepath_u8str = filepath.u8string();
       const std::string filepath_str(filepath_u8str.begin(),
                                      filepath_u8str.end());
-      if (!process_single_file(filepath.u8string().c_str(), target_env, options,
+      if (!process_single_file(filepath_str.c_str(), target_env, options,
                                false)) {
         succeed = false;
       }
