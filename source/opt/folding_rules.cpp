@@ -176,12 +176,57 @@ std::vector<uint32_t> GetWordsFromNumericScalarOrVectorConstant(
     return GetWordsFromScalarIntConstant(int_constant);
   } else if (const auto* vec_constant = c->AsVectorConstant()) {
     std::vector<uint32_t> words;
+    // Retrieve all the components as 32bit words.
     for (const auto* comp : vec_constant->GetComponents()) {
       auto comp_in_words =
           GetWordsFromNumericScalarOrVectorConstant(const_mgr, comp);
       words.insert(words.end(), comp_in_words.begin(), comp_in_words.end());
     }
-    return words;
+
+    if (ElementWidth(c->type()) >= 32) {
+      return words;
+    }
+    // Check the element width and concactenate if the width is less than 32.
+    if (ElementWidth(c->type()) == 8) {
+      assert(words.size() <= 4);
+      // Each 32-bit word will comprise 4 8-bit integers.
+      // reverse the order when compacting.
+      uint32_t compacted_word = 0;
+      for (int32_t i = static_cast<int32_t>(words.size()) - 1; i >= 0; --i) {
+        compacted_word <<= 8;
+        compacted_word |= words[i];
+      }
+      return {compacted_word};
+    } else if (ElementWidth(c->type()) == 16) {
+      assert(words.size() <= 4);
+      std::vector<uint32_t> compacted_words;
+      // Each 32-bit word will comprise 2 16-bit integers.
+      // reverse the order pair-wise when compacting.
+      for (uint32_t i = 0; i < words.size(); i += 2) {
+        uint32_t word1 = words[i];
+        uint32_t word2 = (i + 1 < words.size()) ? words[i + 1] : 0;
+        uint32_t compacted_word = (word2 << 16) | word1;
+        compacted_words.push_back(compacted_word);
+      }
+      return compacted_words;
+    }
+    assert(false && "Unhandled element width");
+  } else if (c->AsNullConstant()) {
+    uint32_t num_elements = 1;
+
+    if (const auto* vec_type = c->type()->AsVector()) {
+      num_elements = vec_type->element_count();
+    }
+
+    // We need to check the element width to determine how many 32-bit words are
+    // needed.
+    uint32_t element_width = ElementWidth(c->type());
+    if (element_width < 32) {
+      num_elements = (num_elements + 1) / 2;
+    } else if (element_width == 64) {
+      num_elements = num_elements * 2;
+    }
+    return std::vector<uint32_t>(num_elements, 0);
   }
   return {};
 }
@@ -2242,6 +2287,48 @@ FoldingRule BitCastScalarOrVector() {
   };
 }
 
+FoldingRule BitReverseScalarOrVector() {
+  return [](IRContext* context, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == spv::Op::OpBitReverse && constants.size() == 1);
+    if (constants[0] == nullptr) return false;
+
+    const analysis::Type* type =
+        context->get_type_mgr()->GetType(inst->type_id());
+    assert(!HasFloatingPoint(type) &&
+           "BitReverse cannot be applied to floating point types.");
+    assert((type->AsInteger() || type->AsVector()) &&
+           "BitReverse can only be applied to integer scalars or vectors.");
+    assert((ElementWidth(type) == 32) &&
+           "BitReverse can only be applied to integer types of width 32");
+
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    std::vector<uint32_t> words =
+        GetWordsFromNumericScalarOrVectorConstant(const_mgr, constants[0]);
+    if (words.size() == 0) return false;
+
+    for (uint32_t& word : words) {
+      // Reverse the bits in each word.
+      word = ((word & 0x55555555) << 1) | ((word >> 1) & 0x55555555);
+      word = ((word & 0x33333333) << 2) | ((word >> 2) & 0x33333333);
+      word = ((word & 0x0F0F0F0F) << 4) | ((word >> 4) & 0x0F0F0F0F);
+      word = ((word & 0x00FF00FF) << 8) | ((word >> 8) & 0x00FF00FF);
+      word = (word << 16) | (word >> 16);
+    }
+
+    const analysis::Constant* bitreversed_constant =
+        ConvertWordsToNumericScalarOrVectorConstant(const_mgr, words, type);
+    if (!bitreversed_constant) return false;
+
+    auto new_feeder_id =
+        const_mgr->GetDefiningInstruction(bitreversed_constant, inst->type_id())
+            ->result_id();
+    inst->SetOpcode(spv::Op::OpCopyObject);
+    inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {new_feeder_id}}});
+    return true;
+  };
+}
+
 FoldingRule RedundantSelect() {
   // An OpSelect instruction where both values are the same or the condition is
   // constant can be replaced by one of the values
@@ -3022,6 +3109,7 @@ void FoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpUMod].push_back(RedundantSUMod());
 
   rules_[spv::Op::OpBitcast].push_back(BitCastScalarOrVector());
+  rules_[spv::Op::OpBitReverse].push_back(BitReverseScalarOrVector());
 
   rules_[spv::Op::OpCompositeConstruct].push_back(
       CompositeExtractFeedingConstruct);
