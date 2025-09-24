@@ -2278,9 +2278,11 @@ spv_result_t CheckInvalidVulkanExplicitLayout(ValidationState_t& vstate) {
             check_id = inst.GetOperandAs<uint32_t>(3);
           }
         }
-        layout_dec = UsesExplicitLayout(vstate, check_id, cache);
-        if (!AllowsLayout(vstate, sc) && layout_dec != spv::Decoration::Max) {
-          fail_id = check_id;
+        if (!AllowsLayout(vstate, sc)) {
+          layout_dec = UsesExplicitLayout(vstate, check_id, cache);
+          if (layout_dec != spv::Decoration::Max) {
+            fail_id = check_id;
+          }
         }
         break;
       }
@@ -2291,8 +2293,8 @@ spv_result_t CheckInvalidVulkanExplicitLayout(ValidationState_t& vstate) {
         // Check both the base type and return type. The return type may have an
         // invalid array stride.
         sc = type_inst->GetOperandAs<spv::StorageClass>(1);
-        const auto base_type_id = inst.GetOperandAs<uint32_t>(2);
         if (!AllowsLayout(vstate, sc)) {
+          const auto base_type_id = inst.GetOperandAs<uint32_t>(2);
           layout_dec = UsesExplicitLayout(vstate, base_type_id, cache);
           if (layout_dec != spv::Decoration::Max) {
             fail_id = base_type_id;
@@ -2311,10 +2313,12 @@ spv_result_t CheckInvalidVulkanExplicitLayout(ValidationState_t& vstate) {
             vstate.FindDef(inst.GetOperandAs<uint32_t>(3))->type_id();
         const auto ptr_ty = vstate.FindDef(ptr_ty_id);
         sc = ptr_ty->GetOperandAs<spv::StorageClass>(1);
-        const auto base_type_id = inst.GetOperandAs<uint32_t>(2);
-        layout_dec = UsesExplicitLayout(vstate, base_type_id, cache);
-        if (!AllowsLayout(vstate, sc) && layout_dec != spv::Decoration::Max) {
-          fail_id = base_type_id;
+        if (!AllowsLayout(vstate, sc)) {
+          const auto base_type_id = inst.GetOperandAs<uint32_t>(2);
+          layout_dec = UsesExplicitLayout(vstate, base_type_id, cache);
+          if (layout_dec != spv::Decoration::Max) {
+            fail_id = base_type_id;
+          }
         }
         break;
       }
@@ -2324,9 +2328,11 @@ spv_result_t CheckInvalidVulkanExplicitLayout(ValidationState_t& vstate) {
         if (ptr_type->opcode() == spv::Op::OpTypeUntypedPointerKHR) {
           // For untyped pointers check the return type for an invalid layout.
           sc = ptr_type->GetOperandAs<spv::StorageClass>(1);
-          layout_dec = UsesExplicitLayout(vstate, type_id, cache);
-          if (!AllowsLayout(vstate, sc) && layout_dec != spv::Decoration::Max) {
-            fail_id = type_id;
+          if (!AllowsLayout(vstate, sc)) {
+            layout_dec = UsesExplicitLayout(vstate, type_id, cache);
+            if (layout_dec != spv::Decoration::Max) {
+              fail_id = type_id;
+            }
           }
         }
         break;
@@ -2338,10 +2344,12 @@ spv_result_t CheckInvalidVulkanExplicitLayout(ValidationState_t& vstate) {
           // For untyped pointers, check the type of the data operand for an
           // invalid layout.
           sc = ptr_type->GetOperandAs<spv::StorageClass>(1);
-          const auto data_type_id = vstate.GetOperandTypeId(&inst, 1);
-          layout_dec = UsesExplicitLayout(vstate, data_type_id, cache);
-          if (!AllowsLayout(vstate, sc) && layout_dec != spv::Decoration::Max) {
-            fail_id = inst.GetOperandAs<uint32_t>(2);
+          if (!AllowsLayout(vstate, sc)) {
+            const auto data_type_id = vstate.GetOperandTypeId(&inst, 1);
+            layout_dec = UsesExplicitLayout(vstate, data_type_id, cache);
+            if (layout_dec != spv::Decoration::Max) {
+              fail_id = inst.GetOperandAs<uint32_t>(2);
+            }
           }
         }
         break;
