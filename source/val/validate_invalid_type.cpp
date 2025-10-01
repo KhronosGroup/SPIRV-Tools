@@ -56,6 +56,11 @@ bool IsFP8ScalarOrCompositeType(ValidationState_t& _, uint32_t type_id) {
   }
 }
 
+bool IsOCPMicroscalingScalarOrCompositeType(ValidationState_t& _,
+                                            uint32_t type_id) {
+  return _.ContainsOCPMicroscalingType(type_id);
+}
+
 spv_result_t CheckInvalidScalarOrCompositeType(ValidationState_t& _,
                                                const Instruction* inst,
                                                uint32_t type_id) {
@@ -68,6 +73,11 @@ spv_result_t CheckInvalidScalarOrCompositeType(ValidationState_t& _,
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
            << " doesn't support FP8 E4M3/E5M2 types.";
+  }
+  if (IsOCPMicroscalingScalarOrCompositeType(_, type_id)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << spvOpcodeString(opcode)
+           << " doesn't support OCP microscaling types.";
   }
 
   return SPV_SUCCESS;
@@ -156,6 +166,11 @@ spv_result_t InvalidTypePass(ValidationState_t& _, const Instruction* inst) {
                << spvOpcodeString(opcode)
                << " doesn't support FP8 E4M3/E5M2 types.";
       }
+      if (_.ContainsOCPMicroscalingType(result_type)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << spvOpcodeString(opcode)
+               << " doesn't support OCP microscaling types.";
+      }
       break;
     }
 
@@ -170,6 +185,11 @@ spv_result_t InvalidTypePass(ValidationState_t& _, const Instruction* inst) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << spvOpcodeString(opcode)
                << " doesn't support FP8 E4M3/E5M2 types.";
+      }
+      if (_.ContainsOCPMicroscalingType(data_type)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << spvOpcodeString(opcode)
+               << " doesn't support OCP microscaling types.";
       }
       break;
     }
@@ -204,6 +224,11 @@ spv_result_t InvalidTypePass(ValidationState_t& _, const Instruction* inst) {
                << spvOpcodeString(opcode)
                << " doesn't support FP8 E4M3/E5M2 types.";
       }
+      if (_.ContainsOCPMicroscalingType(operand_type)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << spvOpcodeString(opcode)
+               << " doesn't support OCP microscaling types.";
+      }
       break;
     }
 
@@ -217,6 +242,11 @@ spv_result_t InvalidTypePass(ValidationState_t& _, const Instruction* inst) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << spvOpcodeString(opcode)
                << " doesn't support FP8 E4M3/E5M2 types.";
+      }
+      if (_.ContainsOCPMicroscalingType(value_type)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << spvOpcodeString(opcode)
+               << " doesn't support OCP microscaling types.";
       }
 
       break;

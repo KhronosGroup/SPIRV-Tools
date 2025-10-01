@@ -235,6 +235,27 @@ spv_result_t FriendlyNameMapper::ParseInstruction(
           SaveName(result_id, "fp8e5m2");
           break;
         }
+        if (spv::FPEncoding(inst.words[3]) == spv::FPEncoding::Float6E2M3EXT) {
+          SaveName(result_id, "fp6e2m3");
+          break;
+        }
+        if (spv::FPEncoding(inst.words[3]) == spv::FPEncoding::Float6E3M2EXT) {
+          SaveName(result_id, "fp6e3m2");
+          break;
+        }
+        if (spv::FPEncoding(inst.words[3]) == spv::FPEncoding::Float4E2M1EXT) {
+          SaveName(result_id, "fp4e2m1");
+          break;
+        }
+        if (spv::FPEncoding(inst.words[3]) ==
+            spv::FPEncoding::Float8UnsignedE8M0EXT) {
+          SaveName(result_id, "fp8e8m0");
+          break;
+        }
+        if (spv::FPEncoding(inst.words[3]) == spv::FPEncoding::MXInt8EXT) {
+          SaveName(result_id, "mxint8");
+          break;
+        }
       }
       switch (bit_width) {
         case 16:

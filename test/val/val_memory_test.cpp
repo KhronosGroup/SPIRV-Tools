@@ -11062,6 +11062,167 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
 }
 
+TEST_F(ValidateMemory, OCPMicroscalingFloat4PrivateVariableGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Float4EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %func "func"
+OpExecutionMode %func LocalSize 1 1 1
+%fp4 = OpTypeFloat 4 Float4E2M1EXT
+%fp4ptr = OpTypePointer Private %fp4
+%var = OpVariable %fp4ptr Private
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateMemory, OCPMicroscalingFloat6PrivateVariableGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Float6EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %func "func"
+OpExecutionMode %func LocalSize 1 1 1
+%fp6 = OpTypeFloat 6 Float6E3M2EXT
+%fp6ptr = OpTypePointer Private %fp6
+%var = OpVariable %fp6ptr Private
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateMemory, OCPMicroscalingFloat4FunctionVariableGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Float4EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %func "func"
+OpExecutionMode %func LocalSize 1 1 1
+%fp4 = OpTypeFloat 4 Float4E2M1EXT
+%fp4ptr = OpTypePointer Function %fp4
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+%var = OpVariable %fp4ptr Function
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateMemory, OCPMicroscalingFloat6FunctionVariableGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Float6EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %func "func"
+OpExecutionMode %func LocalSize 1 1 1
+%fp6 = OpTypeFloat 6 Float6E2M3EXT
+%fp6ptr = OpTypePointer Function %fp6
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+%var = OpVariable %fp6ptr Function
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateMemory, OCPMicroscalingFloat6WorkgroupVariableBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Float6EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %func "func"
+OpExecutionMode %func LocalSize 1 1 1
+%fp6 = OpTypeFloat 6 Float6E3M2EXT
+%fp6ptr = OpTypePointer Workgroup %fp6
+%var = OpVariable %fp6ptr Workgroup
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Cannot allocate a variable containing a Float4EXT or "
+                        "Float6EXT type in Workgroup storage class"));
+}
+
+TEST_F(ValidateMemory, OCPMicroscalingFloat4StructWorkgroupVariableBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Float4EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %func "func"
+OpExecutionMode %func LocalSize 1 1 1
+%fp4 = OpTypeFloat 4 Float4E2M1EXT
+%struct = OpTypeStruct %fp4
+%structptr = OpTypePointer Workgroup %struct
+%var = OpVariable %structptr Workgroup
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Cannot allocate a variable containing a Float4EXT or "
+                        "Float6EXT type in Workgroup storage class"));
+}
+
+TEST_F(ValidateMemory, OCPMicroscalingE8M0WorkgroupVariableGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Float8UnsignedE8M0EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %func "func"
+OpExecutionMode %func LocalSize 1 1 1
+%e8m0 = OpTypeFloat 8 Float8UnsignedE8M0EXT
+%e8m0ptr = OpTypePointer Workgroup %e8m0
+%var = OpVariable %e8m0ptr Workgroup
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
