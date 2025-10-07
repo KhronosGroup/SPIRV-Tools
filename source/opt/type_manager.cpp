@@ -208,6 +208,9 @@ void TypeManager::RemoveId(uint32_t id) {
 }
 
 uint32_t TypeManager::GetTypeInstruction(const Type* type) {
+  if (!type) {
+    return 0;
+  }
   uint32_t id = GetId(type);
   if (id != 0) return id;
 
