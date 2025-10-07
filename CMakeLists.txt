@@ -18,8 +18,6 @@ cmake_minimum_required(VERSION 3.22.1)
 set(MASTER_PROJECT OFF)
 set(SUBPROJECT ON)
 
-# NOTE: source vs current_source detection is unreliable
-# this heuristic is more generally applicable esp w.r.t FetchContent
 if (NOT DEFINED PROJECT_NAME)
   set(MASTER_PROJECT ON)
   set(SUBPROJECT OFF)
@@ -274,7 +272,6 @@ add_custom_target(spirv-tools-check-python-tests
 # Check for symbol exports on Linux.
 # At the moment, this check will fail on the OSX build machines for the Android NDK.
 # It appears they don't have objdump.
-# TODO(crueter): SPIRV-Tools-obj breaks this
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   macro(spvtools_check_symbol_exports TARGET)
     if (NOT "${SPIRV_SKIP_TESTS}")

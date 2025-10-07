@@ -171,12 +171,8 @@ add_subdirectory(link)
 add_subdirectory(lint)
 add_subdirectory(diff)
 
-set(SPIRV_PUBLIC_HEADERS
-  ${spirv-tools_SOURCE_DIR}/include/spirv-tools/libspirv.h
-)
-
 set(SPIRV_SOURCES
-  ${SPIRV_PUBLIC_HEADERS}
+  ${spirv-tools_SOURCE_DIR}/include/spirv-tools/libspirv.h
 
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bitutils.h
   ${CMAKE_CURRENT_SOURCE_DIR}/util/bit_vector.h
