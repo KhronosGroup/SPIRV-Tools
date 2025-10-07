@@ -3584,8 +3584,8 @@ TEST_F(InlineTest, DebugNested) {
 
 TEST_F(InlineTest, DebugSimpleHLSLPixelShader) {
   const std::string text = R"(
-; CHECK: [[dbg_main:%\d+]] = OpExtInst %void [[ext:%\d+]] DebugFunction {{%\d+}} {{%\d+}} {{%\d+}} 1 1 {{%\d+}} {{%\d+}} FlagIsProtected|FlagIsPrivate 1 %src_main
-; CHECK: [[lex_blk:%\d+]] = OpExtInst %void [[ext]] DebugLexicalBlock {{%\d+}} 1 47 [[dbg_main]]
+; CHECK: [[dbg_main:%\d+]] = OpExtInst %void [[ext:%\d+]] DebugFunction {{%\d+}} {{%\d+}} {{%\d+}} 2 1 {{%\d+}} {{%\d+}} FlagIsProtected|FlagIsPrivate 1 %src_main
+; CHECK: [[lex_blk:%\d+]] = OpExtInst %void [[ext]] DebugLexicalBlock {{%\d+}} 2 47 [[dbg_main]]
 ; CHECK: %main = OpFunction %void None
 ; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugScope [[dbg_main]]
 ; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugDeclare {{%\d+}} %param_var_color
@@ -3637,9 +3637,9 @@ float4 main(float4 color : COLOR) : SV_TARGET {
          %18 = OpExtInst %void %1 DebugTypeBasic %17 %uint_32 Float
          %19 = OpExtInst %void %1 DebugTypeVector %18 4
          %20 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %19 %19
-         %22 = OpExtInst %void %1 DebugFunction %21 %20 %15 1 1 %16 %21 FlagIsProtected|FlagIsPrivate 1 %src_main
-         %25 = OpExtInst %void %1 DebugLocalVariable %24 %19 %15 1 20 %22 FlagIsLocal 0
-         %26 = OpExtInst %void %1 DebugLexicalBlock %15 1 47 %22
+         %22 = OpExtInst %void %1 DebugFunction %21 %20 %15 2 1 %16 %21 FlagIsProtected|FlagIsPrivate 1 %src_main
+         %25 = OpExtInst %void %1 DebugLocalVariable %24 %19 %15 2 20 %22 FlagIsLocal 0
+         %26 = OpExtInst %void %1 DebugLexicalBlock %15 2 47 %22
        %main = OpFunction %void None %27
          %28 = OpLabel
 %param_var_color = OpVariable %_ptr_Function_v4float Function
@@ -3670,8 +3670,8 @@ TEST_F(InlineTest, ShaderDebugSimpleHLSLPixelShader) {
   // Same as DebugSimpleHLSLPixelShader but for
   // NonSemantic.Shader.DebugInfo.100.
   const std::string text = R"(
-; CHECK: [[dbg_main:%\d+]] = OpExtInst %void [[ext:%\d+]] DebugFunction {{%\d+}} {{%\d+}} {{%\d+}} %uint_1 %uint_1 {{%\d+}} {{%\d+}} %uint_3 %uint_1
-; CHECK: [[lex_blk:%\d+]] = OpExtInst %void [[ext]] DebugLexicalBlock {{%\d+}} %uint_1 %uint_47 [[dbg_main]]
+; CHECK: [[dbg_main:%\d+]] = OpExtInst %void [[ext:%\d+]] DebugFunction {{%\d+}} {{%\d+}} {{%\d+}} %uint_2 %uint_1 {{%\d+}} {{%\d+}} %uint_3 %uint_1
+; CHECK: [[lex_blk:%\d+]] = OpExtInst %void [[ext]] DebugLexicalBlock {{%\d+}} %uint_2 %uint_47 [[dbg_main]]
 ; CHECK: %main = OpFunction %void None
 ; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugScope [[dbg_main]]
 ; CHECK: {{%\d+}} = OpExtInst %void [[ext]] DebugDeclare {{%\d+}} %param_var_color
@@ -3733,9 +3733,9 @@ float4 main(float4 color : COLOR) : SV_TARGET {
          %18 = OpExtInst %void %1 DebugTypeBasic %17 %uint_32 %uint_3 %uint_0
          %19 = OpExtInst %void %1 DebugTypeVector %18 %uint_4
          %20 = OpExtInst %void %1 DebugTypeFunction %uint_3 %19 %19
-         %22 = OpExtInst %void %1 DebugFunction %21 %20 %15 %uint_1 %uint_1 %16 %21 %uint_3 %uint_1
-         %25 = OpExtInst %void %1 DebugLocalVariable %24 %19 %15 %uint_1 %uint_20 %22 %uint_4 %uint_0
-         %26 = OpExtInst %void %1 DebugLexicalBlock %15 %uint_1 %uint_47 %22
+         %22 = OpExtInst %void %1 DebugFunction %21 %20 %15 %uint_2 %uint_1 %16 %21 %uint_3 %uint_1
+         %25 = OpExtInst %void %1 DebugLocalVariable %24 %19 %15 %uint_2 %uint_20 %22 %uint_4 %uint_0
+         %26 = OpExtInst %void %1 DebugLexicalBlock %15 %uint_2 %uint_47 %22
        %main = OpFunction %void None %27
          %28 = OpLabel
 %param_var_color = OpVariable %_ptr_Function_v4float Function

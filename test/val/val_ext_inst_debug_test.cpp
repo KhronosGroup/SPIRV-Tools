@@ -511,7 +511,7 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugScopeBeforeOpVariableInFunction) {
 %float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
 %v4float_info = OpExtInst %void %DbgExt DebugTypeVector %float_info 4
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %v4float_info %float_info
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %main
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 1 1 %comp_unit %main_name FlagIsPublic 13 %main
 )";
 
   const std::string body = R"(
@@ -2191,7 +2191,7 @@ main() {}
 %v4float_info = OpExtInst %void %DbgExt DebugTypeVector %float_info 4
 %VS_OUTPUT_pos_info = OpExtInst %void %DbgExt DebugTypeMember %VS_OUTPUT_pos_name %v4float_info %dbg_src 2 3 %VS_OUTPUT_info %u32_0 %int_128 FlagIsPublic
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %v4float_info %float_info
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %main
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 6 1 %comp_unit %main_name FlagIsPublic 13 %main
 %foo_info = OpExtInst %void %DbgExt DebugTypeComposite %foo_name Structure %dbg_src 1 1 %comp_unit %foo_name %u32_0 FlagIsPublic
 %child = OpExtInst %void %DbgExt DebugTypeInheritance %foo_info %VS_OUTPUT_info %int_128 %int_128 FlagIsPublic
 )";
@@ -2563,8 +2563,8 @@ main() {}
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void
-%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %main)";
+%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src 4 1 %comp_unit %main_name FlagIsPublic
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src 4 1 %comp_unit %main_name FlagIsPublic 13 %main)";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, "", dbg_inst_header, "", opencl_extension, "Vertex"));
@@ -2588,7 +2588,7 @@ main() {}
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction FlagIsPublic %void
-%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic
+%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src 4 1 %comp_unit %main_name FlagIsPublic
 %main_info = OpExtInst %void %DbgExt DebugFunction )"
      << param.first;
 
@@ -2603,25 +2603,25 @@ INSTANTIATE_TEST_SUITE_P(
     AllOpenCL100DebugInfoFail, ValidateOpenCL100DebugInfoDebugFunction,
     ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
         std::make_pair(
-            R"(%u32_0 %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %main)",
+            R"(%u32_0 %main_type_info %dbg_src 4 1 %comp_unit %main_name FlagIsPublic 13 %main)",
             "Name"),
         std::make_pair(
-            R"(%main_name %dbg_src %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %main)",
+            R"(%main_name %dbg_src %dbg_src 4 1 %comp_unit %main_name FlagIsPublic 13 %main)",
             "Type"),
         std::make_pair(
-            R"(%main_name %main_type_info %comp_unit 12 1 %comp_unit %main_name FlagIsPublic 13 %main)",
+            R"(%main_name %main_type_info %comp_unit 4 1 %comp_unit %main_name FlagIsPublic 13 %main)",
             "Source"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src 12 1 %dbg_src %main_name FlagIsPublic 13 %main)",
+            R"(%main_name %main_type_info %dbg_src 4 1 %dbg_src %main_name FlagIsPublic 13 %main)",
             "Parent"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src 12 1 %comp_unit %void FlagIsPublic 13 %main)",
+            R"(%main_name %main_type_info %dbg_src 4 1 %comp_unit %void FlagIsPublic 13 %main)",
             "Linkage Name"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %void)",
+            R"(%main_name %main_type_info %dbg_src 4 1 %comp_unit %main_name FlagIsPublic 13 %void)",
             "Function"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic 13 %main %dbg_src)",
+            R"(%main_name %main_type_info %dbg_src 4 1 %comp_unit %main_name FlagIsPublic 13 %main %dbg_src)",
             "Declaration"),
     }));
 
@@ -2657,19 +2657,19 @@ INSTANTIATE_TEST_SUITE_P(
     ValidateOpenCL100DebugInfoDebugFunctionDeclaration,
     ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
         std::make_pair(
-            R"(%u32_0 %main_type_info %dbg_src 12 1 %comp_unit %main_name FlagIsPublic)",
+            R"(%u32_0 %main_type_info %dbg_src 4 1 %comp_unit %main_name FlagIsPublic)",
             "Name"),
         std::make_pair(
-            R"(%main_name %dbg_src %dbg_src 12 1 %comp_unit %main_name FlagIsPublic)",
+            R"(%main_name %dbg_src %dbg_src 4 1 %comp_unit %main_name FlagIsPublic)",
             "Type"),
         std::make_pair(
-            R"(%main_name %main_type_info %comp_unit 12 1 %comp_unit %main_name FlagIsPublic)",
+            R"(%main_name %main_type_info %comp_unit 4 1 %comp_unit %main_name FlagIsPublic)",
             "Source"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src 12 1 %dbg_src %main_name FlagIsPublic)",
+            R"(%main_name %main_type_info %dbg_src 4 1 %dbg_src %main_name FlagIsPublic)",
             "Parent"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src 12 1 %comp_unit %void FlagIsPublic)",
+            R"(%main_name %main_type_info %dbg_src 4 1 %comp_unit %void FlagIsPublic)",
             "Linkage Name"),
     }));
 
@@ -2683,21 +2683,16 @@ main() {}
 "
 )";
 
-  const std::string constants = R"(
-%u32_12 = OpConstant %u32 12
-%u32_13 = OpConstant %u32 13
-)";
-
   const std::string dbg_inst_header = R"(
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction %u32_3 %void
-%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3
-%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3 %u32_13
+%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src %u32_4 %u32_1 %comp_unit %main_name %u32_3
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src %u32_4 %u32_1 %comp_unit %main_name %u32_3 %u32_4
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -2711,11 +2706,6 @@ main() {}
 "
 )";
 
-  const std::string constants = R"(
-%u32_12 = OpConstant %u32 12
-%u32_13 = OpConstant %u32 13
-)";
-
   const auto& param = GetParam();
 
   std::ostringstream ss;
@@ -2723,12 +2713,12 @@ main() {}
 %dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
 %main_type_info = OpExtInst %void %DbgExt DebugTypeFunction %u32_3 %void
-%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3
+%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src %u32_4 %u32_1 %comp_unit %main_name %u32_3
 %main_info = OpExtInst %void %DbgExt DebugFunction )"
      << param.first;
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, ss.str(), "", shader_extension, "Vertex"));
+      src, "", ss.str(), "", shader_extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second));
@@ -2738,22 +2728,22 @@ INSTANTIATE_TEST_SUITE_P(
     AllVulkan100DebugInfoFail, ValidateVulkan100DebugInfoDebugFunction,
     ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
         std::make_pair(
-            R"(%u32_0 %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3 %u32_13)",
+            R"(%u32_0 %main_type_info %dbg_src %u32_4 %u32_1 %comp_unit %main_name %u32_3 %u32_4)",
             "Name"),
         std::make_pair(
-            R"(%main_name %dbg_src %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3 %u32_13)",
+            R"(%main_name %dbg_src %dbg_src %u32_4 %u32_1 %comp_unit %main_name %u32_3 %u32_4)",
             "Type"),
         std::make_pair(
-            R"(%main_name %main_type_info %comp_unit %u32_12 %u32_1 %comp_unit %main_name %u32_3 %u32_13)",
+            R"(%main_name %main_type_info %comp_unit %u32_4 %u32_1 %comp_unit %main_name %u32_3 %u32_4)",
             "Source"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src %u32_12 %u32_1 %dbg_src %main_name %u32_3 %u32_13)",
+            R"(%main_name %main_type_info %dbg_src %u32_4 %u32_1 %dbg_src %main_name %u32_3 %u32_4)",
             "Parent"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %void %u32_3 %u32_13)",
+            R"(%main_name %main_type_info %dbg_src %u32_4 %u32_1 %comp_unit %void %u32_3 %u32_4)",
             "Linkage Name"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3 %u32_13 %dbg_src)",
+            R"(%main_name %main_type_info %dbg_src %u32_4 %u32_1 %comp_unit %main_name %u32_3 %u32_4 %dbg_src)",
             "Declaration"),
     }));
 
@@ -2767,11 +2757,6 @@ main() {}
 "
 )";
 
-  const std::string constants = R"(
-%u32_12 = OpConstant %u32 12
-%u32_13 = OpConstant %u32 13
-)";
-
   const auto& param = GetParam();
 
   std::ostringstream ss;
@@ -2783,7 +2768,7 @@ main() {}
      << param.first;
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, ss.str(), "", shader_extension, "Vertex"));
+      src, "", ss.str(), "", shader_extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second));
@@ -2794,19 +2779,19 @@ INSTANTIATE_TEST_SUITE_P(
     ValidateVulkan100DebugInfoDebugFunctionDeclaration,
     ::testing::ValuesIn(std::vector<std::pair<std::string, std::string>>{
         std::make_pair(
-            R"(%u32_0 %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3)",
+            R"(%u32_0 %main_type_info %dbg_src %u32_4 %u32_1 %comp_unit %main_name %u32_3)",
             "Name"),
         std::make_pair(
-            R"(%main_name %dbg_src %dbg_src %u32_12 %u32_1 %comp_unit %main_name %u32_3)",
+            R"(%main_name %dbg_src %dbg_src %u32_4 %u32_1 %comp_unit %main_name %u32_3)",
             "Type"),
         std::make_pair(
-            R"(%main_name %main_type_info %comp_unit %u32_12 %u32_1 %comp_unit %main_name %u32_3)",
+            R"(%main_name %main_type_info %comp_unit %u32_4 %u32_1 %comp_unit %main_name %u32_3)",
             "Source"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src %u32_12 %u32_1 %dbg_src %main_name %u32_3)",
+            R"(%main_name %main_type_info %dbg_src %u32_4 %u32_1 %dbg_src %main_name %u32_3)",
             "Parent"),
         std::make_pair(
-            R"(%main_name %main_type_info %dbg_src %u32_12 %u32_1 %comp_unit %void %u32_3)",
+            R"(%main_name %main_type_info %dbg_src %u32_4 %u32_1 %comp_unit %void %u32_3)",
             "Linkage Name"),
     }));
 
@@ -3227,7 +3212,7 @@ void main(float foo:COLOR) {}
          %16 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %void %15
          %18 = OpExtInst %void %1 DebugFunction %17 %16 %12 1 1 %13 %17 FlagIsProtected|FlagIsPrivate 1 %src_main
          %21 = OpExtInst %void %1 DebugLocalVariable %20 %15 %12 1 17 %18 FlagIsLocal 0
-         %22 = OpExtInst %void %1 DebugLexicalBlock %12 1 28 %18
+         %22 = OpExtInst %void %1 DebugLexicalBlock %12 1 20 %18
                OpLine %4 1 1
        %main = OpFunction %void None %23
          %24 = OpLabel
@@ -3356,7 +3341,6 @@ void main(float foo:COLOR) {}
       %u32_5 = OpConstant %uint 5
      %u32_10 = OpConstant %uint 10
      %u32_17 = OpConstant %uint 17
-     %u32_28 = OpConstant %uint 28
      %u32_32 = OpConstant %uint 32
     %uint_32 = OpConstant %uint 32
       %float = OpTypeFloat 32
@@ -3374,7 +3358,7 @@ void main(float foo:COLOR) {}
          %16 = OpExtInst %void %1 DebugTypeFunction %u32_3 %void %15
          %18 = OpExtInst %void %1 DebugFunction %17 %16 %12 %u32_1 %u32_1 %13 %17 %u32_3 %u32_1
          %21 = OpExtInst %void %1 DebugLocalVariable %20 %15 %12 %u32_1 %u32_17 %18 %u32_4 %u32_0
-         %22 = OpExtInst %void %1 DebugLexicalBlock %12 %u32_1 %u32_28 %18
+         %22 = OpExtInst %void %1 DebugLexicalBlock %12 %u32_1 %u32_4 %18
        %main = OpFunction %void None %23
          %24 = OpLabel
 %param_var_foo = OpVariable %_ptr_Function_float Function
@@ -4838,7 +4822,8 @@ OpFunctionEnd
 TEST_F(ValidateVulkan100DebugInfo, DebugLine) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
-%code = OpString "int main() { }"
+%code = OpString "int main() {
+}"
 )";
 
   const std::string dbg_inst_header = R"(
@@ -4984,6 +4969,28 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineSpecConstant) {
                         "result id of 32-bit unsigned OpConstant"));
 }
 
+TEST_F(ValidateVulkan100DebugInfo, DebugLineLineStartZero) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() { }"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_0 %u32_1 %u32_0 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugLine: operand Line Start (0) is not allowed, "
+                        "source lines start at Line 1"));
+}
+
 TEST_F(ValidateVulkan100DebugInfo, DebugLineLineEndSmaller) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
@@ -5031,7 +5038,8 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnEndSmaller) {
 TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnEndSmallerMultiline) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
-%code = OpString "int main() { }"
+%code = OpString "int main() {
+}"
 )";
 
   const std::string dbg_inst_header = R"(
@@ -5045,6 +5053,549 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnEndSmallerMultiline) {
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, "", dbg_inst_header, body, shader_extension, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugLineOutOfBounds) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "// line 1
+int main() {
+}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_4 %u32_4 %u32_0 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugLine: operand Line End (4) is larger then the 3 "
+                        "lines found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnOutOfBounds) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "// line 1
+123"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_2 %u32_2 %u32_1 %u32_5
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugLine: operand Column End (5) is larger then Line "
+                        "2 column length of 4 found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnOutOfBoundsEmptyLine) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "next line is empty
+
+line 3"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_2 %u32_2 %u32_2 %u32_2
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugLine: operand Column End (2) is larger then Line "
+                        "2 column length of 1 found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnEmptyLine) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "next line is empty
+
+line 3"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_2 %u32_2 %u32_1 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnStartOutOfBounds) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "1
+123
+line 3"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_1 %u32_2 %u32_3 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("DebugLine: operand Column Start (3) is larger then Line 1 "
+                "column length of 2 found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnEndOutOfBounds) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "1
+123
+line 3"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_1 %u32_2 %u32_1 %u32_5
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugLine: operand Column End (5) is larger then Line "
+                        "2 column length of 4 found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugLineDebugSourceContinuedSuccess) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "line 1
+line 2
+line 3"
+%code2 = OpString "line 4
+line 5"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%dbg_src2 = OpExtInst %void %DbgExt DebugSourceContinued %code2
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_4 %u32_5 %u32_1 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugLineDebugSourceContinued) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "line 1
+line 2"
+%code2 = OpString "line 3
+line 4"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%dbg_src2 = OpExtInst %void %DbgExt DebugSourceContinued %code2
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_4 %u32_5 %u32_1 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugLine: operand Line End (5) is larger then the 4 "
+                        "lines found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo,
+       DebugLineMultipleDebugSourceContinuedSuccess) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "line 1"
+%code2 = OpString "line 2
+line 3"
+%code3 = OpString "line 4
+5"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%dbg_src2 = OpExtInst %void %DbgExt DebugSourceContinued %code2
+%dbg_src3 = OpExtInst %void %DbgExt DebugSourceContinued %code3
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_5 %u32_5 %u32_1 %u32_2
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugLineMultipleDebugSourceContinued) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "line 1"
+%code2 = OpString "line 2
+line 3"
+%code3 = OpString "line 4
+5"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%dbg_src2 = OpExtInst %void %DbgExt DebugSourceContinued %code2
+%dbg_src3 = OpExtInst %void %DbgExt DebugSourceContinued %code3
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_5 %u32_5 %u32_1 %u32_3
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugLine: operand Column End (3) is larger then Line "
+                        "5 column length of 2 found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceLineNoText) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src
+)";
+
+  const std::string body = R"(
+%line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_5 %u32_5 %u32_1 %u32_3
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugTypeMemberLine) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "line 1
+line 2
+line 3"
+%uint_name = OpString "uint"
+%member_name = OpString "x"
+)";
+
+  const std::string constants = R"(
+%u32_128 = OpConstant %u32 128
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%uint_info = OpExtInst %void %DbgExt DebugTypeBasic %uint_name %u32_32 %u32_4 %u32_0
+%x = OpExtInst %void %DbgExt DebugTypeMember %member_name %uint_info %dbg_src %u32_4 %u32_1 %u32_0 %u32_128 %u32_3
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugTypeMember: operand Line (4) is larger then the "
+                        "3 lines found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugTypeMemberColumn) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "line 1
+line 2
+3"
+%uint_name = OpString "uint"
+%member_name = OpString "x"
+)";
+
+  const std::string constants = R"(
+%u32_128 = OpConstant %u32 128
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%uint_info = OpExtInst %void %DbgExt DebugTypeBasic %uint_name %u32_32 %u32_4 %u32_0
+%x = OpExtInst %void %DbgExt DebugTypeMember %member_name %uint_info %dbg_src %u32_3 %u32_3 %u32_0 %u32_128 %u32_3
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("DebugTypeMember: operand Column End (3) is larger then Line 3 "
+                "column length of 2 found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugFunctionLine) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() { }"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%main_type_info = OpExtInst %void %DbgExt DebugTypeFunction %u32_3 %void
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src %u32_2 %u32_1 %comp_unit %main_name %u32_3 %u32_1
+)";
+
+  const std::string body = R"(
+%main_def = OpExtInst %void %DbgExt DebugFunctionDefinition %main_info %main
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugFunction: operand Line (2) is larger then the "
+                        "1 lines found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugFunctionDeclarationLine) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() { }"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%main_type_info = OpExtInst %void %DbgExt DebugTypeFunction %u32_3 %void
+%main_decl = OpExtInst %void %DbgExt DebugFunctionDeclaration %main_name %main_type_info %dbg_src %u32_2 %u32_1 %comp_unit %main_name %u32_3
+%main_info = OpExtInst %void %DbgExt DebugFunction %main_name %main_type_info %dbg_src %u32_1 %u32_1 %comp_unit %main_name %u32_3 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("DebugFunctionDeclaration: operand Line (2) is larger then the "
+                "1 lines found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugLexicalBlockLine) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%main_block = OpExtInst %void %DbgExt DebugLexicalBlock %dbg_src %u32_2 %u32_1 %comp_unit %main_name
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("DebugLexicalBlock: operand Line (2) is larger then the "
+                "1 lines found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugTypedefLine) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+%foo_name = OpString "foo"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%foo_info = OpExtInst %void %DbgExt DebugTypedef %foo_name %float_info %dbg_src %u32_2 %u32_1 %comp_unit
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugTypedef: operand Line (2) is larger then the "
+                        "1 lines found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugEnumLine) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+%foo_name = OpString "foo"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%none = OpExtInst %void %DbgExt DebugInfoNone
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%foo_info1 = OpExtInst %void %DbgExt DebugTypeEnum %foo_name %float_info %dbg_src %u32_2 %u32_1 %comp_unit %u32_32 %u32_3 %u32_0 %foo_name %u32_1 %foo_name
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugTypeEnum: operand Line (2) is larger then the "
+                        "1 lines found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugTypeCompositeLine) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "void main() {}"
+%float_name = OpString "float"
+%foo_name = OpString "foo"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%a = OpExtInst %void %DbgExt DebugTypeMember %foo_name %float_info %dbg_src %u32_0 %u32_0 %u32_0 %u32_32 %u32_3
+%t = OpExtInst %void %DbgExt DebugTypeComposite %foo_name %u32_1 %dbg_src %u32_2 %u32_0 %comp_unit %foo_name %u32_32 %u32_3 %a
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("DebugTypeComposite: operand Line (2) is larger then the "
+                "1 lines found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugGlobalVariableLine) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "void main() {}"
+%float_name = OpString "float"
+%foo_name = OpString "foo"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%a = OpExtInst %void %DbgExt DebugTypeMember %foo_name %float_info %dbg_src %u32_0 %u32_0 %u32_0 %u32_32 %u32_3
+%t = OpExtInst %void %DbgExt DebugTypeComposite %foo_name %u32_1 %dbg_src %u32_1 %u32_0 %comp_unit %foo_name %u32_32 %u32_3 %a
+%foo = OpExtInst %void %DbgExt DebugGlobalVariable %foo_name %t %dbg_src %u32_2 %u32_0 %comp_unit %foo_name %f32_input %u32_3
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("DebugGlobalVariable: operand Line (2) is larger then the "
+                "1 lines found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugLocalVariableLine) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "void main() { float foo; }"
+%float_name = OpString "float"
+%foo_name = OpString "foo"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%null_expr = OpExtInst %void %DbgExt DebugExpression
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%v4float_info = OpExtInst %void %DbgExt DebugTypeVector %float_info %u32_4
+%foo_info = OpExtInst %void %DbgExt DebugLocalVariable %foo_name %v4float_info %dbg_src %u32_2 %u32_1 %comp_unit %u32_4
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("DebugLocalVariable: operand Line (2) is larger then the "
+                "1 lines found in the DebugSource text"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugTypeTemplateParameterLine) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+%ty_name = OpString "Texture"
+%t_name = OpString "T"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_none = OpExtInst %void %DbgExt DebugInfoNone
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%opaque = OpExtInst %void %DbgExt DebugTypeComposite %ty_name %u32_1 %dbg_src %u32_1 %u32_1 %comp_unit %ty_name %dbg_none %u32_3
+%param = OpExtInst %void %DbgExt DebugTypeTemplateParameter %t_name %float_info %dbg_none %dbg_src %u32_2 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "DebugTypeTemplateParameter: operand Line (2) is larger then the "
+          "1 lines found in the DebugSource text"));
 }
 
 }  // namespace
