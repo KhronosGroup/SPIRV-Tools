@@ -1001,6 +1001,7 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberPtrAccessChain) {
                OpFunctionEnd
 )";
 
+  ValidatorOptions()->relax_logical_pointer = true;
   SinglePassRunAndMatch<opt::EliminateDeadMembersPass>(text, true);
 }
 
@@ -1060,6 +1061,7 @@ TEST_F(EliminateDeadMemberTest, RemoveMemberInBoundsPtrAccessChain) {
                OpFunctionEnd
 )";
 
+  ValidatorOptions()->relax_logical_pointer = true;
   SinglePassRunAndMatch<opt::EliminateDeadMembersPass>(text, true);
 }
 
