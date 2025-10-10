@@ -59,6 +59,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   fold_spec_constant_op_and_composite_pass.h
   freeze_spec_constant_value_pass.h
   function.h
+  graph.h
   graphics_robust_access_pass.h
   if_conversion.h
   inline_exhaustive_pass.h
@@ -181,6 +182,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   fold_spec_constant_op_and_composite_pass.cpp
   freeze_spec_constant_value_pass.cpp
   function.cpp
+  graph.cpp
   graphics_robust_access_pass.cpp
   if_conversion.cpp
   inline_exhaustive_pass.cpp
