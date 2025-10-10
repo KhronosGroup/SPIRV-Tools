@@ -488,6 +488,8 @@ static_library("spvtools_opt") {
     "source/opt/freeze_spec_constant_value_pass.h",
     "source/opt/function.cpp",
     "source/opt/function.h",
+    "source/opt/graph.cpp",
+    "source/opt/graph.h",
     "source/opt/graphics_robust_access_pass.cpp",
     "source/opt/graphics_robust_access_pass.h",
     "source/opt/if_conversion.cpp",
