@@ -208,6 +208,28 @@ spv_result_t ValidateDebugInfoOperand(
     if (result != SPV_SUCCESS) return result;                                  \
   } while (0)
 
+#define CHECK_OPTIONAL_DEBUG_OPERAND(NAME, operand_type, index)         \
+  do {                                                                  \
+    if (num_words == index + 1 && !DoesDebugInfoOperandMatchExpectation( \
+        _,                                                              \
+        [](CommonDebugInfoInstructions dbg_inst) {                      \
+          return dbg_inst == CommonDebugInfoDebugInfoNone;              \
+        },                                                              \
+        inst, index)) {                                                 \
+    CHECK_OPERAND(NAME, operand_type, index);                           \
+  } } while (false)
+
+#define CHECK_OPTIONAL_DEBUG_OPERAND_VAL(NAME, operand_type, index)     \
+  do {                                                                  \
+    if (num_words == index + 1 && !DoesDebugInfoOperandMatchExpectation( \
+        _,                                                              \
+        [](CommonDebugInfoInstructions dbg_inst) {                      \
+          return dbg_inst == CommonDebugInfoDebugInfoNone;              \
+        },                                                              \
+        inst, index)) {                                                 \
+    CHECK_DEBUG_OPERAND(NAME, operand_type, index);                     \
+  } } while (false)
+
 // Check that the operand of a debug info instruction |inst| at |word_index|
 // is a result id of an debug info instruction with DebugTypeBasic.
 spv_result_t ValidateOperandBaseType(
@@ -3313,7 +3335,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         }
         case CommonDebugInfoDebugSource: {
           CHECK_OPERAND("File", spv::Op::OpString, 5);
-          if (num_words == 7) CHECK_OPERAND("Text", spv::Op::OpString, 6);
+          CHECK_OPTIONAL_DEBUG_OPERAND("Text", spv::Op::OpString, 6);
           break;
         }
         case CommonDebugInfoDebugTypeBasic: {
@@ -3543,8 +3565,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             CHECK_OPERAND("Offset", spv::Op::OpConstant, 11);
             CHECK_OPERAND("Size", spv::Op::OpConstant, 12);
             CHECK_CONST_UINT_OPERAND("Flags", 13);
-            if (num_words == 15)
-              CHECK_OPERAND("Value", spv::Op::OpConstant, 14);
+            CHECK_OPTIONAL_DEBUG_OPERAND("Value", spv::Op::OpConstant, 14);
           }
           break;
         }
@@ -3591,10 +3612,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           // NonSemantic.Shader.DebugInfo.100 doesn't include a reference to the
           // OpFunction
           if (vulkanDebugInfo) {
-            if (num_words == 15) {
-              CHECK_DEBUG_OPERAND("Declaration",
-                                  CommonDebugInfoDebugFunctionDeclaration, 14);
-            }
+            CHECK_OPTIONAL_DEBUG_OPERAND_VAL("Declaration",
+                                             CommonDebugInfoDebugFunctionDeclaration, 14);
           } else {
             if (!DoesDebugInfoOperandMatchExpectation(
                     _,
@@ -3604,10 +3623,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                     inst, 14)) {
               CHECK_OPERAND("Function", spv::Op::OpFunction, 14);
             }
-            if (num_words == 16) {
-              CHECK_DEBUG_OPERAND("Declaration",
-                                  CommonDebugInfoDebugFunctionDeclaration, 15);
-            }
+            CHECK_OPTIONAL_DEBUG_OPERAND_VAL("Declaration", CommonDebugInfoDebugFunctionDeclaration, 15);
           }
           break;
         }
@@ -3631,16 +3647,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           auto validate_parent =
               ValidateOperandLexicalScope(_, "Parent", inst, 8, ext_inst_name);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
-          if (num_words == 10) CHECK_OPERAND("Name", spv::Op::OpString, 9);
+          CHECK_OPTIONAL_DEBUG_OPERAND("Name", spv::Op::OpString, 9);
           break;
         }
         case CommonDebugInfoDebugScope: {
           auto validate_scope =
               ValidateOperandLexicalScope(_, "Scope", inst, 5, ext_inst_name);
           if (validate_scope != SPV_SUCCESS) return validate_scope;
-          if (num_words == 7) {
-            CHECK_DEBUG_OPERAND("Inlined At", CommonDebugInfoDebugInlinedAt, 6);
-          }
+          CHECK_OPTIONAL_DEBUG_OPERAND_VAL("Inlined At", CommonDebugInfoDebugInlinedAt, 6);
           break;
         }
         case CommonDebugInfoDebugLocalVariable: {
@@ -3761,9 +3775,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                         "OpVariable or OpConstant or DebugInfoNone";
             }
           }
-          if (num_words == 15) {
-            CHECK_DEBUG_OPERAND("Static Member Declaration",
-                                CommonDebugInfoDebugTypeMember, 14);
+          CHECK_OPTIONAL_DEBUG_OPERAND_VAL("Static Member Declaration",
+                                           CommonDebugInfoDebugTypeMember, 14);
           }
           break;
         }
@@ -3772,9 +3785,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           auto validate_scope =
               ValidateOperandLexicalScope(_, "Scope", inst, 6, ext_inst_name);
           if (validate_scope != SPV_SUCCESS) return validate_scope;
-          if (num_words == 8) {
-            CHECK_DEBUG_OPERAND("Inlined", CommonDebugInfoDebugInlinedAt, 7);
-          }
+          CHECK_OPTIONAL_DEBUG_OPERAND_VAL("Inlined", CommonDebugInfoDebugInlinedAt, 7);
           break;
         }
         case CommonDebugInfoDebugValue: {
