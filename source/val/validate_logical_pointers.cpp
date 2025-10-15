@@ -165,10 +165,10 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
     case spv::Op::OpCooperativeMatrixLoadNV:
     case spv::Op::OpCooperativeMatrixStoreKHR:
     case spv::Op::OpCooperativeMatrixStoreNV:
-    // SPV_KHR_ray_tracing (spec bugs)
+    // SPV_KHR_ray_tracing
     case spv::Op::OpTraceRayKHR:
     case spv::Op::OpExecuteCallableKHR:
-    // SPV_KHR_ray_query (spec bugs)
+    // SPV_KHR_ray_query
     case spv::Op::OpRayQueryConfirmIntersectionKHR:
     case spv::Op::OpRayQueryInitializeKHR:
     case spv::Op::OpRayQueryTerminateKHR:
@@ -193,15 +193,15 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
     case spv::Op::OpRayQueryGetWorldRayOriginKHR:
     case spv::Op::OpRayQueryGetIntersectionObjectToWorldKHR:
     case spv::Op::OpRayQueryGetIntersectionWorldToObjectKHR:
-    // SPV_KHR_ray_tracing_position_fetch (spec bugs)
+    // SPV_KHR_ray_tracing_position_fetch
     case spv::Op::OpRayQueryGetIntersectionTriangleVertexPositionsKHR:
-    // SPV_NV_cluster_acceleration_structure (spec bugs)
+    // SPV_NV_cluster_acceleration_structure
     case spv::Op::OpRayQueryGetClusterIdNV:
     case spv::Op::OpHitObjectGetClusterIdNV:
-    // SPV_NV_ray_tracing_motion_blur (spec bugs)
+    // SPV_NV_ray_tracing_motion_blur
     case spv::Op::OpTraceMotionNV:
     case spv::Op::OpTraceRayMotionNV:
-    // SPV_NV_linear_swept_spheres (spec bugs)
+    // SPV_NV_linear_swept_spheres
     case spv::Op::OpRayQueryGetIntersectionSpherePositionNV:
     case spv::Op::OpRayQueryGetIntersectionSphereRadiusNV:
     case spv::Op::OpRayQueryGetIntersectionLSSPositionsNV:
@@ -215,7 +215,7 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
     case spv::Op::OpHitObjectGetLSSRadiiNV:
     case spv::Op::OpHitObjectIsSphereHitNV:
     case spv::Op::OpHitObjectIsLSSHitNV:
-    // SPV_NV_shader_invocation_reorder (spec bugs)
+    // SPV_NV_shader_invocation_reorder
     case spv::Op::OpReorderThreadWithHitObjectNV:
     case spv::Op::OpHitObjectTraceRayNV:
     case spv::Op::OpHitObjectTraceRayMotionNV:
@@ -259,13 +259,15 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
     case spv::Op::OpCooperativeVectorMatrixMulAddNV:
     case spv::Op::OpCooperativeVectorOuterProductAccumulateNV:
     case spv::Op::OpCooperativeVectorReduceSumAccumulateNV:
-    // SPV_EXT_mesh_shader (spec bugs)
+    // SPV_EXT_mesh_shader
     case spv::Op::OpEmitMeshTasksEXT:
     // SPV_AMD_shader_enqueue (spec bugs)
     case spv::Op::OpEnqueueNodePayloadsAMDX:
     case spv::Op::OpNodePayloadArrayLengthAMDX:
     case spv::Op::OpIsNodePayloadValidAMDX:
     case spv::Op::OpFinishWritingNodePayloadAMDX:
+    // SPV_ARM_graph
+    case spv::Op::OpGraphEntryPointARM:
       return SPV_SUCCESS;
     // The following cases require a variable pointer capability. Since all
     // instructions are for variable pointers, the storage class and capability
