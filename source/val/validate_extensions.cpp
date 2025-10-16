@@ -84,12 +84,37 @@ uint32_t GetUint32Constant(ValidationState_t& _, uint32_t id) {
   return inst->word(3);
 }
 
+std::string GetExtInstName(const ValidationState_t& _,
+                           const Instruction* inst) {
+  const uint32_t ext_inst_set = inst->word(3);
+  const uint32_t ext_inst_index = inst->word(4);
+  const spv_ext_inst_type_t ext_inst_type =
+      spv_ext_inst_type_t(inst->ext_inst_type());
+
+  const ExtInstDesc* desc = nullptr;
+  if (LookupExtInst(ext_inst_type, ext_inst_index, &desc) != SPV_SUCCESS ||
+      !desc) {
+    return std::string("Unknown ExtInst");
+  }
+
+  auto* import_inst = _.FindDef(ext_inst_set);
+  assert(import_inst);
+
+  std::ostringstream ss;
+  ss << import_inst->GetOperandAs<std::string>(1);
+  ss << " ";
+  ss << desc->name().data();
+
+  return ss.str();
+}
+
 // Check that the operand of a debug info instruction |inst| at |word_index|
 // is a result id of an instruction with |expected_opcode|.
-spv_result_t ValidateOperandForDebugInfo(
-    ValidationState_t& _, const std::string& operand_name,
-    spv::Op expected_opcode, const Instruction* inst, uint32_t word_index,
-    const std::function<std::string()>& ext_inst_name) {
+spv_result_t ValidateOperandForDebugInfo(ValidationState_t& _,
+                                         const std::string& operand_name,
+                                         spv::Op expected_opcode,
+                                         const Instruction* inst,
+                                         uint32_t word_index) {
   auto* operand = _.FindDef(inst->word(word_index));
   if (operand->opcode() != expected_opcode) {
     const spvtools::InstructionDesc* desc = nullptr;
@@ -97,12 +122,13 @@ spv_result_t ValidateOperandForDebugInfo(
                                      &desc) != SPV_SUCCESS ||
         !desc) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << ext_inst_name() << ": "
-             << "expected operand " << operand_name << " is invalid";
+             << GetExtInstName(_, inst) << ": " << "expected operand "
+             << operand_name << " is invalid";
     }
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << ext_inst_name() << ": " << "expected operand " << operand_name
-           << " must be a result id of " << "Op" << desc->name().data();
+           << GetExtInstName(_, inst) << ": " << "expected operand "
+           << operand_name << " must be a result id of " << "Op"
+           << desc->name().data();
   }
   return SPV_SUCCESS;
 }
@@ -113,28 +139,26 @@ spv_result_t ValidateOperandForDebugInfo(
 // word so cannot be validated.
 spv_result_t ValidateUint32ConstantOperandForDebugInfo(
     ValidationState_t& _, const std::string& operand_name,
-    const Instruction* inst, uint32_t word_index,
-    const std::function<std::string()>& ext_inst_name) {
+    const Instruction* inst, uint32_t word_index) {
   if (!IsUint32Constant(_, inst->word(word_index))) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << ext_inst_name() << ": expected operand " << operand_name
+           << GetExtInstName(_, inst) << ": expected operand " << operand_name
            << " must be a result id of 32-bit unsigned OpConstant";
   }
   return SPV_SUCCESS;
 }
 
-#define CHECK_OPERAND(NAME, opcode, index)                                  \
-  do {                                                                      \
-    auto result = ValidateOperandForDebugInfo(_, NAME, opcode, inst, index, \
-                                              ext_inst_name);               \
-    if (result != SPV_SUCCESS) return result;                               \
+#define CHECK_OPERAND(NAME, opcode, index)                                   \
+  do {                                                                       \
+    auto result = ValidateOperandForDebugInfo(_, NAME, opcode, inst, index); \
+    if (result != SPV_SUCCESS) return result;                                \
   } while (0)
 
-#define CHECK_CONST_UINT_OPERAND(NAME, index)                \
-  if (vulkanDebugInfo) {                                     \
-    auto result = ValidateUint32ConstantOperandForDebugInfo( \
-        _, NAME, inst, index, ext_inst_name);                \
-    if (result != SPV_SUCCESS) return result;                \
+#define CHECK_CONST_UINT_OPERAND(NAME, index)                            \
+  if (vulkanDebugInfo) {                                                 \
+    auto result =                                                        \
+        ValidateUint32ConstantOperandForDebugInfo(_, NAME, inst, index); \
+    if (result != SPV_SUCCESS) return result;                            \
   }
 
 // True if the operand of a debug info instruction |inst| at |word_index|
@@ -180,7 +204,7 @@ bool DoesDebugInfoOperandMatchExpectation(
 spv_result_t ValidateDebugInfoOperand(
     ValidationState_t& _, const std::string& debug_inst_name,
     CommonDebugInfoInstructions expected_debug_inst, const Instruction* inst,
-    uint32_t word_index, const std::function<std::string()>& ext_inst_name) {
+    uint32_t word_index) {
   std::function<bool(CommonDebugInfoInstructions)> expectation =
       [expected_debug_inst](CommonDebugInfoInstructions dbg_inst) {
         return dbg_inst == expected_debug_inst;
@@ -193,38 +217,39 @@ spv_result_t ValidateDebugInfoOperand(
           SPV_SUCCESS ||
       !desc) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << ext_inst_name() << ": "
-           << "expected operand " << debug_inst_name << " is invalid";
+           << GetExtInstName(_, inst) << ": " << "expected operand "
+           << debug_inst_name << " is invalid";
   }
   return _.diag(SPV_ERROR_INVALID_DATA, inst)
-         << ext_inst_name() << ": " << "expected operand " << debug_inst_name
-         << " must be a result id of " << desc->name().data();
+         << GetExtInstName(_, inst) << ": " << "expected operand "
+         << debug_inst_name << " must be a result id of "
+         << desc->name().data();
 }
 
-#define CHECK_DEBUG_OPERAND(NAME, debug_opcode, index)                         \
-  do {                                                                         \
-    auto result = ValidateDebugInfoOperand(_, NAME, debug_opcode, inst, index, \
-                                           ext_inst_name);                     \
-    if (result != SPV_SUCCESS) return result;                                  \
+#define CHECK_DEBUG_OPERAND(NAME, debug_opcode, index)                \
+  do {                                                                \
+    auto result =                                                     \
+        ValidateDebugInfoOperand(_, NAME, debug_opcode, inst, index); \
+    if (result != SPV_SUCCESS) return result;                         \
   } while (0)
 
 // Check that the operand of a debug info instruction |inst| at |word_index|
 // is a result id of an debug info instruction with DebugTypeBasic.
-spv_result_t ValidateOperandBaseType(
-    ValidationState_t& _, const Instruction* inst, uint32_t word_index,
-    const std::function<std::string()>& ext_inst_name) {
+spv_result_t ValidateOperandBaseType(ValidationState_t& _,
+                                     const Instruction* inst,
+                                     uint32_t word_index) {
   return ValidateDebugInfoOperand(_, "Base Type", CommonDebugInfoDebugTypeBasic,
-                                  inst, word_index, ext_inst_name);
+                                  inst, word_index);
 }
 
 // Check that the operand of a debug info instruction |inst| at |word_index|
 // is a result id of a debug lexical scope instruction which is one of
 // DebugCompilationUnit, DebugFunction, DebugLexicalBlock, or
 // DebugTypeComposite.
-spv_result_t ValidateOperandLexicalScope(
-    ValidationState_t& _, const std::string& debug_inst_name,
-    const Instruction* inst, uint32_t word_index,
-    const std::function<std::string()>& ext_inst_name) {
+spv_result_t ValidateOperandLexicalScope(ValidationState_t& _,
+                                         const std::string& debug_inst_name,
+                                         const Instruction* inst,
+                                         uint32_t word_index) {
   std::function<bool(CommonDebugInfoInstructions)> expectation =
       [](CommonDebugInfoInstructions dbg_inst) {
         return dbg_inst == CommonDebugInfoDebugCompilationUnit ||
@@ -236,19 +261,18 @@ spv_result_t ValidateOperandLexicalScope(
     return SPV_SUCCESS;
 
   return _.diag(SPV_ERROR_INVALID_DATA, inst)
-         << ext_inst_name() << ": "
-         << "expected operand " << debug_inst_name
-         << " must be a result id of a lexical scope";
+         << GetExtInstName(_, inst) << ": " << "expected operand "
+         << debug_inst_name << " must be a result id of a lexical scope";
 }
 
 // Check that the operand of a debug info instruction |inst| at |word_index|
 // is a result id of a debug type instruction (See DebugTypeXXX in
 // "4.3. Type instructions" section of OpenCL.DebugInfo.100 spec.
-spv_result_t ValidateOperandDebugType(
-    ValidationState_t& _, const std::string& debug_inst_name,
-    const Instruction* inst, uint32_t word_index,
-    const std::function<std::string()>& ext_inst_name,
-    bool allow_template_param) {
+spv_result_t ValidateOperandDebugType(ValidationState_t& _,
+                                      const std::string& debug_inst_name,
+                                      const Instruction* inst,
+                                      uint32_t word_index,
+                                      bool allow_template_param) {
   // Check for NonSemanticShaderDebugInfo100 specific types.
   if (inst->ext_inst_type() ==
       SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100) {
@@ -275,9 +299,8 @@ spv_result_t ValidateOperandDebugType(
     return SPV_SUCCESS;
 
   return _.diag(SPV_ERROR_INVALID_DATA, inst)
-         << ext_inst_name() << ": "
-         << "expected operand " << debug_inst_name
-         << " is not a valid debug type";
+         << GetExtInstName(_, inst) << ": " << "expected operand "
+         << debug_inst_name << " is not a valid debug type";
 }
 
 spv_result_t ValidateClspvReflectionKernel(ValidationState_t& _,
@@ -1099,28 +1122,9 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
   const uint32_t result_type = inst->type_id();
   const uint32_t num_operands = static_cast<uint32_t>(inst->operands().size());
 
-  const uint32_t ext_inst_set = inst->word(3);
   const uint32_t ext_inst_index = inst->word(4);
   const spv_ext_inst_type_t ext_inst_type =
       spv_ext_inst_type_t(inst->ext_inst_type());
-
-  auto ext_inst_name = [&_, ext_inst_set, ext_inst_type, ext_inst_index]() {
-    const ExtInstDesc* desc = nullptr;
-    if (LookupExtInst(ext_inst_type, ext_inst_index, &desc) != SPV_SUCCESS ||
-        !desc) {
-      return std::string("Unknown ExtInst");
-    }
-
-    auto* import_inst = _.FindDef(ext_inst_set);
-    assert(import_inst);
-
-    std::ostringstream ss;
-    ss << import_inst->GetOperandAs<std::string>(1);
-    ss << " ";
-    ss << desc->name().data();
-
-    return ss.str();
-  };
 
   if (ext_inst_type == SPV_EXT_INST_TYPE_GLSL_STD_450) {
     const GLSLstd450 ext_inst_key = GLSLstd450(ext_inst_index);
@@ -1159,7 +1163,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             !(supportsCoopVec &&
               _.IsFloatCooperativeVectorNVType(result_type))) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
 
@@ -1168,7 +1172,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
           if (result_type != operand_type) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected types of all operands to be equal to Result "
                       "Type";
           }
@@ -1196,7 +1200,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsIntScalarOrVectorType(result_type) &&
             !(supportsCoopVec && _.IsIntCooperativeVectorNVType(result_type))) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be an int scalar or vector type";
         }
 
@@ -1211,20 +1215,20 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                !(supportsCoopVec &&
                  _.IsIntCooperativeVectorNVType(operand_type)))) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected all operands to be int scalars or vectors";
           }
 
           if (result_type_dimension != _.GetDimension(operand_type)) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected all operands to have the same dimension as "
                    << "Result Type";
           }
 
           if (result_type_bit_width != _.GetBitWidth(operand_type)) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected all operands to have the same bit width as "
                    << "Result Type";
           }
@@ -1233,7 +1237,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
               ext_inst_key == GLSLstd450FindSMsb) {
             if (result_type_bit_width != 32) {
               return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << ext_inst_name() << ": "
+                     << GetExtInstName(_, inst) << ": "
                      << "this instruction is currently limited to 32-bit width "
                      << "components";
             }
@@ -1270,7 +1274,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             !(supportsCoopVec &&
               _.IsFloatCooperativeVectorNVType(result_type))) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a 16 or 32-bit scalar or "
                     "vector float type";
         }
@@ -1278,7 +1282,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t result_type_bit_width = _.GetBitWidth(result_type);
         if (result_type_bit_width != 16 && result_type_bit_width != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a 16 or 32-bit scalar or "
                     "vector float type";
         }
@@ -1288,7 +1292,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
           if (result_type != operand_type) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected types of all operands to be equal to Result "
                       "Type";
           }
@@ -1306,13 +1310,13 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                                  &component_type) ||
             num_rows != num_cols) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X to be a square matrix";
         }
 
         if (result_type != component_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X component type to be equal to "
                  << "Result Type";
         }
@@ -1328,14 +1332,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                                  &component_type) ||
             num_rows != num_cols) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a square matrix";
         }
 
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
         if (result_type != x_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X type to be equal to Result Type";
         }
         break;
@@ -1344,7 +1348,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450Modf: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or vector float type";
         }
 
@@ -1353,7 +1357,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
         if (x_type != result_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X type to be equal to Result Type";
         }
 
@@ -1361,13 +1365,13 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         uint32_t i_data_type = 0;
         if (!_.GetPointerTypeInfo(i_type, &i_data_type, &i_storage_class)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand I to be a pointer";
         }
 
         if (i_data_type != result_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand I data type to be equal to Result Type";
         }
 
@@ -1381,7 +1385,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             !_.IsFloatScalarOrVectorType(result_types[0]) ||
             result_types[1] != result_types[0]) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a struct with two identical "
                  << "scalar or vector float type members";
         }
@@ -1389,7 +1393,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
         if (x_type != result_types[0]) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X type to be equal to members of "
                  << "Result Type struct";
         }
@@ -1399,7 +1403,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450Frexp: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or vector float type";
         }
 
@@ -1408,7 +1412,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
         if (x_type != result_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X type to be equal to Result Type";
         }
 
@@ -1417,7 +1421,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.GetPointerTypeInfo(exp_type, &exp_data_type,
                                   &exp_storage_class)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Exp to be a pointer";
         }
 
@@ -1428,7 +1432,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
              _.GetBitWidth(exp_data_type) != 16 &&
              _.GetBitWidth(exp_data_type) != 32)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Exp data type to be a "
                  << (_.HasExtension(kSPV_AMD_gpu_shader_int16)
                          ? "16-bit or 32-bit "
@@ -1438,7 +1442,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
         if (_.GetDimension(result_type) != _.GetDimension(exp_data_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Exp data type to have the same component "
                  << "number as Result Type";
         }
@@ -1449,7 +1453,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450Ldexp: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or vector float type";
         }
 
@@ -1458,20 +1462,20 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
         if (x_type != result_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X type to be equal to Result Type";
         }
 
         if (!_.IsIntScalarOrVectorType(exp_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Exp to be a 32-bit int scalar "
                  << "or vector type";
         }
 
         if (_.GetDimension(result_type) != _.GetDimension(exp_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Exp to have the same component "
                  << "number as Result Type";
         }
@@ -1493,7 +1497,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             _.GetDimension(result_types[0]) !=
                 _.GetDimension(result_types[1])) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a struct with two members, "
                  << "first member a float scalar or vector, second member a "
                  << (_.HasExtension(kSPV_AMD_gpu_shader_int16)
@@ -1506,7 +1510,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
         if (x_type != result_types[0]) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X type to be equal to the first member "
                  << "of Result Type struct";
         }
@@ -1518,7 +1522,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsIntScalarType(result_type) ||
             _.GetBitWidth(result_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be 32-bit int scalar type";
         }
 
@@ -1526,7 +1530,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsFloatVectorType(v_type) || _.GetDimension(v_type) != 4 ||
             _.GetBitWidth(v_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand V to be a 32-bit float vector of size 4";
         }
         break;
@@ -1538,7 +1542,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsIntScalarType(result_type) ||
             _.GetBitWidth(result_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be 32-bit int scalar type";
         }
 
@@ -1546,7 +1550,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsFloatVectorType(v_type) || _.GetDimension(v_type) != 2 ||
             _.GetBitWidth(v_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand V to be a 32-bit float vector of size 2";
         }
         break;
@@ -1556,7 +1560,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsFloatScalarType(result_type) ||
             _.GetBitWidth(result_type) != 64) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be 64-bit float scalar type";
         }
 
@@ -1564,7 +1568,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsIntVectorType(v_type) || _.GetDimension(v_type) != 2 ||
             _.GetBitWidth(v_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand V to be a 32-bit int vector of size 2";
         }
         break;
@@ -1576,7 +1580,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             _.GetDimension(result_type) != 4 ||
             _.GetBitWidth(result_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a 32-bit float vector of size "
                     "4";
         }
@@ -1584,7 +1588,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t v_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsIntScalarType(v_type) || _.GetBitWidth(v_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P to be a 32-bit int scalar";
         }
         break;
@@ -1597,7 +1601,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             _.GetDimension(result_type) != 2 ||
             _.GetBitWidth(result_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a 32-bit float vector of size "
                     "2";
         }
@@ -1605,7 +1609,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t v_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsIntScalarType(v_type) || _.GetBitWidth(v_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P to be a 32-bit int scalar";
         }
         break;
@@ -1616,7 +1620,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             _.GetDimension(result_type) != 2 ||
             _.GetBitWidth(result_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a 32-bit int vector of size "
                     "2";
         }
@@ -1624,7 +1628,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t v_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsFloatScalarType(v_type) || _.GetBitWidth(v_type) != 64) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand V to be a 64-bit float scalar";
         }
         break;
@@ -1633,20 +1637,20 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450Length: {
         if (!_.IsFloatScalarType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float scalar type";
         }
 
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsFloatScalarOrVectorType(x_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X to be of float scalar or vector type";
         }
 
         if (result_type != _.GetComponentType(x_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X component type to be equal to Result "
                     "Type";
         }
@@ -1656,20 +1660,20 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450Distance: {
         if (!_.IsFloatScalarType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float scalar type";
         }
 
         const uint32_t p0_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsFloatScalarOrVectorType(p0_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P0 to be of float scalar or vector type";
         }
 
         if (result_type != _.GetComponentType(p0_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P0 component type to be equal to "
                  << "Result Type";
         }
@@ -1677,20 +1681,20 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t p1_type = _.GetOperandTypeId(inst, 5);
         if (!_.IsFloatScalarOrVectorType(p1_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P1 to be of float scalar or vector type";
         }
 
         if (result_type != _.GetComponentType(p1_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P1 component type to be equal to "
                  << "Result Type";
         }
 
         if (_.GetDimension(p0_type) != _.GetDimension(p1_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operands P0 and P1 to have the same number of "
                  << "components";
         }
@@ -1700,13 +1704,13 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450Cross: {
         if (!_.IsFloatVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float vector type";
         }
 
         if (_.GetDimension(result_type) != 3) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to have 3 components";
         }
 
@@ -1715,13 +1719,13 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
         if (x_type != result_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X type to be equal to Result Type";
         }
 
         if (y_type != result_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Y type to be equal to Result Type";
         }
         break;
@@ -1730,7 +1734,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450Refract: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
 
@@ -1740,19 +1744,19 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
         if (result_type != i_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand I to be of type equal to Result Type";
         }
 
         if (result_type != n_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand N to be of type equal to Result Type";
         }
 
         if (!_.IsFloatScalarType(eta_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Eta to be a float scalar";
         }
         break;
@@ -1763,14 +1767,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case GLSLstd450InterpolateAtOffset: {
         if (!_.HasCapability(spv::Capability::InterpolationFunction)) {
           return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
-                 << ext_inst_name()
+                 << GetExtInstName(_, inst)
                  << " requires capability InterpolationFunction";
         }
 
         if (!_.IsFloatScalarOrVectorType(result_type) ||
             _.GetBitWidth(result_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a 32-bit float scalar "
                  << "or vector type";
         }
@@ -1790,19 +1794,19 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.GetPointerTypeInfo(interpolant_type, &interpolant_data_type,
                                   &interpolant_storage_class)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Interpolant to be a pointer";
         }
 
         if (result_type != interpolant_data_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Interpolant data type to be equal to Result Type";
         }
 
         if (interpolant_storage_class != spv::StorageClass::Input) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Interpolant storage class to be Input";
         }
 
@@ -1811,7 +1815,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           if (!_.IsIntScalarType(sample_type) ||
               _.GetBitWidth(sample_type) != 32) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected Sample to be 32-bit integer";
           }
         }
@@ -1822,7 +1826,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
               _.GetDimension(offset_type) != 2 ||
               _.GetBitWidth(offset_type) != 32) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected Offset to be a vector of 2 32-bit floats";
           }
         }
@@ -1830,7 +1834,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         _.function(inst->function()->id())
             ->RegisterExecutionModelLimitation(
                 spv::ExecutionModel::Fragment,
-                ext_inst_name() +
+                GetExtInstName(_, inst) +
                     std::string(" requires Fragment execution model"));
         break;
       }
@@ -1949,14 +1953,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Sign: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
         }
@@ -1966,7 +1970,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
           if (result_type != operand_type) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected types of all operands to be equal to Result "
                       "Type";
           }
@@ -1979,14 +1983,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Sincos: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
         }
@@ -1994,7 +1998,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
         if (result_type != x_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected type of operand X to be equal to Result Type";
         }
 
@@ -2003,7 +2007,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected the last operand to be a pointer";
         }
 
@@ -2012,14 +2016,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             p_storage_class != spv::StorageClass::Workgroup &&
             p_storage_class != spv::StorageClass::Function) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected storage class of the pointer to be Generic, "
                     "CrossWorkgroup, Workgroup or Function";
         }
 
         if (!_.ContainsUntypedPointer(p_type) && result_type != p_data_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected data type of the pointer to be equal to Result "
                     "Type";
         }
@@ -2031,14 +2035,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Remquo: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
         }
@@ -2047,7 +2051,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t x_type = _.GetOperandTypeId(inst, operand_index++);
         if (result_type != x_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected type of operand X to be equal to Result Type";
         }
 
@@ -2055,7 +2059,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           const uint32_t y_type = _.GetOperandTypeId(inst, operand_index++);
           if (result_type != y_type) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected type of operand Y to be equal to Result Type";
           }
         }
@@ -2065,7 +2069,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected the last operand to be a pointer";
         }
 
@@ -2074,7 +2078,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             p_storage_class != spv::StorageClass::Workgroup &&
             p_storage_class != spv::StorageClass::Function) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected storage class of the pointer to be Generic, "
                     "CrossWorkgroup, Workgroup or Function";
         }
@@ -2083,7 +2087,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
              _.GetBitWidth(p_data_type) != 32) &&
             !_.ContainsUntypedPointer(p_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected data type of the pointer to be a 32-bit int "
                     "scalar or vector type";
         }
@@ -2091,7 +2095,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.ContainsUntypedPointer(p_type) &&
             _.GetDimension(p_data_type) != num_components) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected data type of the pointer to have the same number "
                     "of components as Result Type";
         }
@@ -2102,7 +2106,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsIntScalarOrVectorType(result_type) ||
             _.GetBitWidth(result_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a 32-bit int scalar or vector "
                     "type";
         }
@@ -2110,7 +2114,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
         }
@@ -2118,13 +2122,13 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsFloatScalarOrVectorType(x_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X to be a float scalar or vector";
         }
 
         if (_.GetDimension(x_type) != num_components) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X to have the same number of components "
                     "as Result Type";
         }
@@ -2136,14 +2140,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Rootn: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
         }
@@ -2151,7 +2155,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t x_type = _.GetOperandTypeId(inst, 4);
         if (result_type != x_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected type of operand X to be equal to Result Type";
         }
 
@@ -2159,13 +2163,13 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsIntScalarOrVectorType(exp_type) ||
             _.GetBitWidth(exp_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected the exponent to be a 32-bit int scalar or vector";
         }
 
         if (_.GetDimension(exp_type) != num_components) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected the exponent to have the same number of "
                     "components as Result Type";
         }
@@ -2175,14 +2179,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Nan: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
         }
@@ -2190,20 +2194,20 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t nancode_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsIntScalarOrVectorType(nancode_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Nancode to be an int scalar or vector type";
         }
 
         if (_.GetDimension(nancode_type) != num_components) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Nancode to have the same number of components as "
                     "Result Type";
         }
 
         if (_.GetBitWidth(result_type) != _.GetBitWidth(nancode_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Nancode to have the same bit width as Result "
                     "Type";
         }
@@ -2240,14 +2244,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::UMad_hi: {
         if (!_.IsIntScalarOrVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be an int scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
         }
@@ -2257,7 +2261,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
           if (result_type != operand_type) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected types of all operands to be equal to Result "
                       "Type";
           }
@@ -2269,7 +2273,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::S_Upsample: {
         if (!_.IsIntScalarOrVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be an int scalar or vector "
                     "type";
         }
@@ -2278,7 +2282,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (result_num_components > 4 && result_num_components != 8 &&
             result_num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
         }
@@ -2287,7 +2291,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (result_bit_width != 16 && result_bit_width != 32 &&
             result_bit_width != 64) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected bit width of Result Type components to be 16, 32 "
                     "or 64";
         }
@@ -2297,20 +2301,20 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
         if (hi_type != lo_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Hi and Lo operands to have the same type";
         }
 
         if (result_num_components != _.GetDimension(hi_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Hi and Lo operands to have the same number of "
                     "components as Result Type";
         }
 
         if (result_bit_width != 2 * _.GetBitWidth(hi_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected bit width of components of Hi and Lo operands to "
                     "be half of the bit width of components of Result Type";
         }
@@ -2324,7 +2328,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsIntScalarOrVectorType(result_type) ||
             _.GetBitWidth(result_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a 32-bit int scalar or vector "
                     "type";
         }
@@ -2332,7 +2336,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
         }
@@ -2342,7 +2346,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
           if (result_type != operand_type) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected types of all operands to be equal to Result "
                       "Type";
           }
@@ -2353,14 +2357,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Cross: {
         if (!_.IsFloatVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components != 3 && num_components != 4) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to have 3 or 4 components";
         }
 
@@ -2369,13 +2373,13 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
         if (x_type != result_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X type to be equal to Result Type";
         }
 
         if (y_type != result_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Y type to be equal to Result Type";
         }
         break;
@@ -2385,27 +2389,27 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Fast_distance: {
         if (!_.IsFloatScalarType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float scalar type";
         }
 
         const uint32_t p0_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsFloatScalarOrVectorType(p0_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P0 to be of float scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(p0_type);
         if (num_components > 4) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P0 to have no more than 4 components";
         }
 
         if (result_type != _.GetComponentType(p0_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P0 component type to be equal to "
                  << "Result Type";
         }
@@ -2413,7 +2417,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t p1_type = _.GetOperandTypeId(inst, 5);
         if (p0_type != p1_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operands P0 and P1 to be of the same type";
         }
         break;
@@ -2423,27 +2427,27 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Fast_length: {
         if (!_.IsFloatScalarType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float scalar type";
         }
 
         const uint32_t p_type = _.GetOperandTypeId(inst, 4);
         if (!_.IsFloatScalarOrVectorType(p_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P to be a float scalar or vector";
         }
 
         const uint32_t num_components = _.GetDimension(p_type);
         if (num_components > 4) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P to have no more than 4 components";
         }
 
         if (result_type != _.GetComponentType(p_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P component type to be equal to Result "
                     "Type";
         }
@@ -2454,21 +2458,21 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Fast_normalize: {
         if (!_.IsFloatScalarOrVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float scalar or vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to have no more than 4 components";
         }
 
         const uint32_t p_type = _.GetOperandTypeId(inst, 4);
         if (p_type != result_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P type to be equal to Result Type";
         }
         break;
@@ -2478,7 +2482,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsFloatScalarOrVectorType(result_type) &&
             !_.IsIntScalarOrVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be an int or float scalar or "
                     "vector type";
         }
@@ -2486,7 +2490,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
         }
@@ -2496,7 +2500,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           const uint32_t operand_type = _.GetOperandTypeId(inst, operand_index);
           if (result_type != operand_type) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected types of all operands to be equal to Result "
                       "Type";
           }
@@ -2508,7 +2512,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsFloatScalarOrVectorType(result_type) &&
             !_.IsIntScalarOrVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be an int or float scalar or "
                     "vector type";
         }
@@ -2516,7 +2520,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
         }
@@ -2527,32 +2531,32 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
         if (result_type != a_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand A type to be equal to Result Type";
         }
 
         if (result_type != b_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand B type to be equal to Result Type";
         }
 
         if (!_.IsIntScalarOrVectorType(c_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand C to be an int scalar or vector";
         }
 
         if (num_components != _.GetDimension(c_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand C to have the same number of components "
                     "as Result Type";
         }
 
         if (_.GetBitWidth(result_type) != _.GetBitWidth(c_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand C to have the same bit width as Result "
                     "Type";
         }
@@ -2563,14 +2567,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsFloatVectorType(result_type) &&
             !_.IsIntVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be an int or float vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to have 2, 3, 4, 8 or 16 components";
         }
 
@@ -2580,14 +2584,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
         if (!size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name()
+                 << GetExtInstName(_, inst)
                  << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
             _.GetBitWidth(offset_type) != size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Offset to be of type size_t ("
                  << size_t_bit_width
                  << "-bit integer for the addressing model used in the module)";
@@ -2597,7 +2601,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P to be a pointer";
         }
 
@@ -2607,14 +2611,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             p_storage_class != spv::StorageClass::Workgroup &&
             p_storage_class != spv::StorageClass::Function) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P storage class to be UniformConstant, "
                     "Generic, CrossWorkgroup, Workgroup or Function";
         }
 
         if (_.GetComponentType(result_type) != p_data_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P data type to be equal to component "
                     "type of Result Type";
         }
@@ -2622,7 +2626,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t n_value = inst->word(7);
         if (num_components != n_value) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected literal N to be equal to the number of "
                     "components of Result Type";
         }
@@ -2632,7 +2636,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Vstoren: {
         if (_.GetIdOpcode(result_type) != spv::Op::OpTypeVoid) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": expected Result Type to be void";
+                 << GetExtInstName(_, inst)
+                 << ": expected Result Type to be void";
         }
 
         const uint32_t data_type = _.GetOperandTypeId(inst, 4);
@@ -2641,28 +2646,28 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
         if (!_.IsFloatVectorType(data_type) && !_.IsIntVectorType(data_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Data to be an int or float vector";
         }
 
         const uint32_t num_components = _.GetDimension(data_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Data to have 2, 3, 4, 8 or 16 components";
         }
 
         const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
         if (!size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name()
+                 << GetExtInstName(_, inst)
                  << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
             _.GetBitWidth(offset_type) != size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Offset to be of type size_t ("
                  << size_t_bit_width
                  << "-bit integer for the addressing model used in the module)";
@@ -2672,7 +2677,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P to be a pointer";
         }
 
@@ -2681,14 +2686,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             p_storage_class != spv::StorageClass::Workgroup &&
             p_storage_class != spv::StorageClass::Function) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P storage class to be Generic, "
                     "CrossWorkgroup, Workgroup or Function";
         }
 
         if (_.GetComponentType(data_type) != p_data_type) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P data type to be equal to the type of "
                     "operand Data components";
         }
@@ -2698,7 +2703,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Vload_half: {
         if (!_.IsFloatScalarType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float scalar type";
         }
 
@@ -2708,14 +2713,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
         if (!size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name()
+                 << GetExtInstName(_, inst)
                  << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
             _.GetBitWidth(offset_type) != size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Offset to be of type size_t ("
                  << size_t_bit_width
                  << "-bit integer for the addressing model used in the module)";
@@ -2725,7 +2730,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P to be a pointer";
         }
 
@@ -2735,7 +2740,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             p_storage_class != spv::StorageClass::Workgroup &&
             p_storage_class != spv::StorageClass::Function) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P storage class to be UniformConstant, "
                     "Generic, CrossWorkgroup, Workgroup or Function";
         }
@@ -2744,7 +2749,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
              _.GetBitWidth(p_data_type) != 16) &&
             !_.ContainsUntypedPointer(p_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P data type to be 16-bit float scalar";
         }
         break;
@@ -2754,14 +2759,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Vloada_halfn: {
         if (!_.IsFloatVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a float vector type";
         }
 
         const uint32_t num_components = _.GetDimension(result_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to have 2, 3, 4, 8 or 16 components";
         }
 
@@ -2771,14 +2776,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
         if (!size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name()
+                 << GetExtInstName(_, inst)
                  << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
             _.GetBitWidth(offset_type) != size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Offset to be of type size_t ("
                  << size_t_bit_width
                  << "-bit integer for the addressing model used in the module)";
@@ -2788,7 +2793,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P to be a pointer";
         }
 
@@ -2798,7 +2803,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             p_storage_class != spv::StorageClass::Workgroup &&
             p_storage_class != spv::StorageClass::Function) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P storage class to be UniformConstant, "
                     "Generic, CrossWorkgroup, Workgroup or Function";
         }
@@ -2807,14 +2812,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
              _.GetBitWidth(p_data_type) != 16) &&
             !_.ContainsUntypedPointer(p_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P data type to be 16-bit float scalar";
         }
 
         const uint32_t n_value = inst->word(7);
         if (num_components != n_value) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected literal N to be equal to the number of "
                     "components of Result Type";
         }
@@ -2829,7 +2834,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Vstorea_halfn_r: {
         if (_.GetIdOpcode(result_type) != spv::Op::OpTypeVoid) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": expected Result Type to be void";
+                 << GetExtInstName(_, inst)
+                 << ": expected Result Type to be void";
         }
 
         const uint32_t data_type = _.GetOperandTypeId(inst, 4);
@@ -2842,14 +2848,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           if (!_.IsFloatScalarType(data_type) ||
               (data_type_bit_width != 32 && data_type_bit_width != 64)) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected Data to be a 32 or 64-bit float scalar";
           }
         } else {
           if (!_.IsFloatVectorType(data_type) ||
               (data_type_bit_width != 32 && data_type_bit_width != 64)) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected Data to be a 32 or 64-bit float vector";
           }
 
@@ -2857,7 +2863,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           if (num_components > 4 && num_components != 8 &&
               num_components != 16) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected Data to have 2, 3, 4, 8 or 16 components";
           }
         }
@@ -2865,14 +2871,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
         if (!size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name()
+                 << GetExtInstName(_, inst)
                  << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(offset_type) ||
             _.GetBitWidth(offset_type) != size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Offset to be of type size_t ("
                  << size_t_bit_width
                  << "-bit integer for the addressing model used in the module)";
@@ -2882,7 +2888,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P to be a pointer";
         }
 
@@ -2891,7 +2897,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             p_storage_class != spv::StorageClass::Workgroup &&
             p_storage_class != spv::StorageClass::Function) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P storage class to be Generic, "
                     "CrossWorkgroup, Workgroup or Function";
         }
@@ -2900,7 +2906,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
              _.GetBitWidth(p_data_type) != 16) &&
             !_.ContainsUntypedPointer(p_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand P data type to be 16-bit float scalar";
         }
 
@@ -2913,7 +2919,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsFloatVectorType(result_type) &&
             !_.IsIntVectorType(result_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be an int or float vector type";
         }
 
@@ -2921,7 +2927,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (result_num_components != 2 && result_num_components != 4 &&
             result_num_components != 8 && result_num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to have 2, 4, 8 or 16 components";
         }
 
@@ -2932,7 +2938,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           const uint32_t y_type = _.GetOperandTypeId(inst, operand_index++);
           if (x_type != y_type) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected operands X and Y to be of the same type";
           }
         }
@@ -2942,7 +2948,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
         if (!_.IsFloatVectorType(x_type) && !_.IsIntVectorType(x_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X to be an int or float vector";
         }
 
@@ -2950,7 +2956,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (x_num_components != 2 && x_num_components != 4 &&
             x_num_components != 8 && x_num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X to have 2, 4, 8 or 16 components";
         }
 
@@ -2958,20 +2964,20 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
         if (result_component_type != _.GetComponentType(x_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand X and Result Type to have equal "
                     "component types";
         }
 
         if (!_.IsIntVectorType(shuffle_mask_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Shuffle Mask to be an int vector";
         }
 
         if (result_num_components != _.GetDimension(shuffle_mask_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Shuffle Mask to have the same number of "
                     "components as Result Type";
         }
@@ -2979,7 +2985,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (_.GetBitWidth(result_component_type) !=
             _.GetBitWidth(shuffle_mask_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Shuffle Mask components to have the same "
                     "bit width as Result Type components";
         }
@@ -2990,7 +2996,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.IsIntScalarType(result_type) ||
             _.GetBitWidth(result_type) != 32) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a 32-bit int type";
         }
 
@@ -3000,7 +3006,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         if (!_.GetPointerTypeInfo(format_type, &format_data_type,
                                   &format_storage_class)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Format to be a pointer";
         }
 
@@ -3020,14 +3026,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
               // Generic
               format_storage_class != spv::StorageClass::Generic) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected Format storage class to be UniformConstant, "
                       "Crossworkgroup, Workgroup, Function, or Generic";
           }
         } else {
           if (format_storage_class != spv::StorageClass::UniformConstant) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected Format storage class to be UniformConstant";
           }
         }
@@ -3040,7 +3046,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
              _.GetBitWidth(format_data_type) != 8) &&
             !_.ContainsUntypedPointer(format_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Format data type to be 8-bit int";
         }
         break;
@@ -3049,7 +3055,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
       case OpenCLLIB::Prefetch: {
         if (_.GetIdOpcode(result_type) != spv::Op::OpTypeVoid) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": expected Result Type to be void";
+                 << GetExtInstName(_, inst)
+                 << ": expected Result Type to be void";
         }
 
         const uint32_t p_type = _.GetOperandTypeId(inst, 4);
@@ -3059,20 +3066,20 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         uint32_t p_data_type = 0;
         if (!_.GetPointerTypeInfo(p_type, &p_data_type, &p_storage_class)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Ptr to be a pointer";
         }
 
         if (p_storage_class != spv::StorageClass::CrossWorkgroup) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Ptr storage class to be CrossWorkgroup";
         }
 
         if (!_.IsFloatScalarOrVectorType(p_data_type) &&
             !_.IsIntScalarOrVectorType(p_data_type)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Ptr data type to be int or float scalar or "
                     "vector";
         }
@@ -3080,7 +3087,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t num_components = _.GetDimension(p_data_type);
         if (num_components > 4 && num_components != 8 && num_components != 16) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected Result Type to be a scalar or a vector with 2, "
                     "3, 4, 8 or 16 components";
         }
@@ -3088,14 +3095,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         const uint32_t size_t_bit_width = GetSizeTBitWidth(_);
         if (!size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name()
+                 << GetExtInstName(_, inst)
                  << " can only be used with physical addressing models";
         }
 
         if (!_.IsIntScalarType(num_elements_type) ||
             _.GetBitWidth(num_elements_type) != size_t_bit_width) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << ext_inst_name() << ": "
+                 << GetExtInstName(_, inst) << ": "
                  << "expected operand Num Elements to be of type size_t ("
                  << size_t_bit_width
                  << "-bit integer for the addressing model used in the module)";
@@ -3108,9 +3115,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                  SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100) {
     if (!_.IsVoidType(result_type)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << ext_inst_name() << ": "
-             << "expected result type must be a result id of "
-             << "OpTypeVoid";
+             << GetExtInstName(_, inst) << ": "
+             << "expected result type must be a result id of " << "OpTypeVoid";
     }
 
     const bool vulkanDebugInfo =
@@ -3173,7 +3179,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             auto type_id = index_inst != nullptr ? index_inst->type_id() : 0;
             if (type_id == 0 || !IsIntScalar(_, type_id, false, false))
               return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << ext_inst_name() << ": "
+                     << GetExtInstName(_, inst) << ": "
                      << "expected index must be scalar integer";
           }
           break;
@@ -3187,14 +3193,15 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           uint64_t const_val;
           if (!_.EvalConstantValUint64(vector_count, &const_val)) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name()
+                   << GetExtInstName(_, inst)
                    << ": Vector Count must be 32-bit integer OpConstant";
           }
 
           vector_count = const_val & 0xffffffff;
           if (!vector_count || vector_count > 4) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": Vector Count must be positive "
+                   << GetExtInstName(_, inst)
+                   << ": Vector Count must be positive "
                    << "integer less than or equal to 4";
           }
           break;
@@ -3205,14 +3212,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           const auto* current_function = inst->function();
           if (current_function->first_block()->id() != inst->block()->id()) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name()
+                   << GetExtInstName(_, inst)
                    << ": must be in the entry basic block of the function";
           }
 
           const uint32_t definition_id = inst->word(6);
           if (definition_id != current_function->id()) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name()
+                   << GetExtInstName(_, inst)
                    << ": operand Definition must point to the OpFunction it is "
                       "inside";
           }
@@ -3243,13 +3250,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
               _.EvalInt32IfConst(inst->word(9));
           if (line_end < line_start) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": operand Line End (" << line_end
-                   << ") is less than Line Start (" << line_start << ")";
+                   << GetExtInstName(_, inst) << ": operand Line End ("
+                   << line_end << ") is less than Line Start (" << line_start
+                   << ")";
           } else if (line_start == line_end && column_end < column_start) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": operand Column End (" << column_end
-                   << ") is less than Column Start (" << column_start
-                   << ") when Line Start equals Line End";
+                   << GetExtInstName(_, inst) << ": operand Column End ("
+                   << column_end << ") is less than Column Start ("
+                   << column_start << ") when Line Start equals Line End";
           }
           break;
         }
@@ -3323,23 +3331,22 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           break;
         }
         case CommonDebugInfoDebugTypePointer: {
-          auto validate_base_type = ValidateOperandDebugType(
-              _, "Base Type", inst, 5, ext_inst_name, false);
+          auto validate_base_type =
+              ValidateOperandDebugType(_, "Base Type", inst, 5, false);
           if (validate_base_type != SPV_SUCCESS) return validate_base_type;
           CHECK_CONST_UINT_OPERAND("Storage Class", 6);
           CHECK_CONST_UINT_OPERAND("Flags", 7);
           break;
         }
         case CommonDebugInfoDebugTypeQualifier: {
-          auto validate_base_type = ValidateOperandDebugType(
-              _, "Base Type", inst, 5, ext_inst_name, false);
+          auto validate_base_type =
+              ValidateOperandDebugType(_, "Base Type", inst, 5, false);
           if (validate_base_type != SPV_SUCCESS) return validate_base_type;
           CHECK_CONST_UINT_OPERAND("Type Qualifier", 6);
           break;
         }
         case CommonDebugInfoDebugTypeVector: {
-          auto validate_base_type =
-              ValidateOperandBaseType(_, inst, 5, ext_inst_name);
+          auto validate_base_type = ValidateOperandBaseType(_, inst, 5);
           if (validate_base_type != SPV_SUCCESS) return validate_base_type;
 
           CHECK_CONST_UINT_OPERAND("Component Count", 6);
@@ -3348,7 +3355,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             uint64_t const_val;
             if (!_.EvalConstantValUint64(component_count, &const_val)) {
               return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << ext_inst_name()
+                     << GetExtInstName(_, inst)
                      << ": Component Count must be 32-bit integer OpConstant";
             }
             component_count = const_val & 0xffffffff;
@@ -3356,14 +3363,15 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
 
           if (!component_count || component_count > 4) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": Component Count must be positive "
+                   << GetExtInstName(_, inst)
+                   << ": Component Count must be positive "
                    << "integer less than or equal to 4";
           }
           break;
         }
         case CommonDebugInfoDebugTypeArray: {
-          auto validate_base_type = ValidateOperandDebugType(
-              _, "Base Type", inst, 5, ext_inst_name, false);
+          auto validate_base_type =
+              ValidateOperandDebugType(_, "Base Type", inst, 5, false);
           if (validate_base_type != SPV_SUCCESS) return validate_base_type;
           for (uint32_t i = 6; i < num_words; ++i) {
             bool invalid = false;
@@ -3410,7 +3418,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             }
             if (invalid) {
               return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << ext_inst_name() << ": Component Count must be "
+                     << GetExtInstName(_, inst) << ": Component Count must be "
                      << "OpConstant with a 32- or 64-bits integer scalar type "
                         "or "
                      << "DebugGlobalVariable or DebugLocalVariable with a 32- "
@@ -3422,14 +3430,13 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         }
         case CommonDebugInfoDebugTypedef: {
           CHECK_OPERAND("Name", spv::Op::OpString, 5);
-          auto validate_base_type =
-              ValidateOperandBaseType(_, inst, 6, ext_inst_name);
+          auto validate_base_type = ValidateOperandBaseType(_, inst, 6);
           if (validate_base_type != SPV_SUCCESS) return validate_base_type;
           CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 7);
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
           auto validate_parent =
-              ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
+              ValidateOperandLexicalScope(_, "Parent", inst, 10);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
           break;
         }
@@ -3439,13 +3446,13 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           // TODO: We need a spec discussion that we have to allow return and
           // parameter types of a DebugTypeFunction to have template parameter.
           if (return_type->opcode() != spv::Op::OpTypeVoid) {
-            auto validate_return = ValidateOperandDebugType(
-                _, "Return Type", inst, 6, ext_inst_name, true);
+            auto validate_return =
+                ValidateOperandDebugType(_, "Return Type", inst, 6, true);
             if (validate_return != SPV_SUCCESS) return validate_return;
           }
           for (uint32_t word_index = 7; word_index < num_words; ++word_index) {
             auto validate_param = ValidateOperandDebugType(
-                _, "Parameter Types", inst, word_index, ext_inst_name, true);
+                _, "Parameter Types", inst, word_index, true);
             if (validate_param != SPV_SUCCESS) return validate_param;
           }
           break;
@@ -3458,8 +3465,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                     return dbg_inst == CommonDebugInfoDebugInfoNone;
                   },
                   inst, 6)) {
-            auto validate_underlying_type = ValidateOperandDebugType(
-                _, "Underlying Types", inst, 6, ext_inst_name, false);
+            auto validate_underlying_type =
+                ValidateOperandDebugType(_, "Underlying Types", inst, 6, false);
             if (validate_underlying_type != SPV_SUCCESS)
               return validate_underlying_type;
           }
@@ -3467,13 +3474,13 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
           auto validate_parent =
-              ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
+              ValidateOperandLexicalScope(_, "Parent", inst, 10);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
           CHECK_OPERAND("Size", spv::Op::OpConstant, 11);
           auto* size = _.FindDef(inst->word(11));
           if (!_.IsIntScalarType(size->type_id()) || !size->word(3)) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": expected operand Size is a "
+                   << GetExtInstName(_, inst) << ": expected operand Size is a "
                    << "positive integer";
           }
           CHECK_CONST_UINT_OPERAND("Flags", 12);
@@ -3490,7 +3497,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
           auto validate_parent =
-              ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
+              ValidateOperandLexicalScope(_, "Parent", inst, 10);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
           CHECK_OPERAND("Linkage Name", spv::Op::OpString, 11);
           if (!DoesDebugInfoOperandMatchExpectation(
@@ -3512,7 +3519,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                     },
                     inst, word_index)) {
               return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << ext_inst_name() << ": "
+                     << GetExtInstName(_, inst) << ": "
                      << "expected operand Members "
                      << "must be DebugTypeMember, DebugFunction, or "
                         "DebugTypeInheritance";
@@ -3525,7 +3532,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           // TODO: We need a spec discussion that we have to allow member types
           // to have template parameter.
           auto validate_type =
-              ValidateOperandDebugType(_, "Type", inst, 6, ext_inst_name, true);
+              ValidateOperandDebugType(_, "Type", inst, 6, true);
           if (validate_type != SPV_SUCCESS) return validate_type;
           CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 7);
           CHECK_CONST_UINT_OPERAND("Line", 8);
@@ -3556,7 +3563,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           if (composite_type != OpenCLDebugInfo100Class &&
               composite_type != OpenCLDebugInfo100Structure) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected operand Child must be class or struct debug "
                       "type";
           }
@@ -3567,7 +3574,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           if (composite_type != OpenCLDebugInfo100Class &&
               composite_type != OpenCLDebugInfo100Structure) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected operand Parent must be class or struct debug "
                       "type";
           }
@@ -3583,7 +3590,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
           auto validate_parent =
-              ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
+              ValidateOperandLexicalScope(_, "Parent", inst, 10);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
           CHECK_OPERAND("Linkage Name", spv::Op::OpString, 11);
           CHECK_CONST_UINT_OPERAND("Flags", 12);
@@ -3618,7 +3625,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
           auto validate_parent =
-              ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
+              ValidateOperandLexicalScope(_, "Parent", inst, 10);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
           CHECK_OPERAND("Linkage Name", spv::Op::OpString, 11);
           CHECK_CONST_UINT_OPERAND("Flags", 12);
@@ -3629,14 +3636,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           CHECK_CONST_UINT_OPERAND("Line", 6);
           CHECK_CONST_UINT_OPERAND("Column", 7);
           auto validate_parent =
-              ValidateOperandLexicalScope(_, "Parent", inst, 8, ext_inst_name);
+              ValidateOperandLexicalScope(_, "Parent", inst, 8);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
           if (num_words == 10) CHECK_OPERAND("Name", spv::Op::OpString, 9);
           break;
         }
         case CommonDebugInfoDebugScope: {
           auto validate_scope =
-              ValidateOperandLexicalScope(_, "Scope", inst, 5, ext_inst_name);
+              ValidateOperandLexicalScope(_, "Scope", inst, 5);
           if (validate_scope != SPV_SUCCESS) return validate_scope;
           if (num_words == 7) {
             CHECK_DEBUG_OPERAND("Inlined At", CommonDebugInfoDebugInlinedAt, 6);
@@ -3648,13 +3655,13 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           // TODO: We need a spec discussion that we have to allow local
           // variable types to have template parameter.
           auto validate_type =
-              ValidateOperandDebugType(_, "Type", inst, 6, ext_inst_name, true);
+              ValidateOperandDebugType(_, "Type", inst, 6, true);
           if (validate_type != SPV_SUCCESS) return validate_type;
           CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 7);
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
           auto validate_parent =
-              ValidateOperandLexicalScope(_, "Parent", inst, 10, ext_inst_name);
+              ValidateOperandLexicalScope(_, "Parent", inst, 10);
           if (validate_parent != SPV_SUCCESS) return validate_parent;
           CHECK_CONST_UINT_OPERAND("Flags", 11);
           if (num_words == 13) {
@@ -3669,7 +3676,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
           if (operand->opcode() != spv::Op::OpVariable &&
               operand->opcode() != spv::Op::OpFunctionParameter) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected operand Variable must be a result id of "
                       "OpVariable or OpFunctionParameter";
           }
@@ -3693,7 +3700,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                   },
                   inst, 5)) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                   << ext_inst_name() << ": "
+                   << GetExtInstName(_, inst) << ": "
                    << "expected operand Target must be DebugTypeComposite "
                    << "or DebugFunction";
           }
@@ -3708,7 +3715,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
                     },
                     inst, word_index)) {
               return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << ext_inst_name() << ": "
+                     << GetExtInstName(_, inst) << ": "
                      << "expected operand Parameters must be "
                      << "DebugTypeTemplateParameter or "
                      << "DebugTypeTemplateTemplateParameter";
@@ -3718,8 +3725,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         }
         case CommonDebugInfoDebugTypeTemplateParameter: {
           CHECK_OPERAND("Name", spv::Op::OpString, 5);
-          auto validate_actual_type = ValidateOperandDebugType(
-              _, "Actual Type", inst, 6, ext_inst_name, false);
+          auto validate_actual_type =
+              ValidateOperandDebugType(_, "Actual Type", inst, 6, false);
           if (validate_actual_type != SPV_SUCCESS) return validate_actual_type;
           if (!DoesDebugInfoOperandMatchExpectation(
                   _,
@@ -3736,14 +3743,14 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         }
         case CommonDebugInfoDebugGlobalVariable: {
           CHECK_OPERAND("Name", spv::Op::OpString, 5);
-          auto validate_type = ValidateOperandDebugType(_, "Type", inst, 6,
-                                                        ext_inst_name, false);
+          auto validate_type =
+              ValidateOperandDebugType(_, "Type", inst, 6, false);
           if (validate_type != SPV_SUCCESS) return validate_type;
           CHECK_DEBUG_OPERAND("Source", CommonDebugInfoDebugSource, 7);
           CHECK_CONST_UINT_OPERAND("Line", 8);
           CHECK_CONST_UINT_OPERAND("Column", 9);
           auto validate_scope =
-              ValidateOperandLexicalScope(_, "Scope", inst, 10, ext_inst_name);
+              ValidateOperandLexicalScope(_, "Scope", inst, 10);
           if (validate_scope != SPV_SUCCESS) return validate_scope;
           CHECK_OPERAND("Linkage Name", spv::Op::OpString, 11);
           if (!DoesDebugInfoOperandMatchExpectation(
@@ -3756,7 +3763,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             if (operand->opcode() != spv::Op::OpVariable &&
                 operand->opcode() != spv::Op::OpConstant) {
               return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << ext_inst_name() << ": "
+                     << GetExtInstName(_, inst) << ": "
                      << "expected operand Variable must be a result id of "
                         "OpVariable or OpConstant or DebugInfoNone";
             }
@@ -3770,7 +3777,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
         case CommonDebugInfoDebugInlinedAt: {
           CHECK_CONST_UINT_OPERAND("Line", 5);
           auto validate_scope =
-              ValidateOperandLexicalScope(_, "Scope", inst, 6, ext_inst_name);
+              ValidateOperandLexicalScope(_, "Scope", inst, 6);
           if (validate_scope != SPV_SUCCESS) return validate_scope;
           if (num_words == 8) {
             CHECK_DEBUG_OPERAND("Inlined", CommonDebugInfoDebugInlinedAt, 7);
@@ -3790,7 +3797,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
             if (!IsConstWithIntScalarType(_, inst, word_index) &&
                 !IsDebugVariableWithIntScalarType(_, inst, word_index)) {
               return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                     << ext_inst_name() << ": expected operand Indexes is "
+                     << GetExtInstName(_, inst)
+                     << ": expected operand Indexes is "
                      << "OpConstant, DebugGlobalVariable, or "
                      << "type is OpConstant with an integer scalar type";
             }
