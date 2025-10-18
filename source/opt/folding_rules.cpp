@@ -679,6 +679,15 @@ uint32_t PerformIntegerOperation(analysis::ConstantManager* const_mgr,
     case spv::Op::OpISub:
       FOLD_OP(-);
       break;
+    case spv::Op::OpBitwiseXor:
+      FOLD_OP(^);
+      break;
+    case spv::Op::OpBitwiseOr:
+      FOLD_OP(|);
+      break;
+    case spv::Op::OpBitwiseAnd:
+      FOLD_OP(&);
+      break;
     default:
       assert(false && "Unexpected operation");
       break;
@@ -2700,6 +2709,56 @@ FoldingRule RedundantBinaryLhs0To0(spv::Op op) {
   return RedundantBinaryOpWithZeroOperand(0, 0);
 }
 
+FoldingRule ReassociateCommutiveOp() {
+  return [](IRContext* context, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    const analysis::Type* type =
+        context->get_type_mgr()->GetType(inst->type_id());
+    uint32_t width = ElementWidth(type);
+    if (width != 32) return false;
+
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    const analysis::Constant* const_input1 = ConstInput(constants);
+    if (!const_input1) return false;
+    Instruction* other_inst = NonConstInput(context, constants[0], inst);
+
+    if (other_inst->opcode() == inst->opcode()) {
+      std::vector<const analysis::Constant*> other_constants =
+          const_mgr->GetOperandConstants(other_inst);
+      const analysis::Constant* const_input2 = ConstInput(other_constants);
+      if (!const_input2) return false;
+
+      Instruction* non_const_input =
+          NonConstInput(context, other_constants[0], other_inst);
+      uint32_t merged_id = PerformOperation(const_mgr, inst->opcode(),
+                                            const_input1, const_input2);
+
+      if (merged_id == 0) return false;
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {non_const_input->result_id()}},
+           {SPV_OPERAND_TYPE_ID, {merged_id}}});
+      return true;
+    }
+
+    return false;
+  };
+}
+
+// A | (b | C) = b | (A | C)
+// A ^ (b ^ C) = b ^ (A ^ C)
+// A & (b & C) = b & (A & C)
+// Where A and C are constants
+static const constexpr spv::Op ReassociateCommutiveBitwiseOps[] = {
+    spv::Op::OpBitwiseOr, spv::Op::OpBitwiseXor, spv::Op::OpBitwiseAnd};
+FoldingRule ReassociateCommutiveBitwise(spv::Op op) {
+  assert(std::find(std::begin(ReassociateCommutiveBitwiseOps),
+                   std::end(ReassociateCommutiveBitwiseOps),
+                   op) != std::end(ReassociateCommutiveBitwiseOps) &&
+         "Wrong opcode.");
+  (void)op;
+  return ReassociateCommutiveOp();
+}
+
 // Returns true if all elements in |c| are 1.
 bool IsAllInt1(const analysis::Constant* c) {
   if (auto composite = c->AsCompositeConstant()) {
@@ -3103,6 +3162,8 @@ void FoldingRules::AddFoldingRules() {
     rules_[op].push_back(RedundantBinaryLhs0(op));
   for (auto op : RedundantBinaryLhs0To0Ops)
     rules_[op].push_back(RedundantBinaryLhs0To0(op));
+  for (auto op : ReassociateCommutiveBitwiseOps)
+    rules_[op].push_back(ReassociateCommutiveBitwise(op));
   rules_[spv::Op::OpSDiv].push_back(RedundantSUDiv());
   rules_[spv::Op::OpUDiv].push_back(RedundantSUDiv());
   rules_[spv::Op::OpSMod].push_back(RedundantSUMod());
