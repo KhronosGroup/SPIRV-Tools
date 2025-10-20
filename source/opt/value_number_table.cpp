@@ -165,6 +165,8 @@ uint32_t ValueNumberTable::AssignValueNumber(Instruction* inst) {
             {{SPV_OPERAND_TYPE_ID, {value_ins.GetSingleWordInOperand(1)}},
              {SPV_OPERAND_TYPE_ID, {value_ins.GetSingleWordInOperand(0)}}});
       }
+    default:
+      break;
   }
 
   // Otherwise, we check if this value has been computed before.
