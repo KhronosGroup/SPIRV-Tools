@@ -149,6 +149,7 @@ uint32_t ValueNumberTable::AssignValueNumber(Instruction* inst) {
     case spv::Op::OpFAdd:
     case spv::Op::OpIMul:
     case spv::Op::OpFMul:
+    case spv::Op::OpDot:
     case spv::Op::OpLogicalEqual:
     case spv::Op::OpLogicalNotEqual:
     case spv::Op::OpLogicalOr:
