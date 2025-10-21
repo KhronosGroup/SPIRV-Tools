@@ -1123,6 +1123,7 @@ void AggressiveDCEPass::InitExtensions() {
       "SPV_NV_shader_invocation_reorder",
       "SPV_NV_cluster_acceleration_structure",
       "SPV_NV_linear_swept_spheres",
+      "SPV_KHR_maximal_reconvergence",
   });
 }
 
