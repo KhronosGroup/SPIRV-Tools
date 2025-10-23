@@ -2823,7 +2823,7 @@ FoldingRule RedundantSUMod() {
 // The input types must be
 // Integers or Vectors of Integers.
 template <typename Callback>
-void ZipIntegerConstants(analysis::ConstantManager* const_mgr,
+void ForEachIntegerConstantPair(analysis::ConstantManager* const_mgr,
   const analysis::Constant* input1,
   const analysis::Constant* input2,
   Callback&& callback) {
@@ -2904,7 +2904,7 @@ FoldingRule RedundantAndOrXor() {
         bool can_convert_to_const = other_inst->opcode() == spv::Op::OpBitwiseOr;
         bool can_remove_inner = true;
 
-        ZipIntegerConstants(
+        ForEachIntegerConstantPair(
           const_mgr, const_input1, const_input2,
           [&can_remove_inner, &can_convert_to_const](auto lhs, auto rhs) {
             // Only convert to const if 'and' is a subset of 'or'
@@ -2932,6 +2932,25 @@ FoldingRule RedundantAndOrXor() {
       }
       return false;
     };
+}
+
+uint32_t RepeatBitsForward(uint32_t v) {
+  v |= (v << 16);
+  v |= (v << 8);
+  v |= (v << 4);
+  v |= (v << 2);
+  v |= (v << 1);
+  return v;
+}
+
+uint64_t RepeatBitsForward(uint64_t v) {
+  v |= (v << 32);
+  v |= (v << 16);
+  v |= (v << 8);
+  v |= (v << 4);
+  v |= (v << 2);
+  v |= (v << 1);
+  return v;
 }
 
 // Folds redundant add and sub ops that are part of an and.
@@ -2965,11 +2984,14 @@ FoldingRule RedundantAndAddSub() {
         }
 
         bool can_remove_inner = true;
-        ZipIntegerConstants(const_mgr, const_input1, const_input2,
-          [&can_remove_inner](auto lhs, auto rhs) {
-            can_remove_inner = can_remove_inner &&
-              ((lhs & rhs) == 0) &&
-              (rhs > lhs);
+        ForEachIntegerConstantPair(
+          const_mgr, const_input1, const_input2,
+          [&can_remove_inner](auto and_op, auto add_op) {
+            if (can_remove_inner) {
+              // Only valid if no bits from the +/- could affect
+              // bits from the & operation.
+              can_remove_inner = (and_op & RepeatBitsForward(add_op)) == 0;
+            }
           });
 
         if (can_remove_inner) {
@@ -3019,7 +3041,7 @@ FoldingRule RedundantAndShift() {
         if (!const_input2) return false;
 
         bool can_convert_to_zero = true;
-        ZipIntegerConstants(
+        ForEachIntegerConstantPair(
           const_mgr, const_input1, const_input2,
           [&can_convert_to_zero, other_op](auto lhs, auto rhs) {
             if (other_op == spv::Op::OpShiftRightLogical) {
@@ -3030,7 +3052,6 @@ FoldingRule RedundantAndShift() {
           });
 
         if (can_convert_to_zero) {
-          auto type = context->get_type_mgr()->GetType(inst->type_id());
           auto zero_id = context->get_constant_mgr()->GetNullConstId(type);
           inst->SetOpcode(spv::Op::OpCopyObject);
           inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {zero_id}}});
