@@ -2009,15 +2009,16 @@ spv_result_t ValidateArrayLength(ValidationState_t& state,
   std::string instr_name =
       "Op" + std::string(spvOpcodeString(static_cast<spv::Op>(inst->opcode())));
 
-  // Result type must be a 32-bit unsigned int.
+  // Result type must be a 32- or 64-bit unsigned int.
   auto result_type = state.FindDef(inst->type_id());
   if (result_type->opcode() != spv::Op::OpTypeInt ||
-      result_type->GetOperandAs<uint32_t>(1) != 32 ||
+      !(result_type->GetOperandAs<uint32_t>(1) == 32 ||
+        result_type->GetOperandAs<uint32_t>(1) == 64) ||
       result_type->GetOperandAs<uint32_t>(2) != 0) {
     return state.diag(SPV_ERROR_INVALID_ID, inst)
            << "The Result Type of " << instr_name << " <id> "
            << state.getIdName(inst->id())
-           << " must be OpTypeInt with width 32 and signedness 0.";
+           << " must be OpTypeInt with width 32 or 64 and signedness 0.";
   }
 
   const bool untyped = inst->opcode() == spv::Op::OpUntypedArrayLengthKHR;
@@ -2561,6 +2562,23 @@ spv_result_t ValidateInt32Operand(ValidationState_t& _, const Instruction* inst,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateInt32Or64Operand(ValidationState_t& _,
+                                      const Instruction* inst,
+                                      uint32_t operand_index,
+                                      const char* opcode_name,
+                                      const char* operand_name) {
+  const auto type_id =
+      _.FindDef(inst->GetOperandAs<uint32_t>(operand_index))->type_id();
+  if (!_.IsIntScalarType(type_id) ||
+      !(_.GetBitWidth(type_id) == 32 || _.GetBitWidth(type_id) == 64)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << opcode_name << " " << operand_name << " type <id> "
+           << _.getIdName(type_id) << " is not a 32 or 64 bit integer.";
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateCooperativeVectorPointer(ValidationState_t& _,
                                               const Instruction* inst,
                                               const char* opname,
@@ -2651,8 +2669,16 @@ spv_result_t ValidateCooperativeVectorLoadStoreNV(ValidationState_t& _,
   const auto pointer_index =
       (inst->opcode() == spv::Op::OpCooperativeVectorLoadNV) ? 2u : 0u;
 
+  const auto offset_index =
+      (inst->opcode() == spv::Op::OpCooperativeVectorLoadNV) ? 3u : 1u;
+
   if (auto error =
           ValidateCooperativeVectorPointer(_, inst, opname, pointer_index)) {
+    return error;
+  }
+
+  if (auto error =
+          ValidateInt32Or64Operand(_, inst, offset_index, opname, "Offset")) {
     return error;
   }
 
@@ -2705,7 +2731,8 @@ spv_result_t ValidateCooperativeVectorOuterProductNV(ValidationState_t& _,
            << _.getIdName(b_component_type_id) << " do not match.";
   }
 
-  if (auto error = ValidateInt32Operand(_, inst, 1, opcode_name, "Offset")) {
+  if (auto error =
+          ValidateInt32Or64Operand(_, inst, 1, opcode_name, "Offset")) {
     return error;
   }
 
@@ -2748,7 +2775,8 @@ spv_result_t ValidateCooperativeVectorReduceSumNV(ValidationState_t& _,
            << " is not a cooperative vector type.";
   }
 
-  if (auto error = ValidateInt32Operand(_, inst, 1, opcode_name, "Offset")) {
+  if (auto error =
+          ValidateInt32Or64Operand(_, inst, 1, opcode_name, "Offset")) {
     return error;
   }
 
@@ -2781,8 +2809,10 @@ spv_result_t ValidateCooperativeVectorMatrixMulNV(ValidationState_t& _,
   const auto input_index = 2u;
   const auto input_interpretation_index = 3u;
   const auto matrix_index = 4u;
+  const auto matrix_offset_index = 5u;
   const auto matrix_interpretation_index = 6u;
   const auto bias_index = 7u;
+  const auto bias_offset_index = 8u;
   const auto bias_interpretation_index = 9u;
   const auto m_index = 7u + bias_offset;
   const auto k_index = 8u + bias_offset;
@@ -2928,6 +2958,17 @@ spv_result_t ValidateCooperativeVectorMatrixMulNV(ValidationState_t& _,
   if (auto error = ValidateInt32Operand(_, inst, memory_layout_index,
                                         opcode_name, "MemoryLayout")) {
     return error;
+  }
+
+  if (auto error = ValidateInt32Or64Operand(_, inst, matrix_offset_index,
+                                            opcode_name, "MatrixOffset")) {
+    return error;
+  }
+  if (has_bias) {
+    if (auto error = ValidateInt32Or64Operand(_, inst, bias_offset_index,
+                                              opcode_name, "BiasOffset")) {
+      return error;
+    }
   }
 
   return SPV_SUCCESS;
