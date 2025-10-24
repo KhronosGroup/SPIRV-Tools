@@ -194,7 +194,7 @@ std::vector<uint32_t> GetWordsFromNumericScalarOrVectorConstant(
       uint32_t compacted_word = 0;
       for (int32_t i = static_cast<int32_t>(words.size()) - 1; i >= 0; --i) {
         compacted_word <<= 8;
-        compacted_word |= words[i];
+        compacted_word |= (words[i] & 0xFF);
       }
       return {compacted_word};
     } else if (ElementWidth(c->type()) == 16) {
@@ -205,7 +205,7 @@ std::vector<uint32_t> GetWordsFromNumericScalarOrVectorConstant(
       for (uint32_t i = 0; i < words.size(); i += 2) {
         uint32_t word1 = words[i];
         uint32_t word2 = (i + 1 < words.size()) ? words[i + 1] : 0;
-        uint32_t compacted_word = (word2 << 16) | word1;
+        uint32_t compacted_word = (word2 << 16) | (word1 & 0xFFFF);
         compacted_words.push_back(compacted_word);
       }
       return compacted_words;
