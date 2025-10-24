@@ -305,7 +305,7 @@ Pass::Status AggressiveDCEPass::ProcessDebugInformation(
               NonSemanticShaderDebugInfo100DebugValue) {
         uint32_t id = inst->GetSingleWordInOperand(kDebugValueValue);
         auto def = get_def_use_mgr()->GetDef(id);
-        if (!live_insts_.Set(def->unique_id())) {
+        if (!IsLive(def)) {
           AddToWorklist(inst);
           uint32_t undef_id = Type2Undef(def->type_id());
           if (undef_id == 0) {

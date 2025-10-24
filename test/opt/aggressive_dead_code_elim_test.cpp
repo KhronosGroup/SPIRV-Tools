@@ -8686,8 +8686,6 @@ OpDecorate %b Binding 0
 %int_1 = OpConstant %int 1
 %int_2 = OpConstant %int 2
 ; CHECK: [[undef:%\w+]] = OpUndef %int
-; ADCE will create another undef and use the new one.
-; CHECK: [[undef:%\w+]] = OpUndef %int
 %198 = OpUndef %int
 %38 = OpExtInst %void %1 DebugInfoNone
 %16 = OpExtInst %void %1 DebugExpression
@@ -8717,8 +8715,8 @@ OpDecorate %b Binding 0
 %242 = OpExtInst %void %1 DebugValue %31 %198 %16 %int_1
 %239 = OpExtInst %void %1 DebugValue %31 %198 %16 %int_2
 ; CHECK: {{%\w+}} = OpExtInst %void {{%\w+}} DebugValue [[var]] [[undef]] {{%\w+}} %int_0
-; CHECK-NOT: {{%\w+}} = OpExtInst %void {{%\w+}} DebugValue
-; CHECK-NOT: {{%\w+}} = OpExtInst %void {{%\w+}} DebugValue
+; CHECK: {{%\w+}} = OpExtInst %void {{%\w+}} DebugValue [[var]] [[undef]] {{%\w+}} %int_1
+; CHECK: {{%\w+}} = OpExtInst %void {{%\w+}} DebugValue [[var]] [[undef]] {{%\w+}} %int_2
 %160 = OpExtInst %void %1 DebugLine %22 %uint_6 %uint_6 %uint_3 %uint_10
 %147 = OpLoad %type_buffer_image %b
 OpImageWrite %147 %uint_0 %int_0 None
