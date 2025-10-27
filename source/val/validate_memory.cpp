@@ -2010,6 +2010,8 @@ spv_result_t ValidateArrayLength(ValidationState_t& state,
       "Op" + std::string(spvOpcodeString(static_cast<spv::Op>(inst->opcode())));
 
   // Result type must be a 32- or 64-bit unsigned int.
+  // 64-bit requires CapabilityShader64BitIndexingEXT or a pipeline/shader
+  // flag and is validated in VVL.
   auto result_type = state.FindDef(inst->type_id());
   if (result_type->opcode() != spv::Op::OpTypeInt ||
       !(result_type->GetOperandAs<uint32_t>(1) == 32 ||
