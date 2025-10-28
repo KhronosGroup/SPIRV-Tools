@@ -13,6 +13,7 @@
 // limitations under the License.
 
 // Validates correctness of extension SPIR-V instructions.
+#include <algorithm>
 #include <cstdlib>
 #include <sstream>
 #include <string>
@@ -3753,12 +3754,18 @@ spv_result_t ValidateExtInstDebugInfo100(ValidationState_t& _,
                 },
                 inst, 12)) {
           auto* operand = _.FindDef(inst->word(12));
-          if (operand->opcode() != spv::Op::OpVariable &&
-              operand->opcode() != spv::Op::OpConstant) {
+          std::initializer_list<spv::Op> allowed_opcodes = {
+              spv::Op::OpVariable,          spv::Op::OpConstantTrue,
+              spv::Op::OpConstantFalse,     spv::Op::OpConstant,
+              spv::Op::OpConstantComposite, spv::Op::OpConstantSampler,
+              spv::Op::OpConstantNull};
+          if (std::all_of(
+                  allowed_opcodes.begin(), allowed_opcodes.end(),
+                  [operand](spv::Op op) { return operand->opcode() != op; })) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << GetExtInstName(_, inst) << ": "
                    << "expected operand Variable must be a result id of "
-                      "OpVariable or OpConstant or DebugInfoNone";
+                      "OpVariable or OpConstant variant or DebugInfoNone";
           }
         }
         if (num_words == 15) {
