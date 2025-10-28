@@ -2819,9 +2819,9 @@ FoldingRule RedundantSUMod() {
   };
 }
 
-// Helper for zipping together integer constants.
-// The input types must be
-// Integers or Vectors of Integers.
+// Utility function for applying |callback| to |input1| and |input2|.
+// If they are vectors it applies element wise.
+// The constants |input1| and |input2| must be integers or a vector of integers.
 template <typename Callback>
 void ForEachIntegerConstantPair(analysis::ConstantManager* const_mgr,
   const analysis::Constant* input1,
@@ -2934,25 +2934,6 @@ FoldingRule RedundantAndOrXor() {
     };
 }
 
-uint32_t RepeatBitsForward(uint32_t v) {
-  v |= (v << 16);
-  v |= (v << 8);
-  v |= (v << 4);
-  v |= (v << 2);
-  v |= (v << 1);
-  return v;
-}
-
-uint64_t RepeatBitsForward(uint64_t v) {
-  v |= (v << 32);
-  v |= (v << 16);
-  v |= (v << 8);
-  v |= (v << 4);
-  v |= (v << 2);
-  v |= (v << 1);
-  return v;
-}
-
 // Folds redundant add and sub ops that are part of an and.
 // Cases handled:
 // 1 & (b + 2) = b & 1
@@ -2971,39 +2952,39 @@ FoldingRule RedundantAndAddSub() {
       if (!const_input1) return false;
       Instruction* other_inst = NonConstInput(context, constants[0], inst);
 
-      if (other_inst->opcode() == spv::Op::OpIAdd ||
-        other_inst->opcode() == spv::Op::OpISub) {
-        std::vector<const analysis::Constant*> other_constants =
-          const_mgr->GetOperandConstants(other_inst);
-        const analysis::Constant* const_input2 = ConstInput(other_constants);
-        if (!const_input2) return false;
+      if (other_inst->opcode() != spv::Op::OpIAdd &&
+        other_inst->opcode() != spv::Op::OpISub) {
+        return false;
+      }
+      std::vector<const analysis::Constant*> other_constants =
+        const_mgr->GetOperandConstants(other_inst);
+      const analysis::Constant* const_input2 = ConstInput(other_constants);
+      if (!const_input2) return false;
 
-        // Only valid for subtraction if const is on the right
-        if ((other_inst->opcode() == spv::Op::OpISub) && other_constants[0]) {
-          return false;
-        }
+      // Only valid for subtraction if const is on the right
+      if ((other_inst->opcode() == spv::Op::OpISub) && other_constants[0]) {
+        return false;
+      }
 
-        bool can_remove_inner = true;
-        ForEachIntegerConstantPair(
-          const_mgr, const_input1, const_input2,
-          [&can_remove_inner](auto and_op, auto add_op) {
-            if (can_remove_inner) {
-              // Only valid if no bits from the +/- could affect
-              // bits from the & operation.
-              can_remove_inner = (and_op & RepeatBitsForward(add_op)) == 0;
-            }
-          });
+      bool can_remove_inner = true;
+      ForEachIntegerConstantPair(
+        const_mgr, const_input1, const_input2,
+        [&can_remove_inner](auto and_op, auto add_op) {
+          if (can_remove_inner) {
+            // Only valid if no bits from the +/- could affect
+            // bits from the & operation.
+            can_remove_inner = utils::LSB(add_op) > and_op;
+          }
+        });
 
-        if (can_remove_inner) {
-          Instruction* non_const_input =
-            NonConstInput(context, other_constants[0], other_inst);
-          Instruction* const_inst =
-            const_mgr->GetDefiningInstruction(const_input1);
-          inst->SetInOperands(
-            {{SPV_OPERAND_TYPE_ID, {non_const_input->result_id()}},
-            {SPV_OPERAND_TYPE_ID, {const_inst->result_id()}}});
-          return true;
-        }
+      if (can_remove_inner) {
+        Instruction* non_const_input =
+          NonConstInput(context, other_constants[0], other_inst);
+        Instruction* const_inst = const_mgr->GetDefiningInstruction(const_input1);
+        inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {non_const_input->result_id()}},
+          {SPV_OPERAND_TYPE_ID, {const_inst->result_id()}}});
+        return true;
       }
       return false;
     };
