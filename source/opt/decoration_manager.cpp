@@ -179,13 +179,13 @@ bool DecorationManager::RemoveDecorationsFrom(
 
 std::vector<Instruction*> DecorationManager::GetDecorationsFor(
     uint32_t id, bool include_linkage) {
-  return InternalGetDecorationsFor<Instruction*>(id, include_linkage);
+  return InternalGetDecorationsFor<Instruction>(id, include_linkage);
 }
 
 std::vector<const Instruction*> DecorationManager::GetDecorationsFor(
     uint32_t id, bool include_linkage) const {
   return const_cast<DecorationManager*>(this)
-      ->InternalGetDecorationsFor<const Instruction*>(id, include_linkage);
+      ->InternalGetDecorationsFor<const Instruction>(id, include_linkage);
 }
 
 bool DecorationManager::HaveTheSameDecorations(uint32_t id1,
@@ -423,64 +423,80 @@ void DecorationManager::AddMemberDecoration(uint32_t inst_id, uint32_t member,
 }
 
 template <typename T>
-std::vector<T> DecorationManager::InternalGetDecorationsFor(
-    uint32_t id, bool include_linkage) {
-  std::vector<T> decorations;
-
+bool DecorationManager::InternalWhileEachDecoration(uint32_t id,
+                                                    std::function<bool(T*)> f) {
   const auto ids_iter = id_to_decoration_insts_.find(id);
   // |id| has no decorations
-  if (ids_iter == id_to_decoration_insts_.end()) return decorations;
+  if (ids_iter == id_to_decoration_insts_.end()) return true;
 
   const TargetData& target_data = ids_iter->second;
 
-  const auto process_direct_decorations =
-      [include_linkage,
-       &decorations](const std::vector<Instruction*>& direct_decorations) {
-        for (Instruction* inst : direct_decorations) {
-          const bool is_linkage =
-              inst->opcode() == spv::Op::OpDecorate &&
-              spv::Decoration(inst->GetSingleWordInOperand(1u)) ==
-                  spv::Decoration::LinkageAttributes;
-          if (include_linkage || !is_linkage) decorations.push_back(inst);
-        }
-      };
-
   // Process |id|'s decorations.
-  process_direct_decorations(ids_iter->second.direct_decorations);
+  for (T* inst : target_data.direct_decorations) {
+    if (!f(inst)) return false;
+  }
 
   // Process the decorations of all groups applied to |id|.
   for (const Instruction* inst : target_data.indirect_decorations) {
     const uint32_t group_id = inst->GetSingleWordInOperand(0u);
     const auto group_iter = id_to_decoration_insts_.find(group_id);
     assert(group_iter != id_to_decoration_insts_.end() && "Unknown group ID");
-    process_direct_decorations(group_iter->second.direct_decorations);
+    for (T* group_inst : group_iter->second.direct_decorations) {
+      if (!f(group_inst)) return false;
+    }
   }
 
+  return true;
+}
+
+template <typename T>
+bool DecorationManager::InternalWhileEachDecoration(
+    uint32_t id, std::function<bool(T*)> f) const {
+  return const_cast<DecorationManager*>(this)->InternalWhileEachDecoration<T>(
+      id, f);
+}
+
+template <typename T>
+std::vector<T*> DecorationManager::InternalGetDecorationsFor(
+    uint32_t id, bool include_linkage) {
+  std::vector<T*> decorations;
+
+  const auto process_direct_decorations = [include_linkage,
+                                           &decorations](T* inst) {
+    const bool is_linkage = inst->opcode() == spv::Op::OpDecorate &&
+                            spv::Decoration(inst->GetSingleWordInOperand(1u)) ==
+                                spv::Decoration::LinkageAttributes;
+    if (include_linkage || !is_linkage) decorations.push_back(inst);
+    return true;
+  };
+
+  InternalWhileEachDecoration<T>(id, process_direct_decorations);
   return decorations;
 }
 
 bool DecorationManager::WhileEachDecoration(
     uint32_t id, uint32_t decoration,
     std::function<bool(const Instruction&)> f) const {
-  for (const Instruction* inst : GetDecorationsFor(id, true)) {
-    switch (inst->opcode()) {
-      case spv::Op::OpMemberDecorate:
-        if (inst->GetSingleWordInOperand(2) == decoration) {
-          if (!f(*inst)) return false;
+  return InternalWhileEachDecoration<const Instruction>(
+      id, [decoration, f](const Instruction* inst) {
+        switch (inst->opcode()) {
+          case spv::Op::OpMemberDecorate:
+            if (inst->GetSingleWordInOperand(2) == decoration) {
+              if (!f(*inst)) return false;
+            }
+            break;
+          case spv::Op::OpDecorate:
+          case spv::Op::OpDecorateId:
+          case spv::Op::OpDecorateStringGOOGLE:
+            if (inst->GetSingleWordInOperand(1) == decoration) {
+              if (!f(*inst)) return false;
+            }
+            break;
+          default:
+            assert(false && "Unexpected decoration instruction");
         }
-        break;
-      case spv::Op::OpDecorate:
-      case spv::Op::OpDecorateId:
-      case spv::Op::OpDecorateStringGOOGLE:
-        if (inst->GetSingleWordInOperand(1) == decoration) {
-          if (!f(*inst)) return false;
-        }
-        break;
-      default:
-        assert(false && "Unexpected decoration instruction");
-    }
-  }
-  return true;
+        return true;
+      });
 }
 
 void DecorationManager::ForEachDecoration(
@@ -499,8 +515,9 @@ bool DecorationManager::HasDecoration(uint32_t id,
 
 bool DecorationManager::HasDecoration(uint32_t id, uint32_t decoration) const {
   bool has_decoration = false;
-  ForEachDecoration(id, decoration, [&has_decoration](const Instruction&) {
+  WhileEachDecoration(id, decoration, [&has_decoration](const Instruction&) {
     has_decoration = true;
+    return false;
   });
   return has_decoration;
 }

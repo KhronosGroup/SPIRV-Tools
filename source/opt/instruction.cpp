@@ -486,7 +486,7 @@ bool Instruction::IsReadOnlyPointerShaders() const {
       break;
   }
 
-  context()->get_decoration_mgr()->HasDecoration(
+  return context()->get_decoration_mgr()->HasDecoration(
       result_id(), uint32_t(spv::Decoration::NonWritable));
 }
 

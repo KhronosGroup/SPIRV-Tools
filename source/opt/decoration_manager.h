@@ -157,7 +157,14 @@ class DecorationManager {
   void AnalyzeDecorations();
 
   template <typename T>
-  std::vector<T> InternalGetDecorationsFor(uint32_t id, bool include_linkage);
+  std::vector<T*> InternalGetDecorationsFor(uint32_t id, bool include_linkage);
+
+  template <typename T>
+  bool InternalWhileEachDecoration(uint32_t id, std::function<bool(T*)> f);
+
+  template <typename T>
+  bool InternalWhileEachDecoration(uint32_t id,
+                                   std::function<bool(T*)> f) const;
 
   // Tracks decoration information of an ID.
   struct TargetData {
