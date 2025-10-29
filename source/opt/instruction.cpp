@@ -403,20 +403,10 @@ bool Instruction::IsVulkanStorageBuffer() const {
 
   spv::StorageClass storage_class =
       spv::StorageClass(GetSingleWordInOperand(kPointerTypeStorageClassIndex));
-  if (storage_class == spv::StorageClass::Uniform) {
-    bool is_buffer_block = false;
-    context()->get_decoration_mgr()->ForEachDecoration(
-        base_type->result_id(), uint32_t(spv::Decoration::BufferBlock),
-        [&is_buffer_block](const Instruction&) { is_buffer_block = true; });
-    return is_buffer_block;
-  } else if (storage_class == spv::StorageClass::StorageBuffer) {
-    bool is_block = false;
-    context()->get_decoration_mgr()->ForEachDecoration(
-        base_type->result_id(), uint32_t(spv::Decoration::Block),
-        [&is_block](const Instruction&) { is_block = true; });
-    return is_block;
-  }
-  return false;
+  return context()->get_decoration_mgr()->HasDecoration(
+      base_type->result_id(), storage_class == spv::StorageClass::Uniform
+                                  ? uint32_t(spv::Decoration::BufferBlock)
+                                  : uint32_t(spv::Decoration::Block));
 }
 
 bool Instruction::IsVulkanStorageBufferVariable() const {
@@ -460,11 +450,8 @@ bool Instruction::IsVulkanUniformBuffer() const {
     return false;
   }
 
-  bool is_block = false;
-  context()->get_decoration_mgr()->ForEachDecoration(
-      base_type->result_id(), uint32_t(spv::Decoration::Block),
-      [&is_block](const Instruction&) { is_block = true; });
-  return is_block;
+  return context()->get_decoration_mgr()->HasDecoration(
+      base_type->result_id(), uint32_t(spv::Decoration::Block));
 }
 
 bool Instruction::IsReadOnlyPointerShaders() const {
@@ -499,11 +486,8 @@ bool Instruction::IsReadOnlyPointerShaders() const {
       break;
   }
 
-  bool is_nonwritable = false;
-  context()->get_decoration_mgr()->ForEachDecoration(
-      result_id(), uint32_t(spv::Decoration::NonWritable),
-      [&is_nonwritable](const Instruction&) { is_nonwritable = true; });
-  return is_nonwritable;
+  context()->get_decoration_mgr()->HasDecoration(
+      result_id(), uint32_t(spv::Decoration::NonWritable));
 }
 
 bool Instruction::IsReadOnlyPointerKernel() const {
