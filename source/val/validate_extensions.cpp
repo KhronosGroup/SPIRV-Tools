@@ -3755,17 +3755,24 @@ spv_result_t ValidateExtInstDebugInfo100(ValidationState_t& _,
                 inst, 12)) {
           auto* operand = _.FindDef(inst->word(12));
           std::initializer_list<spv::Op> allowed_opcodes = {
-              spv::Op::OpVariable,          spv::Op::OpConstantTrue,
-              spv::Op::OpConstantFalse,     spv::Op::OpConstant,
-              spv::Op::OpConstantComposite, spv::Op::OpConstantSampler,
-              spv::Op::OpConstantNull};
-          if (std::all_of(
-                  allowed_opcodes.begin(), allowed_opcodes.end(),
-                  [operand](spv::Op op) { return operand->opcode() != op; })) {
+              spv::Op::OpVariable,
+              spv::Op::OpConstantTrue,
+              spv::Op::OpConstantFalse,
+              spv::Op::OpConstant,
+              spv::Op::OpConstantComposite,
+              spv::Op::OpConstantSampler,
+              spv::Op::OpConstantNull,
+              spv::Op::OpSpecConstantTrue,
+              spv::Op::OpSpecConstantFalse,
+              spv::Op::OpSpecConstant,
+              spv::Op::OpSpecConstantComposite,
+              spv::Op::OpSpecConstantOp};
+          if (std::find(allowed_opcodes.begin(), allowed_opcodes.end(),
+                        operand->opcode()) == allowed_opcodes.end()) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << GetExtInstName(_, inst) << ": "
                    << "expected operand Variable must be a result id of "
-                      "OpVariable or OpConstant variant or DebugInfoNone";
+                      "OpVariable, OpConstant variant, OpSpecConstant variant or DebugInfoNone";
           }
         }
         if (num_words == 15) {
