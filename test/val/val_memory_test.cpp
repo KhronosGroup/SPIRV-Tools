@@ -3638,13 +3638,17 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
 
-TEST_F(ValidateMemory, VulkanRTAInsideUniformStructWithoutBufferBlockBad) {
+TEST_F(ValidateMemory, VulkanRTAInsideUniformStructWithoutBufferBlock) {
   std::string spirv = R"(
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %func "func"
 OpExecutionMode %func OriginUpperLeft
+OpDecorate %array_t ArrayStride 16
 OpDecorate %struct_t Block
+OpMemberDecorate %struct_t 0 Offset 0
+OpDecorate %2 Binding 0
+OpDecorate %2 DescriptorSet 0
 %uint_t = OpTypeInt 32 0
 %array_t = OpTypeRuntimeArray %uint_t
 %struct_t = OpTypeStruct %array_t
@@ -3659,14 +3663,7 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
-  EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-OpTypeRuntimeArray-04680"));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("For Vulkan, an OpTypeStruct variable containing an "
-                        "OpTypeRuntimeArray must be decorated with BufferBlock "
-                        "if it has storage class Uniform.\n  %6 = OpVariable "
-                        "%_ptr_Uniform__struct_2 Uniform\n"));
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
 
 TEST_F(ValidateMemory, VulkanRTAInsideRTABad) {
