@@ -791,13 +791,9 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
                       "PhysicalStorageBuffer.";
           }
         } else if (storage_class == spv::StorageClass::Uniform) {
-          if (!_.HasDecoration(value_id, spv::Decoration::BufferBlock)) {
-            return _.diag(SPV_ERROR_INVALID_ID, inst)
-                   << _.VkErrorID(4680)
-                   << "For Vulkan, an OpTypeStruct variable containing an "
-                   << "OpTypeRuntimeArray must be decorated with BufferBlock "
-                   << "if it has storage class Uniform.";
-          }
+          // This use to be invalid, but Vulkan added
+          // VK_EXT_shader_uniform_buffer_unsized_array and now this is
+          // validated at runtime
         } else {
           return _.diag(SPV_ERROR_INVALID_ID, inst)
                  << _.VkErrorID(4680)
