@@ -2538,8 +2538,6 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeRuntimeArray-04680);
     case 4682:
       return VUID_WRAP(VUID-StandaloneSpirv-OpControlBarrier-04682);
-    case 6426:
-      return VUID_WRAP(VUID-StandaloneSpirv-LocalSize-06426); // formally 04683
     case 4685:
       return VUID_WRAP(VUID-StandaloneSpirv-OpGroupNonUniformBallotBitCount-04685);
     case 4686:
@@ -2752,7 +2750,7 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
     case 10684:
       return VUID_WRAP(VUID-StandaloneSpirv-None-10684);
     case 10685:
-      return VUID_WRAP(VUID-StandaloneSpirv-None-10685);
+      return VUID_WRAP(VUID-StandaloneSpirv-None-10685); // formally 04683/06426
     case 10824:
       // This use to be a standalone, but maintenance9 will set allow_vulkan_32_bit_bitwise now
       return VUID_WRAP(VUID-RuntimeSpirv-None-10824);
