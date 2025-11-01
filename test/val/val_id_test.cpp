@@ -1755,7 +1755,7 @@ TEST_P(ValidateIdWithMessage, OpConstantNullGood) {
  %4 = OpConstantNull %3
  %5 = OpTypeFloat 32
  %6 = OpConstantNull %5
- %7 = OpTypePointer UniformConstant %3
+ %7 = OpTypePointer Workgroup %3
  %8 = OpConstantNull %7
  %9 = OpTypeEvent
 %10 = OpConstantNull %9
@@ -2391,12 +2391,18 @@ TEST_P(ValidateIdWithMessage, OpVariableInitializerConstantGood) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 TEST_P(ValidateIdWithMessage, OpVariableInitializerGlobalVariableGood) {
-  std::string spirv = kGLSL450MemoryModel + R"(
-%1 = OpTypeInt 32 0
-%2 = OpTypePointer Uniform %1
-%3 = OpVariable %2 Uniform
-%4 = OpTypePointer Private %2 ; pointer to pointer
-%5 = OpVariable %4 Private %3
+  std::string spirv = kOpenCLMemoryModel64 + R"(
+%2 = OpTypeInt 32 0
+%3 = OpTypePointer CrossWorkgroup %2
+%4 = OpVariable %3 CrossWorkgroup
+%5 = OpTypePointer Function %3 ; pointer to pointer
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%func = OpFunction %void None %void_fn
+%entry = OpLabel
+%6 = OpVariable %5 Function %4
+OpReturn
+OpFunctionEnd
 )";
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
@@ -2447,10 +2453,10 @@ OpFunctionEnd
 }
 
 TEST_P(ValidateIdWithMessage, OpVariableInitializerIsModuleVarGood) {
-  std::string spirv = kGLSL450MemoryModel + R"(
+  std::string spirv = kOpenCLMemoryModel64 + R"(
 %int = OpTypeInt 32 0
-%ptrint = OpTypePointer Uniform %int
-%mvar = OpVariable %ptrint Uniform
+%ptrint = OpTypePointer CrossWorkgroup %int
+%mvar = OpVariable %ptrint CrossWorkgroup
 %ptrptrint = OpTypePointer Function %ptrint
 %void = OpTypeVoid
 %fnty = OpTypeFunction %void
@@ -2666,7 +2672,8 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(make_message(
-          "In Logical addressing, variables may not allocate a pointer type")));
+          "In Logical addressing, variables can only allocate a workgroup "
+          "pointer if the VariablePointers capability is declared")));
 }
 
 TEST_P(ValidateIdWithMessage,
@@ -2744,8 +2751,8 @@ OpExtension "SPV_KHR_variable_pointers"
 OpMemoryModel Logical GLSL450
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
-%_ptr_workgroup_int = OpTypePointer Workgroup %int
-%_ptr_function_ptr = OpTypePointer Function %_ptr_workgroup_int
+%_ptr_storagebuffer_int = OpTypePointer StorageBuffer %int
+%_ptr_function_ptr = OpTypePointer Function %_ptr_storagebuffer_int
 %voidfn = OpTypeFunction %void
 %func = OpFunction %void None %voidfn
 %entry = OpLabel
@@ -4032,6 +4039,7 @@ TEST_P(AccessChainInstructionTest, AccessChainGood) {
               OpReturn
               OpFunctionEnd
           )";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -4051,6 +4059,7 @@ OpFunctionEnd
   const std::string expected_err = "The Result Type of " + instr +
                                    " <id> '36[%36]' must be "
                                    "OpTypePointer. Found OpTypeFloat.";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
@@ -4067,6 +4076,7 @@ TEST_P(AccessChainInstructionTest, AccessChainBaseTypeVoidBad) {
 OpReturn
 OpFunctionEnd
   )";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("Operand '1[%void]' cannot be a "
@@ -4084,6 +4094,7 @@ TEST_P(AccessChainInstructionTest, AccessChainBaseTypeNonPtrVariableBad) {
 OpReturn
 OpFunctionEnd
   )";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -4105,6 +4116,7 @@ OpFunctionEnd
   const std::string expected_err =
       "The result pointer storage class and base pointer storage class in " +
       instr + " do not match.";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
@@ -4126,6 +4138,7 @@ OpFunctionEnd
   const std::string expected_err = instr +
                                    " reached non-composite type while "
                                    "indexes still remain to be traversed.";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
@@ -4143,6 +4156,7 @@ TEST_P(AccessChainInstructionTest, AccessChainNoIndexesGood) {
 OpReturn
 OpFunctionEnd
   )";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -4159,6 +4173,7 @@ TEST_P(AccessChainInstructionTest, AccessChainNoIndexesBad) {
 OpReturn
 OpFunctionEnd
   )";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
@@ -4208,6 +4223,7 @@ TEST_P(AccessChainInstructionTest, AccessChainTooManyIndexesGood) {
     OpReturn
     OpFunctionEnd
   )";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -4228,6 +4244,7 @@ TEST_P(AccessChainInstructionTest, AccessChainTooManyIndexesBad) {
   )";
   const std::string expected_err = "The number of indexes in " + instr +
                                    " may not exceed 255. Found 256 indexes.";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
@@ -4275,6 +4292,7 @@ TEST_P(AccessChainInstructionTest, CustomizedAccessChainTooManyIndexesGood) {
     OpFunctionEnd
   )";
 
+  getValidatorOptions()->relax_logical_pointer = true;
   spvValidatorOptionsSetUniversalLimit(
       options_, spv_validator_limit_max_access_chain_indexes, 10u);
   CompileSuccessfully(spirv.str());
@@ -4297,6 +4315,7 @@ TEST_P(AccessChainInstructionTest, CustomizedAccessChainTooManyIndexesBad) {
   )";
   const std::string expected_err = "The number of indexes in " + instr +
                                    " may not exceed 10. Found 11 indexes.";
+  getValidatorOptions()->relax_logical_pointer = true;
   spvValidatorOptionsSetUniversalLimit(
       options_, spv_validator_limit_max_access_chain_indexes, 10u);
   CompileSuccessfully(spirv.str());
@@ -4318,6 +4337,7 @@ OpFunctionEnd
   )";
   const std::string expected_err =
       "Indexes passed to " + instr + " must be of type integer.";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
@@ -4335,6 +4355,7 @@ TEST_P(AccessChainInstructionTest, AccessChainStructIndexNotConstantBad) {
 OpReturn
 OpFunctionEnd
   )";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("The <id> passed to " + instr));
@@ -4358,6 +4379,7 @@ OpFunctionEnd
                                    " result type (OpTypeFloat) does not match "
                                    "the type that results from indexing into "
                                    "the base <id> (OpTypeVector).";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
@@ -4377,6 +4399,7 @@ OpFunctionEnd
   const std::string expected_err = instr +
                                    " reached non-composite type while "
                                    "indexes still remain to be traversed.";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
@@ -4397,6 +4420,7 @@ OpFunctionEnd
                                    " cannot find index 3 into the structure "
                                    "<id> '25[%_struct_25]'. This structure "
                                    "has 3 members. Largest valid index is 2.";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
@@ -4431,6 +4455,7 @@ TEST_P(AccessChainInstructionTest, AccessChainIndexIntoAllTypesGood) {
 OpReturn
 OpFunctionEnd
   )";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv.str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -4449,6 +4474,7 @@ TEST_P(AccessChainInstructionTest, AccessChainIndexIntoRuntimeArrayGood) {
 OpReturn
 OpFunctionEnd
   )";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
@@ -4467,6 +4493,7 @@ OpFunctionEnd
   const std::string expected_err =
       instr +
       " reached non-composite type while indexes still remain to be traversed.";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
@@ -4487,6 +4514,7 @@ OpFunctionEnd
   const std::string expected_err = instr +
                                    " reached non-composite type while "
                                    "indexes still remain to be traversed.";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));
@@ -4508,6 +4536,7 @@ OpFunctionEnd
                                    " result type (OpTypeMatrix) does not match "
                                    "the type that results from indexing into "
                                    "the base <id> (OpTypeFloat).";
+  getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(expected_err));

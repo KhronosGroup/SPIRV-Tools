@@ -68,6 +68,7 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validate_mode_setting.cpp \
 		source/val/validate_layout.cpp \
 		source/val/validate_literals.cpp \
+		source/val/validate_logical_pointers.cpp \
 		source/val/validate_logicals.cpp \
 		source/val/validate_non_uniform.cpp \
 		source/val/validate_primitives.cpp \

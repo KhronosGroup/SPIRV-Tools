@@ -586,20 +586,38 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
   const auto pointee = untyped_pointer
                            ? value_id == 0 ? nullptr : _.FindDef(value_id)
                            : _.FindDef(result_type->word(3));
-  if (_.addressing_model() == spv::AddressingModel::Logical &&
+  if ((_.addressing_model() == spv::AddressingModel::Logical ||
+       _.addressing_model() == spv::AddressingModel::PhysicalStorageBuffer64) &&
       !_.options()->relax_logical_pointer) {
-    // VariablePointersStorageBuffer is implied by VariablePointers.
-    if (pointee && pointee->opcode() == spv::Op::OpTypePointer) {
-      if (!_.HasCapability(spv::Capability::VariablePointersStorageBuffer)) {
-        return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << "In Logical addressing, variables may not allocate a pointer "
-               << "type";
-      } else if (storage_class != spv::StorageClass::Function &&
-                 storage_class != spv::StorageClass::Private) {
-        return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << "In Logical addressing with variable pointers, variables "
-               << "that allocate pointers must be in Function or Private "
-               << "storage classes";
+    if (pointee && (pointee->opcode() == spv::Op::OpTypePointer ||
+                    pointee->opcode() == spv::Op::OpTypeUntypedPointerKHR)) {
+      const auto sc = pointee->GetOperandAs<spv::StorageClass>(1u);
+      if (sc != spv::StorageClass::PhysicalStorageBuffer) {
+        if (sc != spv::StorageClass::StorageBuffer &&
+            sc != spv::StorageClass::Workgroup) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "In Logical addressing, variables can only allocate a "
+                    "pointer to the StorageBuffer or Workgroup storage classes";
+        } else if (!_.HasCapability(
+                       spv::Capability::VariablePointersStorageBuffer) &&
+                   sc == spv::StorageClass::StorageBuffer) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "In Logical addressing, variables can only allocate a "
+                    "storage buffer pointer if the "
+                    "VariablePointersStorageBuffer capability is declared";
+        } else if (!_.HasCapability(spv::Capability::VariablePointers) &&
+                   sc == spv::StorageClass::Workgroup) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "In Logical addressing, variables can only allocate a "
+                    "workgroup pointer if the VariablePointers capability is "
+                    "declared";
+        } else if (storage_class != spv::StorageClass::Function &&
+                   storage_class != spv::StorageClass::Private) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "In Logical addressing with variable pointers, variables "
+                 << "that allocate pointers must be in Function or Private "
+                 << "storage classes";
+        }
       }
     }
   }
@@ -1717,6 +1735,26 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
              << "Indexes passed to " << instr_name
              << " must be of type integer.";
     }
+
+    // Logical pointer restrictions: any constant index with a signed integer
+    // type must not have its sign bit set.
+    if (!_.options()->relax_logical_pointer &&
+        (_.addressing_model() == spv::AddressingModel::Logical ||
+         _.addressing_model() ==
+             spv::AddressingModel::PhysicalStorageBuffer64) &&
+        result_type_storage_class !=
+            static_cast<uint32_t>(spv::StorageClass::PhysicalStorageBuffer)) {
+      if (index_type->GetOperandAs<uint32_t>(2) == 1) {
+        int64_t val = 0;
+        if (_.EvalConstantValInt64(cur_word, &val)) {
+          if (val < 0) {
+            return _.diag(SPV_ERROR_INVALID_ID, inst)
+                   << "Index at word " << i << " may not have a negative value";
+          }
+        }
+      }
+    }
+
     switch (type_pointee->opcode()) {
       case spv::Op::OpTypeMatrix:
       case spv::Op::OpTypeVector:
@@ -1918,15 +1956,6 @@ spv_result_t ValidateRawAccessChain(ValidationState_t& _,
 
 spv_result_t ValidatePtrAccessChain(ValidationState_t& _,
                                     const Instruction* inst) {
-  if (_.addressing_model() == spv::AddressingModel::Logical &&
-      inst->opcode() == spv::Op::OpPtrAccessChain) {
-    if (!_.features().variable_pointers) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Generating variable pointers requires capability "
-             << "VariablePointers or VariablePointersStorageBuffer";
-    }
-  }
-
   // Need to call first, will make sure Base is a valid ID
   if (auto error = ValidateAccessChain(_, inst)) return error;
 
@@ -2978,10 +3007,17 @@ spv_result_t ValidateCooperativeVectorMatrixMulNV(ValidationState_t& _,
 
 spv_result_t ValidatePtrComparison(ValidationState_t& _,
                                    const Instruction* inst) {
-  if (_.addressing_model() == spv::AddressingModel::Logical &&
+  const auto op1 = _.FindDef(inst->GetOperandAs<uint32_t>(2u));
+  const auto op2 = _.FindDef(inst->GetOperandAs<uint32_t>(3u));
+  const auto op1_type = _.FindDef(op1->type_id());
+  const auto op2_type = _.FindDef(op2->type_id());
+  spv::StorageClass sc = op1_type->GetOperandAs<spv::StorageClass>(1u);
+  if ((_.addressing_model() == spv::AddressingModel::Logical ||
+       _.addressing_model() == spv::AddressingModel::PhysicalStorageBuffer64) &&
+      sc != spv::StorageClass::PhysicalStorageBuffer &&
       !_.features().variable_pointers) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Instruction cannot for logical addressing model be used without "
+           << "Instruction on logical pointers cannot be used without "
               "a variable pointers capability";
   }
 
@@ -2998,10 +3034,6 @@ spv_result_t ValidatePtrComparison(ValidationState_t& _,
     }
   }
 
-  const auto op1 = _.FindDef(inst->GetOperandAs<uint32_t>(2u));
-  const auto op2 = _.FindDef(inst->GetOperandAs<uint32_t>(3u));
-  const auto op1_type = _.FindDef(op1->type_id());
-  const auto op2_type = _.FindDef(op2->type_id());
   if (!op1_type || (op1_type->opcode() != spv::Op::OpTypePointer &&
                     op1_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
@@ -3036,7 +3068,6 @@ spv_result_t ValidatePtrComparison(ValidationState_t& _,
     }
   }
 
-  spv::StorageClass sc = op1_type->GetOperandAs<spv::StorageClass>(1u);
   if (_.addressing_model() == spv::AddressingModel::Logical) {
     if (sc != spv::StorageClass::Workgroup &&
         sc != spv::StorageClass::StorageBuffer) {

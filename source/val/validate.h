@@ -259,6 +259,9 @@ spv_result_t ValidateSmallTypeUses(ValidationState_t& _,
 spv_result_t ValidateQCOMImageProcessingTextureUsages(ValidationState_t& _,
                                                       const Instruction* inst);
 
+/// Validates logical pointer restrictions.
+spv_result_t ValidateLogicalPointers(ValidationState_t& _);
+
 /// @brief Validate the ID's within a SPIR-V binary
 ///
 /// @param[in] pInstructions array of instructions
