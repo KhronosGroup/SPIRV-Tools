@@ -26,6 +26,7 @@ namespace lint {
 namespace lints {
 
 bool CheckDivergentDerivatives(opt::IRContext* context);
+bool CheckUninitializedVariables(opt::IRContext* context);
 
 }  // namespace lints
 }  // namespace lint

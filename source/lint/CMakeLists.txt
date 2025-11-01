@@ -20,6 +20,7 @@ set(SPIRV_TOOLS_LINT_SOURCES
   lint_divergent_derivatives.cpp
 
   variable_state.cpp
+  lint_uninitialized_variables.cpp
 )
 
 if(MSVC AND (NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")))
