@@ -31,7 +31,7 @@
 
 (add-to-list 'jka-compr-compression-info-list
              '["\\.spv\\'"
-               "Assembling SPIRV" "spirv-as" ("-o" "-")
+               "Assembling SPIRV" "spirv-as" ("-o" "-" "-")
                "Disassembling SPIRV" "spirv-dis" ("--no-color" "--raw-id")
                t nil "\003\002\043\007"])
 
