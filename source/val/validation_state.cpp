@@ -2254,6 +2254,12 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-LocalInvocationId-LocalInvocationId-04282);
     case 4283:
       return VUID_WRAP(VUID-LocalInvocationId-LocalInvocationId-04283);
+    case 4284:
+      return VUID_WRAP(VUID-LocalInvocationIndex-LocalInvocationIndex-04284);
+    case 4285:
+      return VUID_WRAP(VUID-LocalInvocationIndex-LocalInvocationIndex-04285);
+    case 4286:
+      return VUID_WRAP(VUID-LocalInvocationIndex-LocalInvocationIndex-04286);
     case 4293:
       return VUID_WRAP(VUID-NumSubgroups-NumSubgroups-04293);
     case 4294:
