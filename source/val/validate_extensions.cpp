@@ -3772,7 +3772,8 @@ spv_result_t ValidateExtInstDebugInfo100(ValidationState_t& _,
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << GetExtInstName(_, inst) << ": "
                    << "expected operand Variable must be a result id of "
-                      "OpVariable, OpConstant variant, OpSpecConstant variant or DebugInfoNone";
+                      "OpVariable, OpConstant variant, OpSpecConstant variant "
+                      "or DebugInfoNone";
           }
         }
         if (num_words == 15) {
