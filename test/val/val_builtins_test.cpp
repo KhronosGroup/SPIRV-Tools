@@ -858,6 +858,45 @@ INSTANTIATE_TEST_SUITE_P(
                               "has components with bit width 64"))));
 
 INSTANTIATE_TEST_SUITE_P(
+    LocalInvocationIndexSuccess,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("LocalInvocationIndex"), Values("GLCompute"),
+            Values("Input"), Values("%u32"), Values(nullptr),
+            Values(TestResult())));
+
+INSTANTIATE_TEST_SUITE_P(
+    LocalInvocationIndexNotGLCompute,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("LocalInvocationIndex"),
+            Values("Vertex", "Fragment", "Geometry", "TessellationControl",
+                   "TessellationEvaluation"),
+            Values("Input"), Values("%u32"),
+            Values("VUID-LocalInvocationIndex-LocalInvocationIndex-04284"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "to be used only with GLCompute, MeshNV, "
+                              "TaskNV, MeshEXT or TaskEXT execution model"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    LocalInvocationIndexNotInput,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("LocalInvocationIndex"), Values("GLCompute"),
+            Values("Output"), Values("%u32"),
+            Values("VUID-LocalInvocationIndex-LocalInvocationIndex-04285"),
+            Values(TestResult(
+                SPV_ERROR_INVALID_DATA,
+                "to be only used for variables with Input storage class",
+                "uses storage class Output"))));
+
+INSTANTIATE_TEST_SUITE_P(
+    LocalInvocationIndexNot32Int,
+    ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
+    Combine(Values("LocalInvocationIndex"), Values("GLCompute"),
+            Values("Input"), Values("%u32vec3", "%f32"),
+            Values("VUID-LocalInvocationIndex-LocalInvocationIndex-04286"),
+            Values(TestResult(SPV_ERROR_INVALID_DATA,
+                              "needs to be a 32-bit int scalar"))));
+
+INSTANTIATE_TEST_SUITE_P(
     InvocationIdSuccess,
     ValidateVulkanCombineBuiltInExecutionModelDataTypeResult,
     Combine(Values("InvocationId"), Values("Geometry", "TessellationControl"),
