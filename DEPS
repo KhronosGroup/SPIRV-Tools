@@ -3,7 +3,7 @@ use_relative_paths = True
 vars = {
   'github': 'https://github.com',
 
-  'abseil_revision': '7374f9b0f4275df2e939f1aacbd323ad0182b897',
+  'abseil_revision': 'ff4395895672c03fb544be00e3d66ebada1fcc47',
 
   'effcee_revision': '514b52ec61609744d7e587d93a7ef9b60407ab45',
 
@@ -12,9 +12,9 @@ vars = {
   # Use protobufs before they gained the dependency on abseil
   'protobuf_revision': 'v21.12',
 
-  're2_revision': '61c4644171ee6b480540bf9e569cba06d9090b4b',
+  're2_revision': 'e7aec5985072c1dbe735add802653ef4b36c231a',
 
-  'spirv_headers_revision': 'f2e4bd213104fe323a01e935df56557328d37ac8',
+  'spirv_headers_revision': '0ff65315141cf745c1ac286084943409edbe6504',
 
   'mimalloc_revision': '09a27098aa6e9286518bd9c74e6ffa7199c3f04e',
 }
