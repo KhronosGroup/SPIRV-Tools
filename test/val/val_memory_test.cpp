@@ -3666,6 +3666,40 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
 }
 
+TEST_F(ValidateMemory, VulkanArrayLengthUniformRuntimeArray) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %func "func"
+OpExecutionMode %func OriginUpperLeft
+OpDecorate %array_t ArrayStride 16
+OpDecorate %struct_t Block
+OpMemberDecorate %struct_t 0 Offset 0
+OpDecorate %2 Binding 0
+OpDecorate %2 DescriptorSet 0
+%uint_t = OpTypeInt 32 0
+%array_t = OpTypeRuntimeArray %uint_t
+%struct_t = OpTypeStruct %array_t
+%struct_ptr = OpTypePointer Uniform %struct_t
+%2 = OpVariable %struct_ptr Uniform
+%void = OpTypeVoid
+%func_t = OpTypeFunction %void
+%func = OpFunction %void None %func_t
+%1 = OpLabel
+%length = OpArrayLength %uint_t %2 0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpArrayLength-11805"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpArrayLength must not be used on the "
+                        "OpTypeRuntimeArray inside a Uniform block"));
+}
+
 TEST_F(ValidateMemory, VulkanRTAInsideRTABad) {
   std::string spirv = R"(
 OpCapability Shader

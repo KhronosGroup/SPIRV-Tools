@@ -2094,6 +2094,18 @@ spv_result_t ValidateArrayLength(ValidationState_t& state,
            << state.getIdName(inst->id())
            << " must be the last member of the struct.";
   }
+
+  if (spvIsVulkanEnv(state.context()->target_env)) {
+    const auto storage_class = pointer_ty->GetOperandAs<spv::StorageClass>(1);
+    if (storage_class == spv::StorageClass::Uniform &&
+        state.HasDecoration(structure_type->id(), spv::Decoration::Block)) {
+      return state.diag(SPV_ERROR_INVALID_ID, inst)
+             << state.VkErrorID(11805) << "Op" << spvOpcodeString(opcode)
+             << " must not be used on the OpTypeRuntimeArray inside a Uniform "
+                "block";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
