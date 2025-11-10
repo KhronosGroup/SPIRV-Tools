@@ -247,6 +247,42 @@ spv_result_t ValidateLogicalPointerOperands(ValidationState_t& _,
     case spv::Op::OpHitObjectIsEmptyNV:
     case spv::Op::OpHitObjectIsHitNV:
     case spv::Op::OpHitObjectIsMissNV:
+    // SPV_EXT_shader_invocation_reorder
+    case spv::Op::OpHitObjectRecordFromQueryEXT:
+    case spv::Op::OpHitObjectRecordMissEXT:
+    case spv::Op::OpHitObjectRecordMissMotionEXT:
+    case spv::Op::OpHitObjectGetIntersectionTriangleVertexPositionsEXT:
+    case spv::Op::OpHitObjectGetRayFlagsEXT:
+    case spv::Op::OpHitObjectSetShaderBindingTableRecordIndexEXT:
+    case spv::Op::OpHitObjectReorderExecuteShaderEXT:
+    case spv::Op::OpHitObjectTraceReorderExecuteEXT:
+    case spv::Op::OpHitObjectTraceMotionReorderExecuteEXT:
+    case spv::Op::OpReorderThreadWithHintEXT:
+    case spv::Op::OpReorderThreadWithHitObjectEXT:
+    case spv::Op::OpHitObjectTraceRayEXT:
+    case spv::Op::OpHitObjectTraceRayMotionEXT:
+    case spv::Op::OpHitObjectRecordEmptyEXT:
+    case spv::Op::OpHitObjectExecuteShaderEXT:
+    case spv::Op::OpHitObjectGetCurrentTimeEXT:
+    case spv::Op::OpHitObjectGetAttributesEXT:
+    case spv::Op::OpHitObjectGetHitKindEXT:
+    case spv::Op::OpHitObjectGetPrimitiveIndexEXT:
+    case spv::Op::OpHitObjectGetGeometryIndexEXT:
+    case spv::Op::OpHitObjectGetInstanceIdEXT:
+    case spv::Op::OpHitObjectGetInstanceCustomIndexEXT:
+    case spv::Op::OpHitObjectGetObjectRayOriginEXT:
+    case spv::Op::OpHitObjectGetObjectRayDirectionEXT:
+    case spv::Op::OpHitObjectGetWorldRayDirectionEXT:
+    case spv::Op::OpHitObjectGetWorldRayOriginEXT:
+    case spv::Op::OpHitObjectGetObjectToWorldEXT:
+    case spv::Op::OpHitObjectGetWorldToObjectEXT:
+    case spv::Op::OpHitObjectGetRayTMaxEXT:
+    case spv::Op::OpHitObjectGetRayTMinEXT:
+    case spv::Op::OpHitObjectGetShaderBindingTableRecordIndexEXT:
+    case spv::Op::OpHitObjectGetShaderRecordBufferHandleEXT:
+    case spv::Op::OpHitObjectIsEmptyEXT:
+    case spv::Op::OpHitObjectIsHitEXT:
+    case spv::Op::OpHitObjectIsMissEXT:
     // SPV_NV_raw_access_chains
     case spv::Op::OpRawAccessChainNV:
     // SPV_NV_cooperative_matrix2
