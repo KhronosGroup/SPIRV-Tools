@@ -18,6 +18,8 @@ set(SPIRV_TOOLS_LINT_SOURCES
   linter.cpp
   divergence_analysis.cpp
   lint_divergent_derivatives.cpp
+
+  variable_state.cpp
 )
 
 if(MSVC AND (NOT ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")))

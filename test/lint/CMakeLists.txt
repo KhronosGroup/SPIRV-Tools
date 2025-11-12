@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_spvtools_unittest(TARGET lint
-  SRCS divergence_analysis_test.cpp
+add_spvtools_unittest(TARGET lint SRCS 
+  divergence_analysis_test.cpp 
+  variable_state_test.cpp
   LIBS SPIRV-Tools-lint SPIRV-Tools-opt
 )
