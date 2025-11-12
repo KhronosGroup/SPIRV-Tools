@@ -25,6 +25,7 @@ bazel-spirv-tools
 bazel-SPIRV-Tools
 bazel-testlogs
 MODULE.bazel.lock
+/install
 
 # Vim
 [._]*.s[a-w][a-z]
