@@ -2336,22 +2336,95 @@ spv_result_t ValidateCooperativeMatrixLoadStoreKHR(ValidationState_t& _,
   }
 
   bool stride_required = false;
+  bool layout_requires_constant_stride = false;
   uint64_t layout;
   if (_.EvalConstantValUint64(layout_id, &layout)) {
+    const bool is_arm_layout =
+        (layout ==
+         (uint64_t)spv::CooperativeMatrixLayout::RowBlockedInterleavedARM) ||
+        (layout ==
+         (uint64_t)spv::CooperativeMatrixLayout::ColumnBlockedInterleavedARM);
+
+    if (is_arm_layout) {
+      if (!_.HasCapability(spv::Capability::CooperativeMatrixLayoutsARM)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "Using the RowBlockedInterleavedARM or "
+                  "ColumnBlockedInterleavedARM MemoryLayout requires the "
+                  "CooperativeMatrixLayoutsARM capability be declared";
+      }
+    }
+
     stride_required =
         (layout == (uint64_t)spv::CooperativeMatrixLayout::RowMajorKHR) ||
-        (layout == (uint64_t)spv::CooperativeMatrixLayout::ColumnMajorKHR);
+        (layout == (uint64_t)spv::CooperativeMatrixLayout::ColumnMajorKHR) ||
+        is_arm_layout;
+    layout_requires_constant_stride = is_arm_layout;
   }
 
   const auto stride_index =
       (inst->opcode() == spv::Op::OpCooperativeMatrixLoadKHR) ? 4u : 3u;
   if (inst->operands().size() > stride_index) {
     const auto stride_id = inst->GetOperandAs<uint32_t>(stride_index);
-    const auto stride = _.FindDef(stride_id);
-    if (!stride || !_.IsIntScalarType(stride->type_id())) {
+    const auto stride_inst = _.FindDef(stride_id);
+    if (!stride_inst || !_.IsIntScalarType(stride_inst->type_id())) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "Stride operand <id> " << _.getIdName(stride_id)
              << " must be a scalar integer type.";
+    }
+    // Check SPV_ARM_cooperative_matrix_layouts constraints
+    if (layout_requires_constant_stride &&
+        !spvOpcodeIsConstant(stride_inst->opcode())) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "MemoryLayout " << layout
+             << " requires Stride come from a constant instruction.";
+    }
+    if (layout_requires_constant_stride) {
+      uint64_t stride;
+      if (_.EvalConstantValUint64(stride_id, &stride)) {
+        if ((layout ==
+             (uint64_t)
+                 spv::CooperativeMatrixLayout::RowBlockedInterleavedARM) ||
+            (layout ==
+             (uint64_t)
+                 spv::CooperativeMatrixLayout::ColumnBlockedInterleavedARM)) {
+          if ((stride != 1) && (stride != 2) && (stride != 4)) {
+            return _.diag(SPV_ERROR_INVALID_ID, inst)
+                   << "MemoryLayout " << layout
+                   << " requires Stride be 1, 2, or 4.";
+          }
+        }
+        const uint32_t elty_id = matrix_type->GetOperandAs<uint32_t>(1);
+        const uint32_t rows_id = matrix_type->GetOperandAs<uint32_t>(3);
+        const uint32_t cols_id = matrix_type->GetOperandAs<uint32_t>(4);
+        uint64_t rows = 0, cols = 0;
+        _.EvalConstantValUint64(rows_id, &rows);
+        _.EvalConstantValUint64(cols_id, &cols);
+        uint32_t sizeof_component_in_bytes = _.GetBitWidth(elty_id) / 8;
+        uint64_t rows_required_multiple = 4;
+        uint64_t cols_required_multiple = 16 / sizeof_component_in_bytes;
+
+        if (layout ==
+            (uint64_t)spv::CooperativeMatrixLayout::RowBlockedInterleavedARM) {
+          cols_required_multiple *= stride;
+        }
+        if (layout ==
+            (uint64_t)
+                spv::CooperativeMatrixLayout::ColumnBlockedInterleavedARM) {
+          rows_required_multiple *= stride;
+        }
+        if ((rows != 0) && (rows % rows_required_multiple != 0)) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "MemoryLayout " << layout << " with a Stride of " << stride
+                 << " requires that the number of rows be a multiple of "
+                 << rows_required_multiple;
+        }
+        if ((cols != 0) && (cols % cols_required_multiple != 0)) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << "MemoryLayout " << layout << " with a Stride of " << stride
+                 << " requires that the number of columns be a multiple of "
+                 << cols_required_multiple;
+        }
+      }
     }
   } else if (stride_required) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
