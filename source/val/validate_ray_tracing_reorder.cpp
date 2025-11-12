@@ -38,18 +38,29 @@ uint32_t GetArrayLength(ValidationState_t& _, const Instruction* array_type) {
   return array_length;
 }
 
+spv_result_t ValidateRayQueryPointer(ValidationState_t& _,
+                                     const Instruction* inst,
+                                     uint32_t ray_query_index) {
+  const uint32_t ray_query_id = inst->GetOperandAs<uint32_t>(ray_query_index);
+  auto variable = _.FindDef(ray_query_id);
+  auto pointer = _.FindDef(variable->GetOperandAs<uint32_t>(0));
+  if (!pointer || pointer->opcode() != spv::Op::OpTypePointer) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Ray Query must be a pointer";
+  }
+  auto type = _.FindDef(pointer->GetOperandAs<uint32_t>(2));
+  if (!type || type->opcode() != spv::Op::OpTypeRayQueryKHR) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Ray Query must be a pointer to OpTypeRayQueryKHR";
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateHitObjectPointer(ValidationState_t& _,
                                       const Instruction* inst,
                                       uint32_t hit_object_index) {
   const uint32_t hit_object_id = inst->GetOperandAs<uint32_t>(hit_object_index);
   auto variable = _.FindDef(hit_object_id);
-  const auto var_opcode = variable->opcode();
-  if (!variable || (var_opcode != spv::Op::OpVariable &&
-                    var_opcode != spv::Op::OpFunctionParameter &&
-                    var_opcode != spv::Op::OpAccessChain)) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Hit Object must be a memory object declaration";
-  }
   auto pointer = _.FindDef(variable->GetOperandAs<uint32_t>(0));
   if (!pointer || pointer->opcode() != spv::Op::OpTypePointer) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -68,13 +79,6 @@ spv_result_t ValidateHitObjectPointerEXT(ValidationState_t& _,
                                          uint32_t hit_object_index) {
   const uint32_t hit_object_id = inst->GetOperandAs<uint32_t>(hit_object_index);
   auto variable = _.FindDef(hit_object_id);
-  const auto var_opcode = variable->opcode();
-  if (!variable || (var_opcode != spv::Op::OpVariable &&
-                    var_opcode != spv::Op::OpFunctionParameter &&
-                    var_opcode != spv::Op::OpAccessChain)) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Hit Object must be a memory object declaration";
-  }
   auto pointer = _.FindDef(variable->GetOperandAs<uint32_t>(0));
   if (!pointer || pointer->opcode() != spv::Op::OpTypePointer) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -966,14 +970,12 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpHitObjectRecordFromQueryEXT: {
       RegisterOpcodeForValidModel(_, inst);
       if (auto error = ValidateHitObjectPointerEXT(_, inst, 0)) return error;
+      if (auto error = ValidateRayQueryPointer(_, inst, 1)) return error;
 
-      // Validate Ray Query pointer (operand 1)
-      const uint32_t ray_query_id = inst->GetOperandAs<uint32_t>(1);
-      auto ray_query_var = _.FindDef(ray_query_id);
-      if (!ray_query_var || ray_query_var->opcode() != spv::Op::OpVariable) {
+      if (!_.HasCapability(spv::Capability::RayQueryKHR))
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "Ray Query must be a OpVariable";
-      }
+               << spvOpcodeString(opcode)
+               << ": requires RayQueryKHR capability";
 
       // Validate SBT Record Index (operand 2)
       const uint32_t sbt_record_index_id = _.GetOperandTypeId(inst, 2);
