@@ -481,6 +481,10 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // storage buffer.
   bool IsVulkanStorageBuffer() const;
 
+  // Returns true if the instruction defines a pointer type that points to a
+  // read-only buffer.
+  bool IsVulkanReadOnlyStorageBuffer() const;
+
   // Returns true if the instruction defines a variable in StorageBuffer or
   // Uniform storage class with a pointer type that points to a storage buffer.
   bool IsVulkanStorageBufferVariable() const;
