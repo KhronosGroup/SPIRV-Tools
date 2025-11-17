@@ -300,6 +300,7 @@ static_library("spvtools") {
     "source/util/parse_number.h",
     "source/util/small_vector.h",
     "source/util/span.h",
+    "source/util/status.h",
     "source/util/string_utils.cpp",
     "source/util/string_utils.h",
     "source/util/timer.cpp",
