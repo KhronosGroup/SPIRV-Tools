@@ -515,6 +515,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       storage_class != spv::StorageClass::IncomingCallableDataKHR &&
       storage_class != spv::StorageClass::TaskPayloadWorkgroupEXT &&
       storage_class != spv::StorageClass::HitObjectAttributeNV &&
+      storage_class != spv::StorageClass::HitObjectAttributeEXT &&
       storage_class != spv::StorageClass::NodePayloadAMDX) {
     bool storage_input_or_output = storage_class == spv::StorageClass::Input ||
                                    storage_class == spv::StorageClass::Output;
@@ -755,6 +756,11 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "OpVariable, <id> " << _.getIdName(inst->id())
              << ", initializer are not allowed for HitObjectAttributeNV";
+    }
+    if (storage_class == spv::StorageClass::HitObjectAttributeEXT) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpVariable, <id> " << _.getIdName(inst->id())
+             << ", initializer are not allowed for HitObjectAttributeEXT";
     }
   }
 

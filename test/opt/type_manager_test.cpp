@@ -177,6 +177,7 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
   types.emplace_back(new CooperativeMatrixKHR(f32, 8, 8, 8, 1002));
   types.emplace_back(new RayQueryKHR());
   types.emplace_back(new HitObjectNV());
+  types.emplace_back(new HitObjectEXT());
   types.emplace_back(new CooperativeVectorNV(f32, 16));
 
   // SPV_AMDX_shader_enqueue
