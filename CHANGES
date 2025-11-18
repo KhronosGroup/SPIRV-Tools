@@ -1,5 +1,42 @@
 Revision history for SPIRV-Tools
 
+v2025.5 2025-11-18
+  - General
+  - Validator
+  - Optimizer
+    - spirv-opt: Add a folding rule for `OpBitReverse` and fix `OpBitCast` to support lower to higher bit conversions. (#6321)
+    - spirv-opt: Add basic support for graphs (#6351)
+    - spirv-opt: Adding folding rules for bitwise and (#6361)
+    - spirv-opt: Adding normal form to ValueNumber calculation (#6371)
+    - spirv-opt: Cache IsReadOnlyLoad in ValueNumberTable (#6385)
+    - spirv-opt: Clone decorations when unrolling loops (#6373)
+    - spirv-opt: Correct ADCE bug keeping dead DebugValue Value operands (#6368)
+    - spirv-opt: Fix constant folding for `OpBitcast` on signed integers. (#6378)
+    - spirv-opt: Fix id overflow in ConvertToSampledImage (#6339)
+    - spirv-opt: Handle ID overflow in AggressiveDCEPass (#6366)
+    - spirv-opt: Handle ID overflow in SplitCombinedImageSamplerPass (#6406)
+    - spirv-opt: Handle id overflow in CCP and constant folding (#6367)
+    - spirv-opt: Handle id overflow in MergeReturnPass (#6340)
+    - spirv-opt: Handle id overflow in amd_ext_to_khr (#6403)
+    - Add `SPV_KHR_maximal_reconvergence` to the allowlist (#6372)
+    - Adding folding rules for commutive bitwise operations (xor/or/and). (#6358)
+    - [OPT] Move definition of Pass::Status to Utils (#6402)
+  - Validator:
+    - spirv-val: Add LocalInvocationIndex checks (#6395)
+    - spirv-val: Add validation for SPV_KHR_fma (#6388)
+    - spirv-val: Break up the 3000 line ValidateExtInst function (#6364)
+    - spirv-val: Fix VUID churn for 10685 (#6389)
+    - spirv-val: Improve Explicit Layout message (#6331)
+    - spirv-val: Use spvOpcodeString consistently (#6393)
+    - Relax validation rule for DebugGlobalVariable variable (#6382)
+    - Validate SPV_EXT_shader_64bit_indexing (#6376)
+    - Validate logical pointer restrictions (#6240)
+    - [tools/val] fix u8str for real this time (#6341)
+    - Add VK_EXT_shader_uniform_buffer_unsized_array (#6386)
+  - Assembler
+    - Add as/dis support for Arm.MotionEngine.100 extended instruction set (#6284)
+    - spirv-as: fix command line for stdin as input (#6398)
+
 v2025.4 2025-09-22
   - General
     - Add support for SPV_INTEL_function_variants (#6211, #6195)
