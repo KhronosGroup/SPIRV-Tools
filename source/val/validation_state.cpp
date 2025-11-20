@@ -2703,6 +2703,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-ViewportIndex-ViewportIndex-07060);
     case 7102:
       return VUID_WRAP(VUID-StandaloneSpirv-MeshEXT-07102);
+    case 7107:
+      return VUID_WRAP(VUID-StandaloneSpirv-MeshEXT-07107);
     case 7290:
       return VUID_WRAP(VUID-StandaloneSpirv-Input-07290);
     case 7320:
