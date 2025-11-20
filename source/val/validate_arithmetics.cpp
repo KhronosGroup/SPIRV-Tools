@@ -20,9 +20,66 @@
 #include "source/val/instruction.h"
 #include "source/val/validate.h"
 #include "source/val/validation_state.h"
+#include "spirv-tools/libspirv.h"
+#include "spirv/unified1/spirv.hpp11"
 
 namespace spvtools {
 namespace val {
+
+bool IsOperandZero(ValidationState_t& _, const Instruction* inst) {
+  if (inst->opcode() == spv::Op::OpConstantNull) {
+    return true;
+  }
+  assert(inst->opcode() == spv::Op::OpConstant);
+  uint64_t componet_value = 0;
+  const Instruction* type_inst = _.FindDef(inst->type_id());
+  if (type_inst->opcode() == spv::Op::OpTypeInt) {
+    // We can use UInt here, if it is signed, zero is still the same
+    return (_.EvalConstantValUint64(inst->id(), &componet_value) &&
+            componet_value == 0);
+  } else if (type_inst->opcode() == spv::Op::OpTypeFloat) {
+    if (inst->words().size() == 4) {
+      return inst->word(3) == 0;
+    } else {
+      assert(inst->words().size() == 5);  // 64-bit floats
+      return (inst->word(3) == 0 && inst->word(4) == 0);
+    }
+  }
+  return false;
+}
+
+spv_result_t ValidateDivideByZero(ValidationState_t& _, const Instruction* inst,
+                                  uint32_t operand_index) {
+  const Instruction* operand_inst =
+      _.FindDef(inst->GetOperandAs<uint32_t>(operand_index));
+  const spv::Op opcode = operand_inst->opcode();
+  // We only validate if we can statically get the value from a constant.
+  // If this is a spec costant, tools like VVL will run the freeze-spec-constant
+  if (opcode == spv::Op::OpConstantNull) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Op" << spvOpcodeString(inst->opcode())
+           << " Operand 2 is a OpConstantNull";
+  } else if (opcode == spv::Op::OpConstant) {
+    if (IsOperandZero(_, operand_inst)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Op" << spvOpcodeString(inst->opcode())
+             << " Operand 2 is a OpConstant of zero";
+    }
+  } else if (opcode == spv::Op::OpConstantComposite) {
+    const size_t constituent_count = operand_inst->words().size() - 3;
+    for (size_t i = 0; i < constituent_count; i++) {
+      const Instruction* component_inst = _.FindDef(operand_inst->word(i + 3));
+      if (IsOperandZero(_, component_inst)) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Op" << spvOpcodeString(inst->opcode())
+               << " Operand 2 has a OpConstantComposite where component[" << i
+               << "] is a OpConstant of zero";
+      }
+    }
+  }
+
+  return SPV_SUCCESS;
+}
 
 // Validates correctness of arithmetic instructions.
 spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
@@ -53,6 +110,12 @@ spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected floating scalar or vector type as Result Type: "
                << spvOpcodeString(opcode);
+
+      if (opcode == spv::Op::OpFMod || opcode == spv::Op::OpFRem) {
+        if (auto error = ValidateDivideByZero(_, inst, 3)) {
+          return error;
+        }
+      }
 
       for (size_t operand_index = 2; operand_index < inst->operands().size();
            ++operand_index) {
@@ -102,6 +165,10 @@ spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected unsigned int scalar or vector type as Result Type: "
                << spvOpcodeString(opcode);
+
+      if (auto error = ValidateDivideByZero(_, inst, 3)) {
+        return error;
+      }
 
       for (size_t operand_index = 2; operand_index < inst->operands().size();
            ++operand_index) {
@@ -162,6 +229,13 @@ spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
 
       const uint32_t dimension = _.GetDimension(result_type);
       const uint32_t bit_width = _.GetBitWidth(result_type);
+
+      if (opcode == spv::Op::OpSDiv || opcode == spv::Op::OpSMod ||
+          opcode == spv::Op::OpSRem) {
+        if (auto error = ValidateDivideByZero(_, inst, 3)) {
+          return error;
+        }
+      }
 
       for (size_t operand_index = 2; operand_index < inst->operands().size();
            ++operand_index) {

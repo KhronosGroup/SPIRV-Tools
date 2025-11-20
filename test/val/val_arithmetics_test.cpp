@@ -121,12 +121,16 @@ OpExecutionMode %main OriginUpperLeft
 %u64_3 = OpConstant %u64 3
 %u64_4 = OpConstant %u64 4
 
+%u32_null = OpConstantNull %u32
+
 %u32vec2_01 = OpConstantComposite %u32vec2 %u32_0 %u32_1
 %u32vec2_12 = OpConstantComposite %u32vec2 %u32_1 %u32_2
 %u32vec3_012 = OpConstantComposite %u32vec3 %u32_0 %u32_1 %u32_2
 %u32vec3_123 = OpConstantComposite %u32vec3 %u32_1 %u32_2 %u32_3
 %u32vec4_0123 = OpConstantComposite %u32vec4 %u32_0 %u32_1 %u32_2 %u32_3
 %u32vec4_1234 = OpConstantComposite %u32vec4 %u32_1 %u32_2 %u32_3 %u32_4
+%u32vec4_1001 = OpConstantComposite %u32vec4 %u32_1 %u32_0 %u32_0 %u32_1
+%u32vec4_null = OpConstantComposite %u32vec4 %u32_null %u32_null %u32_null %u32_null
 
 %s32vec2_01 = OpConstantComposite %s32vec2 %s32_0 %s32_1
 %s32vec2_12 = OpConstantComposite %s32vec2 %s32_1 %s32_2
@@ -155,6 +159,12 @@ OpExecutionMode %main OriginUpperLeft
 %f32mat33_123123123 = OpConstantComposite %f32mat33 %f32vec3_123 %f32vec3_123 %f32vec3_123
 
 %f64mat22_1212 = OpConstantComposite %f64mat22 %f64vec2_12 %f64vec2_12
+
+%_ptr_Function_f32 = OpTypePointer Function %f32
+%_ptr_Function_u32 = OpTypePointer Function %u32
+%_ptr_Function_s32 = OpTypePointer Function %s32
+%_ptr_Function_u64 = OpTypePointer Function %u64
+%_ptr_Function_u32vec4 = OpTypePointer Function %u32vec4
 
 %main = OpFunction %void None %func
 %main_entry = OpLabel)";
@@ -2269,6 +2279,191 @@ TEST_F(ValidateArithmetics, CoopVecDimNotConstantInt) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpTypeCooperativeVectorNV component count <id> "
                         "'19[%float_1]' is not a constant integer type"));
+}
+
+TEST_F(ValidateArithmetics, DivideByZeroUDivScalar) {
+  const std::string body = R"(
+          %x = OpVariable %_ptr_Function_u32 Function
+               OpStore %x %u32_4
+       %load = OpLoad %u32 %x
+        %bad = OpUDiv %u32 %load %u32_0
+  )";
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpUDiv Operand 2 is a OpConstant of zero"));
+}
+
+TEST_F(ValidateArithmetics, DivideByZeroUDivVector) {
+  const std::string body = R"(
+          %x = OpVariable %_ptr_Function_u32vec4 Function
+               OpStore %x %u32vec4_1234
+       %load = OpLoad %u32vec4 %x
+        %bad = OpUDiv %u32vec4 %load %u32vec4_1001
+  )";
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpUDiv Operand 2 has a OpConstantComposite where "
+                        "component[1] is a OpConstant of zero"));
+}
+
+TEST_F(ValidateArithmetics, DivideByZeroUDiv64bit) {
+  const std::string body = R"(
+          %x = OpVariable %_ptr_Function_u64 Function
+               OpStore %x %u64_4
+       %load = OpLoad %u64 %x
+        %bad = OpUDiv %u64 %load %u64_0
+  )";
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpUDiv Operand 2 is a OpConstant of zero"));
+}
+
+TEST_F(ValidateArithmetics, DivideByZeroUDiv64bitGood) {
+  const std::string body = R"(
+          %x = OpVariable %_ptr_Function_u64 Function
+               OpStore %x %u64_4
+       %load = OpLoad %u64 %x
+        %bad = OpUDiv %u64 %load %u64_1
+  )";
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateArithmetics, DivideByZeroUDiv8bit) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpCapability Int8
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %u8int = OpTypeInt 32 0
+%_ptr_Function_u8int = OpTypePointer Function %u8int
+     %uint_4 = OpConstant %u8int 4
+     %uint_0 = OpConstant %u8int 0
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+          %x = OpVariable %_ptr_Function_u8int Function
+               OpStore %x %uint_4
+         %11 = OpLoad %u8int %x
+         %13 = OpUDiv %u8int %11 %uint_0
+               OpStore %x %13
+               OpReturn
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpUDiv Operand 2 is a OpConstant of zero"));
+}
+
+TEST_F(ValidateArithmetics, DivideByZeroUDivScalarConstantNull) {
+  const std::string body = R"(
+          %x = OpVariable %_ptr_Function_u32 Function
+               OpStore %x %u32_4
+       %load = OpLoad %u32 %x
+        %bad = OpUDiv %u32 %load %u32_null
+  )";
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpUDiv Operand 2 is a OpConstantNull"));
+}
+
+TEST_F(ValidateArithmetics, DivideByZeroUDivVectorConstantNull) {
+  const std::string body = R"(
+          %x = OpVariable %_ptr_Function_u32vec4 Function
+               OpStore %x %u32vec4_1234
+       %load = OpLoad %u32vec4 %x
+        %bad = OpUDiv %u32vec4 %load %u32vec4_null
+  )";
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpUDiv Operand 2 has a OpConstantComposite where "
+                        "component[0] is a OpConstant of zero"));
+}
+
+TEST_F(ValidateArithmetics, DivideByZeroUMod) {
+  const std::string body = R"(
+          %x = OpVariable %_ptr_Function_u32 Function
+               OpStore %x %u32_4
+       %load = OpLoad %u32 %x
+        %bad = OpUMod %u32 %load %u32_0
+  )";
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpUMod Operand 2 is a OpConstant of zero"));
+}
+
+TEST_F(ValidateArithmetics, DivideByZeroSDiv) {
+  const std::string body = R"(
+          %x = OpVariable %_ptr_Function_s32 Function
+               OpStore %x %s32_4
+       %load = OpLoad %s32 %x
+        %bad = OpSDiv %s32 %load %s32_0
+  )";
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSDiv Operand 2 is a OpConstant of zero"));
+}
+
+TEST_F(ValidateArithmetics, DivideByZeroSMod) {
+  const std::string body = R"(
+          %x = OpVariable %_ptr_Function_s32 Function
+               OpStore %x %s32_4
+       %load = OpLoad %s32 %x
+        %bad = OpSMod %s32 %load %s32_0
+  )";
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSMod Operand 2 is a OpConstant of zero"));
+}
+
+TEST_F(ValidateArithmetics, DivideByZeroSRem) {
+  const std::string body = R"(
+          %x = OpVariable %_ptr_Function_s32 Function
+               OpStore %x %s32_4
+       %load = OpLoad %s32 %x
+        %bad = OpSRem %s32 %load %s32_0
+  )";
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSRem Operand 2 is a OpConstant of zero"));
+}
+
+TEST_F(ValidateArithmetics, DivideByZeroFMod) {
+  const std::string body = R"(
+          %x = OpVariable %_ptr_Function_f32 Function
+               OpStore %x %f32_4
+       %load = OpLoad %f32 %x
+        %bad = OpFMod %f32 %load %f32_0
+  )";
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpFMod Operand 2 is a OpConstant of zero"));
+}
+
+TEST_F(ValidateArithmetics, DivideByZeroFRem) {
+  const std::string body = R"(
+          %x = OpVariable %_ptr_Function_f32 Function
+               OpStore %x %f32_4
+       %load = OpLoad %f32 %x
+        %bad = OpFRem %f32 %load %f32_0
+  )";
+  CompileSuccessfully(GenerateCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpFRem Operand 2 is a OpConstant of zero"));
 }
 
 }  // namespace

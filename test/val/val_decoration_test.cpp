@@ -5970,6 +5970,7 @@ OpName %entry "entry"
   %voidfn = OpTypeFunction %void
      %int = OpTypeInt 32 1
     %zero = OpConstantNull %int
+    %one = OpConstant %int 1
    %float = OpTypeFloat 32
   %float0 = OpConstantNull %float
     %main = OpFunction %void None %voidfn
@@ -6080,7 +6081,7 @@ TEST_F(ValidateDecorations, NoSignedWrapSNegateGood) {
 
 TEST_F(ValidateDecorations, NoSignedWrapSRemBad) {
   std::string spirv = MakeIntegerShader("OpDecorate %val NoSignedWrap",
-                                        "%val = OpSRem %int %zero %zero");
+                                        "%val = OpSRem %int %zero %one");
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -6222,7 +6223,7 @@ TEST_F(ValidateDecorations, NoUnsignedWrapSNegateGood) {
 
 TEST_F(ValidateDecorations, NoUnsignedWrapSRemBad) {
   std::string spirv = MakeIntegerShader("OpDecorate %val NoUnsignedWrap",
-                                        "%val = OpSRem %int %zero %zero");
+                                        "%val = OpSRem %int %zero %one");
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
