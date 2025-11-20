@@ -6526,16 +6526,20 @@ TEST_F(ValidateBuiltIns,
 %void = OpTypeVoid
  %3 = OpTypeFunction %void
 %uint = OpTypeInt 32 0
+%int = OpTypeInt 32 1
 %uint_32 = OpConstant %uint 32
 %uint_1 = OpConstant %uint 1
-%int = OpTypeInt 32 1
+%uint_0 = OpConstant %uint 0
+%int_0 = OpConstant %int 0
 %bool = OpTypeBool
 %_arr_gl_PrimitiveShadingRateEXT_uint_32 = OpTypeArray %int %uint_32
 %_ptr_Output__arr_gl_PrimitiveShadingRateEXT_uint_32 = OpTypePointer Output %_arr_gl_PrimitiveShadingRateEXT_uint_32
 %gl_PrimitiveShadingRateEXT = OpVariable %_ptr_Output__arr_gl_PrimitiveShadingRateEXT_uint_32 Output
+%uint_ptr = OpTypePointer Output %int
 %main = OpFunction %void None %3
  %5 = OpLabel
-%ref_load = OpLoad %_arr_gl_PrimitiveShadingRateEXT_uint_32 %gl_PrimitiveShadingRateEXT
+      %21 = OpAccessChain %uint_ptr %gl_PrimitiveShadingRateEXT %uint_0
+      OpStore %21 %int_0
       OpReturn
       OpFunctionEnd
 )";

@@ -15,6 +15,7 @@
 // limitations under the License.
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -1117,6 +1118,29 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "8- or 16-bit loads must be a scalar, vector or matrix type";
     }
+  }
+
+  // Skip checking if there is zero chance for this having a mesh shader
+  // entrypoint
+  if (_.HasCapability(spv::Capability::MeshShadingEXT) &&
+      pointer_type->GetOperandAs<spv::StorageClass>(1) ==
+          spv::StorageClass::Output) {
+    std::string errorVUID = _.VkErrorID(7107);
+    _.function(inst->function()->id())
+        ->RegisterExecutionModelLimitation(
+            [errorVUID](spv::ExecutionModel model, std::string* message) {
+              // Seems the NV Mesh extension was less strict and allowed
+              // writting to outputs
+              if (model == spv::ExecutionModel::MeshEXT) {
+                if (message) {
+                  *message = errorVUID +
+                             "The Output Storage Class in a Mesh Execution "
+                             "Model must not be read from";
+                }
+                return false;
+              }
+              return true;
+            });
   }
 
   _.RegisterQCOMImageProcessingTextureConsumer(pointer_id, inst, nullptr);
