@@ -1530,11 +1530,13 @@ FoldingRule MergeGenericAddSubArithmetic() {
   };
 }
 
-// Helper function for FactorAddMuls. If |factor0_0| is the same as |factor1_0|,
-// generate |factor0_0| * (|factor0_1| + |factor1_1|).
-bool FactorAddMulsOpnds(uint32_t factor0_0, uint32_t factor0_1,
-                        uint32_t factor1_0, uint32_t factor1_1,
-                        Instruction* inst) {
+// Helper function for FactorAddSubMuls.
+// If |factor0_0| is the same as |factor1_0|, generate:
+//   |factor0_0| * (|factor0_1| + |factor1_1|)
+//   |factor0_0| * (|factor0_1| - |factor1_1|)
+bool FactorAddSubMulsOpnds(uint32_t factor0_0, uint32_t factor0_1,
+                           uint32_t factor1_0, uint32_t factor1_1,
+                           Instruction* inst) {
   IRContext* context = inst->context();
   if (factor0_0 != factor1_0) return false;
   InstructionBuilder ir_builder(
@@ -1545,8 +1547,10 @@ bool FactorAddMulsOpnds(uint32_t factor0_0, uint32_t factor0_1,
   if (!new_add_inst) {
     return false;
   }
-  inst->SetOpcode(inst->opcode() == spv::Op::OpFAdd ? spv::Op::OpFMul
-                                                    : spv::Op::OpIMul);
+
+  bool is_float =
+      inst->opcode() == spv::Op::OpFAdd || inst->opcode() == spv::Op::OpFSub;
+  inst->SetOpcode(is_float ? spv::Op::OpFMul : spv::Op::OpIMul);
   inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {factor0_0}},
                        {SPV_OPERAND_TYPE_ID, {new_add_inst->result_id()}}});
   context->UpdateDefUse(inst);
@@ -1554,12 +1558,16 @@ bool FactorAddMulsOpnds(uint32_t factor0_0, uint32_t factor0_1,
 }
 
 // Perform the following factoring identity, handling all operand order
-// combinations: (a * b) + (a * c) = a * (b + c)
-FoldingRule FactorAddMuls() {
+// combinations:
+//   (a * b) + (a * c) = a * (b + c)
+//   (a * b) - (a * c) = a * (b - c)
+FoldingRule FactorAddSubMuls() {
   return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>&) {
     assert(inst->opcode() == spv::Op::OpFAdd ||
-           inst->opcode() == spv::Op::OpIAdd);
+           inst->opcode() == spv::Op::OpFSub ||
+           inst->opcode() == spv::Op::OpIAdd ||
+           inst->opcode() == spv::Op::OpISub);
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
     bool uses_float = HasFloatingPoint(type);
@@ -1590,11 +1598,11 @@ FoldingRule FactorAddMuls() {
     for (int i = 0; i < 2; i++) {
       for (int j = 0; j < 2; j++) {
         // Check if operand i in add_op0_inst matches operand j in add_op1_inst.
-        if (FactorAddMulsOpnds(add_op0_inst->GetSingleWordInOperand(i),
-                               add_op0_inst->GetSingleWordInOperand(1 - i),
-                               add_op1_inst->GetSingleWordInOperand(j),
-                               add_op1_inst->GetSingleWordInOperand(1 - j),
-                               inst))
+        if (FactorAddSubMulsOpnds(add_op0_inst->GetSingleWordInOperand(i),
+                                  add_op0_inst->GetSingleWordInOperand(1 - i),
+                                  add_op1_inst->GetSingleWordInOperand(j),
+                                  add_op1_inst->GetSingleWordInOperand(1 - j),
+                                  inst))
           return true;
       }
     }
@@ -3417,7 +3425,7 @@ void FoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpFAdd].push_back(MergeAddAddArithmetic());
   rules_[spv::Op::OpFAdd].push_back(MergeAddSubArithmetic());
   rules_[spv::Op::OpFAdd].push_back(MergeGenericAddSubArithmetic());
-  rules_[spv::Op::OpFAdd].push_back(FactorAddMuls());
+  rules_[spv::Op::OpFAdd].push_back(FactorAddSubMuls());
 
   rules_[spv::Op::OpFDiv].push_back(RedundantFDiv());
   rules_[spv::Op::OpFDiv].push_back(ReciprocalFDiv());
@@ -3440,12 +3448,13 @@ void FoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpFSub].push_back(MergeSubNegateArithmetic());
   rules_[spv::Op::OpFSub].push_back(MergeSubAddArithmetic());
   rules_[spv::Op::OpFSub].push_back(MergeSubSubArithmetic());
+  rules_[spv::Op::OpFSub].push_back(FactorAddSubMuls());
 
   rules_[spv::Op::OpIAdd].push_back(MergeAddNegateArithmetic());
   rules_[spv::Op::OpIAdd].push_back(MergeAddAddArithmetic());
   rules_[spv::Op::OpIAdd].push_back(MergeAddSubArithmetic());
   rules_[spv::Op::OpIAdd].push_back(MergeGenericAddSubArithmetic());
-  rules_[spv::Op::OpIAdd].push_back(FactorAddMuls());
+  rules_[spv::Op::OpIAdd].push_back(FactorAddSubMuls());
 
   rules_[spv::Op::OpIMul].push_back(IntMultipleBy1());
   rules_[spv::Op::OpIMul].push_back(MergeMulMulArithmetic());
@@ -3454,6 +3463,7 @@ void FoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpISub].push_back(MergeSubNegateArithmetic());
   rules_[spv::Op::OpISub].push_back(MergeSubAddArithmetic());
   rules_[spv::Op::OpISub].push_back(MergeSubSubArithmetic());
+  rules_[spv::Op::OpISub].push_back(FactorAddSubMuls());
 
   rules_[spv::Op::OpBitwiseAnd].push_back(RedundantAndOrXor());
   rules_[spv::Op::OpBitwiseAnd].push_back(RedundantAndAddSub());

@@ -9102,6 +9102,94 @@ INSTANTIATE_TEST_SUITE_P(FactorAddMul, MatchingInstructionFoldingTest,
     9, true)
 ));
 
+INSTANTIATE_TEST_SUITE_P(FactorSubMul, MatchingInstructionFoldingTest,
+::testing::Values(
+    // Test case 0: factor of sub of muls
+    // (a * b) - (a * c) => a * (b - c)
+    InstructionFoldingCase<bool>(
+      Header() +
+      "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+      "; CHECK: [[newsub:%\\w+]] = OpFSub [[float]] %4 %5\n" +
+      "; CHECK: %9 = OpFMul [[float]] %6 [[newsub]]\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%var0 = OpVariable %_ptr_float Function\n" +
+      "%var1 = OpVariable %_ptr_float Function\n" +
+      "%var2 = OpVariable %_ptr_float Function\n" +
+      "%4 = OpLoad %float %var0\n" +
+      "%5 = OpLoad %float %var1\n" +
+      "%6 = OpLoad %float %var2\n" +
+      "%7 = OpFMul %float %6 %4\n" +
+      "%8 = OpFMul %float %6 %5\n" +
+      "%9 = OpFSub %float %7 %8\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd\n",
+      9, true),
+  // Test case 1: factor of sub of muls
+  // (b * a) - (a * c) => a * (b - c)
+  InstructionFoldingCase<bool>(
+    Header() +
+    "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+    "; CHECK: [[newsub:%\\w+]] = OpFSub [[float]] %4 %5\n" +
+    "; CHECK: %9 = OpFMul [[float]] %6 [[newsub]]\n" +
+    "%main = OpFunction %void None %void_func\n" +
+    "%main_lab = OpLabel\n" +
+    "%var0 = OpVariable %_ptr_float Function\n" +
+    "%var1 = OpVariable %_ptr_float Function\n" +
+    "%var2 = OpVariable %_ptr_float Function\n" +
+    "%4 = OpLoad %float %var0\n" +
+    "%5 = OpLoad %float %var1\n" +
+    "%6 = OpLoad %float %var2\n" +
+    "%7 = OpFMul %float %4 %6\n" +
+    "%8 = OpFMul %float %6 %5\n" +
+    "%9 = OpFSub %float %7 %8\n" +
+    "OpReturn\n" +
+    "OpFunctionEnd\n",
+    9, true),
+  // Test case 2: factor of sub of muls
+  // (a * b) - (c * a) => a * (b - c)
+  InstructionFoldingCase<bool>(
+    Header() +
+    "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+    "; CHECK: [[newsub:%\\w+]] = OpFSub [[float]] %4 %5\n" +
+    "; CHECK: %9 = OpFMul [[float]] %6 [[newsub]]\n" +
+    "%main = OpFunction %void None %void_func\n" +
+    "%main_lab = OpLabel\n" +
+    "%var0 = OpVariable %_ptr_float Function\n" +
+    "%var1 = OpVariable %_ptr_float Function\n" +
+    "%var2 = OpVariable %_ptr_float Function\n" +
+    "%4 = OpLoad %float %var0\n" +
+    "%5 = OpLoad %float %var1\n" +
+    "%6 = OpLoad %float %var2\n" +
+    "%7 = OpFMul %float %6 %4\n" +
+    "%8 = OpFMul %float %5 %6\n" +
+    "%9 = OpFSub %float %7 %8\n" +
+    "OpReturn\n" +
+    "OpFunctionEnd\n",
+    9, true),
+  // Test case 3: factor of sub of muls
+  // (b * a) - (c * a) => a * (b - c)
+  InstructionFoldingCase<bool>(
+    Header() +
+    "; CHECK: [[float:%\\w+]] = OpTypeFloat 32\n" +
+    "; CHECK: [[newsub:%\\w+]] = OpFSub [[float]] %4 %5\n" +
+    "; CHECK: %9 = OpFMul [[float]] %6 [[newsub]]\n" +
+    "%main = OpFunction %void None %void_func\n" +
+    "%main_lab = OpLabel\n" +
+    "%var0 = OpVariable %_ptr_float Function\n" +
+    "%var1 = OpVariable %_ptr_float Function\n" +
+    "%var2 = OpVariable %_ptr_float Function\n" +
+    "%4 = OpLoad %float %var0\n" +
+    "%5 = OpLoad %float %var1\n" +
+    "%6 = OpLoad %float %var2\n" +
+    "%7 = OpFMul %float %4 %6\n" +
+    "%8 = OpFMul %float %5 %6\n" +
+    "%9 = OpFSub %float %7 %8\n" +
+    "OpReturn\n" +
+    "OpFunctionEnd\n",
+    9, true)
+));
+
 INSTANTIATE_TEST_SUITE_P(MergeSubTest, MatchingInstructionFoldingTest,
 ::testing::Values(
   // Test case 0: merge sub of negate
