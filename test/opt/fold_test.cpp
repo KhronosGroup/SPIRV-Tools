@@ -3046,6 +3046,168 @@ INSTANTIATE_TEST_SUITE_P(FloatConstantFoldingTest, FloatInstructionFoldingTest,
             "%2 = OpFDiv %float %float_0 %float_n0\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
+        2, std::numeric_limits<float>::quiet_NaN()),
+    // Test case 47: NMin 1.0 4.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NMin %float_1 %float_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 1.0f),
+    // Test case 48: NMin 4.0 0.2
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NMin %float_4 %float_0p2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0.2f),
+    // Test case 49: NMin NaN 4.0
+    InstructionFoldingCase<float>(
+        HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NMin %float_nan %float_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 4.0f),
+    // Test case 50: NMin 2.0 NaN
+    InstructionFoldingCase<float>(
+        HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NMin %float_2 %float_nan\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 2.0f),
+    // Test case 51: NMin NaN NaN
+    InstructionFoldingCase<float>(
+        HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NMin %float_nan %float_nan\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, std::numeric_limits<float>::quiet_NaN()),
+    // Test case 52: NMax 1.0 4.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NMax %float_1 %float_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 4.0f),
+    // Test case 53: NMax 1.0 0.2
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NMax %float_1 %float_0p2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 1.0f),
+    // Test case 54: NMax 1.0 NaN
+    InstructionFoldingCase<float>(
+        HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NMax %float_1 %float_nan\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 1.0f),
+    // Test case 55: NMax NaN 0.5
+    InstructionFoldingCase<float>(
+        HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NMax %float_nan %float_0p5\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0.5f),
+    // Test case 56: NMax NaN NaN
+    InstructionFoldingCase<float>(
+        HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NMax %float_nan %float_nan\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, std::numeric_limits<float>::quiet_NaN()),
+    // Test case 57: NClamp 1.0 0.2 4.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_1 %float_0p2 %float_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 1.0f),
+    // Test case 58: NClamp 0.2 2.0 4.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_0p2 %float_2 %float_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 2.0f),
+    // Test case 59: NClamp 2049.0 2.0 4.0
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_2049 %float_2 %float_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 4.0f),
+    // Test case 60: NClamp 1.0 2.0 x
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%undef = OpUndef %float\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_1 %float_2 %undef\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 2.0),
+    // Test case 61: NClamp 1.0 x 0.5
+    InstructionFoldingCase<float>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%undef = OpUndef %float\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_1 %undef %float_0p5\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0.5),
+    // Test case 62: NClamp NaN 2.0 4.0
+    InstructionFoldingCase<float>(
+        HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_nan %float_2 %float_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 2.0f),
+    // Test case 63: NClamp 2049.0 NaN 4.0
+    InstructionFoldingCase<float>(
+        HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_2049 %float_nan %float_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 4.0f),
+    // Test case 64: NClamp 1.0 2.0 NaN
+    InstructionFoldingCase<float>(
+        HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_1 %float_2 %float_nan\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 2.0f),
+    // Test case 65: NClamp 4.0 NaN NaN
+    InstructionFoldingCase<float>(
+        HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_4 %float_nan %float_nan\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 4.0f),
+    // Test case 66: NClamp NaN NaN NaN
+    InstructionFoldingCase<float>(
+        HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_nan %float_nan %float_nan\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
         2, std::numeric_limits<float>::quiet_NaN())
 ));
 // clang-format on
@@ -3296,6 +3458,168 @@ INSTANTIATE_TEST_SUITE_P(DoubleConstantFoldingTest, DoubleInstructionFoldingTest
                 "%2 = OpFDiv %double %double_0 %double_n0\n" +
                 "OpReturn\n" +
                 "OpFunctionEnd",
+            2, std::numeric_limits<double>::quiet_NaN()),
+        // Test case 27: NMin 1.0 4.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NMin %double_1 %double_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 1.0),
+        // Test case 28: NMin 4.0 0.2
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NMin %double_4 %double_0p2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 0.2),
+        // Test case 29: NMax 1.0 4.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NMax %double_1 %double_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 4.0),
+        // Test case 30: NMin NaN 4.0
+        InstructionFoldingCase<double>(
+            HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NMin %double_nan %double_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 4.0),
+        // Test case 31: NMin 2.0 NaN
+        InstructionFoldingCase<double>(
+            HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NMin %double_2 %double_nan\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 2.0),
+        // Test case 32: NMin NaN NaN
+        InstructionFoldingCase<double>(
+            HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NMin %double_nan %double_nan\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, std::numeric_limits<double>::quiet_NaN()),
+        // Test case 33: NMax 1.0 0.2
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NMax %double_1 %double_0p2\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 1.0),
+        // Test case 34: NMax 1.0 NaN
+        InstructionFoldingCase<double>(
+            HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NMax %double_1 %double_nan\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 1.0),
+        // Test case 35: NMax NaN 0.5
+        InstructionFoldingCase<double>(
+            HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NMax %double_nan %double_0p5\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 0.5),
+        // Test case 36: NMax NaN NaN
+        InstructionFoldingCase<double>(
+            HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NMax %double_nan %double_nan\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, std::numeric_limits<double>::quiet_NaN()),
+        // Test case 37: NClamp 1.0 0.2 4.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NClamp %double_1 %double_0p2 %double_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 1.0),
+        // Test case 38: NClamp 0.2 2.0 4.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NClamp %double_0p2 %double_2 %double_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 2.0),
+        // Test case 39: NClamp 5.0 2.0 4.0
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NClamp %double_5 %double_2 %double_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 4.0),
+        // Test case 40: NClamp 1.0 2.0 x
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%undef = OpUndef %double\n" +
+            "%2 = OpExtInst %double %1 NClamp %double_1 %double_2 %undef\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 2.0),
+        // Test case 41: NClamp 1.0 x 0.5
+        InstructionFoldingCase<double>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%undef = OpUndef %double\n" +
+            "%2 = OpExtInst %double %1 NClamp %double_1 %undef %double_0p5\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 0.5),
+        // Test case 42: NClamp NaN 2.0 4.0
+        InstructionFoldingCase<double>(
+            HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NClamp %double_nan %double_2 %double_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 2.0),
+        // Test case 43: NClamp 5.0 NaN 4.0
+        InstructionFoldingCase<double>(
+            HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NClamp %double_5 %double_nan %double_4\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 4.0),
+        // Test case 44: NClamp 1.0 2.0 NaN
+        InstructionFoldingCase<double>(
+            HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NClamp %double_1 %double_2 %double_nan\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 2.0),
+        // Test case 45: NClamp 4.0 NaN NaN
+        InstructionFoldingCase<double>(
+            HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NClamp %double_4 %double_nan %double_nan\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+            2, 4.0),
+        // Test case 46: NClamp NaN NaN NaN
+        InstructionFoldingCase<double>(
+            HeaderWithNaN() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %double %1 NClamp %double_nan %double_nan %double_nan\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
             2, std::numeric_limits<double>::quiet_NaN())
 ));
 // clang-format on
