@@ -16,6 +16,7 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <utility>
 
 #include "ir_builder.h"
@@ -2296,6 +2297,48 @@ FoldingRule BitCastScalarOrVector() {
   };
 }
 
+// Remove indirect bitcasts which have no effect.
+//   uint32 x;  asuint32(x)            => x
+//   uint32 x;  asuint32(asint32(x))   => x
+//   float32 x; asuint32(asint32(x))   => asuint32(x)
+FoldingRule RedundantBitcast() {
+  return [](IRContext* context, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == spv::Op::OpBitcast);
+
+    analysis::DefUseManager* def_mgr = context->get_def_use_mgr();
+    Instruction* child = def_mgr->GetDef(inst->GetSingleWordInOperand(0));
+
+    if (inst->type_id() == child->type_id()) {
+      inst->SetOpcode(spv::Op::OpCopyObject);
+      inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {child->result_id()}}});
+      return true;
+    }
+
+    if (child->opcode() != spv::Op::OpBitcast) {
+      return false;
+    }
+    analysis::TypeManager* type_mgr = context->get_type_mgr();
+    const analysis::Type* inst_type = type_mgr->GetType(inst->type_id());
+    const analysis::Type* child_type = type_mgr->GetType(child->type_id());
+
+    if (inst_type->NumberOfComponents() != child_type->NumberOfComponents()) {
+      return false;
+    }
+    if (ElementWidth(inst_type) != ElementWidth(child_type)) {
+      return false;
+    }
+    if (def_mgr->GetDef(child->GetSingleWordInOperand(0))->type_id() ==
+        inst->type_id()) {
+      inst->SetOpcode(spv::Op::OpCopyObject);
+    }
+    inst->SetInOperands(
+        {{SPV_OPERAND_TYPE_ID, {child->GetSingleWordInOperand(0)}}});
+
+    return true;
+  };
+}
+
 FoldingRule BitReverseScalarOrVector() {
   return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
@@ -2351,7 +2394,9 @@ FoldingRule RedundantSelect() {
     uint32_t true_id = inst->GetSingleWordInOperand(1);
     uint32_t false_id = inst->GetSingleWordInOperand(2);
 
-    if (true_id == false_id) {
+    if (true_id == false_id ||
+        (constants[1] && constants[2] && constants[1]->IsZero() &&
+         constants[2]->IsZero())) {
       // Both results are the same, condition doesn't matter
       inst->SetOpcode(spv::Op::OpCopyObject);
       inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {true_id}}});
@@ -2407,6 +2452,254 @@ FoldingRule RedundantSelect() {
     }
 
     return false;
+  };
+}
+
+std::optional<bool> GetBoolConstantKind(const analysis::Constant* c) {
+  if (!c) {
+    return {};
+  }
+  if (auto composite = c->AsCompositeConstant()) {
+    auto& components = composite->GetComponents();
+    if (components.empty()) {
+      return {};
+    }
+    auto first = GetBoolConstantKind(components[0]);
+    if (!first) {
+      return {};
+    }
+    if (std::all_of(std::begin(components) + 1, std::end(components),
+                    [first](const analysis::Constant* c2) {
+                      return GetBoolConstantKind(c2) == first;
+                    })) {
+      return first;
+    }
+    return {};
+  } else if (c->AsNullConstant()) {
+    return false;
+  } else if (c->AsBoolConstant()) {
+    return c->AsBoolConstant()->value();
+  }
+  return {};
+}
+
+// Fold OpSelect instructions which have constant booleans as their result.
+//   x ? true  : false =  x
+//   x ? false : true  = !x
+FoldingRule FoldConstantBooleanSelect() {
+  return [](IRContext* context, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == spv::Op::OpSelect);
+    assert(inst->NumInOperands() == 3);
+    assert(constants.size() == 3);
+
+    if (!constants[1] || !constants[2]) {
+      return false;
+    }
+
+    analysis::TypeManager* type_mgr = context->get_type_mgr();
+    analysis::DefUseManager* def_mgr = context->get_def_use_mgr();
+    const analysis::Type* inst_type = type_mgr->GetType(inst->type_id());
+
+    if (inst->type_id() !=
+        def_mgr->GetDef(inst->GetSingleWordInOperand(0))->type_id()) {
+      return false;
+    }
+
+    std::optional<bool> uniform_true = GetBoolConstantKind(constants[1]);
+    std::optional<bool> uniform_false = GetBoolConstantKind(constants[2]);
+
+    if (!uniform_true || !uniform_false) {
+      return false;
+    }
+
+    if (uniform_true.value() && !uniform_false.value()) {
+      inst->SetOpcode(spv::Op::OpCopyObject);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(0)}}});
+      return true;
+    } else if (!uniform_true.value() && uniform_false.value()) {
+      inst->SetOpcode(spv::Op::OpLogicalNot);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {inst->GetSingleWordInOperand(0)}}});
+      return true;
+    }
+    return false;
+  };
+}
+
+// Fold OpLogicalAnd instructions which have a constant true on one side.
+//   x && true = x
+//   true && x = x
+FoldingRule RedundantLogicalAnd() {
+  return [](IRContext* context, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == spv::Op::OpLogicalAnd);
+
+    if (GetBoolConstantKind(ConstInput(constants)) ==
+        std::optional<bool>(true)) {
+      Instruction* other_inst = NonConstInput(context, constants[0], inst);
+      inst->SetOpcode(spv::Op::OpCopyObject);
+      inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {other_inst->result_id()}}});
+      return true;
+    }
+    return false;
+  };
+}
+
+// Fold OpLogicalOr instructions which have a constant false on one side.
+//   x || false = x
+//   false || x = x
+FoldingRule RedundantLogicalOr() {
+  return [](IRContext* context, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == spv::Op::OpLogicalOr);
+
+    if (GetBoolConstantKind(ConstInput(constants)) ==
+        std::optional<bool>(false)) {
+      Instruction* other_inst = NonConstInput(context, constants[0], inst);
+      inst->SetOpcode(spv::Op::OpCopyObject);
+      inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {other_inst->result_id()}}});
+      return true;
+    }
+    return false;
+  };
+}
+
+// Fold concurrent OpLogicalNot instructions:
+//   !!x = x
+FoldingRule RedundantLogicalNot() {
+  return [](IRContext* context, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == spv::Op::OpLogicalNot);
+    analysis::DefUseManager* def_mgr = context->get_def_use_mgr();
+    Instruction* child =
+        context->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0));
+    if (child->opcode() == spv::Op::OpLogicalNot) {
+      inst->SetOpcode(spv::Op::OpCopyObject);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {child->GetSingleWordInOperand(0)}}});
+      return true;
+    }
+    return false;
+  };
+}
+
+// Fold OpLogicalNot instructions that follow a comparison,
+// if the comparison is only used by that instruction.
+//
+// !(a == b) = (a != b)
+// !(a != b) = (a == b)
+// !(a < b)  = (a >= b)
+// !(a >= b) = (a < b)
+// !(a > b)  = (a <= b)
+// !(a <= b) = (a > b)
+FoldingRule FoldLogicalNotComparison() {
+  return [](IRContext* context, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == spv::Op::OpLogicalNot);
+    analysis::DefUseManager* def_mgr = context->get_def_use_mgr();
+    Instruction* child =
+        context->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0));
+
+    if (def_mgr->NumUses(child) > 1) {
+      return false;
+    }
+
+    spv::Op new_opcode = spv::Op::OpNop;
+    switch (child->opcode()) {
+      // (a == b) <=> (a != b)
+      case spv::Op::OpIEqual:
+        new_opcode = spv::Op::OpINotEqual;
+        break;
+      case spv::Op::OpINotEqual:
+        new_opcode = spv::Op::OpIEqual;
+        break;
+      case spv::Op::OpFOrdEqual:
+        new_opcode = spv::Op::OpFUnordNotEqual;
+        break;
+      case spv::Op::OpFOrdNotEqual:
+        new_opcode = spv::Op::OpFUnordEqual;
+        break;
+      case spv::Op::OpFUnordEqual:
+        new_opcode = spv::Op::OpFOrdNotEqual;
+        break;
+      case spv::Op::OpFUnordNotEqual:
+        new_opcode = spv::Op::OpFOrdEqual;
+        break;
+      case spv::Op::OpLogicalEqual:
+        new_opcode = spv::Op::OpLogicalNotEqual;
+        break;
+      case spv::Op::OpLogicalNotEqual:
+        new_opcode = spv::Op::OpLogicalEqual;
+        break;
+
+      // (a > b) <=> (a <= b)
+      case spv::Op::OpUGreaterThan:
+        new_opcode = spv::Op::OpULessThanEqual;
+        break;
+      case spv::Op::OpULessThanEqual:
+        new_opcode = spv::Op::OpUGreaterThan;
+        break;
+      case spv::Op::OpSGreaterThan:
+        new_opcode = spv::Op::OpSLessThanEqual;
+        break;
+      case spv::Op::OpSLessThanEqual:
+        new_opcode = spv::Op::OpSGreaterThan;
+        break;
+      case spv::Op::OpFOrdGreaterThan:
+        new_opcode = spv::Op::OpFUnordLessThanEqual;
+        break;
+      case spv::Op::OpFOrdLessThanEqual:
+        new_opcode = spv::Op::OpFUnordGreaterThan;
+        break;
+      case spv::Op::OpFUnordGreaterThan:
+        new_opcode = spv::Op::OpFOrdLessThanEqual;
+        break;
+      case spv::Op::OpFUnordLessThanEqual:
+        new_opcode = spv::Op::OpFOrdGreaterThan;
+        break;
+
+      // (a < b) <=> (a >= b)
+      case spv::Op::OpULessThan:
+        new_opcode = spv::Op::OpUGreaterThanEqual;
+        break;
+      case spv::Op::OpUGreaterThanEqual:
+        new_opcode = spv::Op::OpULessThan;
+        break;
+      case spv::Op::OpSLessThan:
+        new_opcode = spv::Op::OpSGreaterThanEqual;
+        break;
+      case spv::Op::OpSGreaterThanEqual:
+        new_opcode = spv::Op::OpSLessThan;
+        break;
+      case spv::Op::OpFOrdLessThan:
+        new_opcode = spv::Op::OpFUnordGreaterThanEqual;
+        break;
+      case spv::Op::OpFOrdGreaterThanEqual:
+        new_opcode = spv::Op::OpFUnordLessThan;
+        break;
+      case spv::Op::OpFUnordLessThan:
+        new_opcode = spv::Op::OpFOrdGreaterThanEqual;
+        break;
+      case spv::Op::OpFUnordGreaterThanEqual:
+        new_opcode = spv::Op::OpFOrdLessThan;
+        break;
+
+      default:
+        break;
+    }
+
+    if (new_opcode == spv::Op::OpNop) {
+      return false;
+    }
+
+    inst->SetOpcode(new_opcode);
+    inst->SetInOperands(
+        {{SPV_OPERAND_TYPE_ID, {child->GetSingleWordInOperand(0)}},
+         {SPV_OPERAND_TYPE_ID, {child->GetSingleWordInOperand(1)}}});
+
+    return true;
   };
 }
 
@@ -3394,6 +3687,8 @@ void FoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpUMod].push_back(RedundantSUMod());
 
   rules_[spv::Op::OpBitcast].push_back(BitCastScalarOrVector());
+  rules_[spv::Op::OpBitcast].push_back(RedundantBitcast());
+
   rules_[spv::Op::OpBitReverse].push_back(BitReverseScalarOrVector());
 
   rules_[spv::Op::OpCompositeConstruct].push_back(
@@ -3466,6 +3761,14 @@ void FoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpSNegate].push_back(MergeNegateAddSubArithmetic());
 
   rules_[spv::Op::OpSelect].push_back(RedundantSelect());
+  rules_[spv::Op::OpSelect].push_back(FoldConstantBooleanSelect());
+
+  rules_[spv::Op::OpLogicalAnd].push_back(RedundantLogicalAnd());
+
+  rules_[spv::Op::OpLogicalOr].push_back(RedundantLogicalOr());
+
+  rules_[spv::Op::OpLogicalNot].push_back(RedundantLogicalNot());
+  rules_[spv::Op::OpLogicalNot].push_back(FoldLogicalNotComparison());
 
   rules_[spv::Op::OpStore].push_back(StoringUndef());
 
