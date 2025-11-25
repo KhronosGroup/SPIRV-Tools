@@ -625,7 +625,7 @@ spv_result_t TraceVariablePointers(
               trace_inst->uses());
           std::unordered_set<const Instruction*> store_seen;
           while (!store_stack.empty()) {
-            const auto& use = store_stack.back();
+            const auto use = store_stack.back();
             store_stack.pop_back();
 
             if (!store_seen.insert(use.first).second) {
@@ -766,7 +766,7 @@ spv_result_t TraceUnmodifiedVariablePointers(
               trace_inst->uses());
           std::unordered_set<const Instruction*> store_seen;
           while (!store_stack.empty()) {
-            const auto& use = store_stack.back();
+            const auto use = store_stack.back();
             store_stack.pop_back();
 
             if (!store_seen.insert(use.first).second) {
