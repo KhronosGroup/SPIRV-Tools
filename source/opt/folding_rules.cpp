@@ -2497,10 +2497,7 @@ FoldingRule FoldConstantBooleanSelect() {
       return false;
     }
 
-    analysis::TypeManager* type_mgr = context->get_type_mgr();
     analysis::DefUseManager* def_mgr = context->get_def_use_mgr();
-    const analysis::Type* inst_type = type_mgr->GetType(inst->type_id());
-
     if (inst->type_id() !=
         def_mgr->GetDef(inst->GetSingleWordInOperand(0))->type_id()) {
       return false;
@@ -2570,9 +2567,8 @@ FoldingRule RedundantLogicalOr() {
 //   !!x = x
 FoldingRule RedundantLogicalNot() {
   return [](IRContext* context, Instruction* inst,
-            const std::vector<const analysis::Constant*>& constants) {
+            const std::vector<const analysis::Constant*>&) {
     assert(inst->opcode() == spv::Op::OpLogicalNot);
-    analysis::DefUseManager* def_mgr = context->get_def_use_mgr();
     Instruction* child =
         context->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0));
     if (child->opcode() == spv::Op::OpLogicalNot) {
@@ -2596,7 +2592,7 @@ FoldingRule RedundantLogicalNot() {
 // !(a <= b) = (a > b)
 FoldingRule FoldLogicalNotComparison() {
   return [](IRContext* context, Instruction* inst,
-            const std::vector<const analysis::Constant*>& constants) {
+            const std::vector<const analysis::Constant*>&) {
     assert(inst->opcode() == spv::Op::OpLogicalNot);
     analysis::DefUseManager* def_mgr = context->get_def_use_mgr();
     Instruction* child =
