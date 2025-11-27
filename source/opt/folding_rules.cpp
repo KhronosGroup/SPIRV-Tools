@@ -2303,7 +2303,7 @@ FoldingRule BitCastScalarOrVector() {
 //   float32 x; asuint32(asint32(x))   => asuint32(x)
 FoldingRule RedundantBitcast() {
   return [](IRContext* context, Instruction* inst,
-            const std::vector<const analysis::Constant*>& constants) {
+            const std::vector<const analysis::Constant*>&) {
     assert(inst->opcode() == spv::Op::OpBitcast);
 
     analysis::DefUseManager* def_mgr = context->get_def_use_mgr();
