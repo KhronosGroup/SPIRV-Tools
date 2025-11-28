@@ -403,24 +403,29 @@ bool Instruction::IsVulkanStorageBuffer() const {
 
   spv::StorageClass storage_class =
       spv::StorageClass(GetSingleWordInOperand(kPointerTypeStorageClassIndex));
-  if (storage_class == spv::StorageClass::Uniform) {
-    bool is_buffer_block = false;
-    context()->get_decoration_mgr()->ForEachDecoration(
-        base_type->result_id(), uint32_t(spv::Decoration::BufferBlock),
-        [&is_buffer_block](const Instruction&) { is_buffer_block = true; });
-    return is_buffer_block;
-  } else if (storage_class == spv::StorageClass::StorageBuffer) {
-    bool is_block = false;
-    context()->get_decoration_mgr()->ForEachDecoration(
-        base_type->result_id(), uint32_t(spv::Decoration::Block),
-        [&is_block](const Instruction&) { is_block = true; });
-    return is_block;
+
+  if (storage_class != spv::StorageClass::Uniform &&
+      storage_class != spv::StorageClass::StorageBuffer) {
+    return false;
+  }
+
+  analysis::DecorationManager* decoration_mgr = context()->get_decoration_mgr();
+  uint32_t base_result_id = base_type->result_id();
+
+  if (storage_class == spv::StorageClass::Uniform &&
+      decoration_mgr->HasDecoration(base_result_id,
+                                    spv::Decoration::BufferBlock)) {
+    return true;
+  }
+  if (storage_class == spv::StorageClass::StorageBuffer &&
+      decoration_mgr->HasDecoration(base_result_id, spv::Decoration::Block)) {
+    return true;
   }
   return false;
 }
 
 bool Instruction::IsVulkanReadOnlyStorageBuffer() const {
-  if (opcode() != spv::Op::OpTypePointer) {
+  if (!IsVulkanStorageBuffer()) {
     return false;
   }
   Instruction* base_type =
@@ -432,31 +437,8 @@ bool Instruction::IsVulkanReadOnlyStorageBuffer() const {
     base_type = context()->get_def_use_mgr()->GetDef(
         base_type->GetSingleWordInOperand(0));
   }
-
-  if (base_type->opcode() != spv::Op::OpTypeStruct) {
-    return false;
-  }
-
-  spv::StorageClass storage_class =
-      spv::StorageClass(GetSingleWordInOperand(kPointerTypeStorageClassIndex));
-
-  if (storage_class != spv::StorageClass::Uniform &&
-      storage_class != spv::StorageClass::StorageBuffer) {
-    return false;
-  }
-
   analysis::DecorationManager* decoration_mgr = context()->get_decoration_mgr();
   uint32_t base_result_id = base_type->result_id();
-
-  if (storage_class == spv::StorageClass::Uniform &&
-      !decoration_mgr->HasDecoration(base_result_id,
-                                     spv::Decoration::BufferBlock)) {
-    return false;
-  }
-  if (storage_class == spv::StorageClass::StorageBuffer &&
-      !decoration_mgr->HasDecoration(base_result_id, spv::Decoration::Block)) {
-    return false;
-  }
   return decoration_mgr->HasDecoration(base_result_id,
                                        spv::Decoration::NonWritable);
 }
