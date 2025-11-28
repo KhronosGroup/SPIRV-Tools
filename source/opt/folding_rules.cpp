@@ -2394,9 +2394,7 @@ FoldingRule RedundantSelect() {
     uint32_t true_id = inst->GetSingleWordInOperand(1);
     uint32_t false_id = inst->GetSingleWordInOperand(2);
 
-    if (true_id == false_id ||
-        (constants[1] && constants[2] && constants[1]->IsZero() &&
-         constants[2]->IsZero())) {
+    if (true_id == false_id) {
       // Both results are the same, condition doesn't matter
       inst->SetOpcode(spv::Op::OpCopyObject);
       inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {true_id}}});
