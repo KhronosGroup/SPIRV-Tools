@@ -1127,7 +1127,7 @@ ConstantFoldingRule FoldFUnordGreaterThanEqual() {
 }
 
 ConstantFoldingRule FoldInvariantSelect() {
-  return [](IRContext* context, Instruction* inst,
+  return [](IRContext*, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
     assert(inst->opcode() == spv::Op::OpSelect);
