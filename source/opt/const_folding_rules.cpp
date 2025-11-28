@@ -1435,6 +1435,18 @@ ConstantFoldingRule FoldFMix() {
   };
 }
 
+template <typename FloatType>
+static bool NegZeroAwareLessThan(FloatType a, FloatType b) {
+  if (a == 0.0 && b == 0.0) {
+    bool sba = std::signbit(a);
+    bool sbb = std::signbit(b);
+    if (sba && !sbb) {
+      return true;
+    }
+  }
+  return a < b;
+}
+
 const analysis::Constant* FoldMin(const analysis::Type* result_type,
                                   const analysis::Constant* a,
                                   const analysis::Constant* b,
@@ -1480,11 +1492,11 @@ const analysis::Constant* FoldMin(const analysis::Type* result_type,
     if (float_type->width() == 32) {
       float va = a->GetFloat();
       float vb = b->GetFloat();
-      return (va < vb ? a : b);
+      return NegZeroAwareLessThan(va, vb) ? a : b;
     } else if (float_type->width() == 64) {
       double va = a->GetDouble();
       double vb = b->GetDouble();
-      return (va < vb ? a : b);
+      return NegZeroAwareLessThan(va, vb) ? a : b;
     }
   }
   return nullptr;
@@ -1535,11 +1547,11 @@ const analysis::Constant* FoldMax(const analysis::Type* result_type,
     if (float_type->width() == 32) {
       float va = a->GetFloat();
       float vb = b->GetFloat();
-      return (va > vb ? a : b);
+      return NegZeroAwareLessThan(vb, va) ? a : b;
     } else if (float_type->width() == 64) {
       double va = a->GetDouble();
       double vb = b->GetDouble();
-      return (va > vb ? a : b);
+      return NegZeroAwareLessThan(vb, va) ? a : b;
     }
   }
   return nullptr;
@@ -1559,7 +1571,7 @@ const analysis::Constant* FoldNMin(const analysis::Type* result_type,
       if (std::isnan(vb)) {
         return a;
       }
-      return (va < vb ? a : b);
+      return NegZeroAwareLessThan(va, vb) ? a : b;
     } else if (float_type->width() == 64) {
       double va = a->GetDouble();
       double vb = b->GetDouble();
@@ -1569,7 +1581,7 @@ const analysis::Constant* FoldNMin(const analysis::Type* result_type,
       if (std::isnan(vb)) {
         return a;
       }
-      return (va < vb ? a : b);
+      return NegZeroAwareLessThan(va, vb) ? a : b;
     }
   }
   return nullptr;
@@ -1589,7 +1601,7 @@ const analysis::Constant* FoldNMax(const analysis::Type* result_type,
       if (std::isnan(vb)) {
         return a;
       }
-      return (va > vb ? a : b);
+      return NegZeroAwareLessThan(vb, va) ? a : b;
     } else if (float_type->width() == 64) {
       double va = a->GetDouble();
       double vb = b->GetDouble();
@@ -1599,7 +1611,7 @@ const analysis::Constant* FoldNMax(const analysis::Type* result_type,
       if (std::isnan(vb)) {
         return a;
       }
-      return (va > vb ? a : b);
+      return NegZeroAwareLessThan(vb, va) ? a : b;
     }
   }
   return nullptr;

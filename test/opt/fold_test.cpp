@@ -2654,6 +2654,27 @@ TEST_P(FloatInstructionFoldingTest, Case) {
                                  });
 }
 
+using FloatBitsInstructionFoldingTest =
+    ::testing::TestWithParam<InstructionFoldingCase<uint32_t>>;
+
+TEST_P(FloatBitsInstructionFoldingTest, Case) {
+  const auto& tc = GetParam();
+
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) =
+      FoldInstruction(tc.test_body, tc.id_to_fold, SPV_ENV_UNIVERSAL_1_1);
+
+  CheckForExpectedScalarConstant(
+      inst, tc.expected_result, [](const analysis::Constant* c) {
+        float f = c->AsFloatConstant()->GetFloatValue();
+        uint32_t fbits{};
+        static_assert(sizeof(float) == sizeof(uint32_t));
+        std::memcpy(&fbits, &f, sizeof(uint32_t));
+        return fbits;
+      });
+}
+
 // Not testing NaNs because there are no expectations concerning NaNs according
 // to the "Precision and Operation of SPIR-V Instructions" section of the Vulkan
 // specification.
@@ -3210,6 +3231,75 @@ INSTANTIATE_TEST_SUITE_P(FloatConstantFoldingTest, FloatInstructionFoldingTest,
             "OpFunctionEnd",
         2, std::numeric_limits<float>::quiet_NaN())
 ));
+
+INSTANTIATE_TEST_SUITE_P(MinMaxZeroFoldingTest, FloatBitsInstructionFoldingTest,
+::testing::Values(
+    // Test case 0: Fold FMin 0.0 -0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FMin %float_0 %float_n0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x80000000u),
+    // Test case 1: Fold FMin -0.0 0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FMin %float_n0 %float_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x80000000u),
+    // Test case 2: Fold FMax 0.0 -0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FMax %float_0 %float_n0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x00000000u),
+    // Test case 3: Fold FMax -0.0 0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FMax %float_n0 %float_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x00000000u),
+    // Test case 4: Fold NMin 0.0 -0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NMin %float_0 %float_n0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x80000000u),
+    // Test case 5: Fold NMin -0.0 0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NMin %float_n0 %float_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x80000000u),
+    // Test case 6: Fold NMax 0.0 -0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NMax %float_0 %float_n0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x00000000u),
+    // Test case 7: Fold NMax -0.0 0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NMax %float_n0 %float_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x00000000u)
+));
+
 // clang-format on
 
 using DoubleInstructionFoldingTest =
