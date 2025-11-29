@@ -570,7 +570,7 @@ TEST_F(DescriptorTypeTest, AliasedNotReadOnlyStorageBuffer) {
   Instruction* variable_readonly = context->get_def_use_mgr()->GetDef(3);
   EXPECT_FALSE(variable_readonly->IsReadOnlyPointer());
   Instruction* variable_writeonly = context->get_def_use_mgr()->GetDef(5);
-  EXPECT_FALSE(variable_readonly->IsReadOnlyPointer());
+  EXPECT_FALSE(variable_writeonly->IsReadOnlyPointer());
 }
 
 TEST_F(DescriptorTypeTest, UniformBuffer) {
