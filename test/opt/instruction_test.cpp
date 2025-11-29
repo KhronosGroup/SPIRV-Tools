@@ -347,7 +347,7 @@ TEST_F(DescriptorTypeTest, StorageImage) {
   EXPECT_FALSE(type->IsVulkanStorageTexelBuffer());
   EXPECT_FALSE(type->IsVulkanStorageBuffer());
   EXPECT_FALSE(type->IsVulkanUniformBuffer());
-  EXPECT_FALSE(type->IsVulkanStorageBufferNonWriteable());
+  EXPECT_FALSE(type->IsVulkanStorageBufferNonWritable());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_FALSE(variable->IsReadOnlyPointer());
@@ -388,7 +388,7 @@ TEST_F(DescriptorTypeTest, SampledImage) {
   EXPECT_FALSE(type->IsVulkanStorageTexelBuffer());
   EXPECT_FALSE(type->IsVulkanStorageBuffer());
   EXPECT_FALSE(type->IsVulkanUniformBuffer());
-  EXPECT_FALSE(type->IsVulkanStorageBufferNonWriteable());
+  EXPECT_FALSE(type->IsVulkanStorageBufferNonWritable());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_TRUE(variable->IsReadOnlyPointer());
@@ -429,7 +429,7 @@ TEST_F(DescriptorTypeTest, StorageTexelBuffer) {
   EXPECT_TRUE(type->IsVulkanStorageTexelBuffer());
   EXPECT_FALSE(type->IsVulkanStorageBuffer());
   EXPECT_FALSE(type->IsVulkanUniformBuffer());
-  EXPECT_FALSE(type->IsVulkanStorageBufferNonWriteable());
+  EXPECT_FALSE(type->IsVulkanStorageBufferNonWritable());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_FALSE(variable->IsReadOnlyPointer());
@@ -473,7 +473,7 @@ TEST_F(DescriptorTypeTest, StorageBuffer) {
   EXPECT_FALSE(type->IsVulkanStorageTexelBuffer());
   EXPECT_TRUE(type->IsVulkanStorageBuffer());
   EXPECT_FALSE(type->IsVulkanUniformBuffer());
-  EXPECT_FALSE(type->IsVulkanStorageBufferNonWriteable());
+  EXPECT_FALSE(type->IsVulkanStorageBufferNonWritable());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_FALSE(variable->IsReadOnlyPointer());
@@ -523,7 +523,7 @@ TEST_F(DescriptorTypeTest, ReadOnlyStorageBuffer) {
   EXPECT_FALSE(type->IsVulkanStorageTexelBuffer());
   EXPECT_TRUE(type->IsVulkanStorageBuffer());
   EXPECT_FALSE(type->IsVulkanUniformBuffer());
-  EXPECT_TRUE(type->IsVulkanStorageBufferNonWriteable());
+  EXPECT_TRUE(type->IsVulkanStorageBufferNonWritable());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_TRUE(variable->IsReadOnlyPointer());
@@ -608,7 +608,7 @@ TEST_F(DescriptorTypeTest, UniformBuffer) {
   EXPECT_FALSE(type->IsVulkanStorageTexelBuffer());
   EXPECT_FALSE(type->IsVulkanStorageBuffer());
   EXPECT_TRUE(type->IsVulkanUniformBuffer());
-  EXPECT_FALSE(type->IsVulkanStorageBufferNonWriteable());
+  EXPECT_FALSE(type->IsVulkanStorageBufferNonWritable());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_TRUE(variable->IsReadOnlyPointer());
