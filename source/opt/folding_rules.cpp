@@ -2322,12 +2322,6 @@ FoldingRule RedundantBitcast() {
     const analysis::Type* inst_type = type_mgr->GetType(inst->type_id());
     const analysis::Type* child_type = type_mgr->GetType(child->type_id());
 
-    if (inst_type->NumberOfComponents() != child_type->NumberOfComponents()) {
-      return false;
-    }
-    if (ElementWidth(inst_type) != ElementWidth(child_type)) {
-      return false;
-    }
     if (def_mgr->GetDef(child->GetSingleWordInOperand(0))->type_id() ==
         inst->type_id()) {
       inst->SetOpcode(spv::Op::OpCopyObject);
