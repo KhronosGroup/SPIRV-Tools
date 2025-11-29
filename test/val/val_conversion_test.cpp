@@ -1371,6 +1371,7 @@ OpExtension "SPV_KHR_cooperative_matrix"
 OpExtension "SPV_KHR_vulkan_memory_model"
 OpMemoryModel Logical VulkanKHR
 OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 32 1 1
 %void = OpTypeVoid
 %func = OpTypeFunction %void
 %bool = OpTypeBool
@@ -1384,11 +1385,11 @@ OpEntryPoint GLCompute %main "main"
 %u32_8 = OpConstant %u32 8
 %u32_4 = OpConstant %u32 4
 %subgroup = OpConstant %u32 3
-%device = OpConstant %u32 1
+%workgroup = OpConstant %u32 2
 %use_A = OpConstant %u32 0
 
 %f16mat = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_8 %use_A
-%f32mat = OpTypeCooperativeMatrixKHR %f32 %device %u32_8 %u32_8 %use_A
+%f32mat = OpTypeCooperativeMatrixKHR %f32 %workgroup %u32_8 %u32_8 %use_A
 
 %f16_1 = OpConstant %f16 1
 
