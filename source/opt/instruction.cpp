@@ -586,7 +586,7 @@ bool Instruction::IsSetBindingUniformlyReadOnly() const {
     assert(false && "Set and binding couldn't be resolved!");
     return false;
   }
-  for (const auto other_inst : context()->types_values()) {
+  for (const auto& other_inst : context()->types_values()) {
     if (other_inst.opcode() != spv::Op::OpVariable) {
       continue;
     }
