@@ -269,9 +269,19 @@ Instruction* Instruction::GetBaseAddress() const {
 }
 
 bool Instruction::IsReadOnlyPointer() const {
-  if (context()->get_feature_mgr()->HasCapability(spv::Capability::Shader))
-    return IsReadOnlyPointerShaders();
-  else
+  if (context()->get_feature_mgr()->HasCapability(spv::Capability::Shader)) {
+    switch (IsReadOnlyPointerShaders()) {
+      case ReadOnlyShaderResult::kFalse:
+        return false;
+      case ReadOnlyShaderResult::kTrue:
+        return true;
+      case ReadOnlyShaderResult::kMayHaveAliasingBinding:
+        return IsSetBindingUniformlyReadOnly();
+      default:
+        assert(false);
+        return false;
+    }
+  } else
     return IsReadOnlyPointerKernel();
 }
 
@@ -424,7 +434,7 @@ bool Instruction::IsVulkanStorageBuffer() const {
   return false;
 }
 
-bool Instruction::IsVulkanReadOnlyStorageBuffer() const {
+bool Instruction::IsVulkanStorageBufferNonWriteable() const {
   if (!IsVulkanStorageBuffer()) {
     return false;
   }
@@ -491,14 +501,15 @@ bool Instruction::IsVulkanUniformBuffer() const {
   return is_block;
 }
 
-bool Instruction::IsReadOnlyPointerShaders() const {
+Instruction::ReadOnlyShaderResult Instruction::IsReadOnlyPointerShaders()
+    const {
   if (type_id() == 0) {
-    return false;
+    return ReadOnlyShaderResult::kFalse;
   }
 
   Instruction* type_def = context()->get_def_use_mgr()->GetDef(type_id());
   if (type_def->opcode() != spv::Op::OpTypePointer) {
-    return false;
+    return ReadOnlyShaderResult::kFalse;
   }
 
   spv::StorageClass storage_class = spv::StorageClass(
@@ -508,26 +519,30 @@ bool Instruction::IsReadOnlyPointerShaders() const {
     case spv::StorageClass::UniformConstant:
       if (!type_def->IsVulkanStorageImage() &&
           !type_def->IsVulkanStorageTexelBuffer()) {
-        return true;
+        return ReadOnlyShaderResult::kTrue;
       }
       break;
     case spv::StorageClass::Uniform:
       if (!type_def->IsVulkanStorageBuffer()) {
-        return true;
+        return ReadOnlyShaderResult::kTrue;
       }
-      if (type_def->IsVulkanReadOnlyStorageBuffer()) {
-        return true;
+      if (type_def->IsVulkanStorageBufferNonWriteable()) {
+        return ReadOnlyShaderResult::kMayHaveAliasingBinding;
       }
       break;
     case spv::StorageClass::PushConstant:
     case spv::StorageClass::Input:
-      return true;
+      return ReadOnlyShaderResult::kTrue;
     default:
       break;
   }
 
-  return context()->get_decoration_mgr()->HasDecoration(
-      result_id(), spv::Decoration::NonWritable);
+  if (context()->get_decoration_mgr()->HasDecoration(
+          result_id(), spv::Decoration::NonWritable)) {
+    return ReadOnlyShaderResult::kTrue;
+  }
+
+  return ReadOnlyShaderResult::kFalse;
 }
 
 bool Instruction::IsReadOnlyPointerKernel() const {
@@ -544,6 +559,55 @@ bool Instruction::IsReadOnlyPointerKernel() const {
       type_def->GetSingleWordInOperand(kPointerTypeStorageClassIndex));
 
   return storage_class == spv::StorageClass::UniformConstant;
+}
+
+bool Instruction::ResolveSetAndBinding(uint32_t& set, uint32_t& binding) const {
+  bool found_set = false;
+  bool found_binding = false;
+  for (Instruction* decr_inst :
+       context()->get_decoration_mgr()->GetDecorationsFor(result_id(), false)) {
+    spv::Decoration decoration =
+        spv::Decoration(decr_inst->GetSingleWordInOperand(1u));
+    if (decoration == spv::Decoration::DescriptorSet) {
+      set = decr_inst->GetSingleWordInOperand(2u);
+      found_set = true;
+    }
+    if (decoration == spv::Decoration::Binding) {
+      binding = decr_inst->GetSingleWordInOperand(2u);
+      found_binding = true;
+    }
+  }
+  return found_set && found_binding;
+}
+
+bool Instruction::IsSetBindingUniformlyReadOnly() const {
+  uint32_t set, binding;
+  if (!ResolveSetAndBinding(set, binding)) {
+    assert(false && "Set and binding couldn't be resolved!");
+    return false;
+  }
+  for (const auto other_inst : context()->types_values()) {
+    if (other_inst.opcode() != spv::Op::OpVariable) {
+      continue;
+    }
+    if (other_inst.result_id() == result_id()) {
+      continue;
+    }
+
+    uint32_t other_set = 0;
+    uint32_t other_binding = 0;
+    if (!other_inst.ResolveSetAndBinding(other_set, other_binding)) {
+      continue;
+    }
+
+    if (other_set == set && other_binding == binding) {
+      if (other_inst.IsReadOnlyPointerShaders() ==
+          ReadOnlyShaderResult::kFalse) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 void Instruction::UpdateLexicalScope(uint32_t scope) {
