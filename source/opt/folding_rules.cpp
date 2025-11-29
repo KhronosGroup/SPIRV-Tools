@@ -2318,9 +2318,6 @@ FoldingRule RedundantBitcast() {
     if (child->opcode() != spv::Op::OpBitcast) {
       return false;
     }
-    analysis::TypeManager* type_mgr = context->get_type_mgr();
-    const analysis::Type* inst_type = type_mgr->GetType(inst->type_id());
-    const analysis::Type* child_type = type_mgr->GetType(child->type_id());
 
     if (def_mgr->GetDef(child->GetSingleWordInOperand(0))->type_id() ==
         inst->type_id()) {
