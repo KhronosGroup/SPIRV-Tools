@@ -3266,7 +3266,55 @@ INSTANTIATE_TEST_SUITE_P(MinMaxZeroFoldingTest, FloatBitsInstructionFoldingTest,
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 0x00000000u),
-    // Test case 4: Fold NMin 0.0 -0.0
+    // Test case 4: Fold FClamp -0.0 0.0 1.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FClamp %float_n0 %float_0 %float_1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x00000000u),
+    // Test case 5: Fold FClamp 0.0 -0.0 1.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FClamp %float_0 %float_n0 %float_1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x00000000u),
+    // Test case 6: Fold FClamp 1.0 -0.0 0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FClamp %float_1 %float_n0 %float_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x00000000u),
+    // Test case 7: Fold FClamp 0.0 -1.0 -0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FClamp %float_0 %float_n1 %float_n0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x80000000u),
+    // Test case 8: Fold FClamp -0.0 -1.0 0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FClamp %float_n0 %float_n1 %float_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x80000000u),
+    // Test case 9: Fold FClamp -1.0 -0.0 0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 FClamp %float_n1 %float_n0 %float_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x80000000u),
+    // Test case 10: Fold NMin 0.0 -0.0
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -3274,7 +3322,7 @@ INSTANTIATE_TEST_SUITE_P(MinMaxZeroFoldingTest, FloatBitsInstructionFoldingTest,
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 0x80000000u),
-    // Test case 5: Fold NMin -0.0 0.0
+    // Test case 11: Fold NMin -0.0 0.0
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -3282,7 +3330,7 @@ INSTANTIATE_TEST_SUITE_P(MinMaxZeroFoldingTest, FloatBitsInstructionFoldingTest,
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 0x80000000u),
-    // Test case 6: Fold NMax 0.0 -0.0
+    // Test case 12: Fold NMax 0.0 -0.0
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
@@ -3290,14 +3338,62 @@ INSTANTIATE_TEST_SUITE_P(MinMaxZeroFoldingTest, FloatBitsInstructionFoldingTest,
             "OpReturn\n" +
             "OpFunctionEnd",
         2, 0x00000000u),
-    // Test case 7: Fold NMax -0.0 0.0
+    // Test case 13: Fold NMax -0.0 0.0
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
             "%main_lab = OpLabel\n" +
             "%2 = OpExtInst %float %1 NMax %float_n0 %float_0\n" +
             "OpReturn\n" +
             "OpFunctionEnd",
-        2, 0x00000000u)
+        2, 0x00000000u),
+    // Test case 14: Fold NClamp -0.0 0.0 1.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_n0 %float_0 %float_1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x00000000u),
+    // Test case 15: Fold NClamp 0.0 -0.0 1.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_0 %float_n0 %float_1\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x00000000u),
+    // Test case 16: Fold NClamp 1.0 -0.0 0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_1 %float_n0 %float_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x00000000u),
+    // Test case 17: Fold NClamp 0.0 -1.0 -0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_0 %float_n1 %float_n0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x80000000u),
+    // Test case 18: Fold NClamp -0.0 -1.0 0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_n0 %float_n1 %float_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x80000000u),
+    // Test case 19: Fold NClamp -1.0 -0.0 0.0
+    InstructionFoldingCase<uint32_t>(
+        Header() + "%main = OpFunction %void None %void_func\n" +
+            "%main_lab = OpLabel\n" +
+            "%2 = OpExtInst %float %1 NClamp %float_n1 %float_n0 %float_0\n" +
+            "OpReturn\n" +
+            "OpFunctionEnd",
+        2, 0x80000000u)
 ));
 
 // clang-format on
