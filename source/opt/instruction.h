@@ -482,8 +482,8 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   bool IsVulkanStorageBuffer() const;
 
   // Returns true if the instruction defines a pointer type that points to a
-  // buffer that is decorated with NonWriteable.
-  bool IsVulkanStorageBufferNonWriteable() const;
+  // buffer that is decorated with NonWritable.
+  bool IsVulkanStorageBufferNonWritable() const;
 
   // Returns true if the instruction defines a variable in StorageBuffer or
   // Uniform storage class with a pointer type that points to a storage buffer.

@@ -434,7 +434,7 @@ bool Instruction::IsVulkanStorageBuffer() const {
   return false;
 }
 
-bool Instruction::IsVulkanStorageBufferNonWriteable() const {
+bool Instruction::IsVulkanStorageBufferNonWritable() const {
   if (!IsVulkanStorageBuffer()) {
     return false;
   }
@@ -526,7 +526,7 @@ Instruction::ReadOnlyShaderResult Instruction::IsReadOnlyPointerShaders()
       if (!type_def->IsVulkanStorageBuffer()) {
         return ReadOnlyShaderResult::kTrue;
       }
-      if (type_def->IsVulkanStorageBufferNonWriteable()) {
+      if (type_def->IsVulkanStorageBufferNonWritable()) {
         return ReadOnlyShaderResult::kMayHaveAliasingBinding;
       }
       break;
