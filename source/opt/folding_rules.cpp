@@ -933,6 +933,42 @@ FoldingRule MergeMulNegateArithmetic() {
   };
 }
 
+// Returns true if |inst| is negation op and is safe to fold.
+static bool IsFoldableNegation(const Instruction* inst) {
+  return (inst->opcode() == spv::Op::OpSNegate ||
+          (inst->opcode() == spv::Op::OpFNegate &&
+           inst->IsFloatingPointFoldingAllowed()));
+}
+
+// Merges multiplies of two negations.
+// Cases:
+// (-x) * (-y) = x * y
+FoldingRule MergeMulDoubleNegative() {
+  return [](IRContext* context, Instruction* inst,
+            const std::vector<const analysis::Constant*>&) {
+    assert(inst->opcode() == spv::Op::OpFMul ||
+           inst->opcode() == spv::Op::OpIMul);
+
+    const analysis::Type* type =
+        context->get_type_mgr()->GetType(inst->type_id());
+
+    bool uses_float = HasFloatingPoint(type);
+    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
+
+    analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+    Instruction* lhs = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
+    Instruction* rhs = def_use_mgr->GetDef(inst->GetSingleWordInOperand(1));
+
+    if (IsFoldableNegation(lhs) && IsFoldableNegation(rhs)) {
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {lhs->GetSingleWordInOperand(0u)}},
+           {SPV_OPERAND_TYPE_ID, {rhs->GetSingleWordInOperand(0u)}}});
+      return true;
+    }
+    return false;
+  };
+}
+
 // Merges consecutive divides if each instruction contains one constant operand.
 // Does not support integer division.
 // Cases:
@@ -1125,13 +1161,12 @@ FoldingRule MergeDivNegateArithmetic() {
   };
 }
 
-// Folds addition of a constant and a negation.
-// Cases:
-// (-x) + 2 = 2 - x
-// 2 + (-x) = 2 - x
+// Folds addition, where one side is a negation.
+// (-x) + y = y - x
+// y + (-x) = y - x
 FoldingRule MergeAddNegateArithmetic() {
   return [](IRContext* context, Instruction* inst,
-            const std::vector<const analysis::Constant*>& constants) {
+            const std::vector<const analysis::Constant*>&) {
     assert(inst->opcode() == spv::Op::OpFAdd ||
            inst->opcode() == spv::Op::OpIAdd);
     const analysis::Type* type =
@@ -1139,73 +1174,65 @@ FoldingRule MergeAddNegateArithmetic() {
     bool uses_float = HasFloatingPoint(type);
     if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
 
-    const analysis::Constant* const_input1 = ConstInput(constants);
-    if (!const_input1) return false;
-    Instruction* other_inst = NonConstInput(context, constants[0], inst);
-    if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
-      return false;
+    analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+    Instruction* lhs = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
+    Instruction* rhs = def_use_mgr->GetDef(inst->GetSingleWordInOperand(1));
 
-    if (other_inst->opcode() == spv::Op::OpSNegate ||
-        other_inst->opcode() == spv::Op::OpFNegate) {
-      inst->SetOpcode(HasFloatingPoint(type) ? spv::Op::OpFSub
-                                             : spv::Op::OpISub);
-      uint32_t const_id = constants[0] ? inst->GetSingleWordInOperand(0u)
-                                       : inst->GetSingleWordInOperand(1u);
-      inst->SetInOperands(
-          {{SPV_OPERAND_TYPE_ID, {const_id}},
-           {SPV_OPERAND_TYPE_ID, {other_inst->GetSingleWordInOperand(0u)}}});
-      return true;
-    }
-    return false;
+    auto TrySubstitute = [inst, uses_float](Instruction* first,
+                                            Instruction* second) {
+      if (IsFoldableNegation(first)) {
+        inst->SetOpcode(uses_float ? spv::Op::OpFSub : spv::Op::OpISub);
+        inst->SetInOperands(
+            {{SPV_OPERAND_TYPE_ID, {second->result_id()}},
+             {SPV_OPERAND_TYPE_ID, {first->GetSingleWordInOperand(0u)}}});
+        return true;
+      }
+      return false;
+    };
+
+    return TrySubstitute(lhs, rhs) || TrySubstitute(rhs, lhs);
   };
 }
 
-// Folds subtraction of a constant and a negation.
+// Folds subtraction, where one side is a negation.
 // Cases:
 // (-x) - 2 = -2 - x
-// 2 - (-x) = x + 2
+// y - (-x) = x + y
 FoldingRule MergeSubNegateArithmetic() {
   return [](IRContext* context, Instruction* inst,
             const std::vector<const analysis::Constant*>& constants) {
     assert(inst->opcode() == spv::Op::OpFSub ||
            inst->opcode() == spv::Op::OpISub);
-    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
+
+    bool uses_float = HasFloatingPoint(type);
+    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
+
+    analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+    Instruction* lhs = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
+    Instruction* rhs = def_use_mgr->GetDef(inst->GetSingleWordInOperand(1));
+
+    if (IsFoldableNegation(rhs)) {
+      inst->SetOpcode(uses_float ? spv::Op::OpFAdd : spv::Op::OpIAdd);
+      inst->SetInOperands(
+          {{SPV_OPERAND_TYPE_ID, {lhs->result_id()}},
+           {SPV_OPERAND_TYPE_ID, {rhs->GetSingleWordInOperand(0)}}});
+      return true;
+    }
 
     if (IsCooperativeMatrix(type)) {
       return false;
     }
 
-    bool uses_float = HasFloatingPoint(type);
-    if (uses_float && !inst->IsFloatingPointFoldingAllowed()) return false;
-
     uint32_t width = ElementWidth(type);
     if (width != 32 && width != 64) return false;
 
-    const analysis::Constant* const_input1 = ConstInput(constants);
-    if (!const_input1) return false;
-    Instruction* other_inst = NonConstInput(context, constants[0], inst);
-    if (uses_float && !other_inst->IsFloatingPointFoldingAllowed())
-      return false;
-
-    if (other_inst->opcode() == spv::Op::OpSNegate ||
-        other_inst->opcode() == spv::Op::OpFNegate) {
-      uint32_t op1 = 0;
-      uint32_t op2 = 0;
-      spv::Op opcode = inst->opcode();
-      if (constants[0] != nullptr) {
-        op1 = other_inst->GetSingleWordInOperand(0u);
-        op2 = inst->GetSingleWordInOperand(0u);
-        opcode = HasFloatingPoint(type) ? spv::Op::OpFAdd : spv::Op::OpIAdd;
-      } else {
-        op1 = NegateConstant(const_mgr, const_input1);
-        op2 = other_inst->GetSingleWordInOperand(0u);
-      }
-
-      inst->SetOpcode(opcode);
+    if (constants[1] && IsFoldableNegation(lhs)) {
       inst->SetInOperands(
-          {{SPV_OPERAND_TYPE_ID, {op1}}, {SPV_OPERAND_TYPE_ID, {op2}}});
+          {{SPV_OPERAND_TYPE_ID,
+            {NegateConstant(context->get_constant_mgr(), constants[1])}},
+           {SPV_OPERAND_TYPE_ID, {lhs->GetSingleWordInOperand(0)}}});
       return true;
     }
     return false;
@@ -3431,6 +3458,7 @@ void FoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpFMul].push_back(MergeMulMulArithmetic());
   rules_[spv::Op::OpFMul].push_back(MergeMulDivArithmetic());
   rules_[spv::Op::OpFMul].push_back(MergeMulNegateArithmetic());
+  rules_[spv::Op::OpFMul].push_back(MergeMulDoubleNegative());
 
   rules_[spv::Op::OpFNegate].push_back(MergeNegateArithmetic());
   rules_[spv::Op::OpFNegate].push_back(MergeNegateAddSubArithmetic());
@@ -3450,6 +3478,7 @@ void FoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpIMul].push_back(IntMultipleBy1());
   rules_[spv::Op::OpIMul].push_back(MergeMulMulArithmetic());
   rules_[spv::Op::OpIMul].push_back(MergeMulNegateArithmetic());
+  rules_[spv::Op::OpIMul].push_back(MergeMulDoubleNegative());
 
   rules_[spv::Op::OpISub].push_back(MergeSubNegateArithmetic());
   rules_[spv::Op::OpISub].push_back(MergeSubAddArithmetic());
