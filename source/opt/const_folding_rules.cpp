@@ -1131,6 +1131,8 @@ ConstantFoldingRule FoldInvariantSelect() {
             const std::vector<const analysis::Constant*>& constants)
              -> const analysis::Constant* {
     assert(inst->opcode() == spv::Op::OpSelect);
+    (void)inst;
+
     if (!constants[1] || !constants[2]) {
       return nullptr;
     }
