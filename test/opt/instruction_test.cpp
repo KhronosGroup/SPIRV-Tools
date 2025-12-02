@@ -29,8 +29,8 @@ namespace spvtools {
 namespace opt {
 namespace {
 
-using ::testing::Eq;
 using spvtest::MakeInstruction;
+using ::testing::Eq;
 using DescriptorTypeTest = PassTest<::testing::Test>;
 using OpaqueTypeTest = PassTest<::testing::Test>;
 using GetBaseTest = PassTest<::testing::Test>;
@@ -347,6 +347,7 @@ TEST_F(DescriptorTypeTest, StorageImage) {
   EXPECT_FALSE(type->IsVulkanStorageTexelBuffer());
   EXPECT_FALSE(type->IsVulkanStorageBuffer());
   EXPECT_FALSE(type->IsVulkanUniformBuffer());
+  EXPECT_FALSE(type->IsVulkanStorageBufferNonWritable());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_FALSE(variable->IsReadOnlyPointer());
@@ -387,6 +388,7 @@ TEST_F(DescriptorTypeTest, SampledImage) {
   EXPECT_FALSE(type->IsVulkanStorageTexelBuffer());
   EXPECT_FALSE(type->IsVulkanStorageBuffer());
   EXPECT_FALSE(type->IsVulkanUniformBuffer());
+  EXPECT_FALSE(type->IsVulkanStorageBufferNonWritable());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_TRUE(variable->IsReadOnlyPointer());
@@ -427,6 +429,7 @@ TEST_F(DescriptorTypeTest, StorageTexelBuffer) {
   EXPECT_TRUE(type->IsVulkanStorageTexelBuffer());
   EXPECT_FALSE(type->IsVulkanStorageBuffer());
   EXPECT_FALSE(type->IsVulkanUniformBuffer());
+  EXPECT_FALSE(type->IsVulkanStorageBufferNonWritable());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_FALSE(variable->IsReadOnlyPointer());
@@ -470,12 +473,104 @@ TEST_F(DescriptorTypeTest, StorageBuffer) {
   EXPECT_FALSE(type->IsVulkanStorageTexelBuffer());
   EXPECT_TRUE(type->IsVulkanStorageBuffer());
   EXPECT_FALSE(type->IsVulkanUniformBuffer());
+  EXPECT_FALSE(type->IsVulkanStorageBufferNonWritable());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_FALSE(variable->IsReadOnlyPointer());
 
   Instruction* object_copy = context->get_def_use_mgr()->GetDef(12);
   EXPECT_FALSE(object_copy->IsReadOnlyPointer());
+}
+
+TEST_F(DescriptorTypeTest, ReadOnlyStorageBuffer) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpDecorate %3 DescriptorSet 0
+               OpDecorate %3 Binding 0
+               OpDecorate %4 BufferBlock
+               OpDecorate %4 NonWritable
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 1
+               OpDecorate %6 BufferBlock
+          %7 = OpTypeVoid
+          %8 = OpTypeFunction %7
+          %9 = OpTypeFloat 32
+         %10 = OpTypeVector %9 4
+         %11 = OpTypeRuntimeArray %10
+          %4 = OpTypeStruct %11
+          %6 = OpTypeStruct %11
+         %12 = OpTypePointer Uniform %4
+         %13 = OpTypePointer Uniform %6
+          %3 = OpVariable %12 Uniform
+          %5 = OpVariable %13 Uniform
+          %2 = OpFunction %7 None %8
+         %14 = OpLabel
+         %15 = OpCopyObject %11 %3
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  Instruction* type = context->get_def_use_mgr()->GetDef(12);
+  EXPECT_FALSE(type->IsVulkanStorageImage());
+  EXPECT_FALSE(type->IsVulkanSampledImage());
+  EXPECT_FALSE(type->IsVulkanStorageTexelBuffer());
+  EXPECT_TRUE(type->IsVulkanStorageBuffer());
+  EXPECT_FALSE(type->IsVulkanUniformBuffer());
+  EXPECT_TRUE(type->IsVulkanStorageBufferNonWritable());
+
+  Instruction* variable = context->get_def_use_mgr()->GetDef(3);
+  EXPECT_TRUE(variable->IsReadOnlyPointer());
+
+  Instruction* object_copy = context->get_def_use_mgr()->GetDef(12);
+  EXPECT_FALSE(object_copy->IsReadOnlyPointer());
+}
+
+TEST_F(DescriptorTypeTest, AliasedNotReadOnlyStorageBuffer) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpSource GLSL 430
+               OpDecorate %3 DescriptorSet 0
+               OpDecorate %3 Binding 0
+               OpDecorate %4 BufferBlock
+               OpDecorate %4 NonWritable
+               OpDecorate %5 DescriptorSet 0
+               OpDecorate %5 Binding 0
+               OpDecorate %6 BufferBlock
+          %7 = OpTypeVoid
+          %8 = OpTypeFunction %7
+          %9 = OpTypeFloat 32
+         %10 = OpTypeVector %9 4
+         %11 = OpTypeRuntimeArray %10
+          %4 = OpTypeStruct %11
+          %6 = OpTypeStruct %11
+         %12 = OpTypePointer Uniform %4
+         %13 = OpTypePointer Uniform %6
+          %3 = OpVariable %12 Uniform
+          %5 = OpVariable %13 Uniform
+          %2 = OpFunction %7 None %8
+         %14 = OpLabel
+         %15 = OpCopyObject %11 %3
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  Instruction* variable_readonly = context->get_def_use_mgr()->GetDef(3);
+  EXPECT_FALSE(variable_readonly->IsReadOnlyPointer());
+  Instruction* variable_writeonly = context->get_def_use_mgr()->GetDef(5);
+  EXPECT_FALSE(variable_writeonly->IsReadOnlyPointer());
 }
 
 TEST_F(DescriptorTypeTest, UniformBuffer) {
@@ -513,6 +608,7 @@ TEST_F(DescriptorTypeTest, UniformBuffer) {
   EXPECT_FALSE(type->IsVulkanStorageTexelBuffer());
   EXPECT_FALSE(type->IsVulkanStorageBuffer());
   EXPECT_TRUE(type->IsVulkanUniformBuffer());
+  EXPECT_FALSE(type->IsVulkanStorageBufferNonWritable());
 
   Instruction* variable = context->get_def_use_mgr()->GetDef(3);
   EXPECT_TRUE(variable->IsReadOnlyPointer());
