@@ -672,6 +672,38 @@ TEST_F(ValidateMeshShading, OpEmitMeshTasksZeroSuccess) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
 }
 
+TEST_F(ValidateMeshShading, MeshOutputScalar) {
+  const std::string body = R"(
+          OpCapability MeshShadingEXT
+          OpExtension "SPV_EXT_mesh_shader"
+          OpMemoryModel Logical GLSL450
+          OpEntryPoint MeshEXT %main "main" %x
+          OpExecutionModeId %main LocalSizeId %uint_1 %uint_1 %uint_1
+          OpExecutionMode %main OutputVertices 3
+          OpExecutionMode %main OutputPrimitivesEXT 1
+          OpExecutionMode %main OutputTrianglesEXT
+          OpDecorate %x Location 0
+  %void = OpTypeVoid
+     %4 = OpTypeFunction %void
+  %uint = OpTypeInt 32 0
+%uint_1 = OpConstant %uint 1
+%uint_3 = OpConstant %uint 3
+%o_ptr = OpTypePointer Output %uint
+     %x = OpVariable %o_ptr Output
+  %main = OpFunction %void None %4
+     %6 = OpLabel
+          OpSetMeshOutputsEXT %uint_3 %uint_1
+          OpReturn
+          OpFunctionEnd
+)";
+
+  CompileSuccessfully(body, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("In the MeshEXT Execution Mode, all Output Variables "
+                        "must contain an Array."));
+}
+
 TEST_F(ValidateMeshShading, BadPerPrimitiveEXTStorageClassInMeshEXT) {
   const std::string body = R"(
               OpCapability MeshShadingEXT
