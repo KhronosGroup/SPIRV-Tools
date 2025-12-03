@@ -1126,6 +1126,26 @@ ConstantFoldingRule FoldFUnordGreaterThanEqual() {
   return FoldFPBinaryOp(FOLD_FPCMP_OP(>=, false));
 }
 
+ConstantFoldingRule FoldInvariantSelect() {
+  return [](IRContext*, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants)
+             -> const analysis::Constant* {
+    assert(inst->opcode() == spv::Op::OpSelect);
+    (void)inst;
+
+    if (!constants[1] || !constants[2]) {
+      return nullptr;
+    }
+    if (constants[1] == constants[2]) {
+      return constants[1];
+    }
+    if (constants[1]->IsZero() && constants[2]->IsZero()) {
+      return constants[1];
+    }
+    return nullptr;
+  };
+}
+
 // Folds an OpDot where all of the inputs are constants to a
 // constant.  A new constant is created if necessary.
 ConstantFoldingRule FoldOpDotWithConstants() {
@@ -1928,6 +1948,8 @@ void ConstantFoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpFDiv].push_back(FoldFDiv());
   rules_[spv::Op::OpFMul].push_back(FoldFMul());
   rules_[spv::Op::OpFSub].push_back(FoldFSub());
+
+  rules_[spv::Op::OpSelect].push_back(FoldInvariantSelect());
 
   rules_[spv::Op::OpFOrdEqual].push_back(FoldFOrdEqual());
 
