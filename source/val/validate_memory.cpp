@@ -773,16 +773,17 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
   if (spvIsVulkanEnv(_.context()->target_env)) {
     // OpTypeRuntimeArray should only ever be in a container like OpTypeStruct,
     // so should never appear as a bare variable.
-    // Unless the module has the RuntimeDescriptorArrayEXT capability.
+    // Unless the module has the RuntimeDescriptorArray capability.
     if (value_type && value_type->opcode() == spv::Op::OpTypeRuntimeArray) {
-      if (!_.HasCapability(spv::Capability::RuntimeDescriptorArrayEXT)) {
+      if (!_.HasCapability(spv::Capability::RuntimeDescriptorArray)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << _.VkErrorID(4680) << "OpVariable, <id> "
                << _.getIdName(inst->id())
                << ", is attempting to create memory for an illegal type, "
                << "OpTypeRuntimeArray.\nFor Vulkan OpTypeRuntimeArray can only "
                << "appear as the final member of an OpTypeStruct, thus cannot "
-               << "be instantiated via OpVariable";
+               << "be instantiated via OpVariable, unless the "
+                  "RuntimeDescriptorArray Capability is declared";
       } else {
         // A bare variable OpTypeRuntimeArray is allowed in this context, but
         // still need to check the storage class.
@@ -791,7 +792,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
             storage_class != spv::StorageClass::UniformConstant) {
           return _.diag(SPV_ERROR_INVALID_ID, inst)
                  << _.VkErrorID(4680)
-                 << "For Vulkan with RuntimeDescriptorArrayEXT, a variable "
+                 << "For Vulkan with RuntimeDescriptorArray, a variable "
                  << "containing OpTypeRuntimeArray must have storage class of "
                  << "StorageBuffer, Uniform, or UniformConstant.";
         }
