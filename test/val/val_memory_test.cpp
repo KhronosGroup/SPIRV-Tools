@@ -3654,7 +3654,8 @@ OpFunctionEnd
           "OpVariable, <id> '5[%5]', is attempting to create memory for an "
           "illegal type, OpTypeRuntimeArray.\nFor Vulkan OpTypeRuntimeArray "
           "can only appear as the final member of an OpTypeStruct, thus cannot "
-          "be instantiated via OpVariable\n  %5 = OpVariable "
+          "be instantiated via OpVariable, unless the RuntimeDescriptorArray "
+          "Capability is declared\n  %5 = OpVariable "
           "%_ptr_UniformConstant__runtimearr_2 UniformConstant\n"));
 }
 
@@ -3721,7 +3722,7 @@ OpFunctionEnd
               AnyVUID("VUID-StandaloneSpirv-OpTypeRuntimeArray-04680"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("For Vulkan with RuntimeDescriptorArrayEXT, a variable "
+      HasSubstr("For Vulkan with RuntimeDescriptorArray, a variable "
                 "containing OpTypeRuntimeArray must have storage class of "
                 "StorageBuffer, Uniform, or UniformConstant.\n  %5 = "
                 "OpVariable %_ptr_Workgroup__runtimearr_uint Workgroup\n"));
