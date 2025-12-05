@@ -2375,6 +2375,82 @@ OpFunctionEnd
               HasSubstr("Pointer operand must not be a variable pointer"));
 }
 
+TEST_F(ValidateLogicalPointersTest, FunctionParameterOperandOfFunctionCall) {
+  const std::string spirv = R"(
+               OpCapability ClipDistance
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "               "
+               OpExecutionMode %2 OriginUpperLeft
+       %void = OpTypeVoid
+         %32 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+         %35 = OpTypeFunction %float %_ptr_Function_float
+%float_1_35631564en19 = OpConstant %float 1.35631564e-19
+%float_1_35631564en19_0 = OpConstant %float 1.35631564e-19
+          %2 = OpFunction %void None %32
+       %8447 = OpLabel
+               OpUnreachable
+               OpFunctionEnd
+          %9 = OpFunction %float None %35
+         %10 = OpFunctionParameter %_ptr_Function_float
+      %65535 = OpLabel
+        %217 = OpVariable %_ptr_Function_float Function
+        %218 = OpLoad %float %10
+    %2097407 = OpFunctionCall %float %9 %10
+        %231 = OpLoad %float %217
+        %232 = OpFDiv %float %218 %231
+        %233 = OpExtInst %float %1 SmoothStep %float_1_35631564en19 %float_1_35631564en19_0 %232
+               OpReturnValue %233
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateLogicalPointersTest, RecursiveCalls) {
+  const std::string spirv = R"(
+               OpCapability ClipDistance
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %2 "               "
+               OpExecutionMode %2 OriginUpperLeft
+       %void = OpTypeVoid
+         %32 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+         %35 = OpTypeFunction %float %_ptr_Function_float
+%float_1_35631564en19 = OpConstant %float 1.35631564e-19
+%float_1_35631564en19_0 = OpConstant %float 1.35631564e-19
+          %2 = OpFunction %void None %32
+       %8447 = OpLabel
+               OpUnreachable
+               OpFunctionEnd
+          %9 = OpFunction %float None %35
+         %10 = OpFunctionParameter %_ptr_Function_float
+      %65535 = OpLabel
+        %217 = OpVariable %_ptr_Function_float Function
+        %218 = OpLoad %float %10
+    %2097407 = OpFunctionCall %float %20 %10
+        %231 = OpLoad %float %217
+        %232 = OpFDiv %float %218 %231
+        %233 = OpExtInst %float %1 SmoothStep %float_1_35631564en19 %float_1_35631564en19_0 %232
+               OpReturnValue %233
+               OpFunctionEnd
+         %20 = OpFunction %float None %35
+         %21 = OpFunctionParameter %_ptr_Function_float
+         %22 = OpLabel
+         %23 = OpFunctionCall %float %9 %21
+               OpReturnValue %float_1_35631564en19
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

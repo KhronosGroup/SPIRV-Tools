@@ -50,6 +50,9 @@ bool IsVariablePointer(const ValidationState_t& _,
     return iter->second;
   }
 
+  // Temporarily mark the instruction as NOT a variable pointer.
+  variable_pointers[inst->id()] = false;
+
   bool is_var_ptr = false;
   switch (inst->opcode()) {
     case spv::Op::OpPtrAccessChain:
@@ -83,6 +86,12 @@ bool IsVariablePointer(const ValidationState_t& _,
         for (const auto& use_pair : func_inst->uses()) {
           const auto use_inst = use_pair.first;
           if (use_inst->opcode() == spv::Op::OpFunctionCall) {
+            // Beware of a function parameter being passed to a function call.
+            const auto call_id = use_inst->GetOperandAs<uint32_t>(2);
+            if (call_id == func->id()) {
+              continue;
+            }
+
             const auto arg_id =
                 use_inst->GetOperandAs<uint32_t>(3 + param_index);
             const auto arg_inst = _.FindDef(arg_id);
