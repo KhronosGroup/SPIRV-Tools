@@ -50,6 +50,9 @@ bool IsVariablePointer(const ValidationState_t& _,
     return iter->second;
   }
 
+  // Temporarily mark the instruction as NOT a variable pointer.
+  variable_pointers[inst->id()] = false;
+
   bool is_var_ptr = false;
   switch (inst->opcode()) {
     case spv::Op::OpPtrAccessChain:
