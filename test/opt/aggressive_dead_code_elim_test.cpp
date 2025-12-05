@@ -6808,7 +6808,7 @@ TEST_F(AggressiveDCETest, ShaderDebugInfoKeepInFunctionElimStoreVar) {
                OpStore %100 %111
 ;CHECK-NOT:    OpStore %100 %111
         %114 = OpExtInst %void %1 DebugValue %92 %111 %76
-;CHECK-NOT: {{%\w+}} = OpExtInst %void %1 DebugValue %92 %111 %76
+;CHECK: {{%\w+}} = OpExtInst %void %1 DebugValue %92 %111 %76
         %115 = OpExtInst %void %1 DebugLine %79 %uint_20 %uint_20 %uint_25 %uint_32
         %116 = OpLoad %type_2d_image %g_tColor
         %117 = OpExtInst %void %1 DebugLine %79 %uint_20 %uint_20 %uint_41 %uint_48
@@ -8477,7 +8477,7 @@ TEST_F(AggressiveDCETest, KeepCopyLogical) {
   SinglePassRunAndMatch<AggressiveDCEPass>(before, true);
 }
 TEST_F(AggressiveDCETest, KeepOnlyLiveDebugValues) {
-  // DebugValue should only be live when Value is live.
+  // DebugValue should replace dead Value with Undef.
   const std::string before =
       R"(OpCapability MinLod
 OpCapability StorageImageWriteWithoutFormat
@@ -8526,6 +8526,7 @@ OpDecorate %b Binding 0
 %uint_2 = OpConstant %uint 2
 %uint_3 = OpConstant %uint 3
 %int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
 %uint_0 = OpConstant %uint 0
 %uint_32 = OpConstant %uint 32
 %type_buffer_image = OpTypeImage %int Buffer 2 0 0 2 R32i
@@ -8539,17 +8540,23 @@ OpDecorate %b Binding 0
 %uint_8 = OpConstant %uint 8
 %49 = OpTypeFunction %void
 %_arr_int_uint_3 = OpTypeArray %int %uint_3
+%_ptr_Function__arr_int_uint_3 = OpTypePointer Function %_arr_int_uint_3
 %v4int = OpTypeVector %int 4
 %uint_21 = OpConstant %uint 21
 %uint_27 = OpConstant %uint 27
 %uint_14 = OpConstant %uint 14
 %uint_31 = OpConstant %uint 31
+%_ptr_Function_int = OpTypePointer Function %int
 %uint_6 = OpConstant %uint 6
+%uint_10 = OpConstant %uint 10
 %b = OpVariable %_ptr_UniformConstant_type_buffer_image UniformConstant
 %int_1 = OpConstant %int 1
 %int_2 = OpConstant %int 2
+; CHECK: %281 = OpUndef %int
 %38 = OpExtInst %void %1 DebugInfoNone
 %16 = OpExtInst %void %1 DebugExpression
+; CHECK: %216 = OpExtInst %void %1 DebugOperation %uint_0
+%216 = OpExtInst %void %1 DebugOperation %uint_0
 %18 = OpExtInst %void %1 DebugTypeBasic %17 %uint_32 %uint_4 %uint_0
 %20 = OpExtInst %void %1 DebugTypeArray %18 %uint_3
 %21 = OpExtInst %void %1 DebugTypeFunction %uint_3 %void
@@ -8565,47 +8572,55 @@ OpDecorate %b Binding 0
 %46 = OpExtInst %void %1 DebugGlobalVariable %45 %44 %22 %uint_1 %uint_15 %23 %45 %b %uint_8
 %37 = OpExtInst %void %1 DebugEntryPoint %34 %23 %35 %36
 %138 = OpExtInst %void %1 DebugInlinedAt %uint_4 %34
+; CHECK: %215 = OpExtInst %void %1 DebugExpression %216
+%215 = OpExtInst %void %1 DebugExpression %216
 %main = OpFunction %void None %49
 %50 = OpLabel
-%311 = OpExtInst %void %1 DebugScope %34
+%205 = OpVariable %_ptr_Function_int Function
+%204 = OpVariable %_ptr_Function_int Function
+%203 = OpVariable %_ptr_Function_int Function
+%255 = OpExtInst %void %1 DebugScope %34
 %52 = OpExtInst %void %1 DebugFunctionDefinition %34 %main
-%312 = OpExtInst %void %1 DebugScope %28 %138
+%256 = OpExtInst %void %1 DebugScope %28 %138
 %155 = OpExtInst %void %1 DebugLine %22 %uint_5 %uint_5 %uint_15 %uint_15
 %141 = OpLoad %type_buffer_image %b
 %142 = OpImageRead %v4int %141 %uint_1 None
 %143 = OpCompositeExtract %int %142 0
-; CHECK: %141 = OpLoad %type_buffer_image %b
-; CHECK: %142 = OpImageRead %v4int %141 %uint_1 None
-; CHECK: %143 = OpCompositeExtract %int %142 0
 %158 = OpExtInst %void %1 DebugLine %22 %uint_5 %uint_5 %uint_21 %uint_21
 %144 = OpLoad %type_buffer_image %b
 %145 = OpImageRead %v4int %144 %uint_2 None
 %146 = OpCompositeExtract %int %145 0
-; CHECK-NOT: %144 = OpLoad %type_buffer_image %b
-; CHECK-NOT: %145 = OpImageRead %v4int %144 %uint_2 None
-; CHECK-NOT: %146 = OpCompositeExtract %int %145 0
 %161 = OpExtInst %void %1 DebugLine %22 %uint_5 %uint_5 %uint_27 %uint_27
 %147 = OpLoad %type_buffer_image %b
 %148 = OpImageRead %v4int %147 %uint_3 None
 %149 = OpCompositeExtract %int %148 0
-; CHECK-NOT: %147 = OpLoad %type_buffer_image %b
-; CHECK-NOT: %148 = OpImageRead %v4int %147 %uint_3 None
-; CHECK-NOT: %149 = OpCompositeExtract %int %148 0
 %164 = OpExtInst %void %1 DebugLine %22 %uint_5 %uint_5 %uint_14 %uint_31
 %150 = OpCompositeConstruct %_arr_int_uint_3 %143 %146 %149
-; CHECK-NOT: %150 = OpCompositeConstruct %_arr_int_uint_3 %143 %146 %149
-%210 = OpExtInst %void %1 DebugLine %22 %uint_5 %uint_5 %uint_3 %uint_31
-%209 = OpUndef %int
+%207 = OpExtInst %void %1 DebugLine %22 %uint_5 %uint_5 %uint_3 %uint_31
+%206 = OpCompositeExtract %int %150 0
+; CHECK-NOT: OpStore %203 %206
+OpStore %203 %206
+; CHECK: %253 = OpExtInst %void %1 DebugValue %31 %206 %16 %int_0
+%253 = OpExtInst %void %1 DebugValue %31 %206 %16 %int_0
+; CHECK-NOT: %209 = OpCompositeExtract %int %150 1
+%209 = OpCompositeExtract %int %150 1
+; CHECK-NOT: OpStore %204 %209
+OpStore %204 %209
+; CHECK: %250 = OpExtInst %void %1 DebugValue %31 %281 %16 %int_1
 %250 = OpExtInst %void %1 DebugValue %31 %209 %16 %int_1
-%247 = OpExtInst %void %1 DebugValue %31 %209 %16 %int_2
-; CHECK-NOT: %247 = OpExtInst %void %1 DebugValue %31 %209 %16 %int_2
+; CHECK-NOT: %212 = OpCompositeExtract %int %150 2
+%212 = OpCompositeExtract %int %150 2
+; CHECK-NOT: OpStore %205 %212
+OpStore %205 %212
+; CHECK: %247 = OpExtInst %void %1 DebugValue %31 %281 %16 %int_2
+%247 = OpExtInst %void %1 DebugValue %31 %212 %16 %int_2
 %169 = OpExtInst %void %1 DebugLine %22 %uint_6 %uint_6 %uint_3 %uint_13
 %154 = OpLoad %type_buffer_image %b
-OpImageWrite %154 %uint_0 %143 None
-%313 = OpExtInst %void %1 DebugScope %34
+OpImageWrite %154 %uint_0 %206 None
+%257 = OpExtInst %void %1 DebugScope %34
 %55 = OpExtInst %void %1 DebugLine %22 %uint_7 %uint_7 %uint_1 %uint_1
 OpReturn
-%314 = OpExtInst %void %1 DebugNoScope
+%258 = OpExtInst %void %1 DebugNoScope
 OpFunctionEnd
 )";
 
