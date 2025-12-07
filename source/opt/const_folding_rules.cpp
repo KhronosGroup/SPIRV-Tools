@@ -999,6 +999,10 @@ ConstantFoldingRule FoldRedundantSub() {
            inst->opcode() == spv::Op::OpISub);
 
     if (inst->GetSingleWordInOperand(0) == inst->GetSingleWordInOperand(1)) {
+      bool use_float = inst->opcode() == spv::Op::OpFSub;
+      if (use_float && !inst->IsFloatingPointFoldingAllowed()) {
+        return nullptr;
+      }
       analysis::TypeManager* type_mgr = context->get_type_mgr();
       const analysis::Type* type = type_mgr->GetType(inst->type_id());
       if (type->IsCooperativeMatrix()) {
@@ -1135,6 +1139,11 @@ ConstantFoldingRule FoldRedundantDiv() {
       return nullptr;
     }
 
+    bool use_float = inst->opcode() == spv::Op::OpFDiv;
+    if (use_float && !inst->IsFloatingPointFoldingAllowed()) {
+      return nullptr;
+    }
+
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
 
     if (inst->GetSingleWordInOperand(0) == inst->GetSingleWordInOperand(1)) {
@@ -1150,14 +1159,16 @@ ConstantFoldingRule FoldRedundantDiv() {
     Instruction* lhs = def_use_mgr->GetDef(inst->GetSingleWordInOperand(0));
     if ((lhs->opcode() == spv::Op::OpSNegate ||
          lhs->opcode() == spv::Op::OpFNegate) &&
-        lhs->GetSingleWordInOperand(0) == inst->GetSingleWordInOperand(1)) {
+        lhs->GetSingleWordInOperand(0) == inst->GetSingleWordInOperand(1) &&
+        (!use_float || lhs->IsFloatingPointFoldingAllowed())) {
       return GetConstantUniformValue(const_mgr, type, -1.0, UINT64_MAX);
     }
 
     Instruction* rhs = def_use_mgr->GetDef(inst->GetSingleWordInOperand(1));
     if ((rhs->opcode() == spv::Op::OpSNegate ||
          rhs->opcode() == spv::Op::OpFNegate) &&
-        rhs->GetSingleWordInOperand(0) == inst->GetSingleWordInOperand(0)) {
+        rhs->GetSingleWordInOperand(0) == inst->GetSingleWordInOperand(0) &&
+        (!use_float || rhs->IsFloatingPointFoldingAllowed())) {
       return GetConstantUniformValue(const_mgr, type, -1.0, UINT64_MAX);
     }
 
