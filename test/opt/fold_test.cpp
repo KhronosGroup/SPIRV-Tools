@@ -10770,6 +10770,738 @@ INSTANTIATE_TEST_SUITE_P(FoldLogicalNotComparisonTest, MatchingInstructionFoldin
       2, true)
   ));
 
+  INSTANTIATE_TEST_SUITE_P(MergeBinaryComparisonSelectTest, MatchingInstructionFoldingTest,
+    ::testing::Values(
+      // Test case 0:
+      // [OpLogicalEqual] ((a ? [true, false] : [false, true] == [true, false])) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: [[v2bool:%\\w+]] = OpTypeVector [[bool]] 2\n" +
+        "; CHECK: %2 = OpCopyObject [[v2bool]] %3\n" +
+        "%_ptr_v2bool = OpTypePointer Function %v2bool\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_v2bool Function\n" +
+        "%3 = OpLoad %v2bool %n\n" +
+        "%4 = OpSelect %v2bool %3 %v2bool_true_false %v2bool_false_true\n" +
+        "%2 = OpLogicalEqual %v2bool %4 %v2bool_true_false\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 1:
+      // [OpLogicalEqual] ((a ? [true, false] : [false, true] == [false, true])) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: [[v2bool:%\\w+]] = OpTypeVector [[bool]] 2\n" +
+        "; CHECK: %2 = OpLogicalNot [[v2bool]] %3\n" +
+        "%_ptr_v2bool = OpTypePointer Function %v2bool\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_v2bool Function\n" +
+        "%3 = OpLoad %v2bool %n\n" +
+        "%4 = OpSelect %v2bool %3 %v2bool_true_false %v2bool_false_true\n" +
+        "%2 = OpLogicalEqual %v2bool %4 %v2bool_false_true\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 2:
+      // [OpLogicalNotEqual] ((a ? [true, false] : [false, true] != [true, false])) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: [[v2bool:%\\w+]] = OpTypeVector [[bool]] 2\n" +
+        "; CHECK: %2 = OpLogicalNot [[v2bool]] %3\n" +
+        "%_ptr_v2bool = OpTypePointer Function %v2bool\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_v2bool Function\n" +
+        "%3 = OpLoad %v2bool %n\n" +
+        "%4 = OpSelect %v2bool %3 %v2bool_true_false %v2bool_false_true\n" +
+        "%2 = OpLogicalNotEqual %v2bool %4 %v2bool_true_false\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 3:
+      // [OpLogicalNotEqual] ((a ? [true, false] : [false, true]) != [false, true]) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: [[v2bool:%\\w+]] = OpTypeVector [[bool]] 2\n" +
+        "; CHECK: %2 = OpCopyObject [[v2bool]] %3\n" +
+        "%_ptr_v2bool = OpTypePointer Function %v2bool\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_v2bool Function\n" +
+        "%3 = OpLoad %v2bool %n\n" +
+        "%4 = OpSelect %v2bool %3 %v2bool_true_false %v2bool_false_true\n" +
+        "%2 = OpLogicalNotEqual %v2bool %4 %v2bool_false_true\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 4:
+      // [OpIEqual] ((a ? 1 : 0) == 1) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %uint %3 %uint_1 %uint_0\n" +
+        "%2 = OpIEqual %bool %4 %uint_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 5:
+      // [OpIEqual] ((a ? 0 : 1) == 1) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %uint %3 %uint_0 %uint_1\n" +
+        "%2 = OpIEqual %bool %4 %uint_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 6:
+      // [OpINotEqual] ((a ? 1 : 0) != 1) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %uint %3 %uint_1 %uint_0\n" +
+        "%2 = OpINotEqual %bool %4 %uint_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 7:
+      // [OpINotEqual] ((a ? 0 : 1) != 1) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %uint %3 %uint_0 %uint_1\n" +
+        "%2 = OpINotEqual %bool %4 %uint_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 8:
+      // [OpUGreaterThan] ((a ? 2 : 0) > 1) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %uint %3 %uint_2 %uint_0\n" +
+        "%2 = OpUGreaterThan %bool %4 %uint_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 9:
+      // [OpUGreaterThan] ((a ? 0 : 2) > 1) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %uint %3 %uint_0 %uint_2\n" +
+        "%2 = OpUGreaterThan %bool %4 %uint_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 10:
+      // [OpSGreaterThan] ((a ? 2 : 0) > 1) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %int %3 %int_2 %int_0\n" +
+        "%2 = OpSGreaterThan %bool %4 %int_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 11:
+      // [OpSGreaterThan] ((a ? 0 : 2) > 1) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %int %3 %int_0 %int_2\n" +
+        "%2 = OpSGreaterThan %bool %4 %int_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 12:
+      // [OpUGreaterThanEqual] ((a ? 2 : 0) >= 2) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %uint %3 %uint_2 %uint_0\n" +
+        "%2 = OpUGreaterThanEqual %bool %4 %uint_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 13:
+      // [OpUGreaterThanEqual] ((a ? 0 : 2) >= 2) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %uint %3 %uint_0 %uint_2\n" +
+        "%2 = OpUGreaterThanEqual %bool %4 %uint_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 14:
+      // [OpSGreaterThanEqual] ((a ? 2 : 0) >= 2) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %int %3 %int_2 %int_0\n" +
+        "%2 = OpSGreaterThanEqual %bool %4 %int_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 15:
+      // [OpSGreaterThanEqual] ((a ? 0 : 2) >= 2) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %int %3 %int_0 %int_2\n" +
+        "%2 = OpSGreaterThanEqual %bool %4 %int_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 16:
+      // [OpULessThan] ((a ? 0 : 2) < 2) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %uint %3 %uint_0 %uint_2\n" +
+        "%2 = OpULessThan %bool %4 %uint_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 17:
+      // [OpULessThan] ((a ? 2 : 0) < 2) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %uint %3 %uint_2 %uint_0\n" +
+        "%2 = OpULessThan %bool %4 %uint_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 18:
+      // [OpSLessThan] ((a ? 0 : 2) < 2) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %int %3 %int_0 %int_2\n" +
+        "%2 = OpSLessThan %bool %4 %int_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 19:
+      // [OpSLessThan] ((a ? 2 : 0) < 2) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %int %3 %int_2 %int_0\n" +
+        "%2 = OpSLessThan %bool %4 %int_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 20:
+      // [OpULessThanEqual] ((a ? 0 : 2) <= 1) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %uint %3 %uint_0 %uint_2\n" +
+        "%2 = OpULessThanEqual %bool %4 %uint_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 21:
+      // [OpULessThanEqual] ((a ? 2 : 0) <= 1) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %uint %3 %uint_2 %uint_0\n" +
+        "%2 = OpULessThanEqual %bool %4 %uint_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 22:
+      // [OpSLessThanEqual] ((a ? 0 : 2) <= 1) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %int %3 %int_0 %int_2\n" +
+        "%2 = OpSLessThanEqual %bool %4 %int_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 23:
+      // [OpSLessThanEqual] ((a ? 2 : 0) <= 1) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %int %3 %int_2 %int_0\n" +
+        "%2 = OpSLessThanEqual %bool %4 %int_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 24:
+      // [OpFUnordEqual] ((a ? 1 : 0) == 1) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_1 %float_0\n" +
+        "%2 = OpFUnordEqual %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 25:
+      // [OpFUnordEqual] ((a ? 0 : 1) == 1) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_0 %float_1\n" +
+        "%2 = OpFUnordEqual %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 26:
+      // [OpFUnordNotEqual] ((a ? 1 : 0) != 1) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_1 %float_0\n" +
+        "%2 = OpFUnordNotEqual %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 27:
+      // [OpFUnordNotEqual] ((a ? 0 : 1) != 1) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_0 %float_1\n" +
+        "%2 = OpFUnordNotEqual %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 28:
+      // [OpFOrdEqual] ((a ? 1 : 0) == 1) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_1 %float_0\n" +
+        "%2 = OpFOrdEqual %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 29:
+      // [OpFOrdEqual] ((a ? 0 : 1) == 1) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_0 %float_1\n" +
+        "%2 = OpFOrdEqual %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 30:
+      // [OpFOrdNotEqual] ((a ? 1 : 0) != 1) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_1 %float_0\n" +
+        "%2 = OpFOrdNotEqual %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 31:
+      // [OpFOrdNotEqual] ((a ? 0 : 1) != 1) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_0 %float_1\n" +
+        "%2 = OpFOrdNotEqual %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 32:
+      // [OpFOrdGreaterThan] ((a ? 2 : 0) > 1) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_2 %float_0\n" +
+        "%2 = OpFOrdGreaterThan %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 33:
+      // [OpFOrdGreaterThan] ((a ? 0 : 2) > 1) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_0 %float_2\n" +
+        "%2 = OpFOrdGreaterThan %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 34:
+      // [OpFUnordGreaterThan] ((a ? 2 : 0) > 1) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_2 %float_0\n" +
+        "%2 = OpFUnordGreaterThan %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 35:
+      // [OpFUnordGreaterThan] ((a ? 0 : 2) > 1) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_0 %float_2\n" +
+        "%2 = OpFUnordGreaterThan %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 36:
+      // [OpFOrdGreaterThanEqual] ((a ? 2 : 0) >= 2) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_2 %float_0\n" +
+        "%2 = OpFOrdGreaterThanEqual %bool %4 %float_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 37:
+      // [OpFOrdGreaterThanEqual] ((a ? 0 : 2) >= 2) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_0 %float_2\n" +
+        "%2 = OpFOrdGreaterThanEqual %bool %4 %float_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 38:
+      // [OpFUnordGreaterThanEqual] ((a ? 2 : 0) >= 2) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_2 %float_0\n" +
+        "%2 = OpFUnordGreaterThanEqual %bool %4 %float_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 39:
+      // [OpFUnordGreaterThanEqual] ((a ? 0 : 2) >= 2) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_0 %float_2\n" +
+        "%2 = OpFUnordGreaterThanEqual %bool %4 %float_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 40:
+      // [OpFUnordLessThan] ((a ? 0 : 2) < 2) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_0 %float_2\n" +
+        "%2 = OpFUnordLessThan %bool %4 %float_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 41:
+      // [OpFUnordLessThan] ((a ? 2 : 0) < 2) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_2 %float_0\n" +
+        "%2 = OpFUnordLessThan %bool %4 %float_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 42:
+      // [OpFOrdLessThan] ((a ? 0 : 2) < 2) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_0 %float_2\n" +
+        "%2 = OpFOrdLessThan %bool %4 %float_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 43:
+      // [OpFOrdLessThan] ((a ? 2 : 0) < 2) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_2 %float_0\n" +
+        "%2 = OpFOrdLessThan %bool %4 %float_2\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 44:
+      // [OpFUnordLessThanEqual] ((a ? 0 : 2) <= 1) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_0 %float_2\n" +
+        "%2 = OpFUnordLessThanEqual %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 45:
+      // [OpFUnordLessThanEqual] ((a ? 2 : 0) <= 1) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_2 %float_0\n" +
+        "%2 = OpFUnordLessThanEqual %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 46:
+      // [OpFOrdLessThanEqual] ((a ? 0 : 2) <= 1) = a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_0 %float_2\n" +
+        "%2 = OpFOrdLessThanEqual %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true),
+      // Test case 47:
+      // [OpFOrdLessThanEqual] ((a ? 2 : 0) <= 1) = !a
+      InstructionFoldingCase<bool>(
+        Header() +
+        "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+        "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+        "%main = OpFunction %void None %void_func\n" +
+        "%main_lab = OpLabel\n" +
+        "%n = OpVariable %_ptr_bool Function\n" +
+        "%3 = OpLoad %bool %n\n" +
+        "%4 = OpSelect %float %3 %float_2 %float_0\n" +
+        "%2 = OpFOrdLessThanEqual %bool %4 %float_1\n" +
+        "OpReturn\n" +
+        "OpFunctionEnd",
+        2, true)
+  ));
+
 INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructionFoldingTest,
 ::testing::Values(
     // Test case 0: Extracting from result of consecutive shuffles of differing
