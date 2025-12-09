@@ -7443,9 +7443,9 @@ TEST_F(ValidateDecorations, ComponentDecoration64Vec2BadVulkan) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState(env));
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-StandaloneSpirv-Component-04922"));
-  HasSubstr(
-      "Sequence of components starting with 2 "
-      "and ending with 6 gets larger than 3");
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Sequence of components starting with 2 "
+                        "and ending with 5 gets larger than 3"));
 }
 
 TEST_F(ValidateDecorations, ComponentDecoration64VecWideBadVulkan) {
