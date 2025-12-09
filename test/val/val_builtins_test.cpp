@@ -141,7 +141,11 @@ CodeGenerator GetInMainCodeGenerator(const char* const built_in,
     execution_modes << "OpExecutionMode %" << entry_point.name
                     << " OutputPoints\n";
   }
-  if (0 == std::strcmp(execution_model, "GLCompute")) {
+  if (0 == std::strcmp(execution_model, "GLCompute") ||
+      0 == std::strcmp(execution_model, "MeshEXT") ||
+      0 == std::strcmp(execution_model, "MeshNV") ||
+      0 == std::strcmp(execution_model, "MeshEXT") ||
+      0 == std::strcmp(execution_model, "TaskNV")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
                     << " LocalSize 1 1 1\n";
   }
@@ -303,7 +307,11 @@ CodeGenerator GetInFunctionCodeGenerator(const char* const built_in,
     execution_modes << "OpExecutionMode %" << entry_point.name
                     << " OutputPoints\n";
   }
-  if (0 == std::strcmp(execution_model, "GLCompute")) {
+  if (0 == std::strcmp(execution_model, "GLCompute") ||
+      0 == std::strcmp(execution_model, "MeshEXT") ||
+      0 == std::strcmp(execution_model, "MeshNV") ||
+      0 == std::strcmp(execution_model, "MeshEXT") ||
+      0 == std::strcmp(execution_model, "TaskNV")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
                     << " LocalSize 1 1 1\n";
   }
@@ -452,7 +460,11 @@ CodeGenerator GetVariableCodeGenerator(const char* const built_in,
     execution_modes << "OpExecutionMode %" << entry_point.name
                     << " OutputPoints\n";
   }
-  if (0 == std::strcmp(execution_model, "GLCompute")) {
+  if (0 == std::strcmp(execution_model, "GLCompute") ||
+      0 == std::strcmp(execution_model, "MeshEXT") ||
+      0 == std::strcmp(execution_model, "MeshNV") ||
+      0 == std::strcmp(execution_model, "MeshEXT") ||
+      0 == std::strcmp(execution_model, "TaskNV")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
                     << " LocalSize 1 1 1\n";
   }
@@ -2703,7 +2715,11 @@ CodeGenerator GetArrayedVariableCodeGenerator(const char* const built_in,
     execution_modes << "OpExecutionMode %" << entry_point.name
                     << " OutputPoints\n";
   }
-  if (0 == std::strcmp(execution_model, "GLCompute")) {
+  if (0 == std::strcmp(execution_model, "GLCompute") ||
+      0 == std::strcmp(execution_model, "MeshEXT") ||
+      0 == std::strcmp(execution_model, "MeshNV") ||
+      0 == std::strcmp(execution_model, "MeshEXT") ||
+      0 == std::strcmp(execution_model, "TaskNV")) {
     execution_modes << "OpExecutionMode %" << entry_point.name
                     << " LocalSize 1 1 1\n";
   }
@@ -3615,6 +3631,7 @@ OpDecorate %gl_ViewportIndex PerPrimitiveNV
   EntryPoint entry_point;
   entry_point.name = "main_d_r";
   entry_point.execution_model = "MeshNV";
+  entry_point.execution_modes = "OpExecutionMode %main_d_r LocalSize 1 1 1";
   entry_point.interfaces = "%gl_PrimitiveID %gl_Layer %gl_ViewportIndex";
   generator.entry_points_.push_back(std::move(entry_point));
 
@@ -3653,6 +3670,7 @@ OpDecorate %gl_ViewportIndex PerPrimitiveNV
   EntryPoint entry_point;
   entry_point.name = "main_d_r";
   entry_point.execution_model = "MeshNV";
+  entry_point.execution_modes = "OpExecutionMode %main_d_r LocalSize 1 1 1";
   entry_point.interfaces = "%gl_PrimitiveID %gl_Layer %gl_ViewportIndex";
   entry_point.body = "%ref_load = OpLoad %_arr_float_uint_81 %gl_PrimitiveID";
   generator.entry_points_.push_back(std::move(entry_point));

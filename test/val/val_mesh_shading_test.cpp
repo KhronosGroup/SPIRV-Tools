@@ -234,6 +234,8 @@ TEST_F(ValidateMeshShading, VulkanBasicMeshAndTaskSuccess) {
                OpMemoryModel Logical GLSL450
                OpEntryPoint MeshEXT %mainMesh "mainMesh"
                OpEntryPoint TaskEXT %mainTask "mainTask"
+               OpExecutionMode %mainMesh LocalSize 1 1 1
+               OpExecutionMode %mainTask LocalSize 1 1 1
                OpExecutionMode %mainMesh OutputVertices 1
                OpExecutionMode %mainMesh OutputPrimitivesEXT 1
                OpExecutionMode %mainMesh OutputTrianglesEXT

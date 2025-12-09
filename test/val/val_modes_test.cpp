@@ -2973,7 +2973,6 @@ OpCapability TileShadingQCOM
 OpExtension "SPV_QCOM_tile_shading"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
-OpExecutionMode %main NonCoherentTileAttachmentReadQCOM
 )" + kVoidFunction;
 
   spv_target_env env = SPV_ENV_VULKAN_1_4;
