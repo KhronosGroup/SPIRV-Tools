@@ -2614,6 +2614,15 @@ FoldingRule RedundantLogicalNot() {
 //  ((a ? C0 : C1) >= C2)  =  ((a ? (C0 >= C2) : (C1 >= C2))
 //  ((a ? C0 : C1) || C2)  =  ((a ? (C0 || C2) : (C1 || C2))
 //  ((a ? C0 : C1) && C2)  =  ((a ? (C0 && C2) : (C1 && C2))
+//  ((a ? C0 : C1) +  C2)  =  ((a ? (C0 +  C2) : (C1 +  C2))
+//  ((a ? C0 : C1) -  C2)  =  ((a ? (C0 -  C2) : (C1 -  C2))
+//  ((a ? C0 : C1) *  C2)  =  ((a ? (C0 *  C2) : (C1 *  C2))
+//  ((a ? C0 : C1) /  C2)  =  ((a ? (C0 /  C2) : (C1 /  C2))
+//  ((a ? C0 : C1) >> C2)  =  ((a ? (C0 >> C2) : (C1 >> C2))
+//  ((a ? C0 : C1) << C2)  =  ((a ? (C0 << C2) : (C1 << C2))
+//  ((a ? C0 : C1) ^  C2)  =  ((a ? (C0 ^  C2) : (C1 ^  C2))
+//  ((a ? C0 : C1) |  C2)  =  ((a ? (C0 |  C2) : (C1 |  C2))
+//  ((a ? C0 : C1) &  C2)  =  ((a ? (C0 &  C2) : (C1 &  C2))
 static const constexpr spv::Op MergeBinaryComparisonSelectOps[] = {
     spv::Op::OpLogicalEqual,
     spv::Op::OpLogicalNotEqual,
@@ -2640,7 +2649,23 @@ static const constexpr spv::Op MergeBinaryComparisonSelectOps[] = {
     spv::Op::OpFOrdLessThanEqual,
     spv::Op::OpFUnordLessThanEqual,
     spv::Op::OpFOrdGreaterThanEqual,
-    spv::Op::OpFUnordGreaterThanEqual};
+    spv::Op::OpFUnordGreaterThanEqual,
+    spv::Op::OpIAdd,
+    spv::Op::OpFAdd,
+    spv::Op::OpISub,
+    spv::Op::OpFSub,
+    spv::Op::OpIMul,
+    spv::Op::OpFMul,
+    spv::Op::OpUDiv,
+    spv::Op::OpSDiv,
+    spv::Op::OpFDiv,
+    spv::Op::OpVectorTimesScalar,
+    spv::Op::OpShiftRightLogical,
+    spv::Op::OpShiftRightArithmetic,
+    spv::Op::OpShiftLeftLogical,
+    spv::Op::OpBitwiseXor,
+    spv::Op::OpBitwiseOr,
+    spv::Op::OpBitwiseAnd};
 
 FoldingRule MergeBinaryComparisonSelect(spv::Op opcode) {
   assert(std::find(std::begin(MergeBinaryComparisonSelectOps),
