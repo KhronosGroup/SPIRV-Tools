@@ -2623,7 +2623,7 @@ FoldingRule RedundantLogicalNot() {
 //  ((a ? C0 : C1) ^  C2)  =  ((a ? (C0 ^  C2) : (C1 ^  C2))
 //  ((a ? C0 : C1) |  C2)  =  ((a ? (C0 |  C2) : (C1 |  C2))
 //  ((a ? C0 : C1) &  C2)  =  ((a ? (C0 &  C2) : (C1 &  C2))
-static const constexpr spv::Op MergeBinaryComparisonSelectOps[] = {
+static const constexpr spv::Op MergeBinaryOpSelectOps[] = {
     spv::Op::OpLogicalEqual,
     spv::Op::OpLogicalNotEqual,
     spv::Op::OpLogicalAnd,
@@ -2667,10 +2667,10 @@ static const constexpr spv::Op MergeBinaryComparisonSelectOps[] = {
     spv::Op::OpBitwiseOr,
     spv::Op::OpBitwiseAnd};
 
-FoldingRule MergeBinaryComparisonSelect(spv::Op opcode) {
-  assert(std::find(std::begin(MergeBinaryComparisonSelectOps),
-                   std::end(MergeBinaryComparisonSelectOps),
-                   opcode) != std::end(MergeBinaryComparisonSelectOps) &&
+FoldingRule MergeBinaryOpSelect(spv::Op opcode) {
+  assert(std::find(std::begin(MergeBinaryOpSelectOps),
+                   std::end(MergeBinaryOpSelectOps),
+                   opcode) != std::end(MergeBinaryOpSelectOps) &&
          "Wrong opcode.");
 
   return [opcode](IRContext* context, Instruction* inst,
@@ -3833,8 +3833,8 @@ void FoldingRules::AddFoldingRules() {
     rules_[op].push_back(RedundantBinaryLhs0To0(op));
   for (auto op : ReassociateCommutiveBitwiseOps)
     rules_[op].push_back(ReassociateCommutiveBitwise(op));
-  for (auto op : MergeBinaryComparisonSelectOps)
-    rules_[op].push_back(MergeBinaryComparisonSelect(op));
+  for (auto op : MergeBinaryOpSelectOps)
+    rules_[op].push_back(MergeBinaryOpSelect(op));
   rules_[spv::Op::OpSDiv].push_back(RedundantSUDiv());
   rules_[spv::Op::OpUDiv].push_back(RedundantSUDiv());
   rules_[spv::Op::OpSMod].push_back(RedundantSUMod());
