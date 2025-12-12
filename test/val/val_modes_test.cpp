@@ -73,6 +73,53 @@ OpEntryPoint GLCompute %main "main"
           "or an object decorated with WorkgroupSize must be specified."));
 }
 
+TEST_F(ValidateMode, MeshNoModeVulkan) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability MeshShadingEXT
+OpExtension "SPV_EXT_mesh_shader"
+OpMemoryModel Logical GLSL450
+OpEntryPoint MeshEXT %main "main"
+OpExecutionMode %main OutputVertices 81
+OpExecutionMode %main OutputPrimitivesEXT 16
+OpExecutionMode %main OutputPoints
+)" + kVoidFunction;
+
+  spv_target_env env = SPV_ENV_VULKAN_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-10685"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "In the Vulkan environment, MeshEXT execution model entry "
+          "points require either the LocalSize or LocalSizeId execution mode "
+          "or an object decorated with WorkgroupSize must be specified."));
+}
+
+TEST_F(ValidateMode, TaskNoModeVulkan) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability MeshShadingEXT
+OpExtension "SPV_EXT_mesh_shader"
+OpMemoryModel Logical GLSL450
+OpEntryPoint TaskEXT %main "main"
+)" + kVoidFunction;
+
+  spv_target_env env = SPV_ENV_VULKAN_1_3;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-10685"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "In the Vulkan environment, TaskEXT execution model entry "
+          "points require either the LocalSize or LocalSizeId execution mode "
+          "or an object decorated with WorkgroupSize must be specified."));
+}
+
 TEST_F(ValidateMode, GLComputeNoModeVulkanWorkgroupSize) {
   const std::string spirv = R"(
 OpCapability Shader
@@ -2926,7 +2973,6 @@ OpCapability TileShadingQCOM
 OpExtension "SPV_QCOM_tile_shading"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
-OpExecutionMode %main NonCoherentTileAttachmentReadQCOM
 )" + kVoidFunction;
 
   spv_target_env env = SPV_ENV_VULKAN_1_4;
