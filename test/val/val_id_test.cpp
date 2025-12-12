@@ -4176,10 +4176,46 @@ OpFunctionEnd
   getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("result type (OpTypeMatrix) does not match the type that "
-                "results from indexing into the base <id> (OpTypeFloat)."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("result type <id> '6[%mat4v3float]' (OpTypeMatrix) "
+                        "does not match the type that results from indexing "
+                        "into the base <id> '4[%float]' (OpTypeFloat)"));
+}
+
+TEST_P(AccessChainInstructionTest, AccessChainDifferentIntTypes) {
+  std::string spirv = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %_arr_uint_uint_32 ArrayStride 4
+               OpDecorate %SSBO Block
+               OpMemberDecorate %SSBO 0 Offset 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_ DescriptorSet 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+    %uint_32 = OpConstant %uint 32
+%_arr_uint_uint_32 = OpTypeArray %uint %uint_32
+       %SSBO = OpTypeStruct %_arr_uint_uint_32
+%_ptr_StorageBuffer_SSBO = OpTypePointer StorageBuffer %SSBO
+          %_ = OpVariable %_ptr_StorageBuffer_SSBO StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+     %uint_1 = OpConstant %uint 1
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %18 = OpAccessChain %ptr_ssbo_int %_ %int_0 %int_0
+               OpReturn
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The types must be the exact same Id, so the two types "
+                        "referenced are slighlty different"));
 }
 
 // Valid: 255 indexes passed to the access chain instruction. Limit is 255.
@@ -4375,10 +4411,11 @@ TEST_P(AccessChainInstructionTest,
 OpReturn
 OpFunctionEnd
   )";
-  const std::string expected_err = instr +
-                                   " result type (OpTypeFloat) does not match "
-                                   "the type that results from indexing into "
-                                   "the base <id> (OpTypeVector).";
+  const std::string expected_err =
+      instr +
+      " result type <id> '4[%float]' (OpTypeFloat) does not match the type "
+      "that results from indexing into the base <id> '18[%v4float]' "
+      "(OpTypeVector).";
   getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -4532,10 +4569,11 @@ TEST_P(AccessChainInstructionTest,
 OpReturn
 OpFunctionEnd
   )";
-  const std::string expected_err = instr +
-                                   " result type (OpTypeMatrix) does not match "
-                                   "the type that results from indexing into "
-                                   "the base <id> (OpTypeFloat).";
+  const std::string expected_err =
+      instr +
+      " result type <id> '6[%mat4v3float]' (OpTypeMatrix) does not match the "
+      "type that results from indexing into the base <id> '4[%float]' "
+      "(OpTypeFloat).";
   getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
