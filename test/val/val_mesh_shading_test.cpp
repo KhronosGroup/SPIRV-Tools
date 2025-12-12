@@ -1158,6 +1158,231 @@ TEST_F(ValidateMeshShading, PerPrimitiveEXTStorageClassInMeshEXT) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
 }
 
+TEST_F(ValidateMeshShading, MeshWriteOutput) {
+  const std::string body = R"(
+               OpCapability MeshShadingEXT
+               OpExtension "SPV_EXT_mesh_shader"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint MeshEXT %main "main" %x %y
+               OpExecutionModeId %main LocalSizeId %uint_1 %uint_1 %uint_1
+               OpExecutionMode %main OutputVertices 3
+               OpExecutionMode %main OutputPrimitivesEXT 1
+               OpExecutionMode %main OutputTrianglesEXT
+               OpDecorate %x Location 1
+               OpDecorate %y Location 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+     %uint_3 = OpConstant %uint 3
+%_arr_uint_uint_3 = OpTypeArray %uint %uint_3
+%_ptr_Output__arr_uint_uint_3 = OpTypePointer Output %_arr_uint_uint_3
+          %x = OpVariable %_ptr_Output__arr_uint_uint_3 Output
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Output_uint = OpTypePointer Output %uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_arr_v4float_uint_3 = OpTypeArray %v4float %uint_3
+%_ptr_Output__arr_v4float_uint_3 = OpTypePointer Output %_arr_v4float_uint_3
+          %y = OpVariable %_ptr_Output__arr_v4float_uint_3 Output
+    %float_0 = OpConstant %float 0
+         %23 = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_0
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %16 = OpAccessChain %_ptr_Output_uint %x %int_0
+               OpStore %16 %uint_1
+         %25 = OpAccessChain %_ptr_Output_v4float %y %int_0
+               OpStore %25 %23
+               OpSetMeshOutputsEXT %uint_3 %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateMeshShading, MeshReadOutputInt) {
+  const std::string body = R"(
+               OpCapability MeshShadingEXT
+               OpExtension "SPV_EXT_mesh_shader"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint MeshEXT %main "main" %x
+               OpExecutionModeId %main LocalSizeId %uint_1 %uint_1 %uint_1
+               OpExecutionMode %main OutputVertices 3
+               OpExecutionMode %main OutputPrimitivesEXT 1
+               OpExecutionMode %main OutputTrianglesEXT
+               OpDecorate %x Location 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+%_ptr_Function_uint = OpTypePointer Function %uint
+     %uint_3 = OpConstant %uint 3
+%_arr_uint_uint_3 = OpTypeArray %uint %uint_3
+%_ptr_Output__arr_uint_uint_3 = OpTypePointer Output %_arr_uint_uint_3
+          %x = OpVariable %_ptr_Output__arr_uint_uint_3 Output
+        %int = OpTypeInt 32 1
+      %int_1 = OpConstant %int 1
+%_ptr_Output_uint = OpTypePointer Output %uint
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+          %y = OpVariable %_ptr_Function_uint Function
+         %18 = OpAccessChain %_ptr_Output_uint %x %int_1
+         %19 = OpLoad %uint %18
+               OpStore %y %19
+               OpSetMeshOutputsEXT %uint_3 %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-MeshEXT-07107"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Output Storage Class in a Mesh Execution Model "
+                        "must not be read from"));
+}
+
+TEST_F(ValidateMeshShading, MeshReadOutputVec) {
+  const std::string body = R"(
+               OpCapability MeshShadingEXT
+               OpExtension "SPV_EXT_mesh_shader"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint MeshEXT %main "main" %x
+               OpExecutionModeId %main LocalSizeId %uint_1 %uint_1 %uint_1
+               OpExecutionMode %main OutputVertices 3
+               OpExecutionMode %main OutputPrimitivesEXT 1
+               OpExecutionMode %main OutputTrianglesEXT
+               OpDecorate %x Location 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+     %uint_3 = OpConstant %uint 3
+%_arr_v4float_uint_3 = OpTypeArray %v4float %uint_3
+%_ptr_Output__arr_v4float_uint_3 = OpTypePointer Output %_arr_v4float_uint_3
+          %x = OpVariable %_ptr_Output__arr_v4float_uint_3 Output
+        %int = OpTypeInt 32 1
+      %int_1 = OpConstant %int 1
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+          %y = OpVariable %_ptr_Function_v4float Function
+         %20 = OpAccessChain %_ptr_Output_v4float %x %int_1
+         %21 = OpLoad %v4float %20
+               OpStore %y %21
+               OpSetMeshOutputsEXT %uint_3 %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-MeshEXT-07107"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Output Storage Class in a Mesh Execution Model "
+                        "must not be read from"));
+}
+
+TEST_F(ValidateMeshShading, MeshReadOutputStruct) {
+  const std::string body = R"(
+               OpCapability MeshShadingEXT
+               OpExtension "SPV_EXT_mesh_shader"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint MeshEXT %main "main" %x_0
+               OpExecutionModeId %main LocalSizeId %uint_1 %uint_1 %uint_1
+               OpExecutionMode %main OutputVertices 3
+               OpExecutionMode %main OutputPrimitivesEXT 1
+               OpExecutionMode %main OutputTrianglesEXT
+               OpDecorate %x_0 Location 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+%_ptr_Function_uint = OpTypePointer Function %uint
+        %Bar = OpTypeStruct %uint
+        %Foo = OpTypeStruct %Bar
+     %uint_3 = OpConstant %uint 3
+%_arr_Foo_uint_3 = OpTypeArray %Foo %uint_3
+%_ptr_Output__arr_Foo_uint_3 = OpTypePointer Output %_arr_Foo_uint_3
+        %x_0 = OpVariable %_ptr_Output__arr_Foo_uint_3 Output
+        %int = OpTypeInt 32 1
+      %int_2 = OpConstant %int 2
+      %int_0 = OpConstant %int 0
+%_ptr_Output_uint = OpTypePointer Output %uint
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+          %x = OpVariable %_ptr_Function_uint Function
+         %21 = OpAccessChain %_ptr_Output_uint %x_0 %int_2 %int_0 %int_0
+         %22 = OpLoad %uint %21
+               OpStore %x %22
+               OpSetMeshOutputsEXT %uint_3 %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-MeshEXT-07107"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Output Storage Class in a Mesh Execution Model "
+                        "must not be read from"));
+}
+
+TEST_F(ValidateMeshShading, MeshReadOutputIntUntyped) {
+  const std::string body = R"(
+               OpCapability MeshShadingEXT
+               OpCapability UntypedPointersKHR
+               OpExtension "SPV_EXT_mesh_shader"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint MeshEXT %main "main" %x
+               OpExecutionModeId %main LocalSizeId %uint_1 %uint_1 %uint_1
+               OpExecutionMode %main OutputVertices 3
+               OpExecutionMode %main OutputPrimitivesEXT 1
+               OpExecutionMode %main OutputTrianglesEXT
+               OpDecorate %x Location 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+%_ptr_Function_uint = OpTypePointer Function %uint
+     %uint_3 = OpConstant %uint 3
+%_arr_uint_uint_3 = OpTypeArray %uint %uint_3
+%_ptr_Output__arr_uint_uint_3 = OpTypePointer Output %_arr_uint_uint_3
+          %x = OpVariable %_ptr_Output__arr_uint_uint_3 Output
+        %int = OpTypeInt 32 1
+      %int_1 = OpConstant %int 1
+%_ptr_Output_uint = OpTypeUntypedPointerKHR Output
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+          %y = OpVariable %_ptr_Function_uint Function
+         %18 = OpUntypedAccessChainKHR %_ptr_Output_uint %_arr_uint_uint_3 %x %int_1
+         %19 = OpLoad %uint %18
+               OpStore %y %19
+               OpSetMeshOutputsEXT %uint_3 %uint_1
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(body, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("In Vulkan, untyped pointers can only be used in an "
+                        "explicitly laid out storage class"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
