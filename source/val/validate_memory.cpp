@@ -1849,11 +1849,13 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
     if (type_pointee->id() != result_type_pointee->id()) {
       bool same_type = result_type_pointee->opcode() == type_pointee->opcode();
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "Op" << spvOpcodeString(opcode) << " result type (Op"
+             << "Op" << spvOpcodeString(opcode) << " result type <id> "
+             << _.getIdName(result_type_pointee->id()) << " (Op"
              << spvOpcodeString(result_type_pointee->opcode())
              << ") does not match the type that results from indexing into the "
                 "base "
-                "<id> (Op"
+                "<id> "
+             << _.getIdName(type_pointee->id()) << " (Op"
              << spvOpcodeString(type_pointee->opcode()) << ")."
              << (same_type ? " (The types must be the exact same Id, so the "
                              "two types referenced are slighlty different)"

@@ -4176,10 +4176,10 @@ OpFunctionEnd
   getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("result type (OpTypeMatrix) does not match the type that "
-                "results from indexing into the base <id> (OpTypeFloat)."));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("result type <id> '6[%mat4v3float]' (OpTypeMatrix) "
+                        "does not match the type that results from indexing "
+                        "into the base <id> '4[%float]' (OpTypeFloat)"));
 }
 
 TEST_P(AccessChainInstructionTest, AccessChainDifferentIntTypes) {
@@ -4411,10 +4411,11 @@ TEST_P(AccessChainInstructionTest,
 OpReturn
 OpFunctionEnd
   )";
-  const std::string expected_err = instr +
-                                   " result type (OpTypeFloat) does not match "
-                                   "the type that results from indexing into "
-                                   "the base <id> (OpTypeVector).";
+  const std::string expected_err =
+      instr +
+      " result type <id> '4[%float]' (OpTypeFloat) does not match the type "
+      "that results from indexing into the base <id> '18[%v4float]' "
+      "(OpTypeVector).";
   getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
@@ -4568,10 +4569,11 @@ TEST_P(AccessChainInstructionTest,
 OpReturn
 OpFunctionEnd
   )";
-  const std::string expected_err = instr +
-                                   " result type (OpTypeMatrix) does not match "
-                                   "the type that results from indexing into "
-                                   "the base <id> (OpTypeFloat).";
+  const std::string expected_err =
+      instr +
+      " result type <id> '6[%mat4v3float]' (OpTypeMatrix) does not match the "
+      "type that results from indexing into the base <id> '4[%float]' "
+      "(OpTypeFloat).";
   getValidatorOptions()->relax_logical_pointer = true;
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
