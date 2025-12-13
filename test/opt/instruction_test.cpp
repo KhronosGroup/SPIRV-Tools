@@ -482,7 +482,7 @@ TEST_F(DescriptorTypeTest, StorageBuffer) {
   EXPECT_FALSE(object_copy->IsReadOnlyPointer());
 }
 
-TEST_F(DescriptorTypeTest, ReadOnlyStorageBuffer) {
+TEST_F(DescriptorTypeTest, NonWritableStorageBuffer) {
   const std::string text = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -493,7 +493,7 @@ TEST_F(DescriptorTypeTest, ReadOnlyStorageBuffer) {
                OpDecorate %3 DescriptorSet 0
                OpDecorate %3 Binding 0
                OpDecorate %4 BufferBlock
-               OpDecorate %4 NonWritable
+         OpMemberDecorate %4 0 NonWritable
                OpDecorate %5 DescriptorSet 0
                OpDecorate %5 Binding 1
                OpDecorate %6 BufferBlock
@@ -532,7 +532,99 @@ TEST_F(DescriptorTypeTest, ReadOnlyStorageBuffer) {
   EXPECT_FALSE(object_copy->IsReadOnlyPointer());
 }
 
-TEST_F(DescriptorTypeTest, AliasedNotReadOnlyStorageBuffer) {
+TEST_F(DescriptorTypeTest, NonWritableStorageBufferMultipleMembers) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %2 "main"
+               OpExecutionMode %2 LocalSize 1 1 1
+               OpDecorate %3 Block
+               OpMemberDecorate %3 0 Offset 0
+               OpDecorate %4 Binding 1
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %5 Block
+               OpMemberDecorate %5 0 NonWritable
+               OpMemberDecorate %5 0 Offset 0
+               OpMemberDecorate %5 1 NonWritable
+               OpMemberDecorate %5 1 Offset 4
+               OpDecorate %6 Binding 0
+               OpDecorate %6 DescriptorSet 0
+          %7 = OpTypeVoid
+          %8 = OpTypeFunction %7
+          %9 = OpTypeInt 32 0
+          %3 = OpTypeStruct %9
+         %10 = OpTypePointer StorageBuffer %3
+          %4 = OpVariable %10 StorageBuffer
+         %11 = OpTypeInt 32 1
+         %12 = OpConstant %11 0
+          %5 = OpTypeStruct %9 %9
+         %13 = OpTypePointer StorageBuffer %5
+          %6 = OpVariable %13 StorageBuffer
+         %14 = OpTypePointer StorageBuffer %9
+          %2 = OpFunction %7 None %8
+         %16 = OpLabel
+         %17 = OpAccessChain %14 %6 %12
+         %18 = OpLoad %9 %17
+               OpReturn
+               OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  Instruction* type = context->get_def_use_mgr()->GetDef(13);
+  EXPECT_TRUE(type->IsVulkanStorageBuffer());
+  EXPECT_TRUE(type->IsVulkanStorageBufferNonWritable());
+  Instruction* variable = context->get_def_use_mgr()->GetDef(6);
+  EXPECT_TRUE(variable->IsReadOnlyPointer());
+}
+
+TEST_F(DescriptorTypeTest, MixedNonWritableStorageBuffer) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %2 "main"
+               OpExecutionMode %2 LocalSize 1 1 1
+               OpDecorate %3 Block
+               OpMemberDecorate %3 0 Offset 0
+               OpDecorate %4 Binding 1
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %5 Block
+               OpMemberDecorate %5 0 NonWritable
+               OpMemberDecorate %5 0 Offset 0
+               OpMemberDecorate %5 1 Offset 4
+               OpDecorate %6 Binding 0
+               OpDecorate %6 DescriptorSet 0
+          %7 = OpTypeVoid
+          %8 = OpTypeFunction %7
+          %9 = OpTypeInt 32 0
+          %3 = OpTypeStruct %9
+         %10 = OpTypePointer StorageBuffer %3
+          %4 = OpVariable %10 StorageBuffer
+         %11 = OpTypeInt 32 1
+         %12 = OpConstant %11 0
+          %5 = OpTypeStruct %9 %9
+         %13 = OpTypePointer StorageBuffer %5
+          %6 = OpVariable %13 StorageBuffer
+         %14 = OpTypePointer StorageBuffer %9
+          %2 = OpFunction %7 None %8
+         %16 = OpLabel
+         %17 = OpAccessChain %14 %6 %12
+         %18 = OpLoad %9 %17
+               OpReturn
+               OpFunctionEnd
+)";
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  Instruction* type = context->get_def_use_mgr()->GetDef(13);
+  EXPECT_TRUE(type->IsVulkanStorageBuffer());
+  EXPECT_FALSE(type->IsVulkanStorageBufferNonWritable());
+  Instruction* variable = context->get_def_use_mgr()->GetDef(6);
+  EXPECT_FALSE(variable->IsReadOnlyPointer());
+}
+
+TEST_F(DescriptorTypeTest, AliasedNotWritableStorageBuffer) {
   const std::string text = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -543,7 +635,7 @@ TEST_F(DescriptorTypeTest, AliasedNotReadOnlyStorageBuffer) {
                OpDecorate %3 DescriptorSet 0
                OpDecorate %3 Binding 0
                OpDecorate %4 BufferBlock
-               OpDecorate %4 NonWritable
+         OpMemberDecorate %4 0 NonWritable
                OpDecorate %5 DescriptorSet 0
                OpDecorate %5 Binding 0
                OpDecorate %6 BufferBlock
@@ -571,6 +663,52 @@ TEST_F(DescriptorTypeTest, AliasedNotReadOnlyStorageBuffer) {
   EXPECT_FALSE(variable_readonly->IsReadOnlyPointer());
   Instruction* variable_writeonly = context->get_def_use_mgr()->GetDef(5);
   EXPECT_FALSE(variable_writeonly->IsReadOnlyPointer());
+}
+
+TEST_F(DescriptorTypeTest, AliasedNonWritableStorageBufferMember) {
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %2 "main"
+               OpExecutionMode %2 LocalSize 1 1 1
+               OpDecorate %3 Block
+               OpMemberDecorate %3 0 Offset 0
+               OpMemberDecorate %3 0 NonWritable
+               OpDecorate %4 Binding 0
+               OpDecorate %4 DescriptorSet 0
+               OpDecorate %5 Block
+               OpMemberDecorate %5 0 NonWritable
+               OpMemberDecorate %5 0 Offset 0
+               OpMemberDecorate %5 1 Offset 4
+               OpDecorate %6 Binding 0
+               OpDecorate %6 DescriptorSet 0
+          %7 = OpTypeVoid
+          %8 = OpTypeFunction %7
+          %9 = OpTypeInt 32 0
+          %3 = OpTypeStruct %9
+         %10 = OpTypePointer StorageBuffer %3
+          %4 = OpVariable %10 StorageBuffer
+         %11 = OpTypeInt 32 1
+         %12 = OpConstant %11 0
+          %5 = OpTypeStruct %9 %9
+         %13 = OpTypePointer StorageBuffer %5
+          %6 = OpVariable %13 StorageBuffer
+         %14 = OpTypePointer StorageBuffer %9
+          %2 = OpFunction %7 None %8
+         %16 = OpLabel
+         %17 = OpAccessChain %14 %6 %12
+         %18 = OpLoad %9 %17
+               OpReturn
+               OpFunctionEnd
+)";
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
+  Instruction* type = context->get_def_use_mgr()->GetDef(10);
+  EXPECT_TRUE(type->IsVulkanStorageBuffer());
+  EXPECT_TRUE(type->IsVulkanStorageBufferNonWritable());
+  Instruction* variable = context->get_def_use_mgr()->GetDef(4);
+  EXPECT_FALSE(variable->IsReadOnlyPointer());
 }
 
 TEST_F(DescriptorTypeTest, UniformBuffer) {

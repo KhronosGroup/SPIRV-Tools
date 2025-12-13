@@ -447,10 +447,34 @@ bool Instruction::IsVulkanStorageBufferNonWritable() const {
     base_type = context()->get_def_use_mgr()->GetDef(
         base_type->GetSingleWordInOperand(0));
   }
+  assert(base_type->opcode() == spv::Op::OpTypeStruct);
+
+  // Check that all individual members of the struct are NonWritable.
   analysis::DecorationManager* decoration_mgr = context()->get_decoration_mgr();
-  uint32_t base_result_id = base_type->result_id();
-  return decoration_mgr->HasDecoration(base_result_id,
-                                       spv::Decoration::NonWritable);
+
+  if (base_type->NumInOperands() <= 64) {
+    uint64_t writeable_mask = (1llu << (base_type->NumInOperands())) - 1;
+    decoration_mgr->ForEachDecoration(
+        base_type->result_id(),
+        static_cast<uint32_t>(spv::Decoration::NonWritable),
+        [&writeable_mask](const Instruction& decr) {
+          if (decr.opcode() == spv::Op::OpMemberDecorate) {
+            writeable_mask &= ~(1llu << decr.GetSingleWordInOperand(1));
+          }
+        });
+    return !writeable_mask;
+  }
+
+  std::vector<uint32_t> nonwritable_members;
+  decoration_mgr->ForEachDecoration(
+      base_type->result_id(),
+      static_cast<uint32_t>(spv::Decoration::NonWritable),
+      [&nonwritable_members](const Instruction& decr) {
+        if (decr.opcode() == spv::Op::OpMemberDecorate) {
+          nonwritable_members.push_back(decr.GetSingleWordInOperand(1));
+        }
+      });
+  return nonwritable_members.size() == base_type->NumInOperands();
 }
 
 bool Instruction::IsVulkanStorageBufferVariable() const {
@@ -523,6 +547,7 @@ Instruction::ReadOnlyShaderResult Instruction::IsReadOnlyPointerShaders()
       }
       break;
     case spv::StorageClass::Uniform:
+    case spv::StorageClass::StorageBuffer:
       if (!type_def->IsVulkanStorageBuffer()) {
         return ReadOnlyShaderResult::kTrue;
       }

@@ -640,6 +640,8 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
 
   // Returns true if all _other_ instruction that have the same set
   // and binding are read only.
+  // This function should only be called if IsReadOnlyPointerShaders() has already
+  // been verified to return true.
   bool IsSetBindingUniformlyReadOnly() const;
 
   // Returns true if the result of |inst| can be used as the base image for an
