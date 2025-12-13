@@ -449,32 +449,20 @@ bool Instruction::IsVulkanStorageBufferNonWritable() const {
   }
   assert(base_type->opcode() == spv::Op::OpTypeStruct);
 
-  // Check that all individual members of the struct are NonWritable.
-  analysis::DecorationManager* decoration_mgr = context()->get_decoration_mgr();
-
-  if (base_type->NumInOperands() <= 64) {
-    uint64_t writeable_mask = (1llu << (base_type->NumInOperands())) - 1;
-    decoration_mgr->ForEachDecoration(
-        base_type->result_id(),
-        static_cast<uint32_t>(spv::Decoration::NonWritable),
-        [&writeable_mask](const Instruction& decr) {
-          if (decr.opcode() == spv::Op::OpMemberDecorate) {
-            writeable_mask &= ~(1llu << decr.GetSingleWordInOperand(1));
-          }
-        });
-    return !writeable_mask;
-  }
-
-  std::vector<uint32_t> nonwritable_members;
-  decoration_mgr->ForEachDecoration(
+  // Test if the number of NonWritable member decorations matches
+  // the number of members within the struct.
+  // We're assuming the decorations to have unique valid member id.
+  uint32_t nonwritable_members = 0;
+  context()->get_decoration_mgr()->ForEachDecoration(
       base_type->result_id(),
       static_cast<uint32_t>(spv::Decoration::NonWritable),
       [&nonwritable_members](const Instruction& decr) {
         if (decr.opcode() == spv::Op::OpMemberDecorate) {
-          nonwritable_members.push_back(decr.GetSingleWordInOperand(1));
+          ++nonwritable_members;
         }
       });
-  return nonwritable_members.size() == base_type->NumInOperands();
+
+  return nonwritable_members == base_type->NumInOperands();
 }
 
 bool Instruction::IsVulkanStorageBufferVariable() const {
