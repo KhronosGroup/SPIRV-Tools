@@ -664,6 +664,7 @@ class ValidationState_t {
   // Only works for types not for objects.
   bool IsVoidType(uint32_t id) const;
   bool IsScalarType(uint32_t id) const;
+  bool IsVectorType(uint32_t id) const;
   bool IsBfloat16ScalarType(uint32_t id) const;
   bool IsBfloat16VectorType(uint32_t id) const;
   bool IsBfloat16CoopMatType(uint32_t id) const;

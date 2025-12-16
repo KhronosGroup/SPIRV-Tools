@@ -231,7 +231,8 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
       bool comp_is_int32 = true, comp_is_const_int32 = true;
 
       if (result_opcode == spv::Op::OpTypeVector) {
-        if (num_operands <= 3) {
+        if (num_operands <= 3 &&
+            !_.HasCapability(spv::Capability::LongVectorEXT)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Expected number of constituents to be at least 2";
         }
@@ -529,18 +530,18 @@ spv_result_t ValidateTranspose(ValidationState_t& _, const Instruction* inst) {
 spv_result_t ValidateVectorShuffle(ValidationState_t& _,
                                    const Instruction* inst) {
   auto resultType = _.FindDef(inst->type_id());
-  if (!resultType || resultType->opcode() != spv::Op::OpTypeVector) {
+  if (!_.IsVectorType(resultType->id())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "The Result Type of OpVectorShuffle must be"
-           << " OpTypeVector. Found Op" << spvOpcodeString(resultType->opcode())
-           << ".";
+           << " a vector type. Found Op"
+           << spvOpcodeString(resultType->opcode()) << ".";
   }
 
   // The number of components in Result Type must be the same as the number of
   // Component operands.
   auto componentCount = inst->operands().size() - 4;
-  auto resultVectorDimension = resultType->GetOperandAs<uint32_t>(2);
-  if (componentCount != resultVectorDimension) {
+  auto resultVectorDimension = _.GetDimension(resultType->id());
+  if (resultVectorDimension > 0 && componentCount != resultVectorDimension) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpVectorShuffle component literals count does not match "
               "Result Type <id> "
@@ -553,13 +554,13 @@ spv_result_t ValidateVectorShuffle(ValidationState_t& _,
   auto vector1Type = _.FindDef(vector1Object->type_id());
   auto vector2Object = _.FindDef(inst->GetOperandAs<uint32_t>(3));
   auto vector2Type = _.FindDef(vector2Object->type_id());
-  if (!vector1Type || vector1Type->opcode() != spv::Op::OpTypeVector) {
+  if (!_.IsVectorType(vector1Type->id())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "The type of Vector 1 must be OpTypeVector.";
+           << "The type of Vector 1 must be a vector type.";
   }
-  if (!vector2Type || vector2Type->opcode() != spv::Op::OpTypeVector) {
+  if (!_.IsVectorType(vector2Type->id())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "The type of Vector 2 must be OpTypeVector.";
+           << "The type of Vector 2 must be a vector type.";
   }
 
   auto resultComponentType = resultType->GetOperandAs<uint32_t>(1);
