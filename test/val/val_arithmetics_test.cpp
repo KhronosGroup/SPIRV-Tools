@@ -2251,14 +2251,14 @@ TEST_F(ValidateArithmetics, CoopVecDimFail) {
 
 TEST_F(ValidateArithmetics, CoopVecComponentTypeNotScalarNumeric) {
   const std::string types = R"(
-%bad = OpTypeCooperativeVectorNV %bool %u32_8
+%bad = OpTypeCooperativeVectorNV %f16vec %u32_8
 )";
 
   CompileSuccessfully(GenerateCoopVecCode(types, "").c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpTypeCooperativeVectorNV Component Type <id> "
-                        "'5[%bool]' is not a scalar numerical type."));
+                        "'14[%14]' is not a scalar numerical type."));
 }
 
 TEST_F(ValidateArithmetics, CoopVecDimNotConstantInt) {
@@ -2269,8 +2269,8 @@ TEST_F(ValidateArithmetics, CoopVecDimNotConstantInt) {
   CompileSuccessfully(GenerateCoopVecCode(types, "").c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpTypeCooperativeVectorNV component count <id> "
-                        "'19[%float_1]' is not a constant integer type"));
+              HasSubstr("OpTypeCooperativeVectorNV component count type <id> "
+                        "'7[%float]' is not a 32-bit integer type"));
 }
 
 }  // namespace

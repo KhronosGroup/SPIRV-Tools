@@ -851,18 +851,48 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
               "parameters";
   }
 
-  if ((storage_class != spv::StorageClass::Function &&
-       storage_class != spv::StorageClass::Private) &&
-      pointee &&
-      _.ContainsType(pointee->id(), [](const Instruction* type_inst) {
-        auto opcode = type_inst->opcode();
-        return opcode == spv::Op::OpTypeCooperativeVectorNV;
-      })) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Cooperative vector types (or types containing them) can only be "
-              "allocated "
-           << "in Function or Private storage classes or as function "
-              "parameters";
+  // Vulkan-specific validation for long vectors
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (_.HasCapability(spv::Capability::LongVectorEXT)) {
+      if ((storage_class != spv::StorageClass::Function &&
+           storage_class != spv::StorageClass::Private &&
+           storage_class != spv::StorageClass::StorageBuffer &&
+           storage_class != spv::StorageClass::PhysicalStorageBuffer &&
+           storage_class != spv::StorageClass::Workgroup &&
+           storage_class != spv::StorageClass::Uniform &&
+           storage_class != spv::StorageClass::PushConstant &&
+           storage_class != spv::StorageClass::ShaderRecordBufferKHR) &&
+          pointee &&
+          _.ContainsType(pointee->id(), [&](const Instruction* type_inst) {
+            auto opcode = type_inst->opcode();
+            if (opcode == spv::Op::OpTypeVector ||
+                opcode == spv::Op::OpTypeVectorIdEXT) {
+              uint32_t dim = _.GetDimension(type_inst->id());
+              return dim > 4;
+            }
+            return false;
+          })) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "Long vector types with more than 4 components (or types "
+                  "containing them) not supported in storage class "
+               << StorageClassToString(storage_class);
+      }
+    } else {
+      if ((storage_class != spv::StorageClass::Function &&
+           storage_class != spv::StorageClass::Private) &&
+          pointee &&
+          _.ContainsType(pointee->id(), [](const Instruction* type_inst) {
+            auto opcode = type_inst->opcode();
+            return opcode == spv::Op::OpTypeCooperativeVectorNV;
+          })) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "Cooperative vector types (or types containing them) can "
+                  "only be "
+                  "allocated "
+               << "in Function or Private storage classes or as function "
+                  "parameters";
+      }
+    }
   }
 
   if (_.HasCapability(spv::Capability::Shader)) {
