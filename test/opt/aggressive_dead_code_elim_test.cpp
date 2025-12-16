@@ -8803,6 +8803,69 @@ TEST_F(AggressiveDCETest, UndefIsOutsideFunction) {
 
   SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
+TEST_F(AggressiveDCETest, ConvertDebugDeclareToDebugValue) {
+  const std::string spirv =
+      R"(OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %input %output
+OpExecutionMode %main OriginUpperLeft
+%5 = OpString "test.hlsl"
+OpSource HLSL 600
+OpName %main "main"
+OpDecorate %input Location 0
+OpDecorate %output Location 0
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%uint = OpTypeInt 32 0
+%uint_1 = OpConstant %uint 1
+%uint_2 = OpConstant %uint 2
+%uint_3 = OpConstant %uint 3
+%uint_32 = OpConstant %uint 32
+%uint_0 = OpConstant %uint 0
+%float_1 = OpConstant %float 1
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+%input = OpVariable %_ptr_Input_v4float Input
+%output = OpVariable %_ptr_Output_v4float Output
+%29 = OpTypeFunction %void
+; CHECK: [[expr:%\w+]] = OpExtInst %void {{%\w+}} DebugExpression
+; CHECK: [[source:%\w+]] = OpExtInst %void {{%\w+}} DebugSource %5
+%30 = OpExtInst %void %1 DebugSource %5
+%31 = OpExtInst %void %1 DebugCompilationUnit %uint_1 %uint_3 %30 %uint_32
+; CHECK: [[basic:%\w+]] = OpExtInst %void {{%\w+}} DebugTypeBasic
+%32 = OpExtInst %void %1 DebugTypeBasic %5 %uint_32 %uint_3 %uint_0
+; CHECK: [[vec_type:%\w+]] = OpExtInst %void {{%\w+}} DebugTypeVector [[basic]] %uint_3
+%33 = OpExtInst %void %1 DebugTypeVector %32 %uint_3
+%34 = OpExtInst %void %1 DebugTypeFunction %uint_0 %void
+%35 = OpExtInst %void %1 DebugFunction %5 %34 %30 %uint_1 %uint_0 %31 %5 %uint_0 %uint_1
+%36 = OpExtInst %void %1 DebugLocalVariable %5 %33 %30 %uint_1 %uint_0 %35 %uint_0
+; CHECK: [[local:%\w+]] = OpExtInst %void {{%\w+}} DebugLocalVariable %5 [[vec_type]] [[source]] %uint_2
+%37 = OpExtInst %void %1 DebugLocalVariable %5 %33 %30 %uint_2 %uint_0 %35 %uint_0
+%38 = OpExtInst %void %1 DebugExpression
+%main = OpFunction %void None %29
+%39 = OpLabel
+%dead_var = OpVariable %_ptr_Function_v4float Function
+%live_var = OpVariable %_ptr_Function_v4float Function
+; CHECK: [[live:%\w+]] = OpLoad
+%live_input = OpLoad %v4float %input
+%dead_value = OpCompositeConstruct %v4float %float_1 %float_1 %float_1 %float_1
+OpStore %dead_var %dead_value
+; CHECK-NOT: DebugDeclare
+%40 = OpExtInst %void %1 DebugDeclare %36 %dead_var %38
+OpStore %live_var %live_input
+; CHECK: DebugValue [[local]] [[live]] [[expr]]
+%41 = OpExtInst %void %1 DebugDeclare %37 %live_var %38
+OpStore %output %live_input
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+}
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
