@@ -119,6 +119,12 @@ elseif(MSVC)
   endif()
 endif()
 
+if (PROJECT_IS_TOP_LEVEL)
+  # enable parallel builds for msbuild
+  list(APPEND CMAKE_VS_GLOBALS UseMultiToolTask=true)
+  list(APPEND CMAKE_VS_GLOBALS EnforceProcessCountAcrossBuilds=true)
+endif()
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/)
 
 option(SPIRV_COLOR_TERMINAL "Enable color terminal output" ON)
