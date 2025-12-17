@@ -142,6 +142,12 @@ class Type {
     return IsSameImpl(that, &seen);
   }
 
+  // Returns true if this is a cooperative matrix.
+  bool IsCooperativeMatrix() const {
+    return kind() == analysis::Type::kCooperativeMatrixKHR ||
+           kind() == analysis::Type::kCooperativeMatrixNV;
+  }
+
   // Returns true if this type is exactly the same as |that| type, including
   // decorations.  |seen| is the set of |Pointer*| pair that are currently being
   // compared in a parent call to |IsSameImpl|.
