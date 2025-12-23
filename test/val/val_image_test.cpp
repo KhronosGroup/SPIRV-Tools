@@ -372,6 +372,7 @@ OpCapability ImageQuery
 OpCapability ImageGatherExtended
 OpCapability InputAttachment
 OpCapability SampledRect
+OpCapability Int16
 )";
 
   ss << capabilities_and_extensions;
@@ -381,6 +382,7 @@ OpMemoryModel Physical32 OpenCL
 %func = OpTypeFunction %void
 %bool = OpTypeBool
 %f32 = OpTypeFloat 32
+%u16 = OpTypeInt 16 0
 %u32 = OpTypeInt 32 0
 %u32vec2 = OpTypeVector %u32 2
 %f32vec2 = OpTypeVector %f32 2
@@ -394,6 +396,8 @@ OpMemoryModel Physical32 OpenCL
 %f32_0_5 = OpConstant %f32 0.5
 %f32_0_25 = OpConstant %f32 0.25
 %f32_0_75 = OpConstant %f32 0.75
+
+%u16_0 = OpConstant %u16 0
 
 %u32_0 = OpConstant %u32 0
 %u32_1 = OpConstant %u32 1
@@ -4451,7 +4455,19 @@ TEST_F(ValidateImage, QuerySizeLodWrongLodType) {
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Level of Detail to be int scalar"));
+              HasSubstr("Expected Level of Detail to be a 32-bit int scalar"));
+}
+
+TEST_F(ValidateImage, QuerySizeLodWrong16Bit) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%res1 = OpImageQuerySizeLod %u32vec2 %img %u16_0
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Level of Detail to be a 32-bit int scalar"));
 }
 
 TEST_F(ValidateImage, QuerySizeSuccess) {
