@@ -113,7 +113,7 @@ spv_result_t ValidateHitObjectInstructionCommonParameters(
 
   if (isValidId(instance_id_index)) {
     const uint32_t instance_id = _.GetOperandTypeId(inst, instance_id_index);
-    if (!_.IsIntScalarType(instance_id) || _.GetBitWidth(instance_id) != 32) {
+    if (!_.IsIntScalarType(instance_id, 32)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Instance Id must be a 32-bit int scalar";
     }
@@ -121,7 +121,7 @@ spv_result_t ValidateHitObjectInstructionCommonParameters(
 
   if (isValidId(primtive_id_index)) {
     const uint32_t primitive_id = _.GetOperandTypeId(inst, primtive_id_index);
-    if (!_.IsIntScalarType(primitive_id) || _.GetBitWidth(primitive_id) != 32) {
+    if (!_.IsIntScalarType(primitive_id, 32)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Primitive Id must be a 32-bit int scalar";
     }
@@ -129,8 +129,7 @@ spv_result_t ValidateHitObjectInstructionCommonParameters(
 
   if (isValidId(geometry_index)) {
     const uint32_t geometry_index_id = _.GetOperandTypeId(inst, geometry_index);
-    if (!_.IsIntScalarType(geometry_index_id) ||
-        _.GetBitWidth(geometry_index_id) != 32) {
+    if (!_.IsIntScalarType(geometry_index_id, 32)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Geometry Index must be a 32-bit int scalar";
     }
@@ -241,7 +240,7 @@ spv_result_t ValidateHitObjectInstructionCommonParameters(
 
   if (isValidId(ray_flags_index)) {
     const uint32_t ray_flags_id = _.GetOperandTypeId(inst, ray_flags_index);
-    if (!_.IsIntScalarType(ray_flags_id) || _.GetBitWidth(ray_flags_id) != 32) {
+    if (!_.IsIntScalarType(ray_flags_id, 32)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Ray Flags must be a 32-bit int scalar";
     }
@@ -352,7 +351,7 @@ spv_result_t RayReorderNVPass(ValidationState_t& _, const Instruction* inst) {
       RegisterOpcodeForValidModel(_, inst);
       if (auto error = ValidateHitObjectPointer(_, inst, 2)) return error;
 
-      if (!_.IsIntScalarType(result_type) || !_.GetBitWidth(result_type))
+      if (!_.IsIntScalarType(result_type, 32))
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected 32-bit integer type scalar as Result Type: "
                << spvOpcodeString(opcode);
@@ -618,12 +617,12 @@ spv_result_t RayReorderNVPass(ValidationState_t& _, const Instruction* inst) {
 
         // Validate the optional opreands Hint and Bits
         const uint32_t hint_id = _.GetOperandTypeId(inst, 1);
-        if (!_.IsIntScalarType(hint_id) || _.GetBitWidth(hint_id) != 32) {
+        if (!_.IsIntScalarType(hint_id, 32)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Hint must be a 32-bit int scalar";
         }
         const uint32_t bits_id = _.GetOperandTypeId(inst, 2);
-        if (!_.IsIntScalarType(bits_id) || _.GetBitWidth(bits_id) != 32) {
+        if (!_.IsIntScalarType(bits_id, 32)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "bits must be a 32-bit int scalar";
         }
@@ -647,13 +646,13 @@ spv_result_t RayReorderNVPass(ValidationState_t& _, const Instruction* inst) {
               });
 
       const uint32_t hint_id = _.GetOperandTypeId(inst, 0);
-      if (!_.IsIntScalarType(hint_id) || _.GetBitWidth(hint_id) != 32) {
+      if (!_.IsIntScalarType(hint_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Hint must be a 32-bit int scalar";
       }
 
       const uint32_t bits_id = _.GetOperandTypeId(inst, 1);
-      if (!_.IsIntScalarType(bits_id) || _.GetBitWidth(bits_id) != 32) {
+      if (!_.IsIntScalarType(bits_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "bits must be a 32-bit int scalar";
       }
@@ -664,7 +663,7 @@ spv_result_t RayReorderNVPass(ValidationState_t& _, const Instruction* inst) {
       RegisterOpcodeForValidModel(_, inst);
       if (auto error = ValidateHitObjectPointer(_, inst, 2)) return error;
 
-      if (!_.IsIntScalarType(result_type) || _.GetBitWidth(result_type) != 32)
+      if (!_.IsIntScalarType(result_type, 32))
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected 32-bit integer type scalar as Result Type: "
                << spvOpcodeString(opcode);
@@ -824,7 +823,7 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
       RegisterOpcodeForValidModel(_, inst);
       if (auto error = ValidateHitObjectPointerEXT(_, inst, 2)) return error;
 
-      if (!_.IsIntScalarType(result_type) || _.GetBitWidth(result_type) != 32)
+      if (!_.IsIntScalarType(result_type, 32))
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected 32-bit integer type scalar as Result Type: "
                << spvOpcodeString(opcode);
@@ -934,8 +933,7 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
       if (auto error = ValidateHitObjectPointerEXT(_, inst, 0)) return error;
 
       const uint32_t sbt_index_id = _.GetOperandTypeId(inst, 1);
-      if (!_.IsIntScalarType(sbt_index_id) ||
-          _.GetBitWidth(sbt_index_id) != 32) {
+      if (!_.IsIntScalarType(sbt_index_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "SBT Index must be a 32-bit integer scalar";
       }
@@ -979,8 +977,7 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
 
       // Validate SBT Record Index (operand 2)
       const uint32_t sbt_record_index_id = _.GetOperandTypeId(inst, 2);
-      if (!_.IsIntScalarType(sbt_record_index_id) ||
-          _.GetBitWidth(sbt_record_index_id) != 32) {
+      if (!_.IsIntScalarType(sbt_record_index_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "SBT Record Index must be a 32-bit integer scalar";
       }
@@ -1005,8 +1002,7 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
 
       // Ray Flags (operand 1)
       const uint32_t ray_flags_id = _.GetOperandTypeId(inst, 1);
-      if (!_.IsIntScalarType(ray_flags_id) ||
-          _.GetBitWidth(ray_flags_id) != 32) {
+      if (!_.IsIntScalarType(ray_flags_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray Flags must be a 32-bit int scalar";
       }
@@ -1058,8 +1054,7 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
 
       // Ray Flags (operand 1)
       const uint32_t ray_flags_id = _.GetOperandTypeId(inst, 1);
-      if (!_.IsIntScalarType(ray_flags_id) ||
-          _.GetBitWidth(ray_flags_id) != 32) {
+      if (!_.IsIntScalarType(ray_flags_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray Flags must be a 32-bit int scalar";
       }
@@ -1129,13 +1124,13 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
               });
 
       const uint32_t hint_id = _.GetOperandTypeId(inst, 0);
-      if (!_.IsIntScalarType(hint_id) || _.GetBitWidth(hint_id) != 32) {
+      if (!_.IsIntScalarType(hint_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Hint must be a 32-bit int scalar";
       }
 
       const uint32_t bits_id = _.GetOperandTypeId(inst, 1);
-      if (!_.IsIntScalarType(bits_id) || _.GetBitWidth(bits_id) != 32) {
+      if (!_.IsIntScalarType(bits_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Bits must be a 32-bit int scalar";
       }
@@ -1168,12 +1163,12 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
 
         // Validate the optional operands Hint and Bits
         const uint32_t hint_id = _.GetOperandTypeId(inst, 1);
-        if (!_.IsIntScalarType(hint_id) || _.GetBitWidth(hint_id) != 32) {
+        if (!_.IsIntScalarType(hint_id, 32)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Hint must be a 32-bit int scalar";
         }
         const uint32_t bits_id = _.GetOperandTypeId(inst, 2);
-        if (!_.IsIntScalarType(bits_id) || _.GetBitWidth(bits_id) != 32) {
+        if (!_.IsIntScalarType(bits_id, 32)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Bits must be a 32-bit int scalar";
         }
@@ -1270,12 +1265,12 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
 
         // Validate optional Hint and Bits
         const uint32_t hint_id = _.GetOperandTypeId(inst, 2);
-        if (!_.IsIntScalarType(hint_id) || _.GetBitWidth(hint_id) != 32) {
+        if (!_.IsIntScalarType(hint_id, 32)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Hint must be a 32-bit int scalar";
         }
         const uint32_t bits_id = _.GetOperandTypeId(inst, 3);
-        if (!_.IsIntScalarType(bits_id) || _.GetBitWidth(bits_id) != 32) {
+        if (!_.IsIntScalarType(bits_id, 32)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Bits must be a 32-bit int scalar";
         }
@@ -1325,12 +1320,12 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
 
         // Validate optional Hint and Bits
         const uint32_t hint_id = _.GetOperandTypeId(inst, 12);
-        if (!_.IsIntScalarType(hint_id) || _.GetBitWidth(hint_id) != 32) {
+        if (!_.IsIntScalarType(hint_id, 32)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Hint must be a 32-bit int scalar";
         }
         const uint32_t bits_id = _.GetOperandTypeId(inst, 13);
-        if (!_.IsIntScalarType(bits_id) || _.GetBitWidth(bits_id) != 32) {
+        if (!_.IsIntScalarType(bits_id, 32)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Bits must be a 32-bit int scalar";
         }
@@ -1388,12 +1383,12 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
 
         // Validate optional Hint and Bits
         const uint32_t hint_id = _.GetOperandTypeId(inst, 13);
-        if (!_.IsIntScalarType(hint_id) || _.GetBitWidth(hint_id) != 32) {
+        if (!_.IsIntScalarType(hint_id, 32)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Hint must be a 32-bit int scalar";
         }
         const uint32_t bits_id = _.GetOperandTypeId(inst, 14);
-        if (!_.IsIntScalarType(bits_id) || _.GetBitWidth(bits_id) != 32) {
+        if (!_.IsIntScalarType(bits_id, 32)) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << "Bits must be a 32-bit int scalar";
         }

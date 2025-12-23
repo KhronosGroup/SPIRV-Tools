@@ -2700,7 +2700,7 @@ spv_result_t ValidateInt32Operand(ValidationState_t& _, const Instruction* inst,
                                   const char* operand_name) {
   const auto type_id =
       _.FindDef(inst->GetOperandAs<uint32_t>(operand_index))->type_id();
-  if (!_.IsIntScalarType(type_id) || _.GetBitWidth(type_id) != 32) {
+  if (!_.IsIntScalarType(type_id, 32)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << opcode_name << " " << operand_name << " type <id> "
            << _.getIdName(type_id) << " is not a 32 bit integer.";
@@ -3000,8 +3000,7 @@ spv_result_t ValidateCooperativeVectorMatrixMulNV(ValidationState_t& _,
   }
 
   const auto result_component_type_id = result_type->GetOperandAs<uint32_t>(1u);
-  if (!(_.IsIntScalarType(result_component_type_id) &&
-        _.GetBitWidth(result_component_type_id) == 32) &&
+  if (!_.IsIntScalarType(result_component_type_id, 32) &&
       !(_.IsFloatScalarType(result_component_type_id) &&
         (_.GetBitWidth(result_component_type_id) == 32 ||
          _.GetBitWidth(result_component_type_id) == 16))) {
