@@ -2321,8 +2321,24 @@ TEST_F(ValidateImage, SampleImplicitLodMinLodWrongType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image Operand MinLod to be float scalar"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Image Operand MinLod to be a 32-bit float scalar"));
+}
+
+TEST_F(ValidateImage, SampleImplicitLodMinLod16Bit) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%res1 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 MinLod %f16_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Image Operand MinLod to be a 32-bit float scalar"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodMinLodWrongDim) {
@@ -4270,8 +4286,34 @@ OpImageWrite %img %u32vec2_01 %f32vec4_0000 Sample %f32_1
                                          declarations)
                           .c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image Operand Sample to be int scalar"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Image Operand Sample to be a 32-bit int scalar"));
+}
+
+TEST_F(ValidateImage, WriteSample16Bit) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0012 %uniform_image_f32_2d_0012
+OpImageWrite %img %u32vec2_01 %f32vec4_0000 Sample %u16_0
+)";
+
+  const std::string extra = R"(
+    OpCapability StorageImageWriteWithoutFormat
+    OpCapability StorageImageMultisample
+    )";
+  const std::string declarations = R"(
+%type_image_f32_2d_0012 = OpTypeImage %f32 2D 0 0 1 2 Unknown
+%ptr_image_f32_2d_0012 = OpTypePointer UniformConstant %type_image_f32_2d_0012
+%uniform_image_f32_2d_0012 = OpVariable %ptr_image_f32_2d_0012 UniformConstant
+    )";
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment", "",
+                                         SPV_ENV_UNIVERSAL_1_0, "GLSL450",
+                                         declarations)
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Image Operand Sample to be a 32-bit int scalar"));
 }
 
 TEST_F(ValidateImage, WriteSampleNotMultisampled) {

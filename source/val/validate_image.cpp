@@ -548,10 +548,11 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << "Image Operand Sample requires non-zero 'MS' parameter";
     }
 
-    const uint32_t type_id = _.GetTypeId(inst->word(word_index++));
-    if (!_.IsIntScalarType(type_id)) {
+    const uint32_t sample_type_id = _.GetTypeId(inst->word(word_index++));
+    if (!_.IsIntScalarType(sample_type_id) ||
+        _.GetBitWidth(sample_type_id) != 32) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Expected Image Operand Sample to be int scalar";
+             << "Expected Image Operand Sample to be a 32-bit int scalar";
     }
   }
 
@@ -562,10 +563,11 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << "opcodes or together with Image Operand Grad";
     }
 
-    const uint32_t type_id = _.GetTypeId(inst->word(word_index++));
-    if (!_.IsFloatScalarType(type_id)) {
+    const uint32_t minlod_type_id = _.GetTypeId(inst->word(word_index++));
+    if (!_.IsFloatScalarType(minlod_type_id) ||
+        _.GetBitWidth(minlod_type_id) != 32) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Expected Image Operand MinLod to be float scalar";
+             << "Expected Image Operand MinLod to be a 32-bit float scalar";
     }
 
     if (info.dim != spv::Dim::Dim1D && info.dim != spv::Dim::Dim2D &&
