@@ -345,17 +345,20 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
                 "time";
     }
 
-    const uint32_t type_id = _.GetTypeId(inst->word(word_index++));
+    const uint32_t lod_type_id = _.GetTypeId(inst->word(word_index++));
     if (is_explicit_lod || is_valid_gather_lod_bias_amd) {
-      if (!_.IsFloatScalarType(type_id)) {
+      if (!_.IsFloatScalarType(lod_type_id) ||
+          _.GetBitWidth(lod_type_id) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "Expected Image Operand Lod to be float scalar when used "
+               << "Expected Image Operand Lod to be a 32-bit float scalar when "
+                  "used "
                << "with ExplicitLod";
       }
     } else {
-      if (!_.IsIntScalarType(type_id)) {
+      if (!_.IsIntScalarType(lod_type_id) || _.GetBitWidth(lod_type_id) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "Expected Image Operand Lod to be int scalar when used with "
+               << "Expected Image Operand Lod to be a 32-bit int scalar when "
+                  "used with "
                << "OpImageFetch";
       }
     }

@@ -50,7 +50,9 @@ OpCapability ImageGatherExtended
 OpCapability MinLod
 OpCapability Sampled1D
 OpCapability ImageQuery
+OpCapability Int16
 OpCapability Int64
+OpCapability Float16
 OpCapability Float64
 OpCapability SparseResidency
 OpCapability ImageBuffer
@@ -139,8 +141,10 @@ OpDecorate %input_flat_u32 Location 0
 %void = OpTypeVoid
 %func = OpTypeFunction %void
 %bool = OpTypeBool
+%f16 = OpTypeFloat 16
 %f32 = OpTypeFloat 32
 %f64 = OpTypeFloat 64
+%u16 = OpTypeInt 16 0
 %u32 = OpTypeInt 32 0
 %s32 = OpTypeInt 32 1
 %u64 = OpTypeInt 64 0
@@ -155,6 +159,8 @@ OpDecorate %input_flat_u32 Location 0
 %s32vec4 = OpTypeVector %s32 4
 %f32vec4 = OpTypeVector %f32 4
 %boolvec4 = OpTypeVector %bool 4
+
+%f16_0 = OpConstant %f16 0
 
 %f32_0 = OpConstant %f32 0
 %f32_1 = OpConstant %f32 1
@@ -171,6 +177,8 @@ OpDecorate %input_flat_u32 Location 0
 %s32_3 = OpConstant %s32 3
 %s32_4 = OpConstant %s32 4
 %s32_m1 = OpConstant %s32 -1
+
+%u16_0 = OpConstant %u16 0
 
 %u32_0 = OpConstant %u32 0
 %u32_1 = OpConstant %u32 1
@@ -1424,7 +1432,7 @@ TEST_F(ValidateImage, ImageTexelPointerImageNotResultTypePointer) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand '148[%148]' cannot be a "
+              HasSubstr("Operand '152[%152]' cannot be a "
                         "type"));
 }
 
@@ -1874,9 +1882,25 @@ TEST_F(ValidateImage, LodWrongType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Image Operand Lod to be a 32-bit float scalar when "
+                "used with ExplicitLod"));
+}
+
+TEST_F(ValidateImage, LodWithHalf) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSampleExplicitLod %f32vec4 %simg %f32vec2_00 Lod %f16_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image Operand Lod to be float scalar when "
-                        "used with ExplicitLod"));
+              HasSubstr("Expected Image Operand Lod to be a 32-bit float "
+                        "scalar when used with ExplicitLod"));
 }
 
 TEST_F(ValidateImage, LodWrongDim) {
@@ -3263,9 +3287,26 @@ TEST_F(ValidateImage, FetchLodNotInt) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image Operand Lod to be int scalar when used "
-                        "with OpImageFetch"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected Image Operand Lod to be a 32-bit int scalar when used "
+          "with OpImageFetch"));
+}
+
+TEST_F(ValidateImage, FetchLod16Int) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%res1 = OpImageFetch %f32vec4 %img %u32vec2_01 Lod %u16_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected Image Operand Lod to be a 32-bit int scalar when used "
+          "with OpImageFetch"));
 }
 
 TEST_F(ValidateImage, FetchMultisampledMissingSample) {
