@@ -417,21 +417,23 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
                 "'Dim'";
     }
 
-    const uint32_t id = inst->word(word_index++);
-    const uint32_t type_id = _.GetTypeId(id);
-    if (!_.IsIntScalarOrVectorType(type_id)) {
+    const uint32_t offset_id = inst->word(word_index++);
+    const uint32_t offset_type_id = _.GetTypeId(offset_id);
+    if (!_.IsIntScalarOrVectorType(offset_type_id) ||
+        _.GetBitWidth(offset_type_id) != 32) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Expected Image Operand ConstOffset to be int scalar or "
+             << "Expected Image Operand ConstOffset to be a 32-bit int scalar "
+                "or "
              << "vector";
     }
 
-    if (!spvOpcodeIsConstant(_.GetIdOpcode(id))) {
+    if (!spvOpcodeIsConstant(_.GetIdOpcode(offset_id))) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Expected Image Operand ConstOffset to be a const object";
     }
 
     const uint32_t plane_size = GetPlaneCoordSize(info);
-    const uint32_t offset_size = _.GetDimension(type_id);
+    const uint32_t offset_size = _.GetDimension(offset_type_id);
     if (plane_size != offset_size) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Expected Image Operand ConstOffset to have " << plane_size
@@ -445,16 +447,17 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << "Image Operand Offset cannot be used with Cube Image 'Dim'";
     }
 
-    const uint32_t id = inst->word(word_index++);
-    const uint32_t type_id = _.GetTypeId(id);
-    if (!_.IsIntScalarOrVectorType(type_id)) {
+    const uint32_t offset_id = inst->word(word_index++);
+    const uint32_t offset_type_id = _.GetTypeId(offset_id);
+    if (!_.IsIntScalarOrVectorType(offset_type_id) ||
+        _.GetBitWidth(offset_type_id) != 32) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Expected Image Operand Offset to be int scalar or "
+             << "Expected Image Operand Offset to be a 32-bit int scalar or "
              << "vector";
     }
 
     const uint32_t plane_size = GetPlaneCoordSize(info);
-    const uint32_t offset_size = _.GetDimension(type_id);
+    const uint32_t offset_size = _.GetDimension(offset_type_id);
     if (plane_size != offset_size) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Expected Image Operand Offset to have " << plane_size
@@ -494,9 +497,9 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
                 "'Dim'";
     }
 
-    const uint32_t id = inst->word(word_index++);
-    const uint32_t type_id = _.GetTypeId(id);
-    const Instruction* type_inst = _.FindDef(type_id);
+    const uint32_t offset_id = inst->word(word_index++);
+    const uint32_t offset_type_id = _.GetTypeId(offset_id);
+    const Instruction* type_inst = _.FindDef(offset_type_id);
     assert(type_inst);
 
     if (type_inst->opcode() != spv::Op::OpTypeArray) {
@@ -516,13 +519,14 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
 
     const uint32_t component_type = type_inst->word(2);
     if (!_.IsIntVectorType(component_type) ||
-        _.GetDimension(component_type) != 2) {
+        _.GetDimension(component_type) != 2 ||
+        _.GetBitWidth(component_type) != 32) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Expected Image Operand ConstOffsets array components to be "
-                "int vectors of size 2";
+             << "Expected Image Operand ConstOffsets array components to be a "
+                "32-bit int vectors of size 2";
     }
 
-    if (!spvOpcodeIsConstant(_.GetIdOpcode(id))) {
+    if (!spvOpcodeIsConstant(_.GetIdOpcode(offset_id))) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Expected Image Operand ConstOffsets to be a const object";
     }

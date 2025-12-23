@@ -196,6 +196,7 @@ OpDecorate %input_flat_u32 Location 0
 %u32vec2arr3 = OpTypeArray %u32vec2 %u32_3
 %u32arr4 = OpTypeArray %u32 %u32_4
 %u32vec3arr4 = OpTypeArray %u32vec3 %u32_4
+%f16vec2arr4 = OpTypeArray %f16vec2 %u32_4
 
 %struct_u32_f32vec4 = OpTypeStruct %u32 %f32vec4
 %struct_u64_f32vec4 = OpTypeStruct %u64 %f32vec4
@@ -242,6 +243,7 @@ OpDecorate %input_flat_u32 Location 0
 %const_offsets3x2 = OpConstantComposite %u32vec2arr3 %u32vec2_01 %u32vec2_12 %u32vec2_01
 %const_offsets4xu = OpConstantComposite %u32arr4 %u32_0 %u32_0 %u32_0 %u32_0
 %const_offsets4x3 = OpConstantComposite %u32vec3arr4 %u32vec3_012 %u32vec3_012 %u32vec3_012 %u32vec3_012
+%const_offsets4f16 = OpConstantComposite %f16vec2arr4 %f16vec2_00 %f16vec2_00 %f16vec2_00 %f16vec2_00
 
 %type_image_f32_1d_0001 = OpTypeImage %f32 1D 0 0 0 1 Unknown
 %ptr_image_f32_1d_0001 = OpTypePointer UniformConstant %type_image_f32_1d_0001
@@ -1435,7 +1437,7 @@ TEST_F(ValidateImage, ImageTexelPointerImageNotResultTypePointer) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand '154[%154]' cannot be a "
+              HasSubstr("Operand '156[%156]' cannot be a "
                         "type"));
 }
 
@@ -2117,10 +2119,24 @@ TEST_F(ValidateImage, SampleImplicitLodConstOffsetWrongType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Expected Image Operand ConstOffset to be int scalar or vector"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image Operand ConstOffset to be a 32-bit int "
+                        "scalar or vector"));
+}
+
+TEST_F(ValidateImage, SampleImplicitLodConstOffset16Bit) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec2_00 ConstOffset %u16_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image Operand ConstOffset to be a 32-bit int "
+                        "scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodConstOffsetWrongSize) {
@@ -2181,7 +2197,24 @@ TEST_F(ValidateImage, SampleImplicitLodOffsetWrongType) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Expected Image Operand Offset to be int scalar or vector"));
+      HasSubstr(
+          "Expected Image Operand Offset to be a 32-bit int scalar or vector"));
+}
+
+TEST_F(ValidateImage, SampleImplicitLodOffset16Bit) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res4 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec4_0000 Offset %u16_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected Image Operand Offset to be a 32-bit int scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodOffsetWrongSize) {
@@ -3614,7 +3647,7 @@ TEST_F(ValidateImage, GatherConstOffsetsArrayNotVector) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image Operand ConstOffsets array components "
-                        "to be int vectors of size 2"));
+                        "to be a 32-bit int vectors of size 2"));
 }
 
 TEST_F(ValidateImage, GatherConstOffsetsArrayVectorWrongSize) {
@@ -3629,7 +3662,22 @@ TEST_F(ValidateImage, GatherConstOffsetsArrayVectorWrongSize) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Image Operand ConstOffsets array components "
-                        "to be int vectors of size 2"));
+                        "to be a 32-bit int vectors of size 2"));
+}
+
+TEST_F(ValidateImage, GatherConstOffsetsArrayVector16Bit) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageGather %f32vec4 %simg %f32vec4_0000 %u32_1 ConstOffsets %const_offsets4f16
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image Operand ConstOffsets array components "
+                        "to be a 32-bit int vectors of size 2"));
 }
 
 TEST_F(ValidateImage, GatherConstOffsetsArrayNotConst) {
