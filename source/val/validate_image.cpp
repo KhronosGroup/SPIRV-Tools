@@ -383,9 +383,12 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     const uint32_t dx_type_id = _.GetTypeId(inst->word(word_index++));
     const uint32_t dy_type_id = _.GetTypeId(inst->word(word_index++));
     if (!_.IsFloatScalarOrVectorType(dx_type_id) ||
-        !_.IsFloatScalarOrVectorType(dy_type_id)) {
+        _.GetBitWidth(dx_type_id) != 32 ||
+        !_.IsFloatScalarOrVectorType(dy_type_id) ||
+        _.GetBitWidth(dy_type_id) != 32) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Expected both Image Operand Grad ids to be float scalars or "
+             << "Expected both Image Operand Grad ids to be 32-bit float "
+                "scalars or "
              << "vectors";
     }
 

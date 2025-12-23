@@ -149,6 +149,7 @@ OpDecorate %input_flat_u32 Location 0
 %s32 = OpTypeInt 32 1
 %u64 = OpTypeInt 64 0
 %s64 = OpTypeInt 64 1
+%f16vec2 = OpTypeVector %f16 2
 %s32vec2 = OpTypeVector %s32 2
 %u32vec2 = OpTypeVector %u32 2
 %f32vec2 = OpTypeVector %f32 2
@@ -221,6 +222,8 @@ OpDecorate %input_flat_u32 Location 0
 %s32vec3_123 = OpConstantComposite %s32vec3 %s32_1 %s32_2 %s32_3
 %s32vec4_0123 = OpConstantComposite %s32vec4 %s32_0 %s32_1 %s32_2 %s32_3
 %s32vec4_1234 = OpConstantComposite %s32vec4 %s32_1 %s32_2 %s32_3 %s32_4
+
+%f16vec2_00 = OpConstantComposite %f16vec2 %f16_0 %f16_0
 
 %f32vec2_00 = OpConstantComposite %f32vec2 %f32_0 %f32_0
 %f32vec2_01 = OpConstantComposite %f32vec2 %f32_0 %f32_1
@@ -1432,7 +1435,7 @@ TEST_F(ValidateImage, ImageTexelPointerImageNotResultTypePointer) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand '152[%152]' cannot be a "
+              HasSubstr("Operand '154[%154]' cannot be a "
                         "type"));
 }
 
@@ -2019,9 +2022,10 @@ TEST_F(ValidateImage, SampleExplicitLodGradDxWrongType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected both Image Operand Grad ids to be float "
-                        "scalars or vectors"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected both Image Operand Grad ids to be 32-bit float "
+                "scalars or vectors"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodGradDyWrongType) {
@@ -2034,9 +2038,25 @@ TEST_F(ValidateImage, SampleExplicitLodGradDyWrongType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected both Image Operand Grad ids to be 32-bit float "
+                "scalars or vectors"));
+}
+
+TEST_F(ValidateImage, SampleExplicitLodGrad16Bit) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_cube_0101 %uniform_image_f32_cube_0101
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_cube_0101 %img %sampler
+%res1 = OpImageSampleExplicitLod %f32vec4 %simg %f32vec4_0000 Grad %f16vec2_00 %f32vec2_00
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected both Image Operand Grad ids to be float "
-                        "scalars or vectors"));
+              HasSubstr("Expected both Image Operand Grad ids to be 32-bit "
+                        "float scalars or vectors"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodGradDxWrongSize) {
