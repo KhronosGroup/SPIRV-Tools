@@ -16,12 +16,15 @@
 
 #include "convert_to_half_pass.h"
 
+#include <cstdint>
+
 #include "source/opt/ir_builder.h"
 
 namespace spvtools {
 namespace opt {
 namespace {
 // Indices of operands in SPIR-V instructions
+constexpr int kImageSampleCoordinateIdInIdx = 1;
 constexpr int kImageSampleDrefIdInIdx = 2;
 }  // namespace
 
@@ -195,6 +198,118 @@ bool ConvertToHalfPass::MatConvertCleanup(Instruction* inst) {
   return true;
 }
 
+// Return operand position of Image Operands <ID> or zero if there is none
+static constexpr uint32_t GetImageOperandsPosition(spv::Op opcode) {
+  uint32_t position = 0;
+  switch (opcode) {
+    case spv::Op::OpImageWrite:
+      return 3;
+    case spv::Op::OpImageSampleImplicitLod:
+    case spv::Op::OpImageSampleExplicitLod:
+    case spv::Op::OpImageSampleProjImplicitLod:
+    case spv::Op::OpImageSampleProjExplicitLod:
+    case spv::Op::OpImageFetch:
+    case spv::Op::OpImageRead:
+    case spv::Op::OpImageSparseSampleImplicitLod:
+    case spv::Op::OpImageSparseSampleExplicitLod:
+    case spv::Op::OpImageSparseSampleProjImplicitLod:
+    case spv::Op::OpImageSparseSampleProjExplicitLod:
+    case spv::Op::OpImageSparseFetch:
+    case spv::Op::OpImageSparseRead:
+      return 4;
+    case spv::Op::OpImageSampleDrefImplicitLod:
+    case spv::Op::OpImageSampleDrefExplicitLod:
+    case spv::Op::OpImageSampleProjDrefImplicitLod:
+    case spv::Op::OpImageSampleProjDrefExplicitLod:
+    case spv::Op::OpImageGather:
+    case spv::Op::OpImageDrefGather:
+    case spv::Op::OpImageSparseSampleDrefImplicitLod:
+    case spv::Op::OpImageSparseSampleDrefExplicitLod:
+    case spv::Op::OpImageSparseSampleProjDrefImplicitLod:
+    case spv::Op::OpImageSparseSampleProjDrefExplicitLod:
+    case spv::Op::OpImageSparseGather:
+    case spv::Op::OpImageSparseDrefGather:
+      return 5;
+    case spv::Op::OpImageSampleFootprintNV:
+      return 6;
+    default:
+      break;
+  }
+  return position;
+}
+
+bool ConvertToHalfPass::ImageOperandCleanup(Instruction* inst) {
+  if (image_ops_.count(inst->opcode()) == 0) return false;
+
+  const uint32_t image_operand_position =
+      GetImageOperandsPosition(inst->opcode());
+  // Image operands can be optional, also some things like |SignExtend| don't
+  // have additonal operands
+  if (image_operand_position == 0 ||
+      (image_operand_position + 1) >= inst->NumOperandWords()) {
+    return false;
+  }
+
+  bool modified = false;
+  const uint32_t mask = inst->GetSingleWordOperand(image_operand_position);
+  uint32_t next_operand = image_operand_position + 1;
+
+  InstructionBuilder builder(
+      context(), inst,
+      IRContext::kAnalysisDefUse | IRContext::kAnalysisInstrToBlockMapping);
+
+  uint32_t float32_type =
+      context()->get_type_mgr()->GetTypeInstruction(FloatScalarType(32));
+
+  // All mask after don't have a 32-bit restriction
+  for (uint32_t i = 1;
+       i <= static_cast<uint32_t>(spv::ImageOperandsMask::MinLod); i <<= 1) {
+    if ((mask & i) == 0) {
+      continue;
+    }
+
+    uint32_t update_operand = next_operand++;
+    const uint32_t ref_id = inst->GetSingleWordOperand(update_operand);
+    Instruction* ref_inst = get_def_use_mgr()->GetDef(ref_id);
+    Instruction* type_inst = get_def_use_mgr()->GetDef(ref_inst->type_id());
+    assert(type_inst->opcode() == spv::Op::OpTypeFloat);
+    if (type_inst->GetSingleWordInOperand(0) != 32) {
+      Instruction* cvt_inst =
+          builder.AddUnaryOp(float32_type, spv::Op::OpFConvert, ref_id);
+      if (cvt_inst == nullptr) {
+        status_ = Status::Failure;
+        return false;
+      }
+      inst->SetOperand(update_operand, {cvt_inst->result_id()});
+      get_def_use_mgr()->AnalyzeInstUse(inst);
+      modified = true;
+    }
+
+    // All masks have 1 operand, except grad has two
+    if (i == static_cast<uint32_t>(spv::ImageOperandsMask::Grad)) {
+      uint32_t dy_update_operand = next_operand++;
+      const uint32_t dy_ref_id = inst->GetSingleWordOperand(dy_update_operand);
+      Instruction* dy_ref_inst = get_def_use_mgr()->GetDef(dy_ref_id);
+      Instruction* dy_type_inst =
+          get_def_use_mgr()->GetDef(dy_ref_inst->type_id());
+      assert(dy_type_inst->opcode() == spv::Op::OpTypeFloat);
+      if (dy_type_inst->GetSingleWordInOperand(0) != 32) {
+        Instruction* dy_cvt_inst =
+            builder.AddUnaryOp(float32_type, spv::Op::OpFConvert, ref_id);
+        if (dy_cvt_inst == nullptr) {
+          status_ = Status::Failure;
+          return false;
+        }
+        inst->SetOperand(dy_update_operand, {dy_cvt_inst->result_id()});
+        get_def_use_mgr()->AnalyzeInstUse(inst);
+        modified = true;
+      }
+    }
+  }
+
+  return modified;
+}
+
 bool ConvertToHalfPass::RemoveRelaxedDecoration(uint32_t id) {
   return context()->get_decoration_mgr()->RemoveDecorationsFrom(
       id, [](const Instruction& dec) {
@@ -325,7 +440,7 @@ bool ConvertToHalfPass::ProcessConvert(Instruction* inst) {
 
 bool ConvertToHalfPass::ProcessImageRef(Instruction* inst) {
   bool modified = false;
-  // If image reference, only need to convert dref args back to float32
+  // If image reference, some operands aren't allowed to be non-32 bit floats
   if (dref_image_ops_.count(inst->opcode()) != 0) {
     uint32_t dref_id = inst->GetSingleWordInOperand(kImageSampleDrefIdInIdx);
     if (converted_ids_.count(dref_id) > 0) {
@@ -334,6 +449,19 @@ bool ConvertToHalfPass::ProcessImageRef(Instruction* inst) {
         return false;
       }
       inst->SetInOperand(kImageSampleDrefIdInIdx, {dref_id});
+      get_def_use_mgr()->AnalyzeInstUse(inst);
+      modified = true;
+    }
+  }
+  if (coordinate_image_ops_.count(inst->opcode()) != 0) {
+    uint32_t coordinate_id =
+        inst->GetSingleWordInOperand(kImageSampleCoordinateIdInIdx);
+    if (converted_ids_.count(coordinate_id) > 0) {
+      GenConvert(&coordinate_id, 32, inst);
+      if (status_ == Status::Failure) {
+        return false;
+      }
+      inst->SetInOperand(kImageSampleCoordinateIdInIdx, {coordinate_id});
       get_def_use_mgr()->AnalyzeInstUse(inst);
       modified = true;
     }
@@ -452,6 +580,7 @@ bool ConvertToHalfPass::ProcessFunction(Function* func) {
         }
         for (auto ii = bb->begin(); ii != bb->end(); ++ii) {
           bool Mmodified = MatConvertCleanup(&*ii);
+          Mmodified |= ImageOperandCleanup(&*ii);
           if (status_ == Status::Failure) {
             ok = false;
             break;
@@ -590,6 +719,30 @@ void ConvertToHalfPass::Initialize() {
       spv::Op::OpImageSparseSampleProjDrefImplicitLod,
       spv::Op::OpImageSparseSampleProjDrefExplicitLod,
       spv::Op::OpImageSparseDrefGather,
+  };
+  coordinate_image_ops_ = {
+      spv::Op::OpImageSampleImplicitLod,
+      spv::Op::OpImageSampleExplicitLod,
+      spv::Op::OpImageSampleDrefImplicitLod,
+      spv::Op::OpImageSampleDrefExplicitLod,
+      spv::Op::OpImageSampleProjImplicitLod,
+      spv::Op::OpImageSampleProjExplicitLod,
+      spv::Op::OpImageSampleProjDrefImplicitLod,
+      spv::Op::OpImageSampleProjDrefExplicitLod,
+      spv::Op::OpImageFetch,
+      spv::Op::OpImageGather,
+      spv::Op::OpImageDrefGather,
+      spv::Op::OpImageRead,
+      spv::Op::OpImageWrite,
+      spv::Op::OpImageQueryLod,
+      spv::Op::OpImageSparseSampleImplicitLod,
+      spv::Op::OpImageSparseSampleExplicitLod,
+      spv::Op::OpImageSparseSampleDrefImplicitLod,
+      spv::Op::OpImageSparseSampleDrefExplicitLod,
+      spv::Op::OpImageSparseFetch,
+      spv::Op::OpImageSparseGather,
+      spv::Op::OpImageSparseDrefGather,
+      spv::Op::OpImageSparseRead,
   };
   closure_ops_ = {
       spv::Op::OpVectorExtractDynamic,
