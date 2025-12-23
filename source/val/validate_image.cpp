@@ -356,7 +356,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
                << "with ExplicitLod";
       }
     } else {
-      if (!_.IsIntScalarType(lod_type_id) || _.GetBitWidth(lod_type_id) != 32) {
+      if (!_.IsIntScalarType(lod_type_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected Image Operand Lod to be a 32-bit int scalar when "
                   "used with "
@@ -549,8 +549,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     }
 
     const uint32_t sample_type_id = _.GetTypeId(inst->word(word_index++));
-    if (!_.IsIntScalarType(sample_type_id) ||
-        _.GetBitWidth(sample_type_id) != 32) {
+    if (!_.IsIntScalarType(sample_type_id, 32)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Expected Image Operand Sample to be a 32-bit int scalar";
     }
@@ -795,8 +794,7 @@ spv_result_t ValidateTypeImage(ValidationState_t& _, const Instruction* inst) {
            << "Corrupt image type definition";
   }
 
-  if (_.IsIntScalarType(info.sampled_type) &&
-      (64 == _.GetBitWidth(info.sampled_type)) &&
+  if (_.IsIntScalarType(info.sampled_type, 64) &&
       !_.HasCapability(spv::Capability::Int64ImageEXT)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Capability Int64ImageEXT is required when using Sampled Type of "
@@ -1624,8 +1622,7 @@ spv_result_t ValidateImageGather(ValidationState_t& _,
       opcode == spv::Op::OpImageSparseGather) {
     const uint32_t component = inst->GetOperandAs<uint32_t>(4);
     const uint32_t component_index_type = _.GetTypeId(component);
-    if (!_.IsIntScalarType(component_index_type) ||
-        _.GetBitWidth(component_index_type) != 32) {
+    if (!_.IsIntScalarType(component_index_type, 32)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Expected Component to be 32-bit int scalar";
     }

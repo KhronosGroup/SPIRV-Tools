@@ -52,31 +52,31 @@ spv_result_t RayTracingPass(ValidationState_t& _, const Instruction* inst) {
       }
 
       const uint32_t ray_flags = _.GetOperandTypeId(inst, 1);
-      if (!_.IsIntScalarType(ray_flags) || _.GetBitWidth(ray_flags) != 32) {
+      if (!_.IsIntScalarType(ray_flags, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray Flags must be a 32-bit int scalar";
       }
 
       const uint32_t cull_mask = _.GetOperandTypeId(inst, 2);
-      if (!_.IsIntScalarType(cull_mask) || _.GetBitWidth(cull_mask) != 32) {
+      if (!_.IsIntScalarType(cull_mask, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Cull Mask must be a 32-bit int scalar";
       }
 
       const uint32_t sbt_offset = _.GetOperandTypeId(inst, 3);
-      if (!_.IsIntScalarType(sbt_offset) || _.GetBitWidth(sbt_offset) != 32) {
+      if (!_.IsIntScalarType(sbt_offset, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "SBT Offset must be a 32-bit int scalar";
       }
 
       const uint32_t sbt_stride = _.GetOperandTypeId(inst, 4);
-      if (!_.IsIntScalarType(sbt_stride) || _.GetBitWidth(sbt_stride) != 32) {
+      if (!_.IsIntScalarType(sbt_stride, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "SBT Stride must be a 32-bit int scalar";
       }
 
       const uint32_t miss_index = _.GetOperandTypeId(inst, 5);
-      if (!_.IsIntScalarType(miss_index) || _.GetBitWidth(miss_index) != 32) {
+      if (!_.IsIntScalarType(miss_index, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Miss Index must be a 32-bit int scalar";
       }
