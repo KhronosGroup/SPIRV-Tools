@@ -1933,9 +1933,9 @@ spv_result_t ValidateImageQuerySizeLod(ValidationState_t& _,
   }
 
   const uint32_t lod_type = _.GetOperandTypeId(inst, 3);
-  if (!_.IsIntScalarType(lod_type)) {
+  if (!_.IsIntScalarType(lod_type, 32)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected Level of Detail to be int scalar";
+           << "Expected Level of Detail to be a 32-bit int scalar";
   }
   return SPV_SUCCESS;
 }
