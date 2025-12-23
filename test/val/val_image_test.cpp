@@ -1974,8 +1974,24 @@ TEST_F(ValidateImage, SampleImplicitLodBiasWrongType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image Operand Bias to be float scalar"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Image Operand Bias to be a 32-bit float scalar"));
+}
+
+TEST_F(ValidateImage, SampleImplicitLodBias16Bit) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res2 = OpImageSampleImplicitLod %f32vec4 %simg %f32vec2_hh Bias %f16_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Image Operand Bias to be a 32-bit float scalar"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodBiasWrongDim) {

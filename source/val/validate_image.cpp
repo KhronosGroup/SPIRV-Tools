@@ -314,10 +314,11 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << "Image Operand Bias can only be used with ImplicitLod opcodes";
     }
 
-    const uint32_t type_id = _.GetTypeId(inst->word(word_index++));
-    if (!_.IsFloatScalarType(type_id)) {
+    const uint32_t bias_type_id = _.GetTypeId(inst->word(word_index++));
+    if (!_.IsFloatScalarType(bias_type_id) ||
+        _.GetBitWidth(bias_type_id) != 32) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Expected Image Operand Bias to be float scalar";
+             << "Expected Image Operand Bias to be a 32-bit float scalar";
     }
 
     if (info.dim != spv::Dim::Dim1D && info.dim != spv::Dim::Dim2D &&
