@@ -14,6 +14,15 @@
 
 cmake_minimum_required(VERSION 3.22.1)
 
+# master project detection--useful for FetchContent/submodule inclusion
+set(master_project OFF)
+set(subproject ON)
+
+if (NOT DEFINED PROJECT_NAME)
+  set(master_project ON)
+  set(subproject OFF)
+endif()
+
 project(spirv-tools)
 
 # Avoid a bug in CMake 3.22.1. By default it will set -std=c++11 for
@@ -141,46 +150,49 @@ if (DEFINED SPIRV_TOOLS_EXTRA_DEFINITIONS)
   add_definitions(${SPIRV_TOOLS_EXTRA_DEFINITIONS})
 endif()
 
-# Library build setting definitions:
-#
-# * SPIRV_TOOLS_BUILD_STATIC - ON or OFF - Defaults to ON.
-#   If enabled the following targets will be created:
-#     ${SPIRV_TOOLS}-static - STATIC library.
-#                             Has full public symbol visibility.
-#     ${SPIRV_TOOLS}-shared - SHARED library.
-#                             Has default-hidden symbol visibility.
-#     ${SPIRV_TOOLS}        - will alias to one of above, based on BUILD_SHARED_LIBS.
-#   If disabled the following targets will be created:
-#     ${SPIRV_TOOLS}        - either STATIC or SHARED based on SPIRV_TOOLS_LIBRARY_TYPE.
-#                             Has full public symbol visibility.
-#     ${SPIRV_TOOLS}-shared - SHARED library.
-#                             Has default-hidden symbol visibility.
-#
-# * SPIRV_TOOLS_LIBRARY_TYPE - SHARED or STATIC.
-#   Specifies the library type used for building SPIRV-Tools libraries.
-#   Defaults to SHARED when BUILD_SHARED_LIBS=1, otherwise STATIC.
-#
-# * SPIRV_TOOLS_FULL_VISIBILITY - "${SPIRV_TOOLS}-static" or "${SPIRV_TOOLS}"
-#   Evaluates to the SPIRV_TOOLS target library name that has no hidden symbols.
-#   This is used by internal targets for accessing symbols that are non-public.
-#   Note this target provides no API stability guarantees.
-#
-# Ideally, all of these will go away - see https://github.com/KhronosGroup/SPIRV-Tools/issues/3909.
-option(ENABLE_EXCEPTIONS_ON_MSVC "Build SPIRV-TOOLS with c++ exceptions enabled in MSVC" ON)
-option(SPIRV_TOOLS_BUILD_STATIC "Build ${SPIRV_TOOLS}-static target. ${SPIRV_TOOLS} will alias to ${SPIRV_TOOLS}-static or ${SPIRV_TOOLS}-shared based on BUILD_SHARED_LIBS" ON)
-if(SPIRV_TOOLS_BUILD_STATIC)
-  set(SPIRV_TOOLS_FULL_VISIBILITY ${SPIRV_TOOLS}-static)
+# If BUILD_SHARED_LIBS is undefined, set it based on whether we are
+# the master project or a subproject
+if (NOT DEFINED BUILD_SHARED_LIBS)
+  set(BUILD_SHARED_LIBS ${master_project})
+endif()
+
+if (BUILD_SHARED_LIBS)
+  set(static_default OFF)
+else()
+  set(static_default ON)
+endif()
+
+option(SPIRV_TOOLS_BUILD_SHARED "Build ${SPIRV_TOOLS} as a shared library"
+       ${BUILD_SHARED_LIBS})
+option(SPIRV_TOOLS_BUILD_STATIC "Build ${SPIRV_TOOLS} as a static library"
+       ${static_default})
+
+# Avoid conflict between the dll import library and
+# the static library (thanks microsoft)
+if(CMAKE_STATIC_LIBRARY_PREFIX STREQUAL "" AND
+   CMAKE_STATIC_LIBRARY_SUFFIX STREQUAL ".lib")
+    set(SPIRV_TOOLS_STATIC_LIBNAME "${SPIRV_TOOLS}-static")
+else()
+    set(SPIRV_TOOLS_STATIC_LIBNAME "${SPIRV_TOOLS}")
+endif()
+
+if (SPIRV_TOOLS_BUILD_STATIC)
+  # If building a static library at all, always build other libraries as static,
+  # and link to the static SPIRV-Tools library.
   set(SPIRV_TOOLS_LIBRARY_TYPE "STATIC")
-else(SPIRV_TOOLS_BUILD_STATIC)
-  set(SPIRV_TOOLS_FULL_VISIBILITY ${SPIRV_TOOLS})
-  if (NOT DEFINED SPIRV_TOOLS_LIBRARY_TYPE)
-      if(BUILD_SHARED_LIBS)
-        set(SPIRV_TOOLS_LIBRARY_TYPE "SHARED")
-      else()
-        set(SPIRV_TOOLS_LIBRARY_TYPE "STATIC")
-      endif()
-  endif()
-endif(SPIRV_TOOLS_BUILD_STATIC)
+  set(SPIRV_TOOLS_FULL_VISIBILITY ${SPIRV_TOOLS}-static)
+elseif (SPIRV_TOOLS_BUILD_SHARED)
+  # If only building a shared library, link other libraries to the
+  # shared library. Also, other libraries should be shared
+  set(SPIRV_TOOLS_LIBRARY_TYPE "SHARED")
+  set(SPIRV_TOOLS_FULL_VISIBILITY ${SPIRV_TOOLS}-shared)
+else()
+  message(FATAL_ERROR "You must set one of "
+    "SPIRV_TOOLS_BUILD_STATIC or SPIRV_TOOLS_BUILD_SHARED!")
+endif()
+
+option(ENABLE_EXCEPTIONS_ON_MSVC
+    "Build SPIRV-TOOLS with C++ exceptions enabled in MSVC" ON)
 
 function(spvtools_default_compile_options TARGET)
   target_compile_options(${TARGET} PRIVATE ${SPIRV_WARNINGS})
@@ -378,7 +390,7 @@ if (NOT "${SPIRV_SKIP_TESTS}")
 endif()
 
 set(SPIRV_LIBRARIES "-lSPIRV-Tools-opt -lSPIRV-Tools -lSPIRV-Tools-link")
-set(SPIRV_SHARED_LIBRARIES "-lSPIRV-Tools-shared")
+set(SPIRV_SHARED_LIBRARIES "-lSPIRV-Tools")
 
 # Build pkg-config file
 # Use a first-class target so it's regenerated when relevant files are updated.
@@ -394,7 +406,12 @@ add_custom_command(
                       -DSPIRV_LIBRARIES=${SPIRV_LIBRARIES}
                       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/write_pkg_config.cmake
         DEPENDS "CHANGES" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/SPIRV-Tools.pc.in" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/write_pkg_config.cmake")
-add_custom_command(
+
+set(pc_files ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools.pc)
+
+# TODO(crueter): remove?
+if (SPIRV_TOOLS_BUILD_SHARED)
+  add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools-shared.pc
         COMMAND ${CMAKE_COMMAND}
                       -DCHANGES_FILE=${CMAKE_CURRENT_SOURCE_DIR}/CHANGES
@@ -406,9 +423,12 @@ add_custom_command(
                       -DSPIRV_SHARED_LIBRARIES=${SPIRV_SHARED_LIBRARIES}
                       -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/write_pkg_config.cmake
         DEPENDS "CHANGES" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/SPIRV-Tools-shared.pc.in" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/write_pkg_config.cmake")
-add_custom_target(spirv-tools-pkg-config 
-        ALL 
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools-shared.pc ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools.pc)
+  set(pc_files ${pc_files} ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools-shared.pc)
+endif()
+
+add_custom_target(spirv-tools-pkg-config
+        ALL
+        DEPENDS ${pc_files})
 
 # Install pkg-config file
 if (ENABLE_SPIRV_TOOLS_INSTALL)
