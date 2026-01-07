@@ -490,7 +490,7 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
         return 0;
       }
       typeInst = MakeUnique<Instruction>(
-          context(), spv::Op::OpTypeCooperativeVectorNV, 0, id,
+          context(), spv::Op::OpTypeVectorIdEXT, 0, id,
           std::initializer_list<Operand>{
               {SPV_OPERAND_TYPE_ID, {component_type}},
               {SPV_OPERAND_TYPE_ID, {coop_vec->components()}}});
@@ -1074,7 +1074,7 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
           inst.GetSingleWordInOperand(1), inst.GetSingleWordInOperand(2),
           inst.GetSingleWordInOperand(3), inst.GetSingleWordInOperand(4));
       break;
-    case spv::Op::OpTypeCooperativeVectorNV:
+    case spv::Op::OpTypeVectorIdEXT:
       type = new CooperativeVectorNV(GetType(inst.GetSingleWordInOperand(0)),
                                      inst.GetSingleWordInOperand(1));
       break;

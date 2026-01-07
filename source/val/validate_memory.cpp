@@ -851,18 +851,72 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
               "parameters";
   }
 
-  if ((storage_class != spv::StorageClass::Function &&
-       storage_class != spv::StorageClass::Private) &&
-      pointee &&
-      _.ContainsType(pointee->id(), [](const Instruction* type_inst) {
-        auto opcode = type_inst->opcode();
-        return opcode == spv::Op::OpTypeCooperativeVectorNV;
-      })) {
-    return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Cooperative vector types (or types containing them) can only be "
-              "allocated "
-           << "in Function or Private storage classes or as function "
-              "parameters";
+  // Vulkan-specific validation for long vectors
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (_.HasCapability(spv::Capability::LongVectorEXT)) {
+      if ((storage_class != spv::StorageClass::Function &&
+           storage_class != spv::StorageClass::Private &&
+           storage_class != spv::StorageClass::StorageBuffer &&
+           storage_class != spv::StorageClass::PhysicalStorageBuffer &&
+           storage_class != spv::StorageClass::Workgroup &&
+           storage_class != spv::StorageClass::Uniform &&
+           storage_class != spv::StorageClass::PushConstant &&
+           storage_class != spv::StorageClass::ShaderRecordBufferKHR) &&
+          pointee &&
+          _.ContainsType(pointee->id(), [&](const Instruction* type_inst) {
+            auto opcode = type_inst->opcode();
+            if (opcode == spv::Op::OpTypeVector ||
+                opcode == spv::Op::OpTypeVectorIdEXT) {
+              uint32_t dim = _.GetDimension(type_inst->id());
+              return dim > 4;
+            }
+            return false;
+          })) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "Long vector types with more than 4 components (or types "
+                  "containing them) not supported in storage class "
+               << StorageClassToString(storage_class);
+      }
+
+      if (pointee &&
+          (storage_class == spv::StorageClass::StorageBuffer ||
+           storage_class == spv::StorageClass::PhysicalStorageBuffer ||
+           storage_class == spv::StorageClass::Uniform ||
+           storage_class == spv::StorageClass::PushConstant ||
+           storage_class == spv::StorageClass::ShaderRecordBufferKHR ||
+           (storage_class == spv::StorageClass::Workgroup &&
+            _.HasDecoration(pointee->id(), spv::Decoration::Block))) &&
+          _.ContainsType(pointee->id(), [&](const Instruction* type_inst) {
+            auto opcode = type_inst->opcode();
+            if (opcode == spv::Op::OpTypeVectorIdEXT) {
+              auto component_count =
+                  _.FindDef(type_inst->GetOperandAs<uint32_t>(2u));
+              return (bool)spvOpcodeIsSpecConstant(component_count->opcode());
+            }
+            return false;
+          })) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << _.VkErrorID(12294)
+               << "Long vector types with spec constant component count "
+                  "not supported in storage class with explicit layout "
+               << StorageClassToString(storage_class);
+      }
+    } else {
+      if ((storage_class != spv::StorageClass::Function &&
+           storage_class != spv::StorageClass::Private) &&
+          pointee &&
+          _.ContainsType(pointee->id(), [](const Instruction* type_inst) {
+            auto opcode = type_inst->opcode();
+            return opcode == spv::Op::OpTypeVectorIdEXT;
+          })) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "Cooperative vector types (or types containing them) can "
+                  "only be "
+                  "allocated "
+               << "in Function or Private storage classes or as function "
+                  "parameters";
+      }
+    }
   }
 
   if (_.HasCapability(spv::Capability::Shader)) {
@@ -1786,14 +1840,14 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
     switch (type_pointee->opcode()) {
       case spv::Op::OpTypeMatrix:
       case spv::Op::OpTypeVector:
-      case spv::Op::OpTypeCooperativeVectorNV:
+      case spv::Op::OpTypeVectorIdEXT:
       case spv::Op::OpTypeCooperativeMatrixNV:
       case spv::Op::OpTypeCooperativeMatrixKHR:
       case spv::Op::OpTypeArray:
       case spv::Op::OpTypeRuntimeArray:
       case spv::Op::OpTypeNodePayloadArrayAMDX: {
         // In OpTypeMatrix, OpTypeVector, spv::Op::OpTypeCooperativeMatrixNV,
-        // OpTypeCooperativeVectorNV, OpTypeArray, and OpTypeRuntimeArray, word
+        // OpTypeVectorIdEXT, OpTypeArray, and OpTypeRuntimeArray, word
         // 2 is the Element Type.
         type_pointee = _.FindDef(type_pointee->word(2));
         break;
@@ -2800,7 +2854,7 @@ spv_result_t ValidateCooperativeVectorLoadStoreNV(ValidationState_t& _,
 
   auto vector_type = _.FindDef(type_id);
 
-  if (vector_type->opcode() != spv::Op::OpTypeCooperativeVectorNV) {
+  if (vector_type->opcode() != spv::Op::OpTypeVectorIdEXT) {
     if (inst->opcode() == spv::Op::OpCooperativeVectorLoadNV) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "spv::Op::OpCooperativeVectorLoadNV Result Type <id> "
@@ -2852,7 +2906,7 @@ spv_result_t ValidateCooperativeVectorOuterProductNV(ValidationState_t& _,
   auto type_id = _.FindDef(inst->GetOperandAs<uint32_t>(2))->type_id();
   auto a_type = _.FindDef(type_id);
 
-  if (a_type->opcode() != spv::Op::OpTypeCooperativeVectorNV) {
+  if (a_type->opcode() != spv::Op::OpTypeVectorIdEXT) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << opcode_name << " A type <id> " << _.getIdName(type_id)
            << " is not a cooperative vector type.";
@@ -2861,7 +2915,7 @@ spv_result_t ValidateCooperativeVectorOuterProductNV(ValidationState_t& _,
   type_id = _.FindDef(inst->GetOperandAs<uint32_t>(3))->type_id();
   auto b_type = _.FindDef(type_id);
 
-  if (b_type->opcode() != spv::Op::OpTypeCooperativeVectorNV) {
+  if (b_type->opcode() != spv::Op::OpTypeVectorIdEXT) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << opcode_name << " B type <id> " << _.getIdName(type_id)
            << " is not a cooperative vector type.";
@@ -2915,7 +2969,7 @@ spv_result_t ValidateCooperativeVectorReduceSumNV(ValidationState_t& _,
   auto type_id = _.FindDef(inst->GetOperandAs<uint32_t>(2))->type_id();
   auto v_type = _.FindDef(type_id);
 
-  if (v_type->opcode() != spv::Op::OpTypeCooperativeVectorNV) {
+  if (v_type->opcode() != spv::Op::OpTypeVectorIdEXT) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << opcode_name << " V type <id> " << _.getIdName(type_id)
            << " is not a cooperative vector type.";
@@ -2993,7 +3047,7 @@ spv_result_t ValidateCooperativeVectorMatrixMulNV(ValidationState_t& _,
 
   const auto result_type = _.FindDef(result_type_id);
 
-  if (result_type->opcode() != spv::Op::OpTypeCooperativeVectorNV) {
+  if (result_type->opcode() != spv::Op::OpTypeVectorIdEXT) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << opcode_name << " result type <id> " << _.getIdName(result_type_id)
            << " is not a cooperative vector type.";

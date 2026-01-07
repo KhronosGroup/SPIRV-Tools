@@ -223,7 +223,7 @@ spv::Id CanonicalizeIdsPass::HashTypeAndConst(spv::Id const id) const {
     // remapper. Support should be added as necessary.
     case spv::Op::OpTypeCooperativeMatrixNV:
     case spv::Op::OpTypeCooperativeMatrixKHR:
-    case spv::Op::OpTypeCooperativeVectorNV:
+    case spv::Op::OpTypeVectorIdEXT:
     case spv::Op::OpTypeHitObjectNV:
     case spv::Op::OpTypeUntypedPointerKHR:
     case spv::Op::OpTypeNodePayloadArrayAMDX:

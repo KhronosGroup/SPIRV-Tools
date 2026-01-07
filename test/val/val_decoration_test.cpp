@@ -11261,6 +11261,139 @@ OpFunctionEnd
               AnyVUID("VUID-StandaloneSpirv-OpTypeRuntimeArray-04680"));
 }
 
+TEST_F(ValidateDecorations, LongVectorUniformPass) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Int8
+OpCapability UniformAndStorageBuffer8BitAccess
+OpCapability LongVectorEXT
+
+OpExtension "SPV_KHR_8bit_storage"
+OpExtension "SPV_EXT_long_vector"
+
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %BP_main "main"
+
+OpDecorate %input0 DescriptorSet 0
+OpDecorate %input0 Binding 0
+OpDecorate %a10testtype ArrayStride 12
+OpDecorate %buf BufferBlock
+OpMemberDecorate %buf 0 Offset 0
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%u32 = OpTypeInt 32 0
+%voidf = OpTypeFunction %void
+%c_u32_10 = OpConstant %u32 10
+%vectorSizeConst = OpConstant %u32 12
+
+%scalartype = OpTypeInt 8 1
+%testtype = OpTypeVectorIdEXT %scalartype %vectorSizeConst
+
+%a10testtype = OpTypeArray %testtype %c_u32_10
+%buf = OpTypeStruct %a10testtype
+%bufptr = OpTypePointer Uniform %buf
+
+%input0 = OpVariable %bufptr Uniform
+
+
+%BP_main = OpFunction %void None %voidf
+%BP_label = OpLabel
+OpReturn
+OpFunctionEnd
+
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateDecorations, LongVectorUniformSpecConstantFail) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability LongVectorEXT
+
+OpExtension "SPV_EXT_long_vector"
+
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %BP_main "main"
+
+OpDecorate %input0 DescriptorSet 0
+OpDecorate %input0 Binding 0
+OpDecorate %buf BufferBlock
+OpMemberDecorate %buf 0 Offset 0
+OpDecorate %spec_const SpecId 1
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%u32 = OpTypeInt 32 0
+%voidf = OpTypeFunction %void
+%spec_const = OpSpecConstant %u32 12
+
+%scalartype = OpTypeInt 32 1
+%testtype = OpTypeVectorIdEXT %scalartype %spec_const
+
+%buf = OpTypeStruct %testtype
+%bufptr = OpTypePointer Uniform %buf
+
+%input0 = OpVariable %bufptr Uniform
+
+
+%BP_main = OpFunction %void None %voidf
+%BP_label = OpLabel
+OpReturn
+OpFunctionEnd
+
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Function-12294"));
+}
+
+TEST_F(ValidateDecorations, LongVectorWorkgroupSpecConstantFail) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability LongVectorEXT
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+
+OpExtension "SPV_EXT_long_vector"
+
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %BP_main "main"
+
+OpDecorate %spec_const SpecId 1
+OpMemberDecorate %str 0 Offset 0
+OpDecorate %str Block
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%u32 = OpTypeInt 32 0
+%voidf = OpTypeFunction %void
+%spec_const = OpSpecConstant %u32 12
+
+%scalartype = OpTypeInt 32 1
+%testtype = OpTypeVectorIdEXT %scalartype %spec_const
+
+%str = OpTypeStruct %testtype
+%ptr_str_Workgroup = OpTypePointer Workgroup %str
+%var = OpVariable %ptr_str_Workgroup Workgroup
+
+%BP_main = OpFunction %void None %voidf
+%BP_label = OpLabel
+OpReturn
+OpFunctionEnd
+
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Function-12294"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

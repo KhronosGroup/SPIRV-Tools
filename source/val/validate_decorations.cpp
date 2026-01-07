@@ -182,7 +182,19 @@ uint32_t getBaseAlignment(uint32_t member_id, bool roundUp,
       const auto componentAlignment = getBaseAlignment(
           componentId, roundUp, inherited, constraints, vstate);
       baseAlignment =
-          componentAlignment * (numComponents == 3 ? 4 : numComponents);
+          componentAlignment *
+          ((numComponents == 3 || numComponents > 4) ? 4 : numComponents);
+      break;
+    }
+    case spv::Op::OpTypeVectorIdEXT: {
+      const auto componentId = words[2];
+      const auto numComponents = vstate.GetDimension(inst->id());
+      assert(numComponents != 0);
+      const auto componentAlignment = getBaseAlignment(
+          componentId, roundUp, inherited, constraints, vstate);
+      baseAlignment =
+          componentAlignment *
+          ((numComponents == 3 || numComponents > 4) ? 4 : numComponents);
       break;
     }
     case spv::Op::OpTypeMatrix: {
@@ -251,6 +263,7 @@ uint32_t getScalarAlignment(uint32_t type_id, ValidationState_t& vstate) {
     case spv::Op::OpTypeFloat:
       return words[2] / 8;
     case spv::Op::OpTypeVector:
+    case spv::Op::OpTypeVectorIdEXT:
     case spv::Op::OpTypeMatrix:
     case spv::Op::OpTypeArray:
     case spv::Op::OpTypeRuntimeArray: {
@@ -301,6 +314,15 @@ uint32_t getSize(uint32_t member_id, const LayoutConstraints& inherited,
     case spv::Op::OpTypeVector: {
       const auto componentId = words[2];
       const auto numComponents = words[3];
+      const auto componentSize =
+          getSize(componentId, inherited, constraints, vstate);
+      const auto size = componentSize * numComponents;
+      return size;
+    }
+    case spv::Op::OpTypeVectorIdEXT: {
+      const auto componentId = words[2];
+      const auto numComponents = vstate.GetDimension(inst->id());
+      assert(numComponents != 0);
       const auto componentSize =
           getSize(componentId, inherited, constraints, vstate);
       const auto size = componentSize * numComponents;
@@ -544,7 +566,8 @@ spv_result_t checkLayout(uint32_t struct_id, spv::StorageClass storage_class,
     }
 
     if (!scalar_block_layout && relaxed_block_layout &&
-        opcode == spv::Op::OpTypeVector) {
+        (opcode == spv::Op::OpTypeVector ||
+         opcode == spv::Op::OpTypeVectorIdEXT)) {
       // In relaxed block layout, the vector offset must be aligned to the
       // vector's scalar element type.
       const auto componentId = inst->words()[2];
@@ -568,7 +591,8 @@ spv_result_t checkLayout(uint32_t struct_id, spv::StorageClass storage_class,
                              << nextValidOffset - 1 << extra();
     if (!scalar_block_layout && relaxed_block_layout) {
       // Check improper straddle of vectors.
-      if (spv::Op::OpTypeVector == opcode &&
+      if ((spv::Op::OpTypeVector == opcode ||
+           spv::Op::OpTypeVectorIdEXT == opcode) &&
           hasImproperStraddle(id, offset, constraint, constraints, vstate))
         return fail(memberIdx)
                << "is an improperly straddling vector at offset " << offset

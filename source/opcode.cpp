@@ -183,7 +183,7 @@ int32_t spvOpcodeIsComposite(const spv::Op opcode) {
     case spv::Op::OpTypeRuntimeArray:
     case spv::Op::OpTypeCooperativeMatrixNV:
     case spv::Op::OpTypeCooperativeMatrixKHR:
-    case spv::Op::OpTypeCooperativeVectorNV:
+    case spv::Op::OpTypeVectorIdEXT:
       return true;
     default:
       return false;
@@ -262,7 +262,7 @@ int32_t spvOpcodeGeneratesType(spv::Op op) {
     case spv::Op::OpTypeAccelerationStructureNV:
     case spv::Op::OpTypeCooperativeMatrixNV:
     case spv::Op::OpTypeCooperativeMatrixKHR:
-    case spv::Op::OpTypeCooperativeVectorNV:
+    case spv::Op::OpTypeVectorIdEXT:
     // case spv::Op::OpTypeAccelerationStructureKHR: covered by
     // spv::Op::OpTypeAccelerationStructureNV
     case spv::Op::OpTypeRayQueryKHR:

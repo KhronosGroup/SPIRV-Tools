@@ -9619,6 +9619,7 @@ OpExtension "SPV_EXT_replicated_composites"
 OpExtension "SPV_KHR_vulkan_memory_model"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
 %void = OpTypeVoid
 %func = OpTypeFunction %void
 %f16 = OpTypeFloat 16
@@ -9640,8 +9641,9 @@ OpEntryPoint GLCompute %main "main"
 OpReturn
 OpFunctionEnd)";
 
-  CompileSuccessfully(body.c_str(), SPV_ENV_UNIVERSAL_1_3);
-  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_1_SPIRV_1_4);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateInstructions(SPV_ENV_VULKAN_1_1_SPIRV_1_4));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -10169,6 +10171,76 @@ TEST_F(ValidateMemory, PhysicalStorageBufferArray) {
 
   CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_0);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
+TEST_F(ValidateMemory, LongVectorPrivateStorageClassGood) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability LongVectorEXT
+OpExtension "SPV_EXT_long_vector"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %func "func"
+%float = OpTypeFloat 32
+%vec5 = OpTypeVector %float 5
+%vec5ptr = OpTypePointer Private %vec5
+%1 = OpVariable %vec5ptr Private
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+}
+
+TEST_F(ValidateMemory, LongVectorInputStorageClassBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability LongVectorEXT
+OpExtension "SPV_EXT_long_vector"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %func "func"
+%float = OpTypeFloat 32
+%vec5 = OpTypeVector %float 5
+%vec5ptr = OpTypePointer Input %vec5
+%1 = OpVariable %vec5ptr Input
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Long vector types with more than 4 components (or types "
+                "containing them) not supported in storage class Input"));
+}
+
+TEST_F(ValidateMemory, LongVectorMissingCapabilityBad) {
+  std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %func "func"
+%float = OpTypeFloat 32
+%vec5 = OpTypeVector %float 5
+%vec5ptr = OpTypePointer Private %vec5
+%1 = OpVariable %vec5ptr Private
+%void = OpTypeVoid
+%functy = OpTypeFunction %void
+%func = OpFunction %void None %functy
+%2 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Illegal number of components (5) for TypeVector"));
 }
 
 }  // namespace

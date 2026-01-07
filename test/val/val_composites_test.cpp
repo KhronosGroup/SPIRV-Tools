@@ -315,6 +315,19 @@ TEST_F(ValidateComposites, CompositeConstructVectorOnlyOneConstituent) {
               HasSubstr("Expected number of constituents to be at least 2"));
 }
 
+TEST_F(ValidateComposites, CompositeConstructLongVectorOnlyOneConstituent) {
+  const std::string body = R"(
+%val1 = OpCompositeConstruct %f32vec4 %f32vec4_0123
+)";
+  const std::string caps = R"(
+OpCapability LongVectorEXT
+OpExtension "SPV_EXT_long_vector"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, caps).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateComposites, CompositeConstructVectorWrongConsituent1) {
   const std::string body = R"(
 %val1 = OpCompositeConstruct %f32vec4 %f32 %f32vec2_12

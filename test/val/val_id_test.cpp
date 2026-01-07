@@ -5019,6 +5019,40 @@ TEST_P(ValidateIdWithMessage, OpVectorShuffleFloatGood) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_P(ValidateIdWithMessage, OpVectorIdShuffleFloatGood) {
+  std::string spirv = "OpCapability LongVectorEXT\n" + kOpCapabilitySetup +
+                      kOpVariablePtrSetUp +
+                      "OpExtension \"SPV_EXT_long_vector\"" + R"(
+OpMemoryModel Logical GLSL450
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%u2 = OpConstant %uint 2
+%u3 = OpConstant %uint 3
+%u4 = OpConstant %uint 4
+%vec2 = OpTypeVectorIdEXT %float %u2
+%vec3 = OpTypeVectorIdEXT %float %u3
+%vec4 = OpTypeVectorIdEXT %float %u4
+%ptr_vec2 = OpTypePointer Function %vec2
+%ptr_vec3 = OpTypePointer Function %vec3
+%float_1 = OpConstant %float 1
+%float_2 = OpConstant %float 2
+%1 = OpConstantComposite %vec2 %float_2 %float_1
+%2 = OpConstantComposite %vec3 %float_1 %float_2 %float_2
+%3 = OpTypeFunction %vec4
+%4 = OpFunction %vec4 None %3
+%5 = OpLabel
+%var = OpVariable %ptr_vec2 Function %1
+%var2 = OpVariable %ptr_vec3 Function %2
+%6 = OpLoad %vec2 %var
+%7 = OpLoad %vec3 %var2
+%8 = OpVectorShuffle %vec4 %6 %7 4 3 1 0xffffffff
+     OpReturnValue %8
+     OpFunctionEnd)";
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_P(ValidateIdWithMessage, OpVectorShuffleScalarResultType) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %float = OpTypeFloat 32
@@ -5039,7 +5073,7 @@ TEST_P(ValidateIdWithMessage, OpVectorShuffleScalarResultType) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr(make_message(
-                  "Result Type of OpVectorShuffle must be OpTypeVector.")));
+                  "Result Type of OpVectorShuffle must be a vector type.")));
 }
 
 TEST_P(ValidateIdWithMessage, OpVectorShuffleComponentCount) {
@@ -5086,7 +5120,7 @@ TEST_P(ValidateIdWithMessage, OpVectorShuffleVector1Type) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(make_message("The type of Vector 1 must be OpTypeVector.")));
+      HasSubstr(make_message("The type of Vector 1 must be a vector type.")));
 }
 
 TEST_P(ValidateIdWithMessage, OpVectorShuffleVector2Type) {
@@ -5109,7 +5143,7 @@ TEST_P(ValidateIdWithMessage, OpVectorShuffleVector2Type) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(make_message("The type of Vector 2 must be OpTypeVector.")));
+      HasSubstr(make_message("The type of Vector 2 must be a vector type.")));
 }
 
 TEST_P(ValidateIdWithMessage, OpVectorShuffleVector1ComponentType) {
