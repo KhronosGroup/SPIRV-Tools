@@ -2849,6 +2849,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpArrayLength-11805);
     case 12243:
       return VUID_WRAP(VUID-StandaloneSpirv-Scope-12243);
+    case 12294:
+      return VUID_WRAP(VUID-StandaloneSpirv-Function-12294);
     default:
       return "";  // unknown id
   }

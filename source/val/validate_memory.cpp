@@ -877,6 +877,30 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
                   "containing them) not supported in storage class "
                << StorageClassToString(storage_class);
       }
+
+      if (pointee &&
+          (storage_class == spv::StorageClass::StorageBuffer ||
+           storage_class == spv::StorageClass::PhysicalStorageBuffer ||
+           storage_class == spv::StorageClass::Uniform ||
+           storage_class == spv::StorageClass::PushConstant ||
+           storage_class == spv::StorageClass::ShaderRecordBufferKHR ||
+           (storage_class == spv::StorageClass::Workgroup &&
+            _.HasDecoration(pointee->id(), spv::Decoration::Block))) &&
+          _.ContainsType(pointee->id(), [&](const Instruction* type_inst) {
+            auto opcode = type_inst->opcode();
+            if (opcode == spv::Op::OpTypeVectorIdEXT) {
+              auto component_count =
+                  _.FindDef(type_inst->GetOperandAs<uint32_t>(2u));
+              return (bool)spvOpcodeIsSpecConstant(component_count->opcode());
+            }
+            return false;
+          })) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << _.VkErrorID(12294)
+               << "Long vector types with spec constant component count "
+                  "not supported in storage class with explicit layout "
+               << StorageClassToString(storage_class);
+      }
     } else {
       if ((storage_class != spv::StorageClass::Function &&
            storage_class != spv::StorageClass::Private) &&
