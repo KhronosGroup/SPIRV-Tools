@@ -1160,9 +1160,6 @@ bool ValidationState_t::IsFloatVectorType(uint32_t id) const {
 }
 
 bool ValidationState_t::IsFloat16Vector2Or4Type(uint32_t id) const {
-  const Instruction* inst = FindDef(id);
-  assert(inst);
-
   if (IsVectorType(id)) {
     uint32_t vectorDim = GetDimension(id);
     return IsFloatScalarType(GetComponentType(id)) &&
