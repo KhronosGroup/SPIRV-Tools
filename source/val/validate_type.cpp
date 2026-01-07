@@ -220,8 +220,8 @@ spv_result_t ValidateTypeVector(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateTypeCooperativeVectorNV(ValidationState_t& _,
-                                             const Instruction* inst) {
+spv_result_t ValidateTypeVectorIdEXT(ValidationState_t& _,
+                                     const Instruction* inst) {
   const auto component_index = 1;
   const auto component_type_id = inst->GetOperandAs<uint32_t>(component_index);
   const auto component_type = _.FindDef(component_type_id);
@@ -229,7 +229,7 @@ spv_result_t ValidateTypeCooperativeVectorNV(ValidationState_t& _,
       (!_.HasCapability(spv::Capability::LongVectorEXT) &&
        spv::Op::OpTypeBool == component_type->opcode())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpTypeCooperativeVectorNV Component Type <id> "
+           << "OpTypeVectorIdEXT Component Type <id> "
            << _.getIdName(component_type_id)
            << " is not a scalar numerical type.";
   }
@@ -240,14 +240,14 @@ spv_result_t ValidateTypeCooperativeVectorNV(ValidationState_t& _,
   const auto num_components = _.FindDef(num_components_id);
   if (!num_components || !spvOpcodeIsConstant(num_components->opcode())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpTypeCooperativeVectorNV component count <id> "
+           << "OpTypeVectorIdEXT component count <id> "
            << _.getIdName(num_components_id)
            << " is not a scalar constant type.";
   }
 
   if (!_.IsIntScalarType(num_components->type_id(), 32)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpTypeCooperativeVectorNV component count type <id> "
+           << "OpTypeVectorIdEXT component count type <id> "
            << _.getIdName(num_components->type_id())
            << " is not a 32-bit integer type.";
   }
@@ -256,7 +256,7 @@ spv_result_t ValidateTypeCooperativeVectorNV(ValidationState_t& _,
   if (_.EvalConstantValUint64(num_components_id, &num_components_value)) {
     if (num_components_value == 0) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "OpTypeCooperativeVectorNV component count <id> "
+             << "OpTypeVectorIdEXT component count <id> "
              << _.getIdName(num_components_id)
              << " default value must be at least 1: found 0.";
     }
@@ -1032,8 +1032,8 @@ spv_result_t TypePass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpTypeCooperativeMatrixKHR:
       if (auto error = ValidateTypeCooperativeMatrix(_, inst)) return error;
       break;
-    case spv::Op::OpTypeCooperativeVectorNV:
-      if (auto error = ValidateTypeCooperativeVectorNV(_, inst)) return error;
+    case spv::Op::OpTypeVectorIdEXT:
+      if (auto error = ValidateTypeVectorIdEXT(_, inst)) return error;
       break;
     case spv::Op::OpTypeUntypedPointerKHR:
       if (auto error = ValidateTypeUntypedPointerKHR(_, inst)) return error;

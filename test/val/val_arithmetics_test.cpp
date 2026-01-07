@@ -2257,7 +2257,7 @@ TEST_F(ValidateArithmetics, CoopVecComponentTypeNotScalarNumeric) {
   CompileSuccessfully(GenerateCoopVecCode(types, "").c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpTypeCooperativeVectorNV Component Type <id> "
+              HasSubstr("OpTypeVectorIdEXT Component Type <id> "
                         "'14[%14]' is not a scalar numerical type."));
 }
 
@@ -2269,7 +2269,7 @@ TEST_F(ValidateArithmetics, CoopVecDimNotConstantInt) {
   CompileSuccessfully(GenerateCoopVecCode(types, "").c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpTypeCooperativeVectorNV component count type <id> "
+              HasSubstr("OpTypeVectorIdEXT component count type <id> "
                         "'7[%float]' is not a 32-bit integer type"));
 }
 

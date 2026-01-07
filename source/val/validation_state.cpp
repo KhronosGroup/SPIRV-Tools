@@ -935,7 +935,7 @@ uint32_t ValidationState_t::GetComponentType(uint32_t id) const {
 
     case spv::Op::OpTypeCooperativeMatrixNV:
     case spv::Op::OpTypeCooperativeMatrixKHR:
-    case spv::Op::OpTypeCooperativeVectorNV:
+    case spv::Op::OpTypeVectorIdEXT:
       return inst->word(2);
 
     case spv::Op::OpTypeTensorARM:
@@ -970,7 +970,7 @@ uint32_t ValidationState_t::GetDimension(uint32_t id) const {
       // Actual dimension isn't known, return 0
       return 0;
 
-    case spv::Op::OpTypeCooperativeVectorNV: {
+    case spv::Op::OpTypeVectorIdEXT: {
       uint64_t value = 0;
       if (EvalConstantValUint64(inst->word(3), &value)) {
         return static_cast<uint32_t>(value);
@@ -1518,7 +1518,7 @@ bool ValidationState_t::IsUnsigned64BitHandle(uint32_t id) const {
 
 bool ValidationState_t::IsCooperativeVectorNVType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
-  return inst && inst->opcode() == spv::Op::OpTypeCooperativeVectorNV;
+  return inst && inst->opcode() == spv::Op::OpTypeVectorIdEXT;
 }
 
 bool ValidationState_t::IsFloatCooperativeVectorNVType(uint32_t id) const {
@@ -1946,7 +1946,7 @@ bool ValidationState_t::ContainsType(
     case spv::Op::OpTypeSampledImage:
     case spv::Op::OpTypeCooperativeMatrixNV:
     case spv::Op::OpTypeCooperativeMatrixKHR:
-    case spv::Op::OpTypeCooperativeVectorNV:
+    case spv::Op::OpTypeVectorIdEXT:
       return ContainsType(inst->GetOperandAs<uint32_t>(1u), f,
                           traverse_all_types);
     case spv::Op::OpTypePointer:
