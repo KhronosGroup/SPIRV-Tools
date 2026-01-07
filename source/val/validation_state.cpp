@@ -1068,8 +1068,7 @@ bool ValidationState_t::IsBfloat16VectorType(uint32_t id) const {
     return false;
   }
 
-  if (inst->opcode() == spv::Op::OpTypeVector ||
-      inst->opcode() == spv::Op::OpTypeVectorIdEXT) {
+  if (IsVectorType(id)) {
     return IsBfloat16ScalarType(GetComponentType(id));
   }
 
@@ -1114,8 +1113,7 @@ bool ValidationState_t::IsFP8VectorType(uint32_t id) const {
     return false;
   }
 
-  if (inst->opcode() == spv::Op::OpTypeVector ||
-      inst->opcode() == spv::Op::OpTypeVectorIdEXT) {
+  if (IsVectorType(id)) {
     return IsFP8ScalarType(GetComponentType(id));
   }
 
@@ -1154,8 +1152,7 @@ bool ValidationState_t::IsFloatVectorType(uint32_t id) const {
     return false;
   }
 
-  if (inst->opcode() == spv::Op::OpTypeVector ||
-      inst->opcode() == spv::Op::OpTypeVectorIdEXT) {
+  if (IsVectorType(id)) {
     return IsFloatScalarType(GetComponentType(id));
   }
 
@@ -1166,8 +1163,7 @@ bool ValidationState_t::IsFloat16Vector2Or4Type(uint32_t id) const {
   const Instruction* inst = FindDef(id);
   assert(inst);
 
-  if (inst->opcode() == spv::Op::OpTypeVector ||
-      inst->opcode() == spv::Op::OpTypeVectorIdEXT) {
+  if (IsVectorType(id)) {
     uint32_t vectorDim = GetDimension(id);
     return IsFloatScalarType(GetComponentType(id)) &&
            (vectorDim == 2 || vectorDim == 4) &&
@@ -1187,8 +1183,7 @@ bool ValidationState_t::IsFloatScalarOrVectorType(uint32_t id) const {
     return true;
   }
 
-  if (inst->opcode() == spv::Op::OpTypeVector ||
-      inst->opcode() == spv::Op::OpTypeVectorIdEXT) {
+  if (IsVectorType(id)) {
     return IsFloatScalarType(GetComponentType(id));
   }
 
@@ -1224,8 +1219,7 @@ bool ValidationState_t::IsIntVectorType(uint32_t id) const {
     return false;
   }
 
-  if (inst->opcode() == spv::Op::OpTypeVector ||
-      inst->opcode() == spv::Op::OpTypeVectorIdEXT) {
+  if (IsVectorType(id)) {
     return IsIntScalarType(GetComponentType(id));
   }
 
@@ -1242,8 +1236,7 @@ bool ValidationState_t::IsIntScalarOrVectorType(uint32_t id) const {
     return true;
   }
 
-  if (inst->opcode() == spv::Op::OpTypeVector ||
-      inst->opcode() == spv::Op::OpTypeVectorIdEXT) {
+  if (IsVectorType(id)) {
     return IsIntScalarType(GetComponentType(id));
   }
 
@@ -1260,8 +1253,7 @@ bool ValidationState_t::IsUnsignedIntVectorType(uint32_t id) const {
     return false;
   }
 
-  if (inst->opcode() == spv::Op::OpTypeVector ||
-      inst->opcode() == spv::Op::OpTypeVectorIdEXT) {
+  if (IsVectorType(id)) {
     return IsUnsignedIntScalarType(GetComponentType(id));
   }
 
@@ -1278,8 +1270,7 @@ bool ValidationState_t::IsUnsignedIntScalarOrVectorType(uint32_t id) const {
     return inst->GetOperandAs<uint32_t>(2) == 0;
   }
 
-  if (inst->opcode() == spv::Op::OpTypeVector ||
-      inst->opcode() == spv::Op::OpTypeVectorIdEXT) {
+  if (IsVectorType(id)) {
     return IsUnsignedIntScalarType(GetComponentType(id));
   }
 
@@ -1297,8 +1288,7 @@ bool ValidationState_t::IsSignedIntVectorType(uint32_t id) const {
     return false;
   }
 
-  if (inst->opcode() == spv::Op::OpTypeVector ||
-      inst->opcode() == spv::Op::OpTypeVectorIdEXT) {
+  if (IsVectorType(id)) {
     return IsSignedIntScalarType(GetComponentType(id));
   }
 
@@ -1316,8 +1306,7 @@ bool ValidationState_t::IsBoolVectorType(uint32_t id) const {
     return false;
   }
 
-  if (inst->opcode() == spv::Op::OpTypeVector ||
-      inst->opcode() == spv::Op::OpTypeVectorIdEXT) {
+  if (IsVectorType(id)) {
     return IsBoolScalarType(GetComponentType(id));
   }
 
@@ -1334,8 +1323,7 @@ bool ValidationState_t::IsBoolScalarOrVectorType(uint32_t id) const {
     return true;
   }
 
-  if (inst->opcode() == spv::Op::OpTypeVector ||
-      inst->opcode() == spv::Op::OpTypeVectorIdEXT) {
+  if (IsVectorType(id)) {
     return IsBoolScalarType(GetComponentType(id));
   }
 
