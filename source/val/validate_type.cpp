@@ -807,8 +807,7 @@ spv_result_t ValidateTensorDim(ValidationState_t& _, const Instruction* inst) {
   const auto dim_index = 1;
   const auto dim_id = inst->GetOperandAs<uint32_t>(dim_index);
   const auto dim = _.FindDef(dim_id);
-  if (!dim || !_.IsIntScalarType(dim->type_id()) ||
-      _.GetBitWidth(dim->type_id()) != 32) {
+  if (!dim || !_.IsIntScalarType(dim->type_id(), 32)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << spvOpcodeString(inst->opcode()) << " Dim <id> "
            << _.getIdName(dim_id) << " is not a 32-bit integer.";
@@ -875,8 +874,7 @@ spv_result_t ValidateTypeTensorViewNV(ValidationState_t& _,
   for (size_t p_index = 3; p_index < inst->operands().size(); ++p_index) {
     auto p_id = inst->GetOperandAs<uint32_t>(p_index);
     const auto p = _.FindDef(p_id);
-    if (!p || !_.IsIntScalarType(p->type_id()) ||
-        _.GetBitWidth(p->type_id()) != 32) {
+    if (!p || !_.IsIntScalarType(p->type_id(), 32)) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << spvOpcodeString(inst->opcode()) << " Permutation <id> "
              << _.getIdName(p_id) << " is not a 32-bit integer.";

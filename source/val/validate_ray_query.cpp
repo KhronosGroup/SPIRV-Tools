@@ -66,8 +66,7 @@ spv_result_t ValidateIntersectionId(ValidationState_t& _,
       inst->GetOperandAs<uint32_t>(intersection_index);
   const uint32_t intersection_type = _.GetTypeId(intersection_id);
   const spv::Op intersection_opcode = _.GetIdOpcode(intersection_id);
-  if (!_.IsIntScalarType(intersection_type) ||
-      _.GetBitWidth(intersection_type) != 32 ||
+  if (!_.IsIntScalarType(intersection_type, 32) ||
       !spvOpcodeIsConstant(intersection_opcode)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "expected Intersection ID to be a constant 32-bit int scalar";
@@ -94,13 +93,13 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
       }
 
       const uint32_t ray_flags = _.GetOperandTypeId(inst, 2);
-      if (!_.IsIntScalarType(ray_flags) || _.GetBitWidth(ray_flags) != 32) {
+      if (!_.IsIntScalarType(ray_flags, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray Flags must be a 32-bit int scalar";
       }
 
       const uint32_t cull_mask = _.GetOperandTypeId(inst, 3);
-      if (!_.IsIntScalarType(cull_mask) || _.GetBitWidth(cull_mask) != 32) {
+      if (!_.IsIntScalarType(cull_mask, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Cull Mask must be a 32-bit int scalar";
       }
@@ -196,7 +195,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpRayQueryGetRayFlagsKHR: {
       if (auto error = ValidateRayQueryPointer(_, inst, 2)) return error;
 
-      if (!_.IsIntScalarType(result_type) || _.GetBitWidth(result_type) != 32) {
+      if (!_.IsIntScalarType(result_type, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "expected Result Type to be 32-bit int scalar type";
       }
@@ -278,7 +277,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
       if (auto error = ValidateRayQueryPointer(_, inst, 2)) return error;
       if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
 
-      if (!_.IsIntScalarType(result_type) || _.GetBitWidth(result_type) != 32) {
+      if (!_.IsIntScalarType(result_type, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "expected Result Type to be 32-bit int scalar type";
       }
