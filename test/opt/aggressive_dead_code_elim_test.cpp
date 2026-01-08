@@ -8809,57 +8809,74 @@ TEST_F(AggressiveDCETest, ConvertDebugDeclareToDebugValue) {
 OpExtension "SPV_KHR_non_semantic_info"
 %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 OpMemoryModel Logical GLSL450
-OpEntryPoint Fragment %main "main" %input %output
+OpEntryPoint Fragment %main "main" %input1 %input2 %output
 OpExecutionMode %main OriginUpperLeft
 %5 = OpString "test.hlsl"
 OpSource HLSL 600
 OpName %main "main"
-OpDecorate %input Location 0
+OpDecorate %input1 Location 0
+OpDecorate %input2 Location 1
 OpDecorate %output Location 0
 %void = OpTypeVoid
 %float = OpTypeFloat 32
+%v3float = OpTypeVector %float 3
 %v4float = OpTypeVector %float 4
 %uint = OpTypeInt 32 0
 %uint_1 = OpConstant %uint 1
 %uint_2 = OpConstant %uint 2
 %uint_3 = OpConstant %uint 3
+%uint_4 = OpConstant %uint 4
 %uint_32 = OpConstant %uint 32
 %uint_0 = OpConstant %uint 0
+%float_0 = OpConstant %float 0
 %float_1 = OpConstant %float 1
-%_ptr_Input_v4float = OpTypePointer Input %v4float
-%_ptr_Output_v4float = OpTypePointer Output %v4float
+%_ptr_Input_v3float = OpTypePointer Input %v3float
+%_ptr_Output_v3float = OpTypePointer Output %v3float
 %_ptr_Function_v4float = OpTypePointer Function %v4float
-%input = OpVariable %_ptr_Input_v4float Input
-%output = OpVariable %_ptr_Output_v4float Output
+%input1 = OpVariable %_ptr_Input_v3float Input
+%input2 = OpVariable %_ptr_Input_v3float Input
+%output = OpVariable %_ptr_Output_v3float Output
 %29 = OpTypeFunction %void
+; CHECK: [[initial:%\w+]] = OpConstantComposite
 ; CHECK: [[expr:%\w+]] = OpExtInst %void {{%\w+}} DebugExpression
-; CHECK: [[source:%\w+]] = OpExtInst %void {{%\w+}} DebugSource %5
+; CHECK: [[source:%\w+]] = OpExtInst %void {{%\w+}} DebugSource %6
 %30 = OpExtInst %void %1 DebugSource %5
 %31 = OpExtInst %void %1 DebugCompilationUnit %uint_1 %uint_3 %30 %uint_32
 ; CHECK: [[basic:%\w+]] = OpExtInst %void {{%\w+}} DebugTypeBasic
 %32 = OpExtInst %void %1 DebugTypeBasic %5 %uint_32 %uint_3 %uint_0
-; CHECK: [[vec_type:%\w+]] = OpExtInst %void {{%\w+}} DebugTypeVector [[basic]] %uint_3
-%33 = OpExtInst %void %1 DebugTypeVector %32 %uint_3
+; CHECK: [[vec_type:%\w+]] = OpExtInst %void {{%\w+}} DebugTypeVector [[basic]] %uint_4
+%33 = OpExtInst %void %1 DebugTypeVector %32 %uint_4
 %34 = OpExtInst %void %1 DebugTypeFunction %uint_0 %void
 %35 = OpExtInst %void %1 DebugFunction %5 %34 %30 %uint_1 %uint_0 %31 %5 %uint_0 %uint_1
+; CHECK: [[local:%\w+]] = OpExtInst %void {{%\w+}} DebugLocalVariable %6 [[vec_type]] [[source]] %uint_1
 %36 = OpExtInst %void %1 DebugLocalVariable %5 %33 %30 %uint_1 %uint_0 %35 %uint_0
-; CHECK: [[local:%\w+]] = OpExtInst %void {{%\w+}} DebugLocalVariable %5 [[vec_type]] [[source]] %uint_2
-%37 = OpExtInst %void %1 DebugLocalVariable %5 %33 %30 %uint_2 %uint_0 %35 %uint_0
 %38 = OpExtInst %void %1 DebugExpression
+%initial_value = OpConstantComposite %v4float %float_0 %float_0 %float_0 %float_1
 %main = OpFunction %void None %29
 %39 = OpLabel
-%dead_var = OpVariable %_ptr_Function_v4float Function
-%live_var = OpVariable %_ptr_Function_v4float Function
-; CHECK: [[live:%\w+]] = OpLoad
-%live_input = OpLoad %v4float %input
-%dead_value = OpCompositeConstruct %v4float %float_1 %float_1 %float_1 %float_1
-OpStore %dead_var %dead_value
+%dead_pos_w = OpVariable %_ptr_Function_v4float Function
+%live_var1 = OpVariable %_ptr_Function_v4float Function
+%live_var2 = OpVariable %_ptr_Function_v4float Function
+%input1_value = OpLoad %v3float %input1
+%input2_value = OpLoad %v3float %input2
 ; CHECK-NOT: DebugDeclare
-%40 = OpExtInst %void %1 DebugDeclare %36 %dead_var %38
-OpStore %live_var %live_input
-; CHECK: DebugValue [[local]] [[live]] [[expr]]
-%41 = OpExtInst %void %1 DebugDeclare %37 %live_var %38
-OpStore %output %live_input
+%40 = OpExtInst %void %1 DebugDeclare %36 %dead_pos_w %38
+OpStore %dead_pos_w %initial_value
+; CHECK: DebugValue %30 [[initial]] %31
+OpStore %live_var1 %initial_value
+%computed1 = OpVectorTimesScalar %v3float %input1_value %float_1
+%computed2 = OpFAdd %v3float %computed1 %input2_value
+; CHECK: [[new:%\w+]] = OpCompositeConstruct
+%new_pos_w = OpCompositeConstruct %v4float %computed2 %float_1
+OpStore %dead_pos_w %new_pos_w
+; CHECK: DebugValue %30 [[new]] %31
+OpStore %live_var2 %new_pos_w
+%loaded1 = OpLoad %v4float %live_var1
+%loaded2 = OpLoad %v4float %live_var2
+%pos_xyz1 = OpVectorShuffle %v3float %loaded1 %loaded1 0 1 2
+%pos_xyz2 = OpVectorShuffle %v3float %loaded2 %loaded2 0 1 2
+%mixed_result = OpFAdd %v3float %pos_xyz1 %pos_xyz2
+OpStore %output %mixed_result
 OpReturn
 OpFunctionEnd
 )";
