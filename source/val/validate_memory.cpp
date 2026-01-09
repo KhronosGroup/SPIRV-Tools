@@ -2126,11 +2126,10 @@ spv_result_t ValidateArrayLength(ValidationState_t& state,
   // Result type must be a 32- or 64-bit unsigned int.
   // 64-bit requires CapabilityShader64BitIndexingEXT or a pipeline/shader
   // flag and is validated in VVL.
-  auto result_type = state.FindDef(inst->type_id());
-  if (result_type->opcode() != spv::Op::OpTypeInt ||
-      !(result_type->GetOperandAs<uint32_t>(1) == 32 ||
-        result_type->GetOperandAs<uint32_t>(1) == 64) ||
-      result_type->GetOperandAs<uint32_t>(2) != 0) {
+  const uint32_t result_type_id = inst->type_id();
+  const uint32_t result_type_width = state.GetBitWidth(inst->type_id());
+  if (!state.IsIntScalarTypeWithSignedness(result_type_id, 0) ||
+      (result_type_width != 32 && result_type_width != 64)) {
     return state.diag(SPV_ERROR_INVALID_ID, inst)
            << "The Result Type of Op" << spvOpcodeString(opcode) << " <id> "
            << state.getIdName(inst->id())
@@ -2204,10 +2203,9 @@ spv_result_t ValidateCooperativeMatrixLengthNV(ValidationState_t& state,
                                                const Instruction* inst) {
   const spv::Op opcode = inst->opcode();
   // Result type must be a 32-bit unsigned int.
-  auto result_type = state.FindDef(inst->type_id());
-  if (result_type->opcode() != spv::Op::OpTypeInt ||
-      result_type->GetOperandAs<uint32_t>(1) != 32 ||
-      result_type->GetOperandAs<uint32_t>(2) != 0) {
+  const uint32_t result_type_id = inst->type_id();
+  if (!state.IsIntScalarTypeWithSignedness(result_type_id, 0) ||
+      state.GetBitWidth(inst->type_id()) != 32) {
     return state.diag(SPV_ERROR_INVALID_ID, inst)
            << "The Result Type of Op" << spvOpcodeString(opcode) << " <id> "
            << state.getIdName(inst->id())
