@@ -136,7 +136,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 std::string BuildShader(const char* shader_decorate_instructions,
                         const char* shader_image_and_sampler_variables,
-                        const char* shader_body) {
+                        const char* shader_body, uint32_t sampled_operand = 1) {
   // Base HLSL code:
   //
   // SamplerState sam : register(s2);
@@ -165,17 +165,24 @@ std::string BuildShader(const char* shader_decorate_instructions,
     %float_1 = OpConstant %float 1
     %float_2 = OpConstant %float 2
     %v2float = OpTypeVector %float 2
+    %v4float = OpTypeVector %float 4
          %12 = OpConstantComposite %v2float %float_1 %float_2
    %float_10 = OpConstant %float 10
         %int = OpTypeInt 32 1
       %int_2 = OpConstant %int 2
       %v2int = OpTypeVector %int 2
          %17 = OpConstantComposite %v2int %int_2 %int_2
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %v2uint = OpTypeVector %uint 2
+         %18 = OpConstantComposite %v2uint %uint_0 %uint_0
+         %19 = OpConstantComposite %v4float %float_10 %float_10 %float_10 %float_10
 %type_sampler = OpTypeSampler
 %_ptr_UniformConstant_type_sampler = OpTypePointer UniformConstant %type_sampler
-%type_2d_image = OpTypeImage %float 2D 2 0 0 1 Unknown
-%_ptr_UniformConstant_type_2d_image = OpTypePointer UniformConstant %type_2d_image
-    %v4float = OpTypeVector %float 4
+)";
+  ss << "%type_2d_image = OpTypeImage %float 2D 2 0 0 " << sampled_operand
+     << " Unknown\n";
+  ss << R"(%_ptr_UniformConstant_type_2d_image = OpTypePointer UniformConstant %type_2d_image
 %_ptr_Output_v4float = OpTypePointer Output %v4float
        %void = OpTypeVoid
          %23 = OpTypeFunction %void
@@ -346,6 +353,29 @@ TEST_F(ConvertToSampledImageTest,
       VectorOfDescriptorSetAndBindingPairs{DescriptorSetAndBinding{0, 2}});
 
   EXPECT_EQ(std::get<1>(result), Pass::Status::Failure);
+}
+
+TEST_F(ConvertToSampledImageTest, Sampled2DoesNotConvert) {
+  const std::string shader = BuildShader(
+      R"(
+        OpDecorate %OutBuffer DescriptorSet 0
+        OpDecorate %OutBuffer Binding 0
+        )",
+      R"(
+        %OutBuffer = OpVariable %_ptr_UniformConstant_type_2d_image UniformConstant
+        )",
+      R"(
+         %30 = OpLoad %type_2d_image %OutBuffer
+               OpImageWrite %30 %18 %19 None
+               OpStore %out_var_SV_TARGET %19
+               )",
+      /* sampled_operand = */ 2);
+
+  auto result = SinglePassRunToBinary<ConvertToSampledImagePass>(
+      shader, /* skip_nop = */ false,
+      VectorOfDescriptorSetAndBindingPairs{DescriptorSetAndBinding{0, 0}});
+
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithoutChange);
 }
 
 }  // namespace
