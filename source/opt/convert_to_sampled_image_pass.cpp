@@ -150,6 +150,9 @@ bool ConvertToSampledImagePass::CollectResourcesToConvert(
     }
 
     if (variable_type->AsImage()) {
+      if (variable_type->AsImage()->sampled() == 2) {
+        continue;
+      }
       if (!descriptor_set_binding_pair_to_image
                ->insert({descriptor_set_binding, &inst})
                .second) {
