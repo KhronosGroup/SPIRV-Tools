@@ -89,7 +89,7 @@ spv_result_t RayTracingPass(ValidationState_t& _, const Instruction* inst) {
       }
 
       const uint32_t ray_tmin = _.GetOperandTypeId(inst, 7);
-      if (!_.IsFloatScalarType(ray_tmin) || _.GetBitWidth(ray_tmin) != 32) {
+      if (!_.IsFloatScalarType(ray_tmin, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray TMin must be a 32-bit float scalar";
       }
@@ -103,7 +103,7 @@ spv_result_t RayTracingPass(ValidationState_t& _, const Instruction* inst) {
       }
 
       const uint32_t ray_tmax = _.GetOperandTypeId(inst, 9);
-      if (!_.IsFloatScalarType(ray_tmax) || _.GetBitWidth(ray_tmax) != 32) {
+      if (!_.IsFloatScalarType(ray_tmax, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray TMax must be a 32-bit float scalar";
       }
@@ -144,7 +144,7 @@ spv_result_t RayTracingPass(ValidationState_t& _, const Instruction* inst) {
       }
 
       const uint32_t hit = _.GetOperandTypeId(inst, 2);
-      if (!_.IsFloatScalarType(hit) || _.GetBitWidth(hit) != 32) {
+      if (!_.IsFloatScalarType(hit, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Hit must be a 32-bit int scalar";
       }

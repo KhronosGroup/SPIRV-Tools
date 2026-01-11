@@ -1022,8 +1022,7 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
               hasDecoration(var_instr->id(), spv::Decoration::Flat, vstate);
           if (has_frag && storage_class == spv::StorageClass::Input &&
               !has_flat &&
-              ((vstate.IsFloatScalarType(type_id) &&
-                vstate.GetBitWidth(type_id) == 64) ||
+              (vstate.IsFloatScalarType(type_id, 64) ||
                vstate.IsIntScalarOrVectorType(type_id))) {
             return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
                      << vstate.VkErrorID(4744)

@@ -17,6 +17,7 @@
 #include "source/val/validation_state.h"
 
 #include <cassert>
+#include <cstdint>
 #include <stack>
 #include <utility>
 
@@ -1137,9 +1138,16 @@ bool ValidationState_t::IsFP8Type(uint32_t id) const {
   return IsFP8ScalarType(id) || IsFP8VectorType(id) || IsFP8CoopMatType(id);
 }
 
-bool ValidationState_t::IsFloatScalarType(uint32_t id) const {
+bool ValidationState_t::IsFloatScalarType(uint32_t id, uint32_t width) const {
   const Instruction* inst = FindDef(id);
-  return inst && inst->opcode() == spv::Op::OpTypeFloat;
+  bool is_float = inst && inst->opcode() == spv::Op::OpTypeFloat;
+  if (!is_float) {
+    return false;
+  }
+  if ((width != 0) && (width != inst->word(2))) {
+    return false;
+  }
+  return true;
 }
 
 bool ValidationState_t::IsFloatArrayType(uint32_t id) const {

@@ -112,7 +112,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
       }
 
       const uint32_t ray_tmin = _.GetOperandTypeId(inst, 5);
-      if (!_.IsFloatScalarType(ray_tmin) || _.GetBitWidth(ray_tmin) != 32) {
+      if (!_.IsFloatScalarType(ray_tmin, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray TMin must be a 32-bit float scalar";
       }
@@ -126,7 +126,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
       }
 
       const uint32_t ray_tmax = _.GetOperandTypeId(inst, 7);
-      if (!_.IsFloatScalarType(ray_tmax) || _.GetBitWidth(ray_tmax) != 32) {
+      if (!_.IsFloatScalarType(ray_tmax, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray TMax must be a 32-bit float scalar";
       }
@@ -143,7 +143,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
       if (auto error = ValidateRayQueryPointer(_, inst, 0)) return error;
 
       const uint32_t hit_t_id = _.GetOperandTypeId(inst, 1);
-      if (!_.IsFloatScalarType(hit_t_id) || _.GetBitWidth(hit_t_id) != 32) {
+      if (!_.IsFloatScalarType(hit_t_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Hit T must be a 32-bit float scalar";
       }
@@ -172,8 +172,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpRayQueryGetRayTMinKHR: {
       if (auto error = ValidateRayQueryPointer(_, inst, 2)) return error;
 
-      if (!_.IsFloatScalarType(result_type) ||
-          _.GetBitWidth(result_type) != 32) {
+      if (!_.IsFloatScalarType(result_type, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "expected Result Type to be 32-bit float scalar type";
       }
@@ -334,8 +333,7 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
       if (auto error = ValidateRayQueryPointer(_, inst, 2)) return error;
       if (auto error = ValidateIntersectionId(_, inst, 3)) return error;
 
-      if (!_.IsFloatScalarType(result_type) ||
-          _.GetBitWidth(result_type) != 32) {
+      if (!_.IsFloatScalarType(result_type, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "expected Result Type to be 32-bit floating point "
                   "scalar type";

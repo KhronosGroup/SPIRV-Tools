@@ -213,7 +213,7 @@ spv_result_t ValidateHitObjectInstructionCommonParameters(
 
   if (isValidId(ray_tmin_index)) {
     const uint32_t ray_tmin_id = _.GetOperandTypeId(inst, ray_tmin_index);
-    if (!_.IsFloatScalarType(ray_tmin_id) || _.GetBitWidth(ray_tmin_id) != 32) {
+    if (!_.IsFloatScalarType(ray_tmin_id, 32)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Ray TMin must be a 32-bit float scalar";
     }
@@ -232,7 +232,7 @@ spv_result_t ValidateHitObjectInstructionCommonParameters(
 
   if (isValidId(ray_tmax_index)) {
     const uint32_t ray_tmax_id = _.GetOperandTypeId(inst, ray_tmax_index);
-    if (!_.IsFloatScalarType(ray_tmax_id) || _.GetBitWidth(ray_tmax_id) != 32) {
+    if (!_.IsFloatScalarType(ray_tmax_id, 32)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Ray TMax must be a 32-bit float scalar";
     }
@@ -364,7 +364,7 @@ spv_result_t RayReorderNVPass(ValidationState_t& _, const Instruction* inst) {
       RegisterOpcodeForValidModel(_, inst);
       if (auto error = ValidateHitObjectPointer(_, inst, 2)) return error;
 
-      if (!_.IsFloatScalarType(result_type) || _.GetBitWidth(result_type) != 32)
+      if (!_.IsFloatScalarType(result_type, 32))
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected 32-bit floating-point type scalar as Result Type: "
                << spvOpcodeString(opcode);
@@ -480,7 +480,7 @@ spv_result_t RayReorderNVPass(ValidationState_t& _, const Instruction* inst) {
       }
 
       const uint32_t ray_tmin = _.GetOperandTypeId(inst, 3);
-      if (!_.IsFloatScalarType(ray_tmin) || _.GetBitWidth(ray_tmin) != 32) {
+      if (!_.IsFloatScalarType(ray_tmin, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray TMin must be a 32-bit float scalar";
       }
@@ -494,7 +494,7 @@ spv_result_t RayReorderNVPass(ValidationState_t& _, const Instruction* inst) {
       }
 
       const uint32_t ray_tmax = _.GetOperandTypeId(inst, 5);
-      if (!_.IsFloatScalarType(ray_tmax) || _.GetBitWidth(ray_tmax) != 32) {
+      if (!_.IsFloatScalarType(ray_tmax, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray TMax must be a 32-bit float scalar";
       }
@@ -562,8 +562,7 @@ spv_result_t RayReorderNVPass(ValidationState_t& _, const Instruction* inst) {
         return error;
       // Current Time
       const uint32_t current_time_id = _.GetOperandTypeId(inst, 11);
-      if (!_.IsFloatScalarType(current_time_id) ||
-          _.GetBitWidth(current_time_id) != 32) {
+      if (!_.IsFloatScalarType(current_time_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Current Times must be a 32-bit float scalar type";
       }
@@ -689,8 +688,7 @@ spv_result_t RayReorderNVPass(ValidationState_t& _, const Instruction* inst) {
       RegisterOpcodeForValidModel(_, inst);
       if (auto error = ValidateHitObjectPointer(_, inst, 2)) return error;
 
-      if (!_.IsFloatScalarType(result_type) ||
-          _.GetBitWidth(result_type) != 32) {
+      if (!_.IsFloatScalarType(result_type, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected 32-bit floating point scalar as Result Type: "
                << spvOpcodeString(opcode);
@@ -836,7 +834,7 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
       RegisterOpcodeForValidModel(_, inst);
       if (auto error = ValidateHitObjectPointerEXT(_, inst, 2)) return error;
 
-      if (!_.IsFloatScalarType(result_type) || _.GetBitWidth(result_type) != 32)
+      if (!_.IsFloatScalarType(result_type, 32))
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected 32-bit floating-point type scalar as Result Type: "
                << spvOpcodeString(opcode);
@@ -1025,7 +1023,7 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
 
       // Ray TMin (operand 4)
       const uint32_t ray_tmin = _.GetOperandTypeId(inst, 4);
-      if (!_.IsFloatScalarType(ray_tmin) || _.GetBitWidth(ray_tmin) != 32) {
+      if (!_.IsFloatScalarType(ray_tmin, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray TMin must be a 32-bit float scalar";
       }
@@ -1041,7 +1039,7 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
 
       // Ray TMax (operand 6)
       const uint32_t ray_tmax = _.GetOperandTypeId(inst, 6);
-      if (!_.IsFloatScalarType(ray_tmax) || _.GetBitWidth(ray_tmax) != 32) {
+      if (!_.IsFloatScalarType(ray_tmax, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray TMax must be a 32-bit float scalar";
       }
@@ -1077,7 +1075,7 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
 
       // Ray TMin (operand 4)
       const uint32_t ray_tmin = _.GetOperandTypeId(inst, 4);
-      if (!_.IsFloatScalarType(ray_tmin) || _.GetBitWidth(ray_tmin) != 32) {
+      if (!_.IsFloatScalarType(ray_tmin, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray TMin must be a 32-bit float scalar";
       }
@@ -1093,15 +1091,14 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
 
       // Ray TMax (operand 6)
       const uint32_t ray_tmax = _.GetOperandTypeId(inst, 6);
-      if (!_.IsFloatScalarType(ray_tmax) || _.GetBitWidth(ray_tmax) != 32) {
+      if (!_.IsFloatScalarType(ray_tmax, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Ray TMax must be a 32-bit float scalar";
       }
 
       // Current Time (operand 7)
       const uint32_t current_time_id = _.GetOperandTypeId(inst, 7);
-      if (!_.IsFloatScalarType(current_time_id) ||
-          _.GetBitWidth(current_time_id) != 32) {
+      if (!_.IsFloatScalarType(current_time_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Current Time must be a 32-bit float scalar";
       }
@@ -1216,8 +1213,7 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
 
       // Current Time (operand 11)
       const uint32_t current_time_id = _.GetOperandTypeId(inst, 11);
-      if (!_.IsFloatScalarType(current_time_id) ||
-          _.GetBitWidth(current_time_id) != 32) {
+      if (!_.IsFloatScalarType(current_time_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Current Time must be a 32-bit float scalar";
       }
@@ -1367,8 +1363,7 @@ spv_result_t RayReorderEXTPass(ValidationState_t& _, const Instruction* inst) {
 
       // Current Time (operand 11)
       const uint32_t current_time_id = _.GetOperandTypeId(inst, 11);
-      if (!_.IsFloatScalarType(current_time_id) ||
-          _.GetBitWidth(current_time_id) != 32) {
+      if (!_.IsFloatScalarType(current_time_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Current Time must be a 32-bit float scalar";
       }
