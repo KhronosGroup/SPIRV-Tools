@@ -1548,8 +1548,7 @@ spv_result_t ValidateExtInstGlslStd450(ValidationState_t& _,
     }
 
     case GLSLstd450PackDouble2x32: {
-      if (!_.IsFloatScalarType(result_type) ||
-          _.GetBitWidth(result_type) != 64) {
+      if (!_.IsFloatScalarType(result_type, 64)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << GetExtInstName(_, inst) << ": "
                << "expected Result Type to be 64-bit float scalar type";
@@ -1616,7 +1615,7 @@ spv_result_t ValidateExtInstGlslStd450(ValidationState_t& _,
       }
 
       const uint32_t v_type = _.GetOperandTypeId(inst, 4);
-      if (!_.IsFloatScalarType(v_type) || _.GetBitWidth(v_type) != 64) {
+      if (!_.IsFloatScalarType(v_type, 64)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << GetExtInstName(_, inst) << ": "
                << "expected operand V to be a 64-bit float scalar";
@@ -2739,8 +2738,7 @@ spv_result_t ValidateExtInstOpenClStd(ValidationState_t& _,
                   "Generic, CrossWorkgroup, Workgroup or Function";
       }
 
-      if ((!_.IsFloatScalarType(p_data_type) ||
-           _.GetBitWidth(p_data_type) != 16) &&
+      if ((!_.IsFloatScalarType(p_data_type, 16)) &&
           !_.ContainsUntypedPointer(p_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << GetExtInstName(_, inst) << ": "
@@ -2801,8 +2799,7 @@ spv_result_t ValidateExtInstOpenClStd(ValidationState_t& _,
                   "Generic, CrossWorkgroup, Workgroup or Function";
       }
 
-      if ((!_.IsFloatScalarType(p_data_type) ||
-           _.GetBitWidth(p_data_type) != 16) &&
+      if ((!_.IsFloatScalarType(p_data_type, 16)) &&
           !_.ContainsUntypedPointer(p_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << GetExtInstName(_, inst) << ": "
@@ -2893,8 +2890,7 @@ spv_result_t ValidateExtInstOpenClStd(ValidationState_t& _,
                   "CrossWorkgroup, Workgroup or Function";
       }
 
-      if ((!_.IsFloatScalarType(p_data_type) ||
-           _.GetBitWidth(p_data_type) != 16) &&
+      if ((!_.IsFloatScalarType(p_data_type, 16)) &&
           !_.ContainsUntypedPointer(p_type)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << GetExtInstName(_, inst) << ": "

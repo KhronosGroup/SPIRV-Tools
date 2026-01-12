@@ -315,8 +315,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     }
 
     const uint32_t bias_type_id = _.GetTypeId(inst->word(word_index++));
-    if (!_.IsFloatScalarType(bias_type_id) ||
-        _.GetBitWidth(bias_type_id) != 32) {
+    if (!_.IsFloatScalarType(bias_type_id, 32)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Expected Image Operand Bias to be a 32-bit float scalar";
     }
@@ -348,8 +347,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
 
     const uint32_t lod_type_id = _.GetTypeId(inst->word(word_index++));
     if (is_explicit_lod || is_valid_gather_lod_bias_amd) {
-      if (!_.IsFloatScalarType(lod_type_id) ||
-          _.GetBitWidth(lod_type_id) != 32) {
+      if (!_.IsFloatScalarType(lod_type_id, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected Image Operand Lod to be a 32-bit float scalar when "
                   "used "
@@ -563,8 +561,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     }
 
     const uint32_t minlod_type_id = _.GetTypeId(inst->word(word_index++));
-    if (!_.IsFloatScalarType(minlod_type_id) ||
-        _.GetBitWidth(minlod_type_id) != 32) {
+    if (!_.IsFloatScalarType(minlod_type_id, 32)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Expected Image Operand MinLod to be a 32-bit float scalar";
     }
@@ -803,12 +800,9 @@ spv_result_t ValidateTypeImage(ValidationState_t& _, const Instruction* inst) {
 
   const auto target_env = _.context()->target_env;
   if (spvIsVulkanEnv(target_env)) {
-    if ((!_.IsFloatScalarType(info.sampled_type) &&
-         !_.IsIntScalarType(info.sampled_type)) ||
-        ((32 != _.GetBitWidth(info.sampled_type)) &&
-         (64 != _.GetBitWidth(info.sampled_type))) ||
-        ((64 == _.GetBitWidth(info.sampled_type)) &&
-         _.IsFloatScalarType(info.sampled_type))) {
+    if (!_.IsFloatScalarType(info.sampled_type, 32) &&
+        !_.IsIntScalarType(info.sampled_type, 32) &&
+        !_.IsIntScalarType(info.sampled_type, 64)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << _.VkErrorID(4656)
              << "Expected Sampled Type to be a 32-bit int, 64-bit int or "
@@ -1388,7 +1382,7 @@ spv_result_t ValidateImageLod(ValidationState_t& _, const Instruction* inst) {
 spv_result_t ValidateImageDref(ValidationState_t& _, const Instruction* inst,
                                const ImageTypeInfo& info) {
   const uint32_t dref_type = _.GetOperandTypeId(inst, 4);
-  if (!_.IsFloatScalarType(dref_type) || _.GetBitWidth(dref_type) != 32) {
+  if (!_.IsFloatScalarType(dref_type, 32)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Dref to be of 32-bit float type";
   }

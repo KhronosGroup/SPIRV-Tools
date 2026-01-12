@@ -3053,9 +3053,8 @@ spv_result_t ValidateCooperativeVectorMatrixMulNV(ValidationState_t& _,
 
   const auto result_component_type_id = result_type->GetOperandAs<uint32_t>(1u);
   if (!_.IsIntScalarType(result_component_type_id, 32) &&
-      !(_.IsFloatScalarType(result_component_type_id) &&
-        (_.GetBitWidth(result_component_type_id) == 32 ||
-         _.GetBitWidth(result_component_type_id) == 16))) {
+      !_.IsFloatScalarType(result_component_type_id, 32) &&
+      !_.IsFloatScalarType(result_component_type_id, 16)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << opcode_name << " result component type <id> "
            << _.getIdName(result_component_type_id)
