@@ -2793,6 +2793,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-None-10684);
     case 10685:
       return VUID_WRAP(VUID-StandaloneSpirv-None-10685); // formally 04683/06426
+    case 10823:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpTypeFloat-10823);
     case 10824:
       // This use to be a standalone, but maintenance9 will set allow_vulkan_32_bit_bitwise now
       return VUID_WRAP(VUID-RuntimeSpirv-None-10824);

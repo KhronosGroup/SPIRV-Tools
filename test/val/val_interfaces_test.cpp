@@ -1997,6 +1997,8 @@ OpFunctionEnd
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpTypeFloat-10823"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("FP8 E4M3/E5M2 OpVariable <id> '2[%2]' must not be declared "
@@ -2029,6 +2031,8 @@ OpFunctionEnd
 
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpTypeFloat-10823"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("FP8 E4M3/E5M2 OpVariable <id> '2[%2]' must not be declared "

@@ -690,7 +690,7 @@ spv_result_t ValidateStorageClass(ValidationState_t& _,
                   return false;
                 })) {
           return _.diag(SPV_ERROR_INVALID_ID, interface_var)
-                 << "FP8 E4M3/E5M2 OpVariable <id> "  // TODO VUID
+                 << _.VkErrorID(10823) << "FP8 E4M3/E5M2 OpVariable <id> "
                  << _.getIdName(interface_var->id()) << " must not be declared "
                  << "with a Storage Class of Input or Output.";
         }
