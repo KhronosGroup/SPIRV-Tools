@@ -2039,6 +2039,65 @@ OpFunctionEnd
                 "with a Storage Class of Input or Output.\n"));
 }
 
+TEST_F(ValidateInterfacesTest, VectorIdFragmentInputOutputPass) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability LongVectorEXT
+OpExtension "SPV_EXT_long_vector"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main" %in %out
+OpExecutionMode %main OriginUpperLeft
+OpDecorate %in Location 0
+OpDecorate %out Location 0
+%void = OpTypeVoid
+%f32 = OpTypeFloat 32
+%u32 = OpTypeInt 32 0
+%u4 = OpConstant %u32 4
+%f32vec = OpTypeVectorIdEXT %f32 %u4
+%in_ptr = OpTypePointer Input %f32vec
+%out_ptr = OpTypePointer Output %f32vec
+%in = OpVariable %in_ptr Input
+%out = OpVariable %out_ptr Output
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateInterfacesTest, VectorIdVertexInputOutputPass) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability LongVectorEXT
+OpExtension "SPV_EXT_long_vector"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main" %in %out
+OpDecorate %in Location 0
+OpDecorate %out Location 0
+%void = OpTypeVoid
+%f32 = OpTypeFloat 32
+%u32 = OpTypeInt 32 0
+%u4 = OpConstant %u32 4
+%f32vec = OpTypeVectorIdEXT %f32 %u4
+%in_ptr = OpTypePointer Input %f32vec
+%out_ptr = OpTypePointer Output %f32vec
+%in = OpVariable %in_ptr Input
+%out = OpVariable %out_ptr Output
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
