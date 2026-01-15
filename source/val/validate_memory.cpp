@@ -2140,7 +2140,11 @@ spv_result_t ValidateArrayLength(ValidationState_t& state,
   auto pointer_ty_id = state.GetOperandTypeId(inst, (untyped ? 3 : 2));
   auto pointer_ty = state.FindDef(pointer_ty_id);
   if (untyped) {
-    if (pointer_ty->opcode() != spv::Op::OpTypeUntypedPointerKHR) {
+    if (!pointer_ty) {
+      return state.diag(SPV_ERROR_INVALID_ID, inst)
+             << "Pointer must be an 'untyped pointer' pointer type, an ID such "
+                "as OpTypeUntypedPointerKHR is invalid";
+    } else if (pointer_ty->opcode() != spv::Op::OpTypeUntypedPointerKHR) {
       return state.diag(SPV_ERROR_INVALID_ID, inst)
              << "Pointer must be an untyped pointer";
     }

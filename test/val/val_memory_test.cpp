@@ -8013,6 +8013,46 @@ OpFunctionEnd
               HasSubstr("Pointer must be an untyped pointer"));
 }
 
+TEST_F(ValidateMemory, UntypedArrayLengthBadPointer2) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability Int64
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %b
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %_runtimearr_float ArrayStride 4
+               OpDecorate %B Block
+               OpMemberDecorate %B 0 NonWritable
+               OpMemberDecorate %B 0 Offset 0
+               OpDecorate %b NonWritable
+               OpDecorate %b Binding 0
+               OpDecorate %b DescriptorSet 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_runtimearr_float = OpTypeRuntimeArray %float
+          %B = OpTypeStruct %_runtimearr_float
+        %ptr = OpTypeUntypedPointerKHR StorageBuffer
+          %b = OpUntypedVariableKHR %ptr StorageBuffer %B
+      %ulong = OpTypeInt 64 0
+       %long = OpTypeInt 64 1
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %13 = OpUntypedArrayLengthKHR %ulong %b %ptr 0
+         %15 = OpBitcast %long %13
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Pointer must be an 'untyped pointer' pointer type, an "
+                        "ID such as OpTypeUntypedPointerKHR is invalid"));
+}
+
 TEST_F(ValidateMemory, UntypedArrayLengtBadStruct) {
   const std::string spirv = R"(
 OpCapability Shader
