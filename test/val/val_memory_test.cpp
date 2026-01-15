@@ -8010,7 +8010,7 @@ OpFunctionEnd
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Pointer must be an untyped pointer"));
+              HasSubstr("Pointer must be an untyped pointer object"));
 }
 
 TEST_F(ValidateMemory, UntypedArrayLengthBadPointer2) {
@@ -8049,8 +8049,7 @@ TEST_F(ValidateMemory, UntypedArrayLengthBadPointer2) {
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Pointer must be an 'untyped pointer' pointer type, an "
-                        "ID such as OpTypeUntypedPointerKHR is invalid"));
+              HasSubstr("Pointer must be an untyped pointer object"));
 }
 
 TEST_F(ValidateMemory, UntypedArrayLengtBadStruct) {
