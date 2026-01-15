@@ -1667,7 +1667,7 @@ FoldingRule ReassociateNestedGenericInt(spv::Op opcode) {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (IsCooperativeMatrix(type)) {
+    if (type->IsCooperativeMatrix()) {
       return false;
     }
 
@@ -1742,7 +1742,7 @@ FoldingRule ReassociateNestedMulDivFloat() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (IsCooperativeMatrix(type)) {
+    if (type->IsCooperativeMatrix()) {
       return false;
     }
 
@@ -1891,7 +1891,7 @@ FoldingRule ReassociateNestedAddSub() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
 
-    if (IsCooperativeMatrix(type)) {
+    if (type->IsCooperativeMatrix()) {
       return false;
     }
 
