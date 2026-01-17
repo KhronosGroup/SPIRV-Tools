@@ -369,7 +369,10 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
                 "or Cube";
     }
 
-    // Multisampled is already checked.
+    if (info.multisampled != 0) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Image Operand LOD requires 'MS' parameter to be 0";
+    }
   }
 
   if (mask & uint32_t(spv::ImageOperandsMask::Grad)) {

@@ -1926,6 +1926,19 @@ TEST_F(ValidateImage, LodWrongDim) {
                         "2D, 3D or Cube"));
 }
 
+TEST_F(ValidateImage, LodWrongMultisample) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0011 %uniform_image_f32_2d_0011
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0011 %img %sampler
+%res1 = OpImageSampleProjExplicitLod %f32vec4 %simg %f32vec2_hh Lod %f32_1)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image 'MS' parameter to be 0"));
+}
+
 TEST_F(ValidateImage, MinLodIncompatible) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
