@@ -105,6 +105,57 @@ TEST_F(ValidateMisc, SizeOfValid) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
 }
 
+TEST_F(ValidateMisc, SizeOfFloat) {
+  const std::string spirv = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %f "f"
+       %void = OpTypeVoid
+        %f32 = OpTypeFloat 32
+        %ptr = OpTypePointer CrossWorkgroup %f32
+       %fnTy = OpTypeFunction %void
+          %f = OpFunction %void None %fnTy
+      %entry = OpLabel
+          %s = OpSizeOf %f32 %ptr
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected OpSizeOf Result Type to be a 32-bit int scalar"));
+}
+
+TEST_F(ValidateMisc, SizeOfVector) {
+  const std::string spirv = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %f "f"
+       %void = OpTypeVoid
+        %i32 = OpTypeInt 32 0
+      %v2i32 = OpTypeVector %i32 2
+        %ptr = OpTypePointer CrossWorkgroup %v2i32
+       %fnTy = OpTypeFunction %void
+          %f = OpFunction %void None %fnTy
+      %entry = OpLabel
+          %s = OpSizeOf %v2i32 %ptr
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected OpSizeOf Result Type to be a 32-bit int scalar"));
+}
+
 const std::string ShaderClockSpirv = R"(
 OpCapability Shader
 OpCapability Int64
