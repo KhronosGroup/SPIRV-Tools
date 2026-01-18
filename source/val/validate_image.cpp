@@ -327,7 +327,10 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
                 "or Cube";
     }
 
-    // Multisampled is already checked.
+    // - |Sample| operand is required to have MS != 0
+    // - |Sample| is only allowed with [Fetch, Write, or Read]
+    // - |Bias| can only be used with |ImplicitLod| opcodes
+    // Multisampled is already checked in all cases
   }
 
   if (mask & uint32_t(spv::ImageOperandsMask::Lod)) {
@@ -371,7 +374,7 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
 
     if (info.multisampled != 0) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Image Operand LOD requires 'MS' parameter to be 0";
+             << "Image Operand Lod requires 'MS' parameter to be 0";
     }
   }
 
@@ -408,7 +411,10 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
              << " components, but given " << dy_size;
     }
 
-    // Multisampled is already checked.
+    // - |Sample| operand is required to have MS != 0
+    // - |Sample| is only allowed with [Fetch, Write, or Read]
+    // - |Grad| can only be used with |ExplicitLod| opcodes
+    // Multisampled is already checked in all cases
   }
 
   if (mask & uint32_t(spv::ImageOperandsMask::ConstOffset)) {

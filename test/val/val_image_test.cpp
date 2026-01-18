@@ -1929,14 +1929,13 @@ TEST_F(ValidateImage, LodWrongDim) {
 TEST_F(ValidateImage, LodWrongMultisample) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_2d_0011 %uniform_image_f32_2d_0011
-%sampler = OpLoad %type_sampler %uniform_sampler
-%simg = OpSampledImage %type_sampled_image_f32_2d_0011 %img %sampler
-%res1 = OpImageSampleProjExplicitLod %f32vec4 %simg %f32vec2_hh Lod %f32_1)";
+%res1 = OpImageFetch %f32vec4 %img %u32vec2_01 Lod|Sample %u32_1 %u32_1
+)";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Image 'MS' parameter to be 0"));
+              HasSubstr("Image Operand Lod requires 'MS' parameter to be 0"));
 }
 
 TEST_F(ValidateImage, MinLodIncompatible) {
@@ -2408,6 +2407,20 @@ TEST_F(ValidateImage, SampleProjExplicitLodSuccessRect) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateImage, GradWrongMultisample) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0011 %uniform_image_f32_2d_0011
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0011 %img %sampler
+%res1 = OpImageSampleExplicitLod %f32vec4 %simg %f32vec2_00 Grad %f32vec2_01 %f32vec2_01
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Sampling operation is invalid for multisample image"));
 }
 
 TEST_F(ValidateImage, SampleProjExplicitLodWrongResultType) {
