@@ -105,6 +105,56 @@ TEST_F(ValidateMisc, SizeOfValid) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
 }
 
+TEST_F(ValidateMisc, SizeOfStructValid) {
+  const std::string spirv = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %f "f"
+       %void = OpTypeVoid
+        %i32 = OpTypeInt 32 0
+        %ptr = OpTypePointer CrossWorkgroup %i32
+   %struct_a = OpTypeStruct %ptr %i32
+   %struct_b = OpTypeStruct %struct_a %ptr
+       %fnTy = OpTypeFunction %void
+          %f = OpFunction %void None %fnTy
+      %entry = OpLabel
+          %s = OpSizeOf %i32 %struct_b
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_1);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+}
+
+TEST_F(ValidateMisc, SizeOfStructWithAbstract) {
+  const std::string spirv = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %f "f"
+       %void = OpTypeVoid
+        %i32 = OpTypeInt 32 0
+       %bool = OpTypeBool
+        %ptr = OpTypePointer CrossWorkgroup %i32
+   %struct_a = OpTypeStruct %ptr %bool
+   %struct_b = OpTypeStruct %struct_a %ptr
+       %fnTy = OpTypeFunction %void
+          %f = OpFunction %void None %fnTy
+      %entry = OpLabel
+          %s = OpSizeOf %i32 %struct_b
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSizeOf Pointer operand is not concrete"));
+}
+
 TEST_F(ValidateMisc, SizeOfFloat) {
   const std::string spirv = R"(
                OpCapability Addresses

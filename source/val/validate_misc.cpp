@@ -88,6 +88,13 @@ spv_result_t ValidateSizeOf(ValidationState_t& _, const Instruction* inst) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected OpSizeOf Result Type to be a 32-bit int scalar.";
   }
+
+  uint32_t pointer_id = inst->GetOperandAs<uint32_t>(2);
+  if (!_.IsConcreteType(pointer_id)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "OpSizeOf Pointer operand is not concrete.";
+  }
+
   return SPV_SUCCESS;
 }
 
