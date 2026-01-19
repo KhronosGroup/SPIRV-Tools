@@ -1493,8 +1493,9 @@ TEST_F(ValidateImage, ImageTexelPointerImageCoordTypeBad) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be integer scalar or vector"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Coordinate to be a 32-bit integer scalar or vector"));
 }
 
 TEST_F(ValidateImage, ImageTexelPointerImageCoordSizeBad) {
@@ -1652,8 +1653,9 @@ TEST_F(ValidateImage, SampleImplicitLodWrongCoordinateType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Coordinate to be a 32-bit float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleImplicitLodCoordinateSizeTooSmall) {
@@ -1816,7 +1818,22 @@ TEST_F(ValidateImage, SampleExplicitLodWrongCoordinateType) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector"));
+              HasSubstr("Expected Coordinate to be a 32-bit integer or float "
+                        "scalar or vector"));
+}
+
+TEST_F(ValidateImage, SampleExplicitLodWrongCoordinateType16Bit) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageSampleExplicitLod %f32vec4 %simg %f16vec2_00 Lod %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Coordinate to be a 32-bit scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleExplicitLodCoordinateSizeTooSmall) {
@@ -2515,8 +2532,9 @@ TEST_F(ValidateImage, SampleProjExplicitLodWrongCoordinateType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Coordinate to be a 32-bit float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleProjExplicitLodCoordinateSizeTooSmall) {
@@ -2651,8 +2669,9 @@ TEST_F(ValidateImage, SampleProjImplicitLodWrongCoordinateType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Coordinate to be a 32-bit float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleProjImplicitLodCoordinateSizeTooSmall) {
@@ -2777,8 +2796,9 @@ TEST_F(ValidateImage, SampleDrefImplicitLodWrongCoordinateType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Coordinate to be a 32-bit float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleDrefImplicitLodCoordinateSizeTooSmall) {
@@ -2934,8 +2954,9 @@ TEST_F(ValidateImage, SampleDrefExplicitLodWrongCoordinateType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Coordinate to be a 32-bit float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleDrefExplicitLodCoordinateSizeTooSmall) {
@@ -3074,8 +3095,9 @@ TEST_F(ValidateImage, SampleProjDrefImplicitLodWrongCoordinateType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Coordinate to be a 32-bit float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefImplicitLodCoordinateSizeTooSmall) {
@@ -3213,8 +3235,9 @@ TEST_F(ValidateImage, SampleProjDrefExplicitLodWrongCoordinateType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Coordinate to be a 32-bit float scalar or vector"));
 }
 
 TEST_F(ValidateImage, SampleProjDrefExplicitLodCoordinateSizeTooSmall) {
@@ -3377,8 +3400,9 @@ TEST_F(ValidateImage, FetchWrongCoordinateType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be int scalar or vector"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Coordinate to be a 32-bit integer scalar or vector"));
 }
 
 TEST_F(ValidateImage, FetchCoordinateSizeTooSmall) {
@@ -3552,8 +3576,9 @@ TEST_F(ValidateImage, GatherWrongCoordinateType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Coordinate to be a 32-bit float scalar or vector"));
 }
 
 TEST_F(ValidateImage, GatherCoordinateSizeTooSmall) {
@@ -4043,7 +4068,7 @@ TEST_F(ValidateImage, ReadVoidSampledType) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateImage, ReadWrongCoordinateType) {
+TEST_F(ValidateImage, ReadFloatCoordinateType) {
   const std::string body = R"(
 %img = OpLoad %type_image_u32_2d_0002 %uniform_image_u32_2d_0002
 %res1 = OpImageRead %u32vec4 %img %f32vec2_00
@@ -4051,9 +4076,20 @@ TEST_F(ValidateImage, ReadWrongCoordinateType) {
 
   const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateImage, ReadWrongCoordinateType) {
+  const std::string body = R"(
+%img = OpLoad %type_image_u32_2d_0002 %uniform_image_u32_2d_0002
+%res1 = OpImageRead %u32vec4 %img %f16vec2_00
+)";
+
+  const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be int scalar or vector"));
+              HasSubstr("Expected Coordinate to be a 32-bit scalar or vector"));
 }
 
 TEST_F(ValidateImage, ReadCoordinateSizeTooSmall) {
@@ -4217,7 +4253,7 @@ OpImageWrite %img %u32vec2_01 %f32vec4_0000
               HasSubstr("Expected Image 'Sampled' parameter to be 0 or 2"));
 }
 
-TEST_F(ValidateImage, WriteWrongCoordinateType) {
+TEST_F(ValidateImage, WriteFloatCoordinateType) {
   const std::string body = R"(
 %img = OpLoad %type_image_u32_2d_0002 %uniform_image_u32_2d_0002
 OpImageWrite %img %f32vec2_00 %u32vec4_0123
@@ -4225,9 +4261,20 @@ OpImageWrite %img %f32vec2_00 %u32vec4_0123
 
   const std::string extra = "\nOpCapability StorageImageWriteWithoutFormat\n";
   CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateImage, WriteWrongCoordinateType) {
+  const std::string body = R"(
+%img = OpLoad %type_image_u32_2d_0002 %uniform_image_u32_2d_0002
+OpImageWrite %img %f16vec2_00 %u32vec4_0123
+)";
+
+  const std::string extra = "\nOpCapability StorageImageWriteWithoutFormat\n";
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be int scalar or vector"));
+              HasSubstr("Expected Coordinate to be a 32-bit scalar or vector"));
 }
 
 TEST_F(ValidateImage, WriteCoordinateSizeTooSmall) {
@@ -4843,8 +4890,9 @@ TEST_F(ValidateImage, QueryLodWrongCoordinateType) {
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Expected Coordinate to be float scalar or vector"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Coordinate to be a 32-bit float scalar or vector"));
 }
 
 TEST_F(ValidateImage, QueryLodCoordinateSizeTooSmall) {
