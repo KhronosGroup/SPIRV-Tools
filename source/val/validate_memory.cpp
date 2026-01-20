@@ -2127,9 +2127,14 @@ spv_result_t ValidateArrayLength(ValidationState_t& state,
   // 64-bit requires CapabilityShader64BitIndexingEXT or a pipeline/shader
   // flag and is validated in VVL.
   const uint32_t result_type_id = inst->type_id();
+  if (!state.IsIntScalarTypeWithSignedness(result_type_id, 0)) {
+    return state.diag(SPV_ERROR_INVALID_ID, inst)
+           << "The Result Type of Op" << spvOpcodeString(opcode) << " <id> "
+           << state.getIdName(inst->id())
+           << " must be OpTypeInt with width 32 or 64 and signedness 0.";
+  }
   const uint32_t result_type_width = state.GetBitWidth(inst->type_id());
-  if (!state.IsIntScalarTypeWithSignedness(result_type_id, 0) ||
-      (result_type_width != 32 && result_type_width != 64)) {
+  if (result_type_width != 32 && result_type_width != 64) {
     return state.diag(SPV_ERROR_INVALID_ID, inst)
            << "The Result Type of Op" << spvOpcodeString(opcode) << " <id> "
            << state.getIdName(inst->id())
