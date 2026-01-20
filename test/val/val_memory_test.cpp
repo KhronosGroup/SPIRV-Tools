@@ -604,6 +604,34 @@ TEST_F(ValidateMemory, ArrayLenResultNotIntType) {
           "0\n"));
 }
 
+TEST_F(ValidateMemory, ArrayLenResultUnsizedPointer) {
+  std::string spirv = R"(
+               OpCapability ClipDistance
+               OpMemoryModel Logical GLSL450
+               OpName %65312 "arrayLen"
+       %void = OpTypeVoid
+          %8 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+  %_struct_5 = OpTypeStruct %v2float
+%_ptr_Uniform__struct_5 = OpTypePointer Uniform %_struct_5
+          %6 = OpVariable %_ptr_Uniform__struct_5 Uniform
+%_ptr_Uniform_v2float = OpTypePointer Uniform %v2float
+    %2105376 = OpFunction %void None %8
+       %8224 = OpLabel
+      %65312 = OpArrayLength %_ptr_Uniform_v2float %6 538976288
+               OpUnreachable
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv.c_str());
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The Result Type of OpArrayLength <id> '1[%arrayLen]' must be "
+                "OpTypeInt with width 32 or 64 and signedness 0."));
+}
+
 TEST_F(ValidateMemory, ArrayLenResultNot32bits) {
   std::string spirv = R"(
                OpCapability Shader
