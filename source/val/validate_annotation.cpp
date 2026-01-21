@@ -440,8 +440,8 @@ spv_result_t ValidateMemberDecorate(ValidationState_t& _,
       }
     }
 
-    const auto is_descriptor_type = [&_](const Instruction* inst) {
-      return _.IsDescriptorType(inst->opcode());
+    const auto is_descriptor_type = [&_](const Instruction* type_inst) {
+      return _.IsDescriptorType(type_inst->opcode());
     };
 
     // recursively scans the struct to find if anything has a descriptor type,
