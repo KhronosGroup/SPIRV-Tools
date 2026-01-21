@@ -617,7 +617,8 @@ spv_result_t ValidateStorageClass(ValidationState_t& _,
     auto storage_class = interface_var->GetOperandAs<spv::StorageClass>(2);
     switch (storage_class) {
       case spv::StorageClass::PushConstant: {
-        if (has_push_constant && !(_.HasCapability(spv::Capability::PushConstantBanksNV))) {
+        if (has_push_constant &&
+            !(_.HasCapability(spv::Capability::PushConstantBanksNV))) {
           return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
                  << _.VkErrorID(6673)
                  << "Entry-point has more than one variable with the "
