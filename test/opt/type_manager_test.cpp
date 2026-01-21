@@ -191,6 +191,9 @@ std::vector<std::unique_ptr<Type>> GenerateAllTypes() {
   types.emplace_back(new TensorARM(f32, 4, 44));
   auto* tensor_f32_shaped = types.back().get();
 
+  // BufferEXT (SPV_EXT_descriptor_heap)
+  types.emplace_back(new BufferEXT(spv::StorageClass::StorageBuffer));
+
   // Graph
   types.emplace_back(new GraphARM(0, {tensor_f32}));
   types.emplace_back(new GraphARM(1, {tensor_f32_ranked, tensor_f32_ranked}));

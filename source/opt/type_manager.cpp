@@ -826,7 +826,7 @@ Type* TypeManager::RebuildType(uint32_t type_id, const Type& type) {
     }
     case Type::kBufferEXT: {
       const BufferEXT* buffer_type = type.AsBufferEXT();
-      rebuilt_ty = MakeUnique<BufferEXT>(buffer_type->target_id(), buffer_type->storage_class());
+      rebuilt_ty = MakeUnique<BufferEXT>(buffer_type->storage_class());
       break;
     }
     default:
@@ -1141,7 +1141,6 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
     }
     case spv::Op::OpTypeBufferEXT: {
       type = new BufferEXT(
-          inst.result_id(),
           static_cast<spv::StorageClass>(inst.GetSingleWordInOperand(0)));
       break;
     }

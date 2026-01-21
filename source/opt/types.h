@@ -844,7 +844,7 @@ class GraphARM : public Type {
 
 class BufferEXT : public Type {
  public:
-  BufferEXT(const uint32_t target_id, spv::StorageClass storage_class_);
+  BufferEXT(spv::StorageClass storage_class_);
   BufferEXT(const BufferEXT&) = default;
 
   std::string str() const override;
@@ -852,7 +852,6 @@ class BufferEXT : public Type {
   BufferEXT* AsBufferEXT() override { return this; }
   const BufferEXT* AsBufferEXT() const override { return this; }
 
-  uint32_t target_id() const { return target_id_; }
   spv::StorageClass storage_class() const { return storage_class_; }
 
   size_t ComputeExtraStateHash(size_t hash, SeenTypes* seen) const override;
@@ -860,7 +859,6 @@ class BufferEXT : public Type {
  private:
   bool IsSameImpl(const Type* that, IsSameCache*) const override;
 
-  const uint32_t target_id_;
   const spv::StorageClass storage_class_;
 };
 

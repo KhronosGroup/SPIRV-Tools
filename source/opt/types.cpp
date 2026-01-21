@@ -996,28 +996,23 @@ bool GraphARM::IsSameImpl(const Type* that, IsSameCache* seen) const {
   return true;
 }
 
-BufferEXT::BufferEXT(uint32_t target_id, spv::StorageClass storage_class)
-    : Type(kBufferEXT), target_id_(target_id), storage_class_(storage_class) {
-}
+BufferEXT::BufferEXT(spv::StorageClass storage_class)
+    : Type(kBufferEXT), storage_class_(storage_class) {}
 
 std::string BufferEXT::str() const {
   std::ostringstream oss;
-  oss << "buffer<" << target_id_ << ", "
-      << static_cast<uint32_t>(storage_class_) << ">";
+  oss << "buffer<" << static_cast<uint32_t>(storage_class_) << ">";
   return oss.str();
 }
 
 size_t BufferEXT::ComputeExtraStateHash(size_t hash, SeenTypes*) const {
-  hash = hash_combine(hash, target_id_, static_cast<uint32_t>(storage_class_));
+  hash = hash_combine(hash, static_cast<uint32_t>(storage_class_));
   return hash;
 }
 
 bool BufferEXT::IsSameImpl(const Type* that, IsSameCache*) const {
   const BufferEXT* og = that->AsBufferEXT();
   if (!og) {
-    return false;
-  }
-  if (target_id_ != og->target_id_) {
     return false;
   }
   if (storage_class_ != og->storage_class_) {
