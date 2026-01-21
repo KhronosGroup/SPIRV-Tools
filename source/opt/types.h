@@ -72,6 +72,7 @@ class TensorLayoutNV;
 class TensorViewNV;
 class TensorARM;
 class GraphARM;
+class BufferEXT;
 
 // Abstract class for a SPIR-V type. It has a bunch of As<sublcass>() methods,
 // which is used as a way to probe the actual <subclass>.
@@ -120,6 +121,7 @@ class Type {
     kTensorViewNV,
     kTensorARM,
     kGraphARM,
+    kBufferEXT,
     kLast
   };
 
@@ -235,6 +237,7 @@ class Type {
   DeclareCastMethod(TensorViewNV)
   DeclareCastMethod(TensorARM)
   DeclareCastMethod(GraphARM)
+  DeclareCastMethod(BufferEXT)
 #undef DeclareCastMethod
 
 protected:
@@ -837,6 +840,28 @@ class GraphARM : public Type {
 
   const uint32_t num_inputs_;
   const std::vector<const Type*> io_types_;
+};
+
+class BufferEXT : public Type {
+ public:
+  BufferEXT(const uint32_t target_id, spv::StorageClass storage_class_);
+  BufferEXT(const BufferEXT&) = default;
+
+  std::string str() const override;
+
+  BufferEXT* AsBufferEXT() override { return this; }
+  const BufferEXT* AsBufferEXT() const override { return this; }
+
+  uint32_t target_id() const { return target_id_; }
+  spv::StorageClass storage_class() const { return storage_class_; }
+
+  size_t ComputeExtraStateHash(size_t hash, SeenTypes* seen) const override;
+
+ private:
+  bool IsSameImpl(const Type* that, IsSameCache*) const override;
+
+  const uint32_t target_id_;
+  const spv::StorageClass storage_class_;
 };
 
 #define DefineParameterlessType(type, name)                                \

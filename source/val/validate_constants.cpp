@@ -505,6 +505,28 @@ spv_result_t ValidateConstantNull(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateConstantSizeOfEXT(ValidationState_t& _,
+                                       const Instruction* inst) {
+  const Instruction* result_type = _.FindDef(inst->type_id());
+  const uint32_t bit_width = result_type->GetOperandAs<uint32_t>(1);
+  // VVL will validate the SPV_EXT_shader_64bit_indexing interaction
+  if (result_type->opcode() != spv::Op::OpTypeInt ||
+      (bit_width != 64 && bit_width != 32)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "For OpConstantSizeOfEXT instruction, its result type "
+           << "must be a 32-bit or 64-bit integer type scalar."
+           << " (OpCapability Int64 is required for 64-bit)";
+  }
+
+  const uint32_t type_operand = inst->GetOperandAs<uint32_t>(2);
+  if (!_.IsDescriptorType(type_operand)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "For OpConstantSizeOfEXT instruction, its Type operand <Id> "
+           << _.getIdName(type_operand) << " must be a Descriptor type.";
+  }
+  return SPV_SUCCESS;
+}
+
 // Validates that OpSpecConstant specializes to either int or float type.
 spv_result_t ValidateSpecConstant(ValidationState_t& _,
                                   const Instruction* inst) {
@@ -606,6 +628,9 @@ spv_result_t ConstantPass(ValidationState_t& _, const Instruction* inst) {
       break;
     case spv::Op::OpSpecConstantOp:
       if (auto error = ValidateSpecConstantOp(_, inst)) return error;
+      break;
+    case spv::Op::OpConstantSizeOfEXT:
+      if (auto error = ValidateConstantSizeOfEXT(_, inst)) return error;
       break;
     default:
       break;

@@ -1160,9 +1160,9 @@ TEST_P(ValidateIdWithMessage, OpTypeStructOpaqueTypeBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-StandaloneSpirv-None-04667"));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(make_message("OpTypeStruct must not contain an opaque type")));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr(make_message(
+                  "OpTypeStruct must not contain an invalid opaque type")));
 }
 
 TEST_P(ValidateIdWithMessage, OpTypePointerGood) {

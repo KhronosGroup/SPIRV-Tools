@@ -539,6 +539,14 @@ uint32_t TypeManager::GetTypeInstruction(const Type* type) {
                                          id, ops);
       break;
     }
+    case Type::kBufferEXT: {
+      typeInst = MakeUnique<Instruction>(
+          context(), spv::Op::OpTypeBufferEXT, 0, id,
+          std::initializer_list<Operand>{
+              {SPV_OPERAND_TYPE_STORAGE_CLASS,
+               {static_cast<uint32_t>(type->AsBufferEXT()->storage_class())}}});
+      break;
+    }
     default:
       assert(false && "Unexpected type");
       break;
@@ -814,6 +822,11 @@ Type* TypeManager::RebuildType(uint32_t type_id, const Type& type) {
         io_types.push_back(RebuildType(GetId(ioty), *ioty));
       }
       rebuilt_ty = MakeUnique<GraphARM>(graph_type->num_inputs(), io_types);
+      break;
+    }
+    case Type::kBufferEXT: {
+      const BufferEXT* buffer_type = type.AsBufferEXT();
+      rebuilt_ty = MakeUnique<BufferEXT>(buffer_type->target_id(), buffer_type->storage_class());
       break;
     }
     default:
@@ -1124,6 +1137,12 @@ Type* TypeManager::RecordIfTypeDefinition(const Instruction& inst) {
         io_types.push_back(GetType(inst.GetSingleWordInOperand(i)));
       }
       type = new GraphARM(inst.GetSingleWordInOperand(0), io_types);
+      break;
+    }
+    case spv::Op::OpTypeBufferEXT: {
+      type = new BufferEXT(
+          inst.result_id(),
+          static_cast<spv::StorageClass>(inst.GetSingleWordInOperand(0)));
       break;
     }
     default:

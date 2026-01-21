@@ -1522,7 +1522,7 @@ TEST_F(ValidateDecorations, BlockMissingArrayStrideBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("must be explicitly laid out with ArrayStride decorations"));
+      HasSubstr("must be explicitly laid out with ArrayStride or ArrayStrideIdEXT decorations"));
 }
 
 TEST_F(ValidateDecorations, BufferBlockMissingArrayStrideBad) {
@@ -1554,7 +1554,7 @@ TEST_F(ValidateDecorations, BufferBlockMissingArrayStrideBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("must be explicitly laid out with ArrayStride decorations"));
+      HasSubstr("must be explicitly laid out with ArrayStride or ArrayStrideIdEXT decorations"));
 }
 
 TEST_F(ValidateDecorations, BlockNestedStructMissingArrayStrideBad) {
@@ -1591,7 +1591,7 @@ TEST_F(ValidateDecorations, BlockNestedStructMissingArrayStrideBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("must be explicitly laid out with ArrayStride decorations"));
+      HasSubstr("must be explicitly laid out with ArrayStride or ArrayStrideIdEXT decorations"));
 }
 
 TEST_F(ValidateDecorations, BufferBlockNestedStructMissingArrayStrideBad) {
@@ -1628,7 +1628,7 @@ TEST_F(ValidateDecorations, BufferBlockNestedStructMissingArrayStrideBad) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateAndRetrieveValidationState());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("must be explicitly laid out with ArrayStride decorations"));
+      HasSubstr("must be explicitly laid out with ArrayStride or ArrayStrideIdEXT decorations"));
 }
 
 TEST_F(ValidateDecorations, BlockMissingMatrixStrideBad) {

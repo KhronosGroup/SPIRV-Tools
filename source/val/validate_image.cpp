@@ -1065,7 +1065,8 @@ spv_result_t ValidateImageCoordinate(ValidationState_t& _,
 
   const bool int_only = opcode == spv::Op::OpImageFetch ||
                         opcode == spv::Op::OpImageSparseFetch ||
-                        opcode == spv::Op::OpImageTexelPointer;
+                        opcode == spv::Op::OpImageTexelPointer ||
+                        opcode == spv::Op::OpUntypedImageTexelPointerEXT;
 
   const bool int_or_float = opcode == spv::Op::OpImageSampleExplicitLod ||
                             opcode == spv::Op::OpImageSparseSampleExplicitLod ||
@@ -1244,6 +1245,8 @@ spv_result_t ValidateSampledImage(ValidationState_t& _,
 
 spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
                                        const Instruction* inst) {
+  bool isUntyped = (inst->opcode() == spv::Op::OpUntypedImageTexelPointerEXT);
+
   const auto result_type = _.FindDef(inst->type_id());
   if (result_type->opcode() != spv::Op::OpTypePointer &&
       result_type->opcode() != spv::Op::OpTypeUntypedPointerKHR) {
@@ -1274,16 +1277,23 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
     }
   }
 
-  const auto image_ptr = _.FindDef(_.GetOperandTypeId(inst, 2));
-  if (!image_ptr || image_ptr->opcode() != spv::Op::OpTypePointer) {
+  const auto image_ptr = _.FindDef(_.GetOperandTypeId(inst, (isUntyped ? 3 : 2)));
+  if (!image_ptr ||
+      (isUntyped && image_ptr->opcode() != spv::Op::OpTypeUntypedPointerKHR) ||
+      (!isUntyped && image_ptr->opcode() != spv::Op::OpTypePointer)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected Image to be OpTypePointer";
+           << "Expected Image to be "
+           << (isUntyped ? "OpTypeUntypedPointerKHR" : "OpTypePointer");
   }
 
-  const auto image_type = image_ptr->GetOperandAs<uint32_t>(2);
+  const auto image_type =
+      isUntyped ? inst->GetOperandAs<uint32_t>(2)
+                : image_ptr->GetOperandAs<uint32_t>(2);
   if (_.GetIdOpcode(image_type) != spv::Op::OpTypeImage) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected Image to be OpTypePointer with Type OpTypeImage";
+           << "Expected Image to be "
+           << (isUntyped ? "OpTypeUntypedPointerKHR" : "OpTypePointer ")
+           << "with Type OpTypeImage";
   }
 
   ImageTypeInfo info;
@@ -1308,20 +1318,22 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
 
   if (info.dim == spv::Dim::SubpassData) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Image Dim SubpassData cannot be used with OpImageTexelPointer";
+           << "Image Dim SubpassData cannot be used with "
+           << (isUntyped ? "OpUntypedImageTexelPointerEXT" : "OpImageTexelPointer");
   }
 
   if (info.dim == spv::Dim::TileImageDataEXT) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Image Dim TileImageDataEXT cannot be used with "
-              "OpImageTexelPointer";
+           << (isUntyped ? "OpUntypedImageTexelPointerEXT"
+                         : "OpImageTexelPointer");
   }
 
   if (spv_result_t result =
-          ValidateImageCoordinate(_, inst, info, /* word_index = */ 3))
+          ValidateImageCoordinate(_, inst, info, /* word_index = */ (isUntyped ? 4 : 3)))
     return result;
 
-  const uint32_t sample_type = _.GetOperandTypeId(inst, 4);
+  const uint32_t sample_type = _.GetOperandTypeId(inst, (isUntyped ? 5 : 4));
   if (!sample_type || !_.IsIntScalarType(sample_type)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Sample to be integer scalar";
@@ -1329,7 +1341,7 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
 
   if (info.multisampled == 0) {
     uint64_t ms = 0;
-    if (!_.EvalConstantValUint64(inst->GetOperandAs<uint32_t>(4), &ms) ||
+    if (!_.EvalConstantValUint64(inst->GetOperandAs<uint32_t>(isUntyped ? 5 : 4), &ms) ||
         ms != 0) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Expected Sample for Image with MS 0 to be a valid <id> for "
@@ -1342,14 +1354,20 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
         (info.format != spv::ImageFormat::R64ui) &&
         (info.format != spv::ImageFormat::R32f) &&
         (info.format != spv::ImageFormat::R32i) &&
-        (info.format != spv::ImageFormat::R32ui) &&
-        !((info.format == spv::ImageFormat::Rg16f ||
+        (info.format != spv::ImageFormat::R32ui)){
+      if (isUntyped) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << _.VkErrorID(11416)
+               << "Expected the Image Format in Image to be R64i, R64ui, R32f, "
+                  "R32i, or R32ui for OpUntypedImageTexelPointerEXT";
+      } else if (!(info.format == spv::ImageFormat::Rg16f ||
            info.format == spv::ImageFormat::Rgba16f) &&
-          _.HasCapability(spv::Capability::AtomicFloat16VectorNV))) {
+          _.HasCapability(spv::Capability::AtomicFloat16VectorNV)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << _.VkErrorID(4658)
              << "Expected the Image Format in Image to be R64i, R64ui, R32f, "
                 "R32i, or R32ui for Vulkan environment";
+      }
     }
   }
 
@@ -2372,6 +2390,7 @@ spv_result_t ImagePass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpSampledImage:
       return ValidateSampledImage(_, inst);
     case spv::Op::OpImageTexelPointer:
+    case spv::Op::OpUntypedImageTexelPointerEXT:
       return ValidateImageTexelPointer(_, inst);
 
     case spv::Op::OpImageSampleImplicitLod:

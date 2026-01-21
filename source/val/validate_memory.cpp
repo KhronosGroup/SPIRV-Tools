@@ -21,6 +21,7 @@
 
 #include "source/opcode.h"
 #include "source/spirv_target_env.h"
+#include "source/table2.h"
 #include "source/val/instruction.h"
 #include "source/val/validate.h"
 #include "source/val/validate_scopes.h"
@@ -450,7 +451,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
       inst->GetOperandAs<spv::StorageClass>(storage_class_index);
   uint32_t value_id = 0;
   if (untyped_pointer) {
-    const auto has_data_type = 3u < inst->operands().size();
+    const bool has_data_type = 3u < inst->operands().size();
     if (has_data_type) {
       value_id = inst->GetOperandAs<uint32_t>(3u);
       auto data_type = _.FindDef(value_id);
@@ -466,10 +467,23 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
                << "Data type must be specified for Function, Private, and "
                   "Workgroup storage classes";
       }
+      // Added from SPV_EXT_descriptor_heap
+      // Vulkan allows untyped pointer without |Data Type| but only for heap
+      // decorated variable that are in UniformConstant
       if (spvIsVulkanEnv(_.context()->target_env)) {
-        return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << _.VkErrorID(11167)
-               << "Vulkan requires that data type be specified";
+        if (storage_class != spv::StorageClass::UniformConstant) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << _.VkErrorID(11167) << "Storage class is "
+                 << StorageClassToString(storage_class)
+                 << ", but Vulkan requires that Data Type be specified when "
+                    "not using UniformConstant storage class";
+        } else if (!(_.IsDescriptorHeapBaseVariable(inst))) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << _.VkErrorID(11347)
+                 << "Storage class is UniformConstant, but Vulkan requires "
+                    "that Data Type be specified if the variable is not "
+                    "decorated with SamplerHeapEXT or ResourceHeapEXT";
+        }
       }
     }
   }
@@ -1198,6 +1212,56 @@ spv_result_t ValidateLoad(ValidationState_t& _, const Instruction* inst) {
   }
 
   _.RegisterQCOMImageProcessingTextureConsumer(pointer_id, inst, nullptr);
+
+  // EXT_descriptor_heap
+  if (spvIsVulkanEnv(_.context()->target_env) &&
+      _.IsDescriptorHeapBaseVariable(_.FindDef(pointer_id))) {
+    auto descBaseVariable = _.FindUntypedBaseVariable(_.FindDef(pointer_id));
+    auto descBaseVariableId = descBaseVariable->id();
+    if (!_.HasDecoration(descBaseVariableId, spv::Decoration::DescriptorSet) &&
+        !_.HasDecoration(descBaseVariableId, spv::Decoration::Binding)) {
+      switch (result_type->opcode()) {
+        case spv::Op::OpTypeSampler:
+          if (!_.IsBuiltin(descBaseVariableId, spv::BuiltIn::SamplerHeapEXT)) {
+            return _.diag(SPV_ERROR_INVALID_ID, inst)
+                   << _.VkErrorID(11336)
+                   << "OpTypeSampler pointer instruction has no descriptor set "
+                   << "or binding and is not derived from a variable decorated "
+                      "with "
+                      "SamplerHeapEXT";
+          }
+          break;
+        case spv::Op::OpTypeImage:
+          if (!_.IsBuiltin(descBaseVariableId, spv::BuiltIn::ResourceHeapEXT)) {
+            return _.diag(SPV_ERROR_INVALID_ID, inst)
+                   << _.VkErrorID(11337)
+                   << "OpTypeImage pointer instruction has no descriptor set "
+                   << "or binding and is not derived from a variable decorated "
+                      "with "
+                      "ResourceHeapEXT";
+          }
+          break;
+        case spv::Op::OpTypeAccelerationStructureKHR:
+          uint32_t data_type;
+          spv::StorageClass sc;
+          if (_.GetPointerTypeInfo(descBaseVariable->type_id(), &data_type,
+                                   &sc) &&
+              sc != spv::StorageClass::Private &&
+              sc != spv::StorageClass::Function &&
+              !_.IsBuiltin(descBaseVariableId, spv::BuiltIn::ResourceHeapEXT)) {
+            return _.diag(SPV_ERROR_INVALID_ID, inst)
+                   << _.VkErrorID(11339)
+                   << "OpTypeAccelerationStructureKHR pointer instruction has "
+                      "no "
+                   << "descriptor set or binding and is not derived from a "
+                      "variable decorated with ResourceHeapEXT";
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }
 
   return SPV_SUCCESS;
 }
@@ -2082,10 +2146,11 @@ spv_result_t ValidatePtrAccessChain(ValidationState_t& _,
        base_type_storage_class == spv::StorageClass::PushConstant ||
        (_.HasCapability(spv::Capability::WorkgroupMemoryExplicitLayoutKHR) &&
         base_type_storage_class == spv::StorageClass::Workgroup)) &&
-      !_.HasDecoration(base_type->id(), spv::Decoration::ArrayStride)) {
+      (!_.HasDecoration(base_type->id(), spv::Decoration::ArrayStride) &&
+       !_.HasDecoration(base_type->id(), spv::Decoration::ArrayStrideIdEXT))) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "OpPtrAccessChain must have a Base whose type is decorated "
-              "with ArrayStride";
+              "with ArrayStride or ArrayStrideIdEXT";
   }
 
   if (spvIsVulkanEnv(_.context()->target_env)) {
@@ -2533,6 +2598,27 @@ spv_result_t ValidateCooperativeMatrixLoadStoreKHR(ValidationState_t& _,
       return error;
   }
 
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateBufferPointerEXT(ValidationState_t& _,
+                                      const Instruction* inst) {
+  const auto storage_class_ptr = _.FindDef(inst->GetOperandAs<uint32_t>(0));
+  if (storage_class_ptr->opcode() != spv::Op::OpTypeUntypedPointerKHR &&
+      storage_class_ptr->opcode() != spv::Op::OpTypePointer) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpBufferPointerEXT's Result Type should be "
+           << "a pointer type.";
+  } else {
+    // Buffer operand
+    auto buffer =
+        _.FindUntypedBaseVariable(_.FindDef(inst->GetOperandAs<uint32_t>(2)));
+    if (!_.IsBuiltin(buffer->id(), spv::BuiltIn::ResourceHeapEXT)) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpBufferPointerEXT's buffer must be an untyped pointer"
+             << " into a variable declared with the ResourceHeapEXT built-in";
+    }
+  }
   return SPV_SUCCESS;
 }
 
@@ -3267,6 +3353,9 @@ spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpVariable:
     case spv::Op::OpUntypedVariableKHR:
       if (auto error = ValidateVariable(_, inst)) return error;
+      break;
+    case spv::Op::OpBufferPointerEXT:
+      if (auto error = ValidateBufferPointerEXT(_, inst)) return error;
       break;
     case spv::Op::OpLoad:
       if (auto error = ValidateLoad(_, inst)) return error;
