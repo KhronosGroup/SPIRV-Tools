@@ -1287,9 +1287,8 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
            << (isUntyped ? "OpTypeUntypedPointerKHR" : "OpTypePointer");
   }
 
-  const auto image_type =
-      isUntyped ? inst->GetOperandAs<uint32_t>(2)
-                : image_ptr->GetOperandAs<uint32_t>(2);
+  const auto image_type = isUntyped ? inst->GetOperandAs<uint32_t>(2)
+                                    : image_ptr->GetOperandAs<uint32_t>(2);
   if (_.GetIdOpcode(image_type) != spv::Op::OpTypeImage) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Image to be "
