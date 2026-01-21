@@ -3000,8 +3000,8 @@ TEST_F(TrimCapabilitiesPassTest, GroupNonUniform_RemovedWhenUnused) {
 ; CHECK-NOT:   OpCapability GroupNonUniformArithmetic
                OpCapability GroupNonUniformClustered
 ; CHECK-NOT:   OpCapability GroupNonUniformClustered
-               OpCapability GroupNonUniformPartitionedNV
-; CHECK-NOT:   OpCapability GroupNonUniformPartitionedNV
+               OpCapability GroupNonUniformPartitionedEXT
+; CHECK-NOT:   OpCapability GroupNonUniformPartitionedEXT
                OpCapability GroupNonUniform
 ; CHECK-NOT:   OpCapability GroupNonUniform
                OpExtension "SPV_NV_shader_subgroup_partitioned"
@@ -3030,8 +3030,8 @@ TEST_F(TrimCapabilitiesPassTest,
 ; CHECK-NOT:       OpCapability GroupNonUniformArithmetic
                    OpCapability GroupNonUniformClustered
 ; CHECK-NOT:       OpCapability GroupNonUniformClustered
-                   OpCapability GroupNonUniformPartitionedNV
-; CHECK-NOT:       OpCapability GroupNonUniformPartitionedNV
+                   OpCapability GroupNonUniformPartitionedEXT
+; CHECK-NOT:       OpCapability GroupNonUniformPartitionedEXT
                    OpCapability GroupNonUniform
 ; CHECK:           OpCapability GroupNonUniform
                    OpCapability Shader
@@ -3066,8 +3066,8 @@ TEST_F(TrimCapabilitiesPassTest,
 ; CHECK-NOT:       OpCapability GroupNonUniformArithmetic
                    OpCapability GroupNonUniformClustered
 ; CHECK-NOT:       OpCapability GroupNonUniformClustered
-                   OpCapability GroupNonUniformPartitionedNV
-; CHECK-NOT:       OpCapability GroupNonUniformPartitionedNV
+                   OpCapability GroupNonUniformPartitionedEXT
+; CHECK-NOT:       OpCapability GroupNonUniformPartitionedEXT
                    OpCapability GroupNonUniform
 ; CHECK-NOT:       OpCapability GroupNonUniform
                    OpExtension "SPV_NV_shader_subgroup_partitioned"
@@ -3102,8 +3102,8 @@ TEST_F(TrimCapabilitiesPassTest,
 ; CHECK-NOT:       OpCapability GroupNonUniformArithmetic
                    OpCapability GroupNonUniformClustered
 ; CHECK-NOT:       OpCapability GroupNonUniformClustered
-                   OpCapability GroupNonUniformPartitionedNV
-; CHECK-NOT:       OpCapability GroupNonUniformPartitionedNV
+                   OpCapability GroupNonUniformPartitionedEXT
+; CHECK-NOT:       OpCapability GroupNonUniformPartitionedEXT
                    OpCapability GroupNonUniform
 ; CHECK-NOT:       OpCapability GroupNonUniform
                    OpExtension "SPV_NV_shader_subgroup_partitioned"
@@ -3138,8 +3138,8 @@ TEST_F(TrimCapabilitiesPassTest,
 ; CHECK:           OpCapability GroupNonUniformArithmetic
                    OpCapability GroupNonUniformClustered
 ; CHECK-NOT:       OpCapability GroupNonUniformClustered
-                   OpCapability GroupNonUniformPartitionedNV
-; CHECK-NOT:       OpCapability GroupNonUniformPartitionedNV
+                   OpCapability GroupNonUniformPartitionedEXT
+; CHECK-NOT:       OpCapability GroupNonUniformPartitionedEXT
                    OpCapability GroupNonUniform
 ; CHECK-NOT:       OpCapability GroupNonUniform
                    OpExtension "SPV_NV_shader_subgroup_partitioned"
@@ -3175,8 +3175,8 @@ TEST_F(TrimCapabilitiesPassTest,
 ; CHECK:           OpCapability GroupNonUniformArithmetic
                    OpCapability GroupNonUniformClustered
 ; CHECK-NOT:       OpCapability GroupNonUniformClustered
-                   OpCapability GroupNonUniformPartitionedNV
-; CHECK-NOT:       OpCapability GroupNonUniformPartitionedNV
+                   OpCapability GroupNonUniformPartitionedEXT
+; CHECK-NOT:       OpCapability GroupNonUniformPartitionedEXT
                    OpCapability GroupNonUniform
 ; CHECK-NOT:       OpCapability GroupNonUniform
                    OpExtension "SPV_NV_shader_subgroup_partitioned"
@@ -3212,8 +3212,8 @@ TEST_F(TrimCapabilitiesPassTest,
 ; CHECK:           OpCapability GroupNonUniformArithmetic
                    OpCapability GroupNonUniformClustered
 ; CHECK-NOT:       OpCapability GroupNonUniformClustered
-                   OpCapability GroupNonUniformPartitionedNV
-; CHECK-NOT:       OpCapability GroupNonUniformPartitionedNV
+                   OpCapability GroupNonUniformPartitionedEXT
+; CHECK-NOT:       OpCapability GroupNonUniformPartitionedEXT
                    OpCapability GroupNonUniform
 ; CHECK-NOT:       OpCapability GroupNonUniform
                    OpExtension "SPV_NV_shader_subgroup_partitioned"
@@ -3249,8 +3249,8 @@ TEST_F(TrimCapabilitiesPassTest,
 ; CHECK-NOT:       OpCapability GroupNonUniformArithmetic
                    OpCapability GroupNonUniformClustered
 ; CHECK:           OpCapability GroupNonUniformClustered
-                   OpCapability GroupNonUniformPartitionedNV
-; CHECK-NOT:       OpCapability GroupNonUniformPartitionedNV
+                   OpCapability GroupNonUniformPartitionedEXT
+; CHECK-NOT:       OpCapability GroupNonUniformPartitionedEXT
                    OpCapability GroupNonUniform
 ; CHECK-NOT:       OpCapability GroupNonUniform
                    OpExtension "SPV_NV_shader_subgroup_partitioned"
@@ -3306,10 +3306,10 @@ static const std::vector<SubgroupTestCase> kSubgroupTestCases{
     // clang-format on
 };
 
-using TrimCapabilitiesPassTestSubgroupNV_Unsigned = PassTest<
+using TrimCapabilitiesPassTestSubgroupEXT_Unsigned = PassTest<
     ::testing::TestWithParam<std::tuple<SubgroupTestCase, std::string>>>;
-TEST_P(TrimCapabilitiesPassTestSubgroupNV_Unsigned,
-       GroupNonUniformPartitionedNV_Remains) {
+TEST_P(TrimCapabilitiesPassTestSubgroupEXT_Unsigned,
+       GroupNonUniformPartitionedEXT_Remains) {
   SubgroupTestCase test_case = std::get<0>(GetParam());
   const std::string operation = std::get<1>(GetParam());
 
@@ -3321,8 +3321,8 @@ TEST_P(TrimCapabilitiesPassTestSubgroupNV_Unsigned,
 ; CHECK-NOT:       OpCapability GroupNonUniformArithmetic
                    OpCapability GroupNonUniformClustered
 ; CHECK-NOT:       OpCapability GroupNonUniformClustered
-                   OpCapability GroupNonUniformPartitionedNV
-; CHECK:           OpCapability GroupNonUniformPartitionedNV
+                   OpCapability GroupNonUniformPartitionedEXT
+; CHECK:           OpCapability GroupNonUniformPartitionedEXT
                    OpCapability GroupNonUniform
 ; CHECK-NOT:       OpCapability GroupNonUniform
                    OpExtension "SPV_NV_shader_subgroup_partitioned"
@@ -3358,14 +3358,14 @@ TEST_P(TrimCapabilitiesPassTestSubgroupNV_Unsigned,
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    TrimCapabilitiesPassTestSubgroupNV_Unsigned_I,
-    TrimCapabilitiesPassTestSubgroupNV_Unsigned,
+    TrimCapabilitiesPassTestSubgroupEXT_Unsigned_I,
+    TrimCapabilitiesPassTestSubgroupEXT_Unsigned,
     ::testing::Combine(::testing::ValuesIn(kSubgroupTestCases),
-                       ::testing::Values("PartitionedReduceNV",
-                                         "PartitionedInclusiveScanNV",
-                                         "PartitionedExclusiveScanNV")),
+                       ::testing::Values("PartitionedReduceEXT",
+                                         "PartitionedInclusiveScanEXT",
+                                         "PartitionedExclusiveScanEXT")),
     [](const ::testing::TestParamInfo<
-        TrimCapabilitiesPassTestSubgroupNV_Unsigned::ParamType>& info) {
+        TrimCapabilitiesPassTestSubgroupEXT_Unsigned::ParamType>& info) {
       return std::get<0>(info.param).opcode + "_" + std::get<1>(info.param);
     });
 
@@ -3384,8 +3384,8 @@ TEST_P(TrimCapabilitiesPassTestSubgroupArithmetic_Unsigned,
 ; CHECK:           OpCapability GroupNonUniformArithmetic
                    OpCapability GroupNonUniformClustered
 ; CHECK-NOT:       OpCapability GroupNonUniformClustered
-                   OpCapability GroupNonUniformPartitionedNV
-; CHECK-NOT:       OpCapability GroupNonUniformPartitionedNV
+                   OpCapability GroupNonUniformPartitionedEXT
+; CHECK-NOT:       OpCapability GroupNonUniformPartitionedEXT
                    OpCapability GroupNonUniform
 ; CHECK-NOT:       OpCapability GroupNonUniform
                    OpExtension "SPV_NV_shader_subgroup_partitioned"
@@ -3445,8 +3445,8 @@ TEST_P(TrimCapabilitiesPassTestSubgroupClustered_Unsigned,
 ; CHECK-NOT:       OpCapability GroupNonUniformArithmetic
                    OpCapability GroupNonUniformClustered
 ; CHECK:           OpCapability GroupNonUniformClustered
-                   OpCapability GroupNonUniformPartitionedNV
-; CHECK-NOT:       OpCapability GroupNonUniformPartitionedNV
+                   OpCapability GroupNonUniformPartitionedEXT
+; CHECK-NOT:       OpCapability GroupNonUniformPartitionedEXT
                    OpCapability GroupNonUniform
 ; CHECK-NOT:       OpCapability GroupNonUniform
                    OpExtension "SPV_NV_shader_subgroup_partitioned"
