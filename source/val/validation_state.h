@@ -525,7 +525,7 @@ class ValidationState_t {
   /// Returns true if the given id <id> has the given built-in decoration <bt>,
   /// otherwise returns false.
   bool IsBuiltin(spv::Id id, spv::BuiltIn bt) {
-    for (auto &dec : id_decorations(id)) {
+    for (auto& dec : id_decorations(id)) {
       if (dec.dec_type() == spv::Decoration::BuiltIn) {
         if (dec.builtin() == bt) return true;
         break;

@@ -1277,7 +1277,8 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
     }
   }
 
-  const auto image_ptr = _.FindDef(_.GetOperandTypeId(inst, (isUntyped ? 3 : 2)));
+  const auto image_ptr =
+      _.FindDef(_.GetOperandTypeId(inst, (isUntyped ? 3 : 2)));
   if (!image_ptr ||
       (isUntyped && image_ptr->opcode() != spv::Op::OpTypeUntypedPointerKHR) ||
       (!isUntyped && image_ptr->opcode() != spv::Op::OpTypePointer)) {
@@ -1319,7 +1320,8 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
   if (info.dim == spv::Dim::SubpassData) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Image Dim SubpassData cannot be used with "
-           << (isUntyped ? "OpUntypedImageTexelPointerEXT" : "OpImageTexelPointer");
+           << (isUntyped ? "OpUntypedImageTexelPointerEXT"
+                         : "OpImageTexelPointer");
   }
 
   if (info.dim == spv::Dim::TileImageDataEXT) {
@@ -1329,8 +1331,8 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
                          : "OpImageTexelPointer");
   }
 
-  if (spv_result_t result =
-          ValidateImageCoordinate(_, inst, info, /* word_index = */ (isUntyped ? 4 : 3)))
+  if (spv_result_t result = ValidateImageCoordinate(
+          _, inst, info, /* word_index = */ (isUntyped ? 4 : 3)))
     return result;
 
   const uint32_t sample_type = _.GetOperandTypeId(inst, (isUntyped ? 5 : 4));
@@ -1341,7 +1343,8 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
 
   if (info.multisampled == 0) {
     uint64_t ms = 0;
-    if (!_.EvalConstantValUint64(inst->GetOperandAs<uint32_t>(isUntyped ? 5 : 4), &ms) ||
+    if (!_.EvalConstantValUint64(
+            inst->GetOperandAs<uint32_t>(isUntyped ? 5 : 4), &ms) ||
         ms != 0) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Expected Sample for Image with MS 0 to be a valid <id> for "

@@ -406,23 +406,24 @@ spv_result_t ValidateMemberDecorate(ValidationState_t& _,
                                     const Instruction* inst) {
   const auto struct_type_id = inst->GetOperandAs<uint32_t>(0);
   const auto struct_type = _.FindDef(struct_type_id);
-  const bool is_mem_dec_id_inst = (inst->opcode() == spv::Op::OpMemberDecorateIdEXT);
+  const bool is_mem_dec_id_inst =
+      (inst->opcode() == spv::Op::OpMemberDecorateIdEXT);
   if (!struct_type || spv::Op::OpTypeStruct != struct_type->opcode()) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << (is_mem_dec_id_inst ? "OpMemberDecorateIdEXT" : "OpMemberDecorate")
-           << " Structure type <id> "
-           << _.getIdName(struct_type_id) << " is not a struct type.";
+           << (is_mem_dec_id_inst ? "OpMemberDecorateIdEXT"
+                                  : "OpMemberDecorate")
+           << " Structure type <id> " << _.getIdName(struct_type_id)
+           << " is not a struct type.";
   }
   const auto member = inst->GetOperandAs<uint32_t>(1);
   const auto member_count =
       static_cast<uint32_t>(struct_type->words().size() - 2);
   if (member_count <= member) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Index " << member
-           << " provided in "
-           << (is_mem_dec_id_inst ? "OpMemberDecorateIdEXT" : "OpMemberDecorate")
-           << " for struct <id> "
-           << _.getIdName(struct_type_id)
+           << "Index " << member << " provided in "
+           << (is_mem_dec_id_inst ? "OpMemberDecorateIdEXT"
+                                  : "OpMemberDecorate")
+           << " for struct <id> " << _.getIdName(struct_type_id)
            << " is out of bounds. The structure has " << member_count
            << " members. Largest valid index is " << member_count - 1 << ".";
   }
@@ -436,7 +437,7 @@ spv_result_t ValidateMemberDecorate(ValidationState_t& _,
                << " to array type using OpDecorateId.";
       } else {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "Decoration operand could only be OffsetIdEXT.";
+               << "Decoration operand could only be OffsetIdEXT.";
       }
     }
 

@@ -739,7 +739,8 @@ TEST_F(ValidateSpvEXTDescriptorHeap, LoadDescHeapDerivedSampler) {
   EXPECT_THAT(diag, AnyVUID("VUID-StandaloneSpirv-Result-11336"));
   EXPECT_THAT(
       diag,
-      HasSubstr("pointer instruction has no descriptor set or binding "
+      HasSubstr(
+          "pointer instruction has no descriptor set or binding "
           "and is not derived from a variable decorated with SamplerHeapEXT"));
 }
 
@@ -808,7 +809,8 @@ TEST_F(ValidateSpvEXTDescriptorHeap, LoadDescHeapDerivedImage) {
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   const std::string diag = getDiagnosticString();
   EXPECT_THAT(diag, AnyVUID("VUID-StandaloneSpirv-Result-11337"));
-  EXPECT_THAT(diag,
+  EXPECT_THAT(
+      diag,
       HasSubstr(
           "pointer instruction has no descriptor set or binding "
           "and is not derived from a variable decorated with ResourceHeapEXT"));
@@ -850,7 +852,8 @@ TEST_F(ValidateSpvEXTDescriptorHeap, LoadDescHeapDerivedAccStruct) {
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   const std::string diag = getDiagnosticString();
   EXPECT_THAT(diag, AnyVUID("VUID-StandaloneSpirv-Result-11339"));
-  EXPECT_THAT(diag,
+  EXPECT_THAT(
+      diag,
       HasSubstr(
           "pointer instruction has no descriptor set or binding "
           "and is not derived from a variable decorated with ResourceHeapEXT"));
@@ -1135,7 +1138,8 @@ TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTStorageClass) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   const std::string diag = getDiagnosticString();
-  EXPECT_THAT(diag,
+  EXPECT_THAT(
+      diag,
       HasSubstr("OpBufferPointerEXT's Result Type must be a pointer "
                 "type with a Storage Class of Uniform or StorageBuffer."));
 }
@@ -1192,9 +1196,9 @@ TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTLayout) {
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   const std::string diag = getDiagnosticString();
   EXPECT_THAT(diag, AnyVUID("VUID-StandaloneSpirv-Result-11346"));
-  EXPECT_THAT(diag,
-      HasSubstr("The result type operand of OpBufferPointerEXT "
-          "must have a Type operand that is explicitly laid out"));
+  EXPECT_THAT(
+      diag, HasSubstr("The result type operand of OpBufferPointerEXT "
+                      "must have a Type operand that is explicitly laid out"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTDecorate) {
@@ -1247,10 +1251,9 @@ TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTDecorate) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   const std::string diag = getDiagnosticString();
-  EXPECT_THAT(diag,
-              HasSubstr("OpBufferPointerEXT's buffer must be an untyped "
-                        "pointer into a variable declared with the "
-                        "ResourceHeapEXT built-in"));
+  EXPECT_THAT(diag, HasSubstr("OpBufferPointerEXT's buffer must be an untyped "
+                              "pointer into a variable declared with the "
+                              "ResourceHeapEXT built-in"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTNonWritable) {
@@ -1309,7 +1312,10 @@ TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTNonWritable) {
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   const std::string diag = getDiagnosticString();
   EXPECT_THAT(diag, HasSubstr("Target of NonWritable decoration is invalid"));
-  EXPECT_THAT(diag, HasSubstr("cannot be used to OpBufferPointerEXT with Uniform storage class"));
+  EXPECT_THAT(
+      diag,
+      HasSubstr(
+          "cannot be used to OpBufferPointerEXT with Uniform storage class"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTNonWritableWithSSBO) {
@@ -1619,7 +1625,8 @@ TEST_F(ValidateSpvEXTDescriptorHeap, MemberDecorateIdArrayStrideIdEXT) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   const std::string diag = getDiagnosticString();
-  EXPECT_THAT(diag, HasSubstr("ArrayStrideIdEXT could only be directly applied to array type using OpDecorateId."));
+  EXPECT_THAT(diag, HasSubstr("ArrayStrideIdEXT could only be directly applied "
+                              "to array type using OpDecorateId."));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, MemberDecorateIdOffsetIdEXT) {
@@ -1945,7 +1952,9 @@ TEST_F(ValidateSpvEXTDescriptorHeap, MemberDecorateIdExtraIdOrder) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_4);
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
   const std::string diag = getDiagnosticString();
-  EXPECT_THAT(diag, HasSubstr("All <id> Extra Operands must appear before Structure Type."));
+  EXPECT_THAT(
+      diag,
+      HasSubstr("All <id> Extra Operands must appear before Structure Type."));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, OpMemberDecorateIdDuplicateOffset) {
@@ -2055,7 +2064,9 @@ TEST_F(ValidateSpvEXTDescriptorHeap, AtomicImageType) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_4);
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
   const std::string diag = getDiagnosticString();
-  EXPECT_THAT(diag, AnyVUID("VUID-StandaloneSpirv-OpUntypedImageTexelPointerEXT-11416"));
+  EXPECT_THAT(
+      diag,
+      AnyVUID("VUID-StandaloneSpirv-OpUntypedImageTexelPointerEXT-11416"));
   EXPECT_THAT(diag,
               HasSubstr("Expected the Image Format in Image to be R64i, R64ui, "
                         "R32f, R32i, or R32ui for Vulkan environment using "
@@ -2106,9 +2117,10 @@ TEST_F(ValidateSpvEXTDescriptorHeap, UntypedPointerStorageClass) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_4);
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
   const std::string diag = getDiagnosticString();
-  EXPECT_THAT(diag, AnyVUID("VUID-StandaloneSpirv-OpTypeUntypedPointerKHR-11417"));
+  EXPECT_THAT(diag,
+              AnyVUID("VUID-StandaloneSpirv-OpTypeUntypedPointerKHR-11417"));
   EXPECT_THAT(diag, HasSubstr("In Vulkan, untyped pointers can only be used "
-      "in an explicitly laid out storage class"));
+                              "in an explicitly laid out storage class"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, InvalidStoreToHeap) {
@@ -2168,8 +2180,8 @@ TEST_F(ValidateSpvEXTDescriptorHeap, InvalidStoreToHeap) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_4);
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
   const std::string diag = getDiagnosticString();
-  EXPECT_THAT( diag, HasSubstr("OpStore Pointer <id>"));
-  EXPECT_THAT( diag, HasSubstr("storage class is read-only"));
+  EXPECT_THAT(diag, HasSubstr("OpStore Pointer <id>"));
+  EXPECT_THAT(diag, HasSubstr("storage class is read-only"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, NonDescriptorOpaqueType) {

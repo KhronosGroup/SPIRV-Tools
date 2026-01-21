@@ -906,7 +906,7 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
         // Descriptor heap's base variables have no data type in declaration.
         if (untyped_pointers && var_instr->words().size() < 5 &&
             vstate.IsDescriptorHeapBaseVariable(var_instr))
-            continue;
+          continue;
 
         // It is guaranteed (by validator ID checks) that ptr_instr is
         // OpTypePointer. Word 3 of this instruction is the type being pointed
@@ -1444,7 +1444,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
                       spv::Op::OpTypeArray, vstate)) {
                 return vstate.diag(SPV_ERROR_INVALID_ID, vstate.FindDef(id))
                        << "Structure id " << id << " decorated as " << deco_str
-                       << " must be explicitly laid out with ArrayStride or ArrayStrideIdEXT "
+                       << " must be explicitly laid out with ArrayStride or "
+                          "ArrayStrideIdEXT "
                           "decorations.";
               }
 
@@ -1595,9 +1596,9 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
 
       if (!vstate.IsDescriptorHeapBaseVariable(&inst)) {
         if (auto result =
-              checkLayout(data_type_id, sc, deco_str, !bufferRules,
-                          scalar_block_layout, 0, constraints, vstate)) {
-            return result;
+                checkLayout(data_type_id, sc, deco_str, !bufferRules,
+                            scalar_block_layout, 0, constraints, vstate)) {
+          return result;
         }
       }
     }

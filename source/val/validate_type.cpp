@@ -814,9 +814,9 @@ spv_result_t ValidateTypeUntypedPointerKHR(ValidationState_t& _,
         break;
       case spv::StorageClass::Image:
         if (!_.HasCapability(spv::Capability::DescriptorHeapEXT)) {
-            return _.diag(SPV_ERROR_INVALID_ID, inst)
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
                  << "Image storage class untyped pointers in Vulkan "
-                 "require DescriptorHeapEXT be declared";
+                    "require DescriptorHeapEXT be declared";
         }
         break;
       default:
@@ -1015,7 +1015,8 @@ spv_result_t ValidateTypeTensorARM(ValidationState_t& _,
 spv_result_t ValidateTypeBufferEXT(ValidationState_t& _,
                                    const Instruction* inst) {
   auto sc = inst->GetOperandAs<spv::StorageClass>(1);
-  if (sc != spv::StorageClass::Uniform && sc != spv::StorageClass::StorageBuffer) {
+  if (sc != spv::StorageClass::Uniform &&
+      sc != spv::StorageClass::StorageBuffer) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << spvOpcodeString(inst->opcode())
            << " StorageClass could only be StorageBuffer or Uniform.";
