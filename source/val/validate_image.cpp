@@ -1350,24 +1350,24 @@ spv_result_t ValidateImageTexelPointer(ValidationState_t& _,
   }
 
   if (spvIsVulkanEnv(_.context()->target_env)) {
-    if ((info.format != spv::ImageFormat::R64i) &&
-        (info.format != spv::ImageFormat::R64ui) &&
-        (info.format != spv::ImageFormat::R32f) &&
-        (info.format != spv::ImageFormat::R32i) &&
-        (info.format != spv::ImageFormat::R32ui)){
-      if (isUntyped) {
-        return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << _.VkErrorID(11416)
-               << "Expected the Image Format in Image to be R64i, R64ui, R32f, "
-                  "R32i, or R32ui for OpUntypedImageTexelPointerEXT";
-      } else if (!(info.format == spv::ImageFormat::Rg16f ||
-           info.format == spv::ImageFormat::Rgba16f) &&
-          _.HasCapability(spv::Capability::AtomicFloat16VectorNV)) {
+    bool valid_format = info.format == spv::ImageFormat::R64i ||
+                        info.format == spv::ImageFormat::R64ui ||
+                        info.format == spv::ImageFormat::R32f ||
+                        info.format == spv::ImageFormat::R32i ||
+                        info.format == spv::ImageFormat::R32ui;
+    if (!valid_format &&
+        _.HasCapability(spv::Capability::AtomicFloat16VectorNV)) {
+      valid_format = info.format == spv::ImageFormat::Rg16f ||
+                     info.format == spv::ImageFormat::Rgba16f;
+    }
+
+    if (!valid_format) {
+      const uint32_t vuid = isUntyped ? 11416 : 4658;
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << _.VkErrorID(4658)
+             << _.VkErrorID(vuid)
              << "Expected the Image Format in Image to be R64i, R64ui, R32f, "
-                "R32i, or R32ui for Vulkan environment";
-      }
+                "R32i, or R32ui for Vulkan environment using Op"
+             << spvOpcodeString(inst->opcode());
     }
   }
 

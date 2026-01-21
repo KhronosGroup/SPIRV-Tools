@@ -2056,8 +2056,10 @@ TEST_F(ValidateSpvEXTDescriptorHeap, AtomicImageType) {
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
   const std::string diag = getDiagnosticString();
   EXPECT_THAT(diag, AnyVUID("VUID-StandaloneSpirv-OpUntypedImageTexelPointerEXT-11416"));
-  EXPECT_THAT(diag, HasSubstr("Expected the Image Format in Image to be R64i, R64ui, "
-      "R32f, R32i, or R32ui for OpUntypedImageTexelPointerEXT"));
+  EXPECT_THAT(diag,
+              HasSubstr("Expected the Image Format in Image to be R64i, R64ui, "
+                        "R32f, R32i, or R32ui for Vulkan environment using "
+                        "OpUntypedImageTexelPointerEXT"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, UntypedPointerStorageClass) {

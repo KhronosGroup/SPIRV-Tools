@@ -6749,7 +6749,8 @@ TEST_F(ValidateImage, ImageTexelPointerRgba32iVulkan) {
               AnyVUID("VUID-StandaloneSpirv-OpImageTexelPointer-04658"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected the Image Format in Image to be R64i, R64ui, "
-                        "R32f, R32i, or R32ui for Vulkan environment"));
+                        "R32f, R32i, or R32ui for Vulkan environment using "
+                        "OpImageTexelPointer"));
 }
 
 TEST_F(ValidateImage, ImageTexelPointerRgba16fVulkan) {
@@ -6774,7 +6775,8 @@ TEST_F(ValidateImage, ImageTexelPointerRgba16fVulkan) {
               AnyVUID("VUID-StandaloneSpirv-OpImageTexelPointer-04658"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected the Image Format in Image to be R64i, R64ui, "
-                        "R32f, R32i, or R32ui for Vulkan environment"));
+                        "R32f, R32i, or R32ui for Vulkan environment using "
+                        "OpImageTexelPointer"));
 }
 
 TEST_F(ValidateImage, ImageExecutionModeLimitationNoMode) {
