@@ -6557,8 +6557,44 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-StandaloneSpirv-OpUntypedVariableKHR-11167"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Storage class is StorageBuffer, but Vulkan requires that Data Type "
+          "be specified when not using UniformConstant storage class"));
+}
+
+TEST_F(ValidateMemory, UntypedVariableNoDataTypeNonHeapVulkan) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability DescriptorHeapEXT
+OpCapability UntypedPointersKHR
+OpExtension "SPV_EXT_descriptor_heap"
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%ptr = OpTypeUntypedPointerKHR UniformConstant
+%var = OpUntypedVariableKHR %ptr UniformConstant
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_1);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Vulkan requires that data type be specified"));
+              AnyVUID("VUID-StandaloneSpirv-OpUntypedVariableKHR-11347"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Storage class is UniformConstant, but Vulkan requires "
+                        "that Data Type be specified if the variable is not "
+                        "decorated with SamplerHeapEXT or ResourceHeapEXT"));
 }
 
 TEST_F(ValidateMemory, PtrAccessChainArrayStrideBad) {
