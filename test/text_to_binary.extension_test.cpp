@@ -866,7 +866,8 @@ INSTANTIATE_TEST_SUITE_P(
             {"OpCapability GroupNonUniformPartitionedEXT\n",
              MakeInstruction(spv::Op::OpCapability, {5297})},
             {"%2 = OpGroupNonUniformPartitionEXT %1 %3\n",
-             MakeInstruction(spv::Op::OpGroupNonUniformPartitionEXT, {1, 2, 3})},
+             MakeInstruction(spv::Op::OpGroupNonUniformPartitionEXT,
+                             {1, 2, 3})},
             // Check the new instruction's token number
             {"%2 = OpGroupNonUniformPartitionEXT %1 %3\n",
              MakeInstruction(static_cast<spv::Op>(5296), {1, 2, 3})},
