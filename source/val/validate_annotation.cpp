@@ -363,14 +363,10 @@ spv_result_t ValidateDecorateId(ValidationState_t& _, const Instruction* inst) {
                 "types.";
     } else {
       const uint32_t operand_id = inst->GetOperandAs<uint32_t>(2);
-      const auto operand_insn = _.FindDef(operand_id);
-      // OpConstantSizeOfEXT is already validating itself
-      if (operand_insn->opcode() != spv::Op::OpConstantSizeOfEXT) {
-        if (!_.IsIntScalarType(operand_insn->type_id(), 32)) {
-          return _.diag(SPV_ERROR_INVALID_ID, inst)
-                 << "ArrayStrideIdEXT extra operand must be a 32-bit int "
-                    "scalar type.";
-        }
+      if (!_.IsIntScalarType(_.GetTypeId(operand_id), 32)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "ArrayStrideIdEXT extra operand must be a 32-bit int "
+                  "scalar type.";
       }
 
       // Strip array and should be the descriptor type

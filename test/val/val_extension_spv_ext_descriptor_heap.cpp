@@ -907,10 +907,10 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ConstantSizeOfScalarIntType) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   const std::string diag = getDiagnosticString();
-  EXPECT_THAT(diag,
-              HasSubstr("For OpConstantSizeOfEXT instruction, its result type "
-                        "must be a 32-bit or 64-bit integer type scalar. "
-                        "(OpCapability Int64 is required for 64-bit)"));
+  EXPECT_THAT(
+      diag,
+      HasSubstr(
+          "ArrayStrideIdEXT extra operand must be a 32-bit int scalar type"));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, ConstantSizeOfDescriptorTypeTarget) {
