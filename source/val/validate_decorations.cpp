@@ -1282,7 +1282,8 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
       if (spvIsVulkanEnv(vstate.context()->target_env)) {
         // Vulkan: There must be no more than one PushConstant block per entry
         // point.
-        if (push_constant) {
+        if (push_constant &&
+            !(vstate.HasCapability(spv::Capability::PushConstantBanksNV))) {
           auto entry_points = vstate.EntryPointReferences(var_id);
           for (auto ep_id : entry_points) {
             const bool already_used = !uses_push_constant.insert(ep_id).second;
