@@ -45,9 +45,7 @@ constexpr uint32_t kExtInstOpInIdx = 1;
 constexpr uint32_t kInterpolantInIdx = 2;
 constexpr uint32_t kCooperativeMatrixLoadSourceAddrInIdx = 0;
 constexpr uint32_t kDebugDeclareVariableInIdx = 3;
-constexpr uint32_t kDebugValueLocalVariableInIdx = 2;
 constexpr uint32_t kDebugValueValueInIdx = 3;
-constexpr uint32_t kDebugValueExpressionInIdx = 4;
 
 // Sorting functor to present annotation instructions in an easy-to-process
 // order. The functor orders by opcode first and falls back on unique id
@@ -326,7 +324,7 @@ Pass::Status AggressiveDCEPass::ProcessDebugInformation(
                     user, var_id, stored_value_id, inst);
             if (added && next_inst) {
               auto new_debug_value = next_inst->PreviousNode();
-              live_insts_.Set(new_debug_value->unique_id());
+              AddToWorklist(new_debug_value);
             }
           }
           return true;
@@ -344,42 +342,13 @@ Pass::Status AggressiveDCEPass::ProcessDebugInformation(
 
         // Value operand of DebugValue is not live
         // Set Value to Undef of appropriate type
-        live_insts_.Set(inst->unique_id());
-
         uint32_t type_id = def->type_id();
-        auto type_def = get_def_use_mgr()->GetDef(type_id);
-        AddToWorklist(type_def);
-
         uint32_t undef_id = Type2Undef(type_id);
         if (undef_id == 0) return false;
 
-        auto undef_inst = get_def_use_mgr()->GetDef(undef_id);
-        live_insts_.Set(undef_inst->unique_id());
         inst->SetInOperand(var_operand_idx, {undef_id});
         context()->get_def_use_mgr()->AnalyzeInstUse(inst);
-
-        id = inst->GetSingleWordInOperand(kDebugValueLocalVariableInIdx);
-        auto localVar = get_def_use_mgr()->GetDef(id);
-        AddToWorklist(localVar);
-
-        uint32_t expr_idx = kDebugValueExpressionInIdx;
-        id = inst->GetSingleWordInOperand(expr_idx);
-        auto expression = get_def_use_mgr()->GetDef(id);
-        AddToWorklist(expression);
-
-        for (uint32_t i = expr_idx + 1; i < inst->NumInOperands(); ++i) {
-          id = inst->GetSingleWordInOperand(i);
-          auto index_def = get_def_use_mgr()->GetDef(id);
-          if (index_def) {
-            AddToWorklist(index_def);
-          }
-        }
-
-        for (auto& line_inst : inst->dbg_line_insts()) {
-          if (line_inst.IsDebugLineInst()) {
-            AddToWorklist(&line_inst);
-          }
-        }
+        AddToWorklist(inst);
       }
       return true;
     });
