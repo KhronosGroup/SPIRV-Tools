@@ -309,8 +309,8 @@ Pass::Status AggressiveDCEPass::ProcessDebugInformation(
         // DebugDeclare Variable is not live. Find the value that was being
         // stored to this variable. If it's live then create a new DebugValue
         // with this value. Otherwise let it die in peace.
-        get_def_use_mgr()->ForEachUser(var_id, [this, var_id,
-                                                inst](Instruction* user) {
+        get_def_use_mgr()->ForEachUser(var_id, [this,
+                                                var_id](Instruction* user) {
           if (user->opcode() == spv::Op::OpStore) {
             uint32_t stored_value_id = 0;
             const uint32_t kStoreValueInIdx = 1;
@@ -320,10 +320,10 @@ Pass::Status AggressiveDCEPass::ProcessDebugInformation(
             }
 
             // value being stored is still live
-            Instruction* next_inst = inst->NextNode();
+            Instruction* next_inst = user->NextNode();
             bool added =
                 context()->get_debug_info_mgr()->AddDebugValueForVariable(
-                    user, var_id, stored_value_id, inst);
+                    user, var_id, stored_value_id, user);
             if (added && next_inst) {
               auto new_debug_value = next_inst->PreviousNode();
               live_insts_.Set(new_debug_value->unique_id());
