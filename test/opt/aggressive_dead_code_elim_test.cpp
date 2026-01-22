@@ -8883,6 +8883,148 @@ OpFunctionEnd
 
   SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
+
+TEST_F(AggressiveDCETest, DebugDeclareConvertedToDebugValueKeepsDebugScope) {
+  const std::string spirv = R"(
+; CHECK: [[ext:%\w+]] = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+; CHECK-DAG: [[inlined:%\w+]] = OpExtInst %void [[ext]] DebugInlinedAt
+; CHECK-DAG: [[UniformVar:%\w+]] = OpVariable %_ptr_Uniform_float Uniform
+; CHECK: [[scope:%\w+]] = OpExtInst %void [[ext]] DebugScope {{%\w+}} [[inlined]]
+; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue {{%\w+}} {{%\w+}} {{%\w+}}
+; CHECK-NEXT: DebugScope
+; CHECK-NEXT: DebugLine
+; CHECK-NEXT: OpStore [[UniformVar]] %float_0
+; CHECK-NEXT: OpReturn
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %2 "main"
+               OpExecutionMode %2 LocalSize 1 1 1
+          %3 = OpString ""
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+          %6 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+     %uint_3 = OpConstant %uint 3
+     %uint_0 = OpConstant %uint 0
+%_ptr_Function_float = OpTypePointer Function %float
+%_ptr_Uniform_float = OpTypePointer Uniform %float
+    %float_0 = OpConstant %float 0
+         %13 = OpVariable %_ptr_Uniform_float Uniform
+    %uint_57 = OpConstant %uint 57
+         %15 = OpExtInst %void %1 DebugExpression
+         %16 = OpExtInst %void %1 DebugSource %3 %3
+         %17 = OpExtInst %void %1 DebugCompilationUnit %uint_0 %uint_0 %16 %uint_0
+         %18 = OpExtInst %void %1 DebugTypeBasic %3 %uint_0 %uint_0 %uint_0
+         %19 = OpExtInst %void %1 DebugTypeVector %18 %uint_3
+         %20 = OpExtInst %void %1 DebugTypePointer %19 %uint_0 %uint_0
+         %21 = OpExtInst %void %1 DebugTypeFunction %uint_0 %void %20
+         %22 = OpExtInst %void %1 DebugFunction %3 %21 %16 %uint_0 %uint_0 %17 %3 %uint_0 %uint_0
+         %23 = OpExtInst %void %1 DebugTypeBasic %3 %uint_0 %uint_3 %uint_0
+         %24 = OpExtInst %void %1 DebugTypeMember %3 %23 %16 %uint_0 %uint_0 %uint_0 %uint_0 %uint_0
+         %25 = OpExtInst %void %1 DebugTypeComposite %3 %uint_0 %16 %uint_0 %uint_0 %17 %3 %uint_0 %uint_0 %24
+         %26 = OpExtInst %void %1 DebugTypeFunction %uint_0 %23 %25 %23
+         %27 = OpExtInst %void %1 DebugFunction %3 %26 %16 %uint_0 %uint_0 %17 %3 %uint_0 %uint_0
+         %28 = OpExtInst %void %1 DebugLocalVariable %3 %23 %16 %uint_0 %uint_0 %27 %uint_0 %uint_0
+         %29 = OpExtInst %void %1 DebugInlinedAt %uint_0 %22
+          %2 = OpFunction %void None %6
+         %30 = OpLabel
+         %31 = OpVariable %_ptr_Function_float Function
+         %32 = OpExtInst %void %1 DebugScope %27 %29
+         %33 = OpExtInst %void %1 DebugNoLine
+         %34 = OpExtInst %void %1 DebugDeclare %28 %31 %15
+               OpStore %31 %float_0
+         %35 = OpExtInst %void %1 DebugScope %22
+         %36 = OpExtInst %void %1 DebugLine %16 %uint_0 %uint_0 %uint_0 %uint_0
+               OpStore %13 %float_0
+               OpReturn
+         %37 = OpExtInst %void %1 DebugNoScope
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+}
+
+TEST_F(AggressiveDCETest, DebugValueWithDeadOperandKeepsDebugScope) {
+  const std::string spirv = R"(
+; CHECK: [[ext:%\w+]] = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+; CHECK-DAG: [[inlined:%\w+]] = OpExtInst %void [[ext]] DebugInlinedAt
+; CHECK-DAG: [[undef:%\w+]] = OpUndef %float
+; CHECK: [[scope:%\w+]] = OpExtInst %void [[ext]] DebugScope {{%\w+}} [[inlined]]
+; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue {{%\w+}} [[undef]] {{%\w+}}
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %2 "main"
+               OpExecutionMode %2 LocalSize 1 1 1
+          %4 = OpString ""
+          %5 = OpString "file.slang"
+          %6 = OpString "uint"
+          %7 = OpString "computeMain"
+          %8 = OpString "float"
+          %9 = OpString "x"
+         %10 = OpString "A"
+         %11 = OpString "test"
+         %12 = OpString "v"
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+    %uint_11 = OpConstant %uint 11
+     %uint_5 = OpConstant %uint 5
+   %uint_100 = OpConstant %uint 100
+         %21 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %uint_32 = OpConstant %uint 32
+     %uint_6 = OpConstant %uint 6
+%uint_131072 = OpConstant %uint 131072
+     %uint_3 = OpConstant %uint 3
+     %uint_7 = OpConstant %uint 7
+     %uint_0 = OpConstant %uint 0
+    %uint_46 = OpConstant %uint 46
+     %uint_1 = OpConstant %uint 1
+     %uint_8 = OpConstant %uint 8
+%_ptr_Function_float = OpTypePointer Function %float
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+    %float_0 = OpConstant %float 0
+    %uint_50 = OpConstant %uint 50
+    %uint_34 = OpConstant %uint 34
+     %uint_2 = OpConstant %uint 2
+    %uint_56 = OpConstant %uint 56
+%_runtimearr_float = OpTypeRuntimeArray %float
+    %uint_57 = OpConstant %uint 57
+         %42 = OpExtInst %void %1 DebugExpression
+         %43 = OpExtInst %void %1 DebugSource %5 %4
+         %44 = OpExtInst %void %1 DebugCompilationUnit %uint_100 %uint_5 %43 %uint_11
+         %45 = OpExtInst %void %1 DebugTypeBasic %6 %uint_32 %uint_6 %uint_131072
+         %46 = OpExtInst %void %1 DebugTypeVector %45 %uint_3
+         %47 = OpExtInst %void %1 DebugTypePointer %46 %uint_7 %uint_131072
+         %48 = OpExtInst %void %1 DebugTypeFunction %uint_0 %void %47
+         %49 = OpExtInst %void %1 DebugFunction %7 %48 %43 %uint_46 %uint_6 %44 %7 %uint_0 %uint_46
+         %50 = OpExtInst %void %1 DebugTypeBasic %8 %uint_32 %uint_3 %uint_131072
+         %51 = OpExtInst %void %1 DebugTypeMember %9 %50 %43 %uint_8 %uint_11 %uint_0 %uint_32 %uint_0
+         %52 = OpExtInst %void %1 DebugTypeComposite %10 %uint_1 %43 %uint_6 %uint_8 %44 %10 %uint_32 %uint_131072 %51
+         %53 = OpExtInst %void %1 DebugTypeFunction %uint_0 %50 %52 %50
+         %54 = OpExtInst %void %1 DebugFunction %11 %53 %43 %uint_34 %uint_7 %44 %11 %uint_0 %uint_34
+         %55 = OpExtInst %void %1 DebugLocalVariable %12 %50 %43 %uint_34 %uint_7 %54 %uint_0 %uint_2
+         %56 = OpExtInst %void %1 DebugInlinedAt %uint_50 %49
+          %2 = OpFunction %void None %21
+         %57 = OpLabel
+         %59 = OpExtInst %void %1 DebugScope %54 %56
+         %60 = OpExtInst %void %1 DebugNoLine
+         %val = OpFAdd %float %float_0 %float_0
+         %61 = OpExtInst %void %1 DebugValue %55 %val %42
+         %62 = OpExtInst %void %1 DebugScope %49
+         %63 = OpExtInst %void %1 DebugLine %43 %uint_56 %uint_56 %uint_5 %uint_6
+               OpReturn
+         %66 = OpExtInst %void %1 DebugNoScope
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
