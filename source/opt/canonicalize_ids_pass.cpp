@@ -428,6 +428,21 @@ bool CanonicalizeIdsPass::ApplyMap() {
             }
           }
         }
+        const auto& debug_scope = inst->GetDebugScope();
+        if (debug_scope.GetLexicalScope() != kNoDebugScope) {
+          uint32_t old_scope = debug_scope.GetLexicalScope();
+          uint32_t new_scope = GetNewId(old_scope);
+          uint32_t old_inlined_at = debug_scope.GetInlinedAt();
+          uint32_t new_inlined_at = old_inlined_at != kNoInlinedAt
+                                        ? GetNewId(old_inlined_at)
+                                        : old_inlined_at;
+          if ((new_scope != unused_ && new_scope != old_scope) ||
+              (new_inlined_at != unused_ && new_inlined_at != old_inlined_at)) {
+            DebugScope new_debug_scope(new_scope, new_inlined_at);
+            inst->SetDebugScope(new_debug_scope);
+            modified = true;
+          }
+        }
       },
       true);
 
