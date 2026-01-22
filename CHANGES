@@ -1,7 +1,51 @@
 Revision history for SPIRV-Tools
 
-v2026.1-dev 2026-02-03
-  - Start v2026.1-dev
+v2026.1 2026-02-03
+  - General
+    - spirv-tools: Fix infinite recursion in SmallVector::operator== on MSVC (#6470)
+    - Add support for SPV_NV_push_constant_bank (#6507)
+    - Enable UseMultiToolTask for msbuild performance (#6472)
+    - Fix asan error in stack usage (#6434)
+    - Fix crash in array length validation (#6500)
+    - Fix infinite loop in logical pointer validation (#6450)
+    - Implement SPV_EXT_descriptor_heap (#6503)
+  - Optimizer
+    - Adding constant folding for NMin, NMax and NClamp (#6433)
+    - Also remap DebugScope instructions (#6501)
+    - Change ValueNumber to use spivOpcodeIsCommutativeBinaryOperator (#6431)
+    - Extending factoring folding rules to support subtraction (#6432)
+    - Extending negation folding rules (#6444)
+    - Folding Rules For Common Comparisons (#6437)
+    - Folding rules for negation and cancellation (#6452)
+    - Harden CFGCleanupPass against ID overflow (#6439)
+    - Harden CombineAccessChainsPass against ID overflow (#6440)
+    - Harden CopyPropagateArraysPass against ID overflow (#6441)
+    - Remove lingering debug-scopes. (#6416)
+    - add adce test for debug declare (#6462)
+    - fix adce when ns debug info present (#6217) (#6420)
+  - Validator
+    - Handle OpTypeVectorIdEXT in validate_interfaces.cpp (#6492)
+    - Validate SPV_EXT_long_vector (#6471)
+    - Validate floats/int Image Operands are 32-bit (#6477)
+    - Add Mesh Shading Read Output check (#6426)
+    - Add Mesh/Task to check for LocalSize (#6459)
+    - Add missing LOD non-zero MS (#6496)
+    - Add width to IsFloatScalarType (#6489)
+    - Better atomic storage class message (#6425)
+    - Better error message when types are the same (#6427)
+    - Check Mesh Topology builtin by entry point (#6457)
+    - Check for CoopMat scope (#6442)
+    - Combine Image Coordinate checks (#6494)
+    - Fix crash with bad OpUntypedArrayLengthKHR (#6493)
+    - Label VUID 10823 (#6488)
+    - Provide RuntimeDescriptorArray hint in message (#6448)
+    - Use new StorageClassToString util (#6460)
+    - Use validation_state.cpp helpers (#6478)
+    - Validate ImageQuerySizeLod is 32-bit (#6479)
+    - Validate Mesh Shader output are an array (#6449)
+    - add missing relational ops to InvalidTypePass (#6495)
+  - Diff
+    - diff: Match OpExtInst in debug and types/values sections (#6430)
 
 v2025.5 2025-11-18
   - General
