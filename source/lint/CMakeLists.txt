@@ -18,6 +18,9 @@ set(SPIRV_TOOLS_LINT_SOURCES
   linter.cpp
   divergence_analysis.cpp
   lint_divergent_derivatives.cpp
+
+  variable_state.cpp
+  lint_uninitialized_variables.cpp
 )
 
 add_library(SPIRV-Tools-lint ${SPIRV_TOOLS_LIBRARY_TYPE} ${SPIRV_TOOLS_LINT_SOURCES})
