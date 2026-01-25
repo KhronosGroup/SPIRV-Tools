@@ -1055,8 +1055,7 @@ spv_result_t ValidateImageCoordinate(ValidationState_t& _,
       opcode == spv::Op::OpImageSampleProjDrefExplicitLod ||
       opcode == spv::Op::OpImageGather ||
       opcode == spv::Op::OpImageDrefGather ||
-      (opcode == spv::Op::OpImageQueryLod &&
-       !_.HasCapability(spv::Capability::Kernel)) ||
+      opcode == spv::Op::OpImageQueryLod ||
       opcode == spv::Op::OpImageSparseSampleImplicitLod ||
       opcode == spv::Op::OpImageSparseSampleDrefImplicitLod ||
       opcode == spv::Op::OpImageSparseSampleDrefExplicitLod ||
@@ -1072,8 +1071,6 @@ spv_result_t ValidateImageCoordinate(ValidationState_t& _,
                             opcode == spv::Op::OpImageSparseSampleExplicitLod ||
                             opcode == spv::Op::OpImageRead ||
                             opcode == spv::Op::OpImageWrite ||
-                            (opcode == spv::Op::OpImageQueryLod &&
-                             _.HasCapability(spv::Capability::Kernel)) ||
                             opcode == spv::Op::OpImageSparseRead;
 
   assert(float_only || int_only || int_or_float);
