@@ -93,6 +93,11 @@ spv_result_t ValidateSizeOf(ValidationState_t& _, const Instruction* inst) {
   if (!_.IsConcreteType(pointer_id)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "OpSizeOf Pointer operand is not concrete.";
+  } else if (_.FindDef(pointer_id)->opcode() ==
+             spv::Op::OpTypeUntypedPointerKHR) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "OpSizeOf Pointer operand is to an untyped pointer, which size "
+              "is not well defined.";
   }
 
   return SPV_SUCCESS;
