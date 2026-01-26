@@ -4806,11 +4806,25 @@ TEST_F(ValidateImage, QueryLodSuccessKernel) {
 %sampler = OpLoad %type_sampler %uniform_sampler
 %simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
 %res1 = OpImageQueryLod %f32vec2 %simg %f32vec2_hh
-%res2 = OpImageQueryLod %f32vec2 %simg %u32vec2_01
 )";
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateImage, QueryLodNonFloatKernel) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageQueryLod %f32vec2 %simg %u32vec2_01
+)";
+
+  CompileSuccessfully(GenerateKernelCode(body).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Coordinate to be a 32-bit float scalar or vector"));
 }
 
 TEST_F(ValidateImage, QueryLodSuccessShader) {
