@@ -1,6 +1,9 @@
 Revision history for SPIRV-Tools
 
-v2026.1 2026-02-03
+v2026.2-dev 2026-01-23
+  - Start v2026.2-dev
+
+v2026.1 2026-01-22
   - General
     - spirv-tools: Fix infinite recursion in SmallVector::operator== on MSVC (#6470)
     - Add support for SPV_NV_push_constant_bank (#6507)
