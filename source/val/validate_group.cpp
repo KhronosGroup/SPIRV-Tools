@@ -87,6 +87,112 @@ spv_result_t ValidateGroupInt(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateGroupAsyncCopy(ValidationState_t& _,
+                                    const Instruction* inst) {
+  if (_.FindDef(inst->type_id())->opcode() != spv::Op::OpTypeEvent) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "The result type must be OpTypeEvent.";
+  }
+
+  const uint32_t destination = _.GetOperandTypeId(inst, 3);
+  const Instruction* destination_pointer = _.FindDef(destination);
+  if (destination_pointer->opcode() != spv::Op::OpTypePointer) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Destination to be a pointer.";
+  }
+  const auto destination_sc =
+      destination_pointer->GetOperandAs<spv::StorageClass>(1);
+  if (destination_sc != spv::StorageClass::Workgroup &&
+      destination_sc != spv::StorageClass::CrossWorkgroup) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Destination to be a pointer with storage class "
+              "Workgroup or CrossWorkgroup.";
+  }
+  const uint32_t destination_type =
+      destination_pointer->GetOperandAs<uint32_t>(2);
+  if (!_.IsIntScalarOrVectorType(destination_type) &&
+      !_.IsFloatScalarOrVectorType(destination_type)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Destination to be a pointer to scalar or vector of "
+              "floating-point type or integer type.";
+  }
+
+  const uint32_t source = _.GetOperandTypeId(inst, 4);
+  const Instruction* source_pointer = _.FindDef(source);
+  const auto source_sc = source_pointer->GetOperandAs<spv::StorageClass>(1);
+  const uint32_t source_type = source_pointer->GetOperandAs<uint32_t>(2);
+  if (destination_type != source_type) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Destination and Source to be the same type.";
+  }
+
+  if (destination_sc == spv::StorageClass::Workgroup &&
+      source_sc != spv::StorageClass::CrossWorkgroup) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "If Destination storage class is Workgroup, then the Source "
+              "storage class must be CrossWorkgroup.";
+  } else if (destination_sc == spv::StorageClass::CrossWorkgroup &&
+             source_sc != spv::StorageClass::Workgroup) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "If Destination storage class is CrossWorkgroup, then the Source "
+              "storage class must be Workgroup.";
+  }
+
+  const bool is_physical_64 =
+      _.addressing_model() == spv::AddressingModel::Physical64;
+  const uint32_t bit_width = is_physical_64 ? 64 : 32;
+
+  const uint32_t num_elements_type =
+      _.GetTypeId(inst->GetOperandAs<uint32_t>(5));
+  if (!_.IsIntScalarType(num_elements_type, bit_width)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "NumElements must be a " << bit_width
+           << "-bit int scalar when Addressing Model is "
+           << (is_physical_64 ? "Physical64" : "Physical32");
+  }
+
+  const uint32_t stride_type = _.GetTypeId(inst->GetOperandAs<uint32_t>(6));
+  if (!_.IsIntScalarType(stride_type, bit_width)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Stride must be a " << bit_width
+           << "-bit int scalar when Addressing Model is "
+           << (is_physical_64 ? "Physical64" : "Physical32");
+  }
+
+  const uint32_t event = _.GetOperandTypeId(inst, 7);
+  const Instruction* event_type = _.FindDef(event);
+  if (event_type->opcode() != spv::Op::OpTypeEvent) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Event to be type OpTypeEvent.";
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateGroupWaitEvents(ValidationState_t& _,
+                                     const Instruction* inst) {
+  const uint32_t num_events_id = _.GetOperandTypeId(inst, 1);
+  if (!_.IsIntScalarType(num_events_id, 32)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Num Events to be a 32-bit int scalar.";
+  }
+
+  const uint32_t events_id = _.GetOperandTypeId(inst, 2);
+  const Instruction* var_pointer = _.FindDef(events_id);
+  if (var_pointer->opcode() != spv::Op::OpTypePointer) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Events List to be a pointer.";
+  }
+  const Instruction* event_list_type =
+      _.FindDef(var_pointer->GetOperandAs<uint32_t>(2));
+  if (event_list_type->opcode() != spv::Op::OpTypeEvent) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Events List to be a pointer to OpTypeEvent.";
+  }
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 spv_result_t GroupPass(ValidationState_t& _, const Instruction* inst) {
@@ -108,6 +214,10 @@ spv_result_t GroupPass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpGroupUMax:
     case spv::Op::OpGroupSMax:
       return ValidateGroupInt(_, inst);
+    case spv::Op::OpGroupAsyncCopy:
+      return ValidateGroupAsyncCopy(_, inst);
+    case spv::Op::OpGroupWaitEvents:
+      return ValidateGroupWaitEvents(_, inst);
     default:
       break;
   }
