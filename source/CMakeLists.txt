@@ -28,7 +28,7 @@ set(EI_amd_evp "${GRAMMAR_DIR}/extinst.spv-amd-shader-explicit-vertex-parameter.
 set(EI_amd_trimm "${GRAMMAR_DIR}/extinst.spv-amd-shader-trinary-minmax.grammar.json")
 set(EI_amd_gcn "${GRAMMAR_DIR}/extinst.spv-amd-gcn-shader.grammar.json")
 set(EI_amd_ballot "${GRAMMAR_DIR}/extinst.spv-amd-shader-ballot.grammar.json")
-set(EI_ns_debuginfo "${GRAMMAR_DIR}/extinst.nonsemantic.shader.debuginfo.100.grammar.json")
+set(EI_ns_debuginfo "${GRAMMAR_DIR}/extinst.nonsemantic.shader.debuginfo.grammar.json")
 set(EI_ns_clspvreflect "${GRAMMAR_DIR}/extinst.nonsemantic.clspvreflection.grammar.json")
 set(EI_ns_vkspreflect "${GRAMMAR_DIR}/extinst.nonsemantic.vkspreflection.grammar.json")
 set(EI_tosa_001000_1 "${GRAMMAR_DIR}/extinst.tosa.001000.1.grammar.json")
@@ -104,7 +104,6 @@ endmacro(spvtools_extinst_lang_headers)
 
 spvtools_extinst_lang_headers("DebugInfo" ${EI_debuginfo})
 spvtools_extinst_lang_headers("OpenCLDebugInfo100" ${EI_cldebuginfo})
-spvtools_extinst_lang_headers("NonSemanticShaderDebugInfo100" ${EI_ns_debuginfo})
 
 spvtools_vimsyntax("unified1" "1.0")
 add_custom_target(spirv-tools-vimsyntax DEPENDS ${VIMSYNTAX_FILE})

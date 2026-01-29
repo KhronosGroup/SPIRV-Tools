@@ -46,10 +46,10 @@ bool IsLineInst(const spv_parsed_instruction_t* inst) {
   if (inst->ext_inst_type != SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100)
     return false;
   const uint32_t ext_inst_index = inst->words[kExtInstSetIndex];
-  const NonSemanticShaderDebugInfo100Instructions ext_inst_key =
-      NonSemanticShaderDebugInfo100Instructions(ext_inst_index);
-  return ext_inst_key == NonSemanticShaderDebugInfo100DebugLine ||
-         ext_inst_key == NonSemanticShaderDebugInfo100DebugNoLine;
+  const NonSemanticShaderDebugInfoInstructions ext_inst_key =
+      NonSemanticShaderDebugInfoInstructions(ext_inst_index);
+  return ext_inst_key == NonSemanticShaderDebugInfoDebugLine ||
+         ext_inst_key == NonSemanticShaderDebugInfoDebugNoLine;
 }
 
 bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
@@ -306,14 +306,14 @@ bool IrLoader::AddInstruction(const spv_parsed_instruction_t* inst) {
           }
         } else if (inst->ext_inst_type ==
                    SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100) {
-          const NonSemanticShaderDebugInfo100Instructions ext_inst_key =
-              NonSemanticShaderDebugInfo100Instructions(ext_inst_index);
+          const NonSemanticShaderDebugInfoInstructions ext_inst_key =
+              NonSemanticShaderDebugInfoInstructions(ext_inst_index);
           switch (ext_inst_key) {
-            case NonSemanticShaderDebugInfo100DebugDeclare:
-            case NonSemanticShaderDebugInfo100DebugValue:
-            case NonSemanticShaderDebugInfo100DebugScope:
-            case NonSemanticShaderDebugInfo100DebugNoScope:
-            case NonSemanticShaderDebugInfo100DebugFunctionDefinition: {
+            case NonSemanticShaderDebugInfoDebugDeclare:
+            case NonSemanticShaderDebugInfoDebugValue:
+            case NonSemanticShaderDebugInfoDebugScope:
+            case NonSemanticShaderDebugInfoDebugNoScope:
+            case NonSemanticShaderDebugInfoDebugFunctionDefinition: {
               if (block_ == nullptr) {  // Inside function but outside blocks
                 Errorf(consumer_, src, loc,
                        "Debug info extension instruction found inside function "

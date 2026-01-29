@@ -90,6 +90,11 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
+const static std::string shader_extension_101 = R"(
+OpExtension "SPV_KHR_non_semantic_info"
+%DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.101"
+)";
+
 // Extension string for a future NSDI version; exercises forward-compatibility.
 const static std::string shader_extension_9999 = R"(
 OpExtension "SPV_KHR_non_semantic_info"
@@ -5949,6 +5954,117 @@ TEST_F(ValidateVulkan100DebugInfo,
       getDiagnosticString(),
       HasSubstr("DebugTypeComposite: operand Column End (32) is larger then "
                 "Line 1 column length of 31 found in the DebugSource text"));
+}
+
+// Tests for NonSemantic.Shader.DebugInfo.101 instructions
+
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorIdEXT) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%vecid_info = OpExtInst %void %DbgExt DebugTypeVectorIdEXT %float_info %u32_4
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorIdEXTWithSpecConst) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%spec_count = OpSpecConstant %u32 4
+%vecid_info = OpExtInst %void %DbgExt DebugTypeVectorIdEXT %float_info %spec_count
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeCooperativeMatrixKHR) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%u32_8 = OpConstant %u32 8
+%u32_16 = OpConstant %u32 16
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%coopmtx_info = OpExtInst %void %DbgExt DebugTypeCooperativeMatrixKHR %float_info %u32_3 %u32_8 %u32_16 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeCooperativeMatrixKHRWithSpecConst) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%spec_scope = OpSpecConstant %u32 3
+%spec_rows = OpSpecConstant %u32 8
+%spec_cols = OpSpecConstant %u32 16
+%spec_use = OpSpecConstant %u32 0
+%coopmtx_info = OpExtInst %void %DbgExt DebugTypeCooperativeMatrixKHR %float_info %spec_scope %spec_rows %spec_cols %spec_use
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicWithFPEncoding) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%u32_8 = OpConstant %u32 8
+%u32_4214 = OpConstant %u32 4214
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%fp8_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_8 %u32_3 %u32_0 %u32_4214
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 }  // namespace
