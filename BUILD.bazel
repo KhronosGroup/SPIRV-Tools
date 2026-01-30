@@ -10,6 +10,7 @@ load(
     "generate_extinst_lang_headers",
     "incompatible_with",
 )
+load("@rules_python//python:defs.bzl", "py_binary")
 
 package(
     default_visibility = ["//visibility:private"],
