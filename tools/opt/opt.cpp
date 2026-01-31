@@ -748,7 +748,7 @@ OptStatus ParseFlags(int argc, const char** argv,
                      spvtools::ValidatorOptions* validator_options,
                      spvtools::OptimizerOptions* optimizer_options) {
   std::vector<std::string> pass_flags;
-  bool preserve_interface = true;
+  bool preserve_interface = false;
   for (int argi = 1; argi < argc; ++argi) {
     const char* cur_arg = argv[argi];
     if ('-' == cur_arg[0]) {
