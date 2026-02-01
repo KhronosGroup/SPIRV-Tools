@@ -59,6 +59,12 @@ spv_result_t ValidateSameSignedDot(ValidationState_t& _,
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "'Vector 1' and 'Vector 2' must be the same type.";
   } else if (is_vec_1_scalar && is_vec_2_scalar) {
+    if (!_.HasCapability(spv::Capability::DotProductInput4x8BitPacked)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "DotProductInput4x8BitPacked capability is required to use "
+                "scalar integers.";
+    }
+
     // If both are scalar, spec doesn't say Signedness needs to match
     const uint32_t vec_1_width = _.GetBitWidth(vec_1_id);
     const uint32_t vec_2_width = _.GetBitWidth(vec_2_id);
@@ -137,6 +143,32 @@ spv_result_t ValidateSameSignedDot(ValidationState_t& _,
              << "Result width (" << result_width
              << ") must be greater than or equal to the vectors width ("
              << vec_1_width << ").";
+    }
+
+    if (!_.HasCapability(spv::Capability::DotProductInputAll)) {
+      // 4-wide 8-bit ints are special exception that has its own capability
+      if (vec_1_length == 4 && vec_1_width == 8) {
+        if (!_.HasCapability(spv::Capability::DotProductInput4x8Bit)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "DotProductInput4x8Bit or DotProductInputAll capability is "
+                    "required to use 4-component vectors of 8-bit integers.";
+        }
+      } else {
+        // provide a more helpful message what is going on if we are here
+        // reporting this error
+        if (_.HasCapability(spv::Capability::DotProductInput4x8BitPacked)) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "DotProductInputAll capability is required use vectors. "
+                    "(DotProductInput4x8BitPacked capability declared allows "
+                    "for only 32-bit int scalars)";
+        } else {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "DotProductInputAll capability is additionally required to "
+                    "the DotProduct capability to use vectors. (It is possible "
+                    "to set DotProductInput4x8BitPacked to only use 32-bit "
+                    "scalars)";
+        }
+      }
     }
 
     if (opcode == spv::Op::OpUDot || opcode == spv::Op::OpUDotAccSat) {
