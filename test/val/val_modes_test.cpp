@@ -1831,6 +1831,24 @@ OpFunctionEnd
   EXPECT_THAT(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateMode, FragmentShaderPostDepthCoverageVertexBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability SampleMaskPostDepthCoverage
+OpExtension "SPV_KHR_post_depth_coverage"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpExecutionMode %main PostDepthCoverage
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Execution mode can only be used with the Fragment execution model"));
+}
+
 TEST_F(ValidateMode, FragmentShaderStencilRefFrontTooManyModesBad) {
   const std::string spirv = R"(
 OpCapability Shader

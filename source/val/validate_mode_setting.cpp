@@ -819,6 +819,7 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
     case spv::ExecutionMode::SampleInterlockUnorderedEXT:
     case spv::ExecutionMode::ShadingRateInterlockOrderedEXT:
     case spv::ExecutionMode::ShadingRateInterlockUnorderedEXT:
+    case spv::ExecutionMode::PostDepthCoverage:
     case spv::ExecutionMode::EarlyAndLateFragmentTestsAMD:
     case spv::ExecutionMode::StencilRefUnchangedFrontAMD:
     case spv::ExecutionMode::StencilRefGreaterFrontAMD:
