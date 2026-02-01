@@ -810,6 +810,7 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
     case spv::ExecutionMode::DepthGreater:
     case spv::ExecutionMode::DepthLess:
     case spv::ExecutionMode::DepthUnchanged:
+    case spv::ExecutionMode::StencilRefReplacingEXT:
     case spv::ExecutionMode::NonCoherentColorAttachmentReadEXT:
     case spv::ExecutionMode::NonCoherentDepthAttachmentReadEXT:
     case spv::ExecutionMode::NonCoherentStencilAttachmentReadEXT:

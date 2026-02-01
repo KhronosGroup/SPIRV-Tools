@@ -1897,6 +1897,24 @@ OpExecutionMode %main StencilRefGreaterBackAMD
                 "execution modes."));
 }
 
+TEST_F(ValidateMode, FragmentShaderStencilRefReplacingVertexBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability StencilExportEXT
+OpExtension "SPV_EXT_shader_stencil_export"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Vertex %main "main"
+OpExecutionMode %main StencilRefReplacingEXT
+)" + kVoidFunction;
+
+  CompileSuccessfully(spirv);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Execution mode can only be used with the Fragment execution model"));
+}
+
 TEST_F(ValidateMode, FragmentShaderStencilRefFrontGood) {
   const std::string spirv = R"(
 OpCapability Shader
