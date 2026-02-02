@@ -166,7 +166,7 @@ spv_result_t ValidateSameSignedDot(ValidationState_t& _,
                  << "DotProductInputAll capability is additionally required to "
                     "the DotProduct capability to use vectors. (It is possible "
                     "to set DotProductInput4x8BitPacked to only use 32-bit "
-                    "scalars)";
+                    "scalars packed as a 4-wide 8-byte vector)";
         }
       }
     }

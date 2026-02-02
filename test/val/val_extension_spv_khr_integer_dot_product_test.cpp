@@ -1572,7 +1572,8 @@ TEST_F(ValidateIntegerDotProductSimple, CapabilityDotProductInputAll) {
       getDiagnosticString(),
       HasSubstr("DotProductInputAll capability is additionally required to the "
                 "DotProduct capability to use vectors. (It is possible to set "
-                "DotProductInput4x8BitPacked to only use 32-bit scalars)"));
+                "DotProductInput4x8BitPacked to only use 32-bit scalars packed "
+                "as a 4-wide 8-byte vector)"));
 }
 
 TEST_F(ValidateIntegerDotProductSimple, CapabilityDotProductInputAll2) {
