@@ -10521,6 +10521,122 @@ INSTANTIATE_TEST_SUITE_P(RedundantLogicalNotTest, MatchingInstructionFoldingTest
       2, true)
   ));
 
+INSTANTIATE_TEST_SUITE_P(RedundantLogicalEqualTest, MatchingInstructionFoldingTest,
+  ::testing::Values(
+    // Test case 0:
+    // x == true = x
+    InstructionFoldingCase<bool>(
+      Header() +
+      "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+      "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%n = OpVariable %_ptr_bool Function\n" +
+      "%3 = OpLoad %bool %n\n" +
+      "%2 = OpLogicalEqual %bool %3 %true\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd",
+      2, true),
+    // Test case 1:
+    // true == x = x
+    InstructionFoldingCase<bool>(
+      Header() +
+      "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+      "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%n = OpVariable %_ptr_bool Function\n" +
+      "%3 = OpLoad %bool %n\n" +
+      "%2 = OpLogicalEqual %bool %true %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd",
+      2, true),
+    // Test case 2:
+    // x == false = !x
+    InstructionFoldingCase<bool>(
+      Header() +
+      "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+      "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%n = OpVariable %_ptr_bool Function\n" +
+      "%3 = OpLoad %bool %n\n" +
+      "%2 = OpLogicalEqual %bool %3 %false\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd",
+      2, true),
+    // Test case 3:
+    // false == x = !x
+    InstructionFoldingCase<bool>(
+      Header() +
+      "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+      "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%n = OpVariable %_ptr_bool Function\n" +
+      "%3 = OpLoad %bool %n\n" +
+      "%2 = OpLogicalEqual %bool %false %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd",
+      2, true),
+    // Test case 4:
+    // x != true = !x
+    InstructionFoldingCase<bool>(
+      Header() +
+      "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+      "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%n = OpVariable %_ptr_bool Function\n" +
+      "%3 = OpLoad %bool %n\n" +
+      "%2 = OpLogicalNotEqual %bool %3 %true\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd",
+      2, true),
+    // Test case 5:
+    // true != x = !x
+    InstructionFoldingCase<bool>(
+      Header() +
+      "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+      "; CHECK: %2 = OpLogicalNot [[bool]] %3\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%n = OpVariable %_ptr_bool Function\n" +
+      "%3 = OpLoad %bool %n\n" +
+      "%2 = OpLogicalNotEqual %bool %true %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd",
+      2, true),
+    // Test case 6:
+    // x != false = x
+    InstructionFoldingCase<bool>(
+      Header() +
+      "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+      "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%n = OpVariable %_ptr_bool Function\n" +
+      "%3 = OpLoad %bool %n\n" +
+      "%2 = OpLogicalNotEqual %bool %3 %false\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd",
+      2, true),
+    // Test case 7:
+    // false != x = x
+    InstructionFoldingCase<bool>(
+      Header() +
+      "; CHECK: [[bool:%\\w+]] = OpTypeBool\n" +
+      "; CHECK: %2 = OpCopyObject [[bool]] %3\n" +
+      "%main = OpFunction %void None %void_func\n" +
+      "%main_lab = OpLabel\n" +
+      "%n = OpVariable %_ptr_bool Function\n" +
+      "%3 = OpLoad %bool %n\n" +
+      "%2 = OpLogicalNotEqual %bool %false %3\n" +
+      "OpReturn\n" +
+      "OpFunctionEnd",
+      2, true)
+  ));
+
 INSTANTIATE_TEST_SUITE_P(FoldLogicalNotComparisonTest, MatchingInstructionFoldingTest,
   ::testing::Values(
     // Test case 0:

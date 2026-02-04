@@ -2853,6 +2853,45 @@ FoldingRule FoldLogicalNotComparison() {
   };
 }
 
+// (a == true)  =  a
+// (a == false) = !a
+// (a != true)  = !a
+// (a != false) =  a
+FoldingRule RedundantLogicalEqual() {
+  return [](IRContext* context, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants) {
+    assert(inst->opcode() == spv::Op::OpLogicalEqual ||
+           inst->opcode() == spv::Op::OpLogicalNotEqual);
+
+    const analysis::Constant* const_input = ConstInput(constants);
+    if (!const_input) {
+      return false;
+    }
+
+    analysis::DefUseManager* def_mgr = context->get_def_use_mgr();
+    if (inst->type_id() !=
+        def_mgr->GetDef(inst->GetSingleWordInOperand(0))->type_id()) {
+      return false;
+    }
+
+    std::optional<bool> uniform_const = GetBoolConstantKind(const_input);
+    if (!uniform_const) {
+      return false;
+    }
+
+    bool direct_copy = inst->opcode() == spv::Op::OpLogicalEqual
+                           ? uniform_const.value()
+                           : !uniform_const.value();
+
+    inst->SetOpcode(direct_copy ? spv::Op::OpCopyObject
+                                : spv::Op::OpLogicalNot);
+    inst->SetInOperands(
+        {{SPV_OPERAND_TYPE_ID,
+          {NonConstInput(context, constants[0], inst)->result_id()}}});
+    return true;
+  };
+}
+
 enum class FloatConstantKind { Unknown, Zero, One };
 
 FloatConstantKind getFloatConstantKind(const analysis::Constant* constant) {
@@ -3930,6 +3969,9 @@ void FoldingRules::AddFoldingRules() {
 
   rules_[spv::Op::OpLogicalNot].push_back(RedundantLogicalNot());
   rules_[spv::Op::OpLogicalNot].push_back(FoldLogicalNotComparison());
+
+  rules_[spv::Op::OpLogicalEqual].push_back(RedundantLogicalEqual());
+  rules_[spv::Op::OpLogicalNotEqual].push_back(RedundantLogicalEqual());
 
   rules_[spv::Op::OpStore].push_back(StoringUndef());
 
