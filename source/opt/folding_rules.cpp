@@ -3483,7 +3483,9 @@ FoldingRule RedundantAndShift() {
     const analysis::Type* type =
         context->get_type_mgr()->GetType(inst->type_id());
     uint32_t width = ElementWidth(type);
-    if ((width != 32) && (width != 64)) return false;
+    if (width != 8 && width != 16 && width != 32 && width != 64) return false;
+    const uint64_t width_mask =
+        (width == 64) ? ~0ull : ((1ull << width) - 1ull);
 
     analysis::ConstantManager* const_mgr = context->get_constant_mgr();
     const analysis::Constant* const_input1 = ConstInput(constants);
@@ -3491,37 +3493,65 @@ FoldingRule RedundantAndShift() {
     Instruction* other_inst = NonConstInput(context, constants[0], inst);
 
     spv::Op other_op = other_inst->opcode();
-    if (other_op == spv::Op::OpShiftLeftLogical ||
-        other_op == spv::Op::OpShiftRightLogical) {
-      std::vector<const analysis::Constant*> other_constants =
-          const_mgr->GetOperandConstants(other_inst);
+    if (other_op != spv::Op::OpShiftLeftLogical &&
+        other_op != spv::Op::OpShiftRightLogical) {
+      return false;
+    }
 
-      // Only valid  if const is on the right
-      if (other_constants[0]) {
+    std::vector<const analysis::Constant*> other_constants =
+        const_mgr->GetOperandConstants(other_inst);
+
+    // Only valid if const is on the right.
+    if (other_constants[0]) return false;
+    const analysis::Constant* const_input2 = other_constants[1];
+    if (!const_input2) return false;
+
+    auto get_value_u64 =
+        [](const analysis::Constant* c) -> std::optional<uint64_t> {
+      if (!c) return std::nullopt;
+      const analysis::Integer* int_t = c->type()->AsInteger();
+      if (!int_t) return std::nullopt;
+      return c->GetZeroExtendedValue();
+    };
+
+    auto can_fold_component =
+        [&](const analysis::Constant* mask_const,
+            const analysis::Constant* shift_const) -> std::optional<bool> {
+      auto lhs = get_value_u64(mask_const);
+      auto rhs = get_value_u64(shift_const);
+      if (!lhs || !rhs) return std::nullopt;
+      if (*rhs >= width) return false;
+      uint64_t lhs_masked = *lhs & width_mask;
+      if (other_op == spv::Op::OpShiftRightLogical) {
+        return ((lhs_masked << *rhs) & width_mask) == 0;
+      }
+      return ((lhs_masked >> *rhs) & width_mask) == 0;
+    };
+
+    if (const analysis::Vector* mask_vec = type->AsVector()) {
+      const analysis::Vector* shift_vec = const_input2->type()->AsVector();
+      if (!shift_vec ||
+          shift_vec->element_count() != mask_vec->element_count()) {
         return false;
       }
-      const analysis::Constant* const_input2 = other_constants[1];
-      if (!const_input2) return false;
-
-      bool can_convert_to_zero = true;
-      ForEachIntegerConstantPair(
-          const_mgr, const_input1, const_input2,
-          [&can_convert_to_zero, other_op](auto lhs, auto rhs) {
-            if (other_op == spv::Op::OpShiftRightLogical) {
-              can_convert_to_zero = can_convert_to_zero && (lhs << rhs) == 0;
-            } else {
-              can_convert_to_zero = can_convert_to_zero && (lhs >> rhs) == 0;
-            }
-          });
-
-      if (can_convert_to_zero) {
-        auto zero_id = context->get_constant_mgr()->GetNullConstId(type);
-        inst->SetOpcode(spv::Op::OpCopyObject);
-        inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {zero_id}}});
-        return true;
+      const auto mask_components = const_input1->GetVectorComponents(const_mgr);
+      const auto shift_components =
+          const_input2->GetVectorComponents(const_mgr);
+      for (uint32_t i = 0; i != mask_vec->element_count(); ++i) {
+        auto result =
+            can_fold_component(mask_components[i], shift_components[i]);
+        if (!result || !*result) return false;
       }
+    } else {
+      if (const_input2->type()->AsVector()) return false;
+      auto result = can_fold_component(const_input1, const_input2);
+      if (!result || !*result) return false;
     }
-    return false;
+
+    auto zero_id = context->get_constant_mgr()->GetNullConstId(type);
+    inst->SetOpcode(spv::Op::OpCopyObject);
+    inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {zero_id}}});
+    return true;
   };
 }
 
