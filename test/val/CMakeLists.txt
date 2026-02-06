@@ -50,6 +50,7 @@ add_spvtools_unittest(TARGET val_abcde
        val_extension_spv_nv_raw_access_chains.cpp
        val_extension_spv_intel_function_variants.cpp
        val_extension_spv_intel_inline_assembly.cpp
+       val_extension_spv_ext_descriptor_heap.cpp
        val_ext_inst_test.cpp
        val_ext_inst_debug_test.cpp
        ${VAL_TEST_COMMON_SRCS}
@@ -75,6 +76,7 @@ add_spvtools_unittest(TARGET val_fghijklmnop
   SRCS
        val_function_test.cpp
        val_graph_test.cpp
+       val_group_test.cpp
        val_id_test.cpp
        val_image_test.cpp
        val_interfaces_test.cpp
