@@ -2195,8 +2195,7 @@ spv_result_t CheckDecorationsFromDecoration(ValidationState_t& vstate) {
             PASS_OR_BAIL(
                 CheckFPRoundingModeForShaders(vstate, *inst, decoration));
           if (is_kernel)
-            PASS_OR_BAIL(
-                CheckFPRoundingModeForKernels(vstate, *inst));
+            PASS_OR_BAIL(CheckFPRoundingModeForKernels(vstate, *inst));
           break;
         case spv::Decoration::NonReadable:
         case spv::Decoration::NonWritable:
