@@ -65,11 +65,16 @@ bool LegalizeMultidimArrayPass::IsMultidimArrayOfResources(Instruction* var) {
 void LegalizeMultidimArrayPass::GetArrayDimensions(uint32_t type_id,
                                                    std::vector<uint32_t>* dims,
                                                    uint32_t* element_type_id) {
+  assert(dims != nullptr && "dims cannot be null.");
+  dims->clear();
+
   Instruction* type_inst = context()->get_def_use_mgr()->GetDef(type_id);
   while (type_inst->opcode() == spv::Op::OpTypeArray) {
     uint32_t length_id = type_inst->GetSingleWordInOperand(1);
     Instruction* length_inst = context()->get_def_use_mgr()->GetDef(length_id);
-    // Assume OpConstant for now.
+    // Assume OpConstant. According to the spec the length could also be an
+    // OpSpecConstantOp. However, DXC will not generate that type of code. The
+    // code to handle spec constants will be much more complicated.
     assert(length_inst->opcode() == spv::Op::OpConstant);
     uint32_t length = length_inst->GetSingleWordInOperand(0);
     dims->push_back(length);
@@ -143,6 +148,8 @@ bool LegalizeMultidimArrayPass::RewriteAccessChains(Instruction* var,
   std::vector<uint32_t> dims;
   uint32_t element_type_id = 0;
   GetArrayDimensions(old_pointee_type_id, &dims, &element_type_id);
+  assert(dims.size() != 0 &&
+         "This variable should have been rejected earlier.");
 
   // Calculate strides once
   std::vector<uint32_t> strides(dims.size());

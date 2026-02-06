@@ -281,7 +281,7 @@ Options (in lexicographical order):)",
   printf(R"(
   --legalize-multidim-array
                Replace multidimensional arrays of resources with single-dimensional
-               arrays.)");
+               arrays. Run combine-access-chains before this pass.)");
   printf(R"(
   --local-redundancy-elimination
                Looks for instructions in the same basic block that compute the

@@ -640,12 +640,19 @@ Optimizer::PassToken CreateLoopFusionPass(size_t max_registers_per_loop);
 Optimizer::PassToken CreateLoopPeelingPass();
 
 // Creates a loop unswitch pass.
+// This pass will look for loop independent branch conditions and move the
+// condition out of the loop and version the loop based on the taken branch.
+// Works best after LICM and local multi store elimination pass.
 Optimizer::PassToken CreateLoopUnswitchPass();
 
 // Creates a pass to legalize multidimensional arrays for Vulkan.
+// This pass will replace multidimensional arrays of resources with a single
+// dimensional array. Combine-access-chains should be run before this pass.
 Optimizer::PassToken CreateLegalizeMultidimArrayPass();
 
 // Create global value numbering pass.
+// This pass will look for instructions where the same value is computed on all
+// paths leading to the instruction.  Those instructions are deleted.
 Optimizer::PassToken CreateRedundancyEliminationPass();
 
 // Create scalar replacement pass.
