@@ -1801,13 +1801,14 @@ bool ValidationState_t::EvalConstantValInt64(uint32_t id, int64_t* val) const {
   return true;
 }
 
+// <is_int32, is_const_int32, value>
 std::tuple<bool, bool, uint32_t> ValidationState_t::EvalInt32IfConst(
     uint32_t id) const {
   const Instruction* const inst = FindDef(id);
   assert(inst);
   const uint32_t type = inst->type_id();
 
-  if (type == 0 || !IsIntScalarType(type) || GetBitWidth(type) != 32) {
+  if (type == 0 || !IsIntScalarType(type, 32)) {
     return std::make_tuple(false, false, 0);
   }
 
