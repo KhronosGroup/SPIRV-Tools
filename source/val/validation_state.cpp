@@ -2837,10 +2837,16 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpEntryPoint-08721);
     case 8722:
       return VUID_WRAP(VUID-StandaloneSpirv-OpEntryPoint-08722);
+    case 8747:
+      return VUID_WRAP(VUID-HitTriangleVertexPositionsKHR-HitTriangleVertexPositionsKHR-08747);
+    case 8748:
+      return VUID_WRAP(VUID-HitTriangleVertexPositionsKHR-HitTriangleVertexPositionsKHR-08748);
+    case 8749:
+      return VUID_WRAP(VUID-HitTriangleVertexPositionsKHR-HitTriangleVertexPositionsKHR-08749);
     case 8973:
       return VUID_WRAP(VUID-StandaloneSpirv-Pointer-08973);
     case 9557:
-    return VUID_WRAP(VUID-StandaloneSpirv-Input-09557);
+      return VUID_WRAP(VUID-StandaloneSpirv-Input-09557);
     case 9638:
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeImage-09638);
     case 9658:
