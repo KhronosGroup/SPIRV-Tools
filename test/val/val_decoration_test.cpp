@@ -5304,6 +5304,71 @@ TEST_F(ValidateDecorations, VulkanFPRoundingModeBadMode) {
       HasSubstr("In Vulkan, the FPRoundingMode mode must only by RTE or RTZ."));
 }
 
+TEST_F(ValidateDecorations, KernelFPRoundingModeGood) {
+  std::string spirv = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability Float64
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "test"
+               OpDecorate %out_float0 FPRoundingMode RTE
+               OpDecorate %out_float1 FPRoundingMode RTZ
+               OpDecorate %out_sint FPRoundingMode RTP
+               OpDecorate %out_uint FPRoundingMode RTN
+               OpDecorate %out_double FPRoundingMode RTE
+               OpDecorate %out_float2 FPRoundingMode RTZ
+       %uint = OpTypeInt 32 0
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+     %double = OpTypeFloat 64
+   %functype = OpTypeFunction %void %uint %float %double
+     %kernel = OpFunction %void None %functype
+     %in_int = OpFunctionParameter %uint
+   %in_float = OpFunctionParameter %float
+  %in_double = OpFunctionParameter %double
+      %entry = OpLabel
+ %out_float0 = OpConvertSToF %float %in_int
+ %out_float1 = OpConvertUToF %float %in_int
+   %out_sint = OpConvertFToS %uint %in_float
+   %out_uint = OpConvertFToU %uint %in_float
+ %out_double = OpFConvert %double %in_float
+ %out_float2 = OpFConvert %float %in_double
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_0));
+}
+
+TEST_F(ValidateDecorations, KernelFPRoundingModeBadMode) {
+  std::string spirv = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "test"
+               OpDecorate %out_float FPRoundingMode RTE
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+   %functype = OpTypeFunction %void %float
+     %kernel = OpFunction %void None %functype
+   %in_float = OpFunctionParameter %float
+      %entry = OpLabel
+  %out_float = OpFAdd %float %in_float %in_float
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_0));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("FPRoundingMode decoration can be applied only to a conversion "
+                "instruction to or from a floating-point type."));
+}
+
 TEST_F(ValidateDecorations, GroupDecorateTargetsDecorationGroup) {
   std::string spirv = R"(
 OpCapability Shader
