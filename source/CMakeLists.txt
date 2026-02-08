@@ -280,6 +280,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_misc.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_mode_setting.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_non_uniform.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_pipe.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_primitives.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_ray_query.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_ray_tracing.cpp
