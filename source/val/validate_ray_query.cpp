@@ -364,7 +364,8 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
       if ((result_id->opcode() != spv::Op::OpTypeArray) ||
           (GetArrayLength(_, result_id) != 3) ||
           !_.IsFloatVectorType(_.GetComponentType(result_type)) ||
-          _.GetDimension(_.GetComponentType(result_type)) != 3) {
+          _.GetDimension(_.GetComponentType(result_type)) != 3 ||
+          _.GetBitWidth(_.GetComponentType(result_type)) != 32) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << "Expected 3 element array of 32-bit 3 component float point "
                   "vector as Result Type: "

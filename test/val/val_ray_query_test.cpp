@@ -780,6 +780,44 @@ TEST_F(ValidateRayQuery, RayQueryGetIntersectionTriangleVertexPositionsType) {
                         "point vector as Result Type"));
 }
 
+TEST_F(ValidateRayQuery,
+       RayQueryGetIntersectionTriangleVertexPositionsType32Bit) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpCapability RayQueryPositionFetchKHR
+               OpCapability Float64
+               OpExtension "SPV_KHR_ray_query"
+               OpExtension "SPV_KHR_ray_tracing_position_fetch"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %rayQuery
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+          %6 = OpTypeRayQueryKHR
+%_ptr_Private_6 = OpTypePointer Private %6
+   %rayQuery = OpVariable %_ptr_Private_6 Private
+       %uint = OpTypeInt 32 0
+    %float64 = OpTypeFloat 64
+  %v3float64 = OpTypeVector %float64 3
+        %int = OpTypeInt 32 1
+      %int_1 = OpConstant %int 1
+     %uint_3 = OpConstant %uint 3
+%_arr_v3float_uint_3 = OpTypeArray %v3float64 %uint_3
+%_ptr_Function__arr_v3float_uint_3 = OpTypePointer Function %_arr_v3float_uint_3
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %28 = OpRayQueryGetIntersectionTriangleVertexPositionsKHR %_arr_v3float_uint_3 %rayQuery %int_1
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected 3 element array of 32-bit 3 component float "
+                        "point vector as Result Type"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
