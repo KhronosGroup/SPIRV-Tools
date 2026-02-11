@@ -92,6 +92,7 @@ add_spvtools_unittest(TARGET val_fghijklmnop
        val_non_semantic_test.cpp
        val_non_uniform_test.cpp
        val_opencl_test.cpp
+       val_pipe_test.cpp
        val_primitives_test.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS_FULL_VISIBILITY}
