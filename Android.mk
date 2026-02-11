@@ -144,6 +144,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/invocation_interlock_placement_pass.cpp \
 		source/opt/ir_context.cpp \
 		source/opt/ir_loader.cpp \
+		source/opt/legalize_multidim_array_pass.cpp \
 		source/opt/licm_pass.cpp \
 		source/opt/liveness.cpp \
 		source/opt/local_access_chain_convert_pass.cpp \

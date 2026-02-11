@@ -171,7 +171,9 @@ Optimizer& Optimizer::RegisterLegalizationPasses(bool preserve_interface) {
           .RegisterPass(CreateRemoveUnusedInterfaceVariablesPass())
           .RegisterPass(CreateInterpolateFixupPass())
           .RegisterPass(CreateInvocationInterlockPlacementPass())
-          .RegisterPass(CreateOpExtInstWithForwardReferenceFixupPass());
+          .RegisterPass(CreateOpExtInstWithForwardReferenceFixupPass())
+          .RegisterPass(CreateCombineAccessChainsPass())
+          .RegisterPass(CreateLegalizeMultidimArrayPass());
 }
 
 Optimizer& Optimizer::RegisterLegalizationPasses() {
@@ -399,6 +401,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
     RegisterPass(CreateFoldSpecConstantOpAndCompositePass());
   } else if (pass_name == "loop-unswitch") {
     RegisterPass(CreateLoopUnswitchPass());
+  } else if (pass_name == "legalize-multidim-array") {
+    RegisterPass(CreateLegalizeMultidimArrayPass());
   } else if (pass_name == "scalar-replacement") {
     if (pass_args.size() == 0) {
       RegisterPass(CreateScalarReplacementPass(0));
@@ -959,6 +963,11 @@ Optimizer::PassToken CreateLoopPeelingPass() {
 Optimizer::PassToken CreateLoopUnswitchPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::LoopUnswitchPass>());
+}
+
+Optimizer::PassToken CreateLegalizeMultidimArrayPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::LegalizeMultidimArrayPass>());
 }
 
 Optimizer::PassToken CreateRedundancyEliminationPass() {
