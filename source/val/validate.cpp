@@ -393,7 +393,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
     if (auto error = DotProductPass(*vstate, &instruction)) return error;
     if (auto error = GroupPass(*vstate, &instruction)) return error;
     // Device-Side Enqueue
-    // Pipe
+    if (auto error = PipePass(*vstate, &instruction)) return error;
     if (auto error = NonUniformPass(*vstate, &instruction)) return error;
 
     if (auto error = LiteralsPass(*vstate, &instruction)) return error;

@@ -73,6 +73,7 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validate_logical_pointers.cpp \
 		source/val/validate_logicals.cpp \
 		source/val/validate_non_uniform.cpp \
+		source/val/validate_pipe.cpp \
 		source/val/validate_primitives.cpp \
 		source/val/validate_ray_query.cpp \
 		source/val/validate_ray_tracing.cpp \
