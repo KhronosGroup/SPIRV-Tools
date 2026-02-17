@@ -149,7 +149,9 @@ Optimizer& Optimizer::RegisterLegalizationPasses(bool preserve_interface) {
           .RegisterPass(CreateLocalSingleStoreElimPass())
           .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
           .RegisterPass(CreateLocalMultiStoreElimPass())
+          .RegisterPass(CreateCombineAccessChainsPass())
           .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
+          .RegisterPass(CreateLegalizeMultidimArrayPass())
           // Propagate constants to get as many constant conditions on branches
           // as possible.
           .RegisterPass(CreateCCPPass())
@@ -171,9 +173,7 @@ Optimizer& Optimizer::RegisterLegalizationPasses(bool preserve_interface) {
           .RegisterPass(CreateRemoveUnusedInterfaceVariablesPass())
           .RegisterPass(CreateInterpolateFixupPass())
           .RegisterPass(CreateInvocationInterlockPlacementPass())
-          .RegisterPass(CreateOpExtInstWithForwardReferenceFixupPass())
-          .RegisterPass(CreateCombineAccessChainsPass())
-          .RegisterPass(CreateLegalizeMultidimArrayPass());
+          .RegisterPass(CreateOpExtInstWithForwardReferenceFixupPass());
 }
 
 Optimizer& Optimizer::RegisterLegalizationPasses() {
