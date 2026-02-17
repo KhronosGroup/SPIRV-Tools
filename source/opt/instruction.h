@@ -481,6 +481,10 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
   // storage buffer.
   bool IsVulkanStorageBuffer() const;
 
+  // Returns true if the instruction defines a pointer type that points to a
+  // buffer that is decorated with NonWritable.
+  bool IsVulkanStorageBufferNonWritable() const;
+
   // Returns true if the instruction defines a variable in StorageBuffer or
   // Uniform storage class with a pointer type that points to a storage buffer.
   bool IsVulkanStorageBufferVariable() const;
@@ -620,12 +624,25 @@ class Instruction : public utils::IntrusiveNodeBase<Instruction> {
     return 0;
   }
 
+  enum class ReadOnlyShaderResult { kFalse, kTrue, kMayHaveAliasingBinding };
+
   // Returns true if the instruction generates a read-only pointer, with the
-  // same caveats documented in the comment for IsReadOnlyPointer.  The first
-  // version assumes the module is a shader module.  The second assumes a
-  // kernel.
-  bool IsReadOnlyPointerShaders() const;
+  // same caveats documented in the comment for IsReadOnlyPointer.
+  // The first version assumes the module is a shader module, which may also
+  // return a hint that the result _may_ be readonly as long as it isn't aliased
+  // by something that is writable. The second assumes a kernel.
+  ReadOnlyShaderResult IsReadOnlyPointerShaders() const;
   bool IsReadOnlyPointerKernel() const;
+
+  // Resolves |DescriptorSet| and |Binding| decoration of this instruction.
+  // Returns true if both could be found.
+  bool ResolveSetAndBinding(uint32_t& set, uint32_t& binding) const;
+
+  // Returns true if all _other_ instruction that have the same set
+  // and binding are read only.
+  // This function should only be called if IsReadOnlyPointerShaders() has already
+  // been verified to return true.
+  bool IsSetBindingUniformlyReadOnly() const;
 
   // Returns true if the result of |inst| can be used as the base image for an
   // instruction that samples a image, reads an image, or writes to an image.
