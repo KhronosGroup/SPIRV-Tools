@@ -36,6 +36,7 @@ add_spvtools_unittest(TARGET val_abcde
        val_data_test.cpp
        val_decoration_test.cpp
        val_derivatives_test.cpp
+       val_dot_product_test.cpp
        val_entry_point_test.cpp
        val_explicit_reserved_test.cpp
        val_invalid_type_test.cpp
