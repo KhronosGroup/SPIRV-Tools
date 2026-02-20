@@ -3401,6 +3401,86 @@ OpEntryPoint Vertex %func "main"
                         "in any stage other than compute or fragment"));
 }
 
+TEST_F(ValidateCapability, ColorAttachmentReadEXTRequireCapability) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability StorageImageReadWithoutFormat
+OpExtension "SPV_EXT_shader_tile_image"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%void = OpTypeVoid
+%voidfn = OpTypeFunction %void
+%f32 = OpTypeFloat 32
+%img_type_f32 = OpTypeImage %f32 2D 0 0 0 1 Rgba32f
+%ptr_image_f32 = OpTypePointer UniformConstant %img_type_f32
+%uniform_image_f32 = OpVariable %ptr_image_f32 UniformConstant
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%img = OpLoad %img_type_f32 %uniform_image_f32
+%res1 = OpColorAttachmentReadEXT %f32 %img
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_5);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Opcode ColorAttachmentReadEXT requires one of these "
+                        "capabilities: TileImageColorReadAccessEXT"));
+}
+
+TEST_F(ValidateCapability, DepthAttachmentReadEXTRequireCapability) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpExtension "SPV_EXT_shader_tile_image"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%void = OpTypeVoid
+%voidfn = OpTypeFunction %void
+%f32 = OpTypeFloat 32
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%res1 = OpDepthAttachmentReadEXT %f32
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_5);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Opcode DepthAttachmentReadEXT requires one of these "
+                        "capabilities: TileImageDepthReadAccessEXT"));
+}
+
+TEST_F(ValidateCapability, StencilAttachmentReadEXTRequireCapability) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpExtension "SPV_EXT_shader_tile_image"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%void = OpTypeVoid
+%voidfn = OpTypeFunction %void
+%u32 = OpTypeInt 32 0
+%main = OpFunction %void None %voidfn
+%entry = OpLabel
+%res1 = OpStencilAttachmentReadEXT %u32
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_5);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_5));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Opcode StencilAttachmentReadEXT requires one of these "
+                        "capabilities: TileImageStencilReadAccessEXT"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
