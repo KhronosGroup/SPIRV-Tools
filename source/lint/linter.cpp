@@ -52,6 +52,7 @@ bool Linter::Run(const uint32_t* binary, size_t binary_size) {
 
   bool result = true;
   result &= lint::lints::CheckDivergentDerivatives(context.get());
+  result &= lint::lints::CheckUninitializedVariables(context.get());
 
   return result;
 }
