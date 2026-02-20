@@ -197,8 +197,7 @@ TEST_F(ValidateDotProductMixAcc, Acc32BadAccType) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(
-          "Accumulator type must be a 32-bit IEEE 754 float scalar type."));
+      HasSubstr("Accumulator Type must be the same as the Result Type."));
 }
 
 TEST_F(ValidateDotProductMixAcc, Acc32MixedEncodingFloat16) {
@@ -230,7 +229,7 @@ TEST_F(ValidateDotProductMixAcc, Acc16BadAccType) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Accumulator Type must be a 16-bit float scalar type."));
+      HasSubstr("Accumulator Type must be the same as the Result Type."));
 }
 
 TEST_F(ValidateDotProductMixAcc, Acc16MixedEncodingFloat16) {
@@ -261,9 +260,9 @@ TEST_F(ValidateDotProductMixAcc, Acc16AccumulatorWrongEncoding) {
   )";
   CompileSuccessfully(GenerateShaderCode(body));
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Accumulator Type must have the same float encoding as "
-                        "the Result Type."));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Accumulator Type must be the same as the Result Type."));
 }
 
 TEST_F(ValidateDotProductMixAcc, Acc32Mix4BadVectorType) {

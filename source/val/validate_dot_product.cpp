@@ -224,7 +224,6 @@ spv_result_t ValidateFDotMixVectors(ValidationState_t& _,
 
 spv_result_t ValidateFDot2MixAcc32(ValidationState_t& _,
                                    const Instruction* inst) {
-  // Currently no 32-bit encoding other than IEEE 754
   const uint32_t result_id = inst->type_id();
   if (!_.IsFloatScalarType(result_id, 32)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -271,9 +270,9 @@ spv_result_t ValidateFDot2MixAcc32(ValidationState_t& _,
   }
 
   const uint32_t accumulator_type = _.GetOperandTypeId(inst, 4);
-  if (!_.IsFloatScalarType(accumulator_type, 32)) {
+  if (accumulator_type != result_id) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Accumulator type must be a 32-bit IEEE 754 float scalar type.";
+           << "Accumulator Type must be the same as the Result Type.";
   }
 
   return SPV_SUCCESS;
@@ -320,7 +319,6 @@ spv_result_t ValidateFDot2MixAcc16(ValidationState_t& _,
     }
   }
 
-  // Currently no 32-bit encoding other than IEEE 754
   const uint32_t result_id = inst->type_id();
   if (!_.IsFloatScalarType(result_id, 16)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -335,16 +333,9 @@ spv_result_t ValidateFDot2MixAcc16(ValidationState_t& _,
   }
 
   const uint32_t accumulator_type = _.GetOperandTypeId(inst, 4);
-  if (!_.IsFloatScalarType(accumulator_type, 16)) {
+  if (accumulator_type != result_id) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Accumulator Type must be a 16-bit float scalar type.";
-  }
-
-  const bool is_accumulator_bfloat = _.IsBfloat16ScalarType(accumulator_type);
-  if (is_result_bfloat != is_accumulator_bfloat) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Accumulator Type must have the same float encoding as the "
-              "Result Type.";
+           << "Accumulator Type must be the same as the Result Type.";
   }
 
   return SPV_SUCCESS;
@@ -352,7 +343,6 @@ spv_result_t ValidateFDot2MixAcc16(ValidationState_t& _,
 
 spv_result_t ValidateFDot4MixAcc32(ValidationState_t& _,
                                    const Instruction* inst) {
-  // Currently no 32-bit encoding other than IEEE 754
   const uint32_t result_id = inst->type_id();
   if (!_.IsFloatScalarType(result_id, 32)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -376,18 +366,10 @@ spv_result_t ValidateFDot4MixAcc32(ValidationState_t& _,
            << "Expected 'Vector 2' to be a vector of 8-bit floats.";
   }
 
-  // Currently 16-bit floats are only BFloat16 or IEEE 754
-  const bool is_vec_1_bfloat = _.IsBfloat16ScalarType(vec_1_type);
-  const bool is_vec_2_bfloat = _.IsBfloat16ScalarType(vec_2_type);
-  if (is_vec_1_bfloat != is_vec_2_bfloat) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "'Vector 1' and 'Vector 2' must be the same float encoding.";
-  }
-
   const uint32_t accumulator_type = _.GetOperandTypeId(inst, 4);
-  if (!_.IsFloatScalarType(accumulator_type, 32)) {
+  if (accumulator_type != result_id) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Accumulator type must be a 32-bit IEEE 754 float scalar type.";
+           << "Accumulator Type must be the same as the Result Type.";
   }
 
   return SPV_SUCCESS;
