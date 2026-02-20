@@ -14,7 +14,7 @@ vars = {
 
   're2_revision': '972a15cedd008d846f1a39b2e88ce48d7f166cbd',
 
-  'spirv_headers_revision': '04f10f650d514df88b76d25e83db360142c7b174',
+  'spirv_headers_revision': 'f88a2d766840fc825af1fc065977953ba1fa4a91',
 
   'mimalloc_revision': 'b69f9cb39f22b95971a4b9196a9c265a7b474718',
 }

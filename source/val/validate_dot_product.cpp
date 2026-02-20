@@ -196,6 +196,185 @@ spv_result_t ValidateSameSignedDot(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateFDotMixVectors(ValidationState_t& _,
+                                    const Instruction* inst, uint32_t vec_1_id,
+                                    uint32_t vec_2_id, uint32_t length) {
+  if (!_.IsVectorType(vec_1_id)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected 'Vector 1' to be an vector.";
+  } else if (!_.IsVectorType(vec_2_id)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected 'Vector 2' to be an vector.";
+  }
+
+  // If using OpTypeVectorIdEXT with a spec constant,
+  // this can be evaluated when spec constants are frozen
+  const uint32_t vec_1_length = _.GetDimension(vec_1_id);
+  const uint32_t vec_2_length = _.GetDimension(vec_2_id);
+  if (vec_1_length != 0 && vec_1_length != length && vec_2_length != 0 &&
+      vec_2_length != length) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "'Vector 1' is " << vec_1_length
+           << " components and 'Vector 2' is " << vec_2_length
+           << " components, but both need to be " << length << "-components";
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateFDot2MixAcc32(ValidationState_t& _,
+                                   const Instruction* inst) {
+  const uint32_t result_id = inst->type_id();
+  if (!_.IsFloatScalarType(result_id, 32)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Result must be a 32-bit IEEE 754 float scalar type.";
+  }
+
+  const uint32_t vec_1_id = _.GetOperandTypeId(inst, 2);
+  const uint32_t vec_2_id = _.GetOperandTypeId(inst, 3);
+
+  if (auto error = ValidateFDotMixVectors(_, inst, vec_1_id, vec_2_id, 2))
+    return error;
+
+  const uint32_t vec_1_type = _.GetComponentType(vec_1_id);
+  const uint32_t vec_2_type = _.GetComponentType(vec_2_id);
+  if (!_.IsFloatScalarType(vec_1_type, 16)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected 'Vector 1' to be a vector of 16-bit floats.";
+  } else if (!_.IsFloatScalarType(vec_2_type, 16)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected 'Vector 2' to be a vector of 16-bit floats.";
+  }
+
+  // Currently 16-bit floats are only BFloat or IEEE 754
+  const bool is_vec_1_bfloat = _.IsBfloat16ScalarType(vec_1_type);
+  const bool is_vec_2_bfloat = _.IsBfloat16ScalarType(vec_2_type);
+  if (is_vec_1_bfloat != is_vec_2_bfloat) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "'Vector 1' and 'Vector 2' must be the same float encoding.";
+  }
+
+  if (is_vec_1_bfloat) {
+    if (!_.HasCapability(spv::Capability::DotProductBFloat16AccVALVE)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "DotProductBFloat16AccVALVE capability is required to use "
+                "BFloat16 encoded floats.";
+    }
+  } else {
+    if (!_.HasCapability(spv::Capability::DotProductFloat16AccFloat32VALVE)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "DotProductFloat16AccFloat32VALVE capability is required to "
+                "use "
+                "IEEE 754 encoded 16-bit floats.";
+    }
+  }
+
+  const uint32_t accumulator_type = _.GetOperandTypeId(inst, 4);
+  if (accumulator_type != result_id) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Accumulator Type must be the same as the Result Type.";
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateFDot2MixAcc16(ValidationState_t& _,
+                                   const Instruction* inst) {
+  const uint32_t vec_1_id = _.GetOperandTypeId(inst, 2);
+  const uint32_t vec_2_id = _.GetOperandTypeId(inst, 3);
+
+  if (auto error = ValidateFDotMixVectors(_, inst, vec_1_id, vec_2_id, 2))
+    return error;
+
+  const uint32_t vec_1_type = _.GetComponentType(vec_1_id);
+  const uint32_t vec_2_type = _.GetComponentType(vec_2_id);
+  if (!_.IsFloatScalarType(vec_1_type, 16)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected 'Vector 1' to be a vector of 16-bit floats.";
+  } else if (!_.IsFloatScalarType(vec_2_type, 16)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected 'Vector 2' to be a vector of 16-bit floats.";
+  }
+
+  // Currently 16-bit floats are only BFloat or IEEE 754
+  const bool is_vec_1_bfloat = _.IsBfloat16ScalarType(vec_1_type);
+  const bool is_vec_2_bfloat = _.IsBfloat16ScalarType(vec_2_type);
+  if (is_vec_1_bfloat != is_vec_2_bfloat) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "'Vector 1' and 'Vector 2' must be the same float encoding.";
+  }
+
+  if (is_vec_1_bfloat) {
+    if (!_.HasCapability(spv::Capability::DotProductBFloat16AccVALVE)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "DotProductBFloat16AccVALVE capability is required to use "
+                "BFloat16 encoded floats.";
+    }
+  } else {
+    if (!_.HasCapability(spv::Capability::DotProductFloat16AccFloat16VALVE)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "DotProductFloat16AccFloat16VALVE capability is required to "
+                "use "
+                "IEEE 754 encoded 16-bit floats.";
+    }
+  }
+
+  const uint32_t result_id = inst->type_id();
+  if (!_.IsFloatScalarType(result_id, 16)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Result must be a 16-bit float scalar type.";
+  }
+
+  const bool is_result_bfloat = _.IsBfloat16ScalarType(result_id);
+  if (is_result_bfloat != is_vec_1_bfloat) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Result must have the same float encoding as 'Vector 1' and "
+              "'Vector 2'.";
+  }
+
+  const uint32_t accumulator_type = _.GetOperandTypeId(inst, 4);
+  if (accumulator_type != result_id) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Accumulator Type must be the same as the Result Type.";
+  }
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidateFDot4MixAcc32(ValidationState_t& _,
+                                   const Instruction* inst) {
+  const uint32_t result_id = inst->type_id();
+  if (!_.IsFloatScalarType(result_id, 32)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Result must be a 32-bit IEEE 754 float scalar type.";
+  }
+
+  const uint32_t vec_1_id = _.GetOperandTypeId(inst, 2);
+  const uint32_t vec_2_id = _.GetOperandTypeId(inst, 3);
+
+  if (auto error = ValidateFDotMixVectors(_, inst, vec_1_id, vec_2_id, 4))
+    return error;
+
+  // Currently 8-bit floats are only Float8E4M3/Float8E5M2
+  const uint32_t vec_1_type = _.GetComponentType(vec_1_id);
+  const uint32_t vec_2_type = _.GetComponentType(vec_2_id);
+  if (!_.IsFloatScalarType(vec_1_type, 8)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected 'Vector 1' to be a vector of 8-bit floats.";
+  } else if (!_.IsFloatScalarType(vec_2_type, 8)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected 'Vector 2' to be a vector of 8-bit floats.";
+  }
+
+  const uint32_t accumulator_type = _.GetOperandTypeId(inst, 4);
+  if (accumulator_type != result_id) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Accumulator Type must be the same as the Result Type.";
+  }
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 spv_result_t DotProductPass(ValidationState_t& _, const Instruction* inst) {
@@ -209,6 +388,14 @@ spv_result_t DotProductPass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpUDotAccSat:
     case spv::Op::OpSUDotAccSat:
       return ValidateSameSignedDot(_, inst);
+    // Tried combining these to a single validate function, but they are less
+    // similar than appeared at first glance
+    case spv::Op::OpFDot2MixAcc32VALVE:
+      return ValidateFDot2MixAcc32(_, inst);
+    case spv::Op::OpFDot2MixAcc16VALVE:
+      return ValidateFDot2MixAcc16(_, inst);
+    case spv::Op::OpFDot4MixAcc32VALVE:
+      return ValidateFDot4MixAcc32(_, inst);
     default:
       break;
   }
