@@ -160,14 +160,16 @@ bool AggressiveDCEPass::AllExtensionsSupported() const {
     if (extensions_allowlist_.find(extName) == extensions_allowlist_.end())
       return false;
   }
-  // Only allow NonSemantic.Shader.DebugInfo.100, we cannot safely optimise
-  // around unknown extended instruction sets even if they are non-semantic
+  // Only allow NonSemantic.Shader.DebugInfo (any version) and
+  // NonSemantic.DebugPrintf; we cannot safely optimise around unknown extended
+  // instruction sets even if they are non-semantic.
   for (auto& inst : context()->module()->ext_inst_imports()) {
     assert(inst.opcode() == spv::Op::OpExtInstImport &&
            "Expecting an import of an extension's instruction set.");
     const std::string extension_name = inst.GetInOperand(0).AsString();
     if (spvtools::utils::starts_with(extension_name, "NonSemantic.") &&
-        (extension_name != "NonSemantic.Shader.DebugInfo.100") &&
+        !spvtools::utils::starts_with(extension_name,
+                                      "NonSemantic.Shader.DebugInfo.") &&
         (extension_name != "NonSemantic.DebugPrintf")) {
       return false;
     }

@@ -33,8 +33,8 @@ constexpr int kEntryPointInterfaceInIdx = 3;
 constexpr int kEntryPointFunctionIdInIdx = 1;
 constexpr int kEntryPointExecutionModelInIdx = 0;
 
-// Constants for OpenCL.DebugInfo.100 / NonSemantic.Shader.DebugInfo.100
-// extension instructions.
+// Constants for OpenCL.DebugInfo.100 / NonSemantic.Shader.DebugInfo extension
+// instructions.
 constexpr uint32_t kDebugFunctionOperandFunctionIndex = 13;
 constexpr uint32_t kDebugGlobalVariableOperandVariableIndex = 11;
 }  // namespace
@@ -539,7 +539,7 @@ void IRContext::KillRelatedDebugScopes(Instruction* inst) {
   // instruction.
   if (inst->opcode() == spv::Op::OpExtInstImport) {
     const std::string extension_name = inst->GetInOperand(0).AsString();
-    if (extension_name == "NonSemantic.Shader.DebugInfo.100" ||
+    if (extension_name.compare(0, 29, "NonSemantic.Shader.DebugInfo.") == 0 ||
         extension_name == "OpenCL.DebugInfo.100") {
       module()->ForEachInst([](Instruction* child) {
         child->SetDebugScope(DebugScope(kNoDebugScope, kNoInlinedAt));

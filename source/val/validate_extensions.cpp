@@ -1105,15 +1105,44 @@ spv_result_t ValidateExtension(ValidationState_t& _, const Instruction* inst) {
 spv_result_t ValidateExtInstImport(ValidationState_t& _,
                                    const Instruction* inst) {
   const auto name_id = 1;
+  const std::string name = inst->GetOperandAs<std::string>(name_id);
   if (_.version() <= SPV_SPIRV_VERSION_WORD(1, 5) &&
       !_.HasExtension(kSPV_KHR_non_semantic_info)) {
-    const std::string name = inst->GetOperandAs<std::string>(name_id);
     if (name.find("NonSemantic.") == 0) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "NonSemantic extended instruction "
                 "sets cannot be declared "
                 "without SPV_KHR_non_semantic_info. (This can also be fixed "
                 "having SPIR-V 1.6 or later)";
+    }
+  }
+
+  // Validate the declared NonSemantic.Shader.DebugInfo version against the
+  // supported range. When a new version of the extended instruction set is
+  // published, increment kNSDILatestVersion.
+  const std::string nsdi_prefix = "NonSemantic.Shader.DebugInfo.";
+  if (name.find(nsdi_prefix) == 0) {
+    static const uint32_t kNSDIMinVersion = 100;
+    static const uint32_t kNSDILatestVersion = 100;
+    auto version_string = name.substr(nsdi_prefix.size());
+    if (version_string.empty()) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "NonSemantic.Shader.DebugInfo import does not encode the "
+                "version correctly";
+    }
+    char* end_ptr;
+    uint32_t ver = static_cast<uint32_t>(
+        std::strtoul(version_string.c_str(), &end_ptr, 10));
+    if (end_ptr && *end_ptr != '\0') {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "NonSemantic.Shader.DebugInfo import does not encode the "
+                "version correctly";
+    }
+    if (ver < kNSDIMinVersion || ver > kNSDILatestVersion) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Unknown NonSemantic.Shader.DebugInfo import version " << ver
+             << "; supported versions are " << kNSDIMinVersion << " through "
+             << kNSDILatestVersion;
     }
   }
 
@@ -3312,7 +3341,7 @@ spv_result_t ValidateExtInstDebugInfo100(ValidationState_t& _,
       }
       case CommonDebugInfoDebugSource: {
         CHECK_OPERAND("File", spv::Op::OpString, 5);
-        if (num_words == 7) CHECK_OPERAND("Text", spv::Op::OpString, 6);
+        if (num_words >= 7) CHECK_OPERAND("Text", spv::Op::OpString, 6);
         break;
       }
       case CommonDebugInfoDebugTypeBasic: {
@@ -3532,13 +3561,13 @@ spv_result_t ValidateExtInstDebugInfo100(ValidationState_t& _,
           CHECK_OPERAND("Offset", spv::Op::OpConstant, 10);
           CHECK_OPERAND("Size", spv::Op::OpConstant, 11);
           CHECK_CONST_UINT_OPERAND("Flags", 12);
-          if (num_words == 14) CHECK_OPERAND("Value", spv::Op::OpConstant, 13);
+          if (num_words >= 14) CHECK_OPERAND("Value", spv::Op::OpConstant, 13);
         } else {
           CHECK_DEBUG_OPERAND("Parent", CommonDebugInfoDebugTypeComposite, 10);
           CHECK_OPERAND("Offset", spv::Op::OpConstant, 11);
           CHECK_OPERAND("Size", spv::Op::OpConstant, 12);
           CHECK_CONST_UINT_OPERAND("Flags", 13);
-          if (num_words == 15) CHECK_OPERAND("Value", spv::Op::OpConstant, 14);
+          if (num_words >= 15) CHECK_OPERAND("Value", spv::Op::OpConstant, 14);
         }
         break;
       }
@@ -3585,7 +3614,7 @@ spv_result_t ValidateExtInstDebugInfo100(ValidationState_t& _,
         // NonSemantic.Shader.DebugInfo.100 doesn't include a reference to the
         // OpFunction
         if (vulkanDebugInfo) {
-          if (num_words == 15) {
+          if (num_words >= 15) {
             CHECK_DEBUG_OPERAND("Declaration",
                                 CommonDebugInfoDebugFunctionDeclaration, 14);
           }
@@ -3598,7 +3627,7 @@ spv_result_t ValidateExtInstDebugInfo100(ValidationState_t& _,
                   inst, 14)) {
             CHECK_OPERAND("Function", spv::Op::OpFunction, 14);
           }
-          if (num_words == 16) {
+          if (num_words >= 16) {
             CHECK_DEBUG_OPERAND("Declaration",
                                 CommonDebugInfoDebugFunctionDeclaration, 15);
           }
@@ -3625,13 +3654,13 @@ spv_result_t ValidateExtInstDebugInfo100(ValidationState_t& _,
         auto validate_parent =
             ValidateOperandLexicalScope(_, "Parent", inst, 8);
         if (validate_parent != SPV_SUCCESS) return validate_parent;
-        if (num_words == 10) CHECK_OPERAND("Name", spv::Op::OpString, 9);
+        if (num_words >= 10) CHECK_OPERAND("Name", spv::Op::OpString, 9);
         break;
       }
       case CommonDebugInfoDebugScope: {
         auto validate_scope = ValidateOperandLexicalScope(_, "Scope", inst, 5);
         if (validate_scope != SPV_SUCCESS) return validate_scope;
-        if (num_words == 7) {
+        if (num_words >= 7) {
           CHECK_DEBUG_OPERAND("Inlined At", CommonDebugInfoDebugInlinedAt, 6);
         }
         break;
@@ -3649,7 +3678,7 @@ spv_result_t ValidateExtInstDebugInfo100(ValidationState_t& _,
             ValidateOperandLexicalScope(_, "Parent", inst, 10);
         if (validate_parent != SPV_SUCCESS) return validate_parent;
         CHECK_CONST_UINT_OPERAND("Flags", 11);
-        if (num_words == 13) {
+        if (num_words >= 13) {
           CHECK_CONST_UINT_OPERAND("ArgNumber", 12);
         }
         break;
@@ -3766,7 +3795,7 @@ spv_result_t ValidateExtInstDebugInfo100(ValidationState_t& _,
                       "or DebugInfoNone";
           }
         }
-        if (num_words == 15) {
+        if (num_words >= 15) {
           CHECK_DEBUG_OPERAND("Static Member Declaration",
                               CommonDebugInfoDebugTypeMember, 14);
         }
@@ -3776,7 +3805,7 @@ spv_result_t ValidateExtInstDebugInfo100(ValidationState_t& _,
         CHECK_CONST_UINT_OPERAND("Line", 5);
         auto validate_scope = ValidateOperandLexicalScope(_, "Scope", inst, 6);
         if (validate_scope != SPV_SUCCESS) return validate_scope;
-        if (num_words == 8) {
+        if (num_words >= 8) {
           CHECK_DEBUG_OPERAND("Inlined", CommonDebugInfoDebugInlinedAt, 7);
         }
         break;
