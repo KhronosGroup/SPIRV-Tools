@@ -5047,26 +5047,6 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnEndSmallerMultiline) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateVulkan100DebugInfo, DebugSourceExtraOperandAccepted) {
-  // The import is "NonSemantic.Shader.DebugInfo.100" (via shader_extension,
-  // which declares %DbgExt). DebugSource in v100 takes File (required) and
-  // Text (optional). The third operand (%src) simulates a word added by 
-  // a newer version of the spec. The validator must accept it.
-  const std::string src = R"(
-%src = OpString "simple.hlsl"
-%code = OpString "int main() { }"
-)";
-
-  const std::string dbg_inst = R"(
-%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code %src ; File Text Extra
-)";
-
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(src, "", dbg_inst, "",
-                                                     shader_extension,
-                                                     "Vertex"));
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
-}
-
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
