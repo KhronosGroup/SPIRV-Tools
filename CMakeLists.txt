@@ -433,9 +433,7 @@ add_custom_target(spirv-tools-pkg-config
 # Install pkg-config file
 if (ENABLE_SPIRV_TOOLS_INSTALL)
   install(
-    FILES
-      ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools.pc
-      ${CMAKE_CURRENT_BINARY_DIR}/SPIRV-Tools-shared.pc
+    FILES ${pc_files}
     DESTINATION
       ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
