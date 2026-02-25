@@ -217,7 +217,7 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
       if (scope != last_scope && !between_merge_and_branch) {
         // Can only emit nonsemantic instructions after all phi instructions
         // in a block so don't emit scope instructions before phi instructions
-        // for NonSemantic.Shader.DebugInfo.100.
+        // for NonSemantic.Shader.DebugInfo.
         if (!between_label_and_phi_var ||
             context()
                 ->get_feature_mgr()

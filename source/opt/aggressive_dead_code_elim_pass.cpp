@@ -293,7 +293,7 @@ Pass::Status AggressiveDCEPass::ProcessDebugInformation(
     bool succeeded = (*bi)->WhileEachInst([this](Instruction* inst) {
       if (!inst->IsNonSemanticInstruction()) return true;
 
-      if (inst->GetShader100DebugOpcode() ==
+      if (inst->GetShaderDebugOpcode() ==
           NonSemanticShaderDebugInfo100DebugDeclare) {
         if (IsLive(inst)) return true;
 
@@ -331,7 +331,7 @@ Pass::Status AggressiveDCEPass::ProcessDebugInformation(
           }
           return true;
         });
-      } else if (inst->GetShader100DebugOpcode() ==
+      } else if (inst->GetShaderDebugOpcode() ==
                  NonSemanticShaderDebugInfo100DebugValue) {
         uint32_t var_operand_idx = kDebugValueValueInIdx;
         uint32_t id = inst->GetSingleWordInOperand(var_operand_idx);
@@ -760,7 +760,7 @@ Pass::Status AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
 
   // Add DebugInfo which should never be eliminated to worklist
   for (auto& dbg : get_module()->ext_inst_debuginfo()) {
-    auto op = dbg.GetShader100DebugOpcode();
+    auto op = dbg.GetShaderDebugOpcode();
     if (op == NonSemanticShaderDebugInfo100DebugCompilationUnit ||
         op == NonSemanticShaderDebugInfo100DebugEntryPoint ||
         op == NonSemanticShaderDebugInfo100DebugSource ||
@@ -1016,7 +1016,7 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
       continue;
     }
     // Save debug build identifier even if no other instructions refer to it.
-    if (dbg.GetShader100DebugOpcode() ==
+    if (dbg.GetShaderDebugOpcode() ==
         NonSemanticShaderDebugInfo100DebugBuildIdentifier) {
       // The debug build identifier refers to other instructions that
       // can potentially be removed, they also need to be kept alive.

@@ -7643,6 +7643,25 @@ OpMemoryModel Logical GLSL450
                         "999; supported versions are 100 through 100"));
 }
 
+TEST_F(ValidateNSDI, FutureVersion101) {
+  // Version 101 is not yet supported. The parser and optimizer already accept
+  // any NonSemantic.Shader.DebugInfo.* prefix, but the validator enforces the
+  // range [kNSDIMinVersion, kNSDILatestVersion]. Update kNSDILatestVersion and
+  // change the expectation here once spirv-headers publishes version 101.
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.101"
+OpMemoryModel Logical GLSL450
+)";
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Unknown NonSemantic.Shader.DebugInfo import version "
+                        "101; supported versions are 100 through 100"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

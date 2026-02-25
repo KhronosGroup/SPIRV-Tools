@@ -3129,7 +3129,7 @@ spv_result_t ValidateExtInstOpenClStd(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateExtInstDebugInfo100(ValidationState_t& _,
+spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
                                          const Instruction* inst) {
   const uint32_t result_type = inst->type_id();
   const uint32_t ext_inst_index = inst->word(4);
@@ -3189,8 +3189,8 @@ spv_result_t ValidateExtInstDebugInfo100(ValidationState_t& _,
       case NonSemanticShaderDebugInfo100DebugSource:
         break;
 
-      // These checks are for operands that are differnet in
-      // ShaderDebugInfo100
+      // These checks are for operands that are different in
+      // NonSemantic.Shader.DebugInfo
       case NonSemanticShaderDebugInfo100DebugTypeBasic: {
         CHECK_CONST_UINT_OPERAND("Flags", 8);
         break;
@@ -3890,7 +3890,7 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
   } else if (ext_inst_type == SPV_EXT_INST_TYPE_OPENCL_DEBUGINFO_100 ||
              ext_inst_type ==
                  SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100) {
-    return ValidateExtInstDebugInfo100(_, inst);
+    return ValidateExtInstDebugInfo(_, inst);
   } else if (ext_inst_type == SPV_EXT_INST_TYPE_NONSEMANTIC_CLSPVREFLECTION) {
     return ValidateExtInstNonsemanticClspvReflection(_, inst);
   }
