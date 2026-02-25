@@ -1119,11 +1119,13 @@ spv_result_t ValidateExtInstImport(ValidationState_t& _,
 
   // Validate the declared NonSemantic.Shader.DebugInfo version against the
   // supported range. When a new version of the extended instruction set is
-  // published, increment kNSDILatestVersion.
+  // published, update kNSDILatestVersion to use the corresponding new version
+  // constant from spirv-headers.
   const std::string nsdi_prefix = "NonSemantic.Shader.DebugInfo.";
   if (name.find(nsdi_prefix) == 0) {
     static const uint32_t kNSDIMinVersion = 100;
-    static const uint32_t kNSDILatestVersion = 100;
+    static const uint32_t kNSDILatestVersion =
+        NonSemanticShaderDebugInfo100Version;
     auto version_string = name.substr(nsdi_prefix.size());
     if (version_string.empty()) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)

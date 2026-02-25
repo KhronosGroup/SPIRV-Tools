@@ -90,7 +90,7 @@ void FeatureManager::AddExtInstImportIds(Module* module) {
   for (auto& ei : module->ext_inst_imports()) {
     const std::string name = ei.GetInOperand(0).AsString();
     if (name.compare(0, 29, "NonSemantic.Shader.DebugInfo.") == 0) {
-      extinst_importid_Shader100DebugInfo_ = ei.result_id();
+      extinst_importid_ShaderDebugInfo_ = ei.result_id();
       break;
     }
   }
@@ -121,8 +121,8 @@ bool operator==(const FeatureManager& a, const FeatureManager& b) {
     return false;
   }
 
-  if (a.extinst_importid_Shader100DebugInfo_ !=
-      b.extinst_importid_Shader100DebugInfo_) {
+  if (a.extinst_importid_ShaderDebugInfo_ !=
+      b.extinst_importid_ShaderDebugInfo_) {
     return false;
   }
 

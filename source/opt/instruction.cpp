@@ -696,12 +696,12 @@ NonSemanticShaderDebugInfo100Instructions Instruction::GetShader100DebugOpcode()
     return NonSemanticShaderDebugInfo100InstructionsMax;
   }
 
-  if (!context()->get_feature_mgr()->GetExtInstImportId_Shader100DebugInfo()) {
+  if (!context()->get_feature_mgr()->GetExtInstImportId_ShaderDebugInfo()) {
     return NonSemanticShaderDebugInfo100InstructionsMax;
   }
 
   if (GetSingleWordInOperand(kExtInstSetIdInIdx) !=
-      context()->get_feature_mgr()->GetExtInstImportId_Shader100DebugInfo()) {
+      context()->get_feature_mgr()->GetExtInstImportId_ShaderDebugInfo()) {
     return NonSemanticShaderDebugInfo100InstructionsMax;
   }
 
@@ -721,7 +721,7 @@ CommonDebugInfoInstructions Instruction::GetCommonDebugOpcode() const {
   const uint32_t opencl_set_id =
       context()->get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo();
   const uint32_t shader_set_id =
-      context()->get_feature_mgr()->GetExtInstImportId_Shader100DebugInfo();
+      context()->get_feature_mgr()->GetExtInstImportId_ShaderDebugInfo();
 
   if (!opencl_set_id && !shader_set_id) {
     return CommonDebugInfoInstructionsMax;

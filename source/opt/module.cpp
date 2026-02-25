@@ -189,7 +189,7 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const {
         // or DebugNoLine to specify it.
         uint32_t shader_set_id = context()
                                      ->get_feature_mgr()
-                                     ->GetExtInstImportId_Shader100DebugInfo();
+                                     ->GetExtInstImportId_ShaderDebugInfo();
         if (shader_set_id != 0) {
           binary->push_back((5 << 16) |
                             static_cast<uint16_t>(spv::Op::OpExtInst));
