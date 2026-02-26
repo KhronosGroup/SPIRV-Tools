@@ -119,16 +119,9 @@ OpCapability Int64
   ss << "%extinst = OpExtInstImport \"GLSL.std.450\"\n";
   ss << "OpMemoryModel Logical GLSL450\n";
   ss << "OpEntryPoint " << execution_model << " %main \"main\""
-     << " %f32_output"
-     << " %f32vec2_output"
-     << " %u32_output"
-     << " %u32vec2_output"
-     << " %u64_output"
-     << " %f32_input"
-     << " %f32vec2_input"
-     << " %u32_input"
-     << " %u32vec2_input"
-     << " %u64_input"
+     << " %f32_output" << " %f32vec2_output" << " %u32_output"
+     << " %u32vec2_output" << " %u64_output" << " %f32_input"
+     << " %f32vec2_input" << " %u32_input" << " %u32vec2_input" << " %u64_input"
      << "\n";
   if (execution_model == "Fragment") {
     ss << "OpExecutionMode %main OriginUpperLeft\n";
@@ -5096,8 +5089,8 @@ TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionAccepted) {
 }
 
 TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicTwoExtraOperands) {
-  // Two extra trailing operands on an NSDI 9999 module; confirms the VARIABLE_ID
-  // sentinel re-expands as many times as needed, not just once.
+  // Two extra trailing operands on an NSDI 9999 module; confirms the
+  // VARIABLE_ID sentinel re-expands as many times as needed, not just once.
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "int main() {}"
