@@ -501,6 +501,12 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
       const spvtools::ExtInstDesc* desc = nullptr;
       if (spvtools::LookupExtInst(inst->ext_inst_type, word, &desc) ==
           SPV_SUCCESS) {
+        // Push VARIABLE_ID so extra trailing operands from future NSDI
+        // versions are silently absorbed after the instruction-specific ones.
+        if (spvExtInstIsNonSemantic(inst->ext_inst_type)) {
+          expected_operands->push_back(SPV_OPERAND_TYPE_VARIABLE_ID);
+        }
+
         // if we know about this ext inst, push the expected operands
         spvPushOperandTypes(desc->operands(), expected_operands);
       } else {

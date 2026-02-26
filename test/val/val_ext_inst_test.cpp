@@ -7624,11 +7624,13 @@ OpMemoryModel Logical GLSL450
   CompileSuccessfully(text);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Unknown NonSemantic.Shader.DebugInfo import version "
-                        "99; supported versions are 100 through 100"));
+              HasSubstr("NonSemantic.Shader.DebugInfo import version 99 is "
+                        "below the minimum supported version 100"));
 }
 
-TEST_F(ValidateNSDI, BadVersionTooHigh) {
+TEST_F(ValidateNSDI, AcceptedFutureVersion) {
+  // Any version >= 100 is accepted; later versions are supersets of earlier
+  // ones.
   const std::string text = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -7637,17 +7639,11 @@ OpExtension "SPV_KHR_non_semantic_info"
 OpMemoryModel Logical GLSL450
 )";
   CompileSuccessfully(text);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Unknown NonSemantic.Shader.DebugInfo import version "
-                        "999; supported versions are 100 through 100"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateNSDI, FutureVersion101) {
-  // Version 101 is not yet supported. The parser and optimizer already accept
-  // any NonSemantic.Shader.DebugInfo.* prefix, but the validator enforces the
-  // range [kNSDIMinVersion, kNSDILatestVersion]. Update kNSDILatestVersion and
-  // change the expectation here once spirv-headers publishes version 101.
+  // Version 101 is >= kNSDIMinVersion; the validator imposes no upper bound.
   const std::string text = R"(
 OpCapability Shader
 OpCapability Linkage
@@ -7656,10 +7652,7 @@ OpExtension "SPV_KHR_non_semantic_info"
 OpMemoryModel Logical GLSL450
 )";
   CompileSuccessfully(text);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Unknown NonSemantic.Shader.DebugInfo import version "
-                        "101; supported versions are 100 through 100"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 }  // namespace

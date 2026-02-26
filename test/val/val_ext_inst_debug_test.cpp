@@ -90,6 +90,12 @@ OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
 )";
 
+// Extension string for a future NSDI version; exercises forward-compatibility.
+const static std::string shader_extension_9999 = R"(
+OpExtension "SPV_KHR_non_semantic_info"
+%DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.9999"
+)";
+
 const static std::string opencl_extension = R"(
 %DbgExt = OpExtInstImport "OpenCL.DebugInfo.100"
 )";
@@ -5040,6 +5046,147 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnEndSmallerMultiline) {
 
   const std::string body = R"(
 %line1 = OpExtInst %void %DbgExt DebugLine %dbg_src %u32_1 %u32_2 %u32_1 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicExtraOperand) {
+  // A module declaring NSDI version 9999 may add an optional trailing operand
+  // to DebugTypeBasic. The parser absorbs it via the VARIABLE_ID sentinel;
+  // the validator accepts it because nsdi_version > kNSDIKnownVersion.
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_9999, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionAccepted) {
+  // Opcode 20000 is not defined in NSDI 100 (highest known opcode is 108).
+  // Both the text assembler and binary decoder handle it via the VARIABLE_ID
+  // fallback for unknown non-semantic opcodes; the validator's switch falls
+  // through to SPV_SUCCESS.
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%unknown_inst = OpExtInst %void %DbgExt 20000 %u32_0 %u32_1 %u32_2 %u32_3
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicTwoExtraOperands) {
+  // Two extra trailing operands on an NSDI 9999 module; confirms the VARIABLE_ID
+  // sentinel re-expands as many times as needed, not just once.
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0 %u32_1 %u32_2
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_9999, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugSourceExtraOperand) {
+  // DebugSource already has one optional operand (Text) in NSDI 100.  An
+  // additional trailing operand tests the VARIABLE_ID sentinel when a
+  // grammar-defined OPTIONAL_ID is also present.
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code %u32_0
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionNoOperands) {
+  // Opcode 20000 with zero operands; tests the zero-operand edge case.
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%unknown_inst = OpExtInst %void %DbgExt 20000
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionManyOperands) {
+  // Opcode 20000 with eight operands; tests that no loop limit is exceeded.
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%unknown_inst = OpExtInst %void %DbgExt 20000 %u32_0 %u32_1 %u32_2 %u32_3 %u32_4 %u32_5 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugNoScopeExtraOperandInBody) {
+  // DebugNoScope is allowed in function bodies and has zero required operands.
+  // An extra trailing operand exercises the VARIABLE_ID sentinel in the body
+  // context, where isStartOfNewInst() uses the startsWithOp() fast path
+  // rather than the '%result = OpXxx' lookahead used at global scope.
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+)";
+
+  const std::string body = R"(
+%no_scope = OpExtInst %void %DbgExt DebugNoScope %u32_0
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
