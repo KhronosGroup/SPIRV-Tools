@@ -86,8 +86,7 @@ uint32_t DebugInfoManager::GetDbgSetImportId() {
   uint32_t setId =
       context()->get_feature_mgr()->GetExtInstImportId_OpenCL100DebugInfo();
   if (setId == 0) {
-    setId =
-        context()->get_feature_mgr()->GetExtInstImportId_ShaderDebugInfo();
+    setId = context()->get_feature_mgr()->GetExtInstImportId_ShaderDebugInfo();
   }
   return setId;
 }
