@@ -1540,6 +1540,8 @@ TEST_F(LocalSingleStoreElimTest, AddDebugValueforStoreOutOfDebugDeclareScope) {
          %55 = OpLoad %v4float %in_var_POSITION
                OpLine %7 6 23
                OpStore %param_var_pos %55
+         %93 = OpExtInst %void %1 DebugScope %48
+         %73 = OpExtInst %void %1 DebugDeclare %53 %param_var_pos %52
                OpNoLine
          %56 = OpLoad %v4float %in_var_COLOR
 ;CHECK:      DebugNoScope
@@ -1547,8 +1549,7 @@ TEST_F(LocalSingleStoreElimTest, AddDebugValueforStoreOutOfDebugDeclareScope) {
                OpLine %7 7 23
                OpStore %param_var_color %56
                OpNoLine
-         %93 = OpExtInst %void %1 DebugScope %48
-         %73 = OpExtInst %void %1 DebugDeclare %53 %param_var_pos %52
+
          %74 = OpExtInst %void %1 DebugDeclare %51 %param_var_color %52
 ;CHECK:      [[pos:%\w+]] = OpLoad %v4float %in_var_POSITION
 ;CHECK:      OpLine [[file:%\w+]] 6 23
