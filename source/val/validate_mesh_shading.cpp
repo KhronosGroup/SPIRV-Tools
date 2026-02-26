@@ -14,6 +14,8 @@
 
 // Validates ray query instructions from SPV_KHR_ray_query
 
+#include <string>
+
 #include "source/val/instruction.h"
 #include "source/val/validate.h"
 #include "source/val/validation_state.h"
@@ -116,6 +118,50 @@ spv_result_t ValidateSetMeshOutputs(ValidationState_t& _,
       _.GetBitWidth(primitive_count) != 32) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Primitive Count must be a 32-bit unsigned int scalar";
+  }
+
+  // Will only validate if constants are used (or spec constant frozen)
+  uint64_t vertex_count_value = 0;
+  if (_.EvalConstantValUint64(inst->GetOperandAs<uint32_t>(0),
+                              &vertex_count_value)) {
+    _.function(inst->function()->id())
+        ->RegisterLimitation(
+            [vertex_count_value](const ValidationState_t& state,
+                                 const Function* entry_point,
+                                 std::string* message) {
+              const uint32_t output_vertices =
+                  state.GetOutputVertices(entry_point->id());
+              if (vertex_count_value > output_vertices) {
+                *message =
+                    "OpSetMeshOutputsEXT Vertex Count (" +
+                    std::to_string(vertex_count_value) +
+                    ") is larger than the OutputVertices in OpExecutionMode (" +
+                    std::to_string(output_vertices) + ").";
+                return false;
+              }
+              return true;
+            });
+  }
+  uint64_t primitive_count_value = 0;
+  if (_.EvalConstantValUint64(inst->GetOperandAs<uint32_t>(1),
+                              &primitive_count_value)) {
+    _.function(inst->function()->id())
+        ->RegisterLimitation(
+            [primitive_count_value](const ValidationState_t& state,
+                                    const Function* entry_point,
+                                    std::string* message) {
+              const uint32_t output_primitives =
+                  state.GetOutputPrimitivesEXT(entry_point->id());
+              if (primitive_count_value > output_primitives) {
+                *message = "OpSetMeshOutputsEXT Primitive Count (" +
+                           std::to_string(primitive_count_value) +
+                           ") is larger than the OutputPrimitivesEXT in "
+                           "OpExecutionMode (" +
+                           std::to_string(output_primitives) + ").";
+                return false;
+              }
+              return true;
+            });
   }
 
   return SPV_SUCCESS;

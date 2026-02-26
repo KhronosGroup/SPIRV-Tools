@@ -271,9 +271,26 @@ class ValidationState_t {
   }
 
   /// Returns the maximum number of primitives mesh shader can emit
-  uint32_t GetOutputPrimitivesEXT(uint32_t entry_point) {
+  uint32_t GetOutputPrimitivesEXT(uint32_t entry_point) const {
     auto entry = entry_point_to_output_primitives_.find(entry_point);
     if (entry != entry_point_to_output_primitives_.end()) {
+      auto inst = entry->second;
+      return inst->GetOperandAs<uint32_t>(2);
+    }
+    return 0;
+  }
+
+  /// Registers that the entry point maximum number of vertices
+  /// mesh shader will ever emit
+  void RegisterEntryPointOutputVertices(uint32_t entry_point,
+                                        const Instruction* inst) {
+    entry_point_to_output_vertices_[entry_point] = inst;
+  }
+
+  /// Returns the maximum number of primitives mesh shader can emit
+  uint32_t GetOutputVertices(uint32_t entry_point) const {
+    auto entry = entry_point_to_output_vertices_.find(entry_point);
+    if (entry != entry_point_to_output_vertices_.end()) {
       auto inst = entry->second;
       return inst->GetOperandAs<uint32_t>(2);
     }
@@ -1131,6 +1148,10 @@ class ValidationState_t {
   // Mapping entry point -> OutputPrimitivesEXT execution mode instruction
   std::unordered_map<uint32_t, const Instruction*>
       entry_point_to_output_primitives_;
+
+  // Mapping entry point -> OutputVertices execution mode instruction
+  std::unordered_map<uint32_t, const Instruction*>
+      entry_point_to_output_vertices_;
 
   /// Mapping function -> array of entry points inside this
   /// module which can (indirectly) call the function.
