@@ -160,14 +160,16 @@ bool AggressiveDCEPass::AllExtensionsSupported() const {
     if (extensions_allowlist_.find(extName) == extensions_allowlist_.end())
       return false;
   }
-  // Only allow NonSemantic.Shader.DebugInfo.100, we cannot safely optimise
-  // around unknown extended instruction sets even if they are non-semantic
+  // Only allow NonSemantic.Shader.DebugInfo (any version) and
+  // NonSemantic.DebugPrintf; we cannot safely optimise around unknown extended
+  // instruction sets even if they are non-semantic.
   for (auto& inst : context()->module()->ext_inst_imports()) {
     assert(inst.opcode() == spv::Op::OpExtInstImport &&
            "Expecting an import of an extension's instruction set.");
     const std::string extension_name = inst.GetInOperand(0).AsString();
     if (spvtools::utils::starts_with(extension_name, "NonSemantic.") &&
-        (extension_name != "NonSemantic.Shader.DebugInfo.100") &&
+        !spvtools::utils::starts_with(extension_name,
+                                      "NonSemantic.Shader.DebugInfo.") &&
         (extension_name != "NonSemantic.DebugPrintf")) {
       return false;
     }
@@ -291,7 +293,7 @@ Pass::Status AggressiveDCEPass::ProcessDebugInformation(
     bool succeeded = (*bi)->WhileEachInst([this](Instruction* inst) {
       if (!inst->IsNonSemanticInstruction()) return true;
 
-      if (inst->GetShader100DebugOpcode() ==
+      if (inst->GetShaderDebugOpcode() ==
           NonSemanticShaderDebugInfo100DebugDeclare) {
         if (IsLive(inst)) return true;
 
@@ -329,7 +331,7 @@ Pass::Status AggressiveDCEPass::ProcessDebugInformation(
           }
           return true;
         });
-      } else if (inst->GetShader100DebugOpcode() ==
+      } else if (inst->GetShaderDebugOpcode() ==
                  NonSemanticShaderDebugInfo100DebugValue) {
         uint32_t var_operand_idx = kDebugValueValueInIdx;
         uint32_t id = inst->GetSingleWordInOperand(var_operand_idx);
@@ -758,7 +760,7 @@ Pass::Status AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
 
   // Add DebugInfo which should never be eliminated to worklist
   for (auto& dbg : get_module()->ext_inst_debuginfo()) {
-    auto op = dbg.GetShader100DebugOpcode();
+    auto op = dbg.GetShaderDebugOpcode();
     if (op == NonSemanticShaderDebugInfo100DebugCompilationUnit ||
         op == NonSemanticShaderDebugInfo100DebugEntryPoint ||
         op == NonSemanticShaderDebugInfo100DebugSource ||
@@ -1014,7 +1016,7 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
       continue;
     }
     // Save debug build identifier even if no other instructions refer to it.
-    if (dbg.GetShader100DebugOpcode() ==
+    if (dbg.GetShaderDebugOpcode() ==
         NonSemanticShaderDebugInfo100DebugBuildIdentifier) {
       // The debug build identifier refers to other instructions that
       // can potentially be removed, they also need to be kept alive.

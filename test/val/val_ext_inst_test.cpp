@@ -7569,6 +7569,92 @@ TEST_F(ValidateExtInst, OpExtInstRequiresNonSemanticBefore16) {
                 "DebugTypeFunction %uint_0 %12\n"));
 }
 
+using ValidateNSDI = spvtest::ValidateBase<bool>;
+
+TEST_F(ValidateNSDI, ValidVersion100) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+OpMemoryModel Logical GLSL450
+)";
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateNSDI, MissingVersion) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.Shader.DebugInfo."
+OpMemoryModel Logical GLSL450
+)";
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonSemantic.Shader.DebugInfo import does not encode "
+                        "the version correctly"));
+}
+
+TEST_F(ValidateNSDI, BadVersionNotANumber) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.1a"
+OpMemoryModel Logical GLSL450
+)";
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonSemantic.Shader.DebugInfo import does not encode "
+                        "the version correctly"));
+}
+
+TEST_F(ValidateNSDI, BadVersionTooLow) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.99"
+OpMemoryModel Logical GLSL450
+)";
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("NonSemantic.Shader.DebugInfo import version 99 is "
+                        "below the minimum supported version 100"));
+}
+
+TEST_F(ValidateNSDI, AcceptedFutureVersion) {
+  // Any version >= 100 is accepted; later versions are supersets of earlier
+  // ones.
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.999"
+OpMemoryModel Logical GLSL450
+)";
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateNSDI, FutureVersion101) {
+  // Version 101 is >= kNSDIMinVersion; the validator imposes no upper bound.
+  const std::string text = R"(
+OpCapability Shader
+OpCapability Linkage
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.101"
+OpMemoryModel Logical GLSL450
+)";
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
