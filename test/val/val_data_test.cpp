@@ -475,10 +475,9 @@ TEST_F(ValidateData, float8_no_encoding_bad) {
 TEST_F(ValidateData, float8_bad_encoding) {
   std::string str =
       header_with_float8_and_bfloat16 + "%2 = OpTypeFloat 8 BFloat16KHR";
-  CompileSuccessfully(str.c_str());
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Unsupported 8-bit floating point encoding"));
+  const auto& err = CompileFailure(str.c_str());
+  EXPECT_THAT(err, HasSubstr("Invalid bit width 8 for floating point encoding "
+                             "BFloat16KHR; expected 16"));
 }
 
 TEST_F(ValidateData, dot_bfloat16_bad) {
