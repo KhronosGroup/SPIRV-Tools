@@ -80,6 +80,9 @@ ModuleLayoutSection InstructionLayoutSection(
       return kLayoutAnnotations;
     case spv::Op::OpTypeForwardPointer:
     case spv::Op::OpTypeTaskSequenceINTEL:
+    case spv::Op::OpAliasDomainDeclINTEL:
+    case spv::Op::OpAliasScopeDeclINTEL:
+    case spv::Op::OpAliasScopeListDeclINTEL:
       return kLayoutTypes;
     case spv::Op::OpVariable:
     case spv::Op::OpUntypedVariableKHR:

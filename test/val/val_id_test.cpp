@@ -7292,6 +7292,74 @@ TEST_P(ValidateIdWithMessage, OpExtInstNoForwardDeclAllowed) {
               HasSubstr(make_message("ID '11[%11]' has not been defined")));
 }
 
+TEST_P(ValidateIdWithMessage, OpAliasScopeDeclINTELDoesNotRequireType) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability MemoryAccessAliasingINTEL
+     OpExtension "SPV_INTEL_memory_access_aliasing"
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint Fragment %main "main"
+     OpExecutionMode %main OriginUpperLeft
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%alias_domain = OpAliasDomainDeclINTEL
+%alias_scope = OpAliasScopeDeclINTEL %alias_domain
+%main = OpFunction %void None %func_type
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_P(ValidateIdWithMessage, OpAliasScopeListDeclINTELDoesNotRequireType) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability MemoryAccessAliasingINTEL
+     OpExtension "SPV_INTEL_memory_access_aliasing"
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint Fragment %main "main"
+     OpExecutionMode %main OriginUpperLeft
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%alias_domain = OpAliasDomainDeclINTEL
+%alias_scope1 = OpAliasScopeDeclINTEL %alias_domain
+%alias_scope2 = OpAliasScopeDeclINTEL %alias_domain
+%alias_list = OpAliasScopeListDeclINTEL %alias_scope1 %alias_scope2
+%main = OpFunction %void None %func_type
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// Test that would have failed before the fix - showing what happens when
+// these instructions reference operands without types
+TEST_P(ValidateIdWithMessage, OpAliasScopeINTELWithNonTypedOperands) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability MemoryAccessAliasingINTEL
+     OpExtension "SPV_INTEL_memory_access_aliasing"
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint Fragment %main "main"
+     OpExecutionMode %main OriginUpperLeft
+%void = OpTypeVoid
+%func_type = OpTypeFunction %void
+%alias_domain = OpAliasDomainDeclINTEL
+%alias_scope = OpAliasScopeDeclINTEL %alias_domain
+%alias_list = OpAliasScopeListDeclINTEL %alias_scope
+%main = OpFunction %void None %func_type
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 INSTANTIATE_TEST_SUITE_P(, ValidateIdWithMessage, ::testing::Bool());
 
 }  // namespace

@@ -603,6 +603,53 @@ spv_result_t ValidateSpecConstantOp(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateConstantFunctionPointerINTEL(ValidationState_t& _,
+                                                  const Instruction* inst) {
+  const auto result_type = _.FindDef(inst->type_id());
+  // Result Type must be a pointer type
+  if (!result_type ||
+      (result_type->opcode() != spv::Op::OpTypePointer &&
+       result_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpConstantFunctionPointerINTEL Result Type <id> "
+           << _.getIdName(inst->type_id()) << " is not a pointer type";
+  }
+
+  // For typed pointers, check that pointee is a function type
+  const Instruction* pointee_type = nullptr;
+  if (result_type->opcode() == spv::Op::OpTypePointer) {
+    pointee_type = _.FindDef(result_type->GetOperandAs<uint32_t>(2));
+    if (!pointee_type || pointee_type->opcode() != spv::Op::OpTypeFunction) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpConstantFunctionPointerINTEL Result Type <id> "
+             << _.getIdName(inst->type_id())
+             << " must be a pointer to function type";
+    }
+  }
+
+  // Validate that the function operand refers to an OpFunction
+  const uint32_t function_id = inst->GetOperandAs<uint32_t>(2);
+  const auto function_inst = _.FindDef(function_id);
+  if (function_inst->opcode() != spv::Op::OpFunction) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpConstantFunctionPointerINTEL Function operand <id> "
+           << _.getIdName(function_id) << " is not an OpFunction";
+  }
+
+  // For typed pointers, validate that function type matches pointee type
+  if (pointee_type) {
+    const uint32_t function_type_id = function_inst->GetOperandAs<uint32_t>(3);
+    if (function_type_id != pointee_type->id()) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpConstantFunctionPointerINTEL Function operand <id> "
+             << _.getIdName(function_id)
+             << " type does not match the pointer's function type";
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 spv_result_t ConstantPass(ValidationState_t& _, const Instruction* inst) {
@@ -631,6 +678,9 @@ spv_result_t ConstantPass(ValidationState_t& _, const Instruction* inst) {
       break;
     case spv::Op::OpConstantSizeOfEXT:
       if (auto error = ValidateConstantSizeOfEXT(_, inst)) return error;
+      break;
+    case spv::Op::OpConstantFunctionPointerINTEL:
+      if (auto error = ValidateConstantFunctionPointerINTEL(_, inst)) return error;
       break;
     default:
       break;
