@@ -114,6 +114,10 @@ class ConvertToHalfPass : public Pass {
   // invalid so we need to clean them up.
   bool MatConvertCleanup(Instruction* inst);
 
+  // If |inst| has any image operands, make sure to covert it back to a 32-bit
+  // float
+  bool ImageOperandCleanup(Instruction* inst);
+
   // Call GenHalfInst on every instruction in |func|.
   // If code is generated for an instruction, replace the instruction
   // with the new instructions that are generated.
