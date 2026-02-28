@@ -750,6 +750,9 @@ class ValidationState_t {
   bool IsTensorType(uint32_t id) const;
   bool IsDescriptorType(spv::Op opcode) const;
   bool IsDescriptorType(uint32_t id) const;
+  bool IsPhysicalPointerType(uint32_t id) const;
+  bool IsNumericalType(uint32_t id) const;
+  bool IsConcreteType(uint32_t id) const;
   // When |length| is not 0, return true only if the array length is equal to
   // |length| and the array length is not defined by a specialization constant.
   bool IsArrayType(uint32_t id, uint64_t length = 0) const;

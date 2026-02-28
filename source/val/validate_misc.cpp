@@ -82,6 +82,27 @@ spv_result_t ValidateShaderClock(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateSizeOf(ValidationState_t& _, const Instruction* inst) {
+  const uint32_t result_type = inst->type_id();
+  if (!_.IsIntScalarType(result_type, 32)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected OpSizeOf Result Type to be a 32-bit int scalar.";
+  }
+
+  uint32_t pointer_id = inst->GetOperandAs<uint32_t>(2);
+  if (!_.IsConcreteType(pointer_id)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "OpSizeOf Pointer operand is not concrete.";
+  } else if (_.FindDef(pointer_id)->opcode() ==
+             spv::Op::OpTypeUntypedPointerKHR) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "OpSizeOf Pointer operand is to an untyped pointer, which size "
+              "is not well defined.";
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateAssumeTrue(ValidationState_t& _, const Instruction* inst) {
   const auto operand_type_id = _.GetOperandTypeId(inst, 0);
   if (!operand_type_id || !_.IsBoolScalarType(operand_type_id)) {
@@ -190,6 +211,11 @@ spv_result_t MiscPass(ValidationState_t& _, const Instruction* inst) {
     }
     case spv::Op::OpReadClockKHR:
       if (auto error = ValidateShaderClock(_, inst)) {
+        return error;
+      }
+      break;
+    case spv::Op::OpSizeOf:
+      if (auto error = ValidateSizeOf(_, inst)) {
         return error;
       }
       break;

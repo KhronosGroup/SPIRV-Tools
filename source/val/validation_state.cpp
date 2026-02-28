@@ -30,6 +30,7 @@
 #include "source/val/construct.h"
 #include "source/val/function.h"
 #include "spirv-tools/libspirv.h"
+#include "spirv/unified1/spirv.hpp11"
 
 namespace spvtools {
 namespace val {
@@ -927,21 +928,15 @@ uint32_t ValidationState_t::GetComponentType(uint32_t id) const {
 
     case spv::Op::OpTypeArray:
     case spv::Op::OpTypeRuntimeArray:
-      return inst->word(2);
-
     case spv::Op::OpTypeVector:
+    case spv::Op::OpTypeVectorIdEXT:
+    case spv::Op::OpTypeCooperativeMatrixNV:
+    case spv::Op::OpTypeCooperativeMatrixKHR:
+    case spv::Op::OpTypeTensorARM:
       return inst->word(2);
 
     case spv::Op::OpTypeMatrix:
       return GetComponentType(inst->word(2));
-
-    case spv::Op::OpTypeCooperativeMatrixNV:
-    case spv::Op::OpTypeCooperativeMatrixKHR:
-    case spv::Op::OpTypeVectorIdEXT:
-      return inst->word(2);
-
-    case spv::Op::OpTypeTensorARM:
-      return inst->word(2);
 
     default:
       break;
@@ -1630,6 +1625,57 @@ bool ValidationState_t::IsDescriptorHeapBaseVariable(const Instruction* inst) {
   return FindDef(base_inst->id())->opcode() == spv::Op::OpBufferPointerEXT ||
          (FindDef(base_inst->id())->opcode() == spv::Op::OpUntypedVariableKHR &&
           is_heap_base);
+}
+
+// From the spec (SPIRV.html#PhysicalPointerType)
+bool ValidationState_t::IsPhysicalPointerType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  const spv::Op opcode = inst->opcode();
+  if (opcode != spv::Op::OpTypePointer &&
+      opcode != spv::Op::OpTypeUntypedPointerKHR) {
+    return false;
+  }
+
+  const spv::AddressingModel am = addressing_model();
+  if (am == spv::AddressingModel::Logical) {
+    return false;
+  } else if (am == spv::AddressingModel::Physical32 ||
+             am == spv::AddressingModel::Physical64) {
+    return true;
+  } else if (am == spv::AddressingModel::PhysicalStorageBuffer64) {
+    const spv::StorageClass storage_class = spv::StorageClass(inst->word(2));
+    return storage_class == spv::StorageClass::PhysicalStorageBuffer;
+  }
+
+  assert(0);
+  return false;
+}
+
+// From the spec (SPIRV.html#Numerical)
+bool ValidationState_t::IsNumericalType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  const spv::Op opcode = inst->opcode();
+  return opcode == spv::Op::OpTypeInt || opcode == spv::Op::OpTypeFloat;
+}
+
+// From the spec (SPIRV.html#Concrete)
+bool ValidationState_t::IsConcreteType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  const spv::Op opcode = inst->opcode();
+
+  if (opcode == spv::Op::OpTypeStruct) {
+    // all elements must be concrete
+    for (uint32_t i = 1; i < inst->operands().size(); ++i) {
+      if (!IsConcreteType(inst->GetOperandAs<uint32_t>(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  const uint32_t component_type = GetComponentType(id);
+  return IsNumericalType(component_type) ||
+         IsPhysicalPointerType(component_type);
 }
 
 spv_result_t ValidationState_t::CooperativeMatrixShapesMatch(
