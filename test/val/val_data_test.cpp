@@ -14,10 +14,12 @@
 
 // Validation tests for Data Rules.
 
+#include <sstream>
 #include <string>
 #include <utility>
 
 #include "gmock/gmock.h"
+#include "spirv/unified1/spirv.hpp11"
 #include "test/unit_spirv.h"
 #include "test/val/val_fixtures.h"
 
@@ -125,6 +127,15 @@ std::string header_with_float64 = R"(
      OpCapability Shader
      OpCapability Linkage
      OpCapability Float64
+     OpMemoryModel Logical GLSL450
+)";
+
+std::string header_with_float64_bfloat16 = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability Float64
+     OpCapability BFloat16TypeKHR
+     OpExtension "SPV_KHR_bfloat16"
      OpMemoryModel Logical GLSL450
 )";
 
@@ -378,7 +389,7 @@ TEST_F(ValidateData, float8_good) {
 %3 = OpTypeFloat 8 Float8E5M2EXT
 )";
   CompileSuccessfully(str.c_str());
-  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
 }
 
 TEST_F(ValidateData, bfloat16_good) {
@@ -438,6 +449,30 @@ TEST_F(ValidateData, float16_buffer_good) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateData, float32_with_encoding_number_bad) {
+  std::string str = header_with_bfloat16 + "%2 = OpTypeFloat 32 !9999";
+  const auto& err = CompileFailure(str.c_str());
+  EXPECT_THAT(err, HasSubstr("Invalid OpTypeFloat encoding"));
+}
+
+TEST_F(ValidateData, float32_with_encoding_enum_bad) {
+  std::string str = header_with_bfloat16 + "%2 = OpTypeFloat 32 BFloat16";
+  const auto& err = CompileFailure(str.c_str());
+  EXPECT_THAT(err, HasSubstr("Invalid FP encoding 'BFloat16'"));
+}
+
+TEST_F(ValidateData, float64_with_encoding_number_bad) {
+  std::string str = header_with_float64 + "%2 = OpTypeFloat 64 !9999";
+  const auto& err = CompileFailure(str.c_str());
+  EXPECT_THAT(err, HasSubstr("Invalid OpTypeFloat encoding"));
+}
+
+TEST_F(ValidateData, float64_with_encoding_enum_bad) {
+  std::string str = header_with_float64 + "%2 = OpTypeFloat 64 BFloat16";
+  const auto& err = CompileFailure(str.c_str());
+  EXPECT_THAT(err, HasSubstr("Invalid FP encoding 'BFloat16'"));
+}
+
 TEST_F(ValidateData, float16_bad) {
   std::string str = header + "%2 = OpTypeFloat 16";
   CompileSuccessfully(str.c_str());
@@ -445,7 +480,7 @@ TEST_F(ValidateData, float16_bad) {
   EXPECT_THAT(getDiagnosticString(), HasSubstr(missing_float16_cap_error));
 }
 
-TEST_F(ValidateData, bfloat16_bad) {
+TEST_F(ValidateData, bfloat16_missing_cap_bad) {
   std::string str = header + "%2 = OpTypeFloat 16 BFloat16KHR";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
@@ -453,10 +488,59 @@ TEST_F(ValidateData, bfloat16_bad) {
               HasSubstr("requires one of these capabilities: BFloat16TypeKHR"));
 }
 
-TEST_F(ValidateData, float8_bad) {
+TEST_F(ValidateData, bfloat16_wrong_width_15_bad) {
+  std::stringstream ss;
+  ss << header_with_bfloat16 << "!"
+     << (4u << 16 | static_cast<uint32_t>(spv::Op::OpTypeFloat)) << " 99 15 "
+     << static_cast<uint32_t>(spv::FPEncoding::BFloat16KHR);
+  CompileSuccessfully(ss.str().c_str());
+  OverwriteIdBound(100);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid number of bits (15) used for OpTypeFloat"))
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateData, bfloat16_wrong_width_8_bad) {
+  std::stringstream ss;
+  ss << header_with_float8_and_bfloat16 << "!"
+     << (4u << 16 | static_cast<uint32_t>(spv::Op::OpTypeFloat)) << " 99 8 "
+     << static_cast<uint32_t>(spv::FPEncoding::BFloat16KHR);
+  CompileSuccessfully(ss.str().c_str());
+  OverwriteIdBound(100);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Unsupported 8-bit floating point encoding"))
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateData, bfloat16_too_many_operands_bad) {
+  std::stringstream ss;
+  ss << header_with_float8_and_bfloat16 << "!"
+     << (5u << 16 | static_cast<uint32_t>(spv::Op::OpTypeFloat)) << " 99 16 "
+     << static_cast<uint32_t>(spv::FPEncoding::BFloat16KHR) << " 0";
+  CompileSuccessfully(ss.str().c_str());
+  OverwriteIdBound(100);
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected no more operands after 4 words, but stated "
+                        "word count is 5"))
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateData, float8_E4M3_missing_cap_bad) {
   std::string str = header +
                     R"(%2 = OpTypeFloat 8 Float8E4M3EXT
-%3 = OpTypeFloat 8 Float8E5M2EXT
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these capabilities: Float8EXT"));
+}
+
+TEST_F(ValidateData, float8_E5M2_missing_cap_bad) {
+  std::string str = header +
+                    R"(%2 = OpTypeFloat 8 Float8E5M2EXT
 )";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
@@ -478,6 +562,86 @@ TEST_F(ValidateData, float8_bad_encoding) {
   const auto& err = CompileFailure(str.c_str());
   EXPECT_THAT(err, HasSubstr("Invalid bit width 8 for floating point encoding "
                              "BFloat16KHR; expected 16"));
+}
+
+TEST_F(ValidateData, float8_E4M3_wrong_width_7_bad) {
+  std::stringstream ss;
+  ss << header_with_float8 << "!"
+     << ((4u << 16) | static_cast<uint32_t>(spv::Op::OpTypeFloat)) << " 99 7 "
+     << static_cast<uint32_t>(spv::FPEncoding::Float8E4M3EXT);
+  CompileSuccessfully(ss.str().c_str());
+  OverwriteIdBound(100);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid number of bits (7) used for OpTypeFloat"))
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateData, float8_E4M3_wrong_width_16_bad) {
+  std::stringstream ss;
+  ss << header_with_float8 << "!"
+     << ((4u << 16) | static_cast<uint32_t>(spv::Op::OpTypeFloat)) << " 99 16 "
+     << static_cast<uint32_t>(spv::FPEncoding::Float8E4M3EXT);
+  CompileSuccessfully(ss.str().c_str());
+  OverwriteIdBound(100);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Unsupported 16-bit floating point encoding (4214)"))
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateData, float8_E5M2_wrong_width_7_bad) {
+  std::stringstream ss;
+  ss << header_with_float8 << "!"
+     << ((4u << 16) | static_cast<uint32_t>(spv::Op::OpTypeFloat)) << " 99 7 "
+     << static_cast<uint32_t>(spv::FPEncoding::Float8E5M2EXT);
+  CompileSuccessfully(ss.str().c_str());
+  OverwriteIdBound(100);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid number of bits (7) used for OpTypeFloat"))
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateData, float8_E5M2_wrong_width_16_bad) {
+  std::stringstream ss;
+  ss << header_with_float8 << "!"
+     << ((4u << 16) | static_cast<uint32_t>(spv::Op::OpTypeFloat)) << " 99 16 "
+     << static_cast<uint32_t>(spv::FPEncoding::Float8E5M2EXT);
+  CompileSuccessfully(ss.str().c_str());
+  OverwriteIdBound(100);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Unsupported 16-bit floating point encoding (4215)"))
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateData, float8_e4m3_too_many_operands_bad) {
+  std::stringstream ss;
+  ss << header_with_float8 << "!"
+     << (5u << 16 | static_cast<uint32_t>(spv::Op::OpTypeFloat)) << " 99 8 "
+     << static_cast<uint32_t>(spv::FPEncoding::Float8E4M3EXT) << " 0";
+  CompileSuccessfully(ss.str().c_str());
+  OverwriteIdBound(100);
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected no more operands after 4 words, but stated "
+                        "word count is 5"))
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateData, float8_e5m2_too_many_operands_bad) {
+  std::stringstream ss;
+  ss << header_with_float8 << "!"
+     << (5u << 16 | static_cast<uint32_t>(spv::Op::OpTypeFloat)) << " 99 8 "
+     << static_cast<uint32_t>(spv::FPEncoding::Float8E5M2EXT) << " 0";
+  CompileSuccessfully(ss.str().c_str());
+  OverwriteIdBound(100);
+  ASSERT_EQ(SPV_ERROR_INVALID_BINARY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected no more operands after 4 words, but stated "
+                        "word count is 5"))
+      << getDiagnosticString();
 }
 
 TEST_F(ValidateData, dot_bfloat16_bad) {
@@ -526,11 +690,39 @@ TEST_F(ValidateData, float64_good) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateData, float64_bad) {
+TEST_F(ValidateData, float64_missing_cap_bad) {
   std::string str = header + "%2 = OpTypeFloat 64";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr(missing_float64_cap_error));
+}
+
+TEST_F(ValidateData, float32_encoding_param_bad) {
+  std::stringstream ss;
+  ss << header_with_bfloat16 << "!"
+     << (4u << 16 | static_cast<uint32_t>(spv::Op::OpTypeFloat)) << " 99 32 "
+     << static_cast<uint32_t>(spv::FPEncoding::BFloat16KHR);
+  CompileSuccessfully(ss.str().c_str());
+  OverwriteIdBound(100);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("32-bit floating point type must not have encoding parameter"))
+      << getDiagnosticString();
+}
+
+TEST_F(ValidateData, float64_encoding_param_bad) {
+  std::stringstream ss;
+  ss << header_with_float64_bfloat16 << "!"
+     << (4u << 16 | static_cast<uint32_t>(spv::Op::OpTypeFloat)) << " 99 64 "
+     << static_cast<uint32_t>(spv::FPEncoding::BFloat16KHR);
+  CompileSuccessfully(ss.str().c_str());
+  OverwriteIdBound(100);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("64-bit floating point type must not have encoding parameter"))
+      << getDiagnosticString();
 }
 
 // Number of bits in a float may be only one of: {16,32,64}
