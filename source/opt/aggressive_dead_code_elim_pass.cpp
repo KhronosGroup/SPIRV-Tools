@@ -1158,6 +1158,8 @@ void AggressiveDCEPass::InitExtensions() {
       "SPV_NV_linear_swept_spheres",
       "SPV_KHR_maximal_reconvergence",
       "SPV_NV_push_constant_bank",
+      "SPV_EXT_opacity_micromap",
+      "SPV_EXT_shader_invocation_reorder",
   });
 }
 
