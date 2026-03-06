@@ -70,6 +70,7 @@ add_spvtools_unittest(TARGET opt
        ir_loader_test.cpp
        iterator_test.cpp
        line_debug_info_test.cpp
+       legalize_multidim_array_test.cpp
        local_access_chain_convert_test.cpp
        local_redundancy_elimination_test.cpp
        local_single_block_elim.cpp

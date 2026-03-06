@@ -1526,7 +1526,7 @@ OpFunctionEnd
   EXPECT_EQ(false, inst->IsVulkanStorageTexelBuffer());
 }
 
-TEST_F(DescriptorTypeTest, GetShader100DebugOpcode) {
+TEST_F(DescriptorTypeTest, GetShaderDebugOpcode) {
   const std::string text = R"(
               OpCapability Shader
          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
@@ -1541,10 +1541,10 @@ TEST_F(DescriptorTypeTest, GetShader100DebugOpcode) {
   std::unique_ptr<IRContext> context =
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   Instruction* debug_expression = context->get_def_use_mgr()->GetDef(5);
-  EXPECT_EQ(debug_expression->GetShader100DebugOpcode(),
+  EXPECT_EQ(debug_expression->GetShaderDebugOpcode(),
             NonSemanticShaderDebugInfo100DebugExpression);
   Instruction* debug_source = context->get_def_use_mgr()->GetDef(6);
-  EXPECT_EQ(debug_source->GetShader100DebugOpcode(),
+  EXPECT_EQ(debug_source->GetShaderDebugOpcode(),
             NonSemanticShaderDebugInfo100DebugSource);
 
   // Test that an opcode larger than the max will return Max.  This instruction
@@ -1555,14 +1555,14 @@ TEST_F(DescriptorTypeTest, GetShader100DebugOpcode) {
   const uint32_t kExtInstOpcodeInIndex = 1;
   uint32_t large_opcode = NonSemanticShaderDebugInfo100InstructionsMax + 2;
   past_max->SetInOperand(kExtInstOpcodeInIndex, {large_opcode});
-  EXPECT_EQ(past_max->GetShader100DebugOpcode(),
+  EXPECT_EQ(past_max->GetShaderDebugOpcode(),
             NonSemanticShaderDebugInfo100InstructionsMax);
 
   // Test that an opcode without a value in the enum, but less than Max returns
   // the same value.
   uint32_t opcode = NonSemanticShaderDebugInfo100InstructionsMax - 2;
   past_max->SetInOperand(kExtInstOpcodeInIndex, {opcode});
-  EXPECT_EQ(past_max->GetShader100DebugOpcode(), opcode);
+  EXPECT_EQ(past_max->GetShaderDebugOpcode(), opcode);
 }
 
 }  // namespace

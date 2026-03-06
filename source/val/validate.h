@@ -195,6 +195,9 @@ spv_result_t ExtensionPass(ValidationState_t& _, const Instruction* inst);
 /// Validates correctness of annotation instructions.
 spv_result_t AnnotationPass(ValidationState_t& _, const Instruction* inst);
 
+/// Validates correctness of pipe instructions.
+spv_result_t PipePass(ValidationState_t& _, const Instruction* inst);
+
 /// Validates correctness of non-uniform group instructions.
 spv_result_t NonUniformPass(ValidationState_t& _, const Instruction* inst);
 

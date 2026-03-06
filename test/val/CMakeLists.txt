@@ -36,6 +36,7 @@ add_spvtools_unittest(TARGET val_abcde
        val_data_test.cpp
        val_decoration_test.cpp
        val_derivatives_test.cpp
+       val_dot_product_test.cpp
        val_entry_point_test.cpp
        val_explicit_reserved_test.cpp
        val_invalid_type_test.cpp
@@ -92,6 +93,7 @@ add_spvtools_unittest(TARGET val_fghijklmnop
        val_non_semantic_test.cpp
        val_non_uniform_test.cpp
        val_opencl_test.cpp
+       val_pipe_test.cpp
        val_primitives_test.cpp
        ${VAL_TEST_COMMON_SRCS}
   LIBS ${SPIRV_TOOLS_FULL_VISIBILITY}

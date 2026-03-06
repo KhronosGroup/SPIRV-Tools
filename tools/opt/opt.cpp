@@ -279,6 +279,10 @@ Options (in lexicographical order):)",
                option --relax-logical-pointer to the validator.)",
          GetLegalizationPasses().c_str());
   printf(R"(
+  --legalize-multidim-array
+               Replace multidimensional arrays of resources with single-dimensional
+               arrays. Run combine-access-chains before this pass.)");
+  printf(R"(
   --local-redundancy-elimination
                Looks for instructions in the same basic block that compute the
                same value, and deletes the redundant ones.)");

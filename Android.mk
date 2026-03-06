@@ -73,6 +73,7 @@ SPVTOOLS_SRC_FILES := \
 		source/val/validate_logical_pointers.cpp \
 		source/val/validate_logicals.cpp \
 		source/val/validate_non_uniform.cpp \
+		source/val/validate_pipe.cpp \
 		source/val/validate_primitives.cpp \
 		source/val/validate_ray_query.cpp \
 		source/val/validate_ray_tracing.cpp \
@@ -144,6 +145,7 @@ SPVTOOLS_OPT_SRC_FILES := \
 		source/opt/invocation_interlock_placement_pass.cpp \
 		source/opt/ir_context.cpp \
 		source/opt/ir_loader.cpp \
+		source/opt/legalize_multidim_array_pass.cpp \
 		source/opt/licm_pass.cpp \
 		source/opt/liveness.cpp \
 		source/opt/local_access_chain_convert_pass.cpp \

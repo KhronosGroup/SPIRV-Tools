@@ -546,6 +546,7 @@ cc_library(
 [cc_test(
     name = "opt_{testcase}_test".format(testcase = f[len("test/opt/"):-len("_test.cpp")]),
     size = "small",
+    timeout = "moderate" if f[len("test/opt/"):-len("_test.cpp")] == "fold" else "short",
     srcs = [f],
     copts = TEST_COPTS,
     linkstatic = 1,
@@ -671,6 +672,7 @@ cc_library(
         ":val_test_lib",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
+        "@spirv_headers//:spirv_cpp11_headers",
     ],
 ) for f in glob(
     ["test/val/val_*_test.cpp"],

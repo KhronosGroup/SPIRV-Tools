@@ -667,6 +667,37 @@ OpFunctionEnd
                 "IncomingCallableDataKHR storage class in the interface"));
 }
 
+TEST_F(ValidateRayTracing, RayTracingPositionFetchCapability) {
+  const std::string spirv = R"(
+               OpCapability RayTracingKHR
+               OpCapability RayQueryPositionFetchKHR
+               OpExtension "SPV_KHR_ray_tracing"
+               OpExtension "SPV_KHR_ray_tracing_position_fetch"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint AnyHitKHR %main "main" %gl_HitTriangleVertexPositionsEXT
+               OpDecorate %gl_HitTriangleVertexPositionsEXT BuiltIn HitTriangleVertexPositionsKHR
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+       %uint = OpTypeInt 32 0
+     %uint_3 = OpConstant %uint 3
+%_arr_v3float_uint_3 = OpTypeArray %v3float %uint_3
+%_ptr_Input__arr_v3float_uint_3 = OpTypePointer Input %_arr_v3float_uint_3
+%gl_HitTriangleVertexPositionsEXT = OpVariable %_ptr_Input__arr_v3float_uint_3 Input
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpTerminateRayKHR
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Decorate requires one of these capabilities: "
+                        "RayTracingPositionFetchKHR"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

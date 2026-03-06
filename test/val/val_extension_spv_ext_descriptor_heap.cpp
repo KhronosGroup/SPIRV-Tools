@@ -2362,6 +2362,61 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideFloat) {
           "ArrayStrideIdEXT extra operand must be a 32-bit int scalar type"));
 }
 
+TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideConstantZero) {
+  const std::string str = R"(
+      OpCapability Shader
+      OpCapability DescriptorHeapEXT
+      OpExtension "SPV_EXT_descriptor_heap"
+      OpMemoryModel Logical GLSL450
+      OpEntryPoint GLCompute %main "main"
+      OpExecutionMode %main LocalSize 1 1 1
+      OpDecorateId %array ArrayStrideIdEXT %int_0
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_2 = OpConstant %int 2
+%sampler = OpTypeSampler
+%array = OpTypeArray %sampler %int_2
+%void = OpTypeVoid
+  %3 = OpTypeFunction %void
+%main = OpFunction %void None %3
+  %5 = OpLabel
+      OpReturn
+      OpFunctionEnd
+
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_4);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ArrayStrideIdEXT contains a stride of zero"));
+}
+
+TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideSpecConstantZero) {
+  const std::string str = R"(
+      OpCapability Shader
+      OpCapability DescriptorHeapEXT
+      OpExtension "SPV_EXT_descriptor_heap"
+      OpMemoryModel Logical GLSL450
+      OpEntryPoint GLCompute %main "main"
+      OpExecutionMode %main LocalSize 1 1 1
+      OpDecorate %spec SpecId 1
+      OpDecorateId %array ArrayStrideIdEXT %spec
+%int = OpTypeInt 32 0
+%int_2 = OpConstant %int 2
+%spec = OpSpecConstant %int 0
+%sampler = OpTypeSampler
+%array = OpTypeArray %sampler %int_2
+%void = OpTypeVoid
+  %3 = OpTypeFunction %void
+%main = OpFunction %void None %3
+  %5 = OpLabel
+      OpReturn
+      OpFunctionEnd
+
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

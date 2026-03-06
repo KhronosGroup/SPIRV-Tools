@@ -1096,6 +1096,258 @@ OpExtension "SPV_EXT_shader_tile_image"
           "Image Dim TileImageDataEXT cannot be used with ImageSparseRead"));
 }
 
+TEST_F(ValidateImage, ColorAttachmentReadEXTWrongResultType) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_tid_0002 %uniform_image_f32_tid_0002
+%res1 = OpColorAttachmentReadEXT %bool %img
+)";
+
+  const std::string decl = R"(
+%type_image_f32_tid_0002 = OpTypeImage %f32 TileImageDataEXT 0 0 0 2 Unknown
+%ptr_image_f32_tid_0002 = OpTypePointer UniformConstant %type_image_f32_tid_0002
+%uniform_image_f32_tid_0002 = OpVariable %ptr_image_f32_tid_0002 UniformConstant
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability TileImageColorReadAccessEXT
+OpExtension "SPV_EXT_shader_tile_image"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment", "",
+                                         SPV_ENV_UNIVERSAL_1_5, "GLSL450", decl)
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected Result Type to be int or float scalar or vector type"));
+}
+
+TEST_F(ValidateImage, ColorAttachmentReadEXTWrongSampledType) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_tid_0002 %uniform_image_f32_tid_0002
+%res1 = OpColorAttachmentReadEXT %f64 %img
+)";
+
+  const std::string decl = R"(
+%type_image_f32_tid_0002 = OpTypeImage %f32 TileImageDataEXT 0 0 0 2 Unknown
+%ptr_image_f32_tid_0002 = OpTypePointer UniformConstant %type_image_f32_tid_0002
+%uniform_image_f32_tid_0002 = OpVariable %ptr_image_f32_tid_0002 UniformConstant
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability TileImageColorReadAccessEXT
+OpExtension "SPV_EXT_shader_tile_image"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment", "",
+                                         SPV_ENV_UNIVERSAL_1_5, "GLSL450", decl)
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Image 'Sampled Type' to be the same as "
+                        "Result Type components"));
+}
+
+TEST_F(ValidateImage, ColorAttachmentReadEXTWrongAttachment) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0002 %uniform_image_f32_0002
+%res1 = OpColorAttachmentReadEXT %f32 %img
+)";
+
+  const std::string decl = R"(
+%ptr_image_f32_0002 = OpTypePointer UniformConstant %type_image_f32_2d_0002
+%uniform_image_f32_0002 = OpVariable %ptr_image_f32_0002 UniformConstant
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability TileImageColorReadAccessEXT
+OpExtension "SPV_EXT_shader_tile_image"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment", "",
+                                         SPV_ENV_UNIVERSAL_1_5, "GLSL450", decl)
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image 'Dim' must be TileImageDataEXT"));
+}
+
+TEST_F(ValidateImage, ColorAttachmentReadEXTWrongSample) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_tid_0002 %uniform_image_f32_tid_0002
+%res1 = OpColorAttachmentReadEXT %f32 %img %f32_0
+)";
+
+  const std::string decl = R"(
+%type_image_f32_tid_0002 = OpTypeImage %f32 TileImageDataEXT 0 0 0 2 Unknown
+%ptr_image_f32_tid_0002 = OpTypePointer UniformConstant %type_image_f32_tid_0002
+%uniform_image_f32_tid_0002 = OpVariable %ptr_image_f32_tid_0002 UniformConstant
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability TileImageColorReadAccessEXT
+OpExtension "SPV_EXT_shader_tile_image"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment", "",
+                                         SPV_ENV_UNIVERSAL_1_5, "GLSL450", decl)
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Sample to be a 32-bit int scalar"));
+}
+
+TEST_F(ValidateImage, ColorAttachmentReadEXTWrongExecutionModel) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_tid_0002 %uniform_image_f32_tid_0002
+%res1 = OpColorAttachmentReadEXT %f32 %img
+)";
+
+  const std::string decl = R"(
+%type_image_f32_tid_0002 = OpTypeImage %f32 TileImageDataEXT 0 0 0 2 Unknown
+%ptr_image_f32_tid_0002 = OpTypePointer UniformConstant %type_image_f32_tid_0002
+%uniform_image_f32_tid_0002 = OpVariable %ptr_image_f32_tid_0002 UniformConstant
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability TileImageColorReadAccessEXT
+OpExtension "SPV_EXT_shader_tile_image"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Vertex", "",
+                                         SPV_ENV_UNIVERSAL_1_5, "GLSL450", decl)
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("ColorAttachmentReadEXT requires Fragment execution model"));
+}
+
+TEST_F(ValidateImage, DepthAttachmentReadEXTWrongResultType) {
+  const std::string body = R"(
+%res1 = OpDepthAttachmentReadEXT %s32
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability TileImageDepthReadAccessEXT
+OpExtension "SPV_EXT_shader_tile_image"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment", "",
+                                         SPV_ENV_UNIVERSAL_1_5, "GLSL450", "")
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Expected Result Type to be a 32-bit floating-point type scalar"));
+}
+
+TEST_F(ValidateImage, DepthAttachmentReadEXTWrongSample) {
+  const std::string body = R"(
+%res1 = OpDepthAttachmentReadEXT %f32 %f32_0
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability TileImageDepthReadAccessEXT
+OpExtension "SPV_EXT_shader_tile_image"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment", "",
+                                         SPV_ENV_UNIVERSAL_1_5, "GLSL450", "")
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Sample to be a 32-bit int scalar"));
+}
+
+TEST_F(ValidateImage, DepthAttachmentReadEXTWrongExecutionModel) {
+  const std::string body = R"(
+%res1 = OpDepthAttachmentReadEXT %f32
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability TileImageDepthReadAccessEXT
+OpExtension "SPV_EXT_shader_tile_image"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Vertex", "",
+                                         SPV_ENV_UNIVERSAL_1_5, "GLSL450", "")
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("DepthAttachmentReadEXT requires Fragment execution model"));
+}
+
+TEST_F(ValidateImage, StencilAttachmentReadEXTWrongResultType) {
+  const std::string body = R"(
+%res1 = OpStencilAttachmentReadEXT %f32
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability TileImageStencilReadAccessEXT
+OpExtension "SPV_EXT_shader_tile_image"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment", "",
+                                         SPV_ENV_UNIVERSAL_1_5, "GLSL450", "")
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Result Type to be a 32-bit integer type scalar"));
+}
+
+TEST_F(ValidateImage, StencilAttachmentReadEXTWrongSample) {
+  const std::string body = R"(
+%res1 = OpStencilAttachmentReadEXT %u32 %f32_0
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability TileImageStencilReadAccessEXT
+OpExtension "SPV_EXT_shader_tile_image"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Fragment", "",
+                                         SPV_ENV_UNIVERSAL_1_5, "GLSL450", "")
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Sample to be a 32-bit int scalar"));
+}
+
+TEST_F(ValidateImage, StencilAttachmentReadEXTWrongExecutionModel) {
+  const std::string body = R"(
+%res1 = OpStencilAttachmentReadEXT %u32
+)";
+
+  const std::string extra = R"(
+OpCapability StorageImageReadWithoutFormat
+OpCapability TileImageStencilReadAccessEXT
+OpExtension "SPV_EXT_shader_tile_image"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra, "Vertex", "",
+                                         SPV_ENV_UNIVERSAL_1_5, "GLSL450", "")
+                          .c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("StencilAttachmentReadEXT requires Fragment execution model"));
+}
+
 TEST_F(ValidateImage, TypeImage_OpenCL_Sampled0_OK) {
   const std::string code = GetKernelHeader() + R"(
 %img_type = OpTypeImage %void 2D 0 0 0 0 Unknown ReadOnly

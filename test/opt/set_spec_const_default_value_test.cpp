@@ -70,7 +70,7 @@ INSTANTIATE_TEST_SUITE_P(
         {"100:1024   \n \r\t \t \v \f ", true,
          SpecIdToValueStrMap{{100, "1024"}}},
         // 6. maximum spec id
-        {"4294967295:0", true, SpecIdToValueStrMap{{4294967295, "0"}}},
+        {"4294967295:0", true, SpecIdToValueStrMap{{4294967295u, "0"}}},
         // 7. minimum spec id
         {"0:100", true, SpecIdToValueStrMap{{0, "100"}}},
         // 8. random content without spaces are allowed

@@ -354,15 +354,15 @@ bool LocalAccessChainConvertPass::AllExtensionsSupported() const {
     if (extensions_allowlist_.find(extName) == extensions_allowlist_.end())
       return false;
   }
-  // only allow NonSemantic.Shader.DebugInfo.100, we cannot safely optimise
-  // around unknown extended
-  // instruction sets even if they are non-semantic
+  // Only allow NonSemantic.Shader.DebugInfo (any version); we cannot safely
+  // optimise around unknown extended instruction sets even if non-semantic.
   for (auto& inst : context()->module()->ext_inst_imports()) {
     assert(inst.opcode() == spv::Op::OpExtInstImport &&
            "Expecting an import of an extension's instruction set.");
     const std::string extension_name = inst.GetInOperand(0).AsString();
     if (spvtools::utils::starts_with(extension_name, "NonSemantic.") &&
-        extension_name != "NonSemantic.Shader.DebugInfo.100") {
+        !spvtools::utils::starts_with(extension_name,
+                                      "NonSemantic.Shader.DebugInfo.")) {
       return false;
     }
   }
@@ -469,6 +469,7 @@ void LocalAccessChainConvertPass::InitExtensions() {
       "SPV_NV_cluster_acceleration_structure",
       "SPV_NV_linear_swept_spheres",
       "SPV_KHR_maximal_reconvergence",
+      "SPV_NV_push_constant_bank",
   });
 }
 

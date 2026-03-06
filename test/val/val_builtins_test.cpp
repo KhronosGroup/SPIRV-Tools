@@ -7161,6 +7161,88 @@ TEST_F(ValidateBuiltIns, MeshBuiltinUnsignedInt) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
+TEST_F(ValidateBuiltIns, HitTriangleVertexPositionExecutionModel) {
+  const std::string spirv = R"(
+                OpCapability RayTracingKHR
+               OpCapability RayTracingPositionFetchKHR
+               OpExtension "SPV_KHR_ray_tracing"
+               OpExtension "SPV_KHR_ray_tracing_position_fetch"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint IntersectionKHR %main "main" %gl_HitTriangleVertexPositionsEXT
+               OpDecorate %gl_HitTriangleVertexPositionsEXT BuiltIn HitTriangleVertexPositionsKHR
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+%_ptr_Function_v3float = OpTypePointer Function %v3float
+       %uint = OpTypeInt 32 0
+     %uint_3 = OpConstant %uint 3
+%_arr_v3float_uint_3 = OpTypeArray %v3float %uint_3
+%_ptr_Input__arr_v3float_uint_3 = OpTypePointer Input %_arr_v3float_uint_3
+%gl_HitTriangleVertexPositionsEXT = OpVariable %_ptr_Input__arr_v3float_uint_3 Input
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Input_v3float = OpTypePointer Input %v3float
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+        %v19 = OpVariable %_ptr_Function_v3float Function
+         %18 = OpAccessChain %_ptr_Input_v3float %gl_HitTriangleVertexPositionsEXT %int_0
+         %19 = OpLoad %v3float %18
+               OpStore %v19 %19
+               OpTerminateRayKHR
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "Vulkan spec does not allow BuiltIn HitTriangleVertexPositionsKHR to "
+          "be used with the execution model IntersectionKHR"));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-HitTriangleVertexPositionsKHR-"
+                      "HitTriangleVertexPositionsKHR-08747"));
+}
+
+TEST_F(ValidateBuiltIns, HitTriangleVertexPositionType) {
+  const std::string spirv = R"(
+                OpCapability RayTracingKHR
+               OpCapability RayTracingPositionFetchKHR
+               OpExtension "SPV_KHR_ray_tracing"
+               OpExtension "SPV_KHR_ray_tracing_position_fetch"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint AnyHitKHR %main "main" %gl_HitTriangleVertexPositionsEXT
+               OpDecorate %gl_HitTriangleVertexPositionsEXT BuiltIn HitTriangleVertexPositionsKHR
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+%_ptr_Function_v3float = OpTypePointer Function %v3float
+       %uint = OpTypeInt 32 0
+     %uint_4 = OpConstant %uint 4
+%_arr_v3float_uint_4 = OpTypeArray %v3float %uint_4
+%_ptr_Input__arr_v3float_uint_4 = OpTypePointer Input %_arr_v3float_uint_4
+%gl_HitTriangleVertexPositionsEXT = OpVariable %_ptr_Input__arr_v3float_uint_4 Input
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Input_v3float = OpTypePointer Input %v3float
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+        %v19 = OpVariable %_ptr_Function_v3float Function
+         %18 = OpAccessChain %_ptr_Input_v3float %gl_HitTriangleVertexPositionsEXT %int_0
+         %19 = OpLoad %v3float %18
+               OpStore %v19 %19
+               OpTerminateRayKHR
+               OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("array length must be 3"));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-HitTriangleVertexPositionsKHR-"
+                      "HitTriangleVertexPositionsKHR-08749"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
