@@ -448,6 +448,7 @@ void LocalAccessChainConvertPass::InitExtensions() {
       "SPV_KHR_ray_query",
       "SPV_EXT_fragment_invocation_density",
       "SPV_KHR_terminate_invocation",
+      "SPV_KHR_shader_clock",
       "SPV_KHR_subgroup_uniform_control_flow",
       "SPV_KHR_integer_dot_product",
       "SPV_EXT_shader_image_int64",
@@ -470,6 +471,8 @@ void LocalAccessChainConvertPass::InitExtensions() {
       "SPV_NV_linear_swept_spheres",
       "SPV_KHR_maximal_reconvergence",
       "SPV_NV_push_constant_bank",
+      "SPV_EXT_opacity_micromap",
+      "SPV_EXT_shader_invocation_reorder",
   });
 }
 
