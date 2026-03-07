@@ -1,6 +1,8 @@
 .clang_complete
 .ycm_extra_conf.py*
 *.pyc
+android_test/lib
+android_test/app
 compile_commands.json
 /build*/
 /buildtools/
