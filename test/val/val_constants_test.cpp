@@ -37,30 +37,39 @@ using ::testing::ValuesIn;
 
 using ValidateConstant = spvtest::ValidateBase<bool>;
 
-#define kBasicTypes                             \
-  "%bool = OpTypeBool "                         \
-  "%uint = OpTypeInt 32 0 "                     \
-  "%uint2 = OpTypeVector %uint 2 "              \
-  "%float = OpTypeFloat 32 "                    \
-  "%_ptr_uint = OpTypePointer Workgroup %uint " \
-  "%uint_0 = OpConstantNull %uint "             \
-  "%uint2_0 = OpConstantNull %uint "            \
-  "%float_0 = OpConstantNull %float "           \
-  "%false = OpConstantFalse %bool "             \
-  "%true = OpConstantTrue %bool "               \
+#define kBasicTypes                                        \
+  "%bool = OpTypeBool "                                    \
+  "%uint = OpTypeInt 32 0 "                                \
+  "%uint64 = OpTypeInt 64 0 "                              \
+  "%uint2 = OpTypeVector %uint 2 "                         \
+  "%float = OpTypeFloat 32 "                               \
+  "%float64 = OpTypeFloat 64 "                             \
+  "%_ptr_uint = OpTypePointer Workgroup %uint "            \
+  "%uint_0 = OpConstantNull %uint "                        \
+  "%uint64_0 = OpConstantNull %uint64 "                    \
+  "%uint2_0 = OpConstantComposite %uint2 %uint_0 %uint_0 " \
+  "%float_0 = OpConstantNull %float "                      \
+  "%float64_0 = OpConstantNull %float64 "                  \
+  "%false = OpConstantFalse %bool "                        \
+  "%true = OpConstantTrue %bool "                          \
   "%null = OpConstantNull %_ptr_uint "
 
 #define kShaderPreamble                         \
   "OpCapability Shader\n"                       \
   "OpCapability Linkage\n"                      \
+  "OpCapability Int64\n"                        \
+  "OpCapability Float64\n"                      \
   "OpCapability VariablePointers\n"             \
   "OpExtension \"SPV_KHR_variable_pointers\"\n" \
   "OpMemoryModel Logical Simple\n"
 
-#define kKernelPreamble      \
-  "OpCapability Kernel\n"    \
-  "OpCapability Linkage\n"   \
-  "OpCapability Addresses\n" \
+#define kKernelPreamble           \
+  "OpCapability Kernel\n"         \
+  "OpCapability Linkage\n"        \
+  "OpCapability Int64\n"          \
+  "OpCapability Float64\n"        \
+  "OpCapability GenericPointer\n" \
+  "OpCapability Addresses\n"      \
   "OpMemoryModel Physical32 OpenCL\n"
 
 struct ConstantOpCase {
@@ -68,6 +77,7 @@ struct ConstantOpCase {
   std::string assembly;
   bool expect_success;
   std::string expect_err;
+  spv_result_t expected_result = SPV_ERROR_INVALID_ID;
 };
 
 using ValidateConstantOp = spvtest::ValidateBase<ConstantOpCase>;
@@ -80,7 +90,7 @@ TEST_P(ValidateConstantOp, Samples) {
     EXPECT_EQ(SPV_SUCCESS, result);
     EXPECT_THAT(getDiagnosticString(), Eq(""));
   } else {
-    EXPECT_EQ(SPV_ERROR_INVALID_ID, result);
+    EXPECT_EQ(GetParam().expected_result, result);
     EXPECT_THAT(getDiagnosticString(), HasSubstr(GetParam().expect_err));
   }
 }
@@ -92,9 +102,8 @@ TEST_P(ValidateConstantOp, Samples) {
 INSTANTIATE_TEST_SUITE_P(
     UniversalInShader, ValidateConstantOp,
     ValuesIn(std::vector<ConstantOpCase>{
-        // TODO(dneto): Conversions must change width.
-        GOOD_SHADER_10("%v = OpSpecConstantOp %uint SConvert %uint_0"),
-        GOOD_SHADER_10("%v = OpSpecConstantOp %float FConvert %float_0"),
+        GOOD_SHADER_10("%v = OpSpecConstantOp %uint SConvert %uint64_0"),
+        GOOD_SHADER_10("%v = OpSpecConstantOp %float FConvert %float64_0"),
         GOOD_SHADER_10("%v = OpSpecConstantOp %uint SNegate %uint_0"),
         GOOD_SHADER_10("%v = OpSpecConstantOp %uint Not %uint_0"),
         GOOD_SHADER_10("%v = OpSpecConstantOp %uint IAdd %uint_0 %uint_0"),
@@ -149,9 +158,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     UniversalInKernel, ValidateConstantOp,
     ValuesIn(std::vector<ConstantOpCase>{
-        // TODO(dneto): Conversions must change width.
-        GOOD_KERNEL_10("%v = OpSpecConstantOp %uint SConvert %uint_0"),
-        GOOD_KERNEL_10("%v = OpSpecConstantOp %float FConvert %float_0"),
+        GOOD_KERNEL_10("%v = OpSpecConstantOp %uint SConvert %uint64_0"),
+        GOOD_KERNEL_10("%v = OpSpecConstantOp %float FConvert %float64_0"),
         GOOD_KERNEL_10("%v = OpSpecConstantOp %uint SNegate %uint_0"),
         GOOD_KERNEL_10("%v = OpSpecConstantOp %uint Not %uint_0"),
         GOOD_KERNEL_10("%v = OpSpecConstantOp %uint IAdd %uint_0 %uint_0"),
@@ -206,66 +214,64 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     UConvert, ValidateConstantOp,
     ValuesIn(std::vector<ConstantOpCase>{
-        // TODO(dneto): Conversions must change width.
         {SPV_ENV_UNIVERSAL_1_0,
          kKernelPreamble kBasicTypes
-         "%v = OpSpecConstantOp %uint UConvert %uint_0",
+         "%v = OpSpecConstantOp %uint UConvert %uint64_0",
          true, ""},
         {SPV_ENV_UNIVERSAL_1_1,
          kKernelPreamble kBasicTypes
-         "%v = OpSpecConstantOp %uint UConvert %uint_0",
+         "%v = OpSpecConstantOp %uint UConvert %uint64_0",
          true, ""},
         {SPV_ENV_UNIVERSAL_1_3,
          kKernelPreamble kBasicTypes
-         "%v = OpSpecConstantOp %uint UConvert %uint_0",
+         "%v = OpSpecConstantOp %uint UConvert %uint64_0",
          true, ""},
         {SPV_ENV_UNIVERSAL_1_3,
          kKernelPreamble kBasicTypes
-         "%v = OpSpecConstantOp %uint UConvert %uint_0",
+         "%v = OpSpecConstantOp %uint UConvert %uint64_0",
          true, ""},
         {SPV_ENV_UNIVERSAL_1_4,
          kKernelPreamble kBasicTypes
-         "%v = OpSpecConstantOp %uint UConvert %uint_0",
+         "%v = OpSpecConstantOp %uint UConvert %uint64_0",
          true, ""},
         {SPV_ENV_UNIVERSAL_1_0,
          kShaderPreamble kBasicTypes
-         "%v = OpSpecConstantOp %uint UConvert %uint_0",
+         "%v = OpSpecConstantOp %uint UConvert %uint64_0",
          false,
          "Prior to SPIR-V 1.4, specialization constant operation "
          "UConvert requires Kernel capability"},
         {SPV_ENV_UNIVERSAL_1_1,
          kShaderPreamble kBasicTypes
-         "%v = OpSpecConstantOp %uint UConvert %uint_0",
+         "%v = OpSpecConstantOp %uint UConvert %uint64_0",
          false,
          "Prior to SPIR-V 1.4, specialization constant operation "
          "UConvert requires Kernel capability"},
         {SPV_ENV_UNIVERSAL_1_3,
          kShaderPreamble kBasicTypes
-         "%v = OpSpecConstantOp %uint UConvert %uint_0",
+         "%v = OpSpecConstantOp %uint UConvert %uint64_0",
          false,
          "Prior to SPIR-V 1.4, specialization constant operation "
          "UConvert requires Kernel capability"},
         {SPV_ENV_UNIVERSAL_1_3,
          kShaderPreamble kBasicTypes
-         "%v = OpSpecConstantOp %uint UConvert %uint_0",
+         "%v = OpSpecConstantOp %uint UConvert %uint64_0",
          false,
          "Prior to SPIR-V 1.4, specialization constant operation "
          "UConvert requires Kernel capability"},
         {SPV_ENV_UNIVERSAL_1_4,
          kShaderPreamble kBasicTypes
-         "%v = OpSpecConstantOp %uint UConvert %uint_0",
+         "%v = OpSpecConstantOp %uint UConvert %uint64_0",
          true, ""},
     }));
 
 INSTANTIATE_TEST_SUITE_P(
     KernelInKernel, ValidateConstantOp,
     ValuesIn(std::vector<ConstantOpCase>{
-        // TODO(dneto): Conversions must change width.
         GOOD_KERNEL_10("%v = OpSpecConstantOp %uint ConvertFToS %float_0"),
         GOOD_KERNEL_10("%v = OpSpecConstantOp %float ConvertSToF %uint_0"),
         GOOD_KERNEL_10("%v = OpSpecConstantOp %uint ConvertFToU %float_0"),
         GOOD_KERNEL_10("%v = OpSpecConstantOp %float ConvertUToF %uint_0"),
-        GOOD_KERNEL_10("%v = OpSpecConstantOp %uint UConvert %uint_0"),
+        GOOD_KERNEL_10("%v = OpSpecConstantOp %uint UConvert %uint64_0"),
         GOOD_KERNEL_10(
             "%v = OpSpecConstantOp %_ptr_uint GenericCastToPtr %null"),
         GOOD_KERNEL_10(
@@ -297,7 +303,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     KernelInShader, ValidateConstantOp,
     ValuesIn(std::vector<ConstantOpCase>{
-        // TODO(dneto): Conversions must change width.
+        // Don't need to test GenericCastToPtr or PtrCastToGeneric as a valid
+        // module can't have a Generic storage class with Shader capability
         BAD_SHADER_10("%v = OpSpecConstantOp %uint ConvertFToS %float_0",
                       "ConvertFToS"),
         BAD_SHADER_10("%v = OpSpecConstantOp %float ConvertSToF %uint_0",
@@ -306,10 +313,6 @@ INSTANTIATE_TEST_SUITE_P(
                       "ConvertFToU"),
         BAD_SHADER_10("%v = OpSpecConstantOp %float ConvertUToF %uint_0",
                       "ConvertUToF"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %_ptr_uint GenericCastToPtr %null",
-                      "GenericCastToPtr"),
-        BAD_SHADER_10("%v = OpSpecConstantOp %_ptr_uint PtrCastToGeneric %null",
-                      "PtrCastToGeneric"),
         BAD_SHADER_10("%v = OpSpecConstantOp %uint Bitcast %uint_0", "Bitcast"),
         BAD_SHADER_10("%v = OpSpecConstantOp %float FNegate %float_0",
                       "FNegate"),
@@ -346,12 +349,14 @@ INSTANTIATE_TEST_SUITE_P(
         // https://github.com/KhronosGroup/glslang/issues/848
         {SPV_ENV_UNIVERSAL_1_0,
          "OpCapability Shader\n"
+         "OpCapability Int64\n"
+         "OpCapability Float64\n"
          "OpCapability VariablePointers\n"
          "OpCapability Linkage ; So we don't need to define a function\n"
          "OpExtension \"SPV_AMD_gpu_shader_int16\"\n"
          "OpExtension \"SPV_KHR_variable_pointers\"\n"
          "OpMemoryModel Logical Simple " kBasicTypes
-         "%v = OpSpecConstantOp %uint UConvert %uint_0",
+         "%v = OpSpecConstantOp %uint UConvert %uint64_0",
          true, ""},
     }));
 
@@ -494,9 +499,41 @@ TEST_F(ValidateConstant, VectorMismatchedConstituents) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
-          "OpConstantComposite Constituent <id> '13[%13]'s type "
-          "does not match Result Type <id> '3[%v2uint]'s vector element type"));
+          "OpConstantComposite Constituent <id> '17[%17]'s type "
+          "does not match Result Type <id> '4[%v2uint]'s vector element type"));
 }
+
+#define BAD_KERNEL_OPERANDS(STR, ERR)                                   \
+  {                                                                     \
+    SPV_ENV_UNIVERSAL_1_0, kKernelPreamble kBasicTypes STR, false, ERR, \
+        SPV_ERROR_INVALID_DATA                                          \
+  }
+
+// 2 of each, first has bad return type, second has bad operand
+INSTANTIATE_TEST_SUITE_P(
+    BadOperandsKernel, ValidateConstantOp,
+    ValuesIn(std::vector<ConstantOpCase>{
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float SConvert %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint SConvert %uint_0",
+            "Expected input to have different bit width from Result Type"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint FConvert %float_0",
+            "Expected float scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %float FConvert %float_0",
+                            "Expected component type of Value to be different "
+                            "from component type of Result Type"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float UConvert %uint_0",
+            "Expected unsigned int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint UConvert %uint_0",
+            "Expected input to have different bit width from Result Type"),
+    }));
 
 }  // namespace
 }  // namespace val

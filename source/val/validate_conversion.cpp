@@ -166,7 +166,8 @@ spv_result_t ValidateConvertIntToF(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateUConvert(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateUConvert(ValidationState_t& _, const Instruction* inst,
+                              uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   if (!_.IsUnsignedIntScalarType(result_type) &&
@@ -177,7 +178,7 @@ spv_result_t ValidateUConvert(ValidationState_t& _, const Instruction* inst) {
            << "Expected unsigned int scalar or vector type as Result Type: "
            << spvOpcodeString(opcode);
 
-  const uint32_t input_type = _.GetOperandTypeId(inst, 2);
+  const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
   if (!input_type ||
       (!_.IsIntScalarType(input_type) && !_.IsIntVectorType(input_type) &&
        !_.IsIntCooperativeMatrixType(input_type) &&
@@ -211,7 +212,8 @@ spv_result_t ValidateUConvert(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateSConvert(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateSConvert(ValidationState_t& _, const Instruction* inst,
+                              uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   if (!_.IsIntScalarType(result_type) && !_.IsIntVectorType(result_type) &&
@@ -221,7 +223,7 @@ spv_result_t ValidateSConvert(ValidationState_t& _, const Instruction* inst) {
            << "Expected int scalar or vector type as Result Type: "
            << spvOpcodeString(opcode);
 
-  const uint32_t input_type = _.GetOperandTypeId(inst, 2);
+  const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
   if (!input_type ||
       (!_.IsIntScalarType(input_type) && !_.IsIntVectorType(input_type) &&
        !_.IsIntCooperativeMatrixType(input_type) &&
@@ -255,7 +257,8 @@ spv_result_t ValidateSConvert(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateFConvert(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateFConvert(ValidationState_t& _, const Instruction* inst,
+                              uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   if (!_.IsFloatScalarType(result_type) && !_.IsFloatVectorType(result_type) &&
@@ -265,7 +268,7 @@ spv_result_t ValidateFConvert(ValidationState_t& _, const Instruction* inst) {
            << "Expected float scalar or vector type as Result Type: "
            << spvOpcodeString(opcode);
 
-  const uint32_t input_type = _.GetOperandTypeId(inst, 2);
+  const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
   if (!input_type ||
       (!_.IsFloatScalarType(input_type) && !_.IsFloatVectorType(input_type) &&
        !_.IsFloatCooperativeMatrixType(input_type) &&
@@ -831,6 +834,20 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
       return ValidateCooperativeMatrix(_, inst);
     case spv::Op::OpBitCastArrayQCOM:
       return ValidateBitCastArray(_, inst);
+
+    case spv::Op::OpSpecConstantOp: {
+      switch (inst->GetOperandAs<spv::Op>(2u)) {
+        case spv::Op::OpUConvert:
+          return ValidateUConvert(_, inst, 3);
+        case spv::Op::OpSConvert:
+          return ValidateSConvert(_, inst, 3);
+        case spv::Op::OpFConvert:
+          return ValidateFConvert(_, inst, 3);
+        default:
+          break;
+      }
+      break;
+    }
     default:
       break;
   }
