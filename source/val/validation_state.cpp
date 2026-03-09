@@ -2930,6 +2930,9 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-UnequalMemorySemantics-10879);
     case 10880:
       return VUID_WRAP(VUID-StandaloneSpirv-TessLevelInner-10880);
+    case 11165:
+      // Validation (via GPU-AV) will catch this if a non-constant
+      return VUID_WRAP(VUID-RuntimeSpirv-Size-11165);
     case 11167:
       return VUID_WRAP(VUID-StandaloneSpirv-OpUntypedVariableKHR-11167);
     case 11239:
