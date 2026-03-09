@@ -1684,12 +1684,21 @@ spv_result_t ValidateCopyMemory(ValidationState_t& _, const Instruction* inst) {
           }
           if (!int8 && !int16 && !(source_int16_match && target_int16_match)) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
-                   << "Size must be a multiple of 4";
+                   << _.VkErrorID(11165)
+                   << "Size must be a multiple of 4. This is valid if Source ("
+                   << StorageClassToString(source_sc) << ") and Target ("
+                   << StorageClassToString(source_sc)
+                   << ") storage classes both support either 8-bit or 16-bit";
           }
           if (value % 2 != 0) {
             if (!int8 && !(source_int8_match && target_int8_match)) {
               return _.diag(SPV_ERROR_INVALID_ID, inst)
-                     << "Size must be a multiple of 2";
+                     << _.VkErrorID(11165)
+                     << "Size must be a multiple of 2. This is valid if Source "
+                        "("
+                     << StorageClassToString(source_sc) << ") and Target ("
+                     << StorageClassToString(source_sc)
+                     << ") storage classes both support 8-bit";
             }
           }
         }

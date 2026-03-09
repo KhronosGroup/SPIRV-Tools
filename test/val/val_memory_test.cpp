@@ -7755,6 +7755,41 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(), HasSubstr("Size must be a multiple of 2"));
 }
 
+TEST_F(ValidateMemory, CopyMemorySizedVulkanConstant) {
+  const std::string spirv = R"(
+        OpCapability Shader
+        OpCapability UntypedPointersKHR
+        OpExtension "SPV_KHR_untyped_pointers"
+        OpMemoryModel Logical GLSL450
+        OpEntryPoint GLCompute %main "main" %v1 %v2
+        OpExecutionMode %main LocalSize 1 1 1
+        OpDecorate %struct Block
+        OpDecorate %v1 DescriptorSet 0
+        OpDecorate %v1 Binding 0
+        OpDecorate %v2 DescriptorSet 0
+        OpDecorate %v2 Binding 0
+        OpMemberDecorate %struct 0 Offset 0
+        %void = OpTypeVoid
+        %int = OpTypeInt 32 0
+        %int_2 = OpConstant %int 2
+        %struct = OpTypeStruct %int
+        %ptr = OpTypeUntypedPointerKHR StorageBuffer
+        %v1 = OpUntypedVariableKHR %ptr StorageBuffer %struct
+        %v2 = OpUntypedVariableKHR %ptr StorageBuffer %struct
+        %void_fn = OpTypeFunction %void
+        %main = OpFunction %void None %void_fn
+        %entry = OpLabel
+        OpCopyMemorySized %v2 %v1 %int_2
+        OpReturn
+        OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Size must be a multiple of 4"));
+  EXPECT_THAT(getDiagnosticString(), AnyVUID("VUID-RuntimeSpirv-Size-11165"));
+}
+
 TEST_F(ValidateMemory, PtrEqualUntypedPointersGood) {
   const std::string spirv = R"(
 OpCapability Shader
