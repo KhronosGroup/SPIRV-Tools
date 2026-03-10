@@ -503,6 +503,27 @@ TEST_F(ValidateConstant, VectorMismatchedConstituents) {
           "does not match Result Type <id> '4[%v2uint]'s vector element type"));
 }
 
+TEST_F(ValidateConstant, BadShaderOperandsQuantizeToF16) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%uint = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%uint_1 = OpConstant %uint 1
+%float_1 = OpConstant %float 1
+%good = OpSpecConstantOp %float QuantizeToF16 %float_1
+%bad1 = OpSpecConstantOp %uint QuantizeToF16 %float_1
+%bad2 = OpSpecConstantOp %float QuantizeToF16 %uint_1
+)";
+
+  CompileSuccessfully(spirv);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected 32-bit float scalar or vector type as Result Type"));
+}
+
 #define BAD_KERNEL_OPERANDS(STR, ERR)                                   \
   {                                                                     \
     SPV_ENV_UNIVERSAL_1_0, kKernelPreamble kBasicTypes STR, false, ERR, \
@@ -533,6 +554,36 @@ INSTANTIATE_TEST_SUITE_P(
         BAD_KERNEL_OPERANDS(
             "%v = OpSpecConstantOp %uint UConvert %uint_0",
             "Expected input to have different bit width from Result Type"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float ConvertFToS %float_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint ConvertFToS %uint2_0",
+                            "Expected input to be float scalar or vector"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint ConvertSToF %uint_0",
+            "Expected float scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %float ConvertSToF %float_0",
+                            "Expected input to be int scalar or vector"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float ConvertFToU %float_0",
+            "Expected unsigned int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint ConvertFToU %uint2_0",
+                            "Expected input to be float scalar or vector"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint ConvertUToF %uint_0",
+            "Expected float scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %float ConvertUToF %float_0",
+                            "Expected input to be int scalar or vector"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint ConvertUToF %uint_0",
+            "Expected float scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %float ConvertUToF %float_0",
+                            "Expected input to be int scalar or vector"),
     }));
 
 }  // namespace

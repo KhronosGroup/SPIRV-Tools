@@ -39,8 +39,8 @@ spv_result_t ValidateShaderBitWidth(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateConvertFToU(ValidationState_t& _,
-                                 const Instruction* inst) {
+spv_result_t ValidateConvertFToU(ValidationState_t& _, const Instruction* inst,
+                                 uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   if (!_.IsUnsignedIntScalarType(result_type) &&
@@ -51,7 +51,7 @@ spv_result_t ValidateConvertFToU(ValidationState_t& _,
            << "Expected unsigned int scalar or vector type as Result Type: "
            << spvOpcodeString(opcode);
 
-  const uint32_t input_type = _.GetOperandTypeId(inst, 2);
+  const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
   if (!input_type ||
       (!_.IsFloatScalarType(input_type) && !_.IsFloatVectorType(input_type) &&
        !_.IsFloatCooperativeMatrixType(input_type) &&
@@ -82,8 +82,8 @@ spv_result_t ValidateConvertFToU(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateConvertFToS(ValidationState_t& _,
-                                 const Instruction* inst) {
+spv_result_t ValidateConvertFToS(ValidationState_t& _, const Instruction* inst,
+                                 uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   if (!_.IsIntScalarType(result_type) && !_.IsIntVectorType(result_type) &&
@@ -93,7 +93,7 @@ spv_result_t ValidateConvertFToS(ValidationState_t& _,
            << "Expected int scalar or vector type as Result Type: "
            << spvOpcodeString(opcode);
 
-  const uint32_t input_type = _.GetOperandTypeId(inst, 2);
+  const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
   if (!input_type ||
       (!_.IsFloatScalarType(input_type) && !_.IsFloatVectorType(input_type) &&
        !_.IsFloatCooperativeMatrixType(input_type) &&
@@ -125,7 +125,8 @@ spv_result_t ValidateConvertFToS(ValidationState_t& _,
 }
 
 spv_result_t ValidateConvertIntToF(ValidationState_t& _,
-                                   const Instruction* inst) {
+                                   const Instruction* inst,
+                                   uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   if (!_.IsFloatScalarType(result_type) && !_.IsFloatVectorType(result_type) &&
@@ -135,7 +136,7 @@ spv_result_t ValidateConvertIntToF(ValidationState_t& _,
            << "Expected float scalar or vector type as Result Type: "
            << spvOpcodeString(opcode);
 
-  const uint32_t input_type = _.GetOperandTypeId(inst, 2);
+  const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
   if (!input_type ||
       (!_.IsIntScalarType(input_type) && !_.IsIntVectorType(input_type) &&
        !_.IsIntCooperativeMatrixType(input_type) &&
@@ -307,7 +308,8 @@ spv_result_t ValidateFConvert(ValidationState_t& _, const Instruction* inst,
 }
 
 spv_result_t ValidateQuantizeToF16(ValidationState_t& _,
-                                   const Instruction* inst) {
+                                   const Instruction* inst,
+                                   uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   if ((!_.IsFloatScalarType(result_type) &&
@@ -317,7 +319,7 @@ spv_result_t ValidateQuantizeToF16(ValidationState_t& _,
            << "Expected 32-bit float scalar or vector type as Result Type: "
            << spvOpcodeString(opcode);
 
-  const uint32_t input_type = _.GetOperandTypeId(inst, 2);
+  const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
   if (input_type != result_type)
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected input type to be equal to Result Type: "
@@ -326,7 +328,8 @@ spv_result_t ValidateQuantizeToF16(ValidationState_t& _,
 }
 
 spv_result_t ValidateConvertPtrToU(ValidationState_t& _,
-                                   const Instruction* inst) {
+                                   const Instruction* inst,
+                                   uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   if (!_.IsUnsignedIntScalarType(result_type))
@@ -334,7 +337,7 @@ spv_result_t ValidateConvertPtrToU(ValidationState_t& _,
            << "Expected unsigned int scalar type as Result Type: "
            << spvOpcodeString(opcode);
 
-  const uint32_t input_type = _.GetOperandTypeId(inst, 2);
+  const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
   if (!_.IsPointerType(input_type))
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected input to be a pointer: " << spvOpcodeString(opcode);
@@ -389,7 +392,8 @@ spv_result_t ValidateSatConvertInt(ValidationState_t& _,
 }
 
 spv_result_t ValidateConvertUToPtr(ValidationState_t& _,
-                                   const Instruction* inst) {
+                                   const Instruction* inst,
+                                   uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   if (!_.IsPointerType(result_type))
@@ -397,7 +401,7 @@ spv_result_t ValidateConvertUToPtr(ValidationState_t& _,
            << "Expected Result Type to be a pointer: "
            << spvOpcodeString(opcode);
 
-  const uint32_t input_type = _.GetOperandTypeId(inst, 2);
+  const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
   if (!input_type || !_.IsIntScalarType(input_type))
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected int scalar as input: " << spvOpcodeString(opcode);
@@ -843,6 +847,19 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
           return ValidateSConvert(_, inst, 3);
         case spv::Op::OpFConvert:
           return ValidateFConvert(_, inst, 3);
+        case spv::Op::OpConvertSToF:
+        case spv::Op::OpConvertUToF:
+          return ValidateConvertIntToF(_, inst, 3);
+        case spv::Op::OpConvertFToS:
+          return ValidateConvertFToS(_, inst, 3);
+        case spv::Op::OpConvertFToU:
+          return ValidateConvertFToU(_, inst, 3);
+        case spv::Op::OpQuantizeToF16:
+          return ValidateQuantizeToF16(_, inst, 3);
+        case spv::Op::OpConvertPtrToU:
+          return ValidateConvertPtrToU(_, inst, 3);
+        case spv::Op::OpConvertUToPtr:
+          return ValidateConvertUToPtr(_, inst, 3);
         default:
           break;
       }
