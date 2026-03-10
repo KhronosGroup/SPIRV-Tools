@@ -1110,6 +1110,12 @@ spv_result_t ValidateExtension(ValidationState_t& _, const Instruction* inst) {
              << extension << " extension requires SPIR-V version 1.4 or later.";
     }
   }
+  if (_.version() < SPV_SPIRV_VERSION_WORD(1, 6)) {
+    if (extension == ExtensionToString(kSPV_ARM_cooperative_matrix_layouts)) {
+      return _.diag(SPV_ERROR_WRONG_VERSION, inst)
+             << extension << " extension requires SPIR-V version 1.6 or later.";
+    }
+  }
 
   return SPV_SUCCESS;
 }
