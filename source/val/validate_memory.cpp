@@ -3361,82 +3361,57 @@ spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
   switch (inst->opcode()) {
     case spv::Op::OpVariable:
     case spv::Op::OpUntypedVariableKHR:
-      if (auto error = ValidateVariable(_, inst)) return error;
-      break;
+      return ValidateVariable(_, inst);
     case spv::Op::OpBufferPointerEXT:
-      if (auto error = ValidateBufferPointerEXT(_, inst)) return error;
-      break;
+      return ValidateBufferPointerEXT(_, inst);
     case spv::Op::OpLoad:
-      if (auto error = ValidateLoad(_, inst)) return error;
-      break;
+      return ValidateLoad(_, inst);
     case spv::Op::OpStore:
-      if (auto error = ValidateStore(_, inst)) return error;
-      break;
+      return ValidateStore(_, inst);
     case spv::Op::OpCopyMemory:
     case spv::Op::OpCopyMemorySized:
-      if (auto error = ValidateCopyMemory(_, inst)) return error;
-      break;
+      return ValidateCopyMemory(_, inst);
     case spv::Op::OpPtrAccessChain:
     case spv::Op::OpUntypedPtrAccessChainKHR:
     case spv::Op::OpUntypedInBoundsPtrAccessChainKHR:
-      if (auto error = ValidatePtrAccessChain(_, inst)) return error;
-      break;
+      return ValidatePtrAccessChain(_, inst);
     case spv::Op::OpAccessChain:
     case spv::Op::OpInBoundsAccessChain:
     case spv::Op::OpInBoundsPtrAccessChain:
     case spv::Op::OpUntypedAccessChainKHR:
     case spv::Op::OpUntypedInBoundsAccessChainKHR:
-      if (auto error = ValidateAccessChain(_, inst)) return error;
-      break;
+      return ValidateAccessChain(_, inst);
     case spv::Op::OpRawAccessChainNV:
-      if (auto error = ValidateRawAccessChain(_, inst)) return error;
-      break;
+      return ValidateRawAccessChain(_, inst);
     case spv::Op::OpArrayLength:
     case spv::Op::OpUntypedArrayLengthKHR:
-      if (auto error = ValidateArrayLength(_, inst)) return error;
-      break;
+      return ValidateArrayLength(_, inst);
     case spv::Op::OpCooperativeMatrixLoadNV:
     case spv::Op::OpCooperativeMatrixStoreNV:
-      if (auto error = ValidateCooperativeMatrixLoadStoreNV(_, inst))
-        return error;
-      break;
+      return ValidateCooperativeMatrixLoadStoreNV(_, inst);
     case spv::Op::OpCooperativeMatrixLengthKHR:
     case spv::Op::OpCooperativeMatrixLengthNV:
-      if (auto error = ValidateCooperativeMatrixLengthNV(_, inst)) return error;
-      break;
+      return ValidateCooperativeMatrixLengthNV(_, inst);
     case spv::Op::OpCooperativeMatrixLoadKHR:
     case spv::Op::OpCooperativeMatrixStoreKHR:
-      if (auto error = ValidateCooperativeMatrixLoadStoreKHR(_, inst))
-        return error;
-      break;
+      return ValidateCooperativeMatrixLoadStoreKHR(_, inst);
     case spv::Op::OpCooperativeMatrixLoadTensorNV:
     case spv::Op::OpCooperativeMatrixStoreTensorNV:
-      if (auto error = ValidateCooperativeMatrixLoadStoreTensorNV(_, inst))
-        return error;
-      break;
+      return ValidateCooperativeMatrixLoadStoreTensorNV(_, inst);
     case spv::Op::OpCooperativeVectorLoadNV:
     case spv::Op::OpCooperativeVectorStoreNV:
-      if (auto error = ValidateCooperativeVectorLoadStoreNV(_, inst))
-        return error;
-      break;
+      return ValidateCooperativeVectorLoadStoreNV(_, inst);
     case spv::Op::OpCooperativeVectorOuterProductAccumulateNV:
-      if (auto error = ValidateCooperativeVectorOuterProductNV(_, inst))
-        return error;
-      break;
+      return ValidateCooperativeVectorOuterProductNV(_, inst);
     case spv::Op::OpCooperativeVectorReduceSumAccumulateNV:
-      if (auto error = ValidateCooperativeVectorReduceSumNV(_, inst))
-        return error;
-      break;
+      return ValidateCooperativeVectorReduceSumNV(_, inst);
     case spv::Op::OpCooperativeVectorMatrixMulNV:
     case spv::Op::OpCooperativeVectorMatrixMulAddNV:
-      if (auto error = ValidateCooperativeVectorMatrixMulNV(_, inst))
-        return error;
-      break;
+      return ValidateCooperativeVectorMatrixMulNV(_, inst);
     case spv::Op::OpPtrEqual:
     case spv::Op::OpPtrNotEqual:
     case spv::Op::OpPtrDiff:
-      if (auto error = ValidatePtrComparison(_, inst)) return error;
-      break;
+      return ValidatePtrComparison(_, inst);
     case spv::Op::OpImageTexelPointer:
     case spv::Op::OpGenericPtrMemSemantics:
     default:
