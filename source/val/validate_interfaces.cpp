@@ -551,12 +551,22 @@ spv_result_t ValidateLocations(ValidationState_t& _,
       return SPV_SUCCESS;
   }
 
+  const bool is_geometry =
+      entry_point->GetOperandAs<spv::ExecutionModel>(0) ==
+      spv::ExecutionModel::Geometry;
+  const bool has_geometry_streams =
+      is_geometry && _.HasCapability(spv::Capability::GeometryStreams);
+
   // Locations are stored as a combined location and component values.
   std::unordered_set<uint32_t> input_locations;
   std::unordered_set<uint32_t> output_locations_index0;
   std::unordered_set<uint32_t> output_locations_index1;
   std::unordered_set<uint32_t> patch_locations_index0;
   std::unordered_set<uint32_t> patch_locations_index1;
+  std::unordered_map<uint32_t, std::unordered_set<uint32_t>>
+      output_locations_per_stream;
+  std::unordered_map<uint32_t, std::unordered_set<uint32_t>>
+      output_index1_locations_per_stream;
   std::unordered_set<uint32_t> seen;
   for (uint32_t i = 3; i < entry_point->operands().size(); ++i) {
     auto interface_id = entry_point->GetOperandAs<uint32_t>(i);
@@ -594,12 +604,31 @@ spv_result_t ValidateLocations(ValidationState_t& _,
       continue;
     }
 
-    auto locations = (storage_class == spv::StorageClass::Input)
-                         ? &input_locations
-                         : &output_locations_index0;
-    if (auto error = GetLocationsForVariable(
-            _, entry_point, interface_var, locations, &output_locations_index1))
-      return error;
+    // For geometry shader outputs with GeometryStreams,
+    // use per-stream location sets since each stream
+    // has an independent location namespace.
+    if (has_geometry_streams && storage_class == spv::StorageClass::Output) {
+      uint32_t stream = 0;
+      for (auto& dec : _.id_decorations(interface_var->id())) {
+        if (dec.dec_type() == spv::Decoration::Stream) {
+          stream = dec.params()[0];
+          break;
+        }
+      }
+      if (auto error = GetLocationsForVariable(
+              _, entry_point, interface_var,
+              &output_locations_per_stream[stream],
+              &output_index1_locations_per_stream[stream]))
+        return error;
+    } else {
+      auto locations = (storage_class == spv::StorageClass::Input)
+                           ? &input_locations
+                           : &output_locations_index0;
+      if (auto error = GetLocationsForVariable(
+              _, entry_point, interface_var, locations,
+              &output_locations_index1))
+        return error;
+    }
   }
 
   return SPV_SUCCESS;
