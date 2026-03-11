@@ -771,6 +771,11 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetAllowOffsetTextureOperand(
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetAllowVulkan32BitBitwise(
     spv_validator_options options, bool val);
 
+// Records whether or not the validator should allow the Linkage
+// capability when targeting Vulkan.
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetAllowVulkanLinkage(
+    spv_validator_options options, bool val);
+
 // Whether friendly names should be used in validation error messages.
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetFriendlyNames(
     spv_validator_options options, bool val);
