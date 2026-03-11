@@ -761,7 +761,8 @@ TEST_P(ValidateIdWithMessage, OpTypeVectorColumnCountEightWithoutVector16Bad) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr(make_message(
-                  "Having 8 components for TypeVector requires the Vector16 "
+                  "Having 8 components for TypeVector requires the Vector16 or "
+                  "LongVectorEXT "
                   "capability\n  %v8float = OpTypeVector %float 8\n")));
 }
 
@@ -776,6 +777,7 @@ TEST_P(ValidateIdWithMessage,
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr(make_message(
                   "Having 16 components for TypeVector requires the Vector16 "
+                  "or LongVectorEXT "
                   "capability\n  %v16float = OpTypeVector %float 16\n")));
 }
 

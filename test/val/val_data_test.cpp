@@ -140,7 +140,8 @@ std::string header_with_float64_bfloat16 = R"(
 )";
 
 std::string invalid_comp_error = "Illegal number of components";
-std::string missing_cap_error = "requires the Vector16 capability";
+std::string missing_cap_error =
+    "requires the Vector16 or LongVectorEXT capability";
 std::string missing_int8_cap_error = "requires the Int8 capability";
 std::string missing_int16_cap_error =
     "requires the Int16 capability,"
