@@ -584,6 +584,142 @@ INSTANTIATE_TEST_SUITE_P(
             "Expected float scalar or vector type as Result Type"),
         BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %float ConvertUToF %float_0",
                             "Expected input to be int scalar or vector"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float UDiv %uint_0 %uint_0",
+            "Expected unsigned int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint UDiv %uint_0 %float_0",
+            "Expected arithmetic operands to be of Result Type"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float UMod %uint_0 %uint_0",
+            "Expected unsigned int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint UMod %uint_0 %float_0",
+            "Expected arithmetic operands to be of Result Type"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float ISub %uint_0 %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint ISub %uint_0 %float_0",
+                            "Expected int scalar or vector type as operand"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float IAdd %uint_0 %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint IAdd %uint_0 %float_0",
+                            "Expected int scalar or vector type as operand"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float IMul %uint_0 %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint IMul %uint_0 %float_0",
+                            "Expected int scalar or vector type as operand"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float SDiv %uint_0 %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint SDiv %uint_0 %float_0",
+                            "Expected int scalar or vector type as operand"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float SRem %uint_0 %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint SRem %uint_0 %float_0",
+                            "Expected int scalar or vector type as operand"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float SMod %uint_0 %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint SMod %uint_0 %float_0",
+                            "Expected int scalar or vector type as operand"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float SNegate %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint SNegate %float_0",
+                            "Expected int scalar or vector type as operand"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint FAdd %float_0 %float_0",
+            "Expected floating scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float FAdd %float_0 %uint_0",
+            "Expected arithmetic operands to be of Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint FSub %float_0 %float_0",
+            "Expected floating scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float FSub %float_0 %uint_0",
+            "Expected arithmetic operands to be of Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint FMul %float_0 %float_0",
+            "Expected floating scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float FMul %float_0 %uint_0",
+            "Expected arithmetic operands to be of Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint FDiv %float_0 %float_0",
+            "Expected floating scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float FDiv %float_0 %uint_0",
+            "Expected arithmetic operands to be of Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint FRem %float_0 %float_0",
+            "Expected floating scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float FRem %float_0 %uint_0",
+            "Expected arithmetic operands to be of Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint FMod %float_0 %float_0",
+            "Expected floating scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float FMod %float_0 %uint_0",
+            "Expected arithmetic operands to be of Result Type"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float ShiftRightLogical %uint_0 %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint ShiftRightLogical %uint_0 %float_0",
+            "Expected Shift to be int scalar or vector"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float ShiftRightArithmetic %uint_0 %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint ShiftRightArithmetic %uint_0 %float_0",
+            "Expected Shift to be int scalar or vector"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float ShiftLeftLogical %uint_0 %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint ShiftLeftLogical %uint_0 %float_0",
+            "Expected Shift to be int scalar or vector"),
+
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float BitwiseOr %uint_0 %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint BitwiseOr %uint_0 %float_0",
+            "Expected int scalar or vector as operand"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float BitwiseXor %uint_0 %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint BitwiseXor %uint_0 %float_0",
+            "Expected int scalar or vector as operand"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float BitwiseAnd %uint_0 %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint BitwiseAnd %uint_0 %float_0",
+            "Expected int scalar or vector as operand"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float Not %uint_0",
+            "Expected int scalar or vector type as Result Type"),
+        BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint Not %float_0",
+                            "Expected int scalar or vector as operand"),
     }));
 
 }  // namespace

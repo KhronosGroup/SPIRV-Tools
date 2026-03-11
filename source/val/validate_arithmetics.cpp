@@ -24,7 +24,8 @@
 namespace spvtools {
 namespace val {
 
-spv_result_t ValidateFloat(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateFloat(ValidationState_t& _, const Instruction* inst,
+                           uint32_t starting_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   bool supportsCoopMat =
@@ -42,8 +43,8 @@ spv_result_t ValidateFloat(ValidationState_t& _, const Instruction* inst) {
            << "Expected floating scalar or vector type as Result Type: "
            << spvOpcodeString(opcode);
 
-  for (size_t operand_index = 2; operand_index < inst->operands().size();
-       ++operand_index) {
+  for (size_t operand_index = starting_index;
+       operand_index < inst->operands().size(); ++operand_index) {
     if (supportsCoopVec && _.IsCooperativeVectorNVType(result_type)) {
       const uint32_t type_id = _.GetOperandTypeId(inst, operand_index);
       if (!_.IsCooperativeVectorNVType(type_id)) {
@@ -73,8 +74,8 @@ spv_result_t ValidateFloat(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateUnsignedInt(ValidationState_t& _,
-                                 const Instruction* inst) {
+spv_result_t ValidateUnsignedInt(ValidationState_t& _, const Instruction* inst,
+                                 uint32_t starting_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   bool supportsCoopMat = (opcode == spv::Op::OpUDiv);
@@ -87,8 +88,8 @@ spv_result_t ValidateUnsignedInt(ValidationState_t& _,
            << "Expected unsigned int scalar or vector type as Result Type: "
            << spvOpcodeString(opcode);
 
-  for (size_t operand_index = 2; operand_index < inst->operands().size();
-       ++operand_index) {
+  for (size_t operand_index = starting_index;
+       operand_index < inst->operands().size(); ++operand_index) {
     if (supportsCoopVec && _.IsCooperativeVectorNVType(result_type)) {
       const uint32_t type_id = _.GetOperandTypeId(inst, operand_index);
       if (!_.IsCooperativeVectorNVType(type_id)) {
@@ -119,7 +120,8 @@ spv_result_t ValidateUnsignedInt(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateSignedInt(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateSignedInt(ValidationState_t& _, const Instruction* inst,
+                               uint32_t starting_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   bool supportsCoopMat =
@@ -140,8 +142,8 @@ spv_result_t ValidateSignedInt(ValidationState_t& _, const Instruction* inst) {
   const uint32_t dimension = _.GetDimension(result_type);
   const uint32_t bit_width = _.GetBitWidth(result_type);
 
-  for (size_t operand_index = 2; operand_index < inst->operands().size();
-       ++operand_index) {
+  for (size_t operand_index = starting_index;
+       operand_index < inst->operands().size(); ++operand_index) {
     const uint32_t type_id = _.GetOperandTypeId(inst, operand_index);
 
     if (supportsCoopVec && _.IsCooperativeVectorNVType(result_type)) {
@@ -884,6 +886,33 @@ spv_result_t ArithmeticsPass(ValidationState_t& _, const Instruction* inst) {
       return ValidateCooperativeMatrixMulAddKHR(_, inst);
     case spv::Op::OpCooperativeMatrixReduceNV:
       return ValidateCooperativeMatrixReduceNV(_, inst);
+
+    case spv::Op::OpSpecConstantOp: {
+      switch (inst->GetOperandAs<spv::Op>(2u)) {
+        case spv::Op::OpFAdd:
+        case spv::Op::OpFSub:
+        case spv::Op::OpFMul:
+        case spv::Op::OpFDiv:
+        case spv::Op::OpFRem:
+        case spv::Op::OpFMod:
+        case spv::Op::OpFNegate:
+          return ValidateFloat(_, inst, 3);
+        case spv::Op::OpUDiv:
+        case spv::Op::OpUMod:
+          return ValidateUnsignedInt(_, inst, 3);
+        case spv::Op::OpISub:
+        case spv::Op::OpIAdd:
+        case spv::Op::OpIMul:
+        case spv::Op::OpSDiv:
+        case spv::Op::OpSMod:
+        case spv::Op::OpSRem:
+        case spv::Op::OpSNegate:
+          return ValidateSignedInt(_, inst, 3);
+        default:
+          break;
+      }
+      break;
+    }
     default:
       break;
   }
