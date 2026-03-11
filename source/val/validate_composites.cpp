@@ -409,6 +409,67 @@ spv_result_t ValidateCompositeConstruct(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateCompositeConstructReplicate(ValidationState_t& _,
+                                                 const Instruction* inst) {
+  const auto result_type = _.FindDef(inst->type_id());
+  const uint32_t operand_type = _.GetOperandTypeId(inst, 2);
+
+  switch (result_type->opcode()) {
+    case spv::Op::OpTypeVector:
+    case spv::Op::OpTypeVectorIdEXT:
+    case spv::Op::OpTypeMatrix:
+    case spv::Op::OpTypeArray:
+    case spv::Op::OpTypeCooperativeMatrixKHR:
+    case spv::Op::OpTypeCooperativeMatrixNV: {
+      const auto element_type = result_type->GetOperandAs<uint32_t>(1);
+      if (operand_type != element_type) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Expected Value type to be equal to the "
+               << "result's element type";
+      }
+      break;
+    }
+    case spv::Op::OpTypeStruct: {
+      for (uint32_t operand_index = 1;
+           operand_index < result_type->operands().size(); ++operand_index) {
+        const uint32_t member_type =
+            result_type->GetOperandAs<uint32_t>(operand_index);
+        if (operand_type != member_type) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "Expected Value type to be equal to the "
+                 << "corresponding member type of the result";
+        }
+      }
+      break;
+    }
+    case spv::Op::OpTypeTensorARM: {
+      const uint32_t component_type = result_type->GetOperandAs<uint32_t>(1);
+      if (operand_type != component_type) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Expected Value type to be equal to the result's element "
+                  "type";
+      }
+      if (result_type->operands().size() <= 3) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Result tensor type is not a composite type because it lacks "
+                  "a shape operand";
+      }
+      break;
+    }
+    default: {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Expected Result Type to be a composite type";
+    }
+  }
+
+  if (_.HasCapability(spv::Capability::Shader) &&
+      _.ContainsLimitedUseIntOrFloatType(inst->type_id())) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Cannot create a composite containing 8- or 16-bit types";
+  }
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateCompositeExtract(ValidationState_t& _,
                                       const Instruction* inst) {
   uint32_t member_type = 0;
@@ -1089,6 +1150,8 @@ spv_result_t CompositesPass(ValidationState_t& _, const Instruction* inst) {
       return ValidateVectorShuffle(_, inst);
     case spv::Op::OpCompositeConstruct:
       return ValidateCompositeConstruct(_, inst);
+    case spv::Op::OpCompositeConstructReplicateEXT:
+      return ValidateCompositeConstructReplicate(_, inst);
     case spv::Op::OpCompositeExtract:
       return ValidateCompositeExtract(_, inst);
     case spv::Op::OpCompositeInsert:
