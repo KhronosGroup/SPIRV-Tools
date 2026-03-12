@@ -1111,6 +1111,34 @@ spv_result_t ValidateImageCoordinate(ValidationState_t& _,
            << " components, but given only " << actual_coord_size;
   }
 
+  if (info.dim == spv::Dim::SubpassData) {
+    const Instruction* coord_inst =
+        _.FindDef(inst->GetOperandAs<uint32_t>(word_index));
+
+    bool is_zero_vector = false;
+    if (coord_inst->opcode() == spv::Op::OpConstantNull) {
+      is_zero_vector = true;
+    } else if (coord_inst->opcode() == spv::Op::OpConstantComposite) {
+      // There is zero reason we should be allowing a OpSpecConstantComposite
+      if (coord_inst->words().size() == 5) {
+        uint64_t val_0 = 0;
+        uint64_t val_1 = 0;
+        if (_.EvalConstantValUint64(coord_inst->word(3), &val_0) &&
+            _.EvalConstantValUint64(coord_inst->word(4), &val_1) &&
+            val_0 == 0 && val_1 == 0) {
+          is_zero_vector = true;
+        }
+      }
+    }
+
+    if (!is_zero_vector) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << _.VkErrorID(4660)
+             << "Expected Coordinate for a SubpassData image to be a "
+                "OpConstantComposite of (0,0) or OpConstantNull";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 

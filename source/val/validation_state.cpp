@@ -708,12 +708,31 @@ void ValidationState_t::RegisterStorageClassConsumer(
                 *message =
                     errorVUID +
                     "in Vulkan environment, Workgroup Storage Class is limited "
-                    "to MeshNV, TaskNV, and GLCompute execution model";
+                    "to MeshEXT, TaskEXT, MeshNV, TaskNV, and GLCompute "
+                    "execution model";
               }
               return false;
             }
             return true;
           });
+    }
+
+    if (storage_class == spv::StorageClass::TileImageEXT) {
+      std::string errorVUID = VkErrorID(8720);
+      function(consumer->function()->id())
+          ->RegisterExecutionModelLimitation(
+              [errorVUID](spv::ExecutionModel model, std::string* message) {
+                if (model != spv::ExecutionModel::Fragment) {
+                  if (message) {
+                    *message = errorVUID +
+                               "in Vulkan environment, TileImageEXT Storage "
+                               "Class is limited "
+                               "to Fragment execution model";
+                  }
+                  return false;
+                }
+                return true;
+              });
     }
   }
 
@@ -2656,6 +2675,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpImageTexelPointer-04658);
     case 4659:
       return VUID_WRAP(VUID-StandaloneSpirv-OpImageQuerySizeLod-04659);
+    case 4660:
+      return VUID_WRAP(VUID-StandaloneSpirv-SubpassData-04660);
     case 4664:
       return VUID_WRAP(VUID-StandaloneSpirv-OpImageGather-04664);
     case 4667:
@@ -2834,6 +2855,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Component-07703);
     case 7951:
       return VUID_WRAP(VUID-StandaloneSpirv-SubgroupVoteKHR-07951);
+    case 8720:
+      return VUID_WRAP(VUID-StandaloneSpirv-None-08720);
     case 8721:
       return VUID_WRAP(VUID-StandaloneSpirv-OpEntryPoint-08721);
     case 8722:
