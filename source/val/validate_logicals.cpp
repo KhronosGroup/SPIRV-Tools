@@ -92,7 +92,8 @@ spv_result_t ValidateFloatCompare(ValidationState_t& _,
 }
 
 spv_result_t ValidateLogicalCompare(ValidationState_t& _,
-                                    const Instruction* inst) {
+                                    const Instruction* inst,
+                                    uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   if (!_.IsBoolScalarType(result_type) && !_.IsBoolVectorType(result_type))
@@ -100,15 +101,17 @@ spv_result_t ValidateLogicalCompare(ValidationState_t& _,
            << "Expected bool scalar or vector type as Result Type: "
            << spvOpcodeString(opcode);
 
-  if (result_type != _.GetOperandTypeId(inst, 2) ||
-      result_type != _.GetOperandTypeId(inst, 3))
+  const uint32_t operand_1 = _.GetOperandTypeId(inst, operand_index);
+  const uint32_t operand_2 = _.GetOperandTypeId(inst, operand_index + 1);
+  if (result_type != operand_1 || result_type != operand_2)
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected both operands to be of Result Type: "
            << spvOpcodeString(opcode);
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateLogicalNot(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateLogicalNot(ValidationState_t& _, const Instruction* inst,
+                                uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   if (!_.IsBoolScalarType(result_type) && !_.IsBoolVectorType(result_type))
@@ -116,14 +119,15 @@ spv_result_t ValidateLogicalNot(ValidationState_t& _, const Instruction* inst) {
            << "Expected bool scalar or vector type as Result Type: "
            << spvOpcodeString(opcode);
 
-  if (result_type != _.GetOperandTypeId(inst, 2))
+  if (result_type != _.GetOperandTypeId(inst, operand_index))
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected operand to be of Result Type: "
            << spvOpcodeString(opcode);
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateSelect(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateSelect(ValidationState_t& _, const Instruction* inst,
+                            uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   uint32_t dimension = 1;
@@ -186,9 +190,9 @@ spv_result_t ValidateSelect(ValidationState_t& _, const Instruction* inst) {
       return fail();
   }
 
-  const uint32_t condition_type = _.GetOperandTypeId(inst, 2);
-  const uint32_t left_type = _.GetOperandTypeId(inst, 3);
-  const uint32_t right_type = _.GetOperandTypeId(inst, 4);
+  const uint32_t condition_type = _.GetOperandTypeId(inst, operand_index);
+  const uint32_t left_type = _.GetOperandTypeId(inst, operand_index + 1);
+  const uint32_t right_type = _.GetOperandTypeId(inst, operand_index + 2);
 
   if (!condition_type || (!_.IsBoolScalarType(condition_type) &&
                           !_.IsBoolVectorType(condition_type)))
@@ -216,7 +220,8 @@ spv_result_t ValidateSelect(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateIntCompare(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateIntCompare(ValidationState_t& _, const Instruction* inst,
+                                uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   if (!_.IsBoolScalarType(result_type) && !_.IsBoolVectorType(result_type))
@@ -224,8 +229,8 @@ spv_result_t ValidateIntCompare(ValidationState_t& _, const Instruction* inst) {
            << "Expected bool scalar or vector type as Result Type: "
            << spvOpcodeString(opcode);
 
-  const uint32_t left_type = _.GetOperandTypeId(inst, 2);
-  const uint32_t right_type = _.GetOperandTypeId(inst, 3);
+  const uint32_t left_type = _.GetOperandTypeId(inst, operand_index);
+  const uint32_t right_type = _.GetOperandTypeId(inst, operand_index + 1);
 
   if (!left_type ||
       (!_.IsIntScalarType(left_type) && !_.IsIntVectorType(left_type)))
@@ -305,6 +310,35 @@ spv_result_t LogicalsPass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpSLessThan:
     case spv::Op::OpSLessThanEqual:
       return ValidateIntCompare(_, inst);
+
+    case spv::Op::OpSpecConstantOp: {
+      switch (inst->GetOperandAs<spv::Op>(2u)) {
+        case spv::Op::OpLogicalEqual:
+        case spv::Op::OpLogicalNotEqual:
+        case spv::Op::OpLogicalOr:
+        case spv::Op::OpLogicalAnd:
+          return ValidateLogicalCompare(_, inst, 3);
+        case spv::Op::OpLogicalNot:
+          return ValidateLogicalNot(_, inst, 3);
+        case spv::Op::OpSelect:
+          return ValidateSelect(_, inst, 3);
+        case spv::Op::OpIEqual:
+        case spv::Op::OpINotEqual:
+        case spv::Op::OpUGreaterThan:
+        case spv::Op::OpUGreaterThanEqual:
+        case spv::Op::OpULessThan:
+        case spv::Op::OpULessThanEqual:
+        case spv::Op::OpSGreaterThan:
+        case spv::Op::OpSGreaterThanEqual:
+        case spv::Op::OpSLessThan:
+        case spv::Op::OpSLessThanEqual:
+          return ValidateIntCompare(_, inst, 3);
+        default:
+          break;
+      }
+      break;
+    }
+
     default:
       break;
   }

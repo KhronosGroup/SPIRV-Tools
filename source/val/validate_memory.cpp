@@ -2280,8 +2280,10 @@ spv_result_t ValidateArrayLength(ValidationState_t& state,
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateCooperativeMatrixLengthNV(ValidationState_t& state,
-                                               const Instruction* inst) {
+spv_result_t ValidateCooperativeMatrixLength(ValidationState_t& state,
+                                             const Instruction* inst,
+                                             bool is_khr,
+                                             uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   // Result type must be a 32-bit unsigned int.
   const uint32_t result_type_id = inst->type_id();
@@ -2293,15 +2295,14 @@ spv_result_t ValidateCooperativeMatrixLengthNV(ValidationState_t& state,
            << " must be OpTypeInt with width 32 and signedness 0.";
   }
 
-  bool isKhr = inst->opcode() == spv::Op::OpCooperativeMatrixLengthKHR;
-  auto type_id = inst->GetOperandAs<uint32_t>(2);
+  auto type_id = inst->GetOperandAs<uint32_t>(operand_index);
   auto type = state.FindDef(type_id);
-  if (isKhr && type->opcode() != spv::Op::OpTypeCooperativeMatrixKHR) {
+  if (is_khr && type->opcode() != spv::Op::OpTypeCooperativeMatrixKHR) {
     return state.diag(SPV_ERROR_INVALID_ID, inst)
            << "The type in Op" << spvOpcodeString(opcode) << " <id> "
            << state.getIdName(type_id)
            << " must be OpTypeCooperativeMatrixKHR.";
-  } else if (!isKhr && type->opcode() != spv::Op::OpTypeCooperativeMatrixNV) {
+  } else if (!is_khr && type->opcode() != spv::Op::OpTypeCooperativeMatrixNV) {
     return state.diag(SPV_ERROR_INVALID_ID, inst)
            << "The type in Op" << spvOpcodeString(opcode) << " <id> "
            << state.getIdName(type_id) << " must be OpTypeCooperativeMatrixNV.";
@@ -3391,8 +3392,9 @@ spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpCooperativeMatrixStoreNV:
       return ValidateCooperativeMatrixLoadStoreNV(_, inst);
     case spv::Op::OpCooperativeMatrixLengthKHR:
+      return ValidateCooperativeMatrixLength(_, inst, true);
     case spv::Op::OpCooperativeMatrixLengthNV:
-      return ValidateCooperativeMatrixLengthNV(_, inst);
+      return ValidateCooperativeMatrixLength(_, inst, false);
     case spv::Op::OpCooperativeMatrixLoadKHR:
     case spv::Op::OpCooperativeMatrixStoreKHR:
       return ValidateCooperativeMatrixLoadStoreKHR(_, inst);
@@ -3415,6 +3417,18 @@ spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
       return ValidatePtrComparison(_, inst);
     case spv::Op::OpImageTexelPointer:
     case spv::Op::OpGenericPtrMemSemantics:
+
+    case spv::Op::OpSpecConstantOp: {
+      switch (inst->GetOperandAs<spv::Op>(2u)) {
+        case spv::Op::OpCooperativeMatrixLengthKHR:
+          return ValidateCooperativeMatrixLength(_, inst, true, 3);
+        case spv::Op::OpCooperativeMatrixLengthNV:
+          return ValidateCooperativeMatrixLength(_, inst, false, 3);
+        default:
+          break;
+      }
+    }
+
     default:
       break;
   }
