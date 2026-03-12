@@ -77,12 +77,12 @@ ModuleLayoutSection InstructionLayoutSection(
     case spv::Op::OpDecorateId:
     case spv::Op::OpDecorateStringGOOGLE:
     case spv::Op::OpMemberDecorateStringGOOGLE:
-      return kLayoutAnnotations;
-    case spv::Op::OpTypeForwardPointer:
-    case spv::Op::OpTypeTaskSequenceINTEL:
     case spv::Op::OpAliasDomainDeclINTEL:
     case spv::Op::OpAliasScopeDeclINTEL:
     case spv::Op::OpAliasScopeListDeclINTEL:
+      return kLayoutAnnotations;
+    case spv::Op::OpTypeForwardPointer:
+    case spv::Op::OpTypeTaskSequenceINTEL:
       return kLayoutTypes;
     case spv::Op::OpVariable:
     case spv::Op::OpUntypedVariableKHR:
