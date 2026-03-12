@@ -433,7 +433,8 @@ spv_result_t ValidateConvertUToPtr(ValidationState_t& _,
 }
 
 spv_result_t ValidatePtrCastToGeneric(ValidationState_t& _,
-                                      const Instruction* inst) {
+                                      const Instruction* inst,
+                                      uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   spv::StorageClass result_storage_class;
@@ -449,7 +450,7 @@ spv_result_t ValidatePtrCastToGeneric(ValidationState_t& _,
            << "Expected Result Type to have storage class Generic: "
            << spvOpcodeString(opcode);
 
-  const uint32_t input_type = _.GetOperandTypeId(inst, 2);
+  const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
   spv::StorageClass input_storage_class;
   uint32_t input_data_type = 0;
   if (!_.GetPointerTypeInfo(input_type, &input_data_type, &input_storage_class))
@@ -471,7 +472,8 @@ spv_result_t ValidatePtrCastToGeneric(ValidationState_t& _,
 }
 
 spv_result_t ValidateGenericCastToPtr(ValidationState_t& _,
-                                      const Instruction* inst) {
+                                      const Instruction* inst,
+                                      uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   spv::StorageClass result_storage_class;
@@ -489,7 +491,7 @@ spv_result_t ValidateGenericCastToPtr(ValidationState_t& _,
            << "Expected Result Type to have storage class Workgroup, "
            << "CrossWorkgroup or Function: " << spvOpcodeString(opcode);
 
-  const uint32_t input_type = _.GetOperandTypeId(inst, 2);
+  const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
   spv::StorageClass input_storage_class;
   uint32_t input_data_type = 0;
   if (!_.GetPointerTypeInfo(input_type, &input_data_type, &input_storage_class))
@@ -552,10 +554,11 @@ spv_result_t ValidateGenericCastToPtrExplicit(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateBitcast(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateBitcast(ValidationState_t& _, const Instruction* inst,
+                             uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
-  const uint32_t input_type = _.GetOperandTypeId(inst, 2);
+  const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
   if (!input_type)
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected input to have a type: " << spvOpcodeString(opcode);
@@ -860,6 +863,12 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
           return ValidateConvertPtrToU(_, inst, 3);
         case spv::Op::OpConvertUToPtr:
           return ValidateConvertUToPtr(_, inst, 3);
+        case spv::Op::OpGenericCastToPtr:
+          return ValidateGenericCastToPtr(_, inst, 3);
+        case spv::Op::OpPtrCastToGeneric:
+          return ValidatePtrCastToGeneric(_, inst, 3);
+        case spv::Op::OpBitcast:
+          return ValidateBitcast(_, inst, 3);
         default:
           break;
       }
