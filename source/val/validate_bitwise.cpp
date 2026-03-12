@@ -57,7 +57,8 @@ spv_result_t ValidateBaseType(ValidationState_t& _, const Instruction* inst,
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateShift(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateShift(ValidationState_t& _, const Instruction* inst,
+                           uint32_t starting_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   if (!_.IsIntScalarType(result_type) && !_.IsIntVectorType(result_type) &&
@@ -67,8 +68,8 @@ spv_result_t ValidateShift(ValidationState_t& _, const Instruction* inst) {
            << spvOpcodeString(opcode);
 
   const uint32_t result_dimension = _.GetDimension(result_type);
-  const uint32_t base_type = _.GetOperandTypeId(inst, 2);
-  const uint32_t shift_type = _.GetOperandTypeId(inst, 3);
+  const uint32_t base_type = _.GetOperandTypeId(inst, starting_index);
+  const uint32_t shift_type = _.GetOperandTypeId(inst, starting_index + 1);
 
   if (!base_type ||
       (!_.IsIntScalarType(base_type) && !_.IsIntVectorType(base_type) &&
@@ -101,7 +102,8 @@ spv_result_t ValidateShift(ValidationState_t& _, const Instruction* inst) {
   return SPV_SUCCESS;
 }
 
-spv_result_t ValidateBitwise(ValidationState_t& _, const Instruction* inst) {
+spv_result_t ValidateBitwise(ValidationState_t& _, const Instruction* inst,
+                             uint32_t starting_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
   if (!_.IsIntScalarType(result_type) && !_.IsIntVectorType(result_type) &&
@@ -113,8 +115,8 @@ spv_result_t ValidateBitwise(ValidationState_t& _, const Instruction* inst) {
   const uint32_t result_dimension = _.GetDimension(result_type);
   const uint32_t result_bit_width = _.GetBitWidth(result_type);
 
-  for (size_t operand_index = 2; operand_index < inst->operands().size();
-       ++operand_index) {
+  for (size_t operand_index = starting_index;
+       operand_index < inst->operands().size(); ++operand_index) {
     const uint32_t type_id = _.GetOperandTypeId(inst, operand_index);
     if (!type_id ||
         (!_.IsIntScalarType(type_id) && !_.IsIntVectorType(type_id) &&
@@ -245,6 +247,24 @@ spv_result_t BitwisePass(ValidationState_t& _, const Instruction* inst) {
       return ValidateBitReverse(_, inst);
     case spv::Op::OpBitCount:
       return ValidateBitCount(_, inst);
+
+    case spv::Op::OpSpecConstantOp: {
+      switch (inst->GetOperandAs<spv::Op>(2u)) {
+        case spv::Op::OpShiftRightLogical:
+        case spv::Op::OpShiftRightArithmetic:
+        case spv::Op::OpShiftLeftLogical:
+          return ValidateShift(_, inst, 3);
+        case spv::Op::OpBitwiseOr:
+        case spv::Op::OpBitwiseXor:
+        case spv::Op::OpBitwiseAnd:
+        case spv::Op::OpNot:
+          return ValidateBitwise(_, inst, 3);
+        default:
+          break;
+      }
+      break;
+    }
+
     default:
       break;
   }
