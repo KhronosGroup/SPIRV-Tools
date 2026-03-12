@@ -503,6 +503,162 @@ TEST_F(ValidateConstant, VectorMismatchedConstituents) {
           "does not match Result Type <id> '4[%v2uint]'s vector element type"));
 }
 
+TEST_F(ValidateConstant, ConstantCompositeReplicateVectorGood) {
+  std::string spirv =
+      std::string(
+          "OpCapability Shader\nOpCapability Linkage\nOpCapability "
+          "Int64\nOpCapability Float64\nOpCapability "
+          "VariablePointers\nOpCapability ReplicatedCompositesEXT\nOpExtension "
+          "\"SPV_KHR_variable_pointers\"\nOpExtension "
+          "\"SPV_EXT_replicated_composites\"\nOpMemoryModel Logical Simple\n") +
+      kBasicTypes + R"(
+%int = OpTypeInt 32 1
+%v4int = OpTypeVector %int 4
+%int_0 = OpConstant %int 0
+%const_vector = OpConstantCompositeReplicateEXT %v4int %int_0
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateConstant, SpecConstantCompositeReplicateVectorGood) {
+  std::string spirv =
+      std::string(
+          "OpCapability Shader\nOpCapability Linkage\nOpCapability "
+          "Int64\nOpCapability Float64\nOpCapability "
+          "VariablePointers\nOpCapability ReplicatedCompositesEXT\nOpExtension "
+          "\"SPV_KHR_variable_pointers\"\nOpExtension "
+          "\"SPV_EXT_replicated_composites\"\nOpMemoryModel Logical Simple\n") +
+      kBasicTypes + R"(
+%int = OpTypeInt 32 1
+%v4int = OpTypeVector %int 4
+%int_0 = OpSpecConstant %int 0
+%const_vector = OpSpecConstantCompositeReplicateEXT %v4int %int_0
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateConstant, ConstantCompositeReplicateMatrixGood) {
+  std::string spirv =
+      std::string(
+          "OpCapability Shader\nOpCapability Linkage\nOpCapability "
+          "Int64\nOpCapability Float64\nOpCapability "
+          "VariablePointers\nOpCapability ReplicatedCompositesEXT\nOpExtension "
+          "\"SPV_KHR_variable_pointers\"\nOpExtension "
+          "\"SPV_EXT_replicated_composites\"\nOpMemoryModel Logical Simple\n") +
+      kBasicTypes + R"(
+%v2float = OpTypeVector %float 2
+%mat2x2 = OpTypeMatrix %v2float 2
+%v_0 = OpConstantNull %v2float
+%const_matrix = OpConstantCompositeReplicateEXT %mat2x2 %v_0
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateConstant, ConstantCompositeReplicateArrayGood) {
+  std::string spirv =
+      std::string(
+          "OpCapability Shader\nOpCapability Linkage\nOpCapability "
+          "Int64\nOpCapability Float64\nOpCapability "
+          "VariablePointers\nOpCapability ReplicatedCompositesEXT\nOpExtension "
+          "\"SPV_KHR_variable_pointers\"\nOpExtension "
+          "\"SPV_EXT_replicated_composites\"\nOpMemoryModel Logical Simple\n") +
+      kBasicTypes + R"(
+%int = OpTypeInt 32 1
+%int_4 = OpConstant %int 4
+%arr = OpTypeArray %int %int_4
+%int_0 = OpConstantNull %int
+%const_arr = OpConstantCompositeReplicateEXT %arr %int_0
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateConstant, ConstantCompositeReplicateStructGood) {
+  std::string spirv =
+      std::string(
+          "OpCapability Shader\nOpCapability Linkage\nOpCapability "
+          "Int64\nOpCapability Float64\nOpCapability "
+          "VariablePointers\nOpCapability ReplicatedCompositesEXT\nOpExtension "
+          "\"SPV_KHR_variable_pointers\"\nOpExtension "
+          "\"SPV_EXT_replicated_composites\"\nOpMemoryModel Logical Simple\n") +
+      kBasicTypes + R"(
+%int = OpTypeInt 32 1
+%struct = OpTypeStruct %int %int %int
+%int_0 = OpConstantNull %int
+%const_struct = OpConstantCompositeReplicateEXT %struct %int_0
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateConstant, ConstantCompositeReplicateWrongOperandType) {
+  std::string spirv =
+      std::string(
+          "OpCapability Shader\nOpCapability Linkage\nOpCapability "
+          "Int64\nOpCapability Float64\nOpCapability "
+          "VariablePointers\nOpCapability ReplicatedCompositesEXT\nOpExtension "
+          "\"SPV_KHR_variable_pointers\"\nOpExtension "
+          "\"SPV_EXT_replicated_composites\"\nOpMemoryModel Logical Simple\n") +
+      kBasicTypes + R"(
+%int = OpTypeInt 32 1
+%v4int = OpTypeVector %int 4
+%const_vector = OpConstantCompositeReplicateEXT %v4int %float_0
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "OpConstantCompositeReplicateEXT Constituent <id> '11[%11]'s type "
+          "does not match Result Type <id> '17[%v4int]'s element type"));
+}
+
+TEST_F(ValidateConstant, ConstantCompositeReplicateWrongOperandClass) {
+  std::string spirv =
+      std::string(
+          "OpCapability Shader\nOpCapability Linkage\nOpCapability "
+          "Int64\nOpCapability Float64\nOpCapability "
+          "VariablePointers\nOpCapability ReplicatedCompositesEXT\nOpExtension "
+          "\"SPV_KHR_variable_pointers\"\nOpExtension "
+          "\"SPV_EXT_replicated_composites\"\nOpMemoryModel Logical Simple\n") +
+      kBasicTypes + R"(
+%int = OpTypeInt 32 1
+%v4int = OpTypeVector %int 4
+%var = OpVariable %_ptr_uint Workgroup
+%const_vector = OpConstantCompositeReplicateEXT %v4int %var
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpConstantCompositeReplicateEXT Constituent <id> '18[%18]' "
+                "is not a constant or undef"));
+}
+
+TEST_F(ValidateConstant, ConstantCompositeReplicateNotComposite) {
+  std::string spirv =
+      std::string(
+          "OpCapability Shader\nOpCapability Linkage\nOpCapability "
+          "Int64\nOpCapability Float64\nOpCapability "
+          "VariablePointers\nOpCapability ReplicatedCompositesEXT\nOpExtension "
+          "\"SPV_KHR_variable_pointers\"\nOpExtension "
+          "\"SPV_EXT_replicated_composites\"\nOpMemoryModel Logical Simple\n") +
+      kBasicTypes + R"(
+%int = OpTypeInt 32 1
+%int_0 = OpConstantNull %int
+%const_vector = OpConstantCompositeReplicateEXT %float %int_0
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpConstantCompositeReplicateEXT Result Type <id> '5[%float]' "
+                "is not a composite type"));
+}
+
 TEST_F(ValidateConstant, BadShaderOperandsQuantizeToF16) {
   std::string spirv = R"(
 OpCapability Shader
