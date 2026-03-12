@@ -227,13 +227,13 @@ spv_result_t ValidateTypeVector(ValidationState_t& _, const Instruction* inst) {
       return SPV_SUCCESS;
     }
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Having " << num_components << " components for "
-           << spvOpcodeString(inst->opcode())
-           << " requires the Vector16 capability";
+           << _.VkErrorID(12295) << "Having " << num_components
+           << " components for " << spvOpcodeString(inst->opcode())
+           << " requires the Vector16 or LongVectorEXT capability";
   } else {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Illegal number of components (" << num_components << ") for "
-           << spvOpcodeString(inst->opcode());
+           << _.VkErrorID(12295) << "Illegal number of components ("
+           << num_components << ") for " << spvOpcodeString(inst->opcode());
   }
 
   return SPV_SUCCESS;

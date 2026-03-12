@@ -887,6 +887,7 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
             return false;
           })) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << _.VkErrorID(12297)
                << "Long vector types with more than 4 components (or types "
                   "containing them) not supported in storage class "
                << StorageClassToString(storage_class);

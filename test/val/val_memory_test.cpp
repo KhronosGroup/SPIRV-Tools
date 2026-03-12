@@ -10357,6 +10357,8 @@ OpFunctionEnd
       getDiagnosticString(),
       HasSubstr("Long vector types with more than 4 components (or types "
                 "containing them) not supported in storage class Input"));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Type-12297"));
 }
 
 TEST_F(ValidateMemory, LongVectorMissingCapabilityBad) {
@@ -10379,6 +10381,8 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Illegal number of components (5) for TypeVector"));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-12295"));
 }
 
 }  // namespace
