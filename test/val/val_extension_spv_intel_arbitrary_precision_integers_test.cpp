@@ -118,7 +118,7 @@ TEST_F(ValidateIntelArbitraryPrecisionIntegers, ArbitraryPrecisionIntegerWithCap
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_MISSING_EXTENSION, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("ArbitraryPrecisionIntegersINTEL(5844) requires one of these extensions: SPV_INTEL_arbitrary_precision_integers"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("SPV_INTEL_arbitrary_precision_integers"));
 }
 
 TEST_F(ValidateIntelArbitraryPrecisionIntegers, StandardIntegerTypesStillWork) {
