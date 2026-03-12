@@ -731,7 +731,7 @@ OpExtension "SPV_INTEL_function_pointers"
 OpMemoryModel Logical Simple
 %void = OpTypeVoid
 %functype = OpTypeFunction %void
-%ptr_fun = OpTypePointer Function %functype
+%ptr_fun = OpTypePointer UniformConstant %functype
 %const_ptr = OpConstantFunctionPointerINTEL %ptr_fun %target_func
 %target_func = OpFunction %void None %functype
 %lbl = OpLabel
