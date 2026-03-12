@@ -678,7 +678,8 @@ spv_result_t ConstantPass(ValidationState_t& _, const Instruction* inst) {
       break;
     case spv::Op::OpConstantCompositeReplicateEXT:
     case spv::Op::OpSpecConstantCompositeReplicateEXT:
-      if (auto error = ValidateConstantCompositeReplicate(_, inst)) return error;
+      if (auto error = ValidateConstantCompositeReplicate(_, inst))
+        return error;
       break;
     case spv::Op::OpConstantSampler:
       if (auto error = ValidateConstantSampler(_, inst)) return error;
