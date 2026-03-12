@@ -659,7 +659,8 @@ spv_result_t ValidateTypeFunction(ValidationState_t& _,
       // Check if this is OpTypePointer with FunctionPointersINTEL capability
       if (use->opcode() == spv::Op::OpTypePointer &&
           _.HasCapability(spv::Capability::FunctionPointersINTEL)) {
-        continue; // Allow OpTypePointer to use function types with this capability
+        // Allow OpTypePointer to use function types with this capability
+        continue;
       }
       return _.diag(SPV_ERROR_INVALID_ID, use)
              << "Invalid use of function type result id "

@@ -144,6 +144,29 @@ TEST_F(ValidateIntelArbitraryPrecisionIntegers, StandardIntegerTypesStillWork) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateIntelArbitraryPrecisionIntegers, ZeroBitIntegerRejected) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability ArbitraryPrecisionIntegersINTEL
+               OpExtension "SPV_INTEL_arbitrary_precision_integers"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int0 = OpTypeInt 0 0
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("OpTypeInt has 0 bits"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
