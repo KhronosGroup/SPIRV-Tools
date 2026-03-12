@@ -77,6 +77,9 @@ ModuleLayoutSection InstructionLayoutSection(
     case spv::Op::OpDecorateId:
     case spv::Op::OpDecorateStringGOOGLE:
     case spv::Op::OpMemberDecorateStringGOOGLE:
+    // SPV_INTEL_memory_access_aliasing: alias scope instructions go in the
+    // annotations section so that OpDecorateId can reference them without
+    // requiring a forward reference across layout sections.
     case spv::Op::OpAliasDomainDeclINTEL:
     case spv::Op::OpAliasScopeDeclINTEL:
     case spv::Op::OpAliasScopeListDeclINTEL:

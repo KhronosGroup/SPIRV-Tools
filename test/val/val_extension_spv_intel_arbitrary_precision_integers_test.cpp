@@ -146,4 +146,4 @@ TEST_F(ValidateIntelArbitraryPrecisionIntegers, StandardIntegerTypesStillWork) {
 
 }  // namespace
 }  // namespace val
-}  // namespace spvtools 
+}  // namespace spvtools

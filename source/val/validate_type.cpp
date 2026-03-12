@@ -83,6 +83,11 @@ spv_result_t ValidateTypeInt(ValidationState_t& _, const Instruction* inst) {
     } else {
       // Check for SPV_INTEL_arbitrary_precision_integers extension
       if (_.HasCapability(spv::Capability::ArbitraryPrecisionIntegersINTEL)) {
+        if (num_bits == 0) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << "OpTypeInt has 0 bits, which is not allowed even with "
+                    "ArbitraryPrecisionIntegersINTEL.";
+        }
         return SPV_SUCCESS;
       }
       return _.diag(SPV_ERROR_INVALID_DATA, inst)

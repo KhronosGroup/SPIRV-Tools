@@ -607,9 +607,8 @@ spv_result_t ValidateConstantFunctionPointerINTEL(ValidationState_t& _,
                                                   const Instruction* inst) {
   const auto result_type = _.FindDef(inst->type_id());
   // Result Type must be a pointer type
-  if (!result_type ||
-      (result_type->opcode() != spv::Op::OpTypePointer &&
-       result_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
+  if (result_type->opcode() != spv::Op::OpTypePointer &&
+      result_type->opcode() != spv::Op::OpTypeUntypedPointerKHR) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpConstantFunctionPointerINTEL Result Type <id> "
            << _.getIdName(inst->type_id()) << " is not a pointer type";
@@ -619,7 +618,7 @@ spv_result_t ValidateConstantFunctionPointerINTEL(ValidationState_t& _,
   const Instruction* pointee_type = nullptr;
   if (result_type->opcode() == spv::Op::OpTypePointer) {
     pointee_type = _.FindDef(result_type->GetOperandAs<uint32_t>(2));
-    if (!pointee_type || pointee_type->opcode() != spv::Op::OpTypeFunction) {
+    if (pointee_type->opcode() != spv::Op::OpTypeFunction) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "OpConstantFunctionPointerINTEL Result Type <id> "
              << _.getIdName(inst->type_id())
