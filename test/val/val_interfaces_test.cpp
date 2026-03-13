@@ -1640,7 +1640,7 @@ OpFunctionEnd
           "Interface struct has no Block decoration but has BuiltIn members."));
 }
 
-TEST_F(ValidateInterfacesTest, InvalidLocationTypePointer) {
+TEST_F(ValidateInterfacesTest, InvalidLocationTypeSampler) {
   const std::string text = R"(
                OpCapability Shader
                OpMemoryModel Logical Simple
@@ -1649,14 +1649,13 @@ TEST_F(ValidateInterfacesTest, InvalidLocationTypePointer) {
        %void = OpTypeVoid
           %5 = OpTypeFunction %void
       %float = OpTypeFloat 32
-%_ptr_Private_void = OpTypePointer Private %void
+      %sampler = OpTypeSampler
        %uint = OpTypeInt 32 0
 %uint_4278132784 = OpConstant %uint 4278132784
-%_arr__ptr_Private_void_uint_4278132784 = OpTypeArray %_ptr_Private_void %uint_4278132784
-%_ptr_Output__arr__ptr_Private_void_uint_4278132784 = OpTypePointer Output %_arr__ptr_Private_void_uint_4278132784
-          %2 = OpVariable %_ptr_Output__arr__ptr_Private_void_uint_4278132784 Output
-%_ptr_Output__ptr_Private_void = OpTypePointer Output %_ptr_Private_void
-          %3 = OpVariable %_ptr_Output__arr__ptr_Private_void_uint_4278132784 Output
+%_arr__sampler_uint_4278132784 = OpTypeArray %sampler %uint_4278132784
+%_ptr_Output__arr__sampler_uint_4278132784 = OpTypePointer Output %_arr__sampler_uint_4278132784
+          %2 = OpVariable %_ptr_Output__arr__sampler_uint_4278132784 Output
+          %3 = OpVariable %_ptr_Output__arr__sampler_uint_4278132784 Output
           %1 = OpFunction %void None %5
          %15 = OpLabel
                OpReturn

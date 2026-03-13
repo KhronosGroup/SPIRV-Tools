@@ -619,35 +619,54 @@ spv_result_t ValidateVariablePointer(ValidationState_t& _,
   if ((_.addressing_model() == spv::AddressingModel::Logical ||
        _.addressing_model() == spv::AddressingModel::PhysicalStorageBuffer64) &&
       !_.options()->relax_logical_pointer) {
-    if ((pointee.opcode() == spv::Op::OpTypePointer ||
-         pointee.opcode() == spv::Op::OpTypeUntypedPointerKHR)) {
-      const auto sc = pointee.GetOperandAs<spv::StorageClass>(1u);
-      if (sc != spv::StorageClass::PhysicalStorageBuffer) {
-        if (sc != spv::StorageClass::StorageBuffer &&
-            sc != spv::StorageClass::Workgroup) {
-          return _.diag(SPV_ERROR_INVALID_ID, inst)
-                 << "In Logical addressing, variables can only allocate a "
-                    "pointer to the StorageBuffer or Workgroup storage classes";
-        } else if (!_.HasCapability(
-                       spv::Capability::VariablePointersStorageBuffer) &&
-                   sc == spv::StorageClass::StorageBuffer) {
-          return _.diag(SPV_ERROR_INVALID_ID, inst)
-                 << "In Logical addressing, variables can only allocate a "
-                    "storage buffer pointer if the "
-                    "VariablePointersStorageBuffer capability is declared";
-        } else if (!_.HasCapability(spv::Capability::VariablePointers) &&
-                   sc == spv::StorageClass::Workgroup) {
-          return _.diag(SPV_ERROR_INVALID_ID, inst)
-                 << "In Logical addressing, variables can only allocate a "
-                    "workgroup pointer if the VariablePointers capability is "
-                    "declared";
-        } else if (storage_class != spv::StorageClass::Function &&
-                   storage_class != spv::StorageClass::Private) {
-          return _.diag(SPV_ERROR_INVALID_ID, inst)
-                 << "In Logical addressing with variable pointers, variables "
-                 << "that allocate pointers must be in Function or Private "
-                 << "storage classes";
-        }
+    spv_result_t error = SPV_SUCCESS;
+    bool contains_logical_pointer = _.ContainsType(
+        pointee.id(),
+        [&_, inst, &error](const Instruction* type) {
+          if (type->opcode() == spv::Op::OpTypePointer ||
+              type->opcode() == spv::Op::OpTypeUntypedPointerKHR) {
+            const auto sc = type->GetOperandAs<spv::StorageClass>(1u);
+            if (sc != spv::StorageClass::PhysicalStorageBuffer) {
+              if (sc != spv::StorageClass::StorageBuffer &&
+                  sc != spv::StorageClass::Workgroup) {
+                error =
+                    _.diag(SPV_ERROR_INVALID_ID, inst)
+                    << "In Logical addressing, variables can only allocate a "
+                       "pointer to the StorageBuffer or Workgroup storage "
+                       "classes";
+              } else if (!_.HasCapability(
+                             spv::Capability::VariablePointersStorageBuffer) &&
+                         sc == spv::StorageClass::StorageBuffer) {
+                error =
+                    _.diag(SPV_ERROR_INVALID_ID, inst)
+                    << "In Logical addressing, variables can only allocate a "
+                       "storage buffer pointer if the "
+                       "VariablePointersStorageBuffer capability is declared";
+              } else if (!_.HasCapability(spv::Capability::VariablePointers) &&
+                         sc == spv::StorageClass::Workgroup) {
+                error =
+                    _.diag(SPV_ERROR_INVALID_ID, inst)
+                    << "In Logical addressing, variables can only allocate a "
+                       "workgroup pointer if the VariablePointers capability "
+                       "is "
+                       "declared";
+              }
+              return true;
+            }
+          }
+          return false;
+        },
+        /* traverse_all_types = */ false);
+
+    if (error != SPV_SUCCESS) return error;
+
+    if (contains_logical_pointer) {
+      if (storage_class != spv::StorageClass::Function &&
+          storage_class != spv::StorageClass::Private) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << "In Logical addressing with variable pointers, variables "
+               << "that allocate pointers must be in Function or Private "
+               << "storage classes";
       }
     }
   }

@@ -2541,11 +2541,11 @@ OpFunctionEnd
 TEST_P(ValidateIdWithMessage, OpVariableContainsBoolPointerGood) {
   std::string spirv = kGLSL450MemoryModel + R"(
 %bool = OpTypeBool
-%boolptr = OpTypePointer Uniform %bool
+%boolptr = OpTypePointer Workgroup %bool
 %int = OpTypeInt 32 0
 %block = OpTypeStruct %boolptr %int
-%_ptr_Uniform_block = OpTypePointer Uniform %block
-%var = OpVariable %_ptr_Uniform_block Uniform
+%_ptr_Private_block = OpTypePointer Private %block
+%var = OpVariable %_ptr_Private_block Private
 %void = OpTypeVoid
 %fnty = OpTypeFunction %void
 %main = OpFunction %void None %fnty
@@ -2801,6 +2801,11 @@ OpMemoryModel Logical GLSL450
 %_ptr_workgroup_int = OpTypePointer Workgroup %int
 %_ptr_uniform_ptr = OpTypePointer Uniform %_ptr_workgroup_int
 %var = OpVariable %_ptr_uniform_ptr Uniform
+%voidfn = OpTypeFunction %void
+%func = OpFunction %void None %voidfn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
 )";
 
   CompileSuccessfully(spirv);
