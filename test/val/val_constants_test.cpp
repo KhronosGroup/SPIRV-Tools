@@ -712,12 +712,7 @@ OpMemoryModel Logical VulkanKHR
   }
 
 #define BAD_KERNEL_OPERANDS_ID(STR, ERR) \
-  {                                      \
-      SPV_ENV_UNIVERSAL_1_0,             \
-      kKernelPreamble kBasicTypes STR,   \
-      false,                             \
-      ERR,                               \
-  }
+  { SPV_ENV_UNIVERSAL_1_0, kKernelPreamble kBasicTypes STR, false, ERR, }
 
 // 2 of each, first has bad return type, second has bad operand
 INSTANTIATE_TEST_SUITE_P(
