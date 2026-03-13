@@ -17,6 +17,7 @@
 // Validates correctness of composite SPIR-V instructions.
 
 #include <climits>
+#include <cstdint>
 
 #include "source/opcode.h"
 #include "source/spirv_target_env.h"
@@ -36,11 +37,8 @@ namespace {
 // deep).
 spv_result_t GetExtractInsertValueType(ValidationState_t& _,
                                        const Instruction* inst,
-                                       uint32_t* member_type) {
-  const spv::Op opcode = inst->opcode();
-  assert(opcode == spv::Op::OpCompositeExtract ||
-         opcode == spv::Op::OpCompositeInsert);
-  uint32_t word_index = opcode == spv::Op::OpCompositeExtract ? 4 : 5;
+                                       uint32_t* member_type,
+                                       uint32_t word_index) {
   const uint32_t num_words = static_cast<uint32_t>(inst->words().size());
   const uint32_t composite_id_index = word_index - 1;
   const uint32_t num_indices = num_words - word_index;
@@ -53,7 +51,7 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
 
   } else if (num_indices > kCompositeExtractInsertMaxNumIndices) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "The number of indexes in Op" << spvOpcodeString(opcode)
+           << "The number of indexes in Op" << spvOpcodeString(inst->opcode())
            << " may not exceed " << kCompositeExtractInsertMaxNumIndices
            << ". Found " << num_indices << " indexes.";
   }
@@ -471,9 +469,12 @@ spv_result_t ValidateCompositeConstructReplicate(ValidationState_t& _,
 }
 
 spv_result_t ValidateCompositeExtract(ValidationState_t& _,
-                                      const Instruction* inst) {
+                                      const Instruction* inst,
+                                      uint32_t operand_index = 2) {
   uint32_t member_type = 0;
-  if (spv_result_t error = GetExtractInsertValueType(_, inst, &member_type)) {
+
+  if (spv_result_t error =
+          GetExtractInsertValueType(_, inst, &member_type, operand_index + 2)) {
     return error;
   }
 
@@ -496,9 +497,10 @@ spv_result_t ValidateCompositeExtract(ValidationState_t& _,
 }
 
 spv_result_t ValidateCompositeInsert(ValidationState_t& _,
-                                     const Instruction* inst) {
-  const uint32_t object_type = _.GetOperandTypeId(inst, 2);
-  const uint32_t composite_type = _.GetOperandTypeId(inst, 3);
+                                     const Instruction* inst,
+                                     uint32_t operand_index = 2) {
+  const uint32_t object_type = _.GetOperandTypeId(inst, operand_index);
+  const uint32_t composite_type = _.GetOperandTypeId(inst, operand_index + 1);
   const uint32_t result_type = inst->type_id();
   if (result_type != composite_type) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -508,7 +510,8 @@ spv_result_t ValidateCompositeInsert(ValidationState_t& _,
   }
 
   uint32_t member_type = 0;
-  if (spv_result_t error = GetExtractInsertValueType(_, inst, &member_type)) {
+  if (spv_result_t error =
+          GetExtractInsertValueType(_, inst, &member_type, operand_index + 3)) {
     return error;
   }
 
@@ -589,58 +592,58 @@ spv_result_t ValidateTranspose(ValidationState_t& _, const Instruction* inst) {
 }
 
 spv_result_t ValidateVectorShuffle(ValidationState_t& _,
-                                   const Instruction* inst) {
-  auto resultType = _.FindDef(inst->type_id());
-  if (!_.IsVectorType(resultType->id())) {
+                                   const Instruction* inst,
+                                   uint32_t operand_index = 2) {
+  auto result_type = _.FindDef(inst->type_id());
+  if (!_.IsVectorType(result_type->id())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "The Result Type of OpVectorShuffle must be"
            << " a vector type. Found Op"
-           << spvOpcodeString(resultType->opcode()) << ".";
+           << spvOpcodeString(result_type->opcode()) << ".";
   }
 
   // The number of components in Result Type must be the same as the number of
   // Component operands.
-  auto componentCount = inst->operands().size() - 4;
-  auto resultVectorDimension = _.GetDimension(resultType->id());
-  if (resultVectorDimension > 0 && componentCount != resultVectorDimension) {
+  uint32_t first_literal_index = operand_index + 2;
+  uint32_t component_count =
+      static_cast<uint32_t>(inst->operands().size()) - first_literal_index;
+  auto result_vec_dimension = _.GetDimension(result_type->id());
+  if (result_vec_dimension > 0 && component_count != result_vec_dimension) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpVectorShuffle component literals count does not match "
               "Result Type <id> "
-           << _.getIdName(resultType->id()) << "s vector component count.";
+           << _.getIdName(result_type->id()) << "s vector component count.";
   }
 
   // Vector 1 and Vector 2 must both have vector types, with the same Component
   // Type as Result Type.
-  auto vector1Object = _.FindDef(inst->GetOperandAs<uint32_t>(2));
-  auto vector1Type = _.FindDef(vector1Object->type_id());
-  auto vector2Object = _.FindDef(inst->GetOperandAs<uint32_t>(3));
-  auto vector2Type = _.FindDef(vector2Object->type_id());
-  if (!_.IsVectorType(vector1Type->id())) {
+  auto vec1_type = _.FindDef(_.GetOperandTypeId(inst, operand_index));
+  auto vec2_type = _.FindDef(_.GetOperandTypeId(inst, operand_index + 1));
+  if (!_.IsVectorType(vec1_type->id())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "The type of Vector 1 must be a vector type.";
   }
-  if (!_.IsVectorType(vector2Type->id())) {
+  if (!_.IsVectorType(vec2_type->id())) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "The type of Vector 2 must be a vector type.";
   }
 
-  auto resultComponentType = resultType->GetOperandAs<uint32_t>(1);
-  if (vector1Type->GetOperandAs<uint32_t>(1) != resultComponentType) {
+  uint32_t result_component_type = result_type->GetOperandAs<uint32_t>(1);
+  if (vec1_type->GetOperandAs<uint32_t>(1) != result_component_type) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "The Component Type of Vector 1 must be the same as ResultType.";
   }
-  if (vector2Type->GetOperandAs<uint32_t>(1) != resultComponentType) {
+  if (vec2_type->GetOperandAs<uint32_t>(1) != result_component_type) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "The Component Type of Vector 2 must be the same as ResultType.";
   }
 
   // All Component literals must either be FFFFFFFF or in [0, N - 1].
-  auto vector1ComponentCount = vector1Type->GetOperandAs<uint32_t>(2);
-  auto vector2ComponentCount = vector2Type->GetOperandAs<uint32_t>(2);
-  auto N = vector1ComponentCount + vector2ComponentCount;
-  auto firstLiteralIndex = 4;
-  for (size_t i = firstLiteralIndex; i < inst->operands().size(); ++i) {
-    auto literal = inst->GetOperandAs<uint32_t>(i);
+  uint32_t vec1_component_count = vec1_type->GetOperandAs<uint32_t>(2);
+  uint32_t vec2_component_count = vec2_type->GetOperandAs<uint32_t>(2);
+  uint32_t N = vec1_component_count + vec2_component_count;
+  for (size_t i = first_literal_index; i < inst->operands().size(); ++i) {
+    uint32_t literal = inst->GetOperandAs<uint32_t>(i);
     if (literal != 0xFFFFFFFF && literal >= N) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "Component index " << literal << " is out of bounds for "
@@ -1168,6 +1171,20 @@ spv_result_t CompositesPass(ValidationState_t& _, const Instruction* inst) {
       return ValidateCompositeExtractCoopMatQCOM(_, inst);
     case spv::Op::OpExtractSubArrayQCOM:
       return ValidateExtractSubArrayQCOM(_, inst);
+
+    case spv::Op::OpSpecConstantOp: {
+      switch (inst->GetOperandAs<spv::Op>(2u)) {
+        case spv::Op::OpVectorShuffle:
+          return ValidateVectorShuffle(_, inst, 3);
+        case spv::Op::OpCompositeExtract:
+          return ValidateCompositeExtract(_, inst, 3);
+        case spv::Op::OpCompositeInsert:
+          return ValidateCompositeInsert(_, inst, 3);
+        default:
+          break;
+      }
+    }
+
     default:
       break;
   }

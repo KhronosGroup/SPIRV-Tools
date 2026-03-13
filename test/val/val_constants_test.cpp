@@ -704,10 +704,19 @@ OpMemoryModel Logical VulkanKHR
               HasSubstr("must be OpTypeCooperativeMatrixKHR"));
 }
 
+// Some check use SPV_ERROR_INVALID_DATA vs SPV_ERROR_INVALID_ID
 #define BAD_KERNEL_OPERANDS(STR, ERR)                                   \
   {                                                                     \
     SPV_ENV_UNIVERSAL_1_0, kKernelPreamble kBasicTypes STR, false, ERR, \
         SPV_ERROR_INVALID_DATA                                          \
+  }
+
+#define BAD_KERNEL_OPERANDS_ID(STR, ERR) \
+  {                                      \
+      SPV_ENV_UNIVERSAL_1_0,             \
+      kKernelPreamble kBasicTypes STR,   \
+      false,                             \
+      ERR,                               \
   }
 
 // 2 of each, first has bad return type, second has bad operand
@@ -1011,7 +1020,57 @@ INSTANTIATE_TEST_SUITE_P(
                             "float vector or scalar type"),
         BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint Bitcast %true",
                             "Expected input to be a pointer or int or float "
-                            "vector or scalar")}));
+                            "vector or scalar"),
+
+        BAD_KERNEL_OPERANDS_ID(
+            "%v = OpSpecConstantOp %float VectorShuffle %uint2_0 %uint2_0 1 3",
+            "The Result Type of OpVectorShuffle must be a vector type"),
+        BAD_KERNEL_OPERANDS_ID(
+            "%v = OpSpecConstantOp %uint2 VectorShuffle %uint2_0 %uint_0 1 3",
+            "The type of Vector 2 must be a vector type"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float CompositeExtract %uint2_0 1",
+            "Result type (OpTypeFloat) does not match the type that results "
+            "from indexing into the composite (OpTypeInt)"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint CompositeExtract %uint_0 1",
+            "Reached non-composite type while indexes still remain to be "
+            "traversed"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %float CompositeInsert %uint_0 %uint2_0 1",
+            "The Result Type must be the same as Composite type in "
+            "OpSpecConstantOp yielding Result Id 5"),
+        BAD_KERNEL_OPERANDS(
+            "%v = OpSpecConstantOp %uint2 CompositeInsert %uint_0 %uint_0 1",
+            "The Result Type must be the same as Composite type in "
+            "OpSpecConstantOp yielding Result Id 4"),
+
+        // TODO - Still need to add access chains
+        //
+        // BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint AccessChain %null",
+        //                     "AccessChain"),
+        // BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %_ptr_uint AccessChain
+        // %null %float_0",
+        //     "AccessChain"),
+        // BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint InBoundsAccessChain
+        // %null",
+        //     "InBoundsAccessChain"),
+        // BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %_ptr_uint
+        // InBoundsAccessChain %null %float_0",
+        //                     "InBoundsAccessChain"),
+        // BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint PtrAccessChain %null
+        // %uint_0",
+        //     "PtrAccessChain"),
+        // BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %_ptr_uint PtrAccessChain
+        // %float_0 %float_0",
+        //     "PtrAccessChain"),
+        // BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %uint
+        // InBoundsPtrAccessChain %null %uint_0",
+        //     "InBoundsPtrAccessChain"),
+        // BAD_KERNEL_OPERANDS("%v = OpSpecConstantOp %_ptr_uint
+        // InBoundsPtrAccessChain %float_0 %float_0",
+        //                     "InBoundsPtrAccessChain"),
+    }));
 
 }  // namespace
 }  // namespace val
