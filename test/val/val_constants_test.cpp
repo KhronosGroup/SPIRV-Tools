@@ -612,7 +612,7 @@ TEST_F(ValidateConstant, ConstantCompositeReplicateWrongOperandType) {
           "does not match Result Type <id> '17[%v4int]'s element type"));
 }
 
-TEST_F(ValidateConstant, ConstantCompositeReplicateWrongOperandClass) {
+TEST_F(ValidateConstant, ConstantCompositeReplicateSpecOperand) {
   std::string spirv =
       std::string(
           "OpCapability Shader\nOpCapability Linkage\nOpCapability "
@@ -622,16 +622,84 @@ TEST_F(ValidateConstant, ConstantCompositeReplicateWrongOperandClass) {
           "\"SPV_EXT_replicated_composites\"\nOpMemoryModel Logical Simple\n") +
       kBasicTypes + R"(
 %int = OpTypeInt 32 1
-%v4int = OpTypeVector %int 4
-%var = OpVariable %_ptr_uint Workgroup
-%const_vector = OpConstantCompositeReplicateEXT %v4int %var
+%int_4 = OpConstant %int 4
+%arr = OpTypeArray %int %int_4
+%int_0 = OpSpecConstant %int 0
+%const_arr = OpConstantCompositeReplicateEXT %arr %int_0
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpConstantCompositeReplicateEXT must not have spec "
+                        "constant operands: <id>"));
+}
+
+TEST_F(ValidateConstant, ConstantCompositeReplicateNotConstant) {
+  std::string spirv =
+      std::string(
+          "OpCapability Kernel\nOpCapability Linkage\nOpCapability "
+          "Int64\nOpCapability Float64\nOpCapability "
+          "VariablePointers\nOpCapability Addresses\nOpCapability "
+          "ReplicatedCompositesEXT\nOpExtension "
+          "\"SPV_KHR_variable_pointers\"\nOpExtension "
+          "\"SPV_EXT_replicated_composites\"\nOpMemoryModel Physical64 "
+          "OpenCL\n") +
+      kBasicTypes + R"(
+%uint_4 = OpConstant %uint 4
+%ptr = OpTypePointer Private %uint
+%var = OpVariable %ptr Private
+%arr = OpTypeArray %ptr %uint_4
+%const_arr = OpConstantCompositeReplicateEXT %arr %var
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpConstantCompositeReplicateEXT must only have "
+                        "constant or undef operands: <id>"));
+}
+
+TEST_F(ValidateConstant, ConstantCompositeSpecOperand) {
+  std::string spirv =
+      std::string(
+          "OpCapability Shader\nOpCapability Linkage\nOpCapability "
+          "Int64\nOpCapability Float64\nOpCapability "
+          "VariablePointers\nOpCapability ReplicatedCompositesEXT\nOpExtension "
+          "\"SPV_KHR_variable_pointers\"\nOpExtension "
+          "\"SPV_EXT_replicated_composites\"\nOpMemoryModel Logical Simple\n") +
+      kBasicTypes + R"(
+%int = OpTypeInt 32 1
+%int_4 = OpConstant %int 4
+%arr = OpTypeArray %int %int_4
+%int_0 = OpSpecConstant %int 0
+%const_arr = OpConstantComposite %arr %int_0 %int_0 %int_0 %int_0
 )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("OpConstantCompositeReplicateEXT Constituent <id> '18[%18]' "
-                "is not a constant or undef"));
+      HasSubstr(
+          "OpConstantComposite must not have spec constant operands: <id>"));
+}
+
+TEST_F(ValidateConstant, ConstantCompositeNotConstant) {
+  std::string spirv =
+      std::string(
+          "OpCapability Kernel\nOpCapability Linkage\nOpCapability "
+          "Int64\nOpCapability Float64\nOpCapability "
+          "VariablePointers\nOpCapability Addresses\nOpExtension "
+          "\"SPV_KHR_variable_pointers\"\nOpMemoryModel Physical64 OpenCL\n") +
+      kBasicTypes + R"(
+%uint_4 = OpConstant %uint 4
+%ptr = OpTypePointer Private %uint
+%var = OpVariable %ptr Private
+%arr = OpTypeArray %ptr %uint_4
+%const_arr = OpConstantComposite %arr %var %var %var %var
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpConstantComposite must only have constant or undef "
+                        "operands: <id>"));
 }
 
 TEST_F(ValidateConstant, ConstantCompositeReplicateNotComposite) {
