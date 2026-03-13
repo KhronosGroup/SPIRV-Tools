@@ -338,45 +338,39 @@ function(spirv_tools_default_target_options target)
   add_dependencies(${target} core_tables extinst_tables)
 endfunction()
 
-# Always build ${SPIRV_TOOLS}-shared. This is expected distro packages, and
-# unlike the other SPIRV_TOOLS target, defaults to hidden symbol visibility.
-add_library(${SPIRV_TOOLS}-shared SHARED ${SPIRV_SOURCES})
-if (SPIRV_TOOLS_USE_MIMALLOC)
-  target_link_libraries(${SPIRV_TOOLS}-shared PRIVATE mimalloc-static)
+if (SPIRV_TOOLS_BUILD_SHARED)
+  add_library(${SPIRV_TOOLS}-shared SHARED ${SPIRV_SOURCES})
+  if (SPIRV_TOOLS_USE_MIMALLOC)
+    target_link_libraries(${SPIRV_TOOLS}-shared PRIVATE mimalloc-static)
+  endif()
+
+  set_target_properties(${SPIRV_TOOLS}-shared PROPERTIES
+    OUTPUT_NAME "${SPIRV_TOOLS}")
+  spirv_tools_default_target_options(${SPIRV_TOOLS}-shared)
+
+  target_compile_definitions(${SPIRV_TOOLS}-shared
+    PRIVATE SPIRV_TOOLS_IMPLEMENTATION
+    PUBLIC SPIRV_TOOLS_SHAREDLIB)
+
+  list(APPEND SPIRV_TOOLS_TARGETS ${SPIRV_TOOLS}-shared)
 endif()
-spirv_tools_default_target_options(${SPIRV_TOOLS}-shared)
-set_target_properties(${SPIRV_TOOLS}-shared PROPERTIES CXX_VISIBILITY_PRESET hidden)
-target_compile_definitions(${SPIRV_TOOLS}-shared
-  PRIVATE SPIRV_TOOLS_IMPLEMENTATION
-  PUBLIC SPIRV_TOOLS_SHAREDLIB
-)
 
 if(SPIRV_TOOLS_BUILD_STATIC)
   add_library(${SPIRV_TOOLS}-static STATIC ${SPIRV_SOURCES})
   if (SPIRV_TOOLS_USE_MIMALLOC AND SPIRV_TOOLS_USE_MIMALLOC_IN_STATIC_BUILD)
     target_link_libraries(${SPIRV_TOOLS}-shared PRIVATE mimalloc-static)
   endif()
+
   spirv_tools_default_target_options(${SPIRV_TOOLS}-static)
-  # The static target does not have the '-static' suffix.
-  set_target_properties(${SPIRV_TOOLS}-static PROPERTIES OUTPUT_NAME "${SPIRV_TOOLS}")
+  set_target_properties(${SPIRV_TOOLS}-static PROPERTIES
+    OUTPUT_NAME "${SPIRV_TOOLS_STATIC_LIBNAME}")
 
-  # Create the "${SPIRV_TOOLS}" target as an alias to either "${SPIRV_TOOLS}-static"
-  # or "${SPIRV_TOOLS}-shared" depending on the value of BUILD_SHARED_LIBS.
-  if(BUILD_SHARED_LIBS)
-    add_library(${SPIRV_TOOLS} ALIAS ${SPIRV_TOOLS}-shared)
-  else()
-    add_library(${SPIRV_TOOLS} ALIAS ${SPIRV_TOOLS}-static)
-  endif()
-
-  set(SPIRV_TOOLS_TARGETS ${SPIRV_TOOLS}-static ${SPIRV_TOOLS}-shared)
-else()
-  add_library(${SPIRV_TOOLS} ${SPIRV_TOOLS_LIBRARY_TYPE} ${SPIRV_SOURCES})
-  if (SPIRV_TOOLS_USE_MIMALLOC)
-    target_link_libraries(${SPIRV_TOOLS} PRIVATE mimalloc-static)
-  endif()
-  spirv_tools_default_target_options(${SPIRV_TOOLS})
-  set(SPIRV_TOOLS_TARGETS ${SPIRV_TOOLS} ${SPIRV_TOOLS}-shared)
+  list(APPEND SPIRV_TOOLS_TARGETS ${SPIRV_TOOLS}-static)
 endif()
+
+# Create the "SPIRV-Tools" target as an alias to either "SPIRV-Tools-static"
+# or "SPIRV-Tools-shared" depending on the value of SPIRV_TOOLS_BUILD_SHARED.
+add_library(${SPIRV_TOOLS} ALIAS ${SPIRV_TOOLS_FULL_VISIBILITY})
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   find_library(LIBRT rt)
@@ -388,14 +382,17 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 endif()
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
-  if (SPIRV_TOOLS_USE_MIMALLOC AND (NOT SPIRV_TOOLS_BUILD_STATIC OR SPIRV_TOOLS_USE_MIMALLOC_IN_STATIC_BUILD))
+  if (SPIRV_TOOLS_USE_MIMALLOC AND
+    (NOT SPIRV_TOOLS_BUILD_STATIC OR SPIRV_TOOLS_USE_MIMALLOC_IN_STATIC_BUILD))
     list(APPEND SPIRV_TOOLS_TARGETS mimalloc-static)
   endif()
   install(TARGETS ${SPIRV_TOOLS_TARGETS} EXPORT ${SPIRV_TOOLS}Targets)
   export(EXPORT ${SPIRV_TOOLS}Targets FILE ${SPIRV_TOOLS}Target.cmake)
 
   spvtools_config_package_dir(${SPIRV_TOOLS} PACKAGE_DIR)
-  install(EXPORT ${SPIRV_TOOLS}Targets FILE ${SPIRV_TOOLS}Target.cmake DESTINATION ${PACKAGE_DIR})
+  install(EXPORT ${SPIRV_TOOLS}Targets
+    FILE ${SPIRV_TOOLS}Target.cmake
+    DESTINATION ${PACKAGE_DIR})
 
   # Special config file for root library compared to other libs.
   file(WRITE ${CMAKE_BINARY_DIR}/${SPIRV_TOOLS}Config.cmake
