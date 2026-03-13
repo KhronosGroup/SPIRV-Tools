@@ -8931,6 +8931,84 @@ OpFunctionEnd
           "allocate pointers must be in Function or Private storage classes"));
 }
 
+TEST_F(ValidateMemory, VariablePointerInStruct) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%ptr_s = OpTypePointer Workgroup %int
+%struct_t = OpTypeStruct %ptr_s
+%ptr_struct = OpTypePointer Function %struct_t
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%var = OpVariable %ptr_struct Function
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, VariablePointerInArray) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointers
+OpExtension "SPV_KHR_variable_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%int_4 = OpConstant %int 4
+%ptr_s = OpTypePointer Workgroup %int
+%array_t = OpTypeArray %ptr_s %int_4
+%ptr_array = OpTypePointer Function %array_t
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%var = OpVariable %ptr_array Function
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, NoVariablePointerInStruct) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 0
+%ptr_f = OpTypePointer Function %int
+%struct_t = OpTypeStruct %ptr_f
+%ptr_struct = OpTypePointer Function %struct_t
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%var = OpVariable %ptr_struct Function
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("In Logical addressing, variables can only allocate a pointer "
+                "to the StorageBuffer or Workgroup storage classes"));
+}
+
 TEST_F(ValidateMemory, VariablePointerBadStorageClassUntyped) {
   const std::string spirv = R"(
 OpCapability Shader
