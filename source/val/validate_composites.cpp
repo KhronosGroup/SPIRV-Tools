@@ -38,10 +38,10 @@ namespace {
 spv_result_t GetExtractInsertValueType(ValidationState_t& _,
                                        const Instruction* inst,
                                        uint32_t* member_type,
-                                       uint32_t word_index) {
-  const uint32_t num_words = static_cast<uint32_t>(inst->words().size());
-  const uint32_t composite_id_index = word_index - 1;
-  const uint32_t num_indices = num_words - word_index;
+                                       uint32_t composite_id_index) {
+  const uint32_t num_operands = static_cast<uint32_t>(inst->operands().size());
+  const uint32_t first_literal_index = composite_id_index + 1;
+  const uint32_t num_indices = num_operands - first_literal_index;
   const uint32_t kCompositeExtractInsertMaxNumIndices = 255;
 
   if (num_indices == 0) {
@@ -56,14 +56,16 @@ spv_result_t GetExtractInsertValueType(ValidationState_t& _,
            << ". Found " << num_indices << " indexes.";
   }
 
-  *member_type = _.GetTypeId(inst->word(composite_id_index));
+  *member_type = _.GetOperandTypeId(inst, composite_id_index);
   if (*member_type == 0) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Composite to be an object of composite type";
   }
 
-  for (; word_index < num_words; ++word_index) {
-    const uint32_t component_index = inst->word(word_index);
+  for (uint32_t operand_index = first_literal_index;
+       operand_index < num_operands; ++operand_index) {
+    const uint32_t component_index =
+        inst->GetOperandAs<uint32_t>(operand_index);
     const Instruction* const type_inst = _.FindDef(*member_type);
     assert(type_inst);
     switch (type_inst->opcode()) {
@@ -474,7 +476,7 @@ spv_result_t ValidateCompositeExtract(ValidationState_t& _,
   uint32_t member_type = 0;
 
   if (spv_result_t error =
-          GetExtractInsertValueType(_, inst, &member_type, operand_index + 2)) {
+          GetExtractInsertValueType(_, inst, &member_type, operand_index)) {
     return error;
   }
 
@@ -511,7 +513,7 @@ spv_result_t ValidateCompositeInsert(ValidationState_t& _,
 
   uint32_t member_type = 0;
   if (spv_result_t error =
-          GetExtractInsertValueType(_, inst, &member_type, operand_index + 3)) {
+          GetExtractInsertValueType(_, inst, &member_type, operand_index + 1)) {
     return error;
   }
 
