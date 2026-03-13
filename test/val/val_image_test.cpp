@@ -210,6 +210,7 @@ OpDecorate %input_flat_u32 Location 0
 %struct_u32_f32vec4_u32 = OpTypeStruct %u32 %f32vec4 %u32
 %struct_u32_u32arr4 = OpTypeStruct %u32 %u32arr4
 
+%u32vec2_00 = OpConstantComposite %u32vec2 %u32_0 %u32_0
 %u32vec2_01 = OpConstantComposite %u32vec2 %u32_0 %u32_1
 %u32vec2_12 = OpConstantComposite %u32vec2 %u32_1 %u32_2
 %u32vec3_012 = OpConstantComposite %u32vec3 %u32_0 %u32_1 %u32_2
@@ -1693,7 +1694,7 @@ TEST_F(ValidateImage, ImageTexelPointerImageNotResultTypePointer) {
   CompileSuccessfully(GenerateShaderCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Operand '156[%156]' cannot be a "
+              HasSubstr("Operand '157[%157]' cannot be a "
                         "type"));
 }
 
@@ -4153,7 +4154,7 @@ TEST_F(ValidateImage, ReadSuccess3) {
 TEST_F(ValidateImage, ReadSuccess4) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_spd_0002 %uniform_image_f32_spd_0002
-%res1 = OpImageRead %f32vec4 %img %u32vec2_01
+%res1 = OpImageRead %f32vec4 %img %u32vec2_00
 )";
 
   CompileSuccessfully(GenerateShaderCode(body).c_str());
@@ -5564,7 +5565,7 @@ OpExecutionMode %main LocalSize 8 8 1
 TEST_F(ValidateImage, ReadSubpassDataWrongExecutionModel) {
   const std::string body = R"(
 %img = OpLoad %type_image_f32_spd_0002 %uniform_image_f32_spd_0002
-%res1 = OpImageRead %f32vec4 %img %u32vec2_01
+%res1 = OpImageRead %f32vec4 %img %u32vec2_00
 )";
 
   const std::string extra = "\nOpCapability StorageImageReadWithoutFormat\n";
@@ -11465,6 +11466,136 @@ TEST_F(ValidateImage, ImageTexelPointerNotAPointer) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type to be a pointer"));
+}
+
+TEST_F(ValidateImage, TileImageNotFragment) {
+  const std::string body = R"(
+    OpCapability Shader
+    OpCapability TileImageColorReadAccessEXT
+    OpExtension "SPV_EXT_shader_tile_image"
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint GLCompute %main "main"
+    OpExecutionMode %main LocalSize 1 1 1
+    %void = OpTypeVoid
+    %func = OpTypeFunction %void
+    %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+    %ptr = OpTypePointer TileImageEXT %v4float
+    %var = OpVariable %ptr TileImageEXT
+    %main = OpFunction %void None %func
+    %label = OpLabel
+    %val = OpLoad %v4float %var
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-08720"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "TileImageEXT Storage Class is limited to Fragment execution model"));
+}
+
+TEST_F(ValidateImage, SubpassDataNonZero) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpCapability InputAttachment
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %outColor %inputColor
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %outColor Location 0
+               OpDecorate %inputColor Binding 0
+               OpDecorate %inputColor DescriptorSet 0
+               OpDecorate %inputColor InputAttachmentIndex 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+   %outColor = OpVariable %_ptr_Output_v4float Output
+         %11 = OpTypeImage %float SubpassData 0 0 0 2 Unknown
+%_ptr_UniformConstant_11 = OpTypePointer UniformConstant %11
+ %inputColor = OpVariable %_ptr_UniformConstant_11 UniformConstant
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+      %int_1 = OpConstant %int 1
+      %v2int = OpTypeVector %int 2
+    %v2int_1 = OpConstantComposite %v2int %int_1 %int_1
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %14 = OpLoad %11 %inputColor
+         %19 = OpImageRead %v4float %14 %v2int_1
+               OpStore %outColor %19
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-SubpassData-04660"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Coordinate for a SubpassData image to be a "
+                        "OpConstantComposite of (0,0) or OpConstantNull"));
+}
+
+TEST_F(ValidateImage, SubpassDataNonConstant) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpCapability InputAttachment
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %_ %outColor %inputColor
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %UBO Block
+               OpMemberDecorate %UBO 0 Offset 0
+               OpDecorate %_ Binding 0
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %outColor Location 0
+               OpDecorate %inputColor Binding 0
+               OpDecorate %inputColor DescriptorSet 0
+               OpDecorate %inputColor InputAttachmentIndex 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v2uint = OpTypeVector %uint 2
+%_ptr_Function_v2uint = OpTypePointer Function %v2uint
+        %UBO = OpTypeStruct %v2uint
+%_ptr_Uniform_UBO = OpTypePointer Uniform %UBO
+          %_ = OpVariable %_ptr_Uniform_UBO Uniform
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Uniform_v2uint = OpTypePointer Uniform %v2uint
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+   %outColor = OpVariable %_ptr_Output_v4float Output
+         %23 = OpTypeImage %float SubpassData 0 0 0 2 Unknown
+%_ptr_UniformConstant_23 = OpTypePointer UniformConstant %23
+ %inputColor = OpVariable %_ptr_UniformConstant_23 UniformConstant
+      %v2int = OpTypeVector %int 2
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+          %x = OpVariable %_ptr_Function_v2uint Function
+         %17 = OpAccessChain %_ptr_Uniform_v2uint %_ %int_0
+         %18 = OpLoad %v2uint %17
+         %26 = OpLoad %23 %inputColor
+         %29 = OpImageRead %v4float %26 %18
+               OpStore %outColor %29
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(body.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-SubpassData-04660"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Coordinate for a SubpassData image to be a "
+                        "OpConstantComposite of (0,0) or OpConstantNull"));
 }
 
 }  // namespace
