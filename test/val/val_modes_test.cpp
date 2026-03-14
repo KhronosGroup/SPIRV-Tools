@@ -168,7 +168,7 @@ OpDecorate %int3_1 BuiltIn WorkgroupSize
 %int3 = OpTypeVector %int 3
 %int_0 = OpSpecConstant %int 0
 %int_1 = OpConstant %int 1
-%int3_1 = OpConstantComposite %int3 %int_1 %int_0 %int_0
+%int3_1 = OpSpecConstantComposite %int3 %int_1 %int_0 %int_0
 )" + kVoidFunction;
 
   CompileSuccessfully(spirv);
