@@ -3535,13 +3535,14 @@ spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
       return ValidatePtrComparison(_, inst);
     case spv::Op::OpImageTexelPointer:
     case spv::Op::OpGenericPtrMemSemantics:
-
+      break;  // no validation currently
     case spv::Op::OpSpecConstantOp: {
       switch (inst->GetOperandAs<spv::Op>(2u)) {
         case spv::Op::OpCooperativeMatrixLengthKHR:
           return ValidateCooperativeMatrixLength(_, inst, true, 3);
         case spv::Op::OpCooperativeMatrixLengthNV:
           return ValidateCooperativeMatrixLength(_, inst, false, 3);
+        // TODO - Add AccesChains
         default:
           break;
       }
