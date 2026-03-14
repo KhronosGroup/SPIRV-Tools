@@ -41,8 +41,7 @@ bool isCompositeType(const Instruction* inst) {
 }
 
 spv_result_t ValidateConstantOperand(ValidationState_t& _,
-                                     const Instruction* inst,
-                                     size_t operand) {
+                                     const Instruction* inst, size_t operand) {
   std::string opcode_name = std::string("Op") + spvOpcodeString(inst->opcode());
 
   const auto operand_id = inst->GetOperandAs<uint32_t>(operand);
@@ -130,7 +129,8 @@ spv_result_t ValidateConstantComposite(ValidationState_t& _,
                << _.getIdName(result_type->id()) << "s matrix column count.";
       }
 
-      const auto column_type = _.FindDef(result_type->GetOperandAs<uint32_t>(1));
+      const auto column_type =
+          _.FindDef(result_type->GetOperandAs<uint32_t>(1));
       if (!column_type) {
         return _.diag(SPV_ERROR_INVALID_ID, result_type)
                << "Column type is not defined.";
