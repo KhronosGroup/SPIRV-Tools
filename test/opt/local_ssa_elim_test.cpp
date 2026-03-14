@@ -2126,8 +2126,8 @@ OpName %fo "fo"
 %f = OpVariable %_ptr_Function_float Function
 %i = OpVariable %_ptr_Function_int Function
 OpStore %f %float_0
-OpStore %i %int_0
 %decl0 = OpExtInst %void %ext DebugDeclare %dbg_f %f %null_expr
+OpStore %i %int_0
 %decl1 = OpExtInst %void %ext DebugDeclare %dbg_i %i %null_expr
 OpBranch %23
 %23 = OpLabel
@@ -2260,8 +2260,8 @@ OpName %fo "fo"
 %f = OpVariable %_ptr_Function_float Function
 %i = OpVariable %_ptr_Function_int Function
 OpStore %f %float_0
-OpStore %i %int_0
 %decl0 = OpExtInst %void %ext DebugDeclare %dbg_f %f %null_expr
+OpStore %i %int_0
 %decl1 = OpExtInst %void %ext DebugDeclare %dbg_i %i %null_expr
 OpBranch %23
 %23 = OpLabel
@@ -2628,8 +2628,8 @@ OpName %fo "fo"
 %f = OpVariable %_ptr_Function_float Function
 %i = OpVariable %_ptr_Function_int Function
 OpStore %f %float_0
-OpStore %i %int_0
 %decl0 = OpExtInst %void %ext DebugValue %dbg_f %f %deref_expr %int_2 %int_1
+OpStore %i %int_0
 %decl1 = OpExtInst %void %ext DebugDeclare %dbg_i %i %null_expr
 OpBranch %23
 %23 = OpLabel
@@ -2757,8 +2757,8 @@ OpName %fo "fo"
 %s0 = OpExtInst %void %ext DebugScope %dbg_main
 %f = OpVariable %_ptr_Function_float Function
 OpStore %f %float_0
-OpStore %j %int_0
 %decl0 = OpExtInst %void %ext DebugDeclare %dbg_f %f %null_expr
+OpStore %j %int_0
 OpBranch %23
 %23 = OpLabel
 %s1 = OpExtInst %void %ext DebugScope %dbg_main
@@ -2821,8 +2821,8 @@ TEST_F(LocalSSAElimTest, DebugValueForReferenceVariable) {
 ; CHECK: [[dbg_x:%\w+]] = OpExtInst %void [[ext]] DebugLocalVariable [[x_name]]
 
 ; CHECK:      OpStore %f %float_0
-; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_f]] %float_0
 ; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_x]] %float_0
+; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_f]] %float_0
 ; CHECK:      OpStore %i %int_0
 ; CHECK-NEXT: OpExtInst %void [[ext]] DebugValue [[dbg_i]] %int_0
 
@@ -2831,8 +2831,8 @@ TEST_F(LocalSSAElimTest, DebugValueForReferenceVariable) {
 ; CHECK:      [[loop_head:%\w+]] = OpLabel
 ; CHECK:      [[phi0:%\w+]] = OpPhi %float %float_0
 ; CHECK:      [[phi1:%\w+]] = OpPhi %int %int_0
-; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[phi0]]
 ; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_x]] [[phi0]]
+; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[phi0]]
 ; CHECK:      OpExtInst %void [[ext]] DebugValue [[dbg_i]] [[phi1]]
 ; CHECK:      OpLoopMerge [[loop_merge:%\w+]] [[loop_cont:%\w+]] None
 ; CHECK-NEXT: OpBranch [[loop_body:%\w+]]
@@ -2842,8 +2842,8 @@ TEST_F(LocalSSAElimTest, DebugValueForReferenceVariable) {
 
 ; CHECK:      [[bb]] = OpLabel
 ; CHECK:      OpStore %f [[f_val:%\w+]]
-; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[f_val]]
 ; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_x]] [[f_val]]
+; CHECK-DAG:  OpExtInst %void [[ext]] DebugValue [[dbg_f]] [[f_val]]
 ; CHECK:      OpBranch [[loop_cont]]
 
 ; CHECK:      [[loop_cont]] = OpLabel
@@ -2906,8 +2906,8 @@ OpName %fo "fo"
 %f = OpVariable %_ptr_Function_float Function
 %i = OpVariable %_ptr_Function_int Function
 OpStore %f %float_0
-OpStore %i %int_0
 %decl0 = OpExtInst %void %ext DebugDeclare %dbg_f %f %null_expr
+OpStore %i %int_0
 %decl1 = OpExtInst %void %ext DebugDeclare %dbg_i %i %null_expr
 %decl2 = OpExtInst %void %ext DebugDeclare %dbg_x %f %null_expr
 OpBranch %23
@@ -3076,8 +3076,8 @@ OpName %fo "fo"
 %f = OpVariable %_ptr_Function_float Function
 %i = OpVariable %_ptr_Function_int Function
 OpStore %f %float_0
-OpStore %i %int_0
 %decl0 = OpExtInst %void %ext DebugDeclare %dbg_f %f %null_expr
+OpStore %i %int_0
 %decl1 = OpExtInst %void %ext DebugDeclare %dbg_i %i %null_expr
 OpBranch %23
 %23 = OpLabel
@@ -3227,8 +3227,8 @@ OpName %fo "fo"
 %f = OpVariable %_ptr_Function_float Function
 %i = OpVariable %_ptr_Function_int Function
 OpStore %f %float_0
-OpStore %i %int_0
 %decl0 = OpExtInst %void %ext DebugValue %dbg_foo %f %deref %uint_0
+OpStore %i %int_0
 %decl1 = OpExtInst %void %ext DebugValue %dbg_foo %i %deref %uint_1
 OpBranch %23
 %23 = OpLabel
@@ -3932,15 +3932,13 @@ OpName %fo "fo"
 %i = OpVariable %_ptr_Function_int Function
 %t = OpVariable %_ptr_Function_float Function
 OpStore %f1 %float_0
+%decl0 = OpExtInst %void %ext DebugDeclare %dbg_f1 %f1 %null_expr
 OpStore %f2 %float_1
+%decl1 = OpExtInst %void %ext DebugDeclare %dbg_f2 %f2 %null_expr
 %24 = OpLoad %float %fe
 %25 = OpConvertFToS %int %24
 OpStore %ie %25
 OpStore %i %int_0
-
-; DebugDeclare
-%decl0 = OpExtInst %void %ext DebugDeclare %dbg_f1 %f1 %null_expr
-%decl1 = OpExtInst %void %ext DebugDeclare %dbg_f2 %f2 %null_expr
 %decl2 = OpExtInst %void %ext DebugDeclare %dbg_i  %i  %null_expr
 
 ; CHECK: %main = OpFunction %void None

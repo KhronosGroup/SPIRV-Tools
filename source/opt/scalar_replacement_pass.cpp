@@ -179,14 +179,10 @@ bool ScalarReplacementPass::ReplaceWholeDebugDeclare(
   // Add DebugValue instruction with Indexes operand and Deref operation.
   int32_t idx = 0;
   for (const auto* var : replacements) {
-    Instruction* insert_before = var->NextNode();
-    while (insert_before->opcode() == spv::Op::OpVariable)
-      insert_before = insert_before->NextNode();
-    assert(insert_before != nullptr && "unexpected end of list");
     Instruction* added_dbg_value =
         context()->get_debug_info_mgr()->AddDebugValueForDecl(
             dbg_decl, /*value_id=*/var->result_id(),
-            /*insert_before=*/insert_before, /*line=*/dbg_decl);
+            /*insert_before=*/dbg_decl, /*line=*/dbg_decl);
 
     if (added_dbg_value == nullptr) return false;
     added_dbg_value->AddOperand(
