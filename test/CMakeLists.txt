@@ -113,6 +113,7 @@ set(TEST_SOURCES
   ext_inst_lookup_test.cpp
   fix_word_test.cpp
   generator_magic_number_test.cpp
+  handle_unknown_opcodes_test.cpp
   hex_float_test.cpp
   hex_to_text_test.cpp
   immediate_int_test.cpp
