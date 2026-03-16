@@ -9025,6 +9025,199 @@ TEST_F(AggressiveDCETest, DebugValueWithDeadOperandKeepsDebugScope) {
   SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 
+TEST_F(AggressiveDCETest, EliminateUntypedAccessChain) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Sampled1D
+               OpCapability DescriptorHeapEXT
+               OpCapability UntypedPointersKHR
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpName %main "main"
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+%type_untyped_pointer = OpTypeUntypedPointerKHR Uniform
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+         %10 = OpTypeFunction %void
+%type_1d_image = OpTypeImage %float 1D 2 0 0 1 Unknown
+%_ptr_Function_type_1d_image = OpTypePointer Function %type_1d_image
+%type_buffer_ext = OpTypeBufferEXT StorageBuffer
+%_runtimearr_type_buffer_ext = OpTypeRuntimeArray %type_buffer_ext
+%resource_heap = OpUntypedVariableKHR %type_untyped_pointer Uniform
+       %main = OpFunction %void None %10
+         %20 = OpLabel
+        %t1d = OpVariable %_ptr_Function_type_1d_image Function
+; CHECK-NOT: OpUntypedAccessChainKHR
+         %21 = OpUntypedAccessChainKHR %type_untyped_pointer %_runtimearr_type_buffer_ext %resource_heap %uint_0
+; CHECK-NOT: OpLoad %type_1d_image
+         %22 = OpLoad %type_1d_image %21
+; CHECK-NOT: OpStore %t1d
+               OpStore %t1d %22
+               OpReturn
+               OpFunctionEnd
+  )";
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+}
+
+TEST_F(AggressiveDCETest, NoEliminateLiveUntypedAccessChain) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability DescriptorHeapEXT
+               OpCapability UntypedPointersKHR
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %outColor
+               OpExecutionMode %main OriginUpperLeft
+               OpName %main "main"
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+%type_untyped_pointer = OpTypeUntypedPointerKHR Uniform
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+   %outColor = OpVariable %_ptr_Output_v4float Output
+         %10 = OpTypeFunction %void
+%type_buffer_ext = OpTypeBufferEXT StorageBuffer
+%_runtimearr_type_buffer_ext = OpTypeRuntimeArray %type_buffer_ext
+%resource_heap = OpUntypedVariableKHR %type_untyped_pointer Uniform
+       %main = OpFunction %void None %10
+         %20 = OpLabel
+; CHECK: OpUntypedAccessChainKHR
+         %21 = OpUntypedAccessChainKHR %type_untyped_pointer %_runtimearr_type_buffer_ext %resource_heap %uint_0
+; CHECK: OpLoad
+         %22 = OpLoad %v4float %21
+               OpStore %outColor %22
+               OpReturn
+               OpFunctionEnd
+  )";
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+}
+
+TEST_F(AggressiveDCETest, EliminateUntypedAccessChainWithCopyObject) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Sampled1D
+               OpCapability DescriptorHeapEXT
+               OpCapability UntypedPointersKHR
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpName %main "main"
+               OpName %type_1d_image "type_1d_image"
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+%type_untyped_pointer = OpTypeUntypedPointerKHR Uniform
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+         %10 = OpTypeFunction %void
+%type_1d_image = OpTypeImage %float 1D 2 0 0 1 Unknown
+%_ptr_Function_type_1d_image = OpTypePointer Function %type_1d_image
+%type_buffer_ext = OpTypeBufferEXT StorageBuffer
+%_runtimearr_type_buffer_ext = OpTypeRuntimeArray %type_buffer_ext
+%resource_heap = OpUntypedVariableKHR %type_untyped_pointer Uniform
+       %main = OpFunction %void None %10
+         %20 = OpLabel
+        %t1d = OpVariable %_ptr_Function_type_1d_image Function
+; CHECK-NOT: OpUntypedAccessChainKHR
+         %21 = OpUntypedAccessChainKHR %type_untyped_pointer %_runtimearr_type_buffer_ext %resource_heap %uint_0
+; CHECK-NOT: OpCopyObject
+         %22 = OpCopyObject %type_untyped_pointer %21
+; CHECK-NOT: OpLoad %type_1d_image
+         %23 = OpLoad %type_1d_image %22
+; CHECK-NOT: OpStore %t1d
+               OpStore %t1d %23
+               OpReturn
+               OpFunctionEnd
+  )";
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+}
+
+// For now, aggressive DCE does not optimizes this pattern. If you implement
+// it, remove this test.
+TEST_F(AggressiveDCETest, EliminateUntypedAtomic) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Int64
+               OpCapability DescriptorHeapEXT
+               OpCapability UntypedPointersKHR
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+%type_untyped_pointer = OpTypeUntypedPointerKHR Uniform
+       %void = OpTypeVoid
+         %10 = OpTypeFunction %void
+%type_buffer_ext = OpTypeBufferEXT StorageBuffer
+%_runtimearr_type_buffer_ext = OpTypeRuntimeArray %type_buffer_ext
+%resource_heap = OpUntypedVariableKHR %type_untyped_pointer Uniform
+       %main = OpFunction %void None %10
+         %20 = OpLabel
+         %21 = OpUntypedAccessChainKHR %type_untyped_pointer %_runtimearr_type_buffer_ext %resource_heap %uint_0
+; CHECK: [[ptr:%\w+]] = OpUntypedAccessChainKHR
+         %22 = OpAtomicLoad %uint %21 %uint_0 %uint_0
+; CHECK:       OpAtomicLoad %uint [[ptr]]
+               OpReturn
+               OpFunctionEnd
+  )";
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+}
+
+TEST_F(AggressiveDCETest, EliminateUntypedAccessChainLoop) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Sampled1D
+               OpCapability DescriptorHeapEXT
+               OpCapability UntypedPointersKHR
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_10 = OpConstant %uint 10
+%type_untyped_pointer = OpTypeUntypedPointerKHR Uniform
+       %void = OpTypeVoid
+      %bool = OpTypeBool
+         %10 = OpTypeFunction %void
+%type_1d_image = OpTypeImage %uint 1D 2 0 0 1 Unknown
+%type_buffer_ext = OpTypeBufferEXT StorageBuffer
+%_runtimearr_type_buffer_ext = OpTypeRuntimeArray %type_buffer_ext
+%resource_heap = OpUntypedVariableKHR %type_untyped_pointer Uniform
+       %main = OpFunction %void None %10
+         %20 = OpLabel
+               OpBranch %header
+     %header = OpLabel
+      %count = OpPhi %uint %uint_0 %20 %next %loop
+       %cond = OpULessThan %bool %count %uint_10
+               OpLoopMerge %exit %loop None
+               OpBranchConditional %cond %loop %exit
+       %loop = OpLabel
+; CHECK-NOT: OpUntypedAccessChainKHR
+         %21 = OpUntypedAccessChainKHR %type_untyped_pointer %_runtimearr_type_buffer_ext %resource_heap %count
+; CHECK-NOT: OpLoad
+         %22 = OpLoad %type_1d_image %21
+       %next = OpIAdd %uint %count %uint_1
+               OpBranch %header
+       %exit = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
