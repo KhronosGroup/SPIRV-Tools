@@ -128,6 +128,7 @@ void AggressiveDCEPass::AddStores(Function* func, uint32_t ptrId) {
     switch (user->opcode()) {
       case spv::Op::OpAccessChain:
       case spv::Op::OpInBoundsAccessChain:
+      case spv::Op::OpUntypedAccessChainKHR:
       case spv::Op::OpCopyObject:
         this->AddStores(func, user->result_id());
         break;
@@ -1123,6 +1124,7 @@ void AggressiveDCEPass::InitExtensions() {
       "SPV_EXT_demote_to_helper_invocation",
       "SPV_EXT_descriptor_indexing",
       "SPV_EXT_descriptor_heap",
+      "SPV_KHR_untyped_pointers",
       "SPV_NV_fragment_shader_barycentric",
       "SPV_NV_compute_shader_derivatives",
       "SPV_NV_shader_image_footprint",

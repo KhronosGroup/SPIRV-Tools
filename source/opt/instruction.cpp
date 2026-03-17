@@ -252,6 +252,7 @@ Instruction* Instruction::GetBaseAddress() const {
     switch (base_inst->opcode()) {
       case spv::Op::OpAccessChain:
       case spv::Op::OpInBoundsAccessChain:
+      case spv::Op::OpUntypedAccessChainKHR:
       case spv::Op::OpPtrAccessChain:
       case spv::Op::OpInBoundsPtrAccessChain:
       case spv::Op::OpImageTexelPointer:
