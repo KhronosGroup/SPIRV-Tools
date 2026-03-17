@@ -201,14 +201,14 @@ TEST_F(HandleUnknownOpcodesTest,
   // OpExtInstImport %1 "NonSemantic.DebugPrintf" (8 words):
   //   opcode=11, word_count=8, result_id=1
   //   "NonSemantic.DebugPrintf\0" packed into 6 32-bit words:
-  //     "NonS" = 0x534E6F4E, "eman" = 0x6E616D65, "tic." = 0x2E636974,
+  //     "NonS" = 0x536E6F4E, "eman" = 0x6E616D65, "tic." = 0x2E636974,
   //     "Debu" = 0x75626544, "gPri" = 0x69725067, "ntf\0" = 0x0066746E
   // OpExtInst %2 %3 %1 0xFFFF (5 words):
   //   opcode=12, word_count=5, result_type=2, result_id=3, set_id=1,
   //   inst_number=0xFFFF (not present in the NonSemantic.DebugPrintf grammar)
   const std::vector<uint32_t> binary = spvtest::Concatenate({
       MakeHeader(4),
-      {0x0008000Bu, 1u, 0x534E6F4Eu, 0x6E616D65u, 0x2E636974u, 0x75626544u,
+      {0x0008000Bu, 1u, 0x536E6F4Eu, 0x6E616D65u, 0x2E636974u, 0x75626544u,
        0x69725067u, 0x0066746Eu},
       {MakeFirstWord(5, 12u), 2u, 3u, 1u, 0xFFFFu},
   });
