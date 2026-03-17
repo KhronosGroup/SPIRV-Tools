@@ -679,7 +679,8 @@ spv_result_t ConstantPass(ValidationState_t& _, const Instruction* inst) {
       if (auto error = ValidateConstantSizeOfEXT(_, inst)) return error;
       break;
     case spv::Op::OpConstantFunctionPointerINTEL:
-      if (auto error = ValidateConstantFunctionPointerINTEL(_, inst)) return error;
+      if (auto error = ValidateConstantFunctionPointerINTEL(_, inst))
+        return error;
       break;
     default:
       break;

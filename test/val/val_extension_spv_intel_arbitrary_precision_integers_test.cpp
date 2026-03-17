@@ -27,7 +27,8 @@ using ::testing::HasSubstr;
 
 using ValidateIntelArbitraryPrecisionIntegers = spvtest::ValidateBase<bool>;
 
-TEST_F(ValidateIntelArbitraryPrecisionIntegers, ArbitraryPrecisionIntegerWithoutExtension) {
+TEST_F(ValidateIntelArbitraryPrecisionIntegers,
+       ArbitraryPrecisionIntegerWithoutExtension) {
   const std::string spirv = R"(
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -45,10 +46,12 @@ TEST_F(ValidateIntelArbitraryPrecisionIntegers, ArbitraryPrecisionIntegerWithout
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("Invalid number of bits (19) used for OpTypeInt"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid number of bits (19) used for OpTypeInt"));
 }
 
-TEST_F(ValidateIntelArbitraryPrecisionIntegers, ArbitraryPrecisionIntegerWithExtension) {
+TEST_F(ValidateIntelArbitraryPrecisionIntegers,
+       ArbitraryPrecisionIntegerWithExtension) {
   const std::string spirv = R"(
                OpCapability Shader
                OpCapability ArbitraryPrecisionIntegersINTEL
@@ -70,7 +73,8 @@ TEST_F(ValidateIntelArbitraryPrecisionIntegers, ArbitraryPrecisionIntegerWithExt
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateIntelArbitraryPrecisionIntegers, ArbitraryPrecisionIntegerVariousBitWidths) {
+TEST_F(ValidateIntelArbitraryPrecisionIntegers,
+       ArbitraryPrecisionIntegerVariousBitWidths) {
   const std::string spirv = R"(
                OpCapability Shader
                OpCapability ArbitraryPrecisionIntegersINTEL
@@ -99,7 +103,8 @@ TEST_F(ValidateIntelArbitraryPrecisionIntegers, ArbitraryPrecisionIntegerVarious
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateIntelArbitraryPrecisionIntegers, ArbitraryPrecisionIntegerWithCapabilityOnly) {
+TEST_F(ValidateIntelArbitraryPrecisionIntegers,
+       ArbitraryPrecisionIntegerWithCapabilityOnly) {
   const std::string spirv = R"(
                OpCapability Shader
                OpCapability ArbitraryPrecisionIntegersINTEL
@@ -118,7 +123,8 @@ TEST_F(ValidateIntelArbitraryPrecisionIntegers, ArbitraryPrecisionIntegerWithCap
 
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_MISSING_EXTENSION, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(), HasSubstr("SPV_INTEL_arbitrary_precision_integers"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("SPV_INTEL_arbitrary_precision_integers"));
 }
 
 TEST_F(ValidateIntelArbitraryPrecisionIntegers, StandardIntegerTypesStillWork) {
