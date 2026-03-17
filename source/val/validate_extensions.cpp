@@ -25,6 +25,7 @@
 #include "source/extensions.h"
 #include "source/latest_version_glsl_std_450_header.h"
 #include "source/latest_version_opencl_std_header.h"
+#include "source/opcode.h"
 #include "source/spirv_constant.h"
 #include "source/table2.h"
 #include "source/val/instruction.h"
@@ -1046,9 +1047,7 @@ bool IsConstIntScalarTypeWith32Or64Bits(ValidationState_t& _,
 
 bool IsSpecConstIntScalarTypeWith32Or64Bits(ValidationState_t& _,
                                             Instruction* instr) {
-  if (instr->opcode() != spv::Op::OpSpecConstant &&
-      instr->opcode() != spv::Op::OpSpecConstantOp)
-    return false;
+  if (!spvOpcodeIsSpecConstant(instr->opcode())) return false;
   if (!_.IsIntScalarType(instr->type_id())) return false;
   uint32_t size_in_bits = _.GetBitWidth(instr->type_id());
   return size_in_bits == 32 || size_in_bits == 64;
