@@ -1237,6 +1237,36 @@ TEST_F(ValidateOpenCL100DebugInfo, DebugTypeArrayFailVariableSizeTypeFloat) {
                         "integer scalar type"));
 }
 
+TEST_F(ValidateOpenCL100DebugInfo,
+       DebugTypeArrayOpSpecConstantComponentCountFail) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string size_const = R"(
+%int_32 = OpConstant %u32 32
+%spec_u32 = OpSpecConstant %u32 4
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit 2 4 %dbg_src HLSL
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %int_32 Float
+%float_arr_info = OpExtInst %void %DbgExt DebugTypeArray %float_info %spec_u32
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, size_const, dbg_inst_header, "", opencl_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Component Count must be OpConstant with a 32- or "
+                        "64-bits integer scalar type or DebugGlobalVariable or "
+                        "DebugLocalVariable with a 32- or 64-bits unsigned "
+                        "integer scalar type"));
+}
+
 TEST_F(ValidateVulkan100DebugInfo, DebugTypeArray) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
@@ -1325,10 +1355,10 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayFailComponentCount) {
       src, "", dbg_inst_header, "", shader_extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component Count must be OpConstant with a 32- or "
-                        "64-bits integer scalar type or DebugGlobalVariable or "
-                        "DebugLocalVariable with a 32- or 64-bits unsigned "
-                        "integer scalar type"));
+              HasSubstr("Component Count must be a constant instruction with a "
+                        "32- or 64-bits integer scalar type or "
+                        "DebugGlobalVariable or DebugLocalVariable with a 32- "
+                        "or 64-bits unsigned integer scalar type"));
 }
 
 TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayFailComponentCountFloat) {
@@ -1349,10 +1379,10 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayFailComponentCountFloat) {
       src, "", dbg_inst_header, "", shader_extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component Count must be OpConstant with a 32- or "
-                        "64-bits integer scalar type or DebugGlobalVariable or "
-                        "DebugLocalVariable with a 32- or 64-bits unsigned "
-                        "integer scalar type"));
+              HasSubstr("Component Count must be a constant instruction with a "
+                        "32- or 64-bits integer scalar type or "
+                        "DebugGlobalVariable or DebugLocalVariable with a 32- "
+                        "or 64-bits unsigned integer scalar type"));
 }
 
 TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayComponentCountZero) {
@@ -1400,10 +1430,59 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayFailVariableSizeTypeFloat) {
       src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component Count must be OpConstant with a 32- or "
-                        "64-bits integer scalar type or DebugGlobalVariable or "
-                        "DebugLocalVariable with a 32- or 64-bits unsigned "
-                        "integer scalar type"));
+              HasSubstr("Component Count must be a constant instruction with a "
+                        "32- or 64-bits integer scalar type or "
+                        "DebugGlobalVariable or DebugLocalVariable with a 32- "
+                        "or 64-bits unsigned integer scalar type"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayOpSpecConstantComponentCount) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%spec_u32 = OpSpecConstant %u32 4
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%float_arr_info = OpExtInst %void %DbgExt DebugTypeArray %float_info %spec_u32
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo,
+       DebugTypeArrayOpSpecConstantOpComponentCount) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%spec_a = OpSpecConstant %u32 2
+%spec_b = OpSpecConstant %u32 2
+%spec_op = OpSpecConstantOp %u32 IMul %spec_a %spec_b
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%float_arr_info = OpExtInst %void %DbgExt DebugTypeArray %float_info %spec_op
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateOpenCL100DebugInfo, DebugTypeVector) {

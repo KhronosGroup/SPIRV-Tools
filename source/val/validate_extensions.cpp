@@ -1044,6 +1044,16 @@ bool IsConstIntScalarTypeWith32Or64Bits(ValidationState_t& _,
   return size_in_bits == 32 || size_in_bits == 64;
 }
 
+bool IsSpecConstIntScalarTypeWith32Or64Bits(ValidationState_t& _,
+                                            Instruction* instr) {
+  if (instr->opcode() != spv::Op::OpSpecConstant &&
+      instr->opcode() != spv::Op::OpSpecConstantOp)
+    return false;
+  if (!_.IsIntScalarType(instr->type_id())) return false;
+  uint32_t size_in_bits = _.GetBitWidth(instr->type_id());
+  return size_in_bits == 32 || size_in_bits == 64;
+}
+
 bool IsConstWithIntScalarType(ValidationState_t& _, const Instruction* inst,
                               uint32_t word_index) {
   auto* int_scalar_const = _.FindDef(inst->word(word_index));
@@ -3424,6 +3434,10 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
             if (!vulkanDebugInfo && !component_count->word(3)) {
               invalid = true;
             }
+          } else if (vulkanDebugInfo && IsSpecConstIntScalarTypeWith32Or64Bits(
+                                            _, component_count)) {
+            // Spec constants are valid component counts for
+            // NonSemantic.Shader.DebugInfo.
           } else if (component_count->words().size() > 6 &&
                      (CommonDebugInfoInstructions(component_count->word(4)) ==
                           CommonDebugInfoDebugLocalVariable ||
@@ -3461,8 +3475,9 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
           if (invalid) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << GetExtInstName(_, inst) << ": Component Count must be "
-                   << "OpConstant with a 32- or 64-bits integer scalar type "
-                      "or "
+                   << (vulkanDebugInfo ? "a constant instruction"
+                                       : "OpConstant")
+                   << " with a 32- or 64-bits integer scalar type or "
                    << "DebugGlobalVariable or DebugLocalVariable with a 32- "
                       "or "
                    << "64-bits unsigned integer scalar type";
