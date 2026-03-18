@@ -1135,6 +1135,28 @@ INSTANTIATE_TEST_SUITE_P(
         //                     "InBoundsPtrAccessChain"),
     }));
 
+TEST_F(ValidateConstant, ForwardConstantFunctionPointerINTEL) {
+  const std::string spirv = R"(
+OpCapability Linkage
+OpCapability Shader
+OpCapability FunctionPointersINTEL
+OpExtension "SPV_INTEL_function_pointers"
+OpMemoryModel Logical Simple
+%void = OpTypeVoid
+%functype = OpTypeFunction %void
+; UniformConstant avoids logical pointer validation conflicts in Function sc
+%ptr_fun = OpTypePointer UniformConstant %functype
+%const_ptr = OpConstantFunctionPointerINTEL %ptr_fun %target_func
+%target_func = OpFunction %void None %functype
+%lbl = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
