@@ -25,6 +25,7 @@
 #include "source/extensions.h"
 #include "source/latest_version_glsl_std_450_header.h"
 #include "source/latest_version_opencl_std_header.h"
+#include "source/opcode.h"
 #include "source/spirv_constant.h"
 #include "source/table2.h"
 #include "source/val/instruction.h"
@@ -1039,6 +1040,14 @@ spv_result_t ValidateClspvReflectionInstruction(ValidationState_t& _,
 bool IsConstIntScalarTypeWith32Or64Bits(ValidationState_t& _,
                                         Instruction* instr) {
   if (instr->opcode() != spv::Op::OpConstant) return false;
+  if (!_.IsIntScalarType(instr->type_id())) return false;
+  uint32_t size_in_bits = _.GetBitWidth(instr->type_id());
+  return size_in_bits == 32 || size_in_bits == 64;
+}
+
+bool IsSpecConstIntScalarTypeWith32Or64Bits(ValidationState_t& _,
+                                            Instruction* instr) {
+  if (!spvOpcodeIsSpecConstant(instr->opcode())) return false;
   if (!_.IsIntScalarType(instr->type_id())) return false;
   uint32_t size_in_bits = _.GetBitWidth(instr->type_id());
   return size_in_bits == 32 || size_in_bits == 64;
@@ -3424,6 +3433,10 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
             if (!vulkanDebugInfo && !component_count->word(3)) {
               invalid = true;
             }
+          } else if (vulkanDebugInfo && IsSpecConstIntScalarTypeWith32Or64Bits(
+                                            _, component_count)) {
+            // Spec constants are valid component counts for
+            // NonSemantic.Shader.DebugInfo.
           } else if (component_count->words().size() > 6 &&
                      (CommonDebugInfoInstructions(component_count->word(4)) ==
                           CommonDebugInfoDebugLocalVariable ||
@@ -3461,8 +3474,9 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
           if (invalid) {
             return _.diag(SPV_ERROR_INVALID_DATA, inst)
                    << GetExtInstName(_, inst) << ": Component Count must be "
-                   << "OpConstant with a 32- or 64-bits integer scalar type "
-                      "or "
+                   << (vulkanDebugInfo ? "a constant instruction"
+                                       : "OpConstant")
+                   << " with a 32- or 64-bits integer scalar type or "
                    << "DebugGlobalVariable or DebugLocalVariable with a 32- "
                       "or "
                    << "64-bits unsigned integer scalar type";
