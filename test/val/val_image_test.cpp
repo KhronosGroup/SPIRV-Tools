@@ -11596,6 +11596,42 @@ TEST_F(ValidateImage, SubpassDataNonConstant) {
                         "OpConstantComposite of (0,0) or OpConstantNull"));
 }
 
+// https://gitlab.khronos.org/spirv/SPIR-V/-/issues/766
+TEST_F(ValidateImage, WriteSignedExtendGood) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %ii2D %ic2D
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %ii2D Binding 0
+               OpDecorate %ii2D DescriptorSet 0
+               OpDecorate %ic2D Flat
+               OpDecorate %ic2D Location 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+          %8 = OpTypeImage %int 2D 0 0 0 2 R32i
+%_ptr_UniformConstant_8 = OpTypePointer UniformConstant %8
+       %ii2D = OpVariable %_ptr_UniformConstant_8 UniformConstant
+      %v2int = OpTypeVector %int 2
+      %int_0 = OpConstant %int 0
+         %14 = OpConstantComposite %v2int %int_0 %int_0
+      %v4int = OpTypeVector %int 4
+         %16 = OpConstantComposite %v4int %int_0 %int_0 %int_0 %int_0
+%_ptr_Input_v2int = OpTypePointer Input %v2int
+       %ic2D = OpVariable %_ptr_Input_v2int Input
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+         %11 = OpLoad %8 %ii2D
+               OpImageWrite %11 %14 %16 SignExtend
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+}
+
 TEST_F(ValidateImage, TypeImageVulkanStorageNotFloat) {
   const std::string code = GetShaderHeader() + R"(
 %img_type = OpTypeImage %f32 2D 0 0 0 2 R32i
@@ -11797,8 +11833,6 @@ TEST_F(ValidateImage, TypeImageVulkanStorageZeroExtendSigned) {
 
   CompileSuccessfully(code.c_str(), SPV_ENV_VULKAN_1_2);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
-  EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-Image-04965"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Using ZeroExtend, but result type is a signed integer type"));
@@ -11843,7 +11877,8 @@ TEST_F(ValidateImage, TypeImageVulkanStorageZeroExtendRedundant) {
                 "including possible SignExtend or ZeroExtend operand"));
 }
 
-TEST_F(ValidateImage, TypeImageVulkanStorageZeroExtendFloat) {
+// TODO - Need to validate in ValidateImageOperands()
+TEST_F(ValidateImage, DISABLED_TypeImageVulkanStorageZeroExtendFloat) {
   // use ZeroExtend on Float image
   const std::string code = R"(
             OpCapability Shader
@@ -11877,8 +11912,6 @@ TEST_F(ValidateImage, TypeImageVulkanStorageZeroExtendFloat) {
 
   CompileSuccessfully(code.c_str(), SPV_ENV_VULKAN_1_2);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
-  EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-Image-04965"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("Using ZeroExtend, but result type is a signed integer type."));

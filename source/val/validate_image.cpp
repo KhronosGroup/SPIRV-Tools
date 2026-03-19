@@ -268,6 +268,28 @@ bool IsFloatImageFormat(spv::ImageFormat format) {
   return false;
 }
 
+bool IsImageSparse(spv::Op opcode) {
+  switch (opcode) {
+    case spv::Op::OpImageSparseSampleImplicitLod:
+    case spv::Op::OpImageSparseSampleExplicitLod:
+    case spv::Op::OpImageSparseSampleDrefImplicitLod:
+    case spv::Op::OpImageSparseSampleDrefExplicitLod:
+    case spv::Op::OpImageSparseSampleProjImplicitLod:
+    case spv::Op::OpImageSparseSampleProjExplicitLod:
+    case spv::Op::OpImageSparseSampleProjDrefImplicitLod:
+    case spv::Op::OpImageSparseSampleProjDrefExplicitLod:
+    case spv::Op::OpImageSparseFetch:
+    case spv::Op::OpImageSparseGather:
+    case spv::Op::OpImageSparseDrefGather:
+    case spv::Op::OpImageSparseTexelsResident:
+    case spv::Op::OpImageSparseRead:
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
 // Returns true if the opcode is a Image instruction which applies
 // homogenous projection to the coordinates.
 bool IsProj(spv::Op opcode) {
@@ -765,40 +787,30 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     if (auto error = ValidateMemoryScope(_, inst, visible_scope)) return error;
   }
 
-  if (mask & uint32_t(spv::ImageOperandsMask::SignExtend)) {
-    // Checked elsewhere: SPIR-V 1.4 version or later.
-
-    // "The texel value is converted to the target value via sign extension.
-    // Only valid when the texel type is a scalar or vector of integer type."
-    //
-    // We don't have enough information to know what the texel type is.
+  // Checked elsewhere: SPIR-V 1.4 version or later.
+  if (is_sign_extend || is_zero_extend) {
+    // We don't have enough information to know what the |texel value type| is.
     // In OpenCL, knowledge is deferred until runtime: the image SampledType is
     // void, and the Format is Unknown.
     // In Vulkan, the texel type is only known in all cases by the pipeline
     // setup.
-    if (!_.IsIntScalarOrVectorType(inst->type_id())) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << _.VkErrorID(4965)
-             << "Using SignExtend, but result type is not a scalar or vector "
-                "integer type.";
-    }
-  }
 
-  if (mask & uint32_t(spv::ImageOperandsMask::ZeroExtend)) {
-    // Checked elsewhere: SPIR-V 1.4 version or later.
-
-    // "The texel value is converted to the target value via zero extension.
-    // Only valid when the texel type is a scalar or vector of integer type."
-    //
-    // We don't have enough information to know what the texel type is.
-    // In OpenCL, knowledge is deferred until runtime: the image SampledType is
-    // void, and the Format is Unknown.
-    // In Vulkan, the texel type is only known in all cases by the pipeline
-    // setup.
-    if (!_.IsUnsignedIntScalarOrVectorType(inst->type_id())) {
-      return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << _.VkErrorID(4965)
-             << "Using ZeroExtend, but result type is a signed integer type.";
+    if (opcode == spv::Op::OpImageWrite) {
+      // OpImageWrite has no result type.
+      // TODO - Add Validation
+    } else if (IsImageSparse(opcode)) {
+      // Sparse image read/sample return a struct.
+      // TODO - Add Validation
+    } else {
+      if (is_sign_extend && !_.IsIntScalarOrVectorType(inst->type_id())) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Using SignExtend, but result type is not a scalar or vector "
+                  "integer type.";
+      } else if (is_zero_extend &&
+                 !_.IsUnsignedIntScalarOrVectorType(inst->type_id())) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Using ZeroExtend, but result type is a signed integer type.";
+      }
     }
   }
 
@@ -1087,11 +1099,11 @@ spv_result_t ValidateTypeImage(ValidationState_t& _, const Instruction* inst) {
              << "Dim must not be Rect in the Vulkan environment";
     }
 
-    // Can't check signedness here due to image operands able to override
-    // sampled type
+    // Can't check signedness here due to image operands (SignExtend or
+    // ZeroExtend) ability to overridesampled type
     if (info.format != spv::ImageFormat::Unknown) {
-      // validated above so can assume this is a 32-bit float, 32-bit int, or
-      // 64-bit int
+      // validated above so can assume this is a
+      // 32-bit float, 32-bit int, or 64-bit int
       const bool is_int = _.IsIntScalarType(info.sampled_type);
       const bool is_float = !is_int;
       if ((is_float && !IsFloatImageFormat(info.format)) ||
