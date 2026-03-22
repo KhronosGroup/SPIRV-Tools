@@ -32,6 +32,13 @@ class Pass;
 struct DescriptorSetAndBinding;
 }  // namespace opt
 
+enum class SSARewriteMode {
+  None,
+  All,
+  OpaqueOnly,
+  SpecialTypes,
+};
+
 // C++ interface for SPIR-V optimization functionalities. It wraps the context
 // (including target environment and the corresponding SPIR-V grammar) and
 // provides methods for registering optimization passes and optimizing.
@@ -125,6 +132,9 @@ class SPIRV_TOOLS_EXPORT Optimizer {
   // interface are considered live and are not eliminated.
   Optimizer& RegisterLegalizationPasses();
   Optimizer& RegisterLegalizationPasses(bool preserve_interface);
+  Optimizer& RegisterLegalizationPasses(bool preserve_interface,
+                                        bool include_loop_unroll,
+                                        SSARewriteMode ssa_rewrite_mode);
 
   // Register passes specified in the list of |flags|.  Each flag must be a
   // string of a form accepted by Optimizer::FlagHasValidForm().
@@ -645,11 +655,6 @@ Optimizer::PassToken CreateLoopPeelingPass();
 // Works best after LICM and local multi store elimination pass.
 Optimizer::PassToken CreateLoopUnswitchPass();
 
-// Creates a pass to legalize multidimensional arrays for Vulkan.
-// This pass will replace multidimensional arrays of resources with a single
-// dimensional array. Combine-access-chains should be run before this pass.
-Optimizer::PassToken CreateLegalizeMultidimArrayPass();
-
 // Create global value numbering pass.
 // This pass will look for instructions where the same value is computed on all
 // paths leading to the instruction.  Those instructions are deleted.
@@ -709,7 +714,8 @@ Optimizer::PassToken CreateLoopUnrollPass(bool fully_unroll, int factor = 0);
 // operations on SSA IDs.  This allows SSA optimizers to act on these variables.
 // Only variables that are local to the function and of supported types are
 // processed (see IsSSATargetVar for details).
-Optimizer::PassToken CreateSSARewritePass();
+Optimizer::PassToken CreateSSARewritePass(
+    SSARewriteMode mode = SSARewriteMode::All);
 
 // Create pass to convert relaxed precision instructions to half precision.
 // This pass converts as many relaxed float32 arithmetic operations to half as
