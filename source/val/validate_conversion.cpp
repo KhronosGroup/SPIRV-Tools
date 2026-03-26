@@ -332,24 +332,67 @@ spv_result_t ValidateConvertPtrToU(ValidationState_t& _,
                                    uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
-  if (!_.IsUnsignedIntScalarType(result_type))
+  const bool has_masked_gather_scatter =
+      _.HasCapability(spv::Capability::MaskedGatherScatterINTEL);
+
+  bool valid_result_type = _.IsUnsignedIntScalarType(result_type);
+  if (!valid_result_type && has_masked_gather_scatter) {
+    valid_result_type = _.IsUnsignedIntVectorType(result_type);
+  }
+
+  if (!valid_result_type) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected unsigned int scalar type as Result Type: "
-           << spvOpcodeString(opcode);
+           << "Expected unsigned int scalar type as Result Type"
+           << (has_masked_gather_scatter ? " (or vector of unsigned int with "
+                                           "MaskedGatherScatterINTEL)"
+                                         : "")
+           << ": " << spvOpcodeString(opcode);
+  }
 
   const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
-  if (!_.IsPointerType(input_type))
+
+  bool valid_input_type = _.IsPointerType(input_type);
+  if (!valid_input_type && has_masked_gather_scatter && input_type) {
+    if (_.IsVectorType(input_type)) {
+      const uint32_t component_type = _.GetComponentType(input_type);
+      valid_input_type = _.IsPointerType(component_type);
+    }
+  }
+
+  if (!valid_input_type) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected input to be a pointer: " << spvOpcodeString(opcode);
+           << "Expected input to be a pointer"
+           << (has_masked_gather_scatter
+                   ? " (or vector of pointers with MaskedGatherScatterINTEL)"
+                   : "")
+           << ": " << spvOpcodeString(opcode);
+  }
+
+  if (has_masked_gather_scatter && _.IsVectorType(result_type)) {
+    if (!_.IsVectorType(input_type)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Expected input to be a vector when Result Type is a vector: "
+             << spvOpcodeString(opcode);
+    }
+    if (_.GetDimension(result_type) != _.GetDimension(input_type)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Expected input to have the same dimension as Result Type: "
+             << spvOpcodeString(opcode);
+    }
+  }
 
   if (_.addressing_model() == spv::AddressingModel::Logical)
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Logical addressing not supported: " << spvOpcodeString(opcode);
 
   if (_.addressing_model() == spv::AddressingModel::PhysicalStorageBuffer64) {
+    uint32_t ptr_type = input_type;
+    if (_.IsVectorType(input_type)) {
+      ptr_type = _.GetComponentType(input_type);
+    }
     spv::StorageClass input_storage_class;
     uint32_t input_data_type = 0;
-    _.GetPointerTypeInfo(input_type, &input_data_type, &input_storage_class);
+    _.GetPointerTypeInfo(ptr_type, &input_data_type, &input_storage_class);
     if (input_storage_class != spv::StorageClass::PhysicalStorageBuffer)
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Pointer storage class must be PhysicalStorageBuffer: "
@@ -396,24 +439,67 @@ spv_result_t ValidateConvertUToPtr(ValidationState_t& _,
                                    uint32_t operand_index = 2) {
   const spv::Op opcode = inst->opcode();
   const uint32_t result_type = inst->type_id();
-  if (!_.IsPointerType(result_type))
+  const bool has_masked_gather_scatter =
+      _.HasCapability(spv::Capability::MaskedGatherScatterINTEL);
+
+  bool valid_result_type = _.IsPointerType(result_type);
+  if (!valid_result_type && has_masked_gather_scatter) {
+    if (_.IsVectorType(result_type)) {
+      const uint32_t component_type = _.GetComponentType(result_type);
+      valid_result_type = _.IsPointerType(component_type);
+    }
+  }
+
+  if (!valid_result_type) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected Result Type to be a pointer: "
-           << spvOpcodeString(opcode);
+           << "Expected Result Type to be a pointer"
+           << (has_masked_gather_scatter
+                   ? " (or vector of pointers with MaskedGatherScatterINTEL)"
+                   : "")
+           << ": " << spvOpcodeString(opcode);
+  }
 
   const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
-  if (!input_type || !_.IsIntScalarType(input_type))
+
+  bool valid_input_type = input_type && _.IsIntScalarType(input_type);
+  if (!valid_input_type && has_masked_gather_scatter && input_type) {
+    valid_input_type = _.IsIntVectorType(input_type);
+  }
+
+  if (!valid_input_type) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << "Expected int scalar as input: " << spvOpcodeString(opcode);
+           << "Expected int scalar as input"
+           << (has_masked_gather_scatter
+                   ? " (or vector of int with MaskedGatherScatterINTEL)"
+                   : "")
+           << ": " << spvOpcodeString(opcode);
+  }
+
+  if (has_masked_gather_scatter && _.IsVectorType(result_type)) {
+    if (!_.IsVectorType(input_type)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Expected input to be a vector when Result Type is a vector: "
+             << spvOpcodeString(opcode);
+    }
+    if (_.GetDimension(result_type) != _.GetDimension(input_type)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Expected input to have the same dimension as Result Type: "
+             << spvOpcodeString(opcode);
+    }
+  }
 
   if (_.addressing_model() == spv::AddressingModel::Logical)
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Logical addressing not supported: " << spvOpcodeString(opcode);
 
   if (_.addressing_model() == spv::AddressingModel::PhysicalStorageBuffer64) {
+    uint32_t ptr_type = result_type;
+    if (_.IsVectorType(result_type)) {
+      ptr_type = _.GetComponentType(result_type);
+    }
     spv::StorageClass result_storage_class;
     uint32_t result_data_type = 0;
-    _.GetPointerTypeInfo(result_type, &result_data_type, &result_storage_class);
+    _.GetPointerTypeInfo(ptr_type, &result_data_type, &result_storage_class);
     if (result_storage_class != spv::StorageClass::PhysicalStorageBuffer)
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "Pointer storage class must be PhysicalStorageBuffer: "
