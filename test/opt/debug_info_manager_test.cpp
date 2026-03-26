@@ -875,6 +875,146 @@ TEST(DebugInfoManager, ConvertGlobalToLocal) {
   EXPECT_EQ(dbg_var->GetInOperand(8), originalOperands[10]);
 }
 
+TEST(DebugInfoManager, DebugValueInsertionMovedWhereOperandDoesNotDominate) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpCapability Linkage
+          %1 = OpExtInstImport "OpenCL.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+          %2 = OpString "test"
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+%_ptr_Function_float = OpTypePointer Function %float
+    %float_0 = OpConstant %float 0
+       %uint = OpTypeInt 32 0
+    %uint_32 = OpConstant %uint 32
+         %10 = OpExtInst %void %1 DebugExpression
+         %11 = OpExtInst %void %1 DebugSource %2
+         %12 = OpExtInst %void %1 DebugCompilationUnit 1 4 %11 HLSL
+         %13 = OpExtInst %void %1 DebugTypeFunction FlagIsProtected|FlagIsPrivate %void
+         %14 = OpExtInst %void %1 DebugFunction %2 %13 %11 0 0 %12 %2 FlagIsProtected|FlagIsPrivate 0 %main
+         %15 = OpExtInst %void %1 DebugTypeBasic %2 %uint_32 Float
+         %16 = OpExtInst %void %1 DebugLocalVariable %2 %15 %11 0 0 %14 FlagIsLocal
+       %main = OpFunction %void None %4
+         %bb = OpLabel
+        %var = OpVariable %_ptr_Function_float Function
+       %var2 = OpVariable %_ptr_Function_float Function
+         %20 = OpExtInst %void %1 DebugScope %14
+               OpStore %var %float_0
+ %value_late = OpLoad %float %var2
+         %21 = OpExtInst %void %1 DebugDeclare %16 %var %10
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::unique_ptr<IRContext> ctx =
+      BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(ctx, nullptr);
+
+  DebugInfoManager* manager = ctx->get_debug_info_mgr();
+  ASSERT_NE(manager, nullptr);
+
+  Instruction* store_inst = nullptr;
+  Instruction* load_inst = nullptr;
+  Instruction* dbg_declare = nullptr;
+  ctx->module()->ForEachInst([&](Instruction* inst) {
+    if (inst->opcode() == spv::Op::OpStore) {
+      store_inst = inst;
+    }
+    if (inst->opcode() == spv::Op::OpLoad) {
+      load_inst = inst;
+    }
+    if (inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugDeclare) {
+      dbg_declare = inst;
+    }
+  });
+  ASSERT_NE(store_inst, nullptr);
+  ASSERT_NE(load_inst, nullptr);
+  ASSERT_NE(dbg_declare, nullptr);
+
+  dbg_declare->AddOperand(
+      {spv_operand_type_t::SPV_OPERAND_TYPE_ID, {load_inst->result_id()}});
+  if (ctx->AreAnalysesValid(IRContext::Analysis::kAnalysisDefUse))
+    ctx->get_def_use_mgr()->AnalyzeInstDefUse(dbg_declare);
+
+  uint32_t var_id = store_inst->GetSingleWordInOperand(0);
+
+  Instruction* line_inst = store_inst->PreviousNode();
+  ASSERT_NE(line_inst, nullptr);
+
+  bool modified = manager->AddDebugValueForVariable(
+      line_inst, var_id, store_inst->GetSingleWordInOperand(1), store_inst);
+  EXPECT_TRUE(modified);
+
+  Instruction* dbg_value_new = nullptr;
+  uint32_t dbg_declare_pos = 0;
+  uint32_t dbg_value_new_pos = 0;
+  uint32_t store_pos = 0;
+  uint32_t position = 0;
+
+  ctx->module()->ForEachInst([&](Instruction* inst) {
+    position++;
+    if (inst == store_inst) {
+      store_pos = position;
+    }
+    if (inst == dbg_declare) {
+      dbg_declare_pos = position;
+    }
+    if (inst->GetOpenCL100DebugOpcode() == OpenCLDebugInfo100DebugValue) {
+      dbg_value_new = inst;
+      dbg_value_new_pos = position;
+    }
+  });
+
+  ASSERT_NE(dbg_value_new, nullptr);
+  ASSERT_NE(dbg_declare_pos, 0u);
+  // The new DebugValue must come after the DebugDeclare, not
+  // directly after the OpStore, because of %value_late
+  EXPECT_GT(dbg_value_new_pos, dbg_declare_pos);
+  EXPECT_GT(dbg_value_new_pos, store_pos);
+}
+
+TEST(DebugInfoManagerTest, DebugInstructionWithForwardRefsKHR) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+               OpExtension "SPV_KHR_relaxed_extended_instruction"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_3 = OpConstant %uint 3
+         %10 = OpExtInstWithForwardRefsKHR %void %1 DebugTypeFunction %uint_3 %11
+         %11 = OpExtInst %void %1 DebugInfoNone
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_1, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(nullptr, context);
+
+  Instruction* forward_ref_inst = context->get_def_use_mgr()->GetDef(10);
+  ASSERT_NE(nullptr, forward_ref_inst);
+  EXPECT_EQ(forward_ref_inst->opcode(), spv::Op::OpExtInstWithForwardRefsKHR);
+
+  EXPECT_EQ(forward_ref_inst->GetShader100DebugOpcode(),
+            NonSemanticShaderDebugInfo100DebugTypeFunction);
+
+  EXPECT_EQ(forward_ref_inst->GetCommonDebugOpcode(),
+            CommonDebugInfoDebugTypeFunction);
+}
+
+
 }  // namespace
 }  // namespace analysis
 }  // namespace opt
