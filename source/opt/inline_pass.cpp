@@ -898,6 +898,30 @@ void InlinePass::FixDebugDeclare(
     // that its Var operand becomes the base of the access chain. The indexes of
     // the access chain are prepended before the indexes of the debug declare.
 
+    // DebugDeclare Indexes must be constant integers. If any access chain
+    // index is non-constant (e.g. the result of an OpLoad), we cannot
+    // produce a valid DebugDeclare. Kill it rather than emit invalid SPIR-V.
+    bool has_non_constant_index = false;
+    for (uint32_t i = kSpvAccessChainBaseInIdx + 1;
+         i < access_chain->NumInOperands(); ++i) {
+      uint32_t idx_id = access_chain->GetSingleWordInOperand(i);
+      bool found_constant = false;
+      for (auto& inst : context()->module()->types_values()) {
+        if (inst.result_id() == idx_id) {
+          found_constant = spvOpcodeIsConstant(inst.opcode());
+          break;
+        }
+      }
+      if (!found_constant) {
+        has_non_constant_index = true;
+        break;
+      }
+    }
+    if (has_non_constant_index) {
+      context()->KillInst(dbg_declare_inst);
+      return;
+    }
+
     std::vector<Operand> operands;
     for (int i = 0; i < kSpvDebugDeclareVarInIdx; i++) {
       operands.push_back(dbg_declare_inst->GetInOperand(i));

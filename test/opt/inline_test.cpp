@@ -4547,6 +4547,75 @@ TEST_F(InlineTest, DebugDeclareWithAccessChain) {
   SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
 }
 
+TEST_F(InlineTest, DebugDeclareWithDynamicAccessChainKilled) {
+  // Check that a DebugDeclare whose Variable operand is remapped to an
+  // OpAccessChain with a non-constant index is killed, because DebugDeclare
+  // Indexes operands must be constant integers.
+  const std::string text = R"(
+; CHECK: OpFunction %void None
+; CHECK-NOT: DebugDeclare
+; CHECK: OpReturn
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+               OpExtension "SPV_KHR_relaxed_extended_instruction"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %2 "main"
+               OpExecutionMode %2 LocalSize 1 1 1
+          %3 = OpString "test.hlsl"
+          %4 = OpString "float"
+          %5 = OpString "source"
+          %6 = OpString "foo"
+          %7 = OpString ""
+          %8 = OpString "this"
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+     %uint_3 = OpConstant %uint 3
+     %uint_4 = OpConstant %uint 4
+     %uint_5 = OpConstant %uint 5
+    %uint_32 = OpConstant %uint 32
+      %float = OpTypeFloat 32
+       %void = OpTypeVoid
+         %20 = OpTypeFunction %void
+%_arr_float_uint_4 = OpTypeArray %float %uint_4
+%_ptr_Function_arr = OpTypePointer Function %_arr_float_uint_4
+%_ptr_Function_float = OpTypePointer Function %float
+%_ptr_Function_int = OpTypePointer Function %int
+         %25 = OpTypeFunction %float %_ptr_Function_float
+         %26 = OpUndef %float
+         %27 = OpExtInst %void %1 DebugTypeBasic %4 %uint_32 %uint_3 %uint_0
+         %28 = OpExtInst %void %1 DebugSource %3 %5
+         %29 = OpExtInst %void %1 DebugCompilationUnit %uint_1 %uint_4 %28 %uint_5
+         %30 = OpExtInst %void %1 DebugTypeFunction %uint_3 %27 %27
+         %31 = OpExtInst %void %1 DebugFunction %6 %30 %28 %uint_1 %uint_5 %29 %7 %uint_3 %uint_4
+         %32 = OpExtInst %void %1 DebugLocalVariable %8 %27 %28 %uint_1 %uint_5 %31 %uint_4 %uint_1
+         %33 = OpExtInst %void %1 DebugExpression
+          %2 = OpFunction %void None %20
+         %34 = OpLabel
+         %35 = OpVariable %_ptr_Function_arr Function
+         %36 = OpVariable %_ptr_Function_int Function
+               OpStore %36 %int_0
+         %37 = OpLoad %int %36
+         %38 = OpAccessChain %_ptr_Function_float %35 %37
+         %39 = OpFunctionCall %float %40 %38
+               OpReturn
+               OpFunctionEnd
+; CHECK: OpFunction %float None
+         %40 = OpFunction %float None %25
+         %41 = OpFunctionParameter %_ptr_Function_float
+         %42 = OpLabel
+         %43 = OpExtInst %void %1 DebugDeclare %32 %41 %33
+               OpReturnValue %26
+               OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_2);
+  SinglePassRunAndMatch<InlineExhaustivePass>(text, true);
+}
+
 // TODO(greg-lunarg): Add tests to verify handling of these cases:
 //
 //    Empty modules
