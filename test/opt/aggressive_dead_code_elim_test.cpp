@@ -7697,8 +7697,7 @@ struct PS_OUTPUT
 } ;
 
 "
-          %6 = OpString "
-PS_OUTPUT MainPs ( )
+          %6 = OpString "PS_OUTPUT MainPs ( )
 {
     PS_OUTPUT ps_output ;
     ps_output . vColor = float4( 1.0, 0.0, 0.0, 0.0 );
@@ -8712,7 +8711,7 @@ OpDecorate %b Binding 0
 %27 = OpExtInst %void %1 DebugFunction %25 %21 %22 %uint_4 %uint_1 %23 %26 %uint_3 %uint_4
 %28 = OpExtInst %void %1 DebugLexicalBlock %22 %uint_4 %uint_13 %27
 %31 = OpExtInst %void %1 DebugLocalVariable %30 %20 %22 %uint_5 %uint_7 %28 %uint_4
-; CHECK: [[var:%\w+]] = OpExtInst %void {{%\w+}} DebugLocalVariable [[VarName]] 
+; CHECK: [[var:%\w+]] = OpExtInst %void {{%\w+}} DebugLocalVariable [[VarName]]
 %34 = OpExtInst %void %1 DebugFunction %33 %21 %22 %uint_4 %uint_1 %23 %26 %uint_3 %uint_4
 %41 = OpExtInst %void %1 DebugTypeComposite %39 %uint_0 %22 %uint_0 %uint_0 %23 %40 %38 %uint_3
 %43 = OpExtInst %void %1 DebugTypeTemplateParameter %42 %18 %38 %22 %uint_0 %uint_0
@@ -8907,6 +8906,7 @@ TEST_F(AggressiveDCETest, DebugDeclareConvertedToDebugValueKeepsDebugScope) {
           %6 = OpTypeFunction %void
       %float = OpTypeFloat 32
      %uint_3 = OpConstant %uint 3
+     %uint_1 = OpConstant %uint 1
      %uint_0 = OpConstant %uint 0
 %_ptr_Function_float = OpTypePointer Function %float
 %_ptr_Uniform_float = OpTypePointer Uniform %float
@@ -8936,7 +8936,7 @@ TEST_F(AggressiveDCETest, DebugDeclareConvertedToDebugValueKeepsDebugScope) {
          %34 = OpExtInst %void %1 DebugDeclare %28 %31 %15
                OpStore %31 %float_0
          %35 = OpExtInst %void %1 DebugScope %22
-         %36 = OpExtInst %void %1 DebugLine %16 %uint_0 %uint_0 %uint_0 %uint_0
+         %36 = OpExtInst %void %1 DebugLine %16 %uint_1 %uint_1 %uint_0 %uint_0
                OpStore %13 %float_0
                OpReturn
          %37 = OpExtInst %void %1 DebugNoScope
