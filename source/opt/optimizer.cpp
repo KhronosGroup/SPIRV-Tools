@@ -189,36 +189,36 @@ Optimizer& Optimizer::RegisterLegalizationPasses(bool preserve_interface) {
 }
 
 Optimizer& Optimizer::RegisterPerformancePasses(bool preserve_interface) {
-  auto& optimizer = RegisterPass(CreateWrapOpKillPass())
+  return RegisterPass(CreateWrapOpKillPass())
       .RegisterPass(CreateDeadBranchElimPass())
       .RegisterPass(CreateMergeReturnPass())
       .RegisterPass(CreateInlineExhaustivePass())
       .RegisterPass(CreateEliminateDeadFunctionsPass())
+      .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
       .RegisterPass(CreatePrivateToLocalPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
       .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
       .RegisterPass(CreateScalarReplacementPass(0))
-      .RegisterPass(CreateLocalAccessChainConvertPass());
-  optimizer.RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
+      .RegisterPass(CreateLocalAccessChainConvertPass())
+      .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
-      .RegisterPass(CreateAggressiveDCEPass(preserve_interface));
-  optimizer.RegisterPass(CreateCCPPass())
-      .RegisterPass(CreateAggressiveDCEPass(preserve_interface));
-  // Preserve LoopControl::Unroll in the IR instead of always materializing
-  // it here. The optimizer-side full unroll is very costly on large modules
-  // with many tiny [unroll]-annotated loops, while the hint remains available
-  // to downstream consumers in the final SPIR-V.
-  optimizer.RegisterPass(CreateDeadBranchElimPass());
-  optimizer.RegisterPass(CreateLocalRedundancyEliminationPass());
-  optimizer.RegisterPass(CreateCombineAccessChainsPass())
+      .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
+      .RegisterPass(CreateLocalMultiStoreElimPass())
+      .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
+      .RegisterPass(CreateCCPPass())
+      .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
+      .RegisterPass(CreateLoopUnrollPass(true))
+      .RegisterPass(CreateDeadBranchElimPass())
+      .RegisterPass(CreateRedundancyEliminationPass())
+      .RegisterPass(CreateCombineAccessChainsPass())
       .RegisterPass(CreateSimplificationPass())
       .RegisterPass(CreateScalarReplacementPass(0))
       .RegisterPass(CreateLocalAccessChainConvertPass())
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
       .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
-      .RegisterPass(CreateSSARewritePass(SSARewriteMode::SpecialTypes))
+      .RegisterPass(CreateSSARewritePass())
       .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
       .RegisterPass(CreateVectorDCEPass())
       .RegisterPass(CreateDeadInsertElimPass())
@@ -228,9 +228,9 @@ Optimizer& Optimizer::RegisterPerformancePasses(bool preserve_interface) {
       .RegisterPass(CreateCopyPropagateArraysPass())
       .RegisterPass(CreateReduceLoadSizePass())
       .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
-      .RegisterPass(CreateBlockMergePass());
-  optimizer.RegisterPass(CreateLocalRedundancyEliminationPass());
-  return optimizer.RegisterPass(CreateDeadBranchElimPass())
+      .RegisterPass(CreateBlockMergePass())
+      .RegisterPass(CreateRedundancyEliminationPass())
+      .RegisterPass(CreateDeadBranchElimPass())
       .RegisterPass(CreateBlockMergePass())
       .RegisterPass(CreateSimplificationPass());
 }
