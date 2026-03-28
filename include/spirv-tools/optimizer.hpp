@@ -109,6 +109,8 @@ class SPIRV_TOOLS_EXPORT Optimizer {
   // interface are considered live and are not eliminated.
   Optimizer& RegisterPerformancePasses();
   Optimizer& RegisterPerformancePasses(bool preserve_interface);
+  Optimizer& RegisterPerformancePassesFastCompile();
+  Optimizer& RegisterPerformancePassesFastCompile(bool preserve_interface);
 
   // Registers passes that attempt to improve the size of generated code.
   // This sequence of passes is subject to constant review and will change

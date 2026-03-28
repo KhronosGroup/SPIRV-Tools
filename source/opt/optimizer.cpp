@@ -239,6 +239,58 @@ Optimizer& Optimizer::RegisterPerformancePasses() {
   return RegisterPerformancePasses(false);
 }
 
+Optimizer& Optimizer::RegisterPerformancePassesFastCompile(
+    bool preserve_interface) {
+  auto& optimizer = RegisterPass(CreateAggressiveDCEPass(preserve_interface))
+      .RegisterPass(CreateDeadVariableEliminationPass())
+      .RegisterPass(CreateRemoveUnusedInterfaceVariablesPass())
+      .RegisterPass(CreateWrapOpKillPass())
+      .RegisterPass(CreateDeadBranchElimPass())
+      .RegisterPass(CreateMergeReturnPass())
+      .RegisterPass(CreateInlineExhaustivePass())
+      .RegisterPass(CreateEliminateDeadFunctionsPass())
+      .RegisterPass(CreatePrivateToLocalPass())
+      .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
+      .RegisterPass(CreateLocalSingleStoreElimPass())
+      .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
+      .RegisterPass(CreateScalarReplacementPass(0))
+      .RegisterPass(CreateLocalAccessChainConvertPass());
+  optimizer.RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
+      .RegisterPass(CreateLocalSingleStoreElimPass())
+      .RegisterPass(CreateAggressiveDCEPass(preserve_interface));
+  optimizer.RegisterPass(CreateCCPPass())
+      .RegisterPass(CreateAggressiveDCEPass(preserve_interface));
+  optimizer.RegisterPass(CreateDeadBranchElimPass());
+  optimizer.RegisterPass(CreateLocalRedundancyEliminationPass());
+  optimizer.RegisterPass(CreateCombineAccessChainsPass())
+      .RegisterPass(CreateSimplificationPass())
+      .RegisterPass(CreateScalarReplacementPass(0))
+      .RegisterPass(CreateLocalAccessChainConvertPass())
+      .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
+      .RegisterPass(CreateLocalSingleStoreElimPass())
+      .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
+      .RegisterPass(CreateSSARewritePass(SSARewriteMode::SpecialTypes))
+      .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
+      .RegisterPass(CreateVectorDCEPass())
+      .RegisterPass(CreateDeadInsertElimPass())
+      .RegisterPass(CreateDeadBranchElimPass())
+      .RegisterPass(CreateSimplificationPass())
+      .RegisterPass(CreateIfConversionPass())
+      .RegisterPass(CreateCopyPropagateArraysPass())
+      .RegisterPass(CreateReduceLoadSizePass())
+      .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
+      .RegisterPass(CreateBlockMergePass());
+  optimizer.RegisterPass(CreateLocalRedundancyEliminationPass());
+  return optimizer.RegisterPass(CreateAggressiveDCEPass(preserve_interface))
+      .RegisterPass(CreateDeadBranchElimPass())
+      .RegisterPass(CreateBlockMergePass())
+      .RegisterPass(CreateSimplificationPass());
+}
+
+Optimizer& Optimizer::RegisterPerformancePassesFastCompile() {
+  return RegisterPerformancePassesFastCompile(false);
+}
+
 Optimizer& Optimizer::RegisterSizePasses(bool preserve_interface) {
   return RegisterPass(CreateWrapOpKillPass())
       .RegisterPass(CreateDeadBranchElimPass())
