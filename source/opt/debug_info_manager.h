@@ -188,6 +188,9 @@ class DebugInfoManager {
   // DebugInlinedAt |inst| from |inlinedat_id_to_users_|.
   void ClearDebugScopeAndInlinedAtUses(Instruction* inst);
 
+  // Invalidates the per-function instruction position cache.
+  void InvalidateDebugValuePositionCache() { inst_position_cache_.clear(); }
+
  private:
   IRContext* context() { return context_; }
 
@@ -232,6 +235,12 @@ class DebugInfoManager {
   // Returns the parent scope of the scope |child_scope|.
   uint32_t GetParentScope(uint32_t child_scope);
 
+  // Returns the position of |inst| within its containing function.
+  uint32_t GetInstPositionInFunction(Instruction* inst);
+
+  // Builds the instruction position cache for the function |func|.
+  void BuildInstPositionCache(opt::Function* func);
+
   IRContext* context_;
 
   // Mapping from ids of DebugInfo extension instructions.
@@ -275,6 +284,10 @@ class DebugInfoManager {
   // a single DebugExpression without Operation operands. To reuse the
   // existing one, we keep it using this member variable.
   Instruction* empty_debug_expr_inst_;
+
+  // Per-function cache mapping each Instruction* to its sequential position
+  // within the function.
+  std::unordered_map<Instruction*, uint32_t> inst_position_cache_;
 };
 
 }  // namespace analysis

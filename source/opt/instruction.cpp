@@ -674,7 +674,8 @@ bool Instruction::IsValidBasePointer() const {
 }
 
 OpenCLDebugInfo100Instructions Instruction::GetOpenCL100DebugOpcode() const {
-  if (opcode() != spv::Op::OpExtInst) {
+  if (opcode() != spv::Op::OpExtInst &&
+      opcode() != spv::Op::OpExtInstWithForwardRefsKHR) {
     return OpenCLDebugInfo100InstructionsMax;
   }
 
@@ -693,7 +694,8 @@ OpenCLDebugInfo100Instructions Instruction::GetOpenCL100DebugOpcode() const {
 
 NonSemanticShaderDebugInfo100Instructions Instruction::GetShaderDebugOpcode()
     const {
-  if (opcode() != spv::Op::OpExtInst) {
+  if (opcode() != spv::Op::OpExtInst &&
+      opcode() != spv::Op::OpExtInstWithForwardRefsKHR) {
     return NonSemanticShaderDebugInfo100InstructionsMax;
   }
 
@@ -715,7 +717,8 @@ NonSemanticShaderDebugInfo100Instructions Instruction::GetShaderDebugOpcode()
 }
 
 CommonDebugInfoInstructions Instruction::GetCommonDebugOpcode() const {
-  if (opcode() != spv::Op::OpExtInst) {
+  if (opcode() != spv::Op::OpExtInst &&
+      opcode() != spv::Op::OpExtInstWithForwardRefsKHR) {
     return CommonDebugInfoInstructionsMax;
   }
 

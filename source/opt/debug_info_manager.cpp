@@ -567,15 +567,41 @@ bool DebugInfoManager::AddDebugValueForVariable(Instruction* line,
                                                 uint32_t value_id,
                                                 Instruction* insert_pos) {
   assert(line != nullptr);
+  assert(insert_pos != nullptr);
 
   auto dbg_decl_itr = var_id_to_dbg_decl_.find(variable_id);
   if (dbg_decl_itr == var_id_to_dbg_decl_.end()) return false;
 
   bool modified = false;
   for (auto* dbg_decl_or_val : dbg_decl_itr->second) {
+    // Determine the insertion point. We default to inserting after
+    // |insert_pos|. However, since we are cloning |dbg_decl_or_val| into a
+    // new DebugValue, all of its operands must dominate the insertion point.
+    // If any operand of |dbg_decl_or_val| is defined later than |insert_pos|,
+    // we must use |dbg_decl_or_val|'s own position instead (which is
+    // guaranteed to come after all of its operands).
+    uint32_t insert_pos_position = GetInstPositionInFunction(insert_pos);
+
+    Instruction* later = insert_pos;
+    bool operand_is_later = false;
+    dbg_decl_or_val->ForEachInId([&](const uint32_t* operand_id) {
+      if (operand_is_later) return;
+      Instruction* operand_def =
+          context()->get_def_use_mgr()->GetDef(*operand_id);
+      if (operand_def == nullptr) return;
+      if (context()->get_instr_block(operand_def) == nullptr) return;
+      uint32_t operand_position = GetInstPositionInFunction(operand_def);
+      if (operand_position > insert_pos_position) {
+        operand_is_later = true;
+      }
+    });
+    if (operand_is_later) {
+      later = dbg_decl_or_val;
+    }
+
     // Avoid inserting the new DebugValue between OpPhi or OpVariable
     // instructions.
-    Instruction* insert_before = insert_pos->NextNode();
+    Instruction* insert_before = later->NextNode();
     while (insert_before->opcode() == spv::Op::OpPhi ||
            insert_before->opcode() == spv::Op::OpVariable) {
       insert_before = insert_before->NextNode();
@@ -943,6 +969,30 @@ void DebugInfoManager::ClearDebugInfo(Instruction* instr) {
       }
     }
   }
+}
+
+void DebugInfoManager::BuildInstPositionCache(opt::Function* func) {
+  uint32_t position = 1;
+  func->ForEachInst([this, &position](Instruction* inst) {
+    inst_position_cache_[inst] = position++;
+  });
+}
+
+uint32_t DebugInfoManager::GetInstPositionInFunction(Instruction* inst) {
+  auto it = inst_position_cache_.find(inst);
+  if (it != inst_position_cache_.end()) return it->second;
+
+  // Cache miss. Rebuild the cache for the function containing |inst|.
+  inst_position_cache_.clear();
+  opt::BasicBlock* block = context()->get_instr_block(inst);
+  if (block == nullptr) return 0;
+  opt::Function* func = block->GetParent();
+  if (func == nullptr) return 0;
+  BuildInstPositionCache(func);
+
+  it = inst_position_cache_.find(inst);
+  if (it != inst_position_cache_.end()) return it->second;
+  return 0;
 }
 
 }  // namespace analysis
