@@ -201,7 +201,8 @@ Optimizer& Optimizer::RegisterLegalizationPassesFastCompile(
   // Propagate the value stored to the loads in very simple cases.
   optimizer.RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
-      .RegisterPass(CreateAggressiveDCEPass(preserve_interface));
+      .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
+      .RegisterPass(CreateSSARewritePass(SSARewriteMode::SpecialTypes));
   optimizer
       // Split up aggregates so they are easier to deal with.
       .RegisterPass(CreateScalarReplacementPass(0));
@@ -233,6 +234,7 @@ Optimizer& Optimizer::RegisterLegalizationPassesFastCompile(
       .RegisterPass(CreateDeadInsertElimPass())
       .RegisterPass(CreateReduceLoadSizePass())
       .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
+      .RegisterPass(CreateDeadVariableEliminationPass())
       .RegisterPass(CreateRemoveUnusedInterfaceVariablesPass())
       .RegisterPass(CreateInterpolateFixupPass())
       .RegisterPass(CreateInvocationInterlockPlacementPass())

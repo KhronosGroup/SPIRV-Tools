@@ -218,7 +218,7 @@ bool MemPass::IsLiveVar(uint32_t varId) const {
 void MemPass::AddStores(uint32_t ptr_id, std::queue<Instruction*>* insts) {
   get_def_use_mgr()->ForEachUser(ptr_id, [this, insts](Instruction* user) {
     spv::Op op = user->opcode();
-    if (IsNonPtrAccessChain(op)) {
+    if (IsNonPtrAccessChain(op) || op == spv::Op::OpCopyObject) {
       AddStores(user->result_id(), insts);
     } else if (op == spv::Op::OpStore) {
       insts->push(user);
