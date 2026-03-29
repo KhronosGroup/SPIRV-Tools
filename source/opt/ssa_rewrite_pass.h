@@ -294,8 +294,8 @@ class SSARewriter {
 
 class SSARewritePass : public MemPass {
  public:
-  explicit SSARewritePass(SSARewriteMode mode = SSARewriteMode::All)
-      : MemPass(mode) {}
+  SSARewritePass() = default;
+  explicit SSARewritePass(SSARewriteMode mode) : MemPass(mode) {}
 
   const char* name() const override { return "ssa-rewrite"; }
   Status Process() override;

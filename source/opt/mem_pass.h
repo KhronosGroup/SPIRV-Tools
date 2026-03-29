@@ -69,7 +69,8 @@ class MemPass : public Pass {
   void CollectTargetVars(Function* func);
 
  protected:
-  explicit MemPass(SSARewriteMode ssa_rewrite_mode = SSARewriteMode::All);
+  MemPass();
+  explicit MemPass(SSARewriteMode ssa_rewrite_mode);
 
   // Returns true if |typeInst| is a scalar type
   // or a vector or matrix
