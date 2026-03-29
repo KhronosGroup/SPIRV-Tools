@@ -32,6 +32,13 @@ class Pass;
 struct DescriptorSetAndBinding;
 }  // namespace opt
 
+enum class SSARewriteMode {
+  None,
+  All,
+  OpaqueOnly,
+  SpecialTypes,
+};
+
 // C++ interface for SPIR-V optimization functionalities. It wraps the context
 // (including target environment and the corresponding SPIR-V grammar) and
 // provides methods for registering optimization passes and optimizing.
@@ -102,6 +109,8 @@ class SPIRV_TOOLS_EXPORT Optimizer {
   // interface are considered live and are not eliminated.
   Optimizer& RegisterPerformancePasses();
   Optimizer& RegisterPerformancePasses(bool preserve_interface);
+  Optimizer& RegisterPerformancePassesFastCompile();
+  Optimizer& RegisterPerformancePassesFastCompile(bool preserve_interface);
 
   // Registers passes that attempt to improve the size of generated code.
   // This sequence of passes is subject to constant review and will change
@@ -125,6 +134,10 @@ class SPIRV_TOOLS_EXPORT Optimizer {
   // interface are considered live and are not eliminated.
   Optimizer& RegisterLegalizationPasses();
   Optimizer& RegisterLegalizationPasses(bool preserve_interface);
+  Optimizer& RegisterLegalizationPassesFastCompile();
+  Optimizer& RegisterLegalizationPassesFastCompile(
+      bool preserve_interface, bool include_loop_unroll,
+      SSARewriteMode ssa_rewrite_mode);
 
   // Register passes specified in the list of |flags|.  Each flag must be a
   // string of a form accepted by Optimizer::FlagHasValidForm().
@@ -710,6 +723,7 @@ Optimizer::PassToken CreateLoopUnrollPass(bool fully_unroll, int factor = 0);
 // Only variables that are local to the function and of supported types are
 // processed (see IsSSATargetVar for details).
 Optimizer::PassToken CreateSSARewritePass();
+Optimizer::PassToken CreateSSARewritePass(SSARewriteMode mode);
 
 // Create pass to convert relaxed precision instructions to half precision.
 // This pass converts as many relaxed float32 arithmetic operations to half as

@@ -53,7 +53,28 @@ bool MemPass::IsBaseTargetType(const Instruction* typeInst) const {
 }
 
 bool MemPass::IsTargetType(const Instruction* typeInst) const {
-  if (IsBaseTargetType(typeInst)) return true;
+  switch (ssa_rewrite_mode_) {
+    case SSARewriteMode::None:
+      return false;
+    case SSARewriteMode::OpaqueOnly:
+      if (typeInst->IsOpaqueType()) return true;
+      break;
+    case SSARewriteMode::SpecialTypes:
+      if (typeInst->IsOpaqueType()) return true;
+      switch (typeInst->opcode()) {
+        case spv::Op::OpTypePointer:
+        case spv::Op::OpTypeUntypedPointerKHR:
+        case spv::Op::OpTypeCooperativeMatrixNV:
+        case spv::Op::OpTypeCooperativeMatrixKHR:
+          return true;
+        default:
+          break;
+      }
+      break;
+    case SSARewriteMode::All:
+      if (IsBaseTargetType(typeInst)) return true;
+      break;
+  }
   if (typeInst->opcode() == spv::Op::OpTypeArray) {
     if (!IsTargetType(
             get_def_use_mgr()->GetDef(typeInst->GetSingleWordOperand(1)))) {
@@ -242,6 +263,9 @@ void MemPass::DCEInst(Instruction* inst,
 }
 
 MemPass::MemPass() {}
+
+MemPass::MemPass(SSARewriteMode ssa_rewrite_mode)
+    : ssa_rewrite_mode_(ssa_rewrite_mode) {}
 
 bool MemPass::HasOnlySupportedRefs(uint32_t varId) {
   return get_def_use_mgr()->WhileEachUser(varId, [this](Instruction* user) {
