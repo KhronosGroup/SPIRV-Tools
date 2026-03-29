@@ -325,7 +325,6 @@ Optimizer& Optimizer::RegisterPerformancePassesFastCompile(
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
       .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
-      .RegisterPass(CreateSSARewritePass(SSARewriteMode::SpecialTypes))
       .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
       .RegisterPass(CreateVectorDCEPass())
       .RegisterPass(CreateDeadInsertElimPass())

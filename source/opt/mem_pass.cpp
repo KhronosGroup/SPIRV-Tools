@@ -60,7 +60,6 @@ bool MemPass::IsTargetType(const Instruction* typeInst) const {
       if (typeInst->IsOpaqueType()) return true;
       break;
     case SSARewriteMode::SpecialTypes:
-      if (typeInst->IsOpaqueType()) return true;
       switch (typeInst->opcode()) {
         case spv::Op::OpTypePointer:
         case spv::Op::OpTypeUntypedPointerKHR:
