@@ -11730,10 +11730,9 @@ TEST_F(ValidateImage, TypeImageVulkanStorageNot64Signedness) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-StandaloneSpirv-Image-04965"));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Image Format signedness does not match Sample Type operand "
-                "including possible SignExtend or ZeroExtend operand"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Format signedness (unsigned) does not match "
+                        "Sample Type operand"));
 }
 
 TEST_F(ValidateImage, TypeImageVulkanStorageNot32Signedness) {
@@ -11766,10 +11765,9 @@ TEST_F(ValidateImage, TypeImageVulkanStorageNot32Signedness) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-StandaloneSpirv-Image-04965"));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Image Format signedness does not match Sample Type operand "
-                "including possible SignExtend or ZeroExtend operand"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Image Format signedness (signed) does not match "
+                        "Sample Type operand"));
 }
 
 TEST_F(ValidateImage, TypeImageVulkanStorageSignExtendOverride) {
@@ -11801,6 +11799,94 @@ TEST_F(ValidateImage, TypeImageVulkanStorageSignExtendOverride) {
 
   CompileSuccessfully(code.c_str(), SPV_ENV_VULKAN_1_2);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+}
+
+TEST_F(ValidateImage, TypeImageVulkanStorageUintToSint) {
+  const std::string code = R"(
+                     OpCapability Shader
+                     OpCapability StorageImageExtendedFormats
+                     OpMemoryModel Logical GLSL450
+                     OpEntryPoint GLCompute %main "main" %image_ptr
+                     OpExecutionMode %main LocalSize 1 1 1
+                     OpSource GLSL 450
+                     OpDecorate %image_ptr DescriptorSet 0
+                     OpDecorate %image_ptr Binding 0
+                     OpDecorate %image_ptr NonReadable
+%type_void         = OpTypeVoid
+%type_u32          = OpTypeInt 32 0
+%type_i32          = OpTypeInt 32 1
+%type_vec3_u32     = OpTypeVector %type_u32 3
+%type_vec4_u32     = OpTypeVector %type_u32 4
+%type_vec2_i32     = OpTypeVector %type_i32 2
+%type_fn_void      = OpTypeFunction %type_void
+%type_ptr_fn       = OpTypePointer Function %type_vec4_u32
+%type_image        = OpTypeImage %type_u32 2D 0 0 0 2 Rgba32ui
+%type_ptr_image    = OpTypePointer UniformConstant %type_image
+%image_ptr         = OpVariable %type_ptr_image UniformConstant
+%const_i32_0       = OpConstant %type_i32 0
+%const_vec2_i32_00 = OpConstantComposite %type_vec2_i32 %const_i32_0 %const_i32_0
+%main              = OpFunction %type_void None %type_fn_void
+%label             = OpLabel
+%store_location    = OpVariable %type_ptr_fn Function
+%image             = OpLoad %type_image %image_ptr
+%value             = OpImageRead %type_vec4_u32 %image %const_vec2_i32_00 SignExtend
+                     OpStore %store_location %value
+                     OpReturn
+                     OpFunctionEnd
+)";
+
+  CompileSuccessfully(code.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Image-04965"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Image Format signedness (unsigned) does not match Sample Type "
+                "operand (SignExtend makes the access as signed)"));
+}
+
+TEST_F(ValidateImage, TypeImageVulkanStorageSintToUint) {
+  const std::string code = R"(
+                     OpCapability Shader
+                     OpCapability StorageImageExtendedFormats
+                     OpMemoryModel Logical GLSL450
+                     OpEntryPoint GLCompute %main "main" %image_ptr
+                     OpExecutionMode %main LocalSize 1 1 1
+                     OpSource GLSL 450
+                     OpDecorate %image_ptr DescriptorSet 0
+                     OpDecorate %image_ptr Binding 0
+                     OpDecorate %image_ptr NonReadable
+%type_void         = OpTypeVoid
+%type_u32          = OpTypeInt 32 0
+%type_i32          = OpTypeInt 32 1
+%type_vec3_u32     = OpTypeVector %type_u32 3
+%type_vec4_u32     = OpTypeVector %type_u32 4
+%type_vec2_i32     = OpTypeVector %type_i32 2
+%type_fn_void      = OpTypeFunction %type_void
+%type_ptr_fn       = OpTypePointer Function %type_vec4_u32
+%type_image        = OpTypeImage %type_u32 2D 0 0 0 2 Rgba32i
+%type_ptr_image    = OpTypePointer UniformConstant %type_image
+%image_ptr         = OpVariable %type_ptr_image UniformConstant
+%const_i32_0       = OpConstant %type_i32 0
+%const_vec2_i32_00 = OpConstantComposite %type_vec2_i32 %const_i32_0 %const_i32_0
+%main              = OpFunction %type_void None %type_fn_void
+%label             = OpLabel
+%store_location    = OpVariable %type_ptr_fn Function
+%image             = OpLoad %type_image %image_ptr
+%value             = OpImageRead %type_vec4_u32 %image %const_vec2_i32_00 ZeroExtend
+                     OpStore %store_location %value
+                     OpReturn
+                     OpFunctionEnd
+)";
+
+  CompileSuccessfully(code.c_str(), SPV_ENV_VULKAN_1_2);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Image-04965"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Image Format signedness (signed) does not match Sample Type "
+                "operand (ZeroExtend makes the access as unsigned)"));
 }
 
 TEST_F(ValidateImage, TypeImageVulkanStorageZeroExtendSigned) {
@@ -11873,8 +11959,8 @@ TEST_F(ValidateImage, TypeImageVulkanStorageZeroExtendRedundant) {
               AnyVUID("VUID-StandaloneSpirv-Image-04965"));
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr("Image Format signedness does not match Sample Type operand "
-                "including possible SignExtend or ZeroExtend operand"));
+      HasSubstr("Image Format signedness (signed) does not match Sample Type "
+                "operand (ZeroExtend makes the access as unsigned)"));
 }
 
 // TODO - Need to validate in ValidateImageOperands()

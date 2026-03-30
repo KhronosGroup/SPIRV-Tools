@@ -426,19 +426,23 @@ spv_result_t ValidateImageOperands(ValidationState_t& _,
     if (info.format != spv::ImageFormat::Unknown &&
         _.IsIntScalarType(info.sampled_type)) {
       const bool is_format_signed = IsSignedIntImageFormat(info.format);
+      const bool is_sampled_type_signed =
+          _.IsSignedIntScalarType(info.sampled_type);
       // (vkspec.html#spirvenv-image-signedness) has order signedness is set by
-      bool is_sampled_type_signed =
-          is_sign_extend
-              ? true
-              : (is_zero_extend
-                     ? false
-                     : (_.IsSignedIntScalarType(info.sampled_type) ? true
-                                                                   : false));
-      if (is_format_signed != is_sampled_type_signed) {
+      const bool effective_sampled_type_signed =
+          is_sign_extend ? true
+                         : (is_zero_extend ? false : is_sampled_type_signed);
+      if (is_format_signed != effective_sampled_type_signed) {
+        std::string err_info = "";
+        if (is_sign_extend) {
+          err_info = " (SignExtend makes the access as signed)";
+        } else if (is_zero_extend) {
+          err_info = " (ZeroExtend makes the access as unsigned)";
+        }
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << _.VkErrorID(4965)
-               << "Image Format signedness does not match Sample Type operand "
-                  "including possible SignExtend or ZeroExtend operand";
+               << _.VkErrorID(4965) << "Image Format signedness ("
+               << (is_format_signed ? "signed" : "unsigned")
+               << ") does not match Sample Type operand" << err_info << ".";
       }
     }
   }
