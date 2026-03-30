@@ -102,6 +102,59 @@ TEST_F(ConstantManagerTest, GetDefiningInstructionIdOverflow) {
   EXPECT_EQ(inst, nullptr);
 }
 
+TEST_F(ConstantManagerTest, ConstantCompositeReplicateExtMapping) {
+  const std::string text = R"(
+OpCapability Shader
+OpCapability ReplicatedCompositesEXT
+OpExtension "SPV_EXT_replicated_composites"
+OpMemoryModel Logical Simple
+%1 = OpTypeInt 32 1
+%2 = OpTypeVector %1 4
+%3 = OpConstant %1 0
+%4 = OpConstantCompositeReplicateEXT %2 %3
+%5 = OpSpecConstantCompositeReplicateEXT %2 %3
+  )";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_5, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(context, nullptr);
+
+  ConstantManager* const_mgr = context->get_constant_mgr();
+  const Constant* base_constant = const_mgr->FindDeclaredConstant(3);
+  ASSERT_NE(base_constant, nullptr);
+
+  const Constant* composite_constant = const_mgr->FindDeclaredConstant(4);
+  ASSERT_NE(composite_constant, nullptr);
+  const Vector* vector_type = composite_constant->type()->AsVector();
+  ASSERT_NE(vector_type, nullptr);
+
+  const CompositeConstant* composite =
+      composite_constant->AsCompositeConstant();
+  ASSERT_NE(composite, nullptr);
+  ASSERT_EQ(composite->GetComponents().size(),
+            static_cast<size_t>(vector_type->element_count()));
+  ASSERT_FALSE(composite->GetComponents().empty());
+  for (const Constant* component : composite->GetComponents()) {
+    EXPECT_EQ(component, base_constant);
+  }
+
+  const Constant* spec_composite_constant = const_mgr->FindDeclaredConstant(5);
+  ASSERT_NE(spec_composite_constant, nullptr);
+  const Vector* spec_vector_type = spec_composite_constant->type()->AsVector();
+  ASSERT_NE(spec_vector_type, nullptr);
+
+  const CompositeConstant* spec_composite =
+      spec_composite_constant->AsCompositeConstant();
+  ASSERT_NE(spec_composite, nullptr);
+  ASSERT_EQ(spec_composite->GetComponents().size(),
+            static_cast<size_t>(spec_vector_type->element_count()));
+  ASSERT_FALSE(spec_composite->GetComponents().empty());
+  for (const Constant* component : spec_composite->GetComponents()) {
+    EXPECT_EQ(component, base_constant);
+  }
+}
+
 }  // namespace
 }  // namespace analysis
 }  // namespace opt
