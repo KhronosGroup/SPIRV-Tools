@@ -2585,6 +2585,19 @@ OpMemoryModel Logical GLSL450
               HasSubstr("Capability Linkage is not allowed by Vulkan 1.0"));
 }
 
+TEST_F(ValidateCapability, Vulkan10AllowLinkage) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Linkage
+OpMemoryModel Logical GLSL450
+%u32    = OpTypeInt 32 0
+%i32    = OpTypeInt 32 1
+)";
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  spvValidatorOptionsSetAllowVulkanLinkage(options_, true);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
 TEST_F(ValidateCapability, Vulkan10EnabledByExtension) {
   const std::string spirv = R"(
 OpCapability Shader
