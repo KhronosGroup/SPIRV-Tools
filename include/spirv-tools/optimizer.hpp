@@ -963,6 +963,12 @@ Optimizer::PassToken CreateFixFuncCallArgumentsPass();
 // the unknown capability interacts with one of the trimmed capabilities.
 Optimizer::PassToken CreateTrimCapabilitiesPass();
 
+// Creates a pass that trims unused VariablePointers capabilities.
+// This pass is intended for targeted call-sites that need to remove stale
+// VariablePointers / VariablePointersStorageBuffer declarations left after
+// optimization when the final module no longer requires them.
+Optimizer::PassToken CreateTrimVariablePointersCapabilitiesPass();
+
 // Creates a struct-packing pass.
 // This pass re-assigns all offset layout decorators to tightly pack
 // the struct with OpName matching `structToPack` according to the given packing

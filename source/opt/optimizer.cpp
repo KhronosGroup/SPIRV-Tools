@@ -28,6 +28,7 @@
 #include "source/opt/log.h"
 #include "source/opt/pass_manager.h"
 #include "source/opt/passes.h"
+#include "source/opt/trim_variable_pointers_capabilities_pass.h"
 #include "source/spirv_optimizer_options.h"
 #include "source/util/make_unique.h"
 #include "source/util/string_utils.h"
@@ -327,7 +328,6 @@ Optimizer& Optimizer::RegisterPerformancePassesFastCompile(
       .RegisterPass(CreateLocalSingleBlockLoadStoreElimPass())
       .RegisterPass(CreateLocalSingleStoreElimPass())
       .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
-      .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
       .RegisterPass(CreateVectorDCEPass())
       .RegisterPass(CreateDeadInsertElimPass())
       .RegisterPass(CreateDeadBranchElimPass())
@@ -341,7 +341,8 @@ Optimizer& Optimizer::RegisterPerformancePassesFastCompile(
   return optimizer.RegisterPass(CreateAggressiveDCEPass(preserve_interface))
       .RegisterPass(CreateDeadBranchElimPass())
       .RegisterPass(CreateBlockMergePass())
-      .RegisterPass(CreateSimplificationPass());
+      .RegisterPass(CreateSimplificationPass())
+      .RegisterPass(CreateTrimVariablePointersCapabilitiesPass());
 }
 
 Optimizer& Optimizer::RegisterPerformancePassesFastCompile() {
@@ -1295,6 +1296,11 @@ Optimizer::PassToken CreateFixFuncCallArgumentsPass() {
 Optimizer::PassToken CreateTrimCapabilitiesPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::TrimCapabilitiesPass>());
+}
+
+Optimizer::PassToken CreateTrimVariablePointersCapabilitiesPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::TrimVariablePointersCapabilitiesPass>());
 }
 
 Optimizer::PassToken CreateStructPackingPass(const char* structToPack,
