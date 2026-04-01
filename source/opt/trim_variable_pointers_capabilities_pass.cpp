@@ -249,7 +249,6 @@ void AddVariablePointerCapabilityRequirements(
 
   switch (instruction->opcode()) {
     case spv::Op::OpReturnValue:
-    case spv::Op::OpStore:
     case spv::Op::OpPtrAccessChain:
     case spv::Op::OpPtrEqual:
     case spv::Op::OpPtrNotEqual:

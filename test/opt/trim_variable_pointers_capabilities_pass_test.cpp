@@ -63,6 +63,45 @@ TEST_F(TrimVariablePointersCapabilitiesPassTest,
 }
 
 TEST_F(TrimVariablePointersCapabilitiesPassTest,
+       VariablePointers_RemovedForOrdinaryStorageBufferStores) {
+  const std::string kTest = R"(
+               OpCapability Shader
+               OpCapability VariablePointers
+; CHECK:       OpCapability Shader
+; CHECK-NOT:   OpCapability VariablePointers
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %buf
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %_struct_4 Block
+               OpMemberDecorate %_struct_4 0 Offset 0
+               OpDecorate %buf DescriptorSet 0
+               OpDecorate %buf Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+    %float_0 = OpConstant %float 0
+         %11 = OpConstantComposite %v3float %float_0 %float_0 %float_0
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+  %_struct_4 = OpTypeStruct %v3float
+%_ptr_StorageBuffer__struct_4 = OpTypePointer StorageBuffer %_struct_4
+%_ptr_StorageBuffer_v3float = OpTypePointer StorageBuffer %v3float
+        %buf = OpVariable %_ptr_StorageBuffer__struct_4 StorageBuffer
+       %main = OpFunction %void None %3
+          %9 = OpLabel
+         %10 = OpAccessChain %_ptr_StorageBuffer_v3float %buf %uint_0
+               OpStore %10 %11
+               OpReturn
+               OpFunctionEnd
+  )";
+  const auto result =
+      SinglePassRunAndMatch<TrimVariablePointersCapabilitiesPass>(
+          kTest, /* skip_nop= */ false);
+  EXPECT_EQ(std::get<1>(result), Pass::Status::SuccessWithChange);
+}
+
+TEST_F(TrimVariablePointersCapabilitiesPassTest,
        VariablePointers_RemainsForWorkgroupSelect) {
   const std::string kTest = R"(
                OpCapability Shader
