@@ -31,12 +31,12 @@ namespace {
 
 using spvtest::Concatenate;
 using spvtest::MakeInstruction;
-using utils::MakeVector;
 using spvtest::TextToBinaryTest;
 using ::testing::Combine;
 using ::testing::Eq;
 using ::testing::Values;
 using ::testing::ValuesIn;
+using utils::MakeVector;
 
 // Returns a generator of common Vulkan environment values to be tested.
 std::vector<spv_target_env> CommonVulkanEnvs() {
@@ -1698,7 +1698,6 @@ TEST_F(TextToBinaryTest, OpConstantDataKHR) {
 
   spvContextDestroy(context);
 }
-
 
 }  // namespace
 }  // namespace spvtools

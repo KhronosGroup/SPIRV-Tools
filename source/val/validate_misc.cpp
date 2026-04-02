@@ -13,11 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "source/val/validate.h"
-
 #include "source/opcode.h"
 #include "source/spirv_target_env.h"
 #include "source/val/instruction.h"
+#include "source/val/validate.h"
 #include "source/val/validate_scopes.h"
 #include "source/val/validation_state.h"
 
@@ -118,12 +117,12 @@ spv_result_t ValidateAbort(ValidationState_t& _, const Instruction* inst) {
   const auto source = _.FindDef(inst->GetOperandAs<uint32_t>(1u));
   const auto source_type = _.FindDef(source->type_id());
 
-  if (source_type == message_type)
-    return SPV_SUCCESS;
+  if (source_type == message_type) return SPV_SUCCESS;
 
   if (!_.LogicallyMatch(source_type, message_type, false)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "Type of Message operand does not logically match the type of the Message Type operand";
+           << "Type of Message operand does not logically match the type of "
+              "the Message Type operand";
   }
 
   return SPV_SUCCESS;

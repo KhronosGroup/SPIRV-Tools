@@ -73,10 +73,8 @@ TEST_F(ValidateSpvKHRAbort, RequireFinalInstructionInBlock) {
 )";
   CompileSuccessfully(str.c_str());
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr(
-          "Return must appear in a block"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Return must appear in a block"));
 }
 
 TEST_F(ValidateSpvKHRAbort, RequiresCapability) {
