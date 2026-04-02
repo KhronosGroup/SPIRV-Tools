@@ -1604,38 +1604,20 @@ INSTANTIATE_TEST_SUITE_P(
 TEST_F(TextToBinaryTest, OpAbortKHR) {
   spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
   const auto assembly = R"(
-OpExtension "SPV_KHR_abort"
+OpCapability Shader
 OpCapability AbortKHR
-             OpCapability ConstantDataKHR
+OpExtension "SPV_KHR_abort"
+OpMemoryModel Logical Simple
+OpEntryPoint GLCompute %main "main"
 
-             OpDecorate %string1_t UTFEncodedKHR
-             OpDecorate %string2_t UTFEncodedKHR
-
-             OpDecorate %string1_x UTFEncodedKHR
-             OpDecorate %string1_x ArrayStride 1
-             OpDecorate %string2_x UTFEncodedKHR
-             OpDecorate %string2_x ArrayStride 1
-             OpMemberDecorate %message_x 0 Offset 0
-             OpMemberDecorate %message_x 1 Offset 6
-             OpMemberDecorate %message_x 2 Offset 8
-
-   %char_t = OpTypeInt 8 0
- %uint32_t = OpTypeInt 32 0
-  %str1len = OpConstant %uint32_t 6
-%string1_t = OpTypeArray %char_t %str1len
-  %string1 = OpConstantDataKHR %string_t "test: "
-  %str2len = OpSpecConstant %uint32_t 2
-%string2_t = OpTypeArray %char_t %str2len
-  %string2 = OpSpecConstantDataKHR %string_t "%u"
-%message_t = OpTypeStruct %string1_t %string2_t %uint32_t
-
-%string1_x = OpTypeArray %char_t %str1len
-%string2_x = OpTypeArray %char_t %str2len
-%message_x = OpTypeStruct %string1_t %string2_t %uint32_t
-
-    %abort = OpLabel
-  %message = OpCompositeConstruct %message_t %string1 %string2 %uintval
-             OpAbortKHR %message_x %message
+%void    = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%uint32_t = OpTypeInt 32 0
+%payload = OpConstant %uint32_t 6
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpAbortKHR %uint32_t %payload
+OpFunctionEnd
 )";
 
   spv_binary binary = nullptr;
@@ -1666,7 +1648,10 @@ OpAbortKHR "aaa"
 TEST_F(TextToBinaryTest, OpConstantDataKHR) {
   spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
   const auto assembly = R"(
+             OpCapability Shader
+             OpCapability Int8
              OpCapability ConstantDataKHR
+             OpExtension "SPV_KHR_constant_data"
 
              OpDecorate %string1_t UTFEncodedKHR
              OpDecorate %string2_t UTFEncodedKHR
@@ -1683,18 +1668,18 @@ TEST_F(TextToBinaryTest, OpConstantDataKHR) {
  %uint32_t = OpTypeInt 32 0
   %str1len = OpConstant %uint32_t 6
 %string1_t = OpTypeArray %char_t %str1len
-  %string1 = OpConstantDataKHR %string_t "test: "
+  %string1 = OpConstantDataKHR %string1_t "test: "
   %str2len = OpSpecConstant %uint32_t 2
 %string2_t = OpTypeArray %char_t %str2len
-  %string2 = OpSpecConstantDataKHR %string_t "%u"
+  %string2 = OpSpecConstantDataKHR %string2_t "%u"
 %message_t = OpTypeStruct %string1_t %string2_t %uint32_t
+%uintval   = OpConstant %uint32_t 6
 
 %string1_x = OpTypeArray %char_t %str1len
 %string2_x = OpTypeArray %char_t %str2len
 %message_x = OpTypeStruct %string1_t %string2_t %uint32_t
 
-    %abort = OpLabel
-  %message = OpCompositeConstruct %message_t %string1 %string2 %uintval
+%message   = OpCompositeConstruct %message_t %string1 %string2 %uintval
 )";
 
   spv_binary binary = nullptr;
