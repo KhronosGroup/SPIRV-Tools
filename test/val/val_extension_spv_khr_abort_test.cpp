@@ -39,12 +39,14 @@ OpCapability AbortKHR
 OpExtension "SPV_KHR_abort"
 OpMemoryModel Logical Simple
 OpEntryPoint GLCompute %main "main"
-%msg = OpString "abort message"
+
 %void    = OpTypeVoid
 %void_fn = OpTypeFunction %void
+%uint32_t = OpTypeInt 32 0
+%payload = OpConstant %uint32_t 6
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
-OpAbortKHR %msg
+OpAbortKHR %uint32_t %payload
 OpReturn
 OpFunctionEnd
 )";
@@ -58,12 +60,14 @@ OpCapability Shader
 OpExtension "SPV_KHR_abort"
 OpMemoryModel Logical Simple
 OpEntryPoint GLCompute %main "main"
-%msg = OpString "abort message"
+
 %void    = OpTypeVoid
 %void_fn = OpTypeFunction %void
+%uint32_t = OpTypeInt 32 0
+%payload = OpConstant %uint32_t 6
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
-OpAbortKHR %msg
+OpAbortKHR %uint32_t %payload
 OpReturn
 OpFunctionEnd
 )";
@@ -75,18 +79,20 @@ OpFunctionEnd
           "Opcode AbortKHR requires one of these capabilities: AbortKHR"));
 }
 
-TEST_F(ValidateSpvKHRAbort, RequiresExtention) {
+TEST_F(ValidateSpvKHRAbort, RequiresExtension) {
   const std::string str = R"(
 OpCapability Shader
 OpCapability AbortKHR
 OpMemoryModel Logical Simple
 OpEntryPoint GLCompute %main "main"
-%msg = OpString "abort message"
+
 %void    = OpTypeVoid
 %void_fn = OpTypeFunction %void
+%uint32_t = OpTypeInt 32 0
+%payload = OpConstant %uint32_t 6
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
-OpAbortKHR %msg
+OpAbortKHR %uint32_t %payload
 OpReturn
 OpFunctionEnd
 )";
