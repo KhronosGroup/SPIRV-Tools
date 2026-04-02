@@ -89,7 +89,7 @@ class TextToBinaryTestBase : public T {
                               txt.size(), &binary, &diagnostic))
         << txt;
     DestroyBinary();
-    return diagnostic ? diagnostic->error : "";
+    return diagnostic->error;
   }
 
   // Potentially flip the words in the binary representation to the other
