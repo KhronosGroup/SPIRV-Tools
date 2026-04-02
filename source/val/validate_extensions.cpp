@@ -1145,6 +1145,9 @@ void BuildDebugSourceLineLength(ValidationState_t& _, const Instruction* inst,
   // Capture last line if the string does not end in a newline
   if (line_start < debug_source_text.size()) {
     line_lengths.push_back(length);
+  } else {
+    // if the last line is a empty-newline, mark as length of zero
+    line_lengths.push_back(0);
   }
 }
 

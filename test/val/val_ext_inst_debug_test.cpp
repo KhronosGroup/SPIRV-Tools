@@ -5817,6 +5817,70 @@ TEST_F(ValidateVulkan100DebugInfo, DebugNoScopeExtraOperandInBody) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+// From
+// https://github.com/KhronosGroup/SPIRV-Tools/pull/5986#issuecomment-4156843064
+TEST_F(ValidateVulkan100DebugInfo,
+       DebugLineDebugSourceContinuedEmptyNewLineGood) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "line 1
+line 2
+" ; line 3
+%code2 = OpString "line 4
+line 5 is really long and hold 32char here"
+
+%float_name = OpString "float"
+%foo_name = OpString "foo"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%dbg_src2 = OpExtInst %void %DbgExt DebugSourceContinued %code2
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%a = OpExtInst %void %DbgExt DebugTypeMember %foo_name %float_info %dbg_src %u32_0 %u32_0 %u32_0 %u32_32 %u32_3
+%t = OpExtInst %void %DbgExt DebugTypeComposite %foo_name %u32_1 %dbg_src %u32_5 %u32_32 %comp_unit %foo_name %u32_32 %u32_3 %a
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+// From
+// https://github.com/KhronosGroup/SPIRV-Tools/pull/5986#issuecomment-4156843064
+TEST_F(ValidateVulkan100DebugInfo,
+       DebugLineDebugSourceContinuedEmptyNewLineBad) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "line 1
+line 2
+" ; line 3
+%code2 = OpString "line 4
+line 5 is really long and hold 32char here"
+
+%float_name = OpString "float"
+%foo_name = OpString "foo"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%dbg_src2 = OpExtInst %void %DbgExt DebugSourceContinued %code2
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%a = OpExtInst %void %DbgExt DebugTypeMember %foo_name %float_info %dbg_src %u32_0 %u32_0 %u32_0 %u32_32 %u32_3
+%t = OpExtInst %void %DbgExt DebugTypeComposite %foo_name %u32_1 %dbg_src %u32_3 %u32_1 %comp_unit %foo_name %u32_32 %u32_3 %a
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("DebugTypeComposite: operand Column End (1) is larger then "
+                "Line 3 column length of 0 found in the DebugSource text"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
