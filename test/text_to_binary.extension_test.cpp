@@ -1601,103 +1601,46 @@ INSTANTIATE_TEST_SUITE_P(
             })));
 
 // SPV_KHR_abort
-TEST_F(TextToBinaryTest, OpAbortKHR) {
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
-  const auto assembly = R"(
-OpCapability Shader
-OpCapability AbortKHR
-OpExtension "SPV_KHR_abort"
-OpMemoryModel Logical Simple
-OpEntryPoint GLCompute %main "main"
-
-%void    = OpTypeVoid
-%void_fn = OpTypeFunction %void
-%uint32_t = OpTypeInt 32 0
-%payload = OpConstant %uint32_t 6
-%main = OpFunction %void None %void_fn
-%entry = OpLabel
-OpAbortKHR %uint32_t %payload
-OpFunctionEnd
-)";
-
-  spv_binary binary = nullptr;
-  spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context, assembly, strlen(assembly),
-                                         &binary, &diagnostic));
-  EXPECT_NE(nullptr, binary);
-  if (binary) {
-    EXPECT_NE(nullptr, binary->code);
-    EXPECT_NE(0u, binary->wordCount);
-  }
-  if (diagnostic) {
-    spvDiagnosticPrint(diagnostic);
-    ASSERT_TRUE(false);
-  }
-
-  spvContextDestroy(context);
-}
-
-TEST_F(TextToBinaryTest, OpAbortKHRInvalidIdName) {
-  const auto assembly = R"(
-OpAbortKHR "aaa"
-)";
-  EXPECT_THAT(CompileFailure(assembly), Eq("Expected id to start with %."));
-}
+INSTANTIATE_TEST_SUITE_P(
+    SPV_KHR_abort, ExtensionRoundTripTest,
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_6,
+                   SPV_ENV_VULKAN_1_0, SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_2,
+                   SPV_ENV_VULKAN_1_3),
+            ValuesIn(std::vector<AssemblyCase>{
+                {"OpExtension \"SPV_KHR_abort\"\n",
+                 MakeInstruction(spv::Op::OpExtension,
+                                 MakeVector("SPV_KHR_abort"))},
+                {"OpCapability AbortKHR\n",
+                 MakeInstruction(spv::Op::OpCapability,
+                                 {(uint32_t)spv::Capability::AbortKHR})},
+                {"OpAbortKHR %1 %2\n",
+                 MakeInstruction(spv::Op::OpAbortKHR, {1, 2})},
+            })));
 
 // SPV_KHR_constant_data
-TEST_F(TextToBinaryTest, OpConstantDataKHR) {
-  spv_context context = spvContextCreate(SPV_ENV_UNIVERSAL_1_0);
-  const auto assembly = R"(
-             OpCapability Shader
-             OpCapability Int8
-             OpCapability ConstantDataKHR
-             OpExtension "SPV_KHR_constant_data"
+INSTANTIATE_TEST_SUITE_P(
+    SPV_KHR_constant_data, ExtensionRoundTripTest,
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_6, SPV_ENV_VULKAN_1_0,
+               SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_2, SPV_ENV_VULKAN_1_3),
+        ValuesIn(std::vector<AssemblyCase>{
+            {"OpExtension \"SPV_KHR_constant_data\"\n",
+             MakeInstruction(spv::Op::OpExtension,
+                             MakeVector("SPV_KHR_constant_data"))},
+            {"OpCapability ConstantDataKHR\n",
+             MakeInstruction(spv::Op::OpCapability,
+                             {(uint32_t)spv::Capability::ConstantDataKHR})},
+            {"%2 = OpConstantDataKHR %1 \"foo\"\n",
+             MakeInstruction(spv::Op::OpConstantDataKHR, {1, 2},
+                             MakeVector("foo"))},
+            {"%2 = OpSpecConstantDataKHR %1 \"foo\"\n",
+             MakeInstruction(spv::Op::OpSpecConstantDataKHR, {1, 2},
+                             MakeVector("foo"))},
+            {"OpDecorate %1 UTFEncodedKHR\n",
+             MakeInstruction(spv::Op::OpDecorate,
+                             {1, (uint32_t)spv::Decoration::UTFEncodedKHR})},
 
-             OpDecorate %string1_t UTFEncodedKHR
-             OpDecorate %string2_t UTFEncodedKHR
-
-             OpDecorate %string1_x UTFEncodedKHR
-             OpDecorate %string1_x ArrayStride 1
-             OpDecorate %string2_x UTFEncodedKHR
-             OpDecorate %string2_x ArrayStride 1
-             OpMemberDecorate %message_x 0 Offset 0
-             OpMemberDecorate %message_x 1 Offset 6
-             OpMemberDecorate %message_x 2 Offset 8
-
-   %char_t = OpTypeInt 8 0
- %uint32_t = OpTypeInt 32 0
-  %str1len = OpConstant %uint32_t 6
-%string1_t = OpTypeArray %char_t %str1len
-  %string1 = OpConstantDataKHR %string1_t "test: "
-  %str2len = OpSpecConstant %uint32_t 2
-%string2_t = OpTypeArray %char_t %str2len
-  %string2 = OpSpecConstantDataKHR %string2_t "%u"
-%message_t = OpTypeStruct %string1_t %string2_t %uint32_t
-%uintval   = OpConstant %uint32_t 6
-
-%string1_x = OpTypeArray %char_t %str1len
-%string2_x = OpTypeArray %char_t %str2len
-%message_x = OpTypeStruct %string1_t %string2_t %uint32_t
-
-%message   = OpCompositeConstruct %message_t %string1 %string2 %uintval
-)";
-
-  spv_binary binary = nullptr;
-  spv_diagnostic diagnostic = nullptr;
-  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context, assembly, strlen(assembly),
-                                         &binary, &diagnostic));
-  EXPECT_NE(nullptr, binary);
-  if (binary) {
-    EXPECT_NE(nullptr, binary->code);
-    EXPECT_NE(0u, binary->wordCount);
-  }
-  if (diagnostic) {
-    spvDiagnosticPrint(diagnostic);
-    ASSERT_TRUE(false);
-  }
-
-  spvContextDestroy(context);
-}
+        })));
 
 }  // namespace
 }  // namespace spvtools
