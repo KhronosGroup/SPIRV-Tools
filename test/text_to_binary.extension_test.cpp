@@ -31,12 +31,12 @@ namespace {
 
 using spvtest::Concatenate;
 using spvtest::MakeInstruction;
-using utils::MakeVector;
 using spvtest::TextToBinaryTest;
 using ::testing::Combine;
 using ::testing::Eq;
 using ::testing::Values;
 using ::testing::ValuesIn;
+using utils::MakeVector;
 
 // Returns a generator of common Vulkan environment values to be tested.
 std::vector<spv_target_env> CommonVulkanEnvs() {
@@ -1599,6 +1599,48 @@ INSTANTIATE_TEST_SUITE_P(
                 {"OpGraphSetOutputARM %1 %2 %3\n",
                  MakeInstruction(spv::Op::OpGraphSetOutputARM, {1, 2, 3})},
             })));
+
+// SPV_KHR_abort
+INSTANTIATE_TEST_SUITE_P(
+    SPV_KHR_abort, ExtensionRoundTripTest,
+    Combine(Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_6,
+                   SPV_ENV_VULKAN_1_0, SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_2,
+                   SPV_ENV_VULKAN_1_3),
+            ValuesIn(std::vector<AssemblyCase>{
+                {"OpExtension \"SPV_KHR_abort\"\n",
+                 MakeInstruction(spv::Op::OpExtension,
+                                 MakeVector("SPV_KHR_abort"))},
+                {"OpCapability AbortKHR\n",
+                 MakeInstruction(spv::Op::OpCapability,
+                                 {(uint32_t)spv::Capability::AbortKHR})},
+                {"OpAbortKHR %1 %2\n",
+                 MakeInstruction(spv::Op::OpAbortKHR, {1, 2})},
+            })));
+
+// SPV_KHR_constant_data
+INSTANTIATE_TEST_SUITE_P(
+    SPV_KHR_constant_data, ExtensionRoundTripTest,
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_6, SPV_ENV_VULKAN_1_0,
+               SPV_ENV_VULKAN_1_1, SPV_ENV_VULKAN_1_2, SPV_ENV_VULKAN_1_3),
+        ValuesIn(std::vector<AssemblyCase>{
+            {"OpExtension \"SPV_KHR_constant_data\"\n",
+             MakeInstruction(spv::Op::OpExtension,
+                             MakeVector("SPV_KHR_constant_data"))},
+            {"OpCapability ConstantDataKHR\n",
+             MakeInstruction(spv::Op::OpCapability,
+                             {(uint32_t)spv::Capability::ConstantDataKHR})},
+            {"%2 = OpConstantDataKHR %1 \"foo\"\n",
+             MakeInstruction(spv::Op::OpConstantDataKHR, {1, 2},
+                             MakeVector("foo"))},
+            {"%2 = OpSpecConstantDataKHR %1 \"foo\"\n",
+             MakeInstruction(spv::Op::OpSpecConstantDataKHR, {1, 2},
+                             MakeVector("foo"))},
+            {"OpDecorate %1 UTFEncodedKHR\n",
+             MakeInstruction(spv::Op::OpDecorate,
+                             {1, (uint32_t)spv::Decoration::UTFEncodedKHR})},
+
+        })));
 
 }  // namespace
 }  // namespace spvtools
