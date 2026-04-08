@@ -162,6 +162,9 @@ void LocalSingleStoreElimPass::InitExtensionAllowList() {
       "SPV_NV_push_constant_bank",
       "SPV_EXT_opacity_micromap",
       "SPV_EXT_shader_invocation_reorder",
+      "SPV_EXT_shader_atomic_float16_add",
+      "SPV_KHR_abort",
+      "SPV_KHR_constant_data",
   });
 }
 bool LocalSingleStoreElimPass::ProcessVariable(Instruction* var_inst) {
