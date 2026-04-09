@@ -1085,11 +1085,14 @@ spv_result_t ValidateClspvReflectionInstruction(ValidationState_t& _,
 }
 
 std::string GetDebugSourceText(ValidationState_t& _, const Instruction* inst,
-                               uint32_t ext_inst_index) {
-  // Validated to be an OpString
+                               uint32_t ext_inst_opcode) {
+  assert(ext_inst_opcode == NonSemanticShaderDebugInfo100DebugSource ||
+         ext_inst_opcode == NonSemanticShaderDebugInfo100DebugSourceContinued);
   const uint32_t string_operand =
-      (ext_inst_index == NonSemanticShaderDebugInfo100DebugSource) ? 6 : 5;
+      (ext_inst_opcode == NonSemanticShaderDebugInfo100DebugSource) ? 6 : 5;
   auto* debug_source_text_insn = _.FindDef(inst->word(string_operand));
+  // Validated to be an OpString
+  assert(debug_source_text_insn->opcode() == spv::Op::OpString);
   return debug_source_text_insn->GetOperandAs<std::string>(1);
 }
 
@@ -1124,8 +1127,7 @@ void BuildDebugSourceLineLength(ValidationState_t& _, const Instruction* inst,
 
     std::string previous_line_text =
         GetDebugSourceText(_, prev_inst, prev_inst->GetOperandAs<uint32_t>(3));
-    if (!previous_line_text.empty() &&
-        previous_line_text[previous_line_text.length() - 1] != '\n') {
+    if (!previous_line_text.empty() && previous_line_text.back() != '\n') {
       start_new_line = false;
     }
   }
