@@ -1084,6 +1084,18 @@ spv_result_t ValidateClspvReflectionInstruction(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+std::string GetDebugSourceText(ValidationState_t& _, const Instruction* inst,
+                               uint32_t ext_inst_opcode) {
+  assert(ext_inst_opcode == NonSemanticShaderDebugInfo100DebugSource ||
+         ext_inst_opcode == NonSemanticShaderDebugInfo100DebugSourceContinued);
+  const uint32_t string_operand =
+      (ext_inst_opcode == NonSemanticShaderDebugInfo100DebugSource) ? 6 : 5;
+  auto* debug_source_text_insn = _.FindDef(inst->word(string_operand));
+  // Validated to be an OpString
+  assert(debug_source_text_insn->opcode() == spv::Op::OpString);
+  return debug_source_text_insn->GetOperandAs<std::string>(1);
+}
+
 // We build up a vector that is length of the DebugSource lines and get how long
 // they are to make sure anyone using a DebugSource provides valid Line/Columns
 // inside
@@ -1094,16 +1106,32 @@ void BuildDebugSourceLineLength(ValidationState_t& _, const Instruction* inst,
     return;  // The optional text was not provided
   }
 
-  // Validated to be an OpString
-  const uint32_t string_operand =
-      (ext_inst_index == NonSemanticShaderDebugInfo100DebugSource) ? 6 : 5;
-  auto* debug_source_text_insn = _.FindDef(inst->word(string_operand));
-  std::string debug_source_text =
-      debug_source_text_insn->GetOperandAs<std::string>(1);
+  std::string debug_source_text = GetDebugSourceText(_, inst, ext_inst_index);
 
   // walk back to get DebugSource to update it's line length list
   uint32_t debug_source_id = inst->id();
   uint32_t continue_count = 0;
+
+  // There might be
+  //   %a = OpString "line starts here"
+  //   %b = OpString " and still the same line"
+  //
+  //   %c = OpExtInst %void %1 DebugSource %_ %a
+  //   %d = OpExtInst %void %1 DebugSourceContinued %b
+  // So we want to find the previous line for checking if we need to append on
+  // to the length of the previous line
+  bool start_new_line = true;
+  if (ext_inst_index == NonSemanticShaderDebugInfo100DebugSourceContinued) {
+    auto prev_index = inst - &_.ordered_instructions()[0] - 1;
+    auto prev_inst = &_.ordered_instructions()[prev_index];
+
+    std::string previous_line_text =
+        GetDebugSourceText(_, prev_inst, prev_inst->GetOperandAs<uint32_t>(3));
+    if (!previous_line_text.empty() && previous_line_text.back() != '\n') {
+      start_new_line = false;
+    }
+  }
+
   while (ext_inst_index == NonSemanticShaderDebugInfo100DebugSourceContinued) {
     continue_count++;  // might have multiple Continues in a row
     auto prev_index = inst - &_.ordered_instructions()[0] - continue_count;
@@ -1119,6 +1147,12 @@ void BuildDebugSourceLineLength(ValidationState_t& _, const Instruction* inst,
   // Even an empty line should have a column of 1
   // Add 1 to length to emulate this later
   uint32_t length = 1;
+
+  // Continue from the previous line length
+  if (!start_new_line) {
+    length = line_lengths.back();
+    line_lengths.pop_back();
+  }
 
   for (uint32_t i = 0; i < debug_source_text.size(); ++i) {
     if (debug_source_text[i] == '\n') {
