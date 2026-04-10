@@ -2259,9 +2259,12 @@ bool LoadFeedingExtract(IRContext* context, Instruction* inst,
     return false;
   }
 
-  // Check the memory operands.  We only support None.
+  // Check the memory operands.
   if (cinst->NumInOperands() > 1) {
-    return false;
+    uint32_t memory_access_mask = cinst->GetSingleWordInOperand(1);
+    if (memory_access_mask & uint32_t(spv::MemoryAccessMask::Volatile)) {
+      return false;
+    }
   }
 
   uint32_t ptr_id = cinst->GetSingleWordInOperand(0);
@@ -2302,7 +2305,55 @@ bool LoadFeedingExtract(IRContext* context, Instruction* inst,
 
   Instruction* access_chain =
       ir_builder.AddAccessChain(element_ptr_type_id, ptr_id, index_ids);
-  Instruction* new_load = ir_builder.AddLoad(inst->type_id(), access_chain->result_id());
+  std::vector<Operand> load_operands;
+  load_operands.push_back({SPV_OPERAND_TYPE_ID, {access_chain->result_id()}});
+
+  if (cinst->NumInOperands() > 1) {
+    uint32_t memory_access_mask = cinst->GetSingleWordInOperand(1);
+    load_operands.push_back(
+        {SPV_OPERAND_TYPE_MEMORY_ACCESS, {memory_access_mask}});
+
+    uint32_t current_operand_index = 2;
+    if (memory_access_mask & uint32_t(spv::MemoryAccessMask::Aligned)) {
+      uint32_t original_alignment =
+          cinst->GetSingleWordInOperand(current_operand_index);
+
+      std::vector<uint32_t> extract_indices;
+      for (uint32_t i = 1; i < inst->NumInOperands(); ++i) {
+        extract_indices.push_back(inst->GetSingleWordInOperand(i));
+      }
+
+      std::optional<uint32_t> offset =
+          type_mgr->GetType(cinst->type_id())->GetByteOffset(extract_indices);
+      if (!offset) {
+        return false;
+      }
+
+      uint32_t new_alignment = original_alignment;
+      if (*offset != 0) {
+        uint32_t offset_alignment = *offset & ~(*offset - 1);
+        new_alignment = std::min(original_alignment, offset_alignment);
+      }
+
+      load_operands.push_back(
+          {SPV_OPERAND_TYPE_TYPED_LITERAL_NUMBER, {new_alignment}});
+      current_operand_index++;
+    }
+
+    // Copy the remaining operands
+    for (; current_operand_index < cinst->NumInOperands();
+         ++current_operand_index) {
+      load_operands.push_back(cinst->GetInOperand(current_operand_index));
+    }
+  }
+
+  uint32_t load_result_id = context->TakeNextId();
+  if (load_result_id == 0) return false;
+
+  std::unique_ptr<Instruction> new_load_inst(
+      new Instruction(context, spv::Op::OpLoad, inst->type_id(), load_result_id,
+                      load_operands));
+  Instruction* new_load = ir_builder.AddInstruction(std::move(new_load_inst));
 
   inst->SetOpcode(spv::Op::OpCopyObject);
   inst->SetInOperands({{SPV_OPERAND_TYPE_ID, {new_load->result_id()}}});

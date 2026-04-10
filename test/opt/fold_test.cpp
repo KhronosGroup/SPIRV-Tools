@@ -14613,20 +14613,77 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
                OpFunctionEnd
         )",
         13, false),
-    // Test case 28: Don't fold because of memory operand other than Volatile.
+    // Test case 28: Fold with Aligned memory operand.
     InstructionFoldingCase<bool>(
         Header() + R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[uint_1:%\w+]] = OpConstant [[uint]] 1
+; CHECK: [[struct_type:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[int_ptr:%\w+]] = OpTypePointer StorageBuffer [[uint]]
+; CHECK: [[ac:%\w+]] = OpAccessChain [[int_ptr]] [[var]] [[uint_1]]
+; CHECK: [[new_ld:%\w+]] = OpLoad [[uint]] [[ac]] Aligned 4
+; CHECK: OpCopyObject [[uint]] [[new_ld]]
+               OpDecorate %struct1 Offset 0
+               OpMemberDecorate %struct1 1 Offset 4
 %struct1 = OpTypeStruct %uint %uint
 %_ptr_StorageBuffer_struct = OpTypePointer StorageBuffer %struct1
 %var1 = OpVariable %_ptr_StorageBuffer_struct StorageBuffer
        %main = OpFunction %void None %void_func
           %4 = OpLabel
          %11 = OpLoad %struct1 %var1 Aligned 16
-         %13 = OpCompositeExtract %uint %11 0
+         %13 = OpCompositeExtract %uint %11 1
                OpReturn
                OpFunctionEnd
         )",
-        13, false)
+        13, true),
+    // Test case 29: Fold with Aligned and Nontemporal memory operands.
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[uint_1:%\w+]] = OpConstant [[uint]] 1
+; CHECK: [[struct_type:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[int_ptr:%\w+]] = OpTypePointer StorageBuffer [[uint]]
+; CHECK: [[ac:%\w+]] = OpAccessChain [[int_ptr]] [[var]] [[uint_1]]
+; CHECK: [[new_ld:%\w+]] = OpLoad [[uint]] [[ac]] Aligned|Nontemporal 4
+; CHECK: OpCopyObject [[uint]] [[new_ld]]
+               OpDecorate %struct1 Offset 0
+               OpMemberDecorate %struct1 1 Offset 4
+%struct1 = OpTypeStruct %uint %uint
+%_ptr_StorageBuffer_struct = OpTypePointer StorageBuffer %struct1
+%var1 = OpVariable %_ptr_StorageBuffer_struct StorageBuffer
+       %main = OpFunction %void None %void_func
+          %4 = OpLabel
+         %11 = OpLoad %struct1 %var1 Aligned|Nontemporal 16
+         %13 = OpCompositeExtract %uint %11 1
+               OpReturn
+               OpFunctionEnd
+        )",
+        13, true),
+    // Test case 30: Fold with MakePointerVisible memory operand and scope.
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[struct_type:%\w+]] = OpTypeStruct [[uint]] [[uint]]
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[int_ptr:%\w+]] = OpTypePointer StorageBuffer [[uint]]
+; CHECK: [[ac:%\w+]] = OpAccessChain [[int_ptr]] [[var]] [[idx:%\w+]]
+; CHECK: [[new_ld:%\w+]] = OpLoad [[uint]] [[ac]] MakePointerVisible [[idx]]
+; CHECK: OpCopyObject [[uint]] [[new_ld]]
+               OpDecorate %struct1 Offset 0
+               OpMemberDecorate %struct1 1 Offset 4
+%struct1 = OpTypeStruct %uint %uint
+%_ptr_StorageBuffer_struct = OpTypePointer StorageBuffer %struct1
+%var1 = OpVariable %_ptr_StorageBuffer_struct StorageBuffer
+       %main = OpFunction %void None %void_func
+          %4 = OpLabel
+         %11 = OpLoad %struct1 %var1 MakePointerVisible %uint_1
+         %13 = OpCompositeExtract %uint %11 1
+               OpReturn
+               OpFunctionEnd
+        )",
+        13, true)
 ));
 
 INSTANTIATE_TEST_SUITE_P(DotProductMatchingTest, MatchingInstructionFoldingTest,
