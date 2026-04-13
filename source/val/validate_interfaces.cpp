@@ -551,9 +551,8 @@ spv_result_t ValidateLocations(ValidationState_t& _,
       return SPV_SUCCESS;
   }
 
-  const bool is_geometry =
-      entry_point->GetOperandAs<spv::ExecutionModel>(0) ==
-      spv::ExecutionModel::Geometry;
+  const bool is_geometry = entry_point->GetOperandAs<spv::ExecutionModel>(0) ==
+                           spv::ExecutionModel::Geometry;
   const bool has_geometry_streams =
       is_geometry && _.HasCapability(spv::Capability::GeometryStreams);
 
@@ -624,9 +623,9 @@ spv_result_t ValidateLocations(ValidationState_t& _,
       auto locations = (storage_class == spv::StorageClass::Input)
                            ? &input_locations
                            : &output_locations_index0;
-      if (auto error = GetLocationsForVariable(
-              _, entry_point, interface_var, locations,
-              &output_locations_index1))
+      if (auto error =
+              GetLocationsForVariable(_, entry_point, interface_var, locations,
+                                      &output_locations_index1))
         return error;
     }
   }
