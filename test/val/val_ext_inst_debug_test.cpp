@@ -6163,7 +6163,8 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeCooperativeMatrixKHRFailVersion) {
                         "NonSemantic.Shader.DebugInfo version"));
 }
 
-TEST_F(ValidateVulkan101DebugInfo, DebugTypeCooperativeMatrixKHRFailComponentType) {
+TEST_F(ValidateVulkan101DebugInfo,
+       DebugTypeCooperativeMatrixKHRFailComponentType) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
@@ -6191,7 +6192,8 @@ TEST_F(ValidateVulkan101DebugInfo, DebugTypeCooperativeMatrixKHRFailComponentTyp
                         "of DebugTypeBasic"));
 }
 
-TEST_F(ValidateVulkan101DebugInfo, DebugTypeCooperativeMatrixKHRFailScopeNotConst) {
+TEST_F(ValidateVulkan101DebugInfo,
+       DebugTypeCooperativeMatrixKHRFailScopeNotConst) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
