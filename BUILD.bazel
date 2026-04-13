@@ -678,9 +678,27 @@ cc_library(
     ["test/val/val_*_test.cpp"],
     exclude = [
         "test/val/val_capability_test.cpp",
+        "test/val/val_ext_inst_debug_test.cpp",
         "test/val/val_limits_test.cpp",
     ],
 )]
+
+cc_test(
+    name = "val_ext_inst_debug_test",
+    size = "small",
+    srcs = ["test/val/val_ext_inst_debug_test.cpp"],
+    copts = TEST_COPTS,
+    linkstatic = 1,
+    deps = [
+        ":spirv_tools_internal",
+        ":test_lib",
+        ":val_test_lib",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@spirv_headers//:spirv_common_headers",
+        "@spirv_headers//:spirv_cpp11_headers",
+    ],
+)
 
 cc_test(
     name = "val_capability_test",
