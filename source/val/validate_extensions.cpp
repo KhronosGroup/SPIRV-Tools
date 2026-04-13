@@ -207,11 +207,11 @@ spv_result_t ValidateUint32ConstOrSpecConstOperandForDebugInfo(
 // Like CHECK_CONST_UINT_OPERAND but also allows OpSpecConstant.  Used for
 // NonSemantic.Shader.DebugInfo.101 cooperative type instructions, where
 // dimension operands may be specialization constants.
-#define CHECK_CONST_OR_SPEC_UINT_OPERAND(NAME, index)                        \
-  if (vulkanDebugInfo) {                                                      \
-    auto result = ValidateUint32ConstOrSpecConstOperandForDebugInfo(          \
-        _, NAME, inst, index);                                                \
-    if (result != SPV_SUCCESS) return result;                                 \
+#define CHECK_CONST_OR_SPEC_UINT_OPERAND(NAME, index)                \
+  if (vulkanDebugInfo) {                                             \
+    auto result = ValidateUint32ConstOrSpecConstOperandForDebugInfo( \
+        _, NAME, inst, index);                                       \
+    if (result != SPV_SUCCESS) return result;                        \
   }
 
 // True if the operand of a debug info instruction |inst| at |word_index|
