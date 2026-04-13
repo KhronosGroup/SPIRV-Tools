@@ -221,7 +221,8 @@ spv_result_t IdPass(ValidationState_t& _, Instruction* inst) {
                    << " cannot be a type";
           } else if (def->type_id() == 0 &&
                      !spvOpcodeGeneratesType(def->opcode()) &&
-                     InstructionRequiresTypeOperand(inst)) {
+                     InstructionRequiresTypeOperand(inst) &&
+                     InstructionRequiresTypeOperand(def)) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
                    << "Operand " << _.getIdName(operand_word)
                    << " requires a type";
