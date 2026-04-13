@@ -6068,6 +6068,180 @@ TEST_F(ValidateVulkan101DebugInfo, DebugTypeBasicWithFPEncoding) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorIdEXTFailVersion) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%vecid_info = OpExtInst %void %DbgExt DebugTypeVectorIdEXT %float_info %u32_4
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugTypeVectorIdEXT: requires "
+                        "NonSemantic.Shader.DebugInfo version"));
+}
+
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeVectorIdEXTFailComponentType) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%float_vec = OpExtInst %void %DbgExt DebugTypeVector %float_info %u32_4
+%vecid_info = OpExtInst %void %DbgExt DebugTypeVectorIdEXT %float_vec %u32_4
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand Component Type must be a result id "
+                        "of DebugTypeBasic"));
+}
+
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeVectorIdEXTFailComponentCount) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%vecid_info = OpExtInst %void %DbgExt DebugTypeVectorIdEXT %float_info %float_info
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Component Count must be a result id of a constant or "
+                        "specialization constant instruction"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeCooperativeMatrixKHRFailVersion) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%u32_8 = OpConstant %u32 8
+%u32_16 = OpConstant %u32 16
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%coopmtx_info = OpExtInst %void %DbgExt DebugTypeCooperativeMatrixKHR %float_info %u32_3 %u32_8 %u32_16 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugTypeCooperativeMatrixKHR: requires "
+                        "NonSemantic.Shader.DebugInfo version"));
+}
+
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeCooperativeMatrixKHRFailComponentType) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%u32_8 = OpConstant %u32 8
+%u32_16 = OpConstant %u32 16
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%float_vec = OpExtInst %void %DbgExt DebugTypeVector %float_info %u32_4
+%coopmtx_info = OpExtInst %void %DbgExt DebugTypeCooperativeMatrixKHR %float_vec %u32_3 %u32_8 %u32_16 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand Component Type must be a result id "
+                        "of DebugTypeBasic"));
+}
+
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeCooperativeMatrixKHRFailScopeNotConst) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%u32_8 = OpConstant %u32 8
+%u32_16 = OpConstant %u32 16
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%coopmtx_info = OpExtInst %void %DbgExt DebugTypeCooperativeMatrixKHR %float_info %dbg_src %u32_8 %u32_16 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Scope must be a result id of a constant or "
+                        "specialization constant instruction"));
+}
+
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeBasicFPEncodingFailNotConst) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%u32_8 = OpConstant %u32 8
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%fp8_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_8 %u32_3 %u32_0 %dbg_src
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FPEncoding must be a result id of 32-bit unsigned "
+                        "OpConstant"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

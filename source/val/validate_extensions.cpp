@@ -329,12 +329,18 @@ spv_result_t ValidateOperandDebugType(ValidationState_t& _,
   // Check for NonSemanticShaderDebugInfo specific types.
   if (inst->ext_inst_type() ==
       SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100) {
+    const uint32_t nsdi_version = GetNSDIVersion(_, inst);
     std::function<bool(NonSemanticShaderDebugInfoInstructions)> expectation =
-        [](NonSemanticShaderDebugInfoInstructions dbg_inst) {
-          return dbg_inst == NonSemanticShaderDebugInfoDebugTypeMatrix ||
-                 dbg_inst == NonSemanticShaderDebugInfoDebugTypeVectorIdEXT ||
-                 dbg_inst ==
-                     NonSemanticShaderDebugInfoDebugTypeCooperativeMatrixKHR;
+        [nsdi_version](NonSemanticShaderDebugInfoInstructions dbg_inst) {
+          if (dbg_inst == NonSemanticShaderDebugInfoDebugTypeMatrix) return true;
+          // DebugTypeVectorIdEXT and DebugTypeCooperativeMatrixKHR were added
+          // in NonSemantic.Shader.DebugInfo version 101.
+          if (nsdi_version >= NonSemanticShaderDebugInfoVersion &&
+              (dbg_inst == NonSemanticShaderDebugInfoDebugTypeVectorIdEXT ||
+               dbg_inst ==
+                   NonSemanticShaderDebugInfoDebugTypeCooperativeMatrixKHR))
+            return true;
+          return false;
         };
     if (DoesDebugInfoOperandMatchExpectation(_, expectation, inst, word_index))
       return SPV_SUCCESS;
@@ -3407,7 +3413,7 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
       case NonSemanticShaderDebugInfoDebugTypeBasic: {
         CHECK_CONST_UINT_OPERAND("Flags", 8);
         // Optional FPEncoding parameter (5th operand, word index 9)
-        if (num_words > 9) {
+        if (has_optional_at(10)) {
           CHECK_CONST_UINT_OPERAND("FPEncoding", 9);
         }
         break;
@@ -3446,6 +3452,12 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
         break;
       }
       case NonSemanticShaderDebugInfoDebugTypeVectorIdEXT: {
+        if (nsdi_version < NonSemanticShaderDebugInfoVersion) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << GetExtInstName(_, inst)
+                 << ": requires NonSemantic.Shader.DebugInfo version "
+                 << NonSemanticShaderDebugInfoVersion << " or later";
+        }
         CHECK_DEBUG_OPERAND("Component Type", CommonDebugInfoDebugTypeBasic, 5);
         // Component Count may be OpSpecConstant when the cooperative vector
         // type uses a specialization constant for its size.
@@ -3453,6 +3465,12 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
         break;
       }
       case NonSemanticShaderDebugInfoDebugTypeCooperativeMatrixKHR: {
+        if (nsdi_version < NonSemanticShaderDebugInfoVersion) {
+          return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                 << GetExtInstName(_, inst)
+                 << ": requires NonSemantic.Shader.DebugInfo version "
+                 << NonSemanticShaderDebugInfoVersion << " or later";
+        }
         CHECK_DEBUG_OPERAND("Component Type", CommonDebugInfoDebugTypeBasic, 5);
         // Scope, Rows, Columns, and Use may be OpSpecConstant when the
         // cooperative matrix type uses specialization constants.
