@@ -155,38 +155,23 @@ spv_result_t ValidateOperandForDebugInfo(ValidationState_t& _,
 // word so cannot be validated.
 spv_result_t ValidateUint32ConstantOperandForDebugInfo(
     ValidationState_t& _, const std::string& operand_name,
-    const Instruction* inst, uint32_t word_index) {
-  if (!IsUint32Constant(_, inst->word(word_index))) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << GetExtInstName(_, inst) << ": expected operand " << operand_name
-           << " must be a result id of 32-bit unsigned OpConstant";
-  }
-  return SPV_SUCCESS;
-}
-
-// For NonSemantic.Shader.DebugInfo.101 cooperative type instructions, check
-// that the operand of |inst| at |word_index| is a result id of a 32-bit
-// unsigned integer constant instruction.  Unlike
-// ValidateUint32ConstantOperandForDebugInfo, this function accepts both
-// OpConstant and OpSpecConstant.  The SPIR-V cooperative types
-// (OpTypeCooperativeVectorEXT, OpTypeCooperativeMatrixKHR) allow
-// specialization constants for their dimension parameters, and the debug type
-// instructions must mirror that.
-spv_result_t ValidateUint32ConstOrSpecConstOperandForDebugInfo(
-    ValidationState_t& _, const std::string& operand_name,
-    const Instruction* inst, uint32_t word_index) {
+    const Instruction* inst, uint32_t word_index,
+    bool allow_spec_const = false) {
   const uint32_t id = inst->word(word_index);
-  const auto* def = _.FindDef(id);
-  if (!def || !spvOpcodeIsConstant(def->opcode())) {
+  if (!IsUint32Constant(_, id)) {
+    if (allow_spec_const) {
+      auto* def = _.FindDef(id);
+      if (def && spvOpcodeIsSpecConstant(def->opcode()) &&
+          IsIntScalar(_, def->type_id(), true, true))
+        return SPV_SUCCESS;
+    }
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << GetExtInstName(_, inst) << ": expected operand " << operand_name
-           << " must be a result id of a constant or specialization constant"
-              " instruction";
-  }
-  if (!IsIntScalar(_, def->type_id(), true, true)) {
-    return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << GetExtInstName(_, inst) << ": expected operand " << operand_name
-           << " must be a 32-bit unsigned integer type";
+           << " must be a result id of "
+           << (allow_spec_const
+                   ? "a 32-bit unsigned integer constant or specialization"
+                     " constant"
+                   : "32-bit unsigned OpConstant");
   }
   return SPV_SUCCESS;
 }
@@ -204,14 +189,24 @@ spv_result_t ValidateUint32ConstOrSpecConstOperandForDebugInfo(
     if (result != SPV_SUCCESS) return result;                            \
   }
 
-// Like CHECK_CONST_UINT_OPERAND but also allows OpSpecConstant.  Used for
+// Like CHECK_CONST_UINT_OPERAND but also allows spec-constants.  Used for
 // NonSemantic.Shader.DebugInfo.101 cooperative type instructions, where
 // dimension operands may be specialization constants.
-#define CHECK_CONST_OR_SPEC_UINT_OPERAND(NAME, index)                \
-  if (vulkanDebugInfo) {                                             \
-    auto result = ValidateUint32ConstOrSpecConstOperandForDebugInfo( \
-        _, NAME, inst, index);                                       \
-    if (result != SPV_SUCCESS) return result;                        \
+#define CHECK_CONST_OR_SPEC_UINT_OPERAND(NAME, index)                          \
+  if (vulkanDebugInfo) {                                                       \
+    auto result =                                                              \
+        ValidateUint32ConstantOperandForDebugInfo(_, NAME, inst, index, true); \
+    if (result != SPV_SUCCESS) return result;                                  \
+  }
+
+// Checks that the NSDI version for the current instruction is at least |v|.
+// Used to guard opcodes added after version 100.
+#define CHECK_NSDI_MIN_VERSION(v)                                       \
+  if (nsdi_version < (v)) {                                             \
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)                         \
+           << GetExtInstName(_, inst)                                   \
+           << ": requires NonSemantic.Shader.DebugInfo version " << (v) \
+           << " or later";                                              \
   }
 
 // True if the operand of a debug info instruction |inst| at |word_index|
@@ -332,7 +327,8 @@ spv_result_t ValidateOperandDebugType(ValidationState_t& _,
     const uint32_t nsdi_version = GetNSDIVersion(_, inst);
     std::function<bool(NonSemanticShaderDebugInfoInstructions)> expectation =
         [nsdi_version](NonSemanticShaderDebugInfoInstructions dbg_inst) {
-          if (dbg_inst == NonSemanticShaderDebugInfoDebugTypeMatrix) return true;
+          if (dbg_inst == NonSemanticShaderDebugInfoDebugTypeMatrix)
+            return true;
           // DebugTypeVectorIdEXT and DebugTypeCooperativeMatrixKHR were added
           // in NonSemantic.Shader.DebugInfo version 101.
           if (nsdi_version >= NonSemanticShaderDebugInfoVersion &&
@@ -3452,12 +3448,7 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
         break;
       }
       case NonSemanticShaderDebugInfoDebugTypeVectorIdEXT: {
-        if (nsdi_version < NonSemanticShaderDebugInfoVersion) {
-          return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << GetExtInstName(_, inst)
-                 << ": requires NonSemantic.Shader.DebugInfo version "
-                 << NonSemanticShaderDebugInfoVersion << " or later";
-        }
+        CHECK_NSDI_MIN_VERSION(NonSemanticShaderDebugInfoVersion);
         CHECK_DEBUG_OPERAND("Component Type", CommonDebugInfoDebugTypeBasic, 5);
         // Component Count may be OpSpecConstant when the cooperative vector
         // type uses a specialization constant for its size.
@@ -3465,12 +3456,7 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
         break;
       }
       case NonSemanticShaderDebugInfoDebugTypeCooperativeMatrixKHR: {
-        if (nsdi_version < NonSemanticShaderDebugInfoVersion) {
-          return _.diag(SPV_ERROR_INVALID_DATA, inst)
-                 << GetExtInstName(_, inst)
-                 << ": requires NonSemantic.Shader.DebugInfo version "
-                 << NonSemanticShaderDebugInfoVersion << " or later";
-        }
+        CHECK_NSDI_MIN_VERSION(NonSemanticShaderDebugInfoVersion);
         CHECK_DEBUG_OPERAND("Component Type", CommonDebugInfoDebugTypeBasic, 5);
         // Scope, Rows, Columns, and Use may be OpSpecConstant when the
         // cooperative matrix type uses specialization constants.

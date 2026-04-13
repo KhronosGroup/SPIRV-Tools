@@ -6131,8 +6131,9 @@ TEST_F(ValidateVulkan101DebugInfo, DebugTypeVectorIdEXTFailComponentCount) {
       src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Component Count must be a result id of a constant or "
-                        "specialization constant instruction"));
+              HasSubstr("Component Count must be a result id of a 32-bit "
+                        "unsigned integer constant or specialization "
+                        "constant"));
 }
 
 TEST_F(ValidateVulkan100DebugInfo, DebugTypeCooperativeMatrixKHRFailVersion) {
@@ -6213,8 +6214,8 @@ TEST_F(ValidateVulkan101DebugInfo, DebugTypeCooperativeMatrixKHRFailScopeNotCons
       src, constants, dbg_inst_header, "", shader_extension_101, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Scope must be a result id of a constant or "
-                        "specialization constant instruction"));
+              HasSubstr("Scope must be a result id of a 32-bit unsigned "
+                        "integer constant or specialization constant"));
 }
 
 TEST_F(ValidateVulkan101DebugInfo, DebugTypeBasicFPEncodingFailNotConst) {
