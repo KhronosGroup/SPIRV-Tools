@@ -84,6 +84,7 @@ using ValidateOpenCL100DebugInfoDebugValue =
 using ValidateVulkan100DebugInfoDebugValue =
     spvtest::ValidateBase<std::pair<std::string, std::string>>;
 using ValidateVulkan100DebugInfo = spvtest::ValidateBase<std::string>;
+using ValidateVulkan101DebugInfo = spvtest::ValidateBase<std::string>;
 
 const static std::string shader_extension = R"(
 OpExtension "SPV_KHR_non_semantic_info"
@@ -5958,7 +5959,7 @@ TEST_F(ValidateVulkan100DebugInfo,
 
 // Tests for NonSemantic.Shader.DebugInfo.101 instructions
 
-TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorIdEXT) {
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeVectorIdEXT) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
@@ -5977,7 +5978,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorIdEXT) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorIdEXTWithSpecConst) {
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeVectorIdEXTWithSpecConst) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
@@ -5997,7 +5998,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorIdEXTWithSpecConst) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateVulkan100DebugInfo, DebugTypeCooperativeMatrixKHR) {
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeCooperativeMatrixKHR) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
@@ -6021,7 +6022,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeCooperativeMatrixKHR) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateVulkan100DebugInfo, DebugTypeCooperativeMatrixKHRWithSpecConst) {
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeCooperativeMatrixKHRWithSpecConst) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
@@ -6044,7 +6045,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeCooperativeMatrixKHRWithSpecConst) {
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicWithFPEncoding) {
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeBasicWithFPEncoding) {
   const std::string src = R"(
 %src = OpString "simple.hlsl"
 %code = OpString "main() {}"
