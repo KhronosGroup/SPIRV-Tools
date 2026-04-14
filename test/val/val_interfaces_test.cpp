@@ -798,10 +798,9 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_0));
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-StandaloneSpirv-OpEntryPoint-08721"));
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Entry-point has conflicting input location assignment "
-                "at location 1"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Entry-point has conflicting input location assignment "
+                        "at location 1"));
 }
 
 TEST_F(ValidateInterfacesTest, VulkanPatchAndNonPatchOverlap) {
