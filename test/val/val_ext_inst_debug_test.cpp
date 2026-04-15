@@ -22,8 +22,150 @@
 
 #include "gmock/gmock.h"
 #include "spirv-tools/libspirv.h"
+#include "spirv/unified1/NonSemanticShaderDebugInfo.h"
+#include "spirv/unified1/NonSemanticShaderDebugInfo100.h"
 #include "test/unit_spirv.h"
 #include "test/val/val_fixtures.h"
+
+// Verify that the frozen NonSemanticShaderDebugInfo100.h opcode values match
+// the version-agnostic NonSemanticShaderDebugInfo.h values. The two headers
+// use different enum type names but must have identical opcode numbers.
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugInfoNone) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugInfoNone));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugCompilationUnit) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugCompilationUnit));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugTypeBasic) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugTypeBasic));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugTypePointer) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugTypePointer));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugTypeQualifier) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugTypeQualifier));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugTypeArray) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugTypeArray));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugTypeVector) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugTypeVector));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugTypedef) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugTypedef));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugTypeFunction) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugTypeFunction));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugTypeEnum) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugTypeEnum));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugTypeComposite) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugTypeComposite));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugTypeMember) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugTypeMember));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugTypeInheritance) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugTypeInheritance));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugTypePtrToMember) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugTypePtrToMember));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugTypeTemplate) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugTypeTemplate));
+static_assert(static_cast<uint32_t>(
+                  NonSemanticShaderDebugInfo100DebugTypeTemplateParameter) ==
+              static_cast<uint32_t>(
+                  NonSemanticShaderDebugInfoDebugTypeTemplateParameter));
+static_assert(
+    static_cast<uint32_t>(
+        NonSemanticShaderDebugInfo100DebugTypeTemplateTemplateParameter) ==
+    static_cast<uint32_t>(
+        NonSemanticShaderDebugInfoDebugTypeTemplateTemplateParameter));
+static_assert(
+    static_cast<uint32_t>(
+        NonSemanticShaderDebugInfo100DebugTypeTemplateParameterPack) ==
+    static_cast<uint32_t>(
+        NonSemanticShaderDebugInfoDebugTypeTemplateParameterPack));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugGlobalVariable) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugGlobalVariable));
+static_assert(
+    static_cast<uint32_t>(
+        NonSemanticShaderDebugInfo100DebugFunctionDeclaration) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugFunctionDeclaration));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugFunction) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugFunction));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugLexicalBlock) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugLexicalBlock));
+static_assert(
+    static_cast<uint32_t>(
+        NonSemanticShaderDebugInfo100DebugLexicalBlockDiscriminator) ==
+    static_cast<uint32_t>(
+        NonSemanticShaderDebugInfoDebugLexicalBlockDiscriminator));
+static_assert(static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugScope) ==
+              static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugScope));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugNoScope) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugNoScope));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugInlinedAt) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugInlinedAt));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugLocalVariable) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugLocalVariable));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugInlinedVariable) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugInlinedVariable));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugDeclare) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugDeclare));
+static_assert(static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugValue) ==
+              static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugValue));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugOperation) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugOperation));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugExpression) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugExpression));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugMacroDef) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugMacroDef));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugMacroUndef) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugMacroUndef));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugImportedEntity) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugImportedEntity));
+static_assert(static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugSource) ==
+              static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugSource));
+static_assert(
+    static_cast<uint32_t>(
+        NonSemanticShaderDebugInfo100DebugFunctionDefinition) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugFunctionDefinition));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugSourceContinued) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugSourceContinued));
+static_assert(static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugLine) ==
+              static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugLine));
+static_assert(static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugNoLine) ==
+              static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugNoLine));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugBuildIdentifier) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugBuildIdentifier));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugStoragePath) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugStoragePath));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugEntryPoint) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugEntryPoint));
+static_assert(
+    static_cast<uint32_t>(NonSemanticShaderDebugInfo100DebugTypeMatrix) ==
+    static_cast<uint32_t>(NonSemanticShaderDebugInfoDebugTypeMatrix));
 
 namespace spvtools {
 namespace val {
@@ -84,10 +226,16 @@ using ValidateOpenCL100DebugInfoDebugValue =
 using ValidateVulkan100DebugInfoDebugValue =
     spvtest::ValidateBase<std::pair<std::string, std::string>>;
 using ValidateVulkan100DebugInfo = spvtest::ValidateBase<std::string>;
+using ValidateVulkan101DebugInfo = spvtest::ValidateBase<std::string>;
 
-const static std::string shader_extension = R"(
+const static std::string shader_extension_100 = R"(
 OpExtension "SPV_KHR_non_semantic_info"
 %DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+)";
+
+const static std::string shader_extension_101 = R"(
+OpExtension "SPV_KHR_non_semantic_info"
+%DbgExt = OpExtInstImport "NonSemantic.Shader.DebugInfo.101"
 )";
 
 // Extension string for a future NSDI version; exercises forward-compatibility.
@@ -358,7 +506,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugSourceInFunction) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", "", dbg_inst, shader_extension, "Vertex"));
+      src, "", "", dbg_inst, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -426,8 +574,9 @@ TEST_P(ValidateLocalDebugInfoOutOfFunction, VulkanDebugInfo100DebugScope) {
 %foo_val = OpLoad %u32 %foo
 )";
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header + GetParam(), body, shader_extension, "Vertex"));
+  CompileSuccessfully(
+      GenerateShaderCodeForDebugInfo(src, "", dbg_inst_header + GetParam(),
+                                     body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugScope, DebugNoScope, DebugDeclare, DebugValue "
@@ -741,7 +890,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugCompilationUnitFail) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst, "", shader_extension, "Vertex"));
+      src, "", dbg_inst, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand Source must be a result id of "
@@ -795,7 +944,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicFailName) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand Name must be a result id of "
@@ -849,7 +998,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicFailSize) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand Size must be a result id of "
@@ -874,7 +1023,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicFailFlags) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand Flags must be a result id of 32-bit "
@@ -1013,7 +1162,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeQualifier) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1036,7 +1185,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeQualifierFail) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -1282,7 +1431,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArray) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1311,7 +1460,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayWithVariableSize) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1330,7 +1479,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayFailBaseType) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand Base Type is not a valid debug "
@@ -1352,7 +1501,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayFailComponentCount) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Component Count must be a constant instruction with a "
@@ -1376,7 +1525,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayFailComponentCountFloat) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Component Count must be a constant instruction with a "
@@ -1400,7 +1549,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayComponentCountZero) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1427,7 +1576,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayFailVariableSizeTypeFloat) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Component Count must be a constant instruction with a "
@@ -1455,7 +1604,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeArrayOpSpecConstantComponentCount) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1481,7 +1630,7 @@ TEST_F(ValidateVulkan100DebugInfo,
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1601,7 +1750,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeVector) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1620,7 +1769,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorFail) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand Base Type must be a result id of "
@@ -1642,7 +1791,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorFailComponentZero) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Component Count must be positive "
@@ -1664,7 +1813,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorFailComponentFive) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Component Count must be positive "
@@ -1691,7 +1840,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeMatrix) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1715,7 +1864,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeMatrixFailVectorTypeType) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand Vector Type must be a result id of "
@@ -1742,7 +1891,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeMatrixFailVectorCountType) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand Vector Count must be a result id of "
@@ -1769,7 +1918,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeMatrixFailVectorCountZero) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Vector Count must be positive "
@@ -1796,7 +1945,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeMatrixFailVectorCountFive) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Vector Count must be positive "
@@ -1886,7 +2035,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypedef) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -1909,7 +2058,7 @@ TEST_P(ValidateVulkan100DebugInfoDebugTypedef, Fail) {
   ss << param.first;
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", ss.str(), "", shader_extension, "Vertex"));
+      src, "", ss.str(), "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second +
@@ -2029,7 +2178,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeFunctionAndParams) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -2048,7 +2197,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeFunctionFailReturn) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -2070,7 +2219,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeFunctionFailParam) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -2181,7 +2330,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeEnum) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -2204,7 +2353,7 @@ TEST_P(ValidateVulkan100DebugInfoDebugTypeEnum, Fail) {
   ss << param.first;
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", ss.str(), "", shader_extension, "Vertex"));
+      src, "", ss.str(), "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second));
@@ -2496,7 +2645,7 @@ main() {}
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -2534,7 +2683,7 @@ main() {}
   ss << param.first;
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, ss.str(), "", shader_extension, "Vertex"));
+      src, constants, ss.str(), "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second + " must be "));
@@ -2595,7 +2744,7 @@ main() {}
   ss << param.first;
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, ss.str(), "", shader_extension, "Vertex"));
+      src, constants, ss.str(), "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   if (!param.second.empty()) {
     EXPECT_THAT(getDiagnosticString(),
@@ -2770,7 +2919,7 @@ main() {}
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -2796,7 +2945,7 @@ main() {}
      << param.first;
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", ss.str(), "", shader_extension, "Vertex"));
+      src, "", ss.str(), "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second));
@@ -2846,7 +2995,7 @@ main() {}
      << param.first;
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", ss.str(), "", shader_extension, "Vertex"));
+      src, "", ss.str(), "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second));
@@ -2894,7 +3043,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugFunctionType) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugFunction: expected operand Type must be a result "
@@ -3002,7 +3151,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLexicalBlock) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -3022,7 +3171,7 @@ TEST_P(ValidateVulkan100DebugInfoDebugLexicalBlock, Fail) {
      << param.first;
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", ss.str(), "", shader_extension, "Vertex"));
+      src, "", ss.str(), "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second));
@@ -3054,7 +3203,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugScopeFailScope) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("expected operand Scope"));
 }
@@ -3075,7 +3224,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugScopeFailInlinedAt) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("expected operand Inlined At"));
 }
@@ -3170,7 +3319,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLocalVariable) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -3197,7 +3346,7 @@ TEST_P(ValidateVulkan100DebugInfoDebugLocalVariable, Fail) {
      << param.first;
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, ss.str(), "", shader_extension, "Vertex"));
+      src, constants, ss.str(), "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second));
@@ -3382,7 +3531,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugDeclare) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, body, shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -3482,8 +3631,9 @@ TEST_P(ValidateVulkan100DebugInfoDebugDeclare, Fail) {
 %decl = OpExtInst %void %DbgExt DebugDeclare )"
      << param.first;
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, ss.str(), shader_extension, "Vertex"));
+  CompileSuccessfully(
+      GenerateShaderCodeForDebugInfo(src, constants, dbg_inst_header, ss.str(),
+                                     shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second));
@@ -3532,7 +3682,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugExpression) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      "", "", dbg_inst_header, "", shader_extension, "Vertex"));
+      "", "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -3543,7 +3693,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugExpressionFail) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      "", "", dbg_inst_header, "", shader_extension, "Vertex"));
+      "", "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -3739,7 +3889,7 @@ main() {}
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -3767,7 +3917,7 @@ main() {}
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -3794,7 +3944,7 @@ main() {}
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -3819,7 +3969,7 @@ main() {}
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand Target must be DebugTypeComposite or "
@@ -3848,7 +3998,7 @@ main() {}
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -4024,7 +4174,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugGlobalVariable) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4046,7 +4196,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugGlobalVariableStaticMember) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4067,7 +4217,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugGlobalVariableDebugInfoNone) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4087,7 +4237,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugGlobalVariableConst) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4110,7 +4260,7 @@ TEST_P(ValidateVulkan100DebugInfoDebugGlobalVariable, Fail) {
      << param.first;
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", ss.str(), "", shader_extension, "Vertex"));
+      src, "", ss.str(), "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second));
@@ -4237,7 +4387,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugInlinedAt) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4262,7 +4412,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugInlinedAtFail) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("expected operand Scope"));
 }
@@ -4288,7 +4438,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugInlinedAtFail2) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(), HasSubstr("expected operand Inlined"));
 }
@@ -4427,7 +4577,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugValue) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, body, shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4461,7 +4611,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugValueWithVariableIndex) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, body, shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4493,8 +4643,9 @@ TEST_P(ValidateVulkan100DebugInfoDebugValue, Fail) {
 %decl = OpExtInst %void %DbgExt DebugValue )"
      << param.first;
 
-  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, ss.str(), shader_extension, "Vertex"));
+  CompileSuccessfully(
+      GenerateShaderCodeForDebugInfo(src, constants, dbg_inst_header, ss.str(),
+                                     shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("expected operand " + param.second));
@@ -4687,7 +4838,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugFunctionDefinition) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4709,7 +4860,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugFunctionDefinitionFailFunction) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugFunctionDefinition: expected operand Function "
@@ -4734,7 +4885,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugFunctionDefinitionFailDefinition) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugFunctionDefinition: expected operand Definition "
@@ -4762,7 +4913,7 @@ TEST_F(ValidateVulkan100DebugInfo, DISABLED_DebugFunctionDefinitionDuplicate) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugFunctionDefinition: Was used multiple times in "
@@ -4795,7 +4946,7 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugFunctionDefinition: Was referenced a "
@@ -4827,7 +4978,7 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugFunctionDefinition: operand Definition must "
@@ -4861,7 +5012,7 @@ OpReturn
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, body, shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugFunctionDefinition: must be in the entry basic "
@@ -4893,7 +5044,7 @@ OpFunctionEnd
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4916,7 +5067,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLine) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -4932,7 +5083,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugNoLineOutOfBlock) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("debug info extension must appear in a function body"));
@@ -4950,7 +5101,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineOutOfBlock) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("debug info extension must appear in a function body"));
@@ -4973,7 +5124,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineSource) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugLine: expected operand Source must be a result "
@@ -4995,7 +5146,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineFloat) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugLine: expected operand Line Start must be a "
@@ -5017,7 +5168,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineInt64) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugLine: expected operand Line Start must be a "
@@ -5040,7 +5191,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineSpecConstant) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugLine: expected operand Line Start must be a "
@@ -5062,7 +5213,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineLineStartZero) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugLine: operand Line Start (0) is not allowed, "
@@ -5084,7 +5235,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineLineEndSmaller) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -5106,7 +5257,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnEndSmaller) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugLine: operand Column End (0) is less than Column "
@@ -5129,7 +5280,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnEndSmallerMultiline) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -5150,7 +5301,7 @@ int main() {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugLine: operand Line End (4) is larger then the 3 "
@@ -5173,7 +5324,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugLineColumnOutOfBounds) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugLine: operand Column End (5) is larger then Line "
@@ -5197,7 +5348,7 @@ line 3"
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugLine: operand Column End (2) is larger then Line "
@@ -5221,7 +5372,7 @@ line 3"
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -5242,7 +5393,7 @@ line 3"
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -5267,7 +5418,7 @@ line 3"
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugLine: operand Column End (5) is larger then Line "
@@ -5295,7 +5446,7 @@ line 5"
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -5319,7 +5470,7 @@ line 4"
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugLine: operand Line End (5) is larger then the 4 "
@@ -5350,7 +5501,7 @@ line 3
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -5377,7 +5528,7 @@ line 3
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugLine: operand Column End (3) is larger then Line "
@@ -5398,7 +5549,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugSourceLineNoText) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -5424,7 +5575,7 @@ line 3"
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugTypeMember: operand Line (4) is larger then the "
@@ -5453,7 +5604,7 @@ line 2
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, constants, dbg_inst_header, "", shader_extension, "Vertex"));
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -5479,7 +5630,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugFunctionLine) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugFunction: operand Line (2) is larger then the "
@@ -5501,7 +5652,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugFunctionDeclarationLine) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -5522,7 +5673,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugLexicalBlockLine) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -5546,7 +5697,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugTypedefLine) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugTypedef: operand Line (2) is larger then the "
@@ -5570,7 +5721,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugEnumLine) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugTypeEnum: operand Line (2) is larger then the "
@@ -5594,7 +5745,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugTypeCompositeLine) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -5620,7 +5771,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugGlobalVariableLine) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -5646,7 +5797,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugLocalVariableLine) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -5673,7 +5824,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugSourceDebugTypeTemplateParameterLine) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
@@ -5720,7 +5871,7 @@ TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionAccepted) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -5759,7 +5910,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugSourceExtraOperand) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -5777,7 +5928,7 @@ TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionNoOperands) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -5795,7 +5946,7 @@ TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionManyOperands) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -5819,7 +5970,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugNoScopeExtraOperandInBody) {
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, body, shader_extension, "Vertex"));
+      src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -5849,7 +6000,7 @@ line 4 is really long and hold 32char here"
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -5883,7 +6034,7 @@ line 3
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
@@ -5913,7 +6064,7 @@ line 4 and there is no line 5"
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("DebugTypeComposite: operand Line (5) is larger then "
@@ -5943,12 +6094,300 @@ TEST_F(ValidateVulkan100DebugInfo,
 )";
 
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
-      src, "", dbg_inst_header, "", shader_extension, "Vertex"));
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("DebugTypeComposite: operand Column End (32) is larger then "
                 "Line 1 column length of 31 found in the DebugSource text"));
+}
+
+// Tests for NonSemantic.Shader.DebugInfo.101 instructions
+
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeVectorIdEXT) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%vecid_info = OpExtInst %void %DbgExt DebugTypeVectorIdEXT %float_info %u32_4
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeVectorIdEXTWithSpecConst) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%spec_count = OpSpecConstant %u32 4
+%vecid_info = OpExtInst %void %DbgExt DebugTypeVectorIdEXT %float_info %spec_count
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeCooperativeMatrixKHR) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%u32_8 = OpConstant %u32 8
+%u32_16 = OpConstant %u32 16
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%coopmtx_info = OpExtInst %void %DbgExt DebugTypeCooperativeMatrixKHR %float_info %u32_3 %u32_8 %u32_16 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeCooperativeMatrixKHRWithSpecConst) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%spec_scope = OpSpecConstant %u32 3
+%spec_rows = OpSpecConstant %u32 8
+%spec_cols = OpSpecConstant %u32 16
+%spec_use = OpSpecConstant %u32 0
+%coopmtx_info = OpExtInst %void %DbgExt DebugTypeCooperativeMatrixKHR %float_info %spec_scope %spec_rows %spec_cols %spec_use
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeBasicWithFPEncoding) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%u32_8 = OpConstant %u32 8
+%u32_4214 = OpConstant %u32 4214
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%fp8_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_8 %u32_3 %u32_0 %u32_4214
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeVectorIdEXTFailVersion) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%vecid_info = OpExtInst %void %DbgExt DebugTypeVectorIdEXT %float_info %u32_4
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugTypeVectorIdEXT: requires "
+                        "NonSemantic.Shader.DebugInfo version"));
+}
+
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeVectorIdEXTFailComponentType) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%float_vec = OpExtInst %void %DbgExt DebugTypeVector %float_info %u32_4
+%vecid_info = OpExtInst %void %DbgExt DebugTypeVectorIdEXT %float_vec %u32_4
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand Component Type must be a result id "
+                        "of DebugTypeBasic"));
+}
+
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeVectorIdEXTFailComponentCount) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%vecid_info = OpExtInst %void %DbgExt DebugTypeVectorIdEXT %float_info %float_info
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Component Count must be a result id of a 32-bit "
+                        "unsigned integer constant or specialization "
+                        "constant"));
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeCooperativeMatrixKHRFailVersion) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%u32_8 = OpConstant %u32 8
+%u32_16 = OpConstant %u32 16
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%coopmtx_info = OpExtInst %void %DbgExt DebugTypeCooperativeMatrixKHR %float_info %u32_3 %u32_8 %u32_16 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugTypeCooperativeMatrixKHR: requires "
+                        "NonSemantic.Shader.DebugInfo version"));
+}
+
+TEST_F(ValidateVulkan101DebugInfo,
+       DebugTypeCooperativeMatrixKHRFailComponentType) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%u32_8 = OpConstant %u32 8
+%u32_16 = OpConstant %u32 16
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%float_vec = OpExtInst %void %DbgExt DebugTypeVector %float_info %u32_4
+%coopmtx_info = OpExtInst %void %DbgExt DebugTypeCooperativeMatrixKHR %float_vec %u32_3 %u32_8 %u32_16 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("expected operand Component Type must be a result id "
+                        "of DebugTypeBasic"));
+}
+
+TEST_F(ValidateVulkan101DebugInfo,
+       DebugTypeCooperativeMatrixKHRFailScopeNotConst) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%u32_8 = OpConstant %u32 8
+%u32_16 = OpConstant %u32 16
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0
+%coopmtx_info = OpExtInst %void %DbgExt DebugTypeCooperativeMatrixKHR %float_info %dbg_src %u32_8 %u32_16 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Scope must be a result id of a 32-bit unsigned "
+                        "integer constant or specialization constant"));
+}
+
+TEST_F(ValidateVulkan101DebugInfo, DebugTypeBasicFPEncodingFailNotConst) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string constants = R"(
+%u32_8 = OpConstant %u32 8
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%fp8_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_8 %u32_3 %u32_0 %dbg_src
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, constants, dbg_inst_header, "", shader_extension_101, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FPEncoding must be a result id of 32-bit unsigned "
+                        "OpConstant"));
 }
 
 }  // namespace

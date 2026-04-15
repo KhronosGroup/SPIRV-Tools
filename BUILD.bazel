@@ -52,7 +52,7 @@ create_grammar_tables_target(
         ExtInst("glsl.std.450", target="spirv_glsl_grammar_unified1"),
         ExtInst("opencl.std.100", target="spirv_opencl_grammar_unified1"),
         ExtInst("opencl.debuginfo.100", prefix="CLDEBUG100_"),
-        ExtInst("nonsemantic.shader.debuginfo.100", prefix="SHDEBUG100_"),
+        ExtInst("nonsemantic.shader.debuginfo", prefix="SHDEBUG100_"),
         ExtInst("tosa.001000.1", target="spirv_ext_inst_tosa_001000_1", prefix="TOSA_"),
         ExtInst("arm.motion-engine.100", target="spirv_ext_inst_arm_motion_engine_100"),
     ] + [ExtInst(e) for e in [
@@ -678,9 +678,27 @@ cc_library(
     ["test/val/val_*_test.cpp"],
     exclude = [
         "test/val/val_capability_test.cpp",
+        "test/val/val_ext_inst_debug_test.cpp",
         "test/val/val_limits_test.cpp",
     ],
 )]
+
+cc_test(
+    name = "val_ext_inst_debug_test",
+    size = "small",
+    srcs = ["test/val/val_ext_inst_debug_test.cpp"],
+    copts = TEST_COPTS,
+    linkstatic = 1,
+    deps = [
+        ":spirv_tools_internal",
+        ":test_lib",
+        ":val_test_lib",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+        "@spirv_headers//:spirv_common_headers",
+        "@spirv_headers//:spirv_cpp11_headers",
+    ],
+)
 
 cc_test(
     name = "val_capability_test",

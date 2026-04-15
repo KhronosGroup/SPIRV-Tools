@@ -587,23 +587,23 @@ bool Instruction::AddDebugLine(const Instruction* inst) {
 }
 
 bool Instruction::IsDebugLineInst() const {
-  NonSemanticShaderDebugInfo100Instructions ext_opt = GetShaderDebugOpcode();
-  return ((ext_opt == NonSemanticShaderDebugInfo100DebugLine) ||
-          (ext_opt == NonSemanticShaderDebugInfo100DebugNoLine));
+  NonSemanticShaderDebugInfoInstructions ext_opt = GetShaderDebugOpcode();
+  return ((ext_opt == NonSemanticShaderDebugInfoDebugLine) ||
+          (ext_opt == NonSemanticShaderDebugInfoDebugNoLine));
 }
 
 bool Instruction::IsLineInst() const { return IsLine() || IsNoLine(); }
 
 bool Instruction::IsLine() const {
   if (opcode() == spv::Op::OpLine) return true;
-  NonSemanticShaderDebugInfo100Instructions ext_opt = GetShaderDebugOpcode();
-  return ext_opt == NonSemanticShaderDebugInfo100DebugLine;
+  NonSemanticShaderDebugInfoInstructions ext_opt = GetShaderDebugOpcode();
+  return ext_opt == NonSemanticShaderDebugInfoDebugLine;
 }
 
 bool Instruction::IsNoLine() const {
   if (opcode() == spv::Op::OpNoLine) return true;
-  NonSemanticShaderDebugInfo100Instructions ext_opt = GetShaderDebugOpcode();
-  return ext_opt == NonSemanticShaderDebugInfo100DebugNoLine;
+  NonSemanticShaderDebugInfoInstructions ext_opt = GetShaderDebugOpcode();
+  return ext_opt == NonSemanticShaderDebugInfoDebugNoLine;
 }
 
 Instruction* Instruction::InsertBefore(std::unique_ptr<Instruction>&& inst) {
@@ -691,27 +691,27 @@ OpenCLDebugInfo100Instructions Instruction::GetOpenCL100DebugOpcode() const {
       GetSingleWordInOperand(kExtInstInstructionInIdx));
 }
 
-NonSemanticShaderDebugInfo100Instructions Instruction::GetShaderDebugOpcode()
+NonSemanticShaderDebugInfoInstructions Instruction::GetShaderDebugOpcode()
     const {
   if (opcode() != spv::Op::OpExtInst) {
-    return NonSemanticShaderDebugInfo100InstructionsMax;
+    return NonSemanticShaderDebugInfoInstructionsMax;
   }
 
   if (!context()->get_feature_mgr()->GetExtInstImportId_ShaderDebugInfo()) {
-    return NonSemanticShaderDebugInfo100InstructionsMax;
+    return NonSemanticShaderDebugInfoInstructionsMax;
   }
 
   if (GetSingleWordInOperand(kExtInstSetIdInIdx) !=
       context()->get_feature_mgr()->GetExtInstImportId_ShaderDebugInfo()) {
-    return NonSemanticShaderDebugInfo100InstructionsMax;
+    return NonSemanticShaderDebugInfoInstructionsMax;
   }
 
   uint32_t opcode = GetSingleWordInOperand(kExtInstInstructionInIdx);
-  if (opcode >= NonSemanticShaderDebugInfo100InstructionsMax) {
-    return NonSemanticShaderDebugInfo100InstructionsMax;
+  if (opcode >= NonSemanticShaderDebugInfoInstructionsMax) {
+    return NonSemanticShaderDebugInfoInstructionsMax;
   }
 
-  return NonSemanticShaderDebugInfo100Instructions(opcode);
+  return NonSemanticShaderDebugInfoInstructions(opcode);
 }
 
 CommonDebugInfoInstructions Instruction::GetCommonDebugOpcode() const {
@@ -1053,8 +1053,8 @@ bool Instruction::IsOpcodeSafeToDelete() const {
   }
 
   if (IsNonSemanticInstruction() &&
-      (GetShaderDebugOpcode() == NonSemanticShaderDebugInfo100DebugDeclare ||
-       GetShaderDebugOpcode() == NonSemanticShaderDebugInfo100DebugValue)) {
+      (GetShaderDebugOpcode() == NonSemanticShaderDebugInfoDebugDeclare ||
+       GetShaderDebugOpcode() == NonSemanticShaderDebugInfoDebugValue)) {
     return true;
   }
 
