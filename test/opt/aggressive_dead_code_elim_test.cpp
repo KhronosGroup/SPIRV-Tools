@@ -9218,6 +9218,45 @@ TEST_F(AggressiveDCETest, EliminateUntypedAccessChainLoop) {
   SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 
+TEST_F(AggressiveDCETest, KeepDebugBuildIdentifier) {
+  // Regression test for https://github.com/KhronosGroup/SPIRV-Tools/issues/6619
+  //
+  // DebugBuildIdentifier was not added to the live-instruction worklist during
+  // initialization, so its operand dependencies (e.g. OpTypeInt used only by
+  // a constant that is only referenced by DebugBuildIdentifier) were never
+  // visited and were incorrectly eliminated. The surviving constant then
+  // referenced a deleted type, producing invalid SPIR-V.
+  //
+  // After the fix, DebugBuildIdentifier is enqueued in the worklist so its
+  // transitive operands (OpTypeInt 32 0, OpConstant %uint 0) are marked live.
+
+  const std::string spirv = R"(
+; CHECK: [[ext:%\w+]] = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+; CHECK: [[str:%\w+]] = OpString
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[uint_0:%\w+]] = OpConstant [[uint]] 0
+; CHECK: OpExtInst %void [[ext]] DebugBuildIdentifier [[str]] [[uint_0]]
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+          %2 = OpString "01cfb4b77c321225f096da8ac72f29d42f0632a7"
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+          %3 = OpTypeFunction %void
+          %4 = OpExtInst %void %1 DebugBuildIdentifier %2 %uint_0
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
