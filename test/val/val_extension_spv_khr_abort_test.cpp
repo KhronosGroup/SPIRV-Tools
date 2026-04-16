@@ -178,10 +178,12 @@ TEST_F(ValidateSpvKHRAbort, ValidCompositeOperandTypes) {
  %uint32_t = OpTypeInt 32 0
   %str1len = OpConstant %uint32_t 6
 %string1_t = OpTypeArray %char_t %str1len
-  %string1 = OpConstantDataKHR %string1_t "test: "
+  ; "test: "
+  %string1 = OpConstantDataKHR %string1_t 0x74736574 0x0000203A
   %str2len = OpSpecConstant %uint32_t 2
 %string2_t = OpTypeArray %char_t %str2len
-  %string2 = OpSpecConstantDataKHR %string2_t "%u"
+  ; "%u"
+  %string2 = OpSpecConstantDataKHR %string2_t 0x00007525
 %message_t = OpTypeStruct %string1_t %string2_t %uint32_t
 %uintval   = OpConstant %uint32_t 6
 
@@ -228,10 +230,12 @@ TEST_F(ValidateSpvKHRAbort, MismatchedCompositeOperandTypes) {
  %uint32_t = OpTypeInt 32 0
   %str1len = OpConstant %uint32_t 6
 %string1_t = OpTypeArray %char_t %str1len
-  %string1 = OpConstantDataKHR %string1_t "test: "
+  ; "test: "
+  %string1 = OpConstantDataKHR %string1_t 0x74736574 0x0000203A
   %str2len = OpSpecConstant %uint32_t 2
 %string2_t = OpTypeArray %char_t %str2len
-  %string2 = OpSpecConstantDataKHR %string2_t "%u"
+  ; "%u"
+  %string2 = OpSpecConstantDataKHR %string2_t 0x00007525
 %message_t = OpTypeStruct %string1_t %string2_t
 %uintval   = OpConstant %uint32_t 6
 
