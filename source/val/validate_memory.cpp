@@ -1,6 +1,7 @@
 // Copyright (c) 2018 Google LLC.
 // Modifications Copyright (C) 2020-2024 Advanced Micro Devices, Inc. All
 // rights reserved.
+// Copyright (C) 2026 Qualcomm Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -613,6 +614,15 @@ spv_result_t ValidateVariableStorageClass(ValidationState_t& _,
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "PhysicalStorageBuffer must not be used with OpVariable.";
   }
+
+  if (storage_class == spv::StorageClass::TileAttachmentQCOM &&
+      !_.HasCapability(spv::Capability::TileShadingQCOM)) {
+    return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
+           << _.VkErrorID(10689)
+           << "the TileAttachmentQCOM storage class variable requires "
+              "TileShadingQCOM capability enabled.";
+  }
+
   return SPV_SUCCESS;
 }
 
@@ -1076,6 +1086,7 @@ spv_result_t ValidateVariableTileShadingQCOM(ValidationState_t& _,
       spv::Dim dim = static_cast<spv::Dim>(pointee_type->word(3));
       if (dim != spv::Dim::Dim2D) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << _.VkErrorID(10693)
                << "Any OpTypeImage variable in the TileAttachmentQCOM "
                   "Storage Class must "
                   "have 2D as its dimension";
@@ -1083,7 +1094,8 @@ spv_result_t ValidateVariableTileShadingQCOM(ValidationState_t& _,
       unsigned sampled = pointee_type->word(7);
       if (sampled != 1 && sampled != 2) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
-               << "Any OpyTpeImage variable in the TileAttachmentQCOM "
+               << _.VkErrorID(10694)
+               << "Any OpTypeImage variable in the TileAttachmentQCOM "
                   "Storage Class must "
                   "have 1 or 2 as Image 'Sampled' parameter";
       }
@@ -1101,6 +1113,7 @@ spv_result_t ValidateVariableTileShadingQCOM(ValidationState_t& _,
               case spv::Op::OpImageQueryLevels:
               case spv::Op::OpImageQuerySamples:
                 return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                       << _.VkErrorID(10697)
                        << "Any variable in the TileAttachmentQCOM Storage "
                           "Class must "
                           "not be consumed by an OpImageQuery* instruction";
@@ -1116,11 +1129,13 @@ spv_result_t ValidateVariableTileShadingQCOM(ValidationState_t& _,
   if (!(_.HasDecoration(inst->id(), spv::Decoration::DescriptorSet) &&
         _.HasDecoration(inst->id(), spv::Decoration::Binding))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << _.VkErrorID(10695)
            << "Any variable in the TileAttachmentQCOM Storage Class must "
               "be decorated with DescriptorSet and Binding";
   }
   if (_.HasDecoration(inst->id(), spv::Decoration::Component)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << _.VkErrorID(10696)
            << "Any variable in the TileAttachmentQCOM Storage Class must "
               "not be decorated with Component decoration";
   }

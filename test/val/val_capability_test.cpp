@@ -1,4 +1,5 @@
 // Copyright (c) 2015-2016 The Khronos Group Inc.
+// Copyright (C) 2026 Qualcomm Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -3397,8 +3398,55 @@ OpEntryPoint Vertex %func "main"
   CompileSuccessfully(spirv, env);
   EXPECT_THAT(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-TileShadingQCOM-10686"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("The TileShadingQCOM capability must not be enabled "
                         "in any stage other than compute or fragment"));
+}
+
+TEST_F(ValidateCapability, TileAttachmentRequiresTileShadingQCOMCapability) {
+  const auto spirv = R"(
+OpCapability Shader
+OpExtension "SPV_QCOM_tile_shading"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+OpSource GLSL 450
+OpDecorate %color1 Binding 0
+OpDecorate %color1 DescriptorSet 0
+%void = OpTypeVoid
+%int = OpTypeInt 32 1
+%44 = OpTypeImage %int 2D 0 0 0 2 Rgba32i
+%_ptr_TileAttachmentQCOM_44 = OpTypePointer TileAttachmentQCOM %44
+%color1 = OpVariable %_ptr_TileAttachmentQCOM_44 TileAttachmentQCOM
+%3 = OpTypeFunction %void
+%main = OpFunction %void None %3
+%5 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  spv_target_env env = SPV_ENV_VULKAN_1_4;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these capabilities: TileShadingQCOM"));
+}
+
+TEST_F(ValidateCapability, TileShadingRateRequiresTileShadingQCOMCapability) {
+  const auto spirv = R"(
+OpCapability Shader
+OpExtension "SPV_QCOM_tile_shading"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main TileShadingRateQCOM 2 2 1
+)" + std::string(kVoidFVoid);
+
+  spv_target_env env = SPV_ENV_VULKAN_1_4;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these capabilities: TileShadingQCOM"));
 }
 
 TEST_F(ValidateCapability, ColorAttachmentReadEXTRequireCapability) {
