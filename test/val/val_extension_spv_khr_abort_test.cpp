@@ -442,7 +442,7 @@ TEST_F(ValidateSpvKHRAbort, ConstantDataNull) {
               HasSubstr("There must be at least 1 literal integer"));
 }
 
-TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtOverUint32) {
+TEST_F(ValidateSpvKHRAbort, ConstantDataLengthOverUint32) {
   const std::string str = R"(
                OpCapability Shader
                OpCapability ConstantDataKHR
@@ -468,7 +468,7 @@ TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtOverUint32) {
                         "to match the array of 2 of 32-bit ints"));
 }
 
-TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtUnderUint32) {
+TEST_F(ValidateSpvKHRAbort, ConstantDataLengthUnderUint32) {
   const std::string str = R"(
                OpCapability Shader
                OpCapability ConstantDataKHR
@@ -494,7 +494,7 @@ TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtUnderUint32) {
                         "to match the array of 2 of 32-bit ints"));
 }
 
-TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtOverUint8) {
+TEST_F(ValidateSpvKHRAbort, ConstantDataLengthOverUint8) {
   const std::string str = R"(
                OpCapability Shader
                OpCapability ConstantDataKHR
@@ -522,7 +522,7 @@ TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtOverUint8) {
                         "to match the array of 5 of 8-bit ints"));
 }
 
-TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtUnderUint8) {
+TEST_F(ValidateSpvKHRAbort, ConstantDataLengthUnderUint8) {
   const std::string str = R"(
                OpCapability Shader
                OpCapability ConstantDataKHR
@@ -550,7 +550,7 @@ TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtUnderUint8) {
                         "to match the array of 4 of 8-bit ints"));
 }
 
-TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtUint64Good) {
+TEST_F(ValidateSpvKHRAbort, ConstantDataLengthUint64Good) {
   const std::string str = R"(
                OpCapability Shader
                OpCapability ConstantDataKHR
@@ -575,7 +575,7 @@ TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtUint64Good) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtUint64Short) {
+TEST_F(ValidateSpvKHRAbort, ConstantDataLengthUint64Short) {
   const std::string str = R"(
                OpCapability Shader
                OpCapability ConstantDataKHR
@@ -603,7 +603,7 @@ TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtUint64Short) {
                         "to match the array of 1 of 64-bit ints"));
 }
 
-TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtUint64Short2) {
+TEST_F(ValidateSpvKHRAbort, ConstantDataLengthUint64Short2) {
   const std::string str = R"(
                OpCapability Shader
                OpCapability ConstantDataKHR
@@ -631,7 +631,7 @@ TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtUint64Short2) {
                         "to match the array of 2 of 64-bit ints"));
 }
 
-TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtOverUint64) {
+TEST_F(ValidateSpvKHRAbort, ConstantDataLengthOverUint64) {
   const std::string str = R"(
                OpCapability Shader
                OpCapability ConstantDataKHR
@@ -659,7 +659,7 @@ TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtOverUint64) {
                         "to match the array of 1 of 64-bit ints"));
 }
 
-TEST_F(ValidateSpvKHRAbort, ConstantDataLenghtUnderUint64) {
+TEST_F(ValidateSpvKHRAbort, ConstantDataLengthUnderUint64) {
   const std::string str = R"(
                OpCapability Shader
                OpCapability ConstantDataKHR
