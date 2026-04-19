@@ -110,6 +110,7 @@ add_spvtools_unittest(TARGET opt
        struct_packing_test.cpp
        switch_descriptorset_test.cpp
        trim_capabilities_pass_test.cpp
+       trim_variable_pointers_capabilities_pass_test.cpp
        type_manager_test.cpp
        types_test.cpp
        unify_const_test.cpp

@@ -308,6 +308,18 @@ bool LocalSingleStoreElimPass::RewriteLoads(
   else
     stored_id = store_inst->GetSingleWordInOperand(kVariableInitIdInIdx);
 
+  const auto get_image_pointer_id = [this](uint32_t value_id) {
+    Instruction* value_inst = context()->get_def_use_mgr()->GetDef(value_id);
+    while (value_inst && value_inst->opcode() == spv::Op::OpCopyObject) {
+      value_id = value_inst->GetSingleWordInOperand(0);
+      value_inst = context()->get_def_use_mgr()->GetDef(value_id);
+    }
+    if (!value_inst || value_inst->opcode() != spv::Op::OpLoad) {
+      return uint32_t{0};
+    }
+    return value_inst->GetSingleWordInOperand(0);
+  };
+
   *all_rewritten = true;
   bool modified = false;
   for (Instruction* use : uses) {
@@ -322,6 +334,17 @@ bool LocalSingleStoreElimPass::RewriteLoads(
       context()->KillNamesAndDecorates(use->result_id());
       context()->ReplaceAllUsesWith(use->result_id(), stored_id);
       context()->KillInst(use);
+    } else if (use->opcode() == spv::Op::OpImageTexelPointer &&
+               dominator_analysis->Dominates(store_inst, use)) {
+      const uint32_t image_ptr_id = get_image_pointer_id(stored_id);
+      if (image_ptr_id == 0) {
+        *all_rewritten = false;
+        continue;
+      }
+      modified = true;
+      context()->ForgetUses(use);
+      use->SetInOperand(0, {image_ptr_id});
+      context()->AnalyzeUses(use);
     } else {
       *all_rewritten = false;
     }
