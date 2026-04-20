@@ -762,14 +762,14 @@ Pass::Status AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
   // Add DebugInfo which should never be eliminated to worklist
   for (auto& dbg : get_module()->ext_inst_debuginfo()) {
     auto op = dbg.GetShaderDebugOpcode();
-    if (op == NonSemanticShaderDebugInfo100DebugCompilationUnit ||
-        op == NonSemanticShaderDebugInfo100DebugEntryPoint ||
-        op == NonSemanticShaderDebugInfo100DebugSource ||
-        op == NonSemanticShaderDebugInfo100DebugSourceContinued ||
-        op == NonSemanticShaderDebugInfo100DebugLocalVariable ||
-        op == NonSemanticShaderDebugInfo100DebugExpression ||
-        op == NonSemanticShaderDebugInfo100DebugOperation ||
-        op == NonSemanticShaderDebugInfo100DebugBuildIdentifier) {
+    if (op == NonSemanticShaderDebugInfoDebugCompilationUnit ||
+        op == NonSemanticShaderDebugInfoDebugEntryPoint ||
+        op == NonSemanticShaderDebugInfoDebugSource ||
+        op == NonSemanticShaderDebugInfoDebugSourceContinued ||
+        op == NonSemanticShaderDebugInfoDebugLocalVariable ||
+        op == NonSemanticShaderDebugInfoDebugExpression ||
+        op == NonSemanticShaderDebugInfoDebugOperation ||
+        op == NonSemanticShaderDebugInfoDebugBuildIdentifier) {
       AddToWorklist(&dbg);
     }
   }
