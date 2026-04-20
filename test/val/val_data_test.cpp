@@ -309,19 +309,21 @@ TEST_F(ValidateData, int4_bad) {
 }
 
 TEST_F(ValidateData, int4_with_arbitrary_precision_good) {
-  std::string str = HeaderWith(
-                        "ArbitraryPrecisionIntegersINTEL "
-                        "OpExtension \"SPV_INTEL_arbitrary_precision_integers\"") +
-                    " %2 = OpTypeInt 4 0";
+  std::string str =
+      HeaderWith(
+          "ArbitraryPrecisionIntegersINTEL "
+          "OpExtension \"SPV_INTEL_arbitrary_precision_integers\"") +
+      " %2 = OpTypeInt 4 0";
   CompileSuccessfully(str.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
 }
 
 TEST_F(ValidateData, int4_signed_with_arbitrary_precision_good) {
-  std::string str = HeaderWith(
-                        "ArbitraryPrecisionIntegersINTEL "
-                        "OpExtension \"SPV_INTEL_arbitrary_precision_integers\"") +
-                    " %2 = OpTypeInt 4 1";
+  std::string str =
+      HeaderWith(
+          "ArbitraryPrecisionIntegersINTEL "
+          "OpExtension \"SPV_INTEL_arbitrary_precision_integers\"") +
+      " %2 = OpTypeInt 4 1";
   CompileSuccessfully(str.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
 }
