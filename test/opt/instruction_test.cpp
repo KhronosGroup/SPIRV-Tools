@@ -1542,10 +1542,10 @@ TEST_F(DescriptorTypeTest, GetShaderDebugOpcode) {
       BuildModule(SPV_ENV_UNIVERSAL_1_2, nullptr, text);
   Instruction* debug_expression = context->get_def_use_mgr()->GetDef(5);
   EXPECT_EQ(debug_expression->GetShaderDebugOpcode(),
-            NonSemanticShaderDebugInfo100DebugExpression);
+            NonSemanticShaderDebugInfoDebugExpression);
   Instruction* debug_source = context->get_def_use_mgr()->GetDef(6);
   EXPECT_EQ(debug_source->GetShaderDebugOpcode(),
-            NonSemanticShaderDebugInfo100DebugSource);
+            NonSemanticShaderDebugInfoDebugSource);
 
   // Test that an opcode larger than the max will return Max.  This instruction
   // cannot be in the assembly above because the assembler expects the string
@@ -1553,14 +1553,15 @@ TEST_F(DescriptorTypeTest, GetShaderDebugOpcode) {
   // file could have an arbitrary number.
   std::unique_ptr<Instruction> past_max(debug_expression->Clone(context.get()));
   const uint32_t kExtInstOpcodeInIndex = 1;
-  uint32_t large_opcode = NonSemanticShaderDebugInfo100InstructionsMax + 2;
+  uint32_t large_opcode =
+      static_cast<uint32_t>(NonSemanticShaderDebugInfoInstructionsMax) + 2u;
   past_max->SetInOperand(kExtInstOpcodeInIndex, {large_opcode});
   EXPECT_EQ(past_max->GetShaderDebugOpcode(),
-            NonSemanticShaderDebugInfo100InstructionsMax);
+            NonSemanticShaderDebugInfoInstructionsMax);
 
   // Test that an opcode without a value in the enum, but less than Max returns
   // the same value.
-  uint32_t opcode = NonSemanticShaderDebugInfo100InstructionsMax - 2;
+  uint32_t opcode = NonSemanticShaderDebugInfoInstructionsMax - 2;
   past_max->SetInOperand(kExtInstOpcodeInIndex, {opcode});
   EXPECT_EQ(past_max->GetShaderDebugOpcode(), opcode);
 }

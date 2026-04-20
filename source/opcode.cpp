@@ -123,6 +123,7 @@ int32_t spvOpcodeIsSpecConstant(const spv::Op opcode) {
     case spv::Op::OpSpecConstantArchitectureINTEL:
     case spv::Op::OpSpecConstantTargetINTEL:
     case spv::Op::OpSpecConstantCapabilitiesINTEL:
+    case spv::Op::OpSpecConstantDataKHR:
       return true;
     default:
       return false;
@@ -154,6 +155,8 @@ int32_t spvOpcodeIsConstant(const spv::Op opcode) {
     case spv::Op::OpSpecConstantTargetINTEL:
     case spv::Op::OpSpecConstantCapabilitiesINTEL:
     case spv::Op::OpConstantSizeOfEXT:
+    case spv::Op::OpConstantDataKHR:
+    case spv::Op::OpSpecConstantDataKHR:
       return true;
     default:
       return false;

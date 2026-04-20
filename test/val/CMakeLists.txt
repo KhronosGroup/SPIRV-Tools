@@ -41,6 +41,7 @@ add_spvtools_unittest(TARGET val_abcde
        val_explicit_reserved_test.cpp
        val_invalid_type_test.cpp
        val_extensions_test.cpp
+       val_extension_spv_khr_abort_test.cpp
        val_extension_spv_khr_expect_assume_test.cpp
        val_extension_spv_khr_linkonce_odr_test.cpp
        val_extension_spv_khr_subgroup_uniform_control_flow_test.cpp
