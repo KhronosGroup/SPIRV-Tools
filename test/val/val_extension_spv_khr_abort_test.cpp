@@ -388,9 +388,7 @@ TEST_F(ValidateSpvKHRAbort, ConstantDataSpecLength) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
-// TODO - We never tested this when writting the spec
-// https://gitlab.khronos.org/spirv/SPIR-V/-/issues/927
-TEST_F(ValidateSpvKHRAbort, DISABLED_ConstantDataSpecLengthAndData) {
+TEST_F(ValidateSpvKHRAbort, ConstantDataSpecLengthAndData) {
   const std::string str = R"(
                OpCapability Shader
                OpCapability ConstantDataKHR
