@@ -345,6 +345,9 @@ spv_result_t ValidateLoopMerge(ValidationState_t& _, const Instruction* inst) {
   if ((loop_control >> spv::LoopControlShift::PartialCount) & 0x1) {
     ++operand;
   }
+  if ((loop_control >> spv::LoopControlShift::MultipleWaitQueuesQCOM) & 0x1) {
+    ++operand;
+  }
 
   // That the right number of operands is present is checked by the parser. The
   // above code tracks operands for expanded validation checking in the future.
