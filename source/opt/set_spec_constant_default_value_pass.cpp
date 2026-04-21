@@ -16,7 +16,9 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <cstring>
+#include <initializer_list>
 #include <vector>
 
 #include "source/opt/def_use_manager.h"
@@ -339,9 +341,11 @@ Pass::Status SetSpecConstantDefaultValuePass::Process() {
           // keep the result/type
           operands.push_back(spec_inst->GetOperand(0u));
           operands.push_back(spec_inst->GetOperand(1u));
-          // always update, the validator is in charge of making sure the length
-          // matches
-          operands.emplace_back(SPV_OPERAND_TYPE_LITERAL_INTEGER, bit_pattern);
+          // the validator is in charge of making sure the length matches
+          for (uint32_t word : bit_pattern) {
+            operands.emplace_back(SPV_OPERAND_TYPE_LITERAL_INTEGER,
+                                  std::initializer_list<uint32_t>{word});
+          }
           spec_inst->ReplaceOperands(operands);
           modified = true;
         }
