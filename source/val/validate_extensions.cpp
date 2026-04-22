@@ -1996,11 +1996,16 @@ spv_result_t ValidateExtInstGlslStd450(ValidationState_t& _,
       }
 
       if (!_.IsFloatScalarOrVectorType(result_type) ||
-          _.GetBitWidth(result_type) != 32) {
+          (_.GetBitWidth(result_type) != 32 &&
+           (!_.HasExtension(kSPV_AMD_gpu_shader_half_float) ||
+            _.GetBitWidth(result_type) != 16))) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << GetExtInstName(_, inst) << ": "
-               << "expected Result Type to be a 32-bit float scalar "
-               << "or vector type";
+               << "expected Result Type to be a "
+               << (_.HasExtension(kSPV_AMD_gpu_shader_half_float)
+                       ? "16-bit or 32-bit "
+                       : "32-bit ")
+               << "float scalar or vector type";
       }
 
       // If HLSL legalization and first operand is an OpLoad, use load
@@ -2047,10 +2052,16 @@ spv_result_t ValidateExtInstGlslStd450(ValidationState_t& _,
         const uint32_t offset_type = _.GetOperandTypeId(inst, 5);
         if (!_.IsFloatVectorType(offset_type) ||
             _.GetDimension(offset_type) != 2 ||
-            _.GetBitWidth(offset_type) != 32) {
+            (_.GetBitWidth(offset_type) != 32 &&
+             (!_.HasExtension(kSPV_AMD_gpu_shader_half_float) ||
+              _.GetBitWidth(offset_type) != 16))) {
           return _.diag(SPV_ERROR_INVALID_DATA, inst)
                  << GetExtInstName(_, inst) << ": "
-                 << "expected Offset to be a vector of 2 32-bit floats";
+                 << "expected Offset to be a vector of 2 "
+                 << (_.HasExtension(kSPV_AMD_gpu_shader_half_float)
+                         ? "16-bit or 32-bit "
+                         : "32-bit ")
+                 << "floats";
         }
       }
 
