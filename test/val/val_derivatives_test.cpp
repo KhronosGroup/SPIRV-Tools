@@ -188,6 +188,19 @@ OpFunctionEnd
 
 using ValidateHalfDerivatives = spvtest::ValidateBase<std::string>;
 
+TEST_P(ValidateHalfDerivatives, ScalarSuccess) {
+  const std::string op = GetParam();
+  const std::string body = "%val = " + op + " %f16 %f16_0\n";
+  const std::string capabilities_and_extensions = R"(
+OpCapability Float16
+OpExtension  "SPV_AMD_gpu_shader_half_float"
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities_and_extensions).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_P(ValidateHalfDerivatives, ScalarFailure) {
   const std::string op = GetParam();
   const std::string body = "%val = " + op + " %f16 %f16_0\n";
@@ -197,6 +210,19 @@ TEST_P(ValidateHalfDerivatives, ScalarFailure) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Result type component width must be 32 bits"));
+}
+
+TEST_P(ValidateHalfDerivatives, VectorSuccess) {
+  const std::string op = GetParam();
+  const std::string body = "%val = " + op + " %f16vec4 %f16vec4_0\n";
+  const std::string capabilities_and_extensions = R"(
+OpCapability Float16
+OpExtension  "SPV_AMD_gpu_shader_half_float"
+)";
+
+  CompileSuccessfully(
+      GenerateShaderCode(body, capabilities_and_extensions).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_P(ValidateHalfDerivatives, VectorFailure) {
