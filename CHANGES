@@ -1,6 +1,6 @@
 Revision history for SPIRV-Tools
 
-v2026.2-dev 2026-04-24
+v2026.2 2026-04-24
   - General
     - Fix build for NonSemanticShaderDebugInfo in GN (#6647)
     - Support SPV_KHR_abort and SPV_KHR_constant_data (#6625)
