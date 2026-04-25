@@ -30,7 +30,7 @@ git config --global --add safe.directory '*'
 using python-3.12
 
 if [ $COMPILER = "clang" ]; then
-  using clang-13.0.1
+  using clang-18
 elif [ $COMPILER = "gcc" ]; then
   using gcc-13
 fi

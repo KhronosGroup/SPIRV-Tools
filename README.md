@@ -463,8 +463,8 @@ also work, but are not verified.
 SPIRV-Tools is regularly tested with the following compilers:
 
 On Linux
-- GCC version 9.4
-- Clang version 10.0
+- GCC version 13
+- Clang version 18
 
 On MacOS
 - AppleClang 15.0
