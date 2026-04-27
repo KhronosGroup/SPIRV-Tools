@@ -29,7 +29,8 @@ Pass::Status InlineExhaustivePass::InlineExhaustive(Function* func) {
     for (auto ii = bi->begin(); ii != bi->end();) {
       if (IsInlinableFunctionCall(&*ii)) {
         // Save instruction before the call to avoid redundant re-scanning.
-        Instruction* prev_inst = (ii == bi->begin()) ? nullptr : &*std::prev(ii);
+        Instruction* prev_inst =
+            (ii == bi->begin()) ? nullptr : &*std::prev(ii);
 
         // Inline call.
         std::vector<std::unique_ptr<BasicBlock>> newBlocks;
