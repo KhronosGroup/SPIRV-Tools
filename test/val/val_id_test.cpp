@@ -5995,9 +5995,10 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(make_message("SpecId decoration on target <id> "
-                             "'1[%uint_3]' must be a scalar specialization "
-                             "constant")));
+      HasSubstr(make_message(
+          "SpecId decoration on target <id> "
+          "'1[%uint_3]' must be OpSpecConstantTrue, OpSpecConstantFalse, "
+          "OpSpecConstant, or OpSpecConstantDataKHR")));
 }
 
 TEST_P(ValidateIdWithMessage, SpecIdTargetOpSpecConstantOpBad) {
@@ -6019,7 +6020,8 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(make_message("SpecId decoration on target <id> '1[%1]' "
-                             "must be a scalar specialization constant")));
+                             "must be OpSpecConstantTrue, OpSpecConstantFalse, "
+                             "OpSpecConstant, or OpSpecConstantDataKHR")));
 }
 
 TEST_P(ValidateIdWithMessage, SpecIdTargetOpSpecConstantCompositeBad) {
@@ -6040,7 +6042,8 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(make_message("SpecId decoration on target <id> '1[%1]' "
-                             "must be a scalar specialization constant")));
+                             "must be OpSpecConstantTrue, OpSpecConstantFalse, "
+                             "OpSpecConstant, or OpSpecConstantDataKHR")));
 }
 
 TEST_P(ValidateIdWithMessage, SpecIdTargetGood) {

@@ -693,6 +693,49 @@ spv_result_t ValidateConstantFunctionPointerINTEL(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateConstantData(ValidationState_t& _,
+                                  const Instruction* inst) {
+  const auto array_inst = _.FindDef(inst->type_id());
+  if (array_inst->opcode() != spv::Op::OpTypeArray) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Result type must be an array.";
+  }
+
+  const auto element_type_inst =
+      _.FindDef(array_inst->GetOperandAs<uint32_t>(1));
+  if (!_.IsIntScalarType(element_type_inst->id())) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Result type must be an array of integer scalar type.";
+  }
+
+  const uint32_t int_width = element_type_inst->word(2);
+  const uint32_t data_words = static_cast<uint32_t>(inst->words().size() - 3);
+
+  if (data_words == 0) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "There must be at least 1 literal integer (because an array of "
+              "zero is not allowed).";
+  }
+
+  uint64_t array_length = 0;
+  if (!_.EvalConstantValUint64(array_inst->GetOperandAs<uint32_t>(2),
+                               &array_length)) {
+    // The length could be a SpecConstant, will need to be frozen to validate
+    return SPV_SUCCESS;
+  }
+
+  const uint32_t words_needed =
+      (((int_width / 8) * static_cast<uint32_t>(array_length) + 3) & ~3) / 4;
+  if (data_words != words_needed) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "contains " << data_words << " words of data, but needs to have "
+           << words_needed << " words to match the array of " << array_length
+           << " of " << int_width << "-bit ints.";
+  }
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 spv_result_t ConstantPass(ValidationState_t& _, const Instruction* inst) {
@@ -730,6 +773,9 @@ spv_result_t ConstantPass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpConstantFunctionPointerINTEL:
       if (auto error = ValidateConstantFunctionPointerINTEL(_, inst))
         return error;
+      break;
+    case spv::Op::OpConstantDataKHR:
+      if (auto error = ValidateConstantData(_, inst)) return error;
       break;
     default:
       break;

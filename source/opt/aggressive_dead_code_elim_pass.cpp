@@ -768,7 +768,8 @@ Pass::Status AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
         op == NonSemanticShaderDebugInfoDebugSourceContinued ||
         op == NonSemanticShaderDebugInfoDebugLocalVariable ||
         op == NonSemanticShaderDebugInfoDebugExpression ||
-        op == NonSemanticShaderDebugInfoDebugOperation) {
+        op == NonSemanticShaderDebugInfoDebugOperation ||
+        op == NonSemanticShaderDebugInfoDebugBuildIdentifier) {
       AddToWorklist(&dbg);
     }
   }

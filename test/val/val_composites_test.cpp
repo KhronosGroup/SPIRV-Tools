@@ -3667,6 +3667,66 @@ OpFunctionEnd)";
                         "start index operand be 32-bit OpTypeInt"));
 }
 
+TEST_F(ValidateComposites, VectorShuffleNotVectorOp1) {
+  const std::string spirv = R"(
+OpCapability ClipDistance
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%67 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%v3float = OpTypeVector %float 3
+%_ptr_Function_float = OpTypePointer Function %float
+%v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%3 = OpVariable %_ptr_Input_v4float Input
+%func = OpFunction %void None %67
+%label = OpLabel
+%43 = OpVariable %_ptr_Function_float Function
+%373 = OpLoad %v4float %3
+%shuffle = OpVectorShuffle %v2float %1 %373 538976288 538976288
+%422 = OpLoad %v3float %43
+OpReturnValue %422
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The type of Vector 1 must be a vector type"));
+}
+
+TEST_F(ValidateComposites, VectorShuffleNotVectorOp2) {
+  const std::string spirv = R"(
+OpCapability ClipDistance
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+%void = OpTypeVoid
+%67 = OpTypeFunction %void
+%float = OpTypeFloat 32
+%v2float = OpTypeVector %float 2
+%v3float = OpTypeVector %float 3
+%_ptr_Function_float = OpTypePointer Function %float
+%v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%3 = OpVariable %_ptr_Input_v4float Input
+%func = OpFunction %void None %67
+%label = OpLabel
+%43 = OpVariable %_ptr_Function_float Function
+%373 = OpLoad %v4float %3
+%shuffle = OpVectorShuffle %v2float %373 %1 538976288 538976288
+%422 = OpLoad %v3float %43
+OpReturnValue %422
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The type of Vector 2 must be a vector type"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

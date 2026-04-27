@@ -1630,17 +1630,55 @@ INSTANTIATE_TEST_SUITE_P(
             {"OpCapability ConstantDataKHR\n",
              MakeInstruction(spv::Op::OpCapability,
                              {(uint32_t)spv::Capability::ConstantDataKHR})},
-            {"%2 = OpConstantDataKHR %1 \"foo\"\n",
-             MakeInstruction(spv::Op::OpConstantDataKHR, {1, 2},
-                             MakeVector("foo"))},
-            {"%2 = OpSpecConstantDataKHR %1 \"foo\"\n",
-             MakeInstruction(spv::Op::OpSpecConstantDataKHR, {1, 2},
-                             MakeVector("foo"))},
+            {"%2 = OpConstantDataKHR %1 1718578944\n",
+             MakeInstruction(spv::Op::OpConstantDataKHR, {1, 2, 0x666F6F00})},
+            {"%2 = OpSpecConstantDataKHR %1 1718578944\n",
+             MakeInstruction(spv::Op::OpSpecConstantDataKHR,
+                             {1, 2, 0x666F6F00})},
             {"OpDecorate %1 UTFEncodedKHR\n",
              MakeInstruction(spv::Op::OpDecorate,
                              {1, (uint32_t)spv::Decoration::UTFEncodedKHR})},
 
         })));
+
+TEST_F(TextToBinaryTest, ConstantDataNonUTF) {
+  const std::string source = R"(
+               OpCapability Shader
+               OpCapability ConstantDataKHR
+               OpCapability Int8
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+       %char = OpTypeInt 8 1
+    %uint_20 = OpConstant %uint 20
+ %char_array = OpTypeArray %char %uint_20
+               ; "abcd" where "a" is 0x61 ascii
+       %data = OpConstantDataKHR %char_array 0x10203040
+  %void_func = OpTypeFunction %void
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+    )";
+
+  auto context = spvContextCreate(SPV_ENV_UNIVERSAL_1_1);
+  spv_binary binary = nullptr;
+  EXPECT_EQ(SPV_SUCCESS, spvTextToBinary(context, source.c_str(), source.size(),
+                                         &binary, nullptr));
+
+  // Opcode for OpConstantDataKHR
+  EXPECT_EQ((binary->code[50] & 0x0ffffu), 5147);
+  EXPECT_EQ(((binary->code[53] & 0xff000000u) >> 24), 0x10);
+  EXPECT_EQ(((binary->code[53] & 0x00ff0000u) >> 16), 0x20);
+  EXPECT_EQ(((binary->code[53] & 0x0000ff00u) >> 8), 0x30);
+  EXPECT_EQ(((binary->code[53] & 0x000000ffu)), 0x40);
+
+  spvBinaryDestroy(binary);
+  spvContextDestroy(context);
+}
 
 }  // namespace
 }  // namespace spvtools

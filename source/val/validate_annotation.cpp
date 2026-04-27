@@ -119,8 +119,12 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
   };
   switch (dec) {
     case spv::Decoration::SpecId:
-      if (!spvOpcodeIsScalarSpecConstant(target->opcode())) {
-        return fail(0) << "must be a scalar specialization constant";
+      if (target->opcode() != spv::Op::OpSpecConstantTrue &&
+          target->opcode() != spv::Op::OpSpecConstantFalse &&
+          target->opcode() != spv::Op::OpSpecConstant &&
+          target->opcode() != spv::Op::OpSpecConstantDataKHR) {
+        return fail(0) << "must be OpSpecConstantTrue, OpSpecConstantFalse, "
+                          "OpSpecConstant, or OpSpecConstantDataKHR";
       }
       break;
     case spv::Decoration::Block:
