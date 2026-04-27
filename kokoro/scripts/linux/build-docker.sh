@@ -32,7 +32,7 @@ using python-3.12
 if [ $COMPILER = "clang" ]; then
   using clang-18
 elif [ $COMPILER = "gcc" ]; then
-  using gcc-13
+  using gcc-15
 fi
 
 cd $ROOT_DIR
