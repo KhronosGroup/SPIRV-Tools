@@ -2765,6 +2765,9 @@ int TensorAddressingOperandsNumWords(spv::TensorAddressingOperandsMask mask) {
   if ((mask & spv::TensorAddressingOperandsMask::DecodeFunc) !=
       spv::TensorAddressingOperandsMask::MaskNone)
     ++result;
+  if ((mask & spv::TensorAddressingOperandsMask::DecodeVectorFunc) !=
+      spv::TensorAddressingOperandsMask::MaskNone)
+    ++result;
   return result;
 }
 
@@ -2893,32 +2896,74 @@ spv_result_t ValidateCooperativeMatrixLoadStoreTensorNV(
     tensor_operand_index++;
   }
 
-  if ((tensor_operands & spv::TensorAddressingOperandsMask::DecodeFunc) !=
-      spv::TensorAddressingOperandsMask::MaskNone) {
+  const bool has_decode_func =
+      (tensor_operands & spv::TensorAddressingOperandsMask::DecodeFunc) !=
+      spv::TensorAddressingOperandsMask::MaskNone;
+  const bool has_decode_vector_func =
+      (tensor_operands & spv::TensorAddressingOperandsMask::DecodeVectorFunc) !=
+      spv::TensorAddressingOperandsMask::MaskNone;
+
+  if (has_decode_func || has_decode_vector_func) {
     if (inst->opcode() == spv::Op::OpCooperativeMatrixStoreTensorNV) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "OpCooperativeMatrixStoreTensorNV does not support DecodeFunc.";
+             << "OpCooperativeMatrixStoreTensorNV does not support DecodeFunc "
+                "or DecodeVectorFunc.";
     }
-    const auto decode_func_id =
-        inst->GetOperandAs<uint32_t>(tensor_operand_index);
+  }
+
+  const auto component_type_index = 1;
+  const auto component_type_id =
+      matrix_type->GetOperandAs<uint32_t>(component_type_index);
+  const auto tensor_layout_type = _.FindDef(tensor_layout->type_id());
+
+  // Validate one decode-function operand (scalar DecodeFunc or vector
+  // DecodeVectorFunc). `expect_vector` selects which return-type rule to
+  // enforce.
+  auto validate_decode_function = [&](uint32_t decode_func_id,
+                                      const char* operand_name,
+                                      bool expect_vector) -> spv_result_t {
     const auto decode_func = _.FindDef(decode_func_id);
 
     if (!decode_func || decode_func->opcode() != spv::Op::OpFunction) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << opname << " DecodeFunc <id> " << _.getIdName(decode_func_id)
-             << " is not a function.";
+             << opname << " " << operand_name << " <id> "
+             << _.getIdName(decode_func_id) << " is not a function.";
     }
-
-    const auto component_type_index = 1;
-    const auto component_type_id =
-        matrix_type->GetOperandAs<uint32_t>(component_type_index);
 
     const auto function_type =
         _.FindDef(decode_func->GetOperandAs<uint32_t>(3));
-    if (function_type->GetOperandAs<uint32_t>(1) != component_type_id) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << opname << " DecodeFunc <id> " << _.getIdName(decode_func_id)
-             << " return type must match matrix component type.";
+    const auto return_type_id = function_type->GetOperandAs<uint32_t>(1);
+    const auto return_type = _.FindDef(return_type_id);
+    const bool return_is_scalar_match = (return_type_id == component_type_id);
+    const bool return_is_vector = _.IsVectorType(return_type_id);
+    const uint32_t return_vec_component_type_id =
+        return_is_vector ? return_type->GetOperandAs<uint32_t>(1) : 0;
+
+    if (!expect_vector) {
+      if (!return_is_scalar_match) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << opname << " " << operand_name << " <id> "
+               << _.getIdName(decode_func_id)
+               << " return type must match matrix component type.";
+      }
+    } else {
+      if (!return_is_vector ||
+          return_vec_component_type_id != component_type_id) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << opname << " " << operand_name << " <id> "
+               << _.getIdName(decode_func_id)
+               << " return type must be a vector of the matrix component "
+                  "type.";
+      }
+      // GetDimension returns 0 for OpTypeVectorIdEXT whose count is a
+      // spec constant; skip the static check in that case.
+      const uint32_t v = _.GetDimension(return_type_id);
+      if (v != 0 && v != 2 && v != 4 && v != 8) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << opname << " " << operand_name << " <id> "
+               << _.getIdName(decode_func_id)
+               << " return vector length must be 2, 4, or 8.";
+      }
     }
 
     const auto decode_ptr_type_id = function_type->GetOperandAs<uint32_t>(2);
@@ -2928,21 +2973,20 @@ spv_result_t ValidateCooperativeMatrixLoadStoreTensorNV(
 
     if (decode_storage_class != spv::StorageClass::PhysicalStorageBuffer) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << opname << " DecodeFunc <id> " << _.getIdName(decode_func_id)
+             << opname << " " << operand_name << " <id> "
+             << _.getIdName(decode_func_id)
              << " first parameter must be pointer to PhysicalStorageBuffer.";
     }
-
-    const auto tensor_layout_type = _.FindDef(tensor_layout->type_id());
 
     for (uint32_t param = 3; param < 5; ++param) {
       const auto param_type_id = function_type->GetOperandAs<uint32_t>(param);
       const auto param_type = _.FindDef(param_type_id);
       if (param_type->opcode() != spv::Op::OpTypeArray) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
-               << opname << " DecodeFunc <id> " << _.getIdName(decode_func_id)
+               << opname << " " << operand_name << " <id> "
+               << _.getIdName(decode_func_id)
                << " second/third parameter must be array of 32-bit integer "
-                  "with "
-               << " dimension equal to the tensor dimension.";
+                  "with dimension equal to the tensor dimension.";
       }
       const auto length_index = 2u;
       uint64_t array_length;
@@ -2955,14 +2999,41 @@ spv_result_t ValidateCooperativeMatrixLoadStoreTensorNV(
         if (_.EvalConstantValUint64(tensor_layout_dim_id, &dim_value)) {
           if (array_length != dim_value) {
             return _.diag(SPV_ERROR_INVALID_ID, inst)
-                   << opname << " DecodeFunc <id> "
+                   << opname << " " << operand_name << " <id> "
                    << _.getIdName(decode_func_id)
                    << " second/third parameter must be array of 32-bit integer "
-                      "with "
-                   << " dimension equal to the tensor dimension.";
+                      "with dimension equal to the tensor dimension.";
           }
         }
       }
+    }
+
+    return SPV_SUCCESS;
+  };
+
+  if (has_decode_func) {
+    const uint32_t decode_func_id =
+        inst->GetOperandAs<uint32_t>(tensor_operand_index);
+    if (auto error = validate_decode_function(decode_func_id, "DecodeFunc",
+                                              /*expect_vector=*/false)) {
+      return error;
+    }
+    tensor_operand_index++;
+  }
+
+  if (has_decode_vector_func) {
+    if (!has_decode_func) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << opname
+             << " DecodeVectorFunc requires DecodeFunc to also be specified.";
+    }
+
+    const uint32_t decode_vector_func_id =
+        inst->GetOperandAs<uint32_t>(tensor_operand_index);
+    if (auto error =
+            validate_decode_function(decode_vector_func_id, "DecodeVectorFunc",
+                                     /*expect_vector=*/true)) {
+      return error;
     }
 
     tensor_operand_index++;
