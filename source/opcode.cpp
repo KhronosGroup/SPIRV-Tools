@@ -392,6 +392,7 @@ bool spvOpcodeIsAbort(spv::Op opcode) {
     case spv::Op::OpTerminateRayKHR:
     case spv::Op::OpIgnoreIntersectionKHR:
     case spv::Op::OpEmitMeshTasksEXT:
+    case spv::Op::OpAbortKHR:
       return true;
     default:
       return false;
