@@ -1473,8 +1473,7 @@ TEST_F(ValidateRayTracingReorderEXT,
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 
-TEST_F(ValidateRayTracingReorderEXT,
-       HitObjectRecordFromQueryEXTWithHitKind) {
+TEST_F(ValidateRayTracingReorderEXT, HitObjectRecordFromQueryEXTWithHitKind) {
   const std::string cap = R"(
                OpCapability RayQueryKHR
                             )";
