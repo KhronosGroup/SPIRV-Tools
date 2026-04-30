@@ -437,6 +437,38 @@ TEST_F(ValidateStorage, TileAttachmentQCOMBad6) {
               HasSubstr("requires one of these capabilities: TileShadingQCOM"));
 }
 
+TEST_F(ValidateStorage, WrongDimTileImageEXT) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability Sampled1D
+               OpCapability TileImageColorReadAccessEXT
+               OpExtension "SPV_EXT_shader_tile_image"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main"
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 450
+       %void = OpTypeVoid
+        %int = OpTypeInt 32 1
+        %img = OpTypeImage %int 1D 0 0 0 2 Rgba32i
+    %ptr_img = OpTypePointer TileImageEXT %img
+     %color1 = OpVariable %ptr_img TileImageEXT
+          %3 = OpTypeFunction %void
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  spv_target_env env = SPV_ENV_VULKAN_1_4;
+  CompileSuccessfully(spirv, env);
+  EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(
+          "The TileImageEXT Storage Class must only be used for declaring "
+          "tile image variables"));
+}
+
 std::string GenerateExecutionModelCode(const std::string& execution_model,
                                        const std::string& storage_class,
                                        bool store) {

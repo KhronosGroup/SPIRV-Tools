@@ -1128,6 +1128,32 @@ spv_result_t ValidateVariableTileShadingQCOM(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateVariableTileImageEXT(ValidationState_t& _,
+                                          const Instruction* inst) {
+  bool is_valid_decl = true;
+
+  auto result_type = _.FindDef(inst->type_id());
+  if (result_type->opcode() == spv::Op::OpTypePointer) {
+    const auto pointee_type = _.FindDef(result_type->GetOperandAs<uint32_t>(2));
+    if (pointee_type && pointee_type->opcode() == spv::Op::OpTypeImage) {
+      spv::Dim dim = static_cast<spv::Dim>(pointee_type->word(3));
+      if (dim != spv::Dim::TileImageDataEXT) {
+        is_valid_decl = false;
+      }
+    } else {
+      is_valid_decl = false;
+    }
+  }
+
+  if (!is_valid_decl) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "The TileImageEXT Storage Class must only be used for declaring "
+              "tile image variables";
+  } else {
+    return SPV_SUCCESS;
+  }
+}
+
 spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
   const bool untyped_pointer = inst->opcode() == spv::Op::OpUntypedVariableKHR;
 
@@ -1244,6 +1270,11 @@ spv_result_t ValidateVariable(ValidationState_t& _, const Instruction* inst) {
   if (_.HasCapability(spv::Capability::TileShadingQCOM) &&
       storage_class == spv::StorageClass::TileAttachmentQCOM) {
     if (auto error = ValidateVariableTileShadingQCOM(_, inst)) return error;
+  }
+
+  if (_.HasCapability(spv::Capability::TileImageColorReadAccessEXT) &&
+      storage_class == spv::StorageClass::TileImageEXT) {
+    if (auto error = ValidateVariableTileImageEXT(_, inst)) return error;
   }
 
   return SPV_SUCCESS;
