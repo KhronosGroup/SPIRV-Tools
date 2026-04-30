@@ -53,6 +53,7 @@ add_spvtools_unittest(TARGET val_abcde
        val_extension_spv_intel_arbitrary_precision_integers_test.cpp
        val_extension_spv_intel_function_variants.cpp
        val_extension_spv_intel_inline_assembly.cpp
+       val_extension_spv_intel_predicated_io_test.cpp
        val_extension_spv_ext_descriptor_heap.cpp
        val_ext_inst_test.cpp
        val_ext_inst_debug_test.cpp
