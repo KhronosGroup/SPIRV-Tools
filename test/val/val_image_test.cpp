@@ -11477,12 +11477,12 @@ TEST_F(ValidateImage, TileImageNotFragment) {
     %void = OpTypeVoid
     %func = OpTypeFunction %void
     %float = OpTypeFloat 32
-    %v4float = OpTypeVector %float 4
-    %ptr = OpTypePointer TileImageEXT %v4float
+    %image = OpTypeImage %float TileImageDataEXT 0 0 0 2 Unknown
+    %ptr = OpTypePointer TileImageEXT %image
     %var = OpVariable %ptr TileImageEXT
     %main = OpFunction %void None %func
     %label = OpLabel
-    %val = OpLoad %v4float %var
+    %val = OpLoad %image %var
     OpReturn
     OpFunctionEnd
   )";
