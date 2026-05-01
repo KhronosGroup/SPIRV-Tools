@@ -27,9 +27,8 @@ using ::testing::HasSubstr;
 
 using ValidatePredicatedIOINTEL = spvtest::ValidateBase<bool>;
 
-std::string GenerateShaderCode(
-    const std::string& body,
-    const std::string& extra_types_and_vars = "") {
+std::string GenerateShaderCode(const std::string& body,
+                               const std::string& extra_types_and_vars = "") {
   std::ostringstream ss;
   ss << R"(
 OpCapability Shader
@@ -153,10 +152,8 @@ TEST_F(ValidatePredicatedIOINTEL, PredicatedLoadPredicateNotBool) {
 )";
   CompileSuccessfully(GenerateShaderCode(body));
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Predicate"));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a Boolean scalar"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Predicate"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a Boolean scalar"));
 }
 
 TEST_F(ValidatePredicatedIOINTEL, PredicatedLoadDefaultValueTypeMismatch) {
@@ -166,8 +163,7 @@ TEST_F(ValidatePredicatedIOINTEL, PredicatedLoadDefaultValueTypeMismatch) {
 )";
   CompileSuccessfully(GenerateShaderCode(body));
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Default Value"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Default Value"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("type does not match Result Type"));
 }
@@ -179,8 +175,7 @@ TEST_F(ValidatePredicatedIOINTEL, PredicatedLoadPointerTypeMismatch) {
 )";
   CompileSuccessfully(GenerateShaderCode(body));
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("does not match Pointer"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("does not match Pointer"));
 }
 
 TEST_F(ValidatePredicatedIOINTEL, PredicatedLoadVolatileNotAllowed) {
@@ -255,10 +250,8 @@ OpPredicatedStoreINTEL %ptr %float_1 %int_0
 )";
   CompileSuccessfully(GenerateShaderCode(body));
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Predicate"));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("must be a Boolean scalar"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Predicate"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("must be a Boolean scalar"));
 }
 
 TEST_F(ValidatePredicatedIOINTEL, PredicatedStorePointerTypeMismatch) {
@@ -268,8 +261,7 @@ OpPredicatedStoreINTEL %ptr %float_1 %true
 )";
   CompileSuccessfully(GenerateShaderCode(body));
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("type does not match Object"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("type does not match Object"));
 }
 
 TEST_F(ValidatePredicatedIOINTEL, PredicatedStoreVolatileNotAllowed) {
@@ -307,8 +299,7 @@ OpFunctionEnd
 )";
   CompileSuccessfully(spirv);
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("PredicatedIOINTEL"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("PredicatedIOINTEL"));
 }
 
 TEST_F(ValidatePredicatedIOINTEL, PredicatedStoreWithoutCapability) {
@@ -333,8 +324,7 @@ OpFunctionEnd
 )";
   CompileSuccessfully(spirv);
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("PredicatedIOINTEL"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("PredicatedIOINTEL"));
 }
 
 }  // namespace

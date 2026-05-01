@@ -3518,9 +3518,8 @@ spv_result_t ValidatePredicatedLoadINTEL(ValidationState_t& _,
     if (!pointee_type || result_type_id != pointee_type->id()) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "OpPredicatedLoadINTEL Result Type <id> "
-             << _.getIdName(result_type_id)
-             << " does not match Pointer <id> " << _.getIdName(pointer->id())
-             << "s type.";
+             << _.getIdName(result_type_id) << " does not match Pointer <id> "
+             << _.getIdName(pointer->id()) << "s type.";
     }
   }
 
@@ -3566,8 +3565,8 @@ spv_result_t ValidatePredicatedStoreINTEL(ValidationState_t& _,
         (_.features().variable_pointers &&
          !spvOpcodeReturnsLogicalVariablePointer(pointer->opcode()))))) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << "OpPredicatedStoreINTEL Pointer <id> "
-           << _.getIdName(pointer_id) << " is not a logical pointer.";
+           << "OpPredicatedStoreINTEL Pointer <id> " << _.getIdName(pointer_id)
+           << " is not a logical pointer.";
   }
 
   const auto pointer_type = _.FindDef(pointer->type_id());
@@ -3601,8 +3600,7 @@ spv_result_t ValidatePredicatedStoreINTEL(ValidationState_t& _,
     if (!pointee_type || pointee_type->id() != object_type_id) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "OpPredicatedStoreINTEL Pointer <id> "
-             << _.getIdName(pointer_id)
-             << "s type does not match Object <id> "
+             << _.getIdName(pointer_id) << "s type does not match Object <id> "
              << _.getIdName(object->id()) << "s type.";
     }
   }
