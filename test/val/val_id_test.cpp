@@ -4562,6 +4562,7 @@ TEST_P(ValidateIdWithMessage, OpFunctionFunctionTypeBad) {
 %5 = OpLabel
      OpReturn
 OpFunctionEnd)";
+  printf("%s\n", spirv.c_str());
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),

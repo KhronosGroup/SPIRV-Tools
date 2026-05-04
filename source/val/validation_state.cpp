@@ -18,7 +18,9 @@
 
 #include <cassert>
 #include <cstdint>
+#include <sstream>
 #include <stack>
+#include <string>
 #include <utility>
 
 #include "source/opcode.h"
@@ -29,7 +31,10 @@
 #include "source/val/basic_block.h"
 #include "source/val/construct.h"
 #include "source/val/function.h"
+#include "source/val/instruction.h"
 #include "spirv-tools/libspirv.h"
+#include "spirv/unified1/NonSemanticShaderDebugInfo.h"
+#include "spirv/unified1/spirv.hpp11"
 
 namespace spvtools {
 namespace val {
@@ -348,10 +353,15 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code,
   }
 
   std::string disassembly;
-  if (inst) disassembly = Disassemble(*inst);
+  std::string shader_debug_info;
+  if (inst) {
+    disassembly = Disassemble(*inst);
+    shader_debug_info = InspectShaderDebugInfo(*inst);
+  }
 
   return DiagnosticStream({0, 0, inst ? inst->LineNum() : 0},
-                          context_->consumer, disassembly, error_code);
+                          context_->consumer, disassembly, error_code,
+                          shader_debug_info);
 }
 
 std::vector<Function>& ValidationState_t::functions() {
@@ -2168,6 +2178,133 @@ std::vector<uint32_t>& ValidationState_t::GetDebugSourceLineLength(
     return debug_source_line_length_[id];
   }
   return it->second;
+}
+
+std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
+  const uint32_t set_id = ShaderDebugInfoSet();
+  if (set_id == 0) {
+    return "";  // no ShaderDebugInfo found
+  } else if (inst.function() == nullptr) {
+    // currently only checking for code in function blocks
+    return "";
+  }
+
+  // Find the DebugLine that is preceding
+  const Instruction* debug_line_inst = nullptr;
+  size_t idx = &inst - &ordered_instructions()[0];
+  while (idx > 0) {
+    const Instruction* prev = &ordered_instructions()[--idx];
+    if (prev->opcode() == spv::Op::OpFunction) {
+      break;
+    }
+
+    if (prev->opcode() == spv::Op::OpExtInst &&
+        prev->GetOperandAs<uint32_t>(2) == set_id &&
+        prev->GetOperandAs<uint32_t>(3) ==
+            NonSemanticShaderDebugInfoDebugLine) {
+      debug_line_inst = prev;
+      break;
+    }
+  }
+
+  if (!debug_line_inst) return "";
+
+  const Instruction* debug_source =
+      FindDef(debug_line_inst->GetOperandAs<uint32_t>(4));
+  if (!debug_source || debug_source->GetOperandAs<uint32_t>(3) !=
+                           NonSemanticShaderDebugInfoDebugSource) {
+    return "";
+  }
+
+  bool is_int32 = false, is_const_int32 = false;
+  uint32_t line_start = 0;
+  uint32_t line_end = 0;
+  uint32_t column_start = 0;
+  uint32_t column_end = 0;
+  std::tie(is_int32, is_const_int32, line_start) =
+      EvalInt32IfConst(debug_line_inst->word(6));
+  std::tie(is_int32, is_const_int32, line_end) =
+      EvalInt32IfConst(debug_line_inst->word(7));
+  std::tie(is_int32, is_const_int32, column_start) =
+      EvalInt32IfConst(debug_line_inst->word(8));
+  std::tie(is_int32, is_const_int32, column_end) =
+      EvalInt32IfConst(debug_line_inst->word(9));
+
+  std::ostringstream ss;
+
+  // The left hand side line number, need to make sure if going from line number
+  // 99 to 100 that all lines have the same padding
+  const size_t vertical_line_padding = std::to_string(line_end).length();
+  auto add_vertical_line = [&](uint32_t line_number) {
+    size_t padding = 1;
+    if (line_number != 0) {
+      ss << line_number;
+      padding += (vertical_line_padding - std::to_string(line_number).length());
+    } else {
+      padding += vertical_line_padding;
+    }
+    for (size_t p = 0; p < padding; p++) {
+      ss << " ";
+    }
+    ss << "|";
+    if (line_number != 0) {
+      ss << " ";  // otherwise test will fail from trailing whitespace being
+                  // trimmed
+    }
+  };
+
+  uint32_t current_line_num = 1;
+  auto stream_text = [&](const Instruction* op_string) {
+    const std::string text = op_string->GetOperandAs<std::string>(1);
+    for (const char c : text) {
+      if (current_line_num >= line_start && current_line_num <= line_end) {
+        ss << c;
+        if (c == '\n' && current_line_num < line_end) {
+          add_vertical_line(current_line_num + 1);
+        }
+      }
+
+      if (c == '\n') {
+        current_line_num++;
+      }
+    }
+  };
+
+  const Instruction* file_string =
+      FindDef(debug_source->GetOperandAs<uint32_t>(4));
+  ss << "\n  --> " << file_string->GetOperandAs<std::string>(1) << ":"
+     << line_start << ":" << column_start << '\n';
+
+  add_vertical_line(0);
+  ss << '\n';
+
+  const Instruction* source_string =
+      FindDef(debug_source->GetOperandAs<uint32_t>(5));
+  add_vertical_line(line_start);
+  stream_text(source_string);
+
+  // Look for any DebugSourceContinued
+  size_t src_idx = debug_source - &ordered_instructions()[0] + 1;
+  for (; src_idx < ordered_instructions().size(); ++src_idx) {
+    const Instruction& continued_insn = ordered_instructions()[src_idx];
+    if (continued_insn.opcode() != spv::Op::OpExtInst ||
+        continued_insn.GetOperandAs<uint32_t>(2) != set_id ||
+        continued_insn.GetOperandAs<uint32_t>(3) !=
+            NonSemanticShaderDebugInfoDebugSourceContinued) {
+      break;
+    }
+
+    const Instruction* continued_string =
+        FindDef(continued_insn.GetOperandAs<uint32_t>(4));
+    stream_text(continued_string);
+  }
+
+  // This happens if the error is the last line of source
+  if (current_line_num == line_end) ss << "\n";
+
+  add_vertical_line(0);
+  ss << "\n";
+  return ss.str();
 }
 
 bool ValidationState_t::IsValidStorageClass(
