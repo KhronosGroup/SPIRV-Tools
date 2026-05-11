@@ -1007,6 +1007,13 @@ class ValidationState_t {
   void RegisterShaderDebugInfo(uint32_t id) { shader_debug_info_set_id = id; }
   uint32_t ShaderDebugInfoSet() const { return shader_debug_info_set_id; }
   std::string InspectShaderDebugInfo(const Instruction& inst);
+  void InspectDebugLine(std::ostringstream& ss, const Instruction& inst);
+  void InspectDebugGlobalVariable(std::ostringstream& ss,
+                                  const Instruction& inst);
+  void PrintShaderDebugInfoSource(std::ostringstream& ss,
+                                  const Instruction& debug_source,
+                                  uint32_t line_start, uint32_t line_end,
+                                  uint32_t column_start);
 
  private:
   ValidationState_t(const ValidationState_t&);
