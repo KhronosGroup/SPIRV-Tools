@@ -2180,15 +2180,27 @@ std::vector<uint32_t>& ValidationState_t::GetDebugSourceLineLength(
   return it->second;
 }
 
+// Main entrypoint to using ShaderDebugInfo to get better error messages
 std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
-  const uint32_t set_id = ShaderDebugInfoSet();
-  if (set_id == 0) {
+  if (ShaderDebugInfoSet() == 0) {
     return "";  // no ShaderDebugInfo found
-  } else if (inst.function() == nullptr) {
-    // currently only checking for code in function blocks
-    return "";
   }
 
+  std::ostringstream ss;
+  if (inst.function() != nullptr) {
+    InspectDebugLine(ss, inst);
+  } else if (inst.opcode() == spv::Op::OpVariable) {
+    // Know are global because not in any function
+    // TODO - test with OpUntypedVariable as well
+    InspectDebugGlobalVariable(ss, inst);
+  }
+
+  return ss.str();
+}
+
+void ValidationState_t::InspectDebugLine(std::ostringstream& ss,
+                                         const Instruction& inst) {
+  const uint32_t set_id = ShaderDebugInfoSet();
   // Find the DebugLine that is preceding
   const Instruction* debug_line_inst = nullptr;
   size_t idx = &inst - &ordered_instructions()[0];
@@ -2207,13 +2219,13 @@ std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
     }
   }
 
-  if (!debug_line_inst) return "";
+  if (!debug_line_inst) return;
 
   const Instruction* debug_source =
       FindDef(debug_line_inst->GetOperandAs<uint32_t>(4));
   if (!debug_source || debug_source->GetOperandAs<uint32_t>(3) !=
                            NonSemanticShaderDebugInfoDebugSource) {
-    return "";
+    return;
   }
 
   bool is_int32 = false, is_const_int32 = false;
@@ -2230,8 +2242,53 @@ std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
   std::tie(is_int32, is_const_int32, column_end) =
       EvalInt32IfConst(debug_line_inst->word(9));
 
-  std::ostringstream ss;
+  PrintShaderDebugInfoSource(ss, *debug_source, line_start, line_end,
+                             column_start);
+}
 
+void ValidationState_t::InspectDebugGlobalVariable(
+    std::ostringstream& ss, const Instruction& variable_inst) {
+  const uint32_t set_id = ShaderDebugInfoSet();
+
+  const Instruction* debug_gloabl_var_inst = nullptr;
+  for (const auto& inst : ordered_instructions()) {
+    if (inst.opcode() == spv::Op::OpFunction) {
+      return;  // validated to not be in a function block
+    }
+
+    if (inst.opcode() == spv::Op::OpExtInst &&
+        inst.GetOperandAs<uint32_t>(2) == set_id &&
+        inst.GetOperandAs<uint32_t>(3) ==
+            NonSemanticShaderDebugInfoDebugGlobalVariable &&
+        inst.GetOperandAs<uint32_t>(11) == variable_inst.id()) {
+      debug_gloabl_var_inst = &inst;
+      break;
+    }
+  }
+  if (!debug_gloabl_var_inst) return;
+
+  const Instruction* debug_source =
+      FindDef(debug_gloabl_var_inst->GetOperandAs<uint32_t>(6));
+  if (!debug_source || debug_source->GetOperandAs<uint32_t>(3) !=
+                           NonSemanticShaderDebugInfoDebugSource) {
+    return;
+  }
+
+  bool is_int32 = false, is_const_int32 = false;
+  uint32_t line_start = 0;
+  uint32_t column_start = 0;
+  std::tie(is_int32, is_const_int32, line_start) =
+      EvalInt32IfConst(debug_gloabl_var_inst->word(8));
+  std::tie(is_int32, is_const_int32, column_start) =
+      EvalInt32IfConst(debug_gloabl_var_inst->word(9));
+
+  PrintShaderDebugInfoSource(ss, *debug_source, line_start, line_start,
+                             column_start);
+}
+
+void ValidationState_t::PrintShaderDebugInfoSource(
+    std::ostringstream& ss, const Instruction& debug_source,
+    uint32_t line_start, uint32_t line_end, uint32_t column_start) {
   // The left hand side line number, need to make sure if going from line number
   // 99 to 100 that all lines have the same padding
   const size_t vertical_line_padding = std::to_string(line_end).length();
@@ -2271,7 +2328,7 @@ std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
   };
 
   const Instruction* file_string =
-      FindDef(debug_source->GetOperandAs<uint32_t>(4));
+      FindDef(debug_source.GetOperandAs<uint32_t>(4));
   ss << "\n  --> " << file_string->GetOperandAs<std::string>(1) << ":"
      << line_start << ":" << column_start << '\n';
 
@@ -2279,12 +2336,14 @@ std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
   ss << '\n';
 
   const Instruction* source_string =
-      FindDef(debug_source->GetOperandAs<uint32_t>(5));
+      FindDef(debug_source.GetOperandAs<uint32_t>(5));
   add_vertical_line(line_start);
   stream_text(source_string);
 
+  const uint32_t set_id = ShaderDebugInfoSet();
+
   // Look for any DebugSourceContinued
-  size_t src_idx = debug_source - &ordered_instructions()[0] + 1;
+  size_t src_idx = &debug_source - &ordered_instructions()[0] + 1;
   for (; src_idx < ordered_instructions().size(); ++src_idx) {
     const Instruction& continued_insn = ordered_instructions()[src_idx];
     if (continued_insn.opcode() != spv::Op::OpExtInst ||
@@ -2304,7 +2363,6 @@ std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
 
   add_vertical_line(0);
   ss << "\n";
-  return ss.str();
 }
 
 bool ValidationState_t::IsValidStorageClass(
