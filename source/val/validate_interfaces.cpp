@@ -411,13 +411,16 @@ spv_result_t GetLocationsForVariable(
     uint32_t num_components = NumConsumedComponents(_, sub_type);
 
     for (uint32_t array_idx = 0; array_idx < array_size; ++array_idx) {
-      uint32_t array_location = location + (num_locations * array_idx);
-      uint32_t start = array_location * 4;
-      if (kMaxLocations <= start) {
+      uint64_t array_location_u64 =
+          static_cast<uint64_t>(location) +
+          (static_cast<uint64_t>(num_locations) * array_idx);
+      if (kMaxLocations <= array_location_u64 * 4) {
         // Too many locations, give up.
         break;
       }
 
+      uint32_t array_location = static_cast<uint32_t>(array_location_u64);
+      uint32_t start = array_location * 4;
       uint32_t end = (array_location + num_locations) * 4;
       if (num_components != 0) {
         start += component;
@@ -487,19 +490,22 @@ spv_result_t GetLocationsForVariable(
         component = member_components[i - 1];
       }
 
-      uint32_t start = location * 4;
-      if (kMaxLocations <= start) {
+      uint64_t start_u64 = static_cast<uint64_t>(location) * 4;
+      if (kMaxLocations <= start_u64) {
         // Too many locations, give up.
         continue;
       }
 
+      uint32_t start = static_cast<uint32_t>(start_u64);
       if (member->opcode() == spv::Op::OpTypeArray && num_components >= 1 &&
           num_components < 4) {
         // When an array has an element that takes less than a location in
         // size, calculate the used locations in a strided manner.
         for (uint32_t l = location; l < num_locations + location; ++l) {
           for (uint32_t c = component; c < component + num_components; ++c) {
-            uint32_t check = 4 * l + c;
+            uint64_t check_u64 = static_cast<uint64_t>(l) * 4 + c;
+            if (kMaxLocations <= check_u64) continue;
+            uint32_t check = static_cast<uint32_t>(check_u64);
             if (!locations->insert(check).second) {
               return _.diag(SPV_ERROR_INVALID_DATA, entry_point)
                      << (is_output ? _.VkErrorID(8722) : _.VkErrorID(8721))

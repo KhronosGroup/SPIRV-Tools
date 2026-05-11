@@ -86,6 +86,7 @@ add_spvtools_unittest(TARGET val_fghijklmnop
        val_interfaces_test.cpp
        val_layout_test.cpp
        val_literals_test.cpp
+       val_location_rollover_test.cpp
        val_logical_pointers_test.cpp
        val_logicals_test.cpp
        val_memory_test.cpp
