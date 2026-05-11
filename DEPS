@@ -5,7 +5,7 @@ vars = {
 
   'abseil_revision': '7dcc24cf19674efc75b8e8de06b9617838b8e0e9',
 
-  'effcee_revision': '63394054b5afa14aee3e32bd12b227eb7225b871',
+  'effcee_revision': 'ae38e040cbb7e83efa8bfbb4967e5b8c8c89b55a',
 
   'googletest_revision': 'd72f9c8aea6817cdf1ca0ac10887f328de7f3da2',
 
@@ -14,9 +14,9 @@ vars = {
 
   're2_revision': '972a15cedd008d846f1a39b2e88ce48d7f166cbd',
 
-  'spirv_headers_revision': '58006c901d1d5c37dece6b6610e9af87fa951375',
+  'spirv_headers_revision': '1a22b167081842915a1c78a0b5b5a353a23284aa',
 
-  'mimalloc_revision': 'fef6b0dd70f9d7fa0750b0d0b9fbb471203b94cd',
+  'mimalloc_revision': 'b1963961a5cdb1996c9ad2e356014089b7a94ea3',
 }
 
 deps = {
@@ -42,4 +42,3 @@ deps = {
   'external/mimalloc':
       Var('github') + '/microsoft/mimalloc.git@' + Var('mimalloc_revision'),
 }
-
