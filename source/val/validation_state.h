@@ -1004,6 +1004,10 @@ class ValidationState_t {
   // instruction Will create a new vector if DebugSource is not found
   std::vector<uint32_t>& GetDebugSourceLineLength(uint32_t id);
 
+  void RegisterShaderDebugInfo(uint32_t id) { shader_debug_info_set_id = id; }
+  uint32_t ShaderDebugInfoSet() const { return shader_debug_info_set_id; }
+  std::string InspectShaderDebugInfo(const Instruction& inst);
+
  private:
   ValidationState_t(const ValidationState_t&);
 
@@ -1185,6 +1189,10 @@ class ValidationState_t {
   /// Maps an id of DebugSource to a vector that contains the length of each
   /// line side of it. (Also will have the DebugSourceContinued source included)
   std::unordered_map<uint32_t, std::vector<uint32_t>> debug_source_line_length_;
+
+  // Quick check if we have seen NonSemantic.Shader.DebugInfo.*
+  // to know to try and print out a source line on an error message
+  uint32_t shader_debug_info_set_id = 0;
 
   /// Maps ids to friendly names.
   std::unique_ptr<spvtools::FriendlyNameMapper> friendly_mapper_;

@@ -1350,6 +1350,8 @@ spv_result_t ValidateExtInstImport(ValidationState_t& _,
              << "NonSemantic.Shader.DebugInfo import version " << ver
              << " is below the minimum supported version " << kNSDIMinVersion;
     }
+
+    _.RegisterShaderDebugInfo(inst->id());
   }
 
   return SPV_SUCCESS;
