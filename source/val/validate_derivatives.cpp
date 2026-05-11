@@ -91,6 +91,7 @@ spv_result_t DerivativesPass(ValidationState_t& _, const Instruction* inst) {
                      models->end() ||
                  models->find(spv::ExecutionModel::MeshEXT) != models->end() ||
                  models->find(spv::ExecutionModel::TaskEXT) != models->end()) &&
+                (state.HasExtension(kSPV_KHR_compute_shader_derivatives)) &&
                 (!modes ||
                  (modes->find(spv::ExecutionMode::DerivativeGroupLinearKHR) ==
                       modes->end() &&
