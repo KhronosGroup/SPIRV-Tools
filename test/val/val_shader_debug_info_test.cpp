@@ -363,6 +363,148 @@ TEST_F(ValidateShaderDebugInfo, NoDebugGlobalVariable) {
   EXPECT_THAT(getDiagnosticString(), Not(HasSubstr("a.comp")));
 }
 
+TEST_F(ValidateShaderDebugInfo, DebugLocalVariable) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+          %2 = OpString "a.comp"
+          %8 = OpString "uint"
+         %16 = OpString "main"
+         %19 = OpString "#version 450
+
+void main() {
+    uint x = 0;
+    int y = int(x);
+}"
+         %32 = OpString "x"
+         %37 = OpString "int"
+         %43 = OpString "y"
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+    %uint_32 = OpConstant %uint 32
+     %uint_6 = OpConstant %uint 6
+     %uint_0 = OpConstant %uint 0
+          %9 = OpExtInst %void %1 DebugTypeBasic %8 %uint_32 %uint_6 %uint_0
+     %uint_3 = OpConstant %uint 3
+          %6 = OpExtInst %void %1 DebugTypeFunction %uint_3 %void
+         %18 = OpExtInst %void %1 DebugSource %2 %19
+     %uint_1 = OpConstant %uint 1
+     %uint_4 = OpConstant %uint 4
+     %uint_2 = OpConstant %uint 2
+         %20 = OpExtInst %void %1 DebugCompilationUnit %uint_1 %uint_4 %18 %uint_2
+         %17 = OpExtInst %void %1 DebugFunction %16 %6 %18 %uint_3 %uint_0 %20 %16 %uint_3 %uint_3
+%_ptr_Function_uint = OpTypePointer Function %uint
+     %uint_7 = OpConstant %uint 7
+         %29 = OpExtInst %void %1 DebugTypePointer %9 %uint_7 %uint_0
+         %31 = OpExtInst %void %1 DebugLocalVariable %32 %9 %18 %uint_4 %uint_0 %17 %uint_4
+         %34 = OpExtInst %void %1 DebugExpression
+        %int = OpTypeInt 32 1
+         %38 = OpExtInst %void %1 DebugTypeBasic %37 %uint_32 %uint_4 %uint_0
+%_ptr_Function_int = OpTypePointer Function %int
+         %40 = OpExtInst %void %1 DebugTypePointer %38 %uint_7 %uint_0
+     %uint_5 = OpConstant %uint 5
+         %42 = OpExtInst %void %1 DebugLocalVariable %43 %38 %18 %uint_5 %uint_0 %17 %uint_4
+       %main = OpFunction %void None %5
+         %15 = OpLabel
+          %x = OpVariable %_ptr_Function_uint Uniform
+          %y = OpVariable %_ptr_Function_int Function
+         %25 = OpExtInst %void %1 DebugScope %17
+         %26 = OpExtInst %void %1 DebugLine %18 %uint_3 %uint_3 %uint_0 %uint_0
+         %24 = OpExtInst %void %1 DebugFunctionDefinition %17 %main
+         %35 = OpExtInst %void %1 DebugLine %18 %uint_4 %uint_4 %uint_0 %uint_0
+         %33 = OpExtInst %void %1 DebugDeclare %31 %x %34
+               OpStore %x %uint_0
+         %46 = OpExtInst %void %1 DebugLine %18 %uint_5 %uint_5 %uint_0 %uint_0
+         %45 = OpExtInst %void %1 DebugDeclare %42 %y %34
+         %47 = OpLoad %uint %x
+         %48 = OpBitcast %int %47
+               OpStore %y %48
+         %49 = OpExtInst %void %1 DebugLine %18 %uint_6 %uint_6 %uint_0 %uint_0
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(R"(  --> a.comp:4:0
+  |
+4 |     uint x = 0;
+  |)"));
+}
+
+// Test if no DebugLocalVariable is found, things still work
+TEST_F(ValidateShaderDebugInfo, NoDebugLocalVariable) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+          %2 = OpString "a.comp"
+          %8 = OpString "uint"
+         %16 = OpString "main"
+         %19 = OpString "#version 450
+
+void main() {
+    uint x = 0;
+    int y = int(x);
+}"
+         %32 = OpString "x"
+         %37 = OpString "int"
+         %43 = OpString "y"
+       %void = OpTypeVoid
+          %5 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+    %uint_32 = OpConstant %uint 32
+     %uint_6 = OpConstant %uint 6
+     %uint_0 = OpConstant %uint 0
+          %9 = OpExtInst %void %1 DebugTypeBasic %8 %uint_32 %uint_6 %uint_0
+     %uint_3 = OpConstant %uint 3
+          %6 = OpExtInst %void %1 DebugTypeFunction %uint_3 %void
+         %18 = OpExtInst %void %1 DebugSource %2 %19
+     %uint_1 = OpConstant %uint 1
+     %uint_4 = OpConstant %uint 4
+     %uint_2 = OpConstant %uint 2
+         %20 = OpExtInst %void %1 DebugCompilationUnit %uint_1 %uint_4 %18 %uint_2
+         %17 = OpExtInst %void %1 DebugFunction %16 %6 %18 %uint_3 %uint_0 %20 %16 %uint_3 %uint_3
+%_ptr_Function_uint = OpTypePointer Function %uint
+     %uint_7 = OpConstant %uint 7
+         %29 = OpExtInst %void %1 DebugTypePointer %9 %uint_7 %uint_0
+         %31 = OpExtInst %void %1 DebugLocalVariable %32 %9 %18 %uint_4 %uint_0 %17 %uint_4
+         %34 = OpExtInst %void %1 DebugExpression
+        %int = OpTypeInt 32 1
+         %38 = OpExtInst %void %1 DebugTypeBasic %37 %uint_32 %uint_4 %uint_0
+%_ptr_Function_int = OpTypePointer Function %int
+         %40 = OpExtInst %void %1 DebugTypePointer %38 %uint_7 %uint_0
+     %uint_5 = OpConstant %uint 5
+         %42 = OpExtInst %void %1 DebugLocalVariable %43 %38 %18 %uint_5 %uint_0 %17 %uint_4
+       %main = OpFunction %void None %5
+         %15 = OpLabel
+          %x = OpVariable %_ptr_Function_uint Uniform
+          %y = OpVariable %_ptr_Function_int Function
+         %25 = OpExtInst %void %1 DebugScope %17
+         %26 = OpExtInst %void %1 DebugLine %18 %uint_3 %uint_3 %uint_0 %uint_0
+         %24 = OpExtInst %void %1 DebugFunctionDefinition %17 %main
+         %35 = OpExtInst %void %1 DebugLine %18 %uint_4 %uint_4 %uint_0 %uint_0
+               OpStore %x %uint_0
+         %46 = OpExtInst %void %1 DebugLine %18 %uint_5 %uint_5 %uint_0 %uint_0
+         %47 = OpLoad %uint %x
+         %48 = OpBitcast %int %47
+               OpStore %y %48
+         %49 = OpExtInst %void %1 DebugLine %18 %uint_6 %uint_6 %uint_0 %uint_0
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(), Not(HasSubstr("a.comp")));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

@@ -2187,8 +2187,13 @@ std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
   }
 
   std::ostringstream ss;
-  if (inst.function() != nullptr) {
-    InspectDebugLine(ss, inst);
+  const Function* func = inst.function();
+  if (func != nullptr) {
+    if (inst.opcode() == spv::Op::OpVariable) {
+      InspectDebugLocalVariable(ss, *func, inst);
+    } else {
+      InspectDebugLine(ss, inst);
+    }
   } else if (inst.opcode() == spv::Op::OpVariable) {
     // Know are global because not in any function
     // TODO - test with OpUntypedVariable as well
@@ -2281,6 +2286,60 @@ void ValidationState_t::InspectDebugGlobalVariable(
       EvalInt32IfConst(debug_gloabl_var_inst->word(8));
   std::tie(is_int32, is_const_int32, column_start) =
       EvalInt32IfConst(debug_gloabl_var_inst->word(9));
+
+  PrintShaderDebugInfoSource(ss, *debug_source, line_start, line_start,
+                             column_start);
+}
+
+void ValidationState_t::InspectDebugLocalVariable(
+    std::ostringstream& ss, const Function& func,
+    const Instruction& variable_inst) {
+  const uint32_t set_id = ShaderDebugInfoSet();
+  const Instruction* debug_declare_inst = nullptr;
+
+  const Instruction* function_inst = FindDef(func.id());
+  // Loop through the Function block as the DebugDeclare needs to be inside it
+  size_t first_inst_id = (function_inst - &ordered_instructions()[0]) + 1;
+  for (size_t i = first_inst_id + 1; i < ordered_instructions().size(); ++i) {
+    const Instruction& current_inst = ordered_instructions()[i];
+    if (current_inst.opcode() == spv::Op::OpFunctionEnd) {
+      break;  // we hit the next Funciton block
+    }
+
+    if (current_inst.opcode() == spv::Op::OpExtInst &&
+        current_inst.GetOperandAs<uint32_t>(2) == set_id &&
+        current_inst.GetOperandAs<uint32_t>(3) ==
+            NonSemanticShaderDebugInfoDebugDeclare &&
+        current_inst.GetOperandAs<uint32_t>(5) == variable_inst.id()) {
+      debug_declare_inst = &current_inst;
+      break;
+    }
+  }
+
+  if (!debug_declare_inst) return;
+
+  const Instruction* debug_local_variable =
+      FindDef(debug_declare_inst->GetOperandAs<uint32_t>(4));
+  if (!debug_local_variable ||
+      debug_local_variable->GetOperandAs<uint32_t>(3) !=
+          NonSemanticShaderDebugInfoDebugLocalVariable) {
+    return;
+  }
+
+  const Instruction* debug_source =
+      FindDef(debug_local_variable->GetOperandAs<uint32_t>(6));
+  if (!debug_source || debug_source->GetOperandAs<uint32_t>(3) !=
+                           NonSemanticShaderDebugInfoDebugSource) {
+    return;
+  }
+
+  bool is_int32 = false, is_const_int32 = false;
+  uint32_t line_start = 0;
+  uint32_t column_start = 0;
+  std::tie(is_int32, is_const_int32, line_start) =
+      EvalInt32IfConst(debug_local_variable->word(8));
+  std::tie(is_int32, is_const_int32, column_start) =
+      EvalInt32IfConst(debug_local_variable->word(9));
 
   PrintShaderDebugInfoSource(ss, *debug_source, line_start, line_start,
                              column_start);

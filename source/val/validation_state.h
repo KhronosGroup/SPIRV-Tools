@@ -1010,6 +1010,8 @@ class ValidationState_t {
   void InspectDebugLine(std::ostringstream& ss, const Instruction& inst);
   void InspectDebugGlobalVariable(std::ostringstream& ss,
                                   const Instruction& inst);
+  void InspectDebugLocalVariable(std::ostringstream& ss, const Function& func,
+                                 const Instruction& inst);
   void PrintShaderDebugInfoSource(std::ostringstream& ss,
                                   const Instruction& debug_source,
                                   uint32_t line_start, uint32_t line_end,
