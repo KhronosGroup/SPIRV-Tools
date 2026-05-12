@@ -207,6 +207,8 @@ const char* spvOperandTypeStr(spv_operand_type_t type) {
       return "cooperative vector matrix layout";
     case SPV_OPERAND_TYPE_COMPONENT_TYPE:
       return "component type";
+    case SPV_OPERAND_TYPE_GATHER_MODES:
+      return "gather modes";
 
     case SPV_OPERAND_TYPE_KERNEL_PROPERTY_FLAGS:
       return "kernel property flags";
@@ -339,6 +341,7 @@ bool spvOperandIsConcrete(spv_operand_type_t type) {
     case SPV_OPERAND_TYPE_TENSOR_CLAMP_MODE:
     case SPV_OPERAND_TYPE_COOPERATIVE_VECTOR_MATRIX_LAYOUT:
     case SPV_OPERAND_TYPE_COMPONENT_TYPE:
+    case SPV_OPERAND_TYPE_GATHER_MODES:
     case SPV_OPERAND_TYPE_KERNEL_PROPERTY_FLAGS:
     case SPV_OPERAND_TYPE_SHDEBUG100_BUILD_IDENTIFIER_FLAGS:
     case SPV_OPERAND_TYPE_SHDEBUG100_DEBUG_BASE_TYPE_ATTRIBUTE_ENCODING:

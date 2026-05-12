@@ -337,6 +337,9 @@ typedef enum spv_operand_type_t {
   SPV_OPERAND_TYPE_OPTIONAL_CAPABILITY,
   SPV_OPERAND_TYPE_VARIABLE_CAPABILITY,
 
+  // Enum type from SPV_QCOM_image_processing3
+  SPV_OPERAND_TYPE_GATHER_MODES,
+
   // This is a sentinel value, and does not represent an operand type.
   // It should come last.
   SPV_OPERAND_TYPE_NUM_OPERAND_TYPES,
@@ -1007,8 +1010,8 @@ SPIRV_TOOLS_EXPORT spv_result_t spvBinaryParse(
 // The optimizer interface.
 
 // A pointer to a function that accepts a log message from an optimizer.
-typedef void (*spv_message_consumer)(
-    spv_message_level_t, const char*, const spv_position_t*, const char*);
+typedef void (*spv_message_consumer)(spv_message_level_t, const char*,
+                                     const spv_position_t*, const char*);
 
 // Creates and returns an optimizer object.  This object must be passed to
 // optimizer APIs below and is valid until passed to spvOptimizerDestroy.
