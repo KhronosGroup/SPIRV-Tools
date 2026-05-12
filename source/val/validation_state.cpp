@@ -2191,7 +2191,10 @@ std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
   if (func != nullptr) {
     if (inst.opcode() == spv::Op::OpVariable) {
       InspectDebugLocalVariable(ss, *func, inst);
+    } else if (inst.opcode() == spv::Op::OpFunctionCall) {
+      InspectDebugFunctionDefinition(ss, inst);
     } else {
+      // Currently a fall back for anything in a function
       InspectDebugLine(ss, inst);
     }
   } else if (inst.opcode() == spv::Op::OpVariable) {
@@ -2201,6 +2204,88 @@ std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
   }
 
   return ss.str();
+}
+
+ValidationState_t::DebugSourceInfo ValidationState_t::GetDebugSourceInfo(
+    const Instruction& inst) {
+  assert(inst.opcode() == spv::Op::OpExtInst);
+  assert(inst.word(3) == ShaderDebugInfoSet());
+
+  uint32_t line_start_id = 0, line_end_id = 0, column_start_id = 0,
+           column_end_id = 0;
+
+  switch (inst.word(4)) {
+    case NonSemanticShaderDebugInfoDebugLine:
+      line_start_id = 6;
+      line_end_id = 7;
+      column_start_id = 8;
+      column_end_id = 9;
+      break;
+    case NonSemanticShaderDebugInfoDebugTypeTemplateParameterPack:
+      line_start_id = 7;
+      column_start_id = 8;
+      break;
+    case NonSemanticShaderDebugInfoDebugLexicalBlock:
+      line_start_id = 6;
+      column_start_id = 7;
+      break;
+    case NonSemanticShaderDebugInfoDebugLocalVariable:
+    case NonSemanticShaderDebugInfoDebugGlobalVariable:
+    case NonSemanticShaderDebugInfoDebugTypedef:
+    case NonSemanticShaderDebugInfoDebugTypeEnum:
+    case NonSemanticShaderDebugInfoDebugTypeComposite:
+    case NonSemanticShaderDebugInfoDebugTypeMember:
+    case NonSemanticShaderDebugInfoDebugTypeTemplateTemplateParameter:
+    case NonSemanticShaderDebugInfoDebugFunctionDeclaration:
+    case NonSemanticShaderDebugInfoDebugFunction:
+      line_start_id = 8;
+      column_start_id = 9;
+      break;
+    case NonSemanticShaderDebugInfoDebugTypeTemplateParameter:
+    case NonSemanticShaderDebugInfoDebugImportedEntity:
+      line_start_id = 9;
+      column_start_id = 10;
+      break;
+    case NonSemanticShaderDebugInfoDebugMacroDef:
+    case NonSemanticShaderDebugInfoDebugMacroUndef:
+      line_start_id = 6;
+      break;
+    default:
+      return {0, 0, 0, 0};
+  }
+
+  // spirv-val enforces these are int32 constants
+  bool is_int32 = false, is_const_int32 = false;
+  uint32_t line_start = 0;
+  uint32_t line_end = 0;
+  uint32_t column_start = 0;
+  uint32_t column_end = 0;
+
+  std::tie(is_int32, is_const_int32, line_start) =
+      EvalInt32IfConst(inst.word(line_start_id));
+
+  // Some instructions only provide a line and column, so set the "end" to be
+  // same as "start"
+  if (line_end_id != 0) {
+    std::tie(is_int32, is_const_int32, line_end) =
+        EvalInt32IfConst(inst.word(line_end_id));
+  } else {
+    line_end = line_start;
+  }
+
+  if (column_start_id != 0) {
+    std::tie(is_int32, is_const_int32, column_start) =
+        EvalInt32IfConst(inst.word(column_start_id));
+  }
+
+  if (column_end_id != 0) {
+    std::tie(is_int32, is_const_int32, column_end) =
+        EvalInt32IfConst(inst.word(column_end_id));
+  } else {
+    column_end = column_start;
+  }
+
+  return {line_start, line_end, column_start, column_end};
 }
 
 void ValidationState_t::InspectDebugLine(std::ostringstream& ss,
@@ -2233,22 +2318,8 @@ void ValidationState_t::InspectDebugLine(std::ostringstream& ss,
     return;
   }
 
-  bool is_int32 = false, is_const_int32 = false;
-  uint32_t line_start = 0;
-  uint32_t line_end = 0;
-  uint32_t column_start = 0;
-  uint32_t column_end = 0;
-  std::tie(is_int32, is_const_int32, line_start) =
-      EvalInt32IfConst(debug_line_inst->word(6));
-  std::tie(is_int32, is_const_int32, line_end) =
-      EvalInt32IfConst(debug_line_inst->word(7));
-  std::tie(is_int32, is_const_int32, column_start) =
-      EvalInt32IfConst(debug_line_inst->word(8));
-  std::tie(is_int32, is_const_int32, column_end) =
-      EvalInt32IfConst(debug_line_inst->word(9));
-
-  PrintShaderDebugInfoSource(ss, *debug_source, line_start, line_end,
-                             column_start);
+  auto source_info = GetDebugSourceInfo(*debug_line_inst);
+  PrintShaderDebugInfoSource(ss, *debug_source, source_info);
 }
 
 void ValidationState_t::InspectDebugGlobalVariable(
@@ -2279,16 +2350,8 @@ void ValidationState_t::InspectDebugGlobalVariable(
     return;
   }
 
-  bool is_int32 = false, is_const_int32 = false;
-  uint32_t line_start = 0;
-  uint32_t column_start = 0;
-  std::tie(is_int32, is_const_int32, line_start) =
-      EvalInt32IfConst(debug_gloabl_var_inst->word(8));
-  std::tie(is_int32, is_const_int32, column_start) =
-      EvalInt32IfConst(debug_gloabl_var_inst->word(9));
-
-  PrintShaderDebugInfoSource(ss, *debug_source, line_start, line_start,
-                             column_start);
+  auto source_info = GetDebugSourceInfo(*debug_gloabl_var_inst);
+  PrintShaderDebugInfoSource(ss, *debug_source, source_info);
 }
 
 void ValidationState_t::InspectDebugLocalVariable(
@@ -2333,24 +2396,68 @@ void ValidationState_t::InspectDebugLocalVariable(
     return;
   }
 
-  bool is_int32 = false, is_const_int32 = false;
-  uint32_t line_start = 0;
-  uint32_t column_start = 0;
-  std::tie(is_int32, is_const_int32, line_start) =
-      EvalInt32IfConst(debug_local_variable->word(8));
-  std::tie(is_int32, is_const_int32, column_start) =
-      EvalInt32IfConst(debug_local_variable->word(9));
+  auto source_info = GetDebugSourceInfo(*debug_local_variable);
+  PrintShaderDebugInfoSource(ss, *debug_source, source_info);
+}
 
-  PrintShaderDebugInfoSource(ss, *debug_source, line_start, line_start,
-                             column_start);
+void ValidationState_t::InspectDebugFunctionDefinition(
+    std::ostringstream& ss, const Instruction& function_call_inst) {
+  // First print the caller, then print the callee if also found
+  InspectDebugLine(ss, function_call_inst);
+
+  const uint32_t set_id = ShaderDebugInfoSet();
+  const Instruction* debug_func_def = nullptr;
+
+  const uint32_t callee_function_id =
+      function_call_inst.GetOperandAs<uint32_t>(2);
+  const Instruction* function_inst = FindDef(callee_function_id);
+  if (!function_inst) return;
+
+  // Loop through the Function block as the DebugFunctionDefinition needs to be
+  // inside it
+  size_t first_inst_id = (function_inst - &ordered_instructions()[0]) + 1;
+  for (size_t i = first_inst_id + 1; i < ordered_instructions().size(); ++i) {
+    const Instruction& current_inst = ordered_instructions()[i];
+    if (current_inst.opcode() == spv::Op::OpFunctionEnd) {
+      break;  // we hit the next Funciton block
+    }
+
+    if (current_inst.opcode() == spv::Op::OpExtInst &&
+        current_inst.GetOperandAs<uint32_t>(2) == set_id &&
+        current_inst.GetOperandAs<uint32_t>(3) ==
+            NonSemanticShaderDebugInfoDebugFunctionDefinition &&
+        current_inst.GetOperandAs<uint32_t>(5) == callee_function_id) {
+      debug_func_def = &current_inst;
+      break;
+    }
+  }
+  if (!debug_func_def) return;
+
+  const Instruction* debug_function =
+      FindDef(debug_func_def->GetOperandAs<uint32_t>(4));
+  if (!debug_function || debug_function->GetOperandAs<uint32_t>(3) !=
+                             NonSemanticShaderDebugInfoDebugFunction) {
+    return;
+  }
+
+  const Instruction* debug_source =
+      FindDef(debug_function->GetOperandAs<uint32_t>(6));
+  if (!debug_source || debug_source->GetOperandAs<uint32_t>(3) !=
+                           NonSemanticShaderDebugInfoDebugSource) {
+    return;
+  }
+
+  auto source_info = GetDebugSourceInfo(*debug_function);
+  PrintShaderDebugInfoSource(ss, *debug_source, source_info);
 }
 
 void ValidationState_t::PrintShaderDebugInfoSource(
     std::ostringstream& ss, const Instruction& debug_source,
-    uint32_t line_start, uint32_t line_end, uint32_t column_start) {
+    const DebugSourceInfo& source_info) {
   // The left hand side line number, need to make sure if going from line number
   // 99 to 100 that all lines have the same padding
-  const size_t vertical_line_padding = std::to_string(line_end).length();
+  const size_t vertical_line_padding =
+      std::to_string(source_info.line_end).length();
   auto add_vertical_line = [&](uint32_t line_number) {
     size_t padding = 1;
     if (line_number != 0) {
@@ -2373,9 +2480,10 @@ void ValidationState_t::PrintShaderDebugInfoSource(
   auto stream_text = [&](const Instruction* op_string) {
     const std::string text = op_string->GetOperandAs<std::string>(1);
     for (const char c : text) {
-      if (current_line_num >= line_start && current_line_num <= line_end) {
+      if (current_line_num >= source_info.line_start &&
+          current_line_num <= source_info.line_end) {
         ss << c;
-        if (c == '\n' && current_line_num < line_end) {
+        if (c == '\n' && current_line_num < source_info.line_end) {
           add_vertical_line(current_line_num + 1);
         }
       }
@@ -2389,14 +2497,14 @@ void ValidationState_t::PrintShaderDebugInfoSource(
   const Instruction* file_string =
       FindDef(debug_source.GetOperandAs<uint32_t>(4));
   ss << "\n  --> " << file_string->GetOperandAs<std::string>(1) << ":"
-     << line_start << ":" << column_start << '\n';
+     << source_info.line_start << ":" << source_info.column_start << '\n';
 
   add_vertical_line(0);
   ss << '\n';
 
   const Instruction* source_string =
       FindDef(debug_source.GetOperandAs<uint32_t>(5));
-  add_vertical_line(line_start);
+  add_vertical_line(source_info.line_start);
   stream_text(source_string);
 
   const uint32_t set_id = ShaderDebugInfoSet();
@@ -2418,10 +2526,9 @@ void ValidationState_t::PrintShaderDebugInfoSource(
   }
 
   // This happens if the error is the last line of source
-  if (current_line_num == line_end) ss << "\n";
+  if (current_line_num == source_info.line_end) ss << "\n";
 
   add_vertical_line(0);
-  ss << "\n";
 }
 
 bool ValidationState_t::IsValidStorageClass(
