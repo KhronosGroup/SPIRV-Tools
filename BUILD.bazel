@@ -56,6 +56,7 @@ create_grammar_tables_target(
         ExtInst("tosa.001000.1", target="spirv_ext_inst_tosa_001000_1", prefix="TOSA_"),
         ExtInst("arm.motion-engine.100", target="spirv_ext_inst_arm_motion_engine_100"),
         ExtInst("nonsemantic.graph.debuginfo", target="spirv_ext_inst_non_semantic_graph_debuginfo_grammar_unified1"),
+        ExtInst("arm.experimental-ml-operations", target="spirv_ext_inst_arm_experimental_ml_operations"),
     ] + [ExtInst(e) for e in [
             "spv-amd-shader-explicit-vertex-parameter",
             "spv-amd-shader-trinary-minmax",
