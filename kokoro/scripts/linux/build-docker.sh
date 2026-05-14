@@ -30,9 +30,9 @@ git config --global --add safe.directory '*'
 using python-3.12
 
 if [ $COMPILER = "clang" ]; then
-  using clang-13.0.1
+  using clang-18
 elif [ $COMPILER = "gcc" ]; then
-  using gcc-13
+  using gcc-15
 fi
 
 cd $ROOT_DIR
@@ -195,7 +195,7 @@ elif [ $TOOL = "cmake-dxc-smoketest" ]; then
 
 elif [ $TOOL = "cmake-android-ndk" ]; then
   using cmake-3.31.2
-  using ndk-r27c
+  using ndk-r29
   using ninja-1.10.0
 
   clean_dir "$ROOT_DIR/build"
@@ -215,7 +215,7 @@ elif [ $TOOL = "cmake-android-ndk" ]; then
   ninja
   echo $(date): Build completed.
 elif [ $TOOL = "android-ndk-build" ]; then
-  using ndk-r27c
+  using ndk-r29
 
   clean_dir "$ROOT_DIR/build"
   cd "$ROOT_DIR/build"

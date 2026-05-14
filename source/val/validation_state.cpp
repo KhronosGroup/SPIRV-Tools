@@ -18,7 +18,9 @@
 
 #include <cassert>
 #include <cstdint>
+#include <sstream>
 #include <stack>
+#include <string>
 #include <utility>
 
 #include "source/opcode.h"
@@ -29,7 +31,10 @@
 #include "source/val/basic_block.h"
 #include "source/val/construct.h"
 #include "source/val/function.h"
+#include "source/val/instruction.h"
 #include "spirv-tools/libspirv.h"
+#include "spirv/unified1/NonSemanticShaderDebugInfo.h"
+#include "spirv/unified1/spirv.hpp11"
 
 namespace spvtools {
 namespace val {
@@ -348,10 +353,15 @@ DiagnosticStream ValidationState_t::diag(spv_result_t error_code,
   }
 
   std::string disassembly;
-  if (inst) disassembly = Disassemble(*inst);
+  std::string shader_debug_info;
+  if (inst) {
+    disassembly = Disassemble(*inst);
+    shader_debug_info = InspectShaderDebugInfo(*inst);
+  }
 
   return DiagnosticStream({0, 0, inst ? inst->LineNum() : 0},
-                          context_->consumer, disassembly, error_code);
+                          context_->consumer, disassembly, error_code,
+                          shader_debug_info);
 }
 
 std::vector<Function>& ValidationState_t::functions() {
@@ -2161,6 +2171,366 @@ bool ValidationState_t::ContainsUntypedPointer(uint32_t id) const {
   return false;
 }
 
+std::vector<uint32_t>& ValidationState_t::GetDebugSourceLineLength(
+    uint32_t id) {
+  auto it = debug_source_line_length_.find(id);
+  if (it == debug_source_line_length_.end()) {
+    return debug_source_line_length_[id];
+  }
+  return it->second;
+}
+
+// Main entrypoint to using ShaderDebugInfo to get better error messages
+std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
+  if (ShaderDebugInfoSet() == 0) {
+    return "";  // no ShaderDebugInfo found
+  }
+
+  std::ostringstream ss;
+  const Function* func = inst.function();
+  if (func != nullptr) {
+    if (inst.opcode() == spv::Op::OpVariable) {
+      InspectDebugLocalVariable(ss, *func, inst);
+    } else if (inst.opcode() == spv::Op::OpFunctionCall) {
+      InspectDebugFunctionDefinition(ss, inst);
+    } else {
+      // Currently a fall back for anything in a function
+      InspectDebugLine(ss, inst);
+    }
+  } else if (inst.opcode() == spv::Op::OpVariable) {
+    // Know are global because not in any function
+    // TODO - test with OpUntypedVariable as well
+    InspectDebugGlobalVariable(ss, inst);
+  }
+
+  return ss.str();
+}
+
+ValidationState_t::DebugSourceInfo ValidationState_t::GetDebugSourceInfo(
+    const Instruction& inst) {
+  assert(inst.opcode() == spv::Op::OpExtInst);
+  assert(inst.word(3) == ShaderDebugInfoSet());
+
+  uint32_t line_start_id = 0, line_end_id = 0, column_start_id = 0,
+           column_end_id = 0;
+
+  switch (inst.word(4)) {
+    case NonSemanticShaderDebugInfoDebugLine:
+      line_start_id = 6;
+      line_end_id = 7;
+      column_start_id = 8;
+      column_end_id = 9;
+      break;
+    case NonSemanticShaderDebugInfoDebugTypeTemplateParameterPack:
+      line_start_id = 7;
+      column_start_id = 8;
+      break;
+    case NonSemanticShaderDebugInfoDebugLexicalBlock:
+      line_start_id = 6;
+      column_start_id = 7;
+      break;
+    case NonSemanticShaderDebugInfoDebugLocalVariable:
+    case NonSemanticShaderDebugInfoDebugGlobalVariable:
+    case NonSemanticShaderDebugInfoDebugTypedef:
+    case NonSemanticShaderDebugInfoDebugTypeEnum:
+    case NonSemanticShaderDebugInfoDebugTypeComposite:
+    case NonSemanticShaderDebugInfoDebugTypeMember:
+    case NonSemanticShaderDebugInfoDebugTypeTemplateTemplateParameter:
+    case NonSemanticShaderDebugInfoDebugFunctionDeclaration:
+    case NonSemanticShaderDebugInfoDebugFunction:
+      line_start_id = 8;
+      column_start_id = 9;
+      break;
+    case NonSemanticShaderDebugInfoDebugTypeTemplateParameter:
+    case NonSemanticShaderDebugInfoDebugImportedEntity:
+      line_start_id = 9;
+      column_start_id = 10;
+      break;
+    case NonSemanticShaderDebugInfoDebugMacroDef:
+    case NonSemanticShaderDebugInfoDebugMacroUndef:
+      line_start_id = 6;
+      break;
+    default:
+      return {0, 0, 0, 0};
+  }
+
+  // spirv-val enforces these are int32 constants
+  bool is_int32 = false, is_const_int32 = false;
+  uint32_t line_start = 0;
+  uint32_t line_end = 0;
+  uint32_t column_start = 0;
+  uint32_t column_end = 0;
+
+  std::tie(is_int32, is_const_int32, line_start) =
+      EvalInt32IfConst(inst.word(line_start_id));
+
+  // Some instructions only provide a line and column, so set the "end" to be
+  // same as "start"
+  if (line_end_id != 0) {
+    std::tie(is_int32, is_const_int32, line_end) =
+        EvalInt32IfConst(inst.word(line_end_id));
+  } else {
+    line_end = line_start;
+  }
+
+  if (column_start_id != 0) {
+    std::tie(is_int32, is_const_int32, column_start) =
+        EvalInt32IfConst(inst.word(column_start_id));
+  }
+
+  if (column_end_id != 0) {
+    std::tie(is_int32, is_const_int32, column_end) =
+        EvalInt32IfConst(inst.word(column_end_id));
+  } else {
+    column_end = column_start;
+  }
+
+  return {line_start, line_end, column_start, column_end};
+}
+
+void ValidationState_t::InspectDebugLine(std::ostringstream& ss,
+                                         const Instruction& inst) {
+  const uint32_t set_id = ShaderDebugInfoSet();
+  // Find the DebugLine that is preceding
+  const Instruction* debug_line_inst = nullptr;
+  size_t idx = &inst - &ordered_instructions()[0];
+  while (idx > 0) {
+    const Instruction* prev = &ordered_instructions()[--idx];
+    if (prev->opcode() == spv::Op::OpFunction) {
+      break;
+    }
+
+    if (prev->opcode() == spv::Op::OpExtInst &&
+        prev->GetOperandAs<uint32_t>(2) == set_id &&
+        prev->GetOperandAs<uint32_t>(3) ==
+            NonSemanticShaderDebugInfoDebugLine) {
+      debug_line_inst = prev;
+      break;
+    }
+  }
+
+  if (!debug_line_inst) return;
+
+  const Instruction* debug_source =
+      FindDef(debug_line_inst->GetOperandAs<uint32_t>(4));
+  if (!debug_source || debug_source->GetOperandAs<uint32_t>(3) !=
+                           NonSemanticShaderDebugInfoDebugSource) {
+    return;
+  }
+
+  auto source_info = GetDebugSourceInfo(*debug_line_inst);
+  PrintShaderDebugInfoSource(ss, *debug_source, source_info);
+}
+
+void ValidationState_t::InspectDebugGlobalVariable(
+    std::ostringstream& ss, const Instruction& variable_inst) {
+  const uint32_t set_id = ShaderDebugInfoSet();
+
+  const Instruction* debug_gloabl_var_inst = nullptr;
+  for (const auto& inst : ordered_instructions()) {
+    if (inst.opcode() == spv::Op::OpFunction) {
+      return;  // validated to not be in a function block
+    }
+
+    if (inst.opcode() == spv::Op::OpExtInst &&
+        inst.GetOperandAs<uint32_t>(2) == set_id &&
+        inst.GetOperandAs<uint32_t>(3) ==
+            NonSemanticShaderDebugInfoDebugGlobalVariable &&
+        inst.GetOperandAs<uint32_t>(11) == variable_inst.id()) {
+      debug_gloabl_var_inst = &inst;
+      break;
+    }
+  }
+  if (!debug_gloabl_var_inst) return;
+
+  const Instruction* debug_source =
+      FindDef(debug_gloabl_var_inst->GetOperandAs<uint32_t>(6));
+  if (!debug_source || debug_source->GetOperandAs<uint32_t>(3) !=
+                           NonSemanticShaderDebugInfoDebugSource) {
+    return;
+  }
+
+  auto source_info = GetDebugSourceInfo(*debug_gloabl_var_inst);
+  PrintShaderDebugInfoSource(ss, *debug_source, source_info);
+}
+
+void ValidationState_t::InspectDebugLocalVariable(
+    std::ostringstream& ss, const Function& func,
+    const Instruction& variable_inst) {
+  const uint32_t set_id = ShaderDebugInfoSet();
+  const Instruction* debug_declare_inst = nullptr;
+
+  const Instruction* function_inst = FindDef(func.id());
+  // Loop through the Function block as the DebugDeclare needs to be inside it
+  size_t first_inst_id = (function_inst - &ordered_instructions()[0]) + 1;
+  for (size_t i = first_inst_id + 1; i < ordered_instructions().size(); ++i) {
+    const Instruction& current_inst = ordered_instructions()[i];
+    if (current_inst.opcode() == spv::Op::OpFunctionEnd) {
+      break;  // we hit the next Funciton block
+    }
+
+    if (current_inst.opcode() == spv::Op::OpExtInst &&
+        current_inst.GetOperandAs<uint32_t>(2) == set_id &&
+        current_inst.GetOperandAs<uint32_t>(3) ==
+            NonSemanticShaderDebugInfoDebugDeclare &&
+        current_inst.GetOperandAs<uint32_t>(5) == variable_inst.id()) {
+      debug_declare_inst = &current_inst;
+      break;
+    }
+  }
+
+  if (!debug_declare_inst) return;
+
+  const Instruction* debug_local_variable =
+      FindDef(debug_declare_inst->GetOperandAs<uint32_t>(4));
+  if (!debug_local_variable ||
+      debug_local_variable->GetOperandAs<uint32_t>(3) !=
+          NonSemanticShaderDebugInfoDebugLocalVariable) {
+    return;
+  }
+
+  const Instruction* debug_source =
+      FindDef(debug_local_variable->GetOperandAs<uint32_t>(6));
+  if (!debug_source || debug_source->GetOperandAs<uint32_t>(3) !=
+                           NonSemanticShaderDebugInfoDebugSource) {
+    return;
+  }
+
+  auto source_info = GetDebugSourceInfo(*debug_local_variable);
+  PrintShaderDebugInfoSource(ss, *debug_source, source_info);
+}
+
+void ValidationState_t::InspectDebugFunctionDefinition(
+    std::ostringstream& ss, const Instruction& function_call_inst) {
+  // First print the caller, then print the callee if also found
+  InspectDebugLine(ss, function_call_inst);
+
+  const uint32_t set_id = ShaderDebugInfoSet();
+  const Instruction* debug_func_def = nullptr;
+
+  const uint32_t callee_function_id =
+      function_call_inst.GetOperandAs<uint32_t>(2);
+  const Instruction* function_inst = FindDef(callee_function_id);
+  if (!function_inst) return;
+
+  // Loop through the Function block as the DebugFunctionDefinition needs to be
+  // inside it
+  size_t first_inst_id = (function_inst - &ordered_instructions()[0]) + 1;
+  for (size_t i = first_inst_id + 1; i < ordered_instructions().size(); ++i) {
+    const Instruction& current_inst = ordered_instructions()[i];
+    if (current_inst.opcode() == spv::Op::OpFunctionEnd) {
+      break;  // we hit the next Funciton block
+    }
+
+    if (current_inst.opcode() == spv::Op::OpExtInst &&
+        current_inst.GetOperandAs<uint32_t>(2) == set_id &&
+        current_inst.GetOperandAs<uint32_t>(3) ==
+            NonSemanticShaderDebugInfoDebugFunctionDefinition &&
+        current_inst.GetOperandAs<uint32_t>(5) == callee_function_id) {
+      debug_func_def = &current_inst;
+      break;
+    }
+  }
+  if (!debug_func_def) return;
+
+  const Instruction* debug_function =
+      FindDef(debug_func_def->GetOperandAs<uint32_t>(4));
+  if (!debug_function || debug_function->GetOperandAs<uint32_t>(3) !=
+                             NonSemanticShaderDebugInfoDebugFunction) {
+    return;
+  }
+
+  const Instruction* debug_source =
+      FindDef(debug_function->GetOperandAs<uint32_t>(6));
+  if (!debug_source || debug_source->GetOperandAs<uint32_t>(3) !=
+                           NonSemanticShaderDebugInfoDebugSource) {
+    return;
+  }
+
+  auto source_info = GetDebugSourceInfo(*debug_function);
+  PrintShaderDebugInfoSource(ss, *debug_source, source_info);
+}
+
+void ValidationState_t::PrintShaderDebugInfoSource(
+    std::ostringstream& ss, const Instruction& debug_source,
+    const DebugSourceInfo& source_info) {
+  // The left hand side line number, need to make sure if going from line number
+  // 99 to 100 that all lines have the same padding
+  const size_t vertical_line_padding =
+      std::to_string(source_info.line_end).length();
+  auto add_vertical_line = [&](uint32_t line_number) {
+    size_t padding = 1;
+    if (line_number != 0) {
+      ss << line_number;
+      padding += (vertical_line_padding - std::to_string(line_number).length());
+    } else {
+      padding += vertical_line_padding;
+    }
+    for (size_t p = 0; p < padding; p++) {
+      ss << " ";
+    }
+    ss << "|";
+    if (line_number != 0) {
+      ss << " ";  // otherwise test will fail from trailing whitespace being
+                  // trimmed
+    }
+  };
+
+  uint32_t current_line_num = 1;
+  auto stream_text = [&](const Instruction* op_string) {
+    const std::string text = op_string->GetOperandAs<std::string>(1);
+    for (const char c : text) {
+      if (current_line_num >= source_info.line_start &&
+          current_line_num <= source_info.line_end) {
+        ss << c;
+        if (c == '\n' && current_line_num < source_info.line_end) {
+          add_vertical_line(current_line_num + 1);
+        }
+      }
+
+      if (c == '\n') {
+        current_line_num++;
+      }
+    }
+  };
+
+  const Instruction* file_string =
+      FindDef(debug_source.GetOperandAs<uint32_t>(4));
+  ss << "\n  --> " << file_string->GetOperandAs<std::string>(1) << ":"
+     << source_info.line_start << ":" << source_info.column_start << '\n';
+
+  add_vertical_line(0);
+  ss << '\n';
+
+  const Instruction* source_string =
+      FindDef(debug_source.GetOperandAs<uint32_t>(5));
+  add_vertical_line(source_info.line_start);
+  stream_text(source_string);
+
+  const uint32_t set_id = ShaderDebugInfoSet();
+
+  // Look for any DebugSourceContinued
+  size_t src_idx = &debug_source - &ordered_instructions()[0] + 1;
+  for (; src_idx < ordered_instructions().size(); ++src_idx) {
+    const Instruction& continued_insn = ordered_instructions()[src_idx];
+    if (continued_insn.opcode() != spv::Op::OpExtInst ||
+        continued_insn.GetOperandAs<uint32_t>(2) != set_id ||
+        continued_insn.GetOperandAs<uint32_t>(3) !=
+            NonSemanticShaderDebugInfoDebugSourceContinued) {
+      break;
+    }
+
+    const Instruction* continued_string =
+        FindDef(continued_insn.GetOperandAs<uint32_t>(4));
+    stream_text(continued_string);
+  }
+
+  // This happens if the error is the last line of source
+  if (current_line_num == source_info.line_end) ss << "\n";
+
+  add_vertical_line(0);
+}
+
 bool ValidationState_t::IsValidStorageClass(
     spv::StorageClass storage_class) const {
   if (spvIsVulkanEnv(context()->target_env)) {
@@ -2755,6 +3125,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Component-04922);
     case 4923:
       return VUID_WRAP(VUID-StandaloneSpirv-Component-04923);
+    case 4965:
+      return VUID_WRAP(VUID-StandaloneSpirv-Image-04965);
     case 6201:
       return VUID_WRAP(VUID-StandaloneSpirv-Flat-06201);
     case 6202:

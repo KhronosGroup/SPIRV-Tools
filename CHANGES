@@ -1,7 +1,36 @@
 Revision history for SPIRV-Tools
 
-v2026.2-dev 2026-01-23
-  - Start v2026.2-dev
+v2026.2 2026-04-24
+  - General
+    - Fix build for NonSemanticShaderDebugInfo in GN (#6647)
+    - Support SPV_KHR_abort and SPV_KHR_constant_data (#6625)
+    - Support versioned NonSemanticShaderDebugInfo imports (#6555)
+    - Fix C++20 compilation issue with large integer literals (#6557)
+    - Remove SVA (Shader Validation Assistant) (#6550)
+    - Improved Kokoro build configuration and storage usage (#6573, #6551)
+    - Various dependency rolls and CI updates
+  - Optimizer
+    - Fold OpCompositeExtract feeding from OpCopyLogical or OpLoad (#6614)
+    - Fix DebugValue placements and initialization (#6599, #6626)
+    - Support OpConstantCompositeReplicateEXT in constant manager (#6616)
+    - Aggressive DCE support for untyped pointers and OpUntypedVariableKHR (#6602, #6607)
+    - Optimize SPV_EXT_opacity_micromap and SPV_EXT_shader_invocation_reorder (#6571)
+    - Add LegalizeMultidimArrayPass and improve access chain reordering (#6535, #6545)
+    - Added various folding and reassociation rules (#6453, #6504, #6454, #6456)
+    - Support for optimizing SPV_NV_push_constant_bank (#6547)
+  - Validator
+    - Add validation for 4-bit integer types (#6644)
+    - Support and validate SPV_KHR_constant_data (OpConstantDataKHR, OpSpecConstantDataKHR) (#6646, #6643, #6642)
+    - Validate NonSemanticShaderDebugInfo 101 and versioned imports (#6635, #6555)
+    - Improve validation for Intel SPIR-V extensions and various KHR/EXT extensions (#6232, #6589, #6583, etc.)
+    - Extensive validation coverage for OpSpecConstantOp (#6596, #6585, #6582, #6579, #6578, #6576)
+    - Check output location uniqueness for GeometryStreams (#6630)
+    - Improved validation for variables, constants, and types (#6634, #6598, #6595, #6568)
+    - Added validation for several new opcodes and capabilities (OpGroupAsyncCopy, OpLifetimeStart/Stop, etc.) (#6519, #6514, #6515)
+  - Assembler/Disassembler
+    - Add --handle-unknown-opcodes flag to spirv-dis (#6604)
+    - Handle leading + in hex float literals in assembler (#6565)
+    - Validate bit width of float types with explicit encodings in assembler (#6562)
 
 v2026.1 2026-01-22
   - General

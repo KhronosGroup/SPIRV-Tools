@@ -222,6 +222,7 @@ $(1)/core_tables_header.inc \
 	$(GRAMMAR_DIR)/extinst.debuginfo.grammar.json \
 	$(GRAMMAR_DIR)/extinst.glsl.std.450.grammar.json \
 	$(GRAMMAR_DIR)/extinst.nonsemantic.clspvreflection.grammar.json \
+	$(GRAMMAR_DIR)/extinst.nonsemantic.graph.debuginfo.grammar.json \
 	$(GRAMMAR_DIR)/extinst.nonsemantic.shader.debuginfo.100.grammar.json \
 	$(GRAMMAR_DIR)/extinst.nonsemantic.vkspreflection.grammar.json \
 	$(GRAMMAR_DIR)/extinst.opencl.debuginfo.100.grammar.json \

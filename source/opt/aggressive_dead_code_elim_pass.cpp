@@ -295,7 +295,7 @@ Pass::Status AggressiveDCEPass::ProcessDebugInformation(
       if (!inst->IsNonSemanticInstruction()) return true;
 
       if (inst->GetShaderDebugOpcode() ==
-          NonSemanticShaderDebugInfo100DebugDeclare) {
+          NonSemanticShaderDebugInfoDebugDeclare) {
         if (IsLive(inst)) return true;
 
         uint32_t var_id =
@@ -333,7 +333,7 @@ Pass::Status AggressiveDCEPass::ProcessDebugInformation(
           return true;
         });
       } else if (inst->GetShaderDebugOpcode() ==
-                 NonSemanticShaderDebugInfo100DebugValue) {
+                 NonSemanticShaderDebugInfoDebugValue) {
         uint32_t var_operand_idx = kDebugValueValueInIdx;
         uint32_t id = inst->GetSingleWordInOperand(var_operand_idx);
         auto def = get_def_use_mgr()->GetDef(id);
@@ -762,13 +762,14 @@ Pass::Status AggressiveDCEPass::InitializeModuleScopeLiveInstructions() {
   // Add DebugInfo which should never be eliminated to worklist
   for (auto& dbg : get_module()->ext_inst_debuginfo()) {
     auto op = dbg.GetShaderDebugOpcode();
-    if (op == NonSemanticShaderDebugInfo100DebugCompilationUnit ||
-        op == NonSemanticShaderDebugInfo100DebugEntryPoint ||
-        op == NonSemanticShaderDebugInfo100DebugSource ||
-        op == NonSemanticShaderDebugInfo100DebugSourceContinued ||
-        op == NonSemanticShaderDebugInfo100DebugLocalVariable ||
-        op == NonSemanticShaderDebugInfo100DebugExpression ||
-        op == NonSemanticShaderDebugInfo100DebugOperation) {
+    if (op == NonSemanticShaderDebugInfoDebugCompilationUnit ||
+        op == NonSemanticShaderDebugInfoDebugEntryPoint ||
+        op == NonSemanticShaderDebugInfoDebugSource ||
+        op == NonSemanticShaderDebugInfoDebugSourceContinued ||
+        op == NonSemanticShaderDebugInfoDebugLocalVariable ||
+        op == NonSemanticShaderDebugInfoDebugExpression ||
+        op == NonSemanticShaderDebugInfoDebugOperation ||
+        op == NonSemanticShaderDebugInfoDebugBuildIdentifier) {
       AddToWorklist(&dbg);
     }
   }
@@ -1018,7 +1019,7 @@ bool AggressiveDCEPass::ProcessGlobalValues() {
     }
     // Save debug build identifier even if no other instructions refer to it.
     if (dbg.GetShaderDebugOpcode() ==
-        NonSemanticShaderDebugInfo100DebugBuildIdentifier) {
+        NonSemanticShaderDebugInfoDebugBuildIdentifier) {
       // The debug build identifier refers to other instructions that
       // can potentially be removed, they also need to be kept alive.
       dbg.ForEachInId([this](const uint32_t* id) {
@@ -1162,6 +1163,9 @@ void AggressiveDCEPass::InitExtensions() {
       "SPV_NV_push_constant_bank",
       "SPV_EXT_opacity_micromap",
       "SPV_EXT_shader_invocation_reorder",
+      "SPV_EXT_shader_atomic_float16_add",
+      "SPV_KHR_abort",
+      "SPV_KHR_constant_data",
   });
 }
 

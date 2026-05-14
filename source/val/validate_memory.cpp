@@ -207,7 +207,8 @@ std::pair<Instruction*, Instruction*> GetPointerTypes(ValidationState_t& _,
     case spv::Op::OpCooperativeMatrixLoadTensorNV:
     case spv::Op::OpCooperativeMatrixLoadKHR:
     case spv::Op::OpCooperativeVectorLoadNV:
-    case spv::Op::OpLoad: {
+    case spv::Op::OpLoad:
+    case spv::Op::OpPredicatedLoadINTEL: {
       auto load_pointer = _.FindDef(inst->GetOperandAs<uint32_t>(2));
       dst_pointer_type = _.FindDef(load_pointer->type_id());
       break;
@@ -216,7 +217,8 @@ std::pair<Instruction*, Instruction*> GetPointerTypes(ValidationState_t& _,
     case spv::Op::OpCooperativeMatrixStoreTensorNV:
     case spv::Op::OpCooperativeMatrixStoreKHR:
     case spv::Op::OpCooperativeVectorStoreNV:
-    case spv::Op::OpStore: {
+    case spv::Op::OpStore:
+    case spv::Op::OpPredicatedStoreINTEL: {
       auto store_pointer = _.FindDef(inst->GetOperandAs<uint32_t>(0));
       dst_pointer_type = _.FindDef(store_pointer->type_id());
       break;
@@ -315,7 +317,8 @@ spv_result_t CheckMemoryAccess(ValidationState_t& _, const Instruction* inst,
         inst->opcode() == spv::Op::OpCooperativeMatrixLoadNV ||
         inst->opcode() == spv::Op::OpCooperativeMatrixLoadTensorNV ||
         inst->opcode() == spv::Op::OpCooperativeMatrixLoadKHR ||
-        inst->opcode() == spv::Op::OpCooperativeVectorLoadNV) {
+        inst->opcode() == spv::Op::OpCooperativeVectorLoadNV ||
+        inst->opcode() == spv::Op::OpPredicatedLoadINTEL) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "MakePointerAvailableKHR cannot be used with OpLoad.";
     }
@@ -337,7 +340,8 @@ spv_result_t CheckMemoryAccess(ValidationState_t& _, const Instruction* inst,
         inst->opcode() == spv::Op::OpCooperativeMatrixStoreNV ||
         inst->opcode() == spv::Op::OpCooperativeMatrixStoreKHR ||
         inst->opcode() == spv::Op::OpCooperativeMatrixStoreTensorNV ||
-        inst->opcode() == spv::Op::OpCooperativeVectorStoreNV) {
+        inst->opcode() == spv::Op::OpCooperativeVectorStoreNV ||
+        inst->opcode() == spv::Op::OpPredicatedStoreINTEL) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "MakePointerVisibleKHR cannot be used with OpStore.";
     }
@@ -3475,6 +3479,154 @@ spv_result_t ValidatePtrComparison(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidatePredicatedLoadINTEL(ValidationState_t& _,
+                                         const Instruction* inst) {
+  const auto result_type_id = inst->type_id();
+  if (!_.IsIntScalarOrVectorType(result_type_id) &&
+      !_.IsFloatScalarOrVectorType(result_type_id)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpPredicatedLoadINTEL Result Type <id> "
+           << _.getIdName(result_type_id)
+           << " must be a scalar or vector of numerical type.";
+  }
+
+  const auto pointer_id = inst->GetOperandAs<uint32_t>(2);
+  const auto pointer = _.FindDef(pointer_id);
+  if (!pointer ||
+      ((_.addressing_model() == spv::AddressingModel::Logical) &&
+       ((!_.features().variable_pointers &&
+         !spvOpcodeReturnsLogicalPointer(pointer->opcode())) ||
+        (_.features().variable_pointers &&
+         !spvOpcodeReturnsLogicalVariablePointer(pointer->opcode()))))) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpPredicatedLoadINTEL Pointer <id> " << _.getIdName(pointer_id)
+           << " is not a logical pointer.";
+  }
+
+  const auto pointer_type = _.FindDef(pointer->type_id());
+  if (!pointer_type ||
+      (pointer_type->opcode() != spv::Op::OpTypePointer &&
+       pointer_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpPredicatedLoadINTEL type for pointer <id> "
+           << _.getIdName(pointer_id) << " is not a pointer type.";
+  }
+
+  if (pointer_type->opcode() == spv::Op::OpTypePointer) {
+    const auto pointee_type =
+        _.FindDef(pointer_type->GetOperandAs<uint32_t>(2));
+    if (!pointee_type || result_type_id != pointee_type->id()) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpPredicatedLoadINTEL Result Type <id> "
+             << _.getIdName(result_type_id) << " does not match Pointer <id> "
+             << _.getIdName(pointer->id()) << "s type.";
+    }
+  }
+
+  const auto predicate_id = inst->GetOperandAs<uint32_t>(3);
+  const auto predicate = _.FindDef(predicate_id);
+  if (!predicate || !_.IsBoolScalarType(predicate->type_id())) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpPredicatedLoadINTEL Predicate <id> "
+           << _.getIdName(predicate_id) << " must be a Boolean scalar.";
+  }
+
+  const auto default_value_id = inst->GetOperandAs<uint32_t>(4);
+  const auto default_value = _.FindDef(default_value_id);
+  if (!default_value || default_value->type_id() != result_type_id) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpPredicatedLoadINTEL Default Value <id> "
+           << _.getIdName(default_value_id)
+           << " type does not match Result Type.";
+  }
+
+  if (inst->operands().size() > 5) {
+    const auto mask = inst->GetOperandAs<uint32_t>(5);
+    if (mask & uint32_t(spv::MemoryAccessMask::Volatile)) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpPredicatedLoadINTEL does not allow the Volatile memory "
+                "operand.";
+    }
+  }
+
+  if (auto error = CheckMemoryAccess(_, inst, 5)) return error;
+
+  return SPV_SUCCESS;
+}
+
+spv_result_t ValidatePredicatedStoreINTEL(ValidationState_t& _,
+                                          const Instruction* inst) {
+  const auto pointer_id = inst->GetOperandAs<uint32_t>(0);
+  const auto pointer = _.FindDef(pointer_id);
+  if (!pointer ||
+      (_.addressing_model() == spv::AddressingModel::Logical &&
+       ((!_.features().variable_pointers &&
+         !spvOpcodeReturnsLogicalPointer(pointer->opcode())) ||
+        (_.features().variable_pointers &&
+         !spvOpcodeReturnsLogicalVariablePointer(pointer->opcode()))))) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpPredicatedStoreINTEL Pointer <id> " << _.getIdName(pointer_id)
+           << " is not a logical pointer.";
+  }
+
+  const auto pointer_type = _.FindDef(pointer->type_id());
+  if (!pointer_type ||
+      (pointer_type->opcode() != spv::Op::OpTypePointer &&
+       pointer_type->opcode() != spv::Op::OpTypeUntypedPointerKHR)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpPredicatedStoreINTEL type for pointer <id> "
+           << _.getIdName(pointer_id) << " is not a pointer type.";
+  }
+
+  const auto object_id = inst->GetOperandAs<uint32_t>(1);
+  const auto object = _.FindDef(object_id);
+  if (!object || !object->type_id()) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpPredicatedStoreINTEL Object <id> " << _.getIdName(object_id)
+           << " is not an object.";
+  }
+
+  const auto object_type_id = object->type_id();
+  if (!_.IsIntScalarOrVectorType(object_type_id) &&
+      !_.IsFloatScalarOrVectorType(object_type_id)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpPredicatedStoreINTEL Object <id> " << _.getIdName(object_id)
+           << " type must be a scalar or vector of numerical type.";
+  }
+
+  if (pointer_type->opcode() == spv::Op::OpTypePointer) {
+    const auto pointee_type =
+        _.FindDef(pointer_type->GetOperandAs<uint32_t>(2));
+    if (!pointee_type || pointee_type->id() != object_type_id) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpPredicatedStoreINTEL Pointer <id> "
+             << _.getIdName(pointer_id) << "s type does not match Object <id> "
+             << _.getIdName(object->id()) << "s type.";
+    }
+  }
+
+  const auto predicate_id = inst->GetOperandAs<uint32_t>(2);
+  const auto predicate = _.FindDef(predicate_id);
+  if (!predicate || !_.IsBoolScalarType(predicate->type_id())) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpPredicatedStoreINTEL Predicate <id> "
+           << _.getIdName(predicate_id) << " must be a Boolean scalar.";
+  }
+
+  if (inst->operands().size() > 3) {
+    const auto mask = inst->GetOperandAs<uint32_t>(3);
+    if (mask & uint32_t(spv::MemoryAccessMask::Volatile)) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "OpPredicatedStoreINTEL does not allow the Volatile memory "
+                "operand.";
+    }
+  }
+
+  if (auto error = CheckMemoryAccess(_, inst, 3)) return error;
+
+  return SPV_SUCCESS;
+}
+
 }  // namespace
 
 spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
@@ -3529,6 +3681,10 @@ spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
     case spv::Op::OpCooperativeVectorMatrixMulNV:
     case spv::Op::OpCooperativeVectorMatrixMulAddNV:
       return ValidateCooperativeVectorMatrixMulNV(_, inst);
+    case spv::Op::OpPredicatedLoadINTEL:
+      return ValidatePredicatedLoadINTEL(_, inst);
+    case spv::Op::OpPredicatedStoreINTEL:
+      return ValidatePredicatedStoreINTEL(_, inst);
     case spv::Op::OpPtrEqual:
     case spv::Op::OpPtrNotEqual:
     case spv::Op::OpPtrDiff:

@@ -7697,8 +7697,7 @@ struct PS_OUTPUT
 } ;
 
 "
-          %6 = OpString "
-PS_OUTPUT MainPs ( )
+          %6 = OpString "PS_OUTPUT MainPs ( )
 {
     PS_OUTPUT ps_output ;
     ps_output . vColor = float4( 1.0, 0.0, 0.0, 0.0 );
@@ -8712,7 +8711,7 @@ OpDecorate %b Binding 0
 %27 = OpExtInst %void %1 DebugFunction %25 %21 %22 %uint_4 %uint_1 %23 %26 %uint_3 %uint_4
 %28 = OpExtInst %void %1 DebugLexicalBlock %22 %uint_4 %uint_13 %27
 %31 = OpExtInst %void %1 DebugLocalVariable %30 %20 %22 %uint_5 %uint_7 %28 %uint_4
-; CHECK: [[var:%\w+]] = OpExtInst %void {{%\w+}} DebugLocalVariable [[VarName]] 
+; CHECK: [[var:%\w+]] = OpExtInst %void {{%\w+}} DebugLocalVariable [[VarName]]
 %34 = OpExtInst %void %1 DebugFunction %33 %21 %22 %uint_4 %uint_1 %23 %26 %uint_3 %uint_4
 %41 = OpExtInst %void %1 DebugTypeComposite %39 %uint_0 %22 %uint_0 %uint_0 %23 %40 %38 %uint_3
 %43 = OpExtInst %void %1 DebugTypeTemplateParameter %42 %18 %38 %22 %uint_0 %uint_0
@@ -8907,6 +8906,7 @@ TEST_F(AggressiveDCETest, DebugDeclareConvertedToDebugValueKeepsDebugScope) {
           %6 = OpTypeFunction %void
       %float = OpTypeFloat 32
      %uint_3 = OpConstant %uint 3
+     %uint_1 = OpConstant %uint 1
      %uint_0 = OpConstant %uint 0
 %_ptr_Function_float = OpTypePointer Function %float
 %_ptr_Uniform_float = OpTypePointer Uniform %float
@@ -8936,7 +8936,7 @@ TEST_F(AggressiveDCETest, DebugDeclareConvertedToDebugValueKeepsDebugScope) {
          %34 = OpExtInst %void %1 DebugDeclare %28 %31 %15
                OpStore %31 %float_0
          %35 = OpExtInst %void %1 DebugScope %22
-         %36 = OpExtInst %void %1 DebugLine %16 %uint_0 %uint_0 %uint_0 %uint_0
+         %36 = OpExtInst %void %1 DebugLine %16 %uint_1 %uint_1 %uint_0 %uint_0
                OpStore %13 %float_0
                OpReturn
          %37 = OpExtInst %void %1 DebugNoScope
@@ -9215,6 +9215,45 @@ TEST_F(AggressiveDCETest, EliminateUntypedAccessChainLoop) {
                OpReturn
                OpFunctionEnd
   )";
+  SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
+}
+
+TEST_F(AggressiveDCETest, KeepDebugBuildIdentifier) {
+  // Regression test for https://github.com/KhronosGroup/SPIRV-Tools/issues/6619
+  //
+  // DebugBuildIdentifier was not added to the live-instruction worklist during
+  // initialization, so its operand dependencies (e.g. OpTypeInt used only by
+  // a constant that is only referenced by DebugBuildIdentifier) were never
+  // visited and were incorrectly eliminated. The surviving constant then
+  // referenced a deleted type, producing invalid SPIR-V.
+  //
+  // After the fix, DebugBuildIdentifier is enqueued in the worklist so its
+  // transitive operands (OpTypeInt 32 0, OpConstant %uint 0) are marked live.
+
+  const std::string spirv = R"(
+; CHECK: [[ext:%\w+]] = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+; CHECK: [[str:%\w+]] = OpString
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[uint_0:%\w+]] = OpConstant [[uint]] 0
+; CHECK: OpExtInst %void [[ext]] DebugBuildIdentifier [[str]] [[uint_0]]
+               OpCapability Shader
+               OpExtension "SPV_KHR_non_semantic_info"
+          %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+          %2 = OpString "01cfb4b77c321225f096da8ac72f29d42f0632a7"
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+          %3 = OpTypeFunction %void
+          %4 = OpExtInst %void %1 DebugBuildIdentifier %2 %uint_0
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+               OpReturn
+               OpFunctionEnd
+  )";
+
   SinglePassRunAndMatch<AggressiveDCEPass>(spirv, true);
 }
 

@@ -4562,6 +4562,7 @@ TEST_P(ValidateIdWithMessage, OpFunctionFunctionTypeBad) {
 %5 = OpLabel
      OpReturn
 OpFunctionEnd)";
+  printf("%s\n", spirv.c_str());
   CompileSuccessfully(spirv.c_str());
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
@@ -5995,9 +5996,10 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(
       getDiagnosticString(),
-      HasSubstr(make_message("SpecId decoration on target <id> "
-                             "'1[%uint_3]' must be a scalar specialization "
-                             "constant")));
+      HasSubstr(make_message(
+          "SpecId decoration on target <id> "
+          "'1[%uint_3]' must be OpSpecConstantTrue, OpSpecConstantFalse, "
+          "OpSpecConstant, or OpSpecConstantDataKHR")));
 }
 
 TEST_P(ValidateIdWithMessage, SpecIdTargetOpSpecConstantOpBad) {
@@ -6019,7 +6021,8 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(make_message("SpecId decoration on target <id> '1[%1]' "
-                             "must be a scalar specialization constant")));
+                             "must be OpSpecConstantTrue, OpSpecConstantFalse, "
+                             "OpSpecConstant, or OpSpecConstantDataKHR")));
 }
 
 TEST_P(ValidateIdWithMessage, SpecIdTargetOpSpecConstantCompositeBad) {
@@ -6040,7 +6043,8 @@ OpFunctionEnd
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(make_message("SpecId decoration on target <id> '1[%1]' "
-                             "must be a scalar specialization constant")));
+                             "must be OpSpecConstantTrue, OpSpecConstantFalse, "
+                             "OpSpecConstant, or OpSpecConstantDataKHR")));
 }
 
 TEST_P(ValidateIdWithMessage, SpecIdTargetGood) {
@@ -7270,6 +7274,34 @@ TEST_P(ValidateIdWithMessage, OpAliasScopeINTELWithNonTypedOperands) {
 %func_type = OpTypeFunction %void
 %main = OpFunction %void None %func_type
 %entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_P(ValidateIdWithMessage,
+       OpLoadStoreWithAliasScopeINTELMaskMemoryOperands) {
+  std::string spirv = R"(
+     OpCapability Shader
+     OpCapability MemoryAccessAliasingINTEL
+     OpExtension "SPV_INTEL_memory_access_aliasing"
+     OpMemoryModel Logical GLSL450
+     OpEntryPoint Fragment %main "main"
+     OpExecutionMode %main OriginUpperLeft
+%alias_domain = OpAliasDomainDeclINTEL
+%alias_scope = OpAliasScopeDeclINTEL %alias_domain
+%alias_list = OpAliasScopeListDeclINTEL %alias_scope
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%ptr_uint = OpTypePointer Function %uint
+%func_type = OpTypeFunction %void
+%main = OpFunction %void None %func_type
+%entry = OpLabel
+%var = OpVariable %ptr_uint Function
+%val = OpLoad %uint %var Aligned|AliasScopeINTELMask 4 %alias_list
+OpStore %var %val Aligned|NoAliasINTELMask 4 %alias_list
 OpReturn
 OpFunctionEnd
 )";

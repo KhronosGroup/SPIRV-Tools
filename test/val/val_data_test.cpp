@@ -143,6 +143,9 @@ std::string invalid_comp_error = "Illegal number of components";
 std::string missing_cap_error =
     "requires the Vector16 or LongVectorEXT capability";
 std::string missing_int8_cap_error = "requires the Int8 capability";
+std::string missing_int4_cap_error =
+    "Using a 4-bit integer type requires the Int4TypeINTEL "
+    "or ArbitraryPrecisionIntegersINTEL capability.";
 std::string missing_int16_cap_error =
     "requires the Int16 capability,"
     " or an extension that explicitly enables 16-bit integers.";
@@ -294,6 +297,33 @@ TEST_F(ValidateData, int8_with_storage_push_constant_8_good) {
                         "StoragePushConstant8 "
                         "OpExtension \"SPV_KHR_8bit_storage\"") +
                     " %2 = OpTypeInt 8 0";
+  CompileSuccessfully(str.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+}
+
+TEST_F(ValidateData, int4_bad) {
+  std::string str = header + "%2 = OpTypeInt 4 0";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(), HasSubstr(missing_int4_cap_error));
+}
+
+TEST_F(ValidateData, int4_with_arbitrary_precision_good) {
+  std::string str =
+      HeaderWith(
+          "ArbitraryPrecisionIntegersINTEL "
+          "OpExtension \"SPV_INTEL_arbitrary_precision_integers\"") +
+      " %2 = OpTypeInt 4 0";
+  CompileSuccessfully(str.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+}
+
+TEST_F(ValidateData, int4_signed_with_arbitrary_precision_good) {
+  std::string str =
+      HeaderWith(
+          "ArbitraryPrecisionIntegersINTEL "
+          "OpExtension \"SPV_INTEL_arbitrary_precision_integers\"") +
+      " %2 = OpTypeInt 4 1";
   CompileSuccessfully(str.c_str());
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
 }
