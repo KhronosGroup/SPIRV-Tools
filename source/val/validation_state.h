@@ -1214,8 +1214,11 @@ class ValidationState_t {
                                   const Instruction& inst);
   void InspectDebugLocalVariable(std::ostringstream& ss, const Function& func,
                                  const Instruction& inst);
+  void InspectFunctionCall(std::ostringstream& ss,
+                           const Instruction& function_call_inst);
+  void InspectEntryPoint(std::ostringstream& ss, const Instruction& inst);
   void InspectDebugFunctionDefinition(std::ostringstream& ss,
-                                      const Instruction& function_call_inst);
+                                      const Instruction& function_inst);
   void PrintShaderDebugInfoSource(std::ostringstream& ss,
                                   const Instruction& debug_source,
                                   const DebugSourceInfo& source_info);
