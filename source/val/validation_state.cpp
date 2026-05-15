@@ -3285,6 +3285,10 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpEntryPoint-09658);
     case 9659:
       return VUID_WRAP(VUID-StandaloneSpirv-OpEntryPoint-09659);
+    case 9931:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpGraphInputARM-09931);
+    case 9932:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpGraphSetOutputARM-09932);
     case 10151:
       return VUID_WRAP(VUID-StandaloneSpirv-DerivativeGroupQuadsKHR-10151);
     case 10152:

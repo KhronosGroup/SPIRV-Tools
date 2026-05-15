@@ -64,6 +64,7 @@ std::string GenerateModuleWithExtInstImports(const std::string& imports,
            %uint_2 = OpConstant %uint 2
            %uint_3 = OpConstant %uint 3
            %uint_4 = OpConstant %uint 4
+       %undef_uint = OpUndef %uint
           %float_1 = OpConstant %float 1.0
        %int8tensor = OpTypeTensorARM %int8 %uint_4
      %int8r3tensor = OpTypeTensorARM %int8 %uint_3
@@ -778,6 +779,26 @@ TEST_F(ValidateGraph, InvalidGraphInputIndexWrongType) {
               HasSubstr("GraphInputARM InputIndex must be a 32-bit integer"));
 }
 
+TEST_F(ValidateGraph, InvalidGraphInputIndexNotConstantVulkan) {
+  const std::string src = R"(
+%graph_type = OpTypeGraphARM 1 %int8tensor %int8tensor
+              OpGraphEntryPointARM %graph "longname" %var_int8tensor %var_int8tensor
+     %graph = OpGraphARM %graph_type
+        %in = OpGraphInputARM %int8tensor %undef_uint
+              OpGraphSetOutputARM %in %uint_0
+              OpGraphEndARM
+)";
+  std::string spvasm = GenerateModule(src);
+
+  CompileSuccessfully(spvasm, SPVENV);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("VUID-StandaloneSpirv-OpGraphInputARM-09931"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpGraphInputARM InputIndex must be the <id> of a "
+                        "constant instruction."));
+}
+
 TEST_F(ValidateGraph, InvalidGraphInputElementIndexWrongType) {
   const std::string src = R"(
 %graph_type = OpTypeGraphARM 1 %int8tensor_array3 %int8tensor
@@ -793,6 +814,26 @@ TEST_F(ValidateGraph, InvalidGraphInputElementIndexWrongType) {
   EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("GraphInputARM ElementIndex must be a 32-bit integer"));
+}
+
+TEST_F(ValidateGraph, InvalidGraphInputElementIndexNotConstantVulkan) {
+  const std::string src = R"(
+%graph_type = OpTypeGraphARM 1 %int8tensor_array3 %int8tensor
+              OpGraphEntryPointARM %graph "longname" %var_int8tensor_array3 %var_int8tensor
+     %graph = OpGraphARM %graph_type
+        %in = OpGraphInputARM %int8tensor %uint_0 %undef_uint
+              OpGraphSetOutputARM %in %uint_0
+              OpGraphEndARM
+)";
+  std::string spvasm = GenerateModule(src);
+
+  CompileSuccessfully(spvasm, SPVENV);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("VUID-StandaloneSpirv-OpGraphInputARM-09931"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpGraphInputARM ElementIndex must be the <id> of a "
+                        "constant instruction."));
 }
 
 TEST_F(ValidateGraph, InvalidGraphInputIndexDuplicate) {
@@ -1123,6 +1164,26 @@ TEST_F(ValidateGraph, InvalidGraphOutputIndexWrongType) {
       HasSubstr("GraphSetOutputARM OutputIndex must be a 32-bit integer"));
 }
 
+TEST_F(ValidateGraph, InvalidGraphOutputIndexNotConstantVulkan) {
+  const std::string src = R"(
+%graph_type = OpTypeGraphARM 1 %int8tensor %int8tensor
+              OpGraphEntryPointARM %graph "longname" %var_int8tensor %var_int8tensor
+     %graph = OpGraphARM %graph_type
+        %in = OpGraphInputARM %int8tensor %uint_0
+              OpGraphSetOutputARM %in %undef_uint
+              OpGraphEndARM
+)";
+  std::string spvasm = GenerateModule(src);
+
+  CompileSuccessfully(spvasm, SPVENV);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("VUID-StandaloneSpirv-OpGraphSetOutputARM-09932"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpGraphSetOutputARM OutputIndex must be the <id> of "
+                        "a constant instruction."));
+}
+
 TEST_F(ValidateGraph, InvalidGraphOutputElementIndexWrongType) {
   const std::string src = R"(
 %graph_type = OpTypeGraphARM 1 %int8tensor %int8tensor_array3
@@ -1139,6 +1200,26 @@ TEST_F(ValidateGraph, InvalidGraphOutputElementIndexWrongType) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("GraphSetOutputARM ElementIndex must be a 32-bit integer"));
+}
+
+TEST_F(ValidateGraph, InvalidGraphOutputElementIndexNotConstantVulkan) {
+  const std::string src = R"(
+%graph_type = OpTypeGraphARM 1 %int8tensor %int8tensor_array3
+              OpGraphEntryPointARM %graph "longname" %var_int8tensor %var_int8tensor_array3
+     %graph = OpGraphARM %graph_type
+        %in = OpGraphInputARM %int8tensor %uint_0
+              OpGraphSetOutputARM %in %uint_0 %undef_uint
+              OpGraphEndARM
+)";
+  std::string spvasm = GenerateModule(src);
+
+  CompileSuccessfully(spvasm, SPVENV);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("VUID-StandaloneSpirv-OpGraphSetOutputARM-09932"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpGraphSetOutputARM ElementIndex must be the <id> of "
+                        "a constant instruction."));
 }
 
 TEST_F(ValidateGraph, InvalidGraphOutputIndexDuplicate) {
