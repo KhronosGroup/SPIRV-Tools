@@ -2188,19 +2188,24 @@ std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
 
   std::ostringstream ss;
   const Function* func = inst.function();
+  const spv::Op opcode = inst.opcode();
   if (func != nullptr) {
-    if (inst.opcode() == spv::Op::OpVariable) {
+    if (opcode == spv::Op::OpVariable) {
       InspectDebugLocalVariable(ss, *func, inst);
-    } else if (inst.opcode() == spv::Op::OpFunctionCall) {
-      InspectDebugFunctionDefinition(ss, inst);
+    } else if (opcode == spv::Op::OpFunctionCall) {
+      InspectFunctionCall(ss, inst);
     } else {
       // Currently a fall back for anything in a function
       InspectDebugLine(ss, inst);
     }
-  } else if (inst.opcode() == spv::Op::OpVariable) {
+  } else if (opcode == spv::Op::OpVariable) {
     // Know are global because not in any function
     // TODO - test with OpUntypedVariable as well
     InspectDebugGlobalVariable(ss, inst);
+  } else if (opcode == spv::Op::OpExecutionMode ||
+             opcode == spv::Op::OpExecutionModeId ||
+             opcode == spv::Op::OpEntryPoint) {
+    InspectEntryPoint(ss, inst);
   }
 
   return ss.str();
@@ -2404,22 +2409,43 @@ void ValidationState_t::InspectDebugLocalVariable(
   PrintShaderDebugInfoSource(ss, *debug_source, source_info);
 }
 
-void ValidationState_t::InspectDebugFunctionDefinition(
+void ValidationState_t::InspectFunctionCall(
     std::ostringstream& ss, const Instruction& function_call_inst) {
   // First print the caller, then print the callee if also found
   InspectDebugLine(ss, function_call_inst);
 
-  const uint32_t set_id = ShaderDebugInfoSet();
-  const Instruction* debug_func_def = nullptr;
-
   const uint32_t callee_function_id =
       function_call_inst.GetOperandAs<uint32_t>(2);
   const Instruction* function_inst = FindDef(callee_function_id);
-  if (!function_inst) return;
+  if (function_inst) {
+    InspectDebugFunctionDefinition(ss, *function_inst);
+  }
+}
+
+void ValidationState_t::InspectEntryPoint(std::ostringstream& ss,
+                                          const Instruction& inst) {
+  const Instruction* function_inst = nullptr;
+  if (inst.opcode() == spv::Op::OpExecutionMode ||
+      inst.opcode() == spv::Op::OpExecutionModeId) {
+    function_inst = FindDef(inst.GetOperandAs<uint32_t>(0));
+  } else if (inst.opcode() == spv::Op::OpEntryPoint) {
+    function_inst = FindDef(inst.GetOperandAs<uint32_t>(1));
+  }
+
+  if (function_inst) {
+    InspectDebugFunctionDefinition(ss, *function_inst);
+  }
+}
+
+void ValidationState_t::InspectDebugFunctionDefinition(
+    std::ostringstream& ss, const Instruction& function_inst) {
+  assert(function_inst.opcode() == spv::Op::OpFunction);
+  const uint32_t set_id = ShaderDebugInfoSet();
+  const Instruction* debug_func_def = nullptr;
 
   // Loop through the Function block as the DebugFunctionDefinition needs to be
   // inside it
-  size_t first_inst_id = (function_inst - &ordered_instructions()[0]) + 1;
+  size_t first_inst_id = (&function_inst - &ordered_instructions()[0]) + 1;
   for (size_t i = first_inst_id + 1; i < ordered_instructions().size(); ++i) {
     const Instruction& current_inst = ordered_instructions()[i];
     if (current_inst.opcode() == spv::Op::OpFunctionEnd) {
@@ -2430,7 +2456,7 @@ void ValidationState_t::InspectDebugFunctionDefinition(
         current_inst.GetOperandAs<uint32_t>(2) == set_id &&
         current_inst.GetOperandAs<uint32_t>(3) ==
             NonSemanticShaderDebugInfoDebugFunctionDefinition &&
-        current_inst.GetOperandAs<uint32_t>(5) == callee_function_id) {
+        current_inst.GetOperandAs<uint32_t>(5) == function_inst.id()) {
       debug_func_def = &current_inst;
       break;
     }
