@@ -9699,6 +9699,571 @@ TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeFuncPointerTypeFail) {
       HasSubstr("first parameter must be pointer to PhysicalStorageBuffer"));
 }
 
+// Shared shader template for SPV_NV_cooperative_matrix_decode_vector tests.
+// `matrix_id` selects which result-matrix type the load uses
+// (%f16matA / %f16matB / %f16matAcc).  When `include_decode_vec_cap` is false,
+// the new capability and extension are omitted from the module so that we can
+// exercise the "capability not declared" diagnostic.  `extra_types`,
+// `main_body`, and `after_main` mirror GenCoopMat2Shader.
+std::string GenCoopMat2DecodeVecShader(
+    const std::string& extra_types, const std::string& main_body,
+    const std::string& after_main, bool include_decode_vec_cap = true,
+    const std::string& matrix_id = "%f16matA",
+    const std::string& extra_decorations = "") {
+  std::string caps = R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability PhysicalStorageBufferAddresses
+OpCapability VulkanMemoryModel
+OpCapability CooperativeMatrixKHR
+OpCapability TensorAddressingNV
+OpCapability CooperativeMatrixTensorAddressingNV
+OpCapability CooperativeMatrixBlockLoadsNV
+OpCapability LongVectorEXT
+)";
+  if (include_decode_vec_cap) {
+    caps += "OpCapability CooperativeMatrixDecodeVectorNV\n";
+  }
+  std::string exts = R"(OpExtension "SPV_KHR_physical_storage_buffer"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_NV_tensor_addressing"
+OpExtension "SPV_NV_cooperative_matrix2"
+OpExtension "SPV_KHR_cooperative_matrix"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpExtension "SPV_EXT_long_vector"
+)";
+  if (include_decode_vec_cap) {
+    exts += "OpExtension \"SPV_NV_cooperative_matrix_decode_vector\"\n";
+  }
+  std::string body = R"(
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+
+OpDecorate %f16_arr ArrayStride 2
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %ssbo Binding 0
+OpDecorate %ssbo DescriptorSet 0
+)" + extra_decorations +
+                     R"(
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%func = OpTypeFunction %void
+%f16 = OpTypeFloat 16
+%f32 = OpTypeFloat 32
+%u32 = OpTypeInt 32 0
+%s32 = OpTypeInt 32 1
+
+%v2f16 = OpTypeVector %f16 2
+%v3f16 = OpTypeVector %f16 3
+%v4f16 = OpTypeVector %f16 4
+%v8f16 = OpTypeVector %f16 8
+%v2f32 = OpTypeVector %f32 2
+
+%s32_0 = OpConstant %s32 0
+%f16_0 = OpConstant %f16 0
+%v2f16_0 = OpConstantNull %v2f16
+%v3f16_0 = OpConstantNull %v3f16
+%v4f16_0 = OpConstantNull %v4f16
+%v8f16_0 = OpConstantNull %v8f16
+%v2f32_0 = OpConstantNull %v2f32
+%u32_2 = OpConstant %u32 2
+%u32_4 = OpConstant %u32 4
+%u32_8 = OpConstant %u32 8
+%use_A = OpConstant %u32 0
+%use_B = OpConstant %u32 1
+%use_Acc = OpConstant %u32 2
+%workgroup = OpConstant %u32 2
+%subgroup = OpConstant %u32 3
+
+%f16_arr = OpTypeRuntimeArray %f16
+%struct = OpTypeStruct %f16_arr
+%ssbo_ptr = OpTypePointer StorageBuffer %struct
+%ssbo = OpVariable %ssbo_ptr StorageBuffer
+%array_ssbo_ptr = OpTypePointer StorageBuffer %f16_arr
+%psbptr = OpTypePointer PhysicalStorageBuffer %f16_arr
+
+%f16matA = OpTypeCooperativeMatrixKHR %f16 %workgroup %u32_8 %u32_8 %use_A
+%f16matB = OpTypeCooperativeMatrixKHR %f16 %workgroup %u32_8 %u32_8 %use_B
+%f16matAcc = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_8 %use_Acc
+
+%arr2 = OpTypeArray %u32 %u32_2
+%functy_f16 = OpTypeFunction %f16 %psbptr %arr2 %arr2
+%functy_v2f16 = OpTypeFunction %v2f16 %psbptr %arr2 %arr2
+%functy_v3f16 = OpTypeFunction %v3f16 %psbptr %arr2 %arr2
+%functy_v4f16 = OpTypeFunction %v4f16 %psbptr %arr2 %arr2
+%functy_v8f16 = OpTypeFunction %v8f16 %psbptr %arr2 %arr2
+%functy_v2f32 = OpTypeFunction %v2f32 %psbptr %arr2 %arr2
+
+%clamp_const = OpConstant %u32 0
+%dim_const = OpConstant %u32 2
+%hasdim = OpConstantFalse %bool
+%p0 = OpConstant %u32 0
+%p1 = OpConstant %u32 1
+%layout = OpTypeTensorLayoutNV %dim_const %clamp_const
+%view = OpTypeTensorViewNV %dim_const %hasdim %p0 %p1
+)" + extra_types + R"(
+
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+%array_ptr = OpAccessChain %array_ssbo_ptr %ssbo %s32_0
+%mat = OpUndef )" + matrix_id +
+                     R"(
+
+%tl = OpCreateTensorLayoutNV %layout
+%tv = OpCreateTensorViewNV %view
+)" + main_body + R"(
+OpReturn
+OpFunctionEnd
+)" + after_main;
+
+  return caps + exts + body;
+}
+
+// Helpers below build "decode_func + load instruction" pairs for various V
+// and component types.
+static std::string ScalarDecodeFuncF16(const std::string& name) {
+  return "\n%" + name + " = OpFunction %f16 None %functy_f16\n%psb_" + name +
+         " = OpFunctionParameter %psbptr\n%c0_" + name +
+         " = OpFunctionParameter %arr2\n%c1_" + name +
+         " = OpFunctionParameter %arr2\n%entry_" + name +
+         " = OpLabel\nOpReturnValue %f16_0\nOpFunctionEnd\n";
+}
+static std::string VectorDecodeFunc(const std::string& name,
+                                    const std::string& functy,
+                                    const std::string& vec_t,
+                                    const std::string& null_id) {
+  return "\n%" + name + " = OpFunction %" + vec_t + " None %" + functy +
+         "\n%psb_" + name + " = OpFunctionParameter %psbptr\n%c0_" + name +
+         " = OpFunctionParameter %arr2\n%c1_" + name +
+         " = OpFunctionParameter %arr2\n%entry_" + name +
+         " = OpLabel\nOpReturnValue %" + null_id + "\nOpFunctionEnd\n";
+}
+
+// ---- Scalar-only DecodeFunc (the SPV_NV_cooperative_matrix2 baseline) ----
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorScalarDecodePass) {
+  // Scalar-only DecodeFunc path must continue to work without the new
+  // CooperativeMatrixDecodeVectorNV capability declared.
+  std::string spirv =
+      GenCoopMat2DecodeVecShader("",
+                                 R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc %scalar
+      )",
+                                 ScalarDecodeFuncF16("scalar"),
+                                 /*include_decode_vec_cap=*/false);
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorScalarDecodeWithDecodeVecCapPass) {
+  // Regression: declaring CooperativeMatrixDecodeVectorNV must not break the
+  // existing scalar-only DecodeFunc path.
+  std::string spirv = GenCoopMat2DecodeVecShader("",
+                                                 R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc %scalar
+      )",
+                                                 ScalarDecodeFuncF16("scalar"));
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorScalarDecodeVectorReturnFail) {
+  // DecodeFunc must be scalar-returning. the vector path is reachable only via
+  // DecodeVectorFunc.
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      "",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc %vec
+      )",
+      VectorDecodeFunc("vec", "functy_v2f16", "v2f16", "v2f16_0"));
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("DecodeFunc <id>"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("return type must match matrix component type"));
+}
+
+// ---- DecodeVectorFunc positive cases ----
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeVectorFuncV2Pass) {
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      "",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc|DecodeVectorFunc %scalar %vec
+      )",
+      ScalarDecodeFuncF16("scalar") +
+          VectorDecodeFunc("vec", "functy_v2f16", "v2f16", "v2f16_0"));
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeVectorFuncV4Pass) {
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      "",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc|DecodeVectorFunc %scalar %vec
+      )",
+      ScalarDecodeFuncF16("scalar") +
+          VectorDecodeFunc("vec", "functy_v4f16", "v4f16", "v4f16_0"));
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeVectorFuncV8Pass) {
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      "",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc|DecodeVectorFunc %scalar %vec
+      )",
+      ScalarDecodeFuncF16("scalar") +
+          VectorDecodeFunc("vec", "functy_v8f16", "v8f16", "v8f16_0"));
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeVectorFuncMatrixBPass) {
+  // No restriction on Use: MatrixBKHR works without a TensorView.
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      "",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matB %array_ptr %mat %tl None DecodeFunc|DecodeVectorFunc %scalar %vec
+      )",
+      ScalarDecodeFuncF16("scalar") +
+          VectorDecodeFunc("vec", "functy_v2f16", "v2f16", "v2f16_0"),
+      /*include_decode_vec_cap=*/true, /*matrix_id=*/"%f16matB");
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory,
+       CoopMat2LoadTensorDecodeVectorFuncMatrixAccumulatorPass) {
+  // No restriction on Use: MatrixAccumulatorKHR is now permitted.
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      "",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matAcc %array_ptr %mat %tl None DecodeFunc|DecodeVectorFunc %scalar %vec
+      )",
+      ScalarDecodeFuncF16("scalar") +
+          VectorDecodeFunc("vec", "functy_v2f16", "v2f16", "v2f16_0"),
+      /*include_decode_vec_cap=*/true, /*matrix_id=*/"%f16matAcc");
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeVectorFuncWithTensorViewPass) {
+  // No restriction on TensorView: any view that is legal on the underlying
+  // load is legal here too.
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      "",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None TensorView|DecodeFunc|DecodeVectorFunc %tv %scalar %vec
+      )",
+      ScalarDecodeFuncF16("scalar") +
+          VectorDecodeFunc("vec", "functy_v2f16", "v2f16", "v2f16_0"));
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeVectorFuncSpecConstLengthPass) {
+  // OpTypeVectorIdEXT with a spec-constant length: V is not statically
+  // known, so the V-in-{2,4,8} check must not fire.
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      R"(
+%spec_v = OpSpecConstant %u32 4
+%v_spec_f16 = OpTypeVectorIdEXT %f16 %spec_v
+%v_spec_f16_0 = OpConstantNull %v_spec_f16
+%functy_v_spec_f16 = OpTypeFunction %v_spec_f16 %psbptr %arr2 %arr2
+)",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc|DecodeVectorFunc %scalar %vec
+      )",
+      ScalarDecodeFuncF16("scalar") +
+          VectorDecodeFunc("vec", "functy_v_spec_f16", "v_spec_f16",
+                           "v_spec_f16_0"),
+      /*include_decode_vec_cap=*/true, /*matrix_id=*/"%f16matA",
+      /*extra_decorations=*/"OpDecorate %spec_v SpecId 1\n");
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+// ---- DecodeVectorFunc negative cases ----
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeVectorFuncMissingCapFail) {
+  // The DecodeVectorFunc operand is gated by the
+  // CooperativeMatrixDecodeVectorNV capability in the grammar; without the
+  // capability declared, the generic per-operand capability check fires.
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      "",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc|DecodeVectorFunc %scalar %vec
+      )",
+      ScalarDecodeFuncF16("scalar") +
+          VectorDecodeFunc("vec", "functy_v2f16", "v2f16", "v2f16_0"),
+      /*include_decode_vec_cap=*/false);
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("CooperativeMatrixDecodeVectorNV"));
+}
+
+TEST_F(ValidateMemory,
+       CoopMat2LoadTensorDecodeVectorFuncWithoutDecodeFuncFail) {
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      "",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeVectorFunc %vec
+      )",
+      VectorDecodeFunc("vec", "functy_v2f16", "v2f16", "v2f16_0"));
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("DecodeVectorFunc requires DecodeFunc to also be specified"));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeVectorFuncScalarReturnFail) {
+  // DecodeVectorFunc's function must be vector-returning.
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      "",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc|DecodeVectorFunc %scalar %scalar2
+      )",
+      ScalarDecodeFuncF16("scalar") + ScalarDecodeFuncF16("scalar2"));
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("DecodeVectorFunc"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("return type must be a vector of the matrix component type"));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeVectorFuncBadVecLengthFail) {
+  // V = 3 is not in {2, 4, 8}.
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      "",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc|DecodeVectorFunc %scalar %vec
+      )",
+      ScalarDecodeFuncF16("scalar") +
+          VectorDecodeFunc("vec", "functy_v3f16", "v3f16", "v3f16_0"));
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("return vector length must be 2, 4, or 8"));
+}
+
+TEST_F(ValidateMemory,
+       CoopMat2LoadTensorDecodeVectorFuncWrongComponentTypeFail) {
+  // Vector component type does not match matrix component type.
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      "",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc|DecodeVectorFunc %scalar %vec
+      )",
+      ScalarDecodeFuncF16("scalar") +
+          VectorDecodeFunc("vec", "functy_v2f32", "v2f32", "v2f32_0"));
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("return type must be a vector of the matrix component type"));
+}
+
+TEST_F(ValidateMemory,
+       CoopMat2LoadTensorDecodeVectorFuncMismatchedPointeePass) {
+  // DecodeVectorFunc and DecodeFunc are independently validated and may use
+  // different PhysicalStorageBuffer pointee types - the implementation passes
+  // both functions the same byte address and lets the shader type-view it.
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      R"(
+%u32_arr = OpTypeRuntimeArray %u32
+%psbptr_u32 = OpTypePointer PhysicalStorageBuffer %u32_arr
+%functy_v2f16_alt = OpTypeFunction %v2f16 %psbptr_u32 %arr2 %arr2
+)",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc|DecodeVectorFunc %scalar %vec
+      )",
+      ScalarDecodeFuncF16("scalar") +
+          R"(
+%vec = OpFunction %v2f16 None %functy_v2f16_alt
+%psb_vec = OpFunctionParameter %psbptr_u32
+%c0_vec = OpFunctionParameter %arr2
+%c1_vec = OpFunctionParameter %arr2
+%entry_vec = OpLabel
+OpReturnValue %v2f16_0
+OpFunctionEnd
+)",
+      /*include_decode_vec_cap=*/true, /*matrix_id=*/"%f16matA",
+      /*extra_decorations=*/"OpDecorate %u32_arr ArrayStride 4\n");
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeVectorFuncBadFirstParamFail) {
+  // DecodeVectorFunc's first parameter must be a PhysicalStorageBuffer
+  // pointer, just like DecodeFunc's. Use a StorageBuffer pointer in both
+  // functions so the per-function storage-class check fires.
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      R"(
+%sbptr = OpTypePointer StorageBuffer %f16_arr
+%functy_f16_sb = OpTypeFunction %f16 %sbptr %arr2 %arr2
+%functy_v2f16_sb = OpTypeFunction %v2f16 %sbptr %arr2 %arr2
+)",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc|DecodeVectorFunc %scalar_sb %vec_sb
+      )",
+      R"(
+%scalar_sb = OpFunction %f16 None %functy_f16_sb
+%psb_scalar_sb = OpFunctionParameter %sbptr
+%c0_scalar_sb = OpFunctionParameter %arr2
+%c1_scalar_sb = OpFunctionParameter %arr2
+%entry_scalar_sb = OpLabel
+OpReturnValue %f16_0
+OpFunctionEnd
+%vec_sb = OpFunction %v2f16 None %functy_v2f16_sb
+%psb_vec_sb = OpFunctionParameter %sbptr
+%c0_vec_sb = OpFunctionParameter %arr2
+%c1_vec_sb = OpFunctionParameter %arr2
+%entry_vec_sb = OpLabel
+OpReturnValue %v2f16_0
+OpFunctionEnd
+)");
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("first parameter must be pointer to PhysicalStorageBuffer"));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeFuncNotAFunctionFail) {
+  // The DecodeFunc operand must reference an OpFunction. Pointing it at
+  // a non-function id (here, an integer constant) trips the defensive
+  // "is not a function" check.
+  std::string spirv = GenCoopMat2DecodeVecShader("",
+                                                 R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc %s32_0
+      )",
+                                                 "");
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("DecodeFunc <id>"));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("is not a function"));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeFuncNonArrayParamFail) {
+  // Second/third parameters must be OpTypeArray; a non-array param (here
+  // a bare uint32_t) trips the "must be array of 32-bit integer" check
+  // through the param-opcode branch (distinct from the dim-mismatch
+  // branch exercised by CoopMat2LoadTensorDecodeFuncArrayTypeFail).
+  std::string spirv = GenCoopMat2DecodeVecShader(
+      R"(
+%functy_f16_noarr = OpTypeFunction %f16 %psbptr %u32 %u32
+)",
+      R"(
+      %loaded = OpCooperativeMatrixLoadTensorNV %f16matA %array_ptr %mat %tl None DecodeFunc %scalar_noarr
+      )",
+      R"(
+%scalar_noarr = OpFunction %f16 None %functy_f16_noarr
+%psb_scalar_noarr = OpFunctionParameter %psbptr
+%c0_scalar_noarr = OpFunctionParameter %u32
+%c1_scalar_noarr = OpFunctionParameter %u32
+%entry_scalar_noarr = OpLabel
+OpReturnValue %f16_0
+OpFunctionEnd
+)");
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("DecodeFunc <id>"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must be array of 32-bit integer"));
+}
+
+TEST_F(ValidateMemory, CoopMat2LoadTensorDecodeVectorFuncStoreFail) {
+  // OpCooperativeMatrixStoreTensorNV must not accept DecodeFunc or
+  // DecodeVectorFunc. The general validator rejects function-result <id>s
+  // outside an allowlisted set of opcodes; that allowlist contains
+  // OpCooperativeMatrixLoadTensorNV but not the store, so the store form
+  // is rejected with the generic "Invalid use of function result id"
+  // diagnostic before our store-specific check ever runs.
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability PhysicalStorageBufferAddresses
+OpCapability VulkanMemoryModel
+OpCapability CooperativeMatrixKHR
+OpCapability TensorAddressingNV
+OpCapability CooperativeMatrixTensorAddressingNV
+OpCapability CooperativeMatrixBlockLoadsNV
+OpCapability LongVectorEXT
+OpCapability CooperativeMatrixDecodeVectorNV
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpExtension "SPV_NV_tensor_addressing"
+OpExtension "SPV_NV_cooperative_matrix2"
+OpExtension "SPV_KHR_cooperative_matrix"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpExtension "SPV_EXT_long_vector"
+OpExtension "SPV_NV_cooperative_matrix_decode_vector"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %f16_arr ArrayStride 2
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpDecorate %ssbo Binding 0
+OpDecorate %ssbo DescriptorSet 0
+%void = OpTypeVoid
+%bool = OpTypeBool
+%func = OpTypeFunction %void
+%f16 = OpTypeFloat 16
+%u32 = OpTypeInt 32 0
+%s32 = OpTypeInt 32 1
+%v2f16 = OpTypeVector %f16 2
+%s32_0 = OpConstant %s32 0
+%f16_0 = OpConstant %f16 0
+%v2f16_0 = OpConstantNull %v2f16
+%u32_2 = OpConstant %u32 2
+%u32_8 = OpConstant %u32 8
+%use_A = OpConstant %u32 0
+%workgroup = OpConstant %u32 2
+%f16_arr = OpTypeRuntimeArray %f16
+%struct = OpTypeStruct %f16_arr
+%ssbo_ptr = OpTypePointer StorageBuffer %struct
+%ssbo = OpVariable %ssbo_ptr StorageBuffer
+%array_ssbo_ptr = OpTypePointer StorageBuffer %f16_arr
+%psbptr = OpTypePointer PhysicalStorageBuffer %f16_arr
+%f16matA = OpTypeCooperativeMatrixKHR %f16 %workgroup %u32_8 %u32_8 %use_A
+%arr2 = OpTypeArray %u32 %u32_2
+%functy_f16 = OpTypeFunction %f16 %psbptr %arr2 %arr2
+%clamp_const = OpConstant %u32 0
+%dim_const = OpConstant %u32 2
+%layout = OpTypeTensorLayoutNV %dim_const %clamp_const
+%scalar = OpFunction %f16 None %functy_f16
+%psb_scalar = OpFunctionParameter %psbptr
+%c0_scalar = OpFunctionParameter %arr2
+%c1_scalar = OpFunctionParameter %arr2
+%entry_scalar = OpLabel
+OpReturnValue %f16_0
+OpFunctionEnd
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+%array_ptr = OpAccessChain %array_ssbo_ptr %ssbo %s32_0
+%mat = OpUndef %f16matA
+%tl = OpCreateTensorLayoutNV %layout
+OpCooperativeMatrixStoreTensorNV %array_ptr %mat %tl None DecodeFunc %scalar
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid use of function result id"));
+}
+
 TEST_F(ValidateMemory, PtrAccessChainNodePayloadArray) {
   const std::string spirv = R"(
 OpCapability Shader
