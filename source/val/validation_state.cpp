@@ -2301,11 +2301,15 @@ void ValidationState_t::InspectDebugLine(std::ostringstream& ss,
     }
 
     if (prev->opcode() == spv::Op::OpExtInst &&
-        prev->GetOperandAs<uint32_t>(2) == set_id &&
-        prev->GetOperandAs<uint32_t>(3) ==
-            NonSemanticShaderDebugInfoDebugLine) {
-      debug_line_inst = prev;
-      break;
+        prev->GetOperandAs<uint32_t>(2) == set_id) {
+      const uint32_t ext_inst = prev->GetOperandAs<uint32_t>(3);
+      if (ext_inst == NonSemanticShaderDebugInfoDebugLine) {
+        debug_line_inst = prev;
+        break;
+      } else if (ext_inst == NonSemanticShaderDebugInfoDebugNoLine) {
+        // If we see a DebugNoLine first, this section has no valid line
+        break;
+      }
     }
   }
 
