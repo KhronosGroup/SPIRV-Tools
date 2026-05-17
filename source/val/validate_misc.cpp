@@ -133,6 +133,7 @@ spv_result_t ValidateAbort(ValidationState_t& _, const Instruction* inst) {
 spv_result_t MiscPass(ValidationState_t& _, const Instruction* inst) {
   switch (inst->opcode()) {
     case spv::Op::OpUndef:
+    case spv::Op::OpPoisonKHR:
       if (auto error = ValidateUndef(_, inst)) return error;
       break;
     default:

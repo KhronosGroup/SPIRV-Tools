@@ -107,6 +107,7 @@ ModuleLayoutSection InstructionLayoutSection(
       return kLayoutFunctionDefinitions;
     case spv::Op::OpLine:
     case spv::Op::OpNoLine:
+    case spv::Op::OpPoisonKHR:
     case spv::Op::OpUndef:
       if (current_section == kLayoutTypes) return kLayoutTypes;
       return kLayoutFunctionDefinitions;
