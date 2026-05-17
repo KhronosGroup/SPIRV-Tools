@@ -2195,6 +2195,9 @@ std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
       InspectDebugLocalVariable(ss, *func, inst);
     } else if (opcode == spv::Op::OpFunctionCall) {
       InspectFunctionCall(ss, inst);
+    } else if (opcode == spv::Op::OpReturnValue ||
+               opcode == spv::Op::OpFunctionParameter) {
+      InspectLineAndFunctionDefinition(ss, *func, inst);
     } else {
       // Currently a fall back for anything in a function
       InspectDebugLine(ss, inst);
@@ -2418,6 +2421,19 @@ void ValidationState_t::InspectFunctionCall(
   const uint32_t callee_function_id =
       function_call_inst.GetOperandAs<uint32_t>(2);
   const Instruction* function_inst = FindDef(callee_function_id);
+  if (function_inst) {
+    InspectDebugFunctionDefinition(ss, *function_inst);
+  }
+}
+
+// For instruction in the function that it would be value to both get the line
+// of the invalid instruction, but also the FunctionDefinition
+void ValidationState_t::InspectLineAndFunctionDefinition(
+    std::ostringstream& ss, const Function& func, const Instruction& inst) {
+  // First print the return line (if one) than find the function def
+  InspectDebugLine(ss, inst);
+
+  const Instruction* function_inst = FindDef(func.id());
   if (function_inst) {
     InspectDebugFunctionDefinition(ss, *function_inst);
   }
