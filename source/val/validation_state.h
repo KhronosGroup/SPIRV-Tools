@@ -1220,6 +1220,8 @@ class ValidationState_t {
                                         const Function& func,
                                         const Instruction& inst);
   void InspectEntryPoint(std::ostringstream& ss, const Instruction& inst);
+  void InspectDecorate(std::ostringstream& ss,
+                       const Instruction& decorate_inst);
   void InspectDebugFunctionDefinition(std::ostringstream& ss,
                                       const Instruction& function_inst);
   void PrintShaderDebugInfoSource(std::ostringstream& ss,

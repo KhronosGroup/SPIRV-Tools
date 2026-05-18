@@ -2210,6 +2210,10 @@ std::string ValidationState_t::InspectShaderDebugInfo(const Instruction& inst) {
              opcode == spv::Op::OpExecutionModeId ||
              opcode == spv::Op::OpEntryPoint) {
     InspectEntryPoint(ss, inst);
+  } else if (opcode == spv::Op::OpDecorate || opcode == spv::Op::OpDecorateId ||
+             opcode == spv::Op::OpMemberDecorate ||
+             opcode == spv::Op::OpMemberDecorateIdEXT) {
+    InspectDecorate(ss, inst);
   }
 
   return ss.str();
@@ -2452,6 +2456,68 @@ void ValidationState_t::InspectEntryPoint(std::ostringstream& ss,
   if (function_inst) {
     InspectDebugFunctionDefinition(ss, *function_inst);
   }
+}
+
+void ValidationState_t::InspectDecorate(std::ostringstream& ss,
+                                        const Instruction& decorate_inst) {
+  const Instruction* target_inst =
+      FindDef(decorate_inst.GetOperandAs<uint32_t>(0));
+  if (!target_inst) {
+    return;
+  }
+
+  spv::Op target_opcode = target_inst->opcode();
+  if (target_opcode == spv::Op::OpVariable) {
+    return InspectDebugGlobalVariable(ss, *target_inst);
+  } else if (target_opcode == spv::Op::OpUntypedVariableKHR) {
+    return;  // TODO - add tests and support
+  }
+
+  // If here, likely an OpType* so if we can detect only a single global
+  // variable is using that type, just attempt to print it out
+  const uint32_t set_id = ShaderDebugInfoSet();
+  const Instruction* debug_gloabl_var_inst = nullptr;
+  for (const auto& inst : ordered_instructions()) {
+    if (inst.opcode() == spv::Op::OpFunction) {
+      break;
+    }
+
+    if (inst.opcode() != spv::Op::OpExtInst ||
+        inst.GetOperandAs<uint32_t>(2) != set_id ||
+        inst.GetOperandAs<uint32_t>(3) !=
+            NonSemanticShaderDebugInfoDebugGlobalVariable) {
+      continue;
+    }
+
+    const Instruction* var_inst = FindDef(inst.GetOperandAs<uint32_t>(11));
+    if (!var_inst || var_inst->opcode() != spv::Op::OpVariable) {
+      continue;
+    }
+
+    const Instruction* pointer_type = FindDef(var_inst->type_id());
+    if (!pointer_type || pointer_type->opcode() != spv::Op::OpTypePointer) {
+      continue;
+    }
+
+    const uint32_t pointee_type_id = pointer_type->GetOperandAs<uint32_t>(2);
+    if (pointee_type_id == target_inst->id()) {
+      if (debug_gloabl_var_inst) {
+        return;  // Multiple variables using this type
+      }
+      debug_gloabl_var_inst = &inst;
+    }
+  }
+  if (!debug_gloabl_var_inst) return;
+
+  const Instruction* debug_source =
+      FindDef(debug_gloabl_var_inst->GetOperandAs<uint32_t>(6));
+  if (!debug_source || debug_source->GetOperandAs<uint32_t>(3) !=
+                           NonSemanticShaderDebugInfoDebugSource) {
+    return;
+  }
+
+  auto source_info = GetDebugSourceInfo(*debug_gloabl_var_inst);
+  PrintShaderDebugInfoSource(ss, *debug_source, source_info);
 }
 
 void ValidationState_t::InspectDebugFunctionDefinition(
