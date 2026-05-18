@@ -1157,6 +1157,84 @@ INSTANTIATE_TEST_SUITE_P(ValidateVulkanInterpolationStorageClass,
                          VulkanInterpolationStorageClass,
                          Values("Flat", "NoPerspective", "Centroid", "Sample"));
 
+TEST_F(DecorationTest, OffsetOnStruct) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %x
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %ssbo Block
+               OpDecorate %ssbo Offset 0
+               OpMemberDecorate %ssbo 0 Offset 0
+               OpMemberDecorate %ssbo 1 Offset 4
+               OpMemberDecorate %ssbo 2 Offset 8
+               OpDecorate %x Binding 0
+               OpDecorate %x DescriptorSet 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+       %ssbo = OpTypeStruct %uint %uint %uint
+     %uint_2 = OpConstant %uint 2
+%_arr_ssbo_uint_2 = OpTypeArray %ssbo %uint_2
+%_ptr_StorageBuffer__arr_ssbo_uint_2 = OpTypePointer StorageBuffer %_arr_ssbo_uint_2
+          %x = OpVariable %_ptr_StorageBuffer__arr_ssbo_uint_2 StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_1 = OpConstant %int 1
+     %uint_0 = OpConstant %uint 0
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %16 = OpAccessChain %_ptr_StorageBuffer_uint %x %int_1 %int_1
+               OpStore %16 %uint_0
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Offset can only be applied to structure members"));
+}
+
+TEST_F(DecorationTest, OffsetOnArray) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %x
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %ssbo Block
+               OpMemberDecorate %ssbo 0 Offset 0
+               OpMemberDecorate %ssbo 1 Offset 4
+               OpMemberDecorate %ssbo 2 Offset 8
+               OpDecorate %x Binding 0
+               OpDecorate %x DescriptorSet 0
+               OpDecorate %_arr_ssbo_uint_2 Offset 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+       %ssbo = OpTypeStruct %uint %uint %uint
+     %uint_2 = OpConstant %uint 2
+%_arr_ssbo_uint_2 = OpTypeArray %ssbo %uint_2
+%_ptr_StorageBuffer__arr_ssbo_uint_2 = OpTypePointer StorageBuffer %_arr_ssbo_uint_2
+          %x = OpVariable %_ptr_StorageBuffer__arr_ssbo_uint_2 StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_1 = OpConstant %int 1
+     %uint_0 = OpConstant %uint 0
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %16 = OpAccessChain %_ptr_StorageBuffer_uint %x %int_1 %int_1
+               OpStore %16 %uint_0
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Offset can only be applied to structure members"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
