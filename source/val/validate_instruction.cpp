@@ -495,6 +495,15 @@ spv_result_t InstructionPass(ValidationState_t& _, const Instruction* inst) {
         spv::ExecutionMode::OutputVertices) {
       _.RegisterEntryPointOutputVertices(entry_point, inst);
     }
+    if (inst->GetOperandAs<spv::ExecutionMode>(1) ==
+        spv::ExecutionMode::OpacityMicromapIdKHR) {
+      if (!(_.HasCapability(spv::Capability::RayQueryKHR) ||
+            _.HasCapability(spv::Capability::RayTracingKHR))) {
+        return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
+               << "The OpacityMicromapIdKHR execution mode requires "
+                  "the RayQueryKHR capability be present";
+      }
+    }
   } else if (opcode == spv::Op::OpVariable) {
     const auto storage_class = inst->GetOperandAs<spv::StorageClass>(2);
     if (auto error = LimitCheckNumVars(_, inst->id(), storage_class)) {
