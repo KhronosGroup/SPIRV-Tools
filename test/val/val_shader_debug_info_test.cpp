@@ -1136,11 +1136,6 @@ void main() {
 
 TEST_F(ValidateShaderDebugInfo, FunctionParameter) {
   const std::string str = R"(
-; SPIR-V
-; Version: 1.5
-; Generator: Khronos Glslang Reference Front End; 11
-; Bound: 75
-; Schema: 0
                OpCapability Shader
                OpExtension "SPV_KHR_non_semantic_info"
           %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.100"
