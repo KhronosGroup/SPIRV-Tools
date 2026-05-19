@@ -110,21 +110,23 @@ bool IsNotMemberDecoration(spv::Decoration dec) {
 spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
                                       const Instruction* inst,
                                       const Instruction* target) {
-  auto fail = [&_, dec, inst, target](uint32_t vuid) -> DiagnosticStream {
-    DiagnosticStream ds = std::move(
-        _.diag(SPV_ERROR_INVALID_ID, inst)
-        << _.VkErrorID(vuid) << _.SpvDecorationString(dec)
-        << " decoration on target <id> " << _.getIdName(target->id()) << " ");
-    return ds;
+  auto fail = [&_, dec, target]() -> std::string {
+    std::ostringstream ss;
+    ss << _.SpvDecorationString(dec) << " decoration on target <id> "
+       << _.getIdName(target->id()) << " ";
+    return ss.str();
   };
+
   switch (dec) {
     case spv::Decoration::SpecId:
       if (target->opcode() != spv::Op::OpSpecConstantTrue &&
           target->opcode() != spv::Op::OpSpecConstantFalse &&
           target->opcode() != spv::Op::OpSpecConstant &&
           target->opcode() != spv::Op::OpSpecConstantDataKHR) {
-        return fail(0) << "must be OpSpecConstantTrue, OpSpecConstantFalse, "
-                          "OpSpecConstant, or OpSpecConstantDataKHR";
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << fail()
+               << "must be OpSpecConstantTrue, OpSpecConstantFalse, "
+                  "OpSpecConstant, or OpSpecConstantDataKHR";
       }
       break;
     case spv::Decoration::Block:
@@ -133,7 +135,8 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
     case spv::Decoration::GLSLPacked:
     case spv::Decoration::CPacked:
       if (target->opcode() != spv::Op::OpTypeStruct) {
-        return fail(0) << "must be a structure type";
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << fail() << "must be a structure type";
       }
       break;
     case spv::Decoration::ArrayStride:
@@ -141,7 +144,8 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
           target->opcode() != spv::Op::OpTypeRuntimeArray &&
           target->opcode() != spv::Op::OpTypePointer &&
           target->opcode() != spv::Op::OpTypeUntypedPointerKHR) {
-        return fail(0) << "must be an array or pointer type";
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << fail() << "must be an array or pointer type";
       }
       break;
     case spv::Decoration::BuiltIn:
@@ -155,11 +159,13 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
       if (_.HasCapability(spv::Capability::Shader) &&
           inst->GetOperandAs<spv::BuiltIn>(2) == spv::BuiltIn::WorkgroupSize) {
         if (!spvOpcodeIsConstant(target->opcode())) {
-          return fail(0) << "must be a constant for WorkgroupSize";
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << fail() << "must be a constant for WorkgroupSize";
         }
       } else if (target->opcode() != spv::Op::OpVariable &&
                  target->opcode() != spv::Op::OpUntypedVariableKHR) {
-        return fail(0) << "must be a variable";
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << fail() << "must be a variable";
       }
       break;
     case spv::Decoration::NoPerspective:
@@ -185,10 +191,12 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
           target->opcode() != spv::Op::OpFunctionParameter &&
           target->opcode() != spv::Op::OpRawAccessChainNV &&
           target->opcode() != spv::Op::OpBufferPointerEXT) {
-        return fail(0) << "must be a memory object declaration";
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << fail() << "must be a memory object declaration";
       }
       if (!_.IsPointerType(target->type_id())) {
-        return fail(0) << "must be a pointer type";
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << fail() << "must be a pointer type";
       }
       break;
     case spv::Decoration::Invariant:
@@ -200,7 +208,8 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
     case spv::Decoration::InputAttachmentIndex:
       if (target->opcode() != spv::Op::OpVariable &&
           target->opcode() != spv::Op::OpUntypedVariableKHR) {
-        return fail(0) << "must be a variable";
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << fail() << "must be a variable";
       }
       break;
     default:
@@ -237,7 +246,8 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
       case spv::Decoration::Index:
         // Langauge from SPIR-V definition of Index
         if (sc != spv::StorageClass::Output) {
-          return fail(0) << "must be in the Output storage class";
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << fail() << "must be in the Output storage class";
         }
         break;
       case spv::Decoration::Binding:
@@ -246,13 +256,17 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
             sc != spv::StorageClass::Uniform &&
             sc != spv::StorageClass::UniformConstant &&
             sc != spv::StorageClass::TileAttachmentQCOM) {
-          return fail(6491) << "must be in the StorageBuffer, Uniform, or "
-                               "UniformConstant storage class";
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << _.VkErrorID(6491) << fail()
+                 << "must be in the StorageBuffer, Uniform, or "
+                    "UniformConstant storage class";
         }
         break;
       case spv::Decoration::InputAttachmentIndex:
         if (sc != spv::StorageClass::UniformConstant) {
-          return fail(6678) << "must be in the UniformConstant storage class";
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << _.VkErrorID(6678) << fail()
+                 << "must be in the UniformConstant storage class";
         }
         break;
       case spv::Decoration::Flat:
@@ -260,12 +274,16 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
       case spv::Decoration::Centroid:
       case spv::Decoration::Sample:
         if (sc != spv::StorageClass::Input && sc != spv::StorageClass::Output) {
-          return fail(4670) << "storage class must be Input or Output";
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << _.VkErrorID(4670) << fail()
+                 << "storage class must be Input or Output";
         }
         break;
       case spv::Decoration::PerVertexKHR:
         if (sc != spv::StorageClass::Input) {
-          return fail(6777) << "storage class must be Input";
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << _.VkErrorID(6777) << fail()
+                 << "storage class must be Input";
         }
         break;
       default:
