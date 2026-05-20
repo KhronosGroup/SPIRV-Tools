@@ -39,8 +39,10 @@ std::string GenerateBFloatCode(const std::string& main_body) {
 OpCapability Shader
 OpCapability BFloat16TypeKHR
 OpCapability AtomicFloat16AddEXT
+OpCapability FMAKHR
 OpCapability GroupNonUniformShuffle
 OpExtension "SPV_EXT_shader_atomic_float16_add"
+OpExtension "SPV_KHR_fma"
 OpExtension "SPV_KHR_bfloat16"
 %1 = OpExtInstImport "GLSL.std.450"
 OpMemoryModel Logical GLSL450
@@ -73,6 +75,43 @@ OpFunctionEnd)";
   return prefix + main_body + suffix;
 }
 
+std::string GenerateBFloatCoopMatCode(const std::string& main_body) {
+  const std::string prefix =
+      R"(
+OpCapability Shader
+OpCapability VulkanMemoryModel
+OpCapability BFloat16TypeKHR
+OpCapability BFloat16CooperativeMatrixKHR
+OpCapability CooperativeMatrixKHR
+OpExtension "SPV_KHR_bfloat16"
+OpExtension "SPV_KHR_cooperative_matrix"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical Vulkan
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 32 1 1
+OpSource GLSL 450
+OpName %main "main"
+%void = OpTypeVoid
+%bfloat16 = OpTypeFloat 16 BFloat16KHR
+%func = OpTypeFunction %void
+%u32 = OpTypeInt 32 0
+%u32_8 = OpConstant %u32 8
+%subgroup = OpConstant %u32 3
+%useA = OpConstant %u32 0
+%bf16_1 = OpConstant %bfloat16 1
+%bf16matA = OpTypeCooperativeMatrixKHR %bfloat16 %subgroup %u32_8 %u32_8 %useA
+%bf16mat_A_1 = OpConstantComposite %bf16matA %bf16_1
+%main = OpFunction %void None %func
+%main_entry = OpLabel)";
+
+  const std::string suffix =
+      R"(
+OpReturn
+OpFunctionEnd)";
+
+  return prefix + main_body + suffix;
+}
+
 TEST_F(ValidateInvalidType, Bfloat16InvalidArithmeticInstruction) {
   const std::string body = R"(
 %v1 = OpVariable %_ptr_Function_bfloat16 Function
@@ -87,6 +126,45 @@ TEST_F(ValidateInvalidType, Bfloat16InvalidArithmeticInstruction) {
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("FMul doesn't support BFloat16 type."));
+}
+
+TEST_F(ValidateInvalidType, Bfloat16InvalidFmaInstruction) {
+  const std::string body = R"(
+%15 = OpFmaKHR %bfloat16 %bf16_1 %bf16_1 %bf16_1
+)";
+
+  CompileSuccessfully(GenerateBFloatCode(body).c_str(), SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FmaKHR doesn't support BFloat16 type."));
+}
+
+TEST_F(ValidateInvalidType, Bfloat16InvalidVectorTimesScalarInstruction) {
+  const std::string body = R"(
+%v1 = OpVariable %_ptr_Function_v2bfloat16 Function
+%12 = OpLoad %v2bfloat16 %v1
+%15 = OpVectorTimesScalar %v2bfloat16 %12 %bf16_1
+)";
+
+  CompileSuccessfully(GenerateBFloatCode(body).c_str(), SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("VectorTimesScalar doesn't support BFloat16 type."));
+}
+
+TEST_F(ValidateInvalidType, Bfloat16InvalidMatrixTimesScalarInstruction) {
+  const std::string body = R"(
+%15 = OpMatrixTimesScalar %bf16matA %bf16mat_A_1 %bf16_1
+)";
+
+  CompileSuccessfully(GenerateBFloatCoopMatCode(body).c_str(),
+                      SPV_ENV_UNIVERSAL_1_6);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("MatrixTimesScalar doesn't support BFloat16 type."));
 }
 
 TEST_F(ValidateInvalidType, Bfloat16InvalidRelationalInstruction) {
@@ -207,6 +285,38 @@ TEST_F(ValidateInvalidType, FP8E5M2InvalidArithmeticInstruction) {
             ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("FMul doesn't support FP8 E4M3/E5M2 types."));
+}
+
+TEST_F(ValidateInvalidType, FP8E4M3InvalidDotInstruction) {
+  const std::string body = R"(
+%v1 = OpVariable %_ptr_Function_v2fp8e4m3 Function
+%v2 = OpVariable %_ptr_Function_v2fp8e4m3 Function
+%12 = OpLoad %v2fp8e4m3 %v1
+%14 = OpLoad %v2fp8e4m3 %v2
+%15 = OpDot %fp8e4m3 %12 %14
+)";
+
+  CompileSuccessfully(GenerateFP8Code(body).c_str(), SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Dot doesn't support FP8 E4M3/E5M2 types."));
+}
+
+TEST_F(ValidateInvalidType, FP8E5M2InvalidDotInstruction) {
+  const std::string body = R"(
+%v1 = OpVariable %_ptr_Function_v2fp8e5m2 Function
+%v2 = OpVariable %_ptr_Function_v2fp8e5m2 Function
+%12 = OpLoad %v2fp8e5m2 %v1
+%14 = OpLoad %v2fp8e5m2 %v2
+%15 = OpDot %fp8e5m2 %12 %14
+)";
+
+  CompileSuccessfully(GenerateFP8Code(body).c_str(), SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Dot doesn't support FP8 E4M3/E5M2 types."));
 }
 
 TEST_F(ValidateInvalidType, FP8E4M3InvalidRelationalInstruction) {
