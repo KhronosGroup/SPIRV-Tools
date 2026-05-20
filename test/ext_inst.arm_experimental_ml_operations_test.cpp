@@ -30,10 +30,12 @@ using testing::Eq;
 using utils::MakeVector;
 
 TEST_F(TextToBinaryTest, ArmExperimentalMLOperationsImportTest) {
-  const std::string src = "%1 = OpExtInstImport \"Arm.ExperimentalMLOperations.1\"";
-  EXPECT_THAT(CompiledInstructions(src),
-              Eq(MakeInstruction(spv::Op::OpExtInstImport, {1},
-                                 MakeVector("Arm.ExperimentalMLOperations.1"))));
+  const std::string src =
+      "%1 = OpExtInstImport \"Arm.ExperimentalMLOperations.1\"";
+  EXPECT_THAT(
+      CompiledInstructions(src),
+      Eq(MakeInstruction(spv::Op::OpExtInstImport, {1},
+                         MakeVector("Arm.ExperimentalMLOperations.1"))));
 }
 
 TEST_F(TextToBinaryTest, ArmExperimentalMLOperationsCALLWithoutParameters) {
@@ -44,10 +46,11 @@ TEST_F(TextToBinaryTest, ArmExperimentalMLOperationsCALLWithoutParameters) {
   // First make sure it assembles correctly.
   EXPECT_THAT(
       CompiledInstructions(src),
-      Eq(Concatenate({MakeInstruction(spv::Op::OpExtInstImport, {1},
-                                      MakeVector("Arm.ExperimentalMLOperations.1")),
-                      MakeInstruction(spv::Op::OpExtInst,
-                                      {2, 3, 1, ArmExperimentalMLOperationsCALL, 42})})))
+      Eq(Concatenate(
+          {MakeInstruction(spv::Op::OpExtInstImport, {1},
+                           MakeVector("Arm.ExperimentalMLOperations.1")),
+           MakeInstruction(spv::Op::OpExtInst,
+                           {2, 3, 1, ArmExperimentalMLOperationsCALL, 42})})))
       << src;
   // Now check the round trip through the disassembler.
   EXPECT_THAT(EncodeAndDecodeSuccessfully(src), src) << src;
@@ -61,10 +64,12 @@ TEST_F(TextToBinaryTest, ArmExperimentalMLOperationsCALLWithParameters) {
   // First make sure it assembles correctly.
   EXPECT_THAT(
       CompiledInstructions(src),
-      Eq(Concatenate({MakeInstruction(spv::Op::OpExtInstImport, {1},
-                                      MakeVector("Arm.ExperimentalMLOperations.1")),
-                      MakeInstruction(spv::Op::OpExtInst,
-                                      {2, 3, 1, ArmExperimentalMLOperationsCALL, 42, 4, 5, 6})})))
+      Eq(Concatenate(
+          {MakeInstruction(spv::Op::OpExtInstImport, {1},
+                           MakeVector("Arm.ExperimentalMLOperations.1")),
+           MakeInstruction(
+               spv::Op::OpExtInst,
+               {2, 3, 1, ArmExperimentalMLOperationsCALL, 42, 4, 5, 6})})))
       << src;
   // Now check the round trip through the disassembler.
   EXPECT_THAT(EncodeAndDecodeSuccessfully(src), src) << src;
