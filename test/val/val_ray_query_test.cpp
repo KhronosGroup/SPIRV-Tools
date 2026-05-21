@@ -633,6 +633,58 @@ TEST_F(ValidateRayQuery, RayQueryArraySuccess) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateRayQuery, RayQueryArraySuccessInBounds) {
+  // This shader is slightly different to the ones above, so it doesn't reuse
+  // the shader code generator.
+  const std::string shader = R"(
+                       OpCapability Shader
+                       OpCapability RayQueryKHR
+                       OpExtension "SPV_KHR_ray_query"
+                       OpMemoryModel Logical GLSL450
+                       OpEntryPoint GLCompute %main "main"
+                       OpExecutionMode %main LocalSize 1 1 1
+                       OpSource GLSL 460
+                       OpDecorate %topLevelAS DescriptorSet 0
+                       OpDecorate %topLevelAS Binding 0
+                       OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+               %void = OpTypeVoid
+               %func = OpTypeFunction %void
+          %ray_query = OpTypeRayQueryKHR
+               %uint = OpTypeInt 32 0
+             %uint_2 = OpConstant %uint 2
+    %ray_query_array = OpTypeArray %ray_query %uint_2
+%ptr_ray_query_array = OpTypePointer Private %ray_query_array
+         %rayQueries = OpVariable %ptr_ray_query_array Private
+                %int = OpTypeInt 32 1
+              %int_0 = OpConstant %int 0
+      %ptr_ray_query = OpTypePointer Private %ray_query
+       %accel_struct = OpTypeAccelerationStructureKHR
+   %ptr_accel_struct = OpTypePointer UniformConstant %accel_struct
+         %topLevelAS = OpVariable %ptr_accel_struct UniformConstant
+             %uint_0 = OpConstant %uint 0
+           %uint_255 = OpConstant %uint 255
+              %float = OpTypeFloat 32
+            %v3float = OpTypeVector %float 3
+            %float_0 = OpConstant %float 0
+          %vec3_zero = OpConstantComposite %v3float %float_0 %float_0 %float_0
+            %float_1 = OpConstant %float 1
+      %vec3_xy_0_z_1 = OpConstantComposite %v3float %float_0 %float_0 %float_1
+           %float_10 = OpConstant %float 10
+             %v3uint = OpTypeVector %uint 3
+             %uint_1 = OpConstant %uint 1
+   %gl_WorkGroupSize = OpConstantComposite %v3uint %uint_1 %uint_1 %uint_1
+               %main = OpFunction %void None %func
+         %main_label = OpLabel
+    %first_ray_query = OpInBoundsAccessChain %ptr_ray_query %rayQueries %int_0
+     %topLevelAS_val = OpLoad %accel_struct %topLevelAS
+                       OpRayQueryInitializeKHR %first_ray_query %topLevelAS_val %uint_0 %uint_255 %vec3_zero %float_0 %vec3_xy_0_z_1 %float_10
+                       OpReturn
+                       OpFunctionEnd
+)";
+  CompileSuccessfully(shader);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateRayQuery, ClusterASNV) {
   const std::string cap = R"(
                OpCapability RayTracingClusterAccelerationStructureNV
