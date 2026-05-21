@@ -2417,6 +2417,47 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideSpecConstantZero) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
 }
 
+// https://github.com/KhronosGroup/SPIRV-Tools/issues/6696
+TEST_F(ValidateSpvEXTDescriptorHeap, OffsetIdOnArray) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability UntypedPointersKHR
+               OpCapability DescriptorHeapEXT
+               OpCapability Sampled1D
+               OpExtension "SPV_KHR_untyped_pointers"
+               OpExtension "SPV_EXT_descriptor_heap"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %1 "main" %2
+               OpExecutionMode %1 LocalSize 1 1 1
+               OpDecorate %2 BuiltIn ResourceHeapEXT
+               OpDecorateId %7 OffsetIdEXT %4
+         %11 = OpTypeVoid
+         %12 = OpTypeFunction %11
+         %13 = OpTypeInt 32 0
+         %16 = OpConstant %13 0
+          %4 = OpConstant %13 0
+         %20 = OpTypeImage %13 1D 0 0 0 1 Unknown
+         %21 = OpTypeBufferEXT StorageBuffer
+         %22 = OpTypeSampler
+         %23 = OpTypeSampledImage %20
+          %7 = OpTypeRuntimeArray %20
+         %24 = OpTypeUntypedPointerKHR UniformConstant
+         %25 = OpTypeUntypedPointerKHR StorageBuffer
+          %2 = OpUntypedVariableKHR %24 UniformConstant
+          %1 = OpFunction %11 None %12
+         %26 = OpLabel
+         %27 = OpUntypedAccessChainKHR %24 %7 %2 %16
+         %28 = OpLoad %20 %27
+               OpReturn
+               OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OffsetIdEXT can only be applied to structure members"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
