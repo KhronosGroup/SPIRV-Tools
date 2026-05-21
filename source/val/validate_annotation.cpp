@@ -53,9 +53,10 @@ bool IsMemberDecorationOnly(spv::Decoration dec) {
     case spv::Decoration::RowMajor:
     case spv::Decoration::ColMajor:
     case spv::Decoration::MatrixStride:
-      // SPIR-V spec bug? Offset is generated on variables when dealing with
-      // transform feedback.
-      // case spv::Decoration::Offset:
+    // Spec ambiguity where this is allowed or not currently
+    // See https://gitlab.khronos.org/spirv/SPIR-V/-/issues/937
+    // case spv::Decoration::Offset:
+    case spv::Decoration::OffsetIdEXT:
       return true;
     default:
       break;
@@ -427,11 +428,12 @@ spv_result_t ValidateDecorateId(ValidationState_t& _, const Instruction* inst) {
     }
   }
 
-  // No member decorations take id parameters, so we don't bother checking if
-  // we are using a member only decoration here.
+  if (IsMemberDecorationOnly(decoration)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << _.SpvDecorationString(decoration)
+           << " can only be applied to structure members";
+  }
 
-  // TODO: Add validations for these decorations.
-  // UniformId is covered elsewhere.
   return SPV_SUCCESS;
 }
 
