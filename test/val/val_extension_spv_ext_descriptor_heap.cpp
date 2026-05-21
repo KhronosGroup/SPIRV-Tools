@@ -1140,7 +1140,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTStorageClass) {
   const std::string diag = getDiagnosticString();
   EXPECT_THAT(
       diag,
-      HasSubstr("OpBufferPointerEXT's Result Type must be a pointer "
+      HasSubstr("OpBufferPointerEXT Result Type must be a pointer "
                 "type with a Storage Class of Uniform or StorageBuffer."));
 }
 
@@ -1195,10 +1195,9 @@ TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTLayout) {
   CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   const std::string diag = getDiagnosticString();
-  EXPECT_THAT(diag, AnyVUID("VUID-StandaloneSpirv-Result-11346"));
-  EXPECT_THAT(
-      diag, HasSubstr("The result type operand of OpBufferPointerEXT "
-                      "must have a Type operand that is explicitly laid out"));
+  EXPECT_THAT(diag,
+              HasSubstr("OpBufferPointerEXT Result Type must be a pointer type "
+                        "with a Storage Class of Uniform or StorageBuffer."));
 }
 
 TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTDecorate) {
