@@ -587,7 +587,8 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
 }
 
-TEST_F(ConvertToUntypedTest, CopyMemory_RowMajorColumn_SharedMemoryOperand_AddAligned) {
+TEST_F(ConvertToUntypedTest,
+       CopyMemory_RowMajorColumn_SharedMemoryOperand_AddAligned) {
   const std::string text = R"(
 ; CHECK-DAG: OpDecorate [[in:%\w+]] Binding 0
 ; CHECK-DAG: OpDecorate [[out:%\w+]] Binding 1
@@ -657,7 +658,8 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
 }
 
-TEST_F(ConvertToUntypedTest, CopyMemory_RowMajorColumn_SeparatedMemoryOperands) {
+TEST_F(ConvertToUntypedTest,
+       CopyMemory_RowMajorColumn_SeparatedMemoryOperands) {
   const std::string text = R"(
 ; CHECK-DAG: OpDecorate [[in:%\w+]] Binding 0
 ; CHECK-DAG: OpDecorate [[out:%\w+]] Binding 1
@@ -727,7 +729,8 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
 }
 
-TEST_F(ConvertToUntypedTest, CopyMemory_RowMajorColumn_SeparatedMemoryOperands_AddAligned) {
+TEST_F(ConvertToUntypedTest,
+       CopyMemory_RowMajorColumn_SeparatedMemoryOperands_AddAligned) {
   const std::string text = R"(
 ; CHECK-DAG: OpDecorate [[in:%\w+]] Binding 0
 ; CHECK-DAG: OpDecorate [[out:%\w+]] Binding 1
