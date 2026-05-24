@@ -15,7 +15,6 @@
 #include "convert_to_untyped.h"
 
 #include <deque>
-#include <iostream>
 #include <limits>
 #include <unordered_set>
 
@@ -330,7 +329,8 @@ Instruction* ConvertToUntyped::ConvertPointer(Instruction* inst) {
   if (!decs.empty() || !base_ptrs_.count(sc)) {
     // Replace in situ
     inst->SetOpcode(spv::Op::OpTypeUntypedPointerKHR);
-    inst->SetInOperands(std::initializer_list<Operand>{{SPV_OPERAND_TYPE_STORAGE_CLASS, {sc}}});
+    inst->SetInOperands(
+        std::initializer_list<Operand>{{SPV_OPERAND_TYPE_STORAGE_CLASS, {sc}}});
     if (decs.empty()) {
       base_ptrs_[sc] = inst;
     }
@@ -348,8 +348,8 @@ void ConvertToUntyped::ConvertVariable(Instruction* inst) {
   // Replace in situ.
   inst->SetOpcode(spv::Op::OpUntypedVariableKHR);
   inst->SetInOperands(std::initializer_list<Operand>{
-    {SPV_OPERAND_TYPE_STORAGE_CLASS, {uint32_t(ptr_ty->storage_class())}},
-    {SPV_OPERAND_TYPE_ID, {data}}});
+      {SPV_OPERAND_TYPE_STORAGE_CLASS, {uint32_t(ptr_ty->storage_class())}},
+      {SPV_OPERAND_TYPE_ID, {data}}});
 }
 
 void ConvertToUntyped::ConvertAccessChain(Instruction* inst) {

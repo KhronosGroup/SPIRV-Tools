@@ -15,10 +15,10 @@
 #ifndef LIBSPIRV_OPT_CONVERT_TO_UNTYPED_H_
 #define LIBSPIRV_OPT_CONVERT_TO_UNTYPED_H_
 
-#include "pass.h"
-
 #include <unordered_map>
 #include <utility>
+
+#include "pass.h"
 
 namespace spvtools {
 namespace opt {
