@@ -46,9 +46,12 @@ TEST_F(ConvertToUntypedTest, SupportedStorageClasses_NoWorkgroup) {
 ; CHECK-DAG: OpTypeUntypedPointerKHR StorageBuffer
 ; CHECK-DAG: OpTypeUntypedPointerKHR Uniform
 ; CHECK-DAG: OpTypeUntypedPointerKHR PushConstant
+; CHECK-DAG: OpTypeUntypedPointerKHR PhysicalStorageBuffer
 ; CHECK-NOT: OpTypeUntypedPointerKHR Workgroup
 OpCapability Shader
-OpMemoryModel Logical GLSL450
+OpCapability PhysicalStorageBufferAddresses
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
 OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 1 1 1
 %void = OpTypeVoid
@@ -57,6 +60,7 @@ OpExecutionMode %main LocalSize 1 1 1
 %ptr_ssbo_int = OpTypePointer StorageBuffer %int
 %ptr_ubo_int = OpTypePointer Uniform %int
 %ptr_pc_int = OpTypePointer PushConstant %int
+%ptr_pssbo_int = OpTypePointer PhysicalStorageBuffer %int
 %ptr_wg_int = OpTypePointer Workgroup %int
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
@@ -72,11 +76,14 @@ TEST_F(ConvertToUntypedTest, SupportedStorageClasses_Workgroup) {
 ; CHECK-DAG: OpTypeUntypedPointerKHR StorageBuffer
 ; CHECK-DAG: OpTypeUntypedPointerKHR Uniform
 ; CHECK-DAG: OpTypeUntypedPointerKHR PushConstant
+; CHECK-DAG: OpTypeUntypedPointerKHR PhysicalStorageBuffer
 ; CHECK-DAG: OpTypeUntypedPointerKHR Workgroup
 OpCapability Shader
 OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpCapability PhysicalStorageBufferAddresses
 OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
-OpMemoryModel Logical GLSL450
+OpExtension "SPV_KHR_physical_storage_buffer"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
 OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 1 1 1
 %void = OpTypeVoid
@@ -85,6 +92,7 @@ OpExecutionMode %main LocalSize 1 1 1
 %ptr_ssbo_int = OpTypePointer StorageBuffer %int
 %ptr_ubo_int = OpTypePointer Uniform %int
 %ptr_pc_int = OpTypePointer PushConstant %int
+%ptr_pssbo_int = OpTypePointer PhysicalStorageBuffer %int
 %ptr_wg_int = OpTypePointer Workgroup %int
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
@@ -139,6 +147,63 @@ OpDecorate %ptr_uint ArrayStride 4
 %uint = OpTypeInt 32 0
 %ptr_int = OpTypePointer StorageBuffer %int
 %ptr_uint = OpTypePointer StorageBuffer %uint
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
+}
+
+TEST_F(ConvertToUntypedTest, Pointer_PreExsitingBase) {
+  const std::string text = R"(
+; CHECK-NOT: OpTypePointer
+; CHECK: OpTypeUntypedPointerKHR StorageBuffer
+; CHECK-NOT: OpTypeUntypedPointerKHR
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%int = OpTypeInt 32 1
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%ptr_uint = OpTypePointer StorageBuffer %uint
+%ptr_int = OpTypePointer StorageBuffer %int
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
+}
+
+TEST_F(ConvertToUntypedTest, Pointer_PreExsitingBase_Unusable) {
+  const std::string text = R"(
+; CHECK: OpDecorate [[ptr:%\w+]] ArrayStride 4
+; CHECK-NOT: OpTypePointer
+; CHECK: [[ptr]] = OpTypeUntypedPointerKHR StorageBuffer
+; CHECK: OpTypeUntypedPointerKHR StorageBuffer
+; CHECK-NOT: OpTypeUntypedPointerKHR
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %ptr ArrayStride 4
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%int = OpTypeInt 32 1
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%ptr_uint = OpTypePointer StorageBuffer %uint
+%ptr_int = OpTypePointer StorageBuffer %int
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
 OpReturn
@@ -1098,6 +1163,46 @@ OpReturn
 OpFunctionEnd
 )";
 
+  SetTargetEnv(SPV_ENV_VULKAN_1_3);
+  SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
+}
+
+TEST_F(ConvertToUntypedTest, PhysicalStorageBuffer) {
+  const std::string text = R"(
+; CHECK: [[ptr:%\w+]] = OpTypeUntypedPointerKHR PhysicalStorageBuffer
+; CHECK: [[conv:%\w+]] = OpConvertUToPtr [[ptr]]
+; CHECK: OpConvertPtrToU {{%\w+}} [[conv]]
+; CHECK: OpBitcast [[ptr]]
+OpCapability Shader
+OpCapability Int64
+OpCapability PhysicalStorageBufferAddresses
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint GLCompute %main "main" %pc
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint2 = OpTypeVector %uint 2
+%uint2_0 = OpConstantComposite %uint2 %uint_0 %uint_0
+%ulong = OpTypeInt 64 0
+%block = OpTypeStruct %ulong
+%ptr_block = OpTypePointer PushConstant %block
+%ptr_ulong = OpTypePointer PushConstant %ulong
+%ptr_pssbo_uint = OpTypePointer PhysicalStorageBuffer %uint
+%pc = OpVariable %ptr_block PushConstant
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpAccessChain %ptr_ulong %pc %uint_0
+%ld = OpLoad %ulong %gep
+%convert = OpConvertUToPtr %ptr_pssbo_uint %ld
+%reconvert = OpConvertPtrToU %ulong %convert
+%bitcast = OpBitcast %ptr_pssbo_uint %uint2_0
+OpReturn
+OpFunctionEnd
+)";
 
   SetTargetEnv(SPV_ENV_VULKAN_1_3);
   SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
