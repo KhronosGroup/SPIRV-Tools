@@ -156,12 +156,9 @@ void ConvertToUntyped::AddUntypedEnable() {
         continue;
       }
       const analysis::Pointer ptr_type{nullptr, sc};
-      auto registered = context()->get_type_mgr()->GetRegisteredType(&ptr_type);
-      if (registered) {
-        auto id = context()->get_type_mgr()->GetId(registered);
-        if (id != 0) {
-          base_ptrs_[uint32_t(sc)] = context()->get_def_use_mgr()->GetDef(id);
-        }
+      auto id = context()->get_type_mgr()->GetId(&ptr_type);
+      if (id != 0) {
+        base_ptrs_[uint32_t(sc)] = context()->get_def_use_mgr()->GetDef(id);
       }
     }
   }
@@ -178,6 +175,7 @@ bool ConvertToUntyped::SupportedStorageClass(spv::StorageClass sc) {
     case spv::StorageClass::StorageBuffer:
     case spv::StorageClass::Uniform:
     case spv::StorageClass::PushConstant:
+    case spv::StorageClass::PhysicalStorageBuffer:
       return true;
     case spv::StorageClass::Workgroup:
       return support_workgroup_;
@@ -274,9 +272,7 @@ std::pair<bool, uint32_t> ConvertToUntyped::MatrixStride(Instruction* inst) {
       case spv::Op::OpUntypedVariableKHR:
         break;
       default:
-        // A variable pointer cannot point to a matrix or inside it so we can
-        // stop searching at this point.
-        return std::make_pair(false, 0);
+        break;
     }
   }
 
