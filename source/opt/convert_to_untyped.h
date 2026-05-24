@@ -33,6 +33,11 @@ class ConvertToUntyped : public Pass {
   void AddUntypedEnable();
 
   // Updates the module by converting instructions and replacing uses.
+  //
+  // The TypeManager is not updated as the mutations occur and all instructions
+  // continue to use old ids (mapped to correctly typed pointers) until after
+  // conversions. Then all operands are updated (and unneeded instructions
+  // removed).
   void ConvertPointers();
 
   // Returns true if sc is supports untyped pointers.
@@ -53,13 +58,13 @@ class ConvertToUntyped : public Pass {
   Instruction* ConvertPointer(Instruction* inst);
 
   // Converts OpVariable to OpUntypedVariableKHR
-  Instruction* ConvertVariable(Instruction* inst);
+  void ConvertVariable(Instruction* inst);
 
-  // Converts Op[InBounds]AccessChain to OpUntyped[InBounds]AccessChainKHR.
-  Instruction* ConvertAccessChain(Instruction* inst);
+  // Converts access chains to equivalent untyped version.
+  void ConvertAccessChain(Instruction* inst);
 
   // Converts OpArrayLength to OpUntypedArrayLengthKHR.
-  Instruction* ConvertArrayLength(Instruction* inst);
+  void ConvertArrayLength(Instruction* inst);
 
   // Converts OpCopyMemory.
   // If the copy is a matrix or the column of a matrix, it is converted to loads

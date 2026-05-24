@@ -224,6 +224,47 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
 }
 
+TEST_F(ConvertToUntypedTest, PtrAccessChain) {
+  const std::string text = R"(
+; CHECK: OpDecorate {{%\w+}} ArrayStride 4
+; CHECK: OpDecorate [[stride_ptr:%\w+]] ArrayStride 4
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[uint_0:%\w+]] = OpConstant [[uint]] 0
+; CHECK: [[ptr:%\w+]] = OpTypeUntypedPointerKHR StorageBuffer
+; CHECK: [[stride_ptr]] = OpTypeUntypedPointerKHR StorageBuffer
+; CHECK: [[access:%\w+]] = OpUntypedAccessChainKHR [[stride_ptr]]
+; CHECK: OpUntypedPtrAccessChainKHR [[stride_ptr]] [[uint]] [[access]] [[uint_0]]
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+OpDecorate %rta ArrayStride 4
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+OpDecorate %ptr_uint ArrayStride 4
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%rta = OpTypeRuntimeArray %uint
+%block = OpTypeStruct %rta
+%ptr_block = OpTypePointer StorageBuffer %block
+%ptr_uint = OpTypePointer StorageBuffer %uint
+%var = OpVariable %ptr_block StorageBuffer
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%access = OpAccessChain %ptr_uint %var %uint_0 %uint_0
+%ptr_access = OpPtrAccessChain %ptr_uint %access %uint_0
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
+}
+
 TEST_F(ConvertToUntypedTest, ArrayLength) {
   const std::string text = R"(
 ; CHECK: [[uint:%\w+]] = OpTypeInt
@@ -316,6 +357,62 @@ OpDecorate %out Binding 1
 %entry = OpLabel
 %in_access = OpAccessChain %ptr_vec %in %uint_0 %uint_2
 %out_access = OpAccessChain %ptr_vec %out %uint_0 %uint_2
+OpCopyMemory %out_access %in_access
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
+}
+
+TEST_F(ConvertToUntypedTest, CopyMemory_RowMajorElement) {
+  const std::string text = R"(
+; CHECK-DAG: OpDecorate [[in:%\w+]] Binding 0
+; CHECK-DAG: OpDecorate [[out:%\w+]] Binding 1
+; CHECK-DAG: [[float:%\w+]] = OpTypeFloat 32
+; CHECK-DAG: [[vec:%\w+]] = OpTypeVector [[float]] 3
+; CHECK-DAG: [[block:%\w+]] = OpTypeStruct
+; CHECK-DAG: [[ptr:%\w+]] = OpTypeUntypedPointerKHR StorageBuffer
+; CHECK-DAG: [[in]] = OpUntypedVariableKHR [[ptr]]
+; CHECK-DAG: [[out]] = OpUntypedVariableKHR [[ptr]]
+; CHECK-DAG: [[zero:%\w+]] = OpConstant {{%\w+}} 0
+; CHECK-DAG: [[two:%\w+]] = OpConstant {{%\w+}} 2
+; CHECK: OpLabel
+; CHECK: [[in_access:%\w+]] = OpUntypedAccessChainKHR [[ptr]] [[block]] [[in]] [[zero]] [[two]]
+; CHECK: [[out_access:%\w+]] = OpUntypedAccessChainKHR [[ptr]] [[block]] [[out]] [[zero]] [[two]]
+; CHECK: [[ld:%\w+]] = OpLoad [[float]] [[in_access]]
+; CHECK: OpStore [[out_access]] [[ld]]
+; CHECK-NOT: OpCopyMemory
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpMemberDecorate %block 0 Offset 0
+OpMemberDecorate %block 0 RowMajor
+OpMemberDecorate %block 0 MatrixStride 12
+OpDecorate %block Block
+OpDecorate %in DescriptorSet 0
+OpDecorate %in Binding 0
+OpDecorate %out DescriptorSet 0
+OpDecorate %out Binding 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_2 = OpConstant %uint 2
+%float = OpTypeFloat 32
+%vec3 = OpTypeVector %float 3
+%mat3x3 = OpTypeMatrix %vec3 3
+%block = OpTypeStruct %mat3x3
+%ptr_block = OpTypePointer StorageBuffer %block
+%ptr_vec = OpTypePointer StorageBuffer %vec3
+%ptr_float = OpTypePointer StorageBuffer %float
+%in = OpVariable %ptr_block StorageBuffer
+%out = OpVariable %ptr_block StorageBuffer
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%in_access = OpAccessChain %ptr_float %in %uint_0 %uint_2 %uint_0
+%out_access = OpAccessChain %ptr_float %out %uint_0 %uint_2 %uint_0
 OpCopyMemory %out_access %in_access
 OpReturn
 OpFunctionEnd
@@ -840,6 +937,80 @@ OpMemberDecorate %heap_ty 0 Offset 0
 %buffer = OpBufferPointerEXT %ptr_uint %gep
 %ld = OpLoad %uint %buffer
 OpReturn
+OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_3);
+  SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
+}
+
+TEST_F(ConvertToUntypedTest, VariablePointers_StorageBuffer) {
+  const std::string text = R"(
+; CHECK: OpDecorate {{%\w+}} ArrayStride 4
+; CHECK: OpDecorate [[stride_ptr:%\w+]] ArrayStride 4
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[uint_0:%\w+]] = OpConstant [[uint]] 0
+; CHECK: [[ptr:%\w+]] = OpTypeUntypedPointerKHR StorageBuffer
+; CHECK: [[stride_ptr]] = OpTypeUntypedPointerKHR StorageBuffer
+; CHECK: [[null:%\w+]] = OpConstantNull [[stride_ptr]]
+; CHECK: [[var:%\w+]] = OpUntypedVariableKHR
+; CHECK: [[fn_ty:%\w+]] = OpTypeFunction [[stride_ptr]] [[stride_ptr]]
+; CHECK: [[fn_ptr:%\w+]] = OpTypePointer Function [[ptr]]
+; CHECK: [[fn_var:%\w+]] = OpVariable [[fn_ptr]] Function [[var]]
+; CHECK: [[ld:%\w+]] = OpLoad [[ptr]] [[fn_var]]
+; CHECK: [[access:%\w+]] = OpUntypedAccessChainKHR [[stride_ptr]] {{%\w+}} [[ld]] [[uint_0]] [[uint_0]]
+; CHECK: [[ptr_access:%\w+]] = OpUntypedPtrAccessChainKHR [[stride_ptr]] [[uint]] [[access]] [[uint_0]]
+; CHECK: OpFunctionCall [[stride_ptr]] [[fn:%\w+]] [[ptr_access]]
+; CHECK: [[fn]] = OpFunction [[stride_ptr]] None [[fn_ty]]
+; CHECK: [[param:%\w+]] = OpFunctionParameter [[stride_ptr]]
+; CHECK: [[sel:%\w+]] = OpSelect [[stride_ptr]] {{%\w+}} [[null]] [[param]]
+; CHECK: [[phi:%\w+]] = OpPhi [[stride_ptr]] [[sel]] {{%\w+}} [[null]] {{%\w+}}
+; CHECK: OpReturnValue [[phi]]
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %var
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+OpDecorate %rta ArrayStride 4
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+OpDecorate %ptr_uint ArrayStride 4
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%bool = OpTypeBool
+%cond = OpConstantFalse %bool
+%rta = OpTypeRuntimeArray %uint
+%block = OpTypeStruct %rta
+%ptr_block = OpTypePointer StorageBuffer %block
+%ptr_uint = OpTypePointer StorageBuffer %uint
+%null = OpConstantNull %ptr_uint
+%var = OpVariable %ptr_block StorageBuffer
+%fn_ty = OpTypeFunction %ptr_uint %ptr_uint
+%ptr_func = OpTypePointer Function %ptr_block
+%main = OpFunction %void None %void_fn
+%main_entry = OpLabel
+%fn_var = OpVariable %ptr_func Function %var
+%ld_ptr = OpLoad %ptr_block %fn_var
+%access = OpAccessChain %ptr_uint %ld_ptr %uint_0 %uint_0
+%ptr_access = OpPtrAccessChain %ptr_uint %access %uint_0
+%call = OpFunctionCall %ptr_uint %fn %ptr_access
+OpReturn
+OpFunctionEnd
+%fn = OpFunction %ptr_uint None %fn_ty
+%param = OpFunctionParameter %ptr_uint
+%fn_entry = OpLabel
+%sel = OpSelect %ptr_uint %cond %null %param
+OpSelectionMerge %merge None
+OpBranchConditional %cond %merge %else
+%else = OpLabel
+OpBranch %merge
+%merge = OpLabel
+%phi = OpPhi %ptr_uint %sel %fn_entry %null %else
+OpReturnValue %phi
 OpFunctionEnd
 )";
 
