@@ -29,6 +29,8 @@ Pass::Status ConvertToUntyped::Process() {
     return Pass::Status::SuccessWithoutChange;
   }
 
+  CheckWorkgroup();
+
   AddUntypedEnable();
   ConvertPointers();
 
@@ -59,6 +61,58 @@ bool ConvertToUntyped::HasUnsupportedFeatures() {
       spv::Capability::CooperativeVectorNV,
       spv::Capability::CooperativeVectorTrainingNV};
   return caps.HasAnyOf(unsupported);
+}
+
+void ConvertToUntyped::CheckWorkgroup() {
+  if (!context()->get_feature_mgr()->GetCapabilities().contains(
+          spv::Capability::WorkgroupMemoryExplicitLayoutKHR)) {
+    return;
+  }
+
+  // The module could have a mix of explicit and non-explicit layout for
+  // workgroup memory (though in different entry points). This transform
+  // requires all explicit to work.
+  for (auto& inst : context()->types_values()) {
+    if (inst.opcode() == spv::Op::OpVariable) {
+      auto pointee_ty = context()
+                            ->get_type_mgr()
+                            ->GetType(inst.type_id())
+                            ->AsPointer()
+                            ->pointee_type();
+      if (!pointee_ty->AsStruct()) {
+        return;
+      }
+      bool has_block = false;
+      for (auto& dec : pointee_ty->decorations()) {
+        if (dec[0] == uint32_t(spv::Decoration::Block)) {
+          has_block = true;
+          break;
+        }
+      }
+      if (!has_block) {
+        return;
+      }
+    } else if (inst.opcode() == spv::Op::OpUntypedVariableKHR) {
+      auto data_ty =
+          context()->get_type_mgr()->GetType(inst.GetSingleWordInOperand(1));
+      if (!data_ty->AsStruct()) {
+        return;
+      }
+      bool has_block = false;
+      for (auto& dec : data_ty->decorations()) {
+        if (dec[0] == uint32_t(spv::Decoration::Block)) {
+          has_block = true;
+          break;
+        }
+      }
+      if (!has_block) {
+        return;
+      }
+    }
+  }
+
+  // All workgroup variables were block-decorated.
+  support_workgroup_ = true;
 }
 
 void ConvertToUntyped::AddUntypedEnable() {
@@ -125,6 +179,8 @@ bool ConvertToUntyped::SupportedStorageClass(spv::StorageClass sc) {
     case spv::StorageClass::Uniform:
     case spv::StorageClass::PushConstant:
       return true;
+    case spv::StorageClass::Workgroup:
+      return support_workgroup_;
     default:
       return false;
   }

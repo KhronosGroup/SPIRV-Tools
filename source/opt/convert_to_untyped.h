@@ -50,6 +50,9 @@ class ConvertToUntyped : public Pass {
   // Returns true if the module has unsupported features.
   bool HasUnsupportedFeatures();
 
+  // Determines whether workgroup storage class can be converted.
+  void CheckWorkgroup();
+
   // Converts or updates inst.
   void Convert(Instruction* inst);
 
@@ -96,6 +99,7 @@ class ConvertToUntyped : public Pass {
   std::vector<Instruction*> to_delete_{};
 
   uint32_t max_id_ = 0;
+  bool support_workgroup_ = false;
 };
 
 }  // namespace opt

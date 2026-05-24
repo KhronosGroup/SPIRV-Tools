@@ -41,11 +41,12 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
 }
 
-TEST_F(ConvertToUntypedTest, SupportedStorageClasses) {
+TEST_F(ConvertToUntypedTest, SupportedStorageClasses_NoWorkgroup) {
   const std::string text = R"(
 ; CHECK-DAG: OpTypeUntypedPointerKHR StorageBuffer
 ; CHECK-DAG: OpTypeUntypedPointerKHR Uniform
 ; CHECK-DAG: OpTypeUntypedPointerKHR PushConstant
+; CHECK-NOT: OpTypeUntypedPointerKHR Workgroup
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
@@ -56,12 +57,42 @@ OpExecutionMode %main LocalSize 1 1 1
 %ptr_ssbo_int = OpTypePointer StorageBuffer %int
 %ptr_ubo_int = OpTypePointer Uniform %int
 %ptr_pc_int = OpTypePointer PushConstant %int
+%ptr_wg_int = OpTypePointer Workgroup %int
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
 OpReturn
 OpFunctionEnd
 )";
 
+  SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
+}
+
+TEST_F(ConvertToUntypedTest, SupportedStorageClasses_Workgroup) {
+  const std::string text = R"(
+; CHECK-DAG: OpTypeUntypedPointerKHR StorageBuffer
+; CHECK-DAG: OpTypeUntypedPointerKHR Uniform
+; CHECK-DAG: OpTypeUntypedPointerKHR PushConstant
+; CHECK-DAG: OpTypeUntypedPointerKHR Workgroup
+OpCapability Shader
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+%ptr_ubo_int = OpTypePointer Uniform %int
+%ptr_pc_int = OpTypePointer PushConstant %int
+%ptr_wg_int = OpTypePointer Workgroup %int
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_4);
   SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
 }
 
@@ -1013,6 +1044,60 @@ OpBranch %merge
 OpReturnValue %phi
 OpFunctionEnd
 )";
+
+  SetTargetEnv(SPV_ENV_VULKAN_1_3);
+  SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
+}
+
+TEST_F(ConvertToUntypedTest, WorkgroupMemoryExplicitLayout) {
+  const std::string text = R"(
+; CHECK: OpDecorate [[block1:%\w+]] Block
+; CHECK: OpDecorate [[block2:%\w+]] Block
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[uint_0:%\w+]] = OpConstant [[uint]] 0
+; CHECK: [[float:%\w+]] = OpTypeFloat 32
+; CHECK: [[ptr:%\w+]] = OpTypeUntypedPointerKHR Workgroup
+; CHECK: [[v1:%\w+]] = OpUntypedVariableKHR [[ptr]] Workgroup [[block1]]
+; CHECK: [[v2:%\w+]] = OpUntypedVariableKHR [[ptr]] Workgroup [[block2]]
+; CHECK: [[access1:%\w+]] = OpUntypedAccessChainKHR [[ptr]] [[block1]] [[v1]] [[uint_0]]
+; CHECK: OpLoad [[uint]] [[access1]]
+; CHECK: [[access2:%\w+]] = OpUntypedAccessChainKHR [[ptr]] [[block2]] [[v2]] [[uint_0]]
+; CHECK: OpLoad [[float]] [[access2]]
+OpCapability Shader
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %v1 %v2
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %block1 Block
+OpMemberDecorate %block1 0 Offset 0
+OpDecorate %block2 Block
+OpMemberDecorate %block2 0 Offset 0
+OpDecorate %v1 Aliased
+OpDecorate %v2 Aliased
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%float = OpTypeFloat 32
+%block1 = OpTypeStruct %uint
+%block2 = OpTypeStruct %float
+%ptr_block1 = OpTypePointer Workgroup %block1
+%ptr_block2 = OpTypePointer Workgroup %block2
+%ptr_uint = OpTypePointer Workgroup %uint
+%ptr_float = OpTypePointer Workgroup %float
+%v1 = OpVariable %ptr_block1 Workgroup
+%v2 = OpVariable %ptr_block2 Workgroup
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%access1 = OpAccessChain %ptr_uint %v1 %uint_0
+%ld1 = OpLoad %uint %access1
+%access2 = OpAccessChain %ptr_float %v2 %uint_0
+%ld2 = OpLoad %float %access2
+OpReturn
+OpFunctionEnd
+)";
+
 
   SetTargetEnv(SPV_ENV_VULKAN_1_3);
   SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
