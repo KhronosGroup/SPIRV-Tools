@@ -46,14 +46,6 @@ bool ConvertToUntyped::HasUnsupportedFeatures() {
     return true;
   }
 
-  // TODO: support the following capabilities
-  if (caps.contains(spv::Capability::VariablePointersStorageBuffer)) {
-    return true;
-  }
-  if (caps.contains(spv::Capability::WorkgroupMemoryExplicitLayoutKHR)) {
-    return true;
-  }
-
   // Unsupported
   CapabilitySet unsupported{
       spv::Capability::RawAccessChainsNV,
@@ -148,6 +140,8 @@ bool ConvertToUntyped::ShouldConvert(const Instruction* inst) {
       return SupportedStorageClass(inst->GetSingleWordInOperand(0));
     case spv::Op::OpAccessChain:
     case spv::Op::OpInBoundsAccessChain:
+    case spv::Op::OpPtrAccessChain:
+    case spv::Op::OpInBoundsPtrAccessChain:
     case spv::Op::OpVariable:
       return SupportedStorageClass(context()
                                        ->get_type_mgr()
@@ -194,7 +188,10 @@ std::pair<bool, uint32_t> ConvertToUntyped::MatrixStride(Instruction* inst) {
     switch (inst->opcode()) {
       case spv::Op::OpAccessChain:
       case spv::Op::OpInBoundsAccessChain:
-        for (uint32_t i = inst->NumInOperands() - 1; i > 0; i--) {
+      case spv::Op::OpUntypedAccessChainKHR: {
+        uint32_t base_idx =
+            inst->opcode() == spv::Op::OpUntypedAccessChainKHR ? 1 : 0;
+        for (uint32_t i = inst->NumInOperands() - 1; i > base_idx; i--) {
           if (auto* constant =
                   context()->get_constant_mgr()->FindDeclaredConstant(
                       inst->GetSingleWordInOperand(i))) {
@@ -209,14 +206,16 @@ std::pair<bool, uint32_t> ConvertToUntyped::MatrixStride(Instruction* inst) {
           }
         }
         inst = context()->get_def_use_mgr()->GetDef(
-            inst->GetSingleWordInOperand(0));
+            inst->GetSingleWordInOperand(base_idx));
         keep_going = true;
         break;
+      }
       case spv::Op::OpCopyObject:
         inst = context()->get_def_use_mgr()->GetDef(
             inst->GetSingleWordInOperand(0));
         break;
       case spv::Op::OpVariable:
+      case spv::Op::OpUntypedVariableKHR:
         break;
       default:
         // A variable pointer cannot point to a matrix or inside it so we can
@@ -227,11 +226,11 @@ std::pair<bool, uint32_t> ConvertToUntyped::MatrixStride(Instruction* inst) {
 
   bool row_major = false;
   uint32_t mat_stride = 0;
-  const auto* type = context()
-                         ->get_type_mgr()
-                         ->GetType(inst->type_id())
-                         ->AsPointer()
-                         ->pointee_type();
+  auto type = context()
+                  ->get_type_mgr()
+                  ->GetType(inst->type_id())
+                  ->AsPointer()
+                  ->pointee_type();
   for (uint32_t i = 0; i < indices.size(); i++) {
     switch (type->kind()) {
       case analysis::Type::kStruct: {
@@ -276,16 +275,11 @@ Instruction* ConvertToUntyped::ConvertPointer(Instruction* inst) {
       inst->result_id(), false);
   // De-duplicate undecorated pointers.
   if (!decs.empty() || !base_ptrs_.count(sc)) {
-    uint32_t id = NextId();
-    auto unique = MakeUnique<Instruction>(
-        context(), spv::Op::OpTypeUntypedPointerKHR, 0, id,
-        std::initializer_list<Operand>{{SPV_OPERAND_TYPE_STORAGE_CLASS, {sc}}});
-    replacement = &*unique;
-    context()->AddType(std::move(unique));
-    if (!decs.empty()) {
-      context()->get_decoration_mgr()->CloneDecorations(inst->result_id(), id);
-    } else {
-      base_ptrs_[sc] = replacement;
+    // Replace in situ
+    inst->SetOpcode(spv::Op::OpTypeUntypedPointerKHR);
+    inst->SetInOperands(std::initializer_list<Operand>{{SPV_OPERAND_TYPE_STORAGE_CLASS, {sc}}});
+    if (decs.empty()) {
+      base_ptrs_[sc] = inst;
     }
   } else {
     replacement = base_ptrs_[sc];
@@ -293,29 +287,37 @@ Instruction* ConvertToUntyped::ConvertPointer(Instruction* inst) {
   return replacement;
 }
 
-Instruction* ConvertToUntyped::ConvertVariable(Instruction* inst) {
+void ConvertToUntyped::ConvertVariable(Instruction* inst) {
   auto ptr_ty =
       context()->get_type_mgr()->GetType(inst->type_id())->AsPointer();
   auto data =
       context()->get_type_mgr()->GetTypeInstruction(ptr_ty->pointee_type());
-  uint32_t id = NextId();
-  // No initializers are permitted on any supported storage class.
-  auto unique = MakeUnique<Instruction>(
-      context(), spv::Op::OpUntypedVariableKHR, remapped_ids_[inst->type_id()],
-      id,
-      std::initializer_list<Operand>{
-          {SPV_OPERAND_TYPE_STORAGE_CLASS,
-           {static_cast<uint32_t>(ptr_ty->storage_class())}},
-          {SPV_OPERAND_TYPE_ID, {data}}});
-  auto replacement = &*unique;
-  // All supported storage classes are module scope variables.
-  context()->AddGlobalValue(std::move(unique));
-  context()->get_decoration_mgr()->CloneDecorations(inst->result_id(), id);
-  return replacement;
+  // Replace in situ.
+  inst->SetOpcode(spv::Op::OpUntypedVariableKHR);
+  inst->SetInOperands(std::initializer_list<Operand>{
+    {SPV_OPERAND_TYPE_STORAGE_CLASS, {uint32_t(ptr_ty->storage_class())}},
+    {SPV_OPERAND_TYPE_ID, {data}}});
 }
 
-Instruction* ConvertToUntyped::ConvertAccessChain(Instruction* inst) {
-  const bool inbounds = inst->opcode() == spv::Op::OpInBoundsAccessChain;
+void ConvertToUntyped::ConvertAccessChain(Instruction* inst) {
+  spv::Op converted_op = inst->opcode();
+  switch (converted_op) {
+    case spv::Op::OpAccessChain:
+      converted_op = spv::Op::OpUntypedAccessChainKHR;
+      break;
+    case spv::Op::OpInBoundsAccessChain:
+      converted_op = spv::Op::OpUntypedInBoundsAccessChainKHR;
+      break;
+    case spv::Op::OpPtrAccessChain:
+      converted_op = spv::Op::OpUntypedPtrAccessChainKHR;
+      break;
+    case spv::Op::OpInBoundsPtrAccessChain:
+      converted_op = spv::Op::OpUntypedInBoundsAccessChainKHR;
+      break;
+    default:
+      assert(false && "unhandled opcode");
+      break;
+  }
   auto base =
       context()->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0));
   auto ptr_ty =
@@ -329,18 +331,11 @@ Instruction* ConvertToUntyped::ConvertAccessChain(Instruction* inst) {
   for (uint32_t i = 0; i < inst->NumInOperands(); i++) {
     operands.push_back(inst->GetInOperand(i));
   }
-  uint32_t id = NextId();
-  auto unique = MakeUnique<Instruction>(
-      context(),
-      (inbounds ? spv::Op::OpUntypedInBoundsAccessChainKHR
-                : spv::Op::OpUntypedAccessChainKHR),
-      remapped_ids_[inst->type_id()], id, operands);
-  auto replacement = inst->InsertBefore(std::move(unique));
-  context()->get_decoration_mgr()->CloneDecorations(inst->result_id(), id);
-  return replacement;
+  inst->SetOpcode(converted_op);
+  inst->SetInOperands(std::move(operands));
 }
 
-Instruction* ConvertToUntyped::ConvertArrayLength(Instruction* inst) {
+void ConvertToUntyped::ConvertArrayLength(Instruction* inst) {
   auto structure =
       context()->get_def_use_mgr()->GetDef(inst->GetSingleWordInOperand(0));
   auto ptr_ty =
@@ -354,12 +349,8 @@ Instruction* ConvertToUntyped::ConvertArrayLength(Instruction* inst) {
   for (uint32_t i = 0; i < inst->NumInOperands(); i++) {
     operands.push_back(inst->GetInOperand(i));
   }
-  uint32_t id = NextId();
-  auto unique =
-      MakeUnique<Instruction>(context(), spv::Op::OpUntypedArrayLengthKHR,
-                              inst->type_id(), id, operands);
-  auto replacement = inst->InsertBefore(std::move(unique));
-  return replacement;
+  inst->SetOpcode(spv::Op::OpUntypedArrayLengthKHR);
+  inst->SetInOperands(std::move(operands));
 }
 
 std::vector<Operand> ConvertToUntyped::StoreOperands(
@@ -656,36 +647,35 @@ void ConvertToUntyped::Convert(Instruction* inst) {
   switch (inst->opcode()) {
     case spv::Op::OpTypePointer:
       replacement = ConvertPointer(inst);
-      to_delete_.push_back(inst);
+      if (replacement != nullptr) {
+        to_delete_.push_back(inst);
+        remapped_ids_[inst->result_id()] = replacement->result_id();
+      }
       break;
     case spv::Op::OpVariable:
-      replacement = ConvertVariable(inst);
-      to_delete_.push_back(inst);
+      ConvertVariable(inst);
       break;
     case spv::Op::OpAccessChain:
     case spv::Op::OpInBoundsAccessChain:
-      replacement = ConvertAccessChain(inst);
-      to_delete_.push_back(inst);
+    case spv::Op::OpPtrAccessChain:
+    case spv::Op::OpInBoundsPtrAccessChain:
+      ConvertAccessChain(inst);
       break;
     case spv::Op::OpArrayLength:
-      replacement = ConvertArrayLength(inst);
-      to_delete_.push_back(inst);
+      ConvertArrayLength(inst);
       break;
     case spv::Op::OpCopyMemory:
       ConvertCopyMemory(inst);
       to_delete_.push_back(inst);
-      return;
+      break;
     case spv::Op::OpCooperativeMatrixLoadKHR:
     case spv::Op::OpCooperativeMatrixStoreKHR:
-      // Note: no deletion here.
       UpdateCooperativeMatrixLoadStore(inst);
-      return;
+      break;
     default:
       assert(false && "unhandled opcode");
       break;
   }
-
-  remapped_ids_[inst->result_id()] = replacement->result_id();
 }
 
 void ConvertToUntyped::ConvertPointers() {
