@@ -305,7 +305,8 @@ std::pair<bool, uint32_t> ConvertToUntyped::MatrixStride(Instruction* inst) {
         type = type->AsArray()->element_type();
         break;
       case analysis::Type::kRuntimeArray:
-        type = type->AsRuntimeArray();
+        type = type->AsRuntimeArray()->element_type();
+        break;
       case analysis::Type::kMatrix:
         return std::make_pair(row_major, mat_stride);
       // No other types could hold a matrix
