@@ -47,8 +47,7 @@ spv_result_t ValidateConstantOperand(ValidationState_t& _,
   const auto operand_id = inst->GetOperandAs<uint32_t>(operand);
   const bool inst_is_spec_constant = spvOpcodeIsSpecConstant(inst->opcode());
   const auto operand_opcode = _.GetIdOpcode(operand_id);
-  const bool is_constant = spvOpcodeIsConstantOrUndef(operand_opcode) ||
-                           operand_opcode == spv::Op::OpPoisonKHR;
+  const bool is_constant = spvOpcodeIsConstantOrUndef(operand_opcode);
   const bool is_spec_constant = spvOpcodeIsSpecConstant(operand_opcode);
   if (!is_constant) {
     // All operands must be constant, undef, or poison.
