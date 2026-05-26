@@ -50,9 +50,10 @@ spv_result_t ValidateConstantOperand(ValidationState_t& _,
   const bool is_constant = spvOpcodeIsConstantOrUndef(operand_opcode);
   const bool is_spec_constant = spvOpcodeIsSpecConstant(operand_opcode);
   if (!is_constant) {
-    // All operands must be constant or undef.
+    // All operands must be constant, undef, or poison.
     return _.diag(SPV_ERROR_INVALID_ID, inst)
-           << opcode_name << " must only have constant or undef operands: <id> "
+           << opcode_name
+           << " must only have constant, undef, or poison operands: <id> "
            << _.getIdName(operand_id);
   } else if (!inst_is_spec_constant && is_spec_constant) {
     // Spec constants are only allowed for spec constant opcodes.

@@ -655,7 +655,7 @@ TEST_F(ValidateConstant, ConstantCompositeReplicateNotConstant) {
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("OpConstantCompositeReplicateEXT must only have "
-                        "constant or undef operands: <id>"));
+                        "constant, undef, or poison operands: <id>"));
 }
 
 TEST_F(ValidateConstant, ConstantCompositeSpecOperand) {
@@ -697,9 +697,44 @@ TEST_F(ValidateConstant, ConstantCompositeNotConstant) {
 )";
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("OpConstantComposite must only have constant or undef "
-                        "operands: <id>"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("OpConstantComposite must only have constant, undef, or "
+                "poison operands: <id>"));
+}
+
+TEST_F(ValidateConstant, ConstantCompositePoisonConstituentGood) {
+  std::string spirv =
+      std::string(
+          "OpCapability Shader\nOpCapability Linkage\nOpCapability "
+          "PoisonFreezeKHR\nOpExtension \"SPV_KHR_poison_freeze\"\n"
+          "OpMemoryModel Logical Simple\n") +
+      R"(
+%int = OpTypeInt 32 1
+%int_4 = OpConstant %int 4
+%arr = OpTypeArray %int %int_4
+%poison = OpPoisonKHR %int
+%const_arr = OpConstantComposite %arr %poison %poison %poison %poison
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateConstant, SpecConstantCompositePoisonConstituentGood) {
+  std::string spirv =
+      std::string(
+          "OpCapability Shader\nOpCapability Linkage\nOpCapability "
+          "PoisonFreezeKHR\nOpExtension \"SPV_KHR_poison_freeze\"\n"
+          "OpMemoryModel Logical Simple\n") +
+      R"(
+%int = OpTypeInt 32 1
+%int_4 = OpConstant %int 4
+%arr = OpTypeArray %int %int_4
+%poison = OpPoisonKHR %int
+%const_arr = OpSpecConstantComposite %arr %poison %poison %poison %poison
+)";
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateConstant, ConstantCompositeReplicateNotComposite) {
