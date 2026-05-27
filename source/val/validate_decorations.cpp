@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "source/diagnostic.h"
-#include "source/latest_version_glsl_std_450_header.h"
 #include "source/latest_version_opencl_std_header.h"
 #include "source/opcode.h"
 #include "source/spirv_constant.h"
