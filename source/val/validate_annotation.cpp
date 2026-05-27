@@ -403,10 +403,15 @@ spv_result_t ValidateDecorateId(ValidationState_t& _, const Instruction* inst) {
         }
       }
 
-      // Strip array and should be the descriptor type
+      const auto is_descriptor_type = [&_](const Instruction* type_inst) {
+        return _.IsDescriptorType(type_inst->opcode());
+      };
+
+      // Strip the array. The element may be a descriptor type directly, or a
+      // composite containing a descriptor type.
       const uint32_t element_type =
           _.FindDef(target_id)->GetOperandAs<uint32_t>(1);
-      if (!_.IsDescriptorType(element_type)) {
+      if (!_.ContainsType(element_type, is_descriptor_type, true)) {
         return _.diag(SPV_ERROR_INVALID_ID, inst)
                << "ArrayStrideIdEXT decoration must only be applied to"
                << " array type containing a Descriptor type.";

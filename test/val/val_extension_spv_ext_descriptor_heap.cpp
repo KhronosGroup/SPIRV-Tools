@@ -1560,6 +1560,33 @@ TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideNonDescriptor) {
                         "array type containing a Descriptor type."));
 }
 
+TEST_F(ValidateSpvEXTDescriptorHeap, ArrayStrideStructContainingDescriptor) {
+  const std::string str = R"(
+              OpCapability Shader
+              OpCapability DescriptorHeapEXT
+              OpExtension "SPV_EXT_descriptor_heap"
+              OpMemoryModel Logical GLSL450
+              OpEntryPoint GLCompute %main "main"
+              OpExecutionMode %main LocalSize 1 1 1
+              OpDecorateId %_runtimearr_Material ArrayStrideIdEXT %uint_16
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+   %uint_16 = OpConstant %uint 16
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+     %buffer = OpTypeBufferEXT StorageBuffer
+   %Material = OpTypeStruct %v4float %buffer
+%_runtimearr_Material = OpTypeRuntimeArray %Material
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+              OpReturn
+              OpFunctionEnd
+  )";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
 TEST_F(ValidateSpvEXTDescriptorHeap, MemberDecorateIdArrayStrideIdEXT) {
   const std::string str = R"(
                OpCapability Shader
