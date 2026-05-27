@@ -5369,6 +5369,112 @@ TEST_F(ValidateDecorations, KernelFPRoundingModeBadMode) {
                 "instruction to or from a floating-point type."));
 }
 
+TEST_F(ValidateDecorations, KernelFPRoundingModeDivideBad) {
+  std::string spirv = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "test"
+               OpDecorate %out_float FPRoundingMode RTE
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+   %functype = OpTypeFunction %void %float
+     %kernel = OpFunction %void None %functype
+   %in_float = OpFunctionParameter %float
+      %entry = OpLabel
+  %out_float = OpFDiv %float %in_float %in_float
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FPRoundingMode decoration can be applied to OpFDiv "
+                        "and sqrt extended instructions only if the "
+                        "RoundedDivideSqrtINTEL capability is enabled."));
+}
+
+TEST_F(ValidateDecorations, KernelFPRoundingModeDivideGood) {
+  std::string spirv = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability RoundedDivideSqrtINTEL
+               OpExtension "SPV_INTEL_rounded_divide_sqrt"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "test"
+               OpDecorate %out_float FPRoundingMode RTE
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+   %functype = OpTypeFunction %void %float
+     %kernel = OpFunction %void None %functype
+   %in_float = OpFunctionParameter %float
+      %entry = OpLabel
+  %out_float = OpFDiv %float %in_float %in_float
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_0));
+}
+
+TEST_F(ValidateDecorations, KernelFPRoundingModeSqrtBad) {
+  std::string spirv = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+     %opencl = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "test"
+               OpDecorate %out_float FPRoundingMode RTE
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+   %functype = OpTypeFunction %void %float
+     %kernel = OpFunction %void None %functype
+   %in_float = OpFunctionParameter %float
+      %entry = OpLabel
+  %out_float = OpExtInst %float %opencl sqrt %in_float
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID,
+            ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_0));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FPRoundingMode decoration can be applied to OpFDiv "
+                        "and sqrt extended instructions only if the "
+                        "RoundedDivideSqrtINTEL capability is enabled."));
+}
+
+TEST_F(ValidateDecorations, KernelFPRoundingModeSqrtGood) {
+  std::string spirv = R"(
+               OpCapability Addresses
+               OpCapability Kernel
+               OpCapability RoundedDivideSqrtINTEL
+               OpExtension "SPV_INTEL_rounded_divide_sqrt"
+     %opencl = OpExtInstImport "OpenCL.std"
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "test"
+               OpDecorate %out_float FPRoundingMode RTE
+       %void = OpTypeVoid
+      %float = OpTypeFloat 32
+   %functype = OpTypeFunction %void %float
+     %kernel = OpFunction %void None %functype
+   %in_float = OpFunctionParameter %float
+      %entry = OpLabel
+  %out_float = OpExtInst %float %opencl sqrt %in_float
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_0);
+  EXPECT_EQ(SPV_SUCCESS,
+            ValidateAndRetrieveValidationState(SPV_ENV_UNIVERSAL_1_0));
+}
+
 TEST_F(ValidateDecorations, GroupDecorateTargetsDecorationGroup) {
   std::string spirv = R"(
 OpCapability Shader

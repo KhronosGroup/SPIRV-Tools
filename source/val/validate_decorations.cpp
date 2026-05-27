@@ -22,6 +22,8 @@
 #include <vector>
 
 #include "source/diagnostic.h"
+#include "source/latest_version_glsl_std_450_header.h"
+#include "source/latest_version_opencl_std_header.h"
 #include "source/opcode.h"
 #include "source/spirv_constant.h"
 #include "source/spirv_target_env.h"
@@ -1823,11 +1825,23 @@ spv_result_t CheckFPRoundingModeForShaders(ValidationState_t& vstate,
 
 spv_result_t CheckFPRoundingModeForKernels(ValidationState_t& vstate,
                                            const Instruction& inst) {
-  // Validates conversion instruction to or from a floating-point type
   const auto opcode = inst.opcode();
-  if (opcode != spv::Op::OpConvertFToU && opcode != spv::Op::OpConvertFToS &&
-      opcode != spv::Op::OpConvertSToF && opcode != spv::Op::OpConvertUToF &&
-      opcode != spv::Op::OpFConvert) {
+  const bool isSqrtExtendedInstruction =
+      spvIsExtendedInstruction(inst.opcode()) &&
+      inst.ext_inst_type() == SPV_EXT_INST_TYPE_OPENCL_STD &&
+      inst.word(4) == OpenCLLIB::Sqrt;
+  if (opcode == spv::Op::OpFDiv || isSqrtExtendedInstruction) {
+    if (!vstate.HasCapability(spv::Capability::RoundedDivideSqrtINTEL)) {
+      return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+             << "FPRoundingMode decoration can be applied to OpFDiv and "
+                "sqrt extended instructions only if the RoundedDivideSqrtINTEL "
+                "capability is enabled.";
+    }
+  } else if (opcode != spv::Op::OpConvertFToU &&
+             opcode != spv::Op::OpConvertFToS &&
+             opcode != spv::Op::OpConvertSToF &&
+             opcode != spv::Op::OpConvertUToF &&
+             opcode != spv::Op::OpFConvert) {
     return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
            << "FPRoundingMode decoration can be applied only to a conversion "
               "instruction to or from a floating-point type.";
