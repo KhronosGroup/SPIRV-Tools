@@ -1,6 +1,7 @@
 // Copyright (c) 2017 Google Inc.
 // Modifications Copyright (C) 2020 Advanced Micro Devices, Inc. All rights
 // reserved.
+// Copyright (C) 2026 Qualcomm Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11474,6 +11475,7 @@ TEST_F(ValidateImage, TileImageNotFragment) {
     OpMemoryModel Logical GLSL450
     OpEntryPoint GLCompute %main "main"
     OpExecutionMode %main LocalSize 1 1 1
+    OpDecorate %var Location 0
     %void = OpTypeVoid
     %func = OpTypeFunction %void
     %float = OpTypeFloat 32
@@ -11495,6 +11497,98 @@ TEST_F(ValidateImage, TileImageNotFragment) {
       getDiagnosticString(),
       HasSubstr(
           "TileImageEXT Storage Class is limited to Fragment execution model"));
+}
+
+TEST_F(ValidateImage, TileImageRequiresLocationDecoration) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpCapability TileImageColorReadAccessEXT
+               OpExtension "SPV_EXT_shader_tile_image"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %color0 %fragColor
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %fragColor Location 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+         %11 = OpTypeImage %float TileImageDataEXT 0 0 0 2 Unknown
+%_ptr_TileImageEXT_11 = OpTypePointer TileImageEXT %11
+     %color0 = OpVariable %_ptr_TileImageEXT_11 TileImageEXT    
+    %float_2 = OpConstant %float 2
+         %17 = OpConstantComposite %v4float %float_2 %float_2 %float_2 %float_2
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+  %fragColor = OpVariable %_ptr_Output_v4float Output   
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+      %value = OpVariable %_ptr_Function_v4float Function
+         %14 = OpLoad %11 %color0
+         %15 = OpColorAttachmentReadEXT %v4float %14
+         %18 = OpFDiv %v4float %15 %17
+               OpStore %value %18
+         %21 = OpLoad %v4float %value
+               OpStore %fragColor %21
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_4);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-TileImageEXT-08723"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Variable with TileImageEXT Storage Class must be decorated "
+                "with Location."));
+}
+
+TEST_F(ValidateImage, TileImageRequiresNoLocationConflict) {
+  const std::string body = R"(
+               OpCapability Shader
+               OpCapability TileImageColorReadAccessEXT
+               OpExtension "SPV_EXT_shader_tile_image"
+          %2 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %color0 %color1 %fragColor
+               OpExecutionMode %main OriginUpperLeft
+               OpDecorate %color0 Location 1
+               OpDecorate %color1 Location 1
+               OpDecorate %fragColor Location 0
+       %void = OpTypeVoid
+          %4 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+         %11 = OpTypeImage %float TileImageDataEXT 0 0 0 2 Unknown
+%_ptr_TileImageEXT_11 = OpTypePointer TileImageEXT %11
+     %color0 = OpVariable %_ptr_TileImageEXT_11 TileImageEXT    
+     %color1 = OpVariable %_ptr_TileImageEXT_11 TileImageEXT    
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+  %fragColor = OpVariable %_ptr_Output_v4float Output   
+       %main = OpFunction %void None %4
+          %6 = OpLabel
+      %value = OpVariable %_ptr_Function_v4float Function
+         %14 = OpLoad %11 %color0
+         %15 = OpColorAttachmentReadEXT %v4float %14
+         %17 = OpLoad %11 %color1
+         %18 = OpColorAttachmentReadEXT %v4float %17
+         %19 = OpFAdd %v4float %15 %18
+               OpStore %value %19
+         %22 = OpLoad %v4float %value
+               OpStore %fragColor %22
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_VULKAN_1_4);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-TileImageEXT-08723"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Variables with TileImageEXT Storage Class must not "
+                        "have conflicting Locations."));
 }
 
 TEST_F(ValidateImage, SubpassDataNonZero) {

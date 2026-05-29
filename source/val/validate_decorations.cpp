@@ -1251,6 +1251,14 @@ spv_result_t CheckDecorationsOfVariables(ValidationState_t& vstate) {
                     "decorations specified";
         }
       }
+      if (storageClass == spv::StorageClass::TileImageEXT) {
+        if (!hasDecoration(var_id, spv::Decoration::Location, vstate)) {
+          return vstate.diag(SPV_ERROR_INVALID_DATA, vstate.FindDef(var_id))
+                 << vstate.VkErrorID(8723)
+                 << "Variable with TileImageEXT Storage Class must be "
+                    "decorated with Location.";
+        }
+      }
     }
   }
   return SPV_SUCCESS;

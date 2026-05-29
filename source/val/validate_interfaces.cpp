@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Google LLC.
+// Copyright (C) 2026 Qualcomm Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -572,6 +573,8 @@ spv_result_t ValidateLocations(ValidationState_t& _,
       output_locations_per_stream;
   std::unordered_map<uint32_t, std::unordered_set<uint32_t>>
       output_index1_locations_per_stream;
+  // For SPIR-V >= 1.4, TileImageEXT variables are always visible.
+  std::unordered_map<uint32_t, uint32_t> tile_image_locations;
   std::unordered_set<uint32_t> seen;
   for (uint32_t i = 3; i < entry_point->operands().size(); ++i) {
     auto interface_id = entry_point->GetOperandAs<uint32_t>(i);
@@ -580,12 +583,30 @@ spv_result_t ValidateLocations(ValidationState_t& _,
     auto storage_class =
         interface_var->GetOperandAs<spv::StorageClass>(sc_index);
     if (storage_class != spv::StorageClass::Input &&
-        storage_class != spv::StorageClass::Output) {
+        storage_class != spv::StorageClass::Output &&
+        storage_class != spv::StorageClass::TileImageEXT) {
       continue;
     }
     if (!seen.insert(interface_id).second) {
       // Pre-1.4 an interface variable could be listed multiple times in an
       // entry point. Validation for 1.4 or later is done elsewhere.
+      continue;
+    }
+
+    if (storage_class == spv::StorageClass::TileImageEXT) {
+      for (auto& dec : _.id_decorations(interface_var->id())) {
+        if (dec.dec_type() == spv::Decoration::Location) {
+          const auto result = tile_image_locations.emplace(dec.params()[0],
+                                                           interface_var->id());
+          if (!result.second) {
+            return _.diag(SPV_ERROR_INVALID_DATA, interface_var)
+                   << _.VkErrorID(8723)
+                   << "Variables with TileImageEXT Storage Class must not have "
+                      "conflicting Locations.";
+          }
+          break;
+        }
+      }
       continue;
     }
 

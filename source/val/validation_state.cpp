@@ -1,6 +1,7 @@
 // Copyright (c) 2015-2016 The Khronos Group Inc.
 // Modifications Copyright (C) 2024 Advanced Micro Devices, Inc. All rights
 // reserved.
+// Copyright (C) 2026 Qualcomm Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -3286,6 +3287,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpEntryPoint-08721);
     case 8722:
       return VUID_WRAP(VUID-StandaloneSpirv-OpEntryPoint-08722);
+    case 8723:
+      return VUID_WRAP(VUID-StandaloneSpirv-TileImageEXT-08723);
     case 8747:
       return VUID_WRAP(VUID-HitTriangleVertexPositionsKHR-HitTriangleVertexPositionsKHR-08747);
     case 8748:
@@ -3341,10 +3344,54 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-ViewportIndex-ViewportIndex-10602);
     case 10603:
       return VUID_WRAP(VUID-ViewportIndex-ViewportIndex-10603);
+    case 10626:
+      return VUID_WRAP(VUID-TileOffsetQCOM-TileOffsetQCOM-10626);
+    case 10627:
+      return VUID_WRAP(VUID-TileOffsetQCOM-TileOffsetQCOM-10627);
+    case 10628:
+      return VUID_WRAP(VUID-TileOffsetQCOM-TileOffsetQCOM-10628);
+    case 10629:
+      return VUID_WRAP(VUID-TileDimensionQCOM-TileDimensionQCOM-10629);
+    case 10630:
+      return VUID_WRAP(VUID-TileDimensionQCOM-TileDimensionQCOM-10630);
+    case 10631:
+      return VUID_WRAP(VUID-TileDimensionQCOM-TileDimensionQCOM-10631);
+    case 10632:
+      return VUID_WRAP(VUID-TileApronSizeQCOM-TileApronSizeQCOM-10632);
+    case 10633:
+      return VUID_WRAP(VUID-TileApronSizeQCOM-TileApronSizeQCOM-10633);
+    case 10634:
+      return VUID_WRAP(VUID-TileApronSizeQCOM-TileApronSizeQCOM-10634);
+    case 10635:
+      return VUID_WRAP(VUID-WorkgroupSize-TileShadingRateQCOM-10635);
     case 10684:
       return VUID_WRAP(VUID-StandaloneSpirv-None-10684);
     case 10685:
       return VUID_WRAP(VUID-StandaloneSpirv-None-10685); // formally 04683/06426
+    case 10686:
+      return VUID_WRAP(VUID-StandaloneSpirv-TileShadingQCOM-10686);
+    case 10687:
+      return VUID_WRAP(VUID-StandaloneSpirv-Execution-10687);
+    case 10688:
+      return VUID_WRAP(VUID-StandaloneSpirv-Execution-10688);
+    case 10689:
+      return VUID_WRAP(VUID-StandaloneSpirv-TileAttachmentQCOM-10689);
+    case 10690:
+      return VUID_WRAP(VUID-StandaloneSpirv-NonCoherentTileAttachmentReadQCOM-10690);
+    case 10691:
+      return VUID_WRAP(VUID-StandaloneSpirv-TileShadingRateQCOM-10691);
+    case 10692:
+      return VUID_WRAP(VUID-StandaloneSpirv-TileShadingRateQCOM-10692);
+    case 10693:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpTypeImage-10693);
+    case 10694:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpTypeImage-10694);
+    case 10695:
+      return VUID_WRAP(VUID-StandaloneSpirv-TileAttachmentQCOM-10695);
+    case 10696:
+      return VUID_WRAP(VUID-StandaloneSpirv-TileAttachmentQCOM-10696);
+    case 10697:
+      return VUID_WRAP(VUID-StandaloneSpirv-TileAttachmentQCOM-10697);
     case 10823:
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeFloat-10823);
     case 10824:
