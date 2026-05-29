@@ -74,6 +74,8 @@ Options:
                                    be allowed by the target environment.
   --allow-vulkan-32-bit-bitwise    Allow use of non-32 bit for the Base operand where it would otherwise
                                    not be allowed by the target environment.
+  --allow-vulkan-linkage           Allow use of the Linkage capability where it would otherwise not
+                                   be allowed by the target environment.
   --before-hlsl-legalization       Allows code patterns that are intended to be
                                    fixed by spirv-opt's legalization passes.
   --version                        Display validator version information.
@@ -220,6 +222,8 @@ int main(int argc, char** argv) {
         options.SetAllowOffsetTextureOperand(true);
       } else if (0 == strcmp(cur_arg, "--allow-vulkan-32-bit-bitwise")) {
         options.SetAllowVulkan32BitBitwise(true);
+      } else if (0 == strcmp(cur_arg, "--allow-vulkan-linkage")) {
+        options.SetAllowVulkanLinkage(true);
       } else if (0 == strcmp(cur_arg, "--relax-struct-store")) {
         options.SetRelaxStructStore(true);
       } else if (0 == cur_arg[1]) {

@@ -232,6 +232,11 @@ TEST_F(ValidationStateTest, CheckAccessChainIndexesLimitOption) {
   EXPECT_EQ(100u, options_->universal_limits_.max_access_chain_indexes);
 }
 
+TEST_F(ValidationStateTest, CheckAllowVulkanLinkageOption) {
+  spvValidatorOptionsSetAllowVulkanLinkage(options_, true);
+  EXPECT_TRUE(options_->allow_vulkan_linkage);
+}
+
 TEST_F(ValidationStateTest, CheckNonRecursiveBodyGood) {
   std::string spirv = std::string(kHeader) + kNonRecursiveBody;
   CompileSuccessfully(spirv);

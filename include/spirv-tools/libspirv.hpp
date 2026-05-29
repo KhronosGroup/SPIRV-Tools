@@ -138,6 +138,12 @@ class SPIRV_TOOLS_EXPORT ValidatorOptions {
     spvValidatorOptionsSetAllowVulkan32BitBitwise(options_, val);
   }
 
+  // Records whether or not the validator should allow the Linkage
+  // capability when targeting Vulkan.
+  void SetAllowVulkanLinkage(bool val) {
+    spvValidatorOptionsSetAllowVulkanLinkage(options_, val);
+  }
+
   // Records whether or not the validator should relax the rules on pointer
   // usage in logical addressing mode.
   //
