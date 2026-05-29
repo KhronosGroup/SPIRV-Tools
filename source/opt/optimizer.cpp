@@ -170,7 +170,8 @@ Optimizer& Optimizer::RegisterLegalizationPasses(bool preserve_interface) {
           .RegisterPass(CreateDeadInsertElimPass())
           .RegisterPass(CreateReduceLoadSizePass())
           .RegisterPass(CreateAggressiveDCEPass(preserve_interface))
-          .RegisterPass(CreateRemoveUnusedInterfaceVariablesPass())
+          .RegisterPass(
+              CreateRemoveUnusedInterfaceVariablesPass(preserve_interface))
           .RegisterPass(CreateInterpolateFixupPass())
           .RegisterPass(CreateInvocationInterlockPlacementPass())
           .RegisterPass(CreateOpExtInstWithForwardReferenceFixupPass());
@@ -901,8 +902,13 @@ Optimizer::PassToken CreateAggressiveDCEPass(bool preserve_interface,
 }
 
 Optimizer::PassToken CreateRemoveUnusedInterfaceVariablesPass() {
+  return CreateRemoveUnusedInterfaceVariablesPass(false);
+}
+
+Optimizer::PassToken CreateRemoveUnusedInterfaceVariablesPass(
+    bool preserve_interface) {
   return MakeUnique<Optimizer::PassToken::Impl>(
-      MakeUnique<opt::RemoveUnusedInterfaceVariablesPass>());
+      MakeUnique<opt::RemoveUnusedInterfaceVariablesPass>(preserve_interface));
 }
 
 Optimizer::PassToken CreatePropagateLineInfoPass() {
@@ -1232,24 +1238,23 @@ SPIRV_TOOLS_EXPORT void spvOptimizerDestroy(spv_optimizer_t* optimizer) {
 
 SPIRV_TOOLS_EXPORT void spvOptimizerSetMessageConsumer(
     spv_optimizer_t* optimizer, spv_message_consumer consumer) {
-  reinterpret_cast<spvtools::Optimizer*>(optimizer)->
-      SetMessageConsumer(
-          [consumer](spv_message_level_t level, const char* source,
-                     const spv_position_t& position, const char* message) {
-            return consumer(level, source, &position, message);
-          });
+  reinterpret_cast<spvtools::Optimizer*>(optimizer)->SetMessageConsumer(
+      [consumer](spv_message_level_t level, const char* source,
+                 const spv_position_t& position, const char* message) {
+        return consumer(level, source, &position, message);
+      });
 }
 
 SPIRV_TOOLS_EXPORT void spvOptimizerRegisterLegalizationPasses(
     spv_optimizer_t* optimizer) {
-  reinterpret_cast<spvtools::Optimizer*>(optimizer)->
-      RegisterLegalizationPasses();
+  reinterpret_cast<spvtools::Optimizer*>(optimizer)
+      ->RegisterLegalizationPasses();
 }
 
 SPIRV_TOOLS_EXPORT void spvOptimizerRegisterPerformancePasses(
     spv_optimizer_t* optimizer) {
-  reinterpret_cast<spvtools::Optimizer*>(optimizer)->
-      RegisterPerformancePasses();
+  reinterpret_cast<spvtools::Optimizer*>(optimizer)
+      ->RegisterPerformancePasses();
 }
 
 SPIRV_TOOLS_EXPORT void spvOptimizerRegisterSizePasses(
@@ -1258,10 +1263,9 @@ SPIRV_TOOLS_EXPORT void spvOptimizerRegisterSizePasses(
 }
 
 SPIRV_TOOLS_EXPORT bool spvOptimizerRegisterPassFromFlag(
-    spv_optimizer_t* optimizer, const char* flag)
-{
-  return reinterpret_cast<spvtools::Optimizer*>(optimizer)->
-      RegisterPassFromFlag(flag);
+    spv_optimizer_t* optimizer, const char* flag) {
+  return reinterpret_cast<spvtools::Optimizer*>(optimizer)
+      ->RegisterPassFromFlag(flag);
 }
 
 SPIRV_TOOLS_EXPORT bool spvOptimizerRegisterPassesFromFlags(
@@ -1282,29 +1286,28 @@ spvOptimizerRegisterPassesFromFlagsWhilePreservingTheInterface(
 }
 
 SPIRV_TOOLS_EXPORT
-spv_result_t spvOptimizerRun(spv_optimizer_t* optimizer,
-                             const uint32_t* binary,
+spv_result_t spvOptimizerRun(spv_optimizer_t* optimizer, const uint32_t* binary,
                              const size_t word_count,
                              spv_binary* optimized_binary,
                              const spv_optimizer_options options) {
   std::vector<uint32_t> optimized;
 
-  if (!reinterpret_cast<spvtools::Optimizer*>(optimizer)->
-      Run(binary, word_count, &optimized, options)) {
+  if (!reinterpret_cast<spvtools::Optimizer*>(optimizer)->Run(
+          binary, word_count, &optimized, options)) {
     return SPV_ERROR_INTERNAL;
   }
 
   auto result_binary = new spv_binary_t();
   if (!result_binary) {
-      *optimized_binary = nullptr;
-      return SPV_ERROR_OUT_OF_MEMORY;
+    *optimized_binary = nullptr;
+    return SPV_ERROR_OUT_OF_MEMORY;
   }
 
   result_binary->code = new uint32_t[optimized.size()];
   if (!result_binary->code) {
-      delete result_binary;
-      *optimized_binary = nullptr;
-      return SPV_ERROR_OUT_OF_MEMORY;
+    delete result_binary;
+    *optimized_binary = nullptr;
+    return SPV_ERROR_OUT_OF_MEMORY;
   }
   result_binary->wordCount = optimized.size();
 
