@@ -153,7 +153,7 @@ std::vector<uint32_t> GetWordsFromScalarFloatConstant(
     const analysis::FloatConstant* c) {
   assert(c != nullptr);
   uint32_t width = c->type()->AsFloat()->width();
-  assert(width == 16 || width == 32 || width == 64);
+  assert(width == 8 || width == 16 || width == 32 || width == 64);
   if (width == 64) {
     utils::FloatProxy<double> result(c->GetDouble());
     return result.GetWords();
