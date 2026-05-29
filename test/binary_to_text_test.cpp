@@ -175,14 +175,13 @@ TEST_F(BinaryToText,
       spvtest::MakeInstruction(spv::Op::OpFunctionEnd, {});
   module.insert(module.end(), end_only.begin(), end_only.end());
 
-  for (const uint32_t cfg_option :
-       {SPV_BINARY_TO_TEXT_OPTION_REORDER_BLOCKS,
-        SPV_BINARY_TO_TEXT_OPTION_NESTED_INDENT}) {
+  for (const uint32_t cfg_option : {SPV_BINARY_TO_TEXT_OPTION_REORDER_BLOCKS,
+                                    SPV_BINARY_TO_TEXT_OPTION_NESTED_INDENT}) {
     spv_text text = nullptr;
     spv_diagnostic diagnostic = nullptr;
     EXPECT_EQ(SPV_SUCCESS,
-              spvBinaryToText(context, module.data(), module.size(),
-                              cfg_option, &text, &diagnostic))
+              spvBinaryToText(context, module.data(), module.size(), cfg_option,
+                              &text, &diagnostic))
         << "option=0x" << std::hex << cfg_option;
     EXPECT_EQ(nullptr, diagnostic);
     ASSERT_NE(nullptr, text);
