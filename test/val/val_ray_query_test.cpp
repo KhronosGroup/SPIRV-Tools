@@ -870,6 +870,304 @@ TEST_F(ValidateRayQuery,
                         "point vector as Result Type"));
 }
 
+TEST_F(ValidateRayQuery, RayQueryOpacityMicromapSpvVersionCheck) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpCapability RayTracingOpacityMicromapExecutionModeKHR
+               OpExtension "SPV_KHR_ray_query"
+               OpExtension "SPV_KHR_opacity_micromap"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionModeId %main OpacityMicromapIdKHR %enable
+               OpDecorate %enable SpecId 4
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+     %enable = OpSpecConstantFalse %bool
+       %main = OpFunction %void None %3
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_WRONG_VERSION,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("SPV_KHR_opacity_micromap extension requires SPIR-V "
+                        "version 1.4 or later."));
+}
+
+TEST_F(ValidateRayQuery, OpacityMicromapExtensionStringIsMissing) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpCapability RayTracingOpacityMicromapExecutionModeKHR
+               OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionModeId %main OpacityMicromapIdKHR %enable
+               OpDecorate %enable SpecId 4
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+     %enable = OpSpecConstantFalse %bool
+       %main = OpFunction %void None %3
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader.c_str(), SPV_ENV_UNIVERSAL_1_4);
+  ASSERT_EQ(SPV_ERROR_MISSING_EXTENSION,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("requires one of these extensions: SPV_KHR_opacity_micromap"));
+}
+
+TEST_F(ValidateRayQuery,
+       OpacityMicromapExecutionModeRejectsEXTExtensionString) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpCapability RayTracingOpacityMicromapExecutionModeKHR
+               OpExtension "SPV_KHR_ray_query"
+               OpExtension "SPV_EXT_opacity_micromap"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionModeId %main OpacityMicromapIdKHR %enable
+               OpDecorate %enable SpecId 4
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+     %enable = OpSpecConstantFalse %bool
+       %main = OpFunction %void None %3
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader.c_str(), SPV_ENV_UNIVERSAL_1_4);
+  ASSERT_EQ(SPV_ERROR_MISSING_EXTENSION,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("requires one of these extensions: SPV_KHR_opacity_micromap"));
+}
+
+TEST_F(ValidateRayQuery, RayQueryOpacityMicromapExtensionCheck2) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayTracingOpacityMicromapExecutionModeKHR
+               OpExtension "SPV_KHR_opacity_micromap"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionModeId %main OpacityMicromapIdKHR %enable
+               OpDecorate %enable SpecId 4
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+     %enable = OpSpecConstantFalse %bool
+       %main = OpFunction %void None %3
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader.c_str(), SPV_ENV_UNIVERSAL_1_4);
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The OpacityMicromapIdKHR execution mode requires the "
+                        "RayQueryKHR capability be present"));
+}
+
+TEST_F(ValidateRayQuery, RayQueryOpacityMicromapId_1) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpCapability RayTracingOpacityMicromapExecutionModeKHR
+               OpExtension "SPV_KHR_opacity_micromap"
+               OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionModeId %main OpacityMicromapIdKHR %omm
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %i32 = OpTypeInt 32 0
+        %omm = OpConstant %i32 9
+       %main = OpFunction %void None %3
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader.c_str(), SPV_ENV_UNIVERSAL_1_4);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpacityMicromapIdKHR's operand must be an <id> of a "
+                        "constant instruction of OpTypeBool"));
+}
+
+TEST_F(ValidateRayQuery, RayQueryOpacityMicromapId_2) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpCapability RayTracingOpacityMicromapExecutionModeKHR
+               OpExtension "SPV_KHR_opacity_micromap"
+               OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionModeId %main OpacityMicromapIdKHR %omm
+               OpDecorate %omm SpecId 4
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %i32 = OpTypeInt 32 0
+        %omm = OpSpecConstant %i32 9
+       %main = OpFunction %void None %3
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader.c_str(), SPV_ENV_UNIVERSAL_1_4);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpacityMicromapIdKHR's operand must be an <id> of a "
+                        "constant instruction of OpTypeBool"));
+}
+
+TEST_F(ValidateRayQuery, RayQueryOpacityMicromapId_3) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayTracingOpacityMicromapExecutionModeKHR
+               OpExtension "SPV_KHR_opacity_micromap"
+               OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionModeId %main OpacityMicromapIdKHR %omm
+               OpDecorate %omm SpecId 4
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+        %omm = OpSpecConstantFalse %bool
+       %main = OpFunction %void None %3
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader.c_str(), SPV_ENV_UNIVERSAL_1_4);
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The OpacityMicromapIdKHR execution mode requires the "
+                        "RayQueryKHR capability be present"));
+}
+
+TEST_F(ValidateRayQuery, RayQueryOpacityMicromapId_4) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpCapability RayTracingOpacityMicromapKHR
+               OpExtension "SPV_KHR_opacity_micromap"
+               OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionModeId %main OpacityMicromapIdKHR %omm
+               OpDecorate %omm SpecId 4
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+        %omm = OpSpecConstantFalse %bool
+       %main = OpFunction %void None %3
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader.c_str(), SPV_ENV_UNIVERSAL_1_4);
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Operand 2 of ExecutionModeId requires one of these "
+                "capabilities: RayTracingOpacityMicromapExecutionModeKHR"));
+}
+
+TEST_F(ValidateRayQuery,
+       RayQueryInitializeForceOpacityMicromap2StateKHRCapabilityCheck) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpExtension "SPV_KHR_opacity_micromap"
+               OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %4725
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+   %_st_4530 = OpTypeStruct %uint
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+    %type_rq = OpTypeRayQueryKHR
+       %4723 = OpTypeAccelerationStructureKHR
+%_ptr_UniformConstant_4723 = OpTypePointer UniformConstant %4723
+     %rq_ptr = OpTypePointer Private %type_rq
+       %4725 = OpVariable %_ptr_UniformConstant_4723 UniformConstant
+     %uint_1 = OpConstant %uint 1
+     %uint_2 = OpConstant %uint 2
+       %flag = OpConstant %uint 1024
+    %float_1 = OpConstant %float 1
+  %v3float_1 = OpConstantComposite %v3float %float_1 %float_1 %float_1
+     %ptr_rq = OpTypePointer Function %type_rq
+       %main = OpFunction %void None %3
+ %main_label = OpLabel
+  %ray_query = OpVariable %ptr_rq Function
+       %4726 = OpLoad %4723 %4725
+               OpRayQueryInitializeKHR %ray_query %4726 %flag %uint_1 %v3float_1 %float_1 %v3float_1 %float_1
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader.c_str(), SPV_ENV_UNIVERSAL_1_4);
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The ForceOpacityMicromap2StateKHR flag requires the "
+                        "RayTracingOpacityMicromapKHR and RayQueryKHR or "
+                        "RayTracingKHR capabilities"));
+}
+
+TEST_F(ValidateRayQuery, RayQueryOpacityMicromapGood) {
+  const std::string shader = R"(
+               OpCapability Shader
+               OpCapability RayQueryKHR
+               OpCapability RayTracingOpacityMicromapKHR
+               OpCapability RayTracingOpacityMicromapExecutionModeKHR
+               OpExtension "SPV_KHR_opacity_micromap"
+               OpExtension "SPV_KHR_ray_query"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpExecutionModeId %main OpacityMicromapIdKHR %omm
+               OpDecorate %omm SpecId 4
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %bool = OpTypeBool
+        %omm = OpSpecConstantFalse %bool
+       %main = OpFunction %void None %3
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(shader.c_str(), SPV_ENV_UNIVERSAL_1_4);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
