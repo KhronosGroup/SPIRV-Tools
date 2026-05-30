@@ -76,6 +76,17 @@ requested:
 After the PR has been reviewed it is the job of the reviewer to merge the PR.
 Instructions for this are given below.
 
+## For developers: AI-Assisted Contributions
+
+By submitting a Contribution to this repository, you additionally represent 
+that, to the extent any of Your Contributions were developed with the 
+assistance of artificial intelligence tools or AI-generated code, You have 
+exercised sufficient review, judgment, and creative direction over such tools 
+and resulting material to reasonably consider it Your original creation, and 
+You are not aware of any third-party license, intellectual property claim, or 
+other restriction arising from such use that is associated with any part of 
+Your Contribution or use thereof.
+
 ## For maintainers: Reviewing a PR
 
 The formal code reviews are done on GitHub. Reviewers are to look for all of the
