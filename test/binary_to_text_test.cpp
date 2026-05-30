@@ -167,6 +167,30 @@ TEST_F(BinaryToText, InvalidMagicNumber) {
   spvDiagnosticDestroy(diagnostic);
 }
 
+TEST_F(BinaryToText,
+       OpFunctionEndOnEmptyFunctionDoesNotCrashUnderDeferredCfgModes) {
+  CompileSuccessfully("");
+  std::vector<uint32_t> module(binary->code, binary->code + binary->wordCount);
+  const std::vector<uint32_t> end_only =
+      spvtest::MakeInstruction(spv::Op::OpFunctionEnd, {});
+  module.insert(module.end(), end_only.begin(), end_only.end());
+
+  for (const uint32_t cfg_option : {SPV_BINARY_TO_TEXT_OPTION_REORDER_BLOCKS,
+                                    SPV_BINARY_TO_TEXT_OPTION_NESTED_INDENT}) {
+    spv_text text = nullptr;
+    spv_diagnostic diagnostic = nullptr;
+    EXPECT_EQ(SPV_SUCCESS,
+              spvBinaryToText(context, module.data(), module.size(), cfg_option,
+                              &text, &diagnostic))
+        << "option=0x" << std::hex << cfg_option;
+    EXPECT_EQ(nullptr, diagnostic);
+    ASSERT_NE(nullptr, text);
+    EXPECT_THAT(std::string(text->str), HasSubstr("OpFunctionEnd"));
+    spvTextDestroy(text);
+    spvDiagnosticDestroy(diagnostic);
+  }
+}
+
 struct FailedDecodeCase {
   std::string source_text;
   std::vector<uint32_t> appended_instruction;
