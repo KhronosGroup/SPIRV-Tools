@@ -66,6 +66,9 @@ spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name) {
   if (!strcmp("Arm.MotionEngine.100", name)) {
     return SPV_EXT_INST_TYPE_ARM_MOTION_ENGINE_100;
   }
+  if (!strncmp("Arm.ExperimentalMLOperations.", name, 29)) {
+    return SPV_EXT_INST_TYPE_ARM_EXPERIMENTAL_ML_OPERATIONS;
+  }
   // ensure to add any known non-semantic extended instruction sets
   // above this point, and update spvExtInstIsNonSemantic()
   if (!strncmp("NonSemantic.", name, 12)) {
