@@ -74,7 +74,7 @@ add_custom_command(OUTPUT ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_
 	    ${EI_tosa_001000_1}
 	    ${EI_arm_motion_engine_100}
 	    ${EI_ns_graph_debug_info}
-            ${EI_arm_experimental_ml_operations}
+	    ${EI_arm_experimental_ml_operations}
     COMMENT "Generate grammar tables")
 add_custom_target(spirv-tools-tables DEPENDS ${CORE_TABLES_BODY_INC_FILE} ${CORE_TABLES_HEADER_INC_FILE})
 
