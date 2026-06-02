@@ -327,8 +327,34 @@ const Constant* ConstantManager::GetConstantFromInst(const Instruction* inst) {
     case spv::Op::OpConstantCompositeReplicateEXT:
     case spv::Op::OpSpecConstantCompositeReplicateEXT: {
       uint32_t value = literal_words_or_ids[0];
-      literal_words_or_ids.assign(
-          static_cast<size_t>(type->NumberOfComponents()), value);
+      uint64_t component_count = type->NumberOfComponents();
+      if (const auto* tensor_type = type->AsTensorARM()) {
+        // TensorARM shape is stored as an ID, so resolve the outer
+        // dimension here instead of using Type::NumberOfComponents().
+        if (!tensor_type->is_shaped()) {
+          return nullptr;
+        }
+        const auto* shape_inst =
+            context()->get_def_use_mgr()->GetDef(tensor_type->shape_id());
+        if (!shape_inst) {
+          return nullptr;
+        }
+        const auto* shape_cst = GetConstantFromInst(shape_inst);
+        if (!shape_cst || !shape_cst->AsArrayConstant()) {
+          return nullptr;
+        }
+        const auto& shape_components =
+            shape_cst->AsArrayConstant()->GetComponents();
+        if (shape_components.empty()) {
+          return nullptr;
+        }
+        const auto* outer_dim_cst = shape_components.front()->AsIntConstant();
+        if (!outer_dim_cst) {
+          return nullptr;
+        }
+        component_count = outer_dim_cst->GetZeroExtendedValue();
+      }
+      literal_words_or_ids.assign(static_cast<size_t>(component_count), value);
       break;
     }
     default:

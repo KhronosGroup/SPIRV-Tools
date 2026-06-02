@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "gtest/gtest.h"
 #include "source/opt/build_module.h"
@@ -227,6 +229,168 @@ OpExtension "SPV_ARM_tensors"
   EXPECT_EQ(tensor_const->GetComponents()[2]->GetZeroExtendedValue(), 3u);
   EXPECT_FALSE(tensor_const->IsZero());
 }
+
+struct TensorConstantCompositeReplicateExtCase {
+  std::string opcode;
+  std::string name;
+};
+
+class TensorConstantCompositeReplicateExtTest
+    : public ::testing::TestWithParam<TensorConstantCompositeReplicateExtCase> {
+};
+
+std::string TensorConstantCompositeReplicateExtCaseName(
+    const ::testing::TestParamInfo<TensorConstantCompositeReplicateExtCase>&
+        info) {
+  return info.param.name;
+}
+
+TEST_P(TensorConstantCompositeReplicateExtTest, FromInstruction) {
+  const std::string text = R"(
+OpCapability TensorsARM
+OpCapability ReplicatedCompositesEXT
+OpExtension "SPV_ARM_tensors"
+OpExtension "SPV_EXT_replicated_composites"
+%1 = OpTypeInt 32 0
+%2 = OpConstant %1 1
+%3 = OpConstant %1 2
+%4 = OpTypeArray %1 %2
+%5 = OpConstantComposite %4 %3
+%6 = OpTypeTensorARM %1 %2 %5
+%7 = )" + GetParam().opcode +
+                           R"( %6 %3
+  )";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_5, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(context, nullptr);
+
+  const Constant* base_constant =
+      context->get_constant_mgr()->FindDeclaredConstant(3);
+  ASSERT_NE(base_constant, nullptr);
+
+  const Constant* constant =
+      context->get_constant_mgr()->FindDeclaredConstant(7);
+  ASSERT_NE(constant, nullptr);
+  const auto* tensor_const = constant->AsTensorConstant();
+  ASSERT_NE(tensor_const, nullptr);
+  ASSERT_EQ(tensor_const->GetComponents().size(), 2u);
+  EXPECT_EQ(tensor_const->GetComponents()[0], base_constant);
+  EXPECT_EQ(tensor_const->GetComponents()[1], base_constant);
+  EXPECT_FALSE(tensor_const->IsZero());
+}
+
+TEST_P(TensorConstantCompositeReplicateExtTest, Rank2FromInstruction) {
+  const std::string text = R"(
+OpCapability TensorsARM
+OpCapability ReplicatedCompositesEXT
+OpExtension "SPV_ARM_tensors"
+OpExtension "SPV_EXT_replicated_composites"
+%1 = OpTypeInt 32 0
+%2 = OpConstant %1 1
+%3 = OpConstant %1 2
+%4 = OpConstant %1 3
+%5 = OpTypeArray %1 %2
+%6 = OpTypeArray %1 %3
+%7 = OpConstantComposite %5 %4
+%8 = OpConstantComposite %6 %3 %4
+%9 = OpTypeTensorARM %1 %2 %7
+%10 = OpTypeTensorARM %1 %3 %8
+%11 = OpConstantComposite %9 %2 %3 %4
+%12 = )" + GetParam().opcode +
+                           R"( %10 %11
+  )";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_5, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(context, nullptr);
+
+  const Constant* row_constant =
+      context->get_constant_mgr()->FindDeclaredConstant(11);
+  ASSERT_NE(row_constant, nullptr);
+  const auto* row_tensor = row_constant->AsTensorConstant();
+  ASSERT_NE(row_tensor, nullptr);
+  ASSERT_EQ(row_tensor->GetComponents().size(), 3u);
+  EXPECT_EQ(row_tensor->GetComponents()[0]->GetZeroExtendedValue(), 1u);
+  EXPECT_EQ(row_tensor->GetComponents()[1]->GetZeroExtendedValue(), 2u);
+  EXPECT_EQ(row_tensor->GetComponents()[2]->GetZeroExtendedValue(), 3u);
+
+  const Constant* constant =
+      context->get_constant_mgr()->FindDeclaredConstant(12);
+  ASSERT_NE(constant, nullptr);
+  const auto* tensor_const = constant->AsTensorConstant();
+  ASSERT_NE(tensor_const, nullptr);
+  ASSERT_EQ(tensor_const->GetComponents().size(), 2u);
+  EXPECT_EQ(tensor_const->GetComponents()[0], row_constant);
+  EXPECT_EQ(tensor_const->GetComponents()[1], row_constant);
+  EXPECT_FALSE(tensor_const->IsZero());
+}
+
+TEST_P(TensorConstantCompositeReplicateExtTest,
+       WithReplicatedShapeFromInstruction) {
+  const std::string text = R"(
+OpCapability TensorsARM
+OpCapability ReplicatedCompositesEXT
+OpExtension "SPV_ARM_tensors"
+OpExtension "SPV_EXT_replicated_composites"
+%1 = OpTypeInt 32 0
+%2 = OpConstant %1 1
+%3 = OpConstant %1 2
+%4 = OpConstant %1 7
+%5 = OpTypeArray %1 %2
+%6 = OpTypeArray %1 %3
+%7 = OpConstantCompositeReplicateEXT %5 %3
+%8 = OpConstantCompositeReplicateEXT %6 %3
+%9 = OpTypeTensorARM %1 %2 %7
+%10 = OpTypeTensorARM %1 %3 %8
+%11 = OpConstantCompositeReplicateEXT %9 %4
+%12 = )" + GetParam().opcode +
+                           R"( %10 %11
+  )";
+
+  std::unique_ptr<IRContext> context =
+      BuildModule(SPV_ENV_UNIVERSAL_1_5, nullptr, text,
+                  SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS);
+  ASSERT_NE(context, nullptr);
+
+  const Constant* shape_constant =
+      context->get_constant_mgr()->FindDeclaredConstant(8);
+  ASSERT_NE(shape_constant, nullptr);
+  const auto* shape_array = shape_constant->AsArrayConstant();
+  ASSERT_NE(shape_array, nullptr);
+  ASSERT_EQ(shape_array->GetComponents().size(), 2u);
+  EXPECT_EQ(shape_array->GetComponents()[0]->GetZeroExtendedValue(), 2u);
+  EXPECT_EQ(shape_array->GetComponents()[1]->GetZeroExtendedValue(), 2u);
+
+  const Constant* row_constant =
+      context->get_constant_mgr()->FindDeclaredConstant(11);
+  ASSERT_NE(row_constant, nullptr);
+  const auto* row_tensor = row_constant->AsTensorConstant();
+  ASSERT_NE(row_tensor, nullptr);
+  ASSERT_EQ(row_tensor->GetComponents().size(), 2u);
+  EXPECT_EQ(row_tensor->GetComponents()[0]->GetZeroExtendedValue(), 7u);
+  EXPECT_EQ(row_tensor->GetComponents()[1]->GetZeroExtendedValue(), 7u);
+
+  const Constant* constant =
+      context->get_constant_mgr()->FindDeclaredConstant(12);
+  ASSERT_NE(constant, nullptr);
+  const auto* tensor_const = constant->AsTensorConstant();
+  ASSERT_NE(tensor_const, nullptr);
+  ASSERT_EQ(tensor_const->GetComponents().size(), 2u);
+  EXPECT_EQ(tensor_const->GetComponents()[0], row_constant);
+  EXPECT_EQ(tensor_const->GetComponents()[1], row_constant);
+  EXPECT_FALSE(tensor_const->IsZero());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    ConstantAndSpecConstant, TensorConstantCompositeReplicateExtTest,
+    ::testing::ValuesIn(std::vector<TensorConstantCompositeReplicateExtCase>{
+        {"OpConstantCompositeReplicateEXT", "Constant"},
+        {"OpSpecConstantCompositeReplicateEXT", "SpecConstant"},
+    }),
+    TensorConstantCompositeReplicateExtCaseName);
 
 TEST_F(ConstantManagerTest, NestedTensorConstantFromInstruction) {
   const std::string text = R"(
