@@ -205,6 +205,13 @@ bool Instruction::HasBranchWeights() const {
 void Instruction::ToBinaryWithoutAttachedDebugInsts(
     std::vector<uint32_t>* binary) const {
   const uint32_t num_words = 1 + NumOperandWords();
+  assert(num_words <= 65535 && "too many words in instruction");
+  if (num_words > 65535) {
+    // Generate an invalid instruction encoding, indicating 0 words in the,
+    // which is always invalid.
+    binary->push_back(static_cast<uint16_t>(opcode_));
+    return;
+  }
   binary->push_back((num_words << 16) | static_cast<uint16_t>(opcode_));
   for (const auto& operand : operands_) {
     binary->insert(binary->end(), operand.words.begin(), operand.words.end());
