@@ -1511,6 +1511,18 @@ spv_result_t CheckDecorationsOfBuffers(ValidationState_t& vstate) {
       const auto* data_type_inst = vstate.FindDef(pointee_type_id);
       scalar_block_layout = vstate.options()->scalar_block_layout;
       if (data_type_inst->opcode() == spv::Op::OpTypeStruct) {
+        const auto runtime_array_members =
+            getStructMembers(pointee_type_id, spv::Op::OpTypeRuntimeArray,
+                             vstate);
+        if (!runtime_array_members.empty()) {
+          if (!isBlock(pointee_type_id, vstate)) {
+            return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
+                   << vstate.VkErrorID(4680)
+                   << "For Vulkan, an OpTypeStruct containing an "
+                   << "OpTypeRuntimeArray must be decorated with Block if it "
+                   << "is used with storage class PhysicalStorageBuffer.";
+          }
+        }
         ComputeMemberConstraintsForStruct(&constraints, pointee_type_id,
                                           LayoutConstraints(), vstate);
       }

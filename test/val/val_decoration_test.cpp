@@ -5571,8 +5571,47 @@ TEST_F(ValidateDecorations, VulkanStructWithoutDecorationWithRuntimeArray) {
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-StandaloneSpirv-OpTypeRuntimeArray-04680"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Vulkan, OpTypeStruct containing an OpTypeRuntimeArray "
-                        "must be decorated with Block or BufferBlock."));
+              HasSubstr("For Vulkan, an OpTypeStruct variable containing an "
+                        "OpTypeRuntimeArray must be decorated with Block if it "
+                        "has storage class StorageBuffer or "
+                        "PhysicalStorageBuffer."));
+}
+
+TEST_F(ValidateDecorations,
+       VulkanPhysicalStorageBufferStructWithoutDecorationWithRuntimeArray) {
+  std::string str = R"(
+              OpCapability Shader
+              OpCapability Int64
+              OpCapability PhysicalStorageBufferAddresses
+              OpMemoryModel PhysicalStorageBuffer64 GLSL450
+              OpEntryPoint GLCompute %func "func"
+              OpExecutionMode %func LocalSize 1 1 1
+              OpDecorate %array_t ArrayStride 4
+              OpMemberDecorate %struct_t 0 Offset 0
+              OpMemberDecorate %struct_t 1 Offset 4
+     %uint_t = OpTypeInt 32 0
+    %ulong_t = OpTypeInt 64 0
+   %ulong_0 = OpConstant %ulong_t 0
+   %array_t = OpTypeRuntimeArray %uint_t
+  %struct_t = OpTypeStruct %uint_t %array_t
+%struct_ptr = OpTypePointer PhysicalStorageBuffer %struct_t
+      %void = OpTypeVoid
+    %func_t = OpTypeFunction %void
+      %func = OpFunction %void None %func_t
+         %1 = OpLabel
+         %2 = OpConvertUToPtr %struct_ptr %ulong_0
+              OpReturn
+              OpFunctionEnd
+)";
+
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpTypeRuntimeArray-04680"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("For Vulkan, an OpTypeStruct containing an "
+                        "OpTypeRuntimeArray must be decorated with Block if it "
+                        "is used with storage class PhysicalStorageBuffer."));
 }
 
 TEST_F(ValidateDecorations, EmptyStructAtNonZeroOffsetGood) {
