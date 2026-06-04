@@ -2180,14 +2180,18 @@ uint32_t GetElementType(uint32_t type_id, Instruction::iterator start,
     const Instruction* type_inst = def_use_manager->GetDef(type_id);
     assert(index.type == SPV_OPERAND_TYPE_LITERAL_INTEGER &&
            index.words.size() == 1);
-    if (type_inst->opcode() == spv::Op::OpTypeArray) {
-      type_id = type_inst->GetSingleWordInOperand(0);
-    } else if (type_inst->opcode() == spv::Op::OpTypeMatrix) {
-      type_id = type_inst->GetSingleWordInOperand(0);
-    } else if (type_inst->opcode() == spv::Op::OpTypeStruct) {
-      type_id = type_inst->GetSingleWordInOperand(index.words[0]);
-    } else {
-      return 0;
+    switch (type_inst->opcode()) {
+      case spv::Op::OpTypeArray:
+      case spv::Op::OpTypeMatrix:
+      case spv::Op::OpTypeVector:
+      case spv::Op::OpTypeVectorIdEXT:
+        type_id = type_inst->GetSingleWordInOperand(0);
+        break;
+      case spv::Op::OpTypeStruct:
+        type_id = type_inst->GetSingleWordInOperand(index.words[0]);
+        break;
+      default:
+        return 0;
     }
   }
   return type_id;
