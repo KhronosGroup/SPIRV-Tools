@@ -549,6 +549,7 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
       case spv::ExecutionMode::SubgroupsPerWorkgroupId:
       case spv::ExecutionMode::LocalSizeHintId:
       case spv::ExecutionMode::LocalSizeId:
+      case spv::ExecutionMode::OpacityMicromapIdKHR:
       case spv::ExecutionMode::FPFastMathDefault:
       case spv::ExecutionMode::MaximumRegistersIdINTEL:
       case spv::ExecutionMode::IsApiEntryAMDX:
@@ -635,6 +636,16 @@ spv_result_t ValidateExecutionMode(ValidationState_t& _,
             }
           }
           break;
+        case spv::ExecutionMode::OpacityMicromapIdKHR: {
+          spv::Op operand_opcode = operand_inst->opcode();
+          if (!spvOpcodeIsConstant(operand_opcode) ||
+              !_.IsBoolScalarType(operand_inst->type_id())) {
+            return _.diag(SPV_ERROR_INVALID_DATA, operand_inst)
+                   << "OpacityMicromapIdKHR's operand must be an <id> "
+                      "of a constant instruction of OpTypeBool.";
+          }
+          break;
+        }
         default:
           break;
       }

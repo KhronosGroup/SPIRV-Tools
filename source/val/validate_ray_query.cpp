@@ -99,6 +99,13 @@ spv_result_t RayQueryPass(ValidationState_t& _, const Instruction* inst) {
                << "Ray Flags must be a 32-bit int scalar";
       }
 
+      if (!_.CheckForceOpacityMicromap2StateKHRCapabilityRequirement(inst, 2)) {
+        return _.diag(SPV_ERROR_INVALID_CAPABILITY, inst)
+               << "The ForceOpacityMicromap2StateKHR flag requires the "
+                  "RayTracingOpacityMicromapKHR and RayQueryKHR or "
+                  "RayTracingKHR capabilities";
+      }
+
       const uint32_t cull_mask = _.GetOperandTypeId(inst, 3);
       if (!_.IsIntScalarType(cull_mask, 32)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
