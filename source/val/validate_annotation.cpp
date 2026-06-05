@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <unordered_set>
+
 #include "source/opcode.h"
 #include "source/spirv_target_env.h"
 #include "source/val/instruction.h"
@@ -548,6 +550,7 @@ spv_result_t ValidateGroupDecorate(ValidationState_t& _,
            << "OpGroupDecorate Decoration group <id> "
            << _.getIdName(decoration_group_id) << " is not a decoration group.";
   }
+  std::unordered_set<uint32_t> seen;
   for (unsigned i = 1; i < inst->operands().size(); ++i) {
     auto target_id = inst->GetOperandAs<uint32_t>(i);
     auto target = _.FindDef(target_id);
@@ -555,6 +558,10 @@ spv_result_t ValidateGroupDecorate(ValidationState_t& _,
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "OpGroupDecorate may not target OpDecorationGroup <id> "
              << _.getIdName(target_id);
+    }
+    if (!seen.insert(target_id).second) {
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "Targets contains duplicate id " << _.getIdName(target_id);
     }
   }
   return SPV_SUCCESS;
