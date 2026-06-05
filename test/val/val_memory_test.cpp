@@ -11028,6 +11028,40 @@ OpFunctionEnd
               AnyVUID("VUID-StandaloneSpirv-None-12295"));
 }
 
+TEST_F(ValidateMemory, LoadPointerFromPointer_DescriptorHeapCap) {
+  std::string spirv = R"(
+OpCapability Shader
+OpCapability PhysicalStorageBufferAddresses
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel PhysicalStorageBuffer64 GLSL450
+OpEntryPoint GLCompute %main "main" %pc
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %block Block
+OpMemberDecorate %block 0 Offset 0
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%ptr_pssbo_uint = OpTypePointer PhysicalStorageBuffer %uint
+%ptr_pssbo_ptr = OpTypePointer PhysicalStorageBuffer %ptr_pssbo_uint
+%block = OpTypeStruct %ptr_pssbo_ptr
+%ptr_pc_block = OpTypePointer PushConstant %block
+%ptr_pc_ptr = OpTypePointer PushConstant %ptr_pssbo_ptr
+%pc = OpVariable %ptr_pc_block PushConstant
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpAccessChain %ptr_pc_ptr %pc %uint_0
+%ld1 = OpLoad %ptr_pssbo_ptr %gep Aligned 8
+%ld2 = OpLoad %ptr_pssbo_uint %ld1 Aligned 8
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
