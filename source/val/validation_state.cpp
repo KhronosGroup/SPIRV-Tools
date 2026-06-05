@@ -1617,6 +1617,8 @@ const Instruction* ValidationState_t::FindUntypedBaseVariable(
         if (GetIdOpcode(GetOperandTypeId(base_inst, 2)) ==
             spv::Op::OpTypeUntypedPointerKHR) {
           base_inst = FindDef(base_inst->GetOperandAs<uint32_t>(2));
+        } else {
+          return nullptr;
         }
         break;
       case spv::Op::OpAtomicExchange:
@@ -1640,6 +1642,8 @@ const Instruction* ValidationState_t::FindUntypedBaseVariable(
         if (GetIdOpcode(GetOperandTypeId(base_inst, 0)) ==
             spv::Op::OpTypeUntypedPointerKHR) {
           base_inst = FindDef(base_inst->GetOperandAs<uint32_t>(0));
+        } else {
+          return nullptr;
         }
         break;
       default:
@@ -1660,6 +1664,9 @@ bool ValidationState_t::IsDescriptorHeapBaseVariable(const Instruction* inst) {
     return false;
   }
   const Instruction* base_inst = FindUntypedBaseVariable(inst);
+  if (!base_inst) {
+    return false;
+  }
   const bool is_heap_base =
       IsBuiltin(base_inst->id(), spv::BuiltIn::SamplerHeapEXT) ||
       IsBuiltin(base_inst->id(), spv::BuiltIn::ResourceHeapEXT);
