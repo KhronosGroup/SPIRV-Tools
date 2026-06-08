@@ -14683,6 +14683,34 @@ INSTANTIATE_TEST_SUITE_P(CompositeExtractOrInsertMatchingTest, MatchingInstructi
                OpReturn
                OpFunctionEnd
         )",
+        13, true),
+    // Test case 31: Fold OpCopyLogical feeding extract into vector.
+    InstructionFoldingCase<bool>(
+        Header() + R"(
+; CHECK: [[uint:%\w+]] = OpTypeInt 32 0
+; CHECK: [[v2uint:%\w+]] = OpTypeVector [[uint]] 2
+; CHECK: [[struct_type1:%\w+]] = OpTypeStruct [[v2uint]]
+; CHECK: [[struct_type2:%\w+]] = OpTypeStruct [[v2uint]]
+; CHECK: [[struct_type3:%\w+]] = OpTypeStruct [[struct_type1]]
+; CHECK: [[struct_type4:%\w+]] = OpTypeStruct [[struct_type2]]
+; CHECK: [[var:%\w+]] = OpVariable
+; CHECK: [[ld:%\w+]] = OpLoad [[struct_type3]] [[var]]
+; CHECK: [[ex:%\w+]] = OpCompositeExtract [[uint]] [[ld]] 0 0 0
+; CHECK: %13 = OpCopyObject [[uint]] [[ex]]
+    %struct1 = OpTypeStruct %v2uint
+    %struct2 = OpTypeStruct %v2uint
+    %struct3 = OpTypeStruct %struct1
+    %struct4 = OpTypeStruct %struct2
+%_ptr_StorageBuffer_struct3 = OpTypePointer StorageBuffer %struct3
+%var1 = OpVariable %_ptr_StorageBuffer_struct3 StorageBuffer
+       %main = OpFunction %void None %void_func
+          %4 = OpLabel
+         %11 = OpLoad %struct3 %var1
+         %12 = OpCopyLogical %struct4 %11
+         %13 = OpCompositeExtract %uint %12 0 0 0
+               OpReturn
+               OpFunctionEnd
+        )",
         13, true)
 ));
 
