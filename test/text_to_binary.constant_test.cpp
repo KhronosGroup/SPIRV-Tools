@@ -827,7 +827,8 @@ INSTANTIATE_TEST_SUITE_P(
         {CASE(CompositeExtract), {0, 99, 42, 16, 17, 12, 19}},
     }));
 
-using TextToBinaryOpSpecConstantOpNegative = spvtest::TextToBinaryTestBase<::testing::Test>;
+using TextToBinaryOpSpecConstantOpNegative =
+    spvtest::TextToBinaryTestBase<::testing::Test>;
 
 TEST_F(TextToBinaryOpSpecConstantOpNegative, BadEnum) {
   std::string input = "%1 = OpSpecConstantOp %1 Add %3 %4";
