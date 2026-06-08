@@ -794,7 +794,8 @@ spv_result_t spvTextEncodeOpcode(const spvtools::AssemblyGrammar& grammar,
         if (spvOperandIsOptional(type)) {
           break;
         } else {
-          if (opcodeName == "OpSpecConstantOp") {
+          if (opcodeName == "OpSpecConstantOp" &&
+              type == SPV_OPERAND_TYPE_SPEC_CONSTANT_OP_NUMBER) {
             std::string operandValue;
             error = context->getWord(&operandValue, &nextPosition);
             spv::Op opcode;
