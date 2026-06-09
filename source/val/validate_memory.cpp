@@ -1149,7 +1149,12 @@ spv_result_t ValidateVariableTileImageEXT(ValidationState_t& _,
 
   auto result_type = _.FindDef(inst->type_id());
   if (result_type->opcode() == spv::Op::OpTypePointer) {
-    const auto pointee_type = _.FindDef(result_type->GetOperandAs<uint32_t>(2));
+    auto pointee_type = _.FindDef(result_type->GetOperandAs<uint32_t>(2));
+
+    while (pointee_type && pointee_type->opcode() == spv::Op::OpTypeArray) {
+      pointee_type = _.FindDef(pointee_type->GetOperandAs<uint32_t>(1));
+    }
+
     if (pointee_type && pointee_type->opcode() == spv::Op::OpTypeImage) {
       spv::Dim dim = static_cast<spv::Dim>(pointee_type->word(3));
       if (dim != spv::Dim::TileImageDataEXT) {
