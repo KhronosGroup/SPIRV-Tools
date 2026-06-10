@@ -610,10 +610,8 @@ OpFunctionEnd
 
   const spv_target_env env = SPV_ENV_VULKAN_1_0;
   CompileSuccessfully(code, env);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability Int64ImageEXT is required when using "
-                        "Sampled Type of 64-bit int"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
 TEST_F(ValidateImage, TypeImageI64SampledTypeVulkan) {
@@ -645,10 +643,8 @@ OpFunctionEnd
 
   const spv_target_env env = SPV_ENV_VULKAN_1_0;
   CompileSuccessfully(code, env);
-  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Capability Int64ImageEXT is required when using "
-                        "Sampled Type of 64-bit int"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(), Eq(""));
 }
 
 TEST_F(ValidateImage, TypeImageU64SampledTypeVulkan) {
@@ -667,6 +663,23 @@ OpFunctionEnd
   CompileSuccessfully(code, env);
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(env));
   EXPECT_THAT(getDiagnosticString(), Eq(""));
+}
+
+TEST_F(ValidateImage, TypeImageR64FormatNoCapabilityVulkan) {
+  const std::string code = GetShaderHeader() + R"(
+%img_type = OpTypeImage %s64 2D 0 0 0 2 R64i
+%main = OpFunction %void None %func
+%main_lab = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  const spv_target_env env = SPV_ENV_VULKAN_1_0;
+  CompileSuccessfully(code, env);
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand 8 of TypeImage requires one of these "
+                        "capabilities: Int64ImageEXT"));
 }
 
 TEST_F(ValidateImage, TypeImageF32SampledTypeVulkan) {
