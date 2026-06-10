@@ -208,6 +208,15 @@ TEST_F(ValidateInvalidType, Bfloat16InvalidGroupNonUniformShuffle) {
       HasSubstr("GroupNonUniformShuffle doesn't support BFloat16 type."));
 }
 
+TEST_F(ValidateInvalidType, Bfloat16ValidExtInstruction) {
+  const std::string body = R"(
+%15 = OpExtInst %bfloat16 %1 FClamp %bf16_1 %bf16_1 %bf16_1
+)";
+
+  CompileSuccessfully(GenerateBFloatCode(body).c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+}
+
 std::string GenerateFP8Code(const std::string& main_body) {
   const std::string prefix =
       R"(
@@ -399,6 +408,24 @@ TEST_F(ValidateInvalidType, FP8E5M2InvalidGroupNonUniformShuffle) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("GroupNonUniformShuffle doesn't support FP8 E4M3/E5M2 types."));
+}
+
+TEST_F(ValidateInvalidType, FP8E4M3ValidExtInstruction) {
+  const std::string body = R"(
+%15 = OpExtInst %fp8e4m3 %1 FClamp %fp8e4m3_1 %fp8e4m3_1 %fp8e4m3_1
+)";
+
+  CompileSuccessfully(GenerateFP8Code(body).c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+}
+
+TEST_F(ValidateInvalidType, FP8E5M2ValidExtInstruction) {
+  const std::string body = R"(
+%15 = OpExtInst %fp8e5m2 %1 FClamp %fp8e5m2_1 %fp8e5m2_1 %fp8e5m2_1
+)";
+
+  CompileSuccessfully(GenerateFP8Code(body).c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
 }
 
 }  // namespace
