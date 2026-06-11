@@ -217,6 +217,32 @@ TEST_F(ValidateInvalidType, Bfloat16ValidExtInstruction) {
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
 }
 
+TEST_F(ValidateInvalidType, Bfloat16ExtInstructionRequiresExtension) {
+  const std::string spirv = R"(
+OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%bfloat16 = OpTypeFloat 16 BFloat16KHR
+%bf16_1 = OpConstant %bfloat16 1
+%main = OpFunction %void None %func
+%entry = OpLabel
+%15 = OpExtInst %bfloat16 %1 FClamp %bf16_1 %bf16_1 %bf16_1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand 3 of TypeFloat requires one of these "
+                        "capabilities: BFloat16TypeKHR"));
+}
+
 std::string GenerateFP8Code(const std::string& main_body) {
   const std::string prefix =
       R"(
@@ -426,6 +452,32 @@ TEST_F(ValidateInvalidType, FP8E5M2ValidExtInstruction) {
 
   CompileSuccessfully(GenerateFP8Code(body).c_str(), SPV_ENV_VULKAN_1_3);
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+}
+
+TEST_F(ValidateInvalidType, FP8ExtInstructionRequiresExtension) {
+  const std::string spirv = R"(
+OpCapability Shader
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%fp8e4m3 = OpTypeFloat 8 Float8E4M3EXT
+%fp8e4m3_1 = OpConstant %fp8e4m3 1
+%main = OpFunction %void None %func
+%entry = OpLabel
+%15 = OpExtInst %fp8e4m3 %1 FClamp %fp8e4m3_1 %fp8e4m3_1 %fp8e4m3_1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Operand 3 of TypeFloat requires one of these "
+                        "capabilities: Float8EXT"));
 }
 
 }  // namespace
