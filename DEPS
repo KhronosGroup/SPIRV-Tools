@@ -9,8 +9,8 @@ vars = {
 
   'googletest_revision': '7140cd416cecd7462a8aae488024abeee55598e4',
 
-  # Use protobufs before they gained the dependency on abseil
-  'protobuf_revision': 'v21.12',
+  # Use a recent protobuf, which can depend on abseil
+  'protobuf_revision': '35cd01f9fe9afbeea38cc7b979a3b6bfcde82c03',
 
   're2_revision': '972a15cedd008d846f1a39b2e88ce48d7f166cbd',
 
