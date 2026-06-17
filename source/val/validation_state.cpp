@@ -3422,8 +3422,6 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10872);
     case 10873:
       return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10873);
-    case 10874:
-      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10874);
     case 10875:
       return VUID_WRAP(VUID-StandaloneSpirv-UnequalMemorySemantics-10875);
     case 10876:
@@ -3471,6 +3469,14 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-None-12295);
     case 12297:
       return VUID_WRAP(VUID-StandaloneSpirv-Type-12297);
+    case 13551:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-13551);
+    case 13552:
+      return VUID_WRAP(VUID-StandaloneSpirv-SplitBarrierEXT-13552);
+    case 13556:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-13556);
+    case 13557:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-13557);
     default:
       return "";  // unknown id
   }
