@@ -58,7 +58,7 @@ if [ $TOOL = "cmake" ]; then
   # ASAN, UBSAN, COVERAGE, RELEASE, DEBUG, DEBUG_EXCEPTION, RELEASE_MINGW
   BUILD_TYPE="Debug"
   if [ $CONFIG = "RELEASE" ] || [ $CONFIG = "RELEASE_MINGW" ]; then
-    BUILD_TYPE="RelWithDebInfo"
+    BUILD_TYPE="Release"
   fi
 
   SKIP_TESTS="False"
@@ -83,8 +83,13 @@ if [ $TOOL = "cmake" ]; then
     SKIP_TESTS="True"
   fi
 
-  if [ $COMPILER = "clang" ]; then
+  # Build fuzzers on selected configurations.
+  if [ $COMPILER-$CONFIG = "clang-RELEASE" ]; then
+    # Build targets that fuzz the assembler, binary parser, disassembler,
+    # optimizer, and validator.
     ADDITIONAL_CMAKE_FLAGS="$ADDITIONAL_CMAKE_FLAGS -DSPIRV_BUILD_LIBFUZZER_TARGETS=ON"
+    # Build spirv-fuzz, including its protobuf dependency
+    ADDITIONAL_CMAKE_FLAGS="$ADDITIONAL_CMAKE_FLAGS -DSPIRV_BUILD_FUZZER=ON"
   fi
 
   clean_dir "$ROOT_DIR/build"
