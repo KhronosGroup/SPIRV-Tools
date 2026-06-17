@@ -396,9 +396,13 @@ spv_result_t ValidateOperandDebugType(ValidationState_t& _,
   // Check for common types.
   std::function<bool(CommonDebugInfoInstructions)> expectation =
       [&allow_template_param](CommonDebugInfoInstructions dbg_inst) {
+        // TODO - Should DebugTypeTemplateParameterPack be allowed?
         if (allow_template_param &&
             (dbg_inst == CommonDebugInfoDebugTypeTemplateParameter ||
              dbg_inst == CommonDebugInfoDebugTypeTemplateTemplateParameter)) {
+          return true;
+        } else if (dbg_inst == CommonDebugInfoDebugInfoNone) {
+          // DebugInfoNone is a safe "null" type that can be used
           return true;
         }
         return CommonDebugInfoDebugTypeBasic <= dbg_inst &&
