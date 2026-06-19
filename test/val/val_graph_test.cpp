@@ -663,6 +663,24 @@ TEST_F(ValidateGraph,
                             "corresponding graph I/O '.*'.*"));
 }
 
+TEST_F(ValidateGraph, InvalidGraphEntryPointDuplicateNames) {
+  const std::string src = R"(
+%graph_type = OpTypeGraphARM 1 %int8tensor %int8tensor
+              OpGraphEntryPointARM %graph "duplicatename" %var_int8tensor %var_int8tensor
+              OpGraphEntryPointARM %graph "duplicatename" %var_int8tensor %var_int8tensor
+     %graph = OpGraphARM %graph_type
+        %in = OpGraphInputARM %int8tensor %uint_0
+              OpGraphSetOutputARM %in %uint_0
+              OpGraphEndARM
+)";
+  std::string spvasm = GenerateModule(src);
+
+  CompileSuccessfully(spvasm, SPVENV);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPVENV));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Graph entry points cannot share the same name"));
+}
+
 //
 // Graph tests
 //
