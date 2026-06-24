@@ -18,6 +18,7 @@
 #include <string>
 
 #include "source/opcode.h"
+#include "source/spirv_target_env.h"
 #include "source/table2.h"
 #include "source/val/instruction.h"
 #include "source/val/validate.h"
@@ -376,6 +377,11 @@ spv_result_t CapabilityPass(ValidationState_t& _, const Instruction* inst) {
   };
 
   const auto env = _.context()->target_env;
+  if (spvIsVulkanEnv(env) && capability == uint32_t(spv::Capability::Linkage) &&
+      _.options()->allow_vulkan_linkage) {
+    return SPV_SUCCESS;
+  }
+
   const bool opencl_embedded = env == SPV_ENV_OPENCL_EMBEDDED_1_2 ||
                                env == SPV_ENV_OPENCL_EMBEDDED_2_0 ||
                                env == SPV_ENV_OPENCL_EMBEDDED_2_1 ||

@@ -136,6 +136,11 @@ void spvValidatorOptionsSetAllowVulkan32BitBitwise(
   options->allow_vulkan_32_bit_bitwise = val;
 }
 
+void spvValidatorOptionsSetAllowVulkanLinkage(spv_validator_options options,
+                                              bool val) {
+  options->allow_vulkan_linkage = val;
+}
+
 void spvValidatorOptionsSetFriendlyNames(spv_validator_options options,
                                          bool val) {
   options->use_friendly_names = val;

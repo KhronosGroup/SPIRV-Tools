@@ -51,6 +51,7 @@ struct spv_validator_options_t {
         allow_offset_texture_operand(false),
         allow_vulkan_32_bit_bitwise(false),
         before_hlsl_legalization(false),
+        allow_vulkan_linkage(false),
         use_friendly_names(true) {}
 
   validator_universal_limits_t universal_limits_;
@@ -65,6 +66,7 @@ struct spv_validator_options_t {
   bool allow_offset_texture_operand;
   bool allow_vulkan_32_bit_bitwise;
   bool before_hlsl_legalization;
+  bool allow_vulkan_linkage;
   bool use_friendly_names;
 };
 
