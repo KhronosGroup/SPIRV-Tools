@@ -3,7 +3,7 @@ use_relative_paths = True
 vars = {
   'github': 'https://github.com',
 
-  'abseil_revision': '41253e45ef6cc814ffe297db03a388379007f3cf',
+  'abseil_revision': '3b33f7fd5c9b751c8463247c992b9f1faa7760a7',
 
   'effcee_revision': '910ed15722d5d05c9d71ecf36c1a22243cb79b02',
 
