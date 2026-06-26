@@ -78,13 +78,21 @@ void FriendlyNameMapper::SaveName(uint32_t id,
                                   const std::string& suggested_name) {
   if (name_for_id_.find(id) != name_for_id_.end()) return;
 
-  const std::string sanitized_suggested_name = Sanitize(suggested_name);
-  std::string name = sanitized_suggested_name;
+  std::string base_name;
+
+  // Limit the size of the name to limit memory usage.
+  const uint32_t kMaxSize = 256;
+  if (suggested_name.size() > kMaxSize) {
+    base_name = to_string(id);
+  } else {
+    base_name = Sanitize(suggested_name);
+  }
+  std::string name = base_name;
   auto inserted = used_names_.insert(name);
   if (!inserted.second) {
-    const std::string base_name = sanitized_suggested_name + "_";
+    const std::string base_name_prefix = base_name + "_";
     for (uint32_t index = 0; !inserted.second; ++index) {
-      name = base_name + to_string(index);
+      name = base_name_prefix + to_string(index);
       inserted = used_names_.insert(name);
     }
   }
