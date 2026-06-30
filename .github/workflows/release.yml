@@ -14,12 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
       - name: Prepare CHANGELOG for version
         run: |
-          python utils/generate_changelog.py CHANGES "${{ github.ref_name }}" VERSION_CHANGELOG
+          python utils/generate_changelog.py CHANGES "${GITHUB_REF_NAME}" VERSION_CHANGELOG
       - name: Create release
         run: |
-          gh release create -t "Release ${{ github.ref_name }}" -F VERSION_CHANGELOG "${{ github.ref_name }}"
+          gh release create -t "Release ${GITHUB_REF_NAME}" -F VERSION_CHANGELOG "${GITHUB_REF_NAME}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
