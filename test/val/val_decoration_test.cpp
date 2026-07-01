@@ -5571,8 +5571,10 @@ TEST_F(ValidateDecorations, VulkanStructWithoutDecorationWithRuntimeArray) {
   EXPECT_THAT(getDiagnosticString(),
               AnyVUID("VUID-StandaloneSpirv-OpTypeRuntimeArray-04680"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Vulkan, OpTypeStruct containing an OpTypeRuntimeArray "
-                        "must be decorated with Block or BufferBlock."));
+              HasSubstr("For Vulkan, an OpTypeStruct variable containing an "
+                        "OpTypeRuntimeArray must be decorated with Block if it "
+                        "has storage class StorageBuffer or "
+                        "PhysicalStorageBuffer."));
 }
 
 TEST_F(ValidateDecorations, EmptyStructAtNonZeroOffsetGood) {
