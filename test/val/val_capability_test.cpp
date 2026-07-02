@@ -2602,6 +2602,25 @@ OpMemberDecorate %block 0 BuiltIn PointSize
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
+TEST_F(ValidateCapability, Vulkan10OCPMicroscalingEnabledByExtension) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability Float4EXT
+OpCapability Float6EXT
+OpCapability Float8UnsignedE8M0EXT
+OpCapability MXInt8EXT
+OpCapability BitcastExtractEXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %func "shader"
+OpExecutionMode %func LocalSize 1 1 1
+%f32 = OpTypeFloat 32
+)" + std::string(kVoidFVoid);
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_0);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
+}
+
 TEST_F(ValidateCapability, Vulkan10NotEnabledByExtension) {
   const std::string spirv = R"(
 OpCapability Shader

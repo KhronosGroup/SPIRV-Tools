@@ -635,6 +635,360 @@ OpExtension "SPV_KHR_bfloat16"
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateConversion, VulkanOCPMicroscalingFConvertToIEEE) {
+  const std::string extensions = R"(
+OpCapability Float4EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string types = R"(
+%fp4 = OpTypeFloat 4 Float4E2M1EXT
+%fp4_undef = OpUndef %fp4
+)";
+  const std::string body = R"(
+%val = OpFConvert %f32 %fp4_undef
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateConversion, VulkanOCPMicroscalingFConvertToFloat8E4M3) {
+  const std::string extensions = R"(
+OpCapability Float4EXT
+OpCapability Float8EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+OpExtension "SPV_EXT_float8"
+)";
+  const std::string types = R"(
+%fp4 = OpTypeFloat 4 Float4E2M1EXT
+%fp8e4m3 = OpTypeFloat 8 Float8E4M3EXT
+%fp4_undef = OpUndef %fp4
+)";
+  const std::string body = R"(
+%val = OpFConvert %fp8e4m3 %fp4_undef
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateConversion, VulkanOCPMicroscalingFConvertToFloat8E5M2) {
+  const std::string extensions = R"(
+OpCapability Float6EXT
+OpCapability Float8EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+OpExtension "SPV_EXT_float8"
+)";
+  const std::string types = R"(
+%fp6 = OpTypeFloat 6 Float6E3M2EXT
+%fp8e5m2 = OpTypeFloat 8 Float8E5M2EXT
+%fp6_undef = OpUndef %fp6
+)";
+  const std::string body = R"(
+%val = OpFConvert %fp8e5m2 %fp6_undef
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateConversion, VulkanOCPMicroscalingFConvertToBFloat16) {
+  const std::string extensions = R"(
+OpCapability Float8UnsignedE8M0EXT
+OpCapability BFloat16TypeKHR
+OpExtension "SPV_EXT_ocp_microscaling_types"
+OpExtension "SPV_KHR_bfloat16"
+)";
+  const std::string types = R"(
+%e8m0 = OpTypeFloat 8 Float8UnsignedE8M0EXT
+%bf16 = OpTypeFloat 16 BFloat16KHR
+%e8m0_undef = OpUndef %e8m0
+)";
+  const std::string body = R"(
+%val = OpFConvert %bf16 %e8m0_undef
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateConversion, VulkanOCPMicroscalingFConvertProducesOCPBad) {
+  const std::string extensions = R"(
+OpCapability Float4EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string types = R"(
+%fp4 = OpTypeFloat 4 Float4E2M1EXT
+)";
+  const std::string body = R"(
+%val = OpFConvert %fp4 %f32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FConvert must not produce OCP microscaling types"));
+}
+
+TEST_F(ValidateConversion, VulkanOCPMicroscalingConvertFToUBad) {
+  const std::string extensions = R"(
+OpCapability Float8UnsignedE8M0EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string types = R"(
+%e8m0 = OpTypeFloat 8 Float8UnsignedE8M0EXT
+%e8m0_undef = OpUndef %e8m0
+)";
+  const std::string body = R"(
+%val = OpConvertFToU %u32 %e8m0_undef
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ConvertFToU must not consume or produce OCP "
+                        "microscaling types"));
+}
+
+TEST_F(ValidateConversion, VulkanOCPMicroscalingConvertFToSBad) {
+  const std::string extensions = R"(
+OpCapability Float6EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string types = R"(
+%fp6 = OpTypeFloat 6 Float6E2M3EXT
+%fp6_undef = OpUndef %fp6
+)";
+  const std::string body = R"(
+%val = OpConvertFToS %s32 %fp6_undef
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ConvertFToS must not consume or produce OCP "
+                        "microscaling types"));
+}
+
+TEST_F(ValidateConversion, VulkanOCPMicroscalingConvertSToFBad) {
+  const std::string extensions = R"(
+OpCapability Float8UnsignedE8M0EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string types = R"(
+%e8m0 = OpTypeFloat 8 Float8UnsignedE8M0EXT
+)";
+  const std::string body = R"(
+%val = OpConvertSToF %e8m0 %s32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ConvertSToF must not consume or produce OCP "
+                        "microscaling types"));
+}
+
+TEST_F(ValidateConversion, VulkanOCPMicroscalingConvertUToFBad) {
+  const std::string extensions = R"(
+OpCapability MXInt8EXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string types = R"(
+%mxint8 = OpTypeFloat 8 MXInt8EXT
+)";
+  const std::string body = R"(
+%val = OpConvertUToF %mxint8 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("ConvertUToF must not consume or produce OCP "
+                        "microscaling types"));
+}
+
+TEST_F(ValidateConversion, VulkanBitcastExtractFloat4Good) {
+  const std::string extensions = R"(
+OpCapability Float4EXT
+OpCapability BitcastExtractEXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string types = R"(
+%fp4 = OpTypeFloat 4 Float4E2M1EXT
+)";
+  const std::string body = R"(
+%val = OpBitcastExtractEXT %fp4 %u32_1 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateConversion, VulkanBitcastExtractFloat6Good) {
+  const std::string extensions = R"(
+OpCapability Float6EXT
+OpCapability BitcastExtractEXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string types = R"(
+%fp6 = OpTypeFloat 6 Float6E3M2EXT
+)";
+  const std::string body = R"(
+%val = OpBitcastExtractEXT %fp6 %u32_1 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateConversion, VulkanBitcastExtractVectorGood) {
+  const std::string extensions = R"(
+OpCapability Float4EXT
+OpCapability BitcastExtractEXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string types = R"(
+%fp4 = OpTypeFloat 4 Float4E2M1EXT
+%fp4vec2 = OpTypeVector %fp4 2
+)";
+  const std::string body = R"(
+%val = OpBitcastExtractEXT %fp4vec2 %u32vec2_12 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateConversion, BitcastExtractIntResultGood) {
+  const std::string extensions = R"(
+OpCapability BitcastExtractEXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string body = R"(
+%val = OpBitcastExtractEXT %u32 %u64_1 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions).c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateConversion, VulkanBitcastExtractResultTypeBad) {
+  const std::string extensions = R"(
+OpCapability Float8UnsignedE8M0EXT
+OpCapability BitcastExtractEXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string types = R"(
+%e8m0 = OpTypeFloat 8 Float8UnsignedE8M0EXT
+)";
+  const std::string body = R"(
+%val = OpBitcastExtractEXT %e8m0 %u32_1 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to be a Float4EXT or "
+                        "Float6EXT type in the Vulkan environment"));
+}
+
+TEST_F(ValidateConversion, VulkanBitcastExtractBaseTypeBad) {
+  const std::string extensions = R"(
+OpCapability Float4EXT
+OpCapability BitcastExtractEXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string types = R"(
+%fp4 = OpTypeFloat 4 Float4E2M1EXT
+)";
+  const std::string body = R"(
+%val = OpBitcastExtractEXT %fp4 %f32_1 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Base to be an integer scalar or vector type "
+                        "in the Vulkan environment"));
+}
+
+TEST_F(ValidateConversion, BitcastExtractMissingCapabilityBad) {
+  const std::string extensions = R"(
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string body = R"(
+%val = OpBitcastExtractEXT %u32 %u64_1 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Opcode BitcastExtractEXT requires one of these "
+                        "capabilities: BitcastExtractEXT"));
+}
+
+TEST_F(ValidateConversion, BitcastExtractDimensionMismatchBad) {
+  const std::string extensions = R"(
+OpCapability BitcastExtractEXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string body = R"(
+%val = OpBitcastExtractEXT %u32vec2 %u64_1 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Base to have the same dimension as Result "
+                        "Type"));
+}
+
+TEST_F(ValidateConversion, BitcastExtractBaseBitWidthBad) {
+  const std::string extensions = R"(
+OpCapability BitcastExtractEXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string body = R"(
+%val = OpBitcastExtractEXT %u32 %u32_1 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Base component bit width to be greater than "
+                        "Result Type component bit width"));
+}
+
+TEST_F(ValidateConversion, BitcastExtractOffsetTypeBad) {
+  const std::string extensions = R"(
+OpCapability BitcastExtractEXT
+OpExtension "SPV_EXT_ocp_microscaling_types"
+)";
+  const std::string body = R"(
+%val = OpBitcastExtractEXT %u32 %u64_1 %f32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extensions).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Offset to be a scalar integer type"));
+}
+
 TEST_F(ValidateConversion, QuantizeToF16Success) {
   const std::string body = R"(
 %val1 = OpQuantizeToF16 %f32 %f32_1

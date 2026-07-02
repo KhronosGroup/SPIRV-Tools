@@ -647,6 +647,16 @@ spv_fp_encoding_t spvFPEncodingFromOperandFPEncoding(spv::FPEncoding encoding) {
       return SPV_FP_ENCODING_FLOAT8_E4M3;
     case spv::FPEncoding::Float8E5M2EXT:
       return SPV_FP_ENCODING_FLOAT8_E5M2;
+    case spv::FPEncoding::Float6E2M3EXT:
+      return SPV_FP_ENCODING_FLOAT6_E2M3;
+    case spv::FPEncoding::Float6E3M2EXT:
+      return SPV_FP_ENCODING_FLOAT6_E3M2;
+    case spv::FPEncoding::Float4E2M1EXT:
+      return SPV_FP_ENCODING_FLOAT4_E2M1;
+    case spv::FPEncoding::Float8UnsignedE8M0EXT:
+      return SPV_FP_ENCODING_FLOAT8_UNSIGNED_E8M0;
+    case spv::FPEncoding::MXInt8EXT:
+      return SPV_FP_ENCODING_MXINT8;
     case spv::FPEncoding::Max:
       break;
   }

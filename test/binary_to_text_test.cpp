@@ -314,6 +314,44 @@ INSTANTIATE_TEST_SUITE_P(
 // clang-format on
 
 INSTANTIATE_TEST_SUITE_P(
+    OCPMicroscalingNumericLiterals, RoundTripInstructionsTest,
+    Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_6),
+            ::testing::ValuesIn(std::vector<std::string>{
+                "OpCapability Float4EXT\n"
+                "OpExtension \"SPV_EXT_ocp_microscaling_types\"\n"
+                "%1 = OpTypeFloat 4 Float4E2M1EXT\n"
+                "%2 = OpConstant %1 0x1p+0\n",
+                "OpCapability Float4EXT\n"
+                "OpExtension \"SPV_EXT_ocp_microscaling_types\"\n"
+                "%1 = OpTypeFloat 4 Float4E2M1EXT\n"
+                "%2 = OpSpecConstant %1 -0x1.8p+0\n",
+                "OpCapability Float6EXT\n"
+                "OpExtension \"SPV_EXT_ocp_microscaling_types\"\n"
+                "%1 = OpTypeFloat 6 Float6E2M3EXT\n"
+                "%2 = OpConstant %1 0x1.6p+0\n",
+                "OpCapability Float6EXT\n"
+                "OpExtension \"SPV_EXT_ocp_microscaling_types\"\n"
+                "%1 = OpTypeFloat 6 Float6E3M2EXT\n"
+                "%2 = OpConstant %1 0x1.cp-2\n",
+                "OpCapability Float8UnsignedE8M0EXT\n"
+                "OpExtension \"SPV_EXT_ocp_microscaling_types\"\n"
+                "%1 = OpTypeFloat 8 Float8UnsignedE8M0EXT\n"
+                "%2 = OpConstant %1 0x1p+4\n",
+                "OpCapability Float8UnsignedE8M0EXT\n"
+                "OpExtension \"SPV_EXT_ocp_microscaling_types\"\n"
+                "%1 = OpTypeFloat 8 Float8UnsignedE8M0EXT\n"
+                "%2 = OpSpecConstant %1 0x1p-127\n",
+                "OpCapability MXInt8EXT\n"
+                "OpExtension \"SPV_EXT_ocp_microscaling_types\"\n"
+                "%1 = OpTypeFloat 8 MXInt8EXT\n"
+                "%2 = OpConstant %1 0x1p+0\n",
+                "OpCapability MXInt8EXT\n"
+                "OpExtension \"SPV_EXT_ocp_microscaling_types\"\n"
+                "%1 = OpTypeFloat 8 MXInt8EXT\n"
+                "%2 = OpSpecConstant %1 -0x1.2p-2\n",
+            })));
+
+INSTANTIATE_TEST_SUITE_P(
     MemoryAccessMasks, RoundTripInstructionsTest,
     Combine(::testing::Values(SPV_ENV_UNIVERSAL_1_0, SPV_ENV_UNIVERSAL_1_1,
                               SPV_ENV_UNIVERSAL_1_2, SPV_ENV_UNIVERSAL_1_3),

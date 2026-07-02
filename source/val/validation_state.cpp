@@ -441,6 +441,8 @@ void ValidationState_t::RegisterCapability(spv::Capability cap) {
       features_.declare_float16_type = true;
       break;
     case spv::Capability::Float8EXT:
+    case spv::Capability::Float8UnsignedE8M0EXT:
+    case spv::Capability::MXInt8EXT:
       features_.declare_float8_type = true;
       break;
     case spv::Capability::StorageUniformBufferBlock16:
@@ -1174,6 +1176,48 @@ bool ValidationState_t::IsFP8CoopMatType(uint32_t id) const {
 
 bool ValidationState_t::IsFP8Type(uint32_t id) const {
   return IsFP8ScalarType(id) || IsFP8VectorType(id) || IsFP8CoopMatType(id);
+}
+
+bool ValidationState_t::IsOCPMicroscalingScalarType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  if (inst && inst->opcode() == spv::Op::OpTypeFloat &&
+      inst->words().size() > 3) {
+    const auto encoding = inst->GetOperandAs<spv::FPEncoding>(2);
+    return encoding == spv::FPEncoding::Float6E2M3EXT ||
+           encoding == spv::FPEncoding::Float6E3M2EXT ||
+           encoding == spv::FPEncoding::Float4E2M1EXT ||
+           encoding == spv::FPEncoding::Float8UnsignedE8M0EXT ||
+           encoding == spv::FPEncoding::MXInt8EXT;
+  }
+  return false;
+}
+
+bool ValidationState_t::IsOCPMicroscalingNonByteScalarType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  if (inst && inst->opcode() == spv::Op::OpTypeFloat &&
+      inst->words().size() > 3) {
+    const auto encoding = inst->GetOperandAs<spv::FPEncoding>(2);
+    return encoding == spv::FPEncoding::Float6E2M3EXT ||
+           encoding == spv::FPEncoding::Float6E3M2EXT ||
+           encoding == spv::FPEncoding::Float4E2M1EXT;
+  }
+  return false;
+}
+
+bool ValidationState_t::IsOCPMicroscalingType(uint32_t id) const {
+  return ContainsOCPMicroscalingType(id);
+}
+
+bool ValidationState_t::ContainsOCPMicroscalingType(uint32_t id) const {
+  return ContainsType(id, [this](const Instruction* inst) {
+    return IsOCPMicroscalingScalarType(inst->id());
+  });
+}
+
+bool ValidationState_t::ContainsOCPMicroscalingNonByteType(uint32_t id) const {
+  return ContainsType(id, [this](const Instruction* inst) {
+    return IsOCPMicroscalingNonByteScalarType(inst->id());
+  });
 }
 
 bool ValidationState_t::IsFloatScalarType(uint32_t id, uint32_t width) const {
