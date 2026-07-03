@@ -11242,7 +11242,8 @@ TEST_F(ValidateMemory, ArrayLength_BadPointer) {
   CompileSuccessfully(spirv);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("The Structure's type in OpArrayLength <id> '2[%pointer]' must be a pointer to an OpTypeStruct"));
+              HasSubstr("The Structure's type in OpArrayLength <id> "
+                        "'2[%pointer]' must be a pointer to an OpTypeStruct"));
 }
 
 }  // namespace
