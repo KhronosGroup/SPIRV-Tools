@@ -11223,6 +11223,28 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
 }
 
+TEST_F(ValidateMemory, ArrayLength_BadPointer) {
+  std::string spirv = R"(
+               OpCapability ClipDistance
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpName %2097184 "pointer"
+       %void = OpTypeVoid
+          %6 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+       %8224 = OpFunction %void None %6
+      %65312 = OpLabel
+    %2097184 = OpArrayLength %uint %1 538976288
+               OpUnreachable
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Structure's type in OpArrayLength <id> '2[%pointer]' must be a pointer to an OpTypeStruct"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
