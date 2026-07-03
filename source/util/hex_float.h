@@ -36,6 +36,29 @@
 namespace spvtools {
 namespace utils {
 
+namespace {
+// Returns true if floating point value a equals b.
+// This is refactored to localize turning off warnings.
+template <typename FloatTy>
+bool FloatEquals(FloatTy a, FloatTy b) {
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wfloat-equal"
+#endif
+  return a == b;
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+}
+}  // namespace
+
 class Float4_E2M1 {
  public:
   Float4_E2M1(uint8_t v) : val(v) {}
@@ -1279,7 +1302,7 @@ class HexFloat {
   template <typename other_traits>
   CastResult castTo(HexFixedPoint<other_traits>& other,
                     round_direction round_dir) {
-    HexFloat<FloatProxy<double>> hf(0.0f);
+    HexFloat<FloatProxy<double>> hf(0.0);
     castTo(hf, round_dir);
 
     using other_int_type = typename other_traits::int_type;
@@ -1289,12 +1312,12 @@ class HexFloat {
                other_traits::implicit_exponent_inverse_double;
     const other_int_type max = std::numeric_limits<other_int_type>::max();
     const other_int_type min = std::numeric_limits<other_int_type>::min();
-    if (d == std::numeric_limits<double>::infinity() || d > max) {
+    if (FloatEquals(d, std::numeric_limits<double>::infinity()) || d > max) {
       // saturate
       other.set_value(static_cast<other_uint_type>(max));
       return CastResult::LostPrecision;
     }
-    if (d == -std::numeric_limits<double>::infinity() || d < min) {
+    if (FloatEquals(d, -std::numeric_limits<double>::infinity()) || d < min) {
       // saturate
       other.set_value(static_cast<other_uint_type>(min));
       return CastResult::LostPrecision;
@@ -2087,7 +2110,7 @@ inline std::istream& operator>>
        HexFloat<FloatProxy<Float8_E8M0>,
                 HexFloatTraits<FloatProxy<Float8_E8M0>>>& value) {
   // need a double since 0x1p-127 is out of float32 range
-  HexFloat<FloatProxy<double>> float_val(0.0f);
+  HexFloat<FloatProxy<double>> float_val(0.0);
   is >> float_val;
   if (is.fail()) return is;
 
@@ -2116,15 +2139,16 @@ inline std::istream& operator>>
 inline std::istream& operator>>(std::istream& is,
                                 HexFixedPoint<MXInt8>& value) {
   // need a double since 0x1p-127 is out of float32 range
-  HexFloat<FloatProxy<double>> float_val(0.0f);
+  HexFloat<FloatProxy<double>> float_val(0.0);
   is >> float_val;
   if (is.fail()) return is;
 
-  if (float_val.value().getAsFloat() > MXInt8::maxf) {
+  if (float_val.value().getAsFloat() > static_cast<double>(MXInt8::maxf)) {
     is.setstate(std::ios_base::failbit);
     value.set_value(MXInt8::max);
     return is;
-  } else if (float_val.value().getAsFloat() < MXInt8::minf) {
+  } else if (float_val.value().getAsFloat() <
+             static_cast<double>(MXInt8::minf)) {
     is.setstate(std::ios_base::failbit);
     value.set_value(MXInt8::min);
     return is;
