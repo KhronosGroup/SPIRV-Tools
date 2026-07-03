@@ -1727,5 +1727,31 @@ TEST_F(TextToBinaryTest, ConstantDataNonUTF) {
   spvContextDestroy(context);
 }
 
+// SPV_QCOM_image_processing3
+INSTANTIATE_TEST_SUITE_P(
+    SPV_QCOM_image_processing3, ExtensionRoundTripTest,
+    Combine(
+        Values(SPV_ENV_UNIVERSAL_1_4, SPV_ENV_UNIVERSAL_1_6, SPV_ENV_VULKAN_1_1,
+               SPV_ENV_VULKAN_1_4),
+        ValuesIn(std::vector<AssemblyCase>{
+            {"OpExtension \"SPV_QCOM_image_processing3\"\n",
+             MakeInstruction(spv::Op::OpExtension,
+                             MakeVector("SPV_QCOM_image_processing3"))},
+            {"OpCapability ImageGatherLinearQCOM\n",
+             MakeInstruction(
+                 spv::Op::OpCapability,
+                 {(uint32_t)spv::Capability::ImageGatherLinearQCOM})},
+            {"OpCapability ImageGatherExtendedModesQCOM\n",
+             MakeInstruction(
+                 spv::Op::OpCapability,
+                 {(uint32_t)spv::Capability::ImageGatherExtendedModesQCOM})},
+            {"%2 = OpImageGatherQCOM %1 %3 %4 %5 %6\n",
+             MakeInstruction(spv::Op::OpImageGatherQCOM, {1, 2, 3, 4, 5, 6})},
+            // Prove that we parse image operands afterward
+            {"%2 = OpImageGatherQCOM %1 %3 %4 %5 %6 Lod %7\n",
+             MakeInstruction(spv::Op::OpImageGatherQCOM,
+                             {1, 2, 3, 4, 5, 6, 2, 7})},
+        })));
+
 }  // namespace
 }  // namespace spvtools
