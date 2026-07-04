@@ -2433,7 +2433,7 @@ spv_result_t ValidateArrayLength(ValidationState_t& state,
       return state.diag(SPV_ERROR_INVALID_ID, inst)
              << "Pointer must be an untyped pointer object";
     }
-  } else if (pointer_ty->opcode() != spv::Op::OpTypePointer) {
+  } else if (!pointer_ty || pointer_ty->opcode() != spv::Op::OpTypePointer) {
     return state.diag(SPV_ERROR_INVALID_ID, inst)
            << "The Structure's type in Op" << spvOpcodeString(opcode)
            << " <id> " << state.getIdName(inst->id())
