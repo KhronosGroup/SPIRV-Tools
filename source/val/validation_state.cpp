@@ -3521,6 +3521,16 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-13556);
     case 13557:
       return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-13557);
+    case 12465:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpConvertFToU-12465);
+    case 12466:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpFConvert-12466);
+    case 12467:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpFConvert-12467);
+    case 12468:
+      return VUID_WRAP(VUID-StandaloneSpirv-Result-12468);
+    case 12469:
+      return VUID_WRAP(VUID-StandaloneSpirv-Base-12469);
     default:
       return "";  // unknown id
   }

@@ -52,7 +52,7 @@ spv_result_t ValidateVulkanOCPMicroscalingFloatIntConversion(
   if (spvIsVulkanEnv(_.context()->target_env) &&
       _.ContainsOCPMicroscalingType(float_type)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
-           << spvOpcodeString(inst->opcode())
+           << _.VkErrorID(12465) << spvOpcodeString(inst->opcode())
            << " must not consume or produce OCP microscaling types in the "
               "Vulkan environment.";
   }
@@ -355,7 +355,7 @@ spv_result_t ValidateFConvert(ValidationState_t& _, const Instruction* inst,
   if (spvIsVulkanEnv(_.context()->target_env)) {
     if (_.ContainsOCPMicroscalingType(result_type)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << spvOpcodeString(opcode)
+             << _.VkErrorID(12466) << spvOpcodeString(opcode)
              << " must not produce OCP microscaling types in the Vulkan "
                 "environment.";
     }
@@ -363,7 +363,7 @@ spv_result_t ValidateFConvert(ValidationState_t& _, const Instruction* inst,
         !IsIEEEOrAlternativeFloatTypeAllowedForOCPMicroscalingFConvert(
             _, result_type)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
-             << spvOpcodeString(opcode)
+             << _.VkErrorID(12467) << spvOpcodeString(opcode)
              << " consuming an OCP microscaling type in the Vulkan "
                 "environment must produce IEEE 754, Float8E4M3EXT, "
                 "Float8E5M2EXT, or BFloat16KHR.";
@@ -857,6 +857,7 @@ spv_result_t ValidateBitcastExtract(ValidationState_t& _,
 
   if (!IsNumericScalarOrVectorType(_, result_type)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(12468)
            << "Expected Result Type to be a numerical scalar or vector type: "
            << spvOpcodeString(opcode);
   }
@@ -864,6 +865,7 @@ spv_result_t ValidateBitcastExtract(ValidationState_t& _,
   if (spvIsVulkanEnv(_.context()->target_env) &&
       !_.ContainsOCPMicroscalingNonByteType(result_type)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(12468)
            << "Expected Result Type to be a Float4EXT or Float6EXT type in "
               "the Vulkan environment: "
            << spvOpcodeString(opcode);
@@ -871,6 +873,7 @@ spv_result_t ValidateBitcastExtract(ValidationState_t& _,
 
   if (!base_type || !IsNumericScalarOrVectorType(_, base_type)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(12469)
            << "Expected Base to be a numerical scalar or vector type: "
            << spvOpcodeString(opcode);
   }
@@ -878,6 +881,7 @@ spv_result_t ValidateBitcastExtract(ValidationState_t& _,
   if (spvIsVulkanEnv(_.context()->target_env) &&
       !_.IsIntScalarType(base_type) && !_.IsIntVectorType(base_type)) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(12469)
            << "Expected Base to be an integer scalar or vector type in the "
               "Vulkan environment: "
            << spvOpcodeString(opcode);

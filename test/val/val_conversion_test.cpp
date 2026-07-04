@@ -732,6 +732,8 @@ OpExtension "SPV_EXT_ocp_microscaling_types"
                       SPV_ENV_VULKAN_1_3);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpFConvert-12466"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("FConvert must not produce OCP microscaling types"));
 }
 
@@ -751,6 +753,8 @@ OpExtension "SPV_EXT_ocp_microscaling_types"
   CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
                       SPV_ENV_VULKAN_1_3);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpConvertFToU-12465"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("ConvertFToU must not consume or produce OCP "
                         "microscaling types"));
@@ -773,6 +777,8 @@ OpExtension "SPV_EXT_ocp_microscaling_types"
                       SPV_ENV_VULKAN_1_3);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpConvertFToU-12465"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("ConvertFToS must not consume or produce OCP "
                         "microscaling types"));
 }
@@ -793,6 +799,8 @@ OpExtension "SPV_EXT_ocp_microscaling_types"
                       SPV_ENV_VULKAN_1_3);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpConvertFToU-12465"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("ConvertSToF must not consume or produce OCP "
                         "microscaling types"));
 }
@@ -812,6 +820,8 @@ OpExtension "SPV_EXT_ocp_microscaling_types"
   CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
                       SPV_ENV_VULKAN_1_3);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpConvertFToU-12465"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("ConvertUToF must not consume or produce OCP "
                         "microscaling types"));
@@ -902,6 +912,8 @@ OpExtension "SPV_EXT_ocp_microscaling_types"
                       SPV_ENV_VULKAN_1_3);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Result-12468"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type to be a Float4EXT or "
                         "Float6EXT type in the Vulkan environment"));
 }
@@ -922,6 +934,8 @@ OpExtension "SPV_EXT_ocp_microscaling_types"
   CompileSuccessfully(GenerateShaderCode(body, extensions, "", types).c_str(),
                       SPV_ENV_VULKAN_1_3);
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Base-12469"));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Base to be an integer scalar or vector type "
                         "in the Vulkan environment"));
