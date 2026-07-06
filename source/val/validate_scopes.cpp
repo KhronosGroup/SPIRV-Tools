@@ -139,6 +139,15 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
           });
     }
 
+    if (opcode == spv::Op::OpControlBarrierArriveEXT ||
+        opcode == spv::Op::OpControlBarrierWaitEXT) {
+      if (value != spv::Scope::Workgroup && value != spv::Scope::Subgroup) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << _.VkErrorID(13553)
+               << "The execution Scope for OpControlBarrierArriveEXT and "
+                  "OpControlBarrierWaitEXT must be Workgroup or Subgroup";
+      }
+    }
     // Only subset of execution models support Workgroup.
     if (value == spv::Scope::Workgroup) {
       std::string errorVUID = _.VkErrorID(4637);

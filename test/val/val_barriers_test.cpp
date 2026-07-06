@@ -1365,6 +1365,68 @@ OpControlBarrierWaitEXT %workgroup %workgroup %acquire_workgroup_memory
                         "any stage other than GLCompute or Kernel."));
 }
 
+TEST_F(ValidateBarriers, OpControlBarrierArriveExecutionScope) {
+  const std::string body = R"(
+OpControlBarrierArriveEXT %device %workgroup %release_workgroup_memory
+OpControlBarrierWaitEXT %workgroup %workgroup %acquire_workgroup_memory
+)";
+
+  CompileSuccessfully(GenerateShaderCodeImpl(body,
+                                             // capabilities_and_extensions
+                                             R"(
+                                               OpCapability VulkanMemoryModelKHR
+                                               OpCapability SplitBarrierEXT
+                                               OpExtension "SPV_KHR_vulkan_memory_model"
+                                               OpExtension "SPV_EXT_split_barrier"
+                                             )",
+                                             // definitions
+                                             "",
+                                             // execution_model
+                                             "GLCompute",
+                                             // memory_model
+                                             "OpMemoryModel Logical VulkanKHR"),
+                      SPV_ENV_VULKAN_1_1);
+
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpControlBarrierArriveEXT-13553"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The execution Scope for OpControlBarrierArriveEXT and "
+                "OpControlBarrierWaitEXT must be Workgroup or Subgroup"));
+}
+
+TEST_F(ValidateBarriers, OpControlBarrierWaitExecutionScope) {
+  const std::string body = R"(
+OpControlBarrierArriveEXT %workgroup %workgroup %release_workgroup_memory
+OpControlBarrierWaitEXT %invocation %workgroup %acquire_workgroup_memory
+)";
+
+  CompileSuccessfully(GenerateShaderCodeImpl(body,
+                                             // capabilities_and_extensions
+                                             R"(
+                                               OpCapability VulkanMemoryModelKHR
+                                               OpCapability SplitBarrierEXT
+                                               OpExtension "SPV_KHR_vulkan_memory_model"
+                                               OpExtension "SPV_EXT_split_barrier"
+                                             )",
+                                             // definitions
+                                             "",
+                                             // execution_model
+                                             "GLCompute",
+                                             // memory_model
+                                             "OpMemoryModel Logical VulkanKHR"),
+                      SPV_ENV_VULKAN_1_1);
+
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_VULKAN_1_1));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-OpControlBarrierArriveEXT-13553"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("The execution Scope for OpControlBarrierArriveEXT and "
+                "OpControlBarrierWaitEXT must be Workgroup or Subgroup"));
+}
+
 TEST_F(ValidateBarriers, OpControlBarrierArriveInvalidMemorySemantics) {
   const std::string body = R"(
 OpControlBarrierArriveEXT %workgroup %workgroup %acquire_release_workgroup
