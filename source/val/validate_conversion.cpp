@@ -26,6 +26,41 @@
 namespace spvtools {
 namespace val {
 
+namespace {
+
+bool IsNumericScalarOrVectorType(ValidationState_t& _, uint32_t type_id) {
+  return _.IsFloatScalarType(type_id) || _.IsFloatVectorType(type_id) ||
+         _.IsIntScalarType(type_id) || _.IsIntVectorType(type_id);
+}
+
+bool IsIEEEOrAlternativeFloatTypeAllowedForOCPMicroscalingFConvert(
+    ValidationState_t& _, uint32_t type_id) {
+  const uint32_t component_type = _.GetComponentType(type_id);
+  const Instruction* inst = _.FindDef(component_type);
+  if (!inst || inst->opcode() != spv::Op::OpTypeFloat) return false;
+
+  if (inst->words().size() <= 3) return true;
+
+  const auto encoding = inst->GetOperandAs<spv::FPEncoding>(2);
+  return encoding == spv::FPEncoding::Float8E4M3EXT ||
+         encoding == spv::FPEncoding::Float8E5M2EXT ||
+         encoding == spv::FPEncoding::BFloat16KHR;
+}
+
+spv_result_t ValidateVulkanOCPMicroscalingFloatIntConversion(
+    ValidationState_t& _, const Instruction* inst, uint32_t float_type) {
+  if (spvIsVulkanEnv(_.context()->target_env) &&
+      _.ContainsOCPMicroscalingType(float_type)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(12465) << spvOpcodeString(inst->opcode())
+           << " must not consume or produce OCP microscaling types in the "
+              "Vulkan environment.";
+  }
+  return SPV_SUCCESS;
+}
+
+}  // namespace
+
 spv_result_t ValidateShaderBitWidth(ValidationState_t& _,
                                     const Instruction* inst) {
   if (_.HasCapability(spv::Capability::Shader)) {
@@ -77,6 +112,10 @@ spv_result_t ValidateConvertFToU(ValidationState_t& _, const Instruction* inst,
              << spvOpcodeString(opcode);
   }
 
+  if (auto error =
+          ValidateVulkanOCPMicroscalingFloatIntConversion(_, inst, input_type))
+    return error;
+
   if (auto error = ValidateShaderBitWidth(_, inst)) return error;
 
   return SPV_SUCCESS;
@@ -118,6 +157,10 @@ spv_result_t ValidateConvertFToS(ValidationState_t& _, const Instruction* inst,
              << "Expected input to have the same dimension as Result Type: "
              << spvOpcodeString(opcode);
   }
+
+  if (auto error =
+          ValidateVulkanOCPMicroscalingFloatIntConversion(_, inst, input_type))
+    return error;
 
   if (auto error = ValidateShaderBitWidth(_, inst)) return error;
 
@@ -161,6 +204,10 @@ spv_result_t ValidateConvertIntToF(ValidationState_t& _,
              << "Expected input to have the same dimension as Result Type: "
              << spvOpcodeString(opcode);
   }
+
+  if (auto error =
+          ValidateVulkanOCPMicroscalingFloatIntConversion(_, inst, result_type))
+    return error;
 
   if (auto error = ValidateShaderBitWidth(_, inst)) return error;
 
@@ -304,6 +351,25 @@ spv_result_t ValidateFConvert(ValidationState_t& _, const Instruction* inst,
               "component type of Result Type: "
            << spvOpcodeString(opcode);
   }
+
+  if (spvIsVulkanEnv(_.context()->target_env)) {
+    if (_.ContainsOCPMicroscalingType(result_type)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << _.VkErrorID(12466) << spvOpcodeString(opcode)
+             << " must not produce OCP microscaling types in the Vulkan "
+                "environment.";
+    }
+    if (_.ContainsOCPMicroscalingType(input_type) &&
+        !IsIEEEOrAlternativeFloatTypeAllowedForOCPMicroscalingFConvert(
+            _, result_type)) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << _.VkErrorID(12467) << spvOpcodeString(opcode)
+             << " consuming an OCP microscaling type in the Vulkan "
+                "environment must produce IEEE 754, Float8E4M3EXT, "
+                "Float8E5M2EXT, or BFloat16KHR.";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
@@ -782,6 +848,67 @@ spv_result_t ValidateConvertUToAccelerationStructure(ValidationState_t& _,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateBitcastExtract(ValidationState_t& _,
+                                    const Instruction* inst) {
+  const spv::Op opcode = inst->opcode();
+  const uint32_t result_type = inst->type_id();
+  const uint32_t base_type = _.GetOperandTypeId(inst, 2);
+  const uint32_t offset_type = _.GetOperandTypeId(inst, 3);
+
+  if (!IsNumericScalarOrVectorType(_, result_type)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(12468)
+           << "Expected Result Type to be a numerical scalar or vector type: "
+           << spvOpcodeString(opcode);
+  }
+
+  if (spvIsVulkanEnv(_.context()->target_env) &&
+      !_.ContainsOCPMicroscalingNonByteType(result_type)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(12468)
+           << "Expected Result Type to be a Float4EXT or Float6EXT type in "
+              "the Vulkan environment: "
+           << spvOpcodeString(opcode);
+  }
+
+  if (!base_type || !IsNumericScalarOrVectorType(_, base_type)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(12469)
+           << "Expected Base to be a numerical scalar or vector type: "
+           << spvOpcodeString(opcode);
+  }
+
+  if (spvIsVulkanEnv(_.context()->target_env) &&
+      !_.IsIntScalarType(base_type) && !_.IsIntVectorType(base_type)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(12469)
+           << "Expected Base to be an integer scalar or vector type in the "
+              "Vulkan environment: "
+           << spvOpcodeString(opcode);
+  }
+
+  if (_.GetDimension(result_type) != _.GetDimension(base_type)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Base to have the same dimension as Result Type: "
+           << spvOpcodeString(opcode);
+  }
+
+  if (_.GetBitWidth(base_type) <= _.GetBitWidth(result_type)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Base component bit width to be greater than Result "
+              "Type component bit width: "
+           << spvOpcodeString(opcode);
+  }
+
+  if (!offset_type || !_.IsIntScalarType(offset_type)) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "Expected Offset to be a scalar integer type: "
+           << spvOpcodeString(opcode);
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateCooperativeMatrix(ValidationState_t& _,
                                        const Instruction* inst) {
   const spv::Op opcode = inst->opcode();
@@ -920,6 +1047,8 @@ spv_result_t ConversionPass(ValidationState_t& _, const Instruction* inst) {
       return ValidateGenericCastToPtrExplicit(_, inst);
     case spv::Op::OpBitcast:
       return ValidateBitcast(_, inst);
+    case spv::Op::OpBitcastExtractEXT:
+      return ValidateBitcastExtract(_, inst);
     case spv::Op::OpConvertUToAccelerationStructureKHR:
       return ValidateConvertUToAccelerationStructure(_, inst);
     case spv::Op::OpCooperativeMatrixConvertNV:

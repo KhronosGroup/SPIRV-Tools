@@ -489,6 +489,76 @@ OpFunctionEnd
                         "capabilities: Float8EXT"));
 }
 
+struct OCPMicroscalingCase {
+  const char* capability;
+  const char* type_decl;
+};
+
+using ValidateInvalidOCPMicroscalingType =
+    spvtest::ValidateBase<OCPMicroscalingCase>;
+
+std::string GenerateOCPMicroscalingCode(const OCPMicroscalingCase& test_case,
+                                        const std::string& main_body) {
+  const std::string prefix = std::string(R"(
+OpCapability Shader
+OpCapability )") + test_case.capability +
+                             R"(
+OpExtension "SPV_EXT_ocp_microscaling_types"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%bool = OpTypeBool
+%void = OpTypeVoid
+)" + test_case.type_decl +
+                             R"(
+%func = OpTypeFunction %void
+%ocp_undef = OpUndef %ocp
+%main = OpFunction %void None %func
+%main_entry = OpLabel)";
+
+  const std::string suffix = R"(
+OpReturn
+OpFunctionEnd)";
+
+  return prefix + main_body + suffix;
+}
+
+TEST_P(ValidateInvalidOCPMicroscalingType, InvalidArithmeticInstruction) {
+  const std::string body = R"(
+%val = OpFMul %ocp %ocp_undef %ocp_undef
+)";
+
+  CompileSuccessfully(GenerateOCPMicroscalingCode(GetParam(), body).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FMul doesn't support OCP microscaling types."));
+}
+
+TEST_P(ValidateInvalidOCPMicroscalingType, InvalidRelationalInstruction) {
+  const std::string body = R"(
+%val = OpFOrdEqual %bool %ocp_undef %ocp_undef
+)";
+
+  CompileSuccessfully(GenerateOCPMicroscalingCode(GetParam(), body).c_str(),
+                      SPV_ENV_VULKAN_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("FOrdEqual doesn't support OCP microscaling types."));
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    ValidateInvalidType, ValidateInvalidOCPMicroscalingType,
+    Values(
+        OCPMicroscalingCase{"Float4EXT", "%ocp = OpTypeFloat 4 Float4E2M1EXT"},
+        OCPMicroscalingCase{"Float6EXT", "%ocp = OpTypeFloat 6 Float6E2M3EXT"},
+        OCPMicroscalingCase{"Float6EXT", "%ocp = OpTypeFloat 6 Float6E3M2EXT"},
+        OCPMicroscalingCase{"Float8UnsignedE8M0EXT",
+                            "%ocp = OpTypeFloat 8 Float8UnsignedE8M0EXT"},
+        OCPMicroscalingCase{"MXInt8EXT", "%ocp = OpTypeFloat 8 MXInt8EXT"}));
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

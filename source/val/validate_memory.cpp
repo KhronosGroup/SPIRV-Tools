@@ -684,6 +684,7 @@ spv_result_t ValidateVariablePointer(ValidationState_t& _,
       }
     }
   }
+
   return SPV_SUCCESS;
 }
 
@@ -1074,6 +1075,25 @@ spv_result_t ValidateVariableShader(ValidationState_t& _,
              << sc_name << " storage class requires an additional capability";
     }
   }
+
+  if (_.ContainsOCPMicroscalingNonByteType(value_id)) {
+    auto underlying_type = value_type;
+    auto sc = storage_class;
+    while (underlying_type &&
+           underlying_type->opcode() == spv::Op::OpTypePointer) {
+      sc = underlying_type->GetOperandAs<spv::StorageClass>(1u);
+      underlying_type = _.FindDef(underlying_type->GetOperandAs<uint32_t>(2u));
+    }
+    if (sc != spv::StorageClass::Function && sc != spv::StorageClass::Private) {
+      std::string sc_name = _.grammar().lookupOperandName(
+          SPV_OPERAND_TYPE_STORAGE_CLASS, uint32_t(sc));
+      return _.diag(SPV_ERROR_INVALID_ID, inst)
+             << "Cannot allocate a variable containing a Float4EXT or "
+                "Float6EXT type in "
+             << sc_name << " storage class";
+    }
+  }
+
   return SPV_SUCCESS;
 }
 
@@ -2413,7 +2433,7 @@ spv_result_t ValidateArrayLength(ValidationState_t& state,
       return state.diag(SPV_ERROR_INVALID_ID, inst)
              << "Pointer must be an untyped pointer object";
     }
-  } else if (pointer_ty->opcode() != spv::Op::OpTypePointer) {
+  } else if (!pointer_ty || pointer_ty->opcode() != spv::Op::OpTypePointer) {
     return state.diag(SPV_ERROR_INVALID_ID, inst)
            << "The Structure's type in Op" << spvOpcodeString(opcode)
            << " <id> " << state.getIdName(inst->id())

@@ -713,6 +713,11 @@ class ValidationState_t {
   bool IsFP8VectorType(uint32_t id) const;
   bool IsFP8CoopMatType(uint32_t id) const;
   bool IsFP8Type(uint32_t id) const;
+  bool IsOCPMicroscalingScalarType(uint32_t id) const;
+  bool IsOCPMicroscalingNonByteScalarType(uint32_t id) const;
+  bool IsOCPMicroscalingType(uint32_t id) const;
+  bool ContainsOCPMicroscalingType(uint32_t id) const;
+  bool ContainsOCPMicroscalingNonByteType(uint32_t id) const;
   bool IsFloatScalarType(uint32_t id, uint32_t width = 0) const;
   bool IsFloatArrayType(uint32_t id) const;
   bool IsFloatVectorType(uint32_t id) const;
