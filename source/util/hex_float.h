@@ -1324,7 +1324,8 @@ class HexFloat {
     }
     other_int_type rounded = static_cast<other_int_type>(std::round(d));
     other.set_value(static_cast<other_uint_type>(rounded));
-    return (d - rounded) == 0 ? CastResult::Success : CastResult::LostPrecision;
+    return FloatEquals(d - rounded, 0.0) ? CastResult::Success
+                                         : CastResult::LostPrecision;
   }
 
  private:
