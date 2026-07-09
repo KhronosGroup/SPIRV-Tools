@@ -611,10 +611,12 @@ spv_result_t ValidatePtrCastToGeneric(ValidationState_t& _,
 
   if (input_storage_class != spv::StorageClass::Workgroup &&
       input_storage_class != spv::StorageClass::CrossWorkgroup &&
-      input_storage_class != spv::StorageClass::Function)
+      input_storage_class != spv::StorageClass::Function &&
+      input_storage_class != spv::StorageClass::CodeSectionINTEL)
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected input to have storage class Workgroup, "
-           << "CrossWorkgroup or Function: " << spvOpcodeString(opcode);
+           << "CrossWorkgroup, Function or CodeSectionINTEL: "
+           << spvOpcodeString(opcode);
 
   if (result_data_type != input_data_type)
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
@@ -638,10 +640,12 @@ spv_result_t ValidateGenericCastToPtr(ValidationState_t& _,
 
   if (result_storage_class != spv::StorageClass::Workgroup &&
       result_storage_class != spv::StorageClass::CrossWorkgroup &&
-      result_storage_class != spv::StorageClass::Function)
+      result_storage_class != spv::StorageClass::Function &&
+      result_storage_class != spv::StorageClass::CodeSectionINTEL)
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected Result Type to have storage class Workgroup, "
-           << "CrossWorkgroup or Function: " << spvOpcodeString(opcode);
+           << "CrossWorkgroup, Function or CodeSectionINTEL: "
+           << spvOpcodeString(opcode);
 
   const uint32_t input_type = _.GetOperandTypeId(inst, operand_index);
   spv::StorageClass input_storage_class;
@@ -699,10 +703,12 @@ spv_result_t ValidateGenericCastToPtrExplicit(ValidationState_t& _,
 
   if (target_storage_class != spv::StorageClass::Workgroup &&
       target_storage_class != spv::StorageClass::CrossWorkgroup &&
-      target_storage_class != spv::StorageClass::Function)
+      target_storage_class != spv::StorageClass::Function &&
+      target_storage_class != spv::StorageClass::CodeSectionINTEL)
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected target storage class to be Workgroup, "
-           << "CrossWorkgroup or Function: " << spvOpcodeString(opcode);
+           << "CrossWorkgroup, Function or CodeSectionINTEL: "
+           << spvOpcodeString(opcode);
   return SPV_SUCCESS;
 }
 
