@@ -1017,8 +1017,8 @@ SPIRV_TOOLS_EXPORT spv_result_t spvBinaryParse(
 // The optimizer interface.
 
 // A pointer to a function that accepts a log message from an optimizer.
-typedef void (*spv_message_consumer)(
-    spv_message_level_t, const char*, const spv_position_t*, const char*);
+typedef void (*spv_message_consumer)(spv_message_level_t, const char*,
+                                     const spv_position_t*, const char*);
 
 // Creates and returns an optimizer object.  This object must be passed to
 // optimizer APIs below and is valid until passed to spvOptimizerDestroy.

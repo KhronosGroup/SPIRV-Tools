@@ -11123,6 +11123,177 @@ TEST_F(ValidateImage, QCOMImageProcessing2BlockMatchGatherSSDInvalidUseRefNI) {
       HasSubstr("Illegal use of QCOM image processing decorated texture"));
 }
 
+TEST_F(ValidateImage, QCOMImageProcessing3ImageGatherQCOMCapabilityCheck1) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageGatherQCOM %f32vec4 %simg %f32vec2_hh %u32_1 %u32_0
+)";
+
+  const std::string extra = R"(
+OpCapability ImageGatherExtendedModesQCOM
+OpExtension "SPV_QCOM_image_processing3"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Mode GatherModesGather4x1QCOM (== 0) requires "
+                        "capability ImageGatherLinearQCOM."));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing3ImageGatherQCOMCapabilityCheck2) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageGatherQCOM %f32vec4 %simg %f32vec2_hh %u32_1 %u32_1
+)";
+
+  const std::string extra = R"(
+OpCapability ImageGatherLinearQCOM
+OpExtension "SPV_QCOM_image_processing3"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Mode GatherModesGatherDQCOM (== 1)/GatherModesGatherH2QCOM "
+                "(== 2)/GatherModesGatherV2QCOM (== 3) requires capability "
+                "ImageGatherExtendedModesQCOM."));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing3ImageGatherQCOMCapabilityCheck3) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageGatherQCOM %f32vec4 %simg %f32vec2_hh %u32_1 %u32_2
+)";
+
+  const std::string extra = R"(
+OpCapability ImageGatherLinearQCOM
+OpExtension "SPV_QCOM_image_processing3"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Mode GatherModesGatherDQCOM (== 1)/GatherModesGatherH2QCOM "
+                "(== 2)/GatherModesGatherV2QCOM (== 3) requires capability "
+                "ImageGatherExtendedModesQCOM."));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing3ImageGatherQCOMCapabilityCheck4) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageGatherQCOM %f32vec4 %simg %f32vec2_hh %u32_1 %u32_3
+)";
+
+  const std::string extra = R"(
+OpCapability ImageGatherLinearQCOM
+OpExtension "SPV_QCOM_image_processing3"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Mode GatherModesGatherDQCOM (== 1)/GatherModesGatherH2QCOM "
+                "(== 2)/GatherModesGatherV2QCOM (== 3) requires capability "
+                "ImageGatherExtendedModesQCOM."));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing3ImageGatherQCOMCapabilityCheck5) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageGatherQCOM %f32vec4 %simg %f32vec2_hh %u32_1 %u32_4
+)";
+
+  const std::string extra = R"(
+OpCapability ImageGatherLinearQCOM
+OpCapability ImageGatherExtendedModesQCOM
+OpExtension "SPV_QCOM_image_processing3"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_4));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("GatherModesGather4x1QCOM (== 0)/GatherModesGatherDQCOM (== "
+                "1)/GatherModesGatherH2QCOM (== 2)/GatherModesGatherV2QCOM (== "
+                "3) are the only supported modes."));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing3ImageGatherQCOMReturnType) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageGatherQCOM %f32 %simg %f32vec2_hh %u32_1 %u32_0
+)";
+
+  const std::string extra = R"(
+OpCapability ImageGatherLinearQCOM
+OpExtension "SPV_QCOM_image_processing3"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Result Type to be int or float vector type"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing3ImageGatherQCOMModeIndexType1) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageGatherQCOM %f32vec4 %simg %f32vec2_hh %u32_1 %f32_1
+)";
+
+  const std::string extra = R"(
+OpCapability ImageGatherExtendedModesQCOM
+OpExtension "SPV_QCOM_image_processing3"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Mode to be 32-bit int scalar"));
+}
+
+TEST_F(ValidateImage, QCOMImageProcessing3ImageGatherQCOMModeIndexType2) {
+  const std::string body = R"(
+%img = OpLoad %type_image_f32_2d_0001 %uniform_image_f32_2d_0001
+%sampler = OpLoad %type_sampler %uniform_sampler
+%simg = OpSampledImage %type_sampled_image_f32_2d_0001 %img %sampler
+%res1 = OpImageGatherQCOM %f32vec4 %simg %f32vec2_hh %u32_1 %u16_0
+)";
+
+  const std::string extra = R"(
+OpCapability ImageGatherExtendedModesQCOM
+OpExtension "SPV_QCOM_image_processing3"
+)";
+
+  CompileSuccessfully(GenerateShaderCode(body, extra).c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected Mode to be 32-bit int scalar"));
+}
+
 TEST_F(ValidateImage, ImageMSArray_ArrayedSampledTypeRequiresCapability) {
   const std::string code = R"(
                OpCapability Shader
