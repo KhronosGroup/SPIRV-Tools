@@ -90,8 +90,6 @@ spv_result_t InvalidTypePass(ValidationState_t& _, const Instruction* inst) {
   const spv::Op opcode = inst->opcode();
 
   switch (opcode) {
-    // OpExtInst
-    case spv::Op::OpExtInst:
     // Arithmetic Instructions
     case spv::Op::OpFAdd:
     case spv::Op::OpFSub:
