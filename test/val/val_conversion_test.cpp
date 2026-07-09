@@ -1237,7 +1237,8 @@ TEST_F(ValidateConversion, PtrCastToGenericWrongInputStorageClass) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected input to have storage class Workgroup, "
-                        "CrossWorkgroup or Function: PtrCastToGeneric"));
+                        "CrossWorkgroup, Function or CodeSectionINTEL: "
+                        "PtrCastToGeneric"));
 }
 
 TEST_F(ValidateConversion, PtrCastToGenericPointToDifferentType) {
@@ -1252,6 +1253,36 @@ TEST_F(ValidateConversion, PtrCastToGenericPointToDifferentType) {
       getDiagnosticString(),
       HasSubstr("Expected input and Result Type to point to the same type: "
                 "PtrCastToGeneric"));
+}
+
+TEST_F(ValidateConversion, PtrCastToGenericFromCodeSectionINTELSuccess) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability FunctionPointersINTEL
+OpCapability GenericPointer
+OpCapability Int8
+OpCapability Linkage
+OpExtension "SPV_INTEL_function_pointers"
+OpMemoryModel Physical64 OpenCL
+OpName %fn "fn"
+OpDecorate %fn LinkageAttributes "fn" Export
+%u8 = OpTypeInt 8 0
+%code_ptr = OpTypePointer CodeSectionINTEL %u8
+%void = OpTypeVoid
+%fn_type = OpTypeFunction %void %code_ptr
+%gen_ptr = OpTypePointer Generic %u8
+%u8_0 = OpConstantNull %u8
+%fn = OpFunction %void None %fn_type
+%param = OpFunctionParameter %code_ptr
+%entry = OpLabel
+%gen = OpPtrCastToGeneric %gen_ptr %param
+OpStore %gen %u8_0 Aligned 1
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrSuccess) {
@@ -1292,7 +1323,8 @@ TEST_F(ValidateConversion, GenericCastToPtrWrongResultStorageClass) {
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Expected Result Type to have storage class Workgroup, "
-                        "CrossWorkgroup or Function: GenericCastToPtr"));
+                        "CrossWorkgroup, Function or CodeSectionINTEL: "
+                        "GenericCastToPtr"));
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrWrongInputType) {
@@ -1334,6 +1366,36 @@ TEST_F(ValidateConversion, GenericCastToPtrPointToDifferentType) {
       getDiagnosticString(),
       HasSubstr("Expected input and Result Type to point to the same type: "
                 "GenericCastToPtr"));
+}
+
+TEST_F(ValidateConversion, GenericCastToPtrToCodeSectionINTELSuccess) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability FunctionPointersINTEL
+OpCapability GenericPointer
+OpCapability Int8
+OpCapability Linkage
+OpExtension "SPV_INTEL_function_pointers"
+OpMemoryModel Physical64 OpenCL
+OpName %fn "fn"
+OpDecorate %fn LinkageAttributes "fn" Export
+%u8 = OpTypeInt 8 0
+%code_ptr = OpTypePointer CodeSectionINTEL %u8
+%void = OpTypeVoid
+%fn_type = OpTypeFunction %void %code_ptr
+%gen_ptr = OpTypePointer Generic %u8
+%u8_0 = OpConstantNull %u8
+%fn = OpFunction %void None %fn_type
+%param = OpFunctionParameter %code_ptr
+%entry = OpLabel
+%gen = OpPtrCastToGeneric %gen_ptr %param
+%code = OpGenericCastToPtr %code_ptr %gen
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrExplicitSuccess) {
@@ -1387,10 +1449,10 @@ TEST_F(ValidateConversion, GenericCastToPtrExplicitWrongResultStorageClass) {
 
   CompileSuccessfully(GenerateKernelCode(body).c_str());
   ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
-  EXPECT_THAT(
-      getDiagnosticString(),
-      HasSubstr("Expected target storage class to be Workgroup, "
-                "CrossWorkgroup or Function: GenericCastToPtrExplicit"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected target storage class to be Workgroup, "
+                        "CrossWorkgroup, Function or CodeSectionINTEL: "
+                        "GenericCastToPtrExplicit"));
 }
 
 TEST_F(ValidateConversion, GenericCastToPtrExplicitWrongInputType) {
@@ -1433,6 +1495,35 @@ TEST_F(ValidateConversion, GenericCastToPtrExplicitPointToDifferentType) {
       getDiagnosticString(),
       HasSubstr("Expected input and Result Type to point to the same type: "
                 "GenericCastToPtrExplicit"));
+}
+
+TEST_F(ValidateConversion, GenericCastToPtrExplicitToCodeSectionINTELSuccess) {
+  const std::string spirv = R"(
+OpCapability Kernel
+OpCapability Addresses
+OpCapability FunctionPointersINTEL
+OpCapability GenericPointer
+OpCapability Int8
+OpCapability Linkage
+OpExtension "SPV_INTEL_function_pointers"
+OpMemoryModel Physical64 OpenCL
+OpName %fn "fn"
+OpDecorate %fn LinkageAttributes "fn" Export
+%u8 = OpTypeInt 8 0
+%code_ptr = OpTypePointer CodeSectionINTEL %u8
+%void = OpTypeVoid
+%fn_type = OpTypeFunction %void %code_ptr
+%gen_ptr = OpTypePointer Generic %u8
+%fn = OpFunction %void None %fn_type
+%param = OpFunctionParameter %code_ptr
+%entry = OpLabel
+%gen = OpPtrCastToGeneric %gen_ptr %param
+%code = OpGenericCastToPtrExplicit %code_ptr %gen CodeSectionINTEL
+OpReturn
+OpFunctionEnd
+)";
+  CompileSuccessfully(spirv.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateConversion, CoopMatConversionSuccess) {
