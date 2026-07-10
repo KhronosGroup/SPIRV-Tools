@@ -2467,20 +2467,13 @@ spv_result_t CheckInvalidVulkanExplicitLayout(ValidationState_t& vstate) {
       case spv::Op::OpBufferPointerEXT: {
         const auto ptr_id = inst.GetOperandAs<uint32_t>(1);
         const auto ptr_type = vstate.FindDef(vstate.FindDef(ptr_id)->type_id());
-        // Check the type of the data operand for an invalid layout.
         sc = ptr_type->GetOperandAs<spv::StorageClass>(1);
-        if (!AllowsLayout(vstate, sc) &&
-            UsesExplicitLayout(vstate, type_id, cache) !=
-                spv::Decoration::Max) {
+        // OpBufferPointerEXT needs to be in explicit layout, which it is,
+        // because it must be Uniform/StorageBuffer
+        if (sc != spv::StorageClass::StorageBuffer &&
+            sc != spv::StorageClass::Uniform) {
           return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-                 << vstate.VkErrorID(11346)
-                 << "The result type operand of OpBufferPointerEXT must have "
-                 << "a Type operand that is explicitly laid out : "
-                 << vstate.getIdName(type_id);
-        } else if (sc != spv::StorageClass::StorageBuffer &&
-                   sc != spv::StorageClass::Uniform) {
-          return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-                 << "OpBufferPointerEXT's Result Type must be a pointer type "
+                 << "OpBufferPointerEXT Result Type must be a pointer type "
                  << "with a Storage Class of Uniform or StorageBuffer.";
         }
         break;

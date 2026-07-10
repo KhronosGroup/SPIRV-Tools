@@ -6390,6 +6390,20 @@ TEST_F(ValidateVulkan101DebugInfo, DebugTypeBasicFPEncodingFailNotConst) {
                         "OpConstant"));
 }
 
+TEST_F(ValidateVulkan100DebugInfo, DebugTypePointerNone) {
+  const std::string constants = R"(
+%u32_7 = OpConstant %u32 7
+)";
+  const std::string dbg_inst_header = R"(
+        %none = OpExtInst %void %DbgExt DebugInfoNone
+        %voidptr = OpExtInst %void %DbgExt DebugTypePointer %none %u32_7 %u32_0
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      "", constants, dbg_inst_header, "", shader_extension_100, "Vertex"));
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

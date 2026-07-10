@@ -441,6 +441,8 @@ void ValidationState_t::RegisterCapability(spv::Capability cap) {
       features_.declare_float16_type = true;
       break;
     case spv::Capability::Float8EXT:
+    case spv::Capability::Float8UnsignedE8M0EXT:
+    case spv::Capability::MXInt8EXT:
       features_.declare_float8_type = true;
       break;
     case spv::Capability::StorageUniformBufferBlock16:
@@ -1174,6 +1176,48 @@ bool ValidationState_t::IsFP8CoopMatType(uint32_t id) const {
 
 bool ValidationState_t::IsFP8Type(uint32_t id) const {
   return IsFP8ScalarType(id) || IsFP8VectorType(id) || IsFP8CoopMatType(id);
+}
+
+bool ValidationState_t::IsOCPMicroscalingScalarType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  if (inst && inst->opcode() == spv::Op::OpTypeFloat &&
+      inst->words().size() > 3) {
+    const auto encoding = inst->GetOperandAs<spv::FPEncoding>(2);
+    return encoding == spv::FPEncoding::Float6E2M3EXT ||
+           encoding == spv::FPEncoding::Float6E3M2EXT ||
+           encoding == spv::FPEncoding::Float4E2M1EXT ||
+           encoding == spv::FPEncoding::Float8UnsignedE8M0EXT ||
+           encoding == spv::FPEncoding::MXInt8EXT;
+  }
+  return false;
+}
+
+bool ValidationState_t::IsOCPMicroscalingNonByteScalarType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  if (inst && inst->opcode() == spv::Op::OpTypeFloat &&
+      inst->words().size() > 3) {
+    const auto encoding = inst->GetOperandAs<spv::FPEncoding>(2);
+    return encoding == spv::FPEncoding::Float6E2M3EXT ||
+           encoding == spv::FPEncoding::Float6E3M2EXT ||
+           encoding == spv::FPEncoding::Float4E2M1EXT;
+  }
+  return false;
+}
+
+bool ValidationState_t::IsOCPMicroscalingType(uint32_t id) const {
+  return ContainsOCPMicroscalingType(id);
+}
+
+bool ValidationState_t::ContainsOCPMicroscalingType(uint32_t id) const {
+  return ContainsType(id, [this](const Instruction* inst) {
+    return IsOCPMicroscalingScalarType(inst->id());
+  });
+}
+
+bool ValidationState_t::ContainsOCPMicroscalingNonByteType(uint32_t id) const {
+  return ContainsType(id, [this](const Instruction* inst) {
+    return IsOCPMicroscalingNonByteScalarType(inst->id());
+  });
 }
 
 bool ValidationState_t::IsFloatScalarType(uint32_t id, uint32_t width) const {
@@ -3422,8 +3466,6 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10872);
     case 10873:
       return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10873);
-    case 10874:
-      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-10874);
     case 10875:
       return VUID_WRAP(VUID-StandaloneSpirv-UnequalMemorySemantics-10875);
     case 10876:
@@ -3451,8 +3493,6 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
         return VUID_WRAP(VUID-StandaloneSpirv-Result-11337);
     case 11339:
         return VUID_WRAP(VUID-StandaloneSpirv-Result-11339);
-    case 11346:
-        return VUID_WRAP(VUID-StandaloneSpirv-Result-11346);
     case 11347:
         return VUID_WRAP(VUID-StandaloneSpirv-OpUntypedVariableKHR-11347);
     case 11416:
@@ -3471,6 +3511,24 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-None-12295);
     case 12297:
       return VUID_WRAP(VUID-StandaloneSpirv-Type-12297);
+    case 13551:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-13551);
+    case 13552:
+      return VUID_WRAP(VUID-StandaloneSpirv-SplitBarrierEXT-13552);
+    case 13556:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-13556);
+    case 13557:
+      return VUID_WRAP(VUID-StandaloneSpirv-MemorySemantics-13557);
+    case 12465:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpConvertFToU-12465);
+    case 12466:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpFConvert-12466);
+    case 12467:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpFConvert-12467);
+    case 12468:
+      return VUID_WRAP(VUID-StandaloneSpirv-Result-12468);
+    case 12469:
+      return VUID_WRAP(VUID-StandaloneSpirv-Base-12469);
     default:
       return "";  // unknown id
   }

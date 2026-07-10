@@ -82,12 +82,50 @@ std::string header_with_bfloat16 = R"(
      OpExtension "SPV_KHR_bfloat16"
      OpMemoryModel Logical GLSL450
 )";
+std::string header_with_float4 = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability Float4EXT
+     OpExtension "SPV_EXT_ocp_microscaling_types"
+     OpMemoryModel Logical GLSL450
+)";
+std::string header_with_float6 = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability Float6EXT
+     OpExtension "SPV_EXT_ocp_microscaling_types"
+     OpMemoryModel Logical GLSL450
+)";
 std::string header_with_float8 = R"(
      OpCapability Shader
      OpCapability Linkage
      OpCapability Float8EXT
      OpCapability Float8CooperativeMatrixEXT
      OpExtension "SPV_EXT_float8"
+     OpMemoryModel Logical GLSL450
+)";
+std::string header_with_float8_unsigned_e8m0 = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability Float8UnsignedE8M0EXT
+     OpExtension "SPV_EXT_ocp_microscaling_types"
+     OpMemoryModel Logical GLSL450
+)";
+std::string header_with_mxint8 = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability MXInt8EXT
+     OpExtension "SPV_EXT_ocp_microscaling_types"
+     OpMemoryModel Logical GLSL450
+)";
+std::string header_with_ocp_microscaling_types = R"(
+     OpCapability Shader
+     OpCapability Linkage
+     OpCapability Float4EXT
+     OpCapability Float6EXT
+     OpCapability Float8UnsignedE8M0EXT
+     OpCapability MXInt8EXT
+     OpExtension "SPV_EXT_ocp_microscaling_types"
      OpMemoryModel Logical GLSL450
 )";
 std::string header_with_float8_and_bfloat16 = R"(
@@ -413,7 +451,21 @@ TEST_F(ValidateData, float16_good) {
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
-
+TEST_F(ValidateData, float4_good) {
+  std::string str = header_with_float4 +
+                    R"(%2 = OpTypeFloat 4 Float4E2M1EXT
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+TEST_F(ValidateData, float6_good) {
+  std::string str = header_with_float6 +
+                    R"(%2 = OpTypeFloat 6 Float6E3M2EXT
+%3 = OpTypeFloat 6 Float6E2M3EXT
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
 TEST_F(ValidateData, float8_good) {
   std::string str = header_with_float8 +
                     R"(%2 = OpTypeFloat 8 Float8E4M3EXT
@@ -421,6 +473,20 @@ TEST_F(ValidateData, float8_good) {
 )";
   CompileSuccessfully(str.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+}
+TEST_F(ValidateData, float8_unsigned_e8m0_good) {
+  std::string str = header_with_float8_unsigned_e8m0 +
+                    R"(%2 = OpTypeFloat 8 Float8UnsignedE8M0EXT
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+TEST_F(ValidateData, mxint8_good) {
+  std::string str = header_with_mxint8 +
+                    R"(%2 = OpTypeFloat 8 MXInt8EXT
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 TEST_F(ValidateData, bfloat16_good) {
@@ -577,6 +643,141 @@ TEST_F(ValidateData, float8_E5M2_missing_cap_bad) {
   ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("requires one of these capabilities: Float8EXT"));
+}
+
+TEST_F(ValidateData, float4_missing_cap_bad) {
+  std::string str = header +
+                    R"(%2 = OpTypeFloat 4 Float4E2M1EXT
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these capabilities: Float4EXT"));
+}
+
+TEST_F(ValidateData, float6_E2M3_missing_cap_bad) {
+  std::string str = header +
+                    R"(%2 = OpTypeFloat 6 Float6E2M3EXT
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these capabilities: Float6EXT"));
+}
+
+TEST_F(ValidateData, float6_E3M2_missing_cap_bad) {
+  std::string str = header +
+                    R"(%2 = OpTypeFloat 6 Float6E3M2EXT
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these capabilities: Float6EXT"));
+}
+
+TEST_F(ValidateData, float8_unsigned_e8m0_missing_cap_bad) {
+  std::string str = header +
+                    R"(%2 = OpTypeFloat 8 Float8UnsignedE8M0EXT
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("requires one of these capabilities: Float8UnsignedE8M0EXT"));
+}
+
+TEST_F(ValidateData, mxint8_missing_cap_bad) {
+  std::string str = header +
+                    R"(%2 = OpTypeFloat 8 MXInt8EXT
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_ERROR_INVALID_CAPABILITY, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("requires one of these capabilities: MXInt8EXT"));
+}
+
+TEST_F(ValidateData, ocp_microscaling_constants_good) {
+  std::string str = header_with_ocp_microscaling_types +
+                    R"(
+%fp4 = OpTypeFloat 4 Float4E2M1EXT
+%fp6_e2m3 = OpTypeFloat 6 Float6E2M3EXT
+%fp6_e3m2 = OpTypeFloat 6 Float6E3M2EXT
+%e8m0 = OpTypeFloat 8 Float8UnsignedE8M0EXT
+%mxint8 = OpTypeFloat 8 MXInt8EXT
+%v2fp4 = OpTypeVector %fp4 2
+%v2fp6_e2m3 = OpTypeVector %fp6_e2m3 2
+%v2fp6_e3m2 = OpTypeVector %fp6_e3m2 2
+%v2e8m0 = OpTypeVector %e8m0 2
+%v2mxint8 = OpTypeVector %mxint8 2
+%c_fp4 = OpConstant %fp4 1.0
+%c_fp6_e2m3 = OpConstant %fp6_e2m3 1.375
+%c_fp6_e3m2 = OpConstant %fp6_e3m2 0.4375
+%c_e8m0 = OpConstant %e8m0 16
+%c_mxint8 = OpConstant %mxint8 1.0
+%sc_fp4 = OpSpecConstant %fp4 -1.5
+%sc_fp6_e2m3 = OpSpecConstant %fp6_e2m3 -3.25
+%sc_fp6_e3m2 = OpSpecConstant %fp6_e3m2 -12
+%sc_e8m0 = OpSpecConstant %e8m0 0x1p-127
+%sc_mxint8 = OpSpecConstant %mxint8 -0.28125
+%cc_fp4 = OpConstantComposite %v2fp4 %c_fp4 %c_fp4
+%cc_fp6_e2m3 = OpConstantComposite %v2fp6_e2m3 %c_fp6_e2m3 %c_fp6_e2m3
+%cc_fp6_e3m2 = OpConstantComposite %v2fp6_e3m2 %c_fp6_e3m2 %c_fp6_e3m2
+%cc_e8m0 = OpConstantComposite %v2e8m0 %c_e8m0 %c_e8m0
+%cc_mxint8 = OpConstantComposite %v2mxint8 %c_mxint8 %c_mxint8
+%scc_fp4 = OpSpecConstantComposite %v2fp4 %sc_fp4 %sc_fp4
+%scc_fp6_e2m3 = OpSpecConstantComposite %v2fp6_e2m3 %sc_fp6_e2m3 %sc_fp6_e2m3
+%scc_fp6_e3m2 = OpSpecConstantComposite %v2fp6_e3m2 %sc_fp6_e3m2 %sc_fp6_e3m2
+%scc_e8m0 = OpSpecConstantComposite %v2e8m0 %sc_e8m0 %sc_e8m0
+%scc_mxint8 = OpSpecConstantComposite %v2mxint8 %sc_mxint8 %sc_mxint8
+%null_fp4 = OpConstantNull %fp4
+%null_fp6_e2m3 = OpConstantNull %fp6_e2m3
+%null_fp6_e3m2 = OpConstantNull %fp6_e3m2
+%null_e8m0 = OpConstantNull %e8m0
+%null_mxint8 = OpConstantNull %mxint8
+%null_v2fp4 = OpConstantNull %v2fp4
+%null_v2fp6_e2m3 = OpConstantNull %v2fp6_e2m3
+%null_v2fp6_e3m2 = OpConstantNull %v2fp6_e3m2
+%null_v2e8m0 = OpConstantNull %v2e8m0
+%null_v2mxint8 = OpConstantNull %v2mxint8
+)";
+  CompileSuccessfully(str.c_str());
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions()) << getDiagnosticString();
+}
+
+TEST_F(ValidateData, float4_bad_encoding_width) {
+  std::string str = header_with_float4 + "%2 = OpTypeFloat 8 Float4E2M1EXT";
+  const auto& err = CompileFailure(str.c_str());
+  EXPECT_THAT(err, HasSubstr("Invalid bit width 8 for floating point encoding "
+                             "Float4E2M1EXT; expected 4"));
+}
+
+TEST_F(ValidateData, float6_E2M3_bad_encoding_width) {
+  std::string str = header_with_float6 + "%2 = OpTypeFloat 8 Float6E2M3EXT";
+  const auto& err = CompileFailure(str.c_str());
+  EXPECT_THAT(err, HasSubstr("Invalid bit width 8 for floating point encoding "
+                             "Float6E2M3EXT; expected 6"));
+}
+
+TEST_F(ValidateData, float6_E3M2_bad_encoding_width) {
+  std::string str = header_with_float6 + "%2 = OpTypeFloat 8 Float6E3M2EXT";
+  const auto& err = CompileFailure(str.c_str());
+  EXPECT_THAT(err, HasSubstr("Invalid bit width 8 for floating point encoding "
+                             "Float6E3M2EXT; expected 6"));
+}
+
+TEST_F(ValidateData, float8_unsigned_e8m0_bad_encoding_width) {
+  std::string str = header_with_float8_unsigned_e8m0 +
+                    "%2 = OpTypeFloat 4 Float8UnsignedE8M0EXT";
+  const auto& err = CompileFailure(str.c_str());
+  EXPECT_THAT(err, HasSubstr("Invalid bit width 4 for floating point encoding "
+                             "Float8UnsignedE8M0EXT; expected 8"));
+}
+
+TEST_F(ValidateData, mxint8_bad_encoding_width) {
+  std::string str = header_with_mxint8 + "%2 = OpTypeFloat 4 MXInt8EXT";
+  const auto& err = CompileFailure(str.c_str());
+  EXPECT_THAT(err, HasSubstr("Invalid bit width 4 for floating point encoding "
+                             "MXInt8EXT; expected 8"));
 }
 
 TEST_F(ValidateData, float8_no_encoding_bad) {
