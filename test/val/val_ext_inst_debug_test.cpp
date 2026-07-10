@@ -5849,9 +5849,30 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicExtraOperand) {
 %float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0 %u32_1
 )";
 
+  spvValidatorOptionsSetAllowUnknownNsdiVersion(getValidatorOptions(), true);
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, "", dbg_inst_header, "", shader_extension_9999, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicExtraOperandFail) {
+  const std::string src = R"(
+%src = OpString "simple.hlsl"
+%code = OpString "int main() {}"
+%float_name = OpString "float"
+)";
+
+  const std::string dbg_inst_header = R"(
+%dbg_src = OpExtInst %void %DbgExt DebugSource %src %code
+%comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
+%float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0 %u32_1
+)";
+
+  CompileSuccessfully(GenerateShaderCodeForDebugInfo(
+      src, "", dbg_inst_header, "", shader_extension_9999, "Vertex"));
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("using an unknown version. Latest known version is"));
 }
 
 TEST_F(ValidateVulkan100DebugInfo, UnknownInstructionAccepted) {
@@ -5890,6 +5911,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugTypeBasicTwoExtraOperands) {
 %float_info = OpExtInst %void %DbgExt DebugTypeBasic %float_name %u32_32 %u32_3 %u32_0 %u32_1 %u32_2
 )";
 
+  spvValidatorOptionsSetAllowUnknownNsdiVersion(getValidatorOptions(), true);
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, "", dbg_inst_header, "", shader_extension_9999, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
@@ -5909,6 +5931,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugSourceExtraOperand) {
 %comp_unit = OpExtInst %void %DbgExt DebugCompilationUnit %u32_2 %u32_4 %dbg_src %u32_5
 )";
 
+  spvValidatorOptionsSetAllowUnknownNsdiVersion(getValidatorOptions(), true);
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, "", dbg_inst_header, "", shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
@@ -5969,6 +5992,7 @@ TEST_F(ValidateVulkan100DebugInfo, DebugNoScopeExtraOperandInBody) {
 %no_scope = OpExtInst %void %DbgExt DebugNoScope %u32_0
 )";
 
+  spvValidatorOptionsSetAllowUnknownNsdiVersion(getValidatorOptions(), true);
   CompileSuccessfully(GenerateShaderCodeForDebugInfo(
       src, "", dbg_inst_header, body, shader_extension_100, "Vertex"));
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());

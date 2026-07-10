@@ -784,6 +784,11 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetAllowOffsetTextureOperand(
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetAllowVulkan32BitBitwise(
     spv_validator_options options, bool val);
 
+// Records whether or not the validator should bypass version checks for
+// NonSemantic.Shader.DebugInfo instructions.
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetAllowUnknownNsdiVersion(
+    spv_validator_options options, bool val);
+
 // Whether friendly names should be used in validation error messages.
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetFriendlyNames(
     spv_validator_options options, bool val);

@@ -52,6 +52,56 @@ class TestHelpFlag(expect.ReturnCodeIsZero, expect.StdoutMatch):
 
 
 @inside_spirv_testsuite('SpirvOptFlags')
+class TestAllowUnknownNsdiVersion(expect.ValidObjectFile1_6):
+  """Tests that spirv-opt accepts --allow-unknown-nsdi-version."""
+
+  shader = placeholder.FileSPIRVShader("""
+         OpCapability Shader
+         OpExtension "SPV_KHR_non_semantic_info"
+    %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.9999"
+         OpMemoryModel Logical GLSL450
+         OpEntryPoint Vertex %4 "main"
+  %src = OpString "simple.hlsl"
+ %code = OpString "int main() {}"
+         OpName %4 "main"
+    %2 = OpTypeVoid
+    %3 = OpTypeFunction %2
+%dbg_src = OpExtInst %2 %1 DebugSource %src %code
+    %4 = OpFunction %2 None %3
+    %5 = OpLabel
+         OpReturn
+         OpFunctionEnd""", '.spvasm')
+  output = placeholder.TempFileName('output.spv')
+  spirv_args = [shader, '-o', output, '-O', '--allow-unknown-nsdi-version']
+  expected_object_filenames = (output)
+
+
+@inside_spirv_testsuite('SpirvOptFlags')
+class TestAllowUnknownNsdiVersionNegative(expect.ErrorMessageSubstr):
+  """Tests that spirv-opt fails without --allow-unknown-nsdi-version."""
+
+  shader = placeholder.FileSPIRVShader("""
+         OpCapability Shader
+         OpExtension "SPV_KHR_non_semantic_info"
+    %1 = OpExtInstImport "NonSemantic.Shader.DebugInfo.9999"
+         OpMemoryModel Logical GLSL450
+         OpEntryPoint Vertex %4 "main"
+  %src = OpString "simple.hlsl"
+ %code = OpString "int main() {}"
+         OpName %4 "main"
+    %2 = OpTypeVoid
+    %3 = OpTypeFunction %2
+%dbg_src = OpExtInst %2 %1 DebugSource %src %code
+    %4 = OpFunction %2 None %3
+    %5 = OpLabel
+         OpReturn
+         OpFunctionEnd""", '.spvasm')
+  output = placeholder.TempFileName('output.spv')
+  spirv_args = [shader, '-o', output, '-O']
+  expected_error_substr = 'using an unknown version. Latest known version is'
+
+
+@inside_spirv_testsuite('SpirvOptFlags')
 class TestValidPassFlags(expect.ValidObjectFile1_6,
                          expect.ExecutedListOfPasses):
   """Tests that spirv-opt accepts all valid optimization flags."""

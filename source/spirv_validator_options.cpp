@@ -136,6 +136,11 @@ void spvValidatorOptionsSetAllowVulkan32BitBitwise(
   options->allow_vulkan_32_bit_bitwise = val;
 }
 
+void spvValidatorOptionsSetAllowUnknownNsdiVersion(
+    spv_validator_options options, bool val) {
+  options->allow_unknown_nsdi_version = val;
+}
+
 void spvValidatorOptionsSetFriendlyNames(spv_validator_options options,
                                          bool val) {
   options->use_friendly_names = val;
