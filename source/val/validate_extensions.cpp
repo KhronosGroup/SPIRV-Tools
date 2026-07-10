@@ -22,6 +22,7 @@
 
 #include "OpenCLDebugInfo100.h"
 #include "source/common_debug_info.h"
+#include "source/ext_inst.h"
 #include "source/extensions.h"
 #include "source/latest_version_glsl_std_450_header.h"
 #include "source/latest_version_opencl_std_header.h"
@@ -203,10 +204,7 @@ uint32_t GetNSDIVersion(const ValidationState_t& _, const Instruction* inst) {
   const auto* import_inst = _.FindDef(inst->word(3));
   if (!import_inst) return 0;
   const std::string name = import_inst->GetOperandAs<std::string>(1);
-  const char kPrefix[] = "NonSemantic.Shader.DebugInfo.";
-  if (name.find(kPrefix) != 0) return 0;
-  return static_cast<uint32_t>(
-      std::strtoul(name.c_str() + sizeof(kPrefix) - 1, nullptr, 10));
+  return spvExtInstShaderDebugInfoVersion(name.c_str());
 }
 
 // Check that the operand of a debug info instruction |inst| at |word_index|
@@ -1416,8 +1414,9 @@ spv_result_t ValidateExtInstImport(ValidationState_t& _,
   }
 
   // Validate the version suffix of a NonSemantic.Shader.DebugInfo import.
-  // Accept any version >= kNSDIMinVersion; no upper bound is imposed because
-  // later versions are backward-compatible supersets of earlier ones.
+  // Versions below kNSDIMinVersion are always rejected. Versions above the
+  // latest known version are accepted by default, because later versions are
+  // backward-compatible supersets of earlier ones.
   const std::string nsdi_prefix = "NonSemantic.Shader.DebugInfo.";
   if (name.find(nsdi_prefix) == 0) {
     static const uint32_t kNSDIMinVersion = 100;
@@ -1439,6 +1438,13 @@ spv_result_t ValidateExtInstImport(ValidationState_t& _,
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << "NonSemantic.Shader.DebugInfo import version " << ver
              << " is below the minimum supported version " << kNSDIMinVersion;
+    }
+    if (_.options()->reject_unknown_nsdi_version &&
+        ver > NonSemanticShaderDebugInfoVersion) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "NonSemantic.Shader.DebugInfo import version " << ver
+             << " is newer than the latest known version "
+             << NonSemanticShaderDebugInfoVersion;
     }
 
     _.RegisterShaderDebugInfo(inst->id());
@@ -3501,19 +3507,40 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
 
   auto num_words = inst->words().size();
 
-  // Parse the declared NSDI version so optional-operand checks are strict
-  // (num_words == n) for version kNSDIKnownVersion and lenient (num_words >= n)
-  // for future versions that may add trailing operands.
   static const uint32_t kNSDIKnownVersion = NonSemanticShaderDebugInfoVersion;
   const uint32_t nsdi_version = vulkanDebugInfo ? GetNSDIVersion(_, inst) : 0;
-  // True if the optional operand at word |n| is present and should be checked.
-  auto has_optional_at = [&](uint32_t n) -> bool {
-    return num_words >= n &&
-           (nsdi_version > kNSDIKnownVersion || num_words == n);
-  };
+  // True if the optional operand at word |n| is present.
+  auto has_optional_at = [&](uint32_t n) -> bool { return num_words >= n; };
 
   // Handle any non-common NonSemanticShaderDebugInfo instructions.
   if (vulkanDebugInfo) {
+    // Newer versions are backward-compatible, so a known instruction is checked
+    // the same way for every version. Newer versions may add instructions and
+    // trailing operands, so those are only errors for known versions.
+    const ExtInstDesc* desc = nullptr;
+    if (LookupExtInst(ext_inst_type, ext_inst_index, &desc) != SPV_SUCCESS ||
+        !desc) {
+      if (nsdi_version > kNSDIKnownVersion) {
+        return SPV_SUCCESS;
+      }
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "NonSemantic.Shader.DebugInfo." << nsdi_version
+             << " has no instruction " << ext_inst_index;
+    }
+    const auto& operands = desc->operands();
+    if (nsdi_version <= kNSDIKnownVersion &&
+        (operands.empty() || !spvOperandIsVariable(operands.back()))) {
+      const size_t max_operands = operands.size();
+      assert(inst->operands().size() >= 4);
+      const size_t num_ext_operands = inst->operands().size() - 4;
+      if (num_ext_operands > max_operands) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << GetExtInstName(_, inst) << ": "
+               << "incorrect number of operands: expected at most "
+               << max_operands << " operands, but found " << num_ext_operands;
+      }
+    }
+
     const NonSemanticShaderDebugInfoInstructions ext_inst_key =
         NonSemanticShaderDebugInfoInstructions(ext_inst_index);
     switch (ext_inst_key) {

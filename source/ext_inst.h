@@ -27,4 +27,8 @@ bool spvExtInstIsNonSemantic(const spv_ext_inst_type_t type);
 // Returns true if the extended instruction set is debug info
 bool spvExtInstIsDebugInfo(const spv_ext_inst_type_t type);
 
+// Returns the version in the name of a NonSemantic.Shader.DebugInfo import, or
+// 0 if |name| is not the name of a NonSemantic.Shader.DebugInfo import.
+uint32_t spvExtInstShaderDebugInfoVersion(const char* name);
+
 #endif  // SOURCE_EXT_INST_H_
