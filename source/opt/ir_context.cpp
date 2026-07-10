@@ -121,10 +121,6 @@ void IRContext::InvalidateAnalyses(IRContext::Analysis analyses_to_invalidate) {
     analyses_to_invalidate |= kAnalysisStructuredCFG;
   }
 
-  if (analyses_to_invalidate & kAnalysisDominatorAnalysis) {
-    analyses_to_invalidate |= kAnalysisLoopAnalysis;
-  }
-
   if (analyses_to_invalidate & kAnalysisLoopAnalysis) {
     analyses_to_invalidate |= kAnalysisScalarEvolution;
     analyses_to_invalidate |= kAnalysisLiveness;

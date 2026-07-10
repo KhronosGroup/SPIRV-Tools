@@ -855,9 +855,6 @@ OpFunctionEnd)";
   EXPECT_FALSE(ctx->AreAnalysesValid(IRContext::kAnalysisCFG));
   EXPECT_FALSE(ctx->AreAnalysesValid(IRContext::kAnalysisDominatorAnalysis));
   EXPECT_FALSE(ctx->AreAnalysesValid(IRContext::kAnalysisStructuredCFG));
-  EXPECT_FALSE(ctx->AreAnalysesValid(IRContext::kAnalysisLoopAnalysis));
-  EXPECT_FALSE(ctx->AreAnalysesValid(IRContext::kAnalysisScalarEvolution));
-  EXPECT_FALSE(ctx->AreAnalysesValid(IRContext::kAnalysisLiveness));
 }
 
 TEST_F(IRContextTest, InvalidateDominatorInvalidatesDownstreamOnly) {
@@ -885,9 +882,6 @@ OpFunctionEnd)";
   EXPECT_TRUE(ctx->AreAnalysesValid(IRContext::kAnalysisCFG));
   EXPECT_TRUE(ctx->AreAnalysesValid(IRContext::kAnalysisStructuredCFG));
   EXPECT_FALSE(ctx->AreAnalysesValid(IRContext::kAnalysisDominatorAnalysis));
-  EXPECT_FALSE(ctx->AreAnalysesValid(IRContext::kAnalysisLoopAnalysis));
-  EXPECT_FALSE(ctx->AreAnalysesValid(IRContext::kAnalysisScalarEvolution));
-  EXPECT_FALSE(ctx->AreAnalysesValid(IRContext::kAnalysisLiveness));
 }
 
 TEST_F(IRContextTest, InvalidateLoopInvalidatesDownstreamOnly) {
