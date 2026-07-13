@@ -1942,6 +1942,35 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_2));
 }
 
+TEST_F(ValidateMemory, CopyMemoryAliasScopeINTELMaskSuccess) {
+  const std::string body = R"(
+OpCapability Shader
+OpCapability MemoryAccessAliasingINTEL
+OpExtension "SPV_INTEL_memory_access_aliasing"
+OpMemoryModel Logical GLSL450
+OpEntryPoint Fragment %main "main"
+OpExecutionMode %main OriginUpperLeft
+%alias_domain = OpAliasDomainDeclINTEL
+%alias_scope = OpAliasScopeDeclINTEL %alias_domain
+%alias_list = OpAliasScopeListDeclINTEL %alias_scope
+%void = OpTypeVoid
+%uint = OpTypeInt 32 0
+%ptr_uint = OpTypePointer Function %uint
+%func_type = OpTypeFunction %void
+%main = OpFunction %void None %func_type
+%entry = OpLabel
+%var1 = OpVariable %ptr_uint Function
+%var2 = OpVariable %ptr_uint Function
+OpCopyMemory %var1 %var2 Aligned|AliasScopeINTELMask 4 %alias_list
+OpCopyMemory %var1 %var2 Aligned|NoAliasINTELMask 4 %alias_list
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(body.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
 TEST_F(ValidateMemory, PSBCopyMemoryAlignedMissingTarget) {
   const std::string body = R"(
 OpCapability PhysicalStorageBufferAddresses
