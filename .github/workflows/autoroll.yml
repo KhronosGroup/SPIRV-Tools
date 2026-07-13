@@ -9,7 +9,7 @@ on:
 
 jobs:
   update-dependencies:
-    if: github.repository == 'KhronosGroup/SPIRV-Tools'
+    if: github.repository == 's-perron/SPIRV-Tools'
     permissions:
       contents: write
       pull-requests: write
@@ -49,7 +49,7 @@ jobs:
       - name: Push changes and create PR
         if: steps.update_dependencies.outputs.changed == 'true'
         run: |
-          git push --force --set-upstream origin roll_deps
+          git push --force --set-upstream https://x-access-token:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY.git roll_deps
           # Create a PR. If it aready exists, the command fails, so ignore the return code.
           gh pr create --base main -f || true 
           # Add the 'kokoro:run' label so that the kokoro tests will be run.
