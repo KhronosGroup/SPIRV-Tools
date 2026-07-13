@@ -410,6 +410,7 @@ struct Impl {
                 inst, type_inst->GetOperandAs<uint32_t>(1u), sc)) {
           return error;
         }
+        break;
       case spv::Op::OpTypePointer: {
         auto ptr_sc = type_inst->GetOperandAs<spv::StorageClass>(1u);
         if (auto error = CheckNoLayout(

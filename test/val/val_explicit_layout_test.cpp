@@ -4884,7 +4884,8 @@ OpFunctionEnd
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("Structure member 1 at offset 4 overlaps previous member ending at offset 7"));
+              HasSubstr("Structure member 1 at offset 4 overlaps previous "
+                        "member ending at offset 7"));
 }
 
 TEST_F(ValidateExplicitLayout, ArrayStrideIdEXTSamplerHeapGood) {
@@ -4988,8 +4989,9 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Invalid explicit layout decorations on type"));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("has an explicit layout from the OffsetIdEXT decoration"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("has an explicit layout from the OffsetIdEXT decoration"));
 }
 
 TEST_F(ValidateExplicitLayout, CheckNoLayoutWithArrayStrideIdEXTBad) {
@@ -5022,8 +5024,9 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Invalid explicit layout decorations on type"));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("has an explicit layout from the ArrayStrideIdEXT decoration"));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("has an explicit layout from the ArrayStrideIdEXT decoration"));
 }
 
 TEST_F(ValidateExplicitLayout, DescriptorArrayWithArrayStrideBad) {
@@ -5057,7 +5060,8 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Invalid explicit layout decorations on type"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("the UniformConstant storage class has an explicit layout from the ArrayStride decoration"));
+              HasSubstr("the UniformConstant storage class has an explicit "
+                        "layout from the ArrayStride decoration"));
 }
 
 TEST_F(ValidateExplicitLayout, DescriptorArrayWithArrayStrideIdEXTBad) {
@@ -5095,7 +5099,8 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Invalid explicit layout decorations on type"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("the UniformConstant storage class has an explicit layout from the ArrayStrideIdEXT decoration"));
+              HasSubstr("the UniformConstant storage class has an explicit "
+                        "layout from the ArrayStrideIdEXT decoration"));
 }
 
 TEST_F(ValidateExplicitLayout, SamplerDescriptorLayoutSamplerHeapGood) {
@@ -5242,7 +5247,8 @@ OpFunctionEnd
               HasSubstr("Structure member 0 at offset 4 is not aligned to 8"));
 }
 
-TEST_F(ValidateExplicitLayout, StorageBufferPtrInFunctionVariableWithArrayStrideGood) {
+TEST_F(ValidateExplicitLayout,
+       StorageBufferPtrInFunctionVariableWithArrayStrideGood) {
   const std::string spirv = R"(
 OpCapability Shader
 OpCapability VariablePointersStorageBuffer
@@ -5293,7 +5299,8 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Invalid explicit layout decorations on type"));
   EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("the Function storage class has an explicit layout from the ArrayStride decoration"));
+              HasSubstr("the Function storage class has an explicit layout "
+                        "from the ArrayStride decoration"));
 }
 
 using UntypedPointerLayout =

@@ -155,9 +155,8 @@ void spvValidatorOptionsSetImageDescriptorLayout(spv_validator_options options,
   options->image_descriptor_layout.alignment = alignment;
 }
 
-void spvValidatorOptionsSetSamplerDescriptorLayout(spv_validator_options options,
-                                                   uint32_t size,
-                                                   uint32_t alignment) {
+void spvValidatorOptionsSetSamplerDescriptorLayout(
+    spv_validator_options options, uint32_t size, uint32_t alignment) {
   options->sampler_descriptor_layout.size = size;
   options->sampler_descriptor_layout.alignment = alignment;
 }

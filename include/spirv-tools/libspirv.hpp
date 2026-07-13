@@ -138,12 +138,14 @@ class SPIRV_TOOLS_EXPORT ValidatorOptions {
     spvValidatorOptionsSetAllowVulkan32BitBitwise(options_, val);
   }
 
-  // Sets custom size and alignment for buffer and acceleration structure descriptor heap resources.
+  // Sets custom size and alignment for buffer and acceleration structure
+  // descriptor heap resources.
   void SetBufferDescriptorLayout(uint32_t size, uint32_t alignment) {
     spvValidatorOptionsSetBufferDescriptorLayout(options_, size, alignment);
   }
 
-  // Sets custom size and alignment for image and sampled image descriptor heap resources.
+  // Sets custom size and alignment for image and sampled image descriptor heap
+  // resources.
   void SetImageDescriptorLayout(uint32_t size, uint32_t alignment) {
     spvValidatorOptionsSetImageDescriptorLayout(options_, size, alignment);
   }

@@ -788,11 +788,13 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetAllowVulkan32BitBitwise(
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetFriendlyNames(
     spv_validator_options options, bool val);
 
-// Sets custom size and alignment for buffer and acceleration structure descriptor heap resources.
+// Sets custom size and alignment for buffer and acceleration structure
+// descriptor heap resources.
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetBufferDescriptorLayout(
     spv_validator_options options, uint32_t size, uint32_t alignment);
 
-// Sets custom size and alignment for image and sampled image descriptor heap resources.
+// Sets custom size and alignment for image and sampled image descriptor heap
+// resources.
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetImageDescriptorLayout(
     spv_validator_options options, uint32_t size, uint32_t alignment);
 

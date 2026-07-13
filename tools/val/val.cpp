@@ -229,60 +229,76 @@ int main(int argc, char** argv) {
       } else if (0 == strcmp(cur_arg, "--buffer-descriptor-layout")) {
         if (argi + 1 < argc) {
           uint32_t size = 0, alignment = 0;
-          if (sscanf(argv[++argi], "%u:%u", &size, &alignment) == 2 && size > 0 && alignment > 0) {
+          if (sscanf(argv[++argi], "%u:%u", &size, &alignment) == 2 &&
+              size > 0 && alignment > 0) {
             options.SetBufferDescriptorLayout(size, alignment);
           } else {
-            fprintf(stderr, "error: Invalid argument to --buffer-descriptor-layout (expected <size>:<align>)\n");
+            fprintf(stderr,
+                    "error: Invalid argument to --buffer-descriptor-layout "
+                    "(expected <size>:<align>)\n");
             continue_processing = false;
             return_code = 1;
           }
         } else {
-          fprintf(stderr, "error: Missing argument to --buffer-descriptor-layout\n");
+          fprintf(stderr,
+                  "error: Missing argument to --buffer-descriptor-layout\n");
           continue_processing = false;
           return_code = 1;
         }
       } else if (0 == strcmp(cur_arg, "--image-descriptor-layout")) {
         if (argi + 1 < argc) {
           uint32_t size = 0, alignment = 0;
-          if (sscanf(argv[++argi], "%u:%u", &size, &alignment) == 2 && size > 0 && alignment > 0) {
+          if (sscanf(argv[++argi], "%u:%u", &size, &alignment) == 2 &&
+              size > 0 && alignment > 0) {
             options.SetImageDescriptorLayout(size, alignment);
           } else {
-            fprintf(stderr, "error: Invalid argument to --image-descriptor-layout (expected <size>:<align>)\n");
+            fprintf(stderr,
+                    "error: Invalid argument to --image-descriptor-layout "
+                    "(expected <size>:<align>)\n");
             continue_processing = false;
             return_code = 1;
           }
         } else {
-          fprintf(stderr, "error: Missing argument to --image-descriptor-layout\n");
+          fprintf(stderr,
+                  "error: Missing argument to --image-descriptor-layout\n");
           continue_processing = false;
           return_code = 1;
         }
       } else if (0 == strcmp(cur_arg, "--sampler-descriptor-layout")) {
         if (argi + 1 < argc) {
           uint32_t size = 0, alignment = 0;
-          if (sscanf(argv[++argi], "%u:%u", &size, &alignment) == 2 && size > 0 && alignment > 0) {
+          if (sscanf(argv[++argi], "%u:%u", &size, &alignment) == 2 &&
+              size > 0 && alignment > 0) {
             options.SetSamplerDescriptorLayout(size, alignment);
           } else {
-            fprintf(stderr, "error: Invalid argument to --sampler-descriptor-layout (expected <size>:<align>)\n");
+            fprintf(stderr,
+                    "error: Invalid argument to --sampler-descriptor-layout "
+                    "(expected <size>:<align>)\n");
             continue_processing = false;
             return_code = 1;
           }
         } else {
-          fprintf(stderr, "error: Missing argument to --sampler-descriptor-layout\n");
+          fprintf(stderr,
+                  "error: Missing argument to --sampler-descriptor-layout\n");
           continue_processing = false;
           return_code = 1;
         }
       } else if (0 == strcmp(cur_arg, "--tensor-descriptor-layout")) {
         if (argi + 1 < argc) {
           uint32_t size = 0, alignment = 0;
-          if (sscanf(argv[++argi], "%u:%u", &size, &alignment) == 2 && size > 0 && alignment > 0) {
+          if (sscanf(argv[++argi], "%u:%u", &size, &alignment) == 2 &&
+              size > 0 && alignment > 0) {
             options.SetTensorDescriptorLayout(size, alignment);
           } else {
-            fprintf(stderr, "error: Invalid argument to --tensor-descriptor-layout (expected <size>:<align>)\n");
+            fprintf(stderr,
+                    "error: Invalid argument to --tensor-descriptor-layout "
+                    "(expected <size>:<align>)\n");
             continue_processing = false;
             return_code = 1;
           }
         } else {
-          fprintf(stderr, "error: Missing argument to --tensor-descriptor-layout\n");
+          fprintf(stderr,
+                  "error: Missing argument to --tensor-descriptor-layout\n");
           continue_processing = false;
           return_code = 1;
         }
