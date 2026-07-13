@@ -256,6 +256,19 @@ struct Impl {
       reference->requirement = LayoutRequirement::kRequired;
 
       return true;
+    } else if (inst->opcode() == spv::Op::OpBufferPointerEXT &&
+               type_inst->opcode() == spv::Op::OpTypePointer) {
+      auto sc = type_inst->GetOperandAs<spv::StorageClass>(1u);
+      reference->storage_class = sc;
+      uint32_t pointee_ty_id = type_inst->GetOperandAs<uint32_t>(2u);
+      const bool buffer_block =
+          vstate.GetIdOpcode(pointee_ty_id) == spv::Op::OpTypeStruct &&
+          vstate.HasDecoration(pointee_ty_id, spv::Decoration::BufferBlock);
+      reference->layout = GetStorageClassLayout(sc, buffer_block);
+      reference->requirement = LayoutRequirement::kRequired;
+      reference->type_id = pointee_ty_id;
+
+      return true;
     } else if (vstate.HasCapability(spv::Capability::UntypedPointersKHR) &&
                spvIsVulkanEnv(vstate.context()->target_env)) {
       uint32_t ptr_ty_id = 0;
@@ -329,18 +342,6 @@ struct Impl {
           vstate.GetIdOpcode(data_ty_id) == spv::Op::OpTypeStruct &&
           vstate.HasDecoration(data_ty_id, spv::Decoration::BufferBlock);
       reference->layout = GetStorageClassLayout(sc, buffer_block);
-
-      return true;
-    } else if (inst->opcode() == spv::Op::OpBufferPointerEXT &&
-               type_inst->opcode() == spv::Op::OpTypePointer) {
-      auto sc = type_inst->GetOperandAs<spv::StorageClass>(1u);
-      reference->storage_class = sc;
-      uint32_t pointee_ty_id = type_inst->GetOperandAs<uint32_t>(2u);
-      const bool buffer_block =
-          vstate.GetIdOpcode(pointee_ty_id) == spv::Op::OpTypeStruct &&
-          vstate.HasDecoration(pointee_ty_id, spv::Decoration::BufferBlock);
-      reference->layout = GetStorageClassLayout(sc, buffer_block);
-      reference->requirement = LayoutRequirement::kRequired;
 
       return true;
     }

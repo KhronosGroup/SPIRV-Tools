@@ -4486,6 +4486,816 @@ OpFunctionEnd
   EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_0));
 }
 
+TEST_F(ValidateExplicitLayout, BufferPointerEXTMissingOffsetBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+OpDecorate %Struct Block
+OpDecorate %storage_buffer_array_type ArrayStride 16
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%int_0 = OpConstant %int 0
+%storage_buffer_type = OpTypeBufferEXT StorageBuffer
+%storage_buffer_array_type = OpTypeRuntimeArray %storage_buffer_type
+%Struct = OpTypeStruct %float
+%_ptr_StorageBuffer_Struct = OpTypePointer StorageBuffer %Struct
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%ptr_storagebuffer = OpTypeUntypedPointerKHR StorageBuffer
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%buffer_ptr = OpUntypedAccessChainKHR %ptr_uniformconstant %storage_buffer_array_type %resource_heap %int_0
+%buffer_data_ptr = OpBufferPointerEXT %_ptr_StorageBuffer_Struct %buffer_ptr
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Structure member 0 must be explicitly laid out with "
+                        "Offset or OffsetIdEXT decorations"));
+}
+
+TEST_F(ValidateExplicitLayout, BufferPointerEXTUnalignedOffsetBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+OpDecorate %Struct Block
+OpMemberDecorate %Struct 0 Offset 2
+OpDecorate %storage_buffer_array_type ArrayStride 16
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%int_0 = OpConstant %int 0
+%storage_buffer_type = OpTypeBufferEXT StorageBuffer
+%storage_buffer_array_type = OpTypeRuntimeArray %storage_buffer_type
+%Struct = OpTypeStruct %float
+%_ptr_StorageBuffer_Struct = OpTypePointer StorageBuffer %Struct
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%ptr_storagebuffer = OpTypeUntypedPointerKHR StorageBuffer
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%buffer_ptr = OpUntypedAccessChainKHR %ptr_uniformconstant %storage_buffer_array_type %resource_heap %int_0
+%buffer_data_ptr = OpBufferPointerEXT %_ptr_StorageBuffer_Struct %buffer_ptr
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Structure member 0 at offset 2 is not aligned to 4"));
+}
+
+TEST_F(ValidateExplicitLayout, BufferPointerEXTMissingArrayStrideBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+OpDecorate %Struct Block
+OpMemberDecorate %Struct 0 Offset 0
+OpDecorate %storage_buffer_array_type ArrayStride 16
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%array = OpTypeArray %float %int_4
+%storage_buffer_type = OpTypeBufferEXT StorageBuffer
+%storage_buffer_array_type = OpTypeRuntimeArray %storage_buffer_type
+%Struct = OpTypeStruct %array
+%_ptr_StorageBuffer_Struct = OpTypePointer StorageBuffer %Struct
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%ptr_storagebuffer = OpTypeUntypedPointerKHR StorageBuffer
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%buffer_ptr = OpUntypedAccessChainKHR %ptr_uniformconstant %storage_buffer_array_type %resource_heap %int_0
+%buffer_data_ptr = OpBufferPointerEXT %_ptr_StorageBuffer_Struct %buffer_ptr
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Array must be explicitly laid out with ArrayStride or "
+                        "ArrayStrideIdEXT decorations"));
+}
+
+TEST_F(ValidateExplicitLayout, BufferPointerEXTMissingMatrixStrideBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+OpDecorate %Struct Block
+OpMemberDecorate %Struct 0 Offset 0
+OpDecorate %storage_buffer_array_type ArrayStride 16
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%v4float = OpTypeVector %float 4
+%int_0 = OpConstant %int 0
+%mat = OpTypeMatrix %v4float 4
+%storage_buffer_type = OpTypeBufferEXT StorageBuffer
+%storage_buffer_array_type = OpTypeRuntimeArray %storage_buffer_type
+%Struct = OpTypeStruct %mat
+%_ptr_Uniform_Struct = OpTypePointer Uniform %Struct
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%ptr_uniform = OpTypeUntypedPointerKHR Uniform
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%buffer_ptr = OpUntypedAccessChainKHR %ptr_uniformconstant %storage_buffer_array_type %resource_heap %int_0
+%buffer_data_ptr = OpBufferPointerEXT %_ptr_Uniform_Struct %buffer_ptr
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Structure member 0 containing a matrix must be "
+                        "explicitly laid out with RowMajor or ColMajor "
+                        "decorations"));
+}
+
+TEST_F(ValidateExplicitLayout, BufferPointerEXTStorageBufferScalarGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+OpDecorate %Struct Block
+OpMemberDecorate %Struct 0 Offset 0
+OpMemberDecorate %Struct 1 Offset 12
+OpDecorate %storage_buffer_array_type ArrayStride 16
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%v3float = OpTypeVector %float 3
+%int_0 = OpConstant %int 0
+%storage_buffer_type = OpTypeBufferEXT StorageBuffer
+%storage_buffer_array_type = OpTypeRuntimeArray %storage_buffer_type
+%Struct = OpTypeStruct %v3float %float
+%_ptr_StorageBuffer_Struct = OpTypePointer StorageBuffer %Struct
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%ptr_storagebuffer = OpTypeUntypedPointerKHR StorageBuffer
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%buffer_ptr = OpUntypedAccessChainKHR %ptr_uniformconstant %storage_buffer_array_type %resource_heap %int_0
+%buffer_data_ptr = OpBufferPointerEXT %_ptr_StorageBuffer_Struct %buffer_ptr
+OpReturn
+OpFunctionEnd
+)";
+
+  options_->scalar_block_layout = true;
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+}
+
+TEST_F(ValidateExplicitLayout, BufferPointerEXTUniformExtendedAlignmentBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+OpDecorate %Struct Block
+OpMemberDecorate %Struct 0 Offset 0
+OpMemberDecorate %Struct 1 Offset 4
+OpDecorate %storage_buffer_array_type ArrayStride 16
+OpDecorate %array ArrayStride 16
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%array = OpTypeArray %float %int_4
+%storage_buffer_type = OpTypeBufferEXT StorageBuffer
+%storage_buffer_array_type = OpTypeRuntimeArray %storage_buffer_type
+%Struct = OpTypeStruct %float %array
+%_ptr_Uniform_Struct = OpTypePointer Uniform %Struct
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%buffer_ptr = OpUntypedAccessChainKHR %ptr_uniformconstant %storage_buffer_array_type %resource_heap %int_0
+%buffer_data_ptr = OpBufferPointerEXT %_ptr_Uniform_Struct %buffer_ptr
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Structure member 1 at offset 4 is not aligned to 16"));
+}
+
+TEST_F(ValidateExplicitLayout, BufferPointerEXTArrayResultBadStrideBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+OpDecorate %storage_buffer_array_type ArrayStride 16
+OpDecorate %array ArrayStride 2
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%array = OpTypeArray %float %int_4
+%storage_buffer_type = OpTypeBufferEXT StorageBuffer
+%storage_buffer_array_type = OpTypeRuntimeArray %storage_buffer_type
+%_ptr_StorageBuffer_array = OpTypePointer StorageBuffer %array
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%buffer_ptr = OpUntypedAccessChainKHR %ptr_uniformconstant %storage_buffer_array_type %resource_heap %int_0
+%buffer_data_ptr = OpBufferPointerEXT %_ptr_StorageBuffer_array %buffer_ptr
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Array stride 2 must satisfy alignment 4"));
+}
+
+TEST_F(ValidateExplicitLayout, StructOffsetIdEXTSamplerHeapGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn SamplerHeapEXT
+OpMemberDecorateIdEXT %Struct 0 OffsetIdEXT %int_0
+OpMemberDecorateIdEXT %Struct 1 OffsetIdEXT %int_4
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%sampler = OpTypeSampler
+%Struct = OpTypeStruct %sampler %int
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpUntypedAccessChainKHR %ptr_uniformconstant %Struct %resource_heap %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+}
+
+TEST_F(ValidateExplicitLayout, StructOffsetIdEXTSamplerHeapUnalignedBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn SamplerHeapEXT
+OpMemberDecorateIdEXT %Struct 0 OffsetIdEXT %int_0
+OpMemberDecorateIdEXT %Struct 1 OffsetIdEXT %int_2
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_2 = OpConstant %int 2
+%sampler = OpTypeSampler
+%Struct = OpTypeStruct %sampler %int
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpUntypedAccessChainKHR %ptr_uniformconstant %Struct %resource_heap %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Structure member 1 at offset 2 is not aligned to 4"));
+}
+
+TEST_F(ValidateExplicitLayout, StructOffsetIdEXTResourceHeapOverlapBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpCapability SampledBuffer
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+OpMemberDecorateIdEXT %Struct 0 OffsetIdEXT %int_0
+OpMemberDecorateIdEXT %Struct 1 OffsetIdEXT %int_4
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%image = OpTypeImage %int Buffer 0 0 0 2 R32ui
+%Struct = OpTypeStruct %image %int
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpUntypedAccessChainKHR %ptr_uniformconstant %Struct %resource_heap %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  options_->image_descriptor_layout.size = 8;
+  options_->image_descriptor_layout.alignment = 8;
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Structure member 1 at offset 4 overlaps previous member ending at offset 7"));
+}
+
+TEST_F(ValidateExplicitLayout, ArrayStrideIdEXTSamplerHeapGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn SamplerHeapEXT
+OpDecorateId %array ArrayStrideIdEXT %int_4
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%int_10 = OpConstant %int 10
+%sampler = OpTypeSampler
+%array = OpTypeArray %sampler %int_10
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpUntypedAccessChainKHR %ptr_uniformconstant %array %resource_heap %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  options_->sampler_descriptor_layout.size = 4;
+  options_->sampler_descriptor_layout.alignment = 4;
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+}
+
+TEST_F(ValidateExplicitLayout, ArrayStrideIdEXTSamplerHeapTooSmallBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn SamplerHeapEXT
+OpDecorateId %array ArrayStrideIdEXT %int_2
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_2 = OpConstant %int 2
+%int_10 = OpConstant %int 10
+%sampler = OpTypeSampler
+%array = OpTypeArray %sampler %int_10
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpUntypedAccessChainKHR %ptr_uniformconstant %array %resource_heap %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  options_->sampler_descriptor_layout.size = 4;
+  options_->sampler_descriptor_layout.alignment = 2;
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Array stride 2 is smaller than element type size 4"));
+}
+
+TEST_F(ValidateExplicitLayout, CheckNoLayoutWithOffsetIdEXTBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpMemberDecorateIdEXT %Struct 0 OffsetIdEXT %int_0
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%sampler = OpTypeSampler
+%Struct = OpTypeStruct %sampler %int
+%_ptr_Function_Struct = OpTypePointer Function %Struct
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%var = OpVariable %_ptr_Function_Struct Function
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid explicit layout decorations on type"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("has an explicit layout from the OffsetIdEXT decoration"));
+}
+
+TEST_F(ValidateExplicitLayout, CheckNoLayoutWithArrayStrideIdEXTBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorateId %array ArrayStrideIdEXT %int_4
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_4 = OpConstant %int 4
+%int_10 = OpConstant %int 10
+%sampler = OpTypeSampler
+%array = OpTypeArray %sampler %int_10
+%_ptr_Workgroup_array = OpTypePointer Workgroup %array
+%var = OpVariable %_ptr_Workgroup_array Workgroup
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid explicit layout decorations on type"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("has an explicit layout from the ArrayStrideIdEXT decoration"));
+}
+
+TEST_F(ValidateExplicitLayout, DescriptorArrayWithArrayStrideBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %var BuiltIn SamplerHeapEXT
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+OpDecorate %array ArrayStride 16
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_4 = OpConstant %int 4
+%sampler = OpTypeSampler
+%array = OpTypeArray %sampler %int_4
+%_ptr_UniformConstant_array = OpTypePointer UniformConstant %array
+%var = OpVariable %_ptr_UniformConstant_array UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid explicit layout decorations on type"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("the UniformConstant storage class has an explicit layout from the ArrayStride decoration"));
+}
+
+TEST_F(ValidateExplicitLayout, DescriptorArrayWithArrayStrideIdEXTBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpCapability SampledBuffer
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %var
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %var BuiltIn ResourceHeapEXT
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+OpDecorateId %array ArrayStrideIdEXT %int_8
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_4 = OpConstant %int 4
+%int_8 = OpConstant %int 8
+%image = OpTypeImage %int Buffer 0 0 0 2 R32ui
+%array = OpTypeArray %image %int_4
+%_ptr_UniformConstant_array = OpTypePointer UniformConstant %array
+%var = OpVariable %_ptr_UniformConstant_array UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid explicit layout decorations on type"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("the UniformConstant storage class has an explicit layout from the ArrayStrideIdEXT decoration"));
+}
+
+TEST_F(ValidateExplicitLayout, SamplerDescriptorLayoutSamplerHeapGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn SamplerHeapEXT
+OpDecorate %Struct Block
+OpMemberDecorate %Struct 0 Offset 0
+OpMemberDecorate %Struct 1 Offset 8
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%sampler = OpTypeSampler
+%Struct = OpTypeStruct %sampler %int
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpUntypedAccessChainKHR %ptr_uniformconstant %Struct %resource_heap %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  options_->sampler_descriptor_layout.size = 8;
+  options_->sampler_descriptor_layout.alignment = 8;
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+}
+
+TEST_F(ValidateExplicitLayout, ImageDescriptorLayoutResourceHeapGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpCapability SampledBuffer
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+OpDecorate %array ArrayStride 16
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%image = OpTypeImage %int Buffer 0 0 0 2 R32ui
+%array = OpTypeArray %image %int_4
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpUntypedAccessChainKHR %ptr_uniformconstant %array %resource_heap %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  options_->image_descriptor_layout.size = 16;
+  options_->image_descriptor_layout.alignment = 16;
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+}
+
+TEST_F(ValidateExplicitLayout, BufferDescriptorLayoutResourceHeapTooSmallBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpExtension "SPV_KHR_storage_buffer_storage_class"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+OpDecorate %array ArrayStride 8
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_4 = OpConstant %int 4
+%buffer = OpTypeBufferEXT StorageBuffer
+%array = OpTypeArray %buffer %int_4
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpUntypedAccessChainKHR %ptr_uniformconstant %array %resource_heap %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  options_->buffer_descriptor_layout.size = 16;
+  options_->buffer_descriptor_layout.alignment = 8;
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Array stride 8 is smaller than element type size 16"));
+}
+
+TEST_F(ValidateExplicitLayout, BindlessTextureNVSamplerHeapUnalignedBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpCapability BindlessTextureNV
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpExtension "SPV_NV_bindless_texture"
+OpMemoryModel Logical GLSL450
+OpSamplerImageAddressingModeNV 64
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn SamplerHeapEXT
+OpDecorate %Struct Block
+OpMemberDecorate %Struct 0 Offset 4
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%sampler = OpTypeSampler
+%Struct = OpTypeStruct %sampler
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpUntypedAccessChainKHR %ptr_uniformconstant %Struct %resource_heap %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Structure member 0 at offset 4 is not aligned to 8"));
+}
+
+TEST_F(ValidateExplicitLayout, StorageBufferPtrInFunctionVariableWithArrayStrideGood) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %ptr_sb ArrayStride 8
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%ptr_sb = OpTypePointer StorageBuffer %float
+%_ptr_Function_ptr_sb = OpTypePointer Function %ptr_sb
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%var = OpVariable %_ptr_Function_ptr_sb Function
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
+TEST_F(ValidateExplicitLayout, NonPointerInFunctionVariableWithArrayStrideBad) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %array ArrayStride 4
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%float = OpTypeFloat 32
+%int_4 = OpConstant %int 4
+%array = OpTypeArray %float %int_4
+%_ptr_Function_array = OpTypePointer Function %array
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%var = OpVariable %_ptr_Function_array Function
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Invalid explicit layout decorations on type"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("the Function storage class has an explicit layout from the ArrayStride decoration"));
+}
+
 using UntypedPointerLayout =
     spvtest::ValidateBase<std::tuple<std::string, std::string>>;
 
@@ -4668,6 +5478,8 @@ INSTANTIATE_TEST_SUITE_P(
                    "%var %int_0",
                    "%gep = OpUntypedPtrAccessChainKHR %ptr %test_type %var "
                    "%int_0 %int_0",
+                   "%gep = OpUntypedInBoundsPtrAccessChainKHR %ptr %test_type "
+                   "%var %int_0 %int_0",
                    "%ld = OpLoad %test_type %var", "OpStore %var %test_val")));
 
 }  // namespace
