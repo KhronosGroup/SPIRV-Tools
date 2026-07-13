@@ -247,6 +247,8 @@ int MemoryAccessNumWords(uint32_t mask) {
   if (mask & uint32_t(spv::MemoryAccessMask::Aligned)) ++result;
   if (mask & uint32_t(spv::MemoryAccessMask::MakePointerAvailableKHR)) ++result;
   if (mask & uint32_t(spv::MemoryAccessMask::MakePointerVisibleKHR)) ++result;
+  if (mask & uint32_t(spv::MemoryAccessMask::AliasScopeINTELMask)) ++result;
+  if (mask & uint32_t(spv::MemoryAccessMask::NoAliasINTELMask)) ++result;
   return result;
 }
 
