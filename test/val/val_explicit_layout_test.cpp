@@ -5037,7 +5037,6 @@ OpExtension "SPV_EXT_descriptor_heap"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 1 1 1
-OpDecorate %var BuiltIn SamplerHeapEXT
 OpDecorate %var DescriptorSet 0
 OpDecorate %var Binding 0
 OpDecorate %array ArrayStride 16
@@ -5075,7 +5074,6 @@ OpExtension "SPV_EXT_descriptor_heap"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main" %var
 OpExecutionMode %main LocalSize 1 1 1
-OpDecorate %var BuiltIn ResourceHeapEXT
 OpDecorate %var DescriptorSet 0
 OpDecorate %var Binding 0
 OpDecorateId %array ArrayStrideIdEXT %int_8
@@ -5101,6 +5099,58 @@ OpFunctionEnd
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("the UniformConstant storage class has an explicit "
                         "layout from the ArrayStrideIdEXT decoration"));
+}
+
+TEST_F(ValidateExplicitLayout, ResourceHeapMissingArrayStride) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_EXT_descriptor_heap"
+OpExtension "SPV_KHR_untyped_pointers"
+%1 = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap %_
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+OpDecorate %Heap Block
+OpMemberDecorate %Heap 0 Offset 0
+OpDecorate %UBO Block
+OpMemberDecorate %UBO 0 Offset 0
+OpDecorate %_ Binding 0
+OpDecorate %_ DescriptorSet 0
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
+%int = OpTypeInt 32 1
+%int_3 = OpConstant %int 3
+%uint = OpTypeInt 32 0
+%Heap = OpTypeStruct %uint
+%int_0 = OpConstant %int 0
+%uint_0 = OpConstant %uint 0
+%_ptr_StorageBuffer = OpTypeUntypedPointerKHR StorageBuffer
+%16 = OpTypeBufferEXT StorageBuffer
+%17 = OpConstantSizeOfEXT %int %16
+%_runtimearr_16 = OpTypeRuntimeArray %16
+%UBO = OpTypeStruct %uint
+%_ptr_Uniform_UBO = OpTypePointer Uniform %UBO
+%_ = OpVariable %_ptr_Uniform_UBO Uniform
+%main = OpFunction %void None %3
+%5 = OpLabel
+%15 = OpUntypedAccessChainKHR %_ptr_UniformConstant %_runtimearr_16 %resource_heap %int_3
+%19 = OpBufferPointerEXT %_ptr_StorageBuffer %15
+%20 = OpUntypedAccessChainKHR %_ptr_StorageBuffer %Heap %19 %int_0
+OpStore %20 %uint_0
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Array must be explicitly laid out with ArrayStride or "
+                        "ArrayStrideIdEXT decorations"));
 }
 
 TEST_F(ValidateExplicitLayout, SamplerDescriptorLayoutSamplerHeapGood) {
