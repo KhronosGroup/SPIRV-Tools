@@ -4997,7 +4997,8 @@ OpFunctionEnd
               HasSubstr("Array stride 2 is smaller than element type size 4"));
 }
 
-TEST_F(ValidateExplicitLayout, ArrayStrideIdEXTSamplerHeapTooSmallSpecConstant) {
+TEST_F(ValidateExplicitLayout,
+       ArrayStrideIdEXTSamplerHeapTooSmallSpecConstant) {
   const std::string spirv = R"(
 OpCapability Shader
 OpCapability UntypedPointersKHR
