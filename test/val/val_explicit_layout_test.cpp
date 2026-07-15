@@ -4888,6 +4888,43 @@ OpFunctionEnd
                         "member ending at offset 7"));
 }
 
+TEST_F(ValidateExplicitLayout, StructOffsetIdEXTResourceHeapOverlapSpecId) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpCapability SampledBuffer
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn ResourceHeapEXT
+OpMemberDecorateIdEXT %Struct 0 OffsetIdEXT %int_0
+OpMemberDecorateIdEXT %Struct 1 OffsetIdEXT %int_4
+OpDecorate %int_4 SpecId 1
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_4 = OpSpecConstant %int 4
+%image = OpTypeImage %int Buffer 0 0 0 2 R32ui
+%Struct = OpTypeStruct %image %int
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpUntypedAccessChainKHR %ptr_uniformconstant %Struct %resource_heap %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  options_->image_descriptor_layout.size = 8;
+  options_->image_descriptor_layout.alignment = 8;
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+}
+
 TEST_F(ValidateExplicitLayout, ArrayStrideIdEXTSamplerHeapGood) {
   const std::string spirv = R"(
 OpCapability Shader
@@ -4958,6 +4995,83 @@ OpFunctionEnd
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_4));
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("Array stride 2 is smaller than element type size 4"));
+}
+
+TEST_F(ValidateExplicitLayout, ArrayStrideIdEXTSamplerHeapTooSmallSpecConstant) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %resource_heap
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %resource_heap BuiltIn SamplerHeapEXT
+OpDecorateId %array ArrayStrideIdEXT %int_2
+OpDecorate %int_2 SpecId 1
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_2 = OpSpecConstant %int 2
+%int_10 = OpConstant %int 10
+%sampler = OpTypeSampler
+%array = OpTypeArray %sampler %int_10
+%ptr_uniformconstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %ptr_uniformconstant UniformConstant
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%gep = OpUntypedAccessChainKHR %ptr_uniformconstant %array %resource_heap %int_0
+OpReturn
+OpFunctionEnd
+)";
+
+  options_->sampler_descriptor_layout.size = 4;
+  options_->sampler_descriptor_layout.alignment = 2;
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
+}
+
+TEST_F(ValidateExplicitLayout, ImageArraySpecConstant) {
+  const std::string spirv = R"(
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpCapability DescriptorHeapEXT
+OpCapability ImageBuffer
+OpExtension "SPV_KHR_untyped_pointers"
+OpExtension "SPV_EXT_descriptor_heap"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %1 "main" %2
+OpExecutionMode %1 LocalSize 1 1 1
+OpDecorate %2 BuiltIn ResourceHeapEXT
+OpDecorate %3 SpecId 0
+OpDecorateId %4 ArrayStrideIdEXT %3
+%5 = OpTypeVoid
+%6 = OpTypeFunction %5
+%7 = OpTypeInt 32 0
+%8 = OpConstant %7 0
+%9 = OpConstant %7 2
+%10 = OpConstant %7 51966
+%11 = OpConstant %7 0
+%3 = OpSpecConstant %7 0
+%12 = OpTypeUntypedPointerKHR UniformConstant
+%2 = OpUntypedVariableKHR %12 UniformConstant
+%13 = OpTypeImage %7 Buffer 0 0 0 2 R32ui
+%4 = OpTypeRuntimeArray %13
+%1 = OpFunction %5 None %6
+%14 = OpLabel
+%15 = OpUntypedAccessChainKHR %12 %4 %2 %9
+%16 = OpLoad %13 %15
+OpImageWrite %16 %8 %10
+OpReturn
+OpFunctionEnd
+)";
+
+  options_->image_descriptor_layout.size = 64;
+  options_->image_descriptor_layout.alignment = 64;
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_4);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_4));
 }
 
 TEST_F(ValidateExplicitLayout, CheckNoLayoutWithOffsetIdEXTBad) {

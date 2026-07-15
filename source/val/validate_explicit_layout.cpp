@@ -648,6 +648,10 @@ struct Impl {
         const auto [has_stride, stride] = GetArrayStride(type_id);
         const auto ele_size =
             GetSize(type_inst->GetOperandAs<uint32_t>(1u), matrix_constraints);
+        // uint32 max is a marker for unevaluatable.
+        if (stride == std::numeric_limits<uint32_t>::max()) {
+          return ele_size;
+        }
         return (static_cast<uint32_t>(count) - 1) * stride + ele_size;
       }
       case spv::Op::OpTypeRuntimeArray:
@@ -920,6 +924,12 @@ struct Impl {
              << "Array must not have a stride of 0."
              << CommonError(inst, storage_class, mode);
     }
+
+    // uint32 max stride is unevaluatable (e.g. spec constant).
+    if (stride == std::numeric_limits<uint32_t>::max()) {
+      return SPV_SUCCESS;
+    }
+
     if (!IsAlignedTo(stride, align)) {
       return vstate.diag(SPV_ERROR_INVALID_ID, type_inst)
              << "Array stride " << stride << " must satisfy alignment " << align
