@@ -286,7 +286,8 @@ void IRContext::CollectNonSemanticTree(
     work_list.pop_back();
     get_def_use_mgr()->ForEachUser(
         i, [&work_list, to_kill, &seen](Instruction* user) {
-          if (user->IsNonSemanticInstruction() && seen.insert(user).second) {
+          if (user->IsNonSemanticInstruction() && !user->IsDebugLineInst() &&
+              seen.insert(user).second) {
             work_list.push_back(user);
             to_kill->insert(user);
           }
