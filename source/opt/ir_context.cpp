@@ -226,7 +226,8 @@ Instruction* IRContext::KillInst(Instruction* inst) {
   if (inst->opcode() == spv::Op::OpCapability ||
       inst->opcode() == spv::Op::OpConditionalCapabilityINTEL ||
       inst->opcode() == spv::Op::OpExtension ||
-      inst->opcode() == spv::Op::OpConditionalExtensionINTEL) {
+      inst->opcode() == spv::Op::OpConditionalExtensionINTEL ||
+      inst->opcode() == spv::Op::OpExtInstImport) {
     // We reset the feature manager, instead of updating it, because it is just
     // as much work.  We would have to remove all capabilities implied by this
     // capability that are not also implied by the remaining OpCapability
