@@ -1560,8 +1560,8 @@ ConstantFoldingRule FoldFMix() {
       if (one_inst == nullptr) return nullptr;
       uint32_t one_id = one_inst->result_id();
       uint32_t count = result_type->AsVector()->element_count();
-      one =
-          const_mgr->GetConstant(result_type, std::vector<uint32_t>(count, one_id));
+      one = const_mgr->GetConstant(result_type,
+                                   std::vector<uint32_t>(count, one_id));
     }
 
     const analysis::Constant* temp1 = FoldFPBinaryOp(

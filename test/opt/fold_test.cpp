@@ -2013,248 +2013,217 @@ INSTANTIATE_TEST_SUITE_P(TestCase, FloatVectorInstructionFoldingTest,
 ));
 // clang-format on
 
-INSTANTIATE_TEST_SUITE_P(RedundantDivVectorFloatTest, FloatVectorInstructionFoldingTest,
-  ::testing::Values(
-    // Test case 0: FDiv v2float self-division x / x
-    InstructionFoldingCase<std::vector<float>>(
-        Header() + "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v2float Function\n" +
-            "%3 = OpLoad %v2float %n\n" +
-            "%2 = OpFDiv %v2float %3 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1.0f,1.0f}),
-    // Test case 1: FDiv v2float -x / x
-    InstructionFoldingCase<std::vector<float>>(
-        Header() + "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v2float Function\n" +
-            "%3 = OpLoad %v2float %n\n" +
-            "%4 = OpFNegate %v2float %3\n" +
-            "%2 = OpFDiv %v2float %4 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {-1.0f,-1.0f}),
-    // Test case 2: FDiv v2float x / -x
-    InstructionFoldingCase<std::vector<float>>(
-        Header() + "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v2float Function\n" +
-            "%3 = OpLoad %v2float %n\n" +
-            "%4 = OpFNegate %v2float %3\n" +
-            "%2 = OpFDiv %v2float %3 %4\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {-1.0f,-1.0f}),
-    // Test case 3: FDiv v3float self-division
-    InstructionFoldingCase<std::vector<float>>(
-        Header() + "%v3float = OpTypeVector %float 3\n" +
-            "%_ptr_v3float = OpTypePointer Function %v3float\n" +
-            "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v3float Function\n" +
-            "%3 = OpLoad %v3float %n\n" +
-            "%2 = OpFDiv %v3float %3 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1.0f,1.0f,1.0f}),
-    // Test case 4: FDiv v4float self-division
-    InstructionFoldingCase<std::vector<float>>(
-        Header() + "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v4float Function\n" +
-            "%3 = OpLoad %v4float %n\n" +
-            "%2 = OpFDiv %v4float %3 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1.0f,1.0f,1.0f,1.0f}),
-    // Test case 5: FDiv v8float self-division
-    InstructionFoldingCase<std::vector<float>>(
-        Header() + "%v8float = OpTypeVector %float 8\n" +
-            "%_ptr_v8float = OpTypePointer Function %v8float\n" +
-            "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v8float Function\n" +
-            "%3 = OpLoad %v8float %n\n" +
-            "%2 = OpFDiv %v8float %3 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f}),
-    // Test case 6: FDiv v16float self-division
-    InstructionFoldingCase<std::vector<float>>(
-        Header() + "%v16float = OpTypeVector %float 16\n" +
-            "%_ptr_v16float = OpTypePointer Function %v16float\n" +
-            "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v16float Function\n" +
-            "%3 = OpLoad %v16float %n\n" +
-            "%2 = OpFDiv %v16float %3 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f,1.0f})
-  ));
+INSTANTIATE_TEST_SUITE_P(
+    RedundantDivVectorFloatTest, FloatVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Test case 0: FDiv v2float self-division x / x
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v2float Function\n" +
+                "%3 = OpLoad %v2float %n\n" + "%2 = OpFDiv %v2float %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.0f, 1.0f}),
+        // Test case 1: FDiv v2float -x / x
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v2float Function\n" +
+                "%3 = OpLoad %v2float %n\n" + "%4 = OpFNegate %v2float %3\n" +
+                "%2 = OpFDiv %v2float %4 %3\n" + "OpReturn\n" + "OpFunctionEnd",
+            2, {-1.0f, -1.0f}),
+        // Test case 2: FDiv v2float x / -x
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v2float Function\n" +
+                "%3 = OpLoad %v2float %n\n" + "%4 = OpFNegate %v2float %3\n" +
+                "%2 = OpFDiv %v2float %3 %4\n" + "OpReturn\n" + "OpFunctionEnd",
+            2, {-1.0f, -1.0f}),
+        // Test case 3: FDiv v3float self-division
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%v3float = OpTypeVector %float 3\n" +
+                "%_ptr_v3float = OpTypePointer Function %v3float\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v3float Function\n" +
+                "%3 = OpLoad %v3float %n\n" + "%2 = OpFDiv %v3float %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.0f, 1.0f, 1.0f}),
+        // Test case 4: FDiv v4float self-division
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v4float Function\n" +
+                "%3 = OpLoad %v4float %n\n" + "%2 = OpFDiv %v4float %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.0f, 1.0f, 1.0f, 1.0f}),
+        // Test case 5: FDiv v8float self-division
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%v8float = OpTypeVector %float 8\n" +
+                "%_ptr_v8float = OpTypePointer Function %v8float\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v8float Function\n" +
+                "%3 = OpLoad %v8float %n\n" + "%2 = OpFDiv %v8float %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}),
+        // Test case 6: FDiv v16float self-division
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%v16float = OpTypeVector %float 16\n" +
+                "%_ptr_v16float = OpTypePointer Function %v16float\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v16float Function\n" +
+                "%3 = OpLoad %v16float %n\n" + "%2 = OpFDiv %v16float %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2,
+            {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+             1.0f, 1.0f, 1.0f, 1.0f, 1.0f})));
 
-INSTANTIATE_TEST_SUITE_P(RedundantDivVectorDoubleTest, DoubleVectorInstructionFoldingTest,
-  ::testing::Values(
-    // Test case 0: FDiv v2double self-division x / x
-    InstructionFoldingCase<std::vector<double>>(
-        Header() + "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v2double Function\n" +
-            "%3 = OpLoad %v2double %n\n" +
-            "%2 = OpFDiv %v2double %3 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1.0,1.0})
-  ));
+INSTANTIATE_TEST_SUITE_P(
+    RedundantDivVectorDoubleTest, DoubleVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Test case 0: FDiv v2double self-division x / x
+        InstructionFoldingCase<std::vector<double>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v2double Function\n" +
+                "%3 = OpLoad %v2double %n\n" + "%2 = OpFDiv %v2double %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.0, 1.0})));
 
-INSTANTIATE_TEST_SUITE_P(RedundantDivVectorIntTest, IntVectorInstructionFoldingTest,
-  ::testing::Values(
-    // Test case 0: SDiv v2int self-division x / x
-    InstructionFoldingCase<std::vector<int32_t>>(
-        Header() + "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v2int Function\n" +
-            "%3 = OpLoad %v2int %n\n" +
-            "%2 = OpSDiv %v2int %3 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1,1}),
-    // Test case 1: SDiv v2int -x / x
-    InstructionFoldingCase<std::vector<int32_t>>(
-        Header() + "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v2int Function\n" +
-            "%3 = OpLoad %v2int %n\n" +
-            "%4 = OpSNegate %v2int %3\n" +
-            "%2 = OpSDiv %v2int %4 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {-1,-1})
-  ));
+INSTANTIATE_TEST_SUITE_P(
+    RedundantDivVectorIntTest, IntVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Test case 0: SDiv v2int self-division x / x
+        InstructionFoldingCase<std::vector<int32_t>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v2int Function\n" +
+                "%3 = OpLoad %v2int %n\n" + "%2 = OpSDiv %v2int %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1, 1}),
+        // Test case 1: SDiv v2int -x / x
+        InstructionFoldingCase<std::vector<int32_t>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v2int Function\n" +
+                "%3 = OpLoad %v2int %n\n" + "%4 = OpSNegate %v2int %3\n" +
+                "%2 = OpSDiv %v2int %4 %3\n" + "OpReturn\n" + "OpFunctionEnd",
+            2, {-1, -1})));
 
-INSTANTIATE_TEST_SUITE_P(RedundantDivVectorUIntTest, UIntVectorInstructionFoldingTest,
-  ::testing::Values(
-    // Test case 0: UDiv v2uint self-division x / x
-    InstructionFoldingCase<std::vector<uint32_t>>(
-        Header() + "%_ptr_v2uint = OpTypePointer Function %v2uint\n" +
-            "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v2uint Function\n" +
-            "%3 = OpLoad %v2uint %n\n" +
-            "%2 = OpUDiv %v2uint %3 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1,1})
-  ));
+INSTANTIATE_TEST_SUITE_P(
+    RedundantDivVectorUIntTest, UIntVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Test case 0: UDiv v2uint self-division x / x
+        InstructionFoldingCase<std::vector<uint32_t>>(
+            Header() + "%_ptr_v2uint = OpTypePointer Function %v2uint\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v2uint Function\n" +
+                "%3 = OpLoad %v2uint %n\n" + "%2 = OpUDiv %v2uint %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1, 1})));
 
-INSTANTIATE_TEST_SUITE_P(ChallengerStressTest, FloatVectorInstructionFoldingTest,
-  ::testing::Values(
-    // Challenger Test case 0: FMix v3float
-    InstructionFoldingCase<std::vector<float>>(
-        Header() + "%v3float = OpTypeVector %float 3\n" +
-            "%v3float_2_3_4 = OpConstantComposite %v3float %float_2 %float_3 %float_4\n" +
-            "%v3float_0_0_0 = OpConstantComposite %v3float %float_0 %float_0 %float_0\n" +
-            "%v3float_0p2_0p5_0p5 = OpConstantComposite %v3float %float_0p2 %float_0p5 %float_0p5\n" +
-            "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%2 = OpExtInst %v3float %1 FMix %v3float_2_3_4 %v3float_0_0_0 %v3float_0p2_0p5_0p5\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1.6f, 1.5f, 2.0f}),
-    // Challenger Test case 1: FMix v4float with different components
-    InstructionFoldingCase<std::vector<float>>(
-        Header() +
-            "%v4float_2_3_4_5 = OpConstantComposite %v4float %float_2 %float_3 %float_4 %float_0\n" +
-            "%v4float_0p2_0p5_0p5_0p1 = OpConstantComposite %v4float %float_0p2 %float_0p5 %float_0p5 %float_0p2\n" +
-            "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%2 = OpExtInst %v4float %1 FMix %v4float_2_3_4_5 %v4float_0_0_0_0 %v4float_0p2_0p5_0p5_0p1\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1.6f, 1.5f, 2.0f, 0.0f})
-  ));
+INSTANTIATE_TEST_SUITE_P(
+    ChallengerStressTest, FloatVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Challenger Test case 0: FMix v3float
+        InstructionFoldingCase<std::vector<float>>(
+            Header() + "%v3float = OpTypeVector %float 3\n" +
+                "%v3float_2_3_4 = OpConstantComposite %v3float %float_2 "
+                "%float_3 %float_4\n" +
+                "%v3float_0_0_0 = OpConstantComposite %v3float %float_0 "
+                "%float_0 %float_0\n" +
+                "%v3float_0p2_0p5_0p5 = OpConstantComposite %v3float "
+                "%float_0p2 %float_0p5 %float_0p5\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpExtInst %v3float %1 FMix %v3float_2_3_4 %v3float_0_0_0 "
+                "%v3float_0p2_0p5_0p5\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.6f, 1.5f, 2.0f}),
+        // Challenger Test case 1: FMix v4float with different components
+        InstructionFoldingCase<std::vector<float>>(
+            Header() +
+                "%v4float_2_3_4_5 = OpConstantComposite %v4float %float_2 "
+                "%float_3 %float_4 %float_0\n" +
+                "%v4float_0p2_0p5_0p5_0p1 = OpConstantComposite %v4float "
+                "%float_0p2 %float_0p5 %float_0p5 %float_0p2\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%2 = OpExtInst %v4float %1 FMix %v4float_2_3_4_5 "
+                "%v4float_0_0_0_0 %v4float_0p2_0p5_0p5_0p1\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.6f, 1.5f, 2.0f, 0.0f})));
 
-INSTANTIATE_TEST_SUITE_P(ChallengerStressTestInt, IntVectorInstructionFoldingTest,
-  ::testing::Values(
-    // Challenger Test case 0: SDiv v3int self-division x / x
-    InstructionFoldingCase<std::vector<int32_t>>(
-        Header() + "%v3int = OpTypeVector %int 3\n" +
-            "%_ptr_v3int = OpTypePointer Function %v3int\n" +
-            "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v3int Function\n" +
-            "%3 = OpLoad %v3int %n\n" +
-            "%2 = OpSDiv %v3int %3 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1,1,1}),
-    // Challenger Test case 1: SDiv v4int self-division x / x
-    InstructionFoldingCase<std::vector<int32_t>>(
-        Header() + "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v4int Function\n" +
-            "%3 = OpLoad %v4int %n\n" +
-            "%2 = OpSDiv %v4int %3 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1,1,1,1})
-  ));
+INSTANTIATE_TEST_SUITE_P(
+    ChallengerStressTestInt, IntVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Challenger Test case 0: SDiv v3int self-division x / x
+        InstructionFoldingCase<std::vector<int32_t>>(
+            Header() + "%v3int = OpTypeVector %int 3\n" +
+                "%_ptr_v3int = OpTypePointer Function %v3int\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v3int Function\n" +
+                "%3 = OpLoad %v3int %n\n" + "%2 = OpSDiv %v3int %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1, 1, 1}),
+        // Challenger Test case 1: SDiv v4int self-division x / x
+        InstructionFoldingCase<std::vector<int32_t>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v4int Function\n" +
+                "%3 = OpLoad %v4int %n\n" + "%2 = OpSDiv %v4int %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1, 1, 1, 1})));
 
-INSTANTIATE_TEST_SUITE_P(ChallengerStressTestUInt, UIntVectorInstructionFoldingTest,
-  ::testing::Values(
-    // Challenger Test case 0: UDiv v3uint self-division x / x
-    InstructionFoldingCase<std::vector<uint32_t>>(
-        Header() + "%v3uint = OpTypeVector %uint 3\n" +
-            "%_ptr_v3uint = OpTypePointer Function %v3uint\n" +
-            "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v3uint Function\n" +
-            "%3 = OpLoad %v3uint %n\n" +
-            "%2 = OpUDiv %v3uint %3 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1,1,1}),
-    // Challenger Test case 1: UDiv v4uint self-division x / x
-    InstructionFoldingCase<std::vector<uint32_t>>(
-        Header() + "%_ptr_v4uint = OpTypePointer Function %v4uint\n" +
-            "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v4uint Function\n" +
-            "%3 = OpLoad %v4uint %n\n" +
-            "%2 = OpUDiv %v4uint %3 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1,1,1,1})
-  ));
+INSTANTIATE_TEST_SUITE_P(
+    ChallengerStressTestUInt, UIntVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Challenger Test case 0: UDiv v3uint self-division x / x
+        InstructionFoldingCase<std::vector<uint32_t>>(
+            Header() + "%v3uint = OpTypeVector %uint 3\n" +
+                "%_ptr_v3uint = OpTypePointer Function %v3uint\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v3uint Function\n" +
+                "%3 = OpLoad %v3uint %n\n" + "%2 = OpUDiv %v3uint %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1, 1, 1}),
+        // Challenger Test case 1: UDiv v4uint self-division x / x
+        InstructionFoldingCase<std::vector<uint32_t>>(
+            Header() + "%_ptr_v4uint = OpTypePointer Function %v4uint\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v4uint Function\n" +
+                "%3 = OpLoad %v4uint %n\n" + "%2 = OpUDiv %v4uint %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1, 1, 1, 1})));
 
-INSTANTIATE_TEST_SUITE_P(ChallengerStressTestDouble, DoubleVectorInstructionFoldingTest,
-  ::testing::Values(
-    // Challenger Test case 0: FDiv v3double self-division x / x
-    InstructionFoldingCase<std::vector<double>>(
-        Header() + "%v3double = OpTypeVector %double 3\n" +
-            "%_ptr_v3double = OpTypePointer Function %v3double\n" +
-            "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v3double Function\n" +
-            "%3 = OpLoad %v3double %n\n" +
-            "%2 = OpFDiv %v3double %3 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1.0,1.0,1.0}),
-    // Challenger Test case 1: FDiv v4double self-division x / x
-    InstructionFoldingCase<std::vector<double>>(
-        Header() + "%main = OpFunction %void None %void_func\n" +
-            "%main_lab = OpLabel\n" +
-            "%n = OpVariable %_ptr_v4double Function\n" +
-            "%3 = OpLoad %v4double %n\n" +
-            "%2 = OpFDiv %v4double %3 %3\n" +
-            "OpReturn\n" +
-            "OpFunctionEnd",
-        2, {1.0,1.0,1.0,1.0})
-  ));
-
+INSTANTIATE_TEST_SUITE_P(
+    ChallengerStressTestDouble, DoubleVectorInstructionFoldingTest,
+    ::testing::Values(
+        // Challenger Test case 0: FDiv v3double self-division x / x
+        InstructionFoldingCase<std::vector<double>>(
+            Header() + "%v3double = OpTypeVector %double 3\n" +
+                "%_ptr_v3double = OpTypePointer Function %v3double\n" +
+                "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v3double Function\n" +
+                "%3 = OpLoad %v3double %n\n" + "%2 = OpFDiv %v3double %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.0, 1.0, 1.0}),
+        // Challenger Test case 1: FDiv v4double self-division x / x
+        InstructionFoldingCase<std::vector<double>>(
+            Header() + "%main = OpFunction %void None %void_func\n" +
+                "%main_lab = OpLabel\n" +
+                "%n = OpVariable %_ptr_v4double Function\n" +
+                "%3 = OpLoad %v4double %n\n" + "%2 = OpFDiv %v4double %3 %3\n" +
+                "OpReturn\n" + "OpFunctionEnd",
+            2, {1.0, 1.0, 1.0, 1.0})));
 
 using FloatMatrixInstructionFoldingTest = ::testing::TestWithParam<
     InstructionFoldingCase<std::vector<std::vector<float>>>>;
