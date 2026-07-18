@@ -663,8 +663,19 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
     case SPV_OPERAND_TYPE_LITERAL_STRING:
     case SPV_OPERAND_TYPE_OPTIONAL_LITERAL_STRING: {
       const size_t max_words = _.num_words - _.word_index;
-      std::string string =
-          spvtools::utils::MakeString(_.words + _.word_index, max_words, false);
+      std::string string;
+      if (_.requires_endian_conversion) {
+        // On big-endian hosts, _.words still holds raw little-endian data at
+        // this point. Byte-swap before extracting the string characters.
+        std::vector<uint32_t> swapped(_.words + _.word_index,
+                                      _.words + _.word_index + max_words);
+        const spv_endianness_t endianness = _.endian;
+        for (auto& w : swapped) w = spvFixWord(w, endianness);
+        string = spvtools::utils::MakeString(swapped.data(), max_words, false);
+      } else {
+        string = spvtools::utils::MakeString(_.words + _.word_index, max_words,
+                                             false);
+      }
 
       if (string.length() == max_words * 4)
         return exhaustedInputDiagnostic(inst_offset, opcode, type);
