@@ -2056,6 +2056,22 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
                           ? _.FindDef(inst->GetOperandAs<uint32_t>(2))
                           : _.FindDef(base_type->word(3));
 
+  if (spvIsVulkanEnv(_.context()->target_env) && untyped_pointer) {
+    if (type_pointee->opcode() == spv::Op::OpTypeStruct &&
+        DoesStructContainRTA(_, type_pointee)) {
+      if (result_type_storage_class ==
+              static_cast<uint32_t>(spv::StorageClass::UniformConstant) &&
+          !_.IsDescriptorHeapBaseVariable(base)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << _.VkErrorID(4680)
+               << "For Vulkan, an OpTypeStruct in the UniformConstant "
+               << "storage class containing an OpTypeRuntimeArray must be "
+               << "accessed from a variable decorated with ResourceHeapEXT "
+               << "or SamplerHeapEXT.";
+      }
+    }
+  }
+
   // Check Universal Limit (SPIR-V Spec. Section 2.17).
   // The number of indexes passed to OpAccessChain may not exceed 255
   // The instruction includes 4 words + N words (for N indexes)
@@ -2838,6 +2854,25 @@ spv_result_t ValidateBufferPointerEXT(ValidationState_t& _,
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << "OpBufferPointerEXT's buffer must be an untyped pointer"
              << " into a variable declared with the ResourceHeapEXT built-in";
+    }
+
+    if (spvIsVulkanEnv(_.context()->target_env) &&
+        storage_class_ptr->opcode() == spv::Op::OpTypePointer) {
+      const auto storage_class =
+          storage_class_ptr->GetOperandAs<spv::StorageClass>(1);
+      const auto pointee_type_id =
+          storage_class_ptr->GetOperandAs<uint32_t>(2);
+      const auto pointee_type = _.FindDef(pointee_type_id);
+      if (pointee_type && pointee_type->opcode() == spv::Op::OpTypeStruct &&
+          DoesStructContainRTA(_, pointee_type)) {
+        if (storage_class != spv::StorageClass::StorageBuffer) {
+          return _.diag(SPV_ERROR_INVALID_ID, inst)
+                 << _.VkErrorID(4680)
+                 << "For Vulkan, an OpTypeRuntimeArray must be the last "
+                 << "member of an OpTypeStruct pointed to by the result of "
+                 << "OpBufferPointerEXT in the StorageBuffer storage class.";
+        }
+      }
     }
   }
   return SPV_SUCCESS;
