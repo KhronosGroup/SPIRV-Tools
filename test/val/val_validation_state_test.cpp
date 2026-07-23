@@ -232,6 +232,31 @@ TEST_F(ValidationStateTest, CheckAccessChainIndexesLimitOption) {
   EXPECT_EQ(100u, options_->universal_limits_.max_access_chain_indexes);
 }
 
+TEST_F(ValidationStateTest, CheckDescriptorHeapLayoutOptions) {
+  EXPECT_EQ(0u, options_->buffer_descriptor_layout.size);
+  EXPECT_EQ(1u, options_->buffer_descriptor_layout.alignment);
+  EXPECT_EQ(0u, options_->image_descriptor_layout.size);
+  EXPECT_EQ(1u, options_->image_descriptor_layout.alignment);
+  EXPECT_EQ(0u, options_->sampler_descriptor_layout.size);
+  EXPECT_EQ(1u, options_->sampler_descriptor_layout.alignment);
+  EXPECT_EQ(0u, options_->tensor_descriptor_layout.size);
+  EXPECT_EQ(1u, options_->tensor_descriptor_layout.alignment);
+
+  spvValidatorOptionsSetBufferDescriptorLayout(options_, 16u, 8u);
+  spvValidatorOptionsSetImageDescriptorLayout(options_, 64u, 16u);
+  spvValidatorOptionsSetSamplerDescriptorLayout(options_, 32u, 8u);
+  spvValidatorOptionsSetTensorDescriptorLayout(options_, 128u, 32u);
+
+  EXPECT_EQ(16u, options_->buffer_descriptor_layout.size);
+  EXPECT_EQ(8u, options_->buffer_descriptor_layout.alignment);
+  EXPECT_EQ(64u, options_->image_descriptor_layout.size);
+  EXPECT_EQ(16u, options_->image_descriptor_layout.alignment);
+  EXPECT_EQ(32u, options_->sampler_descriptor_layout.size);
+  EXPECT_EQ(8u, options_->sampler_descriptor_layout.alignment);
+  EXPECT_EQ(128u, options_->tensor_descriptor_layout.size);
+  EXPECT_EQ(32u, options_->tensor_descriptor_layout.alignment);
+}
+
 TEST_F(ValidationStateTest, CheckNonRecursiveBodyGood) {
   std::string spirv = std::string(kHeader) + kNonRecursiveBody;
   CompileSuccessfully(spirv);

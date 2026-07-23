@@ -2824,21 +2824,29 @@ spv_result_t ValidateCooperativeMatrixLoadStoreKHR(ValidationState_t& _,
 
 spv_result_t ValidateBufferPointerEXT(ValidationState_t& _,
                                       const Instruction* inst) {
-  const auto storage_class_ptr = _.FindDef(inst->GetOperandAs<uint32_t>(0));
+  const auto storage_class_ptr = _.FindDef(inst->type_id());
   if (storage_class_ptr->opcode() != spv::Op::OpTypeUntypedPointerKHR &&
       storage_class_ptr->opcode() != spv::Op::OpTypePointer) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpBufferPointerEXT's Result Type should be "
            << "a pointer type.";
-  } else {
-    // Buffer operand
-    auto buffer =
-        _.FindUntypedBaseVariable(_.FindDef(inst->GetOperandAs<uint32_t>(2)));
-    if (!buffer || !_.IsBuiltin(buffer->id(), spv::BuiltIn::ResourceHeapEXT)) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << "OpBufferPointerEXT's buffer must be an untyped pointer"
-             << " into a variable declared with the ResourceHeapEXT built-in";
-    }
+  }
+
+  auto sc = storage_class_ptr->GetOperandAs<spv::StorageClass>(1u);
+  if (sc != spv::StorageClass::StorageBuffer &&
+      sc != spv::StorageClass::Uniform) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpBufferPointerEXT Result Type must be a pointer type "
+           << "with a Storage Class of Uniform or StorageBuffer.";
+  }
+
+  // Buffer operand
+  auto buffer =
+      _.FindUntypedBaseVariable(_.FindDef(inst->GetOperandAs<uint32_t>(2)));
+  if (!buffer || !_.IsBuiltin(buffer->id(), spv::BuiltIn::ResourceHeapEXT)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "OpBufferPointerEXT's buffer must be an untyped pointer"
+           << " into a variable declared with the ResourceHeapEXT built-in";
   }
   return SPV_SUCCESS;
 }
