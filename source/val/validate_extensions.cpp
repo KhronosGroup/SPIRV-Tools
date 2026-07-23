@@ -3513,6 +3513,33 @@ spv_result_t ValidateExtInstDebugInfo(ValidationState_t& _,
 
   // Handle any non-common NonSemanticShaderDebugInfo instructions.
   if (vulkanDebugInfo) {
+    if (!_.options()->allow_unknown_nsdi_version) {
+      if (nsdi_version > kNSDIKnownVersion) {
+        return _.diag(SPV_ERROR_INVALID_DATA, inst)
+               << GetExtInstName(_, inst) << ": "
+               << "using an unknown version. Latest known version is "
+               << kNSDIKnownVersion;
+      }
+
+      const ExtInstDesc* desc = nullptr;
+      if (LookupExtInst(ext_inst_type, ext_inst_index, &desc) == SPV_SUCCESS &&
+          desc) {
+        auto op_type = desc->operands().back();
+        if (!spvOperandIsVariable(op_type)) {
+          size_t max_operands = desc->operands().size();
+          assert(inst->operands().size() >= 4);
+          size_t num_ext_operands = inst->operands().size() - 4;
+          if (num_ext_operands > max_operands) {
+            return _.diag(SPV_ERROR_INVALID_DATA, inst)
+                   << GetExtInstName(_, inst) << ": "
+                   << "incorrect number of operands: expected at most "
+                   << max_operands << " operands, but found"
+                   << num_ext_operands;
+          }
+        }
+      }
+    }
+
     const NonSemanticShaderDebugInfoInstructions ext_inst_key =
         NonSemanticShaderDebugInfoInstructions(ext_inst_index);
     switch (ext_inst_key) {

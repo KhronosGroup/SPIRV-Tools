@@ -138,6 +138,12 @@ class SPIRV_TOOLS_EXPORT ValidatorOptions {
     spvValidatorOptionsSetAllowVulkan32BitBitwise(options_, val);
   }
 
+  // Records whether or not the validator should bypass version checks for
+  // NonSemantic.Shader.DebugInfo instructions.
+  void SetAllowUnknownNsdiVersion(bool val) {
+    spvValidatorOptionsSetAllowUnknownNsdiVersion(options_, val);
+  }
+
   // Records whether or not the validator should relax the rules on pointer
   // usage in logical addressing mode.
   //

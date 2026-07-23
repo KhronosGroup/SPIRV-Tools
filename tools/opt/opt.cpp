@@ -97,6 +97,10 @@ NOTE: The optimizer is a work in progress.
 Options (in lexicographical order):)",
       program, program);
   printf(R"(
+  --allow-unknown-nsdi-version
+               Forwards this option to the validator.  See the validator help
+               for details.)");
+  printf(R"(
   --amd-ext-to-khr
                Replaces the extensions VK_AMD_shader_ballot, VK_AMD_gcn_shader,
                and VK_AMD_shader_trinary_minmax with equivalent code using core
@@ -830,6 +834,8 @@ OptStatus ParseFlags(int argc, const char** argv,
         optimizer->SetValidateAfterAll(true);
       } else if (0 == strcmp(cur_arg, "--before-hlsl-legalization")) {
         validator_options->SetBeforeHlslLegalization(true);
+      } else if (0 == strcmp(cur_arg, "--allow-unknown-nsdi-version")) {
+        validator_options->SetAllowUnknownNsdiVersion(true);
       } else if (0 == strcmp(cur_arg, "--relax-logical-pointer")) {
         validator_options->SetRelaxLogicalPointer(true);
       } else if (0 == strcmp(cur_arg, "--relax-block-layout")) {
