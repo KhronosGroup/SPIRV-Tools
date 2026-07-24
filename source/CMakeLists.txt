@@ -397,14 +397,14 @@ if(ENABLE_SPIRV_TOOLS_INSTALL)
     list(APPEND SPIRV_TOOLS_TARGETS mimalloc-static)
   endif()
   install(TARGETS ${SPIRV_TOOLS_TARGETS} EXPORT ${SPIRV_TOOLS}Targets)
-  export(EXPORT ${SPIRV_TOOLS}Targets FILE ${SPIRV_TOOLS}Target.cmake)
+  export(EXPORT ${SPIRV_TOOLS}Targets FILE ${SPIRV_TOOLS}Targets.cmake)
 
   spvtools_config_package_dir(${SPIRV_TOOLS} PACKAGE_DIR)
-  install(EXPORT ${SPIRV_TOOLS}Targets FILE ${SPIRV_TOOLS}Target.cmake DESTINATION ${PACKAGE_DIR})
+  install(EXPORT ${SPIRV_TOOLS}Targets FILE ${SPIRV_TOOLS}Targets.cmake DESTINATION ${PACKAGE_DIR})
 
   # Special config file for root library compared to other libs.
   file(WRITE ${CMAKE_BINARY_DIR}/${SPIRV_TOOLS}Config.cmake
-    "include(\${CMAKE_CURRENT_LIST_DIR}/${SPIRV_TOOLS}Target.cmake)\n"
+    "include(\${CMAKE_CURRENT_LIST_DIR}/${SPIRV_TOOLS}Targets.cmake)\n"
     "if(TARGET ${SPIRV_TOOLS})\n"
     "    set(${SPIRV_TOOLS}_LIBRARIES ${SPIRV_TOOLS})\n"
     "    get_target_property(${SPIRV_TOOLS}_INCLUDE_DIRS ${SPIRV_TOOLS} INTERFACE_INCLUDE_DIRECTORIES)\n"
