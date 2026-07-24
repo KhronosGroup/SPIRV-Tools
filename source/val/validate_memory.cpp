@@ -2479,7 +2479,8 @@ spv_result_t ValidateArrayLength(ValidationState_t& state,
   if (spvIsVulkanEnv(state.context()->target_env)) {
     const auto storage_class = pointer_ty->GetOperandAs<spv::StorageClass>(1);
     if (storage_class == spv::StorageClass::Uniform &&
-        state.HasDecoration(structure_type->id(), spv::Decoration::Block)) {
+        !state.HasDecoration(structure_type->id(),
+                             spv::Decoration::BufferBlock)) {
       return state.diag(SPV_ERROR_INVALID_ID, inst)
              << state.VkErrorID(11805) << "Op" << spvOpcodeString(opcode)
              << " must not be used on the OpTypeRuntimeArray inside a Uniform "
