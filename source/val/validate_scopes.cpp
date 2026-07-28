@@ -99,8 +99,7 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
       // Scope for Non Uniform Group Operations must be limited to Subgroup
       if ((spvOpcodeIsNonUniformGroupOperation(opcode) &&
            (opcode != spv::Op::OpGroupNonUniformQuadAllKHR) &&
-           (opcode != spv::Op::OpGroupNonUniformQuadAnyKHR) &&
-           (opcode != spv::Op::OpGroupNonUniformRotateKHR)) &&
+           (opcode != spv::Op::OpGroupNonUniformQuadAnyKHR)) &&
           (value != spv::Scope::Subgroup)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << _.VkErrorID(4642) << spvOpcodeString(opcode)
