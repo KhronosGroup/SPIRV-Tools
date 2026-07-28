@@ -1849,6 +1849,27 @@ bool ValidationState_t::EvalConstantValUint64(uint32_t id,
 
   if (inst->opcode() == spv::Op::OpConstantNull) {
     *val = 0;
+  } else if (inst->opcode() == spv::Op::OpConstantSizeOfEXT) {
+    auto type_op = GetIdOpcode(inst->GetOperandAs<uint32_t>(2u));
+    *val = 0;
+    switch (type_op) {
+      case spv::Op::OpTypeBufferEXT:
+      case spv::Op::OpTypeAccelerationStructureKHR:
+        *val = options()->buffer_descriptor_layout.size;
+        break;
+      case spv::Op::OpTypeSampler:
+        *val = options()->sampler_descriptor_layout.size;
+        break;
+      case spv::Op::OpTypeImage:
+        *val = options()->image_descriptor_layout.size;
+        break;
+      case spv::Op::OpTypeTensorARM:
+        *val = options()->tensor_descriptor_layout.size;
+        break;
+      default:
+        break;
+    }
+    return *val > 0;
   } else if (inst->opcode() != spv::Op::OpConstant) {
     // Spec constant values cannot be evaluated so don't consider constant for
     // static validation
@@ -1874,6 +1895,27 @@ bool ValidationState_t::EvalConstantValInt64(uint32_t id, int64_t* val) const {
 
   if (inst->opcode() == spv::Op::OpConstantNull) {
     *val = 0;
+  } else if (inst->opcode() == spv::Op::OpConstantSizeOfEXT) {
+    auto type_op = GetIdOpcode(inst->GetOperandAs<uint32_t>(2u));
+    *val = 0;
+    switch (type_op) {
+      case spv::Op::OpTypeBufferEXT:
+      case spv::Op::OpTypeAccelerationStructureKHR:
+        *val = static_cast<int64_t>(options()->buffer_descriptor_layout.size);
+        break;
+      case spv::Op::OpTypeSampler:
+        *val = static_cast<int64_t>(options()->sampler_descriptor_layout.size);
+        break;
+      case spv::Op::OpTypeImage:
+        *val = static_cast<int64_t>(options()->image_descriptor_layout.size);
+        break;
+      case spv::Op::OpTypeTensorARM:
+        *val = static_cast<int64_t>(options()->tensor_descriptor_layout.size);
+        break;
+      default:
+        break;
+    }
+    return *val > 0;
   } else if (inst->opcode() != spv::Op::OpConstant) {
     // Spec constant values cannot be evaluated so don't consider constant for
     // static validation

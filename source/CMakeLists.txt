@@ -263,6 +263,7 @@ set(SPIRV_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_dot_product.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_extensions.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_execution_limitations.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_explicit_layout.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_function.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_graph.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/val/validate_group.cpp

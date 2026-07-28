@@ -427,6 +427,7 @@ spv_result_t ValidateBinaryUsingContextAndValidationState(
   if (auto error = PerformCfgChecks(*vstate)) return error;
   if (auto error = CheckIdDefinitionDominateUse(*vstate)) return error;
   if (auto error = ValidateDecorations(*vstate)) return error;
+  if (auto error = ValidateExplicitLayout(*vstate)) return error;
   if (auto error = ValidateInterfaces(*vstate)) return error;
   // TODO(dsinclair): Restructure ValidateBuiltins so we can move into the
   // for() above as it loops over all ordered_instructions internally.

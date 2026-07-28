@@ -1228,8 +1228,9 @@ TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTDecorate) {
        %uint = OpTypeInt 32 0
 %_ptr_Output_uint = OpTypePointer Output %uint
           %o = OpVariable %_ptr_Output_uint Output
-%_ptr_Uniform = OpTypeUntypedPointerKHR UniformConstant
-%resource_heap = OpUntypedVariableKHR %_ptr_Uniform UniformConstant
+%_ptr_Uniform = OpTypeUntypedPointerKHR Uniform
+%_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
+%resource_heap = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
         %int = OpTypeInt 32 1
       %int_9 = OpConstant %int 9
           %U = OpTypeStruct %uint
@@ -1239,7 +1240,7 @@ TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTDecorate) {
 %_runtimearr_17 = OpTypeRuntimeArray %17
        %main = OpFunction %void None %3
           %5 = OpLabel
-         %16 = OpUntypedAccessChainKHR %_ptr_Uniform %_runtimearr_17 %resource_heap %int_9
+         %16 = OpUntypedAccessChainKHR %_ptr_UniformConstant %_runtimearr_17 %resource_heap %int_9
          %20 = OpBufferPointerEXT %_ptr_Uniform %16
          %21 = OpUntypedAccessChainKHR %_ptr_Uniform %U %20 %int_0
          %22 = OpLoad %uint %21
@@ -1819,15 +1820,15 @@ TEST_F(ValidateSpvEXTDescriptorHeap, OffsetIdStructOfStructOfImage) {
                OpExecutionMode %1 LocalSize 1 1 1
                OpDecorate %2 BuiltIn ResourceHeapEXT
                OpMemberDecorate %struct 0 Offset 0
-               OpMemberDecorateIdEXT %struct 1 OffsetIdEXT %uint_0
+               OpMemberDecorateIdEXT %struct 1 OffsetIdEXT %uint_4
                OpMemberDecorate %image_struct 0 Offset 0
        %void = OpTypeVoid
           %7 = OpTypeFunction %void
        %uint = OpTypeInt 32 0
      %uint_0 = OpConstant %uint 0
      %uint_1 = OpConstant %uint 1
+     %uint_4 = OpConstant %uint 4
  %uint_51966 = OpConstant %uint 51966
-   %uint_0_0 = OpConstant %uint 0
 %_ptr_UniformConstant = OpTypeUntypedPointerKHR UniformConstant
           %2 = OpUntypedVariableKHR %_ptr_UniformConstant UniformConstant
          %14 = OpTypeImage %uint Buffer 0 0 0 2 R32ui

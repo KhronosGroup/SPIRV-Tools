@@ -788,6 +788,24 @@ SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetAllowVulkan32BitBitwise(
 SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetFriendlyNames(
     spv_validator_options options, bool val);
 
+// Sets custom size and alignment for buffer and acceleration structure
+// descriptor heap resources.
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetBufferDescriptorLayout(
+    spv_validator_options options, uint32_t size, uint32_t alignment);
+
+// Sets custom size and alignment for image and sampled image descriptor heap
+// resources.
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetImageDescriptorLayout(
+    spv_validator_options options, uint32_t size, uint32_t alignment);
+
+// Sets custom size and alignment for sampler descriptor heap resources.
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetSamplerDescriptorLayout(
+    spv_validator_options options, uint32_t size, uint32_t alignment);
+
+// Sets custom size and alignment for tensor descriptor heap resources.
+SPIRV_TOOLS_EXPORT void spvValidatorOptionsSetTensorDescriptorLayout(
+    spv_validator_options options, uint32_t size, uint32_t alignment);
+
 // Creates an optimizer options object with default options. Returns a valid
 // options object. The object remains valid until it is passed into
 // |spvOptimizerOptionsDestroy|.
