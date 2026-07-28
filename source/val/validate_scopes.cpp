@@ -99,7 +99,8 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
       // Scope for Non Uniform Group Operations must be limited to Subgroup
       if ((spvOpcodeIsNonUniformGroupOperation(opcode) &&
            (opcode != spv::Op::OpGroupNonUniformQuadAllKHR) &&
-           (opcode != spv::Op::OpGroupNonUniformQuadAnyKHR)) &&
+           (opcode != spv::Op::OpGroupNonUniformQuadAnyKHR) &&
+           (opcode != spv::Op::OpGroupNonUniformRotateKHR)) &&
           (value != spv::Scope::Subgroup)) {
         return _.diag(SPV_ERROR_INVALID_DATA, inst)
                << _.VkErrorID(4642) << spvOpcodeString(opcode)
@@ -186,11 +187,19 @@ spv_result_t ValidateExecutionScope(ValidationState_t& _,
   // TODO(atgoo@github.com) Add checks for OpenCL and OpenGL environments.
 
   // General SPIRV rules
-  // Scope for execution must be limited to Workgroup or Subgroup for
-  // non-uniform operations
+  // OpGroupNonUniformRotateKHR is the only non-uniform group operation that
+  // allows Workgroup scope; all others are limited to Subgroup.
   if (spvOpcodeIsNonUniformGroupOperation(opcode) &&
       opcode != spv::Op::OpGroupNonUniformQuadAllKHR &&
       opcode != spv::Op::OpGroupNonUniformQuadAnyKHR &&
+      opcode != spv::Op::OpGroupNonUniformRotateKHR &&
+      value != spv::Scope::Subgroup) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << spvOpcodeString(opcode) << ": Execution scope is limited to "
+           << "Subgroup";
+  }
+
+  if (opcode == spv::Op::OpGroupNonUniformRotateKHR &&
       value != spv::Scope::Subgroup && value != spv::Scope::Workgroup) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
            << spvOpcodeString(opcode)
