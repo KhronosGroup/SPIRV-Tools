@@ -32,11 +32,11 @@ namespace val {
 namespace {
 
 enum class LayoutMode : uint8_t {
-  // Scalar block rules
+  // Vulkan scalar block rules
   kScalar,
-  // Standard layout rules (e.g. std430)
+  // Vulkan standard alignment rules (i.e. std430)
   kStandard,
-  // Extended layout rules (e.g. std140)
+  // Vulkan extended alignment rules (i.e. std140)
   kExtended,
 };
 
