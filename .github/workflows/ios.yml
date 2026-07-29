@@ -14,10 +14,10 @@ jobs:
     runs-on: macos-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
-        - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
           with:
             persist-credentials: false
-        - uses: lukka/get-cmake@e6906078ebd1ccb8ce51ab4626ac46a1b5a517e3 # v4.4.0
+        - uses: lukka/get-cmake@4a7d025fc60f00db0c7b44ebf783d19b52444830 # v4.4.1
         - name: Download dependencies
           run: python3 utils/git-sync-deps
         # NOTE: The MacOS SDK ships universal binaries. CI should reflect this.
