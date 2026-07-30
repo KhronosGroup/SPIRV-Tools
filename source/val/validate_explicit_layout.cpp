@@ -1074,7 +1074,6 @@ struct Impl {
         continue;
       }
 
-
       // Descriptor arrays shouldn't have a stride. Check for that here since
       // most descriptors require a layout.
       if (reference.descriptor_array_id != 0) {
