@@ -1876,10 +1876,12 @@ bool ValidationState_t::EvalConstantValUint64(uint32_t id,
     return false;
   } else if (inst->words().size() == 4) {
     *val = inst->word(3);
-  } else {
-    assert(inst->words().size() == 5);
+  } else if (inst->words().size() == 5) {
     *val = inst->word(3);
     *val |= uint64_t(inst->word(4)) << 32;
+  } else {
+    // Literal value wider than 64 bits does not fit in a uint64_t.
+    return false;
   }
   return true;
 }
@@ -1922,11 +1924,13 @@ bool ValidationState_t::EvalConstantValInt64(uint32_t id, int64_t* val) const {
     return false;
   } else if (inst->words().size() == 4) {
     *val = int32_t(inst->word(3));
-  } else {
-    assert(inst->words().size() == 5);
+  } else if (inst->words().size() == 5) {
     const uint32_t lo_word = inst->word(3);
     const uint32_t hi_word = inst->word(4);
     *val = static_cast<int64_t>(uint64_t(lo_word) | uint64_t(hi_word) << 32);
+  } else {
+    // Literal value wider than 64 bits does not fit in an int64_t.
+    return false;
   }
   return true;
 }
