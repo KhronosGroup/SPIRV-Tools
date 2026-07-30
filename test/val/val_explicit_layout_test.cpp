@@ -5526,6 +5526,70 @@ TEST_F(ValidateExplicitLayout, MatrixStride_TooSmall) {
       HasSubstr("Matrix with a stride 12 not satisfying alignment to 16"));
 }
 
+TEST_F(ValidateExplicitLayout, Offset_Unaligned) {
+  const std::string spirv = R"(
+               OpCapability PhysicalStorageBufferAddresses
+               OpCapability Shader
+               OpExtension "SPV_KHR_physical_storage_buffer"
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %main "main" %uniforms
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %_ptr_PhysicalStorageBuffer_BDA_natural ArrayStride 260
+               OpDecorate %Uniforms_std430 Block
+               OpMemberDecorate %Uniforms_std430 0 Offset 0
+               OpMemberDecorate %Uniforms_std430 1 Offset 8
+               OpDecorate %_ptr_PhysicalStorageBuffer_uint ArrayStride 4
+               OpDecorate %_ptr_PhysicalStorageBuffer__Array_natural_vector_uint_4_16 ArrayStride 256
+               OpDecorate %_arr_v4uint_int_16 ArrayStride 16
+               OpDecorate %_ptr_PhysicalStorageBuffer__arr_v4uint_int_16 ArrayStride 256
+               OpDecorate %_ptr_PhysicalStorageBuffer_v4uint ArrayStride 16
+               OpMemberDecorate %_Array_natural_vector_uint_4_16 0 Offset 0
+               OpMemberDecorate %BDA_natural 0 Offset 0
+               OpMemberDecorate %BDA_natural 1 Offset 4
+       %void = OpTypeVoid
+         %13 = OpTypeFunction %void
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_BDA_natural PhysicalStorageBuffer
+%Uniforms_std430 = OpTypeStruct %_ptr_PhysicalStorageBuffer_BDA_natural %_ptr_PhysicalStorageBuffer_BDA_natural
+%_ptr_PushConstant_Uniforms_std430 = OpTypePointer PushConstant %Uniforms_std430
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_PushConstant_6 = OpTypePointer PushConstant %_ptr_PhysicalStorageBuffer_BDA_natural
+       %uint = OpTypeInt 32 0
+%_ptr_PhysicalStorageBuffer_uint = OpTypePointer PhysicalStorageBuffer %uint
+      %int_1 = OpConstant %int 1
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer__Array_natural_vector_uint_4_16 PhysicalStorageBuffer
+     %v4uint = OpTypeVector %uint 4
+     %int_16 = OpConstant %int 16
+%_arr_v4uint_int_16 = OpTypeArray %v4uint %int_16
+%_ptr_PhysicalStorageBuffer__arr_v4uint_int_16 = OpTypePointer PhysicalStorageBuffer %_arr_v4uint_int_16
+%_ptr_PhysicalStorageBuffer_v4uint = OpTypePointer PhysicalStorageBuffer %v4uint
+%_Array_natural_vector_uint_4_16 = OpTypeStruct %_arr_v4uint_int_16
+%BDA_natural = OpTypeStruct %uint %_Array_natural_vector_uint_4_16
+%_ptr_PhysicalStorageBuffer_BDA_natural = OpTypePointer PhysicalStorageBuffer %BDA_natural
+%_ptr_PhysicalStorageBuffer__Array_natural_vector_uint_4_16 = OpTypePointer PhysicalStorageBuffer %_Array_natural_vector_uint_4_16
+   %uniforms = OpVariable %_ptr_PushConstant_Uniforms_std430 PushConstant
+       %main = OpFunction %void None %13
+         %22 = OpLabel
+         %23 = OpAccessChain %_ptr_PushConstant_6 %uniforms %int_0
+         %24 = OpLoad %_ptr_PhysicalStorageBuffer_BDA_natural %23
+         %25 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %24 %int_0
+         %26 = OpLoad %_ptr_PhysicalStorageBuffer_BDA_natural %23
+         %27 = OpAccessChain %_ptr_PhysicalStorageBuffer__Array_natural_vector_uint_4_16 %26 %int_1
+         %28 = OpAccessChain %_ptr_PhysicalStorageBuffer__arr_v4uint_int_16 %27 %int_0
+         %29 = OpAccessChain %_ptr_PhysicalStorageBuffer_v4uint %28 %int_0
+         %30 = OpLoad %v4uint %29 Aligned 4
+         %31 = OpCompositeExtract %uint %30 0
+               OpStore %25 %31 Aligned 4
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Structure member 1 at offset 4 is not aligned to 16"));
+}
+
 using UntypedPointerLayout =
     spvtest::ValidateBase<std::tuple<std::string, std::string>>;
 
