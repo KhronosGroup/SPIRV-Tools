@@ -519,7 +519,8 @@ struct Impl {
 
   // Returns the alignment for type_id for the given layout rules.
   uint32_t GetAlign(uint32_t type_id, LayoutMode mode,
-                    const MatrixConstraints& matrix_constraints) {
+                    const MatrixConstraints& matrix_constraints,
+                    bool allow_relaxed = true) {
     const auto* type_inst = vstate.FindDef(type_id);
     uint32_t align = 1;
     switch (type_inst->opcode()) {
@@ -547,7 +548,10 @@ struct Impl {
         const auto ele_id = type_inst->GetOperandAs<uint32_t>(1u);
         const auto num_eles = vstate.GetDimension(type_id);
         align = GetAlign(ele_id, mode, {});
-        if (mode == LayoutMode::kScalar || vstate.IsRelaxedBlockLayout()) {
+        // Relaxed layout only applies to vectors as direct members of structs.
+        // Arrays and matrices are not relaxed.
+        if (mode == LayoutMode::kScalar ||
+            (allow_relaxed && vstate.IsRelaxedBlockLayout())) {
           return align;
         }
         return align * ((num_eles == 3 || num_eles > 4) ? 4 : num_eles);
@@ -561,7 +565,8 @@ struct Impl {
         }
 
         if (matrix_constraints.col_major) {
-          align = GetAlign(type_inst->GetOperandAs<uint32_t>(1u), mode, {});
+          align = GetAlign(type_inst->GetOperandAs<uint32_t>(1u), mode, {},
+                           /* allow_relaxed = */ false);
         } else {
           // A row-major matrix of C columns has a base alignment equal to the
           // base alignment of a vector of C matrix components.
@@ -572,7 +577,7 @@ struct Impl {
           align = GetAlign(ele_id, mode, {});
           // The equivalent vector may not exist so we replicate the vector rule
           // here.
-          if (mode != LayoutMode::kScalar && !vstate.IsRelaxedBlockLayout()) {
+          if (mode != LayoutMode::kScalar) {
             align = align * (num_cols == 3 ? 4 : num_cols);
           }
         }
@@ -583,7 +588,7 @@ struct Impl {
       case spv::Op::OpTypeArray:
       case spv::Op::OpTypeRuntimeArray:
         align = GetAlign(type_inst->GetOperandAs<uint32_t>(1u), mode,
-                         matrix_constraints);
+                         matrix_constraints, /* allow_relaxed = */ false);
         if (mode == LayoutMode::kExtended) {
           align = AlignTo(align, 16u);
         }
@@ -1068,6 +1073,7 @@ struct Impl {
       if (!GetMemoryReference(&inst, &reference)) {
         continue;
       }
+
 
       // Descriptor arrays shouldn't have a stride. Check for that here since
       // most descriptors require a layout.
