@@ -5468,6 +5468,128 @@ OpFunctionEnd
                         "from the ArrayStride decoration"));
 }
 
+TEST_F(ValidateExplicitLayout, MatrixStride_TooSmall) {
+  const std::string spirv = R"(
+               OpCapability Shader
+               OpCapability PhysicalStorageBufferAddresses
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %main "main" %_
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %PushConstant Block
+               OpMemberDecorate %PushConstant 0 Offset 0
+               OpMemberDecorate %Transform_0 0 ColMajor
+               OpMemberDecorate %Transform_0 0 MatrixStride 12
+               OpMemberDecorate %Transform_0 0 Offset 0
+               OpMemberDecorate %Transform_0 1 Offset 36
+               OpMemberDecorate %Transform_0 2 Offset 48
+               OpMemberDecorate %Transform_0 3 Offset 60
+               OpDecorate %_runtimearr_Transform_0 ArrayStride 64
+               OpDecorate %Transforms Block
+               OpMemberDecorate %Transforms 0 NonWritable
+               OpMemberDecorate %Transforms 0 Offset 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+%mat3v3float = OpTypeMatrix %v3float 3
+  %Transform = OpTypeStruct %mat3v3float %v3float %v3float %float
+%_ptr_Function_Transform = OpTypePointer Function %Transform
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_Transforms PhysicalStorageBuffer
+%PushConstant = OpTypeStruct %_ptr_PhysicalStorageBuffer_Transforms
+%Transform_0 = OpTypeStruct %mat3v3float %v3float %v3float %float
+%_runtimearr_Transform_0 = OpTypeRuntimeArray %Transform_0
+ %Transforms = OpTypeStruct %_runtimearr_Transform_0
+%_ptr_PhysicalStorageBuffer_Transforms = OpTypePointer PhysicalStorageBuffer %Transforms
+%_ptr_PushConstant_PushConstant = OpTypePointer PushConstant %PushConstant
+          %_ = OpVariable %_ptr_PushConstant_PushConstant PushConstant
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_PushConstant__ptr_PhysicalStorageBuffer_Transforms = OpTypePointer PushConstant %_ptr_PhysicalStorageBuffer_Transforms
+%_ptr_PhysicalStorageBuffer_Transform_0 = OpTypePointer PhysicalStorageBuffer %Transform_0
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+  %transform = OpVariable %_ptr_Function_Transform Function
+         %22 = OpAccessChain %_ptr_PushConstant__ptr_PhysicalStorageBuffer_Transforms %_ %int_0
+         %23 = OpLoad %_ptr_PhysicalStorageBuffer_Transforms %22
+         %25 = OpAccessChain %_ptr_PhysicalStorageBuffer_Transform_0 %23 %int_0 %int_0
+         %26 = OpLoad %Transform_0 %25 Aligned 64
+         %27 = OpCopyLogical %Transform %26
+               OpStore %transform %27
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Matrix with a stride 12 not satisfying alignment to 16"));
+}
+
+TEST_F(ValidateExplicitLayout, Offset_Unaligned) {
+  const std::string spirv = R"(
+               OpCapability PhysicalStorageBufferAddresses
+               OpCapability Shader
+               OpExtension "SPV_KHR_physical_storage_buffer"
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint GLCompute %main "main" %uniforms
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %_ptr_PhysicalStorageBuffer_BDA_natural ArrayStride 260
+               OpDecorate %Uniforms_std430 Block
+               OpMemberDecorate %Uniforms_std430 0 Offset 0
+               OpMemberDecorate %Uniforms_std430 1 Offset 8
+               OpDecorate %_ptr_PhysicalStorageBuffer_uint ArrayStride 4
+               OpDecorate %_ptr_PhysicalStorageBuffer__Array_natural_vector_uint_4_16 ArrayStride 256
+               OpDecorate %_arr_v4uint_int_16 ArrayStride 16
+               OpDecorate %_ptr_PhysicalStorageBuffer__arr_v4uint_int_16 ArrayStride 256
+               OpDecorate %_ptr_PhysicalStorageBuffer_v4uint ArrayStride 16
+               OpMemberDecorate %_Array_natural_vector_uint_4_16 0 Offset 0
+               OpMemberDecorate %BDA_natural 0 Offset 0
+               OpMemberDecorate %BDA_natural 1 Offset 4
+       %void = OpTypeVoid
+         %13 = OpTypeFunction %void
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer_BDA_natural PhysicalStorageBuffer
+%Uniforms_std430 = OpTypeStruct %_ptr_PhysicalStorageBuffer_BDA_natural %_ptr_PhysicalStorageBuffer_BDA_natural
+%_ptr_PushConstant_Uniforms_std430 = OpTypePointer PushConstant %Uniforms_std430
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_PushConstant_6 = OpTypePointer PushConstant %_ptr_PhysicalStorageBuffer_BDA_natural
+       %uint = OpTypeInt 32 0
+%_ptr_PhysicalStorageBuffer_uint = OpTypePointer PhysicalStorageBuffer %uint
+      %int_1 = OpConstant %int 1
+               OpTypeForwardPointer %_ptr_PhysicalStorageBuffer__Array_natural_vector_uint_4_16 PhysicalStorageBuffer
+     %v4uint = OpTypeVector %uint 4
+     %int_16 = OpConstant %int 16
+%_arr_v4uint_int_16 = OpTypeArray %v4uint %int_16
+%_ptr_PhysicalStorageBuffer__arr_v4uint_int_16 = OpTypePointer PhysicalStorageBuffer %_arr_v4uint_int_16
+%_ptr_PhysicalStorageBuffer_v4uint = OpTypePointer PhysicalStorageBuffer %v4uint
+%_Array_natural_vector_uint_4_16 = OpTypeStruct %_arr_v4uint_int_16
+%BDA_natural = OpTypeStruct %uint %_Array_natural_vector_uint_4_16
+%_ptr_PhysicalStorageBuffer_BDA_natural = OpTypePointer PhysicalStorageBuffer %BDA_natural
+%_ptr_PhysicalStorageBuffer__Array_natural_vector_uint_4_16 = OpTypePointer PhysicalStorageBuffer %_Array_natural_vector_uint_4_16
+   %uniforms = OpVariable %_ptr_PushConstant_Uniforms_std430 PushConstant
+       %main = OpFunction %void None %13
+         %22 = OpLabel
+         %23 = OpAccessChain %_ptr_PushConstant_6 %uniforms %int_0
+         %24 = OpLoad %_ptr_PhysicalStorageBuffer_BDA_natural %23
+         %25 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %24 %int_0
+         %26 = OpLoad %_ptr_PhysicalStorageBuffer_BDA_natural %23
+         %27 = OpAccessChain %_ptr_PhysicalStorageBuffer__Array_natural_vector_uint_4_16 %26 %int_1
+         %28 = OpAccessChain %_ptr_PhysicalStorageBuffer__arr_v4uint_int_16 %27 %int_0
+         %29 = OpAccessChain %_ptr_PhysicalStorageBuffer_v4uint %28 %int_0
+         %30 = OpLoad %v4uint %29 Aligned 4
+         %31 = OpCompositeExtract %uint %30 0
+               OpStore %25 %31 Aligned 4
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Structure member 1 at offset 4 is not aligned to 16"));
+}
+
 using UntypedPointerLayout =
     spvtest::ValidateBase<std::tuple<std::string, std::string>>;
 
@@ -5574,13 +5696,9 @@ OpFunctionEnd
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
   const bool read_only = sc == "Uniform" || sc == "PushConstant";
-  if (sc == "Uniform") {
+  if (!read_only || op.find("OpStore") == std::string::npos) {
     EXPECT_THAT(getDiagnosticString(),
                 HasSubstr("Array stride 4 must satisfy alignment 16"));
-  } else if (!read_only || op.find("OpStore") == std::string::npos) {
-    EXPECT_THAT(
-        getDiagnosticString(),
-        HasSubstr("Array stride 4 is smaller than element type size 16"));
   }
 }
 
@@ -5633,12 +5751,9 @@ OpFunctionEnd
   CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_2);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
   const bool read_only = sc == "Uniform" || sc == "PushConstant";
-  if (sc == "Uniform") {
+  if (!read_only || op.find("OpStore") == std::string::npos) {
     EXPECT_THAT(getDiagnosticString(),
                 HasSubstr("Array stride 15 must satisfy alignment 16"));
-  } else if (!read_only || op.find("OpStore") == std::string::npos) {
-    EXPECT_THAT(getDiagnosticString(),
-                HasSubstr("Array stride 15 must satisfy alignment 4"));
   }
 }
 
