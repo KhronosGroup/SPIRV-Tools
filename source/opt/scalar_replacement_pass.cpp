@@ -467,6 +467,21 @@ void ScalarReplacementPass::TransferAnnotations(
   }
 }
 
+bool ScalarReplacementPass::IsPhysicalStorageBufferPointerVariable(
+    const Instruction* var_inst) const {
+  if (var_inst->opcode() != spv::Op::OpVariable) {
+    return false;
+  }
+
+  Instruction* storage_type = GetStorageType(var_inst);
+  if (storage_type->opcode() != spv::Op::OpTypePointer) {
+    return false;
+  }
+
+  return spv::StorageClass(storage_type->GetSingleWordInOperand(0)) ==
+         spv::StorageClass::PhysicalStorageBuffer;
+}
+
 void ScalarReplacementPass::CreateVariable(
     uint32_t type_id, Instruction* var_inst, uint32_t index,
     std::vector<Instruction*>* replacements) {
@@ -987,6 +1002,7 @@ void ScalarReplacementPass::CopyPointerDecorationsToVariable(Instruction* from,
 void ScalarReplacementPass::CopyNecessaryMemberDecorationsToVariable(
     Instruction* from, Instruction* to, uint32_t member_index) {
   Instruction* type_inst = GetStorageType(from);
+  std::vector<Instruction*> decorations_to_kill;
   for (auto dec_inst :
        get_decoration_mgr()->GetDecorationsFor(type_inst->result_id(), false)) {
     uint32_t decoration;
@@ -1002,7 +1018,17 @@ void ScalarReplacementPass::CopyNecessaryMemberDecorationsToVariable(
         case spv::Decoration::AlignmentId:
         case spv::Decoration::MaxByteOffset:
         case spv::Decoration::MaxByteOffsetId:
-        case spv::Decoration::RelaxedPrecision: {
+        case spv::Decoration::RelaxedPrecision:
+        case spv::Decoration::AliasedPointer:
+        case spv::Decoration::RestrictPointer: {
+          if ((decoration == uint32_t(spv::Decoration::AliasedPointer) ||
+               decoration == uint32_t(spv::Decoration::RestrictPointer)) &&
+              (!IsPhysicalStorageBufferPointerVariable(to) ||
+                get_decoration_mgr()->HasDecoration(
+                    to->result_id(), static_cast<spv::Decoration>(decoration)))) {
+            decorations_to_kill.push_back(dec_inst);
+            break;
+          }
           std::unique_ptr<Instruction> new_dec_inst(
               new Instruction(context(), spv::Op::OpDecorate, 0, 0, {}));
           new_dec_inst->AddOperand(
@@ -1011,11 +1037,18 @@ void ScalarReplacementPass::CopyNecessaryMemberDecorationsToVariable(
             new_dec_inst->AddOperand(Operand(dec_inst->GetInOperand(i)));
           }
           context()->AddAnnotationInst(std::move(new_dec_inst));
+          if (decoration == uint32_t(spv::Decoration::AliasedPointer) ||
+              decoration == uint32_t(spv::Decoration::RestrictPointer)) {
+            decorations_to_kill.push_back(dec_inst);
+          }
         } break;
         default:
           break;
       }
     }
+  }
+  for (auto* decoration_inst : decorations_to_kill) {
+    context()->KillInst(decoration_inst);
   }
 }
 

@@ -128,6 +128,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   switch_descriptorset_pass.h
   tree_iterator.h
   trim_capabilities_pass.h
+  trim_variable_pointers_capabilities_pass.h
   type_manager.h
   types.h
   unify_const_pass.h
@@ -249,6 +250,7 @@ set(SPIRV_TOOLS_OPT_SOURCES
   struct_packing_pass.cpp
   switch_descriptorset_pass.cpp
   trim_capabilities_pass.cpp
+  trim_variable_pointers_capabilities_pass.cpp
   type_manager.cpp
   types.cpp
   unify_const_pass.cpp
