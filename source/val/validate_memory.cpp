@@ -2520,6 +2520,41 @@ spv_result_t ValidateCooperativeMatrixLength(ValidationState_t& state,
   return SPV_SUCCESS;
 }
 
+spv_result_t ValidateCooperativeMatrixGetCoordinateEXT(
+    ValidationState_t& state, const Instruction* inst) {
+  std::string instr_name = "OpCooperativeMatrixGetCoordinateEXT";
+
+  // Result type must be a uvec2
+  if (!state.IsIntVectorType(inst->type_id(), 32, 2)) {
+    return state.diag(SPV_ERROR_INVALID_ID, inst)
+           << instr_name << " Result Type <id> "
+           << state.getIdName(inst->type_id())
+           << " must be OpTypeVector with two 32-bit integer components.";
+  }
+
+  // Matrix operand must be a cooperative matrix
+  auto matrix_type_id =
+      state.FindDef(inst->GetOperandAs<uint32_t>(2))->type_id();
+  if (!state.IsCooperativeMatrixKHRType(matrix_type_id)) {
+    return state.diag(SPV_ERROR_INVALID_ID, inst)
+           << instr_name << " Matrix <id> "
+           << state.getIdName(inst->GetOperandAs<uint32_t>(2))
+           << " must be OpTypeCooperativeMatrixKHR.";
+  }
+
+  // Index operand must be a 32-bit int.
+  auto index_type_id =
+      state.FindDef(inst->GetOperandAs<uint32_t>(3))->type_id();
+  if (!state.IsIntScalarType(index_type_id, 32)) {
+    return state.diag(SPV_ERROR_INVALID_ID, inst)
+           << instr_name << " Index <id> "
+           << state.getIdName(inst->GetOperandAs<uint32_t>(3))
+           << " must be OpTypeInt with width 32.";
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateCooperativeMatrixLoadStoreNV(ValidationState_t& _,
                                                   const Instruction* inst) {
   uint32_t type_id;
@@ -3832,6 +3867,8 @@ spv_result_t MemoryPass(ValidationState_t& _, const Instruction* inst) {
       return ValidateCooperativeMatrixLength(_, inst, true);
     case spv::Op::OpCooperativeMatrixLengthNV:
       return ValidateCooperativeMatrixLength(_, inst, false);
+    case spv::Op::OpCooperativeMatrixGetCoordinateEXT:
+      return ValidateCooperativeMatrixGetCoordinateEXT(_, inst);
     case spv::Op::OpCooperativeMatrixLoadKHR:
     case spv::Op::OpCooperativeMatrixStoreKHR:
       return ValidateCooperativeMatrixLoadStoreKHR(_, inst);

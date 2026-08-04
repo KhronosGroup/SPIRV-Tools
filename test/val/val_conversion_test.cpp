@@ -2810,6 +2810,7 @@ OpEntryPoint GLCompute %main "main"
 %val52A = OpCooperativeMatrixConvertNV %f32matA %f32matAcc_1
 %val53A = OpCooperativeMatrixConvertNV %u16matA %u16matAcc_1
 %val54A = OpCooperativeMatrixConvertNV %s16matA %s16matAcc_1
+%val55A = OpCooperativeMatrixConvertNV %s16matA %u16matAcc_1
 
 %val51B = OpCooperativeMatrixConvertNV %f16matB %f16matAcc_1
 %val52B = OpCooperativeMatrixConvertNV %f32matB %f32matAcc_1
@@ -3333,6 +3334,518 @@ OpFunctionEnd
 )";
   CompileSuccessfully(spirv.c_str());
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateConversion, CoopMatMaint1ConversionSuccess) {
+  const std::string body = R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability Int16
+OpCapability CooperativeMatrixConversionsEXT
+OpCapability CooperativeMatrixKHR
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_cooperative_matrix"
+OpExtension "SPV_EXT_cooperative_matrix_maintenance1"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint GLCompute %main "main"
+OpDecorate %val61B CooperativeMatrixTransposeEXT
+OpDecorate %val62B CooperativeMatrixTransposeEXT
+OpDecorate %val63B CooperativeMatrixTransposeEXT
+OpDecorate %val64B CooperativeMatrixTransposeEXT
+OpDecorate %val71B CooperativeMatrixTransposeEXT
+
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%bool = OpTypeBool
+%f16 = OpTypeFloat 16
+%f32 = OpTypeFloat 32
+%u16 = OpTypeInt 16 0
+%u32 = OpTypeInt 32 0
+%s16 = OpTypeInt 16 1
+%s32 = OpTypeInt 32 1
+
+%u32_8 = OpConstant %u32 8
+%u32_16 = OpConstant %u32 16
+%use_A = OpConstant %u32 0
+%use_B = OpConstant %u32 1
+%use_Acc = OpConstant %u32 2
+%subgroup = OpConstant %u32 3
+
+%f16matA = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_8 %use_A
+%f32matA = OpTypeCooperativeMatrixKHR %f32 %subgroup %u32_8 %u32_8 %use_A
+%u16matA = OpTypeCooperativeMatrixKHR %u16 %subgroup %u32_8 %u32_8 %use_A
+%u32matA = OpTypeCooperativeMatrixKHR %u32 %subgroup %u32_8 %u32_8 %use_A
+%s16matA = OpTypeCooperativeMatrixKHR %s16 %subgroup %u32_8 %u32_8 %use_A
+%s32matA = OpTypeCooperativeMatrixKHR %s32 %subgroup %u32_8 %u32_8 %use_A
+
+%f16matB = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_8 %use_B
+%f32matB = OpTypeCooperativeMatrixKHR %f32 %subgroup %u32_8 %u32_8 %use_B
+%u16matB = OpTypeCooperativeMatrixKHR %u16 %subgroup %u32_8 %u32_8 %use_B
+%u32matB = OpTypeCooperativeMatrixKHR %u32 %subgroup %u32_8 %u32_8 %use_B
+%s16matB = OpTypeCooperativeMatrixKHR %s16 %subgroup %u32_8 %u32_8 %use_B
+%s32matB = OpTypeCooperativeMatrixKHR %s32 %subgroup %u32_8 %u32_8 %use_B
+
+%f16matAcc = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_8 %use_Acc
+%f32matAcc = OpTypeCooperativeMatrixKHR %f32 %subgroup %u32_8 %u32_8 %use_Acc
+%u16matAcc = OpTypeCooperativeMatrixKHR %u16 %subgroup %u32_8 %u32_8 %use_Acc
+%u32matAcc = OpTypeCooperativeMatrixKHR %u32 %subgroup %u32_8 %u32_8 %use_Acc
+%s16matAcc = OpTypeCooperativeMatrixKHR %s16 %subgroup %u32_8 %u32_8 %use_Acc
+%s32matAcc = OpTypeCooperativeMatrixKHR %s32 %subgroup %u32_8 %u32_8 %use_Acc
+
+%f16matAcc16x8 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_16 %u32_8 %use_Acc
+%f16matB8x16 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_16 %use_B
+
+%f16_1 = OpConstant %f16 1
+%f32_1 = OpConstant %f32 1
+%u16_1 = OpConstant %u16 1
+%u32_1 = OpConstant %u32 1
+%s16_1 = OpConstant %s16 1
+%s32_1 = OpConstant %s32 1
+
+%f16matAcc_1 = OpConstantComposite %f16matAcc %f16_1
+%f32matAcc_1 = OpConstantComposite %f32matAcc %f32_1
+%u16matAcc_1 = OpConstantComposite %u16matAcc %u16_1
+%u32matAcc_1 = OpConstantComposite %u32matAcc %u32_1
+%s16matAcc_1 = OpConstantComposite %s16matAcc %s16_1
+%s32matAcc_1 = OpConstantComposite %s32matAcc %s32_1
+
+%f16matA_1 = OpConstantComposite %f16matA %f16_1
+%f32matA_1 = OpConstantComposite %f32matA %f32_1
+%u16matA_1 = OpConstantComposite %u16matA %u16_1
+%u32matA_1 = OpConstantComposite %u32matA %u32_1
+%s16matA_1 = OpConstantComposite %s16matA %s16_1
+%s32matA_1 = OpConstantComposite %s32matA %s32_1
+
+%f16matB_1 = OpConstantComposite %f16matB %f16_1
+%f32matB_1 = OpConstantComposite %f32matB %f32_1
+%u16matB_1 = OpConstantComposite %u16matB %u16_1
+%u32matB_1 = OpConstantComposite %u32matB %u32_1
+%s16matB_1 = OpConstantComposite %s16matB %s16_1
+%s32matB_1 = OpConstantComposite %s32matB %s32_1
+
+%f16matAcc16x8_1 = OpConstantComposite %f16matAcc16x8 %f16_1
+
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+
+%val11A = OpConvertFToU %u16matA %f16matAcc_1
+%val12A = OpConvertFToU %u32matA %f16matAcc_1
+%val13A = OpConvertFToS %s16matA %f16matAcc_1
+%val14A = OpConvertFToS %s32matA %f16matAcc_1
+%val15A = OpFConvert %f32matA %f16matAcc_1
+
+%val11B = OpConvertFToU %u16matB %f16matAcc_1
+%val12B = OpConvertFToU %u32matB %f16matAcc_1
+%val13B = OpConvertFToS %s16matB %f16matAcc_1
+%val14B = OpConvertFToS %s32matB %f16matAcc_1
+%val15B = OpFConvert %f32matB %f16matAcc_1
+
+%val21A = OpConvertFToU %u16matA %f32matAcc_1
+%val22A = OpConvertFToU %u32matA %f32matAcc_1
+%val23A = OpConvertFToS %s16matA %f32matAcc_1
+%val24A = OpConvertFToS %s32matA %f32matAcc_1
+%val25A = OpFConvert %f16matA %f32matAcc_1
+
+%val21B = OpConvertFToU %u16matB %f32matAcc_1
+%val22B = OpConvertFToU %u32matB %f32matAcc_1
+%val23B = OpConvertFToS %s16matB %f32matAcc_1
+%val24B = OpConvertFToS %s32matB %f32matAcc_1
+%val25B = OpFConvert %f16matB %f32matAcc_1
+
+%val31A = OpConvertUToF %f16matA %u16matAcc_1
+%val32A = OpConvertUToF %f32matA %u16matAcc_1
+%val33A = OpUConvert %u32matA %u16matAcc_1
+%val34A = OpSConvert %s32matA %u16matAcc_1
+
+%val31B = OpConvertUToF %f16matB %u16matAcc_1
+%val32B = OpConvertUToF %f32matB %u16matAcc_1
+%val33B = OpUConvert %u32matB %u16matAcc_1
+%val34B = OpSConvert %s32matB %u16matAcc_1
+
+%val41A = OpConvertSToF %f16matA %s16matAcc_1
+%val42A = OpConvertSToF %f32matA %s16matAcc_1
+%val43A = OpUConvert %u32matA %s16matAcc_1
+%val44A = OpSConvert %s32matA %s16matAcc_1
+
+%val41B = OpConvertSToF %f16matB %s16matAcc_1
+%val42B = OpConvertSToF %f32matB %s16matAcc_1
+%val43B = OpUConvert %u32matB %s16matAcc_1
+%val44B = OpSConvert %s32matB %s16matAcc_1
+
+%val51A = OpCooperativeMatrixConvertUseEXT %f16matA %f16matAcc_1
+%val52A = OpCooperativeMatrixConvertUseEXT %f32matA %f32matAcc_1
+%val53A = OpCooperativeMatrixConvertUseEXT %u16matA %u16matAcc_1
+%val54A = OpCooperativeMatrixConvertUseEXT %s16matA %s16matAcc_1
+
+%val51B = OpCooperativeMatrixConvertUseEXT %f16matB %f16matAcc_1
+%val52B = OpCooperativeMatrixConvertUseEXT %f32matB %f32matAcc_1
+%val53B = OpCooperativeMatrixConvertUseEXT %u16matB %u16matAcc_1
+%val54B = OpCooperativeMatrixConvertUseEXT %s16matB %s16matAcc_1
+
+%val11A2 = OpConvertFToU %u16matAcc %f16matA_1
+%val12A2 = OpConvertFToU %u32matAcc %f16matA_1
+%val13A2 = OpConvertFToS %s16matAcc %f16matA_1
+%val14A2 = OpConvertFToS %s32matAcc %f16matA_1
+%val15A2 = OpFConvert %f32matAcc %f16matA_1
+
+%val11B2 = OpConvertFToU %u16matAcc %f16matB_1
+%val12B2 = OpConvertFToU %u32matAcc %f16matB_1
+%val13B2 = OpConvertFToS %s16matAcc %f16matB_1
+%val14B2 = OpConvertFToS %s32matAcc %f16matB_1
+%val15B2 = OpFConvert %f32matAcc %f16matB_1
+
+%val21A2 = OpConvertFToU %u16matAcc %f32matA_1
+%val22A2 = OpConvertFToU %u32matAcc %f32matA_1
+%val23A2 = OpConvertFToS %s16matAcc %f32matA_1
+%val24A2 = OpConvertFToS %s32matAcc %f32matA_1
+%val25A2 = OpFConvert %f16matAcc %f32matA_1
+
+%val21B2 = OpConvertFToU %u16matAcc %f32matB_1
+%val22B2 = OpConvertFToU %u32matAcc %f32matB_1
+%val23B2 = OpConvertFToS %s16matAcc %f32matB_1
+%val24B2 = OpConvertFToS %s32matAcc %f32matB_1
+%val25B2 = OpFConvert %f16matAcc %f32matB_1
+
+%val31A2 = OpConvertUToF %f16matAcc %u16matA_1
+%val32A2 = OpConvertUToF %f32matAcc %u16matA_1
+%val33A2 = OpUConvert %u32matAcc %u16matA_1
+%val34A2 = OpSConvert %s32matAcc %u16matA_1
+
+%val31B2 = OpConvertUToF %f16matAcc %u16matB_1
+%val32B2 = OpConvertUToF %f32matAcc %u16matB_1
+%val33B2 = OpUConvert %u32matAcc %u16matB_1
+%val34B2 = OpSConvert %s32matAcc %u16matB_1
+
+%val41A2 = OpConvertSToF %f16matAcc %s16matA_1
+%val42A2 = OpConvertSToF %f32matAcc %s16matA_1
+%val43A2 = OpUConvert %u32matAcc %s16matA_1
+%val44A2 = OpSConvert %s32matAcc %s16matA_1
+
+%val41B2 = OpConvertSToF %f16matAcc %s16matB_1
+%val42B2 = OpConvertSToF %f32matAcc %s16matB_1
+%val43B2 = OpUConvert %u32matAcc %s16matB_1
+%val44B2 = OpSConvert %s32matAcc %s16matB_1
+
+%val51A2 = OpCooperativeMatrixConvertUseEXT %f16matAcc %f16matA_1
+%val52A2 = OpCooperativeMatrixConvertUseEXT %f32matAcc %f32matA_1
+%val53A2 = OpCooperativeMatrixConvertUseEXT %u16matAcc %u16matA_1
+%val54A2 = OpCooperativeMatrixConvertUseEXT %s16matAcc %s16matA_1
+
+%val51B2 = OpCooperativeMatrixConvertUseEXT %f16matAcc %f16matB_1
+%val52B2 = OpCooperativeMatrixConvertUseEXT %f32matAcc %f32matB_1
+%val53B2 = OpCooperativeMatrixConvertUseEXT %u16matAcc %u16matB_1
+%val54B2 = OpCooperativeMatrixConvertUseEXT %s16matAcc %s16matB_1
+
+%val61B = OpCooperativeMatrixConvertUseEXT %f16matB %f16matAcc_1
+%val62B = OpCooperativeMatrixConvertUseEXT %f32matB %f32matAcc_1
+%val63B = OpCooperativeMatrixConvertUseEXT %u16matB %u16matAcc_1
+%val64B = OpCooperativeMatrixConvertUseEXT %s16matB %s16matAcc_1
+%val71B = OpCooperativeMatrixConvertUseEXT %f16matB8x16 %f16matAcc16x8_1
+
+%val81A = OpCooperativeMatrixConvertUseEXT %s32matA %u32matAcc_1
+
+OpReturn
+OpFunctionEnd)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+std::string GenerateCoopMatMaint1ConversionCode(
+    const std::string& annotations, const std::string& instruction) {
+  return R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability CooperativeMatrixConversionsEXT
+OpCapability CooperativeMatrixKHR
+OpCapability CooperativeMatrixNV
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_cooperative_matrix"
+OpExtension "SPV_NV_cooperative_matrix"
+OpExtension "SPV_EXT_cooperative_matrix_maintenance1"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint GLCompute %main "main"
+)" + annotations +
+         R"(
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%f16 = OpTypeFloat 16
+%f32 = OpTypeFloat 32
+%u32 = OpTypeInt 32 0
+%u32_8 = OpConstant %u32 8
+%u32_16 = OpConstant %u32 16
+%use_A = OpConstant %u32 0
+%use_Acc = OpConstant %u32 2
+%use_spec_A = OpSpecConstant %u32 0
+%use_spec_Acc = OpSpecConstant %u32 2
+%subgroup = OpConstant %u32 3
+%f16matA8x8 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_8 %use_A
+%f16matAcc8x8 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_8 %use_Acc
+%f32matAcc8x8 = OpTypeCooperativeMatrixKHR %f32 %subgroup %u32_8 %u32_8 %use_Acc
+%f16matA16x8 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_16 %u32_8 %use_A
+%f32matAcc8x16 = OpTypeCooperativeMatrixKHR %f32 %subgroup %u32_8 %u32_16 %use_Acc
+%f16matSpecA8x8 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_8 %use_spec_A
+%f16matSpecAcc8x8 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_8 %use_spec_Acc
+%f16matNV = OpTypeCooperativeMatrixNV %f16 %subgroup %u32_8 %u32_8
+%f16_1 = OpConstant %f16 1
+%f32_1 = OpConstant %f32 1
+%f16matA8x8_1 = OpConstantComposite %f16matA8x8 %f16_1
+%f16matAcc8x8_1 = OpConstantComposite %f16matAcc8x8 %f16_1
+%f16matA16x8_1 = OpConstantComposite %f16matA16x8 %f16_1
+%f32matAcc8x16_1 = OpConstantComposite %f32matAcc8x16 %f32_1
+%f16matSpecA8x8_1 = OpConstantComposite %f16matSpecA8x8 %f16_1
+%f16matSpecAcc8x8_1 = OpConstantComposite %f16matSpecAcc8x8 %f16_1
+%f16matNV_1 = OpConstantComposite %f16matNV %f16_1
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+)" + instruction +
+         R"(
+OpReturn
+OpFunctionEnd)";
+}
+
+TEST_F(ValidateConversion, CoopMatMaint1ConvertUseRequiresUseChange) {
+  const std::string instruction = R"(
+%result = OpCooperativeMatrixConvertUseEXT %f16matAcc8x8 %f16matAcc8x8_1
+)";
+
+  CompileSuccessfully(
+      GenerateCoopMatMaint1ConversionCode("", instruction).c_str(),
+      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must convert between MatrixAccumulatorKHR and "
+                        "MatrixAKHR or MatrixBKHR"));
+}
+
+TEST_F(ValidateConversion, CoopMatMaint1ConvertUseSpecConstantUseSuccess) {
+  const std::string instruction = R"(
+%result = OpCooperativeMatrixConvertUseEXT %f16matSpecA8x8 %f16matSpecAcc8x8_1
+)";
+
+  CompileSuccessfully(
+      GenerateCoopMatMaint1ConversionCode("", instruction).c_str(),
+      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
+TEST_F(ValidateConversion, CoopMatMaint1ConvertUseSameSpecConstantUseFail) {
+  const std::string instruction = R"(
+%result = OpCooperativeMatrixConvertUseEXT %f16matSpecA8x8 %f16matSpecA8x8_1
+)";
+
+  CompileSuccessfully(
+      GenerateCoopMatMaint1ConversionCode("", instruction).c_str(),
+      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must convert between MatrixAccumulatorKHR and "
+                        "MatrixAKHR or MatrixBKHR"));
+}
+
+TEST_F(ValidateConversion, CoopMatMaint1ConvertUseComponentTypeFail) {
+  const std::string instruction = R"(
+%result = OpCooperativeMatrixConvertUseEXT %f32matAcc8x8 %f16matA8x8_1
+)";
+
+  CompileSuccessfully(
+      GenerateCoopMatMaint1ConversionCode("", instruction).c_str(),
+      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Result Type and Matrix component types mismatch"));
+}
+
+TEST_F(ValidateConversion, CoopMatMaint1ConvertUseRejectsNVResultType) {
+  const std::string instruction = R"(
+%result = OpCooperativeMatrixConvertUseEXT %f16matNV %f16matAcc8x8_1
+)";
+
+  CompileSuccessfully(
+      GenerateCoopMatMaint1ConversionCode("", instruction).c_str(),
+      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected OpTypeCooperativeMatrixKHR Result Type"));
+}
+
+TEST_F(ValidateConversion, CoopMatMaint1ConvertUseRejectsNVMatrixType) {
+  const std::string instruction = R"(
+%result = OpCooperativeMatrixConvertUseEXT %f16matA8x8 %f16matNV_1
+)";
+
+  CompileSuccessfully(
+      GenerateCoopMatMaint1ConversionCode("", instruction).c_str(),
+      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected OpTypeCooperativeMatrixKHR type for Matrix input"));
+}
+
+TEST_F(ValidateConversion, CoopMatMaint1BitcastUseMismatchFail) {
+  const std::string instruction = R"(
+%result = OpBitcast %f16matA8x8 %f16matAcc8x8_1
+)";
+
+  CompileSuccessfully(
+      GenerateCoopMatMaint1ConversionCode("", instruction).c_str(),
+      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr("Expected Use of Matrix type and Result Type to be identical"));
+}
+
+TEST_F(ValidateConversion, CoopMatMaint1TransposeRequiresAccumulatorInput) {
+  const std::string annotations =
+      "OpDecorate %result CooperativeMatrixTransposeEXT\n";
+  const std::string instruction = R"(
+%result = OpFConvert %f32matAcc8x16 %f16matA16x8_1
+)";
+
+  CompileSuccessfully(
+      GenerateCoopMatMaint1ConversionCode(annotations, instruction).c_str(),
+      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must have a MatrixAccumulatorKHR Matrix and a "
+                        "MatrixAKHR or MatrixBKHR Result Type"));
+}
+
+TEST_F(ValidateConversion, CoopMatMaint1TransposeDecorationTargetFail) {
+  const std::string annotations =
+      "OpDecorate %result CooperativeMatrixTransposeEXT\n";
+  const std::string instruction = R"(
+%result = OpFAdd %f32 %f32_1 %f32_1
+)";
+
+  CompileSuccessfully(
+      GenerateCoopMatMaint1ConversionCode(annotations, instruction).c_str(),
+      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must be a cooperative matrix conversion instruction"));
+}
+
+TEST_F(ValidateConversion, CoopMatMaint1TransposeScalarConversionTargetFail) {
+  const std::string annotations =
+      "OpDecorate %result CooperativeMatrixTransposeEXT\n";
+  const std::string instruction = R"(
+%result = OpFConvert %f32 %f16_1
+)";
+
+  CompileSuccessfully(
+      GenerateCoopMatMaint1ConversionCode(annotations, instruction).c_str(),
+      SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must be a cooperative matrix conversion instruction"));
+}
+
+TEST_F(ValidateConversion, CoopMatMaint1TransposeShapeFail) {
+  const std::string body = R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability Int16
+OpCapability CooperativeMatrixConversionsEXT
+OpCapability CooperativeMatrixKHR
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_cooperative_matrix"
+OpExtension "SPV_EXT_cooperative_matrix_maintenance1"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint GLCompute %main "main"
+OpDecorate %val71B CooperativeMatrixTransposeEXT
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%bool = OpTypeBool
+%f16 = OpTypeFloat 16
+%f32 = OpTypeFloat 32
+%u32 = OpTypeInt 32 0
+
+%u32_8 = OpConstant %u32 8
+%u32_16 = OpConstant %u32 16
+%use_B = OpConstant %u32 1
+%use_Acc = OpConstant %u32 2
+%subgroup = OpConstant %u32 3
+
+%f32matAcc16x8 = OpTypeCooperativeMatrixKHR %f32 %subgroup %u32_16 %u32_8 %use_Acc
+%f16matB16x8 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_16 %u32_8 %use_B
+
+%f32_1 = OpConstant %f32 1
+
+%f32matAcc16x8_1 = OpConstantComposite %f32matAcc16x8 %f32_1
+
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+
+%val71B = OpFConvert %f16matB16x8 %f32matAcc16x8_1
+
+OpReturn
+OpFunctionEnd)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Expected rows of Matrix type and Result Type to be "
+                        "swapped with columns"));
+}
+
+TEST_F(ValidateConversion, CoopMatMaint1TransposeShapePass) {
+  const std::string body = R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability Int16
+OpCapability CooperativeMatrixConversionsEXT
+OpCapability CooperativeMatrixKHR
+OpCapability VulkanMemoryModelKHR
+OpExtension "SPV_KHR_cooperative_matrix"
+OpExtension "SPV_EXT_cooperative_matrix_maintenance1"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint GLCompute %main "main"
+OpDecorate %val71B CooperativeMatrixTransposeEXT
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%bool = OpTypeBool
+%f16 = OpTypeFloat 16
+%f32 = OpTypeFloat 32
+%u32 = OpTypeInt 32 0
+
+%u32_8 = OpConstant %u32 8
+%u32_16 = OpConstant %u32 16
+%use_B = OpConstant %u32 1
+%use_Acc = OpConstant %u32 2
+%subgroup = OpConstant %u32 3
+
+%f32matAcc16x8 = OpTypeCooperativeMatrixKHR %f32 %subgroup %u32_16 %u32_8 %use_Acc
+%f16matB8x16 = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_16 %use_B
+
+%f32_1 = OpConstant %f32 1
+
+%f32matAcc16x8_1 = OpConstantComposite %f32matAcc16x8 %f32_1
+
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+
+%val71B = OpFConvert %f16matB8x16 %f32matAcc16x8_1
+
+OpReturn
+OpFunctionEnd)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
 }
 
 }  // namespace
