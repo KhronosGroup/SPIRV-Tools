@@ -334,6 +334,54 @@ OpFunctionEnd
   EXPECT_EQ(1, non_semantic_ids.count(11));
   EXPECT_EQ(1, non_semantic_ids.count(12));
 }
+
+TEST(ModuleTest, ToBinaryFiltersDuplicateDecorations) {
+  const std::string text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %1 RelaxedPrecision
+OpDecorate %1 RelaxedPrecision
+%void = OpTypeVoid
+%fn_type = OpTypeFunction %void
+%main = OpFunction %void None %fn_type
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context = BuildModule(text);
+
+  // Test with filtering enabled (default)
+  {
+    std::vector<uint32_t> binary;
+    context->module()->ToBinary(&binary, false);
+    SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
+    std::string s;
+    tools.Disassemble(binary, &s);
+
+    // Check that we have one decoration but not two.
+    size_t first = s.find("OpDecorate %1 RelaxedPrecision");
+    EXPECT_NE(first, std::string::npos);
+    size_t second = s.find("OpDecorate %1 RelaxedPrecision", first + 1);
+    EXPECT_EQ(second, std::string::npos);
+  }
+
+  // Test with filtering disabled
+  {
+    std::vector<uint32_t> binary;
+    context->module()->ToBinary(&binary, false, false);
+    SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
+    std::string s;
+    tools.Disassemble(binary, &s);
+
+    // Check that we have two decorations.
+    size_t first = s.find("OpDecorate %1 RelaxedPrecision");
+    EXPECT_NE(first, std::string::npos);
+    size_t second = s.find("OpDecorate %1 RelaxedPrecision", first + 1);
+    EXPECT_NE(second, std::string::npos);
+  }
+}
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools

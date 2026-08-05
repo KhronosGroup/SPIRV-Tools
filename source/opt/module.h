@@ -277,7 +277,8 @@ class Module {
 
   // Pushes the binary segments for this instruction into the back of *|binary|.
   // If |skip_nop| is true and this is a OpNop, do nothing.
-  void ToBinary(std::vector<uint32_t>* binary, bool skip_nop) const;
+  void ToBinary(std::vector<uint32_t>* binary, bool skip_nop,
+                bool filter_duplicates = true) const;
 
   // Returns 1 more than the maximum Id value mentioned in the module.
   uint32_t ComputeIdBound() const;
