@@ -15923,6 +15923,69 @@ INSTANTIATE_TEST_SUITE_P(ImageOperandsBitmaskFoldingTest, MatchingInstructionWit
         , 89, true)
 ));
 
+TEST(FoldingTest, SelectVectorScalarConditionSPIRV13) {
+  std::string shader = R"(
+    OpCapability Shader
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint GLCompute %main "main"
+    %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+    %bool = OpTypeBool
+    %_ptr_Function_bool = OpTypePointer Function %bool
+    %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+    %float_8 = OpConstant %float 8
+    %float_0 = OpConstant %float 0
+    %float_1 = OpConstant %float 1
+    %v3float_111 = OpConstantComposite %v3float %float_1 %float_1 %float_1
+    %main = OpFunction %void None %void_fn
+    %entry = OpLabel
+    %var = OpVariable %_ptr_Function_bool Function
+    %cond = OpLoad %bool %var
+    %select = OpSelect %float %cond %float_8 %float_0
+    %mul = OpVectorTimesScalar %v3float %v3float_111 %select
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) = FoldInstruction(shader, 0, SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(inst, nullptr);
+}
+
+TEST(FoldingTest, SelectVectorScalarConditionSPIRV14) {
+  std::string shader = R"(
+    OpCapability Shader
+    OpMemoryModel Logical GLSL450
+    OpEntryPoint GLCompute %main "main"
+    %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+    %bool = OpTypeBool
+    %_ptr_Function_bool = OpTypePointer Function %bool
+    %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+    %float_8 = OpConstant %float 8
+    %float_0 = OpConstant %float 0
+    %float_1 = OpConstant %float 1
+    %v3float_111 = OpConstantComposite %v3float %float_1 %float_1 %float_1
+    %main = OpFunction %void None %void_fn
+    %entry = OpLabel
+    %var = OpVariable %_ptr_Function_bool Function
+    %cond = OpLoad %bool %var
+    %select = OpSelect %float %cond %float_8 %float_0
+    %mul = OpVectorTimesScalar %v3float %v3float_111 %select
+    OpReturn
+    OpFunctionEnd
+  )";
+
+  std::unique_ptr<IRContext> context;
+  Instruction* inst;
+  std::tie(context, inst) = FoldInstruction(shader, 0, SPV_ENV_UNIVERSAL_1_4);
+  EXPECT_NE(inst, nullptr);
+  EXPECT_EQ(inst->opcode(), spv::Op::OpSelect);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
