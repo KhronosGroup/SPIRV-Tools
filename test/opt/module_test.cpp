@@ -243,31 +243,6 @@ void AssembleAndDisassemble(const std::string& text) {
   EXPECT_EQ(s, text);
 }
 
-// Assembles `text`, serializes it to binary (with duplicate decorations
-// filtered if `filter_duplicate_decorations` is true), disassembles it, and
-// checks the output against the Effcee checks in `text` using the given
-// `prefix`.
-void AssembleDisassembleAndCheck(const std::string& text,
-                                 const std::string& prefix,
-                                 bool filter_duplicate_decorations) {
-  std::unique_ptr<IRContext> context = BuildModule(text);
-  std::vector<uint32_t> binary;
-
-  context->module()->ToBinary(&binary, false, filter_duplicate_decorations);
-
-  SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
-  std::string s;
-  tools.Disassemble(binary, &s);
-
-  effcee::Options options;
-  options.SetPrefix(prefix);
-
-  auto match_result = effcee::Match(s, text, options);
-  EXPECT_EQ(effcee::Result::Status::Ok, match_result.status())
-      << match_result.message() << "\nDisassembly:\n"
-      << s;
-}
-
 TEST(ModuleTest, TrailingOpLine) {
   const std::string text = R"(OpCapability Shader
 OpCapability Linkage
@@ -359,6 +334,31 @@ OpFunctionEnd
   EXPECT_EQ(1, non_semantic_ids.count(8));
   EXPECT_EQ(1, non_semantic_ids.count(11));
   EXPECT_EQ(1, non_semantic_ids.count(12));
+}
+
+// Assembles `text`, serializes it to binary (with duplicate decorations
+// filtered if `filter_duplicate_decorations` is true), disassembles it, and
+// checks the output against the Effcee checks in `text` using the given
+// `prefix`.
+void AssembleDisassembleAndCheck(const std::string& text,
+                                 const std::string& prefix,
+                                 bool filter_duplicate_decorations) {
+  std::unique_ptr<IRContext> context = BuildModule(text);
+  std::vector<uint32_t> binary;
+
+  context->module()->ToBinary(&binary, false, filter_duplicate_decorations);
+
+  SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
+  std::string s;
+  tools.Disassemble(binary, &s);
+
+  effcee::Options options;
+  options.SetPrefix(prefix);
+
+  auto match_result = effcee::Match(s, text, options);
+  EXPECT_EQ(effcee::Result::Status::Ok, match_result.status())
+      << match_result.message() << "\nDisassembly:\n"
+      << s;
 }
 
 TEST(ModuleTest, ToBinaryFiltersDuplicateDecorations) {

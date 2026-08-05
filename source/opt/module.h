@@ -276,9 +276,9 @@ class Module {
                    bool run_on_debug_line_insts = false) const;
 
   // Pushes the binary segments for this module into the back of *`binary`.
-  // If `skip_nop` is true and this is a OpNop, do nothing.
-  // If `filter_duplicate_decorations` is true, duplicate decorations are
-  // filtered out.
+  // If `skip_nop` is true, OpNop instructions will not be added to binary.
+  // If `filter_duplicate_decorations` is true, duplicate decorations will not
+  // be added to the binary.
   void ToBinary(std::vector<uint32_t>* binary, bool skip_nop,
                 bool filter_duplicate_decorations = true) const;
 
