@@ -230,16 +230,22 @@ OpFunctionEnd)";
 
 // Tests that "text" does not change when it is assembled, converted into a
 // module, converted back to a binary, and then disassembled.
-void AssembleAndDisassemble(const std::string& text) {
+void AssembleAndDisassemble(const std::string& text,
+                            const std::string& expected_text,
+                            bool filter_duplicates = true) {
   std::unique_ptr<IRContext> context = BuildModule(text);
   std::vector<uint32_t> binary;
 
-  context->module()->ToBinary(&binary, false);
+  context->module()->ToBinary(&binary, false, filter_duplicates);
 
   SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
   std::string s;
   tools.Disassemble(binary, &s);
-  EXPECT_EQ(s, text);
+  EXPECT_EQ(s, expected_text);
+}
+
+void AssembleAndDisassemble(const std::string& text) {
+  AssembleAndDisassemble(text, text, true);
 }
 
 TEST(ModuleTest, TrailingOpLine) {
@@ -338,49 +344,36 @@ OpFunctionEnd
 TEST(ModuleTest, ToBinaryFiltersDuplicateDecorations) {
   const std::string text = R"(OpCapability Shader
 OpMemoryModel Logical GLSL450
-OpEntryPoint GLCompute %main "main"
-OpExecutionMode %main LocalSize 1 1 1
+OpEntryPoint GLCompute %2 "main"
+OpExecutionMode %2 LocalSize 1 1 1
 OpDecorate %1 RelaxedPrecision
 OpDecorate %1 RelaxedPrecision
 %void = OpTypeVoid
-%fn_type = OpTypeFunction %void
-%main = OpFunction %void None %fn_type
-%entry = OpLabel
+%4 = OpTypeFunction %void
+%2 = OpFunction %void None %4
+%5 = OpLabel
 OpReturn
 OpFunctionEnd
 )";
 
-  std::unique_ptr<IRContext> context = BuildModule(text);
+  const std::string expected_text = R"(OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %2 "main"
+OpExecutionMode %2 LocalSize 1 1 1
+OpDecorate %1 RelaxedPrecision
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%2 = OpFunction %void None %4
+%5 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
 
   // Test with filtering enabled (default)
-  {
-    std::vector<uint32_t> binary;
-    context->module()->ToBinary(&binary, false);
-    SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
-    std::string s;
-    tools.Disassemble(binary, &s);
-
-    // Check that we have one decoration but not two.
-    size_t first = s.find("OpDecorate %1 RelaxedPrecision");
-    EXPECT_NE(first, std::string::npos);
-    size_t second = s.find("OpDecorate %1 RelaxedPrecision", first + 1);
-    EXPECT_EQ(second, std::string::npos);
-  }
+  AssembleAndDisassemble(text, expected_text, true);
 
   // Test with filtering disabled
-  {
-    std::vector<uint32_t> binary;
-    context->module()->ToBinary(&binary, false, false);
-    SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
-    std::string s;
-    tools.Disassemble(binary, &s);
-
-    // Check that we have two decorations.
-    size_t first = s.find("OpDecorate %1 RelaxedPrecision");
-    EXPECT_NE(first, std::string::npos);
-    size_t second = s.find("OpDecorate %1 RelaxedPrecision", first + 1);
-    EXPECT_NE(second, std::string::npos);
-  }
+  AssembleAndDisassemble(text, text, false);
 }
 }  // namespace
 }  // namespace opt
