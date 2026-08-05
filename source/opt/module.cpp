@@ -152,7 +152,7 @@ void Module::ForEachInst(const std::function<void(const Instruction*)>& f,
 }
 
 void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop,
-                      bool filter_duplicates) const {
+                      bool filter_duplicate_decorations) const {
   binary->push_back(header_.magic_number);
   binary->push_back(header_.version);
   // TODO(antiagainst): should we change the generator number?
@@ -168,11 +168,11 @@ void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop,
   std::unordered_set<std::vector<uint32_t>,
                      spvtools::utils::VectorHash<uint32_t>>
       seen_decorations;
-  auto write_inst = [binary, skip_nop, filter_duplicates, &last_scope,
-                     &last_line_inst, &between_merge_and_branch,
+  auto write_inst = [binary, skip_nop, filter_duplicate_decorations,
+                     &last_scope, &last_line_inst, &between_merge_and_branch,
                      &between_label_and_phi_var, &seen_decorations,
                      this](const Instruction* i) {
-    if (filter_duplicates && i->IsDecoration()) {
+    if (filter_duplicate_decorations && i->IsDecoration()) {
       std::vector<uint32_t> inst_binary;
       i->ToBinaryWithoutAttachedDebugInsts(&inst_binary);
       if (seen_decorations.count(inst_binary)) {

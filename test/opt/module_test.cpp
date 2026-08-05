@@ -243,13 +243,17 @@ void AssembleAndDisassemble(const std::string& text) {
   EXPECT_EQ(s, text);
 }
 
+// Assembles `text`, serializes it to binary (with duplicate decorations
+// filtered if `filter_duplicate_decorations` is true), disassembles it, and
+// checks the output against the Effcee checks in `text` using the given
+// `prefix`.
 void AssembleDisassembleAndCheck(const std::string& text,
                                  const std::string& prefix,
-                                 bool filter_duplicates) {
+                                 bool filter_duplicate_decorations) {
   std::unique_ptr<IRContext> context = BuildModule(text);
   std::vector<uint32_t> binary;
 
-  context->module()->ToBinary(&binary, false, filter_duplicates);
+  context->module()->ToBinary(&binary, false, filter_duplicate_decorations);
 
   SpirvTools tools(SPV_ENV_UNIVERSAL_1_1);
   std::string s;

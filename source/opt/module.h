@@ -275,10 +275,12 @@ class Module {
   void ForEachInst(const std::function<void(const Instruction*)>& f,
                    bool run_on_debug_line_insts = false) const;
 
-  // Pushes the binary segments for this instruction into the back of *|binary|.
-  // If |skip_nop| is true and this is a OpNop, do nothing.
+  // Pushes the binary segments for this module into the back of *`binary`.
+  // If `skip_nop` is true and this is a OpNop, do nothing.
+  // If `filter_duplicate_decorations` is true, duplicate decorations are
+  // filtered out.
   void ToBinary(std::vector<uint32_t>* binary, bool skip_nop,
-                bool filter_duplicates = true) const;
+                bool filter_duplicate_decorations = true) const;
 
   // Returns 1 more than the maximum Id value mentioned in the module.
   uint32_t ComputeIdBound() const;
