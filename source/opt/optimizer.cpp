@@ -465,6 +465,8 @@ bool Optimizer::RegisterPassFromFlag(const std::string& flag,
     RegisterPass(CreateReplaceInvalidOpcodePass());
   } else if (pass_name == "convert-relaxed-to-half") {
     RegisterPass(CreateConvertRelaxedToHalfPass());
+  } else if (pass_name == "convert-to-untyped") {
+    RegisterPass(CreateConvertToUntypedPass());
   } else if (pass_name == "relax-float-ops") {
     RegisterPass(CreateRelaxFloatOpsPass());
   } else if (pass_name == "simplify-instructions") {
@@ -1052,6 +1054,11 @@ Optimizer::PassToken CreateUpgradeMemoryModelPass() {
 Optimizer::PassToken CreateConvertRelaxedToHalfPass() {
   return MakeUnique<Optimizer::PassToken::Impl>(
       MakeUnique<opt::ConvertToHalfPass>());
+}
+
+Optimizer::PassToken CreateConvertToUntypedPass() {
+  return MakeUnique<Optimizer::PassToken::Impl>(
+      MakeUnique<opt::ConvertToUntyped>());
 }
 
 Optimizer::PassToken CreateRelaxFloatOpsPass() {
