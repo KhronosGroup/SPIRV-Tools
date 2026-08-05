@@ -580,10 +580,10 @@ std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
     case spv::Op::OpTypeArray:
       out = [](unsigned index) { return index == 1; };
       break;
-    case spv::Op::OpCooperativeMatrixPerElementOpNV:
+    case spv::Op::OpCooperativeMatrixPerElementOpEXT:
       out = [](unsigned index) { return index == 3; };
       break;
-    case spv::Op::OpCooperativeMatrixReduceNV:
+    case spv::Op::OpCooperativeMatrixReduceEXT:
       out = [](unsigned index) { return index == 4; };
       break;
     case spv::Op::OpCooperativeMatrixLoadTensorNV:

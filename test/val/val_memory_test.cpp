@@ -11275,6 +11275,167 @@ TEST_F(ValidateMemory, ArrayLength_BadPointer) {
                         "'2[%pointer]' must be a pointer to an OpTypeStruct"));
 }
 
+TEST_F(ValidateMemory, CoopMatMatrixGetCoordinateResultTypeBad) {
+  const std::string body = R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability CooperativeMatrixKHR
+OpCapability VulkanMemoryModelKHR
+OpCapability CooperativeMatrixGetCoordinateEXT
+OpExtension "SPV_EXT_cooperative_matrix_maintenance1"
+OpExtension "SPV_KHR_cooperative_matrix"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint GLCompute %main "main"
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%f16 = OpTypeFloat 16
+%u32 = OpTypeInt 32 0
+%i32 = OpTypeInt 32 1
+%uvec3 = OpTypeVector %u32 3
+
+%u32_8 = OpConstant %u32 8
+%use_A = OpConstant %u32 0
+%subgroup = OpConstant %u32 3
+
+%f16mat = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_8 %use_A
+
+%f16matp = OpTypePointer Private %f16mat
+%f16matv = OpVariable %f16matp Private
+
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+
+%m = OpLoad %f16mat %f16matv
+%1 = OpCooperativeMatrixGetCoordinateEXT %uvec3 %m %u32_8
+
+OpReturn
+OpFunctionEnd)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCooperativeMatrixGetCoordinateEXT Result Type "
+                        "<id>"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must be OpTypeVector with two 32-bit integer "
+                        "components"));
+}
+
+TEST_F(ValidateMemory, CoopMatMatrixGetCoordinateIndexTypeBad) {
+  const std::string body =
+      R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability CooperativeMatrixKHR
+OpCapability VulkanMemoryModelKHR
+OpCapability CooperativeMatrixGetCoordinateEXT
+OpExtension "SPV_EXT_cooperative_matrix_maintenance1"
+OpExtension "SPV_KHR_cooperative_matrix"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint GLCompute %main "main"
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%f16 = OpTypeFloat 16
+%u32 = OpTypeInt 32 0
+%i32 = OpTypeInt 32 1
+%uvec2 = OpTypeVector %u32 2
+
+%f16_0 = OpConstant %f16 0
+%u32_8 = OpConstant %u32 8
+%use_A = OpConstant %u32 0
+%subgroup = OpConstant %u32 3
+
+%f16mat = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_8 %use_A
+
+%f16matp = OpTypePointer Private %f16mat
+%f16matv = OpVariable %f16matp Private
+
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+
+%m = OpLoad %f16mat %f16matv
+%1 = OpCooperativeMatrixGetCoordinateEXT %uvec2 %m %f16_0
+
+OpReturn
+OpFunctionEnd)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpCooperativeMatrixGetCoordinateEXT Index <id> "
+                        "'8[%half_0x0p_0]' must be OpTypeInt with width 32"));
+}
+
+TEST_F(ValidateMemory, CoopMatMatrixGetCoordinateMatrixTypeBad) {
+  const std::string body =
+      R"(
+OpCapability Shader
+OpCapability CooperativeMatrixGetCoordinateEXT
+OpExtension "SPV_EXT_cooperative_matrix_maintenance1"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%u32 = OpTypeInt 32 0
+%uvec2 = OpTypeVector %u32 2
+%u32_8 = OpConstant %u32 8
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+%1 = OpCooperativeMatrixGetCoordinateEXT %uvec2 %u32_8 %u32_8
+OpReturn
+OpFunctionEnd)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  ASSERT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(), HasSubstr("Matrix <id>"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must be OpTypeCooperativeMatrixKHR"));
+}
+
+TEST_F(ValidateMemory, CoopMatMatrixGetCoordinateGood) {
+  const std::string body =
+      R"(
+OpCapability Shader
+OpCapability Float16
+OpCapability CooperativeMatrixKHR
+OpCapability VulkanMemoryModelKHR
+OpCapability CooperativeMatrixGetCoordinateEXT
+OpExtension "SPV_EXT_cooperative_matrix_maintenance1"
+OpExtension "SPV_KHR_cooperative_matrix"
+OpExtension "SPV_KHR_vulkan_memory_model"
+OpMemoryModel Logical VulkanKHR
+OpEntryPoint GLCompute %main "main"
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%f16 = OpTypeFloat 16
+%u32 = OpTypeInt 32 0
+%i32 = OpTypeInt 32 1
+%uvec2 = OpTypeVector %u32 2
+
+%u32_8 = OpConstant %u32 8
+%use_A = OpConstant %u32 0
+%subgroup = OpConstant %u32 3
+
+%f16mat = OpTypeCooperativeMatrixKHR %f16 %subgroup %u32_8 %u32_8 %use_A
+
+%f16matp = OpTypePointer Private %f16mat
+%f16matv = OpVariable %f16matp Private
+
+%main = OpFunction %void None %func
+%main_entry = OpLabel
+
+%m = OpLoad %f16mat %f16matv
+%1 = OpCooperativeMatrixGetCoordinateEXT %uvec2 %m %u32_8
+
+OpReturn
+OpFunctionEnd)";
+
+  CompileSuccessfully(body.c_str(), SPV_ENV_UNIVERSAL_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools

@@ -1313,6 +1313,20 @@ bool ValidationState_t::IsIntVectorType(uint32_t id) const {
   return false;
 }
 
+bool ValidationState_t::IsIntVectorType(uint32_t id, uint32_t width,
+                                        uint32_t components) const {
+  if (!IsIntVectorType(id)) {
+    return false;
+  }
+  if (GetBitWidth(id) != width) {
+    return false;
+  }
+  if (GetDimension(id) != components) {
+    return false;
+  }
+  return true;
+}
+
 bool ValidationState_t::IsIntScalarOrVectorType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
   if (!inst) {
@@ -1787,15 +1801,45 @@ spv_result_t ValidationState_t::CooperativeMatrixShapesMatch(
     std::tie(m2_is_int32, m2_is_const_int32, m2_value) =
         EvalInt32IfConst(m2_use_id);
 
-    if (m1_is_const_int32 && m2_is_const_int32 && m1_value != m2_value &&
-        // CooperativeMatrixConversionsNV allows conversions from Acc->A/B
-        !(is_conversion &&
-          HasCapability(spv::Capability::CooperativeMatrixConversionsNV) &&
-          m2_value ==
-              (uint32_t)spv::CooperativeMatrixUse::MatrixAccumulatorKHR)) {
+    const auto is_accumulator = [](uint32_t use) {
+      return use == uint32_t(spv::CooperativeMatrixUse::MatrixAccumulatorKHR);
+    };
+    const auto is_a_or_b = [](uint32_t use) {
+      return use == uint32_t(spv::CooperativeMatrixUse::MatrixAKHR) ||
+             use == uint32_t(spv::CooperativeMatrixUse::MatrixBKHR);
+    };
+
+    if (swap_row_col &&
+        HasCapability(spv::Capability::CooperativeMatrixConversionsEXT) &&
+        (m1_use_id == m2_use_id ||
+         (m1_is_const_int32 && !is_a_or_b(m1_value)) ||
+         (m2_is_const_int32 && !is_accumulator(m2_value)))) {
       return diag(SPV_ERROR_INVALID_DATA, inst)
-             << "Expected Use of Matrix type and Result Type to be "
-             << "identical";
+             << "A conversion decorated with CooperativeMatrixTransposeEXT "
+                "must have a MatrixAccumulatorKHR Matrix and a MatrixAKHR or "
+                "MatrixBKHR Result Type: "
+             << spvOpcodeString(inst->opcode());
+    }
+
+    if (m1_is_const_int32 && m2_is_const_int32 && m1_value != m2_value) {
+      bool allow_conv = false;
+      // Conversion from Acc->A,B allowed for NV or EXT
+      if ((HasCapability(spv::Capability::CooperativeMatrixConversionsNV) ||
+           HasCapability(spv::Capability::CooperativeMatrixConversionsEXT)) &&
+          is_accumulator(m2_value) && is_a_or_b(m1_value)) {
+        allow_conv = true;
+      }
+      // Conversion from A,B->Acc allowed for EXT
+      if (HasCapability(spv::Capability::CooperativeMatrixConversionsEXT) &&
+          is_accumulator(m1_value) && is_a_or_b(m2_value)) {
+        allow_conv = true;
+      }
+
+      if (!(is_conversion && allow_conv)) {
+        return diag(SPV_ERROR_INVALID_DATA, inst)
+               << "Expected Use of Matrix type and Result Type to be "
+               << "identical";
+      }
     }
   }
 

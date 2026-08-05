@@ -1020,9 +1020,9 @@ void IRContext::AddCalls(const Function* func, std::queue<uint32_t>* todo) {
     for (auto ii = bi->begin(); ii != bi->end(); ++ii) {
       if (ii->opcode() == spv::Op::OpFunctionCall)
         todo->push(ii->GetSingleWordInOperand(0));
-      if (ii->opcode() == spv::Op::OpCooperativeMatrixPerElementOpNV)
+      if (ii->opcode() == spv::Op::OpCooperativeMatrixPerElementOpEXT)
         todo->push(ii->GetSingleWordInOperand(1));
-      if (ii->opcode() == spv::Op::OpCooperativeMatrixReduceNV)
+      if (ii->opcode() == spv::Op::OpCooperativeMatrixReduceEXT)
         todo->push(ii->GetSingleWordInOperand(2));
       if (ii->opcode() == spv::Op::OpCooperativeMatrixLoadTensorNV) {
         const auto memory_operands_index = 3;
