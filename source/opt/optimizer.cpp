@@ -719,7 +719,8 @@ bool Optimizer::Run(const uint32_t* original_binary,
       !context->module()->ContainsDebugInfo()) {
     std::vector<uint32_t> optimized_binary_with_nop;
     context->module()->ToBinary(&optimized_binary_with_nop,
-                                /* skip_nop = */ false);
+                                /* skip_nop = */ false,
+                                /* filter_duplicate_decorations = */ false);
     assert(optimized_binary_with_nop.size() == original_binary_size &&
            "Binary size unexpectedly changed despite the optimizer saying "
            "there was no change");
