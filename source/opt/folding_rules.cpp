@@ -14,14 +14,14 @@
 
 #include "source/opt/folding_rules.h"
 
-#include <limits>
-#include <memory>
 #include <optional>
 #include <utility>
 
 #include "ir_builder.h"
 #include "source/latest_version_glsl_std_450_header.h"
 #include "source/opt/ir_context.h"
+#include "source/spirv_constant.h"
+#include "source/spirv_target_env.h"
 
 namespace spvtools {
 namespace opt {
@@ -3232,6 +3232,10 @@ FoldingRule MergeBinaryOpSelect(spv::Op opcode) {
 
   return [opcode](IRContext* context, Instruction* inst,
                   const std::vector<const analysis::Constant*>& constants) {
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    analysis::TypeManager* type_mgr = context->get_type_mgr();
+    analysis::DefUseManager* def_use_mgr = context->get_def_use_mgr();
+
     const analysis::Constant* const_input = ConstInput(constants);
     if (!const_input) {
       return false;
@@ -3241,9 +3245,26 @@ FoldingRule MergeBinaryOpSelect(spv::Op opcode) {
       return false;
     }
     std::vector<const analysis::Constant*> select_constants =
-        context->get_constant_mgr()->GetOperandConstants(non_const);
+        const_mgr->GetOperandConstants(non_const);
     if (!select_constants[1] || !select_constants[2]) {
       return false;
+    }
+
+    // The OpSelect that will be created below will use the condition from
+    // `non_const` and a result type matching `inst`. Before SPIR-V 1.4,
+    // OpSelect could not have a scalar condition with a vector result.
+    // We must avoid generating the OpSelect if that would happen.
+    const analysis::Type* result_type = type_mgr->GetType(inst->type_id());
+    if (result_type && result_type->AsVector()) {
+      Instruction* cond_inst =
+          def_use_mgr->GetDef(non_const->GetSingleWordInOperand(0));
+      const analysis::Type* cond_type = type_mgr->GetType(cond_inst->type_id());
+      if (cond_type && !cond_type->AsVector()) {
+        if (spvVersionForTargetEnv(context->grammar().target_env()) <
+            SPV_SPIRV_VERSION_WORD(1, 4)) {
+          return false;
+        }
+      }
     }
 
     InstructionBuilder ir_builder(
@@ -3274,15 +3295,13 @@ FoldingRule MergeBinaryOpSelect(spv::Op opcode) {
     if (context->get_instruction_folder().FoldInstruction(lhs)) {
       context->AnalyzeDefUse(lhs);
       while (lhs->opcode() == spv::Op::OpCopyObject) {
-        lhs =
-            context->get_def_use_mgr()->GetDef(lhs->GetSingleWordInOperand(0));
+        lhs = def_use_mgr->GetDef(lhs->GetSingleWordInOperand(0));
       }
     }
     if (context->get_instruction_folder().FoldInstruction(rhs)) {
       context->AnalyzeDefUse(rhs);
       while (rhs->opcode() == spv::Op::OpCopyObject) {
-        rhs =
-            context->get_def_use_mgr()->GetDef(rhs->GetSingleWordInOperand(0));
+        rhs = def_use_mgr->GetDef(rhs->GetSingleWordInOperand(0));
       }
     }
     inst->SetOpcode(spv::Op::OpSelect);
