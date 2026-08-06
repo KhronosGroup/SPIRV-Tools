@@ -3573,43 +3573,6 @@ OpFunctionEnd
                         "ArrayStrideIdEXT decorations"));
 }
 
-TEST_F(ValidateExplicitLayout,
-       PhysicalStorageBufferRuntimeArrayMissingBlock) {
-  const std::string spirv = R"(
-OpCapability Shader
-OpCapability Int64
-OpCapability PhysicalStorageBufferAddresses
-OpMemoryModel PhysicalStorageBuffer64 GLSL450
-OpEntryPoint GLCompute %main "main"
-OpExecutionMode %main LocalSize 1 1 1
-OpDecorate %array ArrayStride 4
-OpMemberDecorate %struct 0 Offset 0
-OpMemberDecorate %struct 1 Offset 4
-%void = OpTypeVoid
-%void_fn = OpTypeFunction %void
-%uint = OpTypeInt 32 0
-%ulong = OpTypeInt 64 0
-%ulong_0 = OpConstant %ulong 0
-%array = OpTypeRuntimeArray %uint
-%struct = OpTypeStruct %uint %array
-%ptr = OpTypePointer PhysicalStorageBuffer %struct
-%main = OpFunction %void None %void_fn
-%entry = OpLabel
-%converted = OpConvertUToPtr %ptr %ulong_0
-OpReturn
-OpFunctionEnd
-)";
-
-  CompileSuccessfully(spirv, SPV_ENV_VULKAN_1_3);
-  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_3));
-  EXPECT_THAT(getDiagnosticString(),
-              AnyVUID("VUID-StandaloneSpirv-OpTypeRuntimeArray-04680"));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr("For Vulkan, an OpTypeStruct containing an "
-                        "OpTypeRuntimeArray must be decorated with Block if it "
-                        "is used with storage class PhysicalStorageBuffer."));
-}
-
 TEST_F(ValidateExplicitLayout, MatrixArrayMissingMajorness) {
   const std::string spirv = R"(
 OpCapability Shader

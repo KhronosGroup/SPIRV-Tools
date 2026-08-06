@@ -3135,8 +3135,7 @@ TEST_F(ValidateDecorations, VulkanStructWithoutDecorationWithRuntimeArray) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("For Vulkan, an OpTypeStruct variable containing an "
                         "OpTypeRuntimeArray must be decorated with Block if it "
-                        "has storage class StorageBuffer or "
-                        "PhysicalStorageBuffer."));
+                        "has storage class StorageBuffer."));
 }
 
 TEST_F(ValidateDecorations, EmptyStructAtNonZeroOffsetGood) {

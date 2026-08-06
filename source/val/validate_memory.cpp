@@ -845,15 +845,13 @@ spv_result_t ValidateVariableVulkanArray(ValidationState_t& _,
   // with Block, or it must be in the Uniform storage class
   if (value_type.opcode() == spv::Op::OpTypeStruct) {
     if (DoesStructContainRTA(_, &value_type)) {
-      if (storage_class == spv::StorageClass::StorageBuffer ||
-          storage_class == spv::StorageClass::PhysicalStorageBuffer) {
+      if (storage_class == spv::StorageClass::StorageBuffer) {
         if (!_.HasDecoration(value_id, spv::Decoration::Block)) {
           return _.diag(SPV_ERROR_INVALID_ID, inst)
                  << _.VkErrorID(4680)
                  << "For Vulkan, an OpTypeStruct variable containing an "
                  << "OpTypeRuntimeArray must be decorated with Block if it "
-                 << "has storage class StorageBuffer or "
-                    "PhysicalStorageBuffer.";
+                 << "has storage class StorageBuffer.";
         }
       } else if (storage_class == spv::StorageClass::Uniform) {
         // BufferBlock Uniform were always allowed.
@@ -869,7 +867,7 @@ spv_result_t ValidateVariableVulkanArray(ValidationState_t& _,
                << _.VkErrorID(4680)
                << "For Vulkan, OpTypeStruct variables containing "
                << "OpTypeRuntimeArray must have storage class of "
-               << "StorageBuffer, PhysicalStorageBuffer, or Uniform.";
+               << "StorageBuffer or Uniform.";
       }
     }
   }
@@ -2863,22 +2861,6 @@ spv_result_t ValidateBufferPointerEXT(ValidationState_t& _,
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "OpBufferPointerEXT's buffer must be an untyped pointer"
            << " into a variable declared with the ResourceHeapEXT built-in";
-  }
-
-  if (spvIsVulkanEnv(_.context()->target_env) &&
-      storage_class_ptr->opcode() == spv::Op::OpTypePointer) {
-    const auto pointee_type_id =
-        storage_class_ptr->GetOperandAs<uint32_t>(2);
-    const auto pointee_type = _.FindDef(pointee_type_id);
-    if (pointee_type && pointee_type->opcode() == spv::Op::OpTypeStruct &&
-        DoesStructContainRTA(_, pointee_type) &&
-        sc != spv::StorageClass::StorageBuffer) {
-      return _.diag(SPV_ERROR_INVALID_ID, inst)
-             << _.VkErrorID(4680)
-             << "For Vulkan, an OpTypeRuntimeArray must be the last "
-             << "member of an OpTypeStruct pointed to by the result of "
-             << "OpBufferPointerEXT in the StorageBuffer storage class.";
-    }
   }
   return SPV_SUCCESS;
 }

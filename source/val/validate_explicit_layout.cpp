@@ -1090,29 +1090,6 @@ struct Impl {
         }
       }
 
-      // Runtime-array structs referenced through typed PhysicalStorageBuffer
-      // pointers must be block-decorated.
-      if (!reference.untyped &&
-          reference.storage_class ==
-              spv::StorageClass::PhysicalStorageBuffer) {
-        const auto* type_inst = vstate.FindDef(reference.type_id);
-        if (type_inst->opcode() == spv::Op::OpTypeStruct &&
-            type_inst->operands().size() > 1) {
-          const auto last_member_id = type_inst->GetOperandAs<uint32_t>(
-              type_inst->operands().size() - 1);
-          if (vstate.GetIdOpcode(last_member_id) ==
-                  spv::Op::OpTypeRuntimeArray &&
-              !vstate.HasDecoration(reference.type_id,
-                                    spv::Decoration::Block)) {
-            return vstate.diag(SPV_ERROR_INVALID_ID, &inst)
-                   << vstate.VkErrorID(4680)
-                   << "For Vulkan, an OpTypeStruct containing an "
-                   << "OpTypeRuntimeArray must be decorated with Block if it "
-                   << "is used with storage class PhysicalStorageBuffer.";
-          }
-        }
-      }
-
       // Untyped pointers require a layout. Workgroup variables must be blocks
       // to have a layout.
       if (reference.untyped &&
