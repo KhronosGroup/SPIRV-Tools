@@ -35,6 +35,13 @@ function chown_dir() {
   fi
 }
 
+# Set up a volume mapping for kokoro artifacts only if the corresponding
+# env var exists. The env var will not exist when manally testing this script.
+ARTIFACTS_MAPPING=
+if [ -n "${KOKORO_ARTIFACTS_DIR}" ]; then
+  ARTIFACTS_MAPPING="--volume ${KOKORO_ARTIFACTS_DIR}:${KOKORO_ARTIFACTS_DIR}"
+fi
+
 set +e
 # Allow build failures
 
@@ -42,7 +49,7 @@ set +e
 docker run --rm -i \
   --privileged \
   --volume "${ROOT_DIR}:${ROOT_DIR}" \
-  --volume "${KOKORO_ARTIFACTS_DIR}:${KOKORO_ARTIFACTS_DIR}" \
+  $ARTIFACTS_MAPPING \
   --workdir "${ROOT_DIR}" \
   --env SCRIPT_DIR=${SCRIPT_DIR} \
   --env ROOT_DIR=${ROOT_DIR} \
