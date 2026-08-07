@@ -51,9 +51,11 @@ endfunction()
 set(COMMON_TOOLS_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/util/flags.cpp")
 
 if (NOT ${SPIRV_SKIP_EXECUTABLES})
+  set(GNU_STDCXXFS $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
+
   add_spvtools_tool(TARGET spirv-diff SRCS ${COMMON_TOOLS_SRCS} diff/diff.cpp util/cli_consumer.cpp io.cpp LIBS SPIRV-Tools-diff SPIRV-Tools-opt ${SPIRV_TOOLS_FULL_VISIBILITY})
   add_spvtools_tool(TARGET spirv-dis  SRCS ${COMMON_TOOLS_SRCS} dis/dis.cpp io.cpp LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
-  add_spvtools_tool(TARGET spirv-val  SRCS ${COMMON_TOOLS_SRCS} val/val.cpp util/cli_consumer.cpp io.cpp LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
+  add_spvtools_tool(TARGET spirv-val  SRCS ${COMMON_TOOLS_SRCS} val/val.cpp util/cli_consumer.cpp io.cpp LIBS ${GNU_STDCXXFS} ${SPIRV_TOOLS_FULL_VISIBILITY})
   add_spvtools_tool(TARGET spirv-opt  SRCS ${COMMON_TOOLS_SRCS} opt/opt.cpp util/cli_consumer.cpp io.cpp LIBS SPIRV-Tools-opt ${SPIRV_TOOLS_FULL_VISIBILITY})
   if(NOT (${CMAKE_SYSTEM_NAME} STREQUAL "iOS")) # iOS does not allow std::system calls which spirv-reduce requires
     add_spvtools_tool(TARGET spirv-reduce SRCS ${COMMON_TOOLS_SRCS} reduce/reduce.cpp util/cli_consumer.cpp io.cpp LIBS SPIRV-Tools-reduce ${SPIRV_TOOLS_FULL_VISIBILITY})
@@ -86,7 +88,7 @@ if (NOT ${SPIRV_SKIP_EXECUTABLES})
                            util/cli_consumer.cpp
                            io.cpp
                            ${COMMON_TOOLS_SRCS}
-                      LIBS ${SPIRV_TOOLS_FULL_VISIBILITY})
+                      LIBS ${GNU_STDCXXFS} ${SPIRV_TOOLS_FULL_VISIBILITY})
     target_include_directories(spirv-objdump PRIVATE ${spirv-tools_SOURCE_DIR}
                                                      ${SPIRV_HEADER_INCLUDE_DIR})
     set(SPIRV_INSTALL_TARGETS ${SPIRV_INSTALL_TARGETS} spirv-objdump)
