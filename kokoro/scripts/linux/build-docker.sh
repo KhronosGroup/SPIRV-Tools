@@ -42,7 +42,7 @@ function clean_dir() {
   if [[ -d "$dir" ]]; then
     rm -fr "$dir"
   fi
-  mkdir "$dir"
+  mkdir -p "$dir"
 }
 
 case $TOOL in

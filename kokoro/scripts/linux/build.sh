@@ -65,6 +65,7 @@ RESULT=$?
 # This is important. If the permissions are not fixed, kokoro will fail
 # to pull build artifacts, and put the build in tool-failure state, which
 # blocks the logs.
-chown_dir "${ROOT_DIR}/build"
-chown_dir "${ROOT_DIR}/external"
+for d in build external testing buildtools out; do
+  [ ! -d "${ROOT_DIR}/$d" ] || chown_dir "${ROOT_DIR}/$d"
+done
 exit $RESULT
