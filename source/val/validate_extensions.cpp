@@ -167,9 +167,13 @@ std::string GetExtInstName(const ValidationState_t& _,
 // Rejects an instruction whose result or any operand uses a BFloat16 or FP8
 // (E4M3/E5M2) type, i.e. an OpTypeFloat that is not IEEE 754 encoded.
 spv_result_t ValidateExtInstFloatEncoding(ValidationState_t& _,
-                                          const Instruction* inst) {
+                                          const Instruction* inst,
+                                          spv_ext_inst_type_t ext_inst_type) {
+  const bool bfloat16_arithmetic_allowed =
+      ext_inst_type == SPV_EXT_INST_TYPE_OPENCL_STD &&
+      _.HasCapability(spv::Capability::BFloat16ArithmeticINTEL);
   auto check = [&](uint32_t type_id) -> spv_result_t {
-    if (_.IsBfloat16Type(type_id)) {
+    if (!bfloat16_arithmetic_allowed && _.IsBfloat16Type(type_id)) {
       return _.diag(SPV_ERROR_INVALID_DATA, inst)
              << GetExtInstName(_, inst) << ": doesn't support BFloat16 type.";
     }
@@ -4457,7 +4461,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
   // using the IEEE 754 encoding, so they don't support BFloat16 or FP8 types.
   if (ext_inst_type == SPV_EXT_INST_TYPE_GLSL_STD_450 ||
       ext_inst_type == SPV_EXT_INST_TYPE_OPENCL_STD) {
-    if (spv_result_t result = ValidateExtInstFloatEncoding(_, inst))
+    if (spv_result_t result =
+            ValidateExtInstFloatEncoding(_, inst, ext_inst_type))
       return result;
   }
 
