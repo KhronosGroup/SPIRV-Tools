@@ -489,6 +489,7 @@ spv_result_t Parser::parseOperand(size_t inst_offset,
   // Assume non-numeric values.  This will be updated for literal numbers.
   parsed_operand.number_kind = SPV_NUMBER_NONE;
   parsed_operand.number_bit_width = 0;
+  parsed_operand.fp_encoding = SPV_FP_ENCODING_UNKNOWN;
 
   if (_.word_index >= _.num_words)
     return exhaustedInputDiagnostic(inst_offset, opcode, type);
