@@ -1677,7 +1677,6 @@ OpEntryPoint MeshNV %foo "foo" %in
 OpExecutionMode %foo LocalSize 1 1 1
 OpDecorate %block Block
 OpMemberDecorate %block 0 PerTaskNV
-OpMemberDecorate %block 0 Offset 0
 %void = OpTypeVoid
 %int = OpTypeInt 32 0
 %int_32 = OpConstant %int 32
