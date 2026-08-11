@@ -296,6 +296,33 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
           }
         }
 
+        // Check for invalid struct member decorations on Input/Output
+        if (is_struct && (storage_class == spv::StorageClass::Input ||
+                          storage_class == spv::StorageClass::Output)) {
+          for (auto& dec : vstate.id_decorations(type_id)) {
+            if (dec.dec_type() != spv::Decoration::Offset) continue;
+            // same as below, instead of spending time checking PerTaskNV just
+            // assume legacy shaders work instead of searchign the block
+            if (vstate.HasCapability(spv::Capability::MeshShadingNV)) continue;
+            if (storage_class == spv::StorageClass::Output) {
+              // Instead of checking if the block inherits XfbBuffer/XfbStride,
+              // just assume anyone declaring TransformFeedback has a legacy
+              // shader they know is working already with Offset
+              if (!vstate.HasCapability(spv::Capability::TransformFeedback)) {
+                return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
+                       << vstate.VkErrorID(4716)
+                       << "The Output interfaces variable must not have Offset "
+                          "on any member decoration unless dealing with "
+                          "TransformFeedback.";
+              }
+            } else {
+              return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
+                     << "The Input interfaces variable must not have Offset on "
+                        "any member decoration.";
+            }
+          }
+        }
+
         if (storage_class == spv::StorageClass::Workgroup) {
           ++num_workgroup_variables;
           if (type_instr) {

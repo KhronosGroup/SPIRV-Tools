@@ -4850,6 +4850,7 @@ TEST_F(AggressiveDCETest, PartiallyDeadGroupMemberDecorate) {
 ; CHECK: [[output]] = OpTypeStruct
 ; CHECK-NOT: OpTypeStruct
 OpCapability Shader
+OpCapability TransformFeedback
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main" %output
 OpExecutionMode %main OriginUpperLeft
@@ -4890,6 +4891,7 @@ TEST_F(AggressiveDCETest,
 ; CHECK: [[output]] = OpTypeStruct
 ; CHECK-NOT: OpTypeStruct
 OpCapability Shader
+OpCapability TransformFeedback
 OpMemoryModel Logical GLSL450
 OpEntryPoint Fragment %main "main" %output
 OpExecutionMode %main OriginUpperLeft
