@@ -1,5 +1,8 @@
 Revision history for SPIRV-Tools
 
+v2026.4 2026-07-09
+  - Start v2026.4-dev
+
 v2026.3 2026-07-08
   - General
     - Support SPV_QCOM_multiple_wait_queues, SPV_KHR_opacity_micromap, and SPV_EXT_ocp_microscaling_types (#6671, #6670, #6772)
