@@ -32,8 +32,8 @@ git config --global --add safe.directory $SRC
 cd $SRC
 /usr/bin/python3 utils/git-sync-deps --treeless
 
-# Get bazel 8.0.0
-BAZEL_VER=8.0.0
+# Get bazel 8.7.0
+BAZEL_VER=8.7.0
 gcloud config set auth/disable_credentials True
 gcloud storage cp gs://bazel/$BAZEL_VER/release/bazel-$BAZEL_VER-darwin-x86_64 .
 chmod +x bazel-$BAZEL_VER-darwin-x86_64
