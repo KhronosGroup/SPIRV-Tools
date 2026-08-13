@@ -70,13 +70,13 @@ vars = {
 
   # Commits for SPIRV-Tools dependencies
 
-  'abseil_revision': '43e07c386b832bb4d1d29af61b7c45b59a54a38d',
-  'effcee_revision': '910ed15722d5d05c9d71ecf36c1a22243cb79b02',
-  'googletest_revision': 'd89aac5f0dd4021198d903d39de16f896726de21',
+  'abseil_revision': 'ee41bbdf12162c2beebd9347d7653380c8170c0a',
+  'effcee_revision': '4d92bbdbe158288a5943aa24e50a654a4697ab27',
+  'googletest_revision': '02e50550c6d65eee1c2038e07f4fb9e99961e666',
   # Use a recent protobuf, which can depend on abseil
   'protobuf_revision': '35cd01f9fe9afbeea38cc7b979a3b6bfcde82c03',
   're2_revision': '972a15cedd008d846f1a39b2e88ce48d7f166cbd',
-  'spirv_headers_revision': '942fe4b988359a0750b79f0ae7ed735994d3147d',
+  'spirv_headers_revision': 'f0bf307f7c49d26484db596185cece53c37701fc',
   'mimalloc_revision': 'fc1e2acbced0b3e893da1a1375e02ac159d0423f',
 
   # SPIRV-Tools standalone GN-only dependencies
