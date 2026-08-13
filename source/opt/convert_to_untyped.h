@@ -38,7 +38,7 @@ class ConvertToUntyped : public Pass {
   // continue to use old ids (mapped to correctly typed pointers) until after
   // conversions. Then all operands are updated (and unneeded instructions
   // removed).
-  // 
+  //
   // Returns true if conversions were made.
   bool ConvertPointers();
 
