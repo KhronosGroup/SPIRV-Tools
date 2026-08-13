@@ -30,14 +30,18 @@ Pass::Status ConvertToUntyped::Process() {
 
   CheckWorkgroup();
 
-  AddUntypedEnable();
-  ConvertPointers();
+  bool changed = ConvertPointers();
+  if (changed) {
+    AddUntypedPointerCapability();
+  }
 
-  uint32_t max_id = std::max(context()->max_id_bound(), max_id_);
-  context()->set_max_id_bound(max_id);
-  get_module()->SetIdBound(max_id);
-
-  return Pass::Status::SuccessWithChange;
+  if (context()->id_overflow()) {
+    return Pass::Status::Failure;
+  }
+  if (changed) {
+    return Pass::Status::SuccessWithChange;
+  }
+  return Pass::Status::SuccessWithoutChange;
 }
 
 bool ConvertToUntyped::HasUnsupportedFeatures() {
@@ -114,7 +118,7 @@ void ConvertToUntyped::CheckWorkgroup() {
   support_workgroup_ = true;
 }
 
-void ConvertToUntyped::AddUntypedEnable() {
+void ConvertToUntyped::AddUntypedPointerCapability() {
   bool needs_ext = true;
   for (auto& ei : get_module()->extensions()) {
     const std::string name = ei.GetInOperand(0).AsString();
@@ -139,33 +143,11 @@ void ConvertToUntyped::AddUntypedEnable() {
         std::initializer_list<Operand>{
             {SPV_OPERAND_TYPE_CAPABILITY,
              {uint32_t(spv::Capability::UntypedPointersKHR)}}}));
-  } else {
-    // Untyped pointers capability is already declared, pre-populate base_ptrs_.
-    // All possibly supported storage classes are listed for extensibility
-    // purposes.
-    std::vector<spv::StorageClass> storage_classes{
-        spv::StorageClass::StorageBuffer,
-        spv::StorageClass::Uniform,
-        spv::StorageClass::Workgroup,
-        spv::StorageClass::PushConstant,
-        spv::StorageClass::PhysicalStorageBuffer,
-        spv::StorageClass::UniformConstant};
-    for (auto sc : storage_classes) {
-      if (!SupportedStorageClass(sc)) {
-        continue;
-      }
-      const analysis::Pointer ptr_type{nullptr, sc};
-      auto id = context()->get_type_mgr()->GetId(&ptr_type);
-      if (id != 0) {
-        base_ptrs_[uint32_t(sc)] = context()->get_def_use_mgr()->GetDef(id);
-      }
-    }
   }
 }
 
 uint32_t ConvertToUntyped::NextId() {
-  uint32_t id = context()->TakeNextUniqueId();
-  max_id_ = std::max(id, max_id_);
+  uint32_t id = context()->TakeNextId();
   return id;
 }
 
@@ -320,14 +302,14 @@ std::pair<bool, uint32_t> ConvertToUntyped::MatrixStride(Instruction* inst) {
   return std::make_pair(false, 0);
 }
 
-Instruction* ConvertToUntyped::ConvertPointer(Instruction* inst) {
+Instruction* ConvertToUntyped::ConvertPointerType(Instruction* inst) {
   Instruction* replacement = nullptr;
   auto sc = inst->GetSingleWordInOperand(0);
   auto decs = context()->get_decoration_mgr()->GetDecorationsFor(
       inst->result_id(), false);
   // De-duplicate undecorated pointers.
   if (!decs.empty() || !base_ptrs_.count(sc)) {
-    // Replace in situ
+    // Rewrite inst in place. This maintains dominance ordering.
     inst->SetOpcode(spv::Op::OpTypeUntypedPointerKHR);
     inst->SetInOperands(
         std::initializer_list<Operand>{{SPV_OPERAND_TYPE_STORAGE_CLASS, {sc}}});
@@ -345,7 +327,7 @@ void ConvertToUntyped::ConvertVariable(Instruction* inst) {
       context()->get_type_mgr()->GetType(inst->type_id())->AsPointer();
   auto data =
       context()->get_type_mgr()->GetTypeInstruction(ptr_ty->pointee_type());
-  // Replace in situ.
+  // Rewrite inst in place. This maintains dominance ordering.
   inst->SetOpcode(spv::Op::OpUntypedVariableKHR);
   inst->SetInOperands(std::initializer_list<Operand>{
       {SPV_OPERAND_TYPE_STORAGE_CLASS, {uint32_t(ptr_ty->storage_class())}},
@@ -699,7 +681,7 @@ void ConvertToUntyped::Convert(Instruction* inst) {
   Instruction* replacement = nullptr;
   switch (inst->opcode()) {
     case spv::Op::OpTypePointer:
-      replacement = ConvertPointer(inst);
+      replacement = ConvertPointerType(inst);
       if (replacement != nullptr) {
         to_delete_.push_back(inst);
         remapped_ids_[inst->result_id()] = replacement->result_id();
@@ -731,7 +713,31 @@ void ConvertToUntyped::Convert(Instruction* inst) {
   }
 }
 
-void ConvertToUntyped::ConvertPointers() {
+bool ConvertToUntyped::ConvertPointers() {
+  if (context()->get_feature_mgr()->HasCapability(
+          spv::Capability::UntypedPointersKHR)) {
+    // Untyped pointers capability is already declared, pre-populate base_ptrs_.
+    // All possibly supported storage classes are listed for extensibility
+    // purposes.
+    std::vector<spv::StorageClass> storage_classes{
+        spv::StorageClass::StorageBuffer,
+        spv::StorageClass::Uniform,
+        spv::StorageClass::Workgroup,
+        spv::StorageClass::PushConstant,
+        spv::StorageClass::PhysicalStorageBuffer,
+        spv::StorageClass::UniformConstant};
+    for (auto sc : storage_classes) {
+      if (!SupportedStorageClass(sc)) {
+        continue;
+      }
+      const analysis::Pointer ptr_type{nullptr, sc};
+      auto id = context()->get_type_mgr()->GetId(&ptr_type);
+      if (id != 0) {
+        base_ptrs_[uint32_t(sc)] = context()->get_def_use_mgr()->GetDef(id);
+      }
+    }
+  }
+
   // Convert instructions that change opcode with untyped pointers.
   std::vector<Instruction*> to_convert;
   get_module()->ForEachInst([this, &to_convert](Instruction* inst) {
@@ -740,27 +746,33 @@ void ConvertToUntyped::ConvertPointers() {
     }
   });
 
-  for (auto* inst : to_convert) {
-    Convert(inst);
-  }
+  if (!to_convert.empty()) {
+    for (auto* inst : to_convert) {
+      Convert(inst);
+    }
 
-  // Update operands of instructions
-  get_module()->ForEachInst([this](Instruction* inst) {
-    for (uint32_t i = 0; i < inst->NumOperands(); i++) {
-      auto& op = inst->GetOperand(i);
-      if (spvIsIdType(op.type) && op.type != SPV_OPERAND_TYPE_RESULT_ID) {
-        auto where = remapped_ids_.find(op.words[0]);
-        if (where != remapped_ids_.end()) {
-          op.words[0] = where->second;
+    // Update operands of instructions
+    get_module()->ForEachInst([this](Instruction* inst) {
+      for (uint32_t i = 0; i < inst->NumOperands(); i++) {
+        auto& op = inst->GetOperand(i);
+        if (spvIsIdType(op.type) && op.type != SPV_OPERAND_TYPE_RESULT_ID) {
+          auto where = remapped_ids_.find(op.words[0]);
+          if (where != remapped_ids_.end()) {
+            op.words[0] = where->second;
+          }
         }
       }
-    }
-  });
+    });
 
-  // Delete dead instructions
-  for (auto* inst : to_delete_) {
-    context()->KillInst(inst);
+    // Delete dead instructions
+    for (auto* inst : to_delete_) {
+      context()->KillInst(inst);
+    }
+
+    return true;
   }
+
+  return false;
 }
 
 }  // namespace opt

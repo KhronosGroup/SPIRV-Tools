@@ -22,6 +22,25 @@ using namespace spvtools;
 
 using ConvertToUntypedTest = opt::PassTest<::testing::Test>;
 
+TEST_F(ConvertToUntypedTest, DoNotCapability) {
+  const std::string text = R"(
+; CHECK-NOT: OpCapability UntypedPointersKHR
+; CHECK-NOT: OpExtension "SPV_KHR_untyped_pointers"
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::ConvertToUntyped>(text, true);
+}
+
 TEST_F(ConvertToUntypedTest, AddCapability) {
   const std::string text = R"(
 ; CHECK: OpCapability UntypedPointersKHR
@@ -32,6 +51,8 @@ OpEntryPoint GLCompute %main "main"
 OpExecutionMode %main LocalSize 1 1 1
 %void = OpTypeVoid
 %void_fn = OpTypeFunction %void
+%uint = OpTypeInt 32 0
+%ptr = OpTypePointer StorageBuffer %uint
 %main = OpFunction %void None %void_fn
 %entry = OpLabel
 OpReturn

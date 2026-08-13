@@ -30,7 +30,7 @@ class ConvertToUntyped : public Pass {
 
  private:
   // Adds the untyped pointer extension and capability if they are not present.
-  void AddUntypedEnable();
+  void AddUntypedPointerCapability();
 
   // Updates the module by converting instructions and replacing uses.
   //
@@ -38,7 +38,9 @@ class ConvertToUntyped : public Pass {
   // continue to use old ids (mapped to correctly typed pointers) until after
   // conversions. Then all operands are updated (and unneeded instructions
   // removed).
-  void ConvertPointers();
+  // 
+  // Returns true if conversions were made.
+  bool ConvertPointers();
 
   // Returns true if sc is supports untyped pointers.
   bool SupportedStorageClass(spv::StorageClass sc);
@@ -58,7 +60,7 @@ class ConvertToUntyped : public Pass {
 
   // Converts OpTypePointer to OpTypeUntypedPointerKHR
   // All undecorated pointers in each storage class are de-duplicated.
-  Instruction* ConvertPointer(Instruction* inst);
+  Instruction* ConvertPointerType(Instruction* inst);
 
   // Converts OpVariable to OpUntypedVariableKHR
   void ConvertVariable(Instruction* inst);
@@ -98,7 +100,6 @@ class ConvertToUntyped : public Pass {
   // Converted instructions that need deleted.
   std::vector<Instruction*> to_delete_{};
 
-  uint32_t max_id_ = 0;
   bool support_workgroup_ = false;
 };
 
