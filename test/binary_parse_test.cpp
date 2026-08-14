@@ -41,13 +41,13 @@ namespace {
 
 using ::spvtest::Concatenate;
 using ::spvtest::MakeInstruction;
-using utils::MakeVector;
 using ::spvtest::ScopedContext;
 using ::testing::_;
 using ::testing::AnyOf;
 using ::testing::Eq;
 using ::testing::InSequence;
 using ::testing::Return;
+using utils::MakeVector;
 
 using MaybeFlipWordsTest = spvtest::TextToBinaryTest;
 
@@ -175,7 +175,11 @@ spv_parsed_operand_t MakeLiteralNumberOperand(uint16_t offset) {
 // Returns a parsed operand for a standalone literal float value at the given
 // word offset within an instruction.
 spv_parsed_operand_t MakeLiteralFloatOperand(uint16_t offset) {
-  return {offset, 1, SPV_OPERAND_TYPE_LITERAL_FLOAT, SPV_NUMBER_FLOATING, 32,
+  return {offset,
+          1,
+          SPV_OPERAND_TYPE_LITERAL_FLOAT,
+          SPV_NUMBER_FLOATING,
+          32,
           SPV_FP_ENCODING_UNKNOWN};
 }
 
@@ -808,13 +812,12 @@ TEST_F(BinaryParseTest, LiteralFloatOperandHasUnknownEncoding) {
       MakeSimpleOperand(1, SPV_OPERAND_TYPE_ID),
       MakeSimpleOperand(2, SPV_OPERAND_TYPE_DECORATION),
       MakeLiteralFloatOperand(3)};
-  EXPECT_CALL(
-      client_,
-      Instruction(ParsedInstruction(spv_parsed_instruction_t{
-          instruction.data(), static_cast<uint16_t>(instruction.size()),
-          uint16_t(spv::Op::OpDecorate), SPV_EXT_INST_TYPE_NONE, 0 /* type id */,
-          0 /* no result id */, operands.data(),
-          static_cast<uint16_t>(operands.size())})))
+  EXPECT_CALL(client_,
+              Instruction(ParsedInstruction(spv_parsed_instruction_t{
+                  instruction.data(), static_cast<uint16_t>(instruction.size()),
+                  uint16_t(spv::Op::OpDecorate), SPV_EXT_INST_TYPE_NONE,
+                  0 /* type id */, 0 /* no result id */, operands.data(),
+                  static_cast<uint16_t>(operands.size())})))
       .WillOnce(Return(SPV_SUCCESS));
 
   Parse(words, SPV_SUCCESS);
