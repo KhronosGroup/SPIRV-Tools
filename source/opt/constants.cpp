@@ -683,12 +683,26 @@ const Constant* ConstantManager::GetIntConst(uint64_t val, int32_t bitWidth,
 uint32_t ConstantManager::GetUIntConstId(uint32_t val) {
   Type* uint_type = context()->get_type_mgr()->GetUIntType();
   const Constant* c = GetConstant(uint_type, {val});
-  return GetDefiningInstruction(c)->result_id();
+  if (!c) {
+    return 0;
+  }
+  Instruction* inst = GetDefiningInstruction(c);
+  if (!inst) {
+    return 0;
+  }
+  return inst->result_id();
 }
 
 uint32_t ConstantManager::GetNullConstId(const Type* type) {
   const Constant* c = GetConstant(type, {});
-  return GetDefiningInstruction(c)->result_id();
+  if (!c) {
+    return 0;
+  }
+  Instruction* inst = GetDefiningInstruction(c);
+  if (!inst) {
+    return 0;
+  }
+  return inst->result_id();
 }
 
 const Constant* ConstantManager::GenerateIntegerConstant(
