@@ -39,11 +39,13 @@ py_binary(
         "utils/Table/Operand.py",
         "utils/Table/StringList.py",
     ],
+    legacy_create_init = False,
 )
 
 py_binary(
     name = "generate_language_headers",
     srcs = ["utils/generate_language_headers.py"],
+    legacy_create_init = False,
 )
 
 create_grammar_tables_target(
@@ -87,6 +89,7 @@ generate_extinst_lang_headers(
 py_binary(
     name = "generate_registry_tables",
     srcs = ["utils/generate_registry_tables.py"],
+    legacy_create_init = False,
 )
 
 genrule(
@@ -101,6 +104,7 @@ genrule(
 py_binary(
     name = "update_build_version",
     srcs = ["utils/update_build_version.py"],
+    legacy_create_init = False,
 )
 
 genrule(
