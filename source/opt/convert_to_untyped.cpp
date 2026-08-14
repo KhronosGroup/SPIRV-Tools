@@ -746,33 +746,33 @@ bool ConvertToUntyped::ConvertPointers() {
     }
   });
 
-  if (!to_convert.empty()) {
-    for (auto* inst : to_convert) {
-      Convert(inst);
-    }
-
-    // Update operands of instructions
-    get_module()->ForEachInst([this](Instruction* inst) {
-      for (uint32_t i = 0; i < inst->NumOperands(); i++) {
-        auto& op = inst->GetOperand(i);
-        if (spvIsIdType(op.type) && op.type != SPV_OPERAND_TYPE_RESULT_ID) {
-          auto where = remapped_ids_.find(op.words[0]);
-          if (where != remapped_ids_.end()) {
-            op.words[0] = where->second;
-          }
-        }
-      }
-    });
-
-    // Delete dead instructions
-    for (auto* inst : to_delete_) {
-      context()->KillInst(inst);
-    }
-
-    return true;
+  if (to_convert.empty()) {
+    return false;
   }
 
-  return false;
+  for (auto* inst : to_convert) {
+    Convert(inst);
+  }
+
+  // Update operands of instructions
+  get_module()->ForEachInst([this](Instruction* inst) {
+    for (uint32_t i = 0; i < inst->NumOperands(); i++) {
+      auto& op = inst->GetOperand(i);
+      if (spvIsIdType(op.type) && op.type != SPV_OPERAND_TYPE_RESULT_ID) {
+        auto where = remapped_ids_.find(op.words[0]);
+        if (where != remapped_ids_.end()) {
+          op.words[0] = where->second;
+        }
+      }
+    }
+  });
+
+  // Delete dead instructions
+  for (auto* inst : to_delete_) {
+    context()->KillInst(inst);
+  }
+
+  return true;
 }
 
 }  // namespace opt
