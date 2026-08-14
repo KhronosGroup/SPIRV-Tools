@@ -69,7 +69,6 @@ const std::vector<std::string>& getInstructions() {
     "%str = OpString \"Test String\"",
     "%str2 = OpString \"blabla\"",
     "OpSource GLSL 450 %str \"uniform vec3 var = vec3(4.0);\"",
-    "OpSourceContinued \"void main(){return;}\"",
     "OpSourceExtension \"Test extension\"",
     "OpName %func \"MyFunction\"",
     "OpMemberName %struct 1 \"my_member\"",
@@ -127,30 +126,29 @@ INSTANTIATE_TEST_SUITE_P(InstructionsOrder,
                     , std::make_tuple(std::string("OpEntryPoint")              , Equals<4>              , All)
                     , std::make_tuple(std::string("OpExecutionMode ")          , Range<5, 6>()          , All)
                     , std::make_tuple(std::string("OpExecutionModeId")         , Range<5, 6>()          , All)
-                    , std::make_tuple(std::string("OpSource ")                 , Range<7, 11>()         , Range<8, kRangeEnd>())
-                    , std::make_tuple(std::string("OpSourceContinued ")        , Range<7, 11>()         , All)
-                    , std::make_tuple(std::string("OpSourceExtension ")        , Range<7, 11>()         , All)
-                    , std::make_tuple(std::string("%str2 = OpString ")         , Range<7, 11>()         , All)
-                    , std::make_tuple(std::string("OpName ")                   , Range<12, 13>()        , All)
-                    , std::make_tuple(std::string("OpMemberName ")             , Range<12, 13>()        , All)
-                    , std::make_tuple(std::string("OpDecorate ")               , Range<14, 17>()        , All)
-                    , std::make_tuple(std::string("OpMemberDecorate ")         , Range<14, 17>()        , All)
-                    , std::make_tuple(std::string("OpGroupDecorate ")          , Range<14, 17>()        , Range<17, kRangeEnd>())
-                    , std::make_tuple(std::string("OpDecorationGroup")         , Range<14, 17>()        , Range<0, 16>())
-                    , std::make_tuple(std::string("OpTypeBool")                , Range<18, 31>()        , All)
-                    , std::make_tuple(std::string("OpTypeVoid")                , Range<18, 31>()        , Range<0, 26>())
-                    , std::make_tuple(std::string("OpTypeFloat")               , Range<18, 31>()        , Range<0,21>())
-                    , std::make_tuple(std::string("OpTypeInt")                 , Range<18, 31>()        , Range<0, 21>())
-                    , std::make_tuple(std::string("OpTypeVector %floatt 4")    , Range<18, 31>()        , Range<20, 24>())
-                    , std::make_tuple(std::string("OpTypeMatrix %vec4 4")      , Range<18, 31>()        , Range<23, kRangeEnd>())
-                    , std::make_tuple(std::string("OpTypeStruct")              , Range<18, 31>()        , Range<25, kRangeEnd>())
-                    , std::make_tuple(std::string("%vfunct   = OpTypeFunction"), Range<18, 31>()        , Range<21, 31>())
-                    , std::make_tuple(std::string("OpConstant")                , Range<18, 31>()        , Range<21, kRangeEnd>())
-                    , std::make_tuple(std::string("OpLine ")                   , Range<18, kRangeEnd>() , Range<8, kRangeEnd>())
-                    , std::make_tuple(std::string("OpNoLine")                  , Range<18, kRangeEnd>() , All)
-                    , std::make_tuple(std::string("%fLabel   = OpLabel")       , Equals<39>             , All)
-                    , std::make_tuple(std::string("OpNop")                     , Equals<40>             , Range<40,kRangeEnd>())
-                    , std::make_tuple(std::string("OpReturn ; %func2 return")  , Equals<41>             , All)
+                    , std::make_tuple(std::string("OpSource ")                 , Range<7, 10>()         , Range<8, kRangeEnd>())
+                    , std::make_tuple(std::string("OpSourceExtension ")        , Range<7, 10>()         , All)
+                    , std::make_tuple(std::string("%str2 = OpString ")         , Range<7, 10>()         , All)
+                    , std::make_tuple(std::string("OpName ")                   , Range<11, 12>()        , All)
+                    , std::make_tuple(std::string("OpMemberName ")             , Range<11, 12>()        , All)
+                    , std::make_tuple(std::string("OpDecorate ")               , Range<13, 16>()        , All)
+                    , std::make_tuple(std::string("OpMemberDecorate ")         , Range<13, 16>()        , All)
+                    , std::make_tuple(std::string("OpGroupDecorate ")          , Range<13, 16>()        , Range<16, kRangeEnd>())
+                    , std::make_tuple(std::string("OpDecorationGroup")         , Range<13, 16>()        , Range<0, 15>())
+                    , std::make_tuple(std::string("OpTypeBool")                , Range<17, 30>()        , All)
+                    , std::make_tuple(std::string("OpTypeVoid")                , Range<17, 30>()        , Range<0, 25>())
+                    , std::make_tuple(std::string("OpTypeFloat")               , Range<17, 30>()        , Range<0, 20>())
+                    , std::make_tuple(std::string("OpTypeInt")                 , Range<17, 30>()        , Range<0, 20>())
+                    , std::make_tuple(std::string("OpTypeVector %floatt 4")    , Range<17, 30>()        , Range<19, 23>())
+                    , std::make_tuple(std::string("OpTypeMatrix %vec4 4")      , Range<17, 30>()        , Range<22, kRangeEnd>())
+                    , std::make_tuple(std::string("OpTypeStruct")              , Range<17, 30>()        , Range<24, kRangeEnd>())
+                    , std::make_tuple(std::string("%vfunct   = OpTypeFunction"), Range<17, 30>()        , Range<20, 30>())
+                    , std::make_tuple(std::string("OpConstant")                , Range<17, 30>()        , Range<20, kRangeEnd>())
+                    , std::make_tuple(std::string("OpLine ")                   , Range<17, kRangeEnd>() , Range<8, kRangeEnd>())
+                    , std::make_tuple(std::string("OpNoLine")                  , Range<17, kRangeEnd>() , All)
+                    , std::make_tuple(std::string("%fLabel   = OpLabel")       , Equals<38>             , All)
+                    , std::make_tuple(std::string("OpNop")                     , Equals<39>             , Range<39, kRangeEnd>())
+                    , std::make_tuple(std::string("OpReturn ; %func2 return")  , Equals<40>             , All)
     )));
 // clang-format on
 
@@ -752,6 +750,54 @@ TEST_F(ValidateLayout, NVBindlessAddressModeFromLayoutSpecifiedTwice) {
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr("OpSamplerImageAddressingModeNV should only be provided once"));
+}
+
+TEST_F(ValidateLayout, SourceContinued) {
+  std::string str = R"(
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpSourceContinued "continued text with no preceding OpSource"
+%void = OpTypeVoid
+%3 = OpTypeFunction %void
+%main = OpFunction %void None %3
+%5 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_ERROR_INVALID_LAYOUT,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("OpSourceContinued must be preceded by OpSource or "
+                        "OpSourceContinued"));
+}
+
+TEST_F(ValidateLayout, OpSourceAndContinuedValid) {
+  std::string str = R"(
+OpCapability Shader
+OpExtension "TestExtension"
+%inst = OpExtInstImport "GLSL.std.450"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %func ""
+OpExecutionMode %func LocalSize 1 1 1
+%str = OpString "Test String"
+OpSource GLSL 450 %str "uniform vec3 var = vec3(4.0);"
+OpSourceContinued "void main(){return;}"
+OpSourceExtension "Test extension"
+OpName %func "MyFunction"
+%voidt   = OpTypeVoid
+%vfunct  = OpTypeFunction %voidt
+%func    = OpFunction %voidt None %vfunct
+%l = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(str);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
 }  // namespace
