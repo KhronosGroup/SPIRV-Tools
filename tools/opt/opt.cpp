@@ -355,9 +355,11 @@ Options (in lexicographical order):)",
   printf(R"(
   --nonwritable-propagation
                Decorate a buffer variable NonWritable when every member of its
-               struct is already decorated NonWritable.  Some producers only
-               decorate the members, which hides the decoration from consumers
-               that read it off the variable.  The member decorations are kept.)");
+               struct is already decorated NonWritable, then remove the
+               now-redundant member decorations.  Some producers only decorate
+               the members, which hides the decoration from consumers that
+               read it off the variable.  Members that are themselves structs
+               are exempt from the check, matching DXC output.)");
   printf(R"(
   --loop-unswitch
                Hoists loop-invariant conditionals out of loops by duplicating
