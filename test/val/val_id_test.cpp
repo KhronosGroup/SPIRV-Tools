@@ -7287,11 +7287,12 @@ TEST_P(ValidateIdWithMessage, OpExtInstWithForwardRefsKHRDisallowedInSemantic) {
 )";
 
   CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_6);
-  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
-  EXPECT_THAT(getDiagnosticString(),
-              HasSubstr(make_message(
-                  "OpExtInstWithForwardRefsKHR is only allowed with "
-                  "non-semantic instructions.")));
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA,
+            ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(
+      getDiagnosticString(),
+      HasSubstr(make_message("OpExtInstWithForwardRefsKHR is only allowed with "
+                             "non-semantic instructions.")));
 }
 
 TEST_P(ValidateIdWithMessage, OpAliasScopeDeclINTELDoesNotRequireType) {
