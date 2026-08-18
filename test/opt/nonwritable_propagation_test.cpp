@@ -231,6 +231,167 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::NonWritablePropagationPass>(text, true);
 }
 
+// A member that is itself a struct is exempt from the all-members check:
+// DXC does not decorate struct members even in a read-only buffer, so
+// requiring them would make the pass a no-op on its target input.
+TEST_F(NonWritablePropagationTest, IgnoresStructTypeMembers) {
+  const std::string text = R"(
+; CHECK: OpDecorate %var NonWritable
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %var "var"
+OpDecorate %buf Block
+OpMemberDecorate %buf 0 Offset 0
+OpMemberDecorate %buf 0 NonWritable
+OpMemberDecorate %buf 1 Offset 4
+OpMemberDecorate %inner 0 Offset 0
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%inner = OpTypeStruct %float
+%buf = OpTypeStruct %float %inner
+%ptr = OpTypePointer StorageBuffer %buf
+%var = OpVariable %ptr StorageBuffer
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::NonWritablePropagationPass>(text, true);
+}
+
+// If every member is an exempt struct there is no evidence in either
+// direction -- a writable buffer of structs looks exactly the same -- so
+// nothing is propagated.
+TEST_F(NonWritablePropagationTest, DoesNotPropagateWhenAllMembersAreStructs) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate %var NonWritable
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %var "var"
+OpDecorate %buf Block
+OpMemberDecorate %buf 0 Offset 0
+OpMemberDecorate %inner 0 Offset 0
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%inner = OpTypeStruct %float
+%buf = OpTypeStruct %inner
+%ptr = OpTypePointer StorageBuffer %buf
+%var = OpVariable %ptr StorageBuffer
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::NonWritablePropagationPass>(text, true);
+}
+
+// Once the variable is decorated, the per-member decorations are redundant
+// and are removed.  Other member decorations (Offset) must survive.
+TEST_F(NonWritablePropagationTest, RemovesMemberDecorationsAfterPropagating) {
+  const std::string text = R"(
+; CHECK: OpMemberDecorate %buf 0 Offset 0
+; CHECK-NOT: OpMemberDecorate %buf 0 NonWritable
+; CHECK: OpDecorate %var NonWritable
+; CHECK-NOT: OpMemberDecorate %buf 0 NonWritable
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %var "var"
+OpName %buf "buf"
+OpDecorate %buf Block
+OpMemberDecorate %buf 0 Offset 0
+OpMemberDecorate %buf 0 NonWritable
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%buf = OpTypeStruct %float
+%ptr = OpTypePointer StorageBuffer %buf
+%var = OpVariable %ptr StorageBuffer
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::NonWritablePropagationPass>(text, true);
+}
+
+// An untyped variable carries no pointee on its pointer type, so the struct
+// comes from the data-type operand.  The propagation applies to it too.
+TEST_F(NonWritablePropagationTest, PropagatesToUntypedStorageBuffer) {
+  const std::string text = R"(
+; CHECK: OpDecorate %var NonWritable
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %var "var"
+OpDecorate %buf Block
+OpMemberDecorate %buf 0 Offset 0
+OpMemberDecorate %buf 0 NonWritable
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%buf = OpTypeStruct %float
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%var = OpUntypedVariableKHR %ptr StorageBuffer %buf
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::NonWritablePropagationPass>(text, true);
+}
+
+// An untyped variable without the optional data-type operand gives the pass
+// nothing to inspect, so it is left alone.
+TEST_F(NonWritablePropagationTest,
+       DoesNotPropagateForUntypedVariableWithoutDataType) {
+  const std::string text = R"(
+; CHECK-NOT: OpDecorate %var NonWritable
+OpCapability Shader
+OpCapability UntypedPointersKHR
+OpExtension "SPV_KHR_untyped_pointers"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %var "var"
+OpDecorate %buf Block
+OpMemberDecorate %buf 0 Offset 0
+OpMemberDecorate %buf 0 NonWritable
+OpDecorate %var DescriptorSet 0
+OpDecorate %var Binding 0
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%buf = OpTypeStruct %float
+%ptr = OpTypeUntypedPointerKHR StorageBuffer
+%var = OpUntypedVariableKHR %ptr StorageBuffer
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::NonWritablePropagationPass>(text, true);
+}
+
 // A descriptor array of buffers carries Block on the struct, one array layer
 // down.  The buffer helpers unpack that layer, so this propagates too.
 TEST_F(NonWritablePropagationTest, PropagatesThroughDescriptorArray) {

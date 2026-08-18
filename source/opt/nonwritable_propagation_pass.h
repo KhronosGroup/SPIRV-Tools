@@ -27,9 +27,12 @@ namespace opt {
 // that read the decoration off the variable -- for example the mapping APIs
 // in VK_EXT_descriptor_heap -- do not see it, so the buffer looks writable.
 //
-// For each buffer variable whose struct has every member decorated
-// NonWritable, this pass decorates the variable NonWritable as well.  The
-// member decorations are left in place; nothing is removed.
+// For each buffer variable (OpVariable or OpUntypedVariableKHR) whose
+// struct has every member decorated NonWritable, this pass decorates the
+// variable NonWritable and then removes the now-redundant member
+// decorations.  Members that are themselves structs are exempt from the
+// all-members check, since DXC does not decorate those even in a read-only
+// buffer.
 class NonWritablePropagationPass : public Pass {
  public:
   const char* name() const override { return "nonwritable-propagation"; }
