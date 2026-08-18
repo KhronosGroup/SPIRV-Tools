@@ -7213,6 +7213,87 @@ TEST_P(ValidateIdWithMessage, OpExtInstNoForwardDeclAllowed) {
               HasSubstr(make_message("ID '11[%11]' has not been defined")));
 }
 
+TEST_P(ValidateIdWithMessage,
+       OpExtInstWithForwardRefsKHRAllowedForwardReferenceInGenericNonSemantic) {
+  std::string spirv = R"(
+             OpCapability Shader
+             OpExtension "SPV_KHR_non_semantic_info"
+             OpExtension "SPV_KHR_relaxed_extended_instruction"
+      %ext = OpExtInstImport "NonSemantic.Foo"
+             OpMemoryModel Logical GLSL450
+             OpEntryPoint GLCompute %main "main"
+             OpExecutionMode %main LocalSize 1 1 1
+     %void = OpTypeVoid
+     %uint = OpTypeInt 32 0
+   %uint_0 = OpConstant %uint 0
+       %fn = OpTypeFunction %void
+        %a = OpExtInstWithForwardRefsKHR %void %ext 1 %b
+        %b = OpExtInst %void %ext 2 %uint_0
+     %main = OpFunction %void None %fn
+    %label = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+}
+
+TEST_P(ValidateIdWithMessage,
+       OpExtInstForwardReferenceDisallowedInGenericNonSemantic) {
+  std::string spirv = R"(
+             OpCapability Shader
+             OpExtension "SPV_KHR_non_semantic_info"
+      %ext = OpExtInstImport "NonSemantic.Foo"
+             OpMemoryModel Logical GLSL450
+             OpEntryPoint GLCompute %main "main"
+             OpExecutionMode %main LocalSize 1 1 1
+     %void = OpTypeVoid
+     %uint = OpTypeInt 32 0
+   %uint_0 = OpConstant %uint 0
+       %fn = OpTypeFunction %void
+        %a = OpExtInst %void %ext 1 %b
+        %b = OpExtInst %void %ext 2 %uint_0
+     %main = OpFunction %void None %fn
+    %label = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr(make_message("has not been defined")));
+}
+
+TEST_P(ValidateIdWithMessage, OpExtInstWithForwardRefsKHRDisallowedInSemantic) {
+  std::string spirv = R"(
+             OpCapability Shader
+             OpExtension "SPV_KHR_relaxed_extended_instruction"
+      %ext = OpExtInstImport "GLSL.std.450"
+             OpMemoryModel Logical GLSL450
+             OpEntryPoint GLCompute %main "main"
+             OpExecutionMode %main LocalSize 1 1 1
+     %void = OpTypeVoid
+    %float = OpTypeFloat 32
+        %c = OpConstant %float 0
+       %fn = OpTypeFunction %void
+        %a = OpExtInstWithForwardRefsKHR %float %ext FAbs %b
+        %b = OpExtInst %float %ext FAbs %c
+     %main = OpFunction %void None %fn
+    %label = OpLabel
+             OpReturn
+             OpFunctionEnd
+)";
+
+  CompileSuccessfully(spirv, SPV_ENV_UNIVERSAL_1_6);
+  EXPECT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions(SPV_ENV_UNIVERSAL_1_6));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr(make_message(
+                  "OpExtInstWithForwardRefsKHR is only allowed with "
+                  "non-semantic instructions.")));
+}
+
 TEST_P(ValidateIdWithMessage, OpAliasScopeDeclINTELDoesNotRequireType) {
   std::string spirv = R"(
      OpCapability Shader

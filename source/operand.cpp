@@ -593,6 +593,10 @@ std::function<bool(unsigned)> spvOperandCanBeForwardDeclaredFunction(
     case spv::Op::OpGraphEntryPointARM:
       out = [](unsigned index) { return index == 0; };
       break;
+    case spv::Op::OpExtInstWithForwardRefsKHR:
+      // Any operand may be a forward reference.
+      out = [](unsigned) { return true; };
+      break;
     default:
       out = [](unsigned) { return false; };
       break;
