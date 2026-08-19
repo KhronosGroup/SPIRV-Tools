@@ -1144,6 +1144,45 @@ TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTStorageClass) {
                 "type with a Storage Class of Uniform or StorageBuffer."));
 }
 
+TEST_F(ValidateSpvEXTDescriptorHeap,
+       ResourceHeapEXTRuntimeArrayStruct) {
+  const std::string str = R"(
+              OpCapability Shader
+              OpCapability UntypedPointersKHR
+              OpCapability DescriptorHeapEXT
+              OpExtension "SPV_EXT_descriptor_heap"
+              OpExtension "SPV_KHR_untyped_pointers"
+         %1 = OpExtInstImport "GLSL.std.450"
+              OpMemoryModel Logical GLSL450
+              OpEntryPoint Fragment %main "main" %base
+              OpExecutionMode %main OriginUpperLeft
+              OpDecorate %base BuiltIn ResourceHeapEXT
+              OpDecorateId %array ArrayStrideIdEXT %size
+              OpMemberDecorateIdEXT %struct 0 OffsetIdEXT %uint_0
+     %void = OpTypeVoid
+   %func_t = OpTypeFunction %void
+  %ptr_uc = OpTypeUntypedPointerKHR UniformConstant
+    %float = OpTypeFloat 32
+    %image = OpTypeImage %float 2D 0 0 0 2 R32f
+     %uint = OpTypeInt 32 0
+     %size = OpConstantSizeOfEXT %uint %image
+   %uint_0 = OpConstant %uint 0
+  %uint_10 = OpConstant %uint 10
+    %array = OpTypeRuntimeArray %image
+   %struct = OpTypeStruct %array
+    %base = OpUntypedVariableKHR %ptr_uc UniformConstant
+     %main = OpFunction %void None %func_t
+    %entry = OpLabel
+      %ptr = OpUntypedAccessChainKHR %ptr_uc %struct %base %uint_0 %uint_10
+   %loaded = OpLoad %image %ptr
+              OpReturn
+              OpFunctionEnd
+)";
+
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+}
+
 TEST_F(ValidateSpvEXTDescriptorHeap, BufferPointerEXTLayout) {
   const std::string str = R"(
                OpCapability Shader
