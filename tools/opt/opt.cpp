@@ -353,6 +353,14 @@ Options (in lexicographical order):)",
                Note: when adding the execution mode, no attempt is made to
                determine if any ray tracing repack instructions are used.)");
   printf(R"(
+  --nonwritable-propagation
+               Decorate a buffer variable NonWritable when every member of its
+               struct is already decorated NonWritable, then remove the
+               now-redundant member decorations.  Some producers only decorate
+               the members, which hides the decoration from consumers that
+               read it off the variable.  Members that are themselves structs
+               are exempt from the check, matching DXC output.)");
+  printf(R"(
   --loop-unswitch
                Hoists loop-invariant conditionals out of loops by duplicating
                the loop on each branch of the conditional and adjusting each
