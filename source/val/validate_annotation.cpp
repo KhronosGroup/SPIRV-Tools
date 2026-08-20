@@ -55,14 +55,36 @@ bool IsMemberDecorationOnly(spv::Decoration dec) {
     case spv::Decoration::RowMajor:
     case spv::Decoration::ColMajor:
     case spv::Decoration::MatrixStride:
-    // Spec ambiguity where this is allowed or not currently
-    // See https://gitlab.khronos.org/spirv/SPIR-V/-/issues/937
-    // case spv::Decoration::Offset:
+    case spv::Decoration::Offset:
     case spv::Decoration::OffsetIdEXT:
       return true;
     default:
       break;
   }
+  return false;
+}
+
+bool IsOffsetAllowedOnObject(ValidationState_t& _,
+                             const Instruction* target) {
+  if (target->opcode() != spv::Op::OpVariable &&
+      target->opcode() != spv::Op::OpUntypedVariableKHR) {
+    return false;
+  }
+
+  // ARB_shader_atomic_counters allows the offset layout qualifier on uniform
+  // atomic_uint declarations. In SPIR-V, these declarations are variables in
+  // the AtomicCounter storage class decorated with Offset.
+  const auto storage_class = target->GetOperandAs<spv::StorageClass>(2);
+  if (storage_class == spv::StorageClass::AtomicCounter) {
+    return true;
+  }
+
+  // Transform feedback also permits Offset on Output variables.
+  if (storage_class == spv::StorageClass::Output &&
+      _.HasCapability(spv::Capability::TransformFeedback)) {
+    return true;
+  }
+
   return false;
 }
 
@@ -372,7 +394,10 @@ spv_result_t ValidateDecorate(ValidationState_t& _, const Instruction* inst) {
   }
 
   if (target->opcode() != spv::Op::OpDecorationGroup) {
-    if (IsMemberDecorationOnly(decoration)) {
+    const bool offset_object_exception =
+        decoration == spv::Decoration::Offset &&
+        IsOffsetAllowedOnObject(_, target);
+    if (IsMemberDecorationOnly(decoration) && !offset_object_exception) {
       return _.diag(SPV_ERROR_INVALID_ID, inst)
              << _.SpvDecorationString(decoration)
              << " can only be applied to structure members";
