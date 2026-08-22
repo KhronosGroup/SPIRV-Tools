@@ -70,7 +70,7 @@ vars = {
 
   # Commits for SPIRV-Tools dependencies
 
-  'abseil_revision': 'ba427a3dd37a1948aaca5cda75191cc4b88b4fa8',
+  'abseil_revision': 'a690167a55b9e210b7884d311759977c0f5669c9',
   'effcee_revision': 'f8e8a164822d4f65e757bff66bc00e1567959aa0',
   'googletest_revision': '7260682388d493f155be62c3ce2efc7c7a9a3dcf',
   # Use a recent protobuf, which can depend on abseil
