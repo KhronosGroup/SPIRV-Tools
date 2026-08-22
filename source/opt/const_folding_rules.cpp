@@ -1276,6 +1276,67 @@ ConstantFoldingRule FoldInvariantSelect() {
   };
 }
 
+// Folds an OpSelect with a constant condition to the selected object.  A
+// scalar condition, which since SPIR-V 1.4 is allowed for any result type,
+// selects a whole object.  A vector condition selects each component
+// separately.
+ConstantFoldingRule FoldSelect() {
+  return [](IRContext* context, Instruction* inst,
+            const std::vector<const analysis::Constant*>& constants)
+             -> const analysis::Constant* {
+    assert(inst->opcode() == spv::Op::OpSelect);
+    const analysis::Constant* condition = constants[0];
+    const analysis::Constant* object_1 = constants[1];
+    const analysis::Constant* object_2 = constants[2];
+    if (!condition || !object_1 || !object_2) {
+      return nullptr;
+    }
+
+    if (condition->type()->AsVector() == nullptr) {
+      bool cond_is_true = false;
+      if (const analysis::BoolConstant* bool_condition =
+              condition->AsBoolConstant()) {
+        cond_is_true = bool_condition->value();
+      } else if (!condition->AsNullConstant()) {
+        return nullptr;
+      }
+      return cond_is_true ? object_1 : object_2;
+    }
+
+    analysis::ConstantManager* const_mgr = context->get_constant_mgr();
+    analysis::TypeManager* type_mgr = context->get_type_mgr();
+    const analysis::Vector* vector_type =
+        type_mgr->GetType(inst->type_id())->AsVector();
+    assert(vector_type != nullptr &&
+           "The result type of an OpSelect with a vector condition must be a "
+           "vector");
+
+    std::vector<const analysis::Constant*> cond_components =
+        condition->GetVectorComponents(const_mgr);
+    std::vector<const analysis::Constant*> object_1_components =
+        object_1->GetVectorComponents(const_mgr);
+    std::vector<const analysis::Constant*> object_2_components =
+        object_2->GetVectorComponents(const_mgr);
+
+    std::vector<uint32_t> ids;
+    for (uint32_t i = 0; i < cond_components.size(); ++i) {
+      const analysis::BoolConstant* bool_component =
+          cond_components[i]->AsBoolConstant();
+      const bool cond_is_true =
+          bool_component != nullptr && bool_component->value();
+      const analysis::Constant* component =
+          cond_is_true ? object_1_components[i] : object_2_components[i];
+      Instruction* component_inst =
+          const_mgr->GetDefiningInstruction(component);
+      if (component_inst == nullptr) {
+        return nullptr;
+      }
+      ids.push_back(component_inst->result_id());
+    }
+    return const_mgr->GetConstant(vector_type, ids);
+  };
+}
+
 // Folds an OpDot where all of the inputs are constants to a
 // constant.  A new constant is created if necessary.
 ConstantFoldingRule FoldOpDotWithConstants() {
@@ -2086,6 +2147,7 @@ void ConstantFoldingRules::AddFoldingRules() {
   rules_[spv::Op::OpFSub].push_back(FoldRedundantSub());
 
   rules_[spv::Op::OpSelect].push_back(FoldInvariantSelect());
+  rules_[spv::Op::OpSelect].push_back(FoldSelect());
 
   rules_[spv::Op::OpFOrdEqual].push_back(FoldFOrdEqual());
 
