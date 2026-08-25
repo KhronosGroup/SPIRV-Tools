@@ -517,6 +517,23 @@ struct Impl {
     return false;
   }
 
+  // Used to map the option alignment to the Vulkan VUID
+  uint32_t GetAlignVkErrorId(spv::Op opcode) {
+    if (opcode == spv::Op::OpTypeSampler) {
+      return 11476;
+    } else if (opcode == spv::Op::OpTypeSampledImage ||
+               opcode == spv::Op::OpTypeImage) {
+      return 11477;
+    } else if (opcode == spv::Op::OpTypeBufferEXT) {
+      return 11478;
+    } else if (opcode == spv::Op::OpTypeAccelerationStructureKHR) {
+      return 11479;
+    } else if (opcode == spv::Op::OpTypeTensorARM) {
+      return 11480;
+    }
+    return 0;
+  }
+
   // Returns the alignment for type_id for the given layout rules.
   uint32_t GetAlign(uint32_t type_id, LayoutMode mode,
                     const MatrixConstraints& matrix_constraints,
@@ -855,12 +872,14 @@ struct Impl {
       uint32_t align = GetAlign(member_id, mode, mat_constraints);
       if (!IsAlignedTo(offset, align)) {
         return vstate.diag(SPV_ERROR_INVALID_ID, type_inst)
+               << vstate.VkErrorID(GetAlignVkErrorId(member_inst->opcode()))
                << "Structure member " << member_idx << " at offset " << offset
                << " is not aligned to " << align << "."
                << CommonError(inst, storage_class, mode);
       }
       if (!IsAlignedTo(offset + incoming_offset, align)) {
         return vstate.diag(SPV_ERROR_INVALID_ID, type_inst)
+               << vstate.VkErrorID(GetAlignVkErrorId(member_inst->opcode()))
                << "Structure member " << member_idx << " at offset " << offset
                << " plus incoming offset " << incoming_offset
                << " is not aligned to " << align << "."
