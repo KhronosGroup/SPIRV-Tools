@@ -3589,6 +3589,18 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
         return VUID_WRAP(VUID-StandaloneSpirv-OpUntypedImageTexelPointerEXT-11416);
     case 11417:
         return VUID_WRAP(VUID-StandaloneSpirv-OpTypeUntypedPointerKHR-11417);
+    // These RuntimeSpirv are here because now we can pass in the size/alignment
+    // which in turns mean we can validate things based on runtime properties
+    case 11476:
+      return VUID_WRAP(VUID-RuntimeSpirv-samplerDescriptorAlignment-11476);
+    case 11477:
+      return VUID_WRAP(VUID-RuntimeSpirv-imageDescriptorAlignment-11477);
+    case 11478:
+      return VUID_WRAP(VUID-RuntimeSpirv-bufferDescriptorAlignment-11478);
+    case 11479:
+      return VUID_WRAP(VUID-RuntimeSpirv-bufferDescriptorAlignment-11479);
+    case 11480:
+      return VUID_WRAP(VUID-RuntimeSpirv-tensorDescriptorAlignment-11480);
     case 11482:
       return VUID_WRAP(VUID-StandaloneSpirv-DescriptorHeapEXT-11482);
     case 11805:
