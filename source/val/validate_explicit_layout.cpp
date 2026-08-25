@@ -76,6 +76,7 @@ struct Impl {
     // The descriptor array type id (if there is one).
     uint32_t descriptor_array_id = 0;
     // The storage class for the memory instruction.
+    // Only used for error messages
     spv::StorageClass storage_class;
     // The layout mode (only relevant if a layout is required).
     LayoutMode layout;
@@ -343,6 +344,17 @@ struct Impl {
           vstate.HasDecoration(data_ty_id, spv::Decoration::BufferBlock);
       reference->layout = GetStorageClassLayout(sc, buffer_block);
 
+      return true;
+    } else if (inst->opcode() == spv::Op::OpAbortKHR) {
+      reference->type_id = inst->GetOperandAs<uint32_t>(0u);
+      // Abort messages doesn't have a storage class
+      reference->storage_class = spv::StorageClass::Max;
+      // Currently not specified well
+      // https://gitlab.khronos.org/spirv/SPIR-V/-/work_items/962
+      reference->layout = vstate.options()->scalar_block_layout
+                              ? LayoutMode::kScalar
+                              : LayoutMode::kStandard;
+      reference->requirement = LayoutRequirement::kRequired;
       return true;
     }
 
@@ -777,9 +789,13 @@ struct Impl {
                           spv::StorageClass storage_class, LayoutMode mode) {
     std::string s;
     std::ostringstream str(s);
-    str << " Instantiated via " << vstate.getIdName(inst->id()) << " in the "
-        << spvtools::StorageClassToString(storage_class)
-        << " storage class using " << mode << " layout rules.";
+    str << " Instantiated via " << vstate.getIdName(inst->id());
+    // OpAbortKHR is an example where there is not storage class
+    if (storage_class != spv::StorageClass::Max) {
+      str << " in the " << spvtools::StorageClassToString(storage_class)
+          << " storage class";
+    }
+    str << " using " << mode << " layout rules.";
     if (mode != LayoutMode::kScalar) {
       if (storage_class == spv::StorageClass::Workgroup) {
         str << vstate.MissingFeature(

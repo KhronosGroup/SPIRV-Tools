@@ -15,11 +15,8 @@
 // Tests for OpExtension validator rules.
 
 #include <string>
-#include <vector>
 
 #include "gmock/gmock.h"
-#include "source/spirv_target_env.h"
-#include "test/unit_spirv.h"
 #include "test/val/val_fixtures.h"
 
 namespace spvtools {
@@ -683,6 +680,40 @@ TEST_F(ValidateSpvKHRAbort, ConstantDataLengthUnderUint64) {
   EXPECT_THAT(getDiagnosticString(),
               HasSubstr("contains 2 words of data, but needs to have 4 words "
                         "to match the array of 2 of 64-bit ints"));
+}
+
+TEST_F(ValidateSpvKHRAbort, ExplicitLayout) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability Int8
+               OpCapability AbortKHR
+               OpCapability ConstantDataKHR
+               OpExtension "SPV_KHR_abort"
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpMemberDecorate %abortMessageLoadType 0 Offset 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %char = OpTypeInt 8 1
+       %uint = OpTypeInt 32 0
+    %uint_12 = OpConstant %uint 12
+%_arr_char_uint_12 = OpTypeArray %char %uint_12
+%_arr_char_uint_12_0 = OpTypeArray %char %uint_12
+         %11 = OpConstantDataKHR %_arr_char_uint_12 1919902305 1870091380 0
+%abortMessageLoadType = OpTypeStruct %_arr_char_uint_12_0
+%abortMessage = OpTypeStruct %_arr_char_uint_12
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %14 = OpCompositeConstruct %abortMessage %11
+               OpAbortKHR %abortMessageLoadType %14
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str(), SPV_ENV_VULKAN_1_3);
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions(SPV_ENV_VULKAN_1_3));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Array must be explicitly laid out"));
 }
 
 }  // namespace
