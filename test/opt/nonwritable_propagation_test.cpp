@@ -231,12 +231,14 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::NonWritablePropagationPass>(text, true);
 }
 
-// A member that is itself a struct is exempt from the all-members check:
-// DXC does not decorate struct members even in a read-only buffer, so
-// requiring them would make the pass a no-op on its target input.
-TEST_F(NonWritablePropagationTest, IgnoresStructTypeMembers) {
+// A member that is itself a struct must carry the decoration like any other
+// member.  The spec allows NonWritable on any structure member and says
+// nothing about the member's type, so without it the member is writable and
+// the variable must not be decorated.
+TEST_F(NonWritablePropagationTest,
+       DoesNotPropagateWhenStructMemberIsUndecorated) {
   const std::string text = R"(
-; CHECK: OpDecorate %var NonWritable
+; CHECK-NOT: OpDecorate %var NonWritable
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
@@ -263,12 +265,13 @@ OpFunctionEnd
   SinglePassRunAndMatch<opt::NonWritablePropagationPass>(text, true);
 }
 
-// If every member is an exempt struct there is no evidence in either
-// direction -- a writable buffer of structs looks exactly the same -- so
-// nothing is propagated.
-TEST_F(NonWritablePropagationTest, DoesNotPropagateWhenAllMembersAreStructs) {
+// A struct-typed member that does carry the decoration counts like any
+// other.  Only direct members are inspected: NonWritable on the member
+// covers everything reachable through it, so the inner struct's own members
+// need no decoration of their own.
+TEST_F(NonWritablePropagationTest, PropagatesWhenStructMemberIsDecorated) {
   const std::string text = R"(
-; CHECK-NOT: OpDecorate %var NonWritable
+; CHECK: OpDecorate %var NonWritable
 OpCapability Shader
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main"
@@ -276,12 +279,50 @@ OpExecutionMode %main LocalSize 1 1 1
 OpName %var "var"
 OpDecorate %buf Block
 OpMemberDecorate %buf 0 Offset 0
+OpMemberDecorate %buf 0 NonWritable
 OpMemberDecorate %inner 0 Offset 0
 %void = OpTypeVoid
 %void_fn = OpTypeFunction %void
 %float = OpTypeFloat 32
 %inner = OpTypeStruct %float
 %buf = OpTypeStruct %inner
+%ptr = OpTypePointer StorageBuffer %buf
+%var = OpVariable %ptr StorageBuffer
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<opt::NonWritablePropagationPass>(text, true);
+}
+
+// The shape DXC emits for a read-only StructuredBuffer<S>: a block whose one
+// member is a runtime array of structs, NonWritable on that member and
+// nothing on the inner struct.  The member decoration is all that is needed.
+TEST_F(NonWritablePropagationTest, PropagatesForRuntimeArrayOfStructs) {
+  const std::string text = R"(
+; CHECK: OpMemberDecorate %buf 0 Offset 0
+; CHECK-NOT: OpMemberDecorate %buf 0 NonWritable
+; CHECK: OpDecorate %var NonWritable
+; CHECK-NOT: OpMemberDecorate %buf 0 NonWritable
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+OpName %var "var"
+OpName %buf "buf"
+OpDecorate %buf Block
+OpMemberDecorate %buf 0 Offset 0
+OpMemberDecorate %buf 0 NonWritable
+OpMemberDecorate %inner 0 Offset 0
+OpDecorate %arr ArrayStride 4
+%void = OpTypeVoid
+%void_fn = OpTypeFunction %void
+%float = OpTypeFloat 32
+%inner = OpTypeStruct %float
+%arr = OpTypeRuntimeArray %inner
+%buf = OpTypeStruct %arr
 %ptr = OpTypePointer StorageBuffer %buf
 %var = OpVariable %ptr StorageBuffer
 %main = OpFunction %void None %void_fn

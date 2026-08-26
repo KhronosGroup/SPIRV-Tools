@@ -358,8 +358,7 @@ Options (in lexicographical order):)",
                struct is already decorated NonWritable, then remove the
                now-redundant member decorations.  Some producers only decorate
                the members, which hides the decoration from consumers that
-               read it off the variable.  Members that are themselves structs
-               are exempt from the check, matching DXC output.)");
+               read it off the variable.)");
   printf(R"(
   --loop-unswitch
                Hoists loop-invariant conditionals out of loops by duplicating

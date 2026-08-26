@@ -30,9 +30,9 @@ namespace opt {
 // For each buffer variable (OpVariable or OpUntypedVariableKHR) whose
 // struct has every member decorated NonWritable, this pass decorates the
 // variable NonWritable and then removes the now-redundant member
-// decorations.  Members that are themselves structs are exempt from the
-// all-members check, since DXC does not decorate those even in a read-only
-// buffer.
+// decorations.  Every direct member must carry the decoration, whatever its
+// type: a struct-typed member without it is writable as far as SPIR-V is
+// concerned, so the variable is left alone.
 class NonWritablePropagationPass : public Pass {
  public:
   const char* name() const override { return "nonwritable-propagation"; }
@@ -40,8 +40,9 @@ class NonWritablePropagationPass : public Pass {
   Status Process() override;
 
   IRContext::Analysis GetPreservedAnalyses() override {
-    // Only OpDecorate instructions are added, so every analysis except the
-    // decoration cache survives untouched.
+    // Decorations are the only thing added or removed, and the removal goes
+    // through the context, so every analysis except the decoration cache
+    // survives untouched.
     return IRContext::kAnalysisDefUse |
            IRContext::kAnalysisInstrToBlockMapping |
            IRContext::kAnalysisCombinators | IRContext::kAnalysisCFG |

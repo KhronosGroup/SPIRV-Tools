@@ -981,9 +981,9 @@ Optimizer::PassToken CreateModifyMaximalReconvergencePass(bool add);
 // NonWritable rather than decorating the variable, which hides the decoration
 // from consumers that read it off the variable.  Where every member of a
 // buffer's struct is NonWritable, this decorates the variable as well and
-// removes the now-redundant member decorations.  Members that are themselves
-// structs are exempt from the check, matching DXC's output for read-only
-// buffers.  Handles both OpVariable and OpUntypedVariableKHR.
+// removes the now-redundant member decorations.  A member without the
+// decoration, whatever its type, means the variable is left alone.  Handles
+// both OpVariable and OpUntypedVariableKHR.
 Optimizer::PassToken CreateNonWritablePropagationPass();
 
 // Creates a pass to split combined image+sampler variables and function

@@ -14,6 +14,7 @@
 
 #include "source/opt/nonwritable_propagation_pass.h"
 
+#include <cassert>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -94,9 +95,7 @@ Instruction* NonWritablePropagationPass::GetBufferStructType(
 
   if (var.opcode() == spv::Op::OpVariable) {
     Instruction* ptr_type = def_use_mgr->GetDef(var.type_id());
-    if (ptr_type == nullptr) {
-      return nullptr;
-    }
+    assert(ptr_type != nullptr && "Variable type id has no definition");
 
     // The validator only accepts NonWritable on a variable pointing at a
     // uniform block, storage buffer, storage image or tensor -- see
@@ -131,17 +130,13 @@ Instruction* NonWritablePropagationPass::GetBufferStructType(
     need_block_check = true;
   }
 
-  if (base_type == nullptr) {
-    return nullptr;
-  }
+  assert(base_type != nullptr && "Pointee or data type id has no definition");
 
   // Unpack the optional layer of arraying (a descriptor array of buffers).
   if (base_type->opcode() == spv::Op::OpTypeArray ||
       base_type->opcode() == spv::Op::OpTypeRuntimeArray) {
     base_type = def_use_mgr->GetDef(base_type->GetSingleWordInOperand(0));
-    if (base_type == nullptr) {
-      return nullptr;
-    }
+    assert(base_type != nullptr && "Array element type id has no definition");
   }
 
   if (base_type->opcode() != spv::Op::OpTypeStruct) {
@@ -171,8 +166,6 @@ Instruction* NonWritablePropagationPass::GetBufferStructType(
 
 bool NonWritablePropagationPass::AllMembersNonWritable(
     const Instruction& struct_type) const {
-  analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
-
   // For OpTypeStruct the in-operands are exactly the member types.
   const uint32_t member_count = struct_type.NumInOperands();
 
@@ -183,34 +176,11 @@ bool NonWritablePropagationPass::AllMembersNonWritable(
     return false;
   }
 
-  // Members that are themselves structs (directly or through an array) are
-  // exempt from the check: DXC does not decorate such members even in a
-  // read-only buffer, so requiring them would make the pass a no-op on
-  // exactly the modules it exists to fix up.
-  std::vector<bool> considered(member_count, true);
-  uint32_t considered_count = 0;
-  for (uint32_t i = 0; i < member_count; ++i) {
-    Instruction* member_type =
-        def_use_mgr->GetDef(struct_type.GetSingleWordInOperand(i));
-    while (member_type != nullptr &&
-           (member_type->opcode() == spv::Op::OpTypeArray ||
-            member_type->opcode() == spv::Op::OpTypeRuntimeArray)) {
-      member_type = def_use_mgr->GetDef(member_type->GetSingleWordInOperand(0));
-    }
-    if (member_type != nullptr &&
-        member_type->opcode() == spv::Op::OpTypeStruct) {
-      considered[i] = false;
-    } else {
-      ++considered_count;
-    }
-  }
-
-  // If every member is exempt there is no evidence in either direction --
-  // a writable buffer of structs looks exactly the same.  Leave it alone.
-  if (considered_count == 0) {
-    return false;
-  }
-
+  // Every member must carry the decoration, whatever its type.  The spec
+  // allows NonWritable on any structure member and says nothing about the
+  // member's type, so a struct-typed member without it is writable and the
+  // variable must not be decorated.  Only direct members need checking:
+  // NonWritable on a member covers everything reachable through it.
   std::vector<bool> is_non_writable(member_count, false);
   context()->get_decoration_mgr()->ForEachDecoration(
       struct_type.result_id(), uint32_t(spv::Decoration::NonWritable),
@@ -228,7 +198,7 @@ bool NonWritablePropagationPass::AllMembersNonWritable(
       });
 
   for (uint32_t i = 0; i < member_count; ++i) {
-    if (considered[i] && !is_non_writable[i]) {
+    if (!is_non_writable[i]) {
       return false;
     }
   }
