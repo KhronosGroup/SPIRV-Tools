@@ -6984,6 +6984,94 @@ OpFunctionEnd
               AnyVUID("VUID-StandaloneSpirv-Function-12294"));
 }
 
+// From https://gitlab.khronos.org/vulkan/vulkan/-/merge_requests/8427
+TEST_F(ValidateDecorations, InputWithOffset) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %6 "main" %9 %10
+               OpExecutionMode %6 OriginUpperLeft
+               OpDecorate %FsOut Block
+               OpMemberDecorate %FsOut 0 Location 0
+               OpMemberDecorate %ShaderLink 0 Offset 0
+               OpDecorate %ShaderLink Block
+               OpMemberDecorate %ShaderLink 0 Location 0
+       %void = OpTypeVoid
+        %int = OpTypeInt 32 1
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+      %int_0 = OpConstant %int 0
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+      %FsOut = OpTypeStruct %v4float
+%_ptr_Output_FsOut = OpTypePointer Output %FsOut
+ %ShaderLink = OpTypeStruct %v4float
+%_ptr_Input_ShaderLink = OpTypePointer Input %ShaderLink
+         %50 = OpTypeFunction %void
+          %9 = OpVariable %_ptr_Input_ShaderLink Input
+         %10 = OpVariable %_ptr_Output_FsOut Output
+          %6 = OpFunction %void None %50
+         %59 = OpLabel
+         %60 = OpAccessChain %_ptr_Output_v4float %10 %int_0
+         %61 = OpAccessChain %_ptr_Input_v4float %9 %int_0
+         %62 = OpLoad %v4float %61
+               OpStore %60 %62
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Input interface variable must not have Offset on "
+                        "any member decoration"));
+}
+
+// From https://gitlab.khronos.org/vulkan/vulkan/-/merge_requests/8427
+TEST_F(ValidateDecorations, OutputWithOffset) {
+  const std::string text = R"(
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %6 "main" %9 %10
+               OpExecutionMode %6 OriginUpperLeft
+               OpMemberDecorate %FsOut 0 Offset 0
+               OpDecorate %FsOut Block
+               OpMemberDecorate %FsOut 0 Location 0
+               OpDecorate %ShaderLink Block
+               OpMemberDecorate %ShaderLink 0 Location 0
+       %void = OpTypeVoid
+        %int = OpTypeInt 32 1
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+      %int_0 = OpConstant %int 0
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+      %FsOut = OpTypeStruct %v4float
+%_ptr_Output_FsOut = OpTypePointer Output %FsOut
+ %ShaderLink = OpTypeStruct %v4float
+%_ptr_Input_ShaderLink = OpTypePointer Input %ShaderLink
+         %50 = OpTypeFunction %void
+          %9 = OpVariable %_ptr_Input_ShaderLink Input
+         %10 = OpVariable %_ptr_Output_FsOut Output
+          %6 = OpFunction %void None %50
+         %59 = OpLabel
+         %60 = OpAccessChain %_ptr_Output_v4float %10 %int_0
+         %61 = OpAccessChain %_ptr_Input_v4float %9 %int_0
+         %62 = OpLoad %v4float %61
+               OpStore %60 %62
+               OpReturn
+               OpFunctionEnd
+)";
+
+  CompileSuccessfully(text, SPV_ENV_VULKAN_1_2);
+  EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Offset-04716"));
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("The Output interface variable must not have Offset "
+                        "on any member decoration"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
