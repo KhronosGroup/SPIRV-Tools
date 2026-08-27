@@ -311,13 +311,13 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
               if (!vstate.HasCapability(spv::Capability::TransformFeedback)) {
                 return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
                        << vstate.VkErrorID(4716)
-                       << "The Output interfaces variable must not have Offset "
+                       << "The Output interface variable must not have Offset "
                           "on any member decoration unless dealing with "
                           "TransformFeedback.";
               }
             } else {
               return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
-                     << "The Input interfaces variable must not have Offset on "
+                     << "The Input interface variable must not have Offset on "
                         "any member decoration.";
             }
           }
