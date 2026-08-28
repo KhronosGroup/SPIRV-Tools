@@ -7023,6 +7023,8 @@ TEST_F(ValidateDecorations, InputWithOffset) {
   CompileSuccessfully(text, SPV_ENV_VULKAN_1_2);
   EXPECT_EQ(SPV_ERROR_INVALID_ID, ValidateInstructions(SPV_ENV_VULKAN_1_2));
   EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-Offset-12509"));
+  EXPECT_THAT(getDiagnosticString(),
               HasSubstr("The Input interface variable must not have Offset on "
                         "any member decoration"));
 }

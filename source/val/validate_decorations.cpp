@@ -317,6 +317,7 @@ spv_result_t CheckDecorationsOfEntryPoints(ValidationState_t& vstate) {
               }
             } else {
               return vstate.diag(SPV_ERROR_INVALID_ID, var_instr)
+                     << vstate.VkErrorID(12509)
                      << "The Input interface variable must not have Offset on "
                         "any member decoration.";
             }
