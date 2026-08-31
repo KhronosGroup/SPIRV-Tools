@@ -111,7 +111,9 @@ Pass::Status EliminateDeadIOComponentsPass::Process() {
           arr_len_inst->GetSingleWordInOperand(kConstantValueInIdx) - 1;
       unsigned max_idx = FindMaxIndex(var, original_max);
       if (max_idx != original_max) {
-        ChangeArrayLength(var, max_idx + 1);
+        if (!ChangeArrayLength(var, max_idx + 1)) {
+          return Status::Failure;
+        }
         vars_to_move.push_back(&var);
         modified = true;
       }
@@ -123,7 +125,9 @@ Pass::Status EliminateDeadIOComponentsPass::Process() {
     unsigned original_max = static_cast<unsigned>(elt_types.size()) - 1;
     unsigned max_idx = FindMaxIndex(var, original_max, skip_first_index);
     if (max_idx != original_max) {
-      ChangeIOVarStructLength(var, max_idx + 1);
+      if (!ChangeIOVarStructLength(var, max_idx + 1)) {
+        return Status::Failure;
+      }
       vars_to_move.push_back(&var);
       modified = true;
     }
@@ -134,6 +138,9 @@ Pass::Status EliminateDeadIOComponentsPass::Process() {
   for (auto var : vars_to_move) {
     auto type_id = var->type_id();
     auto type_inst = def_use_mgr->GetDef(type_id);
+    if (!type_inst) {
+      return Status::Failure;
+    }
     var->RemoveFromList();
     var->InsertAfter(type_inst);
   }
@@ -186,7 +193,7 @@ unsigned EliminateDeadIOComponentsPass::FindMaxIndex(
   return seen_non_const_ac ? original_max : max;
 }
 
-void EliminateDeadIOComponentsPass::ChangeArrayLength(Instruction& arr_var,
+bool EliminateDeadIOComponentsPass::ChangeArrayLength(Instruction& arr_var,
                                                       unsigned length) {
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
   analysis::ConstantManager* const_mgr = context()->get_constant_mgr();
@@ -196,17 +203,30 @@ void EliminateDeadIOComponentsPass::ChangeArrayLength(Instruction& arr_var,
   const analysis::Array* arr_ty = ptr_type->pointee_type()->AsArray();
   assert(arr_ty && "expecting array type");
   uint32_t length_id = const_mgr->GetUIntConstId(length);
+  if (length_id == 0) {
+    return false;
+  }
   analysis::Array new_arr_ty(arr_ty->element_type(),
                              arr_ty->GetConstantLengthInfo(length_id, length));
   analysis::Type* reg_new_arr_ty = type_mgr->GetRegisteredType(&new_arr_ty);
+  if (!reg_new_arr_ty) {
+    return false;
+  }
   analysis::Pointer new_ptr_ty(reg_new_arr_ty, ptr_type->storage_class());
   analysis::Type* reg_new_ptr_ty = type_mgr->GetRegisteredType(&new_ptr_ty);
+  if (!reg_new_ptr_ty) {
+    return false;
+  }
   uint32_t new_ptr_ty_id = type_mgr->GetTypeInstruction(reg_new_ptr_ty);
+  if (new_ptr_ty_id == 0) {
+    return false;
+  }
   arr_var.SetResultType(new_ptr_ty_id);
   def_use_mgr->AnalyzeInstUse(&arr_var);
+  return true;
 }
 
-void EliminateDeadIOComponentsPass::ChangeIOVarStructLength(Instruction& io_var,
+bool EliminateDeadIOComponentsPass::ChangeIOVarStructLength(Instruction& io_var,
                                                             unsigned length) {
   analysis::TypeManager* type_mgr = context()->get_type_mgr();
   analysis::Pointer* ptr_type =
@@ -224,6 +244,9 @@ void EliminateDeadIOComponentsPass::ChangeIOVarStructLength(Instruction& io_var,
     new_elt_types.push_back(orig_elt_types[u]);
   analysis::Struct new_struct_ty(new_elt_types);
   uint32_t old_struct_ty_id = type_mgr->GetTypeInstruction(struct_ty);
+  if (old_struct_ty_id == 0) {
+    return false;
+  }
   std::vector<Instruction*> decorations =
       context()->get_decoration_mgr()->GetDecorationsFor(old_struct_ty_id,
                                                          true);
@@ -236,20 +259,36 @@ void EliminateDeadIOComponentsPass::ChangeIOVarStructLength(Instruction& io_var,
   }
   // Clone name instructions for new struct type
   analysis::Type* reg_new_str_ty = type_mgr->GetRegisteredType(&new_struct_ty);
+  if (!reg_new_str_ty) {
+    return false;
+  }
   uint32_t new_struct_ty_id = type_mgr->GetTypeInstruction(reg_new_str_ty);
+  if (new_struct_ty_id == 0) {
+    return false;
+  }
   context()->CloneNames(old_struct_ty_id, new_struct_ty_id, length);
   // Attach new type to var
   analysis::Type* reg_new_var_ty = reg_new_str_ty;
   if (arr_type) {
     analysis::Array new_arr_ty(reg_new_var_ty, arr_type->length_info());
     reg_new_var_ty = type_mgr->GetRegisteredType(&new_arr_ty);
+    if (!reg_new_var_ty) {
+      return false;
+    }
   }
   analysis::Pointer new_ptr_ty(reg_new_var_ty, elim_sclass_);
   analysis::Type* reg_new_ptr_ty = type_mgr->GetRegisteredType(&new_ptr_ty);
+  if (!reg_new_ptr_ty) {
+    return false;
+  }
   uint32_t new_ptr_ty_id = type_mgr->GetTypeInstruction(reg_new_ptr_ty);
+  if (new_ptr_ty_id == 0) {
+    return false;
+  }
   io_var.SetResultType(new_ptr_ty_id);
   analysis::DefUseManager* def_use_mgr = context()->get_def_use_mgr();
   def_use_mgr->AnalyzeInstUse(&io_var);
+  return true;
 }
 
 }  // namespace opt
