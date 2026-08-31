@@ -255,7 +255,7 @@ void DeadBranchElimPass::MarkUnreachableStructuredTargets(
   }
 }
 
-bool DeadBranchElimPass::FixPhiNodesInLiveBlocks(
+Pass::Status DeadBranchElimPass::FixPhiNodesInLiveBlocks(
     Function* func, const std::unordered_set<BasicBlock*>& live_blocks,
     const std::unordered_map<BasicBlock*, BasicBlock*>& unreachable_continues) {
   bool modified = false;
@@ -298,9 +298,12 @@ bool DeadBranchElimPass::FixPhiNodesInLiveBlocks(
               // loop header. Otherwise, this edge is not live since the
               // unreachable continue block will be replaced with an
               // unconditional branch to the header only.
-              operands.emplace_back(
-                  SPV_OPERAND_TYPE_ID,
-                  std::initializer_list<uint32_t>{Type2Undef(inst->type_id())});
+              uint32_t undef_id = Type2Undef(inst->type_id());
+              if (undef_id == 0) {
+                return Status::Failure;
+              }
+              operands.emplace_back(SPV_OPERAND_TYPE_ID,
+                                    std::initializer_list<uint32_t>{undef_id});
               operands.push_back(inst->GetInOperand(i));
               changed = true;
               backedge_added = true;
@@ -327,9 +330,12 @@ bool DeadBranchElimPass::FixPhiNodesInLiveBlocks(
             // the continue must also be unreachable (dominated by the continue
             // block), any entry for the original backedge has been removed
             // from the phi operands.
-            operands.emplace_back(
-                SPV_OPERAND_TYPE_ID,
-                std::initializer_list<uint32_t>{Type2Undef(inst->type_id())});
+            uint32_t undef_id = Type2Undef(inst->type_id());
+            if (undef_id == 0) {
+              return Status::Failure;
+            }
+            operands.emplace_back(SPV_OPERAND_TYPE_ID,
+                                  std::initializer_list<uint32_t>{undef_id});
             operands.emplace_back(SPV_OPERAND_TYPE_ID,
                                   std::initializer_list<uint32_t>{continue_id});
           }
@@ -362,7 +368,7 @@ bool DeadBranchElimPass::FixPhiNodesInLiveBlocks(
     }
   }
 
-  return modified;
+  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 bool DeadBranchElimPass::EraseDeadBlocks(
@@ -415,9 +421,9 @@ bool DeadBranchElimPass::EraseDeadBlocks(
   return modified;
 }
 
-bool DeadBranchElimPass::EliminateDeadBranches(Function* func) {
+Pass::Status DeadBranchElimPass::EliminateDeadBranches(Function* func) {
   if (func->IsDeclaration()) {
-    return false;
+    return Status::SuccessWithoutChange;
   }
 
   bool modified = false;
@@ -428,11 +434,18 @@ bool DeadBranchElimPass::EliminateDeadBranches(Function* func) {
   std::unordered_map<BasicBlock*, BasicBlock*> unreachable_continues;
   MarkUnreachableStructuredTargets(live_blocks, &unreachable_merges,
                                    &unreachable_continues);
-  modified |= FixPhiNodesInLiveBlocks(func, live_blocks, unreachable_continues);
+  auto phi_status =
+      FixPhiNodesInLiveBlocks(func, live_blocks, unreachable_continues);
+  if (phi_status == Status::Failure) {
+    return Status::Failure;
+  }
+  if (phi_status == Status::SuccessWithChange) {
+    modified = true;
+  }
   modified |= EraseDeadBlocks(func, live_blocks, unreachable_merges,
                               unreachable_continues);
 
-  return modified;
+  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 void DeadBranchElimPass::FixBlockOrder() {
@@ -476,10 +489,19 @@ Pass::Status DeadBranchElimPass::Process() {
     if (ai.opcode() == spv::Op::OpGroupDecorate)
       return Status::SuccessWithoutChange;
   // Process all entry point functions
-  ProcessFunction pfn = [this](Function* fp) {
-    return EliminateDeadBranches(fp);
+  bool failure = false;
+  ProcessFunction pfn = [this, &failure](Function* fp) {
+    auto status = EliminateDeadBranches(fp);
+    if (status == Status::Failure) {
+      failure = true;
+      return false;
+    }
+    return status == Status::SuccessWithChange;
   };
   bool modified = context()->ProcessReachableCallTree(pfn);
+  if (failure) {
+    return Status::Failure;
+  }
   if (modified) {
     context()->InvalidateAnalyses(IRContext::kAnalysisCFG |
                                   IRContext::kAnalysisDominatorAnalysis |
