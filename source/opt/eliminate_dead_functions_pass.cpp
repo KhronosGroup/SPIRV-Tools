@@ -39,6 +39,9 @@ Pass::Status EliminateDeadFunctionsPass::Process() {
       modified = true;
       funcIter =
           eliminatedeadfunctionsutil::EliminateFunction(context(), &funcIter);
+      if (context()->id_overflow()) {
+        return Pass::Status::Failure;
+      }
     } else {
       ++funcIter;
     }
