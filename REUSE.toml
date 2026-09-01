@@ -1,0 +1,19 @@
+version = 1
+
+[[annotations]]
+path = "**"
+SPDX-FileCopyrightText = "The Khronos Group, Inc."
+SPDX-License-Identifier = "Apache-2.0"
+
+# -----------------------------------------------------------------------
+# See LICENSE_EXCEPTIONS.md.
+# -----------------------------------------------------------------------
+[[annotations]]
+path = "test/fuzzers/corpora/spv/**"
+SPDX-FileCopyrightText = "The Khronos Group, Inc."
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "kokoro/img/**"
+SPDX-FileCopyrightText = "2018 Google LLC"
+SPDX-License-Identifier = "Apache-2.0"
