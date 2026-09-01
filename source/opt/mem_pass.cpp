@@ -53,7 +53,27 @@ bool MemPass::IsBaseTargetType(const Instruction* typeInst) const {
 }
 
 bool MemPass::IsTargetType(const Instruction* typeInst) const {
-  if (IsBaseTargetType(typeInst)) return true;
+  switch (ssa_rewrite_mode_) {
+    case SSARewriteMode::None:
+      return false;
+    case SSARewriteMode::OpaqueOnly:
+      if (typeInst->IsOpaqueType()) return true;
+      break;
+    case SSARewriteMode::SpecialTypes:
+      switch (typeInst->opcode()) {
+        case spv::Op::OpTypePointer:
+        case spv::Op::OpTypeUntypedPointerKHR:
+        case spv::Op::OpTypeCooperativeMatrixNV:
+        case spv::Op::OpTypeCooperativeMatrixKHR:
+          return true;
+        default:
+          break;
+      }
+      break;
+    case SSARewriteMode::All:
+      if (IsBaseTargetType(typeInst)) return true;
+      break;
+  }
   if (typeInst->opcode() == spv::Op::OpTypeArray) {
     if (!IsTargetType(
             get_def_use_mgr()->GetDef(typeInst->GetSingleWordOperand(1)))) {
@@ -198,7 +218,7 @@ bool MemPass::IsLiveVar(uint32_t varId) const {
 void MemPass::AddStores(uint32_t ptr_id, std::queue<Instruction*>* insts) {
   get_def_use_mgr()->ForEachUser(ptr_id, [this, insts](Instruction* user) {
     spv::Op op = user->opcode();
-    if (IsNonPtrAccessChain(op)) {
+    if (IsNonPtrAccessChain(op) || op == spv::Op::OpCopyObject) {
       AddStores(user->result_id(), insts);
     } else if (op == spv::Op::OpStore) {
       insts->push(user);
@@ -242,6 +262,9 @@ void MemPass::DCEInst(Instruction* inst,
 }
 
 MemPass::MemPass() {}
+
+MemPass::MemPass(SSARewriteMode ssa_rewrite_mode)
+    : ssa_rewrite_mode_(ssa_rewrite_mode) {}
 
 bool MemPass::HasOnlySupportedRefs(uint32_t varId) {
   return get_def_use_mgr()->WhileEachUser(varId, [this](Instruction* user) {

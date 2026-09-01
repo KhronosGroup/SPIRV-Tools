@@ -2357,6 +2357,46 @@ TEST_F(ScalarReplacementTest, RestrictPointer) {
   SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
 }
 
+TEST_F(ScalarReplacementTest, RestrictPointerMember) {
+  const std::string text = R"(
+; CHECK-NOT: OpMemberDecorate [[struct_type:%\w+]] 0 RestrictPointer
+; CHECK: OpDecorate [[new_var:%\w+]] RestrictPointer
+; CHECK: [[struct_type]] = OpTypeStruct [[ptr_type:%\w+]]
+; CHECK: [[ptr_type]] = OpTypePointer PhysicalStorageBuffer [[block_type:%\w+]]
+; CHECK: [[var_type:%\w+]] = OpTypePointer Function [[ptr_type]]
+; CHECK: [[new_var]] = OpVariable [[var_type]] Function
+               OpCapability Shader
+               OpCapability PhysicalStorageBufferAddresses
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel PhysicalStorageBuffer64 GLSL450
+               OpEntryPoint Fragment %2 "main"
+               OpExecutionMode %2 OriginUpperLeft
+               OpMemberDecorate %3 0 Offset 0
+               OpDecorate %3 Block
+               OpMemberDecorate %11 0 RestrictPointer
+          %6 = OpTypeVoid
+          %7 = OpTypeFunction %6
+          %8 = OpTypeInt 32 1
+          %9 = OpConstant %8 0
+          %3 = OpTypeStruct %8
+         %10 = OpTypePointer PhysicalStorageBuffer %3
+         %11 = OpTypeStruct %10
+         %13 = OpTypePointer Function %11
+         %14 = OpTypePointer Function %10
+         %16 = OpUndef %11
+          %2 = OpFunction %6 None %7
+         %17 = OpLabel
+          %5 = OpVariable %13 Function
+               OpStore %5 %16
+         %18 = OpAccessChain %14 %5 %9
+               OpReturn
+               OpFunctionEnd
+  )";
+
+  SetTargetEnv(SPV_ENV_UNIVERSAL_1_6);
+  SinglePassRunAndMatch<ScalarReplacementPass>(text, true);
+}
+
 }  // namespace
 }  // namespace opt
 }  // namespace spvtools
