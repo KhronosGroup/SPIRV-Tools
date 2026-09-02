@@ -349,11 +349,9 @@ struct Impl {
       reference->type_id = inst->GetOperandAs<uint32_t>(0u);
       // Abort messages doesn't have a storage class
       reference->storage_class = spv::StorageClass::Max;
-      // Currently not specified well
-      // https://gitlab.khronos.org/spirv/SPIR-V/-/work_items/962
-      reference->layout = vstate.options()->scalar_block_layout
-                              ? LayoutMode::kScalar
-                              : LayoutMode::kStandard;
+      // The abort message is always packed with scalar rules
+      // See https://gitlab.khronos.org/vulkan/vulkan/-/work_items/4954
+      reference->layout = LayoutMode::kScalar;
       reference->requirement = LayoutRequirement::kRequired;
       return true;
     }
