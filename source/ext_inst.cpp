@@ -69,6 +69,9 @@ spv_ext_inst_type_t spvExtInstImportTypeGet(const char* name) {
   if (!strncmp("Arm.ExperimentalMLOperations.", name, 29)) {
     return SPV_EXT_INST_TYPE_ARM_EXPERIMENTAL_ML_OPERATIONS;
   }
+  if (!strcmp("NonSemantic.DebugPrintf", name)) {
+    return SPV_EXT_INST_TYPE_NONSEMANTIC_DEBUGPRINTF;
+  }
   // ensure to add any known non-semantic extended instruction sets
   // above this point, and update spvExtInstIsNonSemantic()
   if (!strncmp("NonSemantic.", name, 12)) {
@@ -82,7 +85,8 @@ bool spvExtInstIsNonSemantic(const spv_ext_inst_type_t type) {
       type == SPV_EXT_INST_TYPE_NONSEMANTIC_SHADER_DEBUGINFO_100 ||
       type == SPV_EXT_INST_TYPE_NONSEMANTIC_CLSPVREFLECTION ||
       type == SPV_EXT_INST_TYPE_NONSEMANTIC_GRAPH_DEBUGINFO ||
-      type == SPV_EXT_INST_TYPE_NONSEMANTIC_VKSPREFLECTION) {
+      type == SPV_EXT_INST_TYPE_NONSEMANTIC_VKSPREFLECTION ||
+      type == SPV_EXT_INST_TYPE_NONSEMANTIC_DEBUGPRINTF) {
     return true;
   }
   return false;
