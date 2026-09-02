@@ -275,6 +275,15 @@ class Module {
   void ForEachInst(const std::function<void(const Instruction*)>& f,
                    bool run_on_debug_line_insts = false) const;
 
+  // Invokes function |f| on all instructions in this module, and optionally on
+  // the debug line instructions that precede them.  Terminates early if |f|
+  // returns false.  Returns true if all invocations of |f| returned true;
+  // otherwise returns false.
+  bool WhileEachInst(const std::function<bool(Instruction*)>& f,
+                     bool run_on_debug_line_insts = false);
+  bool WhileEachInst(const std::function<bool(const Instruction*)>& f,
+                     bool run_on_debug_line_insts = false) const;
+
   // Pushes the binary segments for this module into the back of *`binary`.
   // If `skip_nop` is true, OpNop instructions will not be added to binary.
   // If `filter_duplicate_decorations` is true, duplicate decorations will not
@@ -312,6 +321,13 @@ class Module {
   }
 
  private:
+  // Helper template for WhileEachInst to share traversal logic between const
+  // and non-const versions.
+  template <typename ModuleT, typename InstT>
+  static bool WhileEachInstImpl(ModuleT* module,
+                                const std::function<bool(InstT*)>& f,
+                                bool run_on_debug_line_insts);
+
   ModuleHeader header_;  // Module header
 
   // The following fields respect the "Logical Layout of a Module" in
