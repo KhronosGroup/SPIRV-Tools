@@ -26,18 +26,31 @@ bool FixFuncCallArgumentsPass::ModuleHasASingleFunction() {
 
 Pass::Status FixFuncCallArgumentsPass::Process() {
   bool modified = false;
-  if (ModuleHasASingleFunction()) return Status::SuccessWithoutChange;
+  if (ModuleHasASingleFunction()) {
+    return Status::SuccessWithoutChange;
+  }
   for (auto& func : *get_module()) {
-    func.ForEachInst([this, &modified](Instruction* inst) {
-      if (inst->opcode() == spv::Op::OpFunctionCall) {
-        modified |= FixFuncCallArguments(inst);
-      }
-    });
+    const bool success =
+        func.WhileEachInst([this, &modified](Instruction* inst) {
+          if (inst->opcode() == spv::Op::OpFunctionCall) {
+            auto status = FixFuncCallArguments(inst);
+            if (status == Status::Failure) {
+              return false;
+            }
+            if (status == Status::SuccessWithChange) {
+              modified = true;
+            }
+          }
+          return true;
+        });
+    if (!success) {
+      return Status::Failure;
+    }
   }
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
-bool FixFuncCallArgumentsPass::FixFuncCallArguments(
+Pass::Status FixFuncCallArgumentsPass::FixFuncCallArguments(
     Instruction* func_call_inst) {
   bool modified = false;
   for (uint32_t i = 0; i < func_call_inst->NumInOperands(); ++i) {
@@ -47,6 +60,9 @@ bool FixFuncCallArgumentsPass::FixFuncCallArguments(
     if (operand_inst->opcode() == spv::Op::OpAccessChain) {
       uint32_t var_id =
           ReplaceAccessChainFuncCallArguments(func_call_inst, operand_inst);
+      if (var_id == 0) {
+        return Status::Failure;
+      }
       func_call_inst->SetInOperand(i, {var_id});
       modified = true;
     }
@@ -54,7 +70,7 @@ bool FixFuncCallArgumentsPass::FixFuncCallArguments(
   if (modified) {
     context()->UpdateDefUse(func_call_inst);
   }
-  return modified;
+  return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
 uint32_t FixFuncCallArgumentsPass::ReplaceAccessChainFuncCallArguments(
@@ -72,22 +88,31 @@ uint32_t FixFuncCallArgumentsPass::ReplaceAccessChainFuncCallArguments(
       get_def_use_mgr()->GetDef(op_ptr_type->GetSingleWordInOperand(1));
   uint32_t varType = context()->get_type_mgr()->FindPointerToType(
       op_type->result_id(), spv::StorageClass::Function);
+  if (varType == 0) {
+    return 0;
+  }
   // Create new variable
   builder.SetInsertPoint(variable_insertion_point);
-  // TODO(1841): Handle id overflow.
   Instruction* var =
       builder.AddVariable(varType, uint32_t(spv::StorageClass::Function));
+  if (!var) {
+    return 0;
+  }
   // Load access chain to the new variable before function call
   builder.SetInsertPoint(func_call_inst);
 
   uint32_t operand_id = operand_inst->result_id();
-  // TODO(1841): Handle id overflow.
   Instruction* load = builder.AddLoad(op_type->result_id(), operand_id);
+  if (!load) {
+    return 0;
+  }
   builder.AddStore(var->result_id(), load->result_id());
   // Load return value to the acesschain after function call
   builder.SetInsertPoint(next_insert_point);
-  // TODO(1841): Handle id overflow.
   load = builder.AddLoad(op_type->result_id(), var->result_id());
+  if (!load) {
+    return 0;
+  }
   builder.AddStore(operand_id, load->result_id());
 
   return var->result_id();

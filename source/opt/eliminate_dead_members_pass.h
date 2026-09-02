@@ -76,8 +76,8 @@ class EliminateDeadMembersPass : public MemPass {
   void MarkMembersAsLiveForArrayLength(const Instruction* inst);
 
   // Remove dead members from structs and updates any instructions that need to
-  // be updated as a consequence.  Return true if something changed.
-  bool RemoveDeadMembers();
+  // be updated as a consequence.
+  Status RemoveDeadMembers();
 
   // Update |inst|, which must be an |OpMemberName| or |OpMemberDecorate|
   // instruction, so it references the correct member after the struct is
@@ -101,8 +101,8 @@ class EliminateDeadMembersPass : public MemPass {
   // Update the |Op*AccessChain| instruction |inst| to reference the correct
   // members. All members referenced in the access chain must be live.  This
   // function must be called after the |OpTypeStruct| instruction for the type
-  // has been updated.  Return true if something changed.
-  bool UpdateAccessChain(Instruction* inst);
+  // has been updated.
+  Status UpdateAccessChain(Instruction* inst);
 
   // Update the |OpCompositeExtract| instruction |inst| to reference the correct
   // members. All members referenced in the instruction must be live.  This
