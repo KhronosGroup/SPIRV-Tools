@@ -398,7 +398,7 @@ OpFunctionEnd
 OpReturn
 OpFunctionEnd
 %non_semantic2 = OpExtInst %void %ext 2 %foo
-%non_semantic3 = OpExtInst %void %ext 3 
+%non_semantic3 = OpExtInst %void %ext 3
 )";
 
   SinglePassRunAndMatch<EliminateDeadFunctionsPass>(text, true);
@@ -431,7 +431,7 @@ OpFunctionEnd
 OpReturn
 OpFunctionEnd
 %non_semantic2 = OpExtInst %void %ext 2 %foo
-%non_semantic3 = OpExtInst %void %ext 3 
+%non_semantic3 = OpExtInst %void %ext 3
 %non_semantic4 = OpExtInst %void %ext 4 %non_semantic2
 %non_semantic5 = OpExtInst %void %ext 5 %non_semantic4
 )";
@@ -450,7 +450,7 @@ TEST_F(EliminateDeadFunctionsBasicTest, NonSemanticInfoRemoveDebugPrintf) {
 ; CHECK-NOT: OpStore %c % 27
 ; CHECK-NOT: % 31 = OpAccessChain %_ptr_Function_float %c %uint_0
 ; CHECK-NOT: % 32 = OpLoad %float %31
-; CHECK-NOT: % 34 = OpExtInst %void %33 1 % 28 % 32
+; CHECK-NOT: % 34 = OpExtInst %void %33 DebugPrintf % 28 % 32
 OpCapability RayTracingKHR
 OpExtension "SPV_KHR_non_semantic_info"
 OpExtension "SPV_KHR_ray_tracing"
@@ -496,7 +496,7 @@ OpDecorate %samplers Binding 0
 OpStore %36 %40
 %41 = OpAccessChain %_ptr_Function_float %36 %uint_0
 %42 = OpLoad %float %41
-%43 = OpExtInst %void %33 1 %28 %42
+%43 = OpExtInst %void %33 DebugPrintf %28 %42
 OpReturn
 OpFunctionEnd
 %foo_ = OpFunction %void None %3
@@ -508,7 +508,7 @@ OpFunctionEnd
 OpStore %c %27
 %31 = OpAccessChain %_ptr_Function_float %c %uint_0
 %32 = OpLoad %float %31
-%34 = OpExtInst %void %33 1 %28 %32
+%34 = OpExtInst %void %33 DebugPrintf %28 %32
 OpReturn
 OpFunctionEnd
 )";
