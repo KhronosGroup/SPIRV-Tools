@@ -845,15 +845,13 @@ spv_result_t ValidateVariableVulkanArray(ValidationState_t& _,
   // with Block, or it must be in the Uniform storage class
   if (value_type.opcode() == spv::Op::OpTypeStruct) {
     if (DoesStructContainRTA(_, &value_type)) {
-      if (storage_class == spv::StorageClass::StorageBuffer ||
-          storage_class == spv::StorageClass::PhysicalStorageBuffer) {
+      if (storage_class == spv::StorageClass::StorageBuffer) {
         if (!_.HasDecoration(value_id, spv::Decoration::Block)) {
           return _.diag(SPV_ERROR_INVALID_ID, inst)
                  << _.VkErrorID(4680)
                  << "For Vulkan, an OpTypeStruct variable containing an "
                  << "OpTypeRuntimeArray must be decorated with Block if it "
-                 << "has storage class StorageBuffer or "
-                    "PhysicalStorageBuffer.";
+                 << "has storage class StorageBuffer.";
         }
       } else if (storage_class == spv::StorageClass::Uniform) {
         // BufferBlock Uniform were always allowed.
@@ -869,7 +867,7 @@ spv_result_t ValidateVariableVulkanArray(ValidationState_t& _,
                << _.VkErrorID(4680)
                << "For Vulkan, OpTypeStruct variables containing "
                << "OpTypeRuntimeArray must have storage class of "
-               << "StorageBuffer, PhysicalStorageBuffer, or Uniform.";
+               << "StorageBuffer or Uniform.";
       }
     }
   }
@@ -2055,6 +2053,22 @@ spv_result_t ValidateAccessChain(ValidationState_t& _,
   auto type_pointee = untyped_pointer
                           ? _.FindDef(inst->GetOperandAs<uint32_t>(2))
                           : _.FindDef(base_type->word(3));
+
+  if (spvIsVulkanEnv(_.context()->target_env) && untyped_pointer) {
+    if (type_pointee->opcode() == spv::Op::OpTypeStruct &&
+        DoesStructContainRTA(_, type_pointee)) {
+      if (result_type_storage_class ==
+              static_cast<uint32_t>(spv::StorageClass::UniformConstant) &&
+          !_.IsDescriptorHeapBaseVariable(base)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << _.VkErrorID(4680)
+               << "For Vulkan, an OpTypeStruct in the UniformConstant "
+               << "storage class containing an OpTypeRuntimeArray must be "
+               << "accessed from a variable decorated with ResourceHeapEXT "
+               << "or SamplerHeapEXT.";
+      }
+    }
+  }
 
   // Check Universal Limit (SPIR-V Spec. Section 2.17).
   // The number of indexes passed to OpAccessChain may not exceed 255
