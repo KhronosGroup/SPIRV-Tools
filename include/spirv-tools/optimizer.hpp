@@ -976,6 +976,16 @@ Optimizer::PassToken CreateInvocationInterlockPlacementPass();
 // This pass either adds or removes maximal reconvergence from all entry points.
 Optimizer::PassToken CreateModifyMaximalReconvergencePass(bool add);
 
+// Creates a pass that propagates NonWritable from a buffer's members to the
+// buffer variable.  Some producers decorate every member of a buffer's struct
+// NonWritable rather than decorating the variable, which hides the decoration
+// from consumers that read it off the variable.  Where every member of a
+// buffer's struct is NonWritable, this decorates the variable as well and
+// removes the now-redundant member decorations.  A member without the
+// decoration, whatever its type, means the variable is left alone.  Handles
+// both OpVariable and OpUntypedVariableKHR.
+Optimizer::PassToken CreateNonWritablePropagationPass();
+
 // Creates a pass to split combined image+sampler variables and function
 // parameters into separate image and sampler parts. Binding numbers and
 // other decorations are copied.
