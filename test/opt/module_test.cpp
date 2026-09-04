@@ -336,6 +336,73 @@ OpFunctionEnd
   EXPECT_EQ(1, non_semantic_ids.count(12));
 }
 
+TEST(ModuleTest, WhileEachInstEarlyTermination) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint Vertex %main "main"
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%main = OpFunction %void None %func
+%10 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context = BuildModule(text);
+  int count = 0;
+  bool completed = context->module()->WhileEachInst([&count](Instruction*) {
+    ++count;
+    return count < 3;
+  });
+
+  EXPECT_FALSE(completed);
+  EXPECT_EQ(3, count);
+
+  count = 0;
+  completed = context->module()->WhileEachInst([&count](Instruction*) {
+    ++count;
+    return true;
+  });
+
+  EXPECT_TRUE(completed);
+  EXPECT_GT(count, 3);
+}
+
+TEST(ModuleTest, ConstWhileEachInstEarlyTermination) {
+  const std::string text = R"(
+OpCapability Shader
+OpMemoryModel Logical Simple
+OpEntryPoint Vertex %main "main"
+%void = OpTypeVoid
+%func = OpTypeFunction %void
+%main = OpFunction %void None %func
+%10 = OpLabel
+OpReturn
+OpFunctionEnd
+)";
+
+  std::unique_ptr<IRContext> context = BuildModule(text);
+  const Module* module = context->module();
+  int count = 0;
+  bool completed = module->WhileEachInst([&count](const Instruction*) {
+    ++count;
+    return count < 3;
+  });
+
+  EXPECT_FALSE(completed);
+  EXPECT_EQ(3, count);
+
+  count = 0;
+  completed = module->WhileEachInst([&count](const Instruction*) {
+    ++count;
+    return true;
+  });
+
+  EXPECT_TRUE(completed);
+  EXPECT_GT(count, 3);
+}
+
 // Assembles `text`, serializes it to binary (with duplicate decorations
 // filtered if `filter_duplicate_decorations` is true), disassembles it, and
 // checks the output against the Effcee checks in `text` using the given

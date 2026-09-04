@@ -90,6 +90,18 @@ struct Graph {
                    bool run_on_debug_line_insts = false,
                    bool run_on_non_semantic_insts = false) const;
 
+  // Runs the given function |f| on instructions in this graph, in order,
+  // and optionally on debug line instructions that might precede them and
+  // non-semantic instructions that succeed the graph. Terminates early if |f|
+  // returns false. Returns true if all invocations of |f| returned true;
+  // otherwise returns false.
+  bool WhileEachInst(const std::function<bool(Instruction*)>& f,
+                     bool run_on_debug_line_insts = false,
+                     bool run_on_non_semantic_insts = false);
+  bool WhileEachInst(const std::function<bool(const Instruction*)>& f,
+                     bool run_on_debug_line_insts = false,
+                     bool run_on_non_semantic_insts = false) const;
+
  private:
   // The OpGraph instruction that begins the definition of this graph.
   std::unique_ptr<Instruction> def_inst_;

@@ -87,68 +87,22 @@ void Module::AddGlobalValue(spv::Op opcode, uint32_t result_id,
 
 void Module::ForEachInst(const std::function<void(Instruction*)>& f,
                          bool run_on_debug_line_insts) {
-#define DELEGATE(list) list.ForEachInst(f, run_on_debug_line_insts)
-  DELEGATE(capabilities_);
-  DELEGATE(extensions_);
-  DELEGATE(ext_inst_imports_);
-  if (memory_model_) memory_model_->ForEachInst(f, run_on_debug_line_insts);
-  if (sampled_image_address_mode_)
-    sampled_image_address_mode_->ForEachInst(f, run_on_debug_line_insts);
-  DELEGATE(entry_points_);
-  DELEGATE(graph_entry_points_);
-  DELEGATE(execution_modes_);
-  DELEGATE(debugs1_);
-  DELEGATE(debugs2_);
-  DELEGATE(debugs3_);
-  DELEGATE(ext_inst_debuginfo_);
-  DELEGATE(annotations_);
-  DELEGATE(types_values_);
-  for (auto& i : functions_) {
-    i->ForEachInst(f, run_on_debug_line_insts,
-                   /* run_on_non_semantic_insts = */ true);
-  }
-  for (auto& g : graphs_) {
-    g->ForEachInst(f, run_on_debug_line_insts,
-                   /* run_on_non_semantic_insts = */ true);
-  }
-#undef DELEGATE
+  WhileEachInst(
+      [&f](Instruction* inst) {
+        f(inst);
+        return true;
+      },
+      run_on_debug_line_insts);
 }
 
 void Module::ForEachInst(const std::function<void(const Instruction*)>& f,
                          bool run_on_debug_line_insts) const {
-#define DELEGATE(i) i.ForEachInst(f, run_on_debug_line_insts)
-  for (auto& i : capabilities_) DELEGATE(i);
-  for (auto& i : extensions_) DELEGATE(i);
-  for (auto& i : ext_inst_imports_) DELEGATE(i);
-  if (memory_model_)
-    static_cast<const Instruction*>(memory_model_.get())
-        ->ForEachInst(f, run_on_debug_line_insts);
-  if (sampled_image_address_mode_)
-    static_cast<const Instruction*>(sampled_image_address_mode_.get())
-        ->ForEachInst(f, run_on_debug_line_insts);
-  for (auto& i : entry_points_) DELEGATE(i);
-  for (auto& i : execution_modes_) DELEGATE(i);
-  for (auto& i : debugs1_) DELEGATE(i);
-  for (auto& i : debugs2_) DELEGATE(i);
-  for (auto& i : debugs3_) DELEGATE(i);
-  for (auto& i : annotations_) DELEGATE(i);
-  for (auto& i : types_values_) DELEGATE(i);
-  for (auto& i : ext_inst_debuginfo_) DELEGATE(i);
-  for (auto& i : functions_) {
-    static_cast<const Function*>(i.get())->ForEachInst(
-        f, run_on_debug_line_insts,
-        /* run_on_non_semantic_insts = */ true);
-  }
-  for (auto& i : graph_entry_points_) DELEGATE(i);
-  for (auto& i : graphs_) {
-    static_cast<const Graph*>(i.get())->ForEachInst(
-        f, run_on_debug_line_insts,
-        /* run_on_non_semantic_insts = */ true);
-  }
-  if (run_on_debug_line_insts) {
-    for (auto& i : trailing_dbg_line_info_) DELEGATE(i);
-  }
-#undef DELEGATE
+  WhileEachInst(
+      [&f](const Instruction* inst) {
+        f(inst);
+        return true;
+      },
+      run_on_debug_line_insts);
 }
 
 void Module::ToBinary(std::vector<uint32_t>* binary, bool skip_nop,
@@ -305,6 +259,80 @@ std::ostream& operator<<(std::ostream& str, const Module& module) {
     }
   });
   return str;
+}
+
+template <typename ModuleT, typename InstT>
+bool Module::WhileEachInstImpl(ModuleT* module,
+                               const std::function<bool(InstT*)>& f,
+                               bool run_on_debug_line_insts) {
+  static_assert(std::is_const<ModuleT>::value == std::is_const<InstT>::value,
+                "ModuleT and InstT must both be const or both be non-const");
+  using FuncT = typename std::conditional<std::is_const<InstT>::value,
+                                          const Function, Function>::type;
+  using GraphT = typename std::conditional<std::is_const<InstT>::value,
+                                           const Graph, Graph>::type;
+
+#define DELEGATE(list)                                   \
+  if (!list.WhileEachInst(f, run_on_debug_line_insts)) { \
+    return false;                                        \
+  }
+  DELEGATE(module->capabilities_);
+  DELEGATE(module->extensions_);
+  DELEGATE(module->ext_inst_imports_);
+  if (module->memory_model_) {
+    if (!static_cast<InstT*>(module->memory_model_.get())
+             ->WhileEachInst(f, run_on_debug_line_insts)) {
+      return false;
+    }
+  }
+  if (module->sampled_image_address_mode_) {
+    if (!static_cast<InstT*>(module->sampled_image_address_mode_.get())
+             ->WhileEachInst(f, run_on_debug_line_insts)) {
+      return false;
+    }
+  }
+  DELEGATE(module->entry_points_);
+  DELEGATE(module->execution_modes_);
+  DELEGATE(module->debugs1_);
+  DELEGATE(module->debugs2_);
+  DELEGATE(module->debugs3_);
+  DELEGATE(module->annotations_);
+  DELEGATE(module->types_values_);
+  DELEGATE(module->ext_inst_debuginfo_);
+  for (auto& i : module->functions_) {
+    if (!static_cast<FuncT*>(i.get())->WhileEachInst(
+            f, run_on_debug_line_insts,
+            /* run_on_non_semantic_insts = */ true)) {
+      return false;
+    }
+  }
+  DELEGATE(module->graph_entry_points_);
+  for (auto& g : module->graphs_) {
+    if (!static_cast<GraphT*>(g.get())->WhileEachInst(
+            f, run_on_debug_line_insts,
+            /* run_on_non_semantic_insts = */ true)) {
+      return false;
+    }
+  }
+  if (run_on_debug_line_insts) {
+    for (auto& i : module->trailing_dbg_line_info_) {
+      if (!static_cast<InstT*>(&i)->WhileEachInst(f, run_on_debug_line_insts)) {
+        return false;
+      }
+    }
+  }
+#undef DELEGATE
+  return true;
+}
+
+bool Module::WhileEachInst(const std::function<bool(Instruction*)>& f,
+                           bool run_on_debug_line_insts) {
+  return WhileEachInstImpl(this, f, run_on_debug_line_insts);
+}
+
+bool Module::WhileEachInst(const std::function<bool(const Instruction*)>& f,
+                           bool run_on_debug_line_insts) const {
+  return WhileEachInstImpl(this, f, run_on_debug_line_insts);
 }
 
 }  // namespace opt
