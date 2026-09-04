@@ -8068,6 +8068,82 @@ OpMemoryModel Logical GLSL450
   ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
 }
 
+TEST_F(ValidateExtInst, NonSemanticDebugPrintfGood) {
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.DebugPrintf"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%fmt = OpString "value: %d"
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%int_1 = OpConstant %int 1
+%main = OpFunction %void None %4
+%6 = OpLabel
+%10 = OpExtInst %void %1 DebugPrintf %fmt %int_1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateExtInst, NonSemanticDebugPrintfFormat) {
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%9 = OpExtInstImport "NonSemantic.DebugPrintf"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%int_1 = OpConstant %int 1
+%main = OpFunction %void None %4
+%6 = OpLabel
+%10 = OpExtInst %void %9 DebugPrintf %int_1
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugPrintf: expected "
+                        "operand Format must be a result id of OpString"));
+}
+
+TEST_F(ValidateExtInst, NonSemanticDebugPrintfResultType) {
+  const std::string text = R"(
+OpCapability Shader
+OpExtension "SPV_KHR_non_semantic_info"
+%1 = OpExtInstImport "NonSemantic.DebugPrintf"
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main"
+OpExecutionMode %main LocalSize 1 1 1
+%fmt = OpString "value: %d"
+%void = OpTypeVoid
+%4 = OpTypeFunction %void
+%int = OpTypeInt 32 1
+%main = OpFunction %void None %4
+%6 = OpLabel
+%10 = OpExtInst %int %1 DebugPrintf %fmt
+OpReturn
+OpFunctionEnd
+)";
+
+  CompileSuccessfully(text);
+  ASSERT_EQ(SPV_ERROR_INVALID_DATA, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("DebugPrintf: expected "
+                        "result type must be a result id of OpTypeVoid"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
