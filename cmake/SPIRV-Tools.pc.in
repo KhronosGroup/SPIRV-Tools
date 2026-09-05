@@ -8,5 +8,6 @@ Description: Tools for SPIR-V
 Version: @CURRENT_VERSION@
 URL: https://github.com/KhronosGroup/SPIRV-Tools
 
-Libs: -L${libdir} @SPIRV_LIBRARIES@
+Libs: -L${libdir} @SPIRV_SHARED_LIBRARIES@
+Libs.private: @SPIRV_LIBRARIES@
 Cflags: -I${includedir}
