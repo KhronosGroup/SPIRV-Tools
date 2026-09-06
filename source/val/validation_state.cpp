@@ -3463,6 +3463,10 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeFloat-10370);
     case 10583:
       return VUID_WRAP(VUID-StandaloneSpirv-Component-10583);
+    case 10584:
+      return VUID_WRAP(VUID-StandaloneSpirv-Execution-10584);
+    case 10585:
+      return VUID_WRAP(VUID-StandaloneSpirv-Execution-10585);
     case 10589:
       return VUID_WRAP(VUID-CullPrimitiveEXT-CullPrimitiveEXT-10589);
     case 10590:
