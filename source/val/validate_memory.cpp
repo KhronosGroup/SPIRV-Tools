@@ -1189,6 +1189,7 @@ spv_result_t ValidateVariableTileImageEXT(ValidationState_t& _,
 
   if (!is_valid_decl) {
     return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << _.VkErrorID(8724)
            << "The TileImageEXT Storage Class must only be used for declaring "
               "tile image variables";
   } else {

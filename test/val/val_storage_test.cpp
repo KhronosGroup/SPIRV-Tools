@@ -294,7 +294,7 @@ TEST_F(ValidateStorage, TileAttachmentQCOMBad2) {
                OpExecutionMode %main OriginUpperLeft
                OpSource GLSL 450
                OpDecorate %color1 Binding 2
-       %void = OpTypeVoid 
+       %void = OpTypeVoid
         %int = OpTypeInt 32 1
          %44 = OpTypeImage %int 2D 0 0 0 2 Rgba32i
 %_ptr_TileAttachmentQCOM_44 = OpTypePointer TileAttachmentQCOM %44
@@ -326,7 +326,7 @@ TEST_F(ValidateStorage, TileAttachmentQCOMBad3) {
                OpExecutionMode %main OriginUpperLeft
                OpSource GLSL 450
                OpDecorate %color1 DescriptorSet 0
-       %void = OpTypeVoid 
+       %void = OpTypeVoid
         %int = OpTypeInt 32 1
          %44 = OpTypeImage %int 2D 0 0 0 2 Rgba32i
 %_ptr_TileAttachmentQCOM_44 = OpTypePointer TileAttachmentQCOM %44
@@ -392,10 +392,10 @@ TEST_F(ValidateStorage, TileAttachmentQCOMBad5) {
                OpExecutionMode %main OriginUpperLeft
                OpDecorate %color1 Binding 2
                OpDecorate %color1 DescriptorSet 0
-       %void = OpTypeVoid 
+       %void = OpTypeVoid
           %3 = OpTypeFunction %void
         %int = OpTypeInt 32 1
-      %v2int = OpTypeVector %int 2 
+      %v2int = OpTypeVector %int 2
       %int_2 = OpConstant %int 2
          %44 = OpTypeImage %int 2D 0 0 0 2 Rgba32i
 %_ptr_TileAttachmentQCOM_44 = OpTypePointer TileAttachmentQCOM %44
@@ -471,6 +471,8 @@ TEST_F(ValidateStorage, WrongDimTileImageEXT) {
   spv_target_env env = SPV_ENV_VULKAN_1_4;
   CompileSuccessfully(spirv, env);
   EXPECT_THAT(SPV_ERROR_INVALID_DATA, ValidateInstructions(env));
+  EXPECT_THAT(getDiagnosticString(),
+              AnyVUID("VUID-StandaloneSpirv-None-08724"));
   EXPECT_THAT(
       getDiagnosticString(),
       HasSubstr(
@@ -490,7 +492,7 @@ TEST_F(ValidateStorage, TileAttachmentQCOMDecoratedWithComponent) {
                OpDecorate %color1 Binding 0
                OpDecorate %color1 Component 0
                OpDecorate %color1 DescriptorSet 0
-        %void = OpTypeVoid 
+        %void = OpTypeVoid
          %int = OpTypeInt 32 1
           %44 = OpTypeImage %int 2D 0 0 0 2 Rgba32i
 %_ptr_TileAttachmentQCOM_44 = OpTypePointer TileAttachmentQCOM %44
