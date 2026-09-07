@@ -35,6 +35,7 @@
 #include "spirv-tools/libspirv.h"
 #include "spirv/unified1/ArmExperimentalMLOperations.h"
 #include "spirv/unified1/NonSemanticClspvReflection.h"
+#include "spirv/unified1/NonSemanticDebugPrintf.h"
 #include "spirv/unified1/NonSemanticGraphDebugInfo.h"
 #include "spirv/unified1/NonSemanticShaderDebugInfo.h"
 
@@ -4449,6 +4450,26 @@ spv_result_t ValidateExtInstNonsemanticClspvReflection(
   return ValidateClspvReflectionInstruction(_, inst, version);
 }
 
+spv_result_t ValidateExtInstNonSemanticDebugPrintf(ValidationState_t& _,
+                                                   const Instruction* inst) {
+  if (!_.IsVoidType(inst->type_id())) {
+    return _.diag(SPV_ERROR_INVALID_DATA, inst)
+           << "DebugPrintf: "
+           << "expected result type must be a result id of OpTypeVoid";
+  }
+
+  if (inst->word(4) == NonSemanticDebugPrintfDebugPrintf) {
+    const auto* format = _.FindDef(inst->word(5));
+    if (!format || format->opcode() != spv::Op::OpString) {
+      return _.diag(SPV_ERROR_INVALID_DATA, inst)
+             << "DebugPrintf: "
+             << "expected operand Format must be a result id of OpString";
+    }
+  }
+
+  return SPV_SUCCESS;
+}
+
 spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
   const spv_ext_inst_type_t ext_inst_type =
       spv_ext_inst_type_t(inst->ext_inst_type());
@@ -4473,6 +4494,8 @@ spv_result_t ValidateExtInst(ValidationState_t& _, const Instruction* inst) {
     return ValidateExtInstNonsemanticClspvReflection(_, inst);
   } else if (ext_inst_type == SPV_EXT_INST_TYPE_NONSEMANTIC_GRAPH_DEBUGINFO) {
     return ValidateExtInstGraphDebugInfo(_, inst);
+  } else if (ext_inst_type == SPV_EXT_INST_TYPE_NONSEMANTIC_DEBUGPRINTF) {
+    return ValidateExtInstNonSemanticDebugPrintf(_, inst);
   }
 
   return SPV_SUCCESS;

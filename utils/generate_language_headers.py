@@ -178,9 +178,14 @@ def main():
           operand_kinds = grammar_json['operand_kinds']
         else:
           operand_kinds = []
+        # TODO - extinst.nonsemantic.debugprintf.grammar.json is missing the copyright
+        if 'copyright' in grammar_json:
+          copyright = grammar_json['copyright']
+        else:
+          copyright = None
 
         grammar = ExtInstGrammar(name = grammar_name,
-                                 copyright = grammar_json['copyright'],
+                                 copyright = copyright,
                                  instructions = grammar_json['instructions'],
                                  operand_kinds = operand_kinds,
                                  version = version,
