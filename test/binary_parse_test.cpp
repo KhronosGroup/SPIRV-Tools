@@ -856,6 +856,18 @@ TEST_F(BinaryParseTest, ExtendedInstruction) {
   EXPECT_EQ(nullptr, diagnostic_);
 }
 
+TEST_F(BinaryParseTest, ExtendedInstructionWithSwappedEndianness) {
+  const auto words = CompileSuccessfully(
+      "%extcl = OpExtInstImport \"OpenCL.std\" "
+      "%result = OpExtInst %float %extcl sqrt %x");
+  EXPECT_HEADER(5).WillOnce(Return(SPV_SUCCESS));
+  EXPECT_CALL(client_, Instruction(_))
+      .Times(2)
+      .WillRepeatedly(Return(SPV_SUCCESS));
+  Parse(words, SPV_SUCCESS, true);
+  EXPECT_EQ(nullptr, diagnostic_);
+}
+
 TEST_F(CxxBinaryParseTest, ExtendedInstruction) {
   const auto words = CompileSuccessfully(
       "%extcl = OpExtInstImport \"OpenCL.std\" "
