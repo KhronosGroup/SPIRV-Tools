@@ -1,7 +1,32 @@
 Revision history for SPIRV-Tools
 
-v2026.4 2026-07-09
-  - Start v2026.4-dev
+v2026.4 2026-09-08
+  - Optimizer
+    - Add pass to convert typed pointers to untyped pointers (`--convert-to-untyped`) (#6714)
+    - Support optimizing shaders using SPV_KHR_opacity_micromap across dead-code elimination and local passes (#6833)
+    - Add folding rule to dissolve OpCopyLogical of OpCompositeConstruct in simplification pass (#6746)
+    - Harden optimizer passes against ID overflow (#6851, #6852, #6857, #6858, #6863)
+    - Filter duplicate decorations during module serialization to binary (#6828)
+    - Correctness fixes for vector constant folding size and OpSelect folding pre-SPIR-V 1.4 (#6798, #6827)
+    - Stability fixes for IRContext analysis handling, debug info stripping, and eliminate dead functions (#6765, #6797, #6799)
+  - Validator
+    - Support and validate SPV_EXT_cooperative_matrix_maintenance1 (#6825)
+    - Support and validate SPV_QCOM_image_processing3 and OpImageGatherQCOM (#6672)
+    - Add validation for NonSemantic.DebugPrintf extended instruction set (#6861)
+    - Validate OpAbortKHR explicit layout message type and require scalar packing (#6854, #6859)
+    - Tighten relaxed block layout alignments and add explicit alignment VUIDs (#6819, #6853)
+    - Validate Offset decoration on Input/Output storage classes and add VUID 12509 (#6835, #6855)
+    - Allow OpExtInstWithForwardRefsKHR in generic non-semantic instruction sets (#6847)
+    - Restrict Workgroup execution scope to OpGroupNonUniformRotateKHR for non-uniform group operations (#6811)
+    - Validate OpControlBarrierArriveEXT execution and memory scopes (#6782)
+    - Allow Generic pointer casts to and from CodeSectionINTEL storage class (#6787)
+    - Allow BFloat16 and FP8 result types in OpExtInst (#6734)
+    - Validate OpSourceContinued order following OpSource (#6840)
+    - Correctness fixes for >64-bit integer constant evaluation and AliasScopeINTELMask/NoAliasINTELMask operand counting (#6816, #6791, #6865)
+  - Linker
+    - Detect duplicate exported definitions without imports to prevent ODR violations (#6750)
+  - Assembler/Disassembler
+    - Initialize parsed operand floating-point encoding to ensure deterministic disassembly of literal floats (#6834)
 
 v2026.3 2026-07-08
   - General
