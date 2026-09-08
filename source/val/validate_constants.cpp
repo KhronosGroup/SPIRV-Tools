@@ -713,6 +713,13 @@ spv_result_t ValidateConstantData(ValidationState_t& _,
            << "Result type must be an array of integer scalar type.";
   }
 
+  // The Data literals are tightly packed, so an explicit layout stride on the
+  // result type would contradict how the constant is encoded.
+  if (_.HasDecoration(array_inst->id(), spv::Decoration::ArrayStride)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Result type must not be decorated with ArrayStride.";
+  }
+
   const uint32_t int_width = element_type_inst->word(2);
   const uint32_t data_words = static_cast<uint32_t>(inst->words().size() - 3);
 
@@ -780,6 +787,7 @@ spv_result_t ConstantPass(ValidationState_t& _, const Instruction* inst) {
         return error;
       break;
     case spv::Op::OpConstantDataKHR:
+    case spv::Op::OpSpecConstantDataKHR:
       if (auto error = ValidateConstantData(_, inst)) return error;
       break;
     default:

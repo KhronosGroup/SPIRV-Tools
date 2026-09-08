@@ -716,6 +716,58 @@ TEST_F(ValidateSpvKHRAbort, ExplicitLayout) {
               HasSubstr("Array must be explicitly laid out"));
 }
 
+TEST_F(ValidateSpvKHRAbort, ConstantDataArrayStride) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability ConstantDataKHR
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %uint_array ArrayStride 4
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+  %uint_size = OpConstant %uint 1
+ %uint_array = OpTypeArray %uint %uint_size
+       %data = OpConstantDataKHR %uint_array 1
+  %void_func = OpTypeFunction %void
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Result type must not be decorated with ArrayStride"));
+}
+
+TEST_F(ValidateSpvKHRAbort, SpecConstantDataArrayStride) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability ConstantDataKHR
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %uint_array ArrayStride 4
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+  %uint_size = OpConstant %uint 1
+ %uint_array = OpTypeArray %uint %uint_size
+       %data = OpSpecConstantDataKHR %uint_array 1
+  %void_func = OpTypeFunction %void
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("Result type must not be decorated with ArrayStride"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
