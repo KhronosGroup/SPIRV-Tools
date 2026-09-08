@@ -3444,6 +3444,8 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Pointer-08973);
     case 9557:
       return VUID_WRAP(VUID-StandaloneSpirv-Input-09557);
+    case 9565:
+      return VUID_WRAP(VUID-StandaloneSpirv-MaximallyReconvergesKHR-09565);
     case 9638:
       return VUID_WRAP(VUID-StandaloneSpirv-OpTypeImage-09638);
     case 9658:

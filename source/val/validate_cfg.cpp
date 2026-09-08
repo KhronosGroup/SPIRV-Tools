@@ -918,6 +918,28 @@ spv_result_t StructuredControlFlowChecks(
   return SPV_SUCCESS;
 }
 
+// From Vulkan Spec in vkspec.html#ray-tracing-shader-call
+static bool IsInvocationRepackInstruction(spv::Op opcode) {
+  switch (opcode) {
+    case spv::Op::OpTraceRayKHR:
+    case spv::Op::OpTraceRayMotionNV:
+    case spv::Op::OpReorderThreadWithHintNV:
+    case spv::Op::OpReorderThreadWithHitObjectNV:
+    case spv::Op::OpReorderThreadWithHintEXT:
+    case spv::Op::OpReorderThreadWithHitObjectEXT:
+    case spv::Op::OpHitObjectTraceRayEXT:
+    case spv::Op::OpHitObjectReorderExecuteShaderEXT:
+    case spv::Op::OpHitObjectTraceReorderExecuteEXT:
+    case spv::Op::OpHitObjectTraceRayMotionEXT:
+    case spv::Op::OpHitObjectTraceMotionReorderExecuteEXT:
+    case spv::Op::OpReportIntersectionKHR:
+    case spv::Op::OpExecuteCallableKHR:
+      return true;
+    default:
+      return false;
+  }
+}
+
 spv_result_t MaximalReconvergenceChecks(ValidationState_t& _) {
   // Find all the entry points with the MaximallyReconvergencesKHR execution
   // mode.
@@ -947,16 +969,29 @@ spv_result_t MaximalReconvergenceChecks(ValidationState_t& _) {
     }
   }
 
-  // Check for conditional branches with the same true and false targets.
+  // Need to search through functions in execution mode call tree
   for (const auto& inst : _.ordered_instructions()) {
+    if (!inst.function() || !maximal_funcs.count(inst.function()->id())) {
+      continue;
+    }
+
+    // Check for conditional branches with the same true and false targets.
     if (inst.opcode() == spv::Op::OpBranchConditional) {
       const auto true_id = inst.GetOperandAs<uint32_t>(1);
       const auto false_id = inst.GetOperandAs<uint32_t>(2);
-      if (true_id == false_id && maximal_funcs.count(inst.function()->id())) {
+      if (true_id == false_id) {
         return _.diag(SPV_ERROR_INVALID_ID, &inst)
                << "In entry points using the MaximallyReconvergesKHR execution "
                   "mode, True Label and False Label must be different labels";
       }
+    } else if (IsInvocationRepackInstruction(inst.opcode())) {
+      return _.diag(SPV_ERROR_INVALID_ID, &inst)
+             << _.VkErrorID(9565)
+             << "The MaximallyReconvergesKHR Execution "
+                "Mode must not be applied to an entry "
+                "point if an invocation repack "
+                "instruction (Op"
+             << spvOpcodeString(inst.opcode()) << ") is statically used";
     }
   }
 
