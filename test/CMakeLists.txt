@@ -49,7 +49,7 @@ function(add_spvtools_unittest)
       # Effcee and RE2 headers exhibit shadowing.
       target_compile_options(${target} PRIVATE -Wno-shadow)
     endif()
-    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    if(MSVC)
       # Disable C4503 "decorated name length exceeded" warning,
       # triggered by some heavily templated types.
       # We don't care much about that in test code.
@@ -59,6 +59,9 @@ function(add_spvtools_unittest)
       # in VS 2017.  See https://github.com/google/googletest/issues/1352
       # Forcibly turn it on again.
       target_compile_options(${target} PRIVATE /DGTEST_HAS_COMBINE=1)
+      # MSVC builds require /bigobj on test targets to avoid exceeding the
+      # object file section limit.
+      target_compile_options(${target} PRIVATE /bigobj)
     endif()
     target_include_directories(${target} PRIVATE
       ${SPIRV_HEADER_INCLUDE_DIR}
