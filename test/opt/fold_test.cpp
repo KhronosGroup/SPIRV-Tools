@@ -1354,10 +1354,9 @@ INSTANTIATE_TEST_SUITE_P(TestCase, IntegerInstructionFoldingTest,
         "OpReturn\n" +
         "OpFunctionEnd",
     2, 0),
-    // TODO: hex_float.h contains some errors when converting float32 to
-    // smaller floating point types, which causes incorrect results. Please see
-    // https://github.com/KhronosGroup/glslang/issues/4241 and
-    // https://godbolt.org/z/684sEjzGY for details.
+    // TODO(issue KhronosGroup/glslang#4241): hex_float.h contains some errors
+    // when converting float32 to smaller floating point types, it's incorrect.
+    // Please see https://godbolt.org/z/684sEjzGY for details.
     // Test case 98: Bit-cast float8e4m3 1 to float8e4m3
     InstructionFoldingCase<uint32_t>(
         Header() + "%main = OpFunction %void None %void_func\n" +
