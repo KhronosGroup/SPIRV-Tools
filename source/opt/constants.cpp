@@ -173,6 +173,9 @@ std::vector<const Constant*> ConstantManager::GetOperandConstants(
 
 uint32_t ConstantManager::FindDeclaredConstant(const Constant* c,
                                                uint32_t type_id) const {
+  if (c == nullptr) {
+    return 0;
+  }
   c = FindConstant(c);
   if (c == nullptr) {
     return 0;
@@ -204,7 +207,9 @@ std::vector<const Constant*> ConstantManager::GetConstantsFromIds(
 
 Instruction* ConstantManager::BuildInstructionAndAddToModule(
     const Constant* new_const, Module::inst_iterator* pos, uint32_t type_id) {
-  // TODO(1841): Handle id overflow.
+  if (new_const == nullptr) {
+    return nullptr;
+  }
   uint32_t new_id = context()->TakeNextId();
   if (new_id == 0) {
     return nullptr;
@@ -225,6 +230,9 @@ Instruction* ConstantManager::BuildInstructionAndAddToModule(
 
 Instruction* ConstantManager::GetDefiningInstruction(
     const Constant* c, uint32_t type_id, Module::inst_iterator* pos) {
+  if (c == nullptr) {
+    return nullptr;
+  }
   uint32_t decl_id = FindDeclaredConstant(c, type_id);
   if (decl_id == 0) {
     auto iter = context()->types_values_end();
@@ -614,8 +622,14 @@ const Constant* ConstantManager::GetNumericVectorConstantWithWords(
                                      first_word + words_per_element);
     const analysis::Constant* element_constant =
         GetConstant(element_type, const_data);
-    auto element_id = GetDefiningInstruction(element_constant)->result_id();
-    element_ids.push_back(element_id);
+    if (!element_constant) {
+      return nullptr;
+    }
+    Instruction* element_inst = GetDefiningInstruction(element_constant);
+    if (!element_inst) {
+      return nullptr;
+    }
+    element_ids.push_back(element_inst->result_id());
   }
 
   return GetConstant(type, element_ids);
@@ -652,7 +666,14 @@ const Constant* ConstantManager::GetDoubleConst(double val) {
 uint32_t ConstantManager::GetSIntConstId(int32_t val) {
   Type* sint_type = context()->get_type_mgr()->GetSIntType();
   const Constant* c = GetConstant(sint_type, {static_cast<uint32_t>(val)});
-  return GetDefiningInstruction(c)->result_id();
+  if (!c) {
+    return 0;
+  }
+  Instruction* inst = GetDefiningInstruction(c);
+  if (!inst) {
+    return 0;
+  }
+  return inst->result_id();
 }
 
 const Constant* ConstantManager::GetIntConst(uint64_t val, int32_t bitWidth,
