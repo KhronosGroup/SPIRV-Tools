@@ -117,9 +117,35 @@ spv_result_t ValidateAbort(ValidationState_t& _, const Instruction* inst) {
   const auto source = _.FindDef(inst->GetOperandAs<uint32_t>(1u));
   const auto source_type = _.FindDef(source->type_id());
 
-  if (source_type == message_type) return SPV_SUCCESS;
+  // Could not find other checks using this, maybe shareable in future
+  // Defined at SPIRV.html#Concrete
+  const auto IsNotConcrete = [](const Instruction* type_inst) {
+    switch (type_inst->opcode()) {
+      case spv::Op::OpTypeInt:
+      case spv::Op::OpTypeFloat:
+      case spv::Op::OpTypeVector:
+      case spv::Op::OpTypeVectorIdEXT:
+      case spv::Op::OpTypeMatrix:
+      case spv::Op::OpTypeArray:
+      case spv::Op::OpTypeRuntimeArray:
+      case spv::Op::OpTypeStruct:
+        return false;
+      case spv::Op::OpTypePointer:
+        return type_inst->GetOperandAs<spv::StorageClass>(1u) !=
+               spv::StorageClass::PhysicalStorageBuffer;
+      default:
+        return true;
+    }
+  };
 
-  if (!_.LogicallyMatch(source_type, message_type, false)) {
+  if (_.ContainsType(message_type->id(), IsNotConcrete, false)) {
+    return _.diag(SPV_ERROR_INVALID_ID, inst)
+           << "Message Type operand " << _.getIdName(message_type->id())
+           << " must be a concrete type";
+  }
+
+  if (source_type != message_type &&
+      !_.LogicallyMatch(source_type, message_type, false)) {
     return _.diag(SPV_ERROR_INVALID_ID, inst)
            << "Type of Message operand does not logically match the type of "
               "the Message Type operand";
