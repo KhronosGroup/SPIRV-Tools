@@ -238,6 +238,23 @@ spv_result_t ValidateDecorationTarget(ValidationState_t& _, spv::Decoration dec,
                << "must be a cooperative matrix conversion instruction";
       }
       break;
+    case spv::Decoration::UTFEncodedKHR: {
+      if (target->opcode() != spv::Op::OpTypeArray &&
+          target->opcode() != spv::Op::OpTypeRuntimeArray) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << fail() << "must be an array type";
+      }
+      const uint32_t element_type = target->GetOperandAs<uint32_t>(1);
+      if (!_.IsIntScalarType(element_type)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << fail() << "must be an array of scalar integer type";
+      }
+      if (!_.IsIntScalarType(element_type, 8)) {
+        return _.diag(SPV_ERROR_INVALID_ID, inst)
+               << fail() << "must have elements with a Width of 8, but the "
+               << "element type has a Width of " << _.GetBitWidth(element_type);
+      }
+    } break;
     default:
       break;
   }
