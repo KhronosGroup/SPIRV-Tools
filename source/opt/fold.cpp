@@ -631,6 +631,9 @@ Instruction* InstructionFolder::FoldInstructionToConstant(
     if (successful) {
       const analysis::Constant* result_const =
           const_mgr->GetConstant(const_mgr->GetType(inst), {result_val});
+      if (!result_const) {
+        return nullptr;
+      }
       Instruction* folded_inst =
           const_mgr->GetDefiningInstruction(result_const, inst->type_id());
       return folded_inst;
@@ -651,6 +654,9 @@ Instruction* InstructionFolder::FoldInstructionToConstant(
       const analysis::Constant* result_const =
           const_mgr->GetNumericVectorConstantWithWords(
               const_mgr->GetType(inst)->AsVector(), result_val);
+      if (!result_const) {
+        return nullptr;
+      }
       Instruction* folded_inst =
           const_mgr->GetDefiningInstruction(result_const, inst->type_id());
       return folded_inst;

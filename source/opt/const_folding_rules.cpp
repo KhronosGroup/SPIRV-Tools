@@ -192,6 +192,9 @@ ConstantFoldingRule FoldInsertWithConstants() {
       const analysis::Constant* constant =
           (i == final_operand) ? object : components[i];
       Instruction* member_inst = const_mgr->GetDefiningInstruction(constant);
+      if (!member_inst) {
+        return nullptr;
+      }
       ids.push_back(member_inst->result_id());
     }
     const analysis::Constant* new_constant = const_mgr->GetConstant(type, ids);
@@ -271,10 +274,16 @@ ConstantFoldingRule FoldVectorShuffleWithConstants() {
       } else if (index < c1_components.size()) {
         Instruction* member_inst =
             const_mgr->GetDefiningInstruction(c1_components[index]);
+        if (!member_inst) {
+          return nullptr;
+        }
         ids.push_back(member_inst->result_id());
       } else {
         Instruction* member_inst = const_mgr->GetDefiningInstruction(
             c2_components[index - c1_components.size()]);
+        if (!member_inst) {
+          return nullptr;
+        }
         ids.push_back(member_inst->result_id());
       }
     }
@@ -340,7 +349,11 @@ ConstantFoldingRule FoldVectorTimesScalar() {
         std::vector<uint32_t> words = result.GetWords();
         const analysis::Constant* new_elem =
             const_mgr->GetConstant(float_type, words);
-        ids.push_back(const_mgr->GetDefiningInstruction(new_elem)->result_id());
+        Instruction* inst_elem = const_mgr->GetDefiningInstruction(new_elem);
+        if (!inst_elem) {
+          return nullptr;
+        }
+        ids.push_back(inst_elem->result_id());
       }
       return const_mgr->GetConstant(vector_type, ids);
     } else if (float_type->width() == 64) {
@@ -351,7 +364,11 @@ ConstantFoldingRule FoldVectorTimesScalar() {
         std::vector<uint32_t> words = result.GetWords();
         const analysis::Constant* new_elem =
             const_mgr->GetConstant(float_type, words);
-        ids.push_back(const_mgr->GetDefiningInstruction(new_elem)->result_id());
+        Instruction* inst_elem = const_mgr->GetDefiningInstruction(new_elem);
+        if (!inst_elem) {
+          return nullptr;
+        }
+        ids.push_back(inst_elem->result_id());
       }
       return const_mgr->GetConstant(vector_type, ids);
     }
@@ -382,9 +399,12 @@ const analysis::Constant* TransposeMatrix(const analysis::Constant* matrix,
     const auto& column_components = column->AsVectorConstant()->GetComponents();
 
     for (uint32_t row = 0; row < number_of_rows; ++row) {
-      result_elements[row].push_back(
-          const_mgr->GetDefiningInstruction(column_components[row])
-              ->result_id());
+      Instruction* def =
+          const_mgr->GetDefiningInstruction(column_components[row]);
+      if (!def) {
+        return nullptr;
+      }
+      result_elements[row].push_back(def->result_id());
     }
   }
 
@@ -393,8 +413,11 @@ const analysis::Constant* TransposeMatrix(const analysis::Constant* matrix,
   for (uint32_t col = 0; col < number_of_rows; ++col) {
     auto* element = const_mgr->GetConstant(result_type->element_type(),
                                            result_elements[col]);
-    result_columns[col] =
-        const_mgr->GetDefiningInstruction(element)->result_id();
+    Instruction* def = const_mgr->GetDefiningInstruction(element);
+    if (!def) {
+      return nullptr;
+    }
+    result_columns[col] = def->result_id();
   }
 
   // Create the matrix constant from the row ids, and return it.
@@ -465,7 +488,11 @@ ConstantFoldingRule FoldVectorTimesMatrix() {
       for (uint32_t i = 0; i < resultVectorSize; ++i) {
         const analysis::Constant* new_elem =
             const_mgr->GetConstant(float_type, words);
-        ids.push_back(const_mgr->GetDefiningInstruction(new_elem)->result_id());
+        Instruction* def = const_mgr->GetDefiningInstruction(new_elem);
+        if (!def) {
+          return nullptr;
+        }
+        ids.push_back(def->result_id());
       }
       return const_mgr->GetConstant(vector_type, ids);
     }
@@ -492,7 +519,11 @@ ConstantFoldingRule FoldVectorTimesMatrix() {
         std::vector<uint32_t> words = result.GetWords();
         const analysis::Constant* new_elem =
             const_mgr->GetConstant(float_type, words);
-        ids.push_back(const_mgr->GetDefiningInstruction(new_elem)->result_id());
+        Instruction* def = const_mgr->GetDefiningInstruction(new_elem);
+        if (!def) {
+          return nullptr;
+        }
+        ids.push_back(def->result_id());
       }
       return const_mgr->GetConstant(vector_type, ids);
     } else if (float_type->width() == 64) {
@@ -511,7 +542,11 @@ ConstantFoldingRule FoldVectorTimesMatrix() {
         std::vector<uint32_t> words = result.GetWords();
         const analysis::Constant* new_elem =
             const_mgr->GetConstant(float_type, words);
-        ids.push_back(const_mgr->GetDefiningInstruction(new_elem)->result_id());
+        Instruction* def = const_mgr->GetDefiningInstruction(new_elem);
+        if (!def) {
+          return nullptr;
+        }
+        ids.push_back(def->result_id());
       }
       return const_mgr->GetConstant(vector_type, ids);
     }
@@ -561,7 +596,11 @@ ConstantFoldingRule FoldMatrixTimesVector() {
       for (uint32_t i = 0; i < resultVectorSize; ++i) {
         const analysis::Constant* new_elem =
             const_mgr->GetConstant(float_type, words);
-        ids.push_back(const_mgr->GetDefiningInstruction(new_elem)->result_id());
+        Instruction* def = const_mgr->GetDefiningInstruction(new_elem);
+        if (!def) {
+          return nullptr;
+        }
+        ids.push_back(def->result_id());
       }
       return const_mgr->GetConstant(vector_type, ids);
     }
@@ -589,7 +628,11 @@ ConstantFoldingRule FoldMatrixTimesVector() {
         std::vector<uint32_t> words = result.GetWords();
         const analysis::Constant* new_elem =
             const_mgr->GetConstant(float_type, words);
-        ids.push_back(const_mgr->GetDefiningInstruction(new_elem)->result_id());
+        Instruction* def = const_mgr->GetDefiningInstruction(new_elem);
+        if (!def) {
+          return nullptr;
+        }
+        ids.push_back(def->result_id());
       }
       return const_mgr->GetConstant(vector_type, ids);
     } else if (float_type->width() == 64) {
@@ -609,7 +652,11 @@ ConstantFoldingRule FoldMatrixTimesVector() {
         std::vector<uint32_t> words = result.GetWords();
         const analysis::Constant* new_elem =
             const_mgr->GetConstant(float_type, words);
-        ids.push_back(const_mgr->GetDefiningInstruction(new_elem)->result_id());
+        Instruction* def = const_mgr->GetDefiningInstruction(new_elem);
+        if (!def) {
+          return nullptr;
+        }
+        ids.push_back(def->result_id());
       }
       return const_mgr->GetConstant(vector_type, ids);
     }
@@ -708,7 +755,11 @@ ConstantFoldingRule FoldUnaryOp(UnaryScalarFoldingRule scalar_rule) {
       // Build the constant object and return it.
       std::vector<uint32_t> ids;
       for (const analysis::Constant* member : results_components) {
-        ids.push_back(const_mgr->GetDefiningInstruction(member)->result_id());
+        Instruction* def = const_mgr->GetDefiningInstruction(member);
+        if (!def) {
+          return nullptr;
+        }
+        ids.push_back(def->result_id());
       }
       return const_mgr->GetConstant(vector_type, ids);
     } else {
@@ -769,7 +820,11 @@ ConstantFoldingRule FoldBinaryOp(BinaryScalarFoldingRule scalar_rule) {
     // Build the constant object and return it.
     std::vector<uint32_t> ids;
     for (const analysis::Constant* member : results_components) {
-      ids.push_back(const_mgr->GetDefiningInstruction(member)->result_id());
+      Instruction* def = const_mgr->GetDefiningInstruction(member);
+      if (!def) {
+        return nullptr;
+      }
+      ids.push_back(def->result_id());
     }
     return const_mgr->GetConstant(vector_type, ids);
   };
