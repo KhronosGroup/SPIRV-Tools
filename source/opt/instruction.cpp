@@ -171,6 +171,7 @@ Instruction* Instruction::Clone(IRContext* c) const {
     if (i.IsDebugLineInst()) {
       uint32_t new_id = c->TakeNextId();
       if (new_id == 0) {
+        delete clone;
         return nullptr;
       }
       i.SetResultId(new_id);

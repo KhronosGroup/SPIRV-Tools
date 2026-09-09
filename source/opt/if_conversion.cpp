@@ -124,12 +124,17 @@ Pass::Status IfConversion::Process() {
             context()->get_type_mgr()->GetType(true_value->type_id());
         if (analysis::Vector* vec_data_ty = data_ty->AsVector()) {
           condition = SplatCondition(vec_data_ty, condition, &builder);
+          if (condition == 0) {
+            return;
+          }
         }
 
-        // TODO(1841): Handle id overflow.
         Instruction* select = builder.AddSelect(phi->type_id(), condition,
                                                 true_value->result_id(),
                                                 false_value->result_id());
+        if (!select) {
+          return;
+        }
         context()->get_def_use_mgr()->AnalyzeInstDefUse(select);
         select->UpdateDebugInfoFrom(phi);
         context()->ReplaceAllUsesWith(phi->result_id(), select->result_id());
@@ -145,6 +150,9 @@ Pass::Status IfConversion::Process() {
     context()->KillInst(inst);
   }
 
+  if (context()->id_overflow()) {
+    return Status::Failure;
+  }
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
@@ -205,9 +213,15 @@ uint32_t IfConversion::SplatCondition(analysis::Vector* vec_data_ty,
   analysis::Vector bool_vec_ty(&bool_ty, vec_data_ty->element_count());
   uint32_t bool_vec_id =
       context()->get_type_mgr()->GetTypeInstruction(&bool_vec_ty);
+  if (bool_vec_id == 0) {
+    return 0;
+  }
   std::vector<uint32_t> ids(vec_data_ty->element_count(), cond);
-  // TODO(1841): Handle id overflow.
-  return builder->AddCompositeConstruct(bool_vec_id, ids)->result_id();
+  Instruction* construct = builder->AddCompositeConstruct(bool_vec_id, ids);
+  if (!construct) {
+    return 0;
+  }
+  return construct->result_id();
 }
 
 bool IfConversion::CheckType(uint32_t id) {

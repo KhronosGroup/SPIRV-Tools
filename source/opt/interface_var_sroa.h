@@ -315,7 +315,7 @@ class InterfaceVariableScalarReplacement : public Pass {
   // construct instructions using |loads_to_composites|. |depth_to_component| is
   // the number of recursive access steps to get the component from the
   // composite.
-  void AddComponentsToCompositesForLoads(
+  Pass::Status AddComponentsToCompositesForLoads(
       const std::unordered_map<Instruction*, Instruction*>&
           loads_to_component_values,
       std::unordered_map<Instruction*, Instruction*>* loads_to_composites,

@@ -1703,4 +1703,48 @@ TEST_F(GraphicsRobustAccessTest, ReplaceIndexReportsChanged) {
 // TODO(dneto): Test OpImageTexelPointer with coordinate component index other
 // than 32 bits.
 
+TEST_F(GraphicsRobustAccessTest, ACRTArrayWithoutExistingUIntType) {
+  SetTargetEnv(SPV_ENV_VULKAN_1_0);
+  const std::string text = R"(
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpName %var "var"
+               OpName %ac "ac"
+               OpDecorate %rtarr ArrayStride 4
+               OpDecorate %ssbo_s BufferBlock
+               OpMemberDecorate %ssbo_s 0 Offset 0
+               OpDecorate %var DescriptorSet 0
+               OpDecorate %var Binding 0
+       %void = OpTypeVoid
+    %void_fn = OpTypeFunction %void
+      %float = OpTypeFloat 32
+      %rtarr = OpTypeRuntimeArray %float
+     %ssbo_s = OpTypeStruct %rtarr
+    %var_ptr = OpTypePointer Uniform %ssbo_s
+  %float_ptr = OpTypePointer Uniform %float
+        %var = OpVariable %var_ptr Uniform
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+
+; CHECK: %[[GLSLSTD450:\w+]] = OpExtInstImport "GLSL.std.450"
+; CHECK: %uint = OpTypeInt 32 0
+; CHECK: %[[arrlen:\w+]] = OpArrayLength %uint %var 0
+; CHECK: %[[max:\w+]] = OpISub %int %[[arrlen]] %int_1
+; CHECK: %[[smin:\w+]] = OpExtInst %int %[[GLSLSTD450]] UMin %[[max]] %[[intmax:\w+]]
+; CHECK: %[[clamp:\w+]] = OpExtInst %int %[[GLSLSTD450]] SClamp %int_0 %int_0 %[[smin]]
+; CHECK: %ac = OpAccessChain %_ptr_Uniform_float %var %int_0 %[[clamp]]
+
+       %main = OpFunction %void None %void_fn
+      %entry = OpLabel
+         %ac = OpAccessChain %float_ptr %var %int_0 %int_0
+               OpReturn
+               OpFunctionEnd
+)";
+
+  SinglePassRunAndMatch<GraphicsRobustAccessPass>(text, true);
+}
+
 }  // namespace
