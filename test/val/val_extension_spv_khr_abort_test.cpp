@@ -768,6 +768,110 @@ TEST_F(ValidateSpvKHRAbort, SpecConstantDataArrayStride) {
               HasSubstr("Result type must not be decorated with ArrayStride"));
 }
 
+TEST_F(ValidateSpvKHRAbort, UTFEncodeGood) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability Int8
+               OpCapability ConstantDataKHR
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %char_array UTFEncodedKHR
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+       %char = OpTypeInt 8 0
+  %uint_size = OpConstant %uint 4
+ %char_array = OpTypeArray %char %uint_size
+       %data = OpConstantDataKHR %char_array 0x74736574
+  %void_func = OpTypeFunction %void
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str());
+  EXPECT_EQ(SPV_SUCCESS, ValidateInstructions());
+}
+
+TEST_F(ValidateSpvKHRAbort, UTFEncodedNonArray) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability ConstantDataKHR
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %struct UTFEncodedKHR
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+     %struct = OpTypeStruct %uint
+  %void_func = OpTypeFunction %void
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("UTFEncodedKHR decoration on target <id> "
+                        "'2[%_struct_2]' must be an array type"));
+}
+
+TEST_F(ValidateSpvKHRAbort, UTFEncodedFloatElement) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability ConstantDataKHR
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %float_array UTFEncodedKHR
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+      %float = OpTypeFloat 32
+  %uint_size = OpConstant %uint 4
+%float_array = OpTypeArray %float %uint_size
+  %void_func = OpTypeFunction %void
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must be an array of scalar integer type"));
+}
+
+TEST_F(ValidateSpvKHRAbort, UTFEncodedWrongWidth) {
+  const std::string str = R"(
+               OpCapability Shader
+               OpCapability ConstantDataKHR
+               OpExtension "SPV_KHR_constant_data"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main"
+               OpExecutionMode %main LocalSize 1 1 1
+               OpDecorate %uint_array UTFEncodedKHR
+       %void = OpTypeVoid
+       %uint = OpTypeInt 32 0
+  %uint_size = OpConstant %uint 4
+ %uint_array = OpTypeArray %uint %uint_size
+       %data = OpConstantDataKHR %uint_array 1 2 3 4
+  %void_func = OpTypeFunction %void
+       %main = OpFunction %void None %void_func
+ %main_label = OpLabel
+               OpReturn
+               OpFunctionEnd
+)";
+  CompileSuccessfully(str.c_str());
+  EXPECT_NE(SPV_SUCCESS, ValidateInstructions());
+  EXPECT_THAT(getDiagnosticString(),
+              HasSubstr("must have elements with a Width of 8, but the element "
+                        "type has a Width of 32"));
+}
+
 }  // namespace
 }  // namespace val
 }  // namespace spvtools
