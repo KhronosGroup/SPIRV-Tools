@@ -43,6 +43,9 @@ Pass::Status ReduceLoadSize::Process() {
     });
   }
 
+  if (context()->id_overflow()) {
+    return Status::Failure;
+  }
   return modified ? Status::SuccessWithChange : Status::SuccessWithoutChange;
 }
 
@@ -92,25 +95,42 @@ bool ReduceLoadSize::ReplaceExtract(Instruction* inst) {
 
   uint32_t pointer_to_result_type_id =
       type_mgr->FindPointerToType(inst->type_id(), storage_class);
-  assert(pointer_to_result_type_id != 0 &&
-         "We did not find the pointer type that we need.");
+  if (pointer_to_result_type_id == 0) {
+    return false;
+  }
 
   analysis::Integer int_type(32, false);
   const analysis::Type* uint32_type = type_mgr->GetRegisteredType(&int_type);
+  if (uint32_type == nullptr) {
+    return false;
+  }
   std::vector<uint32_t> ids;
   for (uint32_t i = 1; i < inst->NumInOperands(); ++i) {
     uint32_t index = inst->GetSingleWordInOperand(i);
     const analysis::Constant* index_const =
         const_mgr->GetConstant(uint32_type, {index});
-    ids.push_back(const_mgr->GetDefiningInstruction(index_const)->result_id());
+    if (index_const == nullptr) {
+      return false;
+    }
+    Instruction* index_inst = const_mgr->GetDefiningInstruction(index_const);
+    if (index_inst == nullptr) {
+      return false;
+    }
+    ids.push_back(index_inst->result_id());
   }
 
   Instruction* new_access_chain = ir_builder.AddAccessChain(
       pointer_to_result_type_id,
       composite_inst->GetSingleWordInOperand(kLoadPointerInIdx), ids);
-  // TODO(1841): Handle id overflow.
+  if (new_access_chain == nullptr) {
+    return false;
+  }
+
   Instruction* new_load =
       ir_builder.AddLoad(inst->type_id(), new_access_chain->result_id());
+  if (new_load == nullptr) {
+    return false;
+  }
 
   context()->ReplaceAllUsesWith(inst->result_id(), new_load->result_id());
   context()->KillInst(inst);

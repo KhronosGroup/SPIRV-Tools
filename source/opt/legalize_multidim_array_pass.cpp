@@ -46,6 +46,9 @@ Pass::Status LegalizeMultidimArrayPass::Process() {
     if (!RewriteAccessChains(var, old_ptr_type_id)) return Status::Failure;
   }
 
+  if (context()->id_overflow()) {
+    return Status::Failure;
+  }
   return Status::SuccessWithChange;
 }
 
@@ -104,9 +107,15 @@ uint32_t LegalizeMultidimArrayPass::FlattenArrayType(Instruction* var) {
 
   const analysis::Constant* total_elements_const =
       constant_mgr->GetIntConst(total_elements, 32, false);
+  if (!total_elements_const) {
+    return 0;
+  }
 
   Instruction* total_elements_inst =
       constant_mgr->GetDefiningInstruction(total_elements_const);
+  if (!total_elements_inst) {
+    return 0;
+  }
   uint32_t total_elements_id = total_elements_inst->result_id();
 
   // Create new OpTypeArray.
@@ -116,12 +125,18 @@ uint32_t LegalizeMultidimArrayPass::FlattenArrayType(Instruction* var) {
       {analysis::Array::LengthInfo::kConstant, total_elements}};
   analysis::Array new_array_type(element_type, length_info);
   uint32_t new_array_type_id = type_mgr->GetTypeInstruction(&new_array_type);
+  if (new_array_type_id == 0) {
+    return 0;
+  }
 
   // Create new OpTypePointer.
   spv::StorageClass sc =
       static_cast<spv::StorageClass>(ptr_type_inst->GetSingleWordInOperand(0));
   analysis::Pointer new_ptr_type(type_mgr->GetType(new_array_type_id), sc);
   uint32_t new_ptr_type_id = type_mgr->GetTypeInstruction(&new_ptr_type);
+  if (new_ptr_type_id == 0) {
+    return 0;
+  }
 
   var->SetResultType(new_ptr_type_id);
   context()->UpdateDefUse(var);
@@ -186,6 +201,9 @@ bool LegalizeMultidimArrayPass::RewriteAccessChains(Instruction* var,
           Instruction* stride_inst =
               context()->get_constant_mgr()->GetDefiningInstruction(
                   stride_const);
+          if (stride_inst == nullptr) {
+            return false;
+          }
 
           Instruction* mul_inst = builder.AddBinaryOp(
               uint_type_id, spv::Op::OpIMul, idx_id, stride_inst->result_id());

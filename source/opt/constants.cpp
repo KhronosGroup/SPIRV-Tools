@@ -441,11 +441,17 @@ std::unique_ptr<Instruction> ConstantManager::CreateCompositeInstruction(
 
 const Constant* ConstantManager::GetConstant(
     const Type* type, const std::vector<uint32_t>& literal_words_or_ids) {
+  if (type == nullptr) {
+    return nullptr;
+  }
   auto cst = CreateConstant(type, literal_words_or_ids);
   return cst ? RegisterConstant(std::move(cst)) : nullptr;
 }
 
 const Constant* ConstantManager::GetNullCompositeConstant(const Type* type) {
+  if (type == nullptr) {
+    return nullptr;
+  }
   std::vector<uint32_t> literal_words_or_id;
 
   if (type->AsVector()) {
