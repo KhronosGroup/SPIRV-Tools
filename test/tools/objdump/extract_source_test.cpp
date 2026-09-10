@@ -88,7 +88,7 @@ TEST(ExtractSourceTest, SimpleSource) {
                "[numthreads(1, 1, 1)] void compute_1(){ }");
 }
 
-TEST(ExtractSourceTest, SourceContinued) {
+TEST(ExtractSourceTest, MultipleSourceContinued) {
   std::string source = R"(
       OpCapability Shader
       OpMemoryModel Logical GLSL450
@@ -96,7 +96,8 @@ TEST(ExtractSourceTest, SourceContinued) {
       OpExecutionMode %1 LocalSize 1 1 1
  %2 = OpString "compute.hlsl"
       OpSource HLSL 660 %2 "[numthreads(1, 1, 1)] "
-      OpSourceContinued "void compute_1(){ }"
+      OpSourceContinued "void compute_1("
+      OpSourceContinued "){ }"
       OpName %1 "compute_1"
  %3 = OpTypeVoid
  %4 = OpTypeFunction %3

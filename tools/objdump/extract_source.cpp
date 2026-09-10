@@ -21,6 +21,7 @@
 
 #include "source/latest_version_spirv_header.h"
 #include "source/opt/log.h"
+#include "source/util/string_utils.h"
 #include "spirv-tools/libspirv.hpp"
 #include "tools/util/cli_consumer.h"
 
@@ -28,38 +29,33 @@ namespace {
 
 constexpr auto kDefaultEnvironment = SPV_ENV_UNIVERSAL_1_6;
 
-// Extract a string literal from a given range.
-// Copies all the characters from `begin` to the first '\0' it encounters, while
-// removing escape patterns.
-// Not finding a '\0' before reaching `end` fails the extraction.
-//
-// Returns `true` if the extraction succeeded.
-// `output` value is undefined if false is returned.
-spv_result_t ExtractStringLiteral(const spv_position_t& loc, const char* begin,
-                                  const char* end, std::string* output) {
-  size_t sourceLength = std::distance(begin, end);
-  std::string escapedString;
-  escapedString.resize(sourceLength);
-
-  size_t writeIndex = 0;
-  size_t readIndex = 0;
-  for (; readIndex < sourceLength; writeIndex++, readIndex++) {
-    const char read = begin[readIndex];
-    if (read == '\0') {
-      escapedString.resize(writeIndex);
-      output->append(escapedString);
-      return SPV_SUCCESS;
-    }
-
-    if (read == '\\') {
-      ++readIndex;
-    }
-    escapedString[writeIndex] = begin[readIndex];
+// Extract a string literal from a given range of SPIR-V words.
+// Copies all the characters up to the first '\0', while removing escape
+// patterns. Not finding a '\0' before reaching `end` fails the extraction.
+spv_result_t ExtractStringLiteral(const spv_position_t& loc,
+                                  const uint32_t* begin, const uint32_t* end,
+                                  std::string* output) {
+  const size_t source_length =
+      static_cast<size_t>(std::distance(begin, end)) * sizeof(uint32_t);
+  const std::string source = spvtools::utils::MakeString(
+      begin, end, /*assert_found_terminating_null=*/false);
+  if (source.size() == source_length) {
+    spvtools::Error(spvtools::utils::CLIMessageConsumer, "", loc,
+                    "Missing NULL terminator for literal string.");
+    return SPV_ERROR_INVALID_BINARY;
   }
 
-  spvtools::Error(spvtools::utils::CLIMessageConsumer, "", loc,
-                  "Missing NULL terminator for literal string.");
-  return SPV_ERROR_INVALID_BINARY;
+  std::string unescaped_source;
+  unescaped_source.reserve(source.size());
+  for (size_t read_index = 0; read_index < source.size(); ++read_index) {
+    if (source[read_index] == '\\' && read_index + 1 < source.size()) {
+      ++read_index;
+    }
+    unescaped_source.push_back(source[read_index]);
+  }
+
+  output->append(unescaped_source);
+  return SPV_SUCCESS;
 }
 
 spv_result_t extractOpString(const spv_position_t& loc,
@@ -74,11 +70,9 @@ spv_result_t extractOpString(const spv_position_t& loc,
   }
 
   const auto& operand = instruction.operands[1];
-  const char* stringBegin =
-      reinterpret_cast<const char*>(instruction.words + operand.offset);
-  const char* stringEnd = reinterpret_cast<const char*>(
-      instruction.words + operand.offset + operand.num_words);
-  return ExtractStringLiteral(loc, stringBegin, stringEnd, output);
+  const uint32_t* string_begin = instruction.words + operand.offset;
+  const uint32_t* string_end = string_begin + operand.num_words;
+  return ExtractStringLiteral(loc, string_begin, string_end, output);
 }
 
 spv_result_t extractOpSourceContinued(
@@ -94,11 +88,9 @@ spv_result_t extractOpSourceContinued(
   }
 
   const auto& operand = instruction.operands[0];
-  const char* stringBegin =
-      reinterpret_cast<const char*>(instruction.words + operand.offset);
-  const char* stringEnd = reinterpret_cast<const char*>(
-      instruction.words + operand.offset + operand.num_words);
-  return ExtractStringLiteral(loc, stringBegin, stringEnd, output);
+  const uint32_t* string_begin = instruction.words + operand.offset;
+  const uint32_t* string_end = string_begin + operand.num_words;
+  return ExtractStringLiteral(loc, string_begin, string_end, output);
 }
 
 spv_result_t extractOpSource(const spv_position_t& loc,
@@ -124,11 +116,9 @@ spv_result_t extractOpSource(const spv_position_t& loc,
     return SPV_SUCCESS;
   }
 
-  const char* stringBegin =
-      reinterpret_cast<const char*>(instruction.words + 4);
-  const char* stringEnd =
-      reinterpret_cast<const char*>(instruction.words + instruction.num_words);
-  return ExtractStringLiteral(loc, stringBegin, stringEnd, code);
+  const uint32_t* string_begin = instruction.words + 4;
+  const uint32_t* string_end = instruction.words + instruction.num_words;
+  return ExtractStringLiteral(loc, string_begin, string_end, code);
 }
 
 }  // namespace
@@ -172,9 +162,11 @@ bool ExtractSourceFromModule(
           }
         } else if (instruction.opcode ==
                    static_cast<unsigned>(spv::Op::OpSourceContinued)) {
-          if (lastOpcode != spv::Op::OpSource) {
+          if (lastOpcode != spv::Op::OpSource &&
+              lastOpcode != spv::Op::OpSourceContinued) {
             spvtools::Error(spvtools::utils::CLIMessageConsumer, "", loc,
-                            "OpSourceContinued MUST follow an OpSource.");
+                            "OpSourceContinued MUST follow an OpSource or "
+                            "OpSourceContinued.");
             return SPV_ERROR_INVALID_BINARY;
           }
 
